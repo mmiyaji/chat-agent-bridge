@@ -8,6 +8,7 @@ import {
   AgentProgressUpdate,
   AppConfig,
   JsonValue,
+  SessionBinding,
 } from "../../core/types.js";
 
 interface CodexJsonEvent {
@@ -87,7 +88,7 @@ export class CodexAgent implements Agent {
       : this.buildExecArgs(request);
 
     const result = await this.runCodex(
-      request.session.sessionId,
+      request.session,
       args,
       request.prompt,
       request.onActivity,
@@ -178,7 +179,7 @@ export class CodexAgent implements Agent {
   }
 
   private async runCodex(
-    sessionId: string,
+    session: SessionBinding,
     args: string[],
     prompt: string,
     onActivity: AgentExecutionRequest["onActivity"],
@@ -192,12 +193,13 @@ export class CodexAgent implements Agent {
       stdio: ["pipe", "pipe", "pipe"],
       shell: true,
       windowsHide: true,
+      env: this.buildBridgeEnvironment(session),
     });
     const activeRun = {
       child,
       cancelRequested: false,
     };
-    this.activeRuns.set(sessionId, activeRun);
+    this.activeRuns.set(session.sessionId, activeRun);
 
     const stdoutChunks: string[] = [];
     const stderrChunks: string[] = [];
@@ -277,7 +279,7 @@ export class CodexAgent implements Agent {
     const [exitCode] = (await once(child, "close")) as [number | null];
     clearTimeout(idleTimeout);
     clearTimeout(maxTimeout);
-    this.activeRuns.delete(sessionId);
+    this.activeRuns.delete(session.sessionId);
 
     const stdout = stdoutChunks.join("");
     const stderr = stderrChunks.join("");
@@ -322,5 +324,18 @@ export class CodexAgent implements Agent {
   private readThreadId(agentState: Record<string, JsonValue> | undefined): string | undefined {
     const value = agentState?.codexThreadId;
     return isNonEmptyString(value) ? value : undefined;
+  }
+
+  private buildBridgeEnvironment(session: SessionBinding): NodeJS.ProcessEnv {
+    return {
+      ...process.env,
+      CHAT_AGENT_BRIDGE: "1",
+      CHAT_AGENT_BRIDGE_SESSION_ID: session.sessionId,
+      CHAT_AGENT_BRIDGE_AGENT: session.agent,
+      CHAT_AGENT_BRIDGE_CHAT_PROVIDER: session.thread.provider,
+      CHAT_AGENT_BRIDGE_CHAT_CHANNEL_ID: session.thread.channelId,
+      CHAT_AGENT_BRIDGE_CHAT_THREAD_ID: session.thread.threadId,
+      CHAT_AGENT_BRIDGE_WORKDIR: session.workingDirectory,
+    };
   }
 }

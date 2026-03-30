@@ -73,6 +73,18 @@ The current Codex adapter invokes the locally installed `codex` CLI in non-inter
 
 This path works with local ChatGPT login and does not require `OPENAI_API_KEY`.
 
+When the bridge launches `codex`, it also injects bridge-specific environment variables into the child process:
+
+- `CHAT_AGENT_BRIDGE=1`
+- `CHAT_AGENT_BRIDGE_SESSION_ID`
+- `CHAT_AGENT_BRIDGE_AGENT`
+- `CHAT_AGENT_BRIDGE_CHAT_PROVIDER`
+- `CHAT_AGENT_BRIDGE_CHAT_CHANNEL_ID`
+- `CHAT_AGENT_BRIDGE_CHAT_THREAD_ID`
+- `CHAT_AGENT_BRIDGE_WORKDIR`
+
+If you already use Codex hooks to send Slack notifications, use `CHAT_AGENT_BRIDGE=1` as the skip condition so bridge-posted thread replies do not get duplicated by the hook.
+
 ## Local ingress
 
 The Slack adapter supports two ingress modes:
