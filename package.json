@@ -1,0 +1,26 @@
+{
+  "name": "chat-agent-bridge",
+  "version": "0.1.0",
+  "description": "Bridge chat threads to persistent local development agent sessions.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "service:start": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-start.ps1",
+    "service:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-stop.ps1",
+    "service:restart": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-restart.ps1",
+    "service:status": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-status.ps1",
+    "start": "node dist/index.js",
+    "test": "node ./scripts/run-tests.mjs"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
