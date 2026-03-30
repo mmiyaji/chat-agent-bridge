@@ -5,6 +5,7 @@ import {
   ApprovalPolicy,
   AppConfig,
   ChatIngress,
+  MattermostActorMode,
   MattermostMode,
   NetworkAccess,
   SlackMode,
@@ -69,6 +70,19 @@ function parseMattermostMode(value: string | undefined): MattermostMode {
       return value;
     default:
       throw new Error(`Invalid MATTERMOST_MODE: ${value}`);
+  }
+}
+
+function parseMattermostActorMode(value: string | undefined): MattermostActorMode {
+  switch (value) {
+    case undefined:
+    case "":
+    case "bot":
+      return "bot";
+    case "self":
+      return value;
+    default:
+      throw new Error(`Invalid MATTERMOST_ACTOR_MODE: ${value}`);
   }
 }
 
@@ -268,6 +282,9 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     mattermostMode: parseMattermostMode(
       readSettingString(env.MATTERMOST_MODE, persisted, "mattermostMode"),
     ),
+    mattermostActorMode: parseMattermostActorMode(
+      readSettingString(env.MATTERMOST_ACTOR_MODE, persisted, "mattermostActorMode"),
+    ),
     port: parseInteger("CAB_PORT", readSettingInteger(env.CAB_PORT, persisted, "port"), 8787),
     host: readSettingString(env.CAB_HOST, persisted, "host") ?? "0.0.0.0",
     adminPort: parseInteger(
@@ -425,6 +442,9 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     const value = readSettingBoolean(env.MATTERMOST_DM_ONLY, persisted, "mattermostDmOnly");
     if (value) {
       config.mattermostDmOnly = parseBoolean(value);
+      if (config.mattermostDmOnly && !readSettingString(env.MATTERMOST_ACTOR_MODE, persisted, "mattermostActorMode")) {
+        config.mattermostActorMode = "self";
+      }
     }
   }
 

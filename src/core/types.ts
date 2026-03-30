@@ -11,6 +11,7 @@ export type ChatIngress = "slack" | "mattermost";
 export type SlackMode = "http" | "socket";
 
 export type MattermostMode = "http" | "websocket";
+export type MattermostActorMode = "bot" | "self";
 
 export type JsonPrimitive = string | number | boolean | null;
 
@@ -103,6 +104,7 @@ export interface AppConfig {
   networkAccess: NetworkAccess;
   slackMode: SlackMode;
   mattermostMode: MattermostMode;
+  mattermostActorMode?: MattermostActorMode;
   port: number;
   host: string;
   adminPort?: number;

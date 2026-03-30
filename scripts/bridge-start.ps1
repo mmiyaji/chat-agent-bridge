@@ -4,59 +4,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
-$runtimeDir = Join-Path $repoRoot "data\runtime"
-$pidFile = Join-Path $runtimeDir "bridge.pid"
+$commonScript = Join-Path $PSScriptRoot "bridge-common.ps1"
+. $commonScript
+
+$repoRoot = $script:BridgeRepoRoot
+$runtimeDir = $script:BridgeRuntimeDir
+$pidFile = $script:BridgePidFile
 $stdoutLog = Join-Path $runtimeDir "bridge.stdout.log"
 $stderrLog = Join-Path $runtimeDir "bridge.stderr.log"
 
 New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
-
-function Get-BridgeProcesses {
-  return @(Get-CimInstance Win32_Process |
-    Where-Object {
-      $_.Name -eq "node.exe" -and
-      $_.CommandLine -match "dist/index.js"
-    } |
-    Sort-Object CreationDate)
-}
-
-function Read-SettingsValue {
-  param(
-    [Parameter(Mandatory = $true)][string]$Key
-  )
-
-  $settingsFile = if ($env:CAB_SETTINGS_FILE) {
-    $env:CAB_SETTINGS_FILE
-  } else {
-    Join-Path $repoRoot "data\admin-settings.json"
-  }
-
-  if (!(Test-Path $settingsFile)) {
-    return $null
-  }
-
-  try {
-    $raw = Get-Content $settingsFile -Raw | ConvertFrom-Json
-    return $raw.$Key
-  } catch {
-    return $null
-  }
-}
-
-function Get-AdminListenerProcessIds {
-  $adminPort = if ($env:CAB_ADMIN_PORT) {
-    [int]$env:CAB_ADMIN_PORT
-  } elseif (Read-SettingsValue "adminPort") {
-    [int](Read-SettingsValue "adminPort")
-  } else {
-    $basePort = if ($env:CAB_PORT) { [int]$env:CAB_PORT } elseif (Read-SettingsValue "port") { [int](Read-SettingsValue "port") } else { 8787 }
-    $basePort + 1
-  }
-
-  return @(Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $adminPort -State Listen -ErrorAction SilentlyContinue |
-    Select-Object -ExpandProperty OwningProcess -Unique)
-}
 
 $requiredOrOptionalEnvNames = @(
   "CAB_ALLOWED_DIRS",
@@ -80,14 +37,7 @@ $requiredOrOptionalEnvNames = @(
   "SLACK_SIGNING_SECRET"
 )
 
-foreach ($name in $requiredOrOptionalEnvNames) {
-  if ([string]::IsNullOrWhiteSpace((Get-Item "Env:$name" -ErrorAction SilentlyContinue).Value)) {
-    $userValue = [Environment]::GetEnvironmentVariable($name, "User")
-    if (![string]::IsNullOrWhiteSpace($userValue)) {
-      Set-Item -Path "Env:$name" -Value $userValue
-    }
-  }
-}
+Import-BridgeEnvironment -Names $requiredOrOptionalEnvNames
 
 if ([string]::IsNullOrWhiteSpace((Get-Item "Env:CAB_ALLOWED_DIRS" -ErrorAction SilentlyContinue).Value)) {
   Set-Item -Path "Env:CAB_ALLOWED_DIRS" -Value $repoRoot
@@ -134,7 +84,7 @@ foreach ($bridgeProcess in $staleBridgeProcesses) {
   Write-Output "Stopped stale bridge process $($bridgeProcess.ProcessId)."
 }
 
-$staleAdminListenerProcessIds = Get-AdminListenerProcessIds
+$staleAdminListenerProcessIds = Get-BridgeAdminListenerProcessIds
 foreach ($processId in ($staleAdminListenerProcessIds | Select-Object -Unique)) {
   Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
   Wait-Process -Id $processId -Timeout 10 -ErrorAction SilentlyContinue

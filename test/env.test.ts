@@ -82,3 +82,18 @@ test("createAppConfig lets env override persisted settings", () => {
   assert.equal(config.codexModel, "gpt-5.4");
   assert.equal(config.autoSplitThreadUserMessageCount, 30);
 });
+
+test("createAppConfig reads Mattermost actor mode and maps legacy dm-only to self", () => {
+  const explicit = createAppConfig({
+    CAB_ALLOWED_DIRS: "C:/repo",
+    MATTERMOST_ACTOR_MODE: "self",
+  });
+  assert.equal(explicit.mattermostActorMode, "self");
+
+  const legacy = createAppConfig({
+    CAB_ALLOWED_DIRS: "C:/repo",
+    MATTERMOST_DM_ONLY: "true",
+  });
+  assert.equal(legacy.mattermostActorMode, "self");
+  assert.equal(legacy.mattermostDmOnly, true);
+});

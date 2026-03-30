@@ -214,6 +214,27 @@ test("AdminServer serves a dedicated settings page", async () => {
   await admin.stop();
 });
 
+test("AdminServer serves an onboarding page", async () => {
+  const store = new InMemoryStateStore();
+  const admin = new AdminServer({
+    config: createConfig(),
+    stateStore: store,
+    auditLogger: new RecordingAuditLogger(),
+    bridge: createBridge(store).bridge,
+  });
+  await admin.start();
+
+  const port = admin.getListeningPort();
+  assert.ok(port);
+
+  const response = await getText(port, "/admin/onboarding");
+  assert.equal(response.statusCode, 200);
+  assert.match(response.body, /Bridge Onboarding/);
+  assert.match(response.body, /Mattermost actor mode/);
+
+  await admin.stop();
+});
+
 test("AdminServer queues approve actions through the bridge", async () => {
   const store = new InMemoryStateStore();
   const { bridge, chatAdapter, agent, auditLogger } = createBridge(store);
@@ -287,6 +308,7 @@ test("AdminServer reads and updates runtime settings", async () => {
       chatProvider: "mattermost",
       slackMode: "socket",
       mattermostMode: "websocket",
+      mattermostActorMode: "self",
       host: "0.0.0.0",
       port: 9999,
       adminHost: "127.0.0.1",
@@ -294,7 +316,6 @@ test("AdminServer reads and updates runtime settings", async () => {
       defaultWorkingDirectory: "C:/repo",
       mattermostServerUrl: "https://chat.example.test",
       mattermostActionBaseUrl: "https://bridge.example.test",
-      mattermostDmOnly: true,
       slackBotToken: "xoxb-test",
     }),
   );
@@ -318,11 +339,11 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(config.chatProvider, "mattermost");
   assert.equal(config.slackMode, "socket");
   assert.equal(config.mattermostMode, "websocket");
+  assert.equal(config.mattermostActorMode, "self");
   assert.equal(config.port, 9999);
   assert.equal(config.adminPort, 9998);
   assert.equal(config.mattermostServerUrl, "https://chat.example.test");
   assert.equal(config.mattermostActionBaseUrl, "https://bridge.example.test");
-  assert.equal(config.mattermostDmOnly, true);
   assert.equal(update.body.settings.hasSlackBotToken, true);
   assert.match(update.body.settings.settingsSavedAt, /T/);
   const persisted = JSON.parse(fs.readFileSync(config.settingsFile, "utf8")) as Record<string, any>;

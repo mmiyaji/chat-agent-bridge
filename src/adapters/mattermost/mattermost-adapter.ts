@@ -1,10 +1,13 @@
 import crypto from "node:crypto";
 import http, { IncomingMessage, ServerResponse } from "node:http";
 import https from "node:https";
+import { createRequire } from "node:module";
 import querystring from "node:querystring";
 import { AuditLogger, NoopAuditLogger } from "../../core/audit.js";
 import { AppConfig, ChatThreadRef, IncomingChatMessage } from "../../core/types.js";
 import { ChatAction, ChatAdapter, ChatMessageHandler, ChatMessageOptions } from "../chat.js";
+
+const require = createRequire(import.meta.url);
 
 interface MattermostWebhookPayload {
   token?: string;
@@ -42,6 +45,10 @@ interface MattermostChannel {
   type?: string;
 }
 
+interface MattermostChannelMember {
+  user_id?: string;
+}
+
 interface MattermostWebSocketEvent {
   event?: string;
   status?: string;
@@ -77,6 +84,7 @@ interface MattermostAdapterOptions {
   host: string;
   defaultWorkingDirectory: string;
   mode: "http" | "websocket";
+  actorMode: "bot" | "self";
   serverUrl?: string;
   botToken?: string;
   webhookToken?: string;
@@ -131,7 +139,8 @@ async function fetchJson<T>(input: {
 }): Promise<T> {
   return await new Promise<T>((resolve, reject) => {
     const url = new URL(input.url);
-    const request = https.request(
+    const requestModule = url.protocol === "http:" ? http : https;
+    const request = requestModule.request(
       {
         protocol: url.protocol,
         hostname: url.hostname,
@@ -176,6 +185,7 @@ export class MattermostAdapter implements ChatAdapter {
   private selfUsername: string | undefined;
   private stopped = false;
   private readonly channelTypeCache = new Map<string, string>();
+  private readonly selfDmChannelCache = new Map<string, boolean>();
   private readonly actionToken = crypto.randomUUID();
 
   constructor(
@@ -189,6 +199,7 @@ export class MattermostAdapter implements ChatAdapter {
       | "mattermostBotToken"
       | "mattermostWebhookToken"
       | "mattermostActionBaseUrl"
+      | "mattermostActorMode"
       | "mattermostDmOnly"
     >,
     auditLogger?: AuditLogger,
@@ -202,6 +213,7 @@ export class MattermostAdapter implements ChatAdapter {
       host: config.host,
       defaultWorkingDirectory: config.defaultWorkingDirectory,
       mode: config.mattermostMode,
+      actorMode: config.mattermostActorMode ?? (config.mattermostDmOnly ? "self" : "bot"),
       ...(config.mattermostDmOnly
         ? {
             dmOnly: config.mattermostDmOnly,
@@ -232,10 +244,15 @@ export class MattermostAdapter implements ChatAdapter {
     this.socketFactory =
       dependencies?.socketFactory ??
       ((url) => {
-        const WebSocketCtor = (globalThis as { WebSocket?: new (url: string) => MattermostSocketLike })
-          .WebSocket;
+        const WebSocketCtor =
+          (globalThis as { WebSocket?: new (url: string) => MattermostSocketLike }).WebSocket ??
+          (
+            require("ws") as {
+              WebSocket?: new (url: string) => MattermostSocketLike;
+            }
+          ).WebSocket;
         if (!WebSocketCtor) {
-          throw new Error("Global WebSocket is not available in this Node runtime.");
+          throw new Error("No WebSocket implementation is available in this Node runtime.");
         }
 
         return new WebSocketCtor(url);
@@ -258,6 +275,12 @@ export class MattermostAdapter implements ChatAdapter {
     console.log(
       `Mattermost adapter listening on http://${this.options.host}:${this.getListeningPort() ?? this.options.port}/mattermost/events`,
     );
+
+    if (this.options.actorMode === "self") {
+      const currentUser = await this.readCurrentUser();
+      this.selfUserId = currentUser?.id;
+      this.selfUsername = currentUser?.username;
+    }
 
     if (this.options.mode === "websocket") {
       await this.startWebSocketMode();
@@ -588,6 +611,12 @@ export class MattermostAdapter implements ChatAdapter {
     const socket = this.socketFactory(websocketUrl.toString());
     this.socket = socket;
     let authenticated = false;
+    let resolveAuthenticated: (() => void) | undefined;
+    let rejectAuthenticated: ((error: Error) => void) | undefined;
+    const authenticatedPromise = new Promise<void>((resolve, reject) => {
+      resolveAuthenticated = resolve;
+      rejectAuthenticated = reject;
+    });
 
     socket.addEventListener("open", () => {
       socket.send(
@@ -607,6 +636,9 @@ export class MattermostAdapter implements ChatAdapter {
       void this.handleSocketMessage(raw, {
         onAuthenticated: () => {
           authenticated = true;
+          resolveAuthenticated?.();
+          resolveAuthenticated = undefined;
+          rejectAuthenticated = undefined;
         },
       }).catch((error: unknown) => {
         console.error("Mattermost websocket handler failed.", error);
@@ -620,11 +652,15 @@ export class MattermostAdapter implements ChatAdapter {
       }
 
       if (!authenticated) {
+        rejectAuthenticated?.(new Error("Mattermost websocket closed before authentication."));
+        resolveAuthenticated = undefined;
+        rejectAuthenticated = undefined;
         console.error("Mattermost websocket closed before authentication completed.");
       }
       this.scheduleSocketReconnect();
     });
 
+    await authenticatedPromise;
     console.log("Mattermost adapter connected via WebSocket.");
   }
 
@@ -674,16 +710,20 @@ export class MattermostAdapter implements ChatAdapter {
       return;
     }
 
-    if (!this.options.dmOnly && this.selfUserId && post.user_id === this.selfUserId) {
+    if (this.options.actorMode === "bot" && this.selfUserId && post.user_id === this.selfUserId) {
       return;
     }
 
     const mention = this.selfUsername ? `@${this.selfUsername}` : undefined;
     const isThreadReply = Boolean(post.root_id) && post.root_id !== post.id;
-    if (
-      !isThreadReply &&
-      (!mention || !post.message.trim().toLowerCase().startsWith(mention.toLowerCase()))
-    ) {
+    const startsWithMention = Boolean(
+      mention && post.message.trim().toLowerCase().startsWith(mention.toLowerCase()),
+    );
+    if (this.options.actorMode === "self") {
+      if (!startsWithMention) {
+        return;
+      }
+    } else if (!isThreadReply && !startsWithMention) {
       return;
     }
 
@@ -694,7 +734,7 @@ export class MattermostAdapter implements ChatAdapter {
         threadId: post.root_id || post.id,
       },
       userId: post.user_id,
-      text: normalizeMattermostText(post.message, mention),
+      text: startsWithMention && mention ? normalizeMattermostText(post.message, mention) : post.message.trim(),
       requestedWorkingDirectory: this.options.defaultWorkingDirectory,
     };
 
@@ -758,27 +798,80 @@ export class MattermostAdapter implements ChatAdapter {
     });
   }
 
+  private async readChannelMembers(channelId: string): Promise<MattermostChannelMember[]> {
+    if (!this.options.serverUrl || !this.options.botToken) {
+      return [];
+    }
+
+    return await this.mattermostApiFetch<MattermostChannelMember[]>({
+      url: new URL(`/api/v4/channels/${channelId}/members`, this.options.serverUrl).toString(),
+      method: "GET",
+      headers: {
+        authorization: `Bearer ${this.options.botToken}`,
+      },
+    });
+  }
+
   private async isAllowedChannel(channelId: string | undefined): Promise<boolean> {
     if (!channelId) {
       return false;
     }
 
-    if (!this.options.dmOnly) {
+    if (this.options.actorMode !== "self") {
       return true;
     }
 
-    const cached = this.channelTypeCache.get(channelId);
-    if (cached) {
-      return cached === "D";
+    const cachedSelfDm = this.selfDmChannelCache.get(channelId);
+    if (cachedSelfDm !== undefined) {
+      return cachedSelfDm;
     }
 
-    const channel = await this.readChannel(channelId);
+    const cached = this.channelTypeCache.get(channelId);
+    if (cached && cached !== "D") {
+      this.selfDmChannelCache.set(channelId, false);
+      return false;
+    }
+
+    const channel = cached ? { type: cached } : await this.readChannel(channelId);
     if (!channel?.type) {
+      this.selfDmChannelCache.set(channelId, false);
       return false;
     }
 
     this.channelTypeCache.set(channelId, channel.type);
-    return channel.type === "D";
+    if (channel.type !== "D") {
+      this.selfDmChannelCache.set(channelId, false);
+      return false;
+    }
+
+    const isSelfDm = await this.isSelfDirectMessageChannel(channelId);
+    this.selfDmChannelCache.set(channelId, isSelfDm);
+    return isSelfDm;
+  }
+
+  private async isSelfDirectMessageChannel(channelId: string): Promise<boolean> {
+    if (!this.selfUserId) {
+      const currentUser = await this.readCurrentUser();
+      this.selfUserId = currentUser?.id;
+      this.selfUsername = currentUser?.username;
+    }
+
+    if (!this.selfUserId) {
+      return false;
+    }
+
+    const members = await this.readChannelMembers(channelId);
+    if (members.length === 0) {
+      return false;
+    }
+
+    const uniqueUserIds = new Set(
+      members
+        .map((member) => member.user_id)
+        .filter((userId): userId is string => typeof userId === "string" && userId.length > 0),
+    );
+
+    return uniqueUserIds.size === 1 && uniqueUserIds.has(this.selfUserId);
   }
 
   private async createPost(input: {

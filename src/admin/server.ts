@@ -28,6 +28,7 @@ interface RuntimeSettingsPayload {
   chatProvider: AppConfig["chatProvider"];
   slackMode: AppConfig["slackMode"];
   mattermostMode: AppConfig["mattermostMode"];
+  mattermostActorMode: NonNullable<AppConfig["mattermostActorMode"]>;
   host: AppConfig["host"];
   port: AppConfig["port"];
   adminHost: NonNullable<AppConfig["adminHost"]>;
@@ -616,6 +617,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           <nav class="nav" aria-label="Admin navigation">
             <a href="/admin" class="${isSettingsView ? "" : "is-active"}" data-testid="nav-dashboard">Dashboard</a>
             <a href="/admin/settings" class="${isSettingsView ? "is-active" : ""}" data-testid="nav-settings">Settings</a>
+            <a href="/admin/onboarding" data-testid="nav-onboarding">Onboarding</a>
           </nav>
           <div class="stats">
             <div class="stat" data-testid="sessions-stat"><strong>${sessionCount}</strong><span>Sessions</span></div>
@@ -1047,7 +1049,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           '<div class="settings-subgrid">' +
             '<div class="field"><label for="settings-mm-server">Mattermost server URL</label><input id="settings-mm-server" data-testid="settings-mm-server" type="text" value="' + escapeHtml(settings.mattermostServerUrl || "") + '" /></div>' +
             '<div class="field"><label for="settings-mm-action-base">Mattermost action base URL</label><input id="settings-mm-action-base" data-testid="settings-mm-action-base" type="text" value="' + escapeHtml(settings.mattermostActionBaseUrl || "") + '" /></div>' +
-            '<div class="field"><label class="toggle" for="settings-mm-dm-only"><input id="settings-mm-dm-only" data-testid="settings-mm-dm-only" type="checkbox"' + (settings.mattermostDmOnly ? " checked" : "") + ' />Mattermost DM only</label></div>' +
+            '<div class="field"><label for="settings-mm-actor-mode">Mattermost actor mode</label><select id="settings-mm-actor-mode" data-testid="settings-mm-actor-mode"><option value="bot"' + (settings.mattermostActorMode === "bot" ? " selected" : "") + '>bot</option><option value="self"' + (settings.mattermostActorMode === "self" ? " selected" : "") + '>self</option></select></div>' +
           "</div>" +
           '<div class="settings-subgrid">' +
             '<div class="field"><label for="settings-slack-bot-token">Slack bot token</label><input id="settings-slack-bot-token" data-testid="settings-slack-bot-token" type="password" placeholder="' + (settings.hasSlackBotToken ? "stored" : "not set") + '" /></div>' +
@@ -1071,6 +1073,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             '<div class="detail-card"><strong>Chat provider</strong><span>' + escapeHtml(settings.chatProvider) + "</span></div>" +
             '<div class="detail-card"><strong>Slack mode</strong><span>' + escapeHtml(settings.slackMode) + "</span></div>" +
             '<div class="detail-card"><strong>Mattermost mode</strong><span>' + escapeHtml(settings.mattermostMode) + "</span></div>" +
+            '<div class="detail-card"><strong>Mattermost actor mode</strong><span>' + escapeHtml(settings.mattermostActorMode) + "</span></div>" +
             '<div class="detail-card"><strong>Default workdir</strong><code>' + escapeHtml(settings.defaultWorkingDirectory) + "</code></div>" +
             '<div class="detail-card"><strong>Settings file</strong><code>' + escapeHtml(settings.settingsFile) + "</code></div>" +
             '<div class="detail-card"><strong>Last saved</strong><span>' + escapeHtml(settings.settingsSavedAt || "not saved yet") + "</span></div>" +
@@ -1188,7 +1191,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           adminPort: Number.parseInt(document.getElementById("settings-admin-port").value, 10),
           mattermostServerUrl: document.getElementById("settings-mm-server").value.trim(),
           mattermostActionBaseUrl: document.getElementById("settings-mm-action-base").value.trim(),
-          mattermostDmOnly: document.getElementById("settings-mm-dm-only").checked,
+          mattermostActorMode: document.getElementById("settings-mm-actor-mode").value,
           slackBotToken: document.getElementById("settings-slack-bot-token").value.trim() || undefined,
           slackAppToken: document.getElementById("settings-slack-app-token").value.trim() || undefined,
           slackSigningSecret: document.getElementById("settings-slack-signing-secret").value.trim() || undefined,
@@ -1370,6 +1373,251 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
 </html>`;
 }
 
+function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
+  const provider = settings.chatProvider;
+  const mattermostActorMode = settings.mattermostActorMode ?? "bot";
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chat Agent Bridge Onboarding</title>
+    <style>
+      :root { color-scheme: light dark; font-family: "Segoe UI", sans-serif; }
+      body { margin: 0; background: #0f172a; color: #e2e8f0; }
+      main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
+      .hero { margin-bottom: 24px; }
+      .hero h1 { margin: 0 0 8px; font-size: 32px; }
+      .hero p { margin: 0; color: #cbd5e1; line-height: 1.6; }
+      .panel { background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 16px; padding: 20px; margin-top: 20px; }
+      .steps { display: grid; gap: 16px; }
+      .step h2 { margin: 0 0 6px; font-size: 18px; }
+      .step p { margin: 0 0 12px; color: #cbd5e1; }
+      .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+      label { display: grid; gap: 6px; font-size: 14px; color: #cbd5e1; }
+      input, select { width: 100%; box-sizing: border-box; border-radius: 10px; border: 1px solid #475569; background: #111827; color: #f8fafc; padding: 10px 12px; }
+      .hint { font-size: 13px; color: #94a3b8; margin-top: 6px; line-height: 1.5; }
+      .card { border: 1px solid #334155; border-radius: 14px; padding: 16px; background: rgba(30, 41, 59, 0.7); }
+      .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+      button, .link-button { border: 0; border-radius: 999px; padding: 10px 16px; background: #38bdf8; color: #082f49; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+      .secondary { background: transparent; border: 1px solid #475569; color: #e2e8f0; }
+      .flash { margin-top: 16px; min-height: 22px; color: #7dd3fc; }
+      .hidden { display: none; }
+      code { background: rgba(15, 23, 42, 0.9); padding: 2px 6px; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <h1>Bridge Onboarding</h1>
+        <p>Set the minimum runtime configuration without digging through every setting. Start here, save, then move to the full settings page only if you need deeper tuning.</p>
+      </section>
+      <section class="panel steps">
+        <div class="step">
+          <h2>1. Choose how chat reaches the bridge</h2>
+          <div class="grid">
+            <label>
+              Chat provider
+              <select id="provider">
+                <option value="slack"${provider === "slack" ? " selected" : ""}>Slack</option>
+                <option value="mattermost"${provider === "mattermost" ? " selected" : ""}>Mattermost</option>
+              </select>
+            </label>
+            <label>
+              Default agent
+              <select id="agent">
+                <option value="codex"${settings.agentKind === "codex" ? " selected" : ""}>Codex</option>
+                <option value="claude-code"${settings.agentKind === "claude-code" ? " selected" : ""}>Claude Code</option>
+              </select>
+            </label>
+            <label>
+              Default approval
+              <select id="approval">
+                <option value="manual"${settings.defaultApprovalPolicy === "manual" ? " selected" : ""}>manual</option>
+                <option value="on-failure"${settings.defaultApprovalPolicy === "on-failure" ? " selected" : ""}>on-failure</option>
+                <option value="never"${settings.defaultApprovalPolicy === "never" ? " selected" : ""}>allow</option>
+              </select>
+            </label>
+            <label>
+              Network access
+              <select id="network">
+                <option value="enabled"${settings.networkAccess === "enabled" ? " selected" : ""}>enabled</option>
+                <option value="disabled"${settings.networkAccess === "disabled" ? " selected" : ""}>disabled</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="step">
+          <h2>2. Choose transport mode</h2>
+          <div id="slack-card" class="card">
+            <div class="grid">
+              <label>
+                Slack mode
+                <select id="slack-mode">
+                  <option value="http"${settings.slackMode === "http" ? " selected" : ""}>http</option>
+                  <option value="socket"${settings.slackMode === "socket" ? " selected" : ""}>socket</option>
+                </select>
+              </label>
+            </div>
+            <div class="hint">Use <code>socket</code> when you want to avoid tunnels and public callback URLs.</div>
+          </div>
+
+          <div id="mattermost-card" class="card">
+            <div class="grid">
+              <label>
+                Mattermost mode
+                <select id="mattermost-mode">
+                  <option value="http"${settings.mattermostMode === "http" ? " selected" : ""}>http</option>
+                  <option value="websocket"${settings.mattermostMode === "websocket" ? " selected" : ""}>websocket</option>
+                </select>
+              </label>
+              <label>
+                Mattermost actor mode
+                <select id="mattermost-actor-mode">
+                  <option value="bot"${mattermostActorMode === "bot" ? " selected" : ""}>bot</option>
+                  <option value="self"${mattermostActorMode === "self" ? " selected" : ""}>self</option>
+                </select>
+              </label>
+            </div>
+            <div class="hint"><code>bot</code> is for bot or service-account tokens. <code>self</code> is for your own Mattermost account token when you cannot create a bot. In <code>self</code> mode the bridge only reacts in your self-DM, and you still need to mention yourself to trigger it.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <h2>3. Fill only the required connection values</h2>
+          <div id="slack-secrets" class="card">
+            <div class="grid">
+              <label>
+                Slack bot token
+                <input id="slack-bot-token" type="password" placeholder="${settings.hasSlackBotToken ? "stored" : "xoxb-..."}" />
+              </label>
+              <label>
+                Slack app token
+                <input id="slack-app-token" type="password" placeholder="${settings.hasSlackAppToken ? "stored" : "xapp-..."}" />
+              </label>
+              <label>
+                Slack signing secret
+                <input id="slack-signing-secret" type="password" placeholder="${settings.hasSlackSigningSecret ? "stored" : "optional for socket mode"}" />
+              </label>
+            </div>
+          </div>
+
+          <div id="mattermost-secrets" class="card">
+            <div class="grid">
+              <label>
+                Mattermost server URL
+                <input id="mattermost-server-url" type="text" value="${escapeHtml(settings.mattermostServerUrl || "")}" placeholder="http://mattermost.example:8065" />
+              </label>
+              <label>
+                Mattermost bearer token
+                <input id="mattermost-bot-token" type="password" placeholder="${settings.hasMattermostBotToken ? "stored" : "token"}" />
+              </label>
+              <label>
+                Mattermost webhook token
+                <input id="mattermost-webhook-token" type="password" placeholder="${settings.hasMattermostWebhookToken ? "stored" : "required in http mode"}" />
+              </label>
+              <label>
+                Mattermost action base URL
+                <input id="mattermost-action-base-url" type="text" value="${escapeHtml(settings.mattermostActionBaseUrl || "")}" placeholder="http://bridge-host:8787" />
+              </label>
+            </div>
+            <div class="hint"><strong>PAT goes into</strong> <code>Mattermost bearer token</code>. Use a bot token in <code>bot</code> mode, or your own Personal Access Token in <code>self</code> mode.</div>
+            <div class="hint"><code>Mattermost webhook token</code> is only needed for HTTP slash/webhook entrypoints. In websocket mode you usually do not need it.</div>
+            <div class="hint"><code>Mattermost action base URL</code> is the public base URL that Mattermost can call for button clicks. Enter only the base, for example <code>https://bridge.example.com</code>; the bridge appends <code>/mattermost/actions</code> automatically.</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <h2>4. Confirm workspace defaults</h2>
+          <div class="grid">
+            <label>
+              Default workdir
+              <input id="default-workdir" type="text" value="${escapeHtml(settings.defaultWorkingDirectory)}" />
+            </label>
+            <label>
+              Bridge host
+              <input id="host" type="text" value="${escapeHtml(settings.host)}" />
+            </label>
+            <label>
+              Bridge port
+              <input id="port" type="number" min="1" value="${escapeHtml(settings.port)}" />
+            </label>
+            <label>
+              Admin port
+              <input id="admin-port" type="number" min="1" value="${escapeHtml(settings.adminPort)}" />
+            </label>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="save-onboarding">Apply onboarding settings</button>
+          <a class="link-button secondary" href="/admin/settings">Open full settings</a>
+          <a class="link-button secondary" href="/admin">Back to dashboard</a>
+        </div>
+        <div id="flash" class="flash"></div>
+      </section>
+    </main>
+    <script>
+      const provider = document.getElementById("provider");
+      const slackCard = document.getElementById("slack-card");
+      const slackSecrets = document.getElementById("slack-secrets");
+      const mattermostCard = document.getElementById("mattermost-card");
+      const mattermostSecrets = document.getElementById("mattermost-secrets");
+      const flash = document.getElementById("flash");
+
+      function renderProviderState() {
+        const isSlack = provider.value === "slack";
+        slackCard.classList.toggle("hidden", !isSlack);
+        slackSecrets.classList.toggle("hidden", !isSlack);
+        mattermostCard.classList.toggle("hidden", isSlack);
+        mattermostSecrets.classList.toggle("hidden", isSlack);
+      }
+
+      provider.addEventListener("change", renderProviderState);
+      renderProviderState();
+
+      document.getElementById("save-onboarding").addEventListener("click", async () => {
+        const payload = {
+          chatProvider: provider.value,
+          agentKind: document.getElementById("agent").value,
+          defaultApprovalPolicy: document.getElementById("approval").value,
+          networkAccess: document.getElementById("network").value,
+          slackMode: document.getElementById("slack-mode").value,
+          mattermostMode: document.getElementById("mattermost-mode").value,
+          mattermostActorMode: document.getElementById("mattermost-actor-mode").value,
+          defaultWorkingDirectory: document.getElementById("default-workdir").value.trim(),
+          host: document.getElementById("host").value.trim(),
+          port: Number.parseInt(document.getElementById("port").value, 10),
+          adminHost: "${escapeHtml(settings.adminHost)}",
+          adminPort: Number.parseInt(document.getElementById("admin-port").value, 10),
+          slackBotToken: document.getElementById("slack-bot-token").value.trim() || undefined,
+          slackAppToken: document.getElementById("slack-app-token").value.trim() || undefined,
+          slackSigningSecret: document.getElementById("slack-signing-secret").value.trim() || undefined,
+          mattermostServerUrl: document.getElementById("mattermost-server-url").value.trim() || undefined,
+          mattermostBotToken: document.getElementById("mattermost-bot-token").value.trim() || undefined,
+          mattermostWebhookToken: document.getElementById("mattermost-webhook-token").value.trim() || undefined,
+          mattermostActionBaseUrl: document.getElementById("mattermost-action-base-url").value.trim() || undefined
+        };
+
+        const response = await fetch("/admin/api/settings", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          flash.textContent = "Failed to save onboarding settings.";
+          return;
+        }
+
+        flash.textContent = "Onboarding settings applied. Restart the bridge if you changed transport settings.";
+      });
+    </script>
+  </body>
+</html>`;
+}
+
 export class AdminServer {
   private readonly config: AdminServerDeps["config"];
   private readonly stateStore: StateStore;
@@ -1456,6 +1704,11 @@ export class AdminServer {
 
     if (request.method === "GET" && url.pathname === "/admin/settings") {
       writeHtml(response, 200, renderDashboard(await this.readDashboardData(), "settings"));
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/admin/onboarding") {
+      writeHtml(response, 200, renderOnboardingPage(this.readRuntimeSettings()));
       return;
     }
 
@@ -1624,6 +1877,7 @@ export class AdminServer {
       chatProvider: this.config.chatProvider,
       slackMode: this.config.slackMode,
       mattermostMode: this.config.mattermostMode,
+      mattermostActorMode: this.config.mattermostActorMode ?? "bot",
       defaultWorkingDirectory: this.config.defaultWorkingDirectory,
       host: this.config.host,
       port: this.config.port,
@@ -1664,6 +1918,7 @@ export class AdminServer {
       networkAccess: this.config.networkAccess,
       slackMode: this.config.slackMode,
       mattermostMode: this.config.mattermostMode,
+      mattermostActorMode: this.config.mattermostActorMode ?? "bot",
       host: this.config.host,
       port: this.config.port,
       adminHost: this.config.adminHost ?? this.config.host,
@@ -1817,6 +2072,14 @@ export class AdminServer {
       writeJson(response, 400, { error: "Invalid mattermostMode" });
       return;
     }
+    if (
+      payload.mattermostActorMode &&
+      payload.mattermostActorMode !== "bot" &&
+      payload.mattermostActorMode !== "self"
+    ) {
+      writeJson(response, 400, { error: "Invalid mattermostActorMode" });
+      return;
+    }
     if (payload.host !== undefined && !payload.host.trim()) {
       writeJson(response, 400, { error: "Invalid host" });
       return;
@@ -1905,6 +2168,10 @@ export class AdminServer {
     if (payload.mattermostMode) {
       this.config.mattermostMode = payload.mattermostMode;
     }
+    if (payload.mattermostActorMode) {
+      this.config.mattermostActorMode = payload.mattermostActorMode;
+      this.config.mattermostDmOnly = payload.mattermostActorMode === "self";
+    }
     if (payload.host) {
       this.config.host = payload.host;
     }
@@ -1936,6 +2203,7 @@ export class AdminServer {
     }
     if (payload.mattermostDmOnly !== undefined) {
       this.config.mattermostDmOnly = payload.mattermostDmOnly;
+      this.config.mattermostActorMode = payload.mattermostDmOnly ? "self" : "bot";
     }
     if (payload.clearSlackBotToken) {
       delete this.config.slackBotToken;

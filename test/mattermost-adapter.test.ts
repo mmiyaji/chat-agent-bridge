@@ -196,7 +196,7 @@ test("MattermostAdapter accepts slash commands with a synthetic thread id", asyn
       host: "127.0.0.1",
       defaultWorkingDirectory: "C:/repo",
       mattermostMode: "http",
-      mattermostDmOnly: true,
+      mattermostActorMode: "self",
       mattermostWebhookToken: "hook-token",
       mattermostServerUrl: "https://mattermost.example.local",
       mattermostBotToken: "bot-token",
@@ -209,6 +209,17 @@ test("MattermostAdapter accepts slash commands with a synthetic thread id", asyn
         headers: Record<string, string>;
         body?: string;
       }) => {
+        if (/\/api\/v4\/users\/me$/.test(input.url)) {
+          return {
+            id: "user-1",
+            username: "me",
+          } as T;
+        }
+
+        if (/\/api\/v4\/channels\/private-1\/members$/.test(input.url)) {
+          return [{ user_id: "user-1" }] as T;
+        }
+
         assert.match(input.url, /\/api\/v4\/channels\/private-1$/);
         return {
           id: "private-1",
@@ -246,21 +257,28 @@ test("MattermostAdapter accepts slash commands with a synthetic thread id", asyn
   await adapter.stop();
 });
 
-test("MattermostAdapter filters non-DM slash commands when dm-only is enabled", async () => {
+test("MattermostAdapter filters non-self-DM slash commands when self mode is enabled", async () => {
   const adapter = new MattermostAdapter(
     {
       port: 0,
       host: "127.0.0.1",
       defaultWorkingDirectory: "C:/repo",
       mattermostMode: "http",
-      mattermostDmOnly: true,
+      mattermostActorMode: "self",
       mattermostWebhookToken: "hook-token",
       mattermostServerUrl: "https://mattermost.example.local",
       mattermostBotToken: "bot-token",
     },
     undefined,
     {
-      mattermostApiFetch: async <T>() => {
+      mattermostApiFetch: async <T>(input: { url: string }) => {
+        if (/\/api\/v4\/users\/me$/.test(input.url)) {
+          return {
+            id: "user-1",
+            username: "me",
+          } as T;
+        }
+
         return {
           id: "channel-1",
           type: "O",
@@ -364,7 +382,7 @@ test("MattermostAdapter accepts websocket posted events", async () => {
       host: "127.0.0.1",
       defaultWorkingDirectory: "C:/repo",
       mattermostMode: "websocket",
-      mattermostDmOnly: true,
+      mattermostActorMode: "self",
       mattermostServerUrl: "https://mattermost.example.local",
       mattermostBotToken: "bot-token",
     },
@@ -383,6 +401,10 @@ test("MattermostAdapter accepts websocket posted events", async () => {
           } as T;
         }
 
+        if (/\/api\/v4\/channels\/channel-1\/members$/.test(input.url)) {
+          return [{ user_id: "bot-user" }] as T;
+        }
+
         assert.match(input.url, /\/api\/v4\/channels\/channel-1$/);
         return {
           id: "channel-1",
@@ -393,6 +415,9 @@ test("MattermostAdapter accepts websocket posted events", async () => {
         addEventListener: (type, listener) => {
           if (type === "open") {
             openHandler = listener;
+            queueMicrotask(() => {
+              openHandler?.({});
+            });
           } else if (type === "message") {
             messageHandler = listener;
           } else if (type === "close") {
@@ -417,7 +442,6 @@ test("MattermostAdapter accepts websocket posted events", async () => {
     });
   });
 
-  openHandler?.({});
   assert.match(sentFrames[0] ?? "", /authentication_challenge/);
   messageHandler?.({
     data: JSON.stringify({
@@ -445,7 +469,7 @@ test("MattermostAdapter accepts websocket posted events", async () => {
   await adapter.stop();
 });
 
-test("MattermostAdapter accepts self-authored DM posts with mention in dm-only websocket mode", async () => {
+test("MattermostAdapter accepts plain self-DM posts in self mode", async () => {
   let messageHandler: ((event: { data?: unknown }) => void) | undefined;
   let openHandler: ((event: { data?: unknown }) => void) | undefined;
   const adapter = new MattermostAdapter(
@@ -454,7 +478,7 @@ test("MattermostAdapter accepts self-authored DM posts with mention in dm-only w
       host: "127.0.0.1",
       defaultWorkingDirectory: "C:/repo",
       mattermostMode: "websocket",
-      mattermostDmOnly: true,
+      mattermostActorMode: "self",
       mattermostServerUrl: "https://mattermost.example.local",
       mattermostBotToken: "user-token",
     },
@@ -473,6 +497,10 @@ test("MattermostAdapter accepts self-authored DM posts with mention in dm-only w
           } as T;
         }
 
+        if (/\/api\/v4\/channels\/dm-1\/members$/.test(input.url)) {
+          return [{ user_id: "user-1" }] as T;
+        }
+
         return {
           id: "dm-1",
           type: "D",
@@ -482,6 +510,9 @@ test("MattermostAdapter accepts self-authored DM posts with mention in dm-only w
         addEventListener: (type, listener) => {
           if (type === "open") {
             openHandler = listener;
+            queueMicrotask(() => {
+              openHandler?.({});
+            });
           } else if (type === "message") {
             messageHandler = listener;
           }
@@ -497,7 +528,6 @@ test("MattermostAdapter accepts self-authored DM posts with mention in dm-only w
     received.push(message.text);
   });
 
-  openHandler?.({});
   messageHandler?.({
     data: JSON.stringify({
       status: "OK",
@@ -513,7 +543,7 @@ test("MattermostAdapter accepts self-authored DM posts with mention in dm-only w
           channel_id: "dm-1",
           root_id: "",
           user_id: "user-1",
-          message: "@me quick memo",
+          message: "quick memo",
         }),
       },
     }),
@@ -552,6 +582,91 @@ test("MattermostAdapter accepts self-authored DM posts with mention in dm-only w
 
   await waitForMicrotasks();
   assert.deepEqual(received, ["quick memo"]);
+  await adapter.stop();
+});
+
+test("MattermostAdapter ignores one-to-one DMs with other users in self mode", async () => {
+  let messageHandler: ((event: { data?: unknown }) => void) | undefined;
+  let openHandler: ((event: { data?: unknown }) => void) | undefined;
+  const adapter = new MattermostAdapter(
+    {
+      port: 0,
+      host: "127.0.0.1",
+      defaultWorkingDirectory: "C:/repo",
+      mattermostMode: "websocket",
+      mattermostActorMode: "self",
+      mattermostServerUrl: "https://mattermost.example.local",
+      mattermostBotToken: "user-token",
+    },
+    undefined,
+    {
+      mattermostApiFetch: async <T>(input: {
+        url: string;
+        method: string;
+        headers: Record<string, string>;
+        body?: string;
+      }) => {
+        if (/\/api\/v4\/users\/me$/.test(input.url)) {
+          return {
+            id: "user-1",
+            username: "me",
+          } as T;
+        }
+
+        if (/\/api\/v4\/channels\/dm-2\/members$/.test(input.url)) {
+          return [{ user_id: "user-1" }, { user_id: "user-2" }] as T;
+        }
+
+        return {
+          id: "dm-2",
+          type: "D",
+        } as T;
+      },
+      socketFactory: () => ({
+        addEventListener: (type, listener) => {
+          if (type === "open") {
+            openHandler = listener;
+            queueMicrotask(() => {
+              openHandler?.({});
+            });
+          } else if (type === "message") {
+            messageHandler = listener;
+          }
+        },
+        send: () => undefined,
+        close: () => undefined,
+      }),
+    },
+  );
+
+  const received: string[] = [];
+  await adapter.start(async (message) => {
+    received.push(message.text);
+  });
+
+  messageHandler?.({
+    data: JSON.stringify({
+      status: "OK",
+      seq_reply: 1,
+    }),
+  });
+  messageHandler?.({
+    data: JSON.stringify({
+      event: "posted",
+      data: {
+        post: JSON.stringify({
+          id: "post-1",
+          channel_id: "dm-2",
+          root_id: "",
+          user_id: "user-1",
+          message: "should stay private",
+        }),
+      },
+    }),
+  });
+
+  await waitForMicrotasks();
+  assert.deepEqual(received, []);
   await adapter.stop();
 });
 

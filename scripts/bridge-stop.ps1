@@ -1,56 +1,12 @@
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
-$runtimeDir = Join-Path $repoRoot "data\runtime"
-$pidFile = Join-Path $runtimeDir "bridge.pid"
-$settingsFile = if ($env:CAB_SETTINGS_FILE) {
-  $env:CAB_SETTINGS_FILE
-} else {
-  Join-Path $repoRoot "data\admin-settings.json"
-}
+$commonScript = Join-Path $PSScriptRoot "bridge-common.ps1"
+. $commonScript
 
-function Read-SettingsValue {
-  param(
-    [Parameter(Mandatory = $true)][string]$Key
-  )
-
-  if (!(Test-Path $settingsFile)) {
-    return $null
-  }
-
-  try {
-    $raw = Get-Content $settingsFile -Raw | ConvertFrom-Json
-    return $raw.$Key
-  } catch {
-    return $null
-  }
-}
-
-function Get-BridgeProcessIds {
-  return @(Get-CimInstance Win32_Process |
-    Where-Object {
-      $_.Name -eq "node.exe" -and
-      $_.CommandLine -match "dist/index.js"
-    } |
-    Select-Object -ExpandProperty ProcessId)
-}
-
-function Get-AdminListenerProcessIds {
-  $adminPort = if ($env:CAB_ADMIN_PORT) {
-    [int]$env:CAB_ADMIN_PORT
-  } elseif (Read-SettingsValue "adminPort") {
-    [int](Read-SettingsValue "adminPort")
-  } else {
-    $basePort = if ($env:CAB_PORT) { [int]$env:CAB_PORT } elseif (Read-SettingsValue "port") { [int](Read-SettingsValue "port") } else { 8787 }
-    $basePort + 1
-  }
-
-  return @(Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $adminPort -State Listen -ErrorAction SilentlyContinue |
-    Select-Object -ExpandProperty OwningProcess -Unique)
-}
+$pidFile = $script:BridgePidFile
 
 if (!(Test-Path $pidFile)) {
-  $orphanProcessIds = @(Get-BridgeProcessIds) + @(Get-AdminListenerProcessIds)
+  $orphanProcessIds = @(Get-BridgeProcessIds) + @(Get-BridgeAdminListenerProcessIds)
   if ($orphanProcessIds.Count -eq 0) {
     Write-Output "Bridge is not running."
     exit 0
@@ -66,7 +22,7 @@ if (!(Test-Path $pidFile)) {
 }
 
 $bridgeProcessId = (Get-Content $pidFile -Raw).Trim()
-$processIds = @($bridgeProcessId) + (Get-BridgeProcessIds | Where-Object { $_ -ne [int]$bridgeProcessId }) + (Get-AdminListenerProcessIds | Where-Object { $_ -ne [int]$bridgeProcessId })
+$processIds = @($bridgeProcessId) + (Get-BridgeProcessIds | Where-Object { $_ -ne [int]$bridgeProcessId }) + (Get-BridgeAdminListenerProcessIds | Where-Object { $_ -ne [int]$bridgeProcessId })
 $stoppedAny = $false
 
 foreach ($processId in ($processIds | Select-Object -Unique)) {
