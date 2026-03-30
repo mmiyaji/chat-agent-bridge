@@ -982,7 +982,11 @@ export class BridgeService {
       prompt: pendingApproval.prompt,
       approvalPolicy: "never",
       networkAccess: this.deps.config.networkAccess,
-      rerunOfExecutionId: pendingApproval.executionId,
+      ...(pendingApproval.executionId
+        ? {
+            rerunOfExecutionId: pendingApproval.executionId,
+          }
+        : {}),
     });
     await this.deps.stateStore.upsertExecutionRecord(executionRecord);
     progress = await this.createProgressReporter(

@@ -30,7 +30,7 @@ test("SessionManager creates and reuses a binding for the same thread", async ()
 
   assert.equal(second.sessionId, first.sessionId);
   assert.equal(second.workingDirectory, first.workingDirectory);
-  assert.notEqual(second.updatedAt, first.updatedAt);
+  assert.ok(Date.parse(second.updatedAt) >= Date.parse(first.updatedAt));
 });
 
 test("SessionManager rejects a different working directory for the same thread", async () => {

@@ -2,3 +2,7 @@ node_modules/
 dist/
 .env
 data/
+.npm-cache/
+.test-dist/
+.tmp-*
+nodecheck-sandbox.js

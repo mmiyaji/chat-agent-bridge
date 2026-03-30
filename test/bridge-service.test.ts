@@ -370,7 +370,7 @@ test("BridgeService help command lists operational commands", async () => {
 
 test("BridgeService falls back to never approval when the agent does not support manual approval", async () => {
   const { chatAdapter, agent } = await startBridge();
-  agent.capabilities.manualApproval = false;
+  (agent.capabilities as { manualApproval: boolean }).manualApproval = false;
 
   await chatAdapter.handler?.(createMessage("do work"));
 
@@ -406,6 +406,7 @@ test("BridgeService clears stale pending approval when approval policy is never"
       threadId: "T1",
     },
     workingDirectory: "C:/repo/project",
+    createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     agentState: {},
     bridgeState: {

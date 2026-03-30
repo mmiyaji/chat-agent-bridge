@@ -57,5 +57,14 @@ export function readPendingApproval(
     return undefined;
   }
 
-  return { prompt, requestedAt, reason, executionId };
+  return {
+    prompt,
+    requestedAt,
+    reason,
+    ...(executionId
+      ? {
+          executionId,
+        }
+      : {}),
+  };
 }

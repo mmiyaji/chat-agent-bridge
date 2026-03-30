@@ -35,7 +35,10 @@ export class FileStateStore implements StateStore {
     );
     nextSessions.push(session);
 
-    await this.writeSnapshot({ sessions: nextSessions });
+    await this.writeSnapshot({
+      ...snapshot,
+      sessions: nextSessions,
+    });
   }
 
   async listSessions(): Promise<SessionBinding[]> {
