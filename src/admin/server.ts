@@ -163,6 +163,142 @@ function renderTableMarkup(input: {
   return `<div class="table-wrap"><table data-testid="${escapeHtml(input.testId)}"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
+const ADMIN_GITHUB_URL = "https://github.com/mmiyaji/chat-agent-bridge";
+const ADMIN_AUTHOR_NAME = "mmiyaji";
+
+function renderAdminFooter(): string {
+  const year = new Date().getFullYear();
+  return `
+    <footer class="site-footer">
+      <div class="footer-links">
+        <a href="/admin/terms">Terms</a>
+        <a href="/admin/privacy">Privacy</a>
+        <span>Author: ${escapeHtml(ADMIN_AUTHOR_NAME)}</span>
+        <span>&copy; ${escapeHtml(year)}</span>
+        <a href="${escapeHtml(ADMIN_GITHUB_URL)}" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+      <div class="footer-controls">
+        <label>
+          Language
+          <select id="footer-language">
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+          </select>
+        </label>
+        <label>
+          Theme
+          <select id="footer-theme">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="system">System</option>
+          </select>
+        </label>
+      </div>
+    </footer>`;
+}
+
+function renderAdminFooterScript(): string {
+  return `
+      const footerTheme = document.getElementById("footer-theme");
+      const footerLanguage = document.getElementById("footer-language");
+      const THEME_STORAGE_KEY = "bridge-admin-theme";
+      const LANGUAGE_STORAGE_KEY = "bridge-admin-language";
+
+      function applyTheme(theme) {
+        const resolved = theme || "dark";
+        document.documentElement.dataset.theme = resolved;
+        if (footerTheme) {
+          footerTheme.value = resolved;
+        }
+      }
+
+      function applyLanguage(language) {
+        const resolved = language || "en";
+        document.documentElement.lang = resolved;
+        if (footerLanguage) {
+          footerLanguage.value = resolved;
+        }
+      }
+
+      applyTheme(localStorage.getItem(THEME_STORAGE_KEY) || "dark");
+      applyLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY) || "en");
+
+      footerTheme?.addEventListener("change", (event) => {
+        const value = event.target.value;
+        localStorage.setItem(THEME_STORAGE_KEY, value);
+        applyTheme(value);
+      });
+
+      footerLanguage?.addEventListener("change", (event) => {
+        const value = event.target.value;
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, value);
+        applyLanguage(value);
+      });
+  `;
+}
+
+function renderAdminLegalPage(input: { title: string; body: string }): string {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(input.title)}</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0f172a;
+        --panel: rgba(15, 23, 42, 0.88);
+        --panel-alt: rgba(30, 41, 59, 0.78);
+        --ink: #e2e8f0;
+        --muted: #94a3b8;
+        --line: #334155;
+        --accent: #38bdf8;
+      }
+      :root[data-theme="light"] {
+        color-scheme: light;
+        --bg: #f4f7fb;
+        --panel: rgba(255, 255, 255, 0.96);
+        --panel-alt: rgba(241, 245, 249, 0.92);
+        --ink: #0f172a;
+        --muted: #475569;
+        --line: #cbd5e1;
+        --accent: #0ea5e9;
+      }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 "Segoe UI", sans-serif; }
+      main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
+      .shell { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px; }
+      .nav { display: inline-flex; gap: 8px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-alt); margin-bottom: 18px; }
+      .nav a { color: var(--ink); text-decoration: none; padding: 8px 14px; border-radius: 999px; }
+      h1 { margin: 0 0 12px; font-size: 30px; }
+      p, li { color: var(--muted); }
+      a { color: var(--accent); }
+      .site-footer { margin-top: 18px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px; color: var(--muted); }
+      .footer-links, .footer-controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+      .footer-controls label { display: inline-flex; gap: 8px; align-items: center; }
+      .footer-controls select { border-radius: 999px; border: 1px solid var(--line); background: var(--panel-alt); color: var(--ink); padding: 6px 10px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="shell">
+        <nav class="nav" aria-label="Admin navigation">
+          <a href="/admin">Dashboard</a>
+          <a href="/admin/settings">Settings</a>
+          <a href="/admin/onboarding">Onboarding</a>
+        </nav>
+        <h1>${escapeHtml(input.title)}</h1>
+        ${input.body}
+      </section>
+      ${renderAdminFooter()}
+    </main>
+    <script>
+${renderAdminFooterScript()}
+    </script>
+  </body>
+</html>`;
+}
+
 function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): string {
   const isSettingsView = view === "settings";
   const sessionCount = input.sessions.length;
@@ -227,23 +363,36 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
     <title>Chat Agent Bridge Admin</title>
     <style>
       :root {
+        color-scheme: dark;
+        --bg: #0f172a;
+        --panel: rgba(15, 23, 42, 0.88);
+        --panel-alt: rgba(30, 41, 59, 0.78);
+        --ink: #e2e8f0;
+        --muted: #94a3b8;
+        --line: #334155;
+        --accent: #38bdf8;
+        --warn: #f59e0b;
+        --fail: #f87171;
+        --success: #4ade80;
+      }
+      :root[data-theme="light"] {
         color-scheme: light;
-        --bg: #f4f1ea;
-        --panel: #fffdf8;
-        --ink: #1e1d1a;
-        --muted: #6a665d;
-        --line: #d8cfbe;
-        --accent: #0f766e;
+        --bg: #f4f7fb;
+        --panel: rgba(255, 255, 255, 0.96);
+        --panel-alt: rgba(241, 245, 249, 0.92);
+        --ink: #0f172a;
+        --muted: #475569;
+        --line: #cbd5e1;
+        --accent: #0ea5e9;
         --warn: #b45309;
         --fail: #b91c1c;
+        --success: #166534;
       }
       body {
         margin: 0;
         font: 14px/1.5 "Segoe UI", sans-serif;
         color: var(--ink);
-        background:
-          radial-gradient(circle at top left, #efe5d5, transparent 32%),
-          linear-gradient(180deg, #fbf8f2 0%, var(--bg) 100%);
+        background: var(--bg);
       }
       main {
         max-width: 1680px;
@@ -260,7 +409,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
       }
       .grid {
         display: grid;
-        grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.72fr);
+        grid-template-columns: minmax(0, 1fr);
         gap: 18px;
         margin-top: 24px;
         align-items: start;
@@ -277,7 +426,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         padding: 4px;
         border: 1px solid var(--line);
         border-radius: 999px;
-        background: rgba(255, 253, 248, 0.72);
+        background: var(--panel-alt);
       }
       .nav a {
         display: inline-flex;
@@ -288,7 +437,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         text-decoration: none;
       }
       .nav a.is-active {
-        background: #fff8eb;
+        background: rgba(56, 189, 248, 0.16);
         border: 1px solid var(--line);
       }
       .stats {
@@ -301,7 +450,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         padding: 10px 14px;
         border: 1px solid var(--line);
         border-radius: 14px;
-        background: rgba(255, 253, 248, 0.72);
+        background: var(--panel-alt);
       }
       .stat strong {
         display: block;
@@ -317,28 +466,32 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         border: 1px solid var(--line);
         border-radius: 18px;
         padding: 18px;
-        box-shadow: 0 14px 30px rgba(30, 29, 26, 0.06);
         overflow: hidden;
       }
       section[data-testid="sessions-panel"] {
         grid-column: 1;
-        grid-row: 1 / span 2;
-      }
-      section[data-testid="approvals-panel"] {
-        grid-column: 2;
         grid-row: 1;
       }
-      section[data-testid="failures-panel"] {
-        grid-column: 2;
-        grid-row: 2;
-      }
-      section[data-testid="detail-panel"] {
-        grid-column: 1 / span 2;
+      section[data-testid="approvals-panel"] {
+        grid-column: 1;
         grid-row: 3;
       }
+      section[data-testid="failures-panel"] {
+        grid-column: 1;
+        grid-row: 3;
+      }
+      section[data-testid="detail-panel"] {
+        grid-column: 1;
+        grid-row: 2;
+      }
       section[data-testid="settings-panel"] {
-        grid-column: 1 / span 2;
+        grid-column: 1;
         grid-row: 4;
+      }
+      .secondary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
       }
       h2 {
         margin: 0;
@@ -382,7 +535,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
       .status-running { color: var(--accent); }
       .status-waiting_for_approval { color: var(--warn); }
       .status-failed, .status-rejected, .status-cancelled { color: var(--fail); }
-      .status-completed { color: #166534; }
+      .status-completed { color: var(--success); }
       .muted-note {
         color: var(--muted);
         font-size: 12px;
@@ -423,11 +576,11 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         border: 1px solid var(--line);
         border-radius: 12px;
         padding: 9px 12px;
-        background: white;
+        background: var(--panel-alt);
         color: var(--ink);
       }
       .table-wrap tr.is-selected {
-        background: #f7f1e3;
+        background: rgba(56, 189, 248, 0.12);
       }
       .session-cell {
         display: grid;
@@ -447,7 +600,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         border-radius: 999px;
         padding: 2px 10px;
         font-size: 12px;
-        background: #fff8eb;
+        background: rgba(56, 189, 248, 0.12);
       }
       .mini-actions {
         display: flex;
@@ -476,7 +629,38 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         border: 1px solid var(--line);
         border-radius: 14px;
         padding: 12px 14px;
-        background: rgba(255, 253, 248, 0.72);
+        background: var(--panel-alt);
+      }
+      .site-footer {
+        margin-top: 18px;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
+        color: var(--muted);
+      }
+      .footer-links, .footer-controls {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .site-footer a {
+        color: var(--accent);
+      }
+      .footer-controls label {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .footer-controls select {
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--panel-alt);
+        color: var(--ink);
+        padding: 6px 10px;
       }
       .detail-card strong {
         display: block;
@@ -509,7 +693,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         border: 1px solid var(--line);
         border-radius: 14px;
         padding: 12px 14px;
-        background: white;
+        background: var(--panel-alt);
       }
       .history-item header {
         display: flex;
@@ -537,13 +721,18 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         margin-top: 12px;
         padding: 10px 14px;
         border-radius: 12px;
-        border: 1px solid var(--line);
-        background: #fff8eb;
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        background: rgba(56, 189, 248, 0.1);
       }
       .flash[data-kind="error"] {
-        border-color: #efb3b3;
-        background: #fff1f1;
+        border-color: rgba(248, 113, 113, 0.45);
+        background: rgba(248, 113, 113, 0.12);
         color: var(--fail);
+      }
+      .flash[data-kind="success"] {
+        border-color: rgba(74, 222, 128, 0.35);
+        background: rgba(74, 222, 128, 0.1);
+        color: var(--success);
       }
       .toggle {
         display: inline-flex;
@@ -559,7 +748,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
       }
       button {
         border: 1px solid var(--line);
-        background: white;
+        background: var(--panel-alt);
         color: var(--ink);
         border-radius: 999px;
         padding: 8px 14px;
@@ -569,8 +758,8 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
       }
       button:hover {
         transform: translateY(-1px);
-        border-color: #bda97e;
-        background: #fffaf0;
+        border-color: var(--accent);
+        background: rgba(56, 189, 248, 0.12);
       }
       @media (max-width: 720px) {
         main {
@@ -581,6 +770,9 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           flex-direction: column;
         }
         .grid {
+          grid-template-columns: 1fr;
+        }
+        .secondary-grid {
           grid-template-columns: 1fr;
         }
         section[data-testid="sessions-panel"],
@@ -672,24 +864,6 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           </div>
           <div id="sessions">${sessionsMarkup}</div>
         </section>
-        <section data-testid="approvals-panel"${isSettingsView ? ' style="display:none"' : ""}>
-          <div class="section-head">
-            <div>
-              <h2>Pending Approvals</h2>
-              <p>Approval queue stays visible beside the active sessions list.</p>
-            </div>
-          </div>
-          <div id="approvals">${approvalsMarkup}</div>
-        </section>
-        <section data-testid="failures-panel"${isSettingsView ? ' style="display:none"' : ""}>
-          <div class="section-head">
-            <div>
-              <h2>Recent Failures</h2>
-              <p>Recent failure summaries stay stacked under approvals for faster triage.</p>
-            </div>
-          </div>
-          <div id="failures">${failuresMarkup}</div>
-        </section>
         <section data-testid="detail-panel"${isSettingsView ? ' style="display:none"' : ""}>
           <div class="section-head">
             <div>
@@ -701,7 +875,27 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             <div class="detail-empty">Select a session from the sessions table to inspect details and available actions.</div>
           </div>
         </section>
-        <section data-testid="settings-panel"${isSettingsView ? "" : ' style="display:none"'}>
+        <div class="secondary-grid"${isSettingsView ? ' style="display:none"' : ""}>
+          <section data-testid="approvals-panel">
+            <div class="section-head">
+              <div>
+                <h2>Pending Approvals</h2>
+                <p>Approval queue stays grouped below the primary sessions table.</p>
+              </div>
+            </div>
+            <div id="approvals">${approvalsMarkup}</div>
+          </section>
+          <section data-testid="failures-panel">
+            <div class="section-head">
+              <div>
+                <h2>Recent Failures</h2>
+                <p>Failure summaries stay nearby, but no longer compete with the sessions list for width.</p>
+              </div>
+            </div>
+            <div id="failures">${failuresMarkup}</div>
+          </section>
+        </div>
+        <section data-testid="settings-panel"${isSettingsView ? "" : ' style="display:none"'}> 
           <div class="section-head">
             <div>
               <h2>Runtime Settings</h2>
@@ -713,8 +907,10 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           </div>
         </section>
       </div>
+      ${renderAdminFooter()}
     </main>
     <script>
+      ${renderAdminFooterScript()}
       let dashboardState = {
         sessions: [],
         approvals: [],
@@ -1383,32 +1579,65 @@ function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Chat Agent Bridge Onboarding</title>
     <style>
-      :root { color-scheme: light dark; font-family: "Segoe UI", sans-serif; }
-      body { margin: 0; background: #0f172a; color: #e2e8f0; }
+      :root {
+        color-scheme: dark;
+        font-family: "Segoe UI", sans-serif;
+        --bg: #0f172a;
+        --panel: rgba(15, 23, 42, 0.9);
+        --panel-alt: rgba(30, 41, 59, 0.7);
+        --ink: #e2e8f0;
+        --muted: #94a3b8;
+        --line: #334155;
+        --accent: #38bdf8;
+      }
+      :root[data-theme="light"] {
+        color-scheme: light;
+        --bg: #f4f7fb;
+        --panel: rgba(255, 255, 255, 0.96);
+        --panel-alt: rgba(241, 245, 249, 0.92);
+        --ink: #0f172a;
+        --muted: #475569;
+        --line: #cbd5e1;
+        --accent: #0ea5e9;
+      }
+      body { margin: 0; background: var(--bg); color: var(--ink); }
       main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
       .hero { margin-bottom: 24px; }
       .hero h1 { margin: 0 0 8px; font-size: 32px; }
-      .hero p { margin: 0; color: #cbd5e1; line-height: 1.6; }
-      .panel { background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 16px; padding: 20px; margin-top: 20px; }
+      .hero p { margin: 0; color: var(--muted); line-height: 1.6; }
+      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-top: 20px; }
       .steps { display: grid; gap: 16px; }
       .step h2 { margin: 0 0 6px; font-size: 18px; }
-      .step p { margin: 0 0 12px; color: #cbd5e1; }
+      .step p { margin: 0 0 12px; color: var(--muted); }
       .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-      label { display: grid; gap: 6px; font-size: 14px; color: #cbd5e1; }
-      input, select { width: 100%; box-sizing: border-box; border-radius: 10px; border: 1px solid #475569; background: #111827; color: #f8fafc; padding: 10px 12px; }
-      .hint { font-size: 13px; color: #94a3b8; margin-top: 6px; line-height: 1.5; }
-      .card { border: 1px solid #334155; border-radius: 14px; padding: 16px; background: rgba(30, 41, 59, 0.7); }
+      label { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+      input, select { width: 100%; box-sizing: border-box; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-alt); color: var(--ink); padding: 10px 12px; }
+      .hint { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+      .card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--panel-alt); }
       .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
-      button, .link-button { border: 0; border-radius: 999px; padding: 10px 16px; background: #38bdf8; color: #082f49; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
-      .secondary { background: transparent; border: 1px solid #475569; color: #e2e8f0; }
-      .flash { margin-top: 16px; min-height: 22px; color: #7dd3fc; }
+      button, .link-button { border: 0; border-radius: 999px; padding: 10px 16px; background: var(--accent); color: #082f49; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+      .secondary { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+      .flash { margin-top: 16px; min-height: 22px; color: var(--accent); }
       .hidden { display: none; }
       code { background: rgba(15, 23, 42, 0.9); padding: 2px 6px; border-radius: 6px; }
+      .nav { display: inline-flex; gap: 8px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-alt); margin-bottom: 20px; }
+      .nav a { color: var(--ink); text-decoration: none; padding: 8px 14px; border-radius: 999px; }
+      .nav a.is-active { background: rgba(56, 189, 248, 0.16); border: 1px solid var(--line); }
+      .site-footer { margin-top: 18px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px; color: var(--muted); }
+      .footer-links, .footer-controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+      .site-footer a { color: var(--accent); }
+      .footer-controls label { display: inline-flex; gap: 8px; align-items: center; }
+      .footer-controls select { border-radius: 999px; border: 1px solid var(--line); background: var(--panel-alt); color: var(--ink); padding: 6px 10px; }
     </style>
   </head>
   <body>
     <main>
       <section class="hero">
+        <nav class="nav" aria-label="Admin navigation">
+          <a href="/admin">Dashboard</a>
+          <a href="/admin/settings">Settings</a>
+          <a href="/admin/onboarding" class="is-active">Onboarding</a>
+        </nav>
         <h1>Bridge Onboarding</h1>
         <p>Set the minimum runtime configuration without digging through every setting. Start here, save, then move to the full settings page only if you need deeper tuning.</p>
       </section>
@@ -1557,8 +1786,10 @@ function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
         </div>
         <div id="flash" class="flash"></div>
       </section>
+      ${renderAdminFooter()}
     </main>
     <script>
+${renderAdminFooterScript()}
       const provider = document.getElementById("provider");
       const slackCard = document.getElementById("slack-card");
       const slackSecrets = document.getElementById("slack-secrets");
@@ -1709,6 +1940,42 @@ export class AdminServer {
 
     if (request.method === "GET" && url.pathname === "/admin/onboarding") {
       writeHtml(response, 200, renderOnboardingPage(this.readRuntimeSettings()));
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/admin/terms") {
+      writeHtml(
+        response,
+        200,
+        renderAdminLegalPage({
+          title: "Terms of Use",
+          body: `
+            <p>This admin surface is provided for operating a local bridge on infrastructure you control.</p>
+            <ul>
+              <li>Use it only with repositories and credentials you are authorized to operate.</li>
+              <li>Keep bearer tokens, PATs, and signing secrets out of screenshots and shared recordings.</li>
+              <li>Interactive actions can trigger local agent work, so keep access to this admin screen restricted.</li>
+            </ul>`,
+        }),
+      );
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/admin/privacy") {
+      writeHtml(
+        response,
+        200,
+        renderAdminLegalPage({
+          title: "Privacy Policy",
+          body: `
+            <p>This bridge stores local runtime configuration, session state, and audit logs on the machine where it runs.</p>
+            <ul>
+              <li>Chat thread metadata, approval actions, and execution summaries may be written to local state and audit files.</li>
+              <li>Secrets entered from the admin UI are persisted locally in the configured settings file.</li>
+              <li>No additional cloud service is introduced by this admin page beyond the chat providers and agent tools you already configure.</li>
+            </ul>`,
+        }),
+      );
       return;
     }
 

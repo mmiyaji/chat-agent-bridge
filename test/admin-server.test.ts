@@ -231,6 +231,17 @@ test("AdminServer serves an onboarding page", async () => {
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /Bridge Onboarding/);
   assert.match(response.body, /Mattermost actor mode/);
+  assert.match(response.body, /Mattermost bearer token/);
+  assert.match(response.body, /Language/);
+  assert.match(response.body, /Theme/);
+
+  const terms = await getText(port, "/admin/terms");
+  assert.equal(terms.statusCode, 200);
+  assert.match(terms.body, /Terms of Use/);
+
+  const privacy = await getText(port, "/admin/privacy");
+  assert.equal(privacy.statusCode, 200);
+  assert.match(privacy.body, /Privacy Policy/);
 
   await admin.stop();
 });
