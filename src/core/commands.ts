@@ -1,20 +1,26 @@
 import path from "node:path";
 import { assertPathAllowed } from "./paths.js";
-import { ApprovalPolicy, SessionBinding } from "./types.js";
+import { AgentKind, ApprovalPolicy, SessionBinding } from "./types.js";
 
 export type BridgeCommand =
   | { kind: "help" }
   | { kind: "status" }
   | { kind: "history"; limit: number }
   | { kind: "cancel" }
+  | { kind: "new-thread" }
+  | { kind: "fork-session"; approvalPolicy?: ApprovalPolicy; agent?: AgentKind }
+  | { kind: "list-sessions" }
+  | { kind: "list-approvals" }
+  | { kind: "list-failures"; limit: number }
   | { kind: "list-roots" }
   | { kind: "set-workdir"; rawPath: string }
   | { kind: "set-repo"; alias: string }
+  | { kind: "set-agent"; agent: AgentKind }
   | { kind: "attach"; sessionId: string }
   | { kind: "attach-last" }
   | { kind: "detach" }
   | { kind: "set-mode"; approvalPolicy: ApprovalPolicy }
-  | { kind: "new-session"; approvalPolicy?: ApprovalPolicy }
+  | { kind: "new-session"; approvalPolicy?: ApprovalPolicy; agent?: AgentKind }
   | { kind: "restart-bridge" };
 
 function parseApprovalPolicy(value: string): ApprovalPolicy | undefined {
@@ -28,6 +34,69 @@ function parseApprovalPolicy(value: string): ApprovalPolicy | undefined {
   }
 
   return undefined;
+}
+
+function parseAgentKind(value: string): AgentKind | undefined {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "codex") {
+    return "codex";
+  }
+
+  if (normalized === "claude" || normalized === "claude-code") {
+    return "claude-code";
+  }
+
+  if (normalized === "cursor") {
+    return "cursor";
+  }
+
+  return undefined;
+}
+
+function parseSessionInitOptions(
+  raw: string | undefined,
+): { approvalPolicy?: ApprovalPolicy; agent?: AgentKind } | undefined {
+  let approvalPolicy: ApprovalPolicy | undefined;
+  let agent: AgentKind | undefined;
+
+  if (!raw) {
+    return {};
+  }
+
+  for (const part of raw.split(/\s+/)) {
+    const parsedApprovalPolicy = parseApprovalPolicy(part);
+    if (parsedApprovalPolicy) {
+      if (approvalPolicy) {
+        return undefined;
+      }
+      approvalPolicy = parsedApprovalPolicy;
+      continue;
+    }
+
+    const parsedAgent = parseAgentKind(part);
+    if (parsedAgent) {
+      if (agent) {
+        return undefined;
+      }
+      agent = parsedAgent;
+      continue;
+    }
+
+    return undefined;
+  }
+
+  return {
+    ...(approvalPolicy
+      ? {
+          approvalPolicy,
+        }
+      : {}),
+    ...(agent
+      ? {
+          agent,
+        }
+      : {}),
+  };
 }
 
 export function parseBridgeCommand(text: string): BridgeCommand | undefined {
@@ -47,6 +116,44 @@ export function parseBridgeCommand(text: string): BridgeCommand | undefined {
 
   if (lower === "cancel" || lower === "stop") {
     return { kind: "cancel" };
+  }
+
+  if (lower === "new-thread" || lower === "split") {
+    return { kind: "new-thread" };
+  }
+
+  const forkMatch = /^fork(?:\s+(.+))?$/i.exec(normalized);
+  if (forkMatch) {
+    const options = parseSessionInitOptions(forkMatch[1]);
+    if (!options) {
+      return undefined;
+    }
+
+    return {
+      kind: "fork-session",
+      ...options,
+    };
+  }
+
+  if (lower === "sessions") {
+    return { kind: "list-sessions" };
+  }
+
+  if (lower === "approvals" || lower === "pending") {
+    return { kind: "list-approvals" };
+  }
+
+  const failuresMatch = /^failures(?:\s+(\d+))?$/i.exec(normalized);
+  if (failuresMatch) {
+    const limit = failuresMatch[1] ? Number.parseInt(failuresMatch[1], 10) : 5;
+    if (!Number.isFinite(limit) || limit < 1) {
+      return undefined;
+    }
+
+    return {
+      kind: "list-failures",
+      limit: Math.min(limit, 20),
+    };
   }
 
   const historyMatch = /^history(?:\s+(\d+))?$/i.exec(normalized);
@@ -70,18 +177,30 @@ export function parseBridgeCommand(text: string): BridgeCommand | undefined {
     return { kind: "attach-last" };
   }
 
-  const newSessionMatch = /^new(?:\s+(.+))?$/i.exec(normalized);
-  if (newSessionMatch) {
-    const approvalPolicy = newSessionMatch[1]
-      ? parseApprovalPolicy(newSessionMatch[1])
-      : undefined;
-    if (newSessionMatch[1] && !approvalPolicy) {
+  const setAgentMatch = /^agent\s+(.+)$/i.exec(normalized);
+  if (setAgentMatch?.[1]) {
+    const agent = parseAgentKind(setAgentMatch[1]);
+    if (!agent) {
       return undefined;
     }
 
-    return approvalPolicy
-      ? { kind: "new-session", approvalPolicy }
-      : { kind: "new-session" };
+    return {
+      kind: "set-agent",
+      agent,
+    };
+  }
+
+  const newSessionMatch = /^new(?:\s+(.+))?$/i.exec(normalized);
+  if (newSessionMatch) {
+    const options = parseSessionInitOptions(newSessionMatch[1]);
+    if (!options) {
+      return undefined;
+    }
+
+    return {
+      kind: "new-session",
+      ...options,
+    };
   }
 
   if (lower === "detach") {

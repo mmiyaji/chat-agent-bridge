@@ -57,6 +57,7 @@ export class InMemoryStateStore implements StateStore {
 
 export class RecordingChatAdapter implements ChatAdapter {
   handler?: ChatMessageHandler;
+  readonly startedThreads: Array<{ channelId: string; text: string; options?: ChatMessageOptions }> = [];
   readonly posted: Array<{ thread: ChatThreadRef; text: string; options?: ChatMessageOptions }> = [];
   readonly updated: Array<{
     thread: ChatThreadRef;
@@ -68,6 +69,21 @@ export class RecordingChatAdapter implements ChatAdapter {
 
   async start(handler: ChatMessageHandler): Promise<void> {
     this.handler = handler;
+  }
+
+  async startNewThread(
+    channelId: string,
+    text: string,
+    options?: ChatMessageOptions,
+  ): Promise<ChatThreadRef | undefined> {
+    this.startedThreads.push({ channelId, text, options });
+    const threadId = `new-thread-${this.nextMessageId}`;
+    this.nextMessageId += 1;
+    return {
+      provider: "slack",
+      channelId,
+      threadId,
+    };
   }
 
   async postThreadMessage(
@@ -108,7 +124,7 @@ export class RecordingAuditLogger implements AuditLogger {
 }
 
 export class RecordingAgent implements Agent {
-  readonly kind = "codex" as const;
+  readonly kind: Agent["kind"];
   readonly capabilities = {
     manualApproval: true,
     writeApprovalRerun: true,
@@ -124,6 +140,10 @@ export class RecordingAgent implements Agent {
   error?: Error;
   readonly cancelRequests: string[] = [];
   private pendingReject?: (error: Error) => void;
+
+  constructor(kind: Agent["kind"] = "codex") {
+    this.kind = kind;
+  }
 
   async execute(request: AgentExecutionRequest): Promise<AgentExecutionResult> {
     this.requests.push(request);

@@ -16,6 +16,7 @@ import { AppConfig, IncomingChatMessage } from "../src/core/types.js";
 
 function createConfig(): AppConfig {
   return {
+    agentKind: "codex",
     allowedDirectories: ["C:/repo"],
     repoAliases: {
       repo: "C:/repo",
@@ -29,11 +30,16 @@ function createConfig(): AppConfig {
     stateFile: "C:/repo/data/state.json",
     auditLogFile: "C:/repo/data/audit.jsonl",
     codexSessionIndexFile: "C:/repo/data/session_index.jsonl",
+    claudeSessionIndexFile: "C:/repo/data/claude_sessions.json",
     codexModel: "gpt-5.4",
     codexMaxTurns: 8,
     codexCommandTimeoutMs: 1000,
     codexMaxRuntimeMs: 10000,
     codexMaxOutputLength: 12000,
+    claudeModel: "sonnet",
+    claudeMaxTurns: 8,
+    claudeCommandTimeoutMs: 1000,
+    claudeMaxRuntimeMs: 10000,
   };
 }
 
@@ -41,7 +47,8 @@ async function startBridge() {
   const config = createConfig();
   const store = new InMemoryStateStore();
   const chatAdapter = new RecordingChatAdapter();
-  const agent = new RecordingAgent();
+  const codexAgent = new RecordingAgent("codex");
+  const claudeAgent = new RecordingAgent("claude-code");
   const auditLogger = new RecordingAuditLogger();
   const bridge = new BridgeService({
     config,
@@ -49,12 +56,15 @@ async function startBridge() {
     sessionManager: new SessionManager(store),
     jobQueue: new InlineJobQueue(),
     chatAdapter,
-    agent,
+    agents: {
+      codex: codexAgent,
+      "claude-code": claudeAgent,
+    },
     auditLogger,
   });
 
   await bridge.start();
-  return { config, store, chatAdapter, agent, auditLogger };
+  return { config, store, chatAdapter, agent: codexAgent, codexAgent, claudeAgent, auditLogger };
 }
 
 function createMessage(text: string): IncomingChatMessage {
@@ -209,15 +219,17 @@ test("BridgeService reruns the pending prompt when approval is given", async () 
   await chatAdapter.handler?.(createMessage("approve"));
   const sessions = await store.listSessions();
   const records = await store.listExecutionRecords({ limit: 10 });
+  const rerunRecord = records.find((record) => record.status === "completed");
+  const blockedRecord = records.find((record) => record.status === "waiting_for_approval");
 
   assert.equal(agent.requests.length, 2);
   assert.equal(agent.requests[1].approvalPolicy, "never");
   assert.equal(agent.requests[1].prompt, "edit files");
   assert.deepEqual(sessions[0].bridgeState, { connectionMode: "bridge-owned" });
   assert.equal(records.length, 2);
-  assert.equal(records[0].status, "completed");
-  assert.equal(records[0].rerunOfExecutionId, records[1].executionId);
-  assert.equal(records[1].status, "waiting_for_approval");
+  assert.equal(rerunRecord?.status, "completed");
+  assert.equal(rerunRecord?.rerunOfExecutionId, blockedRecord?.executionId);
+  assert.equal(blockedRecord?.status, "waiting_for_approval");
   assert.match(chatAdapter.updated.at(-1)?.text ?? "", /State: Completed/);
 });
 
@@ -258,7 +270,7 @@ test("BridgeService reports session status without invoking the agent", async ()
   assert.equal(agent.requests.length, 0);
   assert.match(chatAdapter.posted[0].text, /Working directory/);
   assert.match(chatAdapter.posted[0].text, /Session connection/);
-  assert.match(chatAdapter.posted[0].text, /Agent thread id/);
+  assert.match(chatAdapter.posted[0].text, /Agent session id/);
   assert.match(chatAdapter.posted[0].text, /Latest execution/);
   assert.equal(auditLogger.events.at(-1)?.type, "bridge.command.status");
 });
@@ -283,6 +295,57 @@ test("BridgeService returns recent execution history on demand", async () => {
   assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Recent executions for session/);
   assert.match(chatAdapter.posted.at(-1)?.text ?? "", /second summary/);
   assert.match(chatAdapter.posted.at(-1)?.text ?? "", /first summary/);
+});
+
+test("BridgeService lists sessions for operations visibility", async () => {
+  const { chatAdapter, store } = await startBridge();
+  const now = new Date().toISOString();
+
+  await store.upsertSession({
+    sessionId: "session-ops",
+    agent: "codex",
+    thread: {
+      provider: "slack",
+      channelId: "C9",
+      threadId: "T9",
+    },
+    workingDirectory: "C:/repo/ops",
+    createdAt: now,
+    updatedAt: now,
+    agentState: {},
+    bridgeState: {},
+  });
+
+  await chatAdapter.handler?.(createMessage("sessions"));
+
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Bridge sessions/);
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /session-ops/);
+});
+
+test("BridgeService lists pending approvals across sessions", async () => {
+  const { chatAdapter, agent } = await startBridge();
+  agent.result = {
+    sessionId: "ignored",
+    summary: "Blocked by read-only sandbox. I need write access to continue.",
+  };
+
+  await chatAdapter.handler?.(createMessage("edit files"));
+  await chatAdapter.handler?.(createMessage("approvals"));
+
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Pending approvals/);
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /edit files/);
+});
+
+test("BridgeService lists recent failures across sessions", async () => {
+  const { chatAdapter, agent } = await startBridge();
+  agent.error = new Error("Codex exploded");
+
+  await chatAdapter.handler?.(createMessage("break things"));
+  agent.error = undefined;
+  await chatAdapter.handler?.(createMessage("failures 3"));
+
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Recent failures/);
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Codex exploded/);
 });
 
 test("BridgeService updates the working directory within allowed roots", async () => {
@@ -324,6 +387,71 @@ test("BridgeService can set per-thread approval mode", async () => {
   assert.match(chatAdapter.posted[0]?.text ?? "", /approval mode is now `never`/);
 });
 
+test("BridgeService can switch the active agent for a thread", async () => {
+  const { chatAdapter, store } = await startBridge();
+
+  await chatAdapter.handler?.(createMessage("agent claude"));
+  const sessions = await store.listSessions();
+
+  assert.equal(sessions[0].agent, "claude-code");
+  assert.deepEqual(sessions[0].agentState, {});
+  assert.equal(sessions[0].bridgeState?.connectionMode, "bridge-owned");
+  assert.match(chatAdapter.posted[0]?.text ?? "", /now uses `claude-code`/);
+});
+
+test("BridgeService can move a session to a new Slack thread", async () => {
+  const { chatAdapter, store, agent } = await startBridge();
+  agent.result = {
+    sessionId: "ignored",
+    summary: "first reply",
+  };
+
+  await chatAdapter.handler?.(createMessage("do work"));
+  await chatAdapter.handler?.(createMessage("new-thread"));
+
+  const sessions = await store.listSessions();
+  const movedThreadId = sessions[0]?.thread.threadId;
+
+  assert.equal(chatAdapter.startedThreads.length, 1);
+  assert.equal(sessions[0]?.thread.channelId, "C1");
+  assert.match(movedThreadId ?? "", /^new-thread-/);
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /moved to a new thread/);
+});
+
+test("BridgeService can fork a session into a new Slack thread", async () => {
+  const { chatAdapter, store } = await startBridge();
+
+  await chatAdapter.handler?.(createMessage("fork claude manual"));
+  const sessions = await store.listSessions();
+  const originalSession = sessions.find((session) => session.thread.threadId === "T1");
+  const forkedSession = sessions.find((session) => session.thread.threadId !== "T1");
+
+  assert.equal(chatAdapter.startedThreads.length, 1);
+  assert.equal(sessions.length, 2);
+  assert.equal(originalSession?.agent, "codex");
+  assert.equal(forkedSession?.agent, "claude-code");
+  assert.equal(forkedSession?.bridgeState?.approvalPolicyOverride, "manual");
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Forked session/);
+});
+
+test("BridgeService routes execution to the selected agent", async () => {
+  const { chatAdapter, store, codexAgent, claudeAgent } = await startBridge();
+  claudeAgent.result = {
+    sessionId: "ignored",
+    summary: "claude handled it",
+  };
+
+  await chatAdapter.handler?.(createMessage("agent claude"));
+  await chatAdapter.handler?.(createMessage("do work"));
+  const sessions = await store.listSessions();
+
+  assert.equal(sessions[0].agent, "claude-code");
+  assert.equal(codexAgent.requests.length, 0);
+  assert.equal(claudeAgent.requests.length, 1);
+  assert.equal(claudeAgent.requests[0]?.session.agent, "claude-code");
+  assert.equal(chatAdapter.posted.at(-1)?.text, "claude handled it");
+});
+
 test("BridgeService can reset to a fresh session with explicit mode", async () => {
   const { chatAdapter, store } = await startBridge();
 
@@ -334,6 +462,18 @@ test("BridgeService can reset to a fresh session with explicit mode", async () =
   assert.deepEqual(sessions[0].agentState, {});
   assert.equal(sessions[0].bridgeState?.approvalPolicyOverride, "manual");
   assert.match(chatAdapter.posted.at(-1)?.text ?? "", /fresh Codex session/);
+});
+
+test("BridgeService can reset to a fresh Claude session explicitly", async () => {
+  const { chatAdapter, store } = await startBridge();
+
+  await chatAdapter.handler?.(createMessage("new claude manual"));
+  const sessions = await store.listSessions();
+
+  assert.equal(sessions[0].agent, "claude-code");
+  assert.deepEqual(sessions[0].agentState, {});
+  assert.equal(sessions[0].bridgeState?.approvalPolicyOverride, "manual");
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /fresh Claude Code session/);
 });
 
 test("BridgeService rejects working directory changes outside allowed roots", async () => {
@@ -492,4 +632,74 @@ test("BridgeService attaches selected session from picker", async () => {
 
   assert.equal(sessions[0].agentState?.codexThreadId, "session-b");
   assert.match(chatAdapter.posted.at(-1)?.text ?? "", /now attached/);
+});
+
+test("BridgeService can attach-last for Claude Code", async () => {
+  const { chatAdapter, store, config } = await startBridge();
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "cab-claude-"));
+  config.agentKind = "claude-code";
+  config.claudeSessionIndexFile = path.join(tempDir, "sessions.json");
+  await fs.writeFile(
+    config.claudeSessionIndexFile,
+    JSON.stringify(
+      [
+        {
+          sessionId: "claude-newer",
+          updatedAt: "2026-03-30T01:00:00Z",
+          summary: "Latest Claude task",
+        },
+        {
+          sessionId: "claude-older",
+          updatedAt: "2026-03-30T00:00:00Z",
+          summary: "Older Claude task",
+        },
+      ],
+      null,
+      2,
+    ),
+    "utf8",
+  );
+
+  await chatAdapter.handler?.(createMessage("attach-last"));
+  const sessions = await store.listSessions();
+
+  assert.equal(sessions[0].agentState?.claudeSessionId, "claude-newer");
+  assert.equal(sessions[0].bridgeState?.connectionMode, "attached");
+  assert.match(chatAdapter.posted[0]?.text ?? "", /claude-newer/);
+});
+
+test("BridgeService opens a Claude session picker on empty mention", async () => {
+  const { chatAdapter, store, config } = await startBridge();
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "cab-claude-picker-"));
+  config.agentKind = "claude-code";
+  config.claudeSessionIndexFile = path.join(tempDir, "sessions.json");
+  await fs.writeFile(
+    config.claudeSessionIndexFile,
+    JSON.stringify(
+      {
+        first: {
+          sessionId: "claude-a",
+          updatedAt: "2026-03-30T01:00:00Z",
+          summary: "Alpha task",
+        },
+        second: {
+          sessionId: "claude-b",
+          updatedAt: "2026-03-30T00:00:00Z",
+          summary: "Beta task",
+        },
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+
+  await chatAdapter.handler?.(createMessage(""));
+  const sessions = await store.listSessions();
+
+  assert.match(chatAdapter.posted[0]?.text ?? "", /Choose a Claude Code session to attach/);
+  assert.equal(
+    ((sessions[0].bridgeState?.sessionPicker as { sessionIds?: string[] } | undefined)?.sessionIds ?? [])[0],
+    "claude-a",
+  );
 });

@@ -1,6 +1,7 @@
-import { Agent, AgentExecutionCancelledError } from "../agents/base.js";
+import { Agent, AgentExecutionCancelledError, AgentRegistry } from "../agents/base.js";
 import { ChatAdapter } from "../adapters/chat.js";
 import { readLatestCodexSession, readRecentCodexSessions } from "../agents/codex/session-index.js";
+import { readLatestClaudeSession, readRecentClaudeSessions } from "../agents/claude/session-index.js";
 import crypto from "node:crypto";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
@@ -37,7 +38,7 @@ interface BridgeServiceDeps {
   sessionManager: SessionManager;
   jobQueue: JobQueue;
   chatAdapter: ChatAdapter;
-  agent: Agent;
+  agents: AgentRegistry;
   auditLogger: AuditLogger;
 }
 
@@ -46,6 +47,12 @@ interface SessionPickerState {
 }
 
 type SessionConnectionMode = "attached" | "bridge-owned";
+
+interface StoredAgentSession {
+  id: string;
+  updatedAt: string;
+  label?: string;
+}
 
 function readApprovalPolicyOverride(
   bridgeState: Record<string, JsonValue> | undefined,
@@ -64,7 +71,46 @@ function readSessionConnectionMode(session: SessionBinding): SessionConnectionMo
     return value;
   }
 
-  return typeof session.agentState?.codexThreadId === "string" ? "attached" : "bridge-owned";
+  return readAgentSessionId(session) ? "attached" : "bridge-owned";
+}
+
+function readAgentSessionId(session: SessionBinding): string | undefined {
+  if (session.agent === "codex") {
+    return typeof session.agentState?.codexThreadId === "string"
+      ? session.agentState.codexThreadId
+      : undefined;
+  }
+
+  if (session.agent === "claude-code") {
+    return typeof session.agentState?.claudeSessionId === "string"
+      ? session.agentState.claudeSessionId
+      : undefined;
+  }
+
+  return undefined;
+}
+
+function createAttachedAgentState(
+  session: SessionBinding,
+  agentSessionId: string,
+): Record<string, JsonValue> {
+  if (session.agent === "codex") {
+    return {
+      ...(session.agentState ?? {}),
+      codexThreadId: agentSessionId,
+    };
+  }
+
+  if (session.agent === "claude-code") {
+    return {
+      ...(session.agentState ?? {}),
+      claudeSessionId: agentSessionId,
+    };
+  }
+
+  return {
+    ...(session.agentState ?? {}),
+  };
 }
 
 function readSessionPicker(
@@ -268,6 +314,17 @@ function buildProgressBlocks(text: string, status: string): unknown[] {
   return blocks;
 }
 
+function formatAgentDisplayName(agentKind: SessionBinding["agent"]): string {
+  switch (agentKind) {
+    case "claude-code":
+      return "Claude Code";
+    case "codex":
+      return "Codex";
+    default:
+      return agentKind;
+  }
+}
+
 export class BridgeService {
   private readonly startedAt = new Date().toISOString();
 
@@ -278,9 +335,22 @@ export class BridgeService {
     await this.deps.chatAdapter.start(async (message) => this.handleMessage(message));
   }
 
+  private resolveAgent(kind: SessionBinding["agent"]): Agent {
+    const agent = this.deps.agents[kind];
+    if (!agent) {
+      throw new Error(`Agent \`${kind}\` is not configured in this bridge instance.`);
+    }
+
+    return agent;
+  }
+
+  private resolveSessionAgent(session: SessionBinding): Agent {
+    return this.resolveAgent(session.agent);
+  }
+
   private async handleMessage(message: IncomingChatMessage): Promise<void> {
     const session = await this.deps.sessionManager.getOrCreate({
-      agent: this.deps.agent.kind,
+      agent: this.deps.config.agentKind,
       thread: message.thread,
       workingDirectory: message.requestedWorkingDirectory,
       allowedDirectories: this.deps.config.allowedDirectories,
@@ -337,6 +407,7 @@ export class BridgeService {
       let progress: Awaited<ReturnType<BridgeService["createProgressReporter"]>> | undefined;
       let executionRecord: ExecutionRecord | undefined;
       try {
+        const sessionAgent = this.resolveSessionAgent(currentSession);
         const approvalPolicy = this.resolveApprovalPolicy(currentSession);
         executionRecord = this.createExecutionRecord({
           session: currentSession,
@@ -360,7 +431,7 @@ export class BridgeService {
           prompt: message.text,
         });
 
-        const result = await this.deps.agent.execute({
+        const result = await sessionAgent.execute({
           session: currentSession,
           prompt: message.text,
           approvalPolicy,
@@ -380,7 +451,7 @@ export class BridgeService {
 
         const needsApproval =
           approvalPolicy !== "never" &&
-          this.deps.agent.capabilities.writeApprovalRerun &&
+          sessionAgent.capabilities.writeApprovalRerun &&
           shouldRequestApproval(result.summary);
         if (executionRecord) {
           executionRecord = this.completeExecutionRecord(
@@ -482,11 +553,17 @@ export class BridgeService {
           "- `@Chat Agent Bridge status`",
           "- `@Chat Agent Bridge history [count]`",
           "- `@Chat Agent Bridge cancel`",
+          "- `@Chat Agent Bridge new-thread`",
+          "- `@Chat Agent Bridge fork [codex|claude] [allow|manual]`",
+          "- `@Chat Agent Bridge sessions`",
+          "- `@Chat Agent Bridge approvals`",
+          "- `@Chat Agent Bridge failures [count]`",
           "- `@Chat Agent Bridge repos`",
           "- `@Chat Agent Bridge repo <alias>`",
           "- `@Chat Agent Bridge cwd <path>`",
+          "- `@Chat Agent Bridge agent <codex|claude>`",
           "- `@Chat Agent Bridge mode <allow|manual>`",
-          "- `@Chat Agent Bridge new <allow|manual>`",
+          "- `@Chat Agent Bridge new [codex|claude] [allow|manual]`",
           "- `@Chat Agent Bridge attach <session-id>`",
           "- `@Chat Agent Bridge attach-last`",
           "- `@Chat Agent Bridge detach`",
@@ -503,7 +580,105 @@ export class BridgeService {
       return;
     }
 
+    if (command.kind === "new-thread") {
+      const newThread = await this.deps.chatAdapter.startNewThread(
+        message.thread.channelId,
+        [
+          `Continuation for session \`${session.sessionId}\`.`,
+          `Agent: \`${session.agent}\``,
+          `Working directory: \`${session.workingDirectory}\``,
+          "Reply in this thread to continue.",
+        ].join("\n"),
+      );
+      if (!newThread) {
+        await this.deps.chatAdapter.postThreadMessage(
+          message.thread,
+          "Thread split failed: the chat adapter could not create a new thread.",
+        );
+        return;
+      }
+
+      const nextSession: SessionBinding = {
+        ...session,
+        thread: newThread,
+        updatedAt: new Date().toISOString(),
+      };
+      await this.deps.stateStore.upsertSession(nextSession);
+      await this.deps.auditLogger.log({
+        type: "bridge.command.new-thread",
+        sessionId: session.sessionId,
+        fromThreadId: session.thread.threadId,
+        toThreadId: newThread.threadId,
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        `Session \`${session.sessionId}\` moved to a new thread in this channel. Continue in the newly created thread.`,
+      );
+      return;
+    }
+
+    if (command.kind === "fork-session") {
+      const nextAgent = command.agent ?? session.agent;
+      try {
+        this.resolveAgent(nextAgent);
+      } catch (error) {
+        const text = error instanceof Error ? error.message : "Requested agent is unavailable.";
+        await this.deps.chatAdapter.postThreadMessage(message.thread, `Fork failed: ${text}`);
+        return;
+      }
+
+      const newThread = await this.deps.chatAdapter.startNewThread(
+        message.thread.channelId,
+        [
+          `Forked from session \`${session.sessionId}\`.`,
+          `Agent: \`${nextAgent}\``,
+          `Working directory: \`${session.workingDirectory}\``,
+          "Reply in this thread to start the forked session.",
+        ].join("\n"),
+      );
+      if (!newThread) {
+        await this.deps.chatAdapter.postThreadMessage(
+          message.thread,
+          "Fork failed: the chat adapter could not create a new thread.",
+        );
+        return;
+      }
+
+      let forkedSession = await this.deps.sessionManager.getOrCreate({
+        agent: nextAgent,
+        thread: newThread,
+        workingDirectory: session.workingDirectory,
+        allowedDirectories: this.deps.config.allowedDirectories,
+      });
+      const approvalPolicy =
+        command.approvalPolicy ?? readApprovalPolicyOverride(session.bridgeState);
+      if (approvalPolicy) {
+        forkedSession = {
+          ...forkedSession,
+          updatedAt: new Date().toISOString(),
+          bridgeState: {
+            ...(forkedSession.bridgeState ?? {}),
+            approvalPolicyOverride: approvalPolicy,
+          },
+        };
+        await this.deps.stateStore.upsertSession(forkedSession);
+      }
+
+      await this.deps.auditLogger.log({
+        type: "bridge.command.fork-session",
+        sessionId: session.sessionId,
+        forkedSessionId: forkedSession.sessionId,
+        agent: nextAgent,
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        `Forked session \`${forkedSession.sessionId}\` into a new thread using \`${nextAgent}\`. Continue in the newly created thread.`,
+      );
+      return;
+    }
+
     if (command.kind === "status") {
+      const sessionAgent = this.resolveSessionAgent(session);
       const pendingApproval = readPendingApproval(session.bridgeState);
       const approvalPolicyOverride = readApprovalPolicyOverride(session.bridgeState);
       const connectionMode = readSessionConnectionMode(session);
@@ -513,10 +688,7 @@ export class BridgeService {
           limit: 1,
         })
       )[0];
-      const agentThreadId =
-        typeof session.agentState?.codexThreadId === "string"
-          ? session.agentState.codexThreadId
-          : "none";
+      const agentThreadId = readAgentSessionId(session) ?? "none";
       await this.deps.auditLogger.log({
         type: "bridge.command.status",
         sessionId: session.sessionId,
@@ -526,7 +698,7 @@ export class BridgeService {
         message.thread,
         [
           `Session \`${session.sessionId}\``,
-          `Agent: \`${this.deps.agent.kind}\``,
+          `Agent: \`${session.agent}\``,
           `Slack mode: \`${this.deps.config.slackMode}\``,
           `Bridge started at: \`${this.startedAt}\``,
           `Session connection: \`${connectionMode}\``,
@@ -534,9 +706,9 @@ export class BridgeService {
           `Approval policy: \`${this.resolveApprovalPolicy(session)}\``,
           `Approval override: \`${approvalPolicyOverride ?? "default"}\``,
           `Network access: \`${this.deps.config.networkAccess}\``,
-          `Agent approval support: \`${this.deps.agent.capabilities.manualApproval}\``,
-          `Agent write rerun support: \`${this.deps.agent.capabilities.writeApprovalRerun}\``,
-          `Agent thread id: \`${agentThreadId}\``,
+          `Agent approval support: \`${sessionAgent.capabilities.manualApproval}\``,
+          `Agent write rerun support: \`${sessionAgent.capabilities.writeApprovalRerun}\``,
+          `Agent session id: \`${agentThreadId}\``,
           `Latest execution: \`${latestExecution?.executionId ?? "none"}\``,
           `Latest status: \`${latestExecution ? formatExecutionStatus(latestExecution.status) : "none"}\``,
           `Pending approval: \`${pendingApproval ? "yes" : "no"}\``,
@@ -566,6 +738,65 @@ export class BridgeService {
       return;
     }
 
+    if (command.kind === "list-sessions") {
+      const sessions = (await this.deps.stateStore.listSessions()).sort((left, right) =>
+        right.updatedAt.localeCompare(left.updatedAt),
+      );
+      await this.deps.auditLogger.log({
+        type: "bridge.command.list-sessions",
+        sessionId: session.sessionId,
+        count: sessions.length,
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        await this.formatSessionList(sessions),
+      );
+      return;
+    }
+
+    if (command.kind === "list-approvals") {
+      const sessions = (await this.deps.stateStore.listSessions())
+        .map((candidate) => ({
+          session: candidate,
+          pendingApproval: readPendingApproval(candidate.bridgeState),
+        }))
+        .filter((candidate) => Boolean(candidate.pendingApproval))
+        .sort((left, right) => right.session.updatedAt.localeCompare(left.session.updatedAt));
+      await this.deps.auditLogger.log({
+        type: "bridge.command.list-approvals",
+        sessionId: session.sessionId,
+        count: sessions.length,
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        this.formatApprovalList(
+          sessions.map((candidate) => ({
+            session: candidate.session,
+            pendingApproval: candidate.pendingApproval!,
+          })),
+        ),
+      );
+      return;
+    }
+
+    if (command.kind === "list-failures") {
+      const failures = (await this.deps.stateStore.listExecutionRecords())
+        .filter((record) => record.status === "failed")
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+        .slice(0, command.limit);
+      await this.deps.auditLogger.log({
+        type: "bridge.command.list-failures",
+        sessionId: session.sessionId,
+        count: failures.length,
+        limit: command.limit,
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        this.formatFailureList(failures, command.limit),
+      );
+      return;
+    }
+
     if (command.kind === "set-mode") {
       const nextSession: SessionBinding = {
         ...session,
@@ -588,7 +819,51 @@ export class BridgeService {
       return;
     }
 
+    if (command.kind === "set-agent") {
+      try {
+        this.resolveAgent(command.agent);
+      } catch (error) {
+        const text = error instanceof Error ? error.message : "Requested agent is unavailable.";
+        await this.deps.chatAdapter.postThreadMessage(message.thread, `Agent switch failed: ${text}`);
+        return;
+      }
+      const nextBridgeState: Record<string, JsonValue> = {
+        connectionMode: "bridge-owned",
+      };
+      const approvalPolicyOverride = readApprovalPolicyOverride(session.bridgeState);
+      if (approvalPolicyOverride) {
+        nextBridgeState.approvalPolicyOverride = approvalPolicyOverride;
+      }
+
+      const nextSession: SessionBinding = {
+        ...session,
+        agent: command.agent,
+        updatedAt: new Date().toISOString(),
+        agentState: {},
+        bridgeState: nextBridgeState,
+      };
+      await this.deps.stateStore.upsertSession(nextSession);
+      await this.deps.auditLogger.log({
+        type: "bridge.command.set-agent",
+        sessionId: session.sessionId,
+        agent: command.agent,
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        `Session \`${session.sessionId}\` now uses \`${command.agent}\`. Send the next instruction to start a fresh ${formatAgentDisplayName(command.agent)} session.`,
+      );
+      return;
+    }
+
     if (command.kind === "new-session") {
+      const nextAgent = command.agent ?? session.agent;
+      try {
+        this.resolveAgent(nextAgent);
+      } catch (error) {
+        const text = error instanceof Error ? error.message : "Requested agent is unavailable.";
+        await this.deps.chatAdapter.postThreadMessage(message.thread, `New session failed: ${text}`);
+        return;
+      }
       const nextBridgeState: Record<string, JsonValue> = {};
       const approvalPolicy =
         command.approvalPolicy ?? readApprovalPolicyOverride(session.bridgeState);
@@ -599,6 +874,7 @@ export class BridgeService {
 
       const nextSession: SessionBinding = {
         ...session,
+        agent: nextAgent,
         updatedAt: new Date().toISOString(),
         agentState: {},
         bridgeState: nextBridgeState,
@@ -612,7 +888,7 @@ export class BridgeService {
       await this.deps.chatAdapter.postThreadMessage(
         message.thread,
         [
-          `Bridge session \`${session.sessionId}\` is reset for a fresh Codex session.`,
+          `Bridge session \`${session.sessionId}\` is reset for a fresh ${formatAgentDisplayName(nextAgent)} session.`,
           `Approval mode: \`${approvalPolicy ?? this.deps.config.defaultApprovalPolicy}\`.`,
           "Send the next instruction to begin.",
         ].join("\n"),
@@ -622,16 +898,16 @@ export class BridgeService {
 
     if (command.kind === "attach-last") {
       try {
-        const latest = await readLatestCodexSession(this.deps.config.codexSessionIndexFile);
+        const latest = await this.readLatestReusableSession(session.agent);
         if (!latest) {
           await this.deps.chatAdapter.postThreadMessage(
             message.thread,
-            "No Codex app session was found in the local session index.",
+            `No ${formatAgentDisplayName(session.agent)} session was found in the local session index.`,
           );
           return;
         }
 
-        await this.attachCodexSession(session, message, latest.id, "latest");
+        await this.attachAgentSession(session, message, latest.id, "latest");
       } catch (error) {
         const text = error instanceof Error ? error.message : "Failed to read Codex session index.";
         await this.deps.chatAdapter.postThreadMessage(
@@ -643,7 +919,7 @@ export class BridgeService {
     }
 
     if (command.kind === "attach") {
-      await this.attachCodexSession(session, message, command.sessionId, "manual");
+      await this.attachAgentSession(session, message, command.sessionId, "manual");
       return;
     }
 
@@ -664,7 +940,7 @@ export class BridgeService {
       });
       await this.deps.chatAdapter.postThreadMessage(
         message.thread,
-        `Detached bridge session \`${session.sessionId}\` from any saved Codex thread.`,
+        `Detached bridge session \`${session.sessionId}\` from any saved agent session.`,
       );
       return;
     }
@@ -751,7 +1027,7 @@ export class BridgeService {
     message: IncomingChatMessage,
     command: Extract<BridgeCommand, { kind: "cancel" }>,
   ): Promise<void> {
-    const cancelled = await this.deps.agent.cancelExecution(session.sessionId);
+    const cancelled = await this.resolveSessionAgent(session).cancelExecution(session.sessionId);
     await this.deps.auditLogger.log({
       type: "bridge.command.cancel",
       sessionId: session.sessionId,
@@ -778,12 +1054,12 @@ export class BridgeService {
     message: IncomingChatMessage,
   ): Promise<void> {
     const existingThreadId =
-      typeof session.agentState?.codexThreadId === "string" ? session.agentState.codexThreadId : "";
+      readAgentSessionId(session) ?? "";
     if (existingThreadId) {
       await this.deps.chatAdapter.postThreadMessage(
         message.thread,
         [
-          `This thread is already attached to Codex thread \`${existingThreadId}\`.`,
+          `This thread is already attached to ${formatAgentDisplayName(session.agent)} session \`${existingThreadId}\`.`,
           "Use `@Chat Agent Bridge status` to inspect it, or send an instruction to continue.",
         ].join("\n"),
       );
@@ -791,11 +1067,11 @@ export class BridgeService {
     }
 
     try {
-      const sessions = await readRecentCodexSessions(this.deps.config.codexSessionIndexFile, 5);
+      const sessions = await this.readRecentReusableSessions(session.agent, 5);
       if (sessions.length === 0) {
         await this.deps.chatAdapter.postThreadMessage(
           message.thread,
-          "No reusable Codex sessions were found. Reply `new` to start a fresh session.",
+          `No reusable ${formatAgentDisplayName(session.agent)} sessions were found. Reply \`new\` to start a fresh session.`,
         );
         return;
       }
@@ -818,18 +1094,21 @@ export class BridgeService {
         candidateCount: sessions.length,
       });
       const lines = [
-        "Choose a Codex session to attach, or reply `new` to start a fresh one:",
+        `Choose a ${formatAgentDisplayName(session.agent)} session to attach, or reply \`new\` to start a fresh one:`,
         ...sessions.map((candidate, index) => {
-          const label = candidate.threadName ? ` - ${candidate.threadName}` : "";
+          const label = candidate.label ? ` - ${candidate.label}` : "";
           return `${index + 1}. \`${candidate.id}\`${label}`;
         }),
       ];
       await this.deps.chatAdapter.postThreadMessage(message.thread, lines.join("\n"));
     } catch (error) {
-      const text = error instanceof Error ? error.message : "Failed to read local Codex sessions.";
+      const text =
+        error instanceof Error
+          ? error.message
+          : `Failed to read local ${formatAgentDisplayName(session.agent)} sessions.`;
       await this.deps.chatAdapter.postThreadMessage(
         message.thread,
-        `Failed to list reusable Codex sessions: ${text}`,
+        `Failed to list reusable ${formatAgentDisplayName(session.agent)} sessions: ${text}`,
       );
     }
   }
@@ -859,7 +1138,7 @@ export class BridgeService {
       });
       await this.deps.chatAdapter.postThreadMessage(
         message.thread,
-        `Starting a fresh Codex session for bridge session \`${session.sessionId}\`. Send the next instruction to begin.`,
+        `Starting a fresh ${formatAgentDisplayName(session.agent)} session for bridge session \`${session.sessionId}\`. Send the next instruction to begin.`,
       );
       return true;
     }
@@ -873,7 +1152,7 @@ export class BridgeService {
       return true;
     }
 
-    await this.attachCodexSession(
+    await this.attachAgentSession(
       session,
       message,
       picker.sessionIds[selectedIndex - 1] ?? "",
@@ -910,10 +1189,10 @@ export class BridgeService {
     );
   }
 
-  private async attachCodexSession(
+  private async attachAgentSession(
     session: SessionBinding,
     message: IncomingChatMessage,
-    codexThreadId: string,
+    agentSessionId: string,
     source: "latest" | "manual" | "picker",
   ): Promise<void> {
     const nextSession: SessionBinding = {
@@ -922,33 +1201,92 @@ export class BridgeService {
       bridgeState: {
         connectionMode: "attached",
       },
-      agentState: {
-        ...(session.agentState ?? {}),
-        codexThreadId,
-      },
+      agentState: createAttachedAgentState(session, agentSessionId),
     };
 
     await this.deps.stateStore.upsertSession(nextSession);
     await this.deps.auditLogger.log({
       type: "bridge.command.attach",
       sessionId: session.sessionId,
-      codexThreadId,
+      agentSessionId,
       source,
     });
     await this.deps.chatAdapter.postThreadMessage(
       message.thread,
-      `Bridge session \`${session.sessionId}\` is now attached to Codex thread \`${codexThreadId}\`.`,
+      `Bridge session \`${session.sessionId}\` is now attached to ${formatAgentDisplayName(session.agent)} session \`${agentSessionId}\`.`,
     );
+  }
+
+  private async readLatestReusableSession(
+    agentKind: SessionBinding["agent"],
+  ): Promise<StoredAgentSession | undefined> {
+    if (agentKind === "claude-code") {
+      const session = await readLatestClaudeSession(this.deps.config.claudeSessionIndexFile);
+      return session
+        ? {
+            id: session.id,
+            updatedAt: session.updatedAt,
+            ...(session.summary
+              ? {
+                  label: session.summary,
+                }
+              : {}),
+          }
+        : undefined;
+    }
+
+    const session = await readLatestCodexSession(this.deps.config.codexSessionIndexFile);
+    return session
+      ? {
+          id: session.id,
+          updatedAt: session.updatedAt,
+          ...(session.threadName
+            ? {
+                label: session.threadName,
+              }
+            : {}),
+        }
+      : undefined;
+  }
+
+  private async readRecentReusableSessions(
+    agentKind: SessionBinding["agent"],
+    limit: number,
+  ): Promise<StoredAgentSession[]> {
+    if (agentKind === "claude-code") {
+      const sessions = await readRecentClaudeSessions(this.deps.config.claudeSessionIndexFile, limit);
+      return sessions.map((session) => ({
+        id: session.id,
+        updatedAt: session.updatedAt,
+        ...(session.summary
+          ? {
+              label: session.summary,
+            }
+          : {}),
+      }));
+    }
+
+    const sessions = await readRecentCodexSessions(this.deps.config.codexSessionIndexFile, limit);
+    return sessions.map((session) => ({
+      id: session.id,
+      updatedAt: session.updatedAt,
+      ...(session.threadName
+        ? {
+            label: session.threadName,
+          }
+        : {}),
+    }));
   }
 
   private async handleApprovalMessage(
     session: SessionBinding,
     message: IncomingChatMessage,
   ): Promise<void> {
-    if (!this.deps.agent.capabilities.writeApprovalRerun) {
+    const sessionAgent = this.resolveSessionAgent(session);
+    if (!sessionAgent.capabilities.writeApprovalRerun) {
       await this.deps.chatAdapter.postThreadMessage(
         message.thread,
-        `Agent \`${this.deps.agent.kind}\` does not support approval reruns.`,
+        `Agent \`${session.agent}\` does not support approval reruns.`,
       );
       return;
     }
@@ -996,7 +1334,7 @@ export class BridgeService {
       "approval accepted; rerunning",
     );
     try {
-      const result = await this.deps.agent.execute({
+      const result = await sessionAgent.execute({
         session,
         prompt: pendingApproval.prompt,
         approvalPolicy: "never",
@@ -1337,6 +1675,80 @@ export class BridgeService {
     ].join("\n");
   }
 
+  private async formatSessionList(sessions: SessionBinding[]): Promise<string> {
+    if (sessions.length === 0) {
+      return "No bridge sessions were found.";
+    }
+
+    const latestBySessionId = new Map<string, ExecutionRecord>();
+    const records = await this.deps.stateStore.listExecutionRecords();
+    for (const record of records) {
+      if (!latestBySessionId.has(record.sessionId)) {
+        latestBySessionId.set(record.sessionId, record);
+      }
+    }
+
+    return [
+      `Bridge sessions (${sessions.length}):`,
+      ...sessions.map((candidate, index) => {
+        const latest = latestBySessionId.get(candidate.sessionId);
+        const pendingApproval = readPendingApproval(candidate.bridgeState);
+        return [
+          `${index + 1}. \`${candidate.sessionId}\``,
+          `agent=\`${candidate.agent}\``,
+          `status=\`${latest ? formatExecutionStatus(latest.status) : "idle"}\``,
+          `mode=\`${readSessionConnectionMode(candidate)}\``,
+          `cwd=\`${candidate.workingDirectory}\``,
+          `updated=\`${candidate.updatedAt}\``,
+          `pending=\`${pendingApproval ? "yes" : "no"}\``,
+        ].join(" ");
+      }),
+    ].join("\n");
+  }
+
+  private formatApprovalList(
+    entries: Array<{
+      session: SessionBinding;
+      pendingApproval: NonNullable<ReturnType<typeof readPendingApproval>>;
+    }>,
+  ): string {
+    if (entries.length === 0) {
+      return "No pending approvals were found.";
+    }
+
+    return [
+      `Pending approvals (${entries.length}):`,
+      ...entries.map((entry, index) =>
+        [
+          `${index + 1}. \`${entry.session.sessionId}\``,
+          `requested=\`${entry.pendingApproval.requestedAt}\``,
+          `cwd=\`${entry.session.workingDirectory}\``,
+          `prompt=\`${this.truncateForCode(entry.pendingApproval.prompt, 80)}\``,
+        ].join(" "),
+      ),
+    ].join("\n");
+  }
+
+  private formatFailureList(records: ExecutionRecord[], requestedLimit: number): string {
+    if (records.length === 0) {
+      return "No failed executions were found.";
+    }
+
+    return [
+      `Recent failures (${records.length}/${requestedLimit}):`,
+      ...records.map((record, index) =>
+        [
+          `${index + 1}. \`${record.executionId}\``,
+          `session=\`${record.sessionId}\``,
+          `updated=\`${record.updatedAt}\``,
+          `cwd=\`${record.workingDirectory}\``,
+          `prompt=\`${this.truncateForCode(record.prompt, 70)}\``,
+          `error=\`${this.truncateForCode(record.error ?? "Unknown error.", 90)}\``,
+        ].join(" "),
+      ),
+    ].join("\n");
+  }
+
   private async persistSessionAfterRun(
     session: SessionBinding,
     input: {
@@ -1411,7 +1823,7 @@ export class BridgeService {
   }
 
   private resolveApprovalPolicy(session?: SessionBinding): AppConfig["defaultApprovalPolicy"] {
-    if (!this.deps.agent.capabilities.manualApproval) {
+    if (session && !this.resolveSessionAgent(session).capabilities.manualApproval) {
       return "never";
     }
 

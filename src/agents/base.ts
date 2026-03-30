@@ -18,3 +18,5 @@ export interface Agent {
   execute(request: AgentExecutionRequest): Promise<AgentExecutionResult>;
   cancelExecution(sessionId: string): Promise<boolean>;
 }
+
+export type AgentRegistry = Partial<Record<AgentKind, Agent>>;

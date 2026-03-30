@@ -1,6 +1,8 @@
 import { createAppConfig } from "./config/env.js";
 import { SlackAdapter } from "./adapters/slack/slack-adapter.js";
+import { AgentRegistry } from "./agents/base.js";
 import { CodexAgent } from "./agents/codex/codex-agent.js";
+import { ClaudeCodeAgent } from "./agents/claude/claude-agent.js";
 import { BridgeService } from "./core/bridge-service.js";
 import { SessionManager } from "./core/session-manager.js";
 import { InMemoryJobQueue } from "./core/job-queue.js";
@@ -14,7 +16,10 @@ async function main(): Promise<void> {
   const sessionManager = new SessionManager(store);
   const jobQueue = new InMemoryJobQueue();
   const chatAdapter = new SlackAdapter(config, auditLogger);
-  const agent = new CodexAgent(config);
+  const agents: AgentRegistry = {
+    codex: new CodexAgent(config),
+    "claude-code": new ClaudeCodeAgent(config),
+  };
 
   const bridge = new BridgeService({
     config,
@@ -22,7 +27,7 @@ async function main(): Promise<void> {
     sessionManager,
     jobQueue,
     chatAdapter,
-    agent,
+    agents,
     auditLogger,
   });
 

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { ApprovalPolicy, AppConfig, NetworkAccess, SlackMode } from "../core/types.js";
+import { AgentKind, ApprovalPolicy, AppConfig, NetworkAccess, SlackMode } from "../core/types.js";
 
 function readRequired(name: string, env: NodeJS.ProcessEnv): string {
   const value = env[name];
@@ -47,6 +47,19 @@ function parseSlackMode(value: string | undefined): SlackMode {
       return value;
     default:
       throw new Error(`Invalid CAB_SLACK_MODE: ${value}`);
+  }
+}
+
+function parseAgentKind(value: string | undefined): AgentKind {
+  switch (value) {
+    case undefined:
+    case "":
+    case "codex":
+      return "codex";
+    case "claude-code":
+      return value;
+    default:
+      throw new Error(`Invalid CAB_AGENT: ${value}`);
   }
 }
 
@@ -121,6 +134,7 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
   }
 
   const config: AppConfig = {
+    agentKind: parseAgentKind(env.CAB_AGENT),
     allowedDirectories,
     repoAliases: parseRepoAliases(env.CAB_REPO_ALIASES, allowedDirectories),
     defaultApprovalPolicy: parseApprovalPolicy(env.CAB_DEFAULT_APPROVAL_POLICY),
@@ -135,6 +149,9 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     auditLogFile: path.resolve(env.CAB_AUDIT_LOG_FILE ?? "./data/audit.jsonl"),
     codexSessionIndexFile: path.resolve(
       env.CAB_CODEX_SESSION_INDEX_FILE ?? "C:/Users/mail/.codex/session_index.jsonl",
+    ),
+    claudeSessionIndexFile: path.resolve(
+      env.CAB_CLAUDE_SESSION_INDEX_FILE ?? "C:/Users/mail/.config/claude/sessions/sessions.json",
     ),
     codexModel: env.CAB_CODEX_MODEL ?? "gpt-5.4",
     codexMaxTurns: parseInteger("CAB_CODEX_MAX_TURNS", env.CAB_CODEX_MAX_TURNS, 8),
@@ -152,6 +169,18 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
       "CAB_CODEX_MAX_OUTPUT_LENGTH",
       env.CAB_CODEX_MAX_OUTPUT_LENGTH,
       12000,
+    ),
+    claudeModel: env.CAB_CLAUDE_MODEL ?? "sonnet",
+    claudeMaxTurns: parseInteger("CAB_CLAUDE_MAX_TURNS", env.CAB_CLAUDE_MAX_TURNS, 8),
+    claudeCommandTimeoutMs: parseInteger(
+      "CAB_CLAUDE_COMMAND_TIMEOUT_MS",
+      env.CAB_CLAUDE_COMMAND_TIMEOUT_MS,
+      600000,
+    ),
+    claudeMaxRuntimeMs: parseInteger(
+      "CAB_CLAUDE_MAX_RUNTIME_MS",
+      env.CAB_CLAUDE_MAX_RUNTIME_MS,
+      3600000,
     ),
   };
 

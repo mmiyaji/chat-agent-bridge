@@ -766,6 +766,62 @@ export class SlackAdapter implements ChatAdapter {
     return undefined;
   }
 
+  async startNewThread(
+    channelId: string,
+    text: string,
+    options?: ChatMessageOptions,
+  ): Promise<ChatThreadRef | undefined> {
+    if (this.options.botToken) {
+      const payload = await this.slackApiFetch<SlackMessageResponse>({
+        url: "https://slack.com/api/chat.postMessage",
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${this.options.botToken}`,
+          "content-type": "application/json; charset=utf-8",
+        },
+        body: JSON.stringify({
+          channel: channelId,
+          text,
+          blocks: options?.blocks,
+        }),
+      });
+
+      if (!payload.ok || !payload.ts) {
+        throw new Error(`Slack API error: ${payload.error ?? "unknown_error"}`);
+      }
+
+      await this.auditLogger.log({
+        type: "slack.thread.started",
+        channelId,
+        threadId: payload.ts,
+        text,
+        hasBlocks: Boolean(options?.blocks),
+      });
+
+      return {
+        provider: "slack",
+        channelId,
+        threadId: payload.ts,
+      };
+    }
+
+    const threadId = `synthetic-thread-${crypto.randomUUID()}`;
+    console.log(`[slack:${channelId}:${threadId}] [new-thread]`, text, options?.blocks ? JSON.stringify(options.blocks) : "");
+    await this.auditLogger.log({
+      type: "slack.thread.started",
+      channelId,
+      threadId,
+      text,
+      hasBlocks: Boolean(options?.blocks),
+      delivery: "stdout",
+    });
+    return {
+      provider: "slack",
+      channelId,
+      threadId,
+    };
+  }
+
   async updateThreadMessage(
     thread: ChatThreadRef,
     messageId: string,

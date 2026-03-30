@@ -91,6 +91,7 @@ export interface AgentExecutionResult {
 }
 
 export interface AppConfig {
+  agentKind: AgentKind;
   allowedDirectories: string[];
   repoAliases: Record<string, string>;
   defaultApprovalPolicy: ApprovalPolicy;
@@ -105,11 +106,16 @@ export interface AppConfig {
   stateFile: string;
   auditLogFile: string;
   codexSessionIndexFile: string;
+  claudeSessionIndexFile: string;
   codexModel: string;
   codexMaxTurns: number;
   codexCommandTimeoutMs: number;
   codexMaxRuntimeMs: number;
   codexMaxOutputLength: number;
+  claudeModel: string;
+  claudeMaxTurns: number;
+  claudeCommandTimeoutMs: number;
+  claudeMaxRuntimeMs: number;
 }
 
 export interface StateSnapshot {

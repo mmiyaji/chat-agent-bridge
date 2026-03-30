@@ -9,6 +9,11 @@ export interface ChatMessageOptions {
 export interface ChatAdapter {
   start(handler: ChatMessageHandler): Promise<void>;
   stop?(): Promise<void>;
+  startNewThread(
+    channelId: string,
+    text: string,
+    options?: ChatMessageOptions,
+  ): Promise<ChatThreadRef | undefined>;
   postThreadMessage(
     thread: ChatThreadRef,
     text: string,

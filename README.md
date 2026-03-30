@@ -5,7 +5,7 @@ Chat Agent Bridge is a local bridge service that lets users continue operating a
 ## MVP scope
 
 - Chat adapter: Slack
-- Agent adapter: Codex
+- Agent adapter: Codex or Claude Code
 - Session model: `channel + thread_ts -> local agent session`
 - Local execution controls: working directory targeting, serial execution, policy checks
 - Safety: allowed-directory restrictions, approval policy, command/network policy hooks
@@ -49,18 +49,24 @@ This mode runs the bridge as a detached Node process, writes a PID file under `d
 | Name | Required | Description |
 | --- | --- | --- |
 | `CAB_ALLOWED_DIRS` | yes | Semicolon-separated list of allowed repository roots |
+| `CAB_AGENT` | no | Default agent for new bridge threads: `codex` or `claude-code`. Defaults to `codex` |
 | `CAB_REPO_ALIASES` | no | Optional `alias=path;alias2=path2` mapping used by `repo <alias>` |
 | `CAB_DEFAULT_WORKDIR` | no | Default working directory used for incoming Slack events. Defaults to the first allowed directory |
 | `CAB_HOST` | no | Bind host for the local HTTP server. Defaults to `0.0.0.0` |
 | `CAB_PORT` | no | Local HTTP port for the Slack-style ingress server. Defaults to `8787` |
 | `CAB_STATE_FILE` | no | Path to the JSON state file. Defaults to `./data/state.json` |
 | `CAB_AUDIT_LOG_FILE` | no | Path to the JSONL audit log. Defaults to `./data/audit.jsonl` |
+| `CAB_CODEX_SESSION_INDEX_FILE` | no | Path to the local Codex session index. Defaults to `C:/Users/mail/.codex/session_index.jsonl` |
+| `CAB_CLAUDE_SESSION_INDEX_FILE` | no | Path to the local Claude Code session index. Defaults to `C:/Users/mail/.config/claude/sessions/sessions.json` |
 | `CAB_DEFAULT_APPROVAL_POLICY` | no | `manual`, `on-failure`, or `never` |
 | `CAB_NETWORK_ACCESS` | no | `enabled` or `disabled` |
 | `CAB_SLACK_MODE` | no | Slack ingress mode: `http` or `socket`. Defaults to `http` |
 | `CAB_CODEX_MODEL` | no | Model passed to `codex exec --model`. Defaults to `gpt-5.4` |
 | `CAB_CODEX_COMMAND_TIMEOUT_MS` | no | Idle timeout for each `codex exec` invocation. The timer resets whenever Codex emits output |
 | `CAB_CODEX_MAX_RUNTIME_MS` | no | Hard maximum runtime for a single `codex exec` invocation |
+| `CAB_CLAUDE_MODEL` | no | Model passed to `claude --model`. Defaults to `sonnet` |
+| `CAB_CLAUDE_COMMAND_TIMEOUT_MS` | no | Idle timeout for each Claude Code invocation |
+| `CAB_CLAUDE_MAX_RUNTIME_MS` | no | Hard maximum runtime for a single Claude Code invocation |
 | `SLACK_BOT_TOKEN` | no | Bot token used for thread replies |
 | `SLACK_APP_TOKEN` | no | App-level token used for Slack Socket Mode (`xapp-...`) |
 | `SLACK_SIGNING_SECRET` | no | Enables Slack request signature verification when set |
@@ -84,6 +90,16 @@ When the bridge launches `codex`, it also injects bridge-specific environment va
 - `CHAT_AGENT_BRIDGE_WORKDIR`
 
 If you already use Codex hooks to send Slack notifications, use `CHAT_AGENT_BRIDGE=1` as the skip condition so bridge-posted thread replies do not get duplicated by the hook.
+
+## Claude Code adapter notes
+
+When a session uses `claude-code`, the bridge invokes the local `claude` CLI in print mode using `-p --output-format stream-json`. Session continuity is preserved via the returned `session_id` and later resumed with `--resume`.
+
+For approval behavior, the bridge maps:
+
+- `manual` -> `--permission-mode plan`
+- `on-failure` -> `--permission-mode acceptEdits`
+- `never` -> `--dangerously-skip-permissions`
 
 ## Local ingress
 
@@ -147,9 +163,15 @@ Useful bridge commands:
 - `@Chat Agent Bridge status`
 - `@Chat Agent Bridge history [count]`
 - `@Chat Agent Bridge cancel`
+- `@Chat Agent Bridge new-thread`
+- `@Chat Agent Bridge fork [codex|claude] [allow|manual]`
+- `@Chat Agent Bridge sessions`
+- `@Chat Agent Bridge approvals`
+- `@Chat Agent Bridge failures [count]`
 - `@Chat Agent Bridge repos`
 - `@Chat Agent Bridge repo <alias>`
 - `@Chat Agent Bridge cwd <path>`
+- `@Chat Agent Bridge agent <codex|claude>`
 - `@Chat Agent Bridge attach <session-id>`
 - `@Chat Agent Bridge attach-last`
 - `@Chat Agent Bridge detach`
@@ -158,4 +180,7 @@ Useful bridge commands:
 
 `cwd` accepts either an absolute path or a path relative to the current session working directory. The target must stay under one of `CAB_ALLOWED_DIRS`.
 `repo <alias>` switches to one of the configured repo aliases. If `CAB_REPO_ALIASES` is omitted, the bridge auto-generates aliases from the basename of each allowed directory.
-`attach` binds the current Slack thread to an existing Codex app thread id. `attach-last` uses the most recent session found in the local Codex session index.
+`agent <kind>` switches the current Slack thread to a fresh session for that agent. `new` also accepts an agent, for example `new claude manual`.
+`new-thread` moves the current bridge session to a newly created Slack thread in the same channel while keeping the underlying agent context.
+`fork` creates a new Slack thread with a separate bridge session, so you can run another agent or workflow in parallel without moving the current one.
+`attach` binds the current Slack thread to an existing agent session id. `attach-last` reuses the most recent local session from the active agent's session index.
