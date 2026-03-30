@@ -1,0 +1,497 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import http from "node:http";
+import fs from "node:fs";
+import { AdminServer } from "../src/admin/server.js";
+import { BridgeService } from "../src/core/bridge-service.js";
+import { SessionManager } from "../src/core/session-manager.js";
+import { AppConfig, ExecutionRecord, SessionBinding } from "../src/core/types.js";
+import {
+  RecordingAuditLogger,
+  InMemoryStateStore,
+  RecordingAgent,
+  RecordingChatAdapter,
+  InlineJobQueue,
+} from "./helpers/fakes.js";
+
+function createConfig(): AppConfig {
+  return {
+    chatProvider: "slack",
+    agentKind: "codex",
+    allowedDirectories: ["C:/repo"],
+    repoAliases: {
+      repo: "C:/repo",
+    },
+    defaultApprovalPolicy: "manual",
+    networkAccess: "disabled",
+    slackMode: "http",
+    mattermostMode: "http",
+    port: 8787,
+    host: "127.0.0.1",
+    adminHost: "127.0.0.1",
+    adminPort: 0,
+    defaultWorkingDirectory: "C:/repo",
+    settingsFile: "./.test-tmp/admin-settings.json",
+    stateFile: "C:/repo/data/state.json",
+    auditLogFile: "C:/repo/data/audit.jsonl",
+    codexSessionIndexFile: "C:/repo/data/session_index.jsonl",
+    claudeSessionIndexFile: "C:/repo/data/claude_sessions.json",
+    codexModel: "gpt-5.4",
+    codexMaxTurns: 8,
+    codexCommandTimeoutMs: 1000,
+    codexMaxRuntimeMs: 10000,
+    codexMaxOutputLength: 12000,
+    claudeModel: "sonnet",
+    claudeMaxTurns: 8,
+    claudeCommandTimeoutMs: 1000,
+    claudeMaxRuntimeMs: 10000,
+    autoSplitThreadUserMessageCount: 30,
+  };
+}
+
+function createSession(overrides?: Partial<SessionBinding>): SessionBinding {
+  return {
+    sessionId: "session-1",
+    agent: "codex",
+    thread: {
+      provider: "slack",
+      channelId: "C1",
+      threadId: "T1",
+    },
+    workingDirectory: "C:/repo",
+    createdAt: "2026-03-30T10:00:00.000Z",
+    updatedAt: "2026-03-30T10:10:00.000Z",
+    bridgeState: {
+      connectionMode: "bridge-owned",
+      approvalPolicyOverride: "manual",
+      pendingApproval: {
+        prompt: "edit files",
+        requestedAt: "2026-03-30T10:09:00.000Z",
+        reason: "Need approval",
+        executionId: "exec-2",
+      },
+    },
+    ...overrides,
+  };
+}
+
+function createRecord(overrides?: Partial<ExecutionRecord>): ExecutionRecord {
+  return {
+    executionId: "exec-1",
+    sessionId: "session-1",
+    thread: {
+      provider: "slack",
+      channelId: "C1",
+      threadId: "T1",
+    },
+    agent: "codex",
+    prompt: "status",
+    workingDirectory: "C:/repo",
+    approvalPolicy: "manual",
+    networkAccess: "disabled",
+    status: "completed",
+    summary: "done",
+    createdAt: "2026-03-30T10:08:00.000Z",
+    updatedAt: "2026-03-30T10:08:30.000Z",
+    completedAt: "2026-03-30T10:08:30.000Z",
+    ...overrides,
+  };
+}
+
+test("AdminServer serves session, approval, and failure APIs", async () => {
+  const store = new InMemoryStateStore();
+  await store.upsertSession(createSession());
+  await store.upsertExecutionRecord(createRecord());
+  await store.upsertExecutionRecord(
+    createRecord({
+      executionId: "exec-2",
+      prompt: "edit files",
+      status: "waiting_for_approval",
+      summary: "Need approval",
+      createdAt: "2026-03-30T10:09:00.000Z",
+      updatedAt: "2026-03-30T10:09:00.000Z",
+    }),
+  );
+  await store.upsertExecutionRecord(
+    createRecord({
+      executionId: "exec-3",
+      sessionId: "session-2",
+      status: "failed",
+      error: "boom",
+      createdAt: "2026-03-30T10:11:00.000Z",
+      updatedAt: "2026-03-30T10:11:10.000Z",
+    }),
+  );
+
+  const admin = new AdminServer({
+    config: createConfig(),
+    stateStore: store,
+    auditLogger: new RecordingAuditLogger(),
+    bridge: createBridge(store).bridge,
+  });
+  await admin.start();
+
+  const port = admin.getListeningPort();
+  assert.ok(port);
+
+  const sessionsResponse = await getJson(port, "/admin/api/sessions");
+  assert.equal(sessionsResponse.statusCode, 200);
+  assert.equal(sessionsResponse.body.sessions.length, 1);
+  assert.equal(sessionsResponse.body.sessions[0].sessionId, "session-1");
+  assert.equal(sessionsResponse.body.sessions[0].pendingApproval.prompt, "edit files");
+
+  const approvalsResponse = await getJson(port, "/admin/api/approvals");
+  assert.equal(approvalsResponse.statusCode, 200);
+  assert.equal(approvalsResponse.body.approvals.length, 1);
+  assert.equal(approvalsResponse.body.approvals[0].sessionId, "session-1");
+
+  const failuresResponse = await getJson(port, "/admin/api/failures?limit=1");
+  assert.equal(failuresResponse.statusCode, 200);
+  assert.equal(failuresResponse.body.failures.length, 1);
+  assert.equal(failuresResponse.body.failures[0].executionId, "exec-3");
+
+  await admin.stop();
+});
+
+test("AdminServer server-renders dashboard data and action controls", async () => {
+  const store = new InMemoryStateStore();
+  await store.upsertSession(createSession());
+  await store.upsertExecutionRecord(
+    createRecord({
+      executionId: "exec-3",
+      sessionId: "session-2",
+      status: "failed",
+      error: "boom",
+      createdAt: "2026-03-30T10:11:00.000Z",
+      updatedAt: "2026-03-30T10:11:10.000Z",
+    }),
+  );
+  const admin = new AdminServer({
+    config: createConfig(),
+    stateStore: store,
+    auditLogger: new RecordingAuditLogger(),
+    bridge: createBridge(store).bridge,
+  });
+  await admin.start();
+
+  const port = admin.getListeningPort();
+  assert.ok(port);
+
+  const response = await getText(port, "/admin");
+  assert.equal(response.statusCode, 200);
+  assert.match(response.body, /Bridge Admin/);
+  assert.match(response.body, /data-testid="sessions-table"/);
+  assert.match(response.body, /session-1/);
+  assert.match(response.body, /edit files/);
+  assert.match(response.body, /data-action="approve"/);
+  assert.match(response.body, /data-testid="session-search"/);
+  assert.match(response.body, /Idle/);
+  assert.match(response.body, /data-testid="nav-settings"/);
+
+  await admin.stop();
+});
+
+test("AdminServer serves a dedicated settings page", async () => {
+  const store = new InMemoryStateStore();
+  await store.upsertSession(createSession());
+  const admin = new AdminServer({
+    config: createConfig(),
+    stateStore: store,
+    auditLogger: new RecordingAuditLogger(),
+    bridge: createBridge(store).bridge,
+  });
+  await admin.start();
+
+  const port = admin.getListeningPort();
+  assert.ok(port);
+
+  const response = await getText(port, "/admin/settings");
+  assert.equal(response.statusCode, 200);
+  assert.match(response.body, /Runtime Settings/);
+  assert.match(response.body, /data-testid="nav-dashboard"/);
+  assert.match(response.body, /class="is-active" data-testid="nav-settings"/);
+
+  await admin.stop();
+});
+
+test("AdminServer queues approve actions through the bridge", async () => {
+  const store = new InMemoryStateStore();
+  const { bridge, chatAdapter, agent, auditLogger } = createBridge(store);
+  agent.result = {
+    sessionId: "ignored",
+    summary: "Applied the requested changes.",
+  };
+
+  await store.upsertSession(createSession());
+  const admin = new AdminServer({
+    config: createConfig(),
+    stateStore: store,
+    auditLogger,
+    bridge,
+  });
+  await admin.start();
+
+  const port = admin.getListeningPort();
+  assert.ok(port);
+
+  const response = await postJson(port, "/admin/api/sessions/session-1/approve", "{}");
+  assert.equal(response.statusCode, 202);
+  await waitForMicrotasks();
+
+  assert.equal(agent.requests[0]?.prompt, "edit files");
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Applied the requested changes/);
+
+  await admin.stop();
+});
+
+test("AdminServer reads and updates runtime settings", async () => {
+  const store = new InMemoryStateStore();
+  const config = createConfig();
+  fs.mkdirSync("./.test-tmp", { recursive: true });
+  fs.rmSync(config.settingsFile, { force: true });
+  const admin = new AdminServer({
+    config,
+    stateStore: store,
+    auditLogger: new RecordingAuditLogger(),
+    bridge: createBridge(store).bridge,
+  });
+  await admin.start();
+
+  const port = admin.getListeningPort();
+  assert.ok(port);
+
+  const before = await getJson(port, "/admin/api/settings");
+  assert.equal(before.statusCode, 200);
+  assert.equal(before.body.settings.agentKind, "codex");
+  assert.equal(before.body.settings.defaultApprovalPolicy, "manual");
+  assert.equal(before.body.settings.networkAccess, "disabled");
+  assert.equal(before.body.settings.codexModel, "gpt-5.4");
+  assert.equal(before.body.settings.claudeModel, "sonnet");
+  assert.equal(before.body.settings.autoSplitThreadUserMessageCount, 30);
+  assert.equal(before.body.settings.hasSlackBotToken, false);
+  assert.match(before.body.settings.settingsFile, /admin-settings\.json$/);
+  assert.equal(before.body.settings.settingsSavedAt, undefined);
+
+  const update = await postJson(
+    port,
+    "/admin/api/settings",
+    JSON.stringify({
+      agentKind: "claude-code",
+      defaultApprovalPolicy: "never",
+      networkAccess: "enabled",
+      autoSplitThreadUserMessageCount: 45,
+      codexModel: "gpt-5.5",
+      codexMaxTurns: 12,
+      claudeModel: "opus",
+      claudeMaxTurns: 10,
+      chatProvider: "mattermost",
+      slackMode: "socket",
+      mattermostMode: "websocket",
+      host: "0.0.0.0",
+      port: 9999,
+      adminHost: "127.0.0.1",
+      adminPort: 9998,
+      defaultWorkingDirectory: "C:/repo",
+      mattermostServerUrl: "https://chat.example.test",
+      mattermostActionBaseUrl: "https://bridge.example.test",
+      mattermostDmOnly: true,
+      slackBotToken: "xoxb-test",
+    }),
+  );
+  assert.equal(update.statusCode, 200);
+  assert.equal(update.body.settings.agentKind, "claude-code");
+  assert.equal(update.body.settings.defaultApprovalPolicy, "never");
+  assert.equal(update.body.settings.networkAccess, "enabled");
+  assert.equal(update.body.settings.autoSplitThreadUserMessageCount, 45);
+  assert.equal(update.body.settings.codexModel, "gpt-5.5");
+  assert.equal(update.body.settings.codexMaxTurns, 12);
+  assert.equal(update.body.settings.claudeModel, "opus");
+  assert.equal(update.body.settings.claudeMaxTurns, 10);
+  assert.equal(config.agentKind, "claude-code");
+  assert.equal(config.defaultApprovalPolicy, "never");
+  assert.equal(config.networkAccess, "enabled");
+  assert.equal(config.autoSplitThreadUserMessageCount, 45);
+  assert.equal(config.codexModel, "gpt-5.5");
+  assert.equal(config.codexMaxTurns, 12);
+  assert.equal(config.claudeModel, "opus");
+  assert.equal(config.claudeMaxTurns, 10);
+  assert.equal(config.chatProvider, "mattermost");
+  assert.equal(config.slackMode, "socket");
+  assert.equal(config.mattermostMode, "websocket");
+  assert.equal(config.port, 9999);
+  assert.equal(config.adminPort, 9998);
+  assert.equal(config.mattermostServerUrl, "https://chat.example.test");
+  assert.equal(config.mattermostActionBaseUrl, "https://bridge.example.test");
+  assert.equal(config.mattermostDmOnly, true);
+  assert.equal(update.body.settings.hasSlackBotToken, true);
+  assert.match(update.body.settings.settingsSavedAt, /T/);
+  const persisted = JSON.parse(fs.readFileSync(config.settingsFile, "utf8")) as Record<string, any>;
+  assert.equal(persisted.chatProvider, "mattermost");
+  assert.equal(persisted.port, 9999);
+  assert.equal(persisted.slackBotToken, "xoxb-test");
+  assert.equal(persisted.autoSplitThreadUserMessageCount, 45);
+
+  const cleared = await postJson(
+    port,
+    "/admin/api/settings",
+    JSON.stringify({
+      clearSlackBotToken: true,
+    }),
+  );
+  assert.equal(cleared.statusCode, 200);
+  assert.equal(cleared.body.settings.hasSlackBotToken, false);
+  assert.equal(config.slackBotToken, undefined);
+  const persistedAfterClear = JSON.parse(fs.readFileSync(config.settingsFile, "utf8")) as Record<
+    string,
+    any
+  >;
+  assert.equal("slackBotToken" in persistedAfterClear, false);
+
+  await admin.stop();
+});
+
+test("AdminServer queues bridge restart requests", async () => {
+  const store = new InMemoryStateStore();
+  const { bridge, auditLogger } = createBridge(store);
+  let restartRequested = false;
+  (bridge as unknown as { requestAdminRestart: () => Promise<void> }).requestAdminRestart = async () => {
+    restartRequested = true;
+  };
+
+  const admin = new AdminServer({
+    config: createConfig(),
+    stateStore: store,
+    auditLogger,
+    bridge,
+  });
+  await admin.start();
+
+  const port = admin.getListeningPort();
+  assert.ok(port);
+
+  const response = await postJson(port, "/admin/api/bridge/restart", "{}");
+  assert.equal(response.statusCode, 202);
+  assert.equal(restartRequested, true);
+
+  await admin.stop();
+});
+
+async function getJson(
+  port: number,
+  path: string,
+): Promise<{ statusCode: number; body: Record<string, any> }> {
+  const response = await getText(port, path);
+  return {
+    statusCode: response.statusCode,
+    body: JSON.parse(response.body) as Record<string, any>,
+  };
+}
+
+async function postJson(
+  port: number,
+  path: string,
+  body: string,
+): Promise<{ statusCode: number; body: Record<string, any> }> {
+  const response = await new Promise<{ statusCode: number; body: string }>((resolve, reject) => {
+    const request = http.request(
+      {
+        agent: false,
+        host: "127.0.0.1",
+        port,
+        path,
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "content-length": Buffer.byteLength(body),
+        },
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        response.on("end", () => {
+          resolve({
+            statusCode: response.statusCode ?? 0,
+            body: Buffer.concat(chunks).toString("utf8"),
+          });
+        });
+      },
+    );
+
+    request.on("error", reject);
+    request.write(body);
+    request.end();
+  });
+
+  return {
+    statusCode: response.statusCode,
+    body: JSON.parse(response.body) as Record<string, any>,
+  };
+}
+
+async function getText(
+  port: number,
+  path: string,
+): Promise<{ statusCode: number; body: string }> {
+  return await new Promise<{ statusCode: number; body: string }>((resolve, reject) => {
+    const request = http.request(
+      {
+        agent: false,
+        host: "127.0.0.1",
+        port,
+        path,
+        method: "GET",
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        response.on("end", () => {
+          resolve({
+            statusCode: response.statusCode ?? 0,
+            body: Buffer.concat(chunks).toString("utf8"),
+          });
+        });
+      },
+    );
+
+    request.on("error", reject);
+    request.end();
+  });
+}
+
+function createBridge(store: InMemoryStateStore): {
+  bridge: BridgeService;
+  chatAdapter: RecordingChatAdapter;
+  agent: RecordingAgent;
+  auditLogger: RecordingAuditLogger;
+} {
+  const config = createConfig();
+  const chatAdapter = new RecordingChatAdapter();
+  const agent = new RecordingAgent("codex");
+  const claudeAgent = new RecordingAgent("claude-code");
+  const auditLogger = new RecordingAuditLogger();
+  return {
+    bridge: new BridgeService({
+      config,
+      stateStore: store,
+      sessionManager: new SessionManager(store),
+      jobQueue: new InlineJobQueue(),
+      chatAdapter,
+      agents: {
+        codex: agent,
+        "claude-code": claudeAgent,
+      },
+      auditLogger,
+    }),
+    chatAdapter,
+    agent,
+    auditLogger,
+  };
+}
+
+async function waitForMicrotasks(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}

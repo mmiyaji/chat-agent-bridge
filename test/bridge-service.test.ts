@@ -29,6 +29,7 @@ function createConfig(): AppConfig {
     port: 8787,
     host: "127.0.0.1",
     defaultWorkingDirectory: "C:/repo",
+    settingsFile: "./.test-tmp/bridge-service-settings.json",
     stateFile: "C:/repo/data/state.json",
     auditLogFile: "C:/repo/data/audit.jsonl",
     codexSessionIndexFile: "C:/repo/data/session_index.jsonl",
@@ -42,6 +43,7 @@ function createConfig(): AppConfig {
     claudeMaxTurns: 8,
     claudeCommandTimeoutMs: 1000,
     claudeMaxRuntimeMs: 10000,
+    autoSplitThreadUserMessageCount: 30,
   };
 }
 
@@ -186,6 +188,27 @@ test("BridgeService reuses the same session for the same thread", async () => {
   assert.equal(sessions.length, 1);
 });
 
+test("BridgeService auto-splits to a new thread after the configured user-message threshold", async () => {
+  const { chatAdapter, store, config, agent } = await startBridge();
+  config.autoSplitThreadUserMessageCount = 2;
+  agent.result = {
+    sessionId: "ignored",
+    summary: "done",
+  };
+
+  await chatAdapter.handler?.(createMessage("first"));
+  await chatAdapter.handler?.(createMessage("second"));
+  await chatAdapter.handler?.(createMessage("third"));
+
+  const sessions = await store.listSessions();
+  assert.equal(chatAdapter.startedThreads.length, 1);
+  assert.match(chatAdapter.startedThreads[0]?.text ?? "", /Auto-split continuation/);
+  assert.match(chatAdapter.posted.find((entry) => /moved to a new thread automatically/.test(entry.text))?.text ?? "", /moved to a new thread automatically/);
+  assert.notEqual(sessions[0]?.thread.threadId, "T1");
+  assert.equal(sessions[0]?.bridgeState?.threadUserMessageCount, 1);
+  assert.equal(chatAdapter.posted.at(-1)?.thread.threadId, sessions[0]?.thread.threadId);
+});
+
 test("BridgeService stores a pending approval when the result indicates write access is needed", async () => {
   const { chatAdapter, store, agent } = await startBridge();
   agent.result = {
@@ -250,7 +273,8 @@ test("BridgeService reruns the pending prompt when approval is given", async () 
   assert.equal(agent.requests.length, 2);
   assert.equal(agent.requests[1].approvalPolicy, "never");
   assert.equal(agent.requests[1].prompt, "edit files");
-  assert.deepEqual(sessions[0].bridgeState, { connectionMode: "bridge-owned" });
+  assert.equal(sessions[0].bridgeState?.connectionMode, "bridge-owned");
+  assert.equal(sessions[0].bridgeState?.threadUserMessageCount, 1);
   assert.equal(records.length, 2);
   assert.equal(rerunRecord?.status, "completed");
   assert.equal(rerunRecord?.rerunOfExecutionId, blockedRecord?.executionId);
@@ -282,7 +306,8 @@ test("BridgeService clears a pending approval when rejected", async () => {
   const sessions = await store.listSessions();
   const records = await store.listExecutionRecords({ limit: 10 });
 
-  assert.deepEqual(sessions[0].bridgeState, { connectionMode: "bridge-owned" });
+  assert.equal(sessions[0].bridgeState?.connectionMode, "bridge-owned");
+  assert.equal(sessions[0].bridgeState?.threadUserMessageCount, 1);
   assert.equal(records[0].status, "rejected");
   assert.match(chatAdapter.posted.at(-1)?.text ?? "", /was cleared/);
 });
@@ -518,9 +543,11 @@ test("BridgeService writes audit events for normal execution", async () => {
 
   await chatAdapter.handler?.(createMessage("do work"));
 
-  assert.equal(auditLogger.events[0]?.type, "bridge.message.received");
-  assert.equal(auditLogger.events[1]?.type, "bridge.execution.started");
-  assert.equal(auditLogger.events[2]?.type, "bridge.execution.completed");
+  const eventTypes = auditLogger.events.map((event) => event.type);
+  assert.equal(eventTypes[0], "bridge.message.received");
+  assert.ok(eventTypes.includes("bridge.execution.started"));
+  assert.ok(eventTypes.includes("bridge.execution.environment"));
+  assert.ok(eventTypes.includes("bridge.execution.completed"));
 });
 
 test("BridgeService help command lists operational commands", async () => {
@@ -553,7 +580,8 @@ test("BridgeService does not keep pending approval when approval policy is never
   await chatAdapter.handler?.(createMessage("make changes"));
   const sessions = await store.listSessions();
 
-  assert.deepEqual(sessions[0].bridgeState, { connectionMode: "bridge-owned" });
+  assert.equal(sessions[0].bridgeState?.connectionMode, "bridge-owned");
+  assert.equal(sessions[0].bridgeState?.threadUserMessageCount, 1);
   assert.equal(chatAdapter.posted.length, 2);
   assert.equal(chatAdapter.posted[1]?.text, "Blocked by read-only sandbox. I need write access to continue.");
 });
@@ -586,7 +614,8 @@ test("BridgeService clears stale pending approval when approval policy is never"
   await chatAdapter.handler?.(createMessage("status"));
   const sessions = await store.listSessions();
 
-  assert.deepEqual(sessions[0].bridgeState, { connectionMode: "bridge-owned" });
+  assert.equal(sessions[0].bridgeState?.connectionMode, "bridge-owned");
+  assert.equal(sessions[0].bridgeState?.threadUserMessageCount, 0);
   assert.match(chatAdapter.posted[0]?.text ?? "", /Pending approval: `no`/);
 });
 

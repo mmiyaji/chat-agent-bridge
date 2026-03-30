@@ -652,7 +652,7 @@ export class SlackAdapter implements ChatAdapter {
     this.stopped = false;
 
     if (this.options.mode === "socket") {
-      await this.startSocketMode();
+      await this.startSocketModeGracefully();
       return;
     }
 
@@ -909,6 +909,20 @@ export class SlackAdapter implements ChatAdapter {
     console.log("Slack adapter connected via Socket Mode.");
   }
 
+  private async startSocketModeGracefully(): Promise<void> {
+    try {
+      await this.startSocketMode();
+    } catch (error) {
+      console.error("Slack Socket Mode initial connect failed.", error);
+      await this.auditLogger.log({
+        type: "slack.socket.connect-failed",
+        phase: "initial",
+        error: error instanceof Error ? error.message : String(error),
+      });
+      this.scheduleSocketReconnect();
+    }
+  }
+
   private scheduleSocketReconnect(): void {
     if (this.socketReconnectTimer || this.stopped) {
       return;
@@ -918,6 +932,11 @@ export class SlackAdapter implements ChatAdapter {
       this.socketReconnectTimer = undefined;
       void this.startSocketMode().catch((error: unknown) => {
         console.error("Slack Socket Mode reconnect failed.", error);
+        void this.auditLogger.log({
+          type: "slack.socket.connect-failed",
+          phase: "reconnect",
+          error: error instanceof Error ? error.message : String(error),
+        });
         this.scheduleSocketReconnect();
       });
     }, 1000);

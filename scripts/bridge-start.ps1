@@ -1,3 +1,7 @@
+param(
+  [switch]$SkipBuild
+)
+
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -7,6 +11,52 @@ $stdoutLog = Join-Path $runtimeDir "bridge.stdout.log"
 $stderrLog = Join-Path $runtimeDir "bridge.stderr.log"
 
 New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
+
+function Get-BridgeProcesses {
+  return @(Get-CimInstance Win32_Process |
+    Where-Object {
+      $_.Name -eq "node.exe" -and
+      $_.CommandLine -match "dist/index.js"
+    } |
+    Sort-Object CreationDate)
+}
+
+function Read-SettingsValue {
+  param(
+    [Parameter(Mandatory = $true)][string]$Key
+  )
+
+  $settingsFile = if ($env:CAB_SETTINGS_FILE) {
+    $env:CAB_SETTINGS_FILE
+  } else {
+    Join-Path $repoRoot "data\admin-settings.json"
+  }
+
+  if (!(Test-Path $settingsFile)) {
+    return $null
+  }
+
+  try {
+    $raw = Get-Content $settingsFile -Raw | ConvertFrom-Json
+    return $raw.$Key
+  } catch {
+    return $null
+  }
+}
+
+function Get-AdminListenerProcessIds {
+  $adminPort = if ($env:CAB_ADMIN_PORT) {
+    [int]$env:CAB_ADMIN_PORT
+  } elseif (Read-SettingsValue "adminPort") {
+    [int](Read-SettingsValue "adminPort")
+  } else {
+    $basePort = if ($env:CAB_PORT) { [int]$env:CAB_PORT } elseif (Read-SettingsValue "port") { [int](Read-SettingsValue "port") } else { 8787 }
+    $basePort + 1
+  }
+
+  return @(Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $adminPort -State Listen -ErrorAction SilentlyContinue |
+    Select-Object -ExpandProperty OwningProcess -Unique)
+}
 
 $requiredOrOptionalEnvNames = @(
   "CAB_ALLOWED_DIRS",
@@ -64,23 +114,44 @@ if ([string]::IsNullOrWhiteSpace((Get-Item "Env:CAB_PORT" -ErrorAction SilentlyC
 }
 
 if (Test-Path $pidFile) {
-  $existingProcessId = Get-Content $pidFile -Raw
-  if ($existingProcessId -and (Get-Process -Id $existingProcessId -ErrorAction SilentlyContinue)) {
-    Write-Output "Bridge is already running with PID $existingProcessId."
-    exit 0
+  $existingProcessId = (Get-Content $pidFile -Raw).Trim()
+  $process = if ($existingProcessId) { Get-Process -Id $existingProcessId -ErrorAction SilentlyContinue } else { $null }
+  if ($process) {
+    $otherBridgeProcesses = @(Get-BridgeProcesses | Where-Object { $_.ProcessId -ne [int]$existingProcessId })
+    if ($otherBridgeProcesses.Count -eq 0) {
+      Write-Output "Bridge is already running with PID $existingProcessId."
+      exit 0
+    }
   }
 
-  Remove-Item $pidFile -Force
+  Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
+}
+
+$staleBridgeProcesses = Get-BridgeProcesses
+foreach ($bridgeProcess in $staleBridgeProcesses) {
+  Stop-Process -Id $bridgeProcess.ProcessId -Force -ErrorAction SilentlyContinue
+  Wait-Process -Id $bridgeProcess.ProcessId -Timeout 10 -ErrorAction SilentlyContinue
+  Write-Output "Stopped stale bridge process $($bridgeProcess.ProcessId)."
+}
+
+$staleAdminListenerProcessIds = Get-AdminListenerProcessIds
+foreach ($processId in ($staleAdminListenerProcessIds | Select-Object -Unique)) {
+  Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+  Wait-Process -Id $processId -Timeout 10 -ErrorAction SilentlyContinue
+  Write-Output "Stopped stale admin-listener process $processId."
 }
 
 Push-Location $repoRoot
 try {
-  npm run build | Out-Host
-
   $nodeCommand = (Get-Command node).Source
+  if (!$SkipBuild) {
+    $npmCli = Join-Path (Split-Path $nodeCommand) "node_modules\npm\bin\npm-cli.js"
+    & $nodeCommand --preserve-symlinks --preserve-symlinks-main $npmCli run build | Out-Host
+  }
+
   $process = Start-Process `
     -FilePath $nodeCommand `
-    -ArgumentList "dist/index.js" `
+    -ArgumentList "--preserve-symlinks", "--preserve-symlinks-main", "dist/index.js" `
     -WorkingDirectory $repoRoot `
     -RedirectStandardOutput $stdoutLog `
     -RedirectStandardError $stderrLog `

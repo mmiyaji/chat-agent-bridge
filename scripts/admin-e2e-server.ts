@@ -1,0 +1,167 @@
+import { AdminServer } from "../src/admin/server.js";
+import { BridgeService } from "../src/core/bridge-service.js";
+import { SessionManager } from "../src/core/session-manager.js";
+import { AppConfig, ExecutionRecord, SessionBinding } from "../src/core/types.js";
+import {
+  InMemoryStateStore,
+  InlineJobQueue,
+  RecordingAgent,
+  RecordingAuditLogger,
+  RecordingChatAdapter,
+} from "../test/helpers/fakes.js";
+
+function createConfig(port: number): AppConfig {
+  return {
+    chatProvider: "slack",
+    agentKind: "codex",
+    allowedDirectories: ["C:/repo"],
+    repoAliases: {
+      repo: "C:/repo",
+    },
+    defaultApprovalPolicy: "manual",
+    networkAccess: "disabled",
+    slackMode: "http",
+    mattermostMode: "http",
+    port: 8787,
+    host: "127.0.0.1",
+    adminHost: "127.0.0.1",
+    adminPort: port,
+    defaultWorkingDirectory: "C:/repo",
+    stateFile: "C:/repo/data/state.json",
+    auditLogFile: "C:/repo/data/audit.jsonl",
+    codexSessionIndexFile: "C:/repo/data/session_index.jsonl",
+    claudeSessionIndexFile: "C:/repo/data/claude_sessions.json",
+    codexModel: "gpt-5.4",
+    codexMaxTurns: 8,
+    codexCommandTimeoutMs: 1000,
+    codexMaxRuntimeMs: 10000,
+    codexMaxOutputLength: 12000,
+    claudeModel: "sonnet",
+    claudeMaxTurns: 8,
+    claudeCommandTimeoutMs: 1000,
+    claudeMaxRuntimeMs: 10000,
+  };
+}
+
+function createSession(): SessionBinding {
+  return {
+    sessionId: "session-e2e-1",
+    agent: "codex",
+    thread: {
+      provider: "slack",
+      channelId: "C-E2E",
+      threadId: "T-E2E",
+    },
+    workingDirectory: "C:/repo",
+    createdAt: "2026-03-30T10:00:00.000Z",
+    updatedAt: "2026-03-30T10:10:00.000Z",
+    bridgeState: {
+      connectionMode: "bridge-owned",
+      approvalPolicyOverride: "manual",
+      pendingApproval: {
+        prompt: "Refine admin screen",
+        requestedAt: "2026-03-30T10:09:00.000Z",
+        reason: "Need approval",
+        executionId: "exec-e2e-2",
+      },
+    },
+  };
+}
+
+function createRecord(overrides?: Partial<ExecutionRecord>): ExecutionRecord {
+  return {
+    executionId: "exec-e2e-1",
+    sessionId: "session-e2e-1",
+    thread: {
+      provider: "slack",
+      channelId: "C-E2E",
+      threadId: "T-E2E",
+    },
+    agent: "codex",
+    prompt: "status",
+    workingDirectory: "C:/repo",
+    approvalPolicy: "manual",
+    networkAccess: "disabled",
+    status: "completed",
+    summary: "done",
+    createdAt: "2026-03-30T10:08:00.000Z",
+    updatedAt: "2026-03-30T10:08:30.000Z",
+    completedAt: "2026-03-30T10:08:30.000Z",
+    ...overrides,
+  };
+}
+
+async function main(): Promise<void> {
+  const port = Number.parseInt(process.env.ADMIN_E2E_PORT ?? "42188", 10);
+  const config = createConfig(port);
+  const store = new InMemoryStateStore();
+  await store.initialize();
+  await store.upsertSession(createSession());
+  await store.upsertExecutionRecord(createRecord());
+  await store.upsertExecutionRecord(
+    createRecord({
+      executionId: "exec-e2e-2",
+      prompt: "Refine admin screen",
+      status: "waiting_for_approval",
+      summary: "Need approval",
+      createdAt: "2026-03-30T10:09:00.000Z",
+      updatedAt: "2026-03-30T10:09:00.000Z",
+    }),
+  );
+  await store.upsertExecutionRecord(
+    createRecord({
+      executionId: "exec-e2e-3",
+      sessionId: "session-e2e-2",
+      status: "failed",
+      error: "Previous run failed",
+      createdAt: "2026-03-30T10:11:00.000Z",
+      updatedAt: "2026-03-30T10:11:10.000Z",
+    }),
+  );
+
+  const chatAdapter = new RecordingChatAdapter();
+  const codexAgent = new RecordingAgent("codex");
+  codexAgent.result = {
+    sessionId: "ignored",
+    summary: "Approval rerun completed.",
+  };
+  const claudeAgent = new RecordingAgent("claude-code");
+  const auditLogger = new RecordingAuditLogger();
+  const bridge = new BridgeService({
+    config,
+    stateStore: store,
+    sessionManager: new SessionManager(store),
+    jobQueue: new InlineJobQueue(),
+    chatAdapter,
+    agents: {
+      codex: codexAgent,
+      "claude-code": claudeAgent,
+    },
+    auditLogger,
+  });
+  await bridge.start();
+
+  const admin = new AdminServer({
+    config,
+    stateStore: store,
+    auditLogger,
+    bridge,
+  });
+  await admin.start();
+
+  const shutdown = async () => {
+    await admin.stop().catch(() => undefined);
+  };
+
+  process.on("SIGINT", () => {
+    void shutdown().finally(() => process.exit(0));
+  });
+  process.on("SIGTERM", () => {
+    void shutdown().finally(() => process.exit(0));
+  });
+}
+
+void main().catch((error) => {
+  console.error("Failed to start admin e2e server.", error);
+  process.exit(1);
+});

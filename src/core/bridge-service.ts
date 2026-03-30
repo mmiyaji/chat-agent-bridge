@@ -24,6 +24,7 @@ import { JobQueue } from "./job-queue.js";
 import { SessionManager } from "./session-manager.js";
 import {
   AgentProgressUpdate,
+  ApprovalPolicy,
   AppConfig,
   ExecutionRecord,
   ExecutionStatus,
@@ -54,6 +55,27 @@ interface StoredAgentSession {
   label?: string;
 }
 
+const EXECUTION_ENV_AUDIT_KEYS = [
+  "HTTP_PROXY",
+  "HTTPS_PROXY",
+  "NO_PROXY",
+  "NPM_CONFIG_PROXY",
+  "NPM_CONFIG_HTTPS_PROXY",
+  "NPM_CONFIG_REGISTRY",
+  "NPM_CONFIG_USERCONFIG",
+  "NPM_CONFIG_CACHE",
+  "NODE_OPTIONS",
+  "npm_config_proxy",
+  "npm_config_https_proxy",
+  "npm_config_registry",
+  "npm_config_userconfig",
+  "npm_config_cache",
+  "PATH",
+  "Path",
+  "ComSpec",
+  "SystemRoot",
+] as const;
+
 function readApprovalPolicyOverride(
   bridgeState: Record<string, JsonValue> | undefined,
 ): AppConfig["defaultApprovalPolicy"] | undefined {
@@ -72,6 +94,13 @@ function readSessionConnectionMode(session: SessionBinding): SessionConnectionMo
   }
 
   return readAgentSessionId(session) ? "attached" : "bridge-owned";
+}
+
+function readThreadUserMessageCount(
+  bridgeState: Record<string, JsonValue> | undefined,
+): number {
+  const value = bridgeState?.threadUserMessageCount;
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : 0;
 }
 
 function readAgentSessionId(session: SessionBinding): string | undefined {
@@ -340,12 +369,66 @@ function formatAgentDisplayName(agentKind: SessionBinding["agent"]): string {
 
 export class BridgeService {
   private readonly startedAt = new Date().toISOString();
+  private readonly restartCompletionLogPath = path.resolve(
+    process.cwd(),
+    "data",
+    "runtime",
+    "restart-completion.log",
+  );
 
   constructor(private readonly deps: BridgeServiceDeps) {}
 
   async start(): Promise<void> {
     await this.deps.stateStore.initialize();
     await this.deps.chatAdapter.start(async (message) => this.handleMessage(message));
+  }
+
+  async dispatchAdminAction(
+    sessionId: string,
+    action: "cancel" | "approve" | "reject",
+  ): Promise<{ accepted: boolean; reason?: string }> {
+    return this.dispatchAdminCommand(sessionId, action);
+  }
+
+  async dispatchAdminCommand(
+    sessionId: string,
+    text: string,
+  ): Promise<{ accepted: boolean; reason?: string }> {
+    const session = await this.findSessionById(sessionId);
+    if (!session) {
+      return {
+        accepted: false,
+        reason: "session-not-found",
+      };
+    }
+
+    const message: IncomingChatMessage = {
+      thread: session.thread,
+      userId: "admin-ui",
+      text,
+      requestedWorkingDirectory: session.workingDirectory,
+    };
+    await this.deps.auditLogger.log({
+      type: "admin.action.dispatched",
+      sessionId,
+      action: text,
+    });
+    queueMicrotask(() => {
+      void this.handleMessage(message).catch((error: unknown) => {
+        console.error("Admin action dispatch failed.", error);
+      });
+    });
+
+    return {
+      accepted: true,
+    };
+  }
+
+  async requestAdminRestart(): Promise<void> {
+    await this.deps.auditLogger.log({
+      type: "admin.restart.requested",
+    });
+    this.scheduleDetachedRestart();
   }
 
   private resolveAgent(kind: SessionBinding["agent"]): Agent {
@@ -359,6 +442,99 @@ export class BridgeService {
 
   private resolveSessionAgent(session: SessionBinding): Agent {
     return this.resolveAgent(session.agent);
+  }
+
+  private async findSessionById(sessionId: string): Promise<SessionBinding | undefined> {
+    const sessions = await this.deps.stateStore.listSessions();
+    return sessions.find((entry) => entry.sessionId === sessionId);
+  }
+
+  private buildSessionBridgeState(
+    session: SessionBinding,
+    overrides?: Record<string, JsonValue>,
+  ): Record<string, JsonValue> {
+    const nextBridgeState: Record<string, JsonValue> = {
+      connectionMode: readSessionConnectionMode(session),
+      threadUserMessageCount: readThreadUserMessageCount(session.bridgeState),
+    };
+    const approvalPolicyOverride = readApprovalPolicyOverride(session.bridgeState);
+    if (approvalPolicyOverride) {
+      nextBridgeState.approvalPolicyOverride = approvalPolicyOverride;
+    }
+    return {
+      ...nextBridgeState,
+      ...(overrides ?? {}),
+    };
+  }
+
+  private async maybeRotateThreadBeforeExecution(
+    session: SessionBinding,
+    incomingThread: IncomingChatMessage["thread"],
+  ): Promise<{ session: SessionBinding; thread: IncomingChatMessage["thread"] }> {
+    const threshold = this.deps.config.autoSplitThreadUserMessageCount;
+    if (threshold < 1) {
+      return { session, thread: incomingThread };
+    }
+
+    const currentCount = readThreadUserMessageCount(session.bridgeState);
+    if (currentCount < threshold) {
+      return { session, thread: incomingThread };
+    }
+
+    const newThread = await this.deps.chatAdapter.startNewThread(
+      incomingThread.channelId,
+      [
+        `Auto-split continuation for session \`${session.sessionId}\`.`,
+        `Agent: \`${session.agent}\``,
+        `Working directory: \`${session.workingDirectory}\``,
+        `The previous thread reached the user-message limit of \`${threshold}\`.`,
+        "Reply in this thread to continue.",
+      ].join("\n"),
+    );
+    if (!newThread) {
+      return { session, thread: incomingThread };
+    }
+
+    const nextSession: SessionBinding = {
+      ...session,
+      thread: newThread,
+      updatedAt: new Date().toISOString(),
+      bridgeState: this.buildSessionBridgeState(session, {
+        threadUserMessageCount: 0,
+      }),
+    };
+    await this.deps.stateStore.upsertSession(nextSession);
+    await this.deps.auditLogger.log({
+      type: "bridge.thread.auto-split",
+      sessionId: session.sessionId,
+      fromThreadId: incomingThread.threadId,
+      toThreadId: newThread.threadId,
+      threshold,
+    });
+    await this.deps.chatAdapter.postThreadMessage(
+      incomingThread,
+      [
+        `Session \`${session.sessionId}\` moved to a new thread automatically after \`${threshold}\` user messages.`,
+        "Continue in the newly created thread. This message will be handled there.",
+      ].join("\n"),
+    );
+
+    return {
+      session: nextSession,
+      thread: newThread,
+    };
+  }
+
+  private async incrementThreadUserMessageCount(session: SessionBinding): Promise<SessionBinding> {
+    const nextSession: SessionBinding = {
+      ...session,
+      updatedAt: new Date().toISOString(),
+      bridgeState: this.buildSessionBridgeState(session, {
+        threadUserMessageCount: readThreadUserMessageCount(session.bridgeState) + 1,
+      }),
+    };
+    await this.deps.stateStore.upsertSession(nextSession);
+    return nextSession;
   }
 
   private async handleMessage(message: IncomingChatMessage): Promise<void> {
@@ -376,6 +552,7 @@ export class BridgeService {
 
     await this.deps.jobQueue.enqueue(session.sessionId, async () => {
       let currentSession = session;
+      let responseThread = message.thread;
       currentSession = await this.clearPendingApprovalIfBypassed(currentSession);
 
       await this.deps.auditLogger.log({
@@ -417,6 +594,11 @@ export class BridgeService {
         }
       }
 
+      const rotated = await this.maybeRotateThreadBeforeExecution(currentSession, message.thread);
+      currentSession = rotated.session;
+      responseThread = rotated.thread;
+      currentSession = await this.incrementThreadUserMessageCount(currentSession);
+
       let progress: Awaited<ReturnType<BridgeService["createProgressReporter"]>> | undefined;
       let executionRecord: ExecutionRecord | undefined;
       try {
@@ -431,7 +613,7 @@ export class BridgeService {
         await this.deps.stateStore.upsertExecutionRecord(executionRecord);
         progress = await this.createProgressReporter(
           currentSession,
-          message.thread,
+          responseThread,
           "running",
           "task started",
         );
@@ -443,6 +625,7 @@ export class BridgeService {
           networkAccess: this.deps.config.networkAccess,
           prompt: message.text,
         });
+        await this.logExecutionEnvironment(currentSession, approvalPolicy);
 
         const result = await sessionAgent.execute({
           session: currentSession,
@@ -481,7 +664,7 @@ export class BridgeService {
           needsApproval ? "waiting for approval" : "completed",
           needsApproval ? "write approval required" : "completed",
         );
-        await this.deps.chatAdapter.postThreadMessage(message.thread, result.summary);
+        await this.deps.chatAdapter.postThreadMessage(responseThread, result.summary);
         await this.deps.auditLogger.log({
           type: "bridge.execution.completed",
           sessionId: currentSession.sessionId,
@@ -497,7 +680,7 @@ export class BridgeService {
             reason: result.summary,
           });
         await this.deps.chatAdapter.postThreadMessage(
-            message.thread,
+            responseThread,
             [
               "Approval required.",
               `Pending request: \`${this.truncateForCode(message.text, 120)}\``,
@@ -523,7 +706,7 @@ export class BridgeService {
             workingDirectory: currentSession.workingDirectory,
           });
           await this.deps.chatAdapter.postThreadMessage(
-            message.thread,
+            responseThread,
             `Execution cancelled for session \`${currentSession.sessionId}\`.`,
           );
           return;
@@ -543,7 +726,7 @@ export class BridgeService {
           error: text,
         });
         await this.deps.chatAdapter.postThreadMessage(
-          message.thread,
+          responseThread,
           `Execution failed for session \`${currentSession.sessionId}\`: ${text}`,
         );
       }
@@ -616,6 +799,9 @@ export class BridgeService {
         ...session,
         thread: newThread,
         updatedAt: new Date().toISOString(),
+        bridgeState: this.buildSessionBridgeState(session, {
+          threadUserMessageCount: 0,
+        }),
       };
       await this.deps.stateStore.upsertSession(nextSession);
       await this.deps.auditLogger.log({
@@ -672,6 +858,8 @@ export class BridgeService {
           updatedAt: new Date().toISOString(),
           bridgeState: {
             ...(forkedSession.bridgeState ?? {}),
+            connectionMode: "bridge-owned",
+            threadUserMessageCount: 0,
             approvalPolicyOverride: approvalPolicy,
           },
         };
@@ -696,6 +884,7 @@ export class BridgeService {
       const pendingApproval = readPendingApproval(session.bridgeState);
       const approvalPolicyOverride = readApprovalPolicyOverride(session.bridgeState);
       const connectionMode = readSessionConnectionMode(session);
+      const threadUserMessageCount = readThreadUserMessageCount(session.bridgeState);
       const latestExecution = (
         await this.deps.stateStore.listExecutionRecords({
           sessionId: session.sessionId,
@@ -726,6 +915,7 @@ export class BridgeService {
           `Latest execution: \`${latestExecution?.executionId ?? "none"}\``,
           `Latest status: \`${latestExecution ? formatExecutionStatus(latestExecution.status) : "none"}\``,
           `Pending approval: \`${pendingApproval ? "yes" : "no"}\``,
+          `Thread user messages: \`${threadUserMessageCount}/${this.deps.config.autoSplitThreadUserMessageCount}\``,
           `Updated at: \`${session.updatedAt}\``,
           pendingApproval
             ? `Pending request: \`${this.truncateForCode(pendingApproval.prompt, 120)}\``
@@ -842,12 +1032,10 @@ export class BridgeService {
         return;
       }
       const nextBridgeState: Record<string, JsonValue> = {
-        connectionMode: "bridge-owned",
+        ...this.buildSessionBridgeState(session, {
+          connectionMode: "bridge-owned",
+        }),
       };
-      const approvalPolicyOverride = readApprovalPolicyOverride(session.bridgeState);
-      if (approvalPolicyOverride) {
-        nextBridgeState.approvalPolicyOverride = approvalPolicyOverride;
-      }
 
       const nextSession: SessionBinding = {
         ...session,
@@ -878,13 +1066,14 @@ export class BridgeService {
         await this.deps.chatAdapter.postThreadMessage(message.thread, `New session failed: ${text}`);
         return;
       }
-      const nextBridgeState: Record<string, JsonValue> = {};
+      const nextBridgeState: Record<string, JsonValue> = this.buildSessionBridgeState(session, {
+        connectionMode: "bridge-owned",
+      });
       const approvalPolicy =
         command.approvalPolicy ?? readApprovalPolicyOverride(session.bridgeState);
       if (approvalPolicy) {
         nextBridgeState.approvalPolicyOverride = approvalPolicy;
       }
-      nextBridgeState.connectionMode = "bridge-owned";
 
       const nextSession: SessionBinding = {
         ...session,
@@ -941,10 +1130,9 @@ export class BridgeService {
       const nextSession: SessionBinding = {
         ...session,
         updatedAt: new Date().toISOString(),
-        bridgeState: {
-          ...(session.bridgeState ?? {}),
+        bridgeState: this.buildSessionBridgeState(session, {
           connectionMode: "bridge-owned",
-        },
+        }),
         agentState: {},
       };
       await this.deps.stateStore.upsertSession(nextSession);
@@ -963,12 +1151,17 @@ export class BridgeService {
       await this.deps.auditLogger.log({
         type: "bridge.command.restart",
         sessionId: session.sessionId,
+        rebuild: command.rebuild,
       });
       await this.deps.chatAdapter.postThreadMessage(
         message.thread,
-        "Bridge restart requested. I will restart the bridge process now and should be available again in a few seconds.",
+        command.rebuild
+          ? "Bridge restart with rebuild requested. I will rebuild and restart the bridge process now. This usually takes longer than a normal restart."
+          : "Bridge restart requested. I will restart the bridge process now and should be available again in a few seconds.",
       );
-      this.scheduleDetachedRestart(message.thread.channelId, message.thread.threadId);
+      this.scheduleDetachedRestart(message.thread.channelId, message.thread.threadId, {
+        rebuild: command.rebuild,
+      });
       return;
     }
 
@@ -1094,8 +1287,9 @@ export class BridgeService {
         ...session,
         updatedAt: new Date().toISOString(),
         bridgeState: {
-          ...(session.bridgeState ?? {}),
-          connectionMode: "bridge-owned",
+          ...this.buildSessionBridgeState(session, {
+            connectionMode: "bridge-owned",
+          }),
           sessionPicker: {
             sessionIds: sessions.map((candidate) => candidate.id),
           },
@@ -1143,7 +1337,10 @@ export class BridgeService {
       const nextSession: SessionBinding = {
         ...session,
         updatedAt: new Date().toISOString(),
-        bridgeState: nextBridgeState,
+        bridgeState: {
+          ...this.buildSessionBridgeState(session),
+          ...nextBridgeState,
+        },
       };
       await this.deps.stateStore.upsertSession(nextSession);
       await this.deps.auditLogger.log({
@@ -1213,7 +1410,9 @@ export class BridgeService {
       ...session,
       updatedAt: new Date().toISOString(),
       bridgeState: {
-        connectionMode: "attached",
+        ...this.buildSessionBridgeState(session, {
+          connectionMode: "attached",
+        }),
       },
       agentState: createAttachedAgentState(session, agentSessionId),
     };
@@ -1348,6 +1547,7 @@ export class BridgeService {
       "approval accepted; rerunning",
     );
     try {
+      await this.logExecutionEnvironment(session, "never");
       const result = await sessionAgent.execute({
         session,
         prompt: pendingApproval.prompt,
@@ -1788,12 +1988,7 @@ export class BridgeService {
       ...session,
       updatedAt: new Date().toISOString(),
     };
-    const nextBridgeState: Record<string, JsonValue> = {};
-    const approvalPolicyOverride = readApprovalPolicyOverride(session.bridgeState);
-    nextBridgeState.connectionMode = readSessionConnectionMode(session);
-    if (approvalPolicyOverride) {
-      nextBridgeState.approvalPolicyOverride = approvalPolicyOverride;
-    }
+    const nextBridgeState = this.buildSessionBridgeState(session);
 
     if (input.agentState) {
       nextSession.agentState = input.agentState;
@@ -1831,9 +2026,7 @@ export class BridgeService {
     const nextSession: SessionBinding = {
       ...session,
       updatedAt: new Date().toISOString(),
-      bridgeState: {
-        connectionMode: readSessionConnectionMode(session),
-      },
+      bridgeState: this.buildSessionBridgeState(session),
     };
 
     await this.deps.stateStore.upsertSession(nextSession);
@@ -1868,7 +2061,11 @@ export class BridgeService {
     return `${normalized.slice(0, maxLength - 3)}...`;
   }
 
-  private scheduleDetachedRestart(channelId?: string, threadId?: string): void {
+  private scheduleDetachedRestart(
+    channelId?: string,
+    threadId?: string,
+    options?: { rebuild?: boolean },
+  ): void {
     const scriptPath = path.resolve(process.cwd(), "scripts", "bridge-restart-detached.ps1");
     const powershellPath = path.join(
       process.env.SystemRoot ?? "C:\\Windows",
@@ -1883,30 +2080,77 @@ export class BridgeService {
       "runtime",
       "bridge.orchestrator.log",
     );
+    fs.mkdirSync(path.dirname(orchestratorLog), { recursive: true });
+    fs.mkdirSync(path.dirname(this.restartCompletionLogPath), { recursive: true });
+    fs.appendFileSync(
+      orchestratorLog,
+      `[${new Date().toISOString()}] scheduling detached restart channel=${channelId ?? ""} thread=${threadId ?? ""} rebuild=${options?.rebuild ? "true" : "false"}\n`,
+      "utf8",
+    );
     const helperArgs = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath];
+    if (options?.rebuild) {
+      helperArgs.push("-Build");
+    }
     if (channelId && threadId) {
       helperArgs.push("-ChannelId", channelId, "-ThreadId", threadId);
     }
 
-    const toPowerShellStringLiteral = (value: string) => `'${value.replace(/'/g, "''")}'`;
-    const startProcessCommand = [
-      `Start-Process -FilePath ${toPowerShellStringLiteral(powershellPath)}`,
-      `-ArgumentList @(${helperArgs.map(toPowerShellStringLiteral).join(", ")})`,
-      "-WindowStyle Hidden",
-    ].join(" ");
-
-    const child = spawn(powershellPath, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", startProcessCommand], {
+    const child = spawn(powershellPath, helperArgs, {
       cwd: process.cwd(),
+      detached: true,
       stdio: "ignore",
       windowsHide: true,
     });
 
+    fs.appendFileSync(
+      orchestratorLog,
+      `[${new Date().toISOString()}] detached restart helper spawned pid=${child.pid ?? "unknown"}\n`,
+      "utf8",
+    );
+
     child.on("error", (error) => {
       const line = `[${new Date().toISOString()}] failed to launch detached restart helper: ${error.message}\n`;
-      fs.mkdirSync(path.dirname(orchestratorLog), { recursive: true });
       fs.appendFileSync(orchestratorLog, line, "utf8");
     });
 
     child.unref();
+  }
+
+  private async logExecutionEnvironment(
+    session: SessionBinding,
+    approvalPolicy: ApprovalPolicy,
+  ): Promise<void> {
+    const parentEnv = EXECUTION_ENV_AUDIT_KEYS.reduce<Record<string, JsonValue>>((acc, key) => {
+      const value = process.env[key];
+      if (typeof value !== "string" || value.length === 0) {
+        return acc;
+      }
+
+      if (key === "PATH" || key === "Path") {
+        acc[key] = value.split(path.delimiter).slice(0, 8);
+        return acc;
+      }
+
+      acc[key] = value;
+      return acc;
+    }, {});
+
+    await this.deps.auditLogger.log({
+      type: "bridge.execution.environment",
+      sessionId: session.sessionId,
+      workingDirectory: session.workingDirectory,
+      approvalPolicy,
+      connectionMode: readSessionConnectionMode(session),
+      parentEnv,
+      childBridgeEnv: {
+        CHAT_AGENT_BRIDGE: "1",
+        CHAT_AGENT_BRIDGE_SESSION_ID: session.sessionId,
+        CHAT_AGENT_BRIDGE_AGENT: session.agent,
+        CHAT_AGENT_BRIDGE_CHAT_PROVIDER: session.thread.provider,
+        CHAT_AGENT_BRIDGE_CHAT_CHANNEL_ID: session.thread.channelId,
+        CHAT_AGENT_BRIDGE_CHAT_THREAD_ID: session.thread.threadId,
+        CHAT_AGENT_BRIDGE_WORKDIR: session.workingDirectory,
+      },
+    });
   }
 }

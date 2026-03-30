@@ -402,6 +402,46 @@ test("SlackAdapter accepts Socket Mode events without HTTP ingress", async () =>
   await adapter.stop();
 });
 
+test("SlackAdapter keeps the bridge alive when initial Socket Mode connect fails", async () => {
+  const auditLogger = new RecordingAuditLogger();
+  let openAttempts = 0;
+  const adapter = new SlackAdapter(
+    {
+      slackMode: "socket",
+      port: 0,
+      host: "127.0.0.1",
+      defaultWorkingDirectory: "C:/repo",
+      slackAppToken: "xapp-test",
+    },
+    auditLogger,
+    {
+      openSocketUrl: async () => "wss://example.invalid/socket",
+      socketConnector: {
+        open: async () => {
+          openAttempts += 1;
+          throw new Error("connect EACCES 1.2.3.4:443");
+        },
+      },
+    },
+  );
+
+  await adapter.start(async () => undefined);
+  await waitForMicrotasks();
+
+  assert.equal(openAttempts, 1);
+  assert.equal(
+    auditLogger.events.some(
+      (event) =>
+        event.type === "slack.socket.connect-failed" &&
+        event.phase === "initial" &&
+        String(event.error).includes("EACCES"),
+    ),
+    true,
+  );
+
+  await adapter.stop();
+});
+
 test("SlackAdapter converts cancel block actions into cancel messages", async () => {
   const auditLogger = new RecordingAuditLogger();
   const adapter = new SlackAdapter(

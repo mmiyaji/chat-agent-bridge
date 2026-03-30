@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import {
   AgentKind,
@@ -176,7 +177,76 @@ function parseBoolean(value: string | undefined): boolean {
   }
 }
 
+function readPersistedSettings(settingsFile: string): Record<string, string | number | boolean> {
+  if (!fs.existsSync(settingsFile)) {
+    return {};
+  }
+
+  const raw = fs.readFileSync(settingsFile, "utf8");
+  const parsed = JSON.parse(raw);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return {};
+  }
+
+  const result: Record<string, string | number | boolean> = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      result[key] = value;
+    }
+  }
+
+  return result;
+}
+
+function readSettingString(
+  envValue: string | undefined,
+  persisted: Record<string, string | number | boolean>,
+  key: string,
+): string | undefined {
+  if (envValue !== undefined && envValue !== "") {
+    return envValue;
+  }
+  const value = persisted[key];
+  return typeof value === "string" ? value : undefined;
+}
+
+function readSettingInteger(
+  envValue: string | undefined,
+  persisted: Record<string, string | number | boolean>,
+  key: string,
+): string | undefined {
+  if (envValue !== undefined && envValue !== "") {
+    return envValue;
+  }
+  const value = persisted[key];
+  if (typeof value === "number") {
+    return String(value);
+  }
+  return typeof value === "string" ? value : undefined;
+}
+
+function readSettingBoolean(
+  envValue: string | undefined,
+  persisted: Record<string, string | number | boolean>,
+  key: string,
+): string | undefined {
+  if (envValue !== undefined && envValue !== "") {
+    return envValue;
+  }
+  const value = persisted[key];
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+  return typeof value === "string" ? value : undefined;
+}
+
 export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
+  const settingsFile = path.resolve(env.CAB_SETTINGS_FILE ?? "./data/admin-settings.json");
+  const persisted = readPersistedSettings(settingsFile);
   const allowedDirectories = parseAllowedDirs(readRequired("CAB_ALLOWED_DIRS", env));
   const defaultAllowedDirectory = allowedDirectories[0];
   if (!defaultAllowedDirectory) {
@@ -184,19 +254,36 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
   }
 
   const config: AppConfig = {
-    chatProvider: parseChatProvider(env.CAB_CHAT_PROVIDER),
-    agentKind: parseAgentKind(env.CAB_AGENT),
+    chatProvider: parseChatProvider(readSettingString(env.CAB_CHAT_PROVIDER, persisted, "chatProvider")),
+    agentKind: parseAgentKind(readSettingString(env.CAB_AGENT, persisted, "agentKind")),
     allowedDirectories,
     repoAliases: parseRepoAliases(env.CAB_REPO_ALIASES, allowedDirectories),
-    defaultApprovalPolicy: parseApprovalPolicy(env.CAB_DEFAULT_APPROVAL_POLICY),
-    networkAccess: parseNetworkAccess(env.CAB_NETWORK_ACCESS),
-    slackMode: parseSlackMode(env.CAB_SLACK_MODE),
-    mattermostMode: parseMattermostMode(env.MATTERMOST_MODE),
-    port: parseInteger("CAB_PORT", env.CAB_PORT, 8787),
-    host: env.CAB_HOST ?? "0.0.0.0",
-    defaultWorkingDirectory: path.resolve(
-      env.CAB_DEFAULT_WORKDIR ?? defaultAllowedDirectory,
+    defaultApprovalPolicy: parseApprovalPolicy(
+      readSettingString(env.CAB_DEFAULT_APPROVAL_POLICY, persisted, "defaultApprovalPolicy"),
     ),
+    networkAccess: parseNetworkAccess(
+      readSettingString(env.CAB_NETWORK_ACCESS, persisted, "networkAccess"),
+    ),
+    slackMode: parseSlackMode(readSettingString(env.CAB_SLACK_MODE, persisted, "slackMode")),
+    mattermostMode: parseMattermostMode(
+      readSettingString(env.MATTERMOST_MODE, persisted, "mattermostMode"),
+    ),
+    port: parseInteger("CAB_PORT", readSettingInteger(env.CAB_PORT, persisted, "port"), 8787),
+    host: readSettingString(env.CAB_HOST, persisted, "host") ?? "0.0.0.0",
+    adminPort: parseInteger(
+      "CAB_ADMIN_PORT",
+      readSettingInteger(env.CAB_ADMIN_PORT, persisted, "adminPort"),
+      8788,
+    ),
+    adminHost:
+      readSettingString(env.CAB_ADMIN_HOST, persisted, "adminHost") ??
+      readSettingString(env.CAB_HOST, persisted, "host") ??
+      "0.0.0.0",
+    defaultWorkingDirectory: path.resolve(
+      readSettingString(env.CAB_DEFAULT_WORKDIR, persisted, "defaultWorkingDirectory") ??
+        defaultAllowedDirectory,
+    ),
+    settingsFile,
     stateFile: path.resolve(env.CAB_STATE_FILE ?? "./data/state.json"),
     auditLogFile: path.resolve(env.CAB_AUDIT_LOG_FILE ?? "./data/audit.jsonl"),
     codexSessionIndexFile: path.resolve(
@@ -205,67 +292,140 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     claudeSessionIndexFile: path.resolve(
       env.CAB_CLAUDE_SESSION_INDEX_FILE ?? "C:/Users/mail/.config/claude/sessions/sessions.json",
     ),
-    codexModel: env.CAB_CODEX_MODEL ?? "gpt-5.4",
-    codexMaxTurns: parseInteger("CAB_CODEX_MAX_TURNS", env.CAB_CODEX_MAX_TURNS, 8),
+    codexModel: readSettingString(env.CAB_CODEX_MODEL, persisted, "codexModel") ?? "gpt-5.4",
+    codexMaxTurns: parseInteger(
+      "CAB_CODEX_MAX_TURNS",
+      readSettingInteger(env.CAB_CODEX_MAX_TURNS, persisted, "codexMaxTurns"),
+      8,
+    ),
     codexCommandTimeoutMs: parseInteger(
       "CAB_CODEX_COMMAND_TIMEOUT_MS",
-      env.CAB_CODEX_COMMAND_TIMEOUT_MS,
+      readSettingInteger(
+        env.CAB_CODEX_COMMAND_TIMEOUT_MS,
+        persisted,
+        "codexCommandTimeoutMs",
+      ),
       600000,
     ),
     codexMaxRuntimeMs: parseInteger(
       "CAB_CODEX_MAX_RUNTIME_MS",
-      env.CAB_CODEX_MAX_RUNTIME_MS,
+      readSettingInteger(env.CAB_CODEX_MAX_RUNTIME_MS, persisted, "codexMaxRuntimeMs"),
       3600000,
     ),
     codexMaxOutputLength: parseInteger(
       "CAB_CODEX_MAX_OUTPUT_LENGTH",
-      env.CAB_CODEX_MAX_OUTPUT_LENGTH,
+      readSettingInteger(
+        env.CAB_CODEX_MAX_OUTPUT_LENGTH,
+        persisted,
+        "codexMaxOutputLength",
+      ),
       12000,
     ),
-    claudeModel: env.CAB_CLAUDE_MODEL ?? "sonnet",
-    claudeMaxTurns: parseInteger("CAB_CLAUDE_MAX_TURNS", env.CAB_CLAUDE_MAX_TURNS, 8),
+    claudeModel: readSettingString(env.CAB_CLAUDE_MODEL, persisted, "claudeModel") ?? "sonnet",
+    claudeMaxTurns: parseInteger(
+      "CAB_CLAUDE_MAX_TURNS",
+      readSettingInteger(env.CAB_CLAUDE_MAX_TURNS, persisted, "claudeMaxTurns"),
+      8,
+    ),
     claudeCommandTimeoutMs: parseInteger(
       "CAB_CLAUDE_COMMAND_TIMEOUT_MS",
-      env.CAB_CLAUDE_COMMAND_TIMEOUT_MS,
+      readSettingInteger(
+        env.CAB_CLAUDE_COMMAND_TIMEOUT_MS,
+        persisted,
+        "claudeCommandTimeoutMs",
+      ),
       600000,
     ),
     claudeMaxRuntimeMs: parseInteger(
       "CAB_CLAUDE_MAX_RUNTIME_MS",
-      env.CAB_CLAUDE_MAX_RUNTIME_MS,
+      readSettingInteger(env.CAB_CLAUDE_MAX_RUNTIME_MS, persisted, "claudeMaxRuntimeMs"),
       3600000,
+    ),
+    autoSplitThreadUserMessageCount: parseInteger(
+      "CAB_AUTO_SPLIT_THREAD_USER_MESSAGE_COUNT",
+      readSettingInteger(
+        env.CAB_AUTO_SPLIT_THREAD_USER_MESSAGE_COUNT,
+        persisted,
+        "autoSplitThreadUserMessageCount",
+      ),
+      30,
     ),
   };
 
-  if (env.SLACK_BOT_TOKEN) {
-    config.slackBotToken = env.SLACK_BOT_TOKEN;
+  {
+    const value = readSettingString(env.SLACK_BOT_TOKEN, persisted, "slackBotToken");
+    if (value) {
+      config.slackBotToken = value;
+    }
   }
 
-  if (env.SLACK_APP_TOKEN) {
-    config.slackAppToken = env.SLACK_APP_TOKEN;
+  {
+    const value = readSettingString(env.SLACK_APP_TOKEN, persisted, "slackAppToken");
+    if (value) {
+      config.slackAppToken = value;
+    }
   }
 
-  if (env.SLACK_SIGNING_SECRET) {
-    config.slackSigningSecret = env.SLACK_SIGNING_SECRET;
+  {
+    const value = readSettingString(
+      env.SLACK_SIGNING_SECRET,
+      persisted,
+      "slackSigningSecret",
+    );
+    if (value) {
+      config.slackSigningSecret = value;
+    }
   }
 
-  if (env.MATTERMOST_SERVER_URL) {
-    config.mattermostServerUrl = env.MATTERMOST_SERVER_URL;
+  {
+    const value = readSettingString(
+      env.MATTERMOST_SERVER_URL,
+      persisted,
+      "mattermostServerUrl",
+    );
+    if (value) {
+      config.mattermostServerUrl = value;
+    }
   }
 
-  if (env.MATTERMOST_BOT_TOKEN) {
-    config.mattermostBotToken = env.MATTERMOST_BOT_TOKEN;
+  {
+    const value = readSettingString(
+      env.MATTERMOST_BOT_TOKEN,
+      persisted,
+      "mattermostBotToken",
+    );
+    if (value) {
+      config.mattermostBotToken = value;
+    }
   }
 
-  if (env.MATTERMOST_WEBHOOK_TOKEN) {
-    config.mattermostWebhookToken = env.MATTERMOST_WEBHOOK_TOKEN;
+  {
+    const value = readSettingString(
+      env.MATTERMOST_WEBHOOK_TOKEN,
+      persisted,
+      "mattermostWebhookToken",
+    );
+    if (value) {
+      config.mattermostWebhookToken = value;
+    }
   }
 
-  if (env.MATTERMOST_ACTION_BASE_URL) {
-    config.mattermostActionBaseUrl = env.MATTERMOST_ACTION_BASE_URL;
+  {
+    const value = readSettingString(
+      env.MATTERMOST_ACTION_BASE_URL,
+      persisted,
+      "mattermostActionBaseUrl",
+    );
+    if (value) {
+      config.mattermostActionBaseUrl = value;
+    }
   }
 
-  if (env.MATTERMOST_DM_ONLY) {
-    config.mattermostDmOnly = parseBoolean(env.MATTERMOST_DM_ONLY);
+  {
+    const value = readSettingBoolean(env.MATTERMOST_DM_ONLY, persisted, "mattermostDmOnly");
+    if (value) {
+      config.mattermostDmOnly = parseBoolean(value);
+    }
   }
 
   return config;

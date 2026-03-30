@@ -20,6 +20,14 @@ interface CodexJsonEvent {
   };
 }
 
+const FILTERED_STDERR_SUBSTRINGS = [
+  "failed to warm featured plugin ids cache",
+  "startup remote plugin sync failed",
+  "remote plugin sync request to https://chatgpt.com/backend-api/plugins/",
+  "Shell snapshot not supported yet for PowerShell",
+  "Transport channel closed, when AuthRequired(",
+] as const;
+
 function trimProgressText(text: string, maxLength: number): string {
   const normalized = text.replace(/\s+/g, " ").trim();
   if (normalized.length <= maxLength) {
@@ -62,6 +70,14 @@ function summarizeStdoutChunk(chunk: string): AgentProgressUpdate[] {
 
 function isNonEmptyString(value: JsonValue | undefined): value is string {
   return typeof value === "string" && value.length > 0;
+}
+
+function sanitizeStderrChunk(chunk: string): string {
+  if (FILTERED_STDERR_SUBSTRINGS.some((needle) => chunk.includes(needle))) {
+    return "";
+  }
+
+  return chunk;
 }
 
 export class CodexAgent implements Agent {
@@ -267,10 +283,16 @@ export class CodexAgent implements Agent {
 
     child.stderr.on("data", (chunk: string) => {
       refreshIdleTimeout();
-      stderrChunks.push(chunk);
+      const sanitized = sanitizeStderrChunk(chunk);
+      if (sanitized.length === 0) {
+        void Promise.resolve(onActivity?.()).catch(() => undefined);
+        return;
+      }
+
+      stderrChunks.push(sanitized);
       const update: AgentProgressUpdate = {
         stream: "stderr",
-        text: trimProgressText(chunk, 160),
+        text: trimProgressText(sanitized, 160),
         urgent: true,
       };
       void Promise.resolve(onActivity?.(update)).catch(() => undefined);

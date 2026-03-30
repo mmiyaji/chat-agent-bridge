@@ -22,6 +22,7 @@ function createClaudeConfig(): AppConfig {
     port: 8787,
     host: "127.0.0.1",
     defaultWorkingDirectory: "C:/repo",
+    settingsFile: "./.test-tmp/claude-settings.json",
     stateFile: "C:/repo/data/state.json",
     auditLogFile: "C:/repo/data/audit.jsonl",
     codexSessionIndexFile: "C:/repo/data/session_index.jsonl",
@@ -35,6 +36,7 @@ function createClaudeConfig(): AppConfig {
     claudeMaxTurns: 8,
     claudeCommandTimeoutMs: 1000,
     claudeMaxRuntimeMs: 10000,
+    autoSplitThreadUserMessageCount: 30,
   };
 }
 

@@ -103,3 +103,20 @@ test("FileStateStore reads older snapshots without execution history", async () 
   assert.equal(sessions.length, 1);
   assert.deepEqual(records, []);
 });
+
+test("FileStateStore recovers from truncated json without crashing", async () => {
+  const { stateFile } = await createStore();
+  await fs.writeFile(stateFile, '{"sessions":[', "utf8");
+
+  const reloaded = new FileStateStore(stateFile);
+  await reloaded.initialize();
+  const sessions = await reloaded.listSessions();
+  const records = await reloaded.listExecutionRecords();
+  const dirEntries = await fs.readdir(path.dirname(stateFile));
+
+  assert.deepEqual(sessions, []);
+  assert.deepEqual(records, []);
+  assert.ok(
+    dirEntries.some((entry) => entry.startsWith("state.json.corrupt.") && entry.endsWith(".json")),
+  );
+});

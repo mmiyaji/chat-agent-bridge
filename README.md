@@ -51,6 +51,8 @@ This mode runs the bridge as a detached Node process, writes a PID file under `d
 | `CAB_ALLOWED_DIRS` | yes | Semicolon-separated list of allowed repository roots |
 | `CAB_CHAT_PROVIDER` | no | Chat provider: `slack` or `mattermost`. Defaults to `slack` |
 | `CAB_AGENT` | no | Default agent for new bridge threads: `codex` or `claude-code`. Defaults to `codex` |
+| `CAB_ADMIN_HOST` | no | Admin server bind host. Defaults to `CAB_HOST` and is LAN-reachable when the bridge host is LAN-reachable |
+| `CAB_ADMIN_PORT` | no | Admin server port. Defaults to `8788` |
 | `CAB_REPO_ALIASES` | no | Optional `alias=path;alias2=path2` mapping used by `repo <alias>` |
 | `CAB_DEFAULT_WORKDIR` | no | Default working directory used for incoming Slack events. Defaults to the first allowed directory |
 | `CAB_HOST` | no | Bind host for the local HTTP server. Defaults to `0.0.0.0` |
@@ -79,6 +81,8 @@ This mode runs the bridge as a detached Node process, writes a PID file under `d
 | `MATTERMOST_DM_ONLY` | no | When `true`, the bridge accepts only direct-message (`D`) channels in Mattermost |
 
 See [docs/architecture.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/architecture.md) for the concrete MVP structure.
+
+The bridge also starts an admin server by default on `http://<bridge-host>:8788/admin`. By default it follows `CAB_HOST`, so if the bridge is bound to a LAN-facing address the admin screen is also reachable from the LAN. Set `CAB_ADMIN_HOST=127.0.0.1` if you want to keep it local-only.
 
 ## Codex adapter notes
 
@@ -147,6 +151,28 @@ The bridge writes JSONL audit records by default to `./data/audit.jsonl`. This l
 - Codex execution start, completion, approval requests, and failures
 
 The bridge state file also persists structured execution history for each session. This history powers thread-local inspection via the `history` bridge command.
+
+## Admin Surface
+
+The local admin server exposes:
+
+- `GET /admin`
+- `GET /admin/settings`
+- `GET /admin/healthz`
+- `GET /admin/api/sessions`
+- `GET /admin/api/sessions/:sessionId`
+- `GET /admin/api/approvals`
+- `GET /admin/api/failures?limit=20`
+- `GET /admin/api/settings`
+- `POST /admin/api/settings`
+- `POST /admin/api/bridge/restart`
+
+The HTML dashboard reads from the same JSON APIs used by admin actions. Runtime settings can be edited from the dashboard, and persisted settings are written to `CAB_SETTINGS_FILE` or `./data/admin-settings.json` by default. Secret fields stay masked; entering a new value rotates it, and the "clear stored ..." toggles remove the persisted secret on save.
+
+For browser-based admin E2E coverage, this repository also includes Playwright fixtures under `e2e/`. After installing dependencies and Playwright browsers, run:
+
+- `npx playwright install`
+- `npm run test:e2e`
 
 ## Slack setup
 

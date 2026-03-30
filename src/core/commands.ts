@@ -21,7 +21,7 @@ export type BridgeCommand =
   | { kind: "detach" }
   | { kind: "set-mode"; approvalPolicy: ApprovalPolicy }
   | { kind: "new-session"; approvalPolicy?: ApprovalPolicy; agent?: AgentKind }
-  | { kind: "restart-bridge" };
+  | { kind: "restart-bridge"; rebuild: boolean };
 
 function parseApprovalPolicy(value: string): ApprovalPolicy | undefined {
   const normalized = value.trim().toLowerCase();
@@ -86,16 +86,8 @@ function parseSessionInitOptions(
   }
 
   return {
-    ...(approvalPolicy
-      ? {
-          approvalPolicy,
-        }
-      : {}),
-    ...(agent
-      ? {
-          agent,
-        }
-      : {}),
+    ...(approvalPolicy ? { approvalPolicy } : {}),
+    ...(agent ? { agent } : {}),
   };
 }
 
@@ -217,14 +209,15 @@ export function parseBridgeCommand(text: string): BridgeCommand | undefined {
     return { kind: "set-mode", approvalPolicy };
   }
 
-  if (
-    lower === "restart" ||
-    lower === "restart bridge" ||
-    lower === "bridge restart" ||
-    lower === "再起動" ||
-    lower === "ブリッジ再起動"
-  ) {
-    return { kind: "restart-bridge" };
+  const restartMatch =
+    /^(?:restart(?:\s+bridge)?|bridge\s+restart|再起動|ブリッジ再起動)(?:\s+(rebuild|build|with-build|with-rebuild))?$/i.exec(
+      normalized,
+    );
+  if (restartMatch) {
+    return {
+      kind: "restart-bridge",
+      rebuild: Boolean(restartMatch[1]),
+    };
   }
 
   const attachMatch = /^attach\s+(.+)$/i.exec(normalized);

@@ -6,3 +6,5 @@ data/
 .test-dist/
 .tmp-*
 nodecheck-sandbox.js
+playwright-report/
+test-results/

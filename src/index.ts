@@ -9,6 +9,7 @@ import { SessionManager } from "./core/session-manager.js";
 import { InMemoryJobQueue } from "./core/job-queue.js";
 import { FileStateStore } from "./state/file-state-store.js";
 import { FileAuditLogger } from "./core/audit.js";
+import { AdminServer } from "./admin/server.js";
 
 async function main(): Promise<void> {
   const config = createAppConfig(process.env);
@@ -35,7 +36,15 @@ async function main(): Promise<void> {
     auditLogger,
   });
 
+  const adminServer = new AdminServer({
+    config,
+    stateStore: store,
+    auditLogger,
+    bridge,
+  });
+
   await bridge.start();
+  await adminServer.start();
 }
 
 main().catch((error: unknown) => {

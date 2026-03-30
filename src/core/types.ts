@@ -105,6 +105,8 @@ export interface AppConfig {
   mattermostMode: MattermostMode;
   port: number;
   host: string;
+  adminPort?: number;
+  adminHost?: string;
   defaultWorkingDirectory: string;
   slackBotToken?: string;
   slackAppToken?: string;
@@ -114,6 +116,7 @@ export interface AppConfig {
   mattermostWebhookToken?: string;
   mattermostActionBaseUrl?: string;
   mattermostDmOnly?: boolean;
+  settingsFile: string;
   stateFile: string;
   auditLogFile: string;
   codexSessionIndexFile: string;
@@ -127,6 +130,7 @@ export interface AppConfig {
   claudeMaxTurns: number;
   claudeCommandTimeoutMs: number;
   claudeMaxRuntimeMs: number;
+  autoSplitThreadUserMessageCount: number;
 }
 
 export interface StateSnapshot {
