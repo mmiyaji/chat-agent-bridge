@@ -260,6 +260,10 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     config.mattermostWebhookToken = env.MATTERMOST_WEBHOOK_TOKEN;
   }
 
+  if (env.MATTERMOST_ACTION_BASE_URL) {
+    config.mattermostActionBaseUrl = env.MATTERMOST_ACTION_BASE_URL;
+  }
+
   if (env.MATTERMOST_DM_ONLY) {
     config.mattermostDmOnly = parseBoolean(env.MATTERMOST_DM_ONLY);
   }

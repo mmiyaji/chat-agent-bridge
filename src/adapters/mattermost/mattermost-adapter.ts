@@ -1,9 +1,10 @@
+import crypto from "node:crypto";
 import http, { IncomingMessage, ServerResponse } from "node:http";
 import https from "node:https";
 import querystring from "node:querystring";
 import { AuditLogger, NoopAuditLogger } from "../../core/audit.js";
 import { AppConfig, ChatThreadRef, IncomingChatMessage } from "../../core/types.js";
-import { ChatAdapter, ChatMessageHandler, ChatMessageOptions } from "../chat.js";
+import { ChatAction, ChatAdapter, ChatMessageHandler, ChatMessageOptions } from "../chat.js";
 
 interface MattermostWebhookPayload {
   token?: string;
@@ -22,7 +23,7 @@ interface MattermostPost {
   channel_id?: string;
   message?: string;
   user_id?: string;
-  props?: Record<string, string>;
+  props?: Record<string, unknown>;
 }
 
 interface MattermostPostResponse {
@@ -53,6 +54,17 @@ interface MattermostWebSocketEvent {
   };
 }
 
+interface MattermostActionRequest {
+  user_id?: string;
+  post_id?: string;
+  channel_id?: string;
+  team_id?: string;
+  context?: {
+    action?: string;
+    token?: string;
+  };
+}
+
 interface MattermostSocketLike {
   addEventListener(type: string, listener: (event: { data?: unknown }) => void): void;
   removeEventListener?(type: string, listener: (event: { data?: unknown }) => void): void;
@@ -68,6 +80,7 @@ interface MattermostAdapterOptions {
   serverUrl?: string;
   botToken?: string;
   webhookToken?: string;
+  actionBaseUrl?: string;
   dmOnly?: boolean;
 }
 
@@ -163,6 +176,7 @@ export class MattermostAdapter implements ChatAdapter {
   private selfUsername: string | undefined;
   private stopped = false;
   private readonly channelTypeCache = new Map<string, string>();
+  private readonly actionToken = crypto.randomUUID();
 
   constructor(
     config: Pick<
@@ -174,6 +188,7 @@ export class MattermostAdapter implements ChatAdapter {
       | "mattermostServerUrl"
       | "mattermostBotToken"
       | "mattermostWebhookToken"
+      | "mattermostActionBaseUrl"
       | "mattermostDmOnly"
     >,
     auditLogger?: AuditLogger,
@@ -202,6 +217,11 @@ export class MattermostAdapter implements ChatAdapter {
             botToken: config.mattermostBotToken,
           }
         : {}),
+      ...(config.mattermostActionBaseUrl
+        ? {
+            actionBaseUrl: config.mattermostActionBaseUrl,
+          }
+        : {}),
       ...(config.mattermostWebhookToken
         ? {
             webhookToken: config.mattermostWebhookToken,
@@ -226,11 +246,6 @@ export class MattermostAdapter implements ChatAdapter {
   async start(handler: ChatMessageHandler): Promise<void> {
     this.handler = handler;
     this.stopped = false;
-    if (this.options.mode === "websocket") {
-      await this.startWebSocketMode();
-      return;
-    }
-
     this.server = http.createServer(async (request, response) => {
       await this.handleHttpRequest(request, response);
     });
@@ -241,8 +256,13 @@ export class MattermostAdapter implements ChatAdapter {
     });
 
     console.log(
-      `Mattermost adapter listening on http://${this.options.host}:${this.options.port}/mattermost/events`,
+      `Mattermost adapter listening on http://${this.options.host}:${this.getListeningPort() ?? this.options.port}/mattermost/events`,
     );
+
+    if (this.options.mode === "websocket") {
+      await this.startWebSocketMode();
+      return;
+    }
   }
 
   async stop(): Promise<void> {
@@ -287,11 +307,16 @@ export class MattermostAdapter implements ChatAdapter {
   async startNewThread(
     channelId: string,
     text: string,
-    _options?: ChatMessageOptions,
+    options?: ChatMessageOptions,
   ): Promise<ChatThreadRef | undefined> {
     const post = await this.createPost({
       channelId,
       text,
+      ...(options
+        ? {
+            options,
+          }
+        : {}),
     });
     if (!post.id) {
       return undefined;
@@ -307,12 +332,17 @@ export class MattermostAdapter implements ChatAdapter {
   async postThreadMessage(
     thread: ChatThreadRef,
     text: string,
-    _options?: ChatMessageOptions,
+    options?: ChatMessageOptions,
   ): Promise<string | undefined> {
     const post = await this.createPost({
       channelId: thread.channelId,
       text,
       rootId: thread.threadId,
+      ...(options
+        ? {
+            options,
+          }
+        : {}),
     });
     return post.id;
   }
@@ -321,7 +351,7 @@ export class MattermostAdapter implements ChatAdapter {
     _thread: ChatThreadRef,
     messageId: string,
     text: string,
-    _options?: ChatMessageOptions,
+    options?: ChatMessageOptions,
   ): Promise<void> {
     if (!this.options.serverUrl || !this.options.botToken) {
       throw new Error("Mattermost update requires MATTERMOST_SERVER_URL and MATTERMOST_BOT_TOKEN.");
@@ -336,6 +366,7 @@ export class MattermostAdapter implements ChatAdapter {
       },
       body: JSON.stringify({
         message: text,
+        props: this.buildPostProps(text, options),
       }),
     });
   }
@@ -344,6 +375,11 @@ export class MattermostAdapter implements ChatAdapter {
     request: IncomingMessage,
     response: ServerResponse,
   ): Promise<void> {
+    if (request.method === "GET" && request.url === "/healthz") {
+      writeJson(response, 200, { ok: true });
+      return;
+    }
+
     if (request.method !== "POST") {
       writeJson(response, 404, { error: "Not found" });
       return;
@@ -351,6 +387,12 @@ export class MattermostAdapter implements ChatAdapter {
 
     try {
       const rawBody = await readRawBody(request);
+
+      if (request.url === "/mattermost/actions") {
+        await this.handleActionRequest(rawBody, response);
+        return;
+      }
+
       const payload = querystring.parse(rawBody.toString("utf8")) as Record<string, string>;
       if (this.options.webhookToken && payload.token !== this.options.webhookToken) {
         await this.auditLogger.log({
@@ -382,6 +424,84 @@ export class MattermostAdapter implements ChatAdapter {
       });
       writeJson(response, 400, { error: text });
     }
+  }
+
+  private async handleActionRequest(rawBody: Buffer, response: ServerResponse): Promise<void> {
+    const payload = JSON.parse(rawBody.toString("utf8")) as MattermostActionRequest;
+    const action = payload.context?.action;
+    const token = payload.context?.token;
+    if (
+      this.options.webhookToken &&
+      (token !== this.options.webhookToken && token !== this.actionToken)
+    ) {
+      await this.auditLogger.log({
+        type: "mattermost.action.rejected",
+        reason: "invalid-token",
+        action: action ?? "",
+      });
+      writeJson(response, 401, {
+        error: {
+          message: "Invalid Mattermost action token.",
+        },
+      });
+      return;
+    }
+
+    if (!action || !payload.channel_id || !payload.user_id || !payload.post_id) {
+      writeJson(response, 400, {
+        error: {
+          message: "Invalid Mattermost action payload.",
+        },
+      });
+      return;
+    }
+
+    const command =
+      action === "approve" || action === "reject" || action === "cancel" ? action : undefined;
+    if (!command) {
+      writeJson(response, 400, {
+        error: {
+          message: "Unsupported Mattermost action.",
+        },
+      });
+      return;
+    }
+
+    const post = await this.readPost(payload.post_id);
+    const threadId = post?.root_id || post?.id || payload.post_id;
+    await this.auditLogger.log({
+      type: "mattermost.action.received",
+      action: command,
+      channelId: payload.channel_id,
+      threadId,
+      userId: payload.user_id,
+    });
+
+    if (this.handler) {
+      queueMicrotask(() => {
+        void this.handler?.({
+          thread: {
+            provider: "mattermost",
+            channelId: payload.channel_id ?? "",
+            threadId,
+          },
+          userId: payload.user_id ?? "",
+          text: command,
+          requestedWorkingDirectory: this.options.defaultWorkingDirectory,
+        }).catch((error: unknown) => {
+          console.error("Mattermost action handler failed.", error);
+        });
+      });
+    }
+
+    writeJson(response, 200, {
+      ephemeral_text:
+        command === "cancel"
+          ? "Cancellation requested."
+          : command === "approve"
+            ? "Approval received. Re-running."
+            : "Pending approval cleared.",
+    });
   }
 
   private async processIncomingPayload(
@@ -665,6 +785,7 @@ export class MattermostAdapter implements ChatAdapter {
     channelId: string;
     text: string;
     rootId?: string;
+    options?: ChatMessageOptions;
   }): Promise<MattermostPostResponse> {
     if (!this.options.serverUrl || !this.options.botToken) {
       throw new Error("Mattermost posting requires MATTERMOST_SERVER_URL and MATTERMOST_BOT_TOKEN.");
@@ -680,9 +801,7 @@ export class MattermostAdapter implements ChatAdapter {
       body: JSON.stringify({
         channel_id: input.channelId,
         message: input.text,
-        props: {
-          chat_agent_bridge: "1",
-        },
+        props: this.buildPostProps(input.text, input.options),
         ...(input.rootId
           ? {
               root_id: input.rootId,
@@ -690,5 +809,69 @@ export class MattermostAdapter implements ChatAdapter {
           : {}),
       }),
     });
+  }
+
+  private buildPostProps(text: string, options?: ChatMessageOptions): Record<string, unknown> {
+    const props: Record<string, unknown> = {
+      chat_agent_bridge: "1",
+    };
+    const attachments = this.buildAttachments(text, options?.actions);
+    if (attachments.length > 0) {
+      props.attachments = attachments;
+    }
+    return props;
+  }
+
+  private buildAttachments(
+    text: string,
+    actions?: ChatAction[],
+  ): Array<Record<string, unknown>> {
+    const actionUrl = this.resolveActionUrl();
+    if (!actionUrl || !actions || actions.length === 0) {
+      return [];
+    }
+
+    return [
+      {
+        text,
+        actions: actions.map((action) => ({
+          id: action.id.replace(/[^a-zA-Z0-9]/g, ""),
+          type: "button",
+          name: action.label,
+          style: this.mapActionStyle(action.style),
+          integration: {
+            url: actionUrl,
+            context: {
+              action: action.value ?? action.id,
+              token: this.options.webhookToken ?? this.actionToken,
+            },
+          },
+        })),
+      },
+    ];
+  }
+
+  private resolveActionUrl(): string | undefined {
+    if (this.options.actionBaseUrl) {
+      return new URL("/mattermost/actions", this.options.actionBaseUrl).toString();
+    }
+
+    if (!this.options.host || this.options.host === "0.0.0.0" || this.options.host === "::") {
+      return undefined;
+    }
+
+    const port = this.getListeningPort() ?? this.options.port;
+    return `http://${this.options.host}:${port}/mattermost/actions`;
+  }
+
+  private mapActionStyle(style: ChatAction["style"]): string {
+    switch (style) {
+      case "primary":
+        return "primary";
+      case "danger":
+        return "danger";
+      default:
+        return "default";
+    }
   }
 }

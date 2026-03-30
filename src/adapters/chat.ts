@@ -2,8 +2,16 @@ import { ChatThreadRef, IncomingChatMessage } from "../core/types.js";
 
 export type ChatMessageHandler = (message: IncomingChatMessage) => Promise<void>;
 
+export interface ChatAction {
+  id: string;
+  label: string;
+  value?: string;
+  style?: "default" | "primary" | "danger";
+}
+
 export interface ChatMessageOptions {
   blocks?: unknown[];
+  actions?: ChatAction[];
 }
 
 export interface ChatAdapter {

@@ -1,5 +1,5 @@
 import { Agent, AgentExecutionCancelledError, AgentRegistry } from "../agents/base.js";
-import { ChatAdapter } from "../adapters/chat.js";
+import { ChatAction, ChatAdapter } from "../adapters/chat.js";
 import { readLatestCodexSession, readRecentCodexSessions } from "../agents/codex/session-index.js";
 import { readLatestClaudeSession, readRecentClaudeSessions } from "../agents/claude/session-index.js";
 import crypto from "node:crypto";
@@ -235,6 +235,23 @@ function formatProgressDetail(detail: string): string {
   }
 }
 
+function buildApprovalActions(): ChatAction[] {
+  return [
+    {
+      id: "cab_approve",
+      label: "Approve and rerun",
+      value: "approve",
+      style: "primary",
+    },
+    {
+      id: "cab_reject",
+      label: "Reject",
+      value: "reject",
+      style: "danger",
+    },
+  ];
+}
+
 function buildApprovalBlocks(): unknown[] {
   return [
     {
@@ -247,30 +264,28 @@ function buildApprovalBlocks(): unknown[] {
     },
     {
       type: "actions",
-      elements: [
-        {
-          type: "button",
-          action_id: "cab_approve",
-          text: {
-            type: "plain_text",
-            text: "Approve and rerun",
-            emoji: true,
-          },
-          style: "primary",
-          value: "approve",
+      elements: buildApprovalActions().map((action) => ({
+        type: "button",
+        action_id: action.id,
+        text: {
+          type: "plain_text",
+          text: action.label,
+          emoji: true,
         },
-        {
-          type: "button",
-          action_id: "cab_reject",
-          text: {
-            type: "plain_text",
-            text: "Reject",
-            emoji: true,
-          },
-          style: "danger",
-          value: "reject",
-        },
-      ],
+        style: action.style,
+        value: action.value,
+      })),
+    },
+  ];
+}
+
+function buildCancelActions(): ChatAction[] {
+  return [
+    {
+      id: "cab_cancel",
+      label: "Cancel",
+      value: "cancel",
+      style: "danger",
     },
   ];
 }
@@ -279,19 +294,17 @@ function buildCancelBlocks(): unknown[] {
   return [
     {
       type: "actions",
-      elements: [
-        {
-          type: "button",
-          action_id: "cab_cancel",
-          text: {
-            type: "plain_text",
-            text: "Cancel",
-            emoji: true,
-          },
-          style: "danger",
-          value: "cancel",
+      elements: buildCancelActions().map((action) => ({
+        type: "button",
+        action_id: action.id,
+        text: {
+          type: "plain_text",
+          text: action.label,
+          emoji: true,
         },
-      ],
+        style: action.style,
+        value: action.value,
+      })),
     },
   ];
 }
@@ -483,7 +496,7 @@ export class BridgeService {
             prompt: message.text,
             reason: result.summary,
           });
-          await this.deps.chatAdapter.postThreadMessage(
+        await this.deps.chatAdapter.postThreadMessage(
             message.thread,
             [
               "Approval required.",
@@ -492,6 +505,7 @@ export class BridgeService {
             ].join("\n"),
             {
               blocks: buildApprovalBlocks(),
+              actions: buildApprovalActions(),
             },
           );
         }
@@ -1458,6 +1472,11 @@ export class BridgeService {
       progressText,
       {
         blocks: buildProgressBlocks(progressText, status),
+        ...(status === "running"
+          ? {
+              actions: buildCancelActions(),
+            }
+          : {}),
       },
     );
     let lastUpdateAt = Date.now();
@@ -1535,6 +1554,11 @@ export class BridgeService {
           this.formatProgressMessage(session, status, detail, recentOutput),
           status,
         ),
+        ...(status === "running"
+          ? {
+              actions: buildCancelActions(),
+            }
+          : {}),
       },
     );
   }

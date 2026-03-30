@@ -112,6 +112,7 @@ export interface AppConfig {
   mattermostServerUrl?: string;
   mattermostBotToken?: string;
   mattermostWebhookToken?: string;
+  mattermostActionBaseUrl?: string;
   mattermostDmOnly?: boolean;
   stateFile: string;
   auditLogFile: string;

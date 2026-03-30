@@ -204,6 +204,29 @@ test("BridgeService stores a pending approval when the result indicates write ac
   assert.match(chatAdapter.posted[2].text, /Approval required/);
 });
 
+test("BridgeService includes provider-neutral approval actions for Mattermost threads", async () => {
+  const { chatAdapter, agent } = await startBridge();
+  agent.result = {
+    sessionId: "ignored",
+    summary: "Blocked by read-only sandbox. I need write access to continue.",
+  };
+
+  await chatAdapter.handler?.({
+    ...createMessage("make changes"),
+    thread: {
+      provider: "mattermost",
+      channelId: "DM1",
+      threadId: "POST1",
+    },
+  });
+
+  const approvalMessage = chatAdapter.posted.find((entry) => /Approval required/.test(entry.text));
+  assert.deepEqual(
+    approvalMessage?.options?.actions?.map((action) => action.value ?? action.id),
+    ["approve", "reject"],
+  );
+});
+
 test("BridgeService reruns the pending prompt when approval is given", async () => {
   const { chatAdapter, store, agent } = await startBridge();
   agent.result = {

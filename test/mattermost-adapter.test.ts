@@ -114,6 +114,81 @@ test("MattermostAdapter starts a new thread via the posts API", async () => {
   });
 });
 
+test("MattermostAdapter includes interactive actions in post props when configured", async () => {
+  const adapter = new MattermostAdapter(
+    {
+      port: 0,
+      host: "127.0.0.1",
+      defaultWorkingDirectory: "C:/repo",
+      mattermostMode: "http",
+      mattermostServerUrl: "https://mattermost.example.local",
+      mattermostBotToken: "bot-token",
+      mattermostActionBaseUrl: "http://bridge.lan:8787",
+    },
+    undefined,
+    {
+      mattermostApiFetch: async <T>(input: {
+        url: string;
+        method: string;
+        headers: Record<string, string>;
+        body?: string;
+      }) => {
+        const body = JSON.parse(input.body ?? "{}") as {
+          props?: {
+            attachments?: Array<{
+              actions?: Array<{
+                id?: string;
+                integration?: {
+                  url?: string;
+                  context?: {
+                    action?: string;
+                    token?: string;
+                  };
+                };
+              }>;
+            }>;
+          };
+        };
+        assert.equal(input.method, "POST");
+        assert.match(input.url, /\/api\/v4\/posts$/);
+        assert.equal(body.props?.attachments?.[0]?.actions?.[0]?.id, "cabapprove");
+        assert.equal(
+          body.props?.attachments?.[0]?.actions?.[0]?.integration?.url,
+          "http://bridge.lan:8787/mattermost/actions",
+        );
+        assert.equal(
+          body.props?.attachments?.[0]?.actions?.[0]?.integration?.context?.action,
+          "approve",
+        );
+        assert.ok(body.props?.attachments?.[0]?.actions?.[0]?.integration?.context?.token);
+        return {
+          id: "reply-post",
+          channel_id: "channel-1",
+        } as T;
+      },
+    },
+  );
+
+  await adapter.postThreadMessage(
+    {
+      provider: "mattermost",
+      channelId: "channel-1",
+      threadId: "root-post",
+    },
+    "Approval required.",
+    {
+      actions: [
+        {
+          id: "cab_approve",
+          label: "Approve and rerun",
+          value: "approve",
+          style: "primary",
+        },
+      ],
+    },
+  );
+});
+
 test("MattermostAdapter accepts slash commands with a synthetic thread id", async () => {
   const adapter = new MattermostAdapter(
     {
@@ -215,6 +290,66 @@ test("MattermostAdapter filters non-DM slash commands when dm-only is enabled", 
 
   await waitForMicrotasks();
   assert.deepEqual(received, []);
+  await adapter.stop();
+});
+
+test("MattermostAdapter converts interactive actions into bridge commands", async () => {
+  const adapter = new MattermostAdapter(
+    {
+      port: 0,
+      host: "127.0.0.1",
+      defaultWorkingDirectory: "C:/repo",
+      mattermostMode: "http",
+      mattermostServerUrl: "https://mattermost.example.local",
+      mattermostBotToken: "bot-token",
+      mattermostWebhookToken: "hook-token",
+    },
+    undefined,
+    {
+      mattermostApiFetch: async <T>(input: {
+        url: string;
+        method: string;
+        headers: Record<string, string>;
+        body?: string;
+      }) => {
+        assert.match(input.url, /\/api\/v4\/posts\/approval-post$/);
+        return {
+          id: "approval-post",
+          root_id: "root-post",
+          channel_id: "channel-1",
+        } as T;
+      },
+    },
+  );
+
+  const received: Array<{ text: string; threadId: string }> = [];
+  await adapter.start(async (message) => {
+    received.push({
+      text: message.text,
+      threadId: message.thread.threadId,
+    });
+  });
+
+  const port = adapter.getListeningPort();
+  assert.ok(port);
+
+  const responseBody = await postJson({
+    port,
+    path: "/mattermost/actions",
+    body: JSON.stringify({
+      user_id: "user-1",
+      post_id: "approval-post",
+      channel_id: "channel-1",
+      context: {
+        action: "approve",
+        token: "hook-token",
+      },
+    }),
+  });
+
+  assert.match(responseBody, /Approval received/);
+  await waitForMicrotasks();
+  assert.deepEqual(received, [{ text: "approve", threadId: "root-post" }]);
   await adapter.stop();
 });
 
@@ -439,6 +574,37 @@ async function postToPath(input: { port: number; path: string; body: string }): 
         headers: {
           connection: "close",
           "content-type": "application/x-www-form-urlencoded",
+          "content-length": Buffer.byteLength(input.body).toString(),
+        },
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        response.on("end", () => {
+          resolve(Buffer.concat(chunks).toString("utf8"));
+        });
+      },
+    );
+
+    request.on("error", reject);
+    request.end(input.body);
+  });
+}
+
+async function postJson(input: { port: number; path: string; body: string }): Promise<string> {
+  return await new Promise<string>((resolve, reject) => {
+    const request = http.request(
+      {
+        agent: false,
+        host: "127.0.0.1",
+        port: input.port,
+        path: input.path,
+        method: "POST",
+        headers: {
+          connection: "close",
+          "content-type": "application/json",
           "content-length": Buffer.byteLength(input.body).toString(),
         },
       },

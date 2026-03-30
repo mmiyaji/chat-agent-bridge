@@ -74,6 +74,7 @@ This mode runs the bridge as a detached Node process, writes a PID file under `d
 | `MATTERMOST_SERVER_URL` | no | Base URL for the Mattermost server, for example `http://mattermost.lan:8065` |
 | `MATTERMOST_BOT_TOKEN` | no | Mattermost personal access token or bot token used for post reads/writes |
 | `MATTERMOST_WEBHOOK_TOKEN` | no | Shared token expected from the Mattermost outgoing webhook |
+| `MATTERMOST_ACTION_BASE_URL` | no | Public base URL used in Mattermost interactive button callbacks, for example `http://bridge.lan:8787` |
 | `MATTERMOST_MODE` | no | Mattermost ingress mode: `http` or `websocket`. Defaults to `http` |
 | `MATTERMOST_DM_ONLY` | no | When `true`, the bridge accepts only direct-message (`D`) channels in Mattermost |
 
@@ -125,6 +126,7 @@ When `CAB_CHAT_PROVIDER=mattermost`, the bridge exposes:
 
 - `POST /mattermost/events`
 - `POST /mattermost/commands`
+- `POST /mattermost/actions`
 
 In `MATTERMOST_MODE=http`, these endpoints are intended for Mattermost on the same LAN. The bridge supports outgoing webhooks for normal public-channel message ingress, and slash commands for private channels or DMs. For webhook events, the bridge reads the incoming `post_id`, resolves the root thread via the Mattermost API, and then posts replies back through the Mattermost REST API. For slash commands without an existing thread context, the bridge uses a synthetic per-channel/per-user thread key.
 
@@ -218,16 +220,18 @@ For the current Mattermost MVP, configure:
 If `MATTERMOST_MODE=http`, also configure:
 
 - `MATTERMOST_WEBHOOK_TOKEN`
+- `MATTERMOST_ACTION_BASE_URL`
 - an outgoing webhook in Mattermost pointing to `http://<bridge-host>:8787/mattermost/events`
 - optionally, a slash command such as `/cab` pointing to `http://<bridge-host>:8787/mattermost/commands`
 
-If `MATTERMOST_MODE=websocket`, the bridge consumes posts directly over the Mattermost WebSocket API and does not need the webhook endpoints for ingress.
+If `MATTERMOST_MODE=websocket`, the bridge consumes posts directly over the Mattermost WebSocket API and does not need the webhook endpoints for ingress. If you want approval and cancel buttons in Mattermost posts, set `MATTERMOST_ACTION_BASE_URL` so the buttons can call back into `/mattermost/actions`.
 
 When `MATTERMOST_DM_ONLY=true`, Mattermost ingress is still limited to direct-message channels, but a new root post still needs an explicit mention to start a bridge session. Bridge-authored replies are tagged and ignored to prevent loops.
 
 Current Mattermost scope:
 
 - ingress is HTTP outgoing webhooks, slash commands, or WebSocket events
+- approval and cancel buttons are available when `MATTERMOST_ACTION_BASE_URL` is configured
 - thread replies and new threads are posted through the Mattermost REST API
 - thread identity is resolved from the incoming `post_id` using `GET /api/v4/posts/{post_id}`
 - slash commands without thread context are grouped by `channel_id + user_id`
