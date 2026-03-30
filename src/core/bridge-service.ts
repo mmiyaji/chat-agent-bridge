@@ -162,6 +162,7 @@ function readSessionPicker(
 
 const PROGRESS_UPDATE_INTERVAL_MS = 20_000;
 const MAX_PROGRESS_LINES = 4;
+const RESTART_COMPLETION_FLUSH_INTERVAL_MS = 2_000;
 const PROGRESS_COPY = {
   heading: {
     running: "Received your request for session",
@@ -367,20 +368,48 @@ function formatAgentDisplayName(agentKind: SessionBinding["agent"]): string {
   }
 }
 
+function appendRestartLog(orchestratorLog: string, line: string): void {
+  try {
+    fs.appendFileSync(orchestratorLog, line, "utf8");
+  } catch (error) {
+    const errorCode =
+      error instanceof Error && "code" in error ? String((error as NodeJS.ErrnoException).code) : "";
+    if (errorCode === "EBUSY" || errorCode === "EPERM") {
+      return;
+    }
+
+    throw error;
+  }
+}
+
+function toPowerShellSingleQuoted(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+interface PendingRestartCompletion {
+  channelId: string;
+  threadId: string;
+  text: string;
+}
+
 export class BridgeService {
   private readonly startedAt = new Date().toISOString();
-  private readonly restartCompletionLogPath = path.resolve(
-    process.cwd(),
-    "data",
-    "runtime",
-    "restart-completion.log",
-  );
+  private readonly restartCompletionFilePath =
+    process.env.CAB_RESTART_COMPLETION_FILE ??
+    path.resolve(process.cwd(), "data", "runtime", "restart-completion.jsonl");
+  private restartCompletionFlushTimer?: NodeJS.Timeout;
+  private restartCompletionFlushInFlight = false;
 
   constructor(private readonly deps: BridgeServiceDeps) {}
 
   async start(): Promise<void> {
     await this.deps.stateStore.initialize();
     await this.deps.chatAdapter.start(async (message) => this.handleMessage(message));
+    await this.flushPendingRestartCompletions();
+    this.restartCompletionFlushTimer = setInterval(() => {
+      void this.flushPendingRestartCompletions();
+    }, RESTART_COMPLETION_FLUSH_INTERVAL_MS);
+    this.restartCompletionFlushTimer.unref();
   }
 
   async dispatchAdminAction(
@@ -2081,11 +2110,9 @@ export class BridgeService {
       "bridge.orchestrator.log",
     );
     fs.mkdirSync(path.dirname(orchestratorLog), { recursive: true });
-    fs.mkdirSync(path.dirname(this.restartCompletionLogPath), { recursive: true });
-    fs.appendFileSync(
+    appendRestartLog(
       orchestratorLog,
       `[${new Date().toISOString()}] scheduling detached restart channel=${channelId ?? ""} thread=${threadId ?? ""} rebuild=${options?.rebuild ? "true" : "false"}\n`,
-      "utf8",
     );
     const helperArgs = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath];
     if (options?.rebuild) {
@@ -2095,25 +2122,118 @@ export class BridgeService {
       helperArgs.push("-ChannelId", channelId, "-ThreadId", threadId);
     }
 
-    const child = spawn(powershellPath, helperArgs, {
-      cwd: process.cwd(),
-      detached: true,
-      stdio: "ignore",
-      windowsHide: true,
-    });
+    const launcherCommand = [
+      `$argList = @(${helperArgs.map((arg) => toPowerShellSingleQuoted(arg)).join(", ")});`,
+      `Start-Process -WindowStyle Hidden -FilePath ${toPowerShellSingleQuoted(powershellPath)} -ArgumentList $argList;`,
+    ].join(" ");
 
-    fs.appendFileSync(
+    const child = spawn(
+      powershellPath,
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", launcherCommand],
+      {
+        cwd: process.cwd(),
+        stdio: "ignore",
+        windowsHide: true,
+      },
+    );
+
+    appendRestartLog(
       orchestratorLog,
-      `[${new Date().toISOString()}] detached restart helper spawned pid=${child.pid ?? "unknown"}\n`,
-      "utf8",
+      `[${new Date().toISOString()}] detached restart helper launcher spawned pid=${child.pid ?? "unknown"}\n`,
     );
 
     child.on("error", (error) => {
       const line = `[${new Date().toISOString()}] failed to launch detached restart helper: ${error.message}\n`;
-      fs.appendFileSync(orchestratorLog, line, "utf8");
+      appendRestartLog(orchestratorLog, line);
     });
 
     child.unref();
+  }
+
+  private async flushPendingRestartCompletions(): Promise<void> {
+    if (this.restartCompletionFlushInFlight) {
+      return;
+    }
+
+    this.restartCompletionFlushInFlight = true;
+    try {
+      let raw: string;
+      try {
+        raw = fs.readFileSync(this.restartCompletionFilePath, "utf8");
+      } catch (error) {
+        const code =
+          error instanceof Error && "code" in error ? String((error as NodeJS.ErrnoException).code) : "";
+        if (code === "ENOENT") {
+          return;
+        }
+        throw error;
+      }
+
+      const lines = raw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      if (lines.length === 0) {
+        fs.rmSync(this.restartCompletionFilePath, { force: true });
+        return;
+      }
+
+      const pending: PendingRestartCompletion[] = [];
+      for (const line of lines) {
+        try {
+          const parsed = JSON.parse(line.replace(/^\uFEFF/, "")) as Partial<PendingRestartCompletion>;
+          if (
+            typeof parsed.channelId === "string" &&
+            typeof parsed.threadId === "string" &&
+            typeof parsed.text === "string"
+          ) {
+            pending.push({
+              channelId: parsed.channelId,
+              threadId: parsed.threadId,
+              text: parsed.text,
+            });
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      fs.rmSync(this.restartCompletionFilePath, { force: true });
+
+      const retryQueue: PendingRestartCompletion[] = [];
+      for (const completion of pending) {
+        try {
+          await this.deps.chatAdapter.postThreadMessage(
+            {
+              provider: this.deps.config.chatProvider,
+              channelId: completion.channelId,
+              threadId: completion.threadId,
+            },
+            completion.text,
+          );
+          await this.deps.auditLogger.log({
+            type: "bridge.restart.completed",
+            channelId: completion.channelId,
+            threadId: completion.threadId,
+          });
+        } catch {
+          retryQueue.push(completion);
+        }
+      }
+
+      if (retryQueue.length > 0) {
+        const serialized = retryQueue
+          .map((completion) => JSON.stringify(completion))
+          .join("\n");
+        fs.writeFileSync(
+          this.restartCompletionFilePath,
+          `${serialized}\n`,
+          "utf8",
+        );
+      }
+    } finally {
+      this.restartCompletionFlushInFlight = false;
+    }
   }
 
   private async logExecutionEnvironment(

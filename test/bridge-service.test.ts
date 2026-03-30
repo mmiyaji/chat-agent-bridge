@@ -54,6 +54,11 @@ async function startBridge() {
   const codexAgent = new RecordingAgent("codex");
   const claudeAgent = new RecordingAgent("claude-code");
   const auditLogger = new RecordingAuditLogger();
+  const previousCompletionFile = process.env.CAB_RESTART_COMPLETION_FILE;
+  if (!previousCompletionFile) {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-bridge-service-"));
+    process.env.CAB_RESTART_COMPLETION_FILE = path.join(tempRoot, "restart-completion.jsonl");
+  }
   const bridge = new BridgeService({
     config,
     stateStore: store,
@@ -67,7 +72,15 @@ async function startBridge() {
     auditLogger,
   });
 
-  await bridge.start();
+  try {
+    await bridge.start();
+  } finally {
+    if (previousCompletionFile === undefined) {
+      delete process.env.CAB_RESTART_COMPLETION_FILE;
+    } else {
+      process.env.CAB_RESTART_COMPLETION_FILE = previousCompletionFile;
+    }
+  }
   return { config, store, chatAdapter, agent: codexAgent, codexAgent, claudeAgent, auditLogger };
 }
 
@@ -82,6 +95,24 @@ function createMessage(text: string): IncomingChatMessage {
     text,
     requestedWorkingDirectory: "C:/repo/project",
   };
+}
+
+async function waitFor(
+  callback: () => Promise<void>,
+  timeoutMs = 10_000,
+  intervalMs = 100,
+): Promise<void> {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      await callback();
+      return;
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+  }
+
+  await callback();
 }
 
 test("BridgeService posts progress then final summary", async () => {
@@ -207,6 +238,156 @@ test("BridgeService auto-splits to a new thread after the configured user-messag
   assert.notEqual(sessions[0]?.thread.threadId, "T1");
   assert.equal(sessions[0]?.bridgeState?.threadUserMessageCount, 1);
   assert.equal(chatAdapter.posted.at(-1)?.thread.threadId, sessions[0]?.thread.threadId);
+});
+
+test("BridgeService restart command acknowledges immediately", async () => {
+  const { chatAdapter, auditLogger } = await startBridge();
+
+  await chatAdapter.handler?.(createMessage("restart"));
+
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Bridge restart requested/);
+  assert.equal(
+    auditLogger.events.some(
+      (event) =>
+        event.type === "bridge.command.restart" &&
+        event.sessionId !== undefined,
+    ),
+    true,
+  );
+});
+
+test("BridgeService posts queued restart completions on start", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-restart-completion-"));
+  const completionFile = path.join(tempRoot, "restart-completion.jsonl");
+  await fs.writeFile(
+    completionFile,
+    `${JSON.stringify({
+      channelId: "C1",
+      threadId: "T1",
+      text: "Bridge restart completed. The bridge is back online.",
+    })}\n`,
+    "utf8",
+  );
+
+  const previousCompletionFile = process.env.CAB_RESTART_COMPLETION_FILE;
+  process.env.CAB_RESTART_COMPLETION_FILE = completionFile;
+
+  try {
+    const { chatAdapter, auditLogger } = await startBridge();
+    assert.equal(chatAdapter.posted.length, 1);
+    assert.equal(
+      chatAdapter.posted[0]?.text,
+      "Bridge restart completed. The bridge is back online.",
+    );
+    assert.equal(chatAdapter.posted[0]?.thread.channelId, "C1");
+    assert.equal(chatAdapter.posted[0]?.thread.threadId, "T1");
+    assert.equal(
+      auditLogger.events.some((event) => event.type === "bridge.restart.completed"),
+      true,
+    );
+    await assert.rejects(fs.readFile(completionFile, "utf8"));
+  } finally {
+    if (previousCompletionFile === undefined) {
+      delete process.env.CAB_RESTART_COMPLETION_FILE;
+    } else {
+      process.env.CAB_RESTART_COMPLETION_FILE = previousCompletionFile;
+    }
+  }
+});
+
+test("BridgeService posts queued restart completions written after start", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-restart-completion-late-"));
+  const completionFile = path.join(tempRoot, "restart-completion.jsonl");
+  const previousCompletionFile = process.env.CAB_RESTART_COMPLETION_FILE;
+  process.env.CAB_RESTART_COMPLETION_FILE = completionFile;
+
+  try {
+    const { chatAdapter, auditLogger } = await startBridge();
+    await fs.writeFile(
+      completionFile,
+      `${JSON.stringify({
+        channelId: "C1",
+        threadId: "T1",
+        text: "Bridge restart completed. The bridge is back online.",
+      })}\n`,
+      "utf8",
+    );
+
+    await waitFor(async () => {
+      assert.equal(chatAdapter.posted.length, 1);
+      assert.equal(
+        chatAdapter.posted[0]?.text,
+        "Bridge restart completed. The bridge is back online.",
+      );
+    });
+
+    assert.equal(
+      auditLogger.events.some((event) => event.type === "bridge.restart.completed"),
+      true,
+    );
+    await assert.rejects(fs.readFile(completionFile, "utf8"));
+  } finally {
+    if (previousCompletionFile === undefined) {
+      delete process.env.CAB_RESTART_COMPLETION_FILE;
+    } else {
+      process.env.CAB_RESTART_COMPLETION_FILE = previousCompletionFile;
+    }
+  }
+});
+
+test("BridgeService retains queued restart completions when posting fails", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-restart-completion-retry-"));
+  const completionFile = path.join(tempRoot, "restart-completion.jsonl");
+  const previousCompletionFile = process.env.CAB_RESTART_COMPLETION_FILE;
+  process.env.CAB_RESTART_COMPLETION_FILE = completionFile;
+
+  try {
+    const { chatAdapter, auditLogger } = await startBridge();
+    const originalPost = chatAdapter.postThreadMessage.bind(chatAdapter);
+    let shouldFail = true;
+    chatAdapter.postThreadMessage = async (...args) => {
+      if (shouldFail) {
+        throw new Error("temporary slack outage");
+      }
+      return originalPost(...args);
+    };
+
+    await fs.writeFile(
+      completionFile,
+      `${JSON.stringify({
+        channelId: "C1",
+        threadId: "T1",
+        text: "Bridge restart completed. The bridge is back online.",
+      })}\n`,
+      "utf8",
+    );
+
+    await waitFor(async () => {
+      const retained = await fs.readFile(completionFile, "utf8");
+      assert.match(retained, /Bridge restart completed/);
+    });
+    assert.equal(chatAdapter.posted.length, 0);
+    assert.equal(
+      auditLogger.events.some((event) => event.type === "bridge.restart.completed"),
+      false,
+    );
+
+    shouldFail = false;
+    await waitFor(async () => {
+      assert.equal(chatAdapter.posted.length, 1);
+      assert.equal(
+        chatAdapter.posted[0]?.text,
+        "Bridge restart completed. The bridge is back online.",
+      );
+    });
+    await assert.rejects(fs.readFile(completionFile, "utf8"));
+  } finally {
+    if (previousCompletionFile === undefined) {
+      delete process.env.CAB_RESTART_COMPLETION_FILE;
+    } else {
+      process.env.CAB_RESTART_COMPLETION_FILE = previousCompletionFile;
+    }
+  }
 });
 
 test("BridgeService stores a pending approval when the result indicates write access is needed", async () => {
