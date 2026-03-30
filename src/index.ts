@@ -1,5 +1,6 @@
 import { createAppConfig } from "./config/env.js";
 import { SlackAdapter } from "./adapters/slack/slack-adapter.js";
+import { MattermostAdapter } from "./adapters/mattermost/mattermost-adapter.js";
 import { AgentRegistry } from "./agents/base.js";
 import { CodexAgent } from "./agents/codex/codex-agent.js";
 import { ClaudeCodeAgent } from "./agents/claude/claude-agent.js";
@@ -15,7 +16,10 @@ async function main(): Promise<void> {
   const auditLogger = new FileAuditLogger(config.auditLogFile);
   const sessionManager = new SessionManager(store);
   const jobQueue = new InMemoryJobQueue();
-  const chatAdapter = new SlackAdapter(config, auditLogger);
+  const chatAdapter =
+    config.chatProvider === "mattermost"
+      ? new MattermostAdapter(config, auditLogger)
+      : new SlackAdapter(config, auditLogger);
   const agents: AgentRegistry = {
     codex: new CodexAgent(config),
     "claude-code": new ClaudeCodeAgent(config),

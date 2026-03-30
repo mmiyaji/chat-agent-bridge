@@ -8,7 +8,7 @@ The bridge centers on one invariant:
 
 For the MVP, a thread is identified as:
 
-- `provider`: currently `slack`
+- `provider`: `slack` or `mattermost`
 - `channelId`
 - `threadId`
 
@@ -43,6 +43,7 @@ When a chat message arrives, the bridge:
 
 - `chat.ts`: generic chat interface
 - `slack/slack-adapter.ts`: Slack ingress over either local HTTP events or Socket Mode
+- `mattermost/mattermost-adapter.ts`: Mattermost ingress over local HTTP outgoing webhooks plus REST posting
 
 ### `src/config`
 
@@ -72,7 +73,8 @@ Execution safety should be split across the bridge and the agent adapter:
 ## Recommended next steps
 
 1. Harden Slack ingress with reconnect backoff, ping telemetry, and Socket Mode coverage.
-2. Add a bridge-level approval layer before invoking `codex exec` with write-capable sandbox settings.
-3. Implement explicit approval handoff so blocked write actions can be resumed from chat.
-4. Persist job history and execution summaries.
-5. Add integration tests around thread rebinding, queue ordering, and Codex CLI resume behavior.
+2. Expand Mattermost support beyond outgoing webhooks, especially private-channel/DM ingress and approval interactions.
+3. Add a bridge-level approval layer before invoking `codex exec` with write-capable sandbox settings.
+4. Implement explicit approval handoff so blocked write actions can be resumed from chat.
+5. Persist job history and execution summaries.
+6. Add integration tests around thread rebinding, queue ordering, and Codex CLI resume behavior.

@@ -4,7 +4,7 @@ Chat Agent Bridge is a local bridge service that lets users continue operating a
 
 ## MVP scope
 
-- Chat adapter: Slack
+- Chat adapter: Slack or Mattermost
 - Agent adapter: Codex or Claude Code
 - Session model: `channel + thread_ts -> local agent session`
 - Local execution controls: working directory targeting, serial execution, policy checks
@@ -23,7 +23,7 @@ This repository currently contains the initial scaffold for the bridge core:
 - persistent execution history per bridge session
 - an in-process job serializer
 - adapter interfaces for chat and agent integrations
-- a bootstrap path that wires a Slack adapter to a Codex CLI adapter with session resume support
+- a bootstrap path that wires a Slack or Mattermost adapter to a local agent adapter with session resume support
 
 ## Development
 
@@ -49,6 +49,7 @@ This mode runs the bridge as a detached Node process, writes a PID file under `d
 | Name | Required | Description |
 | --- | --- | --- |
 | `CAB_ALLOWED_DIRS` | yes | Semicolon-separated list of allowed repository roots |
+| `CAB_CHAT_PROVIDER` | no | Chat provider: `slack` or `mattermost`. Defaults to `slack` |
 | `CAB_AGENT` | no | Default agent for new bridge threads: `codex` or `claude-code`. Defaults to `codex` |
 | `CAB_REPO_ALIASES` | no | Optional `alias=path;alias2=path2` mapping used by `repo <alias>` |
 | `CAB_DEFAULT_WORKDIR` | no | Default working directory used for incoming Slack events. Defaults to the first allowed directory |
@@ -70,6 +71,11 @@ This mode runs the bridge as a detached Node process, writes a PID file under `d
 | `SLACK_BOT_TOKEN` | no | Bot token used for thread replies |
 | `SLACK_APP_TOKEN` | no | App-level token used for Slack Socket Mode (`xapp-...`) |
 | `SLACK_SIGNING_SECRET` | no | Enables Slack request signature verification when set |
+| `MATTERMOST_SERVER_URL` | no | Base URL for the Mattermost server, for example `http://mattermost.lan:8065` |
+| `MATTERMOST_BOT_TOKEN` | no | Mattermost personal access token or bot token used for post reads/writes |
+| `MATTERMOST_WEBHOOK_TOKEN` | no | Shared token expected from the Mattermost outgoing webhook |
+| `MATTERMOST_MODE` | no | Mattermost ingress mode: `http` or `websocket`. Defaults to `http` |
+| `MATTERMOST_DM_ONLY` | no | When `true`, the bridge accepts only direct-message (`D`) channels in Mattermost |
 
 See [docs/architecture.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/architecture.md) for the concrete MVP structure.
 
@@ -114,6 +120,20 @@ HTTP mode exposes:
 - `GET /healthz`
 
 Both modes acknowledge Slack immediately and process messages asynchronously.
+
+When `CAB_CHAT_PROVIDER=mattermost`, the bridge exposes:
+
+- `POST /mattermost/events`
+- `POST /mattermost/commands`
+
+In `MATTERMOST_MODE=http`, these endpoints are intended for Mattermost on the same LAN. The bridge supports outgoing webhooks for normal public-channel message ingress, and slash commands for private channels or DMs. For webhook events, the bridge reads the incoming `post_id`, resolves the root thread via the Mattermost API, and then posts replies back through the Mattermost REST API. For slash commands without an existing thread context, the bridge uses a synthetic per-channel/per-user thread key.
+
+In `MATTERMOST_MODE=websocket`, the bridge connects to `/api/v4/websocket`, authenticates with the Mattermost bot token, and accepts:
+
+- root-level posts that explicitly mention the bot username
+- plain thread replies inside existing Mattermost threads
+
+If `MATTERMOST_DM_ONLY=true`, both HTTP and WebSocket Mattermost ingress are filtered to direct-message channels only.
 
 ## Audit log
 
@@ -184,3 +204,32 @@ Useful bridge commands:
 `new-thread` moves the current bridge session to a newly created Slack thread in the same channel while keeping the underlying agent context.
 `fork` creates a new Slack thread with a separate bridge session, so you can run another agent or workflow in parallel without moving the current one.
 `attach` binds the current Slack thread to an existing agent session id. `attach-last` reuses the most recent local session from the active agent's session index.
+
+## Mattermost setup
+
+For the current Mattermost MVP, configure:
+
+- `CAB_CHAT_PROVIDER=mattermost`
+- `MATTERMOST_SERVER_URL`
+- `MATTERMOST_BOT_TOKEN`
+- either `MATTERMOST_MODE=http` or `MATTERMOST_MODE=websocket`
+- optionally, `MATTERMOST_DM_ONLY=true`
+
+If `MATTERMOST_MODE=http`, also configure:
+
+- `MATTERMOST_WEBHOOK_TOKEN`
+- an outgoing webhook in Mattermost pointing to `http://<bridge-host>:8787/mattermost/events`
+- optionally, a slash command such as `/cab` pointing to `http://<bridge-host>:8787/mattermost/commands`
+
+If `MATTERMOST_MODE=websocket`, the bridge consumes posts directly over the Mattermost WebSocket API and does not need the webhook endpoints for ingress.
+
+When `MATTERMOST_DM_ONLY=true`, Mattermost ingress is still limited to direct-message channels, but a new root post still needs an explicit mention to start a bridge session. Bridge-authored replies are tagged and ignored to prevent loops.
+
+Current Mattermost scope:
+
+- ingress is HTTP outgoing webhooks, slash commands, or WebSocket events
+- thread replies and new threads are posted through the Mattermost REST API
+- thread identity is resolved from the incoming `post_id` using `GET /api/v4/posts/{post_id}`
+- slash commands without thread context are grouped by `channel_id + user_id`
+- `MATTERMOST_DM_ONLY=true` filters ingress to channel type `D`
+- Slack-only interactive buttons are not available in Mattermost yet

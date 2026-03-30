@@ -16,6 +16,7 @@ import { AppConfig, IncomingChatMessage } from "../src/core/types.js";
 
 function createConfig(): AppConfig {
   return {
+    chatProvider: "slack",
     agentKind: "codex",
     allowedDirectories: ["C:/repo"],
     repoAliases: {
@@ -24,6 +25,7 @@ function createConfig(): AppConfig {
     defaultApprovalPolicy: "manual",
     networkAccess: "disabled",
     slackMode: "http",
+    mattermostMode: "http",
     port: 8787,
     host: "127.0.0.1",
     defaultWorkingDirectory: "C:/repo",

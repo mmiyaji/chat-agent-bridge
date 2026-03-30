@@ -9,6 +9,7 @@ import { AppConfig } from "../src/core/types.js";
 
 function createClaudeConfig(): AppConfig {
   return {
+    chatProvider: "slack",
     agentKind: "claude-code",
     allowedDirectories: ["C:/repo"],
     repoAliases: {
@@ -17,6 +18,7 @@ function createClaudeConfig(): AppConfig {
     defaultApprovalPolicy: "manual",
     networkAccess: "disabled",
     slackMode: "http",
+    mattermostMode: "http",
     port: 8787,
     host: "127.0.0.1",
     defaultWorkingDirectory: "C:/repo",

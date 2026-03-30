@@ -6,7 +6,11 @@ export type ApprovalPolicy = "manual" | "on-failure" | "never";
 
 export type NetworkAccess = "enabled" | "disabled";
 
+export type ChatIngress = "slack" | "mattermost";
+
 export type SlackMode = "http" | "socket";
+
+export type MattermostMode = "http" | "websocket";
 
 export type JsonPrimitive = string | number | boolean | null;
 
@@ -91,18 +95,24 @@ export interface AgentExecutionResult {
 }
 
 export interface AppConfig {
+  chatProvider: ChatIngress;
   agentKind: AgentKind;
   allowedDirectories: string[];
   repoAliases: Record<string, string>;
   defaultApprovalPolicy: ApprovalPolicy;
   networkAccess: NetworkAccess;
   slackMode: SlackMode;
+  mattermostMode: MattermostMode;
   port: number;
   host: string;
   defaultWorkingDirectory: string;
   slackBotToken?: string;
   slackAppToken?: string;
   slackSigningSecret?: string;
+  mattermostServerUrl?: string;
+  mattermostBotToken?: string;
+  mattermostWebhookToken?: string;
+  mattermostDmOnly?: boolean;
   stateFile: string;
   auditLogFile: string;
   codexSessionIndexFile: string;

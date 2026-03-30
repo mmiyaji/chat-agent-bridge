@@ -1,5 +1,13 @@
 import path from "node:path";
-import { AgentKind, ApprovalPolicy, AppConfig, NetworkAccess, SlackMode } from "../core/types.js";
+import {
+  AgentKind,
+  ApprovalPolicy,
+  AppConfig,
+  ChatIngress,
+  MattermostMode,
+  NetworkAccess,
+  SlackMode,
+} from "../core/types.js";
 
 function readRequired(name: string, env: NodeJS.ProcessEnv): string {
   const value = env[name];
@@ -47,6 +55,32 @@ function parseSlackMode(value: string | undefined): SlackMode {
       return value;
     default:
       throw new Error(`Invalid CAB_SLACK_MODE: ${value}`);
+  }
+}
+
+function parseMattermostMode(value: string | undefined): MattermostMode {
+  switch (value) {
+    case undefined:
+    case "":
+    case "http":
+      return "http";
+    case "websocket":
+      return value;
+    default:
+      throw new Error(`Invalid MATTERMOST_MODE: ${value}`);
+  }
+}
+
+function parseChatProvider(value: string | undefined): ChatIngress {
+  switch (value) {
+    case undefined:
+    case "":
+    case "slack":
+      return "slack";
+    case "mattermost":
+      return value;
+    default:
+      throw new Error(`Invalid CAB_CHAT_PROVIDER: ${value}`);
   }
 }
 
@@ -126,6 +160,22 @@ function parseInteger(name: string, value: string | undefined, fallback: number)
   return parsed;
 }
 
+function parseBoolean(value: string | undefined): boolean {
+  switch ((value ?? "").trim().toLowerCase()) {
+    case "":
+    case "0":
+    case "false":
+    case "no":
+      return false;
+    case "1":
+    case "true":
+    case "yes":
+      return true;
+    default:
+      throw new Error(`Invalid boolean value: ${value}`);
+  }
+}
+
 export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
   const allowedDirectories = parseAllowedDirs(readRequired("CAB_ALLOWED_DIRS", env));
   const defaultAllowedDirectory = allowedDirectories[0];
@@ -134,12 +184,14 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
   }
 
   const config: AppConfig = {
+    chatProvider: parseChatProvider(env.CAB_CHAT_PROVIDER),
     agentKind: parseAgentKind(env.CAB_AGENT),
     allowedDirectories,
     repoAliases: parseRepoAliases(env.CAB_REPO_ALIASES, allowedDirectories),
     defaultApprovalPolicy: parseApprovalPolicy(env.CAB_DEFAULT_APPROVAL_POLICY),
     networkAccess: parseNetworkAccess(env.CAB_NETWORK_ACCESS),
     slackMode: parseSlackMode(env.CAB_SLACK_MODE),
+    mattermostMode: parseMattermostMode(env.MATTERMOST_MODE),
     port: parseInteger("CAB_PORT", env.CAB_PORT, 8787),
     host: env.CAB_HOST ?? "0.0.0.0",
     defaultWorkingDirectory: path.resolve(
@@ -194,6 +246,22 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
 
   if (env.SLACK_SIGNING_SECRET) {
     config.slackSigningSecret = env.SLACK_SIGNING_SECRET;
+  }
+
+  if (env.MATTERMOST_SERVER_URL) {
+    config.mattermostServerUrl = env.MATTERMOST_SERVER_URL;
+  }
+
+  if (env.MATTERMOST_BOT_TOKEN) {
+    config.mattermostBotToken = env.MATTERMOST_BOT_TOKEN;
+  }
+
+  if (env.MATTERMOST_WEBHOOK_TOKEN) {
+    config.mattermostWebhookToken = env.MATTERMOST_WEBHOOK_TOKEN;
+  }
+
+  if (env.MATTERMOST_DM_ONLY) {
+    config.mattermostDmOnly = parseBoolean(env.MATTERMOST_DM_ONLY);
   }
 
   return config;
