@@ -20,6 +20,8 @@ interface CodexJsonEvent {
   };
 }
 
+const CANCELLATION_GRACE_PERIOD_MS = 1_000;
+
 const FILTERED_STDERR_SUBSTRINGS = [
   "failed to warm featured plugin ids cache",
   "startup remote plugin sync failed",
@@ -92,6 +94,8 @@ export class CodexAgent implements Agent {
     {
       child: ReturnType<typeof spawn>;
       cancelRequested: boolean;
+      resolveCancellation: () => void;
+      cancellationTimer?: NodeJS.Timeout;
     }
   >();
 
@@ -136,6 +140,11 @@ export class CodexAgent implements Agent {
     }
 
     activeRun.cancelRequested = true;
+    if (!activeRun.cancellationTimer) {
+      activeRun.cancellationTimer = setTimeout(() => {
+        activeRun.resolveCancellation();
+      }, CANCELLATION_GRACE_PERIOD_MS);
+    }
     const pid = activeRun.child.pid;
     if (typeof pid === "number" && Number.isFinite(pid)) {
       if (process.platform === "win32") {
@@ -211,10 +220,19 @@ export class CodexAgent implements Agent {
       windowsHide: true,
       env: this.buildBridgeEnvironment(session),
     });
-    const activeRun = {
+    const activeRun: {
+      child: ReturnType<typeof spawn>;
+      cancelRequested: boolean;
+      resolveCancellation: () => void;
+      cancellationTimer?: NodeJS.Timeout;
+    } = {
       child,
       cancelRequested: false,
+      resolveCancellation: () => {},
     };
+    const cancellationPromise = new Promise<"cancelled">((resolve) => {
+      activeRun.resolveCancellation = () => resolve("cancelled");
+    });
     this.activeRuns.set(session.sessionId, activeRun);
 
     const stdoutChunks: string[] = [];
@@ -298,14 +316,29 @@ export class CodexAgent implements Agent {
       void Promise.resolve(onActivity?.(update)).catch(() => undefined);
     });
 
-    const [exitCode] = (await once(child, "close")) as [number | null];
+    const completion = await Promise.race([
+      once(child, "close").then(([exitCode]) => ({
+        type: "close" as const,
+        exitCode: exitCode as number | null,
+      })),
+      cancellationPromise.then(() => ({
+        type: "cancelled" as const,
+      })),
+    ]);
     clearTimeout(idleTimeout);
     clearTimeout(maxTimeout);
+    clearTimeout(activeRun.cancellationTimer);
     this.activeRuns.delete(session.sessionId);
 
     const stdout = stdoutChunks.join("");
     const stderr = stderrChunks.join("");
     const rawOutput = [stdout.trim(), stderr.trim()].filter((part) => part.length > 0).join("\n");
+
+    if (completion.type === "cancelled" || activeRun.cancelRequested) {
+      throw new AgentExecutionCancelledError();
+    }
+
+    const exitCode = completion.exitCode;
 
     if (timedOut === "idle") {
       throw new Error(
@@ -317,10 +350,6 @@ export class CodexAgent implements Agent {
       throw new Error(
         `Codex CLI exceeded the maximum runtime of ${this.config.codexMaxRuntimeMs}ms.`,
       );
-    }
-
-    if (activeRun.cancelRequested) {
-      throw new AgentExecutionCancelledError();
     }
 
     if (exitCode !== 0) {

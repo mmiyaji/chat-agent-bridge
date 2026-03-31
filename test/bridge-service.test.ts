@@ -166,6 +166,56 @@ test("BridgeService stores execution history for completed runs", async () => {
   assert.equal(records[0].summary, "all done");
 });
 
+test("BridgeService marks stale running executions as cancelled on start", async () => {
+  const config = createConfig();
+  const store = new InMemoryStateStore();
+  const chatAdapter = new RecordingChatAdapter();
+  const codexAgent = new RecordingAgent("codex");
+  const claudeAgent = new RecordingAgent("claude-code");
+  const auditLogger = new RecordingAuditLogger();
+
+  await store.upsertExecutionRecord({
+    executionId: "exec-running",
+    sessionId: "session-1",
+    thread: {
+      provider: "slack",
+      channelId: "C1",
+      threadId: "T1",
+    },
+    agent: "codex",
+    prompt: "stuck",
+    workingDirectory: "C:/repo/project",
+    approvalPolicy: "never",
+    networkAccess: "enabled",
+    status: "running",
+    createdAt: "2026-03-31T00:00:00.000Z",
+    updatedAt: "2026-03-31T00:00:00.000Z",
+  });
+
+  const bridge = new BridgeService({
+    config,
+    stateStore: store,
+    sessionManager: new SessionManager(store),
+    jobQueue: new InlineJobQueue(),
+    chatAdapter,
+    agents: {
+      codex: codexAgent,
+      "claude-code": claudeAgent,
+    },
+    auditLogger,
+  });
+
+  await bridge.start();
+
+  const records = await store.listExecutionRecords({ limit: 10 });
+  assert.equal(records[0].status, "cancelled");
+  assert.match(records[0].summary ?? "", /bridge restarted while work was in progress/);
+  assert.equal(
+    auditLogger.events.some((event) => event.type === "bridge.execution.recovered-as-cancelled"),
+    true,
+  );
+});
+
 test("BridgeService posts an execution failure", async () => {
   const { chatAdapter, agent } = await startBridge();
   agent.error = new Error("Codex exploded");

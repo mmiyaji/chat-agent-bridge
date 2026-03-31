@@ -1,5 +1,5 @@
 import { Agent, AgentExecutionCancelledError, AgentRegistry } from "../agents/base.js";
-import { ChatAction, ChatAdapter } from "../adapters/chat.js";
+import { ChatAction, ChatAdapter, ChatConnectionStatus } from "../adapters/chat.js";
 import { readLatestCodexSession, readRecentCodexSessions } from "../agents/codex/session-index.js";
 import { readLatestClaudeSession, readRecentClaudeSessions } from "../agents/claude/session-index.js";
 import crypto from "node:crypto";
@@ -404,6 +404,7 @@ export class BridgeService {
 
   async start(): Promise<void> {
     await this.deps.stateStore.initialize();
+    await this.reconcileInterruptedExecutions();
     await this.deps.chatAdapter.start(async (message) => this.handleMessage(message));
     await this.flushPendingRestartCompletions();
     this.restartCompletionFlushTimer = setInterval(() => {
@@ -458,6 +459,30 @@ export class BridgeService {
       type: "admin.restart.requested",
     });
     this.scheduleDetachedRestart();
+  }
+
+  private async reconcileInterruptedExecutions(): Promise<void> {
+    const records = await this.deps.stateStore.listExecutionRecords();
+    const interrupted = records.filter((record) => record.status === "running");
+    if (interrupted.length === 0) {
+      return;
+    }
+
+    const summary = "Execution was interrupted because the bridge restarted while work was in progress.";
+    for (const record of interrupted) {
+      await this.deps.stateStore.upsertExecutionRecord(
+        this.completeExecutionRecord(record, "cancelled", summary),
+      );
+      await this.deps.auditLogger.log({
+        type: "bridge.execution.recovered-as-cancelled",
+        sessionId: record.sessionId,
+        executionId: record.executionId,
+      });
+    }
+  }
+
+  getChatConnectionStatus(): ChatConnectionStatus | undefined {
+    return this.deps.chatAdapter.getConnectionStatus?.();
   }
 
   private resolveAgent(kind: SessionBinding["agent"]): Agent {

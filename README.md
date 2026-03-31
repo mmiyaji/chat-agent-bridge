@@ -1,5 +1,7 @@
 # Chat Agent Bridge
 
+- Languages: [English](README.md) / [日本語](README.ja.md)
+
 Chat Agent Bridge is a local bridge service that lets users continue operating a development agent from chat threads while preserving the local machine context.
 
 ## What it does
@@ -65,4 +67,4 @@ npm run service:stop
 - Initial setup can be guided from `http://<bridge-host>:8788/admin/onboarding`
 - Codex sessions use the locally installed `codex` CLI and can reuse an existing local login
 - The bridge injects `CHAT_AGENT_BRIDGE=1` into Codex child processes so external hooks can suppress duplicate notifications
-- In Mattermost, `MATTERMOST_ACTOR_MODE=self` is intended for user-token operation, accepts only self-DMs, and does not require mentions in that self-DM
+- In Mattermost, `MATTERMOST_ACTOR_MODE=self` is intended for user-token operation, accepts only self-DMs, and still requires a mention in that self-DM

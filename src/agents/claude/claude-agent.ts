@@ -31,6 +31,8 @@ interface ClaudeStreamMessage extends ClaudeJsonResult {
   };
 }
 
+const CANCELLATION_GRACE_PERIOD_MS = 1_000;
+
 function trimProgressText(text: string, maxLength: number): string {
   const normalized = text.replace(/\s+/g, " ").trim();
   if (normalized.length <= maxLength) {
@@ -127,6 +129,8 @@ export class ClaudeCodeAgent implements Agent {
     {
       child: ReturnType<typeof spawn>;
       cancelRequested: boolean;
+      resolveCancellation: () => void;
+      cancellationTimer?: NodeJS.Timeout;
     }
   >();
 
@@ -166,6 +170,11 @@ export class ClaudeCodeAgent implements Agent {
     }
 
     activeRun.cancelRequested = true;
+    if (!activeRun.cancellationTimer) {
+      activeRun.cancellationTimer = setTimeout(() => {
+        activeRun.resolveCancellation();
+      }, CANCELLATION_GRACE_PERIOD_MS);
+    }
     const pid = activeRun.child.pid;
     if (typeof pid === "number" && Number.isFinite(pid)) {
       if (process.platform === "win32") {
@@ -246,10 +255,19 @@ export class ClaudeCodeAgent implements Agent {
       windowsHide: true,
       env: this.buildBridgeEnvironment(session),
     });
-    const activeRun = {
+    const activeRun: {
+      child: ReturnType<typeof spawn>;
+      cancelRequested: boolean;
+      resolveCancellation: () => void;
+      cancellationTimer?: NodeJS.Timeout;
+    } = {
       child,
       cancelRequested: false,
+      resolveCancellation: () => {},
     };
+    const cancellationPromise = new Promise<"cancelled">((resolve) => {
+      activeRun.resolveCancellation = () => resolve("cancelled");
+    });
     this.activeRuns.set(session.sessionId, activeRun);
 
     const stdoutChunks: string[] = [];
@@ -337,9 +355,18 @@ export class ClaudeCodeAgent implements Agent {
       void Promise.resolve(onActivity?.(update)).catch(() => undefined);
     });
 
-    const [exitCode] = (await once(child, "close")) as [number | null];
+    const completion = await Promise.race([
+      once(child, "close").then(([exitCode]) => ({
+        type: "close" as const,
+        exitCode: exitCode as number | null,
+      })),
+      cancellationPromise.then(() => ({
+        type: "cancelled" as const,
+      })),
+    ]);
     clearTimeout(idleTimeout);
     clearTimeout(maxTimeout);
+    clearTimeout(activeRun.cancellationTimer);
     this.activeRuns.delete(session.sessionId);
 
     const stdout = stdoutChunks.join("");
@@ -356,6 +383,12 @@ export class ClaudeCodeAgent implements Agent {
       }
     }
 
+    if (completion.type === "cancelled" || activeRun.cancelRequested) {
+      throw new AgentExecutionCancelledError();
+    }
+
+    const exitCode = completion.exitCode;
+
     if (timedOut === "idle") {
       throw new Error(
         `Claude Code CLI was idle for ${this.config.claudeCommandTimeoutMs}ms and was stopped.`,
@@ -366,10 +399,6 @@ export class ClaudeCodeAgent implements Agent {
       throw new Error(
         `Claude Code CLI exceeded the maximum runtime of ${this.config.claudeMaxRuntimeMs}ms.`,
       );
-    }
-
-    if (activeRun.cancelRequested) {
-      throw new AgentExecutionCancelledError();
     }
 
     if (exitCode !== 0) {

@@ -41,6 +41,18 @@ Run the Mattermost suite:
 npm run test:e2e:mattermost
 ```
 
+Capture a README-ready Mattermost demo:
+
+```powershell
+npm run mattermost:demo:capture
+```
+
+This writes:
+
+- `docs/assets/mattermost-demo.webm`
+- `docs/assets/mattermost-demo.gif`
+- `docs/assets/mattermost-demo-final.png`
+
 Bootstrap writes `data/runtime/mattermost-e2e.json`.
 
 Current live scenarios:

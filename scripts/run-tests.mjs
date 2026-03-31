@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { pathToFileURL } from "node:url";
 
 const repoRoot = process.cwd();
 const outDir = path.join(repoRoot, ".test-dist");
@@ -51,8 +50,34 @@ if (testFiles.length === 0) {
   process.exit(1);
 }
 
+let hasFailures = false;
+
 for (const file of testFiles) {
-  await import(pathToFileURL(file).href);
+  const testExitCode = await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ["--test", file], {
+      cwd: repoRoot,
+      stdio: "inherit",
+    });
+
+    child.on("error", reject);
+    child.on("exit", (code, signal) => {
+      if (signal) {
+        process.kill(process.pid, signal);
+        return;
+      }
+
+      resolve(code ?? 1);
+    });
+  });
+
+  if (testExitCode !== 0) {
+    hasFailures = true;
+    break;
+  }
+}
+
+if (hasFailures) {
+  process.exit(1);
 }
 
 await fs.promises.rm(outDir, { recursive: true, force: true });

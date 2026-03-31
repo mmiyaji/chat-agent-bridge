@@ -9,6 +9,16 @@ export interface ChatAction {
   style?: "default" | "primary" | "danger";
 }
 
+export interface ChatConnectionStatus {
+  provider: ChatThreadRef["provider"];
+  mode: string;
+  state: "connected" | "connecting" | "disconnected" | "listening";
+  connected: boolean;
+  statusText: string;
+  lastChangedAt?: string;
+  lastError?: string;
+}
+
 export interface ChatMessageOptions {
   blocks?: unknown[];
   actions?: ChatAction[];
@@ -17,6 +27,7 @@ export interface ChatMessageOptions {
 export interface ChatAdapter {
   start(handler: ChatMessageHandler): Promise<void>;
   stop?(): Promise<void>;
+  getConnectionStatus?(): ChatConnectionStatus | undefined;
   startNewThread(
     channelId: string,
     text: string,

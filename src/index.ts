@@ -9,10 +9,12 @@ import { SessionManager } from "./core/session-manager.js";
 import { InMemoryJobQueue } from "./core/job-queue.js";
 import { FileStateStore } from "./state/file-state-store.js";
 import { FileAuditLogger } from "./core/audit.js";
+import { registerProcessAuditHooks, writeProcessAudit } from "./core/process-audit.js";
 import { AdminServer } from "./admin/server.js";
 
 async function main(): Promise<void> {
   const config = createAppConfig(process.env);
+  registerProcessAuditHooks(config);
   const store = new FileStateStore(config.stateFile);
   const auditLogger = new FileAuditLogger(config.auditLogFile);
   const sessionManager = new SessionManager(store);
@@ -49,5 +51,11 @@ async function main(): Promise<void> {
 
 main().catch((error: unknown) => {
   console.error("Failed to start Chat Agent Bridge.", error);
+  const config = createAppConfig(process.env);
+  writeProcessAudit(config.auditLogFile, "bridge.start.failed", {
+    pid: process.pid,
+    message: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+  });
   process.exitCode = 1;
 });

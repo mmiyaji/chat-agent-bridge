@@ -1,4 +1,4 @@
-import http, { IncomingMessage, ServerResponse } from "node:http";
+﻿import http, { IncomingMessage, ServerResponse } from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { AuditLogger } from "../core/audit.js";
@@ -7,6 +7,7 @@ import { BridgeService } from "../core/bridge-service.js";
 import { assertPathAllowed } from "../core/paths.js";
 import { AppConfig, ExecutionRecord, SessionBinding } from "../core/types.js";
 import { StateStore } from "../state/state-store.js";
+import { ChatConnectionStatus } from "../adapters/chat.js";
 
 interface AdminServerDeps {
   config: AppConfig;
@@ -19,6 +20,7 @@ interface DashboardData {
   sessions: Array<Record<string, any>>;
   approvals: Array<Record<string, any>>;
   failures: Array<Record<string, any>>;
+  connectionStatus?: ChatConnectionStatus;
 }
 
 interface RuntimeSettingsPayload {
@@ -163,6 +165,49 @@ function renderTableMarkup(input: {
   return `<div class="table-wrap"><table data-testid="${escapeHtml(input.testId)}"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
+function renderApprovalCardsMarkup(entries: Array<Record<string, any>>): string {
+  if (entries.length === 0) {
+    return `<div class="empty" data-testid="approvals-table-empty">No entries.</div>`;
+  }
+
+  return `<div class="card-list" data-testid="approvals-table">${entries
+    .map(
+      (entry) => `<article class="compact-card">
+        <header>
+          <div>
+            <div class="title">${escapeHtml(entry.prompt)}</div>
+            <div class="meta"><code>${escapeHtml(entry.sessionId)}</code><span>${escapeHtml(entry.requestedAt)}</span></div>
+          </div>
+          <span class="pill">${escapeHtml(entry.agent ?? "agent")}</span>
+        </header>
+        <p class="muted-note">Thread: <code>${escapeHtml(entry.provider)}:${escapeHtml(entry.threadId)}</code></p>
+        <div class="actions">
+          ${renderButtonMarkup({ label: "Approve", action: "approve", sessionId: entry.sessionId })}
+          ${renderButtonMarkup({ label: "Reject", action: "reject", sessionId: entry.sessionId })}
+        </div>
+      </article>`,
+    )
+    .join("")}</div>`;
+}
+
+function renderFailureCardsMarkup(entries: Array<Record<string, any>>): string {
+  if (entries.length === 0) {
+    return `<div class="empty" data-testid="failures-table-empty">No entries.</div>`;
+  }
+
+  return `<div class="card-list" data-testid="failures-table">${entries
+    .map(
+      (entry) => `<article class="compact-card">
+        <header>
+          <div class="meta"><code>${escapeHtml(entry.sessionId)}</code><span>${escapeHtml(entry.updatedAt ?? "")}</span></div>
+          <span class="status-${escapeHtml(entry.status)}">${escapeHtml(entry.status)}</span>
+        </header>
+        <div class="title">${escapeHtml(entry.error || entry.summary || "")}</div>
+      </article>`,
+    )
+    .join("")}</div>`;
+}
+
 const ADMIN_GITHUB_URL = "https://github.com/mmiyaji/chat-agent-bridge";
 const ADMIN_AUTHOR_NAME = "mmiyaji";
 
@@ -218,6 +263,10 @@ function renderAdminFooterScript(): string {
         if (footerLanguage) {
           footerLanguage.value = resolved;
         }
+        const jaOption = document.querySelector("#footer-language option[value='ja']");
+        if (jaOption) {
+          jaOption.textContent = "日本語";
+        }
       }
 
       applyTheme(localStorage.getItem(THEME_STORAGE_KEY) || "dark");
@@ -266,9 +315,13 @@ function renderAdminLegalPage(input: { title: string; body: string }): string {
         --accent: #0ea5e9;
       }
       body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 "Segoe UI", sans-serif; }
-      main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
+      main { max-width: 1680px; margin: 0 auto; padding: 32px 20px 48px; }
       .shell { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px; }
-      .nav { display: inline-flex; gap: 8px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-alt); margin-bottom: 18px; }
+      .hero { display: flex; justify-content: space-between; gap: 20px; align-items: start; margin-bottom: 18px; }
+      .hero-copy { max-width: 640px; }
+      .hero-side { display: grid; gap: 12px; justify-items: end; }
+      .hero-meta { color: var(--muted); font-size: 12px; }
+      .nav { display: inline-flex; gap: 8px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-alt); }
       .nav a { color: var(--ink); text-decoration: none; padding: 8px 14px; border-radius: 999px; }
       h1 { margin: 0 0 12px; font-size: 30px; }
       p, li { color: var(--muted); }
@@ -282,13 +335,20 @@ function renderAdminLegalPage(input: { title: string; body: string }): string {
   <body>
     <main>
       <section class="shell">
-        <nav class="nav" aria-label="Admin navigation">
-          <a href="/admin">Dashboard</a>
-          <a href="/admin/settings">Settings</a>
-          <a href="/admin/onboarding">Onboarding</a>
-        </nav>
-        <h1>${escapeHtml(input.title)}</h1>
-        ${input.body}
+        <div class="hero">
+          <div class="hero-copy">
+            <h1>${escapeHtml(input.title)}</h1>
+            ${input.body}
+          </div>
+          <div class="hero-side">
+            <nav class="nav" aria-label="Admin navigation">
+              <a href="/admin">Dashboard</a>
+              <a href="/admin/settings">Settings</a>
+              <a href="/admin/onboarding">Onboarding</a>
+            </nav>
+            <div class="hero-meta">Local admin surface</div>
+          </div>
+        </div>
       </section>
       ${renderAdminFooter()}
     </main>
@@ -304,6 +364,30 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
   const sessionCount = input.sessions.length;
   const approvalCount = input.approvals.length;
   const failureCount = input.failures.length;
+  const connectionStatus = input.connectionStatus;
+  const connectionStateLabel = connectionStatus
+    ? `${connectionStatus.provider} ${connectionStatus.mode}`
+    : "chat transport";
+  const connectionStateValue = connectionStatus
+    ? connectionStatus.connected
+      ? "Connected"
+      : connectionStatus.state === "connecting"
+        ? "Connecting"
+        : connectionStatus.state === "listening"
+          ? "Listening"
+          : "Disconnected"
+    : "Unknown";
+  const connectionStatusMarkup = connectionStatus
+    ? `<div class="detail-card" data-testid="connection-status-card"><strong>${escapeHtml(connectionStateLabel)}</strong><span class="status-${escapeHtml(connectionStatus.connected ? "completed" : connectionStatus.state === "connecting" ? "running" : "failed")}">${escapeHtml(connectionStateValue)}</span><p>${escapeHtml(connectionStatus.statusText)}</p>${
+        connectionStatus.lastChangedAt
+          ? `<code>${escapeHtml(connectionStatus.lastChangedAt)}</code>`
+          : ""
+      }${
+        connectionStatus.lastError
+          ? `<p>${escapeHtml(connectionStatus.lastError)}</p>`
+          : ""
+      }</div>`
+    : `<div class="detail-card" data-testid="connection-status-card"><strong>chat transport</strong><span>Unknown</span><p>No adapter connection status was reported.</p></div>`;
   const renderCancelAction = (session: Record<string, any>): string => {
     return session.latestExecution?.status === "running"
       ? renderButtonMarkup({
@@ -325,36 +409,8 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
       renderCancelAction(session),
     ]),
   });
-  const approvalsMarkup = renderTableMarkup({
-    testId: "approvals-table",
-    headers: ["Session", "Prompt", "Requested", "Actions"],
-    rows: input.approvals.map((entry) => [
-      `<code>${escapeHtml(entry.sessionId)}</code>`,
-      escapeHtml(entry.prompt),
-      escapeHtml(entry.requestedAt),
-      [
-        renderButtonMarkup({
-          label: "Approve",
-          action: "approve",
-          sessionId: entry.sessionId,
-        }),
-        renderButtonMarkup({
-          label: "Reject",
-          action: "reject",
-          sessionId: entry.sessionId,
-        }),
-      ].join(" "),
-    ]),
-  });
-  const failuresMarkup = renderTableMarkup({
-    testId: "failures-table",
-    headers: ["Session", "Status", "Summary"],
-    rows: input.failures.map((entry) => [
-      `<code>${escapeHtml(entry.sessionId)}</code>`,
-      `<span class="status-${escapeHtml(entry.status)}">${escapeHtml(entry.status)}</span>`,
-      escapeHtml(entry.error || entry.summary || ""),
-    ]),
-  });
+  const approvalsMarkup = renderApprovalCardsMarkup(input.approvals);
+  const failuresMarkup = renderFailureCardsMarkup(input.failures);
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -418,7 +474,22 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         display: flex;
         justify-content: space-between;
         gap: 20px;
-        align-items: end;
+        align-items: start;
+      }
+      .hero-copy {
+        max-width: 760px;
+      }
+      .hero-copy p {
+        margin-top: 6px;
+      }
+      .hero-side {
+        display: grid;
+        gap: 12px;
+        justify-items: end;
+      }
+      .hero-meta {
+        color: var(--muted);
+        font-size: 12px;
       }
       .nav {
         display: inline-flex;
@@ -480,13 +551,9 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         grid-column: 1;
         grid-row: 3;
       }
-      section[data-testid="detail-panel"] {
-        grid-column: 1;
-        grid-row: 2;
-      }
       section[data-testid="settings-panel"] {
         grid-column: 1;
-        grid-row: 4;
+        grid-row: 2;
       }
       .secondary-grid {
         display: grid;
@@ -607,6 +674,42 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         flex-wrap: wrap;
         gap: 8px;
       }
+      .card-list {
+        display: grid;
+        gap: 12px;
+      }
+      .compact-card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px 16px;
+        background: var(--panel-alt);
+      }
+      .compact-card header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: start;
+        margin-bottom: 8px;
+      }
+      .compact-card p {
+        margin: 0;
+      }
+      .compact-card .meta {
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .compact-card .title {
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .compact-card .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
       .detail-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -624,6 +727,19 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 12px;
         margin: 12px 0;
+      }
+      .settings-stack {
+        display: grid;
+        gap: 18px;
+      }
+      .settings-block {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px;
+        background: var(--panel-alt);
+      }
+      .settings-block > .section-head {
+        margin-bottom: 10px;
       }
       .detail-card {
         border: 1px solid var(--line);
@@ -684,6 +800,39 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         border-radius: 14px;
         padding: 20px;
         color: var(--muted);
+      }
+      .detail-drawer {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: stretch;
+        justify-content: flex-end;
+        background: rgba(15, 23, 42, 0.46);
+        z-index: 20;
+      }
+      .detail-drawer.is-open {
+        display: flex;
+      }
+      .detail-drawer-shell {
+        width: min(720px, 100%);
+        height: 100%;
+        background: var(--bg);
+        border-left: 1px solid var(--line);
+        padding: 24px 20px;
+        overflow-y: auto;
+      }
+      .detail-drawer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .detail-drawer-header p {
+        margin-top: 6px;
+      }
+      .detail-close {
+        margin: 0;
       }
       .history-list {
         display: grid;
@@ -746,6 +895,55 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         margin: 2px 0 0;
         flex: 0 0 auto;
       }
+      .secret-reset-list {
+        display: grid;
+        gap: 10px;
+      }
+      .secret-reset-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--bg);
+      }
+      .secret-reset-copy {
+        display: grid;
+        gap: 4px;
+      }
+      .secret-reset-copy strong {
+        font-size: 13px;
+      }
+      .secret-reset-copy span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .toggle-chip {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 118px;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel-alt);
+        color: var(--ink);
+        cursor: pointer;
+        user-select: none;
+      }
+      .toggle-chip input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .toggle-chip.is-active {
+        border-color: var(--accent);
+        background: rgba(56, 189, 248, 0.12);
+      }
       button {
         border: 1px solid var(--line);
         background: var(--panel-alt);
@@ -777,8 +975,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         }
         section[data-testid="sessions-panel"],
         section[data-testid="approvals-panel"],
-        section[data-testid="failures-panel"],
-        section[data-testid="detail-panel"] {
+        section[data-testid="failures-panel"] {
           grid-column: auto;
           grid-row: auto;
         }
@@ -792,6 +989,10 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         .settings-subgrid {
           grid-template-columns: 1fr;
         }
+        .detail-drawer-shell {
+          width: 100%;
+          padding: 20px 12px;
+        }
         section[data-testid="sessions-panel"] table {
           min-width: 760px;
         }
@@ -801,11 +1002,11 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
   <body>
     <main>
       <div class="hero">
-        <div>
+        <div class="hero-copy">
           <h1>Bridge Admin</h1>
           <p>${isSettingsView ? "Bridge configuration and connection settings." : "Sessions, approvals, and failures from the local bridge state."}</p>
         </div>
-        <div class="toolbar-group">
+        <div class="hero-side">
           <nav class="nav" aria-label="Admin navigation">
             <a href="/admin" class="${isSettingsView ? "" : "is-active"}" data-testid="nav-dashboard">Dashboard</a>
             <a href="/admin/settings" class="${isSettingsView ? "is-active" : ""}" data-testid="nav-settings">Settings</a>
@@ -815,7 +1016,9 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             <div class="stat" data-testid="sessions-stat"><strong>${sessionCount}</strong><span>Sessions</span></div>
             <div class="stat" data-testid="approvals-stat"><strong>${approvalCount}</strong><span>Pending</span></div>
             <div class="stat" data-testid="failures-stat"><strong>${failureCount}</strong><span>Recent failures</span></div>
+            <div class="stat" data-testid="connection-stat"><strong>${escapeHtml(connectionStateValue)}</strong><span>${escapeHtml(connectionStateLabel)}</span></div>
           </div>
+          <div class="hero-meta">${isSettingsView ? "Runtime settings" : "Operational dashboard"}</div>
         </div>
       </div>
       <div class="toolbar"${isSettingsView ? ' style="display:none"' : ""}>
@@ -864,16 +1067,14 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           </div>
           <div id="sessions">${sessionsMarkup}</div>
         </section>
-        <section data-testid="detail-panel"${isSettingsView ? ' style="display:none"' : ""}>
+        <section data-testid="connection-panel"${isSettingsView ? ' style="display:none"' : ""}>
           <div class="section-head">
             <div>
-              <h2>Session Detail</h2>
-              <p>Inspect the selected session, current approval state, and recent execution history.</p>
+              <h2>Chat Connection</h2>
+              <p>Live transport state for the active chat adapter.</p>
             </div>
           </div>
-          <div id="detail" data-testid="session-detail">
-            <div class="detail-empty">Select a session from the sessions table to inspect details and available actions.</div>
-          </div>
+          <div id="connection-status">${connectionStatusMarkup}</div>
         </section>
         <div class="secondary-grid"${isSettingsView ? ' style="display:none"' : ""}>
           <section data-testid="approvals-panel">
@@ -907,6 +1108,20 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           </div>
         </section>
       </div>
+      <aside id="detail-drawer" class="detail-drawer"${isSettingsView ? ' style="display:none"' : ""}>
+        <div class="detail-drawer-shell">
+          <div class="detail-drawer-header">
+            <div>
+              <h2>Session Detail</h2>
+              <p>Inspect the selected session, current approval state, and recent execution history.</p>
+            </div>
+            <button id="detail-close" class="detail-close" type="button">Close</button>
+          </div>
+          <div id="detail" data-testid="session-detail">
+            <div class="detail-empty">Select a session from the sessions table to inspect details and available actions.</div>
+          </div>
+        </div>
+      </aside>
       ${renderAdminFooter()}
     </main>
     <script>
@@ -915,6 +1130,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         sessions: [],
         approvals: [],
         failures: [],
+        connectionStatus: null,
         selectedSessionId: null,
         filtersRestored: false,
         settings: null,
@@ -1033,12 +1249,12 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
 
       function renderSessionTableRows(sessions) {
         return sessions.map((session) => [
-          '<div class="session-cell"><strong>' + escapeHtml(session.sessionId) + "</strong><span>" + escapeHtml(session.connectionMode) + "</span></div>",
-          '<span class="pill">' + escapeHtml(session.agent) + "</span>",
           "<code>" + escapeHtml(session.workingDirectory) + "</code>",
-          "<code>" + escapeHtml(session.provider) + ":" + escapeHtml(session.threadId) + "</code>",
           '<div class="session-cell"><span class="status-' + escapeHtml(session.latestExecution?.status ?? "idle") + '">' +
             escapeHtml(session.latestExecution?.status ?? "idle") + '</span><span>' + escapeHtml(session.latestExecution?.updatedAt ?? session.updatedAt) + "</span></div>",
+          '<div class="session-cell"><strong>' + escapeHtml(session.sessionId) + "</strong><span>" + escapeHtml(session.connectionMode) + "</span></div>",
+          '<span class="pill">' + escapeHtml(session.agent) + "</span>",
+          "<code>" + escapeHtml(session.provider) + ":" + escapeHtml(session.threadId) + "</code>",
           '<div class="mini-actions"><button data-session-detail="' + escapeHtml(session.sessionId) + '">Open</button>' +
             (canCancelSession(session) ? renderButtonMarkup("Cancel", session.sessionId, "cancel") : '<span class="muted-note">Idle</span>') + "</div>",
         ]);
@@ -1061,6 +1277,88 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           body,
           "</tbody></table></div>",
         ].join("");
+      }
+
+      function renderApprovalCards(entries) {
+        if (!entries.length) {
+          return '<div class="empty" data-testid="approvals-table-empty">No entries.</div>';
+        }
+
+        return '<div class="card-list" data-testid="approvals-table">' + entries.map((entry) =>
+          '<article class="compact-card">' +
+            '<header><div><div class="title">' + escapeHtml(entry.prompt) + '</div><div class="meta"><code>' + escapeHtml(entry.sessionId) + '</code><span>' + escapeHtml(entry.requestedAt) + '</span></div></div><span class="pill">' + escapeHtml(entry.agent || "agent") + '</span></header>' +
+            '<p class="muted-note">Thread: <code>' + escapeHtml(entry.provider) + ":" + escapeHtml(entry.threadId) + "</code></p>" +
+            '<div class="actions">' +
+              renderButtonMarkup("Approve", entry.sessionId, "approve") +
+              renderButtonMarkup("Reject", entry.sessionId, "reject") +
+            "</div>" +
+          "</article>"
+        ).join("") + "</div>";
+      }
+
+      function renderFailureCards(entries) {
+        if (!entries.length) {
+          return '<div class="empty" data-testid="failures-table-empty">No entries.</div>';
+        }
+
+        return '<div class="card-list" data-testid="failures-table">' + entries.map((entry) =>
+          '<article class="compact-card">' +
+            '<header><div class="meta"><code>' + escapeHtml(entry.sessionId) + '</code><span>' + escapeHtml(entry.updatedAt || "") + '</span></div><span class="status-' + escapeHtml(entry.status) + '">' + escapeHtml(entry.status) + '</span></header>' +
+            '<div class="title">' + escapeHtml(entry.error || entry.summary || "") + '</div>' +
+          "</article>"
+        ).join("") + "</div>";
+      }
+
+      function renderConnectionStatus(status) {
+        if (!status) {
+          return '<div class="detail-card" data-testid="connection-status-card"><strong>chat transport</strong><span>Unknown</span><p>No adapter connection status was reported.</p></div>';
+        }
+        const stateValue = status.connected
+          ? "Connected"
+          : status.state === "connecting"
+            ? "Connecting"
+            : status.state === "listening"
+              ? "Listening"
+              : "Disconnected";
+        const statusClass = status.connected
+          ? "completed"
+          : status.state === "connecting"
+            ? "running"
+            : "failed";
+        return '<div class="detail-card" data-testid="connection-status-card">' +
+          '<strong>' + escapeHtml(status.provider + " " + status.mode) + '</strong>' +
+          '<span class="status-' + escapeHtml(statusClass) + '">' + escapeHtml(stateValue) + '</span>' +
+          '<p>' + escapeHtml(status.statusText || "") + '</p>' +
+          (status.lastChangedAt ? '<code>' + escapeHtml(status.lastChangedAt) + '</code>' : "") +
+          (status.lastError ? '<p>' + escapeHtml(status.lastError) + '</p>' : "") +
+          "</div>";
+      }
+
+      function renderSecretResetItem(id, label, description) {
+        return '<div class="secret-reset-item">' +
+          '<div class="secret-reset-copy"><strong>' + escapeHtml(label) + '</strong><span>' + escapeHtml(description) + "</span></div>" +
+          '<label class="toggle-chip" data-secret-toggle-label="' + escapeHtml(id) + '">' +
+            '<input id="' + escapeHtml(id) + '" data-testid="' + escapeHtml(id) + '" data-secret-toggle="1" type="checkbox" />' +
+            '<span>Clear on save</span>' +
+          "</label>" +
+        "</div>";
+      }
+
+      function renderFieldWithHint(fieldMarkup, hint) {
+        return '<div class="field-with-hint">' +
+          fieldMarkup +
+          '<div class="hint">' + hint + "</div>" +
+        "</div>";
+      }
+
+      function syncSecretToggleStates() {
+        document.querySelectorAll("[data-secret-toggle-label]").forEach((label) => {
+          const input = label.querySelector("input[data-secret-toggle='1']");
+          if (!(input instanceof HTMLInputElement)) {
+            return;
+          }
+          label.classList.toggle("is-active", input.checked);
+        });
       }
 
       function collectOptions(values) {
@@ -1124,7 +1422,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         const filtered = getFilteredSessions();
         document.getElementById("sessions").innerHTML = renderTableMarkup(
           "sessions-table",
-          ["Session", "Agent", "Workspace", "Thread", "State", "Action"],
+          ["Workspace", "State", "Session", "Agent", "Thread", "Action"],
           renderSessionTableRows(filtered),
         );
         const rows = document.querySelectorAll('[data-testid="sessions-table"] tbody tr');
@@ -1134,7 +1432,46 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           }
         });
         document.querySelector('[data-testid="sessions-stat"] strong').textContent = String(filtered.length);
+        const connectionStat = document.querySelector('[data-testid="connection-stat"] strong');
+        const connectionStatLabel = document.querySelector('[data-testid="connection-stat"] span');
+        const connection = dashboardState.connectionStatus;
+        if (connectionStat) {
+          connectionStat.textContent = connection
+            ? connection.connected
+              ? "Connected"
+              : connection.state === "connecting"
+                ? "Connecting"
+                : connection.state === "listening"
+                  ? "Listening"
+                  : "Disconnected"
+            : "Unknown";
+        }
+        if (connectionStatLabel) {
+          connectionStatLabel.textContent = connection
+            ? connection.provider + " " + connection.mode
+            : "chat transport";
+        }
+        const connectionRoot = document.getElementById("connection-status");
+        if (connectionRoot) {
+          connectionRoot.innerHTML = renderConnectionStatus(connection);
+        }
         persistFilters();
+      }
+
+      function openDetailDrawer() {
+        const drawer = document.getElementById("detail-drawer");
+        if (!drawer) {
+          return;
+        }
+        drawer.classList.add("is-open");
+      }
+
+      function closeDetailDrawer() {
+        const drawer = document.getElementById("detail-drawer");
+        if (!drawer) {
+          return;
+        }
+        drawer.classList.remove("is-open");
       }
 
       function renderSessionDetail(payload) {
@@ -1146,6 +1483,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         if (!session) {
           document.getElementById("detail").innerHTML =
             '<div class="detail-empty">Select a session from the sessions table to inspect details and available actions.</div>';
+          closeDetailDrawer();
           return;
         }
         const approvalActions = session.pendingApproval
@@ -1190,6 +1528,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           "</div>" +
           '<div class="section-head"><div><h2>Execution History</h2><p>Most recent 20 executions for this session.</p></div></div>' +
           historyMarkup;
+        openDetailDrawer();
       }
 
       function renderSettings() {
@@ -1203,68 +1542,163 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           return;
         }
         document.getElementById("settings").innerHTML =
+          '<div class="settings-stack">' +
+          '<section class="settings-block">' +
+          '<div class="section-head"><div><h2>Defaults</h2><p>These apply to new sessions unless a thread overrides them.</p></div></div>' +
           '<div class="settings-grid">' +
-            '<div class="field"><label for="settings-agent">Default agent</label><select id="settings-agent" data-testid="settings-agent"><option value="codex"' + (settings.agentKind === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (settings.agentKind === "claude-code" ? " selected" : "") + '>claude</option></select></div>' +
-            '<div class="field"><label for="settings-approval">Default approval</label><select id="settings-approval" data-testid="settings-approval"><option value="manual"' + (settings.defaultApprovalPolicy === "manual" ? " selected" : "") + '>manual</option><option value="on-failure"' + (settings.defaultApprovalPolicy === "on-failure" ? " selected" : "") + '>on-failure</option><option value="never"' + (settings.defaultApprovalPolicy === "never" ? " selected" : "") + '>allow</option></select></div>' +
-            '<div class="field"><label for="settings-network">Network access</label><select id="settings-network" data-testid="settings-network"><option value="enabled"' + (settings.networkAccess === "enabled" ? " selected" : "") + '>enabled</option><option value="disabled"' + (settings.networkAccess === "disabled" ? " selected" : "") + '>disabled</option></select></div>' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-agent">Default agent</label><select id="settings-agent" data-testid="settings-agent"><option value="codex"' + (settings.agentKind === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (settings.agentKind === "claude-code" ? " selected" : "") + '>claude</option></select></div>',
+              'Used when a new session starts and nothing in the thread overrides it.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-approval">Default approval</label><select id="settings-approval" data-testid="settings-approval"><option value="manual"' + (settings.defaultApprovalPolicy === "manual" ? " selected" : "") + '>manual</option><option value="on-failure"' + (settings.defaultApprovalPolicy === "on-failure" ? " selected" : "") + '>on-failure</option><option value="never"' + (settings.defaultApprovalPolicy === "never" ? " selected" : "") + '>allow</option></select></div>',
+              '<code>manual</code> always asks before write actions. <code>on-failure</code> retries with approval only when needed. <code>allow</code> runs without approval.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-network">Network access</label><select id="settings-network" data-testid="settings-network"><option value="enabled"' + (settings.networkAccess === "enabled" ? " selected" : "") + '>enabled</option><option value="disabled"' + (settings.networkAccess === "disabled" ? " selected" : "") + '>disabled</option></select></div>',
+              'Controls whether future agent runs may access external network resources.'
+            ) +
           "</div>" +
           '<div class="settings-subgrid">' +
-            '<div class="field"><label for="settings-auto-split-count">Auto-split after user messages</label><input id="settings-auto-split-count" data-testid="settings-auto-split-count" type="number" min="1" value="' + escapeHtml(settings.autoSplitThreadUserMessageCount) + '" /></div>' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-auto-split-count">Auto-split after user messages</label><input id="settings-auto-split-count" data-testid="settings-auto-split-count" type="number" min="1" value="' + escapeHtml(settings.autoSplitThreadUserMessageCount) + '" /></div>',
+              'Starts a fresh agent session after this many user messages in one thread to avoid overly long context.'
+            ) +
           "</div>" +
-          '<div class="section-head"><div><h2>Codex</h2><p>Applied to future Codex runs.</p></div></div>' +
+          "</section>" +
+          '<section class="settings-block"><div class="section-head"><div><h2>Codex</h2><p>Applied to future Codex runs.</p></div></div>' +
           '<div class="settings-subgrid">' +
-            '<div class="field"><label for="settings-codex-model">Model</label><input id="settings-codex-model" data-testid="settings-codex-model" type="text" value="' + escapeHtml(settings.codexModel) + '" /></div>' +
-            '<div class="field"><label for="settings-codex-turns">Max turns</label><input id="settings-codex-turns" data-testid="settings-codex-turns" type="number" min="1" value="' + escapeHtml(settings.codexMaxTurns) + '" /></div>' +
-            '<div class="field"><label for="settings-codex-timeout">Command timeout ms</label><input id="settings-codex-timeout" data-testid="settings-codex-timeout" type="number" min="1" value="' + escapeHtml(settings.codexCommandTimeoutMs) + '" /></div>' +
-            '<div class="field"><label for="settings-codex-runtime">Max runtime ms</label><input id="settings-codex-runtime" data-testid="settings-codex-runtime" type="number" min="1" value="' + escapeHtml(settings.codexMaxRuntimeMs) + '" /></div>' +
-          "</div>" +
-          '<div class="settings-subgrid">' +
-            '<div class="field"><label for="settings-codex-output">Max output length</label><input id="settings-codex-output" data-testid="settings-codex-output" type="number" min="1" value="' + escapeHtml(settings.codexMaxOutputLength) + '" /></div>' +
-          "</div>" +
-          '<div class="section-head"><div><h2>Claude Code</h2><p>Applied to future Claude runs.</p></div></div>' +
-          '<div class="settings-subgrid">' +
-            '<div class="field"><label for="settings-claude-model">Model</label><input id="settings-claude-model" data-testid="settings-claude-model" type="text" value="' + escapeHtml(settings.claudeModel) + '" /></div>' +
-            '<div class="field"><label for="settings-claude-turns">Max turns</label><input id="settings-claude-turns" data-testid="settings-claude-turns" type="number" min="1" value="' + escapeHtml(settings.claudeMaxTurns) + '" /></div>' +
-            '<div class="field"><label for="settings-claude-timeout">Command timeout ms</label><input id="settings-claude-timeout" data-testid="settings-claude-timeout" type="number" min="1" value="' + escapeHtml(settings.claudeCommandTimeoutMs) + '" /></div>' +
-            '<div class="field"><label for="settings-claude-runtime">Max runtime ms</label><input id="settings-claude-runtime" data-testid="settings-claude-runtime" type="number" min="1" value="' + escapeHtml(settings.claudeMaxRuntimeMs) + '" /></div>' +
-          "</div>" +
-          '<div class="section-head"><div><h2>Restart-required</h2><p>Saved immediately, applied after bridge restart.</p></div></div>' +
-          '<div class="settings-subgrid">' +
-            '<div class="field"><label for="settings-provider">Chat provider</label><select id="settings-provider" data-testid="settings-provider"><option value="slack"' + (settings.chatProvider === "slack" ? " selected" : "") + '>slack</option><option value="mattermost"' + (settings.chatProvider === "mattermost" ? " selected" : "") + '>mattermost</option></select></div>' +
-            '<div class="field"><label for="settings-slack-mode">Slack mode</label><select id="settings-slack-mode" data-testid="settings-slack-mode"><option value="http"' + (settings.slackMode === "http" ? " selected" : "") + '>http</option><option value="socket"' + (settings.slackMode === "socket" ? " selected" : "") + '>socket</option></select></div>' +
-            '<div class="field"><label for="settings-mattermost-mode">Mattermost mode</label><select id="settings-mattermost-mode" data-testid="settings-mattermost-mode"><option value="http"' + (settings.mattermostMode === "http" ? " selected" : "") + '>http</option><option value="websocket"' + (settings.mattermostMode === "websocket" ? " selected" : "") + '>websocket</option></select></div>' +
-            '<div class="field"><label for="settings-workdir">Default workdir</label><input id="settings-workdir" data-testid="settings-workdir" type="text" value="' + escapeHtml(settings.defaultWorkingDirectory) + '" /></div>' +
-          "</div>" +
-          '<div class="settings-subgrid">' +
-            '<div class="field"><label for="settings-host">Bridge host</label><input id="settings-host" data-testid="settings-host" type="text" value="' + escapeHtml(settings.host) + '" /></div>' +
-            '<div class="field"><label for="settings-port">Bridge port</label><input id="settings-port" data-testid="settings-port" type="number" min="1" value="' + escapeHtml(settings.port) + '" /></div>' +
-            '<div class="field"><label for="settings-admin-host">Admin host</label><input id="settings-admin-host" data-testid="settings-admin-host" type="text" value="' + escapeHtml(settings.adminHost) + '" /></div>' +
-            '<div class="field"><label for="settings-admin-port">Admin port</label><input id="settings-admin-port" data-testid="settings-admin-port" type="number" min="1" value="' + escapeHtml(settings.adminPort) + '" /></div>' +
-          "</div>" +
-          '<div class="section-head"><div><h2>Connections</h2><p>Secrets stay masked. Enter a new value only when rotating it.</p></div></div>' +
-          '<div class="settings-subgrid">' +
-            '<div class="field"><label for="settings-mm-server">Mattermost server URL</label><input id="settings-mm-server" data-testid="settings-mm-server" type="text" value="' + escapeHtml(settings.mattermostServerUrl || "") + '" /></div>' +
-            '<div class="field"><label for="settings-mm-action-base">Mattermost action base URL</label><input id="settings-mm-action-base" data-testid="settings-mm-action-base" type="text" value="' + escapeHtml(settings.mattermostActionBaseUrl || "") + '" /></div>' +
-            '<div class="field"><label for="settings-mm-actor-mode">Mattermost actor mode</label><select id="settings-mm-actor-mode" data-testid="settings-mm-actor-mode"><option value="bot"' + (settings.mattermostActorMode === "bot" ? " selected" : "") + '>bot</option><option value="self"' + (settings.mattermostActorMode === "self" ? " selected" : "") + '>self</option></select></div>' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-codex-model">Model</label><input id="settings-codex-model" data-testid="settings-codex-model" type="text" value="' + escapeHtml(settings.codexModel) + '" /></div>',
+              'The model name passed to Codex for new runs.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-codex-turns">Max turns</label><input id="settings-codex-turns" data-testid="settings-codex-turns" type="number" min="1" value="' + escapeHtml(settings.codexMaxTurns) + '" /></div>',
+              'Upper bound for tool or reasoning turns in one request.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-codex-timeout">Command timeout ms</label><input id="settings-codex-timeout" data-testid="settings-codex-timeout" type="number" min="1" value="' + escapeHtml(settings.codexCommandTimeoutMs) + '" /></div>',
+              'Idle timeout. Long tasks may continue as long as output keeps flowing.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-codex-runtime">Max runtime ms</label><input id="settings-codex-runtime" data-testid="settings-codex-runtime" type="number" min="1" value="' + escapeHtml(settings.codexMaxRuntimeMs) + '" /></div>',
+              'Hard stop for the total wall-clock runtime of one Codex request.'
+            ) +
           "</div>" +
           '<div class="settings-subgrid">' +
-            '<div class="field"><label for="settings-slack-bot-token">Slack bot token</label><input id="settings-slack-bot-token" data-testid="settings-slack-bot-token" type="password" placeholder="' + (settings.hasSlackBotToken ? "stored" : "not set") + '" /></div>' +
-            '<div class="field"><label for="settings-slack-app-token">Slack app token</label><input id="settings-slack-app-token" data-testid="settings-slack-app-token" type="password" placeholder="' + (settings.hasSlackAppToken ? "stored" : "not set") + '" /></div>' +
-            '<div class="field"><label for="settings-slack-signing-secret">Slack signing secret</label><input id="settings-slack-signing-secret" data-testid="settings-slack-signing-secret" type="password" placeholder="' + (settings.hasSlackSigningSecret ? "stored" : "not set") + '" /></div>' +
-            '<div class="field"><label for="settings-mm-bot-token">Mattermost bot token</label><input id="settings-mm-bot-token" data-testid="settings-mm-bot-token" type="password" placeholder="' + (settings.hasMattermostBotToken ? "stored" : "not set") + '" /></div>' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-codex-output">Max output length</label><input id="settings-codex-output" data-testid="settings-codex-output" type="number" min="1" value="' + escapeHtml(settings.codexMaxOutputLength) + '" /></div>',
+              'Truncates very large CLI output before it is stored or posted back.'
+            ) +
+          "</div>" +
+          "</section>" +
+          '<section class="settings-block"><div class="section-head"><div><h2>Claude Code</h2><p>Applied to future Claude runs.</p></div></div>' +
+          '<div class="settings-subgrid">' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-claude-model">Model</label><input id="settings-claude-model" data-testid="settings-claude-model" type="text" value="' + escapeHtml(settings.claudeModel) + '" /></div>',
+              'The model name passed to Claude Code for new runs.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-claude-turns">Max turns</label><input id="settings-claude-turns" data-testid="settings-claude-turns" type="number" min="1" value="' + escapeHtml(settings.claudeMaxTurns) + '" /></div>',
+              'Upper bound for one Claude request before the bridge stops the run.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-claude-timeout">Command timeout ms</label><input id="settings-claude-timeout" data-testid="settings-claude-timeout" type="number" min="1" value="' + escapeHtml(settings.claudeCommandTimeoutMs) + '" /></div>',
+              'Idle timeout for Claude runs.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-claude-runtime">Max runtime ms</label><input id="settings-claude-runtime" data-testid="settings-claude-runtime" type="number" min="1" value="' + escapeHtml(settings.claudeMaxRuntimeMs) + '" /></div>',
+              'Hard stop for total runtime, even if the run still emits progress.'
+            ) +
+          "</div>" +
+          "</section>" +
+          '<section class="settings-block"><div class="section-head"><div><h2>Bridge transport</h2><p>Saved immediately, applied after bridge restart.</p></div></div>' +
+          '<div class="settings-subgrid">' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-provider">Chat provider</label><select id="settings-provider" data-testid="settings-provider"><option value="slack"' + (settings.chatProvider === "slack" ? " selected" : "") + '>slack</option><option value="mattermost"' + (settings.chatProvider === "mattermost" ? " selected" : "") + '>mattermost</option></select></div>',
+              'Chooses which chat adapter the bridge should listen to after restart.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-slack-mode">Slack mode</label><select id="settings-slack-mode" data-testid="settings-slack-mode"><option value="http"' + (settings.slackMode === "http" ? " selected" : "") + '>http</option><option value="socket"' + (settings.slackMode === "socket" ? " selected" : "") + '>socket</option></select></div>',
+              '<code>socket</code> avoids public callback URLs. <code>http</code> expects Slack to call your bridge over HTTP.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mattermost-mode">Mattermost mode</label><select id="settings-mattermost-mode" data-testid="settings-mattermost-mode"><option value="http"' + (settings.mattermostMode === "http" ? " selected" : "") + '>http</option><option value="websocket"' + (settings.mattermostMode === "websocket" ? " selected" : "") + '>websocket</option></select></div>',
+              '<code>websocket</code> keeps a live connection to Mattermost. <code>http</code> is for webhook-style entrypoints.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-workdir">Default workdir</label><input id="settings-workdir" data-testid="settings-workdir" type="text" value="' + escapeHtml(settings.defaultWorkingDirectory) + '" /></div>',
+              'Base repository or folder used when a new thread does not choose another workspace.'
+            ) +
           "</div>" +
           '<div class="settings-subgrid">' +
-            '<div class="field"><label for="settings-mm-webhook-token">Mattermost webhook token</label><input id="settings-mm-webhook-token" data-testid="settings-mm-webhook-token" type="password" placeholder="' + (settings.hasMattermostWebhookToken ? "stored" : "not set") + '" /></div>' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-host">Bridge host</label><input id="settings-host" data-testid="settings-host" type="text" value="' + escapeHtml(settings.host) + '" /></div>',
+              'The network interface used by the main bridge HTTP server when HTTP mode is active.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-port">Bridge port</label><input id="settings-port" data-testid="settings-port" type="number" min="1" value="' + escapeHtml(settings.port) + '" /></div>',
+              'Main bridge port used for provider callbacks or local HTTP access.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-admin-host">Admin host</label><input id="settings-admin-host" data-testid="settings-admin-host" type="text" value="' + escapeHtml(settings.adminHost) + '" /></div>',
+              'The interface for the admin UI only. Keep this local unless you intentionally expose it.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-admin-port">Admin port</label><input id="settings-admin-port" data-testid="settings-admin-port" type="number" min="1" value="' + escapeHtml(settings.adminPort) + '" /></div>',
+              'Port for the admin dashboard and runtime APIs.'
+            ) +
+          "</div>" +
+          "</section>" +
+          '<section class="settings-block"><div class="section-head"><div><h2>Connections</h2><p>Secrets stay masked. Enter a new value only when rotating it.</p></div></div>' +
+          '<div class="settings-subgrid">' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-server">Mattermost server URL</label><input id="settings-mm-server" data-testid="settings-mm-server" type="text" value="' + escapeHtml(settings.mattermostServerUrl || "") + '" /></div>',
+              'Base URL of your Mattermost workspace, for example <code>https://chat.example.com</code>.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-action-base">Mattermost action base URL</label><input id="settings-mm-action-base" data-testid="settings-mm-action-base" type="text" value="' + escapeHtml(settings.mattermostActionBaseUrl || "") + '" /></div>',
+              'Public bridge base URL for button clicks. The bridge appends <code>/mattermost/actions</code> automatically.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-actor-mode">Mattermost actor mode</label><select id="settings-mm-actor-mode" data-testid="settings-mm-actor-mode"><option value="bot"' + (settings.mattermostActorMode === "bot" ? " selected" : "") + '>bot</option><option value="self"' + (settings.mattermostActorMode === "self" ? " selected" : "") + '>self</option></select></div>',
+              '<code>bot</code> is for bot or service-account tokens. <code>self</code> is for your own account token and only reacts in your self-DM.'
+            ) +
           "</div>" +
           '<div class="settings-subgrid">' +
-            '<div class="field"><label class="toggle" for="clear-slack-bot-token"><input id="clear-slack-bot-token" data-testid="clear-slack-bot-token" type="checkbox" />Clear stored Slack bot token</label></div>' +
-            '<div class="field"><label class="toggle" for="clear-slack-app-token"><input id="clear-slack-app-token" data-testid="clear-slack-app-token" type="checkbox" />Clear stored Slack app token</label></div>' +
-            '<div class="field"><label class="toggle" for="clear-slack-signing-secret"><input id="clear-slack-signing-secret" data-testid="clear-slack-signing-secret" type="checkbox" />Clear stored Slack signing secret</label></div>' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-slack-bot-token">Slack bot token</label><input id="settings-slack-bot-token" data-testid="settings-slack-bot-token" type="password" placeholder="' + (settings.hasSlackBotToken ? "stored" : "not set") + '" /></div>',
+              'Used to post replies and call Slack APIs. Usually starts with <code>xoxb-</code>.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-slack-app-token">Slack app token</label><input id="settings-slack-app-token" data-testid="settings-slack-app-token" type="password" placeholder="' + (settings.hasSlackAppToken ? "stored" : "not set") + '" /></div>',
+              'Required for Slack Socket Mode. Usually starts with <code>xapp-</code>.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-slack-signing-secret">Slack signing secret</label><input id="settings-slack-signing-secret" data-testid="settings-slack-signing-secret" type="password" placeholder="' + (settings.hasSlackSigningSecret ? "stored" : "not set") + '" /></div>',
+              'Used to verify inbound HTTP requests from Slack. Not needed for pure Socket Mode operation.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-bot-token">Mattermost bot token</label><input id="settings-mm-bot-token" data-testid="settings-mm-bot-token" type="password" placeholder="' + (settings.hasMattermostBotToken ? "stored" : "not set") + '" /></div>',
+              'This field accepts the bearer token used for Mattermost API access. In <code>self</code> mode this is where your PAT goes.'
+            ) +
           "</div>" +
           '<div class="settings-subgrid">' +
-            '<div class="field"><label class="toggle" for="clear-mm-bot-token"><input id="clear-mm-bot-token" data-testid="clear-mm-bot-token" type="checkbox" />Clear stored Mattermost bot token</label></div>' +
-            '<div class="field"><label class="toggle" for="clear-mm-webhook-token"><input id="clear-mm-webhook-token" data-testid="clear-mm-webhook-token" type="checkbox" />Clear stored Mattermost webhook token</label></div>' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-webhook-token">Mattermost webhook token</label><input id="settings-mm-webhook-token" data-testid="settings-mm-webhook-token" type="password" placeholder="' + (settings.hasMattermostWebhookToken ? "stored" : "not set") + '" /></div>',
+              'Only needed for HTTP webhook entrypoints. Websocket mode usually does not use this token.'
+            ) +
           "</div>" +
+          '<div class="section-head"><div><h2>Secret cleanup</h2><p>These do not clear immediately. They are applied only when you save settings.</p></div></div>' +
+          '<div class="secret-reset-list">' +
+            renderSecretResetItem("clear-slack-bot-token", "Slack bot token", "Remove the stored bot token on the next save.") +
+            renderSecretResetItem("clear-slack-app-token", "Slack app token", "Remove the stored app token on the next save.") +
+            renderSecretResetItem("clear-slack-signing-secret", "Slack signing secret", "Remove the stored signing secret on the next save.") +
+            renderSecretResetItem("clear-mm-bot-token", "Mattermost bearer token", "Remove the stored Mattermost bearer token on the next save.") +
+            renderSecretResetItem("clear-mm-webhook-token", "Mattermost webhook token", "Remove the stored webhook token on the next save.") +
+          "</div>" +
+          "</section>" +
+          '<section class="settings-block"><div class="section-head"><div><h2>Current summary</h2><p>Read-only values from the currently loaded runtime settings.</p></div></div>' +
           '<div class="detail-grid">' +
             '<div class="detail-card"><strong>Chat provider</strong><span>' + escapeHtml(settings.chatProvider) + "</span></div>" +
             '<div class="detail-card"><strong>Slack mode</strong><span>' + escapeHtml(settings.slackMode) + "</span></div>" +
@@ -1274,7 +1708,11 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             '<div class="detail-card"><strong>Settings file</strong><code>' + escapeHtml(settings.settingsFile) + "</code></div>" +
             '<div class="detail-card"><strong>Last saved</strong><span>' + escapeHtml(settings.settingsSavedAt || "not saved yet") + "</span></div>" +
           "</div>" +
-          '<div class="detail-actions"><button id="save-settings" data-testid="save-settings">Save runtime settings</button><button id="restart-bridge" data-testid="restart-bridge">Restart bridge</button></div>';
+          '<div class="detail-actions"><button id="save-settings" data-testid="save-settings">Save runtime settings</button><button id="restart-bridge" data-testid="restart-bridge">Restart bridge</button></div>' +
+          "</section>" +
+          "</div>";
+        syncSecretToggleStates();
+        applyLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY) || "en");
       }
 
       async function loadSessionDetail(sessionId) {
@@ -1291,6 +1729,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         } catch (error) {
           document.getElementById("detail").innerHTML =
             '<div class="detail-empty">Failed to load session detail.</div>';
+          openDetailDrawer();
           setFlash("Failed to load session detail.", "error");
           throw error;
         }
@@ -1306,6 +1745,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           fetchJson("/admin/api/failures?limit=20"),
         ]);
         dashboardState.sessions = sessionsPayload.sessions;
+        dashboardState.connectionStatus = sessionsPayload.connectionStatus ?? null;
         dashboardState.approvals = approvalsPayload.approvals;
         dashboardState.failures = failuresPayload.failures;
         syncFilterOptions();
@@ -1316,29 +1756,9 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         }
         renderSessions();
 
-        document.getElementById("approvals").innerHTML = renderTableMarkup(
-          "approvals-table",
-          ["Session", "Prompt", "Requested", "Actions"],
-          approvalsPayload.approvals.map((entry) => [
-            "<code>" + escapeHtml(entry.sessionId) + "</code>",
-            escapeHtml(entry.prompt),
-            escapeHtml(entry.requestedAt),
-            [
-              renderButtonMarkup("Approve", entry.sessionId, "approve"),
-              renderButtonMarkup("Reject", entry.sessionId, "reject"),
-            ].join(" "),
-          ]),
-        );
+        document.getElementById("approvals").innerHTML = renderApprovalCards(approvalsPayload.approvals);
 
-        document.getElementById("failures").innerHTML = renderTableMarkup(
-          "failures-table",
-          ["Session", "Status", "Summary"],
-          failuresPayload.failures.map((entry) => [
-            "<code>" + escapeHtml(entry.sessionId) + "</code>",
-            '<span class="status-' + escapeHtml(entry.status) + '">' + escapeHtml(entry.status) + "</span>",
-            escapeHtml(entry.error || entry.summary || ""),
-          ]),
-        );
+        document.getElementById("failures").innerHTML = renderFailureCards(failuresPayload.failures);
         document.querySelector('[data-testid="approvals-stat"] strong').textContent = String(approvalsPayload.approvals.length);
         document.querySelector('[data-testid="failures-stat"] strong').textContent = String(failuresPayload.failures.length);
         const selectedStillExists = dashboardState.sessions.some((session) => session.sessionId === dashboardState.selectedSessionId);
@@ -1472,6 +1892,16 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           void Promise.all([load(), loadSettings()]);
         });
       }
+      const detailCloseButton = document.getElementById("detail-close");
+      detailCloseButton?.addEventListener("click", () => {
+        closeDetailDrawer();
+      });
+      const detailDrawer = document.getElementById("detail-drawer");
+      detailDrawer?.addEventListener("click", (event) => {
+        if (event.target === detailDrawer) {
+          closeDetailDrawer();
+        }
+      });
       const autoRefreshInput = document.getElementById("auto-refresh");
       if (autoRefreshInput) {
         autoRefreshInput.addEventListener("change", (event) => {
@@ -1551,6 +1981,10 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
       });
       document.addEventListener("change", (event) => {
         const target = event.target;
+        if (target instanceof HTMLInputElement && target.dataset.secretToggle === "1") {
+          syncSecretToggleStates();
+          return;
+        }
         if (!(target instanceof HTMLSelectElement)) {
           return;
         }
@@ -1602,9 +2036,12 @@ function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
       }
       body { margin: 0; background: var(--bg); color: var(--ink); }
       main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
-      .hero { margin-bottom: 24px; }
+      .hero { display: flex; justify-content: space-between; gap: 20px; align-items: start; margin-bottom: 24px; }
+      .hero-copy { max-width: 640px; }
       .hero h1 { margin: 0 0 8px; font-size: 32px; }
       .hero p { margin: 0; color: var(--muted); line-height: 1.6; }
+      .hero-side { display: grid; gap: 12px; justify-items: end; }
+      .hero-meta { color: var(--muted); font-size: 12px; }
       .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-top: 20px; }
       .steps { display: grid; gap: 16px; }
       .step h2 { margin: 0 0 6px; font-size: 18px; }
@@ -1628,18 +2065,31 @@ function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
       .site-footer a { color: var(--accent); }
       .footer-controls label { display: inline-flex; gap: 8px; align-items: center; }
       .footer-controls select { border-radius: 999px; border: 1px solid var(--line); background: var(--panel-alt); color: var(--ink); padding: 6px 10px; }
+      @media (max-width: 720px) {
+        .hero {
+          flex-direction: column;
+        }
+        .hero-side {
+          justify-items: start;
+        }
+      }
     </style>
   </head>
   <body>
     <main>
       <section class="hero">
-        <nav class="nav" aria-label="Admin navigation">
-          <a href="/admin">Dashboard</a>
-          <a href="/admin/settings">Settings</a>
-          <a href="/admin/onboarding" class="is-active">Onboarding</a>
-        </nav>
-        <h1>Bridge Onboarding</h1>
-        <p>Set the minimum runtime configuration without digging through every setting. Start here, save, then move to the full settings page only if you need deeper tuning.</p>
+        <div class="hero-copy">
+          <h1>Bridge Onboarding</h1>
+          <p>Set the minimum runtime configuration without digging through every setting. Start here, save, then move to the full settings page only if you need deeper tuning.</p>
+        </div>
+        <div class="hero-side">
+          <nav class="nav" aria-label="Admin navigation">
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/settings">Settings</a>
+            <a href="/admin/onboarding" class="is-active">Onboarding</a>
+          </nav>
+          <div class="hero-meta">Guided setup</div>
+        </div>
       </section>
       <section class="panel steps">
         <div class="step">
@@ -2085,10 +2535,12 @@ export class AdminServer {
       })
       .slice(0, Math.max(limit, 1));
 
+    const connectionStatus = this.bridge.getChatConnectionStatus();
     return {
       sessions: summarizedSessions,
       approvals,
       failures,
+      ...(connectionStatus ? { connectionStatus } : {}),
     };
   }
 
@@ -2098,8 +2550,10 @@ export class AdminServer {
       type: "admin.api.sessions",
       count: payload.length,
     });
+    const connectionStatus = this.bridge.getChatConnectionStatus();
     writeJson(response, 200, {
       sessions: payload,
+      ...(connectionStatus ? { connectionStatus } : {}),
     });
   }
 
@@ -2546,3 +3000,4 @@ export class AdminServer {
     });
   }
 }
+

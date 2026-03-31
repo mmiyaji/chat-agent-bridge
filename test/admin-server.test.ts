@@ -139,6 +139,8 @@ test("AdminServer serves session, approval, and failure APIs", async () => {
   assert.equal(sessionsResponse.body.sessions.length, 1);
   assert.equal(sessionsResponse.body.sessions[0].sessionId, "session-1");
   assert.equal(sessionsResponse.body.sessions[0].pendingApproval.prompt, "edit files");
+  assert.equal(sessionsResponse.body.connectionStatus.provider, "slack");
+  assert.equal(sessionsResponse.body.connectionStatus.connected, true);
 
   const approvalsResponse = await getJson(port, "/admin/api/approvals");
   assert.equal(approvalsResponse.statusCode, 200);
@@ -187,6 +189,8 @@ test("AdminServer server-renders dashboard data and action controls", async () =
   assert.match(response.body, /data-testid="session-search"/);
   assert.match(response.body, /Idle/);
   assert.match(response.body, /data-testid="nav-settings"/);
+  assert.match(response.body, /data-testid="connection-panel"/);
+  assert.match(response.body, /Connected to Slack via Socket Mode/);
 
   await admin.stop();
 });

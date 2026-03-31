@@ -6,7 +6,12 @@ import net from "node:net";
 import tls from "node:tls";
 import { AuditLogger, NoopAuditLogger } from "../../core/audit.js";
 import { AppConfig, ChatThreadRef, IncomingChatMessage, SlackMode } from "../../core/types.js";
-import { ChatAdapter, ChatMessageHandler, ChatMessageOptions } from "../chat.js";
+import {
+  ChatAdapter,
+  ChatConnectionStatus,
+  ChatMessageHandler,
+  ChatMessageOptions,
+} from "../chat.js";
 
 interface SlackEnvelope {
   type?: string;
@@ -600,6 +605,7 @@ export class SlackAdapter implements ChatAdapter {
   private readonly seenEventIds = new Set<string>();
   private readonly auditLogger: AuditLogger;
   private stopped = false;
+  private connectionStatus: ChatConnectionStatus;
 
   constructor(
     config: Pick<
@@ -645,6 +651,13 @@ export class SlackAdapter implements ChatAdapter {
     this.socketConnector = dependencies?.socketConnector ?? {
       open: openSocketStream,
     };
+    this.connectionStatus = {
+      provider: "slack",
+      mode: options.mode,
+      state: options.mode === "socket" ? "disconnected" : "disconnected",
+      connected: false,
+      statusText: options.mode === "socket" ? "Socket Mode is not connected." : "HTTP listener is stopped.",
+    };
   }
 
   async start(handler: ChatMessageHandler): Promise<void> {
@@ -652,6 +665,11 @@ export class SlackAdapter implements ChatAdapter {
     this.stopped = false;
 
     if (this.options.mode === "socket") {
+      this.updateConnectionStatus({
+        state: "connecting",
+        connected: false,
+        statusText: "Connecting to Slack Socket Mode...",
+      });
       await this.startSocketModeGracefully();
       return;
     }
@@ -668,6 +686,11 @@ export class SlackAdapter implements ChatAdapter {
     console.log(
       `Slack adapter listening on http://${this.options.host}:${this.options.port}/slack/events`,
     );
+    this.updateConnectionStatus({
+      state: "listening",
+      connected: true,
+      statusText: `Listening for Slack HTTP events on ${this.options.host}:${this.getListeningPort() ?? this.options.port}.`,
+    });
   }
 
   async stop(): Promise<void> {
@@ -682,6 +705,15 @@ export class SlackAdapter implements ChatAdapter {
       this.socketConnection = undefined;
       await connection.close().catch(() => undefined);
     }
+
+    this.updateConnectionStatus({
+      state: "disconnected",
+      connected: false,
+      statusText:
+        this.options.mode === "socket"
+          ? "Slack Socket Mode is stopped."
+          : "Slack HTTP listener is stopped.",
+    });
 
     if (!this.server) {
       return;
@@ -711,6 +743,10 @@ export class SlackAdapter implements ChatAdapter {
     }
 
     return address.port;
+  }
+
+  getConnectionStatus(): ChatConnectionStatus {
+    return { ...this.connectionStatus };
   }
 
   async postThreadMessage(
@@ -892,8 +928,20 @@ export class SlackAdapter implements ChatAdapter {
     const socketUrl = await this.openSocketUrl(this.options.appToken);
     const connection = await this.socketConnector.open(socketUrl);
     this.socketConnection = connection;
+    await this.auditLogger.log({
+      type: "slack.socket.connected",
+      mode: "socket",
+    });
     connection.setCloseHandler(() => {
+      void this.auditLogger.log({
+        type: "slack.socket.closed",
+      });
       this.socketConnection = undefined;
+      this.updateConnectionStatus({
+        state: "disconnected",
+        connected: false,
+        statusText: "Slack Socket Mode disconnected. Waiting to reconnect...",
+      });
       if (this.stopped) {
         return;
       }
@@ -907,6 +955,12 @@ export class SlackAdapter implements ChatAdapter {
     });
 
     console.log("Slack adapter connected via Socket Mode.");
+    this.updateConnectionStatus({
+      state: "connected",
+      connected: true,
+      statusText: "Connected to Slack via Socket Mode.",
+      clearError: true,
+    });
   }
 
   private async startSocketModeGracefully(): Promise<void> {
@@ -914,6 +968,12 @@ export class SlackAdapter implements ChatAdapter {
       await this.startSocketMode();
     } catch (error) {
       console.error("Slack Socket Mode initial connect failed.", error);
+      this.updateConnectionStatus({
+        state: "disconnected",
+        connected: false,
+        statusText: "Slack Socket Mode initial connect failed. Retrying...",
+        lastError: error instanceof Error ? error.message : String(error),
+      });
       await this.auditLogger.log({
         type: "slack.socket.connect-failed",
         phase: "initial",
@@ -928,10 +988,26 @@ export class SlackAdapter implements ChatAdapter {
       return;
     }
 
+    this.updateConnectionStatus({
+      state: "connecting",
+      connected: false,
+      statusText: "Reconnecting to Slack Socket Mode...",
+    });
+    void this.auditLogger.log({
+      type: "slack.socket.reconnect-scheduled",
+      delayMs: 1000,
+    });
+
     this.socketReconnectTimer = setTimeout(() => {
       this.socketReconnectTimer = undefined;
       void this.startSocketMode().catch((error: unknown) => {
         console.error("Slack Socket Mode reconnect failed.", error);
+        this.updateConnectionStatus({
+          state: "disconnected",
+          connected: false,
+          statusText: "Slack Socket Mode reconnect failed. Retrying...",
+          lastError: error instanceof Error ? error.message : String(error),
+        });
         void this.auditLogger.log({
           type: "slack.socket.connect-failed",
           phase: "reconnect",
@@ -953,6 +1029,12 @@ export class SlackAdapter implements ChatAdapter {
         type: "slack.socket.disconnect",
         reason: envelope.reason ?? "",
       });
+      this.updateConnectionStatus({
+        state: "disconnected",
+        connected: false,
+        statusText: `Slack Socket Mode disconnected (${envelope.reason ?? "unknown"}). Reconnecting...`,
+      });
+      this.scheduleSocketReconnect();
       await this.socketConnection?.close();
       return;
     }
@@ -1101,5 +1183,29 @@ export class SlackAdapter implements ChatAdapter {
         });
       });
     }
+  }
+
+  private updateConnectionStatus(input: {
+    state: ChatConnectionStatus["state"];
+    connected: boolean;
+    statusText: string;
+    lastError?: string;
+    clearError?: boolean;
+  }): void {
+    const nextStatus: ChatConnectionStatus = {
+      ...this.connectionStatus,
+      state: input.state,
+      connected: input.connected,
+      statusText: input.statusText,
+      lastChangedAt: new Date().toISOString(),
+    };
+
+    if (input.clearError) {
+      delete nextStatus.lastError;
+    } else if (input.lastError !== undefined) {
+      nextStatus.lastError = input.lastError;
+    }
+
+    this.connectionStatus = nextStatus;
   }
 }

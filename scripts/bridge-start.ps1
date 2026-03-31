@@ -1,5 +1,6 @@
 param(
-  [switch]$SkipBuild
+  [switch]$SkipBuild,
+  [switch]$OpenAdmin
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,6 +13,70 @@ $runtimeDir = $script:BridgeRuntimeDir
 $pidFile = $script:BridgePidFile
 $stdoutLog = Join-Path $runtimeDir "bridge.stdout.log"
 $stderrLog = Join-Path $runtimeDir "bridge.stderr.log"
+
+function Test-BridgeOnboardingRequired {
+  $chatProvider = (Get-Item "Env:CAB_CHAT_PROVIDER" -ErrorAction SilentlyContinue).Value
+  if ([string]::IsNullOrWhiteSpace($chatProvider)) {
+    $chatProvider = "slack"
+  }
+
+  $defaultWorkdir = (Get-Item "Env:CAB_DEFAULT_WORKDIR" -ErrorAction SilentlyContinue).Value
+  if ([string]::IsNullOrWhiteSpace($defaultWorkdir)) {
+    return $true
+  }
+
+  if ($chatProvider -eq "mattermost") {
+    $serverUrl = (Get-Item "Env:MATTERMOST_SERVER_URL" -ErrorAction SilentlyContinue).Value
+    $botToken = (Get-Item "Env:MATTERMOST_BOT_TOKEN" -ErrorAction SilentlyContinue).Value
+    $mode = (Get-Item "Env:MATTERMOST_MODE" -ErrorAction SilentlyContinue).Value
+    if ([string]::IsNullOrWhiteSpace($mode)) {
+      $mode = "http"
+    }
+    if ([string]::IsNullOrWhiteSpace($serverUrl) -or [string]::IsNullOrWhiteSpace($botToken)) {
+      return $true
+    }
+    if ($mode -eq "http") {
+      $webhookToken = (Get-Item "Env:MATTERMOST_WEBHOOK_TOKEN" -ErrorAction SilentlyContinue).Value
+      if ([string]::IsNullOrWhiteSpace($webhookToken)) {
+        return $true
+      }
+    }
+    return $false
+  }
+
+  $slackBotToken = (Get-Item "Env:SLACK_BOT_TOKEN" -ErrorAction SilentlyContinue).Value
+  $slackMode = (Get-Item "Env:CAB_SLACK_MODE" -ErrorAction SilentlyContinue).Value
+  if ([string]::IsNullOrWhiteSpace($slackMode)) {
+    $slackMode = "http"
+  }
+  if ([string]::IsNullOrWhiteSpace($slackBotToken)) {
+    return $true
+  }
+  if ($slackMode -eq "socket") {
+    $slackAppToken = (Get-Item "Env:SLACK_APP_TOKEN" -ErrorAction SilentlyContinue).Value
+    return [string]::IsNullOrWhiteSpace($slackAppToken)
+  }
+  return $false
+}
+
+function Open-BridgeAdminPage {
+  $adminHost = (Get-Item "Env:CAB_ADMIN_HOST" -ErrorAction SilentlyContinue).Value
+  if ([string]::IsNullOrWhiteSpace($adminHost)) {
+    $adminHost = (Get-Item "Env:CAB_HOST" -ErrorAction SilentlyContinue).Value
+  }
+  if ([string]::IsNullOrWhiteSpace($adminHost) -or $adminHost -eq "0.0.0.0") {
+    $adminHost = "127.0.0.1"
+  }
+
+  $adminPort = (Get-Item "Env:CAB_ADMIN_PORT" -ErrorAction SilentlyContinue).Value
+  if ([string]::IsNullOrWhiteSpace($adminPort)) {
+    $adminPort = "8788"
+  }
+
+  $path = if (Test-BridgeOnboardingRequired) { "/admin/onboarding" } else { "/admin" }
+  $url = "http://{0}:{1}{2}" -f $adminHost, $adminPort, $path
+  Start-Process $url | Out-Null
+}
 
 New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
 
@@ -70,6 +135,9 @@ if (Test-Path $pidFile) {
     $otherBridgeProcesses = @(Get-BridgeProcesses | Where-Object { $_.ProcessId -ne [int]$existingProcessId })
     if ($otherBridgeProcesses.Count -eq 0) {
       Write-Output "Bridge is already running with PID $existingProcessId."
+      if ($OpenAdmin) {
+        Open-BridgeAdminPage
+      }
       exit 0
     }
   }
@@ -118,6 +186,9 @@ try {
   Write-Output "Bridge started with PID $($process.Id)."
   Write-Output "stdout: $stdoutLog"
   Write-Output "stderr: $stderrLog"
+  if ($OpenAdmin) {
+    Open-BridgeAdminPage
+  }
 } finally {
   Pop-Location
 }

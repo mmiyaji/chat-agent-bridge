@@ -6,7 +6,12 @@ import {
   SessionBinding,
 } from "../../src/core/types.js";
 import { Agent, AgentExecutionCancelledError } from "../../src/agents/base.js";
-import { ChatAdapter, ChatMessageHandler, ChatMessageOptions } from "../../src/adapters/chat.js";
+import {
+  ChatAdapter,
+  ChatConnectionStatus,
+  ChatMessageHandler,
+  ChatMessageOptions,
+} from "../../src/adapters/chat.js";
 import { AuditEvent, AuditLogger } from "../../src/core/audit.js";
 import { JobQueue } from "../../src/core/job-queue.js";
 import { StateStore } from "../../src/state/state-store.js";
@@ -57,6 +62,14 @@ export class InMemoryStateStore implements StateStore {
 
 export class RecordingChatAdapter implements ChatAdapter {
   handler?: ChatMessageHandler;
+  connectionStatus: ChatConnectionStatus = {
+    provider: "slack",
+    mode: "socket",
+    state: "connected",
+    connected: true,
+    statusText: "Connected to Slack via Socket Mode.",
+    lastChangedAt: "2026-03-30T10:00:00.000Z",
+  };
   readonly startedThreads: Array<{ channelId: string; text: string; options?: ChatMessageOptions }> = [];
   readonly posted: Array<{ thread: ChatThreadRef; text: string; options?: ChatMessageOptions }> = [];
   readonly updated: Array<{
@@ -69,6 +82,10 @@ export class RecordingChatAdapter implements ChatAdapter {
 
   async start(handler: ChatMessageHandler): Promise<void> {
     this.handler = handler;
+  }
+
+  getConnectionStatus(): ChatConnectionStatus {
+    return { ...this.connectionStatus };
   }
 
   async startNewThread(

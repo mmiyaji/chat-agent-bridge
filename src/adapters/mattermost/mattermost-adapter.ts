@@ -5,7 +5,13 @@ import { createRequire } from "node:module";
 import querystring from "node:querystring";
 import { AuditLogger, NoopAuditLogger } from "../../core/audit.js";
 import { AppConfig, ChatThreadRef, IncomingChatMessage } from "../../core/types.js";
-import { ChatAction, ChatAdapter, ChatMessageHandler, ChatMessageOptions } from "../chat.js";
+import {
+  ChatAction,
+  ChatAdapter,
+  ChatConnectionStatus,
+  ChatMessageHandler,
+  ChatMessageOptions,
+} from "../chat.js";
 
 const require = createRequire(import.meta.url);
 
@@ -187,6 +193,7 @@ export class MattermostAdapter implements ChatAdapter {
   private readonly channelTypeCache = new Map<string, string>();
   private readonly selfDmChannelCache = new Map<string, boolean>();
   private readonly actionToken = crypto.randomUUID();
+  private connectionStatus: ChatConnectionStatus;
 
   constructor(
     config: Pick<
@@ -258,6 +265,16 @@ export class MattermostAdapter implements ChatAdapter {
         return new WebSocketCtor(url);
       });
     this.auditLogger = auditLogger ?? new NoopAuditLogger();
+    this.connectionStatus = {
+      provider: "mattermost",
+      mode: this.options.mode,
+      state: "disconnected",
+      connected: false,
+      statusText:
+        this.options.mode === "websocket"
+          ? "Mattermost WebSocket is not connected."
+          : "Mattermost HTTP listener is stopped.",
+    };
   }
 
   async start(handler: ChatMessageHandler): Promise<void> {
@@ -275,6 +292,14 @@ export class MattermostAdapter implements ChatAdapter {
     console.log(
       `Mattermost adapter listening on http://${this.options.host}:${this.getListeningPort() ?? this.options.port}/mattermost/events`,
     );
+    this.updateConnectionStatus({
+      state: this.options.mode === "websocket" ? "connecting" : "listening",
+      connected: this.options.mode !== "websocket",
+      statusText:
+        this.options.mode === "websocket"
+          ? "Connecting to Mattermost WebSocket..."
+          : `Listening for Mattermost HTTP events on ${this.options.host}:${this.getListeningPort() ?? this.options.port}.`,
+    });
 
     if (this.options.actorMode === "self") {
       const currentUser = await this.readCurrentUser();
@@ -299,6 +324,15 @@ export class MattermostAdapter implements ChatAdapter {
       this.socket.close();
       this.socket = undefined;
     }
+
+    this.updateConnectionStatus({
+      state: "disconnected",
+      connected: false,
+      statusText:
+        this.options.mode === "websocket"
+          ? "Mattermost WebSocket is stopped."
+          : "Mattermost HTTP listener is stopped.",
+    });
 
     if (!this.server) {
       return;
@@ -325,6 +359,10 @@ export class MattermostAdapter implements ChatAdapter {
     }
 
     return address.port;
+  }
+
+  getConnectionStatus(): ChatConnectionStatus {
+    return { ...this.connectionStatus };
   }
 
   async startNewThread(
@@ -646,7 +684,15 @@ export class MattermostAdapter implements ChatAdapter {
     });
 
     socket.addEventListener("close", () => {
+      void this.auditLogger.log({
+        type: "mattermost.websocket.closed",
+      });
       this.socket = undefined;
+      this.updateConnectionStatus({
+        state: "disconnected",
+        connected: false,
+        statusText: "Mattermost WebSocket disconnected. Waiting to reconnect...",
+      });
       if (this.stopped) {
         return;
       }
@@ -662,6 +708,16 @@ export class MattermostAdapter implements ChatAdapter {
 
     await authenticatedPromise;
     console.log("Mattermost adapter connected via WebSocket.");
+    await this.auditLogger.log({
+      type: "mattermost.websocket.connected",
+      mode: "websocket",
+    });
+    this.updateConnectionStatus({
+      state: "connected",
+      connected: true,
+      statusText: "Connected to Mattermost via WebSocket.",
+      clearError: true,
+    });
   }
 
   private scheduleSocketReconnect(): void {
@@ -669,10 +725,26 @@ export class MattermostAdapter implements ChatAdapter {
       return;
     }
 
+    this.updateConnectionStatus({
+      state: "connecting",
+      connected: false,
+      statusText: "Reconnecting to Mattermost WebSocket...",
+    });
+    void this.auditLogger.log({
+      type: "mattermost.websocket.reconnect-scheduled",
+      delayMs: 1000,
+    });
+
     this.socketReconnectTimer = setTimeout(() => {
       this.socketReconnectTimer = undefined;
       void this.startWebSocketMode().catch((error: unknown) => {
         console.error("Mattermost websocket reconnect failed.", error);
+        this.updateConnectionStatus({
+          state: "disconnected",
+          connected: false,
+          statusText: "Mattermost WebSocket reconnect failed. Retrying...",
+          lastError: error instanceof Error ? error.message : String(error),
+        });
         this.scheduleSocketReconnect();
       });
     }, 1000);
@@ -768,6 +840,30 @@ export class MattermostAdapter implements ChatAdapter {
         authorization: `Bearer ${this.options.botToken}`,
       },
     });
+  }
+
+  private updateConnectionStatus(input: {
+    state: ChatConnectionStatus["state"];
+    connected: boolean;
+    statusText: string;
+    lastError?: string;
+    clearError?: boolean;
+  }): void {
+    const nextStatus: ChatConnectionStatus = {
+      ...this.connectionStatus,
+      state: input.state,
+      connected: input.connected,
+      statusText: input.statusText,
+      lastChangedAt: new Date().toISOString(),
+    };
+
+    if (input.clearError) {
+      delete nextStatus.lastError;
+    } else if (input.lastError !== undefined) {
+      nextStatus.lastError = input.lastError;
+    }
+
+    this.connectionStatus = nextStatus;
   }
 
   private async readCurrentUser(): Promise<MattermostUser | undefined> {

@@ -84,14 +84,20 @@ test("createAppConfig lets env override persisted settings", () => {
 });
 
 test("createAppConfig reads Mattermost actor mode and maps legacy dm-only to self", () => {
+  fs.mkdirSync(tempRoot, { recursive: true });
+  const settingsFile = path.join(tempRoot, "env-settings-mattermost.json");
+  fs.rmSync(settingsFile, { force: true });
+
   const explicit = createAppConfig({
     CAB_ALLOWED_DIRS: "C:/repo",
+    CAB_SETTINGS_FILE: settingsFile,
     MATTERMOST_ACTOR_MODE: "self",
   });
   assert.equal(explicit.mattermostActorMode, "self");
 
   const legacy = createAppConfig({
     CAB_ALLOWED_DIRS: "C:/repo",
+    CAB_SETTINGS_FILE: settingsFile,
     MATTERMOST_DM_ONLY: "true",
   });
   assert.equal(legacy.mattermostActorMode, "self");

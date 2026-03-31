@@ -11,5 +11,8 @@
   "include": [
     "src/**/*.ts",
     "test/**/*.ts"
+  ],
+  "exclude": [
+    "test/mattermost-e2e.test.ts"
   ]
 }

@@ -373,7 +373,6 @@ test("MattermostAdapter converts interactive actions into bridge commands", asyn
 
 test("MattermostAdapter accepts websocket posted events", async () => {
   let messageHandler: ((event: { data?: unknown }) => void) | undefined;
-  let openHandler: ((event: { data?: unknown }) => void) | undefined;
   let closeHandler: ((event: { data?: unknown }) => void) | undefined;
   const sentFrames: string[] = [];
   const adapter = new MattermostAdapter(
@@ -414,9 +413,8 @@ test("MattermostAdapter accepts websocket posted events", async () => {
       socketFactory: () => ({
         addEventListener: (type, listener) => {
           if (type === "open") {
-            openHandler = listener;
             queueMicrotask(() => {
-              openHandler?.({});
+              listener({});
             });
           } else if (type === "message") {
             messageHandler = listener;
@@ -426,6 +424,20 @@ test("MattermostAdapter accepts websocket posted events", async () => {
         },
         send: (data) => {
           sentFrames.push(data);
+          const frame = JSON.parse(data) as {
+            action?: string;
+            seq?: number;
+          };
+          if (frame.action === "authentication_challenge") {
+            queueMicrotask(() => {
+              messageHandler?.({
+                data: JSON.stringify({
+                  status: "OK",
+                  seq_reply: frame.seq,
+                }),
+              });
+            });
+          }
         },
         close: () => {
           closeHandler?.({});
@@ -443,12 +455,6 @@ test("MattermostAdapter accepts websocket posted events", async () => {
   });
 
   assert.match(sentFrames[0] ?? "", /authentication_challenge/);
-  messageHandler?.({
-    data: JSON.stringify({
-      status: "OK",
-      seq_reply: 1,
-    }),
-  });
   messageHandler?.({
     data: JSON.stringify({
       event: "posted",
@@ -469,9 +475,8 @@ test("MattermostAdapter accepts websocket posted events", async () => {
   await adapter.stop();
 });
 
-test("MattermostAdapter accepts plain self-DM posts in self mode", async () => {
+test("MattermostAdapter requires mentions for self-DM posts in self mode", async () => {
   let messageHandler: ((event: { data?: unknown }) => void) | undefined;
-  let openHandler: ((event: { data?: unknown }) => void) | undefined;
   const adapter = new MattermostAdapter(
     {
       port: 0,
@@ -509,15 +514,29 @@ test("MattermostAdapter accepts plain self-DM posts in self mode", async () => {
       socketFactory: () => ({
         addEventListener: (type, listener) => {
           if (type === "open") {
-            openHandler = listener;
             queueMicrotask(() => {
-              openHandler?.({});
+              listener({});
             });
           } else if (type === "message") {
             messageHandler = listener;
           }
         },
-        send: () => undefined,
+        send: (data) => {
+          const frame = JSON.parse(data) as {
+            action?: string;
+            seq?: number;
+          };
+          if (frame.action === "authentication_challenge") {
+            queueMicrotask(() => {
+              messageHandler?.({
+                data: JSON.stringify({
+                  status: "OK",
+                  seq_reply: frame.seq,
+                }),
+              });
+            });
+          }
+        },
         close: () => undefined,
       }),
     },
@@ -530,12 +549,6 @@ test("MattermostAdapter accepts plain self-DM posts in self mode", async () => {
 
   messageHandler?.({
     data: JSON.stringify({
-      status: "OK",
-      seq_reply: 1,
-    }),
-  });
-  messageHandler?.({
-    data: JSON.stringify({
       event: "posted",
       data: {
         post: JSON.stringify({
@@ -543,7 +556,7 @@ test("MattermostAdapter accepts plain self-DM posts in self mode", async () => {
           channel_id: "dm-1",
           root_id: "",
           user_id: "user-1",
-          message: "quick memo",
+          message: "@me quick memo",
         }),
       },
     }),
@@ -587,7 +600,6 @@ test("MattermostAdapter accepts plain self-DM posts in self mode", async () => {
 
 test("MattermostAdapter ignores one-to-one DMs with other users in self mode", async () => {
   let messageHandler: ((event: { data?: unknown }) => void) | undefined;
-  let openHandler: ((event: { data?: unknown }) => void) | undefined;
   const adapter = new MattermostAdapter(
     {
       port: 0,
@@ -625,15 +637,29 @@ test("MattermostAdapter ignores one-to-one DMs with other users in self mode", a
       socketFactory: () => ({
         addEventListener: (type, listener) => {
           if (type === "open") {
-            openHandler = listener;
             queueMicrotask(() => {
-              openHandler?.({});
+              listener({});
             });
           } else if (type === "message") {
             messageHandler = listener;
           }
         },
-        send: () => undefined,
+        send: (data) => {
+          const frame = JSON.parse(data) as {
+            action?: string;
+            seq?: number;
+          };
+          if (frame.action === "authentication_challenge") {
+            queueMicrotask(() => {
+              messageHandler?.({
+                data: JSON.stringify({
+                  status: "OK",
+                  seq_reply: frame.seq,
+                }),
+              });
+            });
+          }
+        },
         close: () => undefined,
       }),
     },
@@ -644,12 +670,6 @@ test("MattermostAdapter ignores one-to-one DMs with other users in self mode", a
     received.push(message.text);
   });
 
-  messageHandler?.({
-    data: JSON.stringify({
-      status: "OK",
-      seq_reply: 1,
-    }),
-  });
   messageHandler?.({
     data: JSON.stringify({
       event: "posted",

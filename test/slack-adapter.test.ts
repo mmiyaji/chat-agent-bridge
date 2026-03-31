@@ -442,6 +442,91 @@ test("SlackAdapter keeps the bridge alive when initial Socket Mode connect fails
   await adapter.stop();
 });
 
+test("SlackAdapter reconnects after a Socket Mode disconnect warning", async () => {
+  const auditLogger = new RecordingAuditLogger();
+  const received: string[] = [];
+  const messageHandlers: Array<(message: string) => void> = [];
+  const closeHandlers: Array<() => void> = [];
+  let openAttempts = 0;
+
+  const adapter = new SlackAdapter(
+    {
+      slackMode: "socket",
+      port: 0,
+      host: "127.0.0.1",
+      defaultWorkingDirectory: "C:/repo",
+      slackAppToken: "xapp-test",
+    },
+    auditLogger,
+    {
+      openSocketUrl: async () => "wss://example.invalid/socket",
+      socketConnector: {
+        open: async () => {
+          const connectionIndex = openAttempts;
+          openAttempts += 1;
+          return {
+            close: async () => {
+              const closeHandler = closeHandlers[connectionIndex];
+              closeHandler?.();
+            },
+            setMessageHandler: (handler) => {
+              messageHandlers[connectionIndex] = handler;
+            },
+            setCloseHandler: (handler) => {
+              closeHandlers[connectionIndex] = handler;
+            },
+            sendText: async () => undefined,
+          };
+        },
+      },
+    },
+  );
+
+  await adapter.start(async (message) => {
+    received.push(message.text);
+  });
+
+  assert.equal(openAttempts, 1);
+  messageHandlers[0]?.(
+    JSON.stringify({
+      type: "disconnect",
+      reason: "warning",
+    }),
+  );
+
+  await new Promise((resolve) => setTimeout(resolve, 1100));
+  assert.equal(openAttempts, 2);
+  messageHandlers[1]?.(
+    JSON.stringify({
+      envelope_id: "env-reconnected",
+      type: "events_api",
+      payload: {
+        type: "event_callback",
+        event_id: "EvSocketReconnect",
+        event: {
+          type: "message",
+          channel: "C1",
+          user: "U1",
+          text: "status",
+          ts: "101.4",
+          thread_ts: "100.1",
+        },
+      },
+    }),
+  );
+
+  await waitForMicrotasks();
+  assert.deepEqual(received, ["status"]);
+  assert.equal(
+    auditLogger.events.some(
+      (event) => event.type === "slack.socket.disconnect" && event.reason === "warning",
+    ),
+    true,
+  );
+
+  await adapter.stop();
+});
+
 test("SlackAdapter converts cancel block actions into cancel messages", async () => {
   const auditLogger = new RecordingAuditLogger();
   const adapter = new SlackAdapter(
