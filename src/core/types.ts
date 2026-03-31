@@ -133,6 +133,7 @@ export interface AppConfig {
   claudeCommandTimeoutMs: number;
   claudeMaxRuntimeMs: number;
   autoSplitThreadUserMessageCount: number;
+  agentRetryCount: number;
 }
 
 export interface StateSnapshot {

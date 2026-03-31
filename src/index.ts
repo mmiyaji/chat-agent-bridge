@@ -1,4 +1,5 @@
 import { createAppConfig } from "./config/env.js";
+import { logger } from "./core/logger.js";
 import { SlackAdapter } from "./adapters/slack/slack-adapter.js";
 import { MattermostAdapter } from "./adapters/mattermost/mattermost-adapter.js";
 import { AgentRegistry } from "./agents/base.js";
@@ -50,7 +51,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error("Failed to start Chat Agent Bridge.", error);
+  logger.error("Failed to start Chat Agent Bridge.", { error: error instanceof Error ? error.message : String(error) });
   const config = createAppConfig(process.env);
   writeProcessAudit(config.auditLogFile, "bridge.start.failed", {
     pid: process.pid,

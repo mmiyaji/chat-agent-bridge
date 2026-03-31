@@ -4,6 +4,7 @@ import https from "node:https";
 import { createRequire } from "node:module";
 import querystring from "node:querystring";
 import { AuditLogger, NoopAuditLogger } from "../../core/audit.js";
+import { logger } from "../../core/logger.js";
 import { AppConfig, ChatThreadRef, IncomingChatMessage } from "../../core/types.js";
 import {
   ChatAction,
@@ -186,6 +187,7 @@ export class MattermostAdapter implements ChatAdapter {
   private server: http.Server | undefined;
   private socket: MattermostSocketLike | undefined;
   private socketReconnectTimer: NodeJS.Timeout | undefined;
+  private socketReconnectDelayMs = 1000;
   private socketSeq = 1;
   private selfUserId: string | undefined;
   private selfUsername: string | undefined;
@@ -708,7 +710,8 @@ export class MattermostAdapter implements ChatAdapter {
     });
 
     await authenticatedPromise;
-    console.log("Mattermost adapter connected via WebSocket.");
+    logger.info("Mattermost adapter connected via WebSocket.", { mode: "websocket" });
+    this.socketReconnectDelayMs = 1000;
     const previousDisconnectAt = this.connectionStatus.lastDisconnectedAt;
     await this.auditLogger.log({
       type: "mattermost.websocket.connected",
@@ -736,20 +739,23 @@ export class MattermostAdapter implements ChatAdapter {
       return;
     }
 
+    const delayMs = this.socketReconnectDelayMs;
+    this.socketReconnectDelayMs = Math.min(delayMs * 2, 60000);
+
     this.updateConnectionStatus({
       state: "connecting",
       connected: false,
-      statusText: "Reconnecting to Mattermost WebSocket...",
+      statusText: `Reconnecting to Mattermost WebSocket in ${delayMs}ms...`,
     });
     void this.auditLogger.log({
       type: "mattermost.websocket.reconnect-scheduled",
-      delayMs: 1000,
+      delayMs,
     });
 
     this.socketReconnectTimer = setTimeout(() => {
       this.socketReconnectTimer = undefined;
       void this.startWebSocketMode().catch((error: unknown) => {
-        console.error("Mattermost websocket reconnect failed.", error);
+        logger.error("Mattermost websocket reconnect failed.", { error: error instanceof Error ? error.message : String(error) });
         this.updateConnectionStatus({
           state: "disconnected",
           connected: false,
@@ -758,7 +764,7 @@ export class MattermostAdapter implements ChatAdapter {
         });
         this.scheduleSocketReconnect();
       });
-    }, 1000);
+    }, delayMs);
   }
 
   private async handleSocketMessage(

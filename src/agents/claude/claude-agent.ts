@@ -200,8 +200,7 @@ export class ClaudeCodeAgent implements Agent {
       "--verbose",
       "--output-format",
       "stream-json",
-      "--max-turns",
-      String(this.config.claudeMaxTurns),
+      ...this.buildMaxTurnsArgs(),
       "--model",
       this.config.claudeModel,
       ...this.buildPermissionArgs(request),
@@ -217,13 +216,19 @@ export class ClaudeCodeAgent implements Agent {
       "--verbose",
       "--output-format",
       "stream-json",
-      "--max-turns",
-      String(this.config.claudeMaxTurns),
+      ...this.buildMaxTurnsArgs(),
       "--model",
       this.config.claudeModel,
       ...this.buildPermissionArgs(request),
       request.prompt,
     ];
+  }
+
+  private buildMaxTurnsArgs(): string[] {
+    if (this.config.claudeMaxTurns <= 0) {
+      return [];
+    }
+    return ["--max-turns", String(this.config.claudeMaxTurns)];
   }
 
   private buildPermissionArgs(request: AgentExecutionRequest): string[] {
@@ -411,13 +416,18 @@ export class ClaudeCodeAgent implements Agent {
     }
 
     const sessionId = payload.session_id ?? streamedSessionId;
+    let resultText = typeof payload.result === "string" ? payload.result : "";
+    if (payload.subtype === "max_turns") {
+      resultText = `⚠ Max turns reached (task may be incomplete).\n\n${resultText}`;
+    }
+
     return {
       ...(typeof sessionId === "string"
         ? {
             sessionId,
           }
         : {}),
-      resultText: typeof payload.result === "string" ? payload.result : "",
+      resultText,
       rawOutput,
     };
   }

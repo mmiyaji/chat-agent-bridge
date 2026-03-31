@@ -731,6 +731,12 @@ export class BridgeService {
         }
         persistInput.allowPendingApproval = approvalPolicy !== "never";
         persistInput.pendingApprovalExecutionId = executionRecord?.executionId;
+        if (currentSession.bridgeState?.retryCount) {
+          currentSession = {
+            ...currentSession,
+            bridgeState: { ...currentSession.bridgeState, retryCount: 0 },
+          };
+        }
         currentSession = await this.persistSessionAfterRun(currentSession, persistInput);
         await progress.finish(
           needsApproval ? "waiting for approval" : "completed",
@@ -797,6 +803,34 @@ export class BridgeService {
           workingDirectory: currentSession.workingDirectory,
           error: text,
         });
+
+        const retryCount = Number(currentSession.bridgeState?.retryCount ?? 0);
+        const maxRetries = this.deps.config.agentRetryCount;
+        if (maxRetries > 0 && retryCount < maxRetries) {
+          const nextRetry = retryCount + 1;
+          currentSession = {
+            ...currentSession,
+            bridgeState: {
+              ...currentSession.bridgeState,
+              retryCount: nextRetry,
+            },
+            updatedAt: new Date().toISOString(),
+          };
+          await this.deps.stateStore.upsertSession(currentSession);
+          await this.deps.auditLogger.log({
+            type: "bridge.execution.retry",
+            sessionId: currentSession.sessionId,
+            attempt: nextRetry,
+            maxRetries,
+          });
+          await this.deps.chatAdapter.postThreadMessage(
+            responseThread,
+            `Execution failed (attempt ${nextRetry}/${maxRetries}). Retrying...`,
+          );
+          await this.handleMessage(message);
+          return;
+        }
+
         await this.deps.chatAdapter.postThreadMessage(
           responseThread,
           `Execution failed for session \`${currentSession.sessionId}\`: ${text}`,

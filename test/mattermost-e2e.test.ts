@@ -113,6 +113,7 @@ function createMattermostBridgeConfig(
     claudeCommandTimeoutMs: 1_000,
     claudeMaxRuntimeMs: 10_000,
     autoSplitThreadUserMessageCount: 30,
+    agentRetryCount: 0,
     mattermostServerUrl: state.serverUrl,
     mattermostBotToken: state.bridgeUser.token,
     mattermostWebhookToken: webhookToken,

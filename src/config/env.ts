@@ -175,6 +175,19 @@ function parseInteger(name: string, value: string | undefined, fallback: number)
   return parsed;
 }
 
+function parseNonNegativeInteger(name: string, value: string | undefined, fallback: number): number {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`${name} must be a non-negative integer.`);
+  }
+
+  return parsed;
+}
+
 function parseBoolean(value: string | undefined): boolean {
   switch ((value ?? "").trim().toLowerCase()) {
     case "":
@@ -339,10 +352,10 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
       12000,
     ),
     claudeModel: readSettingString(env.CAB_CLAUDE_MODEL, persisted, "claudeModel") ?? "sonnet",
-    claudeMaxTurns: parseInteger(
+    claudeMaxTurns: parseNonNegativeInteger(
       "CAB_CLAUDE_MAX_TURNS",
       readSettingInteger(env.CAB_CLAUDE_MAX_TURNS, persisted, "claudeMaxTurns"),
-      8,
+      0,
     ),
     claudeCommandTimeoutMs: parseInteger(
       "CAB_CLAUDE_COMMAND_TIMEOUT_MS",
@@ -351,12 +364,12 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
         persisted,
         "claudeCommandTimeoutMs",
       ),
-      600000,
+      1800000,
     ),
     claudeMaxRuntimeMs: parseInteger(
       "CAB_CLAUDE_MAX_RUNTIME_MS",
       readSettingInteger(env.CAB_CLAUDE_MAX_RUNTIME_MS, persisted, "claudeMaxRuntimeMs"),
-      3600000,
+      14400000,
     ),
     autoSplitThreadUserMessageCount: parseInteger(
       "CAB_AUTO_SPLIT_THREAD_USER_MESSAGE_COUNT",
@@ -366,6 +379,11 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
         "autoSplitThreadUserMessageCount",
       ),
       30,
+    ),
+    agentRetryCount: parseNonNegativeInteger(
+      "CAB_AGENT_RETRY_COUNT",
+      readSettingInteger(env.CAB_AGENT_RETRY_COUNT, persisted, "agentRetryCount"),
+      0,
     ),
   };
 

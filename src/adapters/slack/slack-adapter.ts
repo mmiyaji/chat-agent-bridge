@@ -5,6 +5,7 @@ import https from "node:https";
 import net from "node:net";
 import tls from "node:tls";
 import { AuditLogger, NoopAuditLogger } from "../../core/audit.js";
+import { logger } from "../../core/logger.js";
 import { AppConfig, ChatThreadRef, IncomingChatMessage, SlackMode } from "../../core/types.js";
 import {
   ChatAdapter,
@@ -602,6 +603,7 @@ export class SlackAdapter implements ChatAdapter {
   private server: http.Server | undefined;
   private socketConnection: SlackSocketConnection | undefined;
   private socketReconnectTimer: NodeJS.Timeout | undefined;
+  private socketReconnectDelayMs = 1000;
   private readonly seenEventIds = new Set<string>();
   private readonly auditLogger: AuditLogger;
   private stopped = false;
@@ -955,7 +957,8 @@ export class SlackAdapter implements ChatAdapter {
       });
     });
 
-    console.log("Slack adapter connected via Socket Mode.");
+    logger.info("Slack adapter connected via Socket Mode.", { mode: "socket" });
+    this.socketReconnectDelayMs = 1000;
     const previousDisconnectAt = this.connectionStatus.lastDisconnectedAt;
     this.updateConnectionStatus({
       state: "connected",
@@ -978,7 +981,7 @@ export class SlackAdapter implements ChatAdapter {
     try {
       await this.startSocketMode();
     } catch (error) {
-      console.error("Slack Socket Mode initial connect failed.", error);
+      logger.error("Slack Socket Mode initial connect failed.", { error: error instanceof Error ? error.message : String(error) });
       this.updateConnectionStatus({
         state: "disconnected",
         connected: false,
@@ -999,20 +1002,23 @@ export class SlackAdapter implements ChatAdapter {
       return;
     }
 
+    const delayMs = this.socketReconnectDelayMs;
+    this.socketReconnectDelayMs = Math.min(delayMs * 2, 60000);
+
     this.updateConnectionStatus({
       state: "connecting",
       connected: false,
-      statusText: "Reconnecting to Slack Socket Mode...",
+      statusText: `Reconnecting to Slack Socket Mode in ${delayMs}ms...`,
     });
     void this.auditLogger.log({
       type: "slack.socket.reconnect-scheduled",
-      delayMs: 1000,
+      delayMs,
     });
 
     this.socketReconnectTimer = setTimeout(() => {
       this.socketReconnectTimer = undefined;
       void this.startSocketMode().catch((error: unknown) => {
-        console.error("Slack Socket Mode reconnect failed.", error);
+        logger.error("Slack Socket Mode reconnect failed.", { error: error instanceof Error ? error.message : String(error) });
         this.updateConnectionStatus({
           state: "disconnected",
           connected: false,
@@ -1026,7 +1032,7 @@ export class SlackAdapter implements ChatAdapter {
         });
         this.scheduleSocketReconnect();
       });
-    }, 1000);
+    }, delayMs);
   }
 
   private async handleSocketMessage(rawMessage: string): Promise<void> {

@@ -52,6 +52,7 @@ function createConfig(): AppConfig {
     claudeCommandTimeoutMs: 1000,
     claudeMaxRuntimeMs: 10000,
     autoSplitThreadUserMessageCount: 30,
+    agentRetryCount: 0,
   };
 }
 

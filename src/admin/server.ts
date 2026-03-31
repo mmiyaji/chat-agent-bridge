@@ -464,17 +464,34 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         })
       : `<span class="muted-note">Idle</span>`;
   };
+  const INACTIVE_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const classifyActivity = (session: Record<string, any>): "active" | "inactive" => {
+    const lastTime = session.latestExecution?.updatedAt ?? session.updatedAt;
+    if (!lastTime) return "inactive";
+    return now - new Date(lastTime as string).getTime() > INACTIVE_THRESHOLD_MS ? "inactive" : "active";
+  };
+  const sortedSessions = [...input.sessions].sort((a, b) => {
+    const aActive = classifyActivity(a) === "active" ? 0 : 1;
+    const bActive = classifyActivity(b) === "active" ? 0 : 1;
+    return aActive - bActive;
+  });
   const sessionsMarkup = renderTableMarkup({
     testId: "sessions-table",
     headers: ["Session", "Agent", "Workspace", "Thread", "State", "Action"],
-    rows: input.sessions.map((session) => [
-      `<div class="session-cell"><strong>${escapeHtml(session.sessionId)}</strong><span>${escapeHtml(session.connectionMode)}</span></div>`,
-      `<span class="pill">${escapeHtml(session.agent)}</span>`,
-      `<code>${escapeHtml(session.workingDirectory)}</code>`,
-      `<code>${escapeHtml(session.provider)}:${escapeHtml(session.threadId)}</code>`,
-      `<div class="session-cell"><span class="status-${escapeHtml(session.latestExecution?.status ?? "idle")}">${escapeHtml(session.latestExecution?.status ?? "idle")}</span><span>${escapeHtml(session.latestExecution?.updatedAt ?? session.updatedAt)}</span></div>`,
-      renderCancelAction(session),
-    ]),
+    rows: sortedSessions.map((session) => {
+      const activity = classifyActivity(session);
+      const rowClass = activity === "inactive" ? ' class="row-inactive"' : "";
+      const inactiveLabel = activity === "inactive" ? ' <span class="pill pill-muted">inactive</span>' : "";
+      return [
+        `<div class="session-cell"${rowClass}><strong>${escapeHtml(session.sessionId)}</strong><span>${escapeHtml(session.connectionMode)}</span></div>`,
+        `<span class="pill">${escapeHtml(session.agent)}</span>`,
+        `<code>${escapeHtml(session.workingDirectory)}</code>`,
+        `<code>${escapeHtml(session.provider)}:${escapeHtml(session.threadId)}</code>`,
+        `<div class="session-cell"><span class="status-${escapeHtml(session.latestExecution?.status ?? "idle")}">${escapeHtml(session.latestExecution?.status ?? "idle")}</span>${inactiveLabel}<span>${escapeHtml(session.latestExecution?.updatedAt ?? session.updatedAt)}</span></div>`,
+        renderCancelAction(session),
+      ];
+    }),
   });
   const approvalsMarkup = renderApprovalCardsMarkup(input.approvals);
   const failuresMarkup = renderFailureCardsMarkup(input.failures);
@@ -748,6 +765,12 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         font-size: 12px;
         background: rgba(56, 189, 248, 0.12);
       }
+      .pill-muted {
+        background: rgba(148, 163, 184, 0.15);
+        color: var(--muted);
+        border-color: var(--muted);
+      }
+      .row-inactive { opacity: 0.5; }
       .mini-actions {
         display: flex;
         flex-wrap: wrap;
@@ -2526,6 +2549,11 @@ export class AdminServer {
       return;
     }
 
+    if (request.method === "GET" && url.pathname === "/admin/api/metrics") {
+      await this.handleMetrics(response);
+      return;
+    }
+
     if (request.method === "GET" && url.pathname === "/admin") {
       writeHtml(response, 200, renderDashboard(await this.readDashboardData(), "dashboard"));
       return;
@@ -3207,6 +3235,42 @@ export class AdminServer {
     writeJson(response, 202, {
       ok: true,
       status: "queued",
+    });
+  }
+
+  private async handleMetrics(response: ServerResponse): Promise<void> {
+    const sessions = await this.stateStore.listSessions();
+    const records = await this.stateStore.listExecutionRecords({ limit: 200 });
+    const connectionStatus = this.bridge.getChatConnectionStatus?.();
+
+    const running = records.filter((r) => r.status === "running").length;
+    const failed = records.filter((r) => r.status === "failed").length;
+    const completed = records.filter((r) => r.status === "completed").length;
+    const waitingApproval = records.filter((r) => r.status === "waiting_for_approval").length;
+
+    writeJson(response, 200, {
+      uptime: process.uptime(),
+      sessions: {
+        total: sessions.length,
+      },
+      executions: {
+        running,
+        completed,
+        failed,
+        waitingApproval,
+        recentTotal: records.length,
+      },
+      connection: connectionStatus
+        ? {
+            state: connectionStatus.state,
+            connected: connectionStatus.connected,
+            reconnectCount: connectionStatus.reconnectCount ?? 0,
+            disconnectCount: connectionStatus.disconnectCount ?? 0,
+          }
+        : null,
+      memory: {
+        rss: process.memoryUsage.rss(),
+      },
     });
   }
 }

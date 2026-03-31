@@ -3,6 +3,10 @@ import path from "node:path";
 import { ChatThreadRef, ExecutionRecord, SessionBinding, StateSnapshot } from "../core/types.js";
 import { StateStore } from "./state-store.js";
 
+const MAX_EXECUTION_HISTORY = 500;
+const ARCHIVE_THRESHOLD = 600;
+const DEBOUNCE_MS = 100;
+
 export class FileStateStore implements StateStore {
   private readonly tempFilePath: string;
 
@@ -11,6 +15,10 @@ export class FileStateStore implements StateStore {
   private pendingWrite: Promise<void> = Promise.resolve();
 
   private lastKnownSnapshot: StateSnapshot = { sessions: [], executionHistory: [] };
+
+  private debounceTimer: NodeJS.Timeout | undefined;
+  private debouncedSnapshot: StateSnapshot | undefined;
+  private debounceResolvers: Array<() => void> = [];
 
   constructor(private readonly filePath: string) {
     this.tempFilePath = `${this.filePath}.tmp`;
@@ -64,9 +72,17 @@ export class FileStateStore implements StateStore {
     );
     nextHistory.push(record);
 
+    const trimmed =
+      nextHistory.length > ARCHIVE_THRESHOLD
+        ? nextHistory
+            .slice()
+            .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+            .slice(nextHistory.length - MAX_EXECUTION_HISTORY)
+        : nextHistory;
+
     await this.writeSnapshot({
       ...snapshot,
-      executionHistory: nextHistory,
+      executionHistory: trimmed,
     });
   }
 
@@ -117,6 +133,31 @@ export class FileStateStore implements StateStore {
   }
 
   private async writeSnapshot(snapshot: StateSnapshot): Promise<void> {
+    this.lastKnownSnapshot = snapshot;
+    this.debouncedSnapshot = snapshot;
+
+    return new Promise<void>((resolve) => {
+      this.debounceResolvers.push(resolve);
+      if (this.debounceTimer) {
+        clearTimeout(this.debounceTimer);
+      }
+      this.debounceTimer = setTimeout(() => {
+        this.debounceTimer = undefined;
+        void this.flushWrite();
+      }, DEBOUNCE_MS);
+    });
+  }
+
+  private async flushWrite(): Promise<void> {
+    const snapshot = this.debouncedSnapshot;
+    const resolvers = this.debounceResolvers;
+    this.debouncedSnapshot = undefined;
+    this.debounceResolvers = [];
+    if (!snapshot) {
+      for (const resolve of resolvers) resolve();
+      return;
+    }
+
     const writeOperation = this.pendingWrite.catch(() => undefined).then(async () => {
       const serialized = JSON.stringify(snapshot, null, 2);
       await fs.writeFile(this.tempFilePath, serialized, "utf8");
@@ -125,7 +166,11 @@ export class FileStateStore implements StateStore {
     });
 
     this.pendingWrite = writeOperation;
-    await writeOperation;
+    try {
+      await writeOperation;
+    } finally {
+      for (const resolve of resolvers) resolve();
+    }
   }
 
   private async quarantineCorruptFile(): Promise<void> {
