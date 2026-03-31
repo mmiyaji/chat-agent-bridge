@@ -81,7 +81,7 @@ async function startBridge() {
       process.env.CAB_RESTART_COMPLETION_FILE = previousCompletionFile;
     }
   }
-  return { config, store, chatAdapter, agent: codexAgent, codexAgent, claudeAgent, auditLogger };
+  return { bridge, config, store, chatAdapter, agent: codexAgent, codexAgent, claudeAgent, auditLogger };
 }
 
 function createMessage(text: string): IncomingChatMessage {
@@ -873,6 +873,51 @@ test("BridgeService can detach from a saved Codex thread id", async () => {
 
   assert.deepEqual(sessions[0].agentState, {});
   assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Detached bridge session/);
+});
+
+test("BridgeService can retry the latest execution from an admin command", async () => {
+  const { bridge, store, agent } = await startBridge();
+  await store.upsertSession({
+    sessionId: "session-1",
+    agent: "codex",
+    thread: {
+      provider: "slack",
+      channelId: "C1",
+      threadId: "T1",
+    },
+    workingDirectory: "C:/repo/project",
+    createdAt: "2026-03-30T10:10:00.000Z",
+    updatedAt: "2026-03-30T10:10:00.000Z",
+    agentState: {},
+    bridgeState: {},
+  });
+  await store.upsertExecutionRecord({
+    executionId: "exec-retry",
+    sessionId: "session-1",
+    thread: {
+      provider: "slack",
+      channelId: "C1",
+      threadId: "T1",
+    },
+    agent: "codex",
+    prompt: "retry me",
+    workingDirectory: "C:/repo/project",
+    approvalPolicy: "manual",
+    networkAccess: "disabled",
+    status: "failed",
+    error: "timeout",
+    createdAt: "2026-03-30T10:11:00.000Z",
+    updatedAt: "2026-03-30T10:11:10.000Z",
+    completedAt: "2026-03-30T10:11:10.000Z",
+  });
+
+  const result = await bridge.dispatchAdminCommand("session-1", "retry-last");
+
+  assert.equal(result.accepted, true);
+  await waitFor(async () => {
+    assert.equal(agent.requests.at(-1)?.prompt, "retry me");
+  });
+  assert.equal(agent.requests.at(-1)?.prompt, "retry me");
 });
 
 test("BridgeService opens a session picker on empty mention", async () => {

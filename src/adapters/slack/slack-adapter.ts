@@ -941,6 +941,7 @@ export class SlackAdapter implements ChatAdapter {
         state: "disconnected",
         connected: false,
         statusText: "Slack Socket Mode disconnected. Waiting to reconnect...",
+        disconnectReason: "socket-closed",
       });
       if (this.stopped) {
         return;
@@ -955,12 +956,22 @@ export class SlackAdapter implements ChatAdapter {
     });
 
     console.log("Slack adapter connected via Socket Mode.");
+    const previousDisconnectAt = this.connectionStatus.lastDisconnectedAt;
     this.updateConnectionStatus({
       state: "connected",
       connected: true,
       statusText: "Connected to Slack via Socket Mode.",
       clearError: true,
     });
+    if (previousDisconnectAt && this.connectionStatus.lastRecoveredAt) {
+      await this.auditLogger.log({
+        type: "slack.socket.recovered",
+        disconnectedAt: previousDisconnectAt,
+        recoveredAt: this.connectionStatus.lastRecoveredAt,
+        outageDurationMs: this.connectionStatus.lastOutageDurationMs ?? 0,
+        reconnectCount: this.connectionStatus.reconnectCount ?? 0,
+      });
+    }
   }
 
   private async startSocketModeGracefully(): Promise<void> {
@@ -1033,6 +1044,7 @@ export class SlackAdapter implements ChatAdapter {
         state: "disconnected",
         connected: false,
         statusText: `Slack Socket Mode disconnected (${envelope.reason ?? "unknown"}). Reconnecting...`,
+        disconnectReason: envelope.reason ?? "disconnect-envelope",
       });
       this.scheduleSocketReconnect();
       await this.socketConnection?.close();
@@ -1189,21 +1201,46 @@ export class SlackAdapter implements ChatAdapter {
     state: ChatConnectionStatus["state"];
     connected: boolean;
     statusText: string;
+    disconnectReason?: string;
     lastError?: string;
     clearError?: boolean;
   }): void {
+    const now = new Date().toISOString();
+    const wasConnected = this.connectionStatus.connected;
     const nextStatus: ChatConnectionStatus = {
       ...this.connectionStatus,
       state: input.state,
       connected: input.connected,
       statusText: input.statusText,
-      lastChangedAt: new Date().toISOString(),
+      lastChangedAt: now,
     };
+
+    if (input.connected) {
+      if (!this.connectionStatus.lastConnectedAt) {
+        nextStatus.lastConnectedAt = now;
+      } else if (!wasConnected) {
+        nextStatus.lastConnectedAt = now;
+        nextStatus.reconnectCount = (this.connectionStatus.reconnectCount ?? 0) + 1;
+        if (this.connectionStatus.lastDisconnectedAt) {
+          nextStatus.lastRecoveredAt = now;
+          nextStatus.lastOutageDurationMs =
+            Date.parse(now) - Date.parse(this.connectionStatus.lastDisconnectedAt);
+        }
+      }
+    } else if (wasConnected) {
+      nextStatus.lastDisconnectedAt = now;
+      nextStatus.disconnectCount = (this.connectionStatus.disconnectCount ?? 0) + 1;
+      if (input.disconnectReason) {
+        nextStatus.statusText = `${input.statusText} Cause: ${input.disconnectReason}`;
+      }
+    }
 
     if (input.clearError) {
       delete nextStatus.lastError;
+      delete nextStatus.lastErrorAt;
     } else if (input.lastError !== undefined) {
       nextStatus.lastError = input.lastError;
+      nextStatus.lastErrorAt = now;
     }
 
     this.connectionStatus = nextStatus;

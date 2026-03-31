@@ -432,16 +432,31 @@ export class BridgeService {
       };
     }
 
+    let commandText = text;
+    if (text.trim().toLowerCase() === "retry-last") {
+      const latestRecord = (await this.deps.stateStore.listExecutionRecords({
+        sessionId,
+        limit: 1,
+      }))[0];
+      if (!latestRecord?.prompt) {
+        return {
+          accepted: false,
+          reason: "no-execution-to-retry",
+        };
+      }
+      commandText = latestRecord.prompt;
+    }
+
     const message: IncomingChatMessage = {
       thread: session.thread,
       userId: "admin-ui",
-      text,
+      text: commandText,
       requestedWorkingDirectory: session.workingDirectory,
     };
     await this.deps.auditLogger.log({
       type: "admin.action.dispatched",
       sessionId,
-      action: text,
+      action: commandText,
     });
     queueMicrotask(() => {
       void this.handleMessage(message).catch((error: unknown) => {
@@ -458,7 +473,10 @@ export class BridgeService {
     await this.deps.auditLogger.log({
       type: "admin.restart.requested",
     });
-    this.scheduleDetachedRestart();
+    this.scheduleDetachedRestart(undefined, undefined, {
+      actor: "admin-ui",
+      reason: "admin-request",
+    });
   }
 
   private async reconcileInterruptedExecutions(): Promise<void> {
@@ -1215,6 +1233,8 @@ export class BridgeService {
       );
       this.scheduleDetachedRestart(message.thread.channelId, message.thread.threadId, {
         rebuild: command.rebuild,
+        actor: "chat-command",
+        reason: command.rebuild ? "chat-restart-rebuild" : "chat-restart",
       });
       return;
     }
@@ -2118,7 +2138,7 @@ export class BridgeService {
   private scheduleDetachedRestart(
     channelId?: string,
     threadId?: string,
-    options?: { rebuild?: boolean },
+    options?: { rebuild?: boolean; actor?: string; reason?: string },
   ): void {
     const scriptPath = path.resolve(process.cwd(), "scripts", "bridge-restart-detached.ps1");
     const powershellPath = path.join(
@@ -2142,6 +2162,12 @@ export class BridgeService {
     const helperArgs = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath];
     if (options?.rebuild) {
       helperArgs.push("-Build");
+    }
+    if (options?.actor) {
+      helperArgs.push("-Actor", options.actor);
+    }
+    if (options?.reason) {
+      helperArgs.push("-Reason", options.reason);
     }
     if (channelId && threadId) {
       helperArgs.push("-ChannelId", channelId, "-ThreadId", threadId);
@@ -2204,6 +2230,7 @@ export class BridgeService {
       }
 
       const pending: PendingRestartCompletion[] = [];
+      let skippedLines = 0;
       for (const line of lines) {
         try {
           const parsed = JSON.parse(line.replace(/^\uFEFF/, "")) as Partial<PendingRestartCompletion>;
@@ -2217,15 +2244,26 @@ export class BridgeService {
               threadId: parsed.threadId,
               text: parsed.text,
             });
+          } else {
+            skippedLines += 1;
           }
         } catch {
-          continue;
+          skippedLines += 1;
         }
+      }
+
+      if (skippedLines > 0) {
+        await this.deps.auditLogger.log({
+          type: "bridge.restart.queue.invalid",
+          skippedLines,
+          file: this.restartCompletionFilePath,
+        });
       }
 
       fs.rmSync(this.restartCompletionFilePath, { force: true });
 
       const retryQueue: PendingRestartCompletion[] = [];
+      let postedCount = 0;
       for (const completion of pending) {
         try {
           await this.deps.chatAdapter.postThreadMessage(
@@ -2241,9 +2279,17 @@ export class BridgeService {
             channelId: completion.channelId,
             threadId: completion.threadId,
           });
+          postedCount += 1;
         } catch {
           retryQueue.push(completion);
         }
+      }
+
+      if (postedCount > 0) {
+        await this.deps.auditLogger.log({
+          type: "bridge.restart.queue.flushed",
+          postedCount,
+        });
       }
 
       if (retryQueue.length > 0) {
@@ -2255,6 +2301,10 @@ export class BridgeService {
           `${serialized}\n`,
           "utf8",
         );
+        await this.deps.auditLogger.log({
+          type: "bridge.restart.queue.retry",
+          retryCount: retryQueue.length,
+        });
       }
     } finally {
       this.restartCompletionFlushInFlight = false;

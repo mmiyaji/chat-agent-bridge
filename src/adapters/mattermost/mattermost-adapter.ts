@@ -692,6 +692,7 @@ export class MattermostAdapter implements ChatAdapter {
         state: "disconnected",
         connected: false,
         statusText: "Mattermost WebSocket disconnected. Waiting to reconnect...",
+        disconnectReason: "socket-closed",
       });
       if (this.stopped) {
         return;
@@ -708,6 +709,7 @@ export class MattermostAdapter implements ChatAdapter {
 
     await authenticatedPromise;
     console.log("Mattermost adapter connected via WebSocket.");
+    const previousDisconnectAt = this.connectionStatus.lastDisconnectedAt;
     await this.auditLogger.log({
       type: "mattermost.websocket.connected",
       mode: "websocket",
@@ -718,6 +720,15 @@ export class MattermostAdapter implements ChatAdapter {
       statusText: "Connected to Mattermost via WebSocket.",
       clearError: true,
     });
+    if (previousDisconnectAt && this.connectionStatus.lastRecoveredAt) {
+      await this.auditLogger.log({
+        type: "mattermost.websocket.recovered",
+        disconnectedAt: previousDisconnectAt,
+        recoveredAt: this.connectionStatus.lastRecoveredAt,
+        outageDurationMs: this.connectionStatus.lastOutageDurationMs ?? 0,
+        reconnectCount: this.connectionStatus.reconnectCount ?? 0,
+      });
+    }
   }
 
   private scheduleSocketReconnect(): void {
@@ -846,21 +857,46 @@ export class MattermostAdapter implements ChatAdapter {
     state: ChatConnectionStatus["state"];
     connected: boolean;
     statusText: string;
+    disconnectReason?: string;
     lastError?: string;
     clearError?: boolean;
   }): void {
+    const now = new Date().toISOString();
+    const wasConnected = this.connectionStatus.connected;
     const nextStatus: ChatConnectionStatus = {
       ...this.connectionStatus,
       state: input.state,
       connected: input.connected,
       statusText: input.statusText,
-      lastChangedAt: new Date().toISOString(),
+      lastChangedAt: now,
     };
+
+    if (input.connected) {
+      if (!this.connectionStatus.lastConnectedAt) {
+        nextStatus.lastConnectedAt = now;
+      } else if (!wasConnected) {
+        nextStatus.lastConnectedAt = now;
+        nextStatus.reconnectCount = (this.connectionStatus.reconnectCount ?? 0) + 1;
+        if (this.connectionStatus.lastDisconnectedAt) {
+          nextStatus.lastRecoveredAt = now;
+          nextStatus.lastOutageDurationMs =
+            Date.parse(now) - Date.parse(this.connectionStatus.lastDisconnectedAt);
+        }
+      }
+    } else if (wasConnected) {
+      nextStatus.lastDisconnectedAt = now;
+      nextStatus.disconnectCount = (this.connectionStatus.disconnectCount ?? 0) + 1;
+      if (input.disconnectReason) {
+        nextStatus.statusText = `${input.statusText} Cause: ${input.disconnectReason}`;
+      }
+    }
 
     if (input.clearError) {
       delete nextStatus.lastError;
+      delete nextStatus.lastErrorAt;
     } else if (input.lastError !== undefined) {
       nextStatus.lastError = input.lastError;
+      nextStatus.lastErrorAt = now;
     }
 
     this.connectionStatus = nextStatus;

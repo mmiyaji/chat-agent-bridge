@@ -6,6 +6,11 @@ $script:BridgeSettingsFile = if ($env:CAB_SETTINGS_FILE) {
 } else {
   Join-Path $script:BridgeRepoRoot "data\admin-settings.json"
 }
+$script:BridgeAuditLogFile = if ($env:CAB_AUDIT_LOG_FILE) {
+  $env:CAB_AUDIT_LOG_FILE
+} else {
+  Join-Path $script:BridgeRepoRoot "data\audit.jsonl"
+}
 
 function Read-BridgeSettingsValue {
   param(
@@ -93,5 +98,45 @@ function Import-BridgeEnvironment {
         Set-Item -Path "Env:$name" -Value $userValue
       }
     }
+  }
+}
+
+function Write-BridgeAuditEvent {
+  param(
+    [Parameter(Mandatory = $true)][string]$Type,
+    [string]$Actor,
+    [string]$Reason,
+    [hashtable]$Fields
+  )
+
+  try {
+    $payload = @{
+      timestamp = [DateTime]::UtcNow.ToString("o")
+      type = $Type
+      source = "service-script"
+    }
+
+    if (![string]::IsNullOrWhiteSpace($Actor)) {
+      $payload.actor = $Actor
+    }
+
+    if (![string]::IsNullOrWhiteSpace($Reason)) {
+      $payload.reason = $Reason
+    }
+
+    if ($Fields) {
+      foreach ($entry in $Fields.GetEnumerator()) {
+        $payload[$entry.Key] = $entry.Value
+      }
+    }
+
+    $auditPath = $script:BridgeAuditLogFile
+    $auditDir = Split-Path -Parent $auditPath
+    if ($auditDir) {
+      New-Item -ItemType Directory -Force -Path $auditDir | Out-Null
+    }
+    ($payload | ConvertTo-Json -Compress -Depth 8) | Add-Content -Path $auditPath -Encoding utf8
+  } catch {
+    # Best effort only. Service lifecycle should not fail because audit logging could not write.
   }
 }

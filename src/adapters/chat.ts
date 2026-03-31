@@ -16,7 +16,14 @@ export interface ChatConnectionStatus {
   connected: boolean;
   statusText: string;
   lastChangedAt?: string;
+  lastConnectedAt?: string;
+  lastDisconnectedAt?: string;
+  lastRecoveredAt?: string;
+  lastOutageDurationMs?: number;
+  reconnectCount?: number;
+  disconnectCount?: number;
   lastError?: string;
+  lastErrorAt?: string;
 }
 
 export interface ChatMessageOptions {

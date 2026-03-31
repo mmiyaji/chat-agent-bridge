@@ -1,7 +1,9 @@
 param(
   [string]$ChannelId = "",
   [string]$ThreadId = "",
-  [switch]$Build
+  [switch]$Build,
+  [string]$Actor = "service-script",
+  [string]$Reason = "manual-restart"
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,9 +36,9 @@ $restartFailed = $false
 $restartError = ""
 try {
   if ($Build) {
-    & $restartScript -Build
+    & $restartScript -Build -Actor $Actor -Reason $Reason
   } else {
-    & $restartScript
+    & $restartScript -Actor $Actor -Reason $Reason
   }
   "[$([DateTime]::UtcNow.ToString('o'))] restart script returned successfully" | Add-Content -Path $orchestratorLog -Encoding utf8
 } catch {
@@ -64,7 +66,8 @@ if (
     if ($completionDir) {
       New-Item -ItemType Directory -Force -Path $completionDir | Out-Null
     }
-    Add-Content -Path $completionFile -Value $payload -Encoding utf8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::AppendAllText($completionFile, $payload + [Environment]::NewLine, $utf8NoBom)
     "[$([DateTime]::UtcNow.ToString('o'))] queued restart $(if ($restartFailed) { 'failure' } else { 'completion' }) for channel=$ChannelId thread=$ThreadId" | Add-Content -Path $orchestratorLog -Encoding utf8
   } catch {
     "[$([DateTime]::UtcNow.ToString('o'))] failed to queue restart status: $($_.Exception.Message)" | Add-Content -Path $orchestratorLog -Encoding utf8

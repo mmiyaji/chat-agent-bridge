@@ -517,9 +517,20 @@ test("SlackAdapter reconnects after a Socket Mode disconnect warning", async () 
 
   await waitForMicrotasks();
   assert.deepEqual(received, ["status"]);
+  const status = adapter.getConnectionStatus();
+  assert.equal(status.connected, true);
+  assert.equal(status.reconnectCount, 1);
+  assert.equal(status.disconnectCount, 1);
+  assert.match(status.lastRecoveredAt ?? "", /T/);
   assert.equal(
     auditLogger.events.some(
       (event) => event.type === "slack.socket.disconnect" && event.reason === "warning",
+    ),
+    true,
+  );
+  assert.equal(
+    auditLogger.events.some(
+      (event) => event.type === "slack.socket.recovered" && event.outageDurationMs !== undefined,
     ),
     true,
   );

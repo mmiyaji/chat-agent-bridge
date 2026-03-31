@@ -21,6 +21,7 @@ interface DashboardData {
   approvals: Array<Record<string, any>>;
   failures: Array<Record<string, any>>;
   connectionStatus?: ChatConnectionStatus;
+  repoAliases?: Record<string, string>;
 }
 
 interface RuntimeSettingsPayload {
@@ -136,6 +137,7 @@ function summarizeSession(
         executionId: latestExecution.executionId,
         status: latestExecution.status,
         updatedAt: latestExecution.updatedAt,
+        prompt: latestExecution.prompt,
         summary: latestExecution.summary ?? latestExecution.error ?? "",
       },
   };
@@ -195,7 +197,7 @@ function renderFailureCardsMarkup(entries: Array<Record<string, any>>): string {
     return `<div class="empty" data-testid="failures-table-empty">No entries.</div>`;
   }
 
-  return `<div class="card-list" data-testid="failures-table">${entries
+        return `<div class="card-list" data-testid="failures-table">${entries
     .map(
       (entry) => `<article class="compact-card">
         <header>
@@ -203,9 +205,57 @@ function renderFailureCardsMarkup(entries: Array<Record<string, any>>): string {
           <span class="status-${escapeHtml(entry.status)}">${escapeHtml(entry.status)}</span>
         </header>
         <div class="title">${escapeHtml(entry.error || entry.summary || "")}</div>
+        <p class="muted-note">Category: <code>${escapeHtml(entry.failureCategory ?? "error")}</code></p>
       </article>`,
     )
     .join("")}</div>`;
+}
+
+function formatDuration(ms: number | undefined): string | undefined {
+  if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) {
+    return undefined;
+  }
+
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+  return `${seconds}s`;
+}
+
+function classifyExecutionIssue(record: ExecutionRecord): string {
+  if (record.status === "cancelled") {
+    return "cancelled";
+  }
+  if (record.status === "rejected") {
+    return "rejected";
+  }
+  if (record.status === "waiting_for_approval") {
+    return "approval";
+  }
+  const text = `${record.summary ?? ""} ${record.error ?? ""}`.toLowerCase();
+  if (text.includes("timeout")) {
+    return "timeout";
+  }
+  if (text.includes("approval")) {
+    return "approval";
+  }
+  if (text.includes("cancel")) {
+    return "cancelled";
+  }
+  if (text.includes("network")) {
+    return "network";
+  }
+  if (text.includes("permission") || text.includes("eacces") || text.includes("eperm")) {
+    return "permission";
+  }
+  return record.status === "failed" ? "error" : record.status;
 }
 
 const ADMIN_GITHUB_URL = "https://github.com/mmiyaji/chat-agent-bridge";
@@ -383,8 +433,20 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           ? `<code>${escapeHtml(connectionStatus.lastChangedAt)}</code>`
           : ""
       }${
+        connectionStatus.lastConnectedAt
+          ? `<p>Last connected: <code>${escapeHtml(connectionStatus.lastConnectedAt)}</code></p>`
+          : ""
+      }${
+        connectionStatus.lastDisconnectedAt
+          ? `<p>Last disconnected: <code>${escapeHtml(connectionStatus.lastDisconnectedAt)}</code></p>`
+          : ""
+      }${
+        connectionStatus.lastRecoveredAt
+          ? `<p>Last recovered: <code>${escapeHtml(connectionStatus.lastRecoveredAt)}</code>${formatDuration(connectionStatus.lastOutageDurationMs) ? ` after ${escapeHtml(formatDuration(connectionStatus.lastOutageDurationMs) ?? "")}` : ""}</p>`
+          : ""
+      }<p>Reconnects: <strong>${escapeHtml(connectionStatus.reconnectCount ?? 0)}</strong> · Disconnects: <strong>${escapeHtml(connectionStatus.disconnectCount ?? 0)}</strong></p>${
         connectionStatus.lastError
-          ? `<p>${escapeHtml(connectionStatus.lastError)}</p>`
+          ? `<p>Last error: ${escapeHtml(connectionStatus.lastError)}${connectionStatus.lastErrorAt ? ` <code>${escapeHtml(connectionStatus.lastErrorAt)}</code>` : ""}</p>`
           : ""
       }</div>`
     : `<div class="detail-card" data-testid="connection-status-card"><strong>chat transport</strong><span>Unknown</span><p>No adapter connection status was reported.</p></div>`;
@@ -1131,6 +1193,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         approvals: [],
         failures: [],
         connectionStatus: null,
+        repoAliases: {},
         selectedSessionId: null,
         filtersRestored: false,
         settings: null,
@@ -1235,6 +1298,23 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           .replaceAll("'", "&#39;");
       }
 
+      function formatDuration(ms) {
+        if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) {
+          return "";
+        }
+        const totalSeconds = Math.floor(ms / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        if (hours > 0) {
+          return hours + "h " + minutes + "m " + seconds + "s";
+        }
+        if (minutes > 0) {
+          return minutes + "m " + seconds + "s";
+        }
+        return seconds + "s";
+      }
+
       function renderButtonMarkup(label, sessionId, action) {
         return [
           '<button data-action="',
@@ -1305,6 +1385,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           '<article class="compact-card">' +
             '<header><div class="meta"><code>' + escapeHtml(entry.sessionId) + '</code><span>' + escapeHtml(entry.updatedAt || "") + '</span></div><span class="status-' + escapeHtml(entry.status) + '">' + escapeHtml(entry.status) + '</span></header>' +
             '<div class="title">' + escapeHtml(entry.error || entry.summary || "") + '</div>' +
+            '<p class="muted-note">Category: <code>' + escapeHtml(entry.failureCategory || "error") + '</code></p>' +
           "</article>"
         ).join("") + "</div>";
       }
@@ -1330,7 +1411,11 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           '<span class="status-' + escapeHtml(statusClass) + '">' + escapeHtml(stateValue) + '</span>' +
           '<p>' + escapeHtml(status.statusText || "") + '</p>' +
           (status.lastChangedAt ? '<code>' + escapeHtml(status.lastChangedAt) + '</code>' : "") +
-          (status.lastError ? '<p>' + escapeHtml(status.lastError) + '</p>' : "") +
+          (status.lastConnectedAt ? '<p>Last connected: <code>' + escapeHtml(status.lastConnectedAt) + '</code></p>' : '') +
+          (status.lastDisconnectedAt ? '<p>Last disconnected: <code>' + escapeHtml(status.lastDisconnectedAt) + '</code></p>' : '') +
+          (status.lastRecoveredAt ? '<p>Last recovered: <code>' + escapeHtml(status.lastRecoveredAt) + '</code>' + (formatDuration(status.lastOutageDurationMs) ? ' after ' + escapeHtml(formatDuration(status.lastOutageDurationMs)) : '') + '</p>' : '') +
+          '<p>Reconnects: <strong>' + escapeHtml(status.reconnectCount ?? 0) + '</strong> · Disconnects: <strong>' + escapeHtml(status.disconnectCount ?? 0) + '</strong></p>' +
+          (status.lastError ? '<p>Last error: ' + escapeHtml(status.lastError) + (status.lastErrorAt ? ' <code>' + escapeHtml(status.lastErrorAt) + '</code>' : '') + '</p>' : "") +
           "</div>";
       }
 
@@ -1474,6 +1559,21 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         drawer.classList.remove("is-open");
       }
 
+      function filterDetailHistory() {
+        const input = document.getElementById("detail-history-search");
+        if (!(input instanceof HTMLInputElement)) {
+          return;
+        }
+        const query = input.value.trim().toLowerCase();
+        document.querySelectorAll(".history-item").forEach((item) => {
+          if (!(item instanceof HTMLElement)) {
+            return;
+          }
+          const visible = !query || item.textContent.toLowerCase().includes(query);
+          item.style.display = visible ? "" : "none";
+        });
+      }
+
       function renderSessionDetail(payload) {
         if (!hasDashboardView) {
           return;
@@ -1496,24 +1596,41 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           '<div class="field"><label for="detail-agent">Agent</label><select id="detail-agent" data-session-id="' + escapeHtml(session.sessionId) + '"><option value="codex"' + (session.agent === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (session.agent === "claude-code" ? " selected" : "") + '>claude</option></select></div>',
           '<div class="field"><label for="detail-mode">Approval</label><select id="detail-mode" data-session-id="' + escapeHtml(session.sessionId) + '"><option value="manual"' + (session.approvalPolicyOverride === "manual" ? " selected" : "") + '>manual</option><option value="never"' + (session.approvalPolicyOverride === "never" ? " selected" : "") + '>allow</option></select></div>',
         ].join("");
+        const repoButtons = Object.entries(dashboardState.repoAliases || {})
+          .sort((left, right) => left[0].localeCompare(right[0]))
+          .map(([alias]) =>
+            '<button data-command="repo ' + escapeHtml(alias) + '" data-session-id="' + escapeHtml(session.sessionId) + '">repo ' + escapeHtml(alias) + '</button>'
+          )
+          .join("");
         const pendingMarkup = session.pendingApproval
           ? '<div class="detail-card"><strong>Pending approval</strong><span>' + escapeHtml(session.pendingApproval.requestedAt) + '</span><p>' + escapeHtml(session.pendingApproval.prompt) + "</p></div>"
           : "";
+        const latestRetry = session.latestExecution?.prompt
+          ? '<button data-command="retry-last" data-session-id="' + escapeHtml(session.sessionId) + '">Retry latest</button>'
+          : "";
         const historyMarkup = history.length
-          ? '<div class="history-list">' + history.map((entry) =>
+          ? '<div class="field"><label for="detail-history-search">History search</label><input id="detail-history-search" data-testid="detail-history-search" type="search" placeholder="prompt, result, status" /></div><div class="history-list">' + history.map((entry) =>
               '<article class="history-item"><header><strong>' + escapeHtml(entry.executionId) + '</strong><span class="status-' + escapeHtml(entry.status) + '">' + escapeHtml(entry.status) + '</span></header><code>' +
-              escapeHtml(entry.updatedAt) + "</code><p><strong>Prompt:</strong> " + escapeHtml(entry.prompt || "") + "</p><p><strong>Result:</strong> " + escapeHtml(entry.summary || entry.error || "") + "</p></article>"
+              escapeHtml(entry.updatedAt) + '</code><p><strong>Prompt:</strong> ' + escapeHtml(entry.prompt || "") + '</p><p><strong>Result:</strong> ' + escapeHtml(entry.summary || entry.error || "") + '</p><p><strong>Category:</strong> ' + escapeHtml(entry.failureCategory || "n/a") + "</p></article>"
             ).join("") + "</div>"
           : '<div class="detail-empty">No execution history recorded for this session.</div>';
         document.getElementById("detail").innerHTML =
           '<div class="detail-actions">' +
             cancelAction +
             approvalActions +
+            latestRetry +
             '<button data-command="new-thread" data-session-id="' + escapeHtml(session.sessionId) + '">New thread</button>' +
+            '<button data-command="new allow" data-session-id="' + escapeHtml(session.sessionId) + '">New allow</button>' +
+            '<button data-command="new manual" data-session-id="' + escapeHtml(session.sessionId) + '">New manual</button>' +
             '<button data-command="fork codex" data-session-id="' + escapeHtml(session.sessionId) + '">Fork Codex</button>' +
             '<button data-command="fork claude" data-session-id="' + escapeHtml(session.sessionId) + '">Fork Claude</button>' +
+            '<button data-command="attach-last" data-session-id="' + escapeHtml(session.sessionId) + '">Attach latest</button>' +
             '<button data-command="detach" data-session-id="' + escapeHtml(session.sessionId) + '">Detach</button>' +
           "</div>" +
+          '<div class="detail-actions">' +
+            repoButtons +
+          "</div>" +
+          '<div class="field"><label for="detail-command">Custom command</label><div class="inline-form"><input id="detail-command" data-session-id="' + escapeHtml(session.sessionId) + '" type="text" placeholder="attach <id>, mode allow, repo <alias>, fork codex" /><button id="detail-command-run" data-session-id="' + escapeHtml(session.sessionId) + '">Run</button></div></div>' +
           '<div class="filters">' + sessionCommands + "</div>" +
           '<div class="detail-grid">' +
             '<div class="detail-card"><strong>Session</strong><code>' + escapeHtml(session.sessionId) + "</code></div>" +
@@ -1528,6 +1645,10 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           "</div>" +
           '<div class="section-head"><div><h2>Execution History</h2><p>Most recent 20 executions for this session.</p></div></div>' +
           historyMarkup;
+        const historySearch = document.getElementById("detail-history-search");
+        if (historySearch) {
+          historySearch.addEventListener("input", filterDetailHistory);
+        }
         openDetailDrawer();
       }
 
@@ -1746,6 +1867,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         ]);
         dashboardState.sessions = sessionsPayload.sessions;
         dashboardState.connectionStatus = sessionsPayload.connectionStatus ?? null;
+        dashboardState.repoAliases = sessionsPayload.repoAliases ?? {};
         dashboardState.approvals = approvalsPayload.approvals;
         dashboardState.failures = failuresPayload.failures;
         syncFilterOptions();
@@ -1954,6 +2076,14 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           const command = commandButton.dataset.command;
           if (sessionId && command) {
             void runCommand(sessionId, command, commandButton.textContent || command);
+          }
+          return;
+        }
+        if (target.id === "detail-command-run" && target.dataset.sessionId) {
+          const commandInput = document.getElementById("detail-command");
+          const command = commandInput instanceof HTMLInputElement ? commandInput.value.trim() : "";
+          if (command) {
+            void runCommand(target.dataset.sessionId, command, "custom command");
           }
           return;
         }
@@ -2533,13 +2663,18 @@ export class AdminServer {
           record.status === "rejected"
         );
       })
-      .slice(0, Math.max(limit, 1));
+      .slice(0, Math.max(limit, 1))
+      .map((record) => ({
+        ...record,
+        failureCategory: classifyExecutionIssue(record),
+      }));
 
     const connectionStatus = this.bridge.getChatConnectionStatus();
     return {
       sessions: summarizedSessions,
       approvals,
       failures,
+      repoAliases: this.config.repoAliases,
       ...(connectionStatus ? { connectionStatus } : {}),
     };
   }
@@ -2553,6 +2688,7 @@ export class AdminServer {
     const connectionStatus = this.bridge.getChatConnectionStatus();
     writeJson(response, 200, {
       sessions: payload,
+      repoAliases: this.config.repoAliases,
       ...(connectionStatus ? { connectionStatus } : {}),
     });
   }
@@ -2571,7 +2707,10 @@ export class AdminServer {
     });
     writeJson(response, 200, {
       session: summarizeSession(session, records[0]),
-      executionHistory: records,
+      executionHistory: records.map((record) => ({
+        ...record,
+        failureCategory: classifyExecutionIssue(record),
+      })),
     });
   }
 

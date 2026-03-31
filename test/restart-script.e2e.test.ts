@@ -54,6 +54,15 @@ function readActionsLog(actionsLog: string): string[] {
     .filter((line) => line.trim().length > 0);
 }
 
+function readAuditLog(auditLog: string): Array<Record<string, unknown>> {
+  return fs
+    .readFileSync(auditLog, "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^\uFEFF/, "").trim())
+    .filter((line) => line.length > 0)
+    .map((line) => JSON.parse(line) as Record<string, unknown>);
+}
+
 function isBlockedPowerShellSpawn(error: unknown): boolean {
   return error instanceof Error && "code" in error && (error as { code?: string }).code === "EPERM";
 }
@@ -74,9 +83,13 @@ test("bridge-restart script runs stop then start without build by default", asyn
 
   const restartScript = path.join(process.cwd(), "scripts", "bridge-restart.ps1");
   const copiedRestartScript = path.join(scriptsDir, "bridge-restart.ps1");
+  const commonScript = path.join(process.cwd(), "scripts", "bridge-common.ps1");
+  const copiedCommonScript = path.join(scriptsDir, "bridge-common.ps1");
   fs.copyFileSync(restartScript, copiedRestartScript);
+  fs.copyFileSync(commonScript, copiedCommonScript);
 
   const actionsLog = path.join(tempRoot, "actions.log");
+  const auditLog = path.join(tempRoot, "audit.jsonl");
   const stopScript = path.join(scriptsDir, "fake-stop.ps1");
   const startScript = path.join(scriptsDir, "fake-start.ps1");
 
@@ -103,6 +116,7 @@ test("bridge-restart script runs stop then start without build by default", asyn
     ...process.env,
     CAB_BRIDGE_STOP_SCRIPT: stopScript,
     CAB_BRIDGE_START_SCRIPT: startScript,
+    CAB_AUDIT_LOG_FILE: auditLog,
   };
 
   try {
@@ -116,6 +130,9 @@ test("bridge-restart script runs stop then start without build by default", asyn
 
   const actions = readActionsLog(actionsLog);
   assert.deepEqual(actions, ["stop", "start skipBuild=True"]);
+  const auditEvents = readAuditLog(auditLog).map((entry) => entry.type);
+  assert.ok(auditEvents.includes("service.restart.requested"));
+  assert.ok(auditEvents.includes("service.restart.completed"));
 });
 
 test("bridge-restart script runs stop then start with build when requested", async (t) => {
@@ -125,9 +142,13 @@ test("bridge-restart script runs stop then start with build when requested", asy
 
   const restartScript = path.join(process.cwd(), "scripts", "bridge-restart.ps1");
   const copiedRestartScript = path.join(scriptsDir, "bridge-restart.ps1");
+  const commonScript = path.join(process.cwd(), "scripts", "bridge-common.ps1");
+  const copiedCommonScript = path.join(scriptsDir, "bridge-common.ps1");
   fs.copyFileSync(restartScript, copiedRestartScript);
+  fs.copyFileSync(commonScript, copiedCommonScript);
 
   const actionsLog = path.join(tempRoot, "actions.log");
+  const auditLog = path.join(tempRoot, "audit.jsonl");
   const stopScript = path.join(scriptsDir, "fake-stop.ps1");
   const startScript = path.join(scriptsDir, "fake-start.ps1");
 
@@ -154,6 +175,7 @@ test("bridge-restart script runs stop then start with build when requested", asy
     ...process.env,
     CAB_BRIDGE_STOP_SCRIPT: stopScript,
     CAB_BRIDGE_START_SCRIPT: startScript,
+    CAB_AUDIT_LOG_FILE: auditLog,
   };
 
   try {
@@ -167,4 +189,7 @@ test("bridge-restart script runs stop then start with build when requested", asy
 
   const actions = readActionsLog(actionsLog);
   assert.deepEqual(actions, ["stop", "start skipBuild=False"]);
+  const auditEntries = readAuditLog(auditLog);
+  assert.equal(auditEntries.some((entry) => entry.type === "service.restart.requested"), true);
+  assert.equal(auditEntries.some((entry) => entry.type === "service.restart.completed"), true);
 });

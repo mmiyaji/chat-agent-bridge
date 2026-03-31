@@ -1,6 +1,8 @@
 param(
   [switch]$SkipBuild,
-  [switch]$OpenAdmin
+  [switch]$OpenAdmin,
+  [string]$Actor = "service-script",
+  [string]$Reason = "manual-start"
 )
 
 $ErrorActionPreference = "Stop"
@@ -79,6 +81,10 @@ function Open-BridgeAdminPage {
 }
 
 New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
+Write-BridgeAuditEvent -Type "service.start.requested" -Actor $Actor -Reason $Reason -Fields @{
+  skipBuild = $SkipBuild.IsPresent
+  openAdmin = $OpenAdmin.IsPresent
+}
 
 $requiredOrOptionalEnvNames = @(
   "CAB_ALLOWED_DIRS",
@@ -135,6 +141,9 @@ if (Test-Path $pidFile) {
     $otherBridgeProcesses = @(Get-BridgeProcesses | Where-Object { $_.ProcessId -ne [int]$existingProcessId })
     if ($otherBridgeProcesses.Count -eq 0) {
       Write-Output "Bridge is already running with PID $existingProcessId."
+      Write-BridgeAuditEvent -Type "service.start.skipped" -Actor $Actor -Reason "already-running" -Fields @{
+        processId = [int]$existingProcessId
+      }
       if ($OpenAdmin) {
         Open-BridgeAdminPage
       }
@@ -180,10 +189,19 @@ try {
   Start-Sleep -Seconds 2
 
   if ($process.HasExited) {
+    Write-BridgeAuditEvent -Type "service.start.failed" -Actor $Actor -Reason "process-exited-immediately" -Fields @{
+      processId = $process.Id
+      stderrLog = $stderrLog
+    }
     throw "Bridge exited immediately. Check $stderrLog"
   }
 
   Write-Output "Bridge started with PID $($process.Id)."
+  Write-BridgeAuditEvent -Type "service.start.completed" -Actor $Actor -Reason $Reason -Fields @{
+    processId = $process.Id
+    skipBuild = $SkipBuild.IsPresent
+    openAdmin = $OpenAdmin.IsPresent
+  }
   Write-Output "stdout: $stdoutLog"
   Write-Output "stderr: $stderrLog"
   if ($OpenAdmin) {

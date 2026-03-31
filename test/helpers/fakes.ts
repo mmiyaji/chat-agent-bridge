@@ -69,6 +69,11 @@ export class RecordingChatAdapter implements ChatAdapter {
     connected: true,
     statusText: "Connected to Slack via Socket Mode.",
     lastChangedAt: "2026-03-30T10:00:00.000Z",
+    lastConnectedAt: "2026-03-30T10:00:00.000Z",
+    lastRecoveredAt: "2026-03-30T10:05:00.000Z",
+    lastOutageDurationMs: 120000,
+    reconnectCount: 2,
+    disconnectCount: 2,
   };
   readonly startedThreads: Array<{ channelId: string; text: string; options?: ChatMessageOptions }> = [];
   readonly posted: Array<{ thread: ChatThreadRef; text: string; options?: ChatMessageOptions }> = [];
