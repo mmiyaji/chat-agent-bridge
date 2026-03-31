@@ -11,6 +11,7 @@ $script:BridgeAuditLogFile = if ($env:CAB_AUDIT_LOG_FILE) {
 } else {
   Join-Path $script:BridgeRepoRoot "data\audit.jsonl"
 }
+$script:BridgePowerShellPath = Join-Path $(if ($env:SystemRoot) { $env:SystemRoot } else { "C:\Windows" }) "System32\WindowsPowerShell\v1.0\powershell.exe"
 
 function Read-BridgeSettingsValue {
   param(
@@ -29,17 +30,68 @@ function Read-BridgeSettingsValue {
   }
 }
 
+function Get-BridgePidFileProcessId {
+  if (!(Test-Path $script:BridgePidFile)) {
+    return $null
+  }
+
+  try {
+    $raw = (Get-Content $script:BridgePidFile -Raw).Trim()
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+      return $null
+    }
+    return [int]$raw
+  } catch {
+    return $null
+  }
+}
+
+function Get-BridgeProcessFromPidFile {
+  $processId = Get-BridgePidFileProcessId
+  if ($null -eq $processId) {
+    return $null
+  }
+
+  return Get-Process -Id $processId -ErrorAction SilentlyContinue
+}
+
 function Get-BridgeProcesses {
-  return @(Get-CimInstance Win32_Process |
-    Where-Object {
-      $_.Name -eq "node.exe" -and
-      $_.CommandLine -match "dist/index.js"
-    } |
-    Sort-Object CreationDate)
+  $primaryProcess = Get-BridgeProcessFromPidFile
+  if ($primaryProcess) {
+    return @($primaryProcess)
+  }
+
+  if (!(Get-Command Get-CimInstance -ErrorAction SilentlyContinue)) {
+    return @()
+  }
+
+  try {
+    return @(Get-CimInstance Win32_Process |
+      Where-Object {
+        $_.Name -eq "node.exe" -and
+        $_.CommandLine -match "dist/index.js"
+      } |
+      Sort-Object CreationDate)
+  } catch {
+    return @()
+  }
 }
 
 function Get-BridgeProcessIds {
-  return @(Get-BridgeProcesses | Select-Object -ExpandProperty ProcessId)
+  return @(
+    Get-BridgeProcesses |
+      ForEach-Object {
+        if ($null -ne $_.ProcessId) {
+          $_.ProcessId
+          return
+        }
+        if ($null -ne $_.Id) {
+          $_.Id
+        }
+      } |
+      Where-Object { $null -ne $_ } |
+      Select-Object -Unique
+  )
 }
 
 function Get-BridgeAdminPort {
@@ -65,8 +117,16 @@ function Get-BridgeAdminPort {
 
 function Get-BridgeAdminListenerProcessIds {
   $adminPort = Get-BridgeAdminPort
-  return @(Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $adminPort -State Listen -ErrorAction SilentlyContinue |
-    Select-Object -ExpandProperty OwningProcess -Unique)
+  if (!(Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue)) {
+    return @()
+  }
+
+  try {
+    return @(Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $adminPort -State Listen -ErrorAction SilentlyContinue |
+      Select-Object -ExpandProperty OwningProcess -Unique)
+  } catch {
+    return @()
+  }
 }
 
 function Resolve-BridgeLoopbackHost {
@@ -84,6 +144,10 @@ function Resolve-BridgeLoopbackHost {
     "::" { return "127.0.0.1" }
     default { return $Value.Trim() }
   }
+}
+
+function Get-BridgePowerShellPath {
+  return $script:BridgePowerShellPath
 }
 
 function Import-BridgeEnvironment {

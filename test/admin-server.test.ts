@@ -14,6 +14,12 @@ import {
   InlineJobQueue,
 } from "./helpers/fakes.js";
 
+class ThrowingExecutionStateStore extends InMemoryStateStore {
+  override async listExecutionRecords(): Promise<ExecutionRecord[]> {
+    throw new Error("execution-store-offline");
+  }
+}
+
 function createConfig(): AppConfig {
   return {
     chatProvider: "slack",
@@ -219,6 +225,41 @@ test("AdminServer serves a dedicated settings page", async () => {
   assert.match(response.body, /Runtime Settings/);
   assert.match(response.body, /data-testid="nav-dashboard"/);
   assert.match(response.body, /class="is-active" data-testid="nav-settings"/);
+
+  await admin.stop();
+});
+
+test("AdminServer degrades gracefully when execution history cannot be read", async () => {
+  const store = new ThrowingExecutionStateStore();
+  await store.upsertSession(createSession());
+  const auditLogger = new RecordingAuditLogger();
+  const admin = new AdminServer({
+    config: createConfig(),
+    stateStore: store,
+    auditLogger,
+    bridge: createBridge(store).bridge,
+  });
+  await admin.start();
+
+  const port = admin.getListeningPort();
+  assert.ok(port);
+
+  const dashboard = await getText(port, "/admin");
+  assert.equal(dashboard.statusCode, 200);
+  assert.match(dashboard.body, /data-testid="dashboard-warning"/);
+  assert.match(dashboard.body, /Execution history could not be fully loaded/);
+
+  const session = await getJson(port, "/admin/api/sessions/session-1");
+  assert.equal(session.statusCode, 200);
+  assert.deepEqual(session.body.executionHistory, []);
+  assert.equal(
+    auditLogger.events.some((event) => event.type === "admin.dashboard.degraded"),
+    true,
+  );
+  assert.equal(
+    auditLogger.events.some((event) => event.type === "admin.api.session.degraded"),
+    true,
+  );
 
   await admin.stop();
 });

@@ -96,7 +96,7 @@ The bridge uses the locally installed Codex CLI and does not require `OPENAI_API
 
 ## Next steps
 
-- Slack setup: [docs/slack-setup.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/slack-setup.md)
-- Mattermost setup: [docs/mattermost-setup.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/mattermost-setup.md)
-- Operations: [docs/operations.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/operations.md)
-- Testing: [docs/testing.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/testing.md)
+- Slack setup: [slack-setup.md](slack-setup.md)
+- Mattermost setup: [mattermost-setup.md](mattermost-setup.md)
+- Operations: [operations.md](operations.md)
+- Testing: [testing.md](testing.md)

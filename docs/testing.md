@@ -49,6 +49,8 @@ npm run mattermost:demo:capture
 
 This writes:
 
+- `docs/assets/mattermost-demo-2026-03-31.gif`
+- `docs/assets/mattermost-demo-2026-03-31-palette.png`
 - `docs/assets/mattermost-demo.webm`
 - `docs/assets/mattermost-demo.gif`
 - `docs/assets/mattermost-demo-final.png`
@@ -59,6 +61,8 @@ Current live scenarios:
 
 - websocket ingress from a public channel mention to the bridge user
 - websocket ingress from a self-authored self-DM mention
+- approval button flow
+- cancel button flow
 
 The current bootstrap creates:
 

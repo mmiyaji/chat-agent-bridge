@@ -25,7 +25,11 @@ if ($bridgeProcesses.Count -eq 0) {
 }
 
 $selectedBridgeProcess = $bridgeProcesses[-1]
-$bridgeProcessId = [string]$selectedBridgeProcess.ProcessId
+$bridgeProcessId = if ($null -ne $selectedBridgeProcess.ProcessId) {
+  [string]$selectedBridgeProcess.ProcessId
+} else {
+  [string]$selectedBridgeProcess.Id
+}
 
 $port = if ($env:CAB_PORT) {
   [int]$env:CAB_PORT
@@ -48,13 +52,25 @@ $adminHost = Resolve-BridgeLoopbackHost -Value $(if ($env:CAB_ADMIN_HOST) { $env
 
 Write-Output "Bridge PID: $bridgeProcessId"
 if ($bridgeProcesses.Count -gt 1) {
-  $otherProcessIds = @($bridgeProcesses | Where-Object { $_.ProcessId -ne $selectedBridgeProcess.ProcessId } | Select-Object -ExpandProperty ProcessId)
+  $selectedProcessNumericId = if ($null -ne $selectedBridgeProcess.ProcessId) {
+    [int]$selectedBridgeProcess.ProcessId
+  } else {
+    [int]$selectedBridgeProcess.Id
+  }
+  $otherProcessIds = @(
+    $bridgeProcesses |
+      ForEach-Object {
+        if ($null -ne $_.ProcessId) { $_.ProcessId } elseif ($null -ne $_.Id) { $_.Id }
+      } |
+      Where-Object { $null -ne $_ -and $_ -ne $selectedProcessNumericId } |
+      Select-Object -Unique
+  )
   Write-Output "Additional bridge PIDs: $($otherProcessIds -join ', ')"
 }
 if (![string]::IsNullOrWhiteSpace($pidFileValue) -and $pidFileValue -ne $bridgeProcessId) {
   Write-Output "Bridge PID file mismatch: $pidFileValue"
 }
-if ($adminListenerProcessIds.Count -gt 0 -and ($adminListenerProcessIds -notcontains $selectedBridgeProcess.ProcessId)) {
+if ($adminListenerProcessIds.Count -gt 0 -and ($adminListenerProcessIds -notcontains [int]$bridgeProcessId)) {
   Write-Output "Admin listener PIDs: $($adminListenerProcessIds -join ', ')"
 }
 Write-Output "Bridge URL: http://${bridgeHost}:$port"

@@ -36,7 +36,7 @@ Actor modes:
 - `self`
   - intended for user-token operation when you cannot create a bot
   - only self-DMs are accepted
-  - root posts in the self-DM do not need a mention
+  - self-DM posts still require a mention so unrelated notes are ignored
   - direct messages with other users do not trigger the bridge
 
 `MATTERMOST_DM_ONLY=true` is kept only as a legacy compatibility switch. New setups should use `MATTERMOST_ACTOR_MODE=self`.
@@ -91,7 +91,7 @@ Use WebSocket mode when the bridge should consume posts directly from Mattermost
 Behavior:
 
 - in `bot` mode, root-level posts must mention the configured bridge username
-- in `self` mode, plain self-DM root posts are accepted without a mention
+- in `self` mode, only mentioned posts in the self-DM are accepted
 - plain thread replies inside existing threads are accepted
 - if `MATTERMOST_ACTOR_MODE=self`, only self-DMs are accepted
 
@@ -107,4 +107,4 @@ Behavior:
 
 There is an opt-in Docker-based Mattermost integration harness for websocket-mode tests.
 
-See [docs/testing.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/testing.md) for the exact commands and scenarios.
+See [testing.md](testing.md) for the exact commands and scenarios.

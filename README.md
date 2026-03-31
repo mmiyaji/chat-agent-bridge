@@ -4,6 +4,14 @@
 
 Chat Agent Bridge is a local bridge service that lets users continue operating a development agent from chat threads while preserving the local machine context.
 
+## Project status
+
+This project is an unofficial personal tool intended for individual development workflows until official remote-control session support becomes available in the upstream products.
+
+It is designed for local, self-hosted use on a machine you control. It is not an official OpenAI, Anthropic, Slack, or Mattermost product.
+
+The current implementation is Windows-first and is developed and validated primarily on Windows with PowerShell.
+
 ## What it does
 
 - Binds a chat thread to a local agent session
@@ -14,6 +22,8 @@ Chat Agent Bridge is a local bridge service that lets users continue operating a
 - Mattermost supports both `bot` mode and `self` mode
 
 ## Quick start
+
+The commands below assume a Windows environment with PowerShell.
 
 1. Install dependencies:
 
@@ -35,12 +45,20 @@ $env:CAB_DEFAULT_WORKDIR="C:\Users\mail\Documents\git\chat-agent-bridge"
 npm run dev
 ```
 
+Demo: send `@Chat Agent Bridge status` from a connected chat thread.
+
 Or run it as a detached service:
 
 ```powershell
 npm run service:start
 npm run service:status
 ```
+
+## Demo
+
+Slack example:
+
+![Slack demo](docs/assets/slack-demo-2026-03-31.gif)
 
 ## Common service commands
 
@@ -54,12 +72,12 @@ npm run service:stop
 
 ## Documentation
 
-- Install and base configuration: [docs/install.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/install.md)
-- Slack setup: [docs/slack-setup.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/slack-setup.md)
-- Mattermost setup: [docs/mattermost-setup.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/mattermost-setup.md)
-- Operations and service management: [docs/operations.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/operations.md)
-- Testing and E2E flows: [docs/testing.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/testing.md)
-- Architecture: [docs/architecture.md](/C:/Users/mail/Documents/git/chat-agent-bridge/docs/architecture.md)
+- Install and base configuration: [docs/install.md](docs/install.md)
+- Slack setup: [docs/slack-setup.md](docs/slack-setup.md)
+- Mattermost setup: [docs/mattermost-setup.md](docs/mattermost-setup.md)
+- Operations and service management: [docs/operations.md](docs/operations.md)
+- Testing and E2E flows: [docs/testing.md](docs/testing.md)
+- Architecture: [docs/architecture.md](docs/architecture.md)
 
 ## Notes
 
@@ -68,3 +86,13 @@ npm run service:stop
 - Codex sessions use the locally installed `codex` CLI and can reuse an existing local login
 - The bridge injects `CHAT_AGENT_BRIDGE=1` into Codex child processes so external hooks can suppress duplicate notifications
 - In Mattermost, `MATTERMOST_ACTOR_MODE=self` is intended for user-token operation, accepts only self-DMs, and still requires a mention in that self-DM
+
+## Disclaimer
+
+- This tool is provided as-is, with no warranty of any kind.
+- The author does not guarantee stability, correctness, security, or fitness for any purpose.
+- Use of this tool is entirely at your own risk.
+- The author is not responsible for any data loss, repository damage, account issues, service disruption, security incident, costs, or any other trouble caused by using this project.
+- This bridge can trigger local agent actions against real files, repositories, and connected chat systems. Review the configuration carefully before using it.
+- You should restrict allowed directories, tokens, network access, and chat exposure to the minimum required for your environment.
+- Do not use this project in environments where you cannot accept the operational and security risks of remote-triggered local execution.

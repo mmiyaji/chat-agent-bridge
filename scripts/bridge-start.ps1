@@ -80,6 +80,22 @@ function Open-BridgeAdminPage {
   Start-Process $url | Out-Null
 }
 
+function Test-BridgeAdminHealth {
+  $adminHost = Resolve-BridgeLoopbackHost -Value $(if ($env:CAB_ADMIN_HOST) { $env:CAB_ADMIN_HOST } elseif ($env:CAB_HOST) { $env:CAB_HOST } else { "127.0.0.1" }) -Fallback "127.0.0.1"
+  $adminPort = if ((Get-Item "Env:CAB_ADMIN_PORT" -ErrorAction SilentlyContinue).Value) {
+    [int](Get-Item "Env:CAB_ADMIN_PORT" -ErrorAction SilentlyContinue).Value
+  } else {
+    Get-BridgeAdminPort
+  }
+
+  try {
+    $response = Invoke-WebRequest -UseBasicParsing "http://${adminHost}:$adminPort/admin/healthz"
+    return $response.StatusCode -ge 200 -and $response.StatusCode -lt 300
+  } catch {
+    return $false
+  }
+}
+
 New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
 Write-BridgeAuditEvent -Type "service.start.requested" -Actor $Actor -Reason $Reason -Fields @{
   skipBuild = $SkipBuild.IsPresent
@@ -135,20 +151,18 @@ if ([string]::IsNullOrWhiteSpace((Get-Item "Env:CAB_PORT" -ErrorAction SilentlyC
 }
 
 if (Test-Path $pidFile) {
-  $existingProcessId = (Get-Content $pidFile -Raw).Trim()
-  $process = if ($existingProcessId) { Get-Process -Id $existingProcessId -ErrorAction SilentlyContinue } else { $null }
+  $existingProcess = Get-BridgeProcessFromPidFile
+  $existingProcessId = if ($existingProcess) { [string]$existingProcess.Id } else { (Get-Content $pidFile -Raw).Trim() }
+  $process = $existingProcess
   if ($process) {
-    $otherBridgeProcesses = @(Get-BridgeProcesses | Where-Object { $_.ProcessId -ne [int]$existingProcessId })
-    if ($otherBridgeProcesses.Count -eq 0) {
-      Write-Output "Bridge is already running with PID $existingProcessId."
-      Write-BridgeAuditEvent -Type "service.start.skipped" -Actor $Actor -Reason "already-running" -Fields @{
-        processId = [int]$existingProcessId
-      }
-      if ($OpenAdmin) {
-        Open-BridgeAdminPage
-      }
-      exit 0
+    Write-Output "Bridge is already running with PID $existingProcessId."
+    Write-BridgeAuditEvent -Type "service.start.skipped" -Actor $Actor -Reason "already-running" -Fields @{
+      processId = [int]$existingProcessId
     }
+    if ($OpenAdmin) {
+      Open-BridgeAdminPage
+    }
+    exit 0
   }
 
   Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
@@ -188,7 +202,9 @@ try {
   Set-Content -Path $pidFile -Value $process.Id -Encoding ascii
   Start-Sleep -Seconds 2
 
-  if ($process.HasExited) {
+  $startedProcess = Get-BridgeProcessFromPidFile
+  $adminHealthy = Test-BridgeAdminHealth
+  if ((!$startedProcess) -and !$adminHealthy) {
     Write-BridgeAuditEvent -Type "service.start.failed" -Actor $Actor -Reason "process-exited-immediately" -Fields @{
       processId = $process.Id
       stderrLog = $stderrLog

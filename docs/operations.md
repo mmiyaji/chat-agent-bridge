@@ -48,7 +48,7 @@ By default the admin server follows `CAB_HOST`. Set `CAB_ADMIN_HOST=127.0.0.1` i
 
 Default files:
 
-- state: `./data/state.json`
+- state: `./data/slack-run-state.json`
 - audit log: `./data/audit.jsonl`
 - admin settings: `./data/admin-settings.json`
 
@@ -91,6 +91,8 @@ Check:
 - `data/runtime/bridge.orchestrator.log`
 - `data/runtime/bridge.stderr.log`
 - `npm run service:status`
+
+If Slack runs in Socket Mode, `Bridge health: unavailable` is expected. Use `Admin health` and the runtime logs instead.
 
 ### A thread is bound to the wrong agent session
 

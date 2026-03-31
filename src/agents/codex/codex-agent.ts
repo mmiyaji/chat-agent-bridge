@@ -23,6 +23,7 @@ interface CodexJsonEvent {
 const CANCELLATION_GRACE_PERIOD_MS = 1_000;
 
 const FILTERED_STDERR_SUBSTRINGS = [
+  "failed to refresh curated plugin cache",
   "failed to warm featured plugin ids cache",
   "startup remote plugin sync failed",
   "remote plugin sync request to https://chatgpt.com/backend-api/plugins/",

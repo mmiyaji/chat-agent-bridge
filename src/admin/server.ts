@@ -22,6 +22,7 @@ interface DashboardData {
   failures: Array<Record<string, any>>;
   connectionStatus?: ChatConnectionStatus;
   repoAliases?: Record<string, string>;
+  warnings?: string[];
 }
 
 interface RuntimeSettingsPayload {
@@ -258,6 +259,10 @@ function classifyExecutionIssue(record: ExecutionRecord): string {
   return record.status === "failed" ? "error" : record.status;
 }
 
+function buildDashboardWarning(message: string): string {
+  return `<div class="warning-banner" data-testid="dashboard-warning">${escapeHtml(message)}</div>`;
+}
+
 const ADMIN_GITHUB_URL = "https://github.com/mmiyaji/chat-agent-bridge";
 const ADMIN_AUTHOR_NAME = "mmiyaji";
 
@@ -473,6 +478,10 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
   });
   const approvalsMarkup = renderApprovalCardsMarkup(input.approvals);
   const failuresMarkup = renderFailureCardsMarkup(input.failures);
+  const warningsMarkup =
+    input.warnings && input.warnings.length > 0
+      ? input.warnings.map((warning) => buildDashboardWarning(warning)).join("")
+      : "";
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -677,6 +686,14 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
       }
       .empty {
         color: var(--muted);
+      }
+      .warning-banner {
+        margin: 0 0 14px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(245, 158, 11, 0.55);
+        background: rgba(245, 158, 11, 0.14);
+        color: #fde68a;
       }
       .table-wrap {
         width: 100%;
@@ -1063,6 +1080,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
   </head>
   <body>
     <main>
+      ${warningsMarkup}
       <div class="hero">
         <div class="hero-copy">
           <h1>Bridge Admin</h1>
@@ -2620,10 +2638,35 @@ export class AdminServer {
   }
 
   private async readDashboardData(limit = 20): Promise<DashboardData> {
-    const sessions = await this.stateStore.listSessions();
-    const latestRecords = await this.stateStore.listExecutionRecords({
-      limit: Math.max(sessions.length * 5, 50),
-    });
+    const warnings: string[] = [];
+    let sessions: SessionBinding[] = [];
+    let latestRecords: ExecutionRecord[] = [];
+
+    try {
+      sessions = await this.stateStore.listSessions();
+    } catch (error) {
+      warnings.push("Session state could not be fully loaded. Showing a degraded dashboard.");
+      await this.auditLogger.log({
+        type: "admin.dashboard.degraded",
+        area: "sessions",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    try {
+      latestRecords = await this.stateStore.listExecutionRecords({
+        limit: Math.max(sessions.length * 5, 50),
+      });
+    } catch (error) {
+      warnings.push(
+        "Execution history could not be fully loaded. Recent statuses may be incomplete.",
+      );
+      await this.auditLogger.log({
+        type: "admin.dashboard.degraded",
+        area: "executions",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
     const latestBySession = new Map<string, ExecutionRecord>();
     for (const record of latestRecords) {
       if (!latestBySession.has(record.sessionId)) {
@@ -2675,6 +2718,7 @@ export class AdminServer {
       approvals,
       failures,
       repoAliases: this.config.repoAliases,
+      ...(warnings.length > 0 ? { warnings } : {}),
       ...(connectionStatus ? { connectionStatus } : {}),
     };
   }
@@ -2694,17 +2738,39 @@ export class AdminServer {
   }
 
   private async handleGetSession(response: ServerResponse, sessionId: string): Promise<void> {
-    const sessions = await this.stateStore.listSessions();
+    let sessions: SessionBinding[];
+    try {
+      sessions = await this.stateStore.listSessions();
+    } catch (error) {
+      await this.auditLogger.log({
+        type: "admin.api.session.degraded",
+        sessionId,
+        area: "sessions",
+        error: error instanceof Error ? error.message : String(error),
+      });
+      writeJson(response, 503, { error: "Session state is temporarily unavailable" });
+      return;
+    }
     const session = sessions.find((entry) => entry.sessionId === sessionId);
     if (!session) {
       writeJson(response, 404, { error: "Session not found" });
       return;
     }
 
-    const records = await this.stateStore.listExecutionRecords({
-      sessionId,
-      limit: 20,
-    });
+    let records: ExecutionRecord[] = [];
+    try {
+      records = await this.stateStore.listExecutionRecords({
+        sessionId,
+        limit: 20,
+      });
+    } catch (error) {
+      await this.auditLogger.log({
+        type: "admin.api.session.degraded",
+        sessionId,
+        area: "executions",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
     writeJson(response, 200, {
       session: summarizeSession(session, records[0]),
       executionHistory: records.map((record) => ({
@@ -2727,9 +2793,14 @@ export class AdminServer {
   }
 
   private readRuntimeSettings(): RuntimeSettingsPayload {
-    const settingsSavedAt = fs.existsSync(this.config.settingsFile)
-      ? fs.statSync(this.config.settingsFile).mtime.toISOString()
-      : undefined;
+    let settingsSavedAt: string | undefined;
+    try {
+      settingsSavedAt = fs.existsSync(this.config.settingsFile)
+        ? fs.statSync(this.config.settingsFile).mtime.toISOString()
+        : undefined;
+    } catch {
+      settingsSavedAt = undefined;
+    }
     return {
       agentKind: this.config.agentKind,
       defaultApprovalPolicy: this.config.defaultApprovalPolicy,
