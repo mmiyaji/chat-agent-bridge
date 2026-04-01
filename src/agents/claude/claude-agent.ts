@@ -33,6 +33,49 @@ interface ClaudeStreamMessage extends ClaudeJsonResult {
 
 const CANCELLATION_GRACE_PERIOD_MS = 1_000;
 
+function extractStderrMessage(chunk: string): string | undefined {
+  const text = chunk.trim();
+  if (text.length === 0) {
+    return undefined;
+  }
+
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) continue;
+
+    try {
+      const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+      const errorType =
+        (parsed.type as string | undefined) === "error"
+          ? (parsed.error as Record<string, unknown> | undefined)
+          : undefined;
+
+      if (errorType) {
+        const kind = String(errorType.type ?? "");
+        const msg = String(errorType.message ?? parsed.message ?? "Unknown error");
+        if (kind === "rate_limit_error") {
+          return `Rate limit reached. Claude Code will retry automatically. (${msg})`;
+        }
+        if (kind === "overloaded_error") {
+          return `Claude API overloaded. Retrying... (${msg})`;
+        }
+        return `API error (${kind}): ${msg}`;
+      }
+
+      const message = parsed.message ?? parsed.error ?? parsed.msg;
+      if (typeof message === "string") {
+        return message;
+      }
+
+      return undefined;
+    } catch {
+      return trimmed;
+    }
+  }
+
+  return undefined;
+}
+
 function trimProgressText(text: string, maxLength: number): string {
   const normalized = text.replace(/\s+/g, " ").trim();
   if (normalized.length <= maxLength) {
@@ -352,9 +395,13 @@ export class ClaudeCodeAgent implements Agent {
     child.stderr.on("data", (chunk: string) => {
       refreshIdleTimeout();
       stderrChunks.push(chunk);
+      const text = extractStderrMessage(chunk);
+      if (!text) {
+        return;
+      }
       const update: AgentProgressUpdate = {
         stream: "stderr",
-        text: trimProgressText(chunk, 160),
+        text: trimProgressText(text, 160),
         urgent: true,
       };
       void Promise.resolve(onActivity?.(update)).catch(() => undefined);
@@ -407,6 +454,18 @@ export class ClaudeCodeAgent implements Agent {
     }
 
     if (exitCode !== 0) {
+      const rateLimitMatch = rawOutput.match(/rate_limit_error|rate limit/i);
+      if (rateLimitMatch) {
+        throw new Error(
+          `Claude Code stopped due to rate limit. Please wait a moment and try again.\n${rawOutput}`,
+        );
+      }
+      const overloadedMatch = rawOutput.match(/overloaded_error|overloaded/i);
+      if (overloadedMatch) {
+        throw new Error(
+          `Claude API is currently overloaded. Please try again shortly.\n${rawOutput}`,
+        );
+      }
       throw new Error(`Claude Code CLI failed with exit code ${exitCode ?? -1}.\n${rawOutput}`);
     }
 

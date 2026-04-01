@@ -17,7 +17,7 @@ Chat Agent Bridge は、チャットスレッドからローカル開発エー�
 - チャットスレッドをローカル agent session に紐付ける
 - 同じマシン上で repo の状態、未コミット変更、ローカルツールの状態を維持する
 - Slack と Mattermost の chat adapter を使う
-- Codex と Claude Code の agent adapter を使う
+- Codex、Claude Code、experimental な Cursor の agent adapter を使う
 - 承認、監査ログ、repo 切り替え、admin 画面を提供する
 - Mattermost は `bot` mode と `self` mode の両方をサポートする
 
@@ -68,6 +68,57 @@ npm run service:status
 npm run service:restart
 npm run service:restart:build
 npm run service:stop
+```
+
+## アーキテクチャ
+
+```mermaid
+flowchart TD
+    subgraph Chat["チャット基盤"]
+        Slack["Slack\n(HTTP / Socket Mode)"]
+        Mattermost["Mattermost\n(HTTP / WebSocket)"]
+    end
+
+    subgraph Bridge["Chat Agent Bridge（ローカル）"]
+        direction TB
+        Adapter["Chat Adapter\nslack-adapter / mattermost-adapter"]
+        BridgeSvc["Bridge Service\nルーティング・承認・セッション・ジョブキュー"]
+        StateStore["File State Store\nstate.json"]
+        AuditLog["Audit Logger\naudit.jsonl"]
+        AdminSrv["Admin Server\n:8788/admin"]
+    end
+
+    subgraph Agents["Agent アダプター"]
+        Claude["Claude Code CLI\nclaude-agent"]
+        Codex["Codex CLI\ncodex-agent"]
+    end
+
+    subgraph LocalFS["ローカルマシン"]
+        Repos["Git リポジトリ\nCAB_ALLOWED_DIRS"]
+        Settings["admin-settings.json"]
+    end
+
+    Browser["ブラウザ\nAdmin UI"]
+    User["ユーザー"]
+
+    User -- "メッセージ" --> Slack
+    User -- "メッセージ" --> Mattermost
+    Slack -- "イベント" --> Adapter
+    Mattermost -- "イベント" --> Adapter
+    Adapter --> BridgeSvc
+    BridgeSvc --> StateStore
+    BridgeSvc --> AuditLog
+    BridgeSvc --> Claude
+    BridgeSvc --> Codex
+    Claude -- "spawn / stream-json" --> Repos
+    Codex -- "spawn" --> Repos
+    BridgeSvc -- "返信" --> Adapter
+    Adapter -- "投稿" --> Slack
+    Adapter -- "投稿" --> Mattermost
+    AdminSrv --> StateStore
+    AdminSrv --> BridgeSvc
+    Browser -- "HTTP" --> AdminSrv
+    Settings --> BridgeSvc
 ```
 
 ## ドキュメント

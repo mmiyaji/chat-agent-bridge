@@ -165,6 +165,39 @@ function Import-BridgeEnvironment {
   }
 }
 
+function Refresh-BridgePathEnvironment {
+  try {
+    $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    $segments = @()
+
+    foreach ($value in @($machinePath, $userPath)) {
+      if ([string]::IsNullOrWhiteSpace($value)) {
+        continue
+      }
+
+      foreach ($segment in $value.Split(";")) {
+        $trimmed = $segment.Trim()
+        if ([string]::IsNullOrWhiteSpace($trimmed)) {
+          continue
+        }
+        if ($segments -contains $trimmed) {
+          continue
+        }
+        $segments += $trimmed
+      }
+    }
+
+    if ($segments.Count -gt 0) {
+      $joined = $segments -join ";"
+      Set-Item -Path "Env:Path" -Value $joined
+      Set-Item -Path "Env:PATH" -Value $joined
+    }
+  } catch {
+    # Best effort only. Service lifecycle should not fail because PATH refresh failed.
+  }
+}
+
 function Write-BridgeAuditEvent {
   param(
     [Parameter(Mandatory = $true)][string]$Type,

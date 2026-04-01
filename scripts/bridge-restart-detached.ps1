@@ -34,6 +34,7 @@ Start-Sleep -Seconds 3
 
 $restartFailed = $false
 $restartError = ""
+$restartStartedAt = [DateTime]::UtcNow
 try {
   if ($Build) {
     & $restartScript -Build -Actor $Actor -Reason $Reason
@@ -46,21 +47,27 @@ try {
   $restartError = $_.Exception.Message
   "[$([DateTime]::UtcNow.ToString('o'))] bridge restart failed: $restartError" | Add-Content -Path $orchestratorLog -Encoding utf8
 }
+$restartDurationMs = [int]([DateTime]::UtcNow - $restartStartedAt).TotalMilliseconds
+
+if ($restartFailed) {
+  $completionText = "Bridge restart failed: $(if ([string]::IsNullOrWhiteSpace($restartError)) { "unknown error" } else { $restartError })"
+} else {
+  $completionText = "Bridge restart completed. The bridge is back online."
+}
 
 if (
   ![string]::IsNullOrWhiteSpace($ChannelId) -and
   ![string]::IsNullOrWhiteSpace($ThreadId)
 ) {
   try {
-    $completionText = if ($restartFailed) {
-      "Bridge restart failed: $restartError"
-    } else {
-      "Bridge restart completed. The bridge is back online."
-    }
     $payload = @{
-      channelId = $ChannelId
-      threadId = $ThreadId
-      text = $completionText
+      channelId    = $ChannelId
+      threadId     = $ThreadId
+      text         = $completionText
+      startedAt    = $restartStartedAt.ToString('o')
+      durationMs   = $restartDurationMs
+      failed       = $restartFailed
+      errorMessage = if ($restartFailed) { $restartError } else { "" }
     } | ConvertTo-Json -Compress
     $completionDir = Split-Path -Parent $completionFile
     if ($completionDir) {

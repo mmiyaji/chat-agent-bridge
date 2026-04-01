@@ -125,6 +125,7 @@ $requiredOrOptionalEnvNames = @(
 )
 
 Import-BridgeEnvironment -Names $requiredOrOptionalEnvNames
+Refresh-BridgePathEnvironment
 
 if ([string]::IsNullOrWhiteSpace((Get-Item "Env:CAB_ALLOWED_DIRS" -ErrorAction SilentlyContinue).Value)) {
   Set-Item -Path "Env:CAB_ALLOWED_DIRS" -Value $repoRoot

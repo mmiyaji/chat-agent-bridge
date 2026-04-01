@@ -18,7 +18,8 @@
     "service:restart": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-restart.ps1",
     "service:restart:build": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-restart.ps1 -Build",
     "service:status": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-status.ps1",
-    "start": "node dist/index.js",
+    "prestart": "node --preserve-symlinks --preserve-symlinks-main ./node_modules/typescript/bin/tsc -p tsconfig.json",
+    "start": "set CAB_OPEN_ADMIN=1&& node dist/index.js",
     "test": "node --preserve-symlinks --preserve-symlinks-main ./scripts/run-tests.mjs",
     "test:e2e:mattermost": "set CAB_ENABLE_MATTERMOST_E2E=1&& node --import ./node_modules/tsx/dist/loader.mjs --test test/mattermost-e2e.test.ts",
     "test:e2e": "node --preserve-symlinks --preserve-symlinks-main ./node_modules/@playwright/test/cli.js test"

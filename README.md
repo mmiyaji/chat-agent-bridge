@@ -17,7 +17,7 @@ The current implementation is Windows-first and is developed and validated prima
 - Binds a chat thread to a local agent session
 - Keeps local repository context, uncommitted work, and tool state on the same machine
 - Supports Slack and Mattermost chat adapters
-- Supports Codex and Claude Code agent adapters
+- Supports Codex, Claude Code, and experimental Cursor agent adapters
 - Adds approvals, audit logging, repo targeting, and an admin surface
 - Mattermost supports both `bot` mode and `self` mode
 
@@ -68,6 +68,57 @@ npm run service:status
 npm run service:restart
 npm run service:restart:build
 npm run service:stop
+```
+
+## Architecture
+
+```mermaid
+flowchart TD
+    subgraph Chat["Chat Providers"]
+        Slack["Slack\n(HTTP / Socket Mode)"]
+        Mattermost["Mattermost\n(HTTP / WebSocket)"]
+    end
+
+    subgraph Bridge["Chat Agent Bridge (Local)"]
+        direction TB
+        Adapter["Chat Adapter\nslack-adapter / mattermost-adapter"]
+        BridgeSvc["Bridge Service\nrouting · approvals · session · job queue"]
+        StateStore["File State Store\nstate.json"]
+        AuditLog["Audit Logger\naudit.jsonl"]
+        AdminSrv["Admin Server\n:8788/admin"]
+    end
+
+    subgraph Agents["Agent Adapters"]
+        Claude["Claude Code CLI\nclaude-agent"]
+        Codex["Codex CLI\ncodex-agent"]
+    end
+
+    subgraph LocalFS["Local Machine"]
+        Repos["Git Repositories\nCAB_ALLOWED_DIRS"]
+        Settings["admin-settings.json"]
+    end
+
+    Browser["Browser\nAdmin UI"]
+    User["User"]
+
+    User -- "message" --> Slack
+    User -- "message" --> Mattermost
+    Slack -- "event" --> Adapter
+    Mattermost -- "event" --> Adapter
+    Adapter --> BridgeSvc
+    BridgeSvc --> StateStore
+    BridgeSvc --> AuditLog
+    BridgeSvc --> Claude
+    BridgeSvc --> Codex
+    Claude -- "spawn / stream-json" --> Repos
+    Codex -- "spawn" --> Repos
+    BridgeSvc -- "reply" --> Adapter
+    Adapter -- "post" --> Slack
+    Adapter -- "post" --> Mattermost
+    AdminSrv --> StateStore
+    AdminSrv --> BridgeSvc
+    Browser -- "HTTP" --> AdminSrv
+    Settings --> BridgeSvc
 ```
 
 ## Documentation

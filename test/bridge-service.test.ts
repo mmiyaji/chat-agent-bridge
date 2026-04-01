@@ -54,6 +54,7 @@ async function startBridge() {
   const chatAdapter = new RecordingChatAdapter();
   const codexAgent = new RecordingAgent("codex");
   const claudeAgent = new RecordingAgent("claude-code");
+  const cursorAgent = new RecordingAgent("cursor");
   const auditLogger = new RecordingAuditLogger();
   const previousCompletionFile = process.env.CAB_RESTART_COMPLETION_FILE;
   if (!previousCompletionFile) {
@@ -69,6 +70,7 @@ async function startBridge() {
     agents: {
       codex: codexAgent,
       "claude-code": claudeAgent,
+      cursor: cursorAgent,
     },
     auditLogger,
   });
@@ -82,7 +84,17 @@ async function startBridge() {
       process.env.CAB_RESTART_COMPLETION_FILE = previousCompletionFile;
     }
   }
-  return { bridge, config, store, chatAdapter, agent: codexAgent, codexAgent, claudeAgent, auditLogger };
+  return {
+    bridge,
+    config,
+    store,
+    chatAdapter,
+    agent: codexAgent,
+    codexAgent,
+    claudeAgent,
+    cursorAgent,
+    auditLogger,
+  };
 }
 
 function createMessage(text: string): IncomingChatMessage {
@@ -681,6 +693,18 @@ test("BridgeService can switch the active agent for a thread", async () => {
   assert.match(chatAdapter.posted[0]?.text ?? "", /now uses `claude-code`/);
 });
 
+test("BridgeService can switch the active agent to Cursor for a thread", async () => {
+  const { chatAdapter, store } = await startBridge();
+
+  await chatAdapter.handler?.(createMessage("agent cursor"));
+  const sessions = await store.listSessions();
+
+  assert.equal(sessions[0].agent, "cursor");
+  assert.deepEqual(sessions[0].agentState, {});
+  assert.equal(sessions[0].bridgeState?.connectionMode, "bridge-owned");
+  assert.match(chatAdapter.posted[0]?.text ?? "", /now uses `cursor`/);
+});
+
 test("BridgeService can move a session to a new Slack thread", async () => {
   const { chatAdapter, store, agent } = await startBridge();
   agent.result = {
@@ -734,6 +758,25 @@ test("BridgeService routes execution to the selected agent", async () => {
   assert.equal(chatAdapter.posted.at(-1)?.text, "claude handled it");
 });
 
+test("BridgeService routes execution to Cursor when selected", async () => {
+  const { chatAdapter, store, codexAgent, claudeAgent, cursorAgent } = await startBridge();
+  cursorAgent.result = {
+    sessionId: "ignored",
+    summary: "cursor handled it",
+  };
+
+  await chatAdapter.handler?.(createMessage("agent cursor"));
+  await chatAdapter.handler?.(createMessage("do work"));
+  const sessions = await store.listSessions();
+
+  assert.equal(sessions[0].agent, "cursor");
+  assert.equal(codexAgent.requests.length, 0);
+  assert.equal(claudeAgent.requests.length, 0);
+  assert.equal(cursorAgent.requests.length, 1);
+  assert.equal(cursorAgent.requests[0]?.session.agent, "cursor");
+  assert.equal(chatAdapter.posted.at(-1)?.text, "cursor handled it");
+});
+
 test("BridgeService can reset to a fresh session with explicit mode", async () => {
   const { chatAdapter, store } = await startBridge();
 
@@ -756,6 +799,18 @@ test("BridgeService can reset to a fresh Claude session explicitly", async () =>
   assert.deepEqual(sessions[0].agentState, {});
   assert.equal(sessions[0].bridgeState?.approvalPolicyOverride, "manual");
   assert.match(chatAdapter.posted.at(-1)?.text ?? "", /fresh Claude Code session/);
+});
+
+test("BridgeService can reset to a fresh Cursor session explicitly", async () => {
+  const { chatAdapter, store } = await startBridge();
+
+  await chatAdapter.handler?.(createMessage("new cursor manual"));
+  const sessions = await store.listSessions();
+
+  assert.equal(sessions[0].agent, "cursor");
+  assert.deepEqual(sessions[0].agentState, {});
+  assert.equal(sessions[0].bridgeState?.approvalPolicyOverride, "manual");
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /fresh Cursor session/);
 });
 
 test("BridgeService rejects working directory changes outside allowed roots", async () => {
@@ -1033,4 +1088,28 @@ test("BridgeService opens a Claude session picker on empty mention", async () =>
     ((sessions[0].bridgeState?.sessionPicker as { sessionIds?: string[] } | undefined)?.sessionIds ?? [])[0],
     "claude-a",
   );
+});
+
+test("BridgeService reports that Cursor reusable sessions are unsupported", async () => {
+  const { chatAdapter, store } = await startBridge();
+  await store.upsertSession({
+    sessionId: "session-cursor",
+    agent: "cursor",
+    thread: {
+      provider: "slack",
+      channelId: "C1",
+      threadId: "T1",
+    },
+    workingDirectory: "C:/repo/project",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    agentState: {},
+    bridgeState: {
+      connectionMode: "bridge-owned",
+    },
+  });
+
+  await chatAdapter.handler?.(createMessage(""));
+
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Reusable Cursor sessions are not supported yet/);
 });

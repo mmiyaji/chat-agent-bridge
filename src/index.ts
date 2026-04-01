@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import { createAppConfig } from "./config/env.js";
 import { logger } from "./core/logger.js";
 import { SlackAdapter } from "./adapters/slack/slack-adapter.js";
@@ -5,6 +6,7 @@ import { MattermostAdapter } from "./adapters/mattermost/mattermost-adapter.js";
 import { AgentRegistry } from "./agents/base.js";
 import { CodexAgent } from "./agents/codex/codex-agent.js";
 import { ClaudeCodeAgent } from "./agents/claude/claude-agent.js";
+import { CursorAgent } from "./agents/cursor/cursor-agent.js";
 import { BridgeService } from "./core/bridge-service.js";
 import { SessionManager } from "./core/session-manager.js";
 import { InMemoryJobQueue } from "./core/job-queue.js";
@@ -27,6 +29,7 @@ async function main(): Promise<void> {
   const agents: AgentRegistry = {
     codex: new CodexAgent(config),
     "claude-code": new ClaudeCodeAgent(config),
+    cursor: new CursorAgent(config),
   };
 
   const bridge = new BridgeService({
@@ -48,6 +51,15 @@ async function main(): Promise<void> {
 
   await bridge.start();
   await adminServer.start();
+
+  if (process.env.CAB_OPEN_ADMIN === "1") {
+    const adminHost =
+      config.adminHost === "0.0.0.0" ? "127.0.0.1" : (config.adminHost ?? "127.0.0.1");
+    const adminPort = config.adminPort ?? 8788;
+    const url = `http://${adminHost}:${adminPort}/admin`;
+    spawn("cmd", ["/c", "start", url], { stdio: "ignore", detached: true, windowsHide: true });
+    logger.info("Opening admin UI.", { url });
+  }
 }
 
 main().catch((error: unknown) => {

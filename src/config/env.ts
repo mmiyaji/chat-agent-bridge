@@ -106,6 +106,7 @@ function parseAgentKind(value: string | undefined): AgentKind {
     case "codex":
       return "codex";
     case "claude-code":
+    case "cursor":
       return value;
     default:
       throw new Error(`Invalid CAB_AGENT: ${value}`);
@@ -204,6 +205,45 @@ function parseBoolean(value: string | undefined): boolean {
   }
 }
 
+function normalizeCursorConfig(
+  commandValue: string | undefined,
+  modelValue: string | undefined,
+): { command?: string; model?: string } {
+  const normalizedModel = modelValue?.trim() || undefined;
+  if (!commandValue) {
+    return normalizedModel ? { model: normalizedModel } : {};
+  }
+
+  const trimmed = commandValue.trim();
+  if (
+    /^cursor\s+agent$/i.test(trimmed) ||
+    /^cursor-agent$/i.test(trimmed)
+  ) {
+    return {
+      command: "cursor-agent --trust",
+      model: normalizedModel ?? "Auto",
+    };
+  }
+
+  if (/^cursor-agent\s+--trust$/i.test(trimmed)) {
+    return {
+      command: "cursor-agent --trust",
+      model: normalizedModel ?? "Auto",
+    };
+  }
+
+  if (/^cursor-agent\s+--trust\s+--model\s+Auto$/i.test(trimmed)) {
+    return {
+      command: "cursor-agent --trust",
+      model: normalizedModel ?? "Auto",
+    };
+  }
+
+  return normalizedModel
+    ? { command: commandValue, model: normalizedModel }
+    : { command: commandValue };
+}
+
 function readPersistedSettings(settingsFile: string): Record<string, string | number | boolean> {
   if (!fs.existsSync(settingsFile)) {
     return {};
@@ -274,11 +314,17 @@ function readSettingBoolean(
 export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
   const settingsFile = path.resolve(env.CAB_SETTINGS_FILE ?? "./data/admin-settings.json");
   const persisted = readPersistedSettings(settingsFile);
-  const allowedDirectories = parseAllowedDirs(readRequired("CAB_ALLOWED_DIRS", env));
+  const rawAllowedDirs = env.CAB_ALLOWED_DIRS ?? process.cwd();
+  const allowedDirectories = parseAllowedDirs(rawAllowedDirs);
   const defaultAllowedDirectory = allowedDirectories[0];
   if (!defaultAllowedDirectory) {
     throw new Error("CAB_ALLOWED_DIRS must include at least one directory.");
   }
+
+  const normalizedCursor = normalizeCursorConfig(
+    readSettingString(env.CAB_CURSOR_COMMAND, persisted, "cursorCommand"),
+    readSettingString(env.CAB_CURSOR_MODEL, persisted, "cursorModel"),
+  );
 
   const config: AppConfig = {
     chatProvider: parseChatProvider(readSettingString(env.CAB_CHAT_PROVIDER, persisted, "chatProvider")),
@@ -350,6 +396,22 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
         "codexMaxOutputLength",
       ),
       12000,
+    ),
+    cursorCommand: normalizedCursor.command ?? "cursor-agent --trust",
+    cursorModel: normalizedCursor.model ?? "Auto",
+    cursorCommandTimeoutMs: parseInteger(
+      "CAB_CURSOR_COMMAND_TIMEOUT_MS",
+      readSettingInteger(
+        env.CAB_CURSOR_COMMAND_TIMEOUT_MS,
+        persisted,
+        "cursorCommandTimeoutMs",
+      ),
+      600000,
+    ),
+    cursorMaxRuntimeMs: parseInteger(
+      "CAB_CURSOR_MAX_RUNTIME_MS",
+      readSettingInteger(env.CAB_CURSOR_MAX_RUNTIME_MS, persisted, "cursorMaxRuntimeMs"),
+      3600000,
     ),
     claudeModel: readSettingString(env.CAB_CLAUDE_MODEL, persisted, "claudeModel") ?? "sonnet",
     claudeMaxTurns: parseNonNegativeInteger(

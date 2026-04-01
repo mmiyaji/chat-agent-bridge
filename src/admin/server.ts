@@ -2,10 +2,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { AuditLogger } from "../core/audit.js";
+import { resolveCommand } from "../core/command-resolution.js";
 import { readPendingApproval } from "../core/approval.js";
 import { BridgeService } from "../core/bridge-service.js";
 import { assertPathAllowed } from "../core/paths.js";
-import { AppConfig, ExecutionRecord, SessionBinding } from "../core/types.js";
+import { AppConfig, ExecutionRecord, JsonValue, SessionBinding } from "../core/types.js";
 import { StateStore } from "../state/state-store.js";
 import { ChatConnectionStatus } from "../adapters/chat.js";
 
@@ -61,10 +62,19 @@ interface RuntimeSettingsPayload {
   codexCommandTimeoutMs: AppConfig["codexCommandTimeoutMs"];
   codexMaxRuntimeMs: AppConfig["codexMaxRuntimeMs"];
   codexMaxOutputLength: AppConfig["codexMaxOutputLength"];
+  cursorCommand: NonNullable<AppConfig["cursorCommand"]>;
+  cursorModel: NonNullable<AppConfig["cursorModel"]>;
+  cursorCommandTimeoutMs: NonNullable<AppConfig["cursorCommandTimeoutMs"]>;
+  cursorMaxRuntimeMs: NonNullable<AppConfig["cursorMaxRuntimeMs"]>;
   claudeModel: AppConfig["claudeModel"];
   claudeMaxTurns: AppConfig["claudeMaxTurns"];
   claudeCommandTimeoutMs: AppConfig["claudeCommandTimeoutMs"];
   claudeMaxRuntimeMs: AppConfig["claudeMaxRuntimeMs"];
+  agentCommands: {
+    codex: ReturnType<typeof resolveCommand>;
+    "claude-code": ReturnType<typeof resolveCommand>;
+    cursor: ReturnType<typeof resolveCommand>;
+  };
   autoSplitThreadUserMessageCount: AppConfig["autoSplitThreadUserMessageCount"];
   settingsFile: string;
   settingsSavedAt?: string;
@@ -73,12 +83,18 @@ interface RuntimeSettingsPayload {
 function writeJson(response: ServerResponse, statusCode: number, body: unknown): void {
   response.statusCode = statusCode;
   response.setHeader("content-type", "application/json; charset=utf-8");
+  response.setHeader("cache-control", "no-store, no-cache, must-revalidate");
+  response.setHeader("pragma", "no-cache");
+  response.setHeader("expires", "0");
   response.end(JSON.stringify(body));
 }
 
 function writeHtml(response: ServerResponse, statusCode: number, body: string): void {
   response.statusCode = statusCode;
   response.setHeader("content-type", "text/html; charset=utf-8");
+  response.setHeader("cache-control", "no-store, no-cache, must-revalidate");
+  response.setHeader("pragma", "no-cache");
+  response.setHeader("expires", "0");
   response.end(body);
 }
 
@@ -210,6 +226,26 @@ function renderFailureCardsMarkup(entries: Array<Record<string, any>>): string {
       </article>`,
     )
     .join("")}</div>`;
+}
+
+function renderCommandResolutionCard(
+  label: string,
+  diagnostic: RuntimeSettingsPayload["agentCommands"]["codex"],
+): string {
+  const resolved =
+    diagnostic.status === "resolved" && diagnostic.resolvedPath
+      ? `<code>${escapeHtml(diagnostic.resolvedPath)}</code>`
+      : '<span class="muted-note">Not resolved on this host.</span>';
+  const source = diagnostic.source ? `<span class="pill">${escapeHtml(diagnostic.source)}</span>` : "";
+  return `<article class="compact-card">
+    <header>
+      <div class="title">${escapeHtml(label)}</div>
+      ${source}
+    </header>
+    <p class="muted-note">Configured command: <code>${escapeHtml(diagnostic.command)}</code></p>
+    <p class="muted-note">Executable token: <code>${escapeHtml(diagnostic.executable || "(empty)")}</code></p>
+    <div class="title">${resolved}</div>
+  </article>`;
 }
 
 function formatDuration(ms: number | undefined): string | undefined {
@@ -1477,6 +1513,32 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         "</div>";
       }
 
+      function renderCommandResolutionCard(label, diagnostic) {
+        const safeDiagnostic = diagnostic || {
+          command: "",
+          executable: "",
+          status: "not_found",
+          resolvedPath: "",
+          source: "",
+        };
+        const resolved =
+          safeDiagnostic.status === "resolved" && safeDiagnostic.resolvedPath
+            ? "<code>" + escapeHtml(safeDiagnostic.resolvedPath) + "</code>"
+            : '<span class="muted-note">Not resolved on this host.</span>';
+        const source = safeDiagnostic.source
+          ? '<span class="pill">' + escapeHtml(safeDiagnostic.source) + "</span>"
+          : "";
+        return '<article class="compact-card">' +
+          "<header>" +
+            '<div class="title">' + escapeHtml(label) + "</div>" +
+            source +
+          "</header>" +
+          '<p class="muted-note">Configured command: <code>' + escapeHtml(safeDiagnostic.command) + "</code></p>" +
+          '<p class="muted-note">Executable token: <code>' + escapeHtml(safeDiagnostic.executable || "(empty)") + "</code></p>" +
+          '<div class="title">' + resolved + "</div>" +
+        "</article>";
+      }
+
       function syncSecretToggleStates() {
         document.querySelectorAll("[data-secret-toggle-label]").forEach((label) => {
           const input = label.querySelector("input[data-secret-toggle='1']");
@@ -1634,7 +1696,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           ? renderButtonMarkup("Cancel session", session.sessionId, "cancel")
           : "";
         const sessionCommands = [
-          '<div class="field"><label for="detail-agent">Agent</label><select id="detail-agent" data-session-id="' + escapeHtml(session.sessionId) + '"><option value="codex"' + (session.agent === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (session.agent === "claude-code" ? " selected" : "") + '>claude</option></select></div>',
+          '<div class="field"><label for="detail-agent">Agent</label><select id="detail-agent" data-session-id="' + escapeHtml(session.sessionId) + '"><option value="codex"' + (session.agent === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (session.agent === "claude-code" ? " selected" : "") + '>claude</option><option value="cursor"' + (session.agent === "cursor" ? " selected" : "") + '>cursor</option></select></div>',
           '<div class="field"><label for="detail-mode">Approval</label><select id="detail-mode" data-session-id="' + escapeHtml(session.sessionId) + '"><option value="manual"' + (session.approvalPolicyOverride === "manual" ? " selected" : "") + '>manual</option><option value="never"' + (session.approvalPolicyOverride === "never" ? " selected" : "") + '>allow</option></select></div>',
         ].join("");
         const repoButtons = Object.entries(dashboardState.repoAliases || {})
@@ -1665,13 +1727,14 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             '<button data-command="new manual" data-session-id="' + escapeHtml(session.sessionId) + '">New manual</button>' +
             '<button data-command="fork codex" data-session-id="' + escapeHtml(session.sessionId) + '">Fork Codex</button>' +
             '<button data-command="fork claude" data-session-id="' + escapeHtml(session.sessionId) + '">Fork Claude</button>' +
+            '<button data-command="fork cursor" data-session-id="' + escapeHtml(session.sessionId) + '">Fork Cursor</button>' +
             '<button data-command="attach-last" data-session-id="' + escapeHtml(session.sessionId) + '">Attach latest</button>' +
             '<button data-command="detach" data-session-id="' + escapeHtml(session.sessionId) + '">Detach</button>' +
           "</div>" +
           '<div class="detail-actions">' +
             repoButtons +
           "</div>" +
-          '<div class="field"><label for="detail-command">Custom command</label><div class="inline-form"><input id="detail-command" data-session-id="' + escapeHtml(session.sessionId) + '" type="text" placeholder="attach <id>, mode allow, repo <alias>, fork codex" /><button id="detail-command-run" data-session-id="' + escapeHtml(session.sessionId) + '">Run</button></div></div>' +
+          '<div class="field"><label for="detail-command">Custom command</label><div class="inline-form"><input id="detail-command" data-session-id="' + escapeHtml(session.sessionId) + '" type="text" placeholder="attach <id>, mode allow, repo <alias>, fork cursor" /><button id="detail-command-run" data-session-id="' + escapeHtml(session.sessionId) + '">Run</button></div></div>' +
           '<div class="filters">' + sessionCommands + "</div>" +
           '<div class="detail-grid">' +
             '<div class="detail-card"><strong>Session</strong><code>' + escapeHtml(session.sessionId) + "</code></div>" +
@@ -1703,13 +1766,18 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             '<div class="detail-empty">Loading runtime settings.</div>';
           return;
         }
+        const agentCommands = settings.agentCommands || {
+          codex: { command: "codex", executable: "codex", status: "not_found" },
+          "claude-code": { command: "claude", executable: "claude", status: "not_found" },
+          cursor: { command: settings.cursorCommand || "cursor-agent --trust", executable: "cursor-agent", status: "not_found" },
+        };
         document.getElementById("settings").innerHTML =
           '<div class="settings-stack">' +
           '<section class="settings-block">' +
           '<div class="section-head"><div><h2>Defaults</h2><p>These apply to new sessions unless a thread overrides them.</p></div></div>' +
           '<div class="settings-grid">' +
             renderFieldWithHint(
-              '<div class="field"><label for="settings-agent">Default agent</label><select id="settings-agent" data-testid="settings-agent"><option value="codex"' + (settings.agentKind === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (settings.agentKind === "claude-code" ? " selected" : "") + '>claude</option></select></div>',
+              '<div class="field"><label for="settings-agent">Default agent</label><select id="settings-agent" data-testid="settings-agent"><option value="codex"' + (settings.agentKind === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (settings.agentKind === "claude-code" ? " selected" : "") + '>claude</option><option value="cursor"' + (settings.agentKind === "cursor" ? " selected" : "") + '>cursor</option></select></div>',
               'Used when a new session starts and nothing in the thread overrides it.'
             ) +
             renderFieldWithHint(
@@ -1754,6 +1822,26 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             ) +
           "</div>" +
           "</section>" +
+          '<section class="settings-block"><div class="section-head"><div><h2>Cursor</h2><p>Applied to future Cursor runs.</p></div></div>' +
+          '<div class="settings-subgrid">' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-cursor-command">Command</label><input id="settings-cursor-command" data-testid="settings-cursor-command" type="text" value="' + escapeHtml(settings.cursorCommand) + '" /></div>',
+              'A non-interactive Cursor CLI command such as <code>cursor-agent --trust</code>. The default includes <code>--trust</code> for workspace trust.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-cursor-model">Model</label><input id="settings-cursor-model" data-testid="settings-cursor-model" type="text" value="' + escapeHtml(settings.cursorModel) + '" /></div>',
+              'Model passed as <code>--model</code>. Use <code>Auto</code> for plans that cannot use named models.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-cursor-timeout">Command timeout ms</label><input id="settings-cursor-timeout" data-testid="settings-cursor-timeout" type="number" min="1" value="' + escapeHtml(settings.cursorCommandTimeoutMs) + '" /></div>',
+              'Idle timeout for Cursor runs.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-cursor-runtime">Max runtime ms</label><input id="settings-cursor-runtime" data-testid="settings-cursor-runtime" type="number" min="1" value="' + escapeHtml(settings.cursorMaxRuntimeMs) + '" /></div>',
+              'Hard stop for total runtime, even if Cursor still emits output.'
+            ) +
+          "</div>" +
+          "</section>" +
           '<section class="settings-block"><div class="section-head"><div><h2>Claude Code</h2><p>Applied to future Claude runs.</p></div></div>' +
           '<div class="settings-subgrid">' +
             renderFieldWithHint(
@@ -1761,8 +1849,8 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
               'The model name passed to Claude Code for new runs.'
             ) +
             renderFieldWithHint(
-              '<div class="field"><label for="settings-claude-turns">Max turns</label><input id="settings-claude-turns" data-testid="settings-claude-turns" type="number" min="1" value="' + escapeHtml(settings.claudeMaxTurns) + '" /></div>',
-              'Upper bound for one Claude request before the bridge stops the run.'
+              '<div class="field"><label for="settings-claude-turns">Max turns</label><input id="settings-claude-turns" data-testid="settings-claude-turns" type="number" min="0" value="' + escapeHtml(settings.claudeMaxTurns) + '" /></div>',
+              'Upper bound for one Claude request (0 = unlimited).'
             ) +
             renderFieldWithHint(
               '<div class="field"><label for="settings-claude-timeout">Command timeout ms</label><input id="settings-claude-timeout" data-testid="settings-claude-timeout" type="number" min="1" value="' + escapeHtml(settings.claudeCommandTimeoutMs) + '" /></div>',
@@ -1772,6 +1860,13 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
               '<div class="field"><label for="settings-claude-runtime">Max runtime ms</label><input id="settings-claude-runtime" data-testid="settings-claude-runtime" type="number" min="1" value="' + escapeHtml(settings.claudeMaxRuntimeMs) + '" /></div>',
               'Hard stop for total runtime, even if the run still emits progress.'
             ) +
+          "</div>" +
+          "</section>" +
+          '<section class="settings-block"><div class="section-head"><div><h2>CLI resolution</h2><p>Shows which executable each agent command resolves to on this host.</p></div></div>' +
+          '<div class="card-list">' +
+            renderCommandResolutionCard("Codex", agentCommands.codex) +
+            renderCommandResolutionCard("Claude Code", agentCommands["claude-code"]) +
+            renderCommandResolutionCard("Cursor", agentCommands.cursor) +
           "</div>" +
           "</section>" +
           '<section class="settings-block"><div class="section-head"><div><h2>Bridge transport</h2><p>Saved immediately, applied after bridge restart.</p></div></div>' +
@@ -1940,9 +2035,15 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         if (!hasSettingsView) {
           return;
         }
-        const payload = await fetchJson("/admin/api/settings");
-        dashboardState.settings = payload.settings;
-        renderSettings();
+        try {
+          const payload = await fetchJson("/admin/api/settings");
+          dashboardState.settings = payload.settings;
+          renderSettings();
+        } catch (error) {
+          document.getElementById("settings").innerHTML =
+            '<div class="detail-empty">Failed to load runtime settings.</div>';
+          setFlash(error instanceof Error ? error.message : String(error), "error");
+        }
       }
 
       async function saveSettings() {
@@ -1956,6 +2057,10 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           codexCommandTimeoutMs: Number.parseInt(document.getElementById("settings-codex-timeout").value, 10),
           codexMaxRuntimeMs: Number.parseInt(document.getElementById("settings-codex-runtime").value, 10),
           codexMaxOutputLength: Number.parseInt(document.getElementById("settings-codex-output").value, 10),
+          cursorCommand: document.getElementById("settings-cursor-command").value.trim(),
+          cursorModel: document.getElementById("settings-cursor-model").value.trim(),
+          cursorCommandTimeoutMs: Number.parseInt(document.getElementById("settings-cursor-timeout").value, 10),
+          cursorMaxRuntimeMs: Number.parseInt(document.getElementById("settings-cursor-runtime").value, 10),
           claudeModel: document.getElementById("settings-claude-model").value.trim(),
           claudeMaxTurns: Number.parseInt(document.getElementById("settings-claude-turns").value, 10),
           claudeCommandTimeoutMs: Number.parseInt(document.getElementById("settings-claude-timeout").value, 10),
@@ -2278,6 +2383,7 @@ function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
               <select id="agent">
                 <option value="codex"${settings.agentKind === "codex" ? " selected" : ""}>Codex</option>
                 <option value="claude-code"${settings.agentKind === "claude-code" ? " selected" : ""}>Claude Code</option>
+                <option value="cursor"${settings.agentKind === "cursor" ? " selected" : ""}>Cursor</option>
               </select>
             </label>
             <label>
@@ -2853,10 +2959,19 @@ export class AdminServer {
       codexCommandTimeoutMs: this.config.codexCommandTimeoutMs,
       codexMaxRuntimeMs: this.config.codexMaxRuntimeMs,
       codexMaxOutputLength: this.config.codexMaxOutputLength,
+      cursorCommand: this.config.cursorCommand ?? "cursor-agent --trust",
+      cursorModel: this.config.cursorModel ?? "Auto",
+      cursorCommandTimeoutMs: this.config.cursorCommandTimeoutMs ?? 600000,
+      cursorMaxRuntimeMs: this.config.cursorMaxRuntimeMs ?? 3600000,
       claudeModel: this.config.claudeModel,
       claudeMaxTurns: this.config.claudeMaxTurns,
       claudeCommandTimeoutMs: this.config.claudeCommandTimeoutMs,
       claudeMaxRuntimeMs: this.config.claudeMaxRuntimeMs,
+      agentCommands: {
+        codex: resolveCommand("codex", process.cwd()),
+        "claude-code": resolveCommand("claude", process.cwd()),
+        cursor: resolveCommand(this.config.cursorCommand ?? "cursor-agent --trust", process.cwd()),
+      },
       autoSplitThreadUserMessageCount: this.config.autoSplitThreadUserMessageCount,
       settingsFile: this.config.settingsFile,
       ...(this.config.mattermostServerUrl
@@ -2896,6 +3011,10 @@ export class AdminServer {
       codexCommandTimeoutMs: this.config.codexCommandTimeoutMs,
       codexMaxRuntimeMs: this.config.codexMaxRuntimeMs,
       codexMaxOutputLength: this.config.codexMaxOutputLength,
+      cursorCommand: this.config.cursorCommand ?? "cursor-agent --trust",
+      cursorModel: this.config.cursorModel ?? "Auto",
+      cursorCommandTimeoutMs: this.config.cursorCommandTimeoutMs ?? 600000,
+      cursorMaxRuntimeMs: this.config.cursorMaxRuntimeMs ?? 3600000,
       claudeModel: this.config.claudeModel,
       claudeMaxTurns: this.config.claudeMaxTurns,
       claudeCommandTimeoutMs: this.config.claudeCommandTimeoutMs,
@@ -2986,7 +3105,12 @@ export class AdminServer {
       return;
     }
 
-    if (payload.agentKind && payload.agentKind !== "codex" && payload.agentKind !== "claude-code") {
+    if (
+      payload.agentKind &&
+      payload.agentKind !== "codex" &&
+      payload.agentKind !== "claude-code" &&
+      payload.agentKind !== "cursor"
+    ) {
       writeJson(response, 400, { error: "Invalid agentKind" });
       return;
     }
@@ -3054,7 +3178,8 @@ export class AdminServer {
       "codexCommandTimeoutMs",
       "codexMaxRuntimeMs",
       "codexMaxOutputLength",
-      "claudeMaxTurns",
+      "cursorCommandTimeoutMs",
+      "cursorMaxRuntimeMs",
       "claudeCommandTimeoutMs",
       "claudeMaxRuntimeMs",
       "autoSplitThreadUserMessageCount",
@@ -3062,6 +3187,15 @@ export class AdminServer {
     for (const key of numericKeys) {
       const value = payload[key as keyof RuntimeSettingsPayload];
       if (value !== undefined && (!Number.isInteger(value) || Number(value) < 1)) {
+        writeJson(response, 400, { error: `Invalid ${key}` });
+        return;
+      }
+    }
+    // Keys that accept 0 (e.g. 0 = unlimited)
+    const nonNegativeKeys = ["claudeMaxTurns", "agentRetryCount"];
+    for (const key of nonNegativeKeys) {
+      const value = payload[key as keyof RuntimeSettingsPayload];
+      if (value !== undefined && (!Number.isInteger(value) || Number(value) < 0)) {
         writeJson(response, 400, { error: `Invalid ${key}` });
         return;
       }
@@ -3090,6 +3224,14 @@ export class AdminServer {
         });
         return;
       }
+    }
+    if (payload.cursorCommand !== undefined && !payload.cursorCommand.trim()) {
+      writeJson(response, 400, { error: "Invalid cursorCommand" });
+      return;
+    }
+    if (payload.cursorModel !== undefined && !payload.cursorModel.trim()) {
+      writeJson(response, 400, { error: "Invalid cursorModel" });
+      return;
     }
     const clearSecretKeys = [
       "clearSlackBotToken",
@@ -3204,10 +3346,22 @@ export class AdminServer {
     if (payload.codexMaxOutputLength) {
       this.config.codexMaxOutputLength = payload.codexMaxOutputLength;
     }
+    if (payload.cursorCommand) {
+      this.config.cursorCommand = payload.cursorCommand;
+    }
+    if (payload.cursorModel) {
+      this.config.cursorModel = payload.cursorModel;
+    }
+    if (payload.cursorCommandTimeoutMs) {
+      this.config.cursorCommandTimeoutMs = payload.cursorCommandTimeoutMs;
+    }
+    if (payload.cursorMaxRuntimeMs) {
+      this.config.cursorMaxRuntimeMs = payload.cursorMaxRuntimeMs;
+    }
     if (payload.claudeModel) {
       this.config.claudeModel = payload.claudeModel;
     }
-    if (payload.claudeMaxTurns) {
+    if (payload.claudeMaxTurns != null) {
       this.config.claudeMaxTurns = payload.claudeMaxTurns;
     }
     if (payload.claudeCommandTimeoutMs) {
@@ -3217,16 +3371,15 @@ export class AdminServer {
       this.config.claudeMaxRuntimeMs = payload.claudeMaxRuntimeMs;
     }
 
+    const settings = this.readRuntimeSettings();
     await this.auditLogger.log({
       type: "admin.settings.updated",
-      settings: {
-        ...this.readRuntimeSettings(),
-      },
+      settings: JSON.parse(JSON.stringify(settings)) as JsonValue,
     });
     this.persistSettingsFile();
     writeJson(response, 200, {
       ok: true,
-      settings: this.readRuntimeSettings(),
+      settings,
     });
   }
 
@@ -3274,4 +3427,3 @@ export class AdminServer {
     });
   }
 }
-

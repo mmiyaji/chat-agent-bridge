@@ -14,6 +14,7 @@ import {
   shouldRequestApproval,
 } from "./approval.js";
 import { AuditLogger } from "./audit.js";
+import { logger } from "./logger.js";
 import {
   BridgeCommand,
   formatRepoAliases,
@@ -116,6 +117,12 @@ function readAgentSessionId(session: SessionBinding): string | undefined {
       : undefined;
   }
 
+  if (session.agent === "cursor") {
+    return typeof session.agentState?.cursorSessionId === "string"
+      ? session.agentState.cursorSessionId
+      : undefined;
+  }
+
   return undefined;
 }
 
@@ -134,6 +141,13 @@ function createAttachedAgentState(
     return {
       ...(session.agentState ?? {}),
       claudeSessionId: agentSessionId,
+    };
+  }
+
+  if (session.agent === "cursor") {
+    return {
+      ...(session.agentState ?? {}),
+      cursorSessionId: agentSessionId,
     };
   }
 
@@ -363,9 +377,15 @@ function formatAgentDisplayName(agentKind: SessionBinding["agent"]): string {
       return "Claude Code";
     case "codex":
       return "Codex";
+    case "cursor":
+      return "Cursor";
     default:
       return agentKind;
   }
+}
+
+function supportsReusableSessions(agentKind: SessionBinding["agent"]): boolean {
+  return agentKind === "codex" || agentKind === "claude-code";
 }
 
 function appendRestartLog(orchestratorLog: string, line: string): void {
@@ -389,7 +409,16 @@ function toPowerShellSingleQuoted(value: string): string {
 interface PendingRestartCompletion {
   channelId: string;
   threadId: string;
-  text: string;
+  /** Legacy field — used when the PS1 script pre-composed the message. */
+  text?: string;
+  /** ISO timestamp of when the restart was initiated. */
+  startedAt?: string;
+  /** Wall-clock duration of the restart in milliseconds. */
+  durationMs?: number;
+  /** True if the restart script itself failed. */
+  failed?: boolean;
+  /** Error message when failed === true. */
+  errorMessage?: string;
 }
 
 export class BridgeService {
@@ -857,16 +886,16 @@ export class BridgeService {
           "- `@Chat Agent Bridge history [count]`",
           "- `@Chat Agent Bridge cancel`",
           "- `@Chat Agent Bridge new-thread`",
-          "- `@Chat Agent Bridge fork [codex|claude] [allow|manual]`",
+          "- `@Chat Agent Bridge fork [codex|claude|cursor] [allow|manual]`",
           "- `@Chat Agent Bridge sessions`",
           "- `@Chat Agent Bridge approvals`",
           "- `@Chat Agent Bridge failures [count]`",
           "- `@Chat Agent Bridge repos`",
           "- `@Chat Agent Bridge repo <alias>`",
           "- `@Chat Agent Bridge cwd <path>`",
-          "- `@Chat Agent Bridge agent <codex|claude>`",
+          "- `@Chat Agent Bridge agent <codex|claude|cursor>`",
           "- `@Chat Agent Bridge mode <allow|manual>`",
-          "- `@Chat Agent Bridge new [codex|claude] [allow|manual]`",
+          "- `@Chat Agent Bridge new [codex|claude|cursor] [allow|manual]`",
           "- `@Chat Agent Bridge attach <session-id>`",
           "- `@Chat Agent Bridge attach-last`",
           "- `@Chat Agent Bridge detach`",
@@ -1206,6 +1235,13 @@ export class BridgeService {
     }
 
     if (command.kind === "attach-last") {
+      if (!supportsReusableSessions(session.agent)) {
+        await this.deps.chatAdapter.postThreadMessage(
+          message.thread,
+          `${formatAgentDisplayName(session.agent)} session reuse is not supported yet. Use \`new\` to start a fresh session.`,
+        );
+        return;
+      }
       try {
         const latest = await this.readLatestReusableSession(session.agent);
         if (!latest) {
@@ -1228,6 +1264,13 @@ export class BridgeService {
     }
 
     if (command.kind === "attach") {
+      if (!supportsReusableSessions(session.agent)) {
+        await this.deps.chatAdapter.postThreadMessage(
+          message.thread,
+          `${formatAgentDisplayName(session.agent)} does not support manual attach yet.`,
+        );
+        return;
+      }
       await this.attachAgentSession(session, message, command.sessionId, "manual");
       return;
     }
@@ -1382,6 +1425,14 @@ export class BridgeService {
     }
 
     try {
+      if (!supportsReusableSessions(session.agent)) {
+        await this.deps.chatAdapter.postThreadMessage(
+          message.thread,
+          `Reusable ${formatAgentDisplayName(session.agent)} sessions are not supported yet. Reply \`new\` to start a fresh session.`,
+        );
+        return;
+      }
+
       const sessions = await this.readRecentReusableSessions(session.agent, 5);
       if (sessions.length === 0) {
         await this.deps.chatAdapter.postThreadMessage(
@@ -1541,6 +1592,10 @@ export class BridgeService {
   private async readLatestReusableSession(
     agentKind: SessionBinding["agent"],
   ): Promise<StoredAgentSession | undefined> {
+    if (agentKind === "cursor") {
+      return undefined;
+    }
+
     if (agentKind === "claude-code") {
       const session = await readLatestClaudeSession(this.deps.config.claudeSessionIndexFile);
       return session
@@ -1574,6 +1629,10 @@ export class BridgeService {
     agentKind: SessionBinding["agent"],
     limit: number,
   ): Promise<StoredAgentSession[]> {
+    if (agentKind === "cursor") {
+      return [];
+    }
+
     if (agentKind === "claude-code") {
       const sessions = await readRecentClaudeSessions(this.deps.config.claudeSessionIndexFile, limit);
       return sessions.map((session) => ({
@@ -2235,6 +2294,37 @@ export class BridgeService {
     child.unref();
   }
 
+  private buildRestartCompletionText(completion: PendingRestartCompletion): string {
+    // Legacy entries (written by old PS1 code) carry a pre-composed text field.
+    if (completion.text) {
+      return completion.text;
+    }
+
+    const lines: string[] = [];
+
+    if (completion.failed) {
+      lines.push(`Bridge restart failed: ${completion.errorMessage ?? "unknown error"}`);
+    } else {
+      lines.push("Bridge restarted successfully. The bridge is back online.");
+    }
+
+    if (typeof completion.durationMs === "number") {
+      const secs = Math.round(completion.durationMs / 1000);
+      lines.push(`• Duration: ${secs}s`);
+    }
+
+    const connStatus = this.getChatConnectionStatus();
+    if (connStatus) {
+      const stateLabel = connStatus.connected ? "Connected" : connStatus.state === "connecting" ? "Connecting..." : "Disconnected";
+      lines.push(`• Connection: ${connStatus.provider} (${connStatus.mode}) — ${stateLabel}`);
+    }
+
+    const uptimeSecs = Math.round((Date.now() - Date.parse(this.startedAt)) / 1000);
+    lines.push(`• Uptime: ${uptimeSecs}s`);
+
+    return lines.join("\n");
+  }
+
   private async flushPendingRestartCompletions(): Promise<void> {
     if (this.restartCompletionFlushInFlight) {
       return;
@@ -2271,12 +2361,16 @@ export class BridgeService {
           if (
             typeof parsed.channelId === "string" &&
             typeof parsed.threadId === "string" &&
-            typeof parsed.text === "string"
+            (typeof parsed.text === "string" || typeof parsed.startedAt === "string")
           ) {
             pending.push({
               channelId: parsed.channelId,
               threadId: parsed.threadId,
-              text: parsed.text,
+              ...(typeof parsed.text === "string" ? { text: parsed.text } : {}),
+              ...(typeof parsed.startedAt === "string" ? { startedAt: parsed.startedAt } : {}),
+              ...(typeof parsed.durationMs === "number" ? { durationMs: parsed.durationMs } : {}),
+              ...(typeof parsed.failed === "boolean" ? { failed: parsed.failed } : {}),
+              ...(typeof parsed.errorMessage === "string" ? { errorMessage: parsed.errorMessage } : {}),
             });
           } else {
             skippedLines += 1;
@@ -2300,13 +2394,14 @@ export class BridgeService {
       let postedCount = 0;
       for (const completion of pending) {
         try {
+          const text = this.buildRestartCompletionText(completion);
           await this.deps.chatAdapter.postThreadMessage(
             {
               provider: this.deps.config.chatProvider,
               channelId: completion.channelId,
               threadId: completion.threadId,
             },
-            completion.text,
+            text,
           );
           await this.deps.auditLogger.log({
             type: "bridge.restart.completed",
@@ -2314,7 +2409,12 @@ export class BridgeService {
             threadId: completion.threadId,
           });
           postedCount += 1;
-        } catch {
+        } catch (err) {
+          logger.warn("Failed to post restart completion; will retry.", {
+            channelId: completion.channelId,
+            threadId: completion.threadId,
+            error: err instanceof Error ? err.message : String(err),
+          });
           retryQueue.push(completion);
         }
       }

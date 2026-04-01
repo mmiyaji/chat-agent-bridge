@@ -8,6 +8,7 @@
 - Local agent CLI
   - Codex CLI for `CAB_AGENT=codex`
   - Claude Code CLI for `CAB_AGENT=claude-code`
+  - Cursor CLI for `CAB_AGENT=cursor` (experimental; non-interactive wrapper behavior may vary)
 
 ## Install dependencies
 
@@ -64,7 +65,7 @@ Service mode stores runtime files under `data/runtime/`.
 | `CAB_ALLOWED_DIRS` | yes | Semicolon-separated list of allowed repository roots |
 | `CAB_DEFAULT_WORKDIR` | no | Default working directory. Defaults to the first allowed directory |
 | `CAB_CHAT_PROVIDER` | no | `slack` or `mattermost`. Defaults to `slack` |
-| `CAB_AGENT` | no | `codex` or `claude-code`. Defaults to `codex` |
+| `CAB_AGENT` | no | `codex`, `claude-code`, or `cursor`. Defaults to `codex` |
 | `CAB_DEFAULT_APPROVAL_POLICY` | no | `manual`, `on-failure`, or `never` |
 | `CAB_NETWORK_ACCESS` | no | `enabled` or `disabled` |
 | `CAB_ADMIN_HOST` | no | Admin server bind host. Defaults to `CAB_HOST` |
@@ -90,6 +91,27 @@ The bridge uses the locally installed Codex CLI and does not require `OPENAI_API
 | Name | Required | Description |
 | --- | --- | --- |
 | `CAB_CLAUDE_MODEL` | no | Model passed to `claude --model`. Defaults to `sonnet` |
+
+### Cursor
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `CAB_CURSOR_COMMAND` | no | Command used for Cursor execution. Defaults to `cursor-agent --trust` |
+| `CAB_CURSOR_MODEL` | no | Model passed to Cursor as `--model`. Defaults to `Auto` |
+| `CAB_CURSOR_COMMAND_TIMEOUT_MS` | no | Idle timeout for a single Cursor invocation |
+| `CAB_CURSOR_MAX_RUNTIME_MS` | no | Hard maximum runtime for a single Cursor invocation |
+
+Cursor runtime settings can also be adjusted later from the Admin UI. This is useful when Cursor needs a wrapper script or a machine-specific CLI command.
+
+The default command includes `--trust` so Cursor can run in repositories that require workspace trust.
+The default model is `Auto`, which is safer for plans that cannot use named models.
+
+If you need a different wrapper, you can still override `CAB_CURSOR_COMMAND` or save another value in the Admin UI.
+
+### Claude runtime
+
+| Variable | Required | Description |
+| --- | --- | --- |
 | `CAB_CLAUDE_COMMAND_TIMEOUT_MS` | no | Idle timeout for a single Claude Code invocation |
 | `CAB_CLAUDE_MAX_RUNTIME_MS` | no | Hard maximum runtime for a single Claude Code invocation |
 | `CAB_CLAUDE_SESSION_INDEX_FILE` | no | Local Claude Code session index path |

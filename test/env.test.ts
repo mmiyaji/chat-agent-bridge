@@ -103,3 +103,44 @@ test("createAppConfig reads Mattermost actor mode and maps legacy dm-only to sel
   assert.equal(legacy.mattermostActorMode, "self");
   assert.equal(legacy.mattermostDmOnly, true);
 });
+
+test("createAppConfig accepts cursor as the default agent", () => {
+  fs.mkdirSync(tempRoot, { recursive: true });
+  const settingsFile = path.join(tempRoot, "env-settings-cursor.json");
+  fs.rmSync(settingsFile, { force: true });
+
+  const config = createAppConfig({
+    CAB_ALLOWED_DIRS: "C:/repo",
+    CAB_SETTINGS_FILE: settingsFile,
+    CAB_AGENT: "cursor",
+    CAB_CURSOR_COMMAND: "cursor-agent",
+  });
+
+  assert.equal(config.agentKind, "cursor");
+  assert.equal(config.cursorCommand, "cursor-agent --trust");
+  assert.equal(config.cursorModel, "Auto");
+});
+
+test("createAppConfig normalizes the legacy cursor agent default command", () => {
+  fs.mkdirSync(tempRoot, { recursive: true });
+  const settingsFile = path.join(tempRoot, "env-settings-cursor-legacy.json");
+  fs.writeFileSync(
+    settingsFile,
+    JSON.stringify(
+      {
+        cursorCommand: "cursor agent",
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+
+  const config = createAppConfig({
+    CAB_ALLOWED_DIRS: "C:/repo",
+    CAB_SETTINGS_FILE: settingsFile,
+  });
+
+  assert.equal(config.cursorCommand, "cursor-agent --trust");
+  assert.equal(config.cursorModel, "Auto");
+});

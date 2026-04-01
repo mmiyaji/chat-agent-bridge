@@ -128,6 +128,10 @@ export interface AppConfig {
   codexCommandTimeoutMs: number;
   codexMaxRuntimeMs: number;
   codexMaxOutputLength: number;
+  cursorCommand?: string;
+  cursorModel?: string;
+  cursorCommandTimeoutMs?: number;
+  cursorMaxRuntimeMs?: number;
   claudeModel: string;
   claudeMaxTurns: number;
   claudeCommandTimeoutMs: number;

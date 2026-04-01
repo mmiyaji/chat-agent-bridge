@@ -223,9 +223,11 @@ test("AdminServer serves a dedicated settings page", async () => {
 
   const response = await getText(port, "/admin/settings");
   assert.equal(response.statusCode, 200);
+  assert.equal(response.headers["cache-control"], "no-store, no-cache, must-revalidate");
   assert.match(response.body, /Runtime Settings/);
   assert.match(response.body, /data-testid="nav-dashboard"/);
   assert.match(response.body, /class="is-active" data-testid="nav-settings"/);
+  assert.match(response.body, /function renderCommandResolutionCard\(label, diagnostic\)/);
 
   await admin.stop();
 });
@@ -345,11 +347,19 @@ test("AdminServer reads and updates runtime settings", async () => {
 
   const before = await getJson(port, "/admin/api/settings");
   assert.equal(before.statusCode, 200);
+  assert.equal(before.headers["cache-control"], "no-store, no-cache, must-revalidate");
   assert.equal(before.body.settings.agentKind, "codex");
   assert.equal(before.body.settings.defaultApprovalPolicy, "manual");
   assert.equal(before.body.settings.networkAccess, "disabled");
   assert.equal(before.body.settings.codexModel, "gpt-5.4");
   assert.equal(before.body.settings.claudeModel, "sonnet");
+  assert.equal(before.body.settings.cursorCommand, "cursor-agent --trust");
+  assert.equal(before.body.settings.cursorModel, "Auto");
+  assert.equal(before.body.settings.cursorCommandTimeoutMs, 600000);
+  assert.equal(before.body.settings.cursorMaxRuntimeMs, 3600000);
+  assert.equal(before.body.settings.agentCommands.codex.command, "codex");
+  assert.equal(before.body.settings.agentCommands["claude-code"].command, "claude");
+  assert.equal(before.body.settings.agentCommands.cursor.command, "cursor-agent --trust");
   assert.equal(before.body.settings.autoSplitThreadUserMessageCount, 30);
   assert.equal(before.body.settings.hasSlackBotToken, false);
   assert.match(before.body.settings.settingsFile, /admin-settings\.json$/);
@@ -365,6 +375,10 @@ test("AdminServer reads and updates runtime settings", async () => {
       autoSplitThreadUserMessageCount: 45,
       codexModel: "gpt-5.5",
       codexMaxTurns: 12,
+      cursorCommand: "cursor-agent --print",
+      cursorModel: "Auto",
+      cursorCommandTimeoutMs: 222000,
+      cursorMaxRuntimeMs: 333000,
       claudeModel: "opus",
       claudeMaxTurns: 10,
       chatProvider: "mattermost",
@@ -388,6 +402,11 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(update.body.settings.autoSplitThreadUserMessageCount, 45);
   assert.equal(update.body.settings.codexModel, "gpt-5.5");
   assert.equal(update.body.settings.codexMaxTurns, 12);
+  assert.equal(update.body.settings.cursorCommand, "cursor-agent --print");
+  assert.equal(update.body.settings.cursorModel, "Auto");
+  assert.equal(update.body.settings.cursorCommandTimeoutMs, 222000);
+  assert.equal(update.body.settings.cursorMaxRuntimeMs, 333000);
+  assert.equal(update.body.settings.agentCommands.cursor.command, "cursor-agent --print");
   assert.equal(update.body.settings.claudeModel, "opus");
   assert.equal(update.body.settings.claudeMaxTurns, 10);
   assert.equal(config.agentKind, "claude-code");
@@ -396,6 +415,10 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(config.autoSplitThreadUserMessageCount, 45);
   assert.equal(config.codexModel, "gpt-5.5");
   assert.equal(config.codexMaxTurns, 12);
+  assert.equal(config.cursorCommand, "cursor-agent --print");
+  assert.equal(config.cursorModel, "Auto");
+  assert.equal(config.cursorCommandTimeoutMs, 222000);
+  assert.equal(config.cursorMaxRuntimeMs, 333000);
   assert.equal(config.claudeModel, "opus");
   assert.equal(config.claudeMaxTurns, 10);
   assert.equal(config.chatProvider, "mattermost");
@@ -413,6 +436,21 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(persisted.port, 9999);
   assert.equal(persisted.slackBotToken, "xoxb-test");
   assert.equal(persisted.autoSplitThreadUserMessageCount, 45);
+  assert.equal(persisted.cursorCommand, "cursor-agent --print");
+  assert.equal(persisted.cursorModel, "Auto");
+  assert.equal(persisted.cursorCommandTimeoutMs, 222000);
+  assert.equal(persisted.cursorMaxRuntimeMs, 333000);
+
+  const cursorUpdate = await postJson(
+    port,
+    "/admin/api/settings",
+    JSON.stringify({
+      agentKind: "cursor",
+    }),
+  );
+  assert.equal(cursorUpdate.statusCode, 200);
+  assert.equal(cursorUpdate.body.settings.agentKind, "cursor");
+  assert.equal(config.agentKind, "cursor");
 
   const cleared = await postJson(
     port,
@@ -462,10 +500,11 @@ test("AdminServer queues bridge restart requests", async () => {
 async function getJson(
   port: number,
   path: string,
-): Promise<{ statusCode: number; body: Record<string, any> }> {
+): Promise<{ statusCode: number; headers: http.IncomingHttpHeaders; body: Record<string, any> }> {
   const response = await getText(port, path);
   return {
     statusCode: response.statusCode,
+    headers: response.headers,
     body: JSON.parse(response.body) as Record<string, any>,
   };
 }
@@ -474,8 +513,8 @@ async function postJson(
   port: number,
   path: string,
   body: string,
-): Promise<{ statusCode: number; body: Record<string, any> }> {
-  const response = await new Promise<{ statusCode: number; body: string }>((resolve, reject) => {
+): Promise<{ statusCode: number; headers: http.IncomingHttpHeaders; body: Record<string, any> }> {
+  const response = await new Promise<{ statusCode: number; headers: http.IncomingHttpHeaders; body: string }>((resolve, reject) => {
     const request = http.request(
       {
         agent: false,
@@ -496,6 +535,7 @@ async function postJson(
         response.on("end", () => {
           resolve({
             statusCode: response.statusCode ?? 0,
+            headers: response.headers,
             body: Buffer.concat(chunks).toString("utf8"),
           });
         });
@@ -509,6 +549,7 @@ async function postJson(
 
   return {
     statusCode: response.statusCode,
+    headers: response.headers,
     body: JSON.parse(response.body) as Record<string, any>,
   };
 }
@@ -516,8 +557,8 @@ async function postJson(
 async function getText(
   port: number,
   path: string,
-): Promise<{ statusCode: number; body: string }> {
-  return await new Promise<{ statusCode: number; body: string }>((resolve, reject) => {
+): Promise<{ statusCode: number; headers: http.IncomingHttpHeaders; body: string }> {
+  return await new Promise<{ statusCode: number; headers: http.IncomingHttpHeaders; body: string }>((resolve, reject) => {
     const request = http.request(
       {
         agent: false,
@@ -534,6 +575,7 @@ async function getText(
         response.on("end", () => {
           resolve({
             statusCode: response.statusCode ?? 0,
+            headers: response.headers,
             body: Buffer.concat(chunks).toString("utf8"),
           });
         });
@@ -555,6 +597,7 @@ function createBridge(store: InMemoryStateStore): {
   const chatAdapter = new RecordingChatAdapter();
   const agent = new RecordingAgent("codex");
   const claudeAgent = new RecordingAgent("claude-code");
+  const cursorAgent = new RecordingAgent("cursor");
   const auditLogger = new RecordingAuditLogger();
   return {
     bridge: new BridgeService({
@@ -566,6 +609,7 @@ function createBridge(store: InMemoryStateStore): {
       agents: {
         codex: agent,
         "claude-code": claudeAgent,
+        cursor: cursorAgent,
       },
       auditLogger,
     }),
