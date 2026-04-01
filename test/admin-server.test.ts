@@ -47,6 +47,14 @@ function createConfig(): AppConfig {
     codexCommandTimeoutMs: 1000,
     codexMaxRuntimeMs: 10000,
     codexMaxOutputLength: 12000,
+    cursorCommand: "cursor-agent --trust",
+    cursorModel: "Auto",
+    cursorCommandTimeoutMs: 600000,
+    cursorMaxRuntimeMs: 3600000,
+    geminiCommand: "gemini --approval-mode yolo",
+    geminiModel: "gemini-2.5-pro",
+    geminiCommandTimeoutMs: 600000,
+    geminiMaxRuntimeMs: 3600000,
     claudeModel: "sonnet",
     claudeMaxTurns: 8,
     claudeCommandTimeoutMs: 1000,
@@ -357,9 +365,14 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(before.body.settings.cursorModel, "Auto");
   assert.equal(before.body.settings.cursorCommandTimeoutMs, 600000);
   assert.equal(before.body.settings.cursorMaxRuntimeMs, 3600000);
+  assert.equal(before.body.settings.geminiCommand, "gemini --approval-mode yolo");
+  assert.equal(before.body.settings.geminiModel, "gemini-2.5-pro");
+  assert.equal(before.body.settings.geminiCommandTimeoutMs, 600000);
+  assert.equal(before.body.settings.geminiMaxRuntimeMs, 3600000);
   assert.equal(before.body.settings.agentCommands.codex.command, "codex");
   assert.equal(before.body.settings.agentCommands["claude-code"].command, "claude");
   assert.equal(before.body.settings.agentCommands.cursor.command, "cursor-agent --trust");
+  assert.equal(before.body.settings.agentCommands.gemini.command, "gemini --approval-mode yolo");
   assert.equal(before.body.settings.autoSplitThreadUserMessageCount, 30);
   assert.equal(before.body.settings.hasSlackBotToken, false);
   assert.match(before.body.settings.settingsFile, /admin-settings\.json$/);
@@ -379,6 +392,10 @@ test("AdminServer reads and updates runtime settings", async () => {
       cursorModel: "Auto",
       cursorCommandTimeoutMs: 222000,
       cursorMaxRuntimeMs: 333000,
+      geminiCommand: "gemini --approval-mode yolo --sandbox workspace-write",
+      geminiModel: "gemini-2.5-flash",
+      geminiCommandTimeoutMs: 444000,
+      geminiMaxRuntimeMs: 555000,
       claudeModel: "opus",
       claudeMaxTurns: 10,
       chatProvider: "mattermost",
@@ -407,6 +424,17 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(update.body.settings.cursorCommandTimeoutMs, 222000);
   assert.equal(update.body.settings.cursorMaxRuntimeMs, 333000);
   assert.equal(update.body.settings.agentCommands.cursor.command, "cursor-agent --print");
+  assert.equal(
+    update.body.settings.geminiCommand,
+    "gemini --approval-mode yolo --sandbox workspace-write",
+  );
+  assert.equal(update.body.settings.geminiModel, "gemini-2.5-flash");
+  assert.equal(update.body.settings.geminiCommandTimeoutMs, 444000);
+  assert.equal(update.body.settings.geminiMaxRuntimeMs, 555000);
+  assert.equal(
+    update.body.settings.agentCommands.gemini.command,
+    "gemini --approval-mode yolo --sandbox workspace-write",
+  );
   assert.equal(update.body.settings.claudeModel, "opus");
   assert.equal(update.body.settings.claudeMaxTurns, 10);
   assert.equal(config.agentKind, "claude-code");
@@ -419,6 +447,10 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(config.cursorModel, "Auto");
   assert.equal(config.cursorCommandTimeoutMs, 222000);
   assert.equal(config.cursorMaxRuntimeMs, 333000);
+  assert.equal(config.geminiCommand, "gemini --approval-mode yolo --sandbox workspace-write");
+  assert.equal(config.geminiModel, "gemini-2.5-flash");
+  assert.equal(config.geminiCommandTimeoutMs, 444000);
+  assert.equal(config.geminiMaxRuntimeMs, 555000);
   assert.equal(config.claudeModel, "opus");
   assert.equal(config.claudeMaxTurns, 10);
   assert.equal(config.chatProvider, "mattermost");
@@ -440,6 +472,10 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(persisted.cursorModel, "Auto");
   assert.equal(persisted.cursorCommandTimeoutMs, 222000);
   assert.equal(persisted.cursorMaxRuntimeMs, 333000);
+  assert.equal(persisted.geminiCommand, "gemini --approval-mode yolo --sandbox workspace-write");
+  assert.equal(persisted.geminiModel, "gemini-2.5-flash");
+  assert.equal(persisted.geminiCommandTimeoutMs, 444000);
+  assert.equal(persisted.geminiMaxRuntimeMs, 555000);
 
   const cursorUpdate = await postJson(
     port,
@@ -451,6 +487,17 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(cursorUpdate.statusCode, 200);
   assert.equal(cursorUpdate.body.settings.agentKind, "cursor");
   assert.equal(config.agentKind, "cursor");
+
+  const geminiUpdate = await postJson(
+    port,
+    "/admin/api/settings",
+    JSON.stringify({
+      agentKind: "gemini",
+    }),
+  );
+  assert.equal(geminiUpdate.statusCode, 200);
+  assert.equal(geminiUpdate.body.settings.agentKind, "gemini");
+  assert.equal(config.agentKind, "gemini");
 
   const cleared = await postJson(
     port,
@@ -525,6 +572,7 @@ async function postJson(
         headers: {
           "content-type": "application/json",
           "content-length": Buffer.byteLength(body),
+          connection: "close",
         },
       },
       (response) => {
@@ -566,6 +614,9 @@ async function getText(
         port,
         path,
         method: "GET",
+        headers: {
+          connection: "close",
+        },
       },
       (response) => {
         const chunks: Buffer[] = [];
@@ -598,6 +649,7 @@ function createBridge(store: InMemoryStateStore): {
   const agent = new RecordingAgent("codex");
   const claudeAgent = new RecordingAgent("claude-code");
   const cursorAgent = new RecordingAgent("cursor");
+  const geminiAgent = new RecordingAgent("gemini");
   const auditLogger = new RecordingAuditLogger();
   return {
     bridge: new BridgeService({
@@ -610,6 +662,7 @@ function createBridge(store: InMemoryStateStore): {
         codex: agent,
         "claude-code": claudeAgent,
         cursor: cursorAgent,
+        gemini: geminiAgent,
       },
       auditLogger,
     }),

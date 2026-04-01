@@ -8,7 +8,8 @@
 - Local agent CLI
   - Codex CLI for `CAB_AGENT=codex`
   - Claude Code CLI for `CAB_AGENT=claude-code`
-  - Cursor CLI for `CAB_AGENT=cursor` (experimental; non-interactive wrapper behavior may vary)
+  - Cursor CLI for `CAB_AGENT=cursor`
+  - Gemini CLI for `CAB_AGENT=gemini`
 
 ## Install dependencies
 
@@ -65,7 +66,7 @@ Service mode stores runtime files under `data/runtime/`.
 | `CAB_ALLOWED_DIRS` | yes | Semicolon-separated list of allowed repository roots |
 | `CAB_DEFAULT_WORKDIR` | no | Default working directory. Defaults to the first allowed directory |
 | `CAB_CHAT_PROVIDER` | no | `slack` or `mattermost`. Defaults to `slack` |
-| `CAB_AGENT` | no | `codex`, `claude-code`, or `cursor`. Defaults to `codex` |
+| `CAB_AGENT` | no | `codex`, `claude-code`, `cursor`, or `gemini`. Defaults to `codex` |
 | `CAB_DEFAULT_APPROVAL_POLICY` | no | `manual`, `on-failure`, or `never` |
 | `CAB_NETWORK_ACCESS` | no | `enabled` or `disabled` |
 | `CAB_ADMIN_HOST` | no | Admin server bind host. Defaults to `CAB_HOST` |
@@ -107,6 +108,17 @@ The default command includes `--trust` so Cursor can run in repositories that re
 The default model is `Auto`, which is safer for plans that cannot use named models.
 
 If you need a different wrapper, you can still override `CAB_CURSOR_COMMAND` or save another value in the Admin UI.
+
+### Gemini
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `CAB_GEMINI_COMMAND` | no | Command used for Gemini execution. Defaults to `gemini --approval-mode yolo` |
+| `CAB_GEMINI_MODEL` | no | Optional Gemini model name. Omit it to use the CLI default |
+| `CAB_GEMINI_COMMAND_TIMEOUT_MS` | no | Idle timeout for a single Gemini invocation |
+| `CAB_GEMINI_MAX_RUNTIME_MS` | no | Hard maximum runtime for a single Gemini invocation |
+
+Gemini runtime settings can also be changed later from the Admin UI.
 
 ### Claude runtime
 

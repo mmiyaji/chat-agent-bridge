@@ -50,6 +50,10 @@ function parseAgentKind(value: string): AgentKind | undefined {
     return "cursor";
   }
 
+  if (normalized === "gemini") {
+    return "gemini";
+  }
+
   return undefined;
 }
 

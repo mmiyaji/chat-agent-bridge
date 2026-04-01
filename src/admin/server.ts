@@ -66,6 +66,10 @@ interface RuntimeSettingsPayload {
   cursorModel: NonNullable<AppConfig["cursorModel"]>;
   cursorCommandTimeoutMs: NonNullable<AppConfig["cursorCommandTimeoutMs"]>;
   cursorMaxRuntimeMs: NonNullable<AppConfig["cursorMaxRuntimeMs"]>;
+  geminiCommand: NonNullable<AppConfig["geminiCommand"]>;
+  geminiModel: AppConfig["geminiModel"];
+  geminiCommandTimeoutMs: NonNullable<AppConfig["geminiCommandTimeoutMs"]>;
+  geminiMaxRuntimeMs: NonNullable<AppConfig["geminiMaxRuntimeMs"]>;
   claudeModel: AppConfig["claudeModel"];
   claudeMaxTurns: AppConfig["claudeMaxTurns"];
   claudeCommandTimeoutMs: AppConfig["claudeCommandTimeoutMs"];
@@ -74,6 +78,7 @@ interface RuntimeSettingsPayload {
     codex: ReturnType<typeof resolveCommand>;
     "claude-code": ReturnType<typeof resolveCommand>;
     cursor: ReturnType<typeof resolveCommand>;
+    gemini: ReturnType<typeof resolveCommand>;
   };
   autoSplitThreadUserMessageCount: AppConfig["autoSplitThreadUserMessageCount"];
   settingsFile: string;
@@ -1696,7 +1701,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           ? renderButtonMarkup("Cancel session", session.sessionId, "cancel")
           : "";
         const sessionCommands = [
-          '<div class="field"><label for="detail-agent">Agent</label><select id="detail-agent" data-session-id="' + escapeHtml(session.sessionId) + '"><option value="codex"' + (session.agent === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (session.agent === "claude-code" ? " selected" : "") + '>claude</option><option value="cursor"' + (session.agent === "cursor" ? " selected" : "") + '>cursor</option></select></div>',
+          '<div class="field"><label for="detail-agent">Agent</label><select id="detail-agent" data-session-id="' + escapeHtml(session.sessionId) + '"><option value="codex"' + (session.agent === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (session.agent === "claude-code" ? " selected" : "") + '>claude</option><option value="cursor"' + (session.agent === "cursor" ? " selected" : "") + '>cursor</option><option value="gemini"' + (session.agent === "gemini" ? " selected" : "") + '>gemini</option></select></div>',
           '<div class="field"><label for="detail-mode">Approval</label><select id="detail-mode" data-session-id="' + escapeHtml(session.sessionId) + '"><option value="manual"' + (session.approvalPolicyOverride === "manual" ? " selected" : "") + '>manual</option><option value="never"' + (session.approvalPolicyOverride === "never" ? " selected" : "") + '>allow</option></select></div>',
         ].join("");
         const repoButtons = Object.entries(dashboardState.repoAliases || {})
@@ -1728,13 +1733,14 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             '<button data-command="fork codex" data-session-id="' + escapeHtml(session.sessionId) + '">Fork Codex</button>' +
             '<button data-command="fork claude" data-session-id="' + escapeHtml(session.sessionId) + '">Fork Claude</button>' +
             '<button data-command="fork cursor" data-session-id="' + escapeHtml(session.sessionId) + '">Fork Cursor</button>' +
+            '<button data-command="fork gemini" data-session-id="' + escapeHtml(session.sessionId) + '">Fork Gemini</button>' +
             '<button data-command="attach-last" data-session-id="' + escapeHtml(session.sessionId) + '">Attach latest</button>' +
             '<button data-command="detach" data-session-id="' + escapeHtml(session.sessionId) + '">Detach</button>' +
           "</div>" +
           '<div class="detail-actions">' +
             repoButtons +
           "</div>" +
-          '<div class="field"><label for="detail-command">Custom command</label><div class="inline-form"><input id="detail-command" data-session-id="' + escapeHtml(session.sessionId) + '" type="text" placeholder="attach <id>, mode allow, repo <alias>, fork cursor" /><button id="detail-command-run" data-session-id="' + escapeHtml(session.sessionId) + '">Run</button></div></div>' +
+          '<div class="field"><label for="detail-command">Custom command</label><div class="inline-form"><input id="detail-command" data-session-id="' + escapeHtml(session.sessionId) + '" type="text" placeholder="attach <id>, mode allow, repo <alias>, fork gemini" /><button id="detail-command-run" data-session-id="' + escapeHtml(session.sessionId) + '">Run</button></div></div>' +
           '<div class="filters">' + sessionCommands + "</div>" +
           '<div class="detail-grid">' +
             '<div class="detail-card"><strong>Session</strong><code>' + escapeHtml(session.sessionId) + "</code></div>" +
@@ -1770,6 +1776,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           codex: { command: "codex", executable: "codex", status: "not_found" },
           "claude-code": { command: "claude", executable: "claude", status: "not_found" },
           cursor: { command: settings.cursorCommand || "cursor-agent --trust", executable: "cursor-agent", status: "not_found" },
+          gemini: { command: settings.geminiCommand || "gemini --approval-mode yolo", executable: "gemini", status: "not_found" },
         };
         document.getElementById("settings").innerHTML =
           '<div class="settings-stack">' +
@@ -1777,7 +1784,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           '<div class="section-head"><div><h2>Defaults</h2><p>These apply to new sessions unless a thread overrides them.</p></div></div>' +
           '<div class="settings-grid">' +
             renderFieldWithHint(
-              '<div class="field"><label for="settings-agent">Default agent</label><select id="settings-agent" data-testid="settings-agent"><option value="codex"' + (settings.agentKind === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (settings.agentKind === "claude-code" ? " selected" : "") + '>claude</option><option value="cursor"' + (settings.agentKind === "cursor" ? " selected" : "") + '>cursor</option></select></div>',
+              '<div class="field"><label for="settings-agent">Default agent</label><select id="settings-agent" data-testid="settings-agent"><option value="codex"' + (settings.agentKind === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (settings.agentKind === "claude-code" ? " selected" : "") + '>claude</option><option value="cursor"' + (settings.agentKind === "cursor" ? " selected" : "") + '>cursor</option><option value="gemini"' + (settings.agentKind === "gemini" ? " selected" : "") + '>gemini</option></select></div>',
               'Used when a new session starts and nothing in the thread overrides it.'
             ) +
             renderFieldWithHint(
@@ -1842,6 +1849,26 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             ) +
           "</div>" +
           "</section>" +
+          '<section class="settings-block"><div class="section-head"><div><h2>Gemini CLI</h2><p>Applied to future Gemini runs.</p></div></div>' +
+          '<div class="settings-subgrid">' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-gemini-command">Command</label><input id="settings-gemini-command" data-testid="settings-gemini-command" type="text" value="' + escapeHtml(settings.geminiCommand) + '" /></div>',
+              'A non-interactive Gemini CLI command such as <code>gemini --approval-mode yolo</code>.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-gemini-model">Model</label><input id="settings-gemini-model" data-testid="settings-gemini-model" type="text" value="' + escapeHtml(settings.geminiModel || "") + '" /></div>',
+              'Optional model passed as <code>--model</code>. Leave blank to use the CLI default.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-gemini-timeout">Command timeout ms</label><input id="settings-gemini-timeout" data-testid="settings-gemini-timeout" type="number" min="1" value="' + escapeHtml(settings.geminiCommandTimeoutMs) + '" /></div>',
+              'Idle timeout for Gemini runs.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-gemini-runtime">Max runtime ms</label><input id="settings-gemini-runtime" data-testid="settings-gemini-runtime" type="number" min="1" value="' + escapeHtml(settings.geminiMaxRuntimeMs) + '" /></div>',
+              'Hard stop for total runtime, even if Gemini still emits output.'
+            ) +
+          "</div>" +
+          "</section>" +
           '<section class="settings-block"><div class="section-head"><div><h2>Claude Code</h2><p>Applied to future Claude runs.</p></div></div>' +
           '<div class="settings-subgrid">' +
             renderFieldWithHint(
@@ -1867,6 +1894,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             renderCommandResolutionCard("Codex", agentCommands.codex) +
             renderCommandResolutionCard("Claude Code", agentCommands["claude-code"]) +
             renderCommandResolutionCard("Cursor", agentCommands.cursor) +
+            renderCommandResolutionCard("Gemini CLI", agentCommands.gemini) +
           "</div>" +
           "</section>" +
           '<section class="settings-block"><div class="section-head"><div><h2>Bridge transport</h2><p>Saved immediately, applied after bridge restart.</p></div></div>' +
@@ -2061,6 +2089,10 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           cursorModel: document.getElementById("settings-cursor-model").value.trim(),
           cursorCommandTimeoutMs: Number.parseInt(document.getElementById("settings-cursor-timeout").value, 10),
           cursorMaxRuntimeMs: Number.parseInt(document.getElementById("settings-cursor-runtime").value, 10),
+          geminiCommand: document.getElementById("settings-gemini-command").value.trim(),
+          geminiModel: document.getElementById("settings-gemini-model").value.trim(),
+          geminiCommandTimeoutMs: Number.parseInt(document.getElementById("settings-gemini-timeout").value, 10),
+          geminiMaxRuntimeMs: Number.parseInt(document.getElementById("settings-gemini-runtime").value, 10),
           claudeModel: document.getElementById("settings-claude-model").value.trim(),
           claudeMaxTurns: Number.parseInt(document.getElementById("settings-claude-turns").value, 10),
           claudeCommandTimeoutMs: Number.parseInt(document.getElementById("settings-claude-timeout").value, 10),
@@ -2384,6 +2416,7 @@ function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
                 <option value="codex"${settings.agentKind === "codex" ? " selected" : ""}>Codex</option>
                 <option value="claude-code"${settings.agentKind === "claude-code" ? " selected" : ""}>Claude Code</option>
                 <option value="cursor"${settings.agentKind === "cursor" ? " selected" : ""}>Cursor</option>
+                <option value="gemini"${settings.agentKind === "gemini" ? " selected" : ""}>Gemini CLI</option>
               </select>
             </label>
             <label>
@@ -2582,6 +2615,7 @@ export class AdminServer {
   private readonly auditLogger: AuditLogger;
   private readonly bridge: BridgeService;
   private server: http.Server | undefined;
+  private readonly sockets = new Set<{ destroy(): void; on(event: "close", listener: () => void): void }>();
 
   constructor(deps: AdminServerDeps) {
     this.config = deps.config;
@@ -2607,10 +2641,16 @@ export class AdminServer {
         } else {
           response.end();
         }
-      }
-    });
+        }
+      });
+      this.server?.on("connection", (socket) => {
+        this.sockets.add(socket);
+        socket.on("close", () => {
+          this.sockets.delete(socket);
+        });
+      });
 
-    const host = this.config.adminHost ?? this.config.host ?? "0.0.0.0";
+      const host = this.config.adminHost ?? this.config.host ?? "0.0.0.0";
     const port = this.config.adminPort ?? this.config.port + 1;
     await new Promise<void>((resolve, reject) => {
       this.server?.once("error", reject);
@@ -2626,7 +2666,7 @@ export class AdminServer {
     }
 
     const server = this.server;
-    await new Promise<void>((resolve, reject) => {
+    const closePromise = new Promise<void>((resolve, reject) => {
       server.close((error) => {
         if (error) {
           reject(error);
@@ -2636,6 +2676,11 @@ export class AdminServer {
         resolve();
       });
     });
+    for (const socket of this.sockets) {
+      socket.destroy();
+    }
+    this.sockets.clear();
+    await closePromise;
     this.server = undefined;
   }
 
@@ -2963,6 +3008,10 @@ export class AdminServer {
       cursorModel: this.config.cursorModel ?? "Auto",
       cursorCommandTimeoutMs: this.config.cursorCommandTimeoutMs ?? 600000,
       cursorMaxRuntimeMs: this.config.cursorMaxRuntimeMs ?? 3600000,
+      geminiCommand: this.config.geminiCommand ?? "gemini --approval-mode yolo",
+      geminiModel: this.config.geminiModel,
+      geminiCommandTimeoutMs: this.config.geminiCommandTimeoutMs ?? 600000,
+      geminiMaxRuntimeMs: this.config.geminiMaxRuntimeMs ?? 3600000,
       claudeModel: this.config.claudeModel,
       claudeMaxTurns: this.config.claudeMaxTurns,
       claudeCommandTimeoutMs: this.config.claudeCommandTimeoutMs,
@@ -2971,6 +3020,7 @@ export class AdminServer {
         codex: resolveCommand("codex", process.cwd()),
         "claude-code": resolveCommand("claude", process.cwd()),
         cursor: resolveCommand(this.config.cursorCommand ?? "cursor-agent --trust", process.cwd()),
+        gemini: resolveCommand(this.config.geminiCommand ?? "gemini --approval-mode yolo", process.cwd()),
       },
       autoSplitThreadUserMessageCount: this.config.autoSplitThreadUserMessageCount,
       settingsFile: this.config.settingsFile,
@@ -3015,6 +3065,10 @@ export class AdminServer {
       cursorModel: this.config.cursorModel ?? "Auto",
       cursorCommandTimeoutMs: this.config.cursorCommandTimeoutMs ?? 600000,
       cursorMaxRuntimeMs: this.config.cursorMaxRuntimeMs ?? 3600000,
+      geminiCommand: this.config.geminiCommand ?? "gemini --approval-mode yolo",
+      geminiModel: this.config.geminiModel,
+      geminiCommandTimeoutMs: this.config.geminiCommandTimeoutMs ?? 600000,
+      geminiMaxRuntimeMs: this.config.geminiMaxRuntimeMs ?? 3600000,
       claudeModel: this.config.claudeModel,
       claudeMaxTurns: this.config.claudeMaxTurns,
       claudeCommandTimeoutMs: this.config.claudeCommandTimeoutMs,
@@ -3109,7 +3163,8 @@ export class AdminServer {
       payload.agentKind &&
       payload.agentKind !== "codex" &&
       payload.agentKind !== "claude-code" &&
-      payload.agentKind !== "cursor"
+      payload.agentKind !== "cursor" &&
+      payload.agentKind !== "gemini"
     ) {
       writeJson(response, 400, { error: "Invalid agentKind" });
       return;
@@ -3180,6 +3235,8 @@ export class AdminServer {
       "codexMaxOutputLength",
       "cursorCommandTimeoutMs",
       "cursorMaxRuntimeMs",
+      "geminiCommandTimeoutMs",
+      "geminiMaxRuntimeMs",
       "claudeCommandTimeoutMs",
       "claudeMaxRuntimeMs",
       "autoSplitThreadUserMessageCount",
@@ -3231,6 +3288,10 @@ export class AdminServer {
     }
     if (payload.cursorModel !== undefined && !payload.cursorModel.trim()) {
       writeJson(response, 400, { error: "Invalid cursorModel" });
+      return;
+    }
+    if (payload.geminiCommand !== undefined && !payload.geminiCommand.trim()) {
+      writeJson(response, 400, { error: "Invalid geminiCommand" });
       return;
     }
     const clearSecretKeys = [
@@ -3357,6 +3418,22 @@ export class AdminServer {
     }
     if (payload.cursorMaxRuntimeMs) {
       this.config.cursorMaxRuntimeMs = payload.cursorMaxRuntimeMs;
+    }
+    if (payload.geminiCommand) {
+      this.config.geminiCommand = payload.geminiCommand;
+    }
+    if (payload.geminiModel !== undefined) {
+      if (payload.geminiModel) {
+        this.config.geminiModel = payload.geminiModel;
+      } else {
+        delete this.config.geminiModel;
+      }
+    }
+    if (payload.geminiCommandTimeoutMs) {
+      this.config.geminiCommandTimeoutMs = payload.geminiCommandTimeoutMs;
+    }
+    if (payload.geminiMaxRuntimeMs) {
+      this.config.geminiMaxRuntimeMs = payload.geminiMaxRuntimeMs;
     }
     if (payload.claudeModel) {
       this.config.claudeModel = payload.claudeModel;

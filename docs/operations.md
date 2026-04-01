@@ -103,6 +103,11 @@ Use:
 - `attach-last`
 - `new <agent> <mode>`
 
+Note:
+
+- `attach` and `attach-last` are currently intended for reusable Codex and Claude Code sessions
+- Cursor and Gemini use fresh bridge-owned sessions only
+
 ### A Codex or Claude session behaves differently than expected
 
 If the thread is attached to an existing local session, that agent session may carry its own sandbox or execution history. A bridge-owned fresh session is usually more predictable.

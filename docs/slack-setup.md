@@ -90,10 +90,11 @@ Socket Mode does not require a public HTTP endpoint for Slack ingress.
 - `@Chat Agent Bridge repos`
 - `@Chat Agent Bridge repo <alias>`
 - `@Chat Agent Bridge cwd <path>`
-- `@Chat Agent Bridge agent <codex|claude>`
+- `@Chat Agent Bridge agent <codex|claude|cursor|gemini>`
 - `@Chat Agent Bridge attach <session-id>`
 - `@Chat Agent Bridge attach-last`
 - `@Chat Agent Bridge detach`
+- `@Chat Agent Bridge new <codex|claude|cursor|gemini> <allow|manual>`
 - `@Chat Agent Bridge restart`
 - `@Chat Agent Bridge restart rebuild`
 - `@Chat Agent Bridge reject`

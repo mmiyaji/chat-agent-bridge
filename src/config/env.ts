@@ -107,6 +107,7 @@ function parseAgentKind(value: string | undefined): AgentKind {
       return "codex";
     case "claude-code":
     case "cursor":
+    case "gemini":
       return value;
     default:
       throw new Error(`Invalid CAB_AGENT: ${value}`);
@@ -413,6 +414,23 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
       readSettingInteger(env.CAB_CURSOR_MAX_RUNTIME_MS, persisted, "cursorMaxRuntimeMs"),
       3600000,
     ),
+    geminiCommand:
+      readSettingString(env.CAB_GEMINI_COMMAND, persisted, "geminiCommand") ??
+      "gemini --approval-mode yolo",
+    geminiCommandTimeoutMs: parseInteger(
+      "CAB_GEMINI_COMMAND_TIMEOUT_MS",
+      readSettingInteger(
+        env.CAB_GEMINI_COMMAND_TIMEOUT_MS,
+        persisted,
+        "geminiCommandTimeoutMs",
+      ),
+      600000,
+    ),
+    geminiMaxRuntimeMs: parseInteger(
+      "CAB_GEMINI_MAX_RUNTIME_MS",
+      readSettingInteger(env.CAB_GEMINI_MAX_RUNTIME_MS, persisted, "geminiMaxRuntimeMs"),
+      3600000,
+    ),
     claudeModel: readSettingString(env.CAB_CLAUDE_MODEL, persisted, "claudeModel") ?? "sonnet",
     claudeMaxTurns: parseNonNegativeInteger(
       "CAB_CLAUDE_MAX_TURNS",
@@ -448,6 +466,13 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
       0,
     ),
   };
+
+  {
+    const value = readSettingString(env.CAB_GEMINI_MODEL, persisted, "geminiModel");
+    if (value) {
+      config.geminiModel = value;
+    }
+  }
 
   {
     const value = readSettingString(env.SLACK_BOT_TOKEN, persisted, "slackBotToken");

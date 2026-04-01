@@ -7,6 +7,8 @@ npm run check
 npm test
 ```
 
+`npm test` runs the fast local suite only. It does not require Docker and does not execute the live Mattermost E2E harness.
+
 ## Browser admin E2E
 
 Install Playwright browsers once:
@@ -22,6 +24,8 @@ npm run test:e2e
 ```
 
 ## Mattermost Docker E2E
+
+These scenarios are opt-in and run only when you call the dedicated Mattermost E2E command.
 
 Start Mattermost:
 

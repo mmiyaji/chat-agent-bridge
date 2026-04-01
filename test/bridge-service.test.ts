@@ -39,6 +39,14 @@ function createConfig(): AppConfig {
     codexCommandTimeoutMs: 1000,
     codexMaxRuntimeMs: 10000,
     codexMaxOutputLength: 12000,
+    cursorCommand: "cursor-agent --trust",
+    cursorModel: "Auto",
+    cursorCommandTimeoutMs: 1000,
+    cursorMaxRuntimeMs: 10000,
+    geminiCommand: "gemini --approval-mode yolo",
+    geminiModel: "gemini-2.5-pro",
+    geminiCommandTimeoutMs: 1000,
+    geminiMaxRuntimeMs: 10000,
     claudeModel: "sonnet",
     claudeMaxTurns: 8,
     claudeCommandTimeoutMs: 1000,
@@ -55,6 +63,7 @@ async function startBridge() {
   const codexAgent = new RecordingAgent("codex");
   const claudeAgent = new RecordingAgent("claude-code");
   const cursorAgent = new RecordingAgent("cursor");
+  const geminiAgent = new RecordingAgent("gemini");
   const auditLogger = new RecordingAuditLogger();
   const previousCompletionFile = process.env.CAB_RESTART_COMPLETION_FILE;
   if (!previousCompletionFile) {
@@ -71,6 +80,7 @@ async function startBridge() {
       codex: codexAgent,
       "claude-code": claudeAgent,
       cursor: cursorAgent,
+      gemini: geminiAgent,
     },
     auditLogger,
   });
@@ -93,6 +103,7 @@ async function startBridge() {
     codexAgent,
     claudeAgent,
     cursorAgent,
+    geminiAgent,
     auditLogger,
   };
 }
@@ -705,6 +716,18 @@ test("BridgeService can switch the active agent to Cursor for a thread", async (
   assert.match(chatAdapter.posted[0]?.text ?? "", /now uses `cursor`/);
 });
 
+test("BridgeService can switch the active agent to Gemini for a thread", async () => {
+  const { chatAdapter, store } = await startBridge();
+
+  await chatAdapter.handler?.(createMessage("agent gemini"));
+  const sessions = await store.listSessions();
+
+  assert.equal(sessions[0].agent, "gemini");
+  assert.deepEqual(sessions[0].agentState, {});
+  assert.equal(sessions[0].bridgeState?.connectionMode, "bridge-owned");
+  assert.match(chatAdapter.posted[0]?.text ?? "", /now uses `gemini`/);
+});
+
 test("BridgeService can move a session to a new Slack thread", async () => {
   const { chatAdapter, store, agent } = await startBridge();
   agent.result = {
@@ -777,6 +800,27 @@ test("BridgeService routes execution to Cursor when selected", async () => {
   assert.equal(chatAdapter.posted.at(-1)?.text, "cursor handled it");
 });
 
+test("BridgeService routes execution to Gemini when selected", async () => {
+  const { chatAdapter, store, codexAgent, claudeAgent, cursorAgent, geminiAgent } =
+    await startBridge();
+  geminiAgent.result = {
+    sessionId: "ignored",
+    summary: "gemini handled it",
+  };
+
+  await chatAdapter.handler?.(createMessage("agent gemini"));
+  await chatAdapter.handler?.(createMessage("do work"));
+  const sessions = await store.listSessions();
+
+  assert.equal(sessions[0].agent, "gemini");
+  assert.equal(codexAgent.requests.length, 0);
+  assert.equal(claudeAgent.requests.length, 0);
+  assert.equal(cursorAgent.requests.length, 0);
+  assert.equal(geminiAgent.requests.length, 1);
+  assert.equal(geminiAgent.requests[0]?.session.agent, "gemini");
+  assert.equal(chatAdapter.posted.at(-1)?.text, "gemini handled it");
+});
+
 test("BridgeService can reset to a fresh session with explicit mode", async () => {
   const { chatAdapter, store } = await startBridge();
 
@@ -811,6 +855,18 @@ test("BridgeService can reset to a fresh Cursor session explicitly", async () =>
   assert.deepEqual(sessions[0].agentState, {});
   assert.equal(sessions[0].bridgeState?.approvalPolicyOverride, "manual");
   assert.match(chatAdapter.posted.at(-1)?.text ?? "", /fresh Cursor session/);
+});
+
+test("BridgeService can reset to a fresh Gemini session explicitly", async () => {
+  const { chatAdapter, store } = await startBridge();
+
+  await chatAdapter.handler?.(createMessage("new gemini manual"));
+  const sessions = await store.listSessions();
+
+  assert.equal(sessions[0].agent, "gemini");
+  assert.deepEqual(sessions[0].agentState, {});
+  assert.equal(sessions[0].bridgeState?.approvalPolicyOverride, "manual");
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /fresh Gemini CLI session/);
 });
 
 test("BridgeService rejects working directory changes outside allowed roots", async () => {
@@ -1112,4 +1168,31 @@ test("BridgeService reports that Cursor reusable sessions are unsupported", asyn
   await chatAdapter.handler?.(createMessage(""));
 
   assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Reusable Cursor sessions are not supported yet/);
+});
+
+test("BridgeService reports that Gemini reusable sessions are unsupported", async () => {
+  const { chatAdapter, store } = await startBridge();
+  await store.upsertSession({
+    sessionId: "session-gemini",
+    agent: "gemini",
+    thread: {
+      provider: "slack",
+      channelId: "C1",
+      threadId: "T1",
+    },
+    workingDirectory: "C:/repo/project",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    agentState: {},
+    bridgeState: {
+      connectionMode: "bridge-owned",
+    },
+  });
+
+  await chatAdapter.handler?.(createMessage(""));
+
+  assert.match(
+    chatAdapter.posted.at(-1)?.text ?? "",
+    /Reusable Gemini CLI sessions are not supported yet/,
+  );
 });

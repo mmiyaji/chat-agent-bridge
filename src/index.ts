@@ -7,6 +7,7 @@ import { AgentRegistry } from "./agents/base.js";
 import { CodexAgent } from "./agents/codex/codex-agent.js";
 import { ClaudeCodeAgent } from "./agents/claude/claude-agent.js";
 import { CursorAgent } from "./agents/cursor/cursor-agent.js";
+import { GeminiAgent } from "./agents/gemini/gemini-agent.js";
 import { BridgeService } from "./core/bridge-service.js";
 import { SessionManager } from "./core/session-manager.js";
 import { InMemoryJobQueue } from "./core/job-queue.js";
@@ -30,6 +31,7 @@ async function main(): Promise<void> {
     codex: new CodexAgent(config),
     "claude-code": new ClaudeCodeAgent(config),
     cursor: new CursorAgent(config),
+    gemini: new GeminiAgent(config),
   };
 
   const bridge = new BridgeService({

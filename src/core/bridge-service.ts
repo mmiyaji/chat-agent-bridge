@@ -123,6 +123,12 @@ function readAgentSessionId(session: SessionBinding): string | undefined {
       : undefined;
   }
 
+  if (session.agent === "gemini") {
+    return typeof session.agentState?.geminiSessionId === "string"
+      ? session.agentState.geminiSessionId
+      : undefined;
+  }
+
   return undefined;
 }
 
@@ -148,6 +154,13 @@ function createAttachedAgentState(
     return {
       ...(session.agentState ?? {}),
       cursorSessionId: agentSessionId,
+    };
+  }
+
+  if (session.agent === "gemini") {
+    return {
+      ...(session.agentState ?? {}),
+      geminiSessionId: agentSessionId,
     };
   }
 
@@ -379,6 +392,8 @@ function formatAgentDisplayName(agentKind: SessionBinding["agent"]): string {
       return "Codex";
     case "cursor":
       return "Cursor";
+    case "gemini":
+      return "Gemini CLI";
     default:
       return agentKind;
   }
@@ -886,16 +901,16 @@ export class BridgeService {
           "- `@Chat Agent Bridge history [count]`",
           "- `@Chat Agent Bridge cancel`",
           "- `@Chat Agent Bridge new-thread`",
-          "- `@Chat Agent Bridge fork [codex|claude|cursor] [allow|manual]`",
+          "- `@Chat Agent Bridge fork [codex|claude|cursor|gemini] [allow|manual]`",
           "- `@Chat Agent Bridge sessions`",
           "- `@Chat Agent Bridge approvals`",
           "- `@Chat Agent Bridge failures [count]`",
           "- `@Chat Agent Bridge repos`",
           "- `@Chat Agent Bridge repo <alias>`",
           "- `@Chat Agent Bridge cwd <path>`",
-          "- `@Chat Agent Bridge agent <codex|claude|cursor>`",
+          "- `@Chat Agent Bridge agent <codex|claude|cursor|gemini>`",
           "- `@Chat Agent Bridge mode <allow|manual>`",
-          "- `@Chat Agent Bridge new [codex|claude|cursor] [allow|manual]`",
+          "- `@Chat Agent Bridge new [codex|claude|cursor|gemini] [allow|manual]`",
           "- `@Chat Agent Bridge attach <session-id>`",
           "- `@Chat Agent Bridge attach-last`",
           "- `@Chat Agent Bridge detach`",
@@ -1592,7 +1607,7 @@ export class BridgeService {
   private async readLatestReusableSession(
     agentKind: SessionBinding["agent"],
   ): Promise<StoredAgentSession | undefined> {
-    if (agentKind === "cursor") {
+    if (agentKind === "cursor" || agentKind === "gemini") {
       return undefined;
     }
 
@@ -1629,7 +1644,7 @@ export class BridgeService {
     agentKind: SessionBinding["agent"],
     limit: number,
   ): Promise<StoredAgentSession[]> {
-    if (agentKind === "cursor") {
+    if (agentKind === "cursor" || agentKind === "gemini") {
       return [];
     }
 

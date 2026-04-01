@@ -1,6 +1,6 @@
 export type ChatProvider = "slack" | "mattermost";
 
-export type AgentKind = "codex" | "claude-code" | "cursor";
+export type AgentKind = "codex" | "claude-code" | "cursor" | "gemini";
 
 export type ApprovalPolicy = "manual" | "on-failure" | "never";
 
@@ -132,6 +132,10 @@ export interface AppConfig {
   cursorModel?: string;
   cursorCommandTimeoutMs?: number;
   cursorMaxRuntimeMs?: number;
+  geminiCommand?: string;
+  geminiModel?: string;
+  geminiCommandTimeoutMs?: number;
+  geminiMaxRuntimeMs?: number;
   claudeModel: string;
   claudeMaxTurns: number;
   claudeCommandTimeoutMs: number;

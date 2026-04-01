@@ -1,14 +1,14 @@
 # Chat Agent Bridge
 
-- Languages: [English](README.md) / [日本語](README.ja.md)
+- Languages: [English](README.md) / [Japanese](README.ja.md)
 
-Chat Agent Bridge is a local bridge service that lets users continue operating a development agent from chat threads while preserving the local machine context.
+Chat Agent Bridge is a local bridge service that lets you continue operating a development agent from chat threads while preserving local machine context.
 
 ## Project status
 
-This project is an unofficial personal tool intended for individual development workflows until official remote-control session support becomes available in the upstream products.
+This project is an unofficial personal tool intended for individual development workflows until official remote-control session support becomes available in upstream products.
 
-It is designed for local, self-hosted use on a machine you control. It is not an official OpenAI, Anthropic, Slack, or Mattermost product.
+It is designed for local, self-hosted use on a machine you control. It is not an official OpenAI, Anthropic, Slack, Mattermost, Cursor, or Google product.
 
 The current implementation is Windows-first and is developed and validated primarily on Windows with PowerShell.
 
@@ -17,9 +17,9 @@ The current implementation is Windows-first and is developed and validated prima
 - Binds a chat thread to a local agent session
 - Keeps local repository context, uncommitted work, and tool state on the same machine
 - Supports Slack and Mattermost chat adapters
-- Supports Codex, Claude Code, and experimental Cursor agent adapters
+- Supports Codex, Claude Code, Cursor, and Gemini CLI agent adapters
 - Adds approvals, audit logging, repo targeting, and an admin surface
-- Mattermost supports both `bot` mode and `self` mode
+- Supports Mattermost `bot` mode and `self` mode
 
 ## Quick start
 
@@ -82,15 +82,17 @@ flowchart TD
     subgraph Bridge["Chat Agent Bridge (Local)"]
         direction TB
         Adapter["Chat Adapter\nslack-adapter / mattermost-adapter"]
-        BridgeSvc["Bridge Service\nrouting · approvals · session · job queue"]
+        BridgeSvc["Bridge Service\nrouting / approvals / sessions / job queue"]
         StateStore["File State Store\nstate.json"]
         AuditLog["Audit Logger\naudit.jsonl"]
         AdminSrv["Admin Server\n:8788/admin"]
     end
 
     subgraph Agents["Agent Adapters"]
-        Claude["Claude Code CLI\nclaude-agent"]
         Codex["Codex CLI\ncodex-agent"]
+        Claude["Claude Code CLI\nclaude-agent"]
+        Cursor["Cursor CLI\ncursor-agent"]
+        Gemini["Gemini CLI\ngemini"]
     end
 
     subgraph LocalFS["Local Machine"]
@@ -108,10 +110,14 @@ flowchart TD
     Adapter --> BridgeSvc
     BridgeSvc --> StateStore
     BridgeSvc --> AuditLog
-    BridgeSvc --> Claude
     BridgeSvc --> Codex
-    Claude -- "spawn / stream-json" --> Repos
+    BridgeSvc --> Claude
+    BridgeSvc --> Cursor
+    BridgeSvc --> Gemini
     Codex -- "spawn" --> Repos
+    Claude -- "spawn / stream-json" --> Repos
+    Cursor -- "spawn" --> Repos
+    Gemini -- "spawn" --> Repos
     BridgeSvc -- "reply" --> Adapter
     Adapter -- "post" --> Slack
     Adapter -- "post" --> Mattermost
@@ -135,6 +141,8 @@ flowchart TD
 - The bridge starts an admin server by default on `http://<bridge-host>:8788/admin`
 - Initial setup can be guided from `http://<bridge-host>:8788/admin/onboarding`
 - Codex sessions use the locally installed `codex` CLI and can reuse an existing local login
+- Cursor uses `cursor-agent --trust` by default and exposes a separate model setting in the Admin UI. The default model is `Auto`.
+- Gemini uses `gemini --approval-mode yolo` by default and exposes separate command and model settings in the Admin UI.
 - The bridge injects `CHAT_AGENT_BRIDGE=1` into Codex child processes so external hooks can suppress duplicate notifications
 - In Mattermost, `MATTERMOST_ACTOR_MODE=self` is intended for user-token operation, accepts only self-DMs, and still requires a mention in that self-DM
 
@@ -143,7 +151,7 @@ flowchart TD
 - This tool is provided as-is, with no warranty of any kind.
 - The author does not guarantee stability, correctness, security, or fitness for any purpose.
 - Use of this tool is entirely at your own risk.
-- The author is not responsible for any data loss, repository damage, account issues, service disruption, security incident, costs, or any other trouble caused by using this project.
+- The author is not responsible for any data loss, repository damage, account issues, service disruption, security incidents, costs, or any other trouble caused by using this project.
 - This bridge can trigger local agent actions against real files, repositories, and connected chat systems. Review the configuration carefully before using it.
-- You should restrict allowed directories, tokens, network access, and chat exposure to the minimum required for your environment.
+- Restrict allowed directories, tokens, network access, and chat exposure to the minimum required for your environment.
 - Do not use this project in environments where you cannot accept the operational and security risks of remote-triggered local execution.

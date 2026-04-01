@@ -52,7 +52,32 @@ if (testFiles.length === 0) {
 
 let hasFailures = false;
 
+const adminServerHarnessPath = path.join(repoRoot, "scripts", "run-admin-server-tests.mjs");
+const adminServerExitCode = await new Promise((resolve, reject) => {
+  const child = spawn(process.execPath, ["--test", adminServerHarnessPath], {
+    cwd: repoRoot,
+    stdio: "inherit",
+  });
+
+  child.on("error", reject);
+  child.on("exit", (code, signal) => {
+    if (signal) {
+      process.kill(process.pid, signal);
+      return;
+    }
+
+    resolve(code ?? 1);
+  });
+});
+
+if (adminServerExitCode !== 0) {
+  process.exit(Number(adminServerExitCode));
+}
+
 for (const file of testFiles) {
+  if (path.basename(file) === "admin-server.test.js") {
+    continue;
+  }
   const testExitCode = await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, ["--test", file], {
       cwd: repoRoot,

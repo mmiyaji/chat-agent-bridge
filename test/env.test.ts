@@ -121,6 +121,24 @@ test("createAppConfig accepts cursor as the default agent", () => {
   assert.equal(config.cursorModel, "Auto");
 });
 
+test("createAppConfig accepts gemini as the default agent", () => {
+  fs.mkdirSync(tempRoot, { recursive: true });
+  const settingsFile = path.join(tempRoot, "env-settings-gemini.json");
+  fs.rmSync(settingsFile, { force: true });
+
+  const config = createAppConfig({
+    CAB_ALLOWED_DIRS: "C:/repo",
+    CAB_SETTINGS_FILE: settingsFile,
+    CAB_AGENT: "gemini",
+    CAB_GEMINI_COMMAND: "gemini --approval-mode yolo",
+    CAB_GEMINI_MODEL: "gemini-2.5-pro",
+  });
+
+  assert.equal(config.agentKind, "gemini");
+  assert.equal(config.geminiCommand, "gemini --approval-mode yolo");
+  assert.equal(config.geminiModel, "gemini-2.5-pro");
+});
+
 test("createAppConfig normalizes the legacy cursor agent default command", () => {
   fs.mkdirSync(tempRoot, { recursive: true });
   const settingsFile = path.join(tempRoot, "env-settings-cursor-legacy.json");
