@@ -31,6 +31,8 @@ interface RuntimeSettingsPayload {
   defaultApprovalPolicy: AppConfig["defaultApprovalPolicy"];
   networkAccess: AppConfig["networkAccess"];
   chatProvider: AppConfig["chatProvider"];
+  slackAllowedUserIds: string;
+  mattermostAllowedUserIds: string;
   slackMode: AppConfig["slackMode"];
   mattermostMode: AppConfig["mattermostMode"];
   mattermostActorMode: NonNullable<AppConfig["mattermostActorMode"]>;
@@ -269,6 +271,21 @@ function formatDuration(ms: number | undefined): string | undefined {
     return `${minutes}m ${seconds}s`;
   }
   return `${seconds}s`;
+}
+
+function serializeUserIdList(userIds: string[]): string {
+  return userIds.join("\n");
+}
+
+function parseUserIdList(value: string | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(/[;,\r\n]/)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
 }
 
 function classifyExecutionIssue(record: ExecutionRecord): string {
@@ -1973,6 +1990,14 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
               '<div class="field"><label for="settings-mm-webhook-token">Mattermost webhook token</label><input id="settings-mm-webhook-token" data-testid="settings-mm-webhook-token" type="password" placeholder="' + (settings.hasMattermostWebhookToken ? "stored" : "not set") + '" /></div>',
               'Only needed for HTTP webhook entrypoints. Websocket mode usually does not use this token.'
             ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-slack-allowed-user-ids">Slack allowed user IDs</label><textarea id="settings-slack-allowed-user-ids" data-testid="settings-slack-allowed-user-ids" rows="4" placeholder="U01234567&#10;U07654321">' + escapeHtml(settings.slackAllowedUserIds || "") + '</textarea></div>',
+              'Optional. When set, only these Slack user IDs can trigger the bridge. One ID per line, or separate with commas / semicolons.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-allowed-user-ids">Mattermost allowed user IDs</label><textarea id="settings-mm-allowed-user-ids" data-testid="settings-mm-allowed-user-ids" rows="4" placeholder="user-id-1&#10;user-id-2">' + escapeHtml(settings.mattermostAllowedUserIds || "") + '</textarea></div>',
+              'Optional. Applied only in Mattermost bot mode. One user ID per line, or separate with commas / semicolons.'
+            ) +
           "</div>" +
           '<div class="section-head"><div><h2>Secret cleanup</h2><p>These do not clear immediately. They are applied only when you save settings.</p></div></div>' +
           '<div class="secret-reset-list">' +
@@ -2108,6 +2133,8 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           mattermostServerUrl: document.getElementById("settings-mm-server").value.trim(),
           mattermostActionBaseUrl: document.getElementById("settings-mm-action-base").value.trim(),
           mattermostActorMode: document.getElementById("settings-mm-actor-mode").value,
+          slackAllowedUserIds: document.getElementById("settings-slack-allowed-user-ids").value.trim(),
+          mattermostAllowedUserIds: document.getElementById("settings-mm-allowed-user-ids").value.trim(),
           slackBotToken: document.getElementById("settings-slack-bot-token").value.trim() || undefined,
           slackAppToken: document.getElementById("settings-slack-app-token").value.trim() || undefined,
           slackSigningSecret: document.getElementById("settings-slack-signing-secret").value.trim() || undefined,
@@ -2985,6 +3012,8 @@ export class AdminServer {
       defaultApprovalPolicy: this.config.defaultApprovalPolicy,
       networkAccess: this.config.networkAccess,
       chatProvider: this.config.chatProvider,
+      slackAllowedUserIds: serializeUserIdList(this.config.slackAllowedUserIds),
+      mattermostAllowedUserIds: serializeUserIdList(this.config.mattermostAllowedUserIds),
       slackMode: this.config.slackMode,
       mattermostMode: this.config.mattermostMode,
       mattermostActorMode: this.config.mattermostActorMode ?? "bot",
@@ -3041,6 +3070,8 @@ export class AdminServer {
       defaultApprovalPolicy: this.config.defaultApprovalPolicy,
       networkAccess: this.config.networkAccess,
       slackMode: this.config.slackMode,
+      slackAllowedUserIds: serializeUserIdList(this.config.slackAllowedUserIds),
+      mattermostAllowedUserIds: serializeUserIdList(this.config.mattermostAllowedUserIds),
       mattermostMode: this.config.mattermostMode,
       mattermostActorMode: this.config.mattermostActorMode ?? "bot",
       host: this.config.host,
@@ -3321,12 +3352,18 @@ export class AdminServer {
     if (payload.autoSplitThreadUserMessageCount) {
       this.config.autoSplitThreadUserMessageCount = payload.autoSplitThreadUserMessageCount;
     }
-    if (payload.chatProvider) {
-      this.config.chatProvider = payload.chatProvider;
-    }
-    if (payload.slackMode) {
-      this.config.slackMode = payload.slackMode;
-    }
+      if (payload.chatProvider) {
+        this.config.chatProvider = payload.chatProvider;
+      }
+      if (payload.slackAllowedUserIds !== undefined) {
+        this.config.slackAllowedUserIds = parseUserIdList(payload.slackAllowedUserIds);
+      }
+      if (payload.mattermostAllowedUserIds !== undefined) {
+        this.config.mattermostAllowedUserIds = parseUserIdList(payload.mattermostAllowedUserIds);
+      }
+      if (payload.slackMode) {
+        this.config.slackMode = payload.slackMode;
+      }
     if (payload.mattermostMode) {
       this.config.mattermostMode = payload.mattermostMode;
     }

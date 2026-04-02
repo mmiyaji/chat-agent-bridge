@@ -17,6 +17,8 @@ test("createAppConfig reads persisted settings when env values are absent", () =
         defaultApprovalPolicy: "never",
         networkAccess: "disabled",
         chatProvider: "mattermost",
+        slackAllowedUserIds: "U1\nU2",
+        mattermostAllowedUserIds: "mm-1,mm-2",
         mattermostMode: "websocket",
         mattermostServerUrl: "https://chat.example.test",
         slackBotToken: "persisted-token",
@@ -39,6 +41,8 @@ test("createAppConfig reads persisted settings when env values are absent", () =
   assert.equal(config.defaultApprovalPolicy, "never");
   assert.equal(config.networkAccess, "disabled");
   assert.equal(config.chatProvider, "mattermost");
+  assert.deepEqual(config.slackAllowedUserIds, ["U1", "U2"]);
+  assert.deepEqual(config.mattermostAllowedUserIds, ["mm-1", "mm-2"]);
   assert.equal(config.mattermostMode, "websocket");
   assert.equal(config.mattermostServerUrl, "https://chat.example.test");
   assert.equal(config.slackBotToken, "persisted-token");

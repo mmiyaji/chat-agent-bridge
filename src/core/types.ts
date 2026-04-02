@@ -100,6 +100,8 @@ export interface AppConfig {
   agentKind: AgentKind;
   allowedDirectories: string[];
   repoAliases: Record<string, string>;
+  slackAllowedUserIds: string[];
+  mattermostAllowedUserIds: string[];
   defaultApprovalPolicy: ApprovalPolicy;
   networkAccess: NetworkAccess;
   slackMode: SlackMode;

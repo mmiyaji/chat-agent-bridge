@@ -76,6 +76,8 @@ Service mode stores runtime files under `data/runtime/`.
 | `CAB_ADMIN_HOST` | no | Admin server bind host. Defaults to `CAB_HOST` |
 | `CAB_ADMIN_PORT` | no | Admin server port. Defaults to `8788` |
 | `CAB_AUDIT_LOG_FILE` | no | Audit JSONL path. Defaults to `./data/audit.jsonl` |
+| `CAB_SLACK_ALLOWED_USER_IDS` | no | Optional Slack user-ID allowlist for bot-facing operation. Accepts newline-, comma-, or semicolon-separated IDs |
+| `CAB_MATTERMOST_ALLOWED_USER_IDS` | no | Optional Mattermost user-ID allowlist for `bot` mode. Accepts newline-, comma-, or semicolon-separated IDs |
 | `CAB_REPO_ALIASES` | no | Optional `alias=path;alias2=path2` mapping |
 
 ## Agent-specific environment variables
@@ -143,3 +145,5 @@ Gemini must already be installed and authenticated locally before the bridge can
 - Mattermost setup: [mattermost-setup.md](mattermost-setup.md)
 - Operations: [operations.md](operations.md)
 - Testing: [testing.md](testing.md)
+
+When the allowlist variables are set, the bridge silently ignores messages from users outside the list and records the rejection in the audit log.

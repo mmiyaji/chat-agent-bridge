@@ -31,7 +31,9 @@ function createConfig(): AppConfig {
     defaultApprovalPolicy: "manual",
     networkAccess: "disabled",
     slackMode: "http",
+    slackAllowedUserIds: [],
     mattermostMode: "http",
+    mattermostAllowedUserIds: [],
     port: 8787,
     host: "127.0.0.1",
     adminHost: "127.0.0.1",
@@ -374,6 +376,8 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(before.body.settings.agentCommands.cursor.command, "cursor-agent --trust");
   assert.equal(before.body.settings.agentCommands.gemini.command, "gemini --approval-mode yolo");
   assert.equal(before.body.settings.autoSplitThreadUserMessageCount, 30);
+  assert.equal(before.body.settings.slackAllowedUserIds, "");
+  assert.equal(before.body.settings.mattermostAllowedUserIds, "");
   assert.equal(before.body.settings.hasSlackBotToken, false);
   assert.match(before.body.settings.settingsFile, /admin-settings\.json$/);
   assert.equal(before.body.settings.settingsSavedAt, undefined);
@@ -402,6 +406,8 @@ test("AdminServer reads and updates runtime settings", async () => {
       slackMode: "socket",
       mattermostMode: "websocket",
       mattermostActorMode: "self",
+      slackAllowedUserIds: "U1\nU2",
+      mattermostAllowedUserIds: "mm-1\nmm-2",
       host: "0.0.0.0",
       port: 9999,
       adminHost: "127.0.0.1",
@@ -437,6 +443,8 @@ test("AdminServer reads and updates runtime settings", async () => {
   );
   assert.equal(update.body.settings.claudeModel, "opus");
   assert.equal(update.body.settings.claudeMaxTurns, 10);
+  assert.equal(update.body.settings.slackAllowedUserIds, "U1\nU2");
+  assert.equal(update.body.settings.mattermostAllowedUserIds, "mm-1\nmm-2");
   assert.equal(config.agentKind, "claude-code");
   assert.equal(config.defaultApprovalPolicy, "never");
   assert.equal(config.networkAccess, "enabled");
@@ -454,6 +462,8 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(config.claudeModel, "opus");
   assert.equal(config.claudeMaxTurns, 10);
   assert.equal(config.chatProvider, "mattermost");
+  assert.deepEqual(config.slackAllowedUserIds, ["U1", "U2"]);
+  assert.deepEqual(config.mattermostAllowedUserIds, ["mm-1", "mm-2"]);
   assert.equal(config.slackMode, "socket");
   assert.equal(config.mattermostMode, "websocket");
   assert.equal(config.mattermostActorMode, "self");
@@ -476,6 +486,8 @@ test("AdminServer reads and updates runtime settings", async () => {
   assert.equal(persisted.geminiModel, "gemini-2.5-flash");
   assert.equal(persisted.geminiCommandTimeoutMs, 444000);
   assert.equal(persisted.geminiMaxRuntimeMs, 555000);
+  assert.equal(persisted.slackAllowedUserIds, "U1\nU2");
+  assert.equal(persisted.mattermostAllowedUserIds, "mm-1\nmm-2");
 
   const cursorUpdate = await postJson(
     port,

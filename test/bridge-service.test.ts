@@ -25,7 +25,9 @@ function createConfig(): AppConfig {
     defaultApprovalPolicy: "manual",
     networkAccess: "disabled",
     slackMode: "http",
+    slackAllowedUserIds: [],
     mattermostMode: "http",
+    mattermostAllowedUserIds: [],
     port: 8787,
     host: "127.0.0.1",
     defaultWorkingDirectory: "C:/repo",
@@ -263,6 +265,82 @@ test("BridgeService stores failed executions in history", async () => {
   assert.equal(records.length, 1);
   assert.equal(records[0].status, "failed");
   assert.equal(records[0].error, "Codex exploded");
+});
+
+test("BridgeService silently ignores Slack users outside the allowlist", async () => {
+  const { config, chatAdapter, codexAgent, auditLogger } = await startBridge();
+  config.slackAllowedUserIds = ["U_ALLOWED"];
+
+  await chatAdapter.handler?.({
+    ...createMessage("do work"),
+    userId: "U_BLOCKED",
+  });
+
+  assert.equal(codexAgent.requests.length, 0);
+  assert.equal(chatAdapter.posted.length, 0);
+  assert.equal(
+    auditLogger.events.some(
+      (event) =>
+        event.type === "bridge.message.rejected" &&
+        event.provider === "slack" &&
+        event.userId === "U_BLOCKED" &&
+        event.reason === "user-not-allowed",
+    ),
+    true,
+  );
+});
+
+test("BridgeService silently ignores Mattermost bot-mode users outside the allowlist", async () => {
+  const { config, chatAdapter, codexAgent, auditLogger } = await startBridge();
+  config.mattermostActorMode = "bot";
+  config.mattermostAllowedUserIds = ["mm-allowed"];
+
+  await chatAdapter.handler?.({
+    thread: {
+      provider: "mattermost",
+      channelId: "town-square",
+      threadId: "post-1",
+    },
+    userId: "mm-blocked",
+    text: "@cab do work",
+    requestedWorkingDirectory: "C:/repo/project",
+  });
+
+  assert.equal(codexAgent.requests.length, 0);
+  assert.equal(chatAdapter.posted.length, 0);
+  assert.equal(
+    auditLogger.events.some(
+      (event) =>
+        event.type === "bridge.message.rejected" &&
+        event.provider === "mattermost" &&
+        event.userId === "mm-blocked" &&
+        event.reason === "user-not-allowed",
+    ),
+    true,
+  );
+});
+
+test("BridgeService does not apply Mattermost allowlist outside bot mode", async () => {
+  const { config, chatAdapter, codexAgent } = await startBridge();
+  config.mattermostActorMode = "self";
+  config.mattermostAllowedUserIds = ["someone-else"];
+  codexAgent.result = {
+    sessionId: "ignored",
+    summary: "ok",
+  };
+
+  await chatAdapter.handler?.({
+    thread: {
+      provider: "mattermost",
+      channelId: "dm-channel",
+      threadId: "post-1",
+    },
+    userId: "self-user",
+    text: "@self status",
+    requestedWorkingDirectory: "C:/repo/project",
+  });
+
+  assert.equal(codexAgent.requests.length, 1);
 });
 
 test("BridgeService cancels a running execution best-effort", async () => {

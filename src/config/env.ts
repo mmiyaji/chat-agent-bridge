@@ -173,6 +173,17 @@ function parseRepoAliases(
   return aliases;
 }
 
+function parseUserIdList(value: string | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(/[;,\r\n]/)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
 function parseInteger(name: string, value: string | undefined, fallback: number): number {
   if (!value) {
     return fallback;
@@ -341,6 +352,16 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     agentKind: parseAgentKind(readSettingString(env.CAB_AGENT, persisted, "agentKind")),
     allowedDirectories,
     repoAliases: parseRepoAliases(env.CAB_REPO_ALIASES, allowedDirectories),
+    slackAllowedUserIds: parseUserIdList(
+      readSettingString(env.CAB_SLACK_ALLOWED_USER_IDS, persisted, "slackAllowedUserIds"),
+    ),
+    mattermostAllowedUserIds: parseUserIdList(
+      readSettingString(
+        env.CAB_MATTERMOST_ALLOWED_USER_IDS,
+        persisted,
+        "mattermostAllowedUserIds",
+      ),
+    ),
     defaultApprovalPolicy: parseApprovalPolicy(
       readSettingString(env.CAB_DEFAULT_APPROVAL_POLICY, persisted, "defaultApprovalPolicy"),
     ),

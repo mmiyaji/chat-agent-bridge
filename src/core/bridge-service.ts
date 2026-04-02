@@ -654,6 +654,18 @@ export class BridgeService {
   }
 
   private async handleMessage(message: IncomingChatMessage): Promise<void> {
+    if (!(await this.isMessageUserAllowed(message))) {
+      await this.deps.auditLogger.log({
+        type: "bridge.message.rejected",
+        provider: message.thread.provider,
+        channelId: message.thread.channelId,
+        threadId: message.thread.threadId,
+        userId: message.userId,
+        reason: "user-not-allowed",
+      });
+      return;
+    }
+
     const session = await this.deps.sessionManager.getOrCreate({
       agent: this.deps.config.agentKind,
       thread: message.thread,
@@ -881,6 +893,34 @@ export class BridgeService {
         );
       }
     });
+  }
+
+  private async isMessageUserAllowed(message: IncomingChatMessage): Promise<boolean> {
+    if (message.userId === "admin-ui") {
+      return true;
+    }
+
+    if (message.thread.provider === "slack") {
+      if (this.deps.config.slackAllowedUserIds.length === 0) {
+        return true;
+      }
+
+      return this.deps.config.slackAllowedUserIds.includes(message.userId);
+    }
+
+    if (message.thread.provider === "mattermost") {
+      if (this.deps.config.mattermostActorMode !== "bot") {
+        return true;
+      }
+
+      if (this.deps.config.mattermostAllowedUserIds.length === 0) {
+        return true;
+      }
+
+      return this.deps.config.mattermostAllowedUserIds.includes(message.userId);
+    }
+
+    return true;
   }
 
   private async handleBridgeCommand(
@@ -2330,7 +2370,8 @@ export class BridgeService {
 
     const connStatus = this.getChatConnectionStatus();
     if (connStatus) {
-      const stateLabel = connStatus.connected ? "Connected" : connStatus.state === "connecting" ? "Connecting..." : "Disconnected";
+      const stateLabel =
+        connStatus.connected ? "Connected" : connStatus.state === "connecting" ? "Connecting..." : "Disconnected";
       lines.push(`• Connection: ${connStatus.provider} (${connStatus.mode}) — ${stateLabel}`);
     }
 
