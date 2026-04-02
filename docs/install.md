@@ -11,6 +11,10 @@
   - Cursor CLI for `CAB_AGENT=cursor`
   - Gemini CLI for `CAB_AGENT=gemini`
 
+The bridge assumes the selected local agent CLI is already installed and authenticated before execution. It does not guide or perform interactive login flows for you.
+
+Before using an agent through the bridge, verify that the corresponding CLI can already run successfully in the same machine and user session in non-interactive mode.
+
 ## Install dependencies
 
 ```powershell
@@ -23,8 +27,8 @@ npm run check
 At a minimum, set the allowed repositories and choose a default working directory.
 
 ```powershell
-$env:CAB_ALLOWED_DIRS="C:\Users\mail\Documents\git"
-$env:CAB_DEFAULT_WORKDIR="C:\Users\mail\Documents\git\chat-agent-bridge"
+$env:CAB_ALLOWED_DIRS="$env:USERPROFILE\Documents\git"
+$env:CAB_DEFAULT_WORKDIR="$env:USERPROFILE\Documents\git\chat-agent-bridge"
 ```
 
 Optional but commonly useful:
@@ -83,7 +87,7 @@ Service mode stores runtime files under `data/runtime/`.
 | `CAB_CODEX_MODEL` | no | Model passed to `codex exec --model`. Defaults to `gpt-5.4` |
 | `CAB_CODEX_COMMAND_TIMEOUT_MS` | no | Idle timeout for a single `codex exec` invocation |
 | `CAB_CODEX_MAX_RUNTIME_MS` | no | Hard maximum runtime for a single `codex exec` invocation |
-| `CAB_CODEX_SESSION_INDEX_FILE` | no | Local Codex session index path |
+| `CAB_CODEX_SESSION_INDEX_FILE` | no | Local Codex session index path. Defaults to a file under the current user's home directory |
 
 The bridge uses the locally installed Codex CLI and does not require `OPENAI_API_KEY` when the local CLI is already logged in.
 
@@ -92,6 +96,8 @@ The bridge uses the locally installed Codex CLI and does not require `OPENAI_API
 | Name | Required | Description |
 | --- | --- | --- |
 | `CAB_CLAUDE_MODEL` | no | Model passed to `claude --model`. Defaults to `sonnet` |
+
+Claude Code must already be installed and authenticated locally before the bridge can execute it.
 
 ### Cursor
 
@@ -106,6 +112,7 @@ Cursor runtime settings can also be adjusted later from the Admin UI. This is us
 
 The default command includes `--trust` so Cursor can run in repositories that require workspace trust.
 The default model is `Auto`, which is safer for plans that cannot use named models.
+Cursor must already be installed and authenticated locally before the bridge can execute it.
 
 If you need a different wrapper, you can still override `CAB_CURSOR_COMMAND` or save another value in the Admin UI.
 
@@ -120,13 +127,15 @@ If you need a different wrapper, you can still override `CAB_CURSOR_COMMAND` or 
 
 Gemini runtime settings can also be changed later from the Admin UI.
 
+Gemini must already be installed and authenticated locally before the bridge can execute it.
+
 ### Claude runtime
 
 | Variable | Required | Description |
 | --- | --- | --- |
 | `CAB_CLAUDE_COMMAND_TIMEOUT_MS` | no | Idle timeout for a single Claude Code invocation |
 | `CAB_CLAUDE_MAX_RUNTIME_MS` | no | Hard maximum runtime for a single Claude Code invocation |
-| `CAB_CLAUDE_SESSION_INDEX_FILE` | no | Local Claude Code session index path |
+| `CAB_CLAUDE_SESSION_INDEX_FILE` | no | Local Claude Code session index path. Defaults to a file under the current user's home directory |
 
 ## Next steps
 

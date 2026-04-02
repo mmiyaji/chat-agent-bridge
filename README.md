@@ -25,6 +25,8 @@ The current implementation is Windows-first and is developed and validated prima
 
 The commands below assume a Windows environment with PowerShell.
 
+This bridge assumes the local CLI for the selected agent is already installed and authenticated on the same machine before you use it from chat. The bridge does not perform interactive login flows for Codex, Claude Code, Cursor, or Gemini on your behalf.
+
 1. Install dependencies:
 
 ```powershell
@@ -35,8 +37,8 @@ npm run check
 2. Set the minimum environment:
 
 ```powershell
-$env:CAB_ALLOWED_DIRS="C:\Users\mail\Documents\git"
-$env:CAB_DEFAULT_WORKDIR="C:\Users\mail\Documents\git\chat-agent-bridge"
+$env:CAB_ALLOWED_DIRS="$env:USERPROFILE\Documents\git"
+$env:CAB_DEFAULT_WORKDIR="$env:USERPROFILE\Documents\git\chat-agent-bridge"
 ```
 
 3. Start the bridge:
@@ -140,9 +142,13 @@ flowchart TD
 
 - The bridge starts an admin server by default on `http://<bridge-host>:8788/admin`
 - Initial setup can be guided from `http://<bridge-host>:8788/admin/onboarding`
+- Before using any agent through the bridge, verify that the corresponding local CLI can already run successfully in the same environment in non-interactive mode
 - Codex sessions use the locally installed `codex` CLI and can reuse an existing local login
+- Claude Code is expected to be installed and authenticated locally before bridge execution
 - Cursor uses `cursor-agent --trust` by default and exposes a separate model setting in the Admin UI. The default model is `Auto`.
+- Cursor is expected to be installed and authenticated locally before bridge execution
 - Gemini uses `gemini --approval-mode yolo` by default and exposes separate command and model settings in the Admin UI.
+- Gemini is expected to be installed and authenticated locally before bridge execution
 - The bridge injects `CHAT_AGENT_BRIDGE=1` into Codex child processes so external hooks can suppress duplicate notifications
 - In Mattermost, `MATTERMOST_ACTOR_MODE=self` is intended for user-token operation, accepts only self-DMs, and still requires a mention in that self-DM
 

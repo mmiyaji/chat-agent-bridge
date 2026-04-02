@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import {
   AgentKind,
@@ -18,6 +19,14 @@ function readRequired(name: string, env: NodeJS.ProcessEnv): string {
   }
 
   return value;
+}
+
+function defaultCodexSessionIndexFile(): string {
+  return path.join(os.homedir(), ".codex", "session_index.jsonl");
+}
+
+function defaultClaudeSessionIndexFile(): string {
+  return path.join(os.homedir(), ".config", "claude", "sessions", "sessions.json");
 }
 
 function parseApprovalPolicy(value: string | undefined): ApprovalPolicy {
@@ -364,10 +373,10 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     stateFile: path.resolve(env.CAB_STATE_FILE ?? "./data/state.json"),
     auditLogFile: path.resolve(env.CAB_AUDIT_LOG_FILE ?? "./data/audit.jsonl"),
     codexSessionIndexFile: path.resolve(
-      env.CAB_CODEX_SESSION_INDEX_FILE ?? "C:/Users/mail/.codex/session_index.jsonl",
+      env.CAB_CODEX_SESSION_INDEX_FILE ?? defaultCodexSessionIndexFile(),
     ),
     claudeSessionIndexFile: path.resolve(
-      env.CAB_CLAUDE_SESSION_INDEX_FILE ?? "C:/Users/mail/.config/claude/sessions/sessions.json",
+      env.CAB_CLAUDE_SESSION_INDEX_FILE ?? defaultClaudeSessionIndexFile(),
     ),
     codexModel: readSettingString(env.CAB_CODEX_MODEL, persisted, "codexModel") ?? "gpt-5.4",
     codexMaxTurns: parseInteger(

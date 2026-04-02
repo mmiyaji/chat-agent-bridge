@@ -35,8 +35,8 @@ npm run check
 2. 最低限の環境変数を設定します。
 
 ```powershell
-$env:CAB_ALLOWED_DIRS="C:\Users\mail\Documents\git"
-$env:CAB_DEFAULT_WORKDIR="C:\Users\mail\Documents\git\chat-agent-bridge"
+$env:CAB_ALLOWED_DIRS="$env:USERPROFILE\Documents\git"
+$env:CAB_DEFAULT_WORKDIR="$env:USERPROFILE\Documents\git\chat-agent-bridge"
 ```
 
 3. bridge を起動します。
