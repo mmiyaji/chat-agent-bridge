@@ -99,6 +99,7 @@ export interface AppConfig {
   chatProvider: ChatIngress;
   agentKind: AgentKind;
   allowedDirectories: string[];
+  discoverRepos?: boolean;
   repoAliases: Record<string, string>;
   slackAllowedUserIds: string[];
   mattermostAllowedUserIds: string[];

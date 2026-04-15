@@ -166,3 +166,38 @@ test("createAppConfig normalizes the legacy cursor agent default command", () =>
   assert.equal(config.cursorCommand, "cursor-agent --trust");
   assert.equal(config.cursorModel, "Auto");
 });
+
+test("createAppConfig discovers git repos under allowed roots when enabled", () => {
+  fs.mkdirSync(tempRoot, { recursive: true });
+  const root = path.join(tempRoot, "discover-root");
+  const repoA = path.join(root, "repo-a");
+  const repoB = path.join(root, "repo-b");
+  fs.mkdirSync(path.join(repoA, ".git"), { recursive: true });
+  fs.mkdirSync(path.join(repoB, ".git"), { recursive: true });
+
+  const config = createAppConfig({
+    CAB_ALLOWED_DIRS: root,
+    CAB_DISCOVER_REPOS: "true",
+  });
+
+  assert.equal(config.discoverRepos, true);
+  assert.equal(config.repoAliases["repo-a"], repoA);
+  assert.equal(config.repoAliases["repo-b"], repoB);
+});
+
+test("createAppConfig keeps explicit repo aliases ahead of discovered repos", () => {
+  fs.mkdirSync(tempRoot, { recursive: true });
+  const root = path.join(tempRoot, "discover-root-explicit");
+  const repoA = path.join(root, "repo-a");
+  const explicitTarget = path.join(tempRoot, "explicit-target");
+  fs.mkdirSync(path.join(repoA, ".git"), { recursive: true });
+  fs.mkdirSync(explicitTarget, { recursive: true });
+
+  const config = createAppConfig({
+    CAB_ALLOWED_DIRS: root,
+    CAB_DISCOVER_REPOS: "true",
+    CAB_REPO_ALIASES: `repo-a=${explicitTarget}`,
+  });
+
+  assert.equal(config.repoAliases["repo-a"], explicitTarget);
+});

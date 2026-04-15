@@ -140,6 +140,7 @@ function parseAllowedDirs(value: string): string[] {
 function parseRepoAliases(
   value: string | undefined,
   allowedDirectories: string[],
+  discoverRepos: boolean,
 ): Record<string, string> {
   const aliases: Record<string, string> = {};
 
@@ -151,6 +152,9 @@ function parseRepoAliases(
   }
 
   if (!value) {
+    if (discoverRepos) {
+      discoverGitRepos(aliases, allowedDirectories);
+    }
     return aliases;
   }
 
@@ -170,7 +174,42 @@ function parseRepoAliases(
     aliases[alias] = path.resolve(target);
   }
 
+  if (discoverRepos) {
+    discoverGitRepos(aliases, allowedDirectories);
+  }
+
   return aliases;
+}
+
+function discoverGitRepos(
+  aliases: Record<string, string>,
+  allowedDirectories: string[],
+): void {
+  for (const root of allowedDirectories) {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(root, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+
+      const repoPath = path.join(root, entry.name);
+      const gitPath = path.join(repoPath, ".git");
+      if (!fs.existsSync(gitPath)) {
+        continue;
+      }
+
+      const alias = entry.name.toLowerCase();
+      if (!(alias in aliases)) {
+        aliases[alias] = repoPath;
+      }
+    }
+  }
 }
 
 function parseUserIdList(value: string | undefined): string[] {
@@ -346,12 +385,16 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     readSettingString(env.CAB_CURSOR_COMMAND, persisted, "cursorCommand"),
     readSettingString(env.CAB_CURSOR_MODEL, persisted, "cursorModel"),
   );
+  const discoverRepos = parseBoolean(
+    readSettingBoolean(env.CAB_DISCOVER_REPOS, persisted, "discoverRepos"),
+  );
 
   const config: AppConfig = {
     chatProvider: parseChatProvider(readSettingString(env.CAB_CHAT_PROVIDER, persisted, "chatProvider")),
     agentKind: parseAgentKind(readSettingString(env.CAB_AGENT, persisted, "agentKind")),
     allowedDirectories,
-    repoAliases: parseRepoAliases(env.CAB_REPO_ALIASES, allowedDirectories),
+    discoverRepos,
+    repoAliases: parseRepoAliases(env.CAB_REPO_ALIASES, allowedDirectories, discoverRepos),
     slackAllowedUserIds: parseUserIdList(
       readSettingString(env.CAB_SLACK_ALLOWED_USER_IDS, persisted, "slackAllowedUserIds"),
     ),

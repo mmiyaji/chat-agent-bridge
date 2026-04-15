@@ -743,6 +743,39 @@ test("BridgeService updates the working directory within allowed roots", async (
   assert.match(chatAdapter.posted[0].text, /now bound/);
 });
 
+test("BridgeService keeps the new workdir for later messages after cwd", async () => {
+  const { chatAdapter, store, agent, config } = await startBridge();
+  config.allowedDirectories = ["C:/repo"];
+
+  await chatAdapter.handler?.(createMessage("cwd other-project"));
+  await chatAdapter.handler?.(createMessage("status"));
+
+  const sessions = await store.listSessions();
+
+  assert.equal(agent.requests.length, 0);
+  assert.equal(sessions[0].workingDirectory, "C:\\repo\\project\\other-project");
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Working directory: `C:\\repo\\project\\other-project`/);
+});
+
+test("BridgeService runs later messages from the updated workdir after cwd", async () => {
+  const { chatAdapter, store, agent, config } = await startBridge();
+  config.allowedDirectories = ["C:/repo"];
+  agent.result = {
+    sessionId: "ignored",
+    summary: "done",
+  };
+
+  await chatAdapter.handler?.(createMessage("cwd other-project"));
+  await chatAdapter.handler?.(createMessage("do work"));
+
+  const sessions = await store.listSessions();
+
+  assert.equal(sessions[0].workingDirectory, "C:\\repo\\project\\other-project");
+  assert.equal(agent.requests.length, 1);
+  assert.equal(agent.requests[0]?.session.workingDirectory, "C:\\repo\\project\\other-project");
+  assert.equal(chatAdapter.posted.at(-1)?.text, "done");
+});
+
 test("BridgeService switches to a repo alias", async () => {
   const { chatAdapter, store, agent, config } = await startBridge();
   config.allowedDirectories = ["C:/repo", "C:/other"];

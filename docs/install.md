@@ -79,6 +79,7 @@ Service mode stores runtime files under `data/runtime/`.
 | `CAB_SLACK_ALLOWED_USER_IDS` | no | Optional Slack user-ID allowlist for bot-facing operation. Accepts newline-, comma-, or semicolon-separated IDs |
 | `CAB_MATTERMOST_ALLOWED_USER_IDS` | no | Optional Mattermost user-ID allowlist for `bot` mode. Accepts newline-, comma-, or semicolon-separated IDs |
 | `CAB_REPO_ALIASES` | no | Optional `alias=path;alias2=path2` mapping |
+| `CAB_DISCOVER_REPOS` | no | When `true`, also discover direct child Git repos under each allowed root and expose them as `repo` aliases |
 
 ## Agent-specific environment variables
 

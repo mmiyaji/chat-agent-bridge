@@ -666,10 +666,11 @@ export class BridgeService {
       return;
     }
 
+    const existingSession = await this.deps.sessionManager.getByThread(message.thread);
     const session = await this.deps.sessionManager.getOrCreate({
-      agent: this.deps.config.agentKind,
+      agent: existingSession?.agent ?? this.deps.config.agentKind,
       thread: message.thread,
-      workingDirectory: message.requestedWorkingDirectory,
+      workingDirectory: existingSession?.workingDirectory ?? message.requestedWorkingDirectory,
       allowedDirectories: this.deps.config.allowedDirectories,
     });
     const immediateBridgeCommand = parseBridgeCommand(message.text);
