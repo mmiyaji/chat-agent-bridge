@@ -623,6 +623,50 @@ export class BridgeService {
     return this.deps.chatAdapter.getConnectionStatus?.();
   }
 
+  /**
+   * Read-only view of the environment a session actually runs in, resolved the
+   * same way the execution path resolves it. Consumed by the admin UI so it can
+   * answer "where and how does this session run" without reading code.
+   */
+  describeSessionEnvironment(session: SessionBinding): {
+    workingDirectory: string;
+    agent: SessionBinding["agent"];
+    connectionMode: SessionConnectionMode;
+    agentSessionId: string | null;
+    approvalPolicy: ApprovalPolicy;
+    workdirConfirmed: boolean;
+    pendingWorkdirPicker: boolean;
+    pendingSessionPicker: boolean;
+  } {
+    return {
+      workingDirectory: session.workingDirectory,
+      agent: session.agent,
+      connectionMode: readSessionConnectionMode(session),
+      agentSessionId: readAgentSessionId(session) ?? null,
+      approvalPolicy: this.resolveApprovalPolicy(session),
+      workdirConfirmed: session.bridgeState?.workdirConfirmed === true,
+      pendingWorkdirPicker: Boolean(readWorkdirPicker(session.bridgeState)),
+      pendingSessionPicker: Boolean(readSessionPicker(session.bridgeState)),
+    };
+  }
+
+  /**
+   * Static, non-secret description of the bridge process environment exposed to
+   * agents. Returns variable NAMES only — never values — so the admin UI never
+   * surfaces tokens or secrets.
+   */
+  getAgentEnvironmentVariableNames(): string[] {
+    return [
+      "CHAT_AGENT_BRIDGE",
+      "CHAT_AGENT_BRIDGE_SESSION_ID",
+      "CHAT_AGENT_BRIDGE_AGENT",
+      "CHAT_AGENT_BRIDGE_CHAT_PROVIDER",
+      "CHAT_AGENT_BRIDGE_CHAT_CHANNEL_ID",
+      "CHAT_AGENT_BRIDGE_CHAT_THREAD_ID",
+      "CHAT_AGENT_BRIDGE_WORKDIR",
+    ];
+  }
+
   private resolveAgent(kind: SessionBinding["agent"]): Agent {
     const agent = this.deps.agents[kind];
     if (!agent) {
@@ -735,6 +779,33 @@ export class BridgeService {
     return nextSession;
   }
 
+  private async resolveNewSessionWorkingDirectory(
+    message: IncomingChatMessage,
+  ): Promise<string> {
+    const channelDefault = await this.deps.stateStore.getChannelDefaultWorkingDirectory(
+      message.thread.provider,
+      message.thread.channelId,
+    );
+    if (!channelDefault) {
+      return message.requestedWorkingDirectory;
+    }
+
+    try {
+      // A config change may have narrowed the allowed roots since the default
+      // was persisted; if so, ignore it rather than start outside the sandbox.
+      return assertPathAllowed(channelDefault, this.deps.config.allowedDirectories);
+    } catch (error) {
+      await this.deps.auditLogger.log({
+        type: "bridge.channel-default.invalid",
+        provider: message.thread.provider,
+        channelId: message.thread.channelId,
+        workingDirectory: channelDefault,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return message.requestedWorkingDirectory;
+    }
+  }
+
   private async handleMessage(message: IncomingChatMessage): Promise<void> {
     if (!(await this.isMessageUserAllowed(message))) {
       await this.deps.auditLogger.log({
@@ -749,10 +820,13 @@ export class BridgeService {
     }
 
     const existingSession = await this.deps.sessionManager.getByThread(message.thread);
+    const newSessionWorkingDirectory = existingSession
+      ? existingSession.workingDirectory
+      : await this.resolveNewSessionWorkingDirectory(message);
     const session = await this.deps.sessionManager.getOrCreate({
       agent: existingSession?.agent ?? this.deps.config.agentKind,
       thread: message.thread,
-      workingDirectory: existingSession?.workingDirectory ?? message.requestedWorkingDirectory,
+      workingDirectory: newSessionWorkingDirectory,
       allowedDirectories: this.deps.config.allowedDirectories,
     });
     const immediateBridgeCommand = parseBridgeCommand(message.text);
@@ -1065,6 +1139,7 @@ export class BridgeService {
           "- `@Chat Agent Bridge repos`",
           "- `@Chat Agent Bridge repo <alias>`",
           "- `@Chat Agent Bridge cwd <path>`",
+          "- `@Chat Agent Bridge channel-default <alias|path|clear>`",
           "- `@Chat Agent Bridge agent <codex|claude|cursor|gemini>`",
           "- `@Chat Agent Bridge mode <allow|manual>`",
           "- `@Chat Agent Bridge new [codex|claude|cursor|gemini] [allow|manual]`",
@@ -1202,6 +1277,10 @@ export class BridgeService {
         })
       )[0];
       const agentThreadId = readAgentSessionId(session) ?? "none";
+      const channelDefault = await this.deps.stateStore.getChannelDefaultWorkingDirectory(
+        message.thread.provider,
+        message.thread.channelId,
+      );
       await this.deps.auditLogger.log({
         type: "bridge.command.status",
         sessionId: session.sessionId,
@@ -1216,6 +1295,7 @@ export class BridgeService {
           `Bridge started at: \`${this.startedAt}\``,
           `Session connection: \`${connectionMode}\``,
           `Working directory: \`${session.workingDirectory}\``,
+          `Channel default cwd: \`${channelDefault ?? "none"}\``,
           `Approval policy: \`${this.resolveApprovalPolicy(session)}\``,
           `Approval override: \`${approvalPolicyOverride ?? "default"}\``,
           `Network access: \`${this.deps.config.networkAccess}\``,
@@ -1500,6 +1580,11 @@ export class BridgeService {
         message.thread,
         `Allowed working-directory roots:\n${formatRepoAliases(this.deps.config.repoAliases)}`,
       );
+      return;
+    }
+
+    if (command.kind === "channel-default") {
+      await this.handleChannelDefaultCommand(session, message, command);
       return;
     }
 
@@ -1900,6 +1985,21 @@ export class BridgeService {
       }
 
       return { offered: false, session: updated, text: remainder };
+    }
+
+    // The inline token wins above; otherwise, a channel default that matches the
+    // session's current directory has already answered the directory question, so
+    // skip the picker and confirm the working directory.
+    const channelDefault = await this.deps.stateStore.getChannelDefaultWorkingDirectory(
+      session.thread.provider,
+      session.thread.channelId,
+    );
+    if (
+      channelDefault &&
+      path.resolve(channelDefault) === path.resolve(session.workingDirectory)
+    ) {
+      const nextSession = await this.persistWorkdirConfirmed(session);
+      return { offered: false, session: nextSession, text };
     }
 
     // (b) Numbered directory picker over the allowed repo aliases.
@@ -2745,6 +2845,104 @@ export class BridgeService {
     });
 
     return nextSession;
+  }
+
+  private resolveAliasOrPath(rawPath: string): string {
+    const aliasKey = rawPath.trim().toLowerCase();
+    const aliasTarget = this.deps.config.repoAliases[aliasKey];
+    if (aliasTarget) {
+      return assertPathAllowed(aliasTarget, this.deps.config.allowedDirectories);
+    }
+
+    return resolveRequestedWorkingDirectory({
+      rawPath,
+      defaultWorkingDirectory: this.deps.config.defaultWorkingDirectory,
+      allowedDirectories: this.deps.config.allowedDirectories,
+    });
+  }
+
+  private async handleChannelDefaultCommand(
+    session: SessionBinding,
+    message: IncomingChatMessage,
+    command: Extract<BridgeCommand, { kind: "channel-default" }>,
+  ): Promise<void> {
+    const { provider, channelId } = message.thread;
+
+    if (command.action === "show") {
+      const current = await this.deps.stateStore.getChannelDefaultWorkingDirectory(
+        provider,
+        channelId,
+      );
+      await this.deps.auditLogger.log({
+        type: "bridge.command.channel-default.show",
+        sessionId: session.sessionId,
+        provider,
+        channelId,
+        workingDirectory: current ?? "none",
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        `Channel default working directory: \`${current ?? "none"}\`.`,
+      );
+      return;
+    }
+
+    if (command.action === "clear") {
+      await this.deps.stateStore.clearChannelDefaultWorkingDirectory(provider, channelId);
+      await this.deps.auditLogger.log({
+        type: "bridge.command.channel-default.clear",
+        sessionId: session.sessionId,
+        provider,
+        channelId,
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        "Channel default working directory cleared. New threads in this channel use their own directory choice.",
+      );
+      return;
+    }
+
+    let workingDirectory: string;
+    try {
+      workingDirectory = this.resolveAliasOrPath(command.rawPath);
+    } catch (error) {
+      const text =
+        error instanceof Error ? error.message : "Failed to resolve the requested directory.";
+      await this.deps.auditLogger.log({
+        type: "bridge.command.channel-default.set.failed",
+        sessionId: session.sessionId,
+        provider,
+        channelId,
+        rawPath: command.rawPath,
+        error: text,
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        [
+          `Channel default not set: ${text}`,
+          "Run `@Chat Agent Bridge repos` to see the allowed roots and aliases.",
+        ].join("\n"),
+      );
+      return;
+    }
+
+    await this.deps.stateStore.setChannelDefaultWorkingDirectory(
+      provider,
+      channelId,
+      workingDirectory,
+    );
+    await this.deps.auditLogger.log({
+      type: "bridge.command.channel-default.set",
+      sessionId: session.sessionId,
+      provider,
+      channelId,
+      rawPath: command.rawPath,
+      workingDirectory,
+    });
+    await this.deps.chatAdapter.postThreadMessage(
+      message.thread,
+      `Channel default working directory set to \`${workingDirectory}\`. New threads in this channel start there.`,
+    );
   }
 
   private resolveApprovalPolicy(session?: SessionBinding): AppConfig["defaultApprovalPolicy"] {

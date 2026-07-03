@@ -174,6 +174,82 @@ test("AdminServer serves session, approval, and failure APIs", async () => {
   await admin.stop();
 });
 
+test("AdminServer enriches the session payload with environment fields", async () => {
+  const store = new InMemoryStateStore();
+  await store.upsertSession(
+    createSession({
+      agent: "claude-code",
+      agentState: { claudeSessionId: "claude-abc" },
+      bridgeState: {
+        connectionMode: "attached",
+        workdirConfirmed: true,
+      },
+    }),
+  );
+
+  const admin = new AdminServer({
+    config: createConfig(),
+    stateStore: store,
+    auditLogger: new RecordingAuditLogger(),
+    bridge: createBridge(store).bridge,
+  });
+  await admin.start();
+  const port = admin.getListeningPort();
+  assert.ok(port);
+
+  const response = await getJson(port, "/admin/api/sessions");
+  assert.equal(response.statusCode, 200);
+  const session = response.body.sessions[0];
+  assert.equal(session.workingDirectory, "C:/repo");
+  assert.equal(session.agent, "claude-code");
+  assert.equal(session.connectionMode, "attached");
+  assert.equal(session.agentSessionId, "claude-abc");
+  // claude-code supports manual approval; default policy is manual.
+  assert.equal(session.approvalPolicy, "manual");
+  assert.equal(session.workdirConfirmed, true);
+  assert.equal(session.pendingWorkdirPicker, false);
+  assert.equal(session.pendingSessionPicker, false);
+
+  await admin.stop();
+});
+
+test("AdminServer serves an environment endpoint without secret values", async () => {
+  const store = new InMemoryStateStore();
+  await store.setChannelDefaultWorkingDirectory("slack", "C1", "C:/repo");
+
+  const config = createConfig();
+  config.slackBotToken = "xoxb-super-secret";
+  const admin = new AdminServer({
+    config,
+    stateStore: store,
+    auditLogger: new RecordingAuditLogger(),
+    bridge: createBridge(store).bridge,
+  });
+  await admin.start();
+  const port = admin.getListeningPort();
+  assert.ok(port);
+
+  const response = await getJson(port, "/admin/api/environment");
+  assert.equal(response.statusCode, 200);
+  const environment = response.body.environment;
+  assert.equal(environment.defaultWorkingDirectory, "C:/repo");
+  assert.deepEqual(environment.allowedDirectories, ["C:/repo"]);
+  assert.deepEqual(environment.repoAliases, { repo: "C:/repo" });
+  assert.deepEqual(environment.channelDefaultWorkingDirectories, { "slack:C1": "C:/repo" });
+  assert.equal(environment.claudeProjectsDir, "C:/repo/data/claude-projects");
+  assert.equal(environment.agentKind, "codex");
+  assert.equal(environment.chatProvider, "slack");
+  assert.ok(Array.isArray(environment.agentEnvironmentVariables));
+  assert.ok(environment.agentEnvironmentVariables.includes("CHAT_AGENT_BRIDGE_WORKDIR"));
+
+  // No secret-looking value leaks anywhere in the payload.
+  const serialized = JSON.stringify(response.body);
+  assert.doesNotMatch(serialized, /xoxb-super-secret/);
+  assert.doesNotMatch(serialized, /TOKEN|SECRET|PASSWORD/i);
+
+  await admin.stop();
+});
+
 test("AdminServer server-renders dashboard data and action controls", async () => {
   const store = new InMemoryStateStore();
   await store.upsertSession(createSession());

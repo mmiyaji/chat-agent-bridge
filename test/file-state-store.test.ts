@@ -104,6 +104,47 @@ test("FileStateStore reads older snapshots without execution history", async () 
   assert.deepEqual(records, []);
 });
 
+test("FileStateStore persists channel default working directories across reloads", async () => {
+  const { store, stateFile } = await createStore();
+  await store.setChannelDefaultWorkingDirectory("slack", "C1", "C:/repo/alpha");
+  await store.setChannelDefaultWorkingDirectory("mattermost", "C2", "C:/repo/beta");
+
+  assert.equal(await store.getChannelDefaultWorkingDirectory("slack", "C1"), "C:/repo/alpha");
+  assert.deepEqual(await store.listChannelDefaultWorkingDirectories(), {
+    "slack:C1": "C:/repo/alpha",
+    "mattermost:C2": "C:/repo/beta",
+  });
+
+  const reloaded = new FileStateStore(stateFile);
+  await reloaded.initialize();
+  assert.equal(await reloaded.getChannelDefaultWorkingDirectory("slack", "C1"), "C:/repo/alpha");
+
+  await reloaded.clearChannelDefaultWorkingDirectory("slack", "C1");
+  assert.equal(await reloaded.getChannelDefaultWorkingDirectory("slack", "C1"), undefined);
+  assert.deepEqual(await reloaded.listChannelDefaultWorkingDirectories(), {
+    "mattermost:C2": "C:/repo/beta",
+  });
+});
+
+test("FileStateStore reads older snapshots without channel defaults", async () => {
+  const { stateFile } = await createStore();
+  await fs.writeFile(
+    stateFile,
+    JSON.stringify({ sessions: [createSession()], executionHistory: [] }, null, 2),
+    "utf8",
+  );
+
+  const reloaded = new FileStateStore(stateFile);
+  await reloaded.initialize();
+
+  assert.deepEqual(await reloaded.listChannelDefaultWorkingDirectories(), {});
+  assert.equal(await reloaded.getChannelDefaultWorkingDirectory("slack", "C1"), undefined);
+  // Setting still works and does not disturb existing sessions.
+  await reloaded.setChannelDefaultWorkingDirectory("slack", "C1", "C:/repo");
+  assert.equal(await reloaded.getChannelDefaultWorkingDirectory("slack", "C1"), "C:/repo");
+  assert.equal((await reloaded.listSessions()).length, 1);
+});
+
 test("FileStateStore recovers from truncated json without crashing", async () => {
   const { stateFile } = await createStore();
   await fs.writeFile(stateFile, '{"sessions":[', "utf8");

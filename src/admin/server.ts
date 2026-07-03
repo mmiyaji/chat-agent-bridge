@@ -23,7 +23,19 @@ interface DashboardData {
   failures: Array<Record<string, any>>;
   connectionStatus?: ChatConnectionStatus;
   repoAliases?: Record<string, string>;
+  environment?: EnvironmentPayload;
   warnings?: string[];
+}
+
+interface EnvironmentPayload {
+  defaultWorkingDirectory: string;
+  allowedDirectories: string[];
+  repoAliases: Record<string, string>;
+  channelDefaultWorkingDirectories: Record<string, string>;
+  claudeProjectsDir: string;
+  agentKind: AppConfig["agentKind"];
+  chatProvider: AppConfig["chatProvider"];
+  agentEnvironmentVariables: string[];
 }
 
 interface RuntimeSettingsPayload {
@@ -132,9 +144,12 @@ function readConnectionMode(session: SessionBinding): string {
   return typeof value === "string" ? value : "bridge-owned";
 }
 
+type SessionEnvironment = ReturnType<BridgeService["describeSessionEnvironment"]>;
+
 function summarizeSession(
   session: SessionBinding,
   latestExecution: ExecutionRecord | undefined,
+  environment?: SessionEnvironment,
 ): Record<string, unknown> {
   const pendingApproval = readPendingApproval(session.bridgeState);
   return {
@@ -145,8 +160,17 @@ function summarizeSession(
     threadId: session.thread.threadId,
     workingDirectory: session.workingDirectory,
     updatedAt: session.updatedAt,
-    connectionMode: readConnectionMode(session),
+    connectionMode: environment?.connectionMode ?? readConnectionMode(session),
     approvalPolicyOverride: readApprovalPolicyOverride(session) ?? "default",
+    ...(environment
+      ? {
+          agentSessionId: environment.agentSessionId,
+          approvalPolicy: environment.approvalPolicy,
+          workdirConfirmed: environment.workdirConfirmed,
+          pendingWorkdirPicker: environment.pendingWorkdirPicker,
+          pendingSessionPicker: environment.pendingSessionPicker,
+        }
+      : {}),
     pendingApproval:
       pendingApproval &&
       {
@@ -253,6 +277,83 @@ function renderCommandResolutionCard(
     <p class="muted-note">Executable token: <code>${escapeHtml(diagnostic.executable || "(empty)")}</code></p>
     <div class="title">${resolved}</div>
   </article>`;
+}
+
+function renderKeyValueList(
+  entries: Array<[string, string]>,
+  testId: string,
+): string {
+  if (entries.length === 0) {
+    return `<div class="empty" data-testid="${escapeHtml(testId)}-empty">None.</div>`;
+  }
+
+  const rows = entries
+    .map(
+      ([key, value]) =>
+        `<div><dt>${escapeHtml(key)}</dt><dd><code>${escapeHtml(value)}</code></dd></div>`,
+    )
+    .join("");
+  return `<dl class="kv-list" data-testid="${escapeHtml(testId)}">${rows}</dl>`;
+}
+
+function renderEnvironmentSection(environment: EnvironmentPayload | undefined): string {
+  if (!environment) {
+    return `<div class="detail-empty" data-testid="environment-empty">Environment details are unavailable.</div>`;
+  }
+
+  const overview = renderKeyValueList(
+    [
+      ["Default working directory", environment.defaultWorkingDirectory],
+      ["Default agent", environment.agentKind],
+      ["Chat provider", environment.chatProvider],
+      ["Claude projects dir", environment.claudeProjectsDir],
+    ],
+    "environment-overview",
+  );
+  const allowed = renderKeyValueList(
+    environment.allowedDirectories.map((dir, index) => [`root ${index + 1}`, dir]),
+    "environment-allowed",
+  );
+  const aliases = renderKeyValueList(
+    Object.entries(environment.repoAliases).sort(([left], [right]) => left.localeCompare(right)),
+    "environment-aliases",
+  );
+  const channelDefaults = renderKeyValueList(
+    Object.entries(environment.channelDefaultWorkingDirectories).sort(([left], [right]) =>
+      left.localeCompare(right),
+    ),
+    "environment-channel-defaults",
+  );
+  const envVars =
+    environment.agentEnvironmentVariables.length === 0
+      ? `<div class="empty">None.</div>`
+      : `<ul class="env-var-list" data-testid="environment-env-vars">${environment.agentEnvironmentVariables
+          .map((name) => `<li><code>${escapeHtml(name)}</code></li>`)
+          .join("")}</ul>`;
+
+  return `<div class="environment-grid" data-testid="environment-body">
+    <div class="settings-block">
+      <div class="section-head"><div><h2>Overview</h2></div></div>
+      ${overview}
+    </div>
+    <div class="settings-block">
+      <div class="section-head"><div><h2>Allowed Directories</h2></div></div>
+      ${allowed}
+    </div>
+    <div class="settings-block">
+      <div class="section-head"><div><h2>Repo Aliases</h2></div></div>
+      ${aliases}
+    </div>
+    <div class="settings-block">
+      <div class="section-head"><div><h2>Channel Default Directories</h2></div></div>
+      ${channelDefaults}
+    </div>
+    <div class="settings-block">
+      <div class="section-head"><div><h2>Agent Environment Variables</h2></div></div>
+      <p class="muted-note">These variable names are set per session for each agent process. Values are omitted; tokens and secrets are never exposed here.</p>
+      ${envVars}
+    </div>
+  </div>`;
 }
 
 function formatDuration(ms: number | undefined): string | undefined {
@@ -553,6 +654,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
   });
   const approvalsMarkup = renderApprovalCardsMarkup(input.approvals);
   const failuresMarkup = renderFailureCardsMarkup(input.failures);
+  const environmentMarkup = renderEnvironmentSection(input.environment);
   const warningsMarkup =
     input.warnings && input.warnings.length > 0
       ? input.warnings.map((warning) => buildDashboardWarning(warning)).join("")
@@ -898,6 +1000,29 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         padding: 16px;
         background: var(--panel-alt);
       }
+      .environment-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .kv-list {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+      }
+      .kv-list dt {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .kv-list dd {
+        margin: 2px 0 0;
+      }
+      .env-var-list {
+        margin: 0;
+        padding-left: 18px;
+        display: grid;
+        gap: 4px;
+      }
       .settings-block > .section-head {
         margin-bottom: 10px;
       }
@@ -1149,6 +1274,9 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         .settings-subgrid {
           grid-template-columns: 1fr;
         }
+        .environment-grid {
+          grid-template-columns: 1fr;
+        }
         .detail-drawer-shell {
           width: 100%;
           padding: 20px 12px;
@@ -1257,7 +1385,16 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             <div id="failures">${failuresMarkup}</div>
           </section>
         </div>
-        <section data-testid="settings-panel"${isSettingsView ? "" : ' style="display:none"'}> 
+        <section data-testid="environment-panel"${isSettingsView ? ' style="display:none"' : ""}>
+          <div class="section-head">
+            <div>
+              <h2>Environment</h2>
+              <p>Read-only view of where and how sessions run: allowed roots, aliases, channel defaults, and the bridge variables passed to agents.</p>
+            </div>
+          </div>
+          <div id="environment">${environmentMarkup}</div>
+        </section>
+        <section data-testid="settings-panel"${isSettingsView ? "" : ' style="display:none"'}>
           <div class="section-head">
             <div>
               <h2>Runtime Settings</h2>
@@ -2811,6 +2948,11 @@ export class AdminServer {
       return;
     }
 
+    if (request.method === "GET" && url.pathname === "/admin/api/environment") {
+      await this.handleGetEnvironment(response);
+      return;
+    }
+
     if (request.method === "POST" && url.pathname.startsWith("/admin/api/sessions/")) {
       const suffix = url.pathname.slice("/admin/api/sessions/".length);
       const [encodedSessionId, action] = suffix.split("/", 2);
@@ -2882,7 +3024,13 @@ export class AdminServer {
 
     const summarizedSessions = sessions
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-      .map((session) => summarizeSession(session, latestBySession.get(session.sessionId)));
+      .map((session) =>
+        summarizeSession(
+          session,
+          latestBySession.get(session.sessionId),
+          this.bridge.describeSessionEnvironment(session),
+        ),
+      );
     const approvals = sessions
       .map((session) => {
         const pending = readPendingApproval(session.bridgeState);
@@ -2919,11 +3067,23 @@ export class AdminServer {
       }));
 
     const connectionStatus = this.bridge.getChatConnectionStatus();
+    let environment: EnvironmentPayload | undefined;
+    try {
+      environment = await this.readEnvironmentData();
+    } catch (error) {
+      warnings.push("Environment details could not be loaded.");
+      await this.auditLogger.log({
+        type: "admin.dashboard.degraded",
+        area: "environment",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
     return {
       sessions: summarizedSessions,
       approvals,
       failures,
       repoAliases: this.config.repoAliases,
+      ...(environment ? { environment } : {}),
       ...(warnings.length > 0 ? { warnings } : {}),
       ...(connectionStatus ? { connectionStatus } : {}),
     };
@@ -2978,7 +3138,7 @@ export class AdminServer {
       });
     }
     writeJson(response, 200, {
-      session: summarizeSession(session, records[0]),
+      session: summarizeSession(session, records[0], this.bridge.describeSessionEnvironment(session)),
       executionHistory: records.map((record) => ({
         ...record,
         failureCategory: classifyExecutionIssue(record),
@@ -2996,6 +3156,39 @@ export class AdminServer {
     writeJson(response, 200, {
       failures: (await this.readDashboardData(limit)).failures,
     });
+  }
+
+  private async readEnvironmentData(): Promise<EnvironmentPayload> {
+    let channelDefaultWorkingDirectories: Record<string, string> = {};
+    try {
+      channelDefaultWorkingDirectories =
+        await this.stateStore.listChannelDefaultWorkingDirectories();
+    } catch (error) {
+      await this.auditLogger.log({
+        type: "admin.api.environment.degraded",
+        area: "channel-defaults",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    return {
+      defaultWorkingDirectory: this.config.defaultWorkingDirectory,
+      allowedDirectories: [...this.config.allowedDirectories],
+      repoAliases: { ...this.config.repoAliases },
+      channelDefaultWorkingDirectories,
+      claudeProjectsDir: this.config.claudeProjectsDir,
+      agentKind: this.config.agentKind,
+      chatProvider: this.config.chatProvider,
+      agentEnvironmentVariables: this.bridge.getAgentEnvironmentVariableNames(),
+    };
+  }
+
+  private async handleGetEnvironment(response: ServerResponse): Promise<void> {
+    const environment = await this.readEnvironmentData();
+    await this.auditLogger.log({
+      type: "admin.api.environment",
+    });
+    writeJson(response, 200, { environment });
   }
 
   private readRuntimeSettings(): RuntimeSettingsPayload {

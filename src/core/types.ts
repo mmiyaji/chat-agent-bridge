@@ -151,4 +151,7 @@ export interface AppConfig {
 export interface StateSnapshot {
   sessions: SessionBinding[];
   executionHistory: ExecutionRecord[];
+  // Per-channel default working directories keyed by `provider:channelId`.
+  // Optional so state files written before this field still load.
+  channelDefaults?: Record<string, string>;
 }

@@ -14,6 +14,9 @@ export type BridgeCommand =
   | { kind: "list-failures"; limit: number }
   | { kind: "list-roots" }
   | { kind: "set-workdir"; rawPath: string }
+  | { kind: "channel-default"; action: "set"; rawPath: string }
+  | { kind: "channel-default"; action: "clear" }
+  | { kind: "channel-default"; action: "show" }
   | { kind: "set-repo"; alias: string }
   | { kind: "set-agent"; agent: AgentKind }
   | { kind: "attach"; sessionId: string }
@@ -222,6 +225,20 @@ export function parseBridgeCommand(text: string): BridgeCommand | undefined {
       kind: "restart-bridge",
       rebuild: Boolean(restartMatch[1]),
     };
+  }
+
+  const channelDefaultMatch = /^channel-default(?:\s+(.+))?$/i.exec(normalized);
+  if (channelDefaultMatch) {
+    const argument = channelDefaultMatch[1]?.trim();
+    if (!argument) {
+      return { kind: "channel-default", action: "show" };
+    }
+
+    if (argument.toLowerCase() === "clear") {
+      return { kind: "channel-default", action: "clear" };
+    }
+
+    return { kind: "channel-default", action: "set", rawPath: argument };
   }
 
   const attachMatch = /^attach\s+(.+)$/i.exec(normalized);

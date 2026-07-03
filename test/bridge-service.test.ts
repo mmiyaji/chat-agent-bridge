@@ -1842,3 +1842,137 @@ test("BridgeService skips the workdir picker when the session already has execut
   const updated = sessions.find((entry) => entry.sessionId === "session-history");
   assert.equal(updated?.bridgeState?.workdirConfirmed, true);
 });
+
+function createMessageInThread(text: string, threadId: string): IncomingChatMessage {
+  return {
+    thread: {
+      provider: "slack",
+      channelId: "C1",
+      threadId,
+    },
+    userId: "U1",
+    text,
+    requestedWorkingDirectory: "C:/repo/project",
+  };
+}
+
+test("BridgeService starts a new thread in the channel default and skips the workdir picker", async () => {
+  const { chatAdapter, store, claudeAgent, config } = await startBridge();
+  config.agentKind = "claude-code";
+  const channelDefault = "C:/repo/project";
+  config.allowedDirectories = ["C:/repo"];
+  config.repoAliases = {
+    project: channelDefault,
+    other: "C:/repo/other",
+  };
+  config.claudeProjectsDir = await seedClaudeProjectSessions(channelDefault, [
+    { id: "aaaa1111-aaaa-aaaa-aaaa-aaaaaaaaaaaa", summary: "First session", mtimeSeconds: 2000 },
+  ]);
+
+  // Set the channel default via chat command in one thread.
+  await chatAdapter.handler?.(createMessageInThread("channel-default project", "T-setup"));
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Channel default working directory set to/);
+  assert.equal(
+    path.resolve((await store.getChannelDefaultWorkingDirectory("slack", "C1")) ?? ""),
+    path.resolve(channelDefault),
+  );
+
+  // A NEW thread in the same channel runs in the default and skips the picker,
+  // but the Claude resume picker still fires.
+  await chatAdapter.handler?.(createMessageInThread("build the feature", "T-new"));
+
+  assert.equal(
+    chatAdapter.posted.some((post) => /Choose a working directory/.test(post.text)),
+    false,
+  );
+  const resumePost = chatAdapter.posted.at(-1)?.text ?? "";
+  assert.match(resumePost, /has previous Claude Code sessions/);
+
+  const newSession = (await store.listSessions()).find(
+    (entry) => entry.thread.threadId === "T-new",
+  );
+  assert.equal(
+    path.resolve(newSession?.workingDirectory ?? ""),
+    path.resolve(channelDefault),
+  );
+  assert.equal(newSession?.bridgeState?.workdirConfirmed, true);
+
+  // Resuming runs the pending instruction in the default directory.
+  await chatAdapter.handler?.(createMessageInThread("1", "T-new"));
+  await waitFor(async () => {
+    assert.equal(claudeAgent.requests.length, 1);
+  });
+  assert.equal(claudeAgent.requests[0]?.prompt, "build the feature");
+  assert.equal(
+    path.resolve(claudeAgent.requests[0]?.session.workingDirectory ?? ""),
+    path.resolve(channelDefault),
+  );
+});
+
+test("BridgeService restores the workdir picker after channel-default clear", async () => {
+  const { chatAdapter, store, agent, config } = await startBridge();
+  config.allowedDirectories = ["C:/repo"];
+  config.repoAliases = {
+    project: "C:/repo/project",
+    other: "C:/repo/other",
+  };
+
+  await chatAdapter.handler?.(createMessageInThread("channel-default project", "T-setup"));
+  await chatAdapter.handler?.(createMessageInThread("channel-default clear", "T-clear"));
+  assert.match(
+    chatAdapter.posted.at(-1)?.text ?? "",
+    /Channel default working directory cleared/,
+  );
+  assert.equal(await store.getChannelDefaultWorkingDirectory("slack", "C1"), undefined);
+
+  // A new thread now falls back to the picker again.
+  await chatAdapter.handler?.(createMessageInThread("do work", "T-fresh"));
+  assert.equal(agent.requests.length, 0);
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Choose a working directory/);
+});
+
+test("BridgeService rejects channel-default with a forbidden path", async () => {
+  const { chatAdapter, store, config } = await startBridge();
+  config.allowedDirectories = ["C:/repo"];
+  config.repoAliases = {
+    project: "C:/repo/project",
+  };
+
+  // Absolute path outside the allowed roots (and not a known alias).
+  await chatAdapter.handler?.(createMessageInThread("channel-default C:/forbidden/place", "T1"));
+
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Channel default not set/);
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /repos/);
+  assert.equal(await store.getChannelDefaultWorkingDirectory("slack", "C1"), undefined);
+});
+
+test("BridgeService lets an inline directory token override a channel default", async () => {
+  const { chatAdapter, store, agent, config } = await startBridge();
+  config.allowedDirectories = ["C:/repo"];
+  config.repoAliases = {
+    project: "C:/repo/project",
+    other: "C:/repo/other",
+  };
+  agent.result = { sessionId: "ignored", summary: "done" };
+
+  await chatAdapter.handler?.(createMessageInThread("channel-default project", "T-setup"));
+
+  // Inline token `other` wins over the channel default `project`.
+  await chatAdapter.handler?.(createMessageInThread("other fix the bug", "T-inline"));
+  await waitFor(async () => {
+    assert.equal(agent.requests.length, 1);
+  });
+
+  assert.equal(agent.requests[0]?.prompt, "fix the bug");
+  assert.equal(
+    path.resolve(agent.requests[0]?.session.workingDirectory ?? ""),
+    path.resolve("C:/repo/other"),
+  );
+  const inlineSession = (await store.listSessions()).find(
+    (entry) => entry.thread.threadId === "T-inline",
+  );
+  assert.equal(
+    path.resolve(inlineSession?.workingDirectory ?? ""),
+    path.resolve("C:/repo/other"),
+  );
+});

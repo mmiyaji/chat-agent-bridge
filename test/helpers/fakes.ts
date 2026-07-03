@@ -19,6 +19,7 @@ import { StateStore } from "../../src/state/state-store.js";
 export class InMemoryStateStore implements StateStore {
   private readonly sessions = new Map<string, SessionBinding>();
   private readonly executionRecords = new Map<string, ExecutionRecord>();
+  private readonly channelDefaults = new Map<string, string>();
 
   async initialize(): Promise<void> {}
 
@@ -57,6 +58,32 @@ export class InMemoryStateStore implements StateStore {
     }
 
     return filtered.slice(0, input.limit);
+  }
+
+  async getChannelDefaultWorkingDirectory(
+    provider: string,
+    channelId: string,
+  ): Promise<string | undefined> {
+    return this.channelDefaults.get(`${provider}:${channelId}`);
+  }
+
+  async setChannelDefaultWorkingDirectory(
+    provider: string,
+    channelId: string,
+    workingDirectory: string,
+  ): Promise<void> {
+    this.channelDefaults.set(`${provider}:${channelId}`, workingDirectory);
+  }
+
+  async clearChannelDefaultWorkingDirectory(
+    provider: string,
+    channelId: string,
+  ): Promise<void> {
+    this.channelDefaults.delete(`${provider}:${channelId}`);
+  }
+
+  async listChannelDefaultWorkingDirectories(): Promise<Record<string, string>> {
+    return Object.fromEntries(this.channelDefaults.entries());
   }
 }
 

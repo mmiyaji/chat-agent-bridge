@@ -7,6 +7,10 @@ const MAX_EXECUTION_HISTORY = 500;
 const ARCHIVE_THRESHOLD = 600;
 const DEBOUNCE_MS = 100;
 
+function channelDefaultKey(provider: string, channelId: string): string {
+  return `${provider}:${channelId}`;
+}
+
 export class FileStateStore implements StateStore {
   private readonly tempFilePath: string;
 
@@ -86,6 +90,50 @@ export class FileStateStore implements StateStore {
     });
   }
 
+  async getChannelDefaultWorkingDirectory(
+    provider: string,
+    channelId: string,
+  ): Promise<string | undefined> {
+    const snapshot = await this.readSnapshot();
+    return snapshot.channelDefaults?.[channelDefaultKey(provider, channelId)];
+  }
+
+  async setChannelDefaultWorkingDirectory(
+    provider: string,
+    channelId: string,
+    workingDirectory: string,
+  ): Promise<void> {
+    const snapshot = await this.readSnapshot();
+    await this.writeSnapshot({
+      ...snapshot,
+      channelDefaults: {
+        ...(snapshot.channelDefaults ?? {}),
+        [channelDefaultKey(provider, channelId)]: workingDirectory,
+      },
+    });
+  }
+
+  async clearChannelDefaultWorkingDirectory(
+    provider: string,
+    channelId: string,
+  ): Promise<void> {
+    const snapshot = await this.readSnapshot();
+    if (!snapshot.channelDefaults) {
+      return;
+    }
+    const nextChannelDefaults = { ...snapshot.channelDefaults };
+    delete nextChannelDefaults[channelDefaultKey(provider, channelId)];
+    await this.writeSnapshot({
+      ...snapshot,
+      channelDefaults: nextChannelDefaults,
+    });
+  }
+
+  async listChannelDefaultWorkingDirectories(): Promise<Record<string, string>> {
+    const snapshot = await this.readSnapshot();
+    return { ...(snapshot.channelDefaults ?? {}) };
+  }
+
   async listExecutionRecords(input?: {
     sessionId?: string;
     limit?: number;
@@ -110,9 +158,14 @@ export class FileStateStore implements StateStore {
     try {
       const raw = await fs.readFile(this.filePath, "utf8");
       const parsed = JSON.parse(raw) as Partial<StateSnapshot>;
-      const snapshot = {
+      const channelDefaults =
+        parsed.channelDefaults && typeof parsed.channelDefaults === "object"
+          ? parsed.channelDefaults
+          : {};
+      const snapshot: StateSnapshot = {
         sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
         executionHistory: Array.isArray(parsed.executionHistory) ? parsed.executionHistory : [],
+        channelDefaults,
       };
       this.lastKnownSnapshot = snapshot;
       return snapshot;

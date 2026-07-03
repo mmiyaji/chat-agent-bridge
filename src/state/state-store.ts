@@ -10,4 +10,15 @@ export interface StateStore {
     sessionId?: string;
     limit?: number;
   }): Promise<ExecutionRecord[]>;
+  getChannelDefaultWorkingDirectory(
+    provider: string,
+    channelId: string,
+  ): Promise<string | undefined>;
+  setChannelDefaultWorkingDirectory(
+    provider: string,
+    channelId: string,
+    workingDirectory: string,
+  ): Promise<void>;
+  clearChannelDefaultWorkingDirectory(provider: string, channelId: string): Promise<void>;
+  listChannelDefaultWorkingDirectories(): Promise<Record<string, string>>;
 }
