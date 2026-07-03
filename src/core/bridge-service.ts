@@ -23,6 +23,7 @@ import {
   resolveRequestedWorkingDirectory,
 } from "./commands.js";
 import { JobQueue } from "./job-queue.js";
+import { assertPathAllowed } from "./paths.js";
 import { SessionManager } from "./session-manager.js";
 import {
   AgentProgressUpdate,
@@ -47,6 +48,11 @@ interface BridgeServiceDeps {
 
 interface SessionPickerState {
   sessionIds: string[];
+  pendingPrompt?: string;
+}
+
+interface WorkdirPickerState {
+  aliases: string[];
   pendingPrompt?: string;
 }
 
@@ -187,6 +193,28 @@ function readSessionPicker(
   const pendingPrompt = picker.pendingPrompt;
   return {
     sessionIds: sessionIds as string[],
+    ...(typeof pendingPrompt === "string" && pendingPrompt.length > 0
+      ? { pendingPrompt }
+      : {}),
+  };
+}
+
+function readWorkdirPicker(
+  bridgeState: Record<string, JsonValue> | undefined,
+): WorkdirPickerState | undefined {
+  const picker = bridgeState?.workdirPicker;
+  if (!picker || typeof picker !== "object" || Array.isArray(picker)) {
+    return undefined;
+  }
+
+  const aliases = picker.aliases;
+  if (!Array.isArray(aliases) || aliases.some((alias) => typeof alias !== "string")) {
+    return undefined;
+  }
+
+  const pendingPrompt = picker.pendingPrompt;
+  return {
+    aliases: aliases as string[],
     ...(typeof pendingPrompt === "string" && pendingPrompt.length > 0
       ? { pendingPrompt }
       : {}),
@@ -586,6 +614,9 @@ export class BridgeService {
     if (session.bridgeState?.resumeOffered === true) {
       nextBridgeState.resumeOffered = true;
     }
+    if (session.bridgeState?.workdirConfirmed === true) {
+      nextBridgeState.workdirConfirmed = true;
+    }
     return {
       ...nextBridgeState,
       ...(overrides ?? {}),
@@ -705,6 +736,18 @@ export class BridgeService {
       });
 
       const trimmedText = message.text.trim();
+      // workdirPicker replies (a number or `keep`) must route before the
+      // sessionPicker check and before bridge-command parsing, since `keep`
+      // and bare numbers are not bridge commands.
+      const looksLikeWorkdirReply =
+        /^\d+$/.test(trimmedText) || /^keep$/i.test(trimmedText);
+      if (looksLikeWorkdirReply && readWorkdirPicker(currentSession.bridgeState)) {
+        const handled = await this.handleWorkdirPickerSelection(currentSession, message);
+        if (handled) {
+          return;
+        }
+      }
+
       const looksLikePickerReply =
         /^\d+$/.test(trimmedText) || /^(new|start)$/i.test(trimmedText);
       if (looksLikePickerReply && readSessionPicker(currentSession.bridgeState)) {
@@ -735,7 +778,20 @@ export class BridgeService {
         return;
       }
 
-      const resumeResult = await this.maybeOfferResume(currentSession, message);
+      const workdirResult = await this.maybeOfferWorkdir(currentSession, message);
+      if (workdirResult.offered) {
+        return;
+      }
+      currentSession = workdirResult.session;
+
+      // maybeOfferWorkdir may strip an inline directory token from the first
+      // mention, leaving only the remaining instruction to execute.
+      const promptText = workdirResult.text;
+
+      const resumeResult = await this.maybeOfferResume(currentSession, {
+        ...message,
+        text: promptText,
+      });
       if (resumeResult.offered) {
         return;
       }
@@ -753,7 +809,7 @@ export class BridgeService {
         const approvalPolicy = this.resolveApprovalPolicy(currentSession);
         executionRecord = this.createExecutionRecord({
           session: currentSession,
-          prompt: message.text,
+          prompt: promptText,
           approvalPolicy,
           networkAccess: this.deps.config.networkAccess,
         });
@@ -770,13 +826,13 @@ export class BridgeService {
           workingDirectory: currentSession.workingDirectory,
           approvalPolicy,
           networkAccess: this.deps.config.networkAccess,
-          prompt: message.text,
+          prompt: promptText,
         });
         await this.logExecutionEnvironment(currentSession, approvalPolicy);
 
         const result = await sessionAgent.execute({
           session: currentSession,
-          prompt: message.text,
+          prompt: promptText,
           approvalPolicy,
           networkAccess: this.deps.config.networkAccess,
           allowedDirectories: this.deps.config.allowedDirectories,
@@ -784,7 +840,7 @@ export class BridgeService {
         });
 
         const persistInput: Parameters<BridgeService["persistSessionAfterRun"]>[1] = {
-          prompt: message.text,
+          prompt: promptText,
           resultSummary: result.summary,
         };
 
@@ -829,14 +885,14 @@ export class BridgeService {
           await this.deps.auditLogger.log({
             type: "bridge.approval.requested",
             sessionId: currentSession.sessionId,
-            prompt: message.text,
+            prompt: promptText,
             reason: result.summary,
           });
         await this.deps.chatAdapter.postThreadMessage(
             responseThread,
             [
               "Approval required.",
-              `Pending request: \`${this.truncateForCode(message.text, 120)}\``,
+              `Pending request: \`${this.truncateForCode(promptText, 120)}\``,
               "Reply `@Chat Agent Bridge approve` to rerun it with write access, or `@Chat Agent Bridge reject` to clear it.",
             ].join("\n"),
             {
@@ -902,7 +958,7 @@ export class BridgeService {
             responseThread,
             `Execution failed (attempt ${nextRetry}/${maxRetries}). Retrying...`,
           );
-          await this.handleMessage(message);
+          await this.handleMessage({ ...message, text: promptText });
           return;
         }
 
@@ -976,6 +1032,9 @@ export class BridgeService {
           "- `@Chat Agent Bridge restart bridge`",
           "- `@Chat Agent Bridge approve`",
           "- `@Chat Agent Bridge reject`",
+          "First message of a thread:",
+          "- `@Chat Agent Bridge <repo-alias|absolute-path> <instruction>` starts in that directory",
+          "- A fresh thread with no directory shows a numbered directory picker before running",
         ].join("\n"),
       );
       return;
@@ -1421,6 +1480,7 @@ export class BridgeService {
       await this.updateSessionWorkingDirectory(session, message, {
         workingDirectory,
         source: `repo ${command.alias}`,
+        extraBridgeState: { workdirConfirmed: true },
       });
       return;
     }
@@ -1436,6 +1496,7 @@ export class BridgeService {
       await this.updateSessionWorkingDirectory(session, message, {
         workingDirectory,
         source: command.rawPath,
+        extraBridgeState: { workdirConfirmed: true },
       });
     } catch (error) {
       const text =
@@ -1631,8 +1692,10 @@ export class BridgeService {
     input: {
       workingDirectory: string;
       source: string;
+      // Extra bridgeState keys merged before persisting (e.g. workdirConfirmed).
+      extraBridgeState?: Record<string, JsonValue>;
     },
-  ): Promise<void> {
+  ): Promise<SessionBinding> {
     const directoryChanged =
       path.resolve(session.workingDirectory) !== path.resolve(input.workingDirectory);
     const detachClaude =
@@ -1653,7 +1716,12 @@ export class BridgeService {
       delete nextBridgeState.resumeOffered;
       delete nextBridgeState.sessionPicker;
       nextSession.agentState = {};
-      nextSession.bridgeState = nextBridgeState;
+      nextSession.bridgeState = { ...nextBridgeState, ...(input.extraBridgeState ?? {}) };
+    } else if (input.extraBridgeState) {
+      nextSession.bridgeState = {
+        ...(session.bridgeState ?? {}),
+        ...input.extraBridgeState,
+      };
     }
 
     await this.deps.stateStore.upsertSession(nextSession);
@@ -1666,7 +1734,7 @@ export class BridgeService {
       ...(detachClaude ? { detachedAgentSession: true } : {}),
     });
     const lines = [
-      `Session \`${session.sessionId}\` is now bound to \`${input.workingDirectory}\`.`,
+      `Session \`${session.sessionId}\` is now bound to \`${input.workingDirectory}\`. Send your next instruction to continue.`,
     ];
     if (detachClaude) {
       lines.push(
@@ -1674,6 +1742,8 @@ export class BridgeService {
       );
     }
     await this.deps.chatAdapter.postThreadMessage(message.thread, lines.join("\n"));
+
+    return nextSession;
   }
 
   private async attachAgentSession(
@@ -1704,6 +1774,226 @@ export class BridgeService {
       message.thread,
       `Bridge session \`${session.sessionId}\` is now attached to ${formatAgentDisplayName(session.agent)} session \`${agentSessionId}\`.`,
     );
+  }
+
+  private async maybeOfferWorkdir(
+    session: SessionBinding,
+    message: IncomingChatMessage,
+  ): Promise<{ offered: boolean; session: SessionBinding; text: string }> {
+    const text = message.text;
+    if (session.bridgeState?.workdirConfirmed === true) {
+      return { offered: false, session, text };
+    }
+
+    if (
+      readWorkdirPicker(session.bridgeState) ||
+      readSessionPicker(session.bridgeState)
+    ) {
+      return { offered: false, session, text };
+    }
+
+    if (readAgentSessionId(session)) {
+      return { offered: false, session, text };
+    }
+
+    const priorExecutions = await this.deps.stateStore.listExecutionRecords({
+      sessionId: session.sessionId,
+      limit: 1,
+    });
+    if (priorExecutions.length > 0) {
+      // An existing conversation already picked a working directory implicitly;
+      // record that so this check short-circuits on subsequent messages.
+      const nextSession = await this.persistWorkdirConfirmed(session);
+      return { offered: false, session: nextSession, text };
+    }
+
+    // (a) Inline directory token as the first word of the instruction.
+    const trimmed = text.trim();
+    const firstToken = trimmed.split(/\s+/, 1)[0] ?? "";
+    const aliasKey = firstToken.toLowerCase();
+    const aliasTarget = this.deps.config.repoAliases[aliasKey];
+    const looksLikePath =
+      firstToken.includes("/") || firstToken.includes("\\") || /^[A-Za-z]:/.test(firstToken);
+
+    let inlineDirectory: string | undefined;
+    if (aliasTarget) {
+      inlineDirectory = aliasTarget;
+    } else if (looksLikePath && firstToken.length > 0) {
+      let resolved: string | undefined;
+      try {
+        const candidate = path.resolve(firstToken);
+        assertPathAllowed(candidate, this.deps.config.allowedDirectories);
+        if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+          resolved = candidate;
+        }
+      } catch {
+        resolved = undefined;
+      }
+
+      if (!resolved) {
+        // The token clearly looks like a path but is not allowed or does not
+        // exist. Surface an error instead of running in the wrong folder.
+        await this.deps.chatAdapter.postThreadMessage(
+          message.thread,
+          [
+            `Directory not allowed or not found: \`${firstToken}\``,
+            "Run `@Chat Agent Bridge repos` to see the allowed roots.",
+          ].join("\n"),
+        );
+        return { offered: true, session, text };
+      }
+
+      inlineDirectory = resolved;
+    }
+
+    if (inlineDirectory) {
+      const updated = await this.updateSessionWorkingDirectory(session, message, {
+        workingDirectory: inlineDirectory,
+        source: aliasTarget ? `repo ${aliasKey}` : firstToken,
+        extraBridgeState: { workdirConfirmed: true },
+      });
+      const remainder = trimmed.slice(firstToken.length).trim();
+      if (remainder.length === 0) {
+        return { offered: true, session: updated, text: remainder };
+      }
+
+      return { offered: false, session: updated, text: remainder };
+    }
+
+    // (b) Numbered directory picker over the allowed repo aliases.
+    const aliasEntries = Object.keys(this.deps.config.repoAliases).sort((left, right) =>
+      left.localeCompare(right),
+    );
+    if (aliasEntries.length === 0) {
+      const nextSession = await this.persistWorkdirConfirmed(session);
+      return { offered: false, session: nextSession, text };
+    }
+
+    const nextSession: SessionBinding = {
+      ...session,
+      updatedAt: new Date().toISOString(),
+      bridgeState: this.buildSessionBridgeState(session, {
+        workdirPicker: {
+          aliases: aliasEntries,
+          pendingPrompt: message.text,
+        },
+      }),
+    };
+    await this.deps.stateStore.upsertSession(nextSession);
+    await this.deps.auditLogger.log({
+      type: "bridge.workdir-picker.opened",
+      sessionId: session.sessionId,
+      candidateCount: aliasEntries.length,
+    });
+
+    const lines = [
+      `Choose a working directory for this thread (allowed roots only). Reply with a number, or \`keep\` to stay on \`${session.workingDirectory}\`.`,
+      ...aliasEntries.map(
+        (alias, index) =>
+          `${index + 1}. \`${alias}\` -> \`${this.deps.config.repoAliases[alias]}\``,
+      ),
+    ];
+    await this.deps.chatAdapter.postThreadMessage(message.thread, lines.join("\n"));
+
+    return { offered: true, session: nextSession, text };
+  }
+
+  private async persistWorkdirConfirmed(session: SessionBinding): Promise<SessionBinding> {
+    if (session.bridgeState?.workdirConfirmed === true) {
+      return session;
+    }
+
+    const nextSession: SessionBinding = {
+      ...session,
+      updatedAt: new Date().toISOString(),
+      bridgeState: this.buildSessionBridgeState(session, {
+        workdirConfirmed: true,
+      }),
+    };
+    await this.deps.stateStore.upsertSession(nextSession);
+    return nextSession;
+  }
+
+  private async handleWorkdirPickerSelection(
+    session: SessionBinding,
+    message: IncomingChatMessage,
+  ): Promise<boolean> {
+    const picker = readWorkdirPicker(session.bridgeState);
+    if (!picker) {
+      return false;
+    }
+
+    const pendingPrompt = picker.pendingPrompt;
+    const normalized = message.text.trim().toLowerCase();
+
+    if (normalized === "keep") {
+      const nextBridgeState = { ...(session.bridgeState ?? {}) };
+      delete nextBridgeState.workdirPicker;
+      const nextSession: SessionBinding = {
+        ...session,
+        updatedAt: new Date().toISOString(),
+        bridgeState: {
+          ...nextBridgeState,
+          workdirConfirmed: true,
+        },
+      };
+      await this.deps.stateStore.upsertSession(nextSession);
+      await this.deps.auditLogger.log({
+        type: "bridge.workdir-picker.kept",
+        sessionId: session.sessionId,
+        workingDirectory: session.workingDirectory,
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        `Keeping working directory \`${session.workingDirectory}\`.`,
+      );
+      this.dispatchPendingPrompt(message, pendingPrompt);
+      return true;
+    }
+
+    const selectedIndex = Number.parseInt(normalized, 10);
+    if (
+      !Number.isFinite(selectedIndex) ||
+      selectedIndex < 1 ||
+      selectedIndex > picker.aliases.length
+    ) {
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        `Invalid selection. Reply with a number from 1 to ${picker.aliases.length}, or \`keep\`.`,
+      );
+      return true;
+    }
+
+    const alias = picker.aliases[selectedIndex - 1] ?? "";
+    const workingDirectory = this.deps.config.repoAliases[alias];
+    if (!workingDirectory) {
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        `Invalid selection. Reply with a number from 1 to ${picker.aliases.length}, or \`keep\`.`,
+      );
+      return true;
+    }
+
+    // updateSessionWorkingDirectory clears the workdirPicker via buildSessionBridgeState
+    // (which does not preserve it) when detaching; for the non-detach path we drop it
+    // by rebuilding bridgeState below through extraBridgeState + buildSessionBridgeState.
+    const cleared: SessionBinding = {
+      ...session,
+      bridgeState: this.buildSessionBridgeState(session),
+    };
+    await this.updateSessionWorkingDirectory(cleared, message, {
+      workingDirectory,
+      source: `repo ${alias}`,
+      extraBridgeState: { workdirConfirmed: true },
+    });
+    await this.deps.auditLogger.log({
+      type: "bridge.workdir-picker.selected",
+      sessionId: session.sessionId,
+      alias,
+      workingDirectory,
+    });
+    this.dispatchPendingPrompt(message, pendingPrompt);
+    return true;
   }
 
   private async maybeOfferResume(

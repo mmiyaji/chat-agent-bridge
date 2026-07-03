@@ -19,9 +19,10 @@ function createConfig(): AppConfig {
     chatProvider: "slack",
     agentKind: "codex",
     allowedDirectories: ["C:/repo"],
-    repoAliases: {
-      repo: "C:/repo",
-    },
+    // Empty by default so fresh threads run in the current cwd without a
+    // working-directory picker. Tests that exercise the picker configure
+    // aliases explicitly.
+    repoAliases: {},
     defaultApprovalPolicy: "manual",
     networkAccess: "disabled",
     slackMode: "http",
@@ -1456,4 +1457,272 @@ test("BridgeService clears the Claude session and re-arms resume when the folder
   assert.equal(updated?.bridgeState?.resumeOffered, undefined);
   assert.equal(updated?.bridgeState?.sessionPicker, undefined);
   assert.match(chatAdapter.posted.at(-1)?.text ?? "", /detached because the folder changed/);
+});
+
+test("BridgeService opens a workdir picker on a fresh thread with no directory", async () => {
+  const { chatAdapter, store, agent, config, auditLogger } = await startBridge();
+  config.allowedDirectories = ["C:/repo", "C:/other"];
+  config.repoAliases = {
+    repo: "C:/repo",
+    other: "C:/other",
+  };
+
+  await chatAdapter.handler?.(createMessage("do work"));
+
+  assert.equal(agent.requests.length, 0);
+  const picker = chatAdapter.posted.at(-1)?.text ?? "";
+  assert.match(picker, /Choose a working directory for this thread/);
+  assert.match(picker, /1\. `other`/);
+  assert.match(picker, /2\. `repo`/);
+
+  const sessions = await store.listSessions();
+  const storedPicker = sessions[0]?.bridgeState?.workdirPicker as
+    | { aliases: string[]; pendingPrompt?: string }
+    | undefined;
+  assert.deepEqual(storedPicker?.aliases, ["other", "repo"]);
+  assert.equal(storedPicker?.pendingPrompt, "do work");
+  assert.equal(
+    auditLogger.events.some((event) => event.type === "bridge.workdir-picker.opened"),
+    true,
+  );
+});
+
+test("BridgeService binds the selected alias and cascades into the resume picker", async () => {
+  const { chatAdapter, store, claudeAgent, config } = await startBridge();
+  config.agentKind = "claude-code";
+  const workingDirectory = "C:/repo/project";
+  config.allowedDirectories = ["C:/repo"];
+  config.repoAliases = {
+    // Two aliases so index 2 (sorted) is a meaningful pick.
+    alpha: "C:/repo/alpha",
+    project: workingDirectory,
+  };
+  config.claudeProjectsDir = await seedClaudeProjectSessions(workingDirectory, [
+    { id: "aaaa1111-aaaa-aaaa-aaaa-aaaaaaaaaaaa", summary: "First session", mtimeSeconds: 2000 },
+  ]);
+
+  await chatAdapter.handler?.(createMessage("build the feature"));
+
+  // Sorted aliases: ["alpha", "project"]; pick #2 -> project.
+  const workdirPicker = chatAdapter.posted.at(-1)?.text ?? "";
+  assert.match(workdirPicker, /Choose a working directory/);
+
+  await chatAdapter.handler?.(createMessage("2"));
+
+  await waitFor(async () => {
+    const resumePost = chatAdapter.posted.at(-1)?.text ?? "";
+    assert.match(resumePost, /has previous Claude Code sessions/);
+  });
+
+  await chatAdapter.handler?.(createMessage("1"));
+
+  await waitFor(async () => {
+    assert.equal(claudeAgent.requests.length, 1);
+  });
+
+  assert.equal(claudeAgent.requests[0]?.prompt, "build the feature");
+  assert.equal(
+    claudeAgent.requests[0]?.session.agentState?.claudeSessionId,
+    "aaaa1111-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  );
+  assert.equal(claudeAgent.requests[0]?.session.workingDirectory, workingDirectory);
+
+  const sessions = await store.listSessions();
+  assert.equal(sessions[0]?.bridgeState?.workdirConfirmed, true);
+  assert.equal(sessions[0]?.bridgeState?.workdirPicker, undefined);
+});
+
+test("BridgeService keeps the current directory when the workdir picker reply is keep", async () => {
+  const { chatAdapter, store, agent, config } = await startBridge();
+  config.allowedDirectories = ["C:/repo"];
+  config.repoAliases = {
+    repo: "C:/repo",
+  };
+  agent.result = {
+    sessionId: "ignored",
+    summary: "done",
+  };
+
+  await chatAdapter.handler?.(createMessage("do work"));
+  await chatAdapter.handler?.(createMessage("keep"));
+
+  await waitFor(async () => {
+    assert.equal(agent.requests.length, 1);
+  });
+
+  assert.equal(agent.requests[0]?.prompt, "do work");
+  assert.equal(
+    path.resolve(agent.requests[0]?.session.workingDirectory ?? ""),
+    path.resolve("C:/repo/project"),
+  );
+
+  const sessions = await store.listSessions();
+  assert.equal(sessions[0]?.bridgeState?.workdirConfirmed, true);
+  assert.equal(sessions[0]?.bridgeState?.workdirPicker, undefined);
+  assert.equal(
+    chatAdapter.posted.some((post) => /Keeping working directory/.test(post.text)),
+    true,
+  );
+});
+
+test("BridgeService binds an inline alias token and runs the remaining instruction", async () => {
+  const { chatAdapter, store, agent, config } = await startBridge();
+  config.allowedDirectories = ["C:/repo", "C:/other"];
+  config.repoAliases = {
+    repo: "C:/repo",
+    other: "C:/other",
+  };
+  agent.result = {
+    sessionId: "ignored",
+    summary: "done",
+  };
+
+  await chatAdapter.handler?.(createMessage("other do something"));
+
+  await waitFor(async () => {
+    assert.equal(agent.requests.length, 1);
+  });
+
+  assert.equal(agent.requests[0]?.prompt, "do something");
+  assert.equal(agent.requests[0]?.session.workingDirectory, "C:/other");
+
+  const sessions = await store.listSessions();
+  assert.equal(sessions[0]?.bridgeState?.workdirConfirmed, true);
+  assert.equal(sessions[0]?.bridgeState?.workdirPicker, undefined);
+  // No workdir picker was ever posted.
+  assert.equal(
+    chatAdapter.posted.some((post) => /Choose a working directory/.test(post.text)),
+    false,
+  );
+});
+
+test("BridgeService binds an inline absolute path with no instruction and waits", async () => {
+  const { chatAdapter, store, agent, config } = await startBridge();
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-inline-abs-"));
+  const childDir = path.join(tempRoot, "child");
+  await fs.mkdir(childDir, { recursive: true });
+  config.allowedDirectories = [tempRoot];
+  config.repoAliases = {};
+
+  const message: IncomingChatMessage = {
+    thread: { provider: "slack", channelId: "C1", threadId: "T1" },
+    userId: "U1",
+    text: childDir,
+    requestedWorkingDirectory: tempRoot,
+  };
+  await chatAdapter.handler?.(message);
+
+  assert.equal(agent.requests.length, 0);
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /is now bound to/);
+
+  const sessions = await store.listSessions();
+  assert.equal(sessions[0]?.bridgeState?.workdirConfirmed, true);
+  assert.equal(path.resolve(sessions[0]?.workingDirectory ?? ""), path.resolve(childDir));
+
+  // A later instruction flows normally without another picker.
+  agent.result = { sessionId: "ignored", summary: "done" };
+  await chatAdapter.handler?.(createMessage("do work"));
+  await waitFor(async () => {
+    assert.equal(agent.requests.length, 1);
+  });
+  assert.equal(agent.requests[0]?.prompt, "do work");
+});
+
+test("BridgeService rejects an inline path outside allowed roots without executing", async () => {
+  const { chatAdapter, store, agent, config } = await startBridge();
+  config.allowedDirectories = ["C:/repo"];
+  config.repoAliases = {
+    repo: "C:/repo",
+  };
+
+  await chatAdapter.handler?.(createMessage("C:/forbidden/place fix the bug"));
+
+  assert.equal(agent.requests.length, 0);
+  assert.match(
+    chatAdapter.posted.at(-1)?.text ?? "",
+    /Directory not allowed or not found: `C:\/forbidden\/place`/,
+  );
+  const sessions = await store.listSessions();
+  assert.equal(sessions[0]?.bridgeState?.workdirConfirmed, undefined);
+});
+
+test("BridgeService treats a non-matching first word as prose and shows the picker", async () => {
+  const { chatAdapter, store, agent, config } = await startBridge();
+  config.allowedDirectories = ["C:/repo"];
+  config.repoAliases = {
+    repo: "C:/repo",
+  };
+
+  await chatAdapter.handler?.(createMessage("please fix the bug"));
+
+  assert.equal(agent.requests.length, 0);
+  const picker = chatAdapter.posted.at(-1)?.text ?? "";
+  assert.match(picker, /Choose a working directory/);
+  assert.doesNotMatch(picker, /Directory not allowed/);
+
+  const sessions = await store.listSessions();
+  const storedPicker = sessions[0]?.bridgeState?.workdirPicker as
+    | { aliases: string[]; pendingPrompt?: string }
+    | undefined;
+  assert.equal(storedPicker?.pendingPrompt, "please fix the bug");
+});
+
+test("BridgeService skips the workdir picker when the session already has execution history", async () => {
+  const { chatAdapter, store, agent, config } = await startBridge();
+  config.allowedDirectories = ["C:/repo"];
+  config.repoAliases = {
+    repo: "C:/repo",
+  };
+  agent.result = {
+    sessionId: "ignored",
+    summary: "done",
+  };
+
+  await store.upsertSession({
+    sessionId: "session-history",
+    agent: "codex",
+    thread: {
+      provider: "slack",
+      channelId: "C1",
+      threadId: "T1",
+    },
+    workingDirectory: "C:/repo/project",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    agentState: {},
+    bridgeState: {
+      connectionMode: "bridge-owned",
+    },
+  });
+  await store.upsertExecutionRecord({
+    executionId: "exec-1",
+    sessionId: "session-history",
+    thread: {
+      provider: "slack",
+      channelId: "C1",
+      threadId: "T1",
+    },
+    agent: "codex",
+    prompt: "earlier",
+    workingDirectory: "C:/repo/project",
+    approvalPolicy: "manual",
+    networkAccess: "disabled",
+    status: "completed",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  await chatAdapter.handler?.(createMessage("do work"));
+
+  await waitFor(async () => {
+    assert.equal(agent.requests.length, 1);
+  });
+  assert.equal(agent.requests[0]?.prompt, "do work");
+  assert.equal(
+    chatAdapter.posted.some((post) => /Choose a working directory/.test(post.text)),
+    false,
+  );
+  const sessions = await store.listSessions();
+  const updated = sessions.find((entry) => entry.sessionId === "session-history");
+  assert.equal(updated?.bridgeState?.workdirConfirmed, true);
 });
