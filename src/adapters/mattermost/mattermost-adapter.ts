@@ -16,6 +16,9 @@ import {
 
 const require = createRequire(import.meta.url);
 
+const MATTERMOST_API_TIMEOUT_MS = 15000;
+const MATTERMOST_PING_INTERVAL_MS = 30000;
+
 interface MattermostWebhookPayload {
   token?: string;
   team_id?: string;
@@ -174,6 +177,13 @@ async function fetchJson<T>(input: {
     );
 
     request.on("error", reject);
+    request.setTimeout(MATTERMOST_API_TIMEOUT_MS, () => {
+      request.destroy(
+        new Error(
+          `Mattermost API request timed out after ${MATTERMOST_API_TIMEOUT_MS}ms: ${input.method} ${url.pathname}`,
+        ),
+      );
+    });
     request.end(input.body ?? "");
   });
 }
@@ -189,6 +199,9 @@ export class MattermostAdapter implements ChatAdapter {
   private socketReconnectTimer: NodeJS.Timeout | undefined;
   private socketReconnectDelayMs = 1000;
   private socketSeq = 1;
+  private readonly pingIntervalMs: number;
+  private pingTimer: NodeJS.Timeout | undefined;
+  private messageSinceLastPing = false;
   private selfUserId: string | undefined;
   private selfUsername: string | undefined;
   private stopped = false;
@@ -215,8 +228,10 @@ export class MattermostAdapter implements ChatAdapter {
     dependencies?: {
       mattermostApiFetch?: typeof fetchJson;
       socketFactory?: (url: string) => MattermostSocketLike;
+      pingIntervalMs?: number;
     },
   ) {
+    this.pingIntervalMs = dependencies?.pingIntervalMs ?? MATTERMOST_PING_INTERVAL_MS;
     this.options = {
       port: config.port,
       host: config.host,
@@ -317,6 +332,7 @@ export class MattermostAdapter implements ChatAdapter {
 
   async stop(): Promise<void> {
     this.stopped = true;
+    this.clearPingTimer();
     if (this.socketReconnectTimer) {
       clearTimeout(this.socketReconnectTimer);
       this.socketReconnectTimer = undefined;
@@ -650,6 +666,8 @@ export class MattermostAdapter implements ChatAdapter {
     websocketUrl.protocol = websocketUrl.protocol === "https:" ? "wss:" : "ws:";
     const socket = this.socketFactory(websocketUrl.toString());
     this.socket = socket;
+    const authSeq = this.socketSeq;
+    this.socketSeq += 1;
     let authenticated = false;
     let resolveAuthenticated: (() => void) | undefined;
     let rejectAuthenticated: ((error: Error) => void) | undefined;
@@ -661,31 +679,51 @@ export class MattermostAdapter implements ChatAdapter {
     socket.addEventListener("open", () => {
       socket.send(
         JSON.stringify({
-          seq: this.socketSeq,
+          seq: authSeq,
           action: "authentication_challenge",
           data: {
             token: this.options.botToken,
           },
         }),
       );
-      this.socketSeq += 1;
     });
 
     socket.addEventListener("message", (event) => {
+      this.messageSinceLastPing = true;
       const raw = typeof event.data === "string" ? event.data : String(event.data ?? "");
       void this.handleSocketMessage(raw, {
+        authSeq,
         onAuthenticated: () => {
           authenticated = true;
           resolveAuthenticated?.();
           resolveAuthenticated = undefined;
           rejectAuthenticated = undefined;
+          this.startPingLoop(socket);
         },
       }).catch((error: unknown) => {
         console.error("Mattermost websocket handler failed.", error);
       });
     });
 
+    socket.addEventListener("error", (event) => {
+      const error = event as { message?: string; error?: { message?: string } };
+      const message =
+        error.error?.message ?? error.message ?? "Mattermost websocket encountered an error.";
+      logger.error("Mattermost websocket error.", { error: message });
+      this.updateConnectionStatus({
+        state: this.connectionStatus.state,
+        connected: this.connectionStatus.connected,
+        statusText: this.connectionStatus.statusText,
+        lastError: message,
+      });
+      void this.auditLogger.log({
+        type: "mattermost.websocket.error",
+        error: message,
+      });
+    });
+
     socket.addEventListener("close", () => {
+      this.clearPingTimer();
       void this.auditLogger.log({
         type: "mattermost.websocket.closed",
       });
@@ -767,14 +805,62 @@ export class MattermostAdapter implements ChatAdapter {
     }, delayMs);
   }
 
+  private startPingLoop(socket: MattermostSocketLike): void {
+    this.clearPingTimer();
+    this.messageSinceLastPing = true;
+    const timer = setInterval(() => {
+      if (this.socket !== socket) {
+        return;
+      }
+
+      if (!this.messageSinceLastPing) {
+        logger.error("Mattermost websocket ping timed out. Closing socket.", {
+          intervalMs: this.pingIntervalMs,
+        });
+        void this.auditLogger.log({
+          type: "mattermost.websocket.ping-timeout",
+          intervalMs: this.pingIntervalMs,
+        });
+        this.clearPingTimer();
+        socket.close();
+        return;
+      }
+
+      this.messageSinceLastPing = false;
+      socket.send(
+        JSON.stringify({
+          seq: this.socketSeq,
+          action: "ping",
+        }),
+      );
+      this.socketSeq += 1;
+    }, this.pingIntervalMs);
+    if (typeof timer.unref === "function") {
+      timer.unref();
+    }
+    this.pingTimer = timer;
+  }
+
+  private clearPingTimer(): void {
+    if (this.pingTimer) {
+      clearInterval(this.pingTimer);
+      this.pingTimer = undefined;
+    }
+  }
+
   private async handleSocketMessage(
     rawMessage: string,
     input: {
+      authSeq: number;
       onAuthenticated: () => void;
     },
   ): Promise<void> {
     const event = JSON.parse(rawMessage) as MattermostWebSocketEvent;
-    if (event.status === "OK" && event.seq_reply === 1) {
+    if (event.event === "hello") {
+      return;
+    }
+
+    if (event.status === "OK" && event.seq_reply === input.authSeq) {
       input.onAuthenticated();
       await this.auditLogger.log({
         type: "mattermost.websocket.authenticated",

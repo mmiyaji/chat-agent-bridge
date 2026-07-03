@@ -690,6 +690,219 @@ test("MattermostAdapter ignores one-to-one DMs with other users in self mode", a
   await adapter.stop();
 });
 
+test("MattermostAdapter re-authenticates after a reconnect with a fresh challenge seq", async () => {
+  let messageHandler: ((event: { data?: unknown }) => void) | undefined;
+  let closeHandler: ((event: { data?: unknown }) => void) | undefined;
+  let connectionCount = 0;
+  const adapter = new MattermostAdapter(
+    {
+      port: 0,
+      host: "127.0.0.1",
+      defaultWorkingDirectory: "C:/repo",
+      mattermostMode: "websocket",
+      mattermostActorMode: "self",
+      mattermostServerUrl: "https://mattermost.example.local",
+      mattermostBotToken: "bot-token",
+    },
+    undefined,
+    {
+      mattermostApiFetch: async <T>(input: { url: string }) => {
+        if (/\/api\/v4\/users\/me$/.test(input.url)) {
+          return {
+            id: "bot-user",
+            username: "bridgebot",
+          } as T;
+        }
+
+        return {
+          id: "channel-1",
+          type: "D",
+        } as T;
+      },
+      pingIntervalMs: 10000,
+      socketFactory: () => {
+        connectionCount += 1;
+        return {
+          addEventListener: (type, listener) => {
+            if (type === "open") {
+              queueMicrotask(() => {
+                listener({});
+              });
+            } else if (type === "message") {
+              messageHandler = listener;
+            } else if (type === "close") {
+              closeHandler = listener;
+            }
+          },
+          send: (data) => {
+            const frame = JSON.parse(data) as {
+              action?: string;
+              seq?: number;
+            };
+            if (frame.action === "authentication_challenge") {
+              // Reply using the challenge seq (which increments across connections).
+              queueMicrotask(() => {
+                messageHandler?.({
+                  data: JSON.stringify({
+                    status: "OK",
+                    seq_reply: frame.seq,
+                  }),
+                });
+              });
+            }
+          },
+          close: () => {
+            closeHandler?.({});
+          },
+        };
+      },
+    },
+  );
+
+  await adapter.start(async () => undefined);
+  assert.equal(adapter.getConnectionStatus().connected, true);
+  assert.equal(connectionCount, 1);
+
+  // Drop the connection and let the reconnect timer fire (initial delay is 1000ms).
+  closeHandler?.({});
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  await waitForMicrotasks();
+
+  assert.equal(connectionCount, 2);
+  assert.equal(adapter.getConnectionStatus().connected, true);
+  await adapter.stop();
+});
+
+test("MattermostAdapter records a websocket error without crashing", async () => {
+  let errorHandler: ((event: { data?: unknown }) => void) | undefined;
+  let messageHandler: ((event: { data?: unknown }) => void) | undefined;
+  const adapter = new MattermostAdapter(
+    {
+      port: 0,
+      host: "127.0.0.1",
+      defaultWorkingDirectory: "C:/repo",
+      mattermostMode: "websocket",
+      mattermostActorMode: "self",
+      mattermostServerUrl: "https://mattermost.example.local",
+      mattermostBotToken: "bot-token",
+    },
+    undefined,
+    {
+      mattermostApiFetch: async <T>() =>
+        ({
+          id: "bot-user",
+          username: "bridgebot",
+        }) as T,
+      pingIntervalMs: 10000,
+      socketFactory: () => ({
+        addEventListener: (type, listener) => {
+          if (type === "open") {
+            queueMicrotask(() => {
+              listener({});
+            });
+          } else if (type === "message") {
+            messageHandler = listener;
+          } else if (type === "error") {
+            errorHandler = listener;
+          }
+        },
+        send: (data) => {
+          const frame = JSON.parse(data) as {
+            action?: string;
+            seq?: number;
+          };
+          if (frame.action === "authentication_challenge") {
+            queueMicrotask(() => {
+              messageHandler?.({
+                data: JSON.stringify({
+                  status: "OK",
+                  seq_reply: frame.seq,
+                }),
+              });
+            });
+          }
+        },
+        close: () => undefined,
+      }),
+    },
+  );
+
+  await adapter.start(async () => undefined);
+  errorHandler?.({ message: "boom" } as unknown as { data?: unknown });
+  await waitForMicrotasks();
+
+  assert.equal(adapter.getConnectionStatus().lastError, "boom");
+  await adapter.stop();
+});
+
+test("MattermostAdapter closes the socket when a ping goes unanswered", async () => {
+  let messageHandler: ((event: { data?: unknown }) => void) | undefined;
+  let closed = false;
+  const sentFrames: string[] = [];
+  const adapter = new MattermostAdapter(
+    {
+      port: 0,
+      host: "127.0.0.1",
+      defaultWorkingDirectory: "C:/repo",
+      mattermostMode: "websocket",
+      mattermostActorMode: "self",
+      mattermostServerUrl: "https://mattermost.example.local",
+      mattermostBotToken: "bot-token",
+    },
+    undefined,
+    {
+      mattermostApiFetch: async <T>() =>
+        ({
+          id: "bot-user",
+          username: "bridgebot",
+        }) as T,
+      pingIntervalMs: 20,
+      socketFactory: () => ({
+        addEventListener: (type, listener) => {
+          if (type === "open") {
+            queueMicrotask(() => {
+              listener({});
+            });
+          } else if (type === "message") {
+            messageHandler = listener;
+          }
+        },
+        send: (data) => {
+          sentFrames.push(data);
+          const frame = JSON.parse(data) as {
+            action?: string;
+            seq?: number;
+          };
+          if (frame.action === "authentication_challenge") {
+            queueMicrotask(() => {
+              messageHandler?.({
+                data: JSON.stringify({
+                  status: "OK",
+                  seq_reply: frame.seq,
+                }),
+              });
+            });
+          }
+        },
+        close: () => {
+          closed = true;
+        },
+      }),
+    },
+  );
+
+  await adapter.start(async () => undefined);
+  // Wait long enough for at least two ping intervals with no inbound traffic.
+  await new Promise((resolve) => setTimeout(resolve, 80));
+
+  assert.ok(
+    sentFrames.some((frame) => (JSON.parse(frame) as { action?: string }).action === "ping"),
+    "expected a ping frame to be sent",
+  );
+  assert.equal(closed, true);
+  await adapter.stop();
+});
+
 async function postForm(input: { port: number; body: string }): Promise<string> {
   return await postToPath({
     ...input,
