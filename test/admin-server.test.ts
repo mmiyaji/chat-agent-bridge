@@ -678,6 +678,7 @@ function createBridge(store: InMemoryStateStore): {
         gemini: geminiAgent,
       },
       auditLogger,
+      launchDetachedRestart: () => {},
     }),
     chatAdapter,
     agent,

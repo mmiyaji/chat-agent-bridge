@@ -46,9 +46,51 @@ function Get-BridgePidFileProcessId {
   }
 }
 
+function Test-BridgeProcessId {
+  param(
+    [Parameter(Mandatory = $true)][int]$ProcessId
+  )
+
+  $process = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
+  if (!$process) {
+    return $false
+  }
+
+  $processName = $process.ProcessName
+  $isNode = ($processName -eq "node") -or ($processName -eq "node.exe")
+  if (!$isNode) {
+    return $false
+  }
+
+  # Best effort: confirm the command line points at the bridge entry point.
+  # If the command line cannot be read (missing cmdlet, access denied, WMI
+  # failure), fall back to the name-only check above.
+  if (!(Get-Command Get-CimInstance -ErrorAction SilentlyContinue)) {
+    return $true
+  }
+
+  try {
+    $cimProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -ErrorAction Stop
+    if ($null -eq $cimProcess) {
+      return $true
+    }
+    $commandLine = $cimProcess.CommandLine
+    if ([string]::IsNullOrWhiteSpace($commandLine)) {
+      return $true
+    }
+    return [bool]($commandLine -match "dist[\\/]index\.js")
+  } catch {
+    return $true
+  }
+}
+
 function Get-BridgeProcessFromPidFile {
   $processId = Get-BridgePidFileProcessId
   if ($null -eq $processId) {
+    return $null
+  }
+
+  if (!(Test-BridgeProcessId -ProcessId $processId)) {
     return $null
   }
 
@@ -123,7 +165,8 @@ function Get-BridgeAdminListenerProcessIds {
 
   try {
     return @(Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $adminPort -State Listen -ErrorAction SilentlyContinue |
-      Select-Object -ExpandProperty OwningProcess -Unique)
+      Select-Object -ExpandProperty OwningProcess -Unique |
+      Where-Object { Test-BridgeProcessId -ProcessId $_ })
   } catch {
     return @()
   }

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { BridgeService } from "../src/core/bridge-service.js";
+import { BridgeService, isPermanentChatPostError } from "../src/core/bridge-service.js";
 import { SessionManager } from "../src/core/session-manager.js";
 import {
   InMemoryStateStore,
@@ -69,6 +69,13 @@ async function startBridge() {
   const cursorAgent = new RecordingAgent("cursor");
   const geminiAgent = new RecordingAgent("gemini");
   const auditLogger = new RecordingAuditLogger();
+  const detachedRestarts: Array<{
+    channelId?: string;
+    threadId?: string;
+    rebuild?: boolean;
+    actor?: string;
+    reason?: string;
+  }> = [];
   const previousCompletionFile = process.env.CAB_RESTART_COMPLETION_FILE;
   if (!previousCompletionFile) {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-bridge-service-"));
@@ -87,6 +94,9 @@ async function startBridge() {
       gemini: geminiAgent,
     },
     auditLogger,
+    launchDetachedRestart: (input) => {
+      detachedRestarts.push(input);
+    },
   });
 
   try {
@@ -109,6 +119,7 @@ async function startBridge() {
     cursorAgent,
     geminiAgent,
     auditLogger,
+    detachedRestarts,
   };
 }
 
@@ -395,7 +406,7 @@ test("BridgeService auto-splits to a new thread after the configured user-messag
 });
 
 test("BridgeService restart command acknowledges immediately", async () => {
-  const { chatAdapter, auditLogger } = await startBridge();
+  const { chatAdapter, auditLogger, detachedRestarts } = await startBridge();
 
   await chatAdapter.handler?.(createMessage("restart"));
 
@@ -408,6 +419,10 @@ test("BridgeService restart command acknowledges immediately", async () => {
     ),
     true,
   );
+  assert.equal(detachedRestarts.length, 1);
+  assert.equal(detachedRestarts[0]?.rebuild, false);
+  assert.equal(detachedRestarts[0]?.channelId, "C1");
+  assert.equal(detachedRestarts[0]?.threadId, "T1");
 });
 
 test("BridgeService posts queued restart completions on start", async () => {
@@ -535,6 +550,107 @@ test("BridgeService retains queued restart completions when posting fails", asyn
       );
     });
     await assert.rejects(fs.readFile(completionFile, "utf8"));
+  } finally {
+    if (previousCompletionFile === undefined) {
+      delete process.env.CAB_RESTART_COMPLETION_FILE;
+    } else {
+      process.env.CAB_RESTART_COMPLETION_FILE = previousCompletionFile;
+    }
+  }
+});
+
+test("isPermanentChatPostError classifies permanent vs transient errors", () => {
+  // Permanent chat errors — must be dropped, never retried.
+  assert.equal(isPermanentChatPostError("channel_not_found"), true);
+  assert.equal(isPermanentChatPostError("Mattermost API HTTP error: 404"), true);
+  assert.equal(isPermanentChatPostError("Slack API error: channel_not_found"), true);
+  assert.equal(isPermanentChatPostError("Slack API error: is_archived"), true);
+  assert.equal(isPermanentChatPostError("Slack API error: not_in_channel"), true);
+  assert.equal(isPermanentChatPostError("Slack API error: invalid_arguments"), true);
+  assert.equal(isPermanentChatPostError("Mattermost API HTTP error: 400"), true);
+  assert.equal(isPermanentChatPostError("Mattermost API HTTP error: 401"), true);
+  assert.equal(isPermanentChatPostError("Mattermost API HTTP error: 403"), true);
+
+  // Transient errors — must be retried.
+  assert.equal(isPermanentChatPostError("Request timed out"), false);
+  assert.equal(isPermanentChatPostError("connect ECONNREFUSED 127.0.0.1:443"), false);
+  assert.equal(isPermanentChatPostError("Mattermost API HTTP error: 500"), false);
+  assert.equal(isPermanentChatPostError("Mattermost API HTTP error: 503"), false);
+  assert.equal(isPermanentChatPostError(""), false);
+});
+
+test("BridgeService drops restart completions that fail with a permanent chat error", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-restart-completion-permanent-"));
+  const completionFile = path.join(tempRoot, "restart-completion.jsonl");
+  const previousCompletionFile = process.env.CAB_RESTART_COMPLETION_FILE;
+  process.env.CAB_RESTART_COMPLETION_FILE = completionFile;
+
+  try {
+    const { chatAdapter } = await startBridge();
+    let postCalls = 0;
+    chatAdapter.postThreadMessage = async () => {
+      postCalls += 1;
+      throw new Error("Slack API error: channel_not_found");
+    };
+
+    await fs.writeFile(
+      completionFile,
+      `${JSON.stringify({
+        channelId: "C1",
+        threadId: "T1",
+        text: "Bridge restart completed. The bridge is back online.",
+      })}\n`,
+      "utf8",
+    );
+
+    // The next flush tick must post exactly once and then permanently drop the
+    // entry (file removed, not re-queued).
+    await waitFor(async () => {
+      await assert.rejects(fs.readFile(completionFile, "utf8"));
+    });
+    assert.equal(postCalls, 1);
+    assert.equal(chatAdapter.posted.length, 0);
+  } finally {
+    if (previousCompletionFile === undefined) {
+      delete process.env.CAB_RESTART_COMPLETION_FILE;
+    } else {
+      process.env.CAB_RESTART_COMPLETION_FILE = previousCompletionFile;
+    }
+  }
+});
+
+test("BridgeService increments attempts and retains transient restart completions", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-restart-completion-attempts-"));
+  const completionFile = path.join(tempRoot, "restart-completion.jsonl");
+  const previousCompletionFile = process.env.CAB_RESTART_COMPLETION_FILE;
+  process.env.CAB_RESTART_COMPLETION_FILE = completionFile;
+
+  try {
+    const { chatAdapter } = await startBridge();
+    chatAdapter.postThreadMessage = async () => {
+      throw new Error("temporary slack outage");
+    };
+
+    await fs.writeFile(
+      completionFile,
+      `${JSON.stringify({
+        channelId: "C1",
+        threadId: "T1",
+        text: "Bridge restart completed. The bridge is back online.",
+      })}\n`,
+      "utf8",
+    );
+
+    // After at least one flush the entry is retained with an incremented
+    // attempts count persisted back to the file.
+    await waitFor(async () => {
+      const retained = await fs.readFile(completionFile, "utf8");
+      const line = retained.split(/\r?\n/).find((entry) => entry.trim().length > 0) ?? "{}";
+      const parsed = JSON.parse(line) as { attempts?: number; channelId?: string };
+      assert.equal(parsed.channelId, "C1");
+      assert.ok((parsed.attempts ?? 0) >= 1, `expected attempts >= 1, got ${parsed.attempts}`);
+    });
+    assert.equal(chatAdapter.posted.length, 0);
   } finally {
     if (previousCompletionFile === undefined) {
       delete process.env.CAB_RESTART_COMPLETION_FILE;

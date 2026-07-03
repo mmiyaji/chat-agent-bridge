@@ -46,6 +46,31 @@ async function runPowershellScript(
   });
 }
 
+async function runPowershellCommand(
+  command: string,
+): Promise<{ stdout: string; stderr: string; code: number | null }> {
+  return await new Promise((resolve, reject) => {
+    const child = spawn(
+      powershellPath(),
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
+      { stdio: "pipe" },
+    );
+
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      resolve({ stdout, stderr, code });
+    });
+  });
+}
+
 function isBlockedPowerShellSpawn(error: unknown): boolean {
   return error instanceof Error && "code" in error && (error as { code?: string }).code === "EPERM";
 }
@@ -122,4 +147,38 @@ test("bridge-restart-detached helper runs stop/start and posts completion", asyn
   assert.equal(payload.channelId, "C123");
   assert.equal(payload.threadId, "T123");
   assert.match(payload.text ?? "", /Bridge restart completed/);
+});
+
+test("Test-BridgeProcessId rejects a non-node system process (stale-pid guard)", async (t) => {
+  // Hermetic guard for the stale-PID class of bug: a PID owned by something that
+  // is not the bridge (here PID 4 = System) must be classified as NOT the
+  // bridge, so the stop script would treat the pid file as stale and never
+  // Stop-Process it. We only exercise the classifier here — we never invoke the
+  // real bridge-stop.ps1, because its process discovery would find (and kill)
+  // the genuine running bridge node.exe.
+  const commonScript = path.join(process.cwd(), "scripts", "bridge-common.ps1");
+  const commonScriptLiteral = commonScript.replace(/'/g, "''");
+  const command = [
+    `. '${commonScriptLiteral}'`,
+    "$system = Test-BridgeProcessId -ProcessId 4",
+    "$missing = Test-BridgeProcessId -ProcessId 999999",
+    'Write-Output "system=$system"',
+    'Write-Output "missing=$missing"',
+  ].join("; ");
+
+  let result: { stdout: string; stderr: string; code: number | null };
+  try {
+    result = await runPowershellCommand(command);
+  } catch (error) {
+    if (skipIfPowerShellSpawnBlocked(t, error)) {
+      return;
+    }
+    throw error;
+  }
+
+  assert.equal(result.code, 0, result.stderr);
+  // PID 4 (System) exists but is not node.exe -> false.
+  assert.match(result.stdout, /system=False/);
+  // A PID that does not exist -> false.
+  assert.match(result.stdout, /missing=False/);
 });

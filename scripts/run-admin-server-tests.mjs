@@ -2,6 +2,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+// Point BridgeService's restart-completion queue at a throwaway temp file before
+// any BridgeService is constructed. The default resolves to the repo's real
+// data/runtime/restart-completion.jsonl; these fixtures use channel C1/thread T1
+// and must never leak into production runtime state.
+if (!process.env.CAB_RESTART_COMPLETION_FILE) {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cab-admin-server-tests-"));
+  process.env.CAB_RESTART_COMPLETION_FILE = path.join(tempRoot, "restart-completion.jsonl");
+}
+
 import { AdminServer } from "../.test-dist/src/admin/server.js";
 import { BridgeService } from "../.test-dist/src/core/bridge-service.js";
 import { SessionManager } from "../.test-dist/src/core/session-manager.js";
@@ -125,6 +137,7 @@ function createBridge(store) {
         cursor: cursorAgent,
       },
       auditLogger,
+      launchDetachedRestart: () => {},
     }),
     chatAdapter,
     agent,

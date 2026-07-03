@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { AdminServer } from "../src/admin/server.js";
 import { BridgeService } from "../src/core/bridge-service.js";
 import { SessionManager } from "../src/core/session-manager.js";
@@ -94,6 +97,16 @@ function createRecord(overrides?: Partial<ExecutionRecord>): ExecutionRecord {
 
 async function main(): Promise<void> {
   const port = Number.parseInt(process.env.ADMIN_E2E_PORT ?? "42188", 10);
+
+  // Isolate every runtime file this harness could touch so the e2e server never
+  // writes into the repo's real data/ directory. BridgeService.start() flushes
+  // the restart-completion queue on boot, which would otherwise re-write the
+  // real data/runtime/restart-completion.jsonl with fixture channel ids.
+  if (!process.env.CAB_RESTART_COMPLETION_FILE) {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cab-admin-e2e-"));
+    process.env.CAB_RESTART_COMPLETION_FILE = path.join(tempRoot, "restart-completion.jsonl");
+  }
+
   const config = createConfig(port);
   const store = new InMemoryStateStore();
   await store.initialize();
@@ -139,6 +152,10 @@ async function main(): Promise<void> {
       "claude-code": claudeAgent,
     },
     auditLogger,
+    // Demo server must never restart the real bridge process.
+    launchDetachedRestart: (input) => {
+      console.log("[admin-e2e-server] detached restart requested (stubbed):", input);
+    },
   });
   await bridge.start();
 

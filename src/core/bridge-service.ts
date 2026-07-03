@@ -44,6 +44,13 @@ interface BridgeServiceDeps {
   chatAdapter: ChatAdapter;
   agents: AgentRegistry;
   auditLogger: AuditLogger;
+  launchDetachedRestart?: (input: {
+    channelId?: string;
+    threadId?: string;
+    rebuild?: boolean;
+    actor?: string;
+    reason?: string;
+  }) => void;
 }
 
 interface SessionPickerState {
@@ -468,6 +475,41 @@ interface PendingRestartCompletion {
   failed?: boolean;
   /** Error message when failed === true. */
   errorMessage?: string;
+  /** Number of times posting this entry has been attempted (transient failures). */
+  attempts?: number;
+}
+
+/** Maximum number of transient post attempts before a pending entry is dropped. */
+const MAX_RESTART_COMPLETION_ATTEMPTS = 30;
+
+/**
+ * True when a failed restart-completion post should never be retried because the
+ * target thread/channel is permanently unreachable (e.g. deleted channel, bad
+ * credentials, malformed request). Detection is by message pattern only so it
+ * works across the Slack and Mattermost adapters:
+ *   - Mattermost throws `Mattermost API HTTP error: <status>`
+ *   - Slack throws `Slack API error: <code>`
+ */
+export function isPermanentChatPostError(message: string): boolean {
+  if (typeof message !== "string" || message.length === 0) {
+    return false;
+  }
+
+  const normalized = message.toLowerCase();
+  const permanentSubstrings = [
+    "channel_not_found",
+    "is_archived",
+    "not_in_channel",
+    "channel_id",
+    "invalid",
+  ];
+  if (permanentSubstrings.some((needle) => normalized.includes(needle))) {
+    return true;
+  }
+
+  // Permanent HTTP status codes (client errors). Match on word boundaries so we
+  // do not treat e.g. "5400" as a 400.
+  return /\b(400|401|403|404)\b/.test(normalized);
 }
 
 export class BridgeService {
@@ -2732,6 +2774,17 @@ export class BridgeService {
     threadId?: string,
     options?: { rebuild?: boolean; actor?: string; reason?: string },
   ): void {
+    if (this.deps.launchDetachedRestart) {
+      this.deps.launchDetachedRestart({
+        ...(channelId !== undefined ? { channelId } : {}),
+        ...(threadId !== undefined ? { threadId } : {}),
+        ...(options?.rebuild !== undefined ? { rebuild: options.rebuild } : {}),
+        ...(options?.actor !== undefined ? { actor: options.actor } : {}),
+        ...(options?.reason !== undefined ? { reason: options.reason } : {}),
+      });
+      return;
+    }
+
     const scriptPath = path.resolve(process.cwd(), "scripts", "bridge-restart-detached.ps1");
     const powershellPath = path.join(
       process.env.SystemRoot ?? "C:\\Windows",
@@ -2871,6 +2924,7 @@ export class BridgeService {
               ...(typeof parsed.durationMs === "number" ? { durationMs: parsed.durationMs } : {}),
               ...(typeof parsed.failed === "boolean" ? { failed: parsed.failed } : {}),
               ...(typeof parsed.errorMessage === "string" ? { errorMessage: parsed.errorMessage } : {}),
+              ...(typeof parsed.attempts === "number" ? { attempts: parsed.attempts } : {}),
             });
           } else {
             skippedLines += 1;
@@ -2910,12 +2964,33 @@ export class BridgeService {
           });
           postedCount += 1;
         } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+
+          if (isPermanentChatPostError(errorMessage)) {
+            logger.warn("Dropping restart completion; permanent chat error.", {
+              channelId: completion.channelId,
+              threadId: completion.threadId,
+              error: errorMessage,
+            });
+            continue;
+          }
+
+          const attempts = (completion.attempts ?? 0) + 1;
+          if (attempts >= MAX_RESTART_COMPLETION_ATTEMPTS) {
+            logger.warn("Dropping restart completion; attempt cap reached.", {
+              channelId: completion.channelId,
+              threadId: completion.threadId,
+              error: errorMessage,
+            });
+            continue;
+          }
+
           logger.warn("Failed to post restart completion; will retry.", {
             channelId: completion.channelId,
             threadId: completion.threadId,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorMessage,
           });
-          retryQueue.push(completion);
+          retryQueue.push({ ...completion, attempts });
         }
       }
 
