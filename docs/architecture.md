@@ -16,10 +16,29 @@ When a chat message arrives, the bridge:
 
 1. normalizes the incoming thread reference
 2. loads or creates a session binding
-3. serializes work for that session
-4. checks execution policy against the requested repository and command intent
-5. forwards the request to the agent adapter
-6. returns a status update or summary back to the chat adapter
+3. on the first instruction of a new thread, resolves a working directory (inline alias/path in the message, a per-channel default, or a numbered picker) before anything else runs
+4. for Claude Code, offers to resume a session already known for that working directory before running a fresh one
+5. serializes work for that session
+6. checks execution policy against the requested repository and command intent
+7. forwards the request to the agent adapter
+8. returns a status update or summary back to the chat adapter
+
+## Working directory selection
+
+A thread's working directory is decided once, on its first instruction, and then stays pinned to the session:
+
+- if the message starts with a known repo alias or an absolute path under an allowed root, the bridge binds to it immediately and treats the remainder of the message as the instruction
+- otherwise, if the channel has a default working directory (`channel-default`), the bridge binds to it silently and continues
+- otherwise, the bridge posts a numbered picker over the configured repo aliases and holds the instruction until the user replies with a number or `keep`
+- changing directory later with `cwd`/`repo` detaches any stored Claude Code session binding and re-offers the resume picker for the new folder
+
+## Agent session reuse
+
+Codex and Claude Code sessions can be resumed instead of started fresh:
+
+- Codex candidates come from the local Codex session index (`CAB_CODEX_SESSION_INDEX_FILE`)
+- Claude Code candidates come from the real Claude Code project store under `CAB_CLAUDE_PROJECTS_DIR` (default `~/.claude/projects`), filtered to `<encoded-cwd>/*.jsonl` where the encoding replaces every non-alphanumeric character in the absolute working directory with `-`. `CAB_CLAUDE_SESSION_INDEX_FILE` remains only as a legacy fallback when no project sessions are found
+- Cursor and Gemini always start a fresh bridge-owned session
 
 ## Module split
 

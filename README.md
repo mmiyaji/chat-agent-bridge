@@ -16,6 +16,9 @@ The current implementation is Windows-first and is developed and validated prima
 
 - Binds a chat thread to a local agent session
 - Keeps local repository context, uncommitted work, and tool state on the same machine
+- Picks the working directory from the first message of a thread, or offers a numbered repo picker when none is given
+- Offers to resume a prior Claude Code session for the bound folder, based on the real `~/.claude/projects` session store
+- Remembers a default working directory per chat channel
 - Supports Slack and Mattermost chat adapters
 - Supports Codex, Claude Code, Cursor, and Gemini CLI agent adapters
 - Adds approvals, audit logging, repo targeting, and an admin surface
@@ -55,6 +58,32 @@ Or run it as a detached service:
 npm run service:start
 npm run service:status
 ```
+
+## Typical first-mention flow
+
+The first message of a new thread decides where the agent runs. A typical exchange looks like this:
+
+```
+You:    @Chat Agent Bridge haruhi fix the login screen
+Bridge: This folder (`...\haruhi`) has previous Claude Code sessions. Reply with a number to resume, or `new` to start fresh. Your instruction will run after you choose.
+        1. `a1b2c3d4` - fix login redirect loop (2026-07-01T09:12:00.000Z)
+        2. `9f8e7d6c` - add MUI theme toggle (2026-06-28T14:03:00.000Z)
+You:    1
+Bridge: (resumes session `a1b2c3d4` in `...\haruhi` and runs "fix the login screen")
+```
+
+If the alias or path is omitted from the first message, the bridge asks first:
+
+```
+You:    @Chat Agent Bridge fix the login screen
+Bridge: Choose a working directory for this thread (allowed roots only). Reply with a number, or `keep` to stay on `...\chat-agent-bridge`.
+        1. `haruhi` -> `...\haruhi`
+        2. `inori` -> `...\inori`
+You:    1
+Bridge: (binds the thread to `haruhi`, then offers the Claude Code resume picker if applicable, then runs "fix the login screen")
+```
+
+Set a default per channel to skip the directory picker on future threads: `@Chat Agent Bridge channel-default haruhi`.
 
 ## Demo
 
@@ -151,6 +180,8 @@ flowchart TD
 - Gemini is expected to be installed and authenticated locally before bridge execution
 - The bridge injects `CHAT_AGENT_BRIDGE=1` into Codex child processes so external hooks can suppress duplicate notifications
 - In Mattermost, `MATTERMOST_ACTOR_MODE=self` is intended for user-token operation, accepts only self-DMs, and still requires a mention in that self-DM
+- Claude Code resume candidates are read from `~/.claude/projects/<encoded-cwd>/*.jsonl` (override with `CAB_CLAUDE_PROJECTS_DIR`); only directories inside `CAB_ALLOWED_DIRS` are ever accepted as a working directory
+- The Admin UI has a read-only Environment panel (`GET /admin/api/environment`) showing allowed roots, repo aliases, channel defaults, and the `CHAT_AGENT_BRIDGE_*` variable names passed to agents
 
 ## Disclaimer
 

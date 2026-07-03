@@ -16,6 +16,9 @@ Chat Agent Bridge は、チャットスレッドからローカル PC 上の開�
 
 - チャットスレッドをローカル agent session に紐付ける
 - 同じ PC 上の repository、未コミット変更、ローカルツール状態を維持したまま継続操作する
+- スレッドの最初のメッセージから working directory を決定し、指定がなければ番号付きの repo picker を出す
+- 紐付いた folder に過去の Claude Code session があれば、`~/.claude/projects` の実データから resume 候補を提示する
+- チャンネルごとに既定の working directory を記憶する
 - Slack と Mattermost の chat adapter を使う
 - Codex、Claude Code、Cursor、Gemini CLI の agent adapter を使う
 - 承認フロー、監査ログ、repo 切り替え、Admin UI を提供する
@@ -53,6 +56,32 @@ detached service として動かす場合:
 npm run service:start
 npm run service:status
 ```
+
+## 最初のメンションから始まる典型的な流れ
+
+新しいスレッドの最初のメッセージで、どの working directory で動くかが決まります。典型的なやり取りは次のようになります。
+
+```
+あなた: @Chat Agent Bridge haruhi ログイン画面を直して
+Bridge: This folder (`...\haruhi`) has previous Claude Code sessions. Reply with a number to resume, or `new` to start fresh. Your instruction will run after you choose.
+        1. `a1b2c3d4` - fix login redirect loop (2026-07-01T09:12:00.000Z)
+        2. `9f8e7d6c` - add MUI theme toggle (2026-06-28T14:03:00.000Z)
+あなた: 1
+Bridge: (session `a1b2c3d4` を `...\haruhi` で resume し、「ログイン画面を直して」を実行する)
+```
+
+最初のメッセージに alias や path がなければ、bridge が先に尋ねます。
+
+```
+あなた: @Chat Agent Bridge ログイン画面を直して
+Bridge: Choose a working directory for this thread (allowed roots only). Reply with a number, or `keep` to stay on `...\chat-agent-bridge`.
+        1. `haruhi` -> `...\haruhi`
+        2. `inori` -> `...\inori`
+あなた: 1
+Bridge: (スレッドを `haruhi` に紐付け、必要なら Claude Code の resume picker を出したうえで「ログイン画面を直して」を実行する)
+```
+
+チャンネルごとに既定の working directory を設定しておくと、以降のスレッドで directory picker を省略できます: `@Chat Agent Bridge channel-default haruhi`
 
 ## デモ
 
@@ -145,6 +174,8 @@ flowchart TD
 - Gemini は既定で `gemini --approval-mode yolo` を使い、command と model は Admin UI から設定できます
 - bridge は Codex child process に `CHAT_AGENT_BRIDGE=1` を注入するため、外部 hook 側で重複通知を抑制できます
 - Mattermost の `MATTERMOST_ACTOR_MODE=self` は user token 運用向けで、self-DM でもメンションが必要です
+- Claude Code の resume 候補は `~/.claude/projects/<encoded-cwd>/*.jsonl` から読み込みます（`CAB_CLAUDE_PROJECTS_DIR` で変更可能）。working directory として受理されるのは `CAB_ALLOWED_DIRS` 配下のみです
+- Admin UI には read-only の Environment パネル（`GET /admin/api/environment`）があり、allowed roots、repo alias、channel default、agent に渡す `CHAT_AGENT_BRIDGE_*` 変数名を確認できます
 
 ## 免責事項
 

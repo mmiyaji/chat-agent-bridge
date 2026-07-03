@@ -81,6 +81,8 @@ Service mode stores runtime files under `data/runtime/`.
 | `CAB_REPO_ALIASES` | no | Optional `alias=path;alias2=path2` mapping |
 | `CAB_DISCOVER_REPOS` | no | When `true`, also discover direct child Git repos under each allowed root and expose them as `repo` aliases |
 
+`CAB_ALLOWED_DIRS` and the resulting repo aliases also drive the first-mention working-directory flow: an alias or absolute path in the first message of a thread must resolve under `CAB_ALLOWED_DIRS` to be accepted, and the numbered directory picker offered when no directory is given lists these same aliases.
+
 ## Agent-specific environment variables
 
 ### Codex
@@ -138,7 +140,8 @@ Gemini must already be installed and authenticated locally before the bridge can
 | --- | --- | --- |
 | `CAB_CLAUDE_COMMAND_TIMEOUT_MS` | no | Idle timeout for a single Claude Code invocation |
 | `CAB_CLAUDE_MAX_RUNTIME_MS` | no | Hard maximum runtime for a single Claude Code invocation |
-| `CAB_CLAUDE_SESSION_INDEX_FILE` | no | Local Claude Code session index path. Defaults to a file under the current user's home directory |
+| `CAB_CLAUDE_PROJECTS_DIR` | no | Root of the real Claude Code project session store used for resume candidates. Defaults to `~/.claude/projects` |
+| `CAB_CLAUDE_SESSION_INDEX_FILE` | no | Legacy Claude Code session index path, used only as a fallback when a working directory has no sessions under `CAB_CLAUDE_PROJECTS_DIR`. Defaults to a file under the current user's home directory |
 
 ## Next steps
 

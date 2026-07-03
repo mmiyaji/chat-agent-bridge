@@ -16,6 +16,8 @@ Behavior:
 - `service:restart` performs a fast restart without rebuilding
 - `service:restart:build` rebuilds before restarting
 
+`service:stop` (and the restart scripts) only ever stop process IDs that were independently validated as genuine bridge processes (`node.exe` running `dist/index.js`), whether that PID came from `bridge.pid` or from process discovery. A stale `bridge.pid` pointing at a dead or reused PID is removed but never used to kill an unrelated process.
+
 ## Runtime files
 
 Stored under `data/runtime/`:
@@ -41,8 +43,11 @@ The admin server exposes:
 - `GET /admin/api/settings`
 - `POST /admin/api/settings`
 - `POST /admin/api/bridge/restart`
+- `GET /admin/api/environment`
 
 By default the admin server follows `CAB_HOST`. Set `CAB_ADMIN_HOST=127.0.0.1` if the bridge is LAN-reachable but the admin screen should stay local-only.
+
+The Admin UI's Environment panel is read-only and shows the default working directory, allowed roots, repo aliases, channel defaults, `claudeProjectsDir`, the agent/chat provider defaults, and the names (not values) of the `CHAT_AGENT_BRIDGE_*` variables passed into agent child processes.
 
 ## Audit and state
 
@@ -54,6 +59,8 @@ Default files:
 
 The audit log records accepted chat events, bridge commands, execution start/completion, approvals, and failures.
 
+Claude Code resume candidates are read from `CAB_CLAUDE_PROJECTS_DIR` (default `~/.claude/projects`), not from a bridge-owned index file. `CAB_CLAUDE_SESSION_INDEX_FILE` is kept only as a fallback for folders with no entries under `CAB_CLAUDE_PROJECTS_DIR`. See [install.md](install.md) for the full environment variable reference.
+
 ## Restart behavior
 
 Slack and admin-triggered restart flows use an external helper so the bridge can request its own restart without killing the request handler mid-response.
@@ -63,6 +70,8 @@ Expected Slack flow:
 1. `Bridge restart requested...`
 2. bridge restarts
 3. `Bridge restart completed. The bridge is back online.`
+
+If the restart-completion message cannot be posted, the bridge retries with backoff, but it gives up instead of retrying forever: a permanent chat error (for example `channel_not_found`, or another sign the target channel/thread no longer exists) drops the pending notification immediately, and any other, transient failure is dropped after 30 attempts.
 
 ## Operational commands from chat
 
@@ -76,11 +85,14 @@ These are the most useful during day-to-day operation:
 - `repos`
 - `repo <alias>`
 - `cwd <path>`
+- `channel-default <alias|path>` / `channel-default clear` / `channel-default`
 - `attach <session-id>`
 - `attach-last`
 - `detach`
 - `restart`
 - `restart rebuild`
+
+`status` includes a `Channel default cwd:` line showing the current channel's default working directory, if one is set.
 
 ## Troubleshooting
 
@@ -111,3 +123,7 @@ Note:
 ### A Codex or Claude session behaves differently than expected
 
 If the thread is attached to an existing local session, that agent session may carry its own sandbox or execution history. A bridge-owned fresh session is usually more predictable.
+
+### Mattermost WebSocket mode drops or seems to hang
+
+The Mattermost adapter re-authenticates on every reconnect, so a dropped socket does not leave the bridge silently unauthenticated. A 30-second ping heartbeat detects a silently dead connection and forces a reconnect, and REST calls to the Mattermost API time out after 15 seconds rather than hanging indefinitely. A socket error no longer crashes the bridge process; it is logged and followed by the normal reconnect-with-backoff flow. See [mattermost-setup.md](mattermost-setup.md) for connection-mode details.

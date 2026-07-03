@@ -95,6 +95,13 @@ Behavior:
 - plain thread replies inside existing threads are accepted
 - if `MATTERMOST_ACTOR_MODE=self`, only self-DMs are accepted
 
+Connection reliability:
+
+- on every reconnect, the adapter re-authenticates over the socket before it is treated as live, so a silent drop cannot leave the bridge listening on a stale, unauthenticated connection
+- a 30-second ping heartbeat detects a connection that has gone silent without an explicit close, and forces a reconnect
+- reconnect uses exponential backoff and does not crash the bridge process on a socket error
+- REST calls made by the adapter (posting messages, resolving threads, and so on) time out after 15 seconds instead of hanging indefinitely
+
 ## Current Mattermost scope
 
 - thread replies and new threads are posted through the Mattermost REST API
