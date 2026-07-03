@@ -36,6 +36,7 @@ function createConfig(): AppConfig {
     auditLogFile: "C:/repo/data/audit.jsonl",
     codexSessionIndexFile: "C:/repo/data/session_index.jsonl",
     claudeSessionIndexFile: "C:/repo/data/claude_sessions.json",
+    claudeProjectsDir: "C:/repo/data/claude-projects",
     codexModel: "gpt-5.4",
     codexMaxTurns: 8,
     codexCommandTimeoutMs: 1000,
@@ -1306,4 +1307,153 @@ test("BridgeService reports that Gemini reusable sessions are unsupported", asyn
     chatAdapter.posted.at(-1)?.text ?? "",
     /Reusable Gemini CLI sessions are not supported yet/,
   );
+});
+
+async function seedClaudeProjectSessions(
+  workingDirectory: string,
+  entries: Array<{ id: string; summary: string; mtimeSeconds: number }>,
+): Promise<string> {
+  const { encodeClaudeProjectDir } = await import("../src/agents/claude/project-sessions.js");
+  const projectsRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-bridge-projects-"));
+  const projectFolder = path.join(projectsRoot, encodeClaudeProjectDir(workingDirectory));
+  await fs.mkdir(projectFolder, { recursive: true });
+  for (const entry of entries) {
+    const file = path.join(projectFolder, `${entry.id}.jsonl`);
+    await fs.writeFile(file, JSON.stringify({ type: "summary", summary: entry.summary }), "utf8");
+    await fs.utimes(file, entry.mtimeSeconds, entry.mtimeSeconds);
+  }
+
+  return projectsRoot;
+}
+
+test("BridgeService offers a resume picker on the first Claude instruction", async () => {
+  const { chatAdapter, store, claudeAgent, config, auditLogger } = await startBridge();
+  config.agentKind = "claude-code";
+  config.claudeProjectsDir = await seedClaudeProjectSessions("C:/repo/project", [
+    { id: "aaaa1111-aaaa-aaaa-aaaa-aaaaaaaaaaaa", summary: "First session", mtimeSeconds: 2000 },
+    { id: "bbbb2222-bbbb-bbbb-bbbb-bbbbbbbbbbbb", summary: "Second session", mtimeSeconds: 1000 },
+  ]);
+
+  await chatAdapter.handler?.(createMessage("build the feature"));
+
+  assert.equal(claudeAgent.requests.length, 0);
+  const picker = chatAdapter.posted.at(-1)?.text ?? "";
+  assert.match(picker, /has previous Claude Code sessions/);
+  assert.match(picker, /aaaa1111-aaaa-aaaa-aaaa-aaaaaaaaaaaa/);
+  assert.match(picker, /First session/);
+
+  const sessions = await store.listSessions();
+  assert.equal(sessions[0]?.bridgeState?.resumeOffered, true);
+  const storedPicker = sessions[0]?.bridgeState?.sessionPicker as
+    | { sessionIds: string[]; pendingPrompt?: string }
+    | undefined;
+  assert.deepEqual(storedPicker?.sessionIds, [
+    "aaaa1111-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "bbbb2222-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+  ]);
+  assert.equal(storedPicker?.pendingPrompt, "build the feature");
+  assert.equal(
+    auditLogger.events.some((event) => event.type === "bridge.resume-picker.opened"),
+    true,
+  );
+});
+
+test("BridgeService runs the pending prompt after a numeric resume selection", async () => {
+  const { chatAdapter, store, claudeAgent, config } = await startBridge();
+  config.agentKind = "claude-code";
+  config.claudeProjectsDir = await seedClaudeProjectSessions("C:/repo/project", [
+    { id: "aaaa1111-aaaa-aaaa-aaaa-aaaaaaaaaaaa", summary: "First session", mtimeSeconds: 2000 },
+  ]);
+
+  await chatAdapter.handler?.(createMessage("build the feature"));
+  await chatAdapter.handler?.(createMessage("1"));
+
+  await waitFor(async () => {
+    assert.equal(claudeAgent.requests.length, 1);
+  });
+
+  assert.equal(claudeAgent.requests[0]?.prompt, "build the feature");
+  assert.equal(
+    claudeAgent.requests[0]?.session.agentState?.claudeSessionId,
+    "aaaa1111-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  );
+
+  const sessions = await store.listSessions();
+  assert.equal(sessions[0]?.bridgeState?.resumeOffered, true);
+  assert.equal(sessions[0]?.bridgeState?.sessionPicker, undefined);
+});
+
+test("BridgeService runs the pending prompt after a fresh resume selection", async () => {
+  const { chatAdapter, store, claudeAgent, config } = await startBridge();
+  config.agentKind = "claude-code";
+  config.claudeProjectsDir = await seedClaudeProjectSessions("C:/repo/project", [
+    { id: "aaaa1111-aaaa-aaaa-aaaa-aaaaaaaaaaaa", summary: "First session", mtimeSeconds: 2000 },
+  ]);
+
+  await chatAdapter.handler?.(createMessage("build the feature"));
+  await chatAdapter.handler?.(createMessage("new"));
+
+  await waitFor(async () => {
+    assert.equal(claudeAgent.requests.length, 1);
+  });
+
+  assert.equal(claudeAgent.requests[0]?.prompt, "build the feature");
+  assert.equal(claudeAgent.requests[0]?.session.agentState?.claudeSessionId, undefined);
+
+  const sessions = await store.listSessions();
+  assert.equal(sessions[0]?.bridgeState?.resumeOffered, true);
+  assert.equal(sessions[0]?.bridgeState?.sessionPicker, undefined);
+});
+
+test("BridgeService executes immediately when the folder has no Claude sessions", async () => {
+  const { chatAdapter, store, claudeAgent, config } = await startBridge();
+  config.agentKind = "claude-code";
+  config.claudeSessionIndexFile = path.join(
+    await fs.mkdtemp(path.join(os.tmpdir(), "cab-bridge-empty-")),
+    "missing-sessions.json",
+  );
+  config.claudeProjectsDir = path.join(os.tmpdir(), "cab-bridge-projects-missing-none");
+
+  await chatAdapter.handler?.(createMessage("do work"));
+
+  assert.equal(claudeAgent.requests.length, 1);
+  assert.equal(claudeAgent.requests[0]?.prompt, "do work");
+  const sessions = await store.listSessions();
+  assert.equal(sessions[0]?.bridgeState?.resumeOffered, true);
+});
+
+test("BridgeService clears the Claude session and re-arms resume when the folder changes", async () => {
+  const { chatAdapter, store, config } = await startBridge();
+  config.agentKind = "claude-code";
+  config.allowedDirectories = ["C:/repo"];
+  await store.upsertSession({
+    sessionId: "session-claude-cwd",
+    agent: "claude-code",
+    thread: {
+      provider: "slack",
+      channelId: "C1",
+      threadId: "T1",
+    },
+    workingDirectory: "C:/repo/project",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    agentState: {
+      claudeSessionId: "aaaa1111-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    },
+    bridgeState: {
+      connectionMode: "attached",
+      resumeOffered: true,
+    },
+  });
+
+  await chatAdapter.handler?.(createMessage("cwd other-project"));
+
+  const sessions = await store.listSessions();
+  const updated = sessions.find((entry) => entry.sessionId === "session-claude-cwd");
+  assert.equal(updated?.workingDirectory, "C:\\repo\\project\\other-project");
+  assert.deepEqual(updated?.agentState, {});
+  assert.equal(updated?.bridgeState?.connectionMode, "bridge-owned");
+  assert.equal(updated?.bridgeState?.resumeOffered, undefined);
+  assert.equal(updated?.bridgeState?.sessionPicker, undefined);
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /detached because the folder changed/);
 });

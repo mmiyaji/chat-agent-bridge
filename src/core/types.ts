@@ -126,6 +126,7 @@ export interface AppConfig {
   auditLogFile: string;
   codexSessionIndexFile: string;
   claudeSessionIndexFile: string;
+  claudeProjectsDir: string;
   codexModel: string;
   codexMaxTurns: number;
   codexCommandTimeoutMs: number;

@@ -103,6 +103,7 @@ function createMattermostBridgeConfig(
     auditLogFile: path.join(tempRoot, "audit.jsonl"),
     codexSessionIndexFile: path.join(tempRoot, "codex-session-index.jsonl"),
     claudeSessionIndexFile: path.join(tempRoot, "claude-session-index.json"),
+    claudeProjectsDir: path.join(tempRoot, "claude-projects"),
     codexModel: "gpt-5.4",
     codexMaxTurns: 8,
     codexCommandTimeoutMs: 1_000,

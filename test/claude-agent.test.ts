@@ -29,6 +29,7 @@ function createClaudeConfig(): AppConfig {
     auditLogFile: "C:/repo/data/audit.jsonl",
     codexSessionIndexFile: "C:/repo/data/session_index.jsonl",
     claudeSessionIndexFile: "C:/repo/data/claude_sessions.json",
+    claudeProjectsDir: "C:/repo/data/claude-projects",
     codexModel: "gpt-5.4",
     codexMaxTurns: 8,
     codexCommandTimeoutMs: 1000,

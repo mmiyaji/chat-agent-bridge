@@ -2,6 +2,7 @@ import { Agent, AgentExecutionCancelledError, AgentRegistry } from "../agents/ba
 import { ChatAction, ChatAdapter, ChatConnectionStatus } from "../adapters/chat.js";
 import { readLatestCodexSession, readRecentCodexSessions } from "../agents/codex/session-index.js";
 import { readLatestClaudeSession, readRecentClaudeSessions } from "../agents/claude/session-index.js";
+import { readClaudeProjectSessions } from "../agents/claude/project-sessions.js";
 import crypto from "node:crypto";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
@@ -46,6 +47,7 @@ interface BridgeServiceDeps {
 
 interface SessionPickerState {
   sessionIds: string[];
+  pendingPrompt?: string;
 }
 
 type SessionConnectionMode = "attached" | "bridge-owned";
@@ -182,8 +184,12 @@ function readSessionPicker(
     return undefined;
   }
 
+  const pendingPrompt = picker.pendingPrompt;
   return {
     sessionIds: sessionIds as string[],
+    ...(typeof pendingPrompt === "string" && pendingPrompt.length > 0
+      ? { pendingPrompt }
+      : {}),
   };
 }
 
@@ -577,6 +583,9 @@ export class BridgeService {
     if (approvalPolicyOverride) {
       nextBridgeState.approvalPolicyOverride = approvalPolicyOverride;
     }
+    if (session.bridgeState?.resumeOffered === true) {
+      nextBridgeState.resumeOffered = true;
+    }
     return {
       ...nextBridgeState,
       ...(overrides ?? {}),
@@ -695,6 +704,16 @@ export class BridgeService {
         workingDirectory: currentSession.workingDirectory,
       });
 
+      const trimmedText = message.text.trim();
+      const looksLikePickerReply =
+        /^\d+$/.test(trimmedText) || /^(new|start)$/i.test(trimmedText);
+      if (looksLikePickerReply && readSessionPicker(currentSession.bridgeState)) {
+        const handled = await this.handleSessionPickerSelection(currentSession, message);
+        if (handled) {
+          return;
+        }
+      }
+
       const bridgeCommand = immediateBridgeCommand ?? parseBridgeCommand(message.text);
       if (bridgeCommand) {
         await this.handleBridgeCommand(currentSession, message, bridgeCommand);
@@ -716,12 +735,11 @@ export class BridgeService {
         return;
       }
 
-      if (/^\d+$/.test(message.text.trim()) || /^(new|start)$/i.test(message.text.trim())) {
-        const handled = await this.handleSessionPickerSelection(currentSession, message);
-        if (handled) {
-          return;
-        }
+      const resumeResult = await this.maybeOfferResume(currentSession, message);
+      if (resumeResult.offered) {
+        return;
       }
+      currentSession = resumeResult.session;
 
       const rotated = await this.maybeRotateThreadBeforeExecution(currentSession, message.thread);
       currentSession = rotated.session;
@@ -1299,7 +1317,7 @@ export class BridgeService {
         return;
       }
       try {
-        const latest = await this.readLatestReusableSession(session.agent);
+        const latest = await this.readLatestReusableSession(session);
         if (!latest) {
           await this.deps.chatAdapter.postThreadMessage(
             message.thread,
@@ -1489,7 +1507,7 @@ export class BridgeService {
         return;
       }
 
-      const sessions = await this.readRecentReusableSessions(session.agent, 5);
+      const sessions = await this.readRecentReusableSessions(session, 5);
       if (sessions.length === 0) {
         await this.deps.chatAdapter.postThreadMessage(
           message.thread,
@@ -1545,6 +1563,7 @@ export class BridgeService {
       return false;
     }
 
+    const pendingPrompt = picker.pendingPrompt;
     const normalized = message.text.trim().toLowerCase();
     if (normalized === "new" || normalized === "start") {
       const nextBridgeState = { ...(session.bridgeState ?? {}) };
@@ -1564,8 +1583,11 @@ export class BridgeService {
       });
       await this.deps.chatAdapter.postThreadMessage(
         message.thread,
-        `Starting a fresh ${formatAgentDisplayName(session.agent)} session for bridge session \`${session.sessionId}\`. Send the next instruction to begin.`,
+        `Starting a fresh ${formatAgentDisplayName(session.agent)} session for bridge session \`${session.sessionId}\`. ${
+          pendingPrompt ? "Running your pending instruction now." : "Send the next instruction to begin."
+        }`,
       );
+      this.dispatchPendingPrompt(message, pendingPrompt);
       return true;
     }
 
@@ -1584,7 +1606,23 @@ export class BridgeService {
       picker.sessionIds[selectedIndex - 1] ?? "",
       "picker",
     );
+    this.dispatchPendingPrompt(message, pendingPrompt);
     return true;
+  }
+
+  private dispatchPendingPrompt(
+    message: IncomingChatMessage,
+    pendingPrompt: string | undefined,
+  ): void {
+    if (!pendingPrompt) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      void this.handleMessage({ ...message, text: pendingPrompt }).catch((error: unknown) => {
+        console.error("Pending prompt dispatch failed.", error);
+      });
+    });
   }
 
   private async updateSessionWorkingDirectory(
@@ -1595,11 +1633,28 @@ export class BridgeService {
       source: string;
     },
   ): Promise<void> {
+    const directoryChanged =
+      path.resolve(session.workingDirectory) !== path.resolve(input.workingDirectory);
+    const detachClaude =
+      directoryChanged &&
+      session.agent === "claude-code" &&
+      (readAgentSessionId(session) !== undefined || Boolean(session.bridgeState?.resumeOffered));
+
     const nextSession: SessionBinding = {
       ...session,
       workingDirectory: input.workingDirectory,
       updatedAt: new Date().toISOString(),
     };
+
+    if (detachClaude) {
+      const nextBridgeState = this.buildSessionBridgeState(session, {
+        connectionMode: "bridge-owned",
+      });
+      delete nextBridgeState.resumeOffered;
+      delete nextBridgeState.sessionPicker;
+      nextSession.agentState = {};
+      nextSession.bridgeState = nextBridgeState;
+    }
 
     await this.deps.stateStore.upsertSession(nextSession);
     await this.deps.auditLogger.log({
@@ -1608,11 +1663,17 @@ export class BridgeService {
       previousWorkingDirectory: session.workingDirectory,
       workingDirectory: input.workingDirectory,
       rawPath: input.source,
+      ...(detachClaude ? { detachedAgentSession: true } : {}),
     });
-    await this.deps.chatAdapter.postThreadMessage(
-      message.thread,
+    const lines = [
       `Session \`${session.sessionId}\` is now bound to \`${input.workingDirectory}\`.`,
-    );
+    ];
+    if (detachClaude) {
+      lines.push(
+        "The attached Claude Code session was detached because the folder changed. The next instruction will offer resume choices for the new folder.",
+      );
+    }
+    await this.deps.chatAdapter.postThreadMessage(message.thread, lines.join("\n"));
   }
 
   private async attachAgentSession(
@@ -1645,36 +1706,105 @@ export class BridgeService {
     );
   }
 
+  private async maybeOfferResume(
+    session: SessionBinding,
+    message: IncomingChatMessage,
+  ): Promise<{ offered: boolean; session: SessionBinding }> {
+    if (session.agent !== "claude-code") {
+      return { offered: false, session };
+    }
+
+    if (readAgentSessionId(session)) {
+      return { offered: false, session };
+    }
+
+    if (readSessionPicker(session.bridgeState)) {
+      return { offered: false, session };
+    }
+
+    if (session.bridgeState?.resumeOffered === true) {
+      return { offered: false, session };
+    }
+
+    const priorExecutions = await this.deps.stateStore.listExecutionRecords({
+      sessionId: session.sessionId,
+      limit: 1,
+    });
+    if (priorExecutions.length > 0) {
+      return { offered: false, session };
+    }
+
+    let candidates: StoredAgentSession[] = [];
+    try {
+      candidates = await this.readRecentReusableSessions(session, 5);
+    } catch {
+      candidates = [];
+    }
+
+    if (candidates.length === 0) {
+      const nextSession: SessionBinding = {
+        ...session,
+        updatedAt: new Date().toISOString(),
+        bridgeState: this.buildSessionBridgeState(session, {
+          resumeOffered: true,
+        }),
+      };
+      await this.deps.stateStore.upsertSession(nextSession);
+      return { offered: false, session: nextSession };
+    }
+
+    const nextSession: SessionBinding = {
+      ...session,
+      updatedAt: new Date().toISOString(),
+      bridgeState: this.buildSessionBridgeState(session, {
+        resumeOffered: true,
+        sessionPicker: {
+          sessionIds: candidates.map((candidate) => candidate.id),
+          pendingPrompt: message.text,
+        },
+      }),
+    };
+    await this.deps.stateStore.upsertSession(nextSession);
+    await this.deps.auditLogger.log({
+      type: "bridge.resume-picker.opened",
+      sessionId: session.sessionId,
+      workingDirectory: session.workingDirectory,
+      candidateCount: candidates.length,
+    });
+
+    const lines = [
+      `This folder (\`${session.workingDirectory}\`) has previous Claude Code sessions. Reply with a number to resume, or \`new\` to start fresh. Your instruction will run after you choose.`,
+      ...candidates.map((candidate, index) => {
+        const label = candidate.label ? ` - ${candidate.label}` : "";
+        return `${index + 1}. \`${candidate.id}\`${label} (${candidate.updatedAt})`;
+      }),
+    ];
+    await this.deps.chatAdapter.postThreadMessage(message.thread, lines.join("\n"));
+
+    return { offered: true, session: nextSession };
+  }
+
   private async readLatestReusableSession(
-    agentKind: SessionBinding["agent"],
+    session: SessionBinding,
   ): Promise<StoredAgentSession | undefined> {
+    const agentKind = session.agent;
     if (agentKind === "cursor" || agentKind === "gemini") {
       return undefined;
     }
 
     if (agentKind === "claude-code") {
-      const session = await readLatestClaudeSession(this.deps.config.claudeSessionIndexFile);
-      return session
-        ? {
-            id: session.id,
-            updatedAt: session.updatedAt,
-            ...(session.summary
-              ? {
-                  label: session.summary,
-                }
-              : {}),
-          }
-        : undefined;
+      const candidates = await this.readRecentReusableSessions(session, 1);
+      return candidates[0];
     }
 
-    const session = await readLatestCodexSession(this.deps.config.codexSessionIndexFile);
-    return session
+    const latest = await readLatestCodexSession(this.deps.config.codexSessionIndexFile);
+    return latest
       ? {
-          id: session.id,
-          updatedAt: session.updatedAt,
-          ...(session.threadName
+          id: latest.id,
+          updatedAt: latest.updatedAt,
+          ...(latest.threadName
             ? {
-                label: session.threadName,
+                label: latest.threadName,
               }
             : {}),
         }
@@ -1682,33 +1812,56 @@ export class BridgeService {
   }
 
   private async readRecentReusableSessions(
-    agentKind: SessionBinding["agent"],
+    session: SessionBinding,
     limit: number,
   ): Promise<StoredAgentSession[]> {
+    const agentKind = session.agent;
     if (agentKind === "cursor" || agentKind === "gemini") {
       return [];
     }
 
     if (agentKind === "claude-code") {
-      const sessions = await readRecentClaudeSessions(this.deps.config.claudeSessionIndexFile, limit);
-      return sessions.map((session) => ({
-        id: session.id,
-        updatedAt: session.updatedAt,
-        ...(session.summary
-          ? {
-              label: session.summary,
-            }
-          : {}),
-      }));
+      const projectSessions = await readClaudeProjectSessions(
+        this.deps.config.claudeProjectsDir,
+        session.workingDirectory,
+        limit,
+      );
+      if (projectSessions.length > 0) {
+        return projectSessions.map((entry) => ({
+          id: entry.id,
+          updatedAt: entry.updatedAt,
+          ...(entry.label ? { label: entry.label } : {}),
+        }));
+      }
+
+      try {
+        const legacy = await readRecentClaudeSessions(
+          this.deps.config.claudeSessionIndexFile,
+          limit,
+        );
+        return legacy.map((entry) => ({
+          id: entry.id,
+          updatedAt: entry.updatedAt,
+          ...(entry.summary ? { label: entry.summary } : {}),
+        }));
+      } catch (error) {
+        if (error instanceof Error && "code" in error) {
+          const code = (error as NodeJS.ErrnoException).code;
+          if (code === "ENOENT") {
+            return [];
+          }
+        }
+        throw error;
+      }
     }
 
     const sessions = await readRecentCodexSessions(this.deps.config.codexSessionIndexFile, limit);
-    return sessions.map((session) => ({
-      id: session.id,
-      updatedAt: session.updatedAt,
-      ...(session.threadName
+    return sessions.map((entry) => ({
+      id: entry.id,
+      updatedAt: entry.updatedAt,
+      ...(entry.threadName
         ? {
-            label: session.threadName,
+            label: entry.threadName,
           }
         : {}),
     }));

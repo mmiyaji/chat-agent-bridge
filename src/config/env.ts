@@ -29,6 +29,10 @@ function defaultClaudeSessionIndexFile(): string {
   return path.join(os.homedir(), ".config", "claude", "sessions", "sessions.json");
 }
 
+function defaultClaudeProjectsDir(): string {
+  return path.join(os.homedir(), ".claude", "projects");
+}
+
 function parseApprovalPolicy(value: string | undefined): ApprovalPolicy {
   switch (value) {
     case undefined:
@@ -441,6 +445,9 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     ),
     claudeSessionIndexFile: path.resolve(
       env.CAB_CLAUDE_SESSION_INDEX_FILE ?? defaultClaudeSessionIndexFile(),
+    ),
+    claudeProjectsDir: path.resolve(
+      env.CAB_CLAUDE_PROJECTS_DIR ?? defaultClaudeProjectsDir(),
     ),
     codexModel: readSettingString(env.CAB_CODEX_MODEL, persisted, "codexModel") ?? "gpt-5.4",
     codexMaxTurns: parseInteger(
