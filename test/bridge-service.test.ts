@@ -1976,3 +1976,108 @@ test("BridgeService lets an inline directory token override a channel default", 
     path.resolve("C:/repo/other"),
   );
 });
+
+function createMessageInDir(text: string, workingDirectory: string): IncomingChatMessage {
+  return {
+    thread: { provider: "slack", channelId: "C1", threadId: "T1" },
+    userId: "U1",
+    text,
+    requestedWorkingDirectory: workingDirectory,
+  };
+}
+
+test("BridgeService allow-dir adds a root and cwd into it succeeds", async () => {
+  const { chatAdapter, store, config, agent } = await startBridge();
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-allow-dir-add-"));
+  const newRoot = path.join(tempRoot, "extra-root");
+  await fs.mkdir(newRoot, { recursive: true });
+  config.settingsFile = path.join(tempRoot, "settings.json");
+  agent.result = { sessionId: "ignored", summary: "ok" };
+
+  await chatAdapter.handler?.(createMessage(`allow-dir ${newRoot}`));
+  assert.ok(
+    config.allowedDirectories.some((root) => path.resolve(root) === path.resolve(newRoot)),
+  );
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /Added allowed root/);
+
+  // Alias for the new root's basename is recomputed.
+  assert.equal(
+    path.resolve(config.repoAliases["extra-root"] ?? ""),
+    path.resolve(newRoot),
+  );
+
+  // The persisted settings file records the new root.
+  const persisted = JSON.parse(await fs.readFile(config.settingsFile, "utf8"));
+  assert.ok(String(persisted.allowedDirs).includes(newRoot));
+
+  // cwd into the newly allowed root now succeeds.
+  await chatAdapter.handler?.(createMessage(`cwd ${newRoot}`));
+  const session = (await store.listSessions())[0];
+  assert.equal(path.resolve(session.workingDirectory), path.resolve(newRoot));
+});
+
+test("BridgeService allow-dir on an already-covered path is a no-op", async () => {
+  const { chatAdapter, config } = await startBridge();
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-allow-dir-noop-"));
+  const child = path.join(tempRoot, "child");
+  await fs.mkdir(child, { recursive: true });
+  config.settingsFile = path.join(tempRoot, "settings.json");
+  config.allowedDirectories = [tempRoot];
+
+  const before = [...config.allowedDirectories];
+  await chatAdapter.handler?.(createMessageInDir(`allow-dir ${child}`, tempRoot));
+
+  assert.deepEqual(config.allowedDirectories, before);
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /already allowed/);
+});
+
+test("BridgeService allow-dir remove refuses on the last root", async () => {
+  const { chatAdapter, config } = await startBridge();
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-allow-dir-last-"));
+  config.settingsFile = path.join(tempRoot, "settings.json");
+  config.allowedDirectories = [tempRoot];
+  config.defaultWorkingDirectory = tempRoot;
+
+  await chatAdapter.handler?.(createMessageInDir(`allow-dir remove ${tempRoot}`, tempRoot));
+
+  assert.deepEqual(config.allowedDirectories, [tempRoot]);
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /last remaining allowed root/);
+});
+
+test("BridgeService allow-dir remove refuses when default workdir would be orphaned", async () => {
+  const { chatAdapter, config } = await startBridge();
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-allow-dir-orphan-"));
+  const rootA = path.join(tempRoot, "a");
+  const rootB = path.join(tempRoot, "b");
+  await fs.mkdir(rootA, { recursive: true });
+  await fs.mkdir(rootB, { recursive: true });
+  config.settingsFile = path.join(tempRoot, "settings.json");
+  config.allowedDirectories = [rootA, rootB];
+  config.defaultWorkingDirectory = rootA;
+
+  await chatAdapter.handler?.(createMessageInDir(`allow-dir remove ${rootA}`, rootA));
+
+  assert.equal(config.allowedDirectories.length, 2);
+  assert.match(chatAdapter.posted.at(-1)?.text ?? "", /would then be outside all allowed roots/);
+});
+
+test("BridgeService allow-dir remove succeeds and recomputes aliases", async () => {
+  const { chatAdapter, config } = await startBridge();
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-allow-dir-remove-"));
+  const rootA = path.join(tempRoot, "keep");
+  const rootB = path.join(tempRoot, "drop");
+  await fs.mkdir(rootA, { recursive: true });
+  await fs.mkdir(rootB, { recursive: true });
+  config.settingsFile = path.join(tempRoot, "settings.json");
+  config.allowedDirectories = [rootA, rootB];
+  config.repoAliases = { keep: rootA, drop: rootB };
+  config.defaultWorkingDirectory = rootA;
+
+  await chatAdapter.handler?.(createMessageInDir(`allow-dir remove ${rootB}`, rootA));
+
+  assert.equal(config.allowedDirectories.length, 1);
+  assert.equal(path.resolve(config.allowedDirectories[0]), path.resolve(rootA));
+  // Alias for the removed root is gone after recomputation.
+  assert.equal(config.repoAliases["drop"], undefined);
+  assert.equal(path.resolve(config.repoAliases["keep"] ?? ""), path.resolve(rootA));
+});

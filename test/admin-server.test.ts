@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { AdminServer } from "../src/admin/server.js";
 import { BridgeService } from "../src/core/bridge-service.js";
 import { SessionManager } from "../src/core/session-manager.js";
@@ -765,3 +767,151 @@ function createBridge(store: InMemoryStateStore): {
 async function waitForMicrotasks(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
+
+async function startAdminWithConfig(config: AppConfig): Promise<{
+  admin: AdminServer;
+  port: number;
+  store: InMemoryStateStore;
+}> {
+  const store = new InMemoryStateStore();
+  fs.mkdirSync("./.test-tmp", { recursive: true });
+  fs.rmSync(config.settingsFile, { force: true });
+  const bridgeStore = new InMemoryStateStore();
+  const bridge = new BridgeService({
+    config,
+    stateStore: bridgeStore,
+    sessionManager: new SessionManager(bridgeStore),
+    jobQueue: new InlineJobQueue(),
+    chatAdapter: new RecordingChatAdapter(),
+    agents: {
+      codex: new RecordingAgent("codex"),
+      "claude-code": new RecordingAgent("claude-code"),
+      cursor: new RecordingAgent("cursor"),
+      gemini: new RecordingAgent("gemini"),
+    },
+    auditLogger: new RecordingAuditLogger(),
+    launchDetachedRestart: () => {},
+  });
+  const admin = new AdminServer({
+    config,
+    stateStore: store,
+    auditLogger: new RecordingAuditLogger(),
+    bridge,
+  });
+  await admin.start();
+  const port = admin.getListeningPort();
+  assert.ok(port);
+  return { admin, port: port!, store };
+}
+
+test("admin GET settings returns allowed directory roots", async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cab-admin-allowed-get-"));
+  const config = createConfig();
+  config.allowedDirectories = [tempRoot];
+  config.defaultWorkingDirectory = tempRoot;
+  config.settingsFile = path.join(tempRoot, "settings.json");
+  const { admin, port } = await startAdminWithConfig(config);
+  try {
+    const before = await getJson(port, "/admin/api/settings");
+    assert.equal(before.statusCode, 200);
+    assert.equal(before.body.settings.allowedDirectories, tempRoot);
+  } finally {
+    await admin.stop();
+  }
+});
+
+test("admin POST applies new allowed roots and recomputes aliases", async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cab-admin-allowed-post-"));
+  const rootA = path.join(tempRoot, "alpha");
+  const rootB = path.join(tempRoot, "beta");
+  fs.mkdirSync(rootA, { recursive: true });
+  fs.mkdirSync(rootB, { recursive: true });
+  const config = createConfig();
+  config.allowedDirectories = [rootA];
+  config.defaultWorkingDirectory = rootA;
+  config.settingsFile = path.join(tempRoot, "settings.json");
+  const { admin, port } = await startAdminWithConfig(config);
+  try {
+    const update = await postJson(
+      port,
+      "/admin/api/settings",
+      JSON.stringify({ allowedDirectories: `${rootA}\n${rootB}` }),
+    );
+    assert.equal(update.statusCode, 200);
+    assert.deepEqual(config.allowedDirectories, [path.resolve(rootA), path.resolve(rootB)]);
+    assert.equal(path.resolve(config.repoAliases["beta"] ?? ""), path.resolve(rootB));
+    assert.equal(update.body.settings.allowedDirectories, `${path.resolve(rootA)}\n${path.resolve(rootB)}`);
+
+    const persisted = JSON.parse(fs.readFileSync(config.settingsFile, "utf8"));
+    assert.ok(String(persisted.allowedDirs).includes(rootB));
+  } finally {
+    await admin.stop();
+  }
+});
+
+test("admin POST rejects a relative allowed root", async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cab-admin-allowed-rel-"));
+  const config = createConfig();
+  config.allowedDirectories = [tempRoot];
+  config.defaultWorkingDirectory = tempRoot;
+  config.settingsFile = path.join(tempRoot, "settings.json");
+  const { admin, port } = await startAdminWithConfig(config);
+  try {
+    const update = await postJson(
+      port,
+      "/admin/api/settings",
+      JSON.stringify({ allowedDirectories: "./relative-root" }),
+    );
+    assert.equal(update.statusCode, 400);
+    assert.match(update.body.error, /absolute path/);
+    assert.deepEqual(config.allowedDirectories, [tempRoot]);
+  } finally {
+    await admin.stop();
+  }
+});
+
+test("admin POST rejects a nonexistent allowed root", async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cab-admin-allowed-missing-"));
+  const config = createConfig();
+  config.allowedDirectories = [tempRoot];
+  config.defaultWorkingDirectory = tempRoot;
+  config.settingsFile = path.join(tempRoot, "settings.json");
+  const missing = path.join(tempRoot, "does-not-exist");
+  const { admin, port } = await startAdminWithConfig(config);
+  try {
+    const update = await postJson(
+      port,
+      "/admin/api/settings",
+      JSON.stringify({ allowedDirectories: missing }),
+    );
+    assert.equal(update.statusCode, 400);
+    assert.match(update.body.error, /does not exist or is not a directory/);
+  } finally {
+    await admin.stop();
+  }
+});
+
+test("admin POST rejects new roots that orphan the default working directory", async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cab-admin-allowed-orphan-"));
+  const rootA = path.join(tempRoot, "current");
+  const rootB = path.join(tempRoot, "other");
+  fs.mkdirSync(rootA, { recursive: true });
+  fs.mkdirSync(rootB, { recursive: true });
+  const config = createConfig();
+  config.allowedDirectories = [rootA];
+  config.defaultWorkingDirectory = rootA;
+  config.settingsFile = path.join(tempRoot, "settings.json");
+  const { admin, port } = await startAdminWithConfig(config);
+  try {
+    const update = await postJson(
+      port,
+      "/admin/api/settings",
+      JSON.stringify({ allowedDirectories: rootB }),
+    );
+    assert.equal(update.statusCode, 400);
+    assert.match(update.body.error, /outside the new allowed roots/);
+    assert.deepEqual(config.allowedDirectories, [rootA]);
+  } finally {
+    await admin.stop();
+  }
+});

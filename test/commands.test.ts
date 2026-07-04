@@ -67,3 +67,35 @@ test("parseBridgeCommand parses bare channel-default as show", () => {
   });
 });
 
+
+test("parseBridgeCommand parses allow-dirs list command", () => {
+  assert.deepEqual(parseBridgeCommand("allow-dirs"), {
+    kind: "list-allowed-dirs",
+  });
+});
+
+test("parseBridgeCommand parses allow-dir add with an absolute path", () => {
+  assert.deepEqual(parseBridgeCommand("allow-dir C:/work/new-root"), {
+    kind: "allow-dir",
+    action: "add",
+    rawPath: "C:/work/new-root",
+  });
+});
+
+test("parseBridgeCommand parses allow-dir remove with an absolute path", () => {
+  assert.deepEqual(parseBridgeCommand("allow-dir remove C:/work/old-root"), {
+    kind: "allow-dir",
+    action: "remove",
+    rawPath: "C:/work/old-root",
+  });
+});
+
+test("parseBridgeCommand rejects allow-dir with a relative path", () => {
+  assert.equal(parseBridgeCommand("allow-dir ./relative"), undefined);
+  assert.equal(parseBridgeCommand("allow-dir remove ./relative"), undefined);
+});
+
+test("parseBridgeCommand rejects allow-dir with a missing argument", () => {
+  assert.equal(parseBridgeCommand("allow-dir"), undefined);
+  assert.equal(parseBridgeCommand("allow-dir remove"), undefined);
+});

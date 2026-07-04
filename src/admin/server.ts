@@ -6,6 +6,8 @@ import { resolveCommand } from "../core/command-resolution.js";
 import { readPendingApproval } from "../core/approval.js";
 import { BridgeService } from "../core/bridge-service.js";
 import { assertPathAllowed } from "../core/paths.js";
+import { computeRepoAliases } from "../config/env.js";
+import { updatePersistedSettings } from "../config/settings-io.js";
 import { AppConfig, ExecutionRecord, JsonValue, SessionBinding } from "../core/types.js";
 import { StateStore } from "../state/state-store.js";
 import { ChatConnectionStatus } from "../adapters/chat.js";
@@ -53,6 +55,8 @@ interface RuntimeSettingsPayload {
   adminHost: NonNullable<AppConfig["adminHost"]>;
   adminPort: NonNullable<AppConfig["adminPort"]>;
   defaultWorkingDirectory: AppConfig["defaultWorkingDirectory"];
+  /** Allowed working-directory roots, one absolute path per line. */
+  allowedDirectories: string;
   mattermostServerUrl?: NonNullable<AppConfig["mattermostServerUrl"]>;
   mattermostActionBaseUrl?: NonNullable<AppConfig["mattermostActionBaseUrl"]>;
   mattermostDmOnly: boolean;
@@ -2072,6 +2076,12 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           "</div>" +
           '<div class="settings-subgrid">' +
             renderFieldWithHint(
+              '<div class="field"><label for="settings-allowed-dirs">Allowed directory roots</label><textarea id="settings-allowed-dirs" data-testid="settings-allowed-dirs" rows="4" placeholder="C:/repo&#10;C:/work">' + escapeHtml(settings.allowedDirectories || "") + '</textarea></div>',
+              'One absolute path per line. Changes apply immediately and repo aliases are recomputed. If the <code>CAB_ALLOWED_DIRS</code> environment variable is set, it takes precedence again at the next restart.'
+            ) +
+          "</div>" +
+          '<div class="settings-subgrid">' +
+            renderFieldWithHint(
               '<div class="field"><label for="settings-host">Bridge host</label><input id="settings-host" data-testid="settings-host" type="text" value="' + escapeHtml(settings.host) + '" /></div>',
               'The network interface used by the main bridge HTTP server when HTTP mode is active.'
             ) +
@@ -2263,6 +2273,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           slackMode: document.getElementById("settings-slack-mode").value,
           mattermostMode: document.getElementById("settings-mattermost-mode").value,
           defaultWorkingDirectory: document.getElementById("settings-workdir").value.trim(),
+          allowedDirectories: document.getElementById("settings-allowed-dirs").value.trim(),
           host: document.getElementById("settings-host").value.trim(),
           port: Number.parseInt(document.getElementById("settings-port").value, 10),
           adminHost: document.getElementById("settings-admin-host").value.trim(),
@@ -3211,6 +3222,7 @@ export class AdminServer {
       mattermostMode: this.config.mattermostMode,
       mattermostActorMode: this.config.mattermostActorMode ?? "bot",
       defaultWorkingDirectory: this.config.defaultWorkingDirectory,
+      allowedDirectories: this.config.allowedDirectories.join("\n"),
       host: this.config.host,
       port: this.config.port,
       adminHost: this.config.adminHost ?? this.config.host,
@@ -3258,6 +3270,7 @@ export class AdminServer {
 
   private persistSettingsFile(): void {
     const payload = {
+      allowedDirs: this.config.allowedDirectories.join(";"),
       chatProvider: this.config.chatProvider,
       agentKind: this.config.agentKind,
       defaultApprovalPolicy: this.config.defaultApprovalPolicy,
@@ -3299,12 +3312,9 @@ export class AdminServer {
       claudeMaxRuntimeMs: this.config.claudeMaxRuntimeMs,
       autoSplitThreadUserMessageCount: this.config.autoSplitThreadUserMessageCount,
     };
-    fs.mkdirSync(path.dirname(this.config.settingsFile), { recursive: true });
-    fs.writeFileSync(
-      this.config.settingsFile,
-      JSON.stringify(payload, null, 2),
-      "utf8",
-    );
+    // Read-modify-write so keys owned by chat commands (or future writers) are
+    // preserved. `undefined` values (unset optional secrets) are stripped.
+    updatePersistedSettings(this.config.settingsFile, payload);
   }
 
   private handleGetSettings(response: ServerResponse): void {
@@ -3493,15 +3503,73 @@ export class AdminServer {
         }
       }
     }
+    // Validate the allowed roots first so defaultWorkingDirectory can be checked
+    // against the new roots below. Each root must be an absolute path to an
+    // existing directory.
+    let nextAllowedDirectories: string[] | undefined;
+    if (payload.allowedDirectories !== undefined) {
+      if (typeof payload.allowedDirectories !== "string") {
+        writeJson(response, 400, { error: "Invalid allowedDirectories" });
+        return;
+      }
+      const entries = payload.allowedDirectories
+        .split(/[\r\n]+/)
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
+      if (entries.length === 0) {
+        writeJson(response, 400, {
+          error: "Allowed directory roots must include at least one path.",
+        });
+        return;
+      }
+
+      const resolved: string[] = [];
+      for (const entry of entries) {
+        if (!path.isAbsolute(entry)) {
+          writeJson(response, 400, {
+            error: `Allowed directory root is not an absolute path: ${entry}`,
+          });
+          return;
+        }
+        const resolvedEntry = path.resolve(entry);
+        let stat: fs.Stats | undefined;
+        try {
+          stat = fs.statSync(resolvedEntry);
+        } catch {
+          stat = undefined;
+        }
+        if (!stat || !stat.isDirectory()) {
+          writeJson(response, 400, {
+            error: `Allowed directory root does not exist or is not a directory: ${entry}`,
+          });
+          return;
+        }
+        resolved.push(resolvedEntry);
+      }
+      nextAllowedDirectories = resolved;
+    }
+
+    // The default working directory must stay inside the (possibly new) roots.
+    const effectiveAllowedDirectories =
+      nextAllowedDirectories ?? this.config.allowedDirectories;
     if (payload.defaultWorkingDirectory !== undefined) {
       try {
         payload.defaultWorkingDirectory = assertPathAllowed(
           payload.defaultWorkingDirectory,
-          this.config.allowedDirectories,
+          effectiveAllowedDirectories,
         );
       } catch (error) {
         writeJson(response, 400, {
           error: error instanceof Error ? error.message : "Invalid defaultWorkingDirectory",
+        });
+        return;
+      }
+    } else if (nextAllowedDirectories) {
+      try {
+        assertPathAllowed(this.config.defaultWorkingDirectory, nextAllowedDirectories);
+      } catch {
+        writeJson(response, 400, {
+          error: `Current default working directory \`${this.config.defaultWorkingDirectory}\` would be outside the new allowed roots. Update the default working directory as well.`,
         });
         return;
       }
@@ -3578,6 +3646,25 @@ export class AdminServer {
     }
     if (payload.defaultWorkingDirectory) {
       this.config.defaultWorkingDirectory = payload.defaultWorkingDirectory;
+    }
+    let allowedDirsChange:
+      | { before: string[]; after: string[] }
+      | undefined;
+    if (nextAllowedDirectories) {
+      const before = [...this.config.allowedDirectories];
+      // Mutate the shared array in place so path checks that captured a
+      // reference to config.allowedDirectories see the update immediately.
+      this.config.allowedDirectories.splice(
+        0,
+        this.config.allowedDirectories.length,
+        ...nextAllowedDirectories,
+      );
+      this.config.repoAliases = computeRepoAliases(
+        this.config.repoAliasesRaw,
+        this.config.allowedDirectories,
+        this.config.discoverRepos ?? false,
+      );
+      allowedDirsChange = { before, after: [...this.config.allowedDirectories] };
     }
     if (payload.mattermostServerUrl !== undefined) {
       if (payload.mattermostServerUrl) {
@@ -3676,6 +3763,14 @@ export class AdminServer {
     }
     if (payload.claudeMaxRuntimeMs) {
       this.config.claudeMaxRuntimeMs = payload.claudeMaxRuntimeMs;
+    }
+
+    if (allowedDirsChange) {
+      await this.auditLogger.log({
+        type: "admin.settings.allowed-dirs.updated",
+        before: allowedDirsChange.before,
+        after: allowedDirsChange.after,
+      });
     }
 
     const settings = this.readRuntimeSettings();

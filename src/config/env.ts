@@ -141,7 +141,7 @@ function parseAllowedDirs(value: string): string[] {
   return items;
 }
 
-function parseRepoAliases(
+export function computeRepoAliases(
   value: string | undefined,
   allowedDirectories: string[],
   discoverRepos: boolean,
@@ -378,7 +378,8 @@ function readSettingBoolean(
 export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
   const settingsFile = path.resolve(env.CAB_SETTINGS_FILE ?? "./data/admin-settings.json");
   const persisted = readPersistedSettings(settingsFile);
-  const rawAllowedDirs = env.CAB_ALLOWED_DIRS ?? process.cwd();
+  const rawAllowedDirs =
+    readSettingString(env.CAB_ALLOWED_DIRS, persisted, "allowedDirs") ?? process.cwd();
   const allowedDirectories = parseAllowedDirs(rawAllowedDirs);
   const defaultAllowedDirectory = allowedDirectories[0];
   if (!defaultAllowedDirectory) {
@@ -393,12 +394,15 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     readSettingBoolean(env.CAB_DISCOVER_REPOS, persisted, "discoverRepos"),
   );
 
+  const repoAliasesRaw = env.CAB_REPO_ALIASES;
+
   const config: AppConfig = {
     chatProvider: parseChatProvider(readSettingString(env.CAB_CHAT_PROVIDER, persisted, "chatProvider")),
     agentKind: parseAgentKind(readSettingString(env.CAB_AGENT, persisted, "agentKind")),
     allowedDirectories,
     discoverRepos,
-    repoAliases: parseRepoAliases(env.CAB_REPO_ALIASES, allowedDirectories, discoverRepos),
+    ...(repoAliasesRaw !== undefined ? { repoAliasesRaw } : {}),
+    repoAliases: computeRepoAliases(repoAliasesRaw, allowedDirectories, discoverRepos),
     slackAllowedUserIds: parseUserIdList(
       readSettingString(env.CAB_SLACK_ALLOWED_USER_IDS, persisted, "slackAllowedUserIds"),
     ),

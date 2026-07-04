@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { createAppConfig } from "../src/config/env.js";
+import { createAppConfig, computeRepoAliases } from "../src/config/env.js";
 
 const tempRoot = path.resolve("./.test-tmp");
 
@@ -183,6 +183,64 @@ test("createAppConfig discovers git repos under allowed roots when enabled", () 
   assert.equal(config.discoverRepos, true);
   assert.equal(config.repoAliases["repo-a"], repoA);
   assert.equal(config.repoAliases["repo-b"], repoB);
+});
+
+test("createAppConfig reads persisted allowedDirs when env is absent", () => {
+  fs.mkdirSync(tempRoot, { recursive: true });
+  const rootA = path.join(tempRoot, "allowed-persist-a");
+  const rootB = path.join(tempRoot, "allowed-persist-b");
+  fs.mkdirSync(rootA, { recursive: true });
+  fs.mkdirSync(rootB, { recursive: true });
+  const settingsFile = path.join(tempRoot, "env-settings-allowed-dirs.json");
+  fs.writeFileSync(
+    settingsFile,
+    JSON.stringify({ allowedDirs: `${rootA};${rootB}` }, null, 2),
+    "utf8",
+  );
+
+  const config = createAppConfig({ CAB_SETTINGS_FILE: settingsFile });
+
+  assert.deepEqual(config.allowedDirectories, [
+    path.resolve(rootA),
+    path.resolve(rootB),
+  ]);
+});
+
+test("createAppConfig lets env CAB_ALLOWED_DIRS override persisted allowedDirs", () => {
+  fs.mkdirSync(tempRoot, { recursive: true });
+  const settingsFile = path.join(tempRoot, "env-settings-allowed-dirs-override.json");
+  fs.writeFileSync(
+    settingsFile,
+    JSON.stringify({ allowedDirs: "C:/persisted-root" }, null, 2),
+    "utf8",
+  );
+
+  const config = createAppConfig({
+    CAB_SETTINGS_FILE: settingsFile,
+    CAB_ALLOWED_DIRS: "C:/env-root",
+  });
+
+  assert.deepEqual(config.allowedDirectories, [path.resolve("C:/env-root")]);
+});
+
+test("computeRepoAliases derives basename aliases without discovery", () => {
+  const aliases = computeRepoAliases(undefined, ["C:/work/alpha", "C:/work/Beta"], false);
+  // The basename (lower-cased) maps to the directory exactly as provided.
+  assert.equal(aliases["alpha"], "C:/work/alpha");
+  assert.equal(aliases["beta"], "C:/work/Beta");
+});
+
+test("computeRepoAliases includes discovered git repos when enabled", () => {
+  fs.mkdirSync(tempRoot, { recursive: true });
+  const root = path.join(tempRoot, "compute-discover-root");
+  const repo = path.join(root, "discovered-repo");
+  fs.mkdirSync(path.join(repo, ".git"), { recursive: true });
+
+  const withDiscovery = computeRepoAliases(undefined, [root], true);
+  assert.equal(withDiscovery["discovered-repo"], repo);
+
+  const withoutDiscovery = computeRepoAliases(undefined, [root], false);
+  assert.equal(withoutDiscovery["discovered-repo"], undefined);
 });
 
 test("createAppConfig keeps explicit repo aliases ahead of discovered repos", () => {

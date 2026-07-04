@@ -24,6 +24,8 @@ import {
 } from "./commands.js";
 import { JobQueue } from "./job-queue.js";
 import { assertPathAllowed } from "./paths.js";
+import { computeRepoAliases } from "../config/env.js";
+import { updatePersistedSettings } from "../config/settings-io.js";
 import { SessionManager } from "./session-manager.js";
 import {
   AgentProgressUpdate,
@@ -1137,6 +1139,9 @@ export class BridgeService {
           "- `@Chat Agent Bridge approvals`",
           "- `@Chat Agent Bridge failures [count]`",
           "- `@Chat Agent Bridge repos`",
+          "- `@Chat Agent Bridge allow-dirs`",
+          "- `@Chat Agent Bridge allow-dir <absolute-path>`",
+          "- `@Chat Agent Bridge allow-dir remove <absolute-path>`",
           "- `@Chat Agent Bridge repo <alias>`",
           "- `@Chat Agent Bridge cwd <path>`",
           "- `@Chat Agent Bridge channel-default <alias|path|clear>`",
@@ -1578,8 +1583,30 @@ export class BridgeService {
       });
       await this.deps.chatAdapter.postThreadMessage(
         message.thread,
-        `Allowed working-directory roots:\n${formatRepoAliases(this.deps.config.repoAliases)}`,
+        [
+          this.formatAllowedDirectories(),
+          "",
+          "Repo aliases:",
+          formatRepoAliases(this.deps.config.repoAliases),
+        ].join("\n"),
       );
+      return;
+    }
+
+    if (command.kind === "list-allowed-dirs") {
+      await this.deps.auditLogger.log({
+        type: "bridge.command.list-allowed-dirs",
+        sessionId: session.sessionId,
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        this.formatAllowedDirectories(),
+      );
+      return;
+    }
+
+    if (command.kind === "allow-dir") {
+      await this.handleAllowDirCommand(session, message, command);
       return;
     }
 
@@ -1811,6 +1838,150 @@ export class BridgeService {
         console.error("Pending prompt dispatch failed.", error);
       });
     });
+  }
+
+  private formatAllowedDirectories(): string {
+    const roots = this.deps.config.allowedDirectories;
+    if (roots.length === 0) {
+      return "Allowed working-directory roots: `none`";
+    }
+
+    return [
+      "Allowed working-directory roots:",
+      ...roots.map((root, index) => `${index + 1}. \`${root}\``),
+    ].join("\n");
+  }
+
+  /**
+   * Recompute repo aliases and persist the allowed roots after the shared
+   * config.allowedDirectories array has been mutated in place. The array is
+   * mutated (not reassigned) so path checks holding a reference see the change.
+   */
+  private async persistAllowedDirs(): Promise<void> {
+    this.deps.config.repoAliases = computeRepoAliases(
+      this.deps.config.repoAliasesRaw,
+      this.deps.config.allowedDirectories,
+      this.deps.config.discoverRepos ?? false,
+    );
+    updatePersistedSettings(this.deps.config.settingsFile, {
+      allowedDirs: this.deps.config.allowedDirectories.join(";"),
+    });
+  }
+
+  private async handleAllowDirCommand(
+    session: SessionBinding,
+    message: IncomingChatMessage,
+    command: Extract<BridgeCommand, { kind: "allow-dir" }>,
+  ): Promise<void> {
+    const resolved = path.resolve(command.rawPath);
+
+    if (command.action === "add") {
+      // Already inside an existing root? Then it is already usable; do nothing.
+      let alreadyAllowed = false;
+      try {
+        assertPathAllowed(resolved, this.deps.config.allowedDirectories);
+        alreadyAllowed = true;
+      } catch {
+        alreadyAllowed = false;
+      }
+      if (alreadyAllowed) {
+        await this.deps.chatAdapter.postThreadMessage(
+          message.thread,
+          `\`${resolved}\` is already allowed by an existing root. No change made.`,
+        );
+        return;
+      }
+
+      let stat: fs.Stats | undefined;
+      try {
+        stat = fs.statSync(resolved);
+      } catch {
+        stat = undefined;
+      }
+      if (!stat || !stat.isDirectory()) {
+        await this.deps.auditLogger.log({
+          type: "bridge.command.allow-dir.failed",
+          sessionId: session.sessionId,
+          rawPath: command.rawPath,
+          error: "not-a-directory",
+        });
+        await this.deps.chatAdapter.postThreadMessage(
+          message.thread,
+          `Cannot add root: \`${resolved}\` does not exist or is not a directory.`,
+        );
+        return;
+      }
+
+      const before = [...this.deps.config.allowedDirectories];
+      this.deps.config.allowedDirectories.push(resolved);
+      await this.persistAllowedDirs();
+      await this.deps.auditLogger.log({
+        type: "bridge.command.allow-dir",
+        sessionId: session.sessionId,
+        rawPath: command.rawPath,
+        before,
+        after: [...this.deps.config.allowedDirectories],
+      });
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        [`Added allowed root \`${resolved}\`.`, "", this.formatAllowedDirectories()].join("\n"),
+      );
+      return;
+    }
+
+    // action === "remove"
+    const index = this.deps.config.allowedDirectories.findIndex(
+      (root) => path.resolve(root) === resolved,
+    );
+    if (index === -1) {
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        [
+          `\`${resolved}\` is not an exact allowed root, so nothing was removed.`,
+          this.formatAllowedDirectories(),
+        ].join("\n"),
+      );
+      return;
+    }
+
+    if (this.deps.config.allowedDirectories.length === 1) {
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        "Cannot remove the last remaining allowed root. Add another root first.",
+      );
+      return;
+    }
+
+    const remaining = this.deps.config.allowedDirectories.filter((_, i) => i !== index);
+    try {
+      assertPathAllowed(this.deps.config.defaultWorkingDirectory, remaining);
+    } catch {
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        `Cannot remove \`${resolved}\`: the default working directory \`${this.deps.config.defaultWorkingDirectory}\` would then be outside all allowed roots.`,
+      );
+      return;
+    }
+
+    const before = [...this.deps.config.allowedDirectories];
+    this.deps.config.allowedDirectories.splice(index, 1);
+    await this.persistAllowedDirs();
+    await this.deps.auditLogger.log({
+      type: "bridge.command.allow-dir.remove",
+      sessionId: session.sessionId,
+      rawPath: command.rawPath,
+      before,
+      after: [...this.deps.config.allowedDirectories],
+    });
+    await this.deps.chatAdapter.postThreadMessage(
+      message.thread,
+      [
+        `Removed allowed root \`${resolved}\`.`,
+        "Sessions already bound inside it keep working until their next working-directory change.",
+        "",
+        this.formatAllowedDirectories(),
+      ].join("\n"),
+    );
   }
 
   private async updateSessionWorkingDirectory(

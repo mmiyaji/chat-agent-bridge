@@ -101,6 +101,11 @@ export interface AppConfig {
   allowedDirectories: string[];
   discoverRepos?: boolean;
   repoAliases: Record<string, string>;
+  /**
+   * Raw CAB_REPO_ALIASES string (semicolon-separated `alias=path` entries) kept
+   * so repoAliases can be recomputed when the allowed roots change at runtime.
+   */
+  repoAliasesRaw?: string;
   slackAllowedUserIds: string[];
   mattermostAllowedUserIds: string[];
   defaultApprovalPolicy: ApprovalPolicy;

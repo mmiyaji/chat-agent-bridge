@@ -13,6 +13,9 @@ export type BridgeCommand =
   | { kind: "list-approvals" }
   | { kind: "list-failures"; limit: number }
   | { kind: "list-roots" }
+  | { kind: "list-allowed-dirs" }
+  | { kind: "allow-dir"; action: "add"; rawPath: string }
+  | { kind: "allow-dir"; action: "remove"; rawPath: string }
   | { kind: "set-workdir"; rawPath: string }
   | { kind: "channel-default"; action: "set"; rawPath: string }
   | { kind: "channel-default"; action: "clear" }
@@ -170,6 +173,36 @@ export function parseBridgeCommand(text: string): BridgeCommand | undefined {
 
   if (lower === "repos" || lower === "roots") {
     return { kind: "list-roots" };
+  }
+
+  if (lower === "allow-dirs") {
+    return { kind: "list-allowed-dirs" };
+  }
+
+  const allowDirMatch = /^allow-dir(?:\s+(.+))?$/i.exec(normalized);
+  if (allowDirMatch) {
+    const argument = allowDirMatch[1]?.trim();
+    if (!argument) {
+      return undefined;
+    }
+
+    const removeMatch = /^remove\s+(.+)$/i.exec(argument);
+    if (removeMatch?.[1]) {
+      const target = removeMatch[1].trim();
+      if (!path.isAbsolute(target)) {
+        return undefined;
+      }
+      return { kind: "allow-dir", action: "remove", rawPath: target };
+    }
+
+    if (argument.toLowerCase() === "remove") {
+      return undefined;
+    }
+
+    if (!path.isAbsolute(argument)) {
+      return undefined;
+    }
+    return { kind: "allow-dir", action: "add", rawPath: argument };
   }
 
   if (lower === "attach-last") {
