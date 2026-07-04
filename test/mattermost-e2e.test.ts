@@ -85,6 +85,7 @@ function createMattermostBridgeConfig(
   state: BootstrapState,
   webhookToken: string,
   tempRoot: string,
+  overrides?: Partial<AppConfig>,
 ): AppConfig {
   return {
     chatProvider: "mattermost",
@@ -118,6 +119,7 @@ function createMattermostBridgeConfig(
     mattermostServerUrl: state.serverUrl,
     mattermostBotToken: state.bridgeUser.token,
     mattermostWebhookToken: webhookToken,
+    ...overrides,
   };
 }
 
@@ -181,6 +183,34 @@ class CancelE2EAgent implements Agent {
   }
 }
 
+// Generic fake agent for the workdir/alias/resume/channel-default flow scenarios,
+// which only need to observe what prompt and session state reached the agent.
+class RecordingE2EAgent implements Agent {
+  readonly kind: Agent["kind"];
+  readonly capabilities = {
+    manualApproval: true,
+    writeApprovalRerun: true,
+    networkAccessControl: false,
+  } as const;
+  readonly requests: AgentExecutionRequest[] = [];
+
+  constructor(kind: Agent["kind"] = "codex") {
+    this.kind = kind;
+  }
+
+  async execute(request: AgentExecutionRequest): Promise<AgentExecutionResult> {
+    this.requests.push(request);
+    return {
+      sessionId: request.session.sessionId,
+      summary: "done",
+    };
+  }
+
+  async cancelExecution(): Promise<boolean> {
+    return false;
+  }
+}
+
 async function apiRequest<T>(
   serverUrl: string,
   requestPath: string,
@@ -227,9 +257,15 @@ async function startMattermostBridge(input: {
   state: BootstrapState;
   webhookToken: string;
   agent: Agent;
+  configOverrides?: Partial<AppConfig>;
 }) {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-mm-bridge-"));
-  const config = createMattermostBridgeConfig(input.state, input.webhookToken, tempRoot);
+  const config = createMattermostBridgeConfig(
+    input.state,
+    input.webhookToken,
+    tempRoot,
+    input.configOverrides,
+  );
   const chatAdapter = new MattermostAdapter(config);
   const stateStore = new InMemoryStateStore();
   const bridge = new BridgeService({
@@ -239,7 +275,9 @@ async function startMattermostBridge(input: {
     jobQueue: new InlineJobQueue(),
     chatAdapter,
     agents: {
-      codex: input.agent,
+      // Register under whichever agent kind this scenario configures so
+      // agentKind: "claude-code" scenarios route to the fake agent too.
+      [input.agent.kind]: input.agent,
     },
     auditLogger: new RecordingAuditLogger(),
   });
@@ -760,6 +798,447 @@ mattermostTest("Mattermost cancel button E2E cancels the running request", async
     await chatAdapter.stop();
   }
 });
+
+async function seedClaudeProjectSessions(
+  workingDirectory: string,
+  entries: Array<{ id: string; summary: string; mtimeSeconds: number }>,
+): Promise<string> {
+  const { encodeClaudeProjectDir } = await import("../src/agents/claude/project-sessions.js");
+  const projectsRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-mm-e2e-projects-"));
+  const projectFolder = path.join(projectsRoot, encodeClaudeProjectDir(workingDirectory));
+  await fs.mkdir(projectFolder, { recursive: true });
+  for (const entry of entries) {
+    const file = path.join(projectFolder, `${entry.id}.jsonl`);
+    await fs.writeFile(file, JSON.stringify({ type: "summary", summary: entry.summary }), "utf8");
+    await fs.utimes(file, entry.mtimeSeconds, entry.mtimeSeconds);
+  }
+
+  return projectsRoot;
+}
+
+mattermostTest("Mattermost workdir picker E2E offers aliases and binds the selection", async () => {
+  const state = JSON.parse(await fs.readFile(stateFile, "utf8")) as BootstrapState;
+  const webhookToken = "mm-e2e-workdir-picker-hook";
+  const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-mm-e2e-repo-"));
+  const aliasDir = path.join(repoRoot, "alias-project");
+  await fs.mkdir(aliasDir, { recursive: true });
+  const agent = new RecordingE2EAgent("codex");
+  const { chatAdapter } = await startMattermostBridge({
+    state,
+    webhookToken,
+    agent,
+    configOverrides: {
+      allowedDirectories: [repoRoot],
+      repoAliases: { project: aliasDir },
+      defaultWorkingDirectory: repoRoot,
+    },
+  });
+
+  try {
+    const created = await apiRequest<MattermostPost>(
+      state.serverUrl,
+      "/api/v4/posts",
+      state.memberUser.token,
+      {
+        method: "POST",
+        body: {
+          channel_id: state.channel.id,
+          message: "bridge workdir picker root",
+        },
+      },
+    );
+
+    await dispatchMattermostWebhook({
+      adapter: chatAdapter,
+      webhookToken,
+      channelId: state.channel.id,
+      userId: state.memberUser.id,
+      postId: created.id,
+      text: "please build the feature",
+    });
+
+    const pickerPost = await waitForThreadPost(
+      state,
+      state.channel.id,
+      state.memberUser.token,
+      (post) =>
+        post.root_id === created.id &&
+        /Choose a working directory for this thread/.test(post.message),
+    );
+    assert.match(pickerPost.message, /1\. `project`/);
+
+    await dispatchMattermostWebhook({
+      adapter: chatAdapter,
+      webhookToken,
+      channelId: state.channel.id,
+      userId: state.memberUser.id,
+      postId: created.id,
+      text: "1",
+    });
+
+    const boundPost = await waitForThreadPost(
+      state,
+      state.channel.id,
+      state.memberUser.token,
+      (post) => post.root_id === created.id && post.message === "done",
+    );
+    assert.equal(boundPost.user_id, state.bridgeUser.id);
+    assert.equal(agent.requests.length, 1);
+    assert.equal(agent.requests[0]?.prompt, "please build the feature");
+    assert.equal(
+      path.resolve(agent.requests[0]?.session.workingDirectory ?? ""),
+      path.resolve(aliasDir),
+    );
+  } finally {
+    await chatAdapter.stop();
+  }
+});
+
+mattermostTest("Mattermost inline directory token E2E binds without a picker", async () => {
+  const state = JSON.parse(await fs.readFile(stateFile, "utf8")) as BootstrapState;
+  const webhookToken = "mm-e2e-inline-alias-hook";
+  const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-mm-e2e-inline-"));
+  const aliasDir = path.join(repoRoot, "alias-inline");
+  await fs.mkdir(aliasDir, { recursive: true });
+  const agent = new RecordingE2EAgent("codex");
+  const { chatAdapter } = await startMattermostBridge({
+    state,
+    webhookToken,
+    agent,
+    configOverrides: {
+      allowedDirectories: [repoRoot],
+      repoAliases: { inline: aliasDir },
+      defaultWorkingDirectory: repoRoot,
+    },
+  });
+
+  try {
+    const created = await apiRequest<MattermostPost>(
+      state.serverUrl,
+      "/api/v4/posts",
+      state.memberUser.token,
+      {
+        method: "POST",
+        body: {
+          channel_id: state.channel.id,
+          message: "bridge inline alias root",
+        },
+      },
+    );
+
+    await dispatchMattermostWebhook({
+      adapter: chatAdapter,
+      webhookToken,
+      channelId: state.channel.id,
+      userId: state.memberUser.id,
+      postId: created.id,
+      text: "inline fix the thing",
+    });
+
+    const boundPost = await waitForThreadPost(
+      state,
+      state.channel.id,
+      state.memberUser.token,
+      (post) => post.root_id === created.id && /is now bound to/.test(post.message),
+    );
+    assert.match(boundPost.message, new RegExp(escapeRegExp(aliasDir)));
+
+    const completionPost = await waitForThreadPost(
+      state,
+      state.channel.id,
+      state.memberUser.token,
+      (post) => post.root_id === created.id && post.message === "done",
+    );
+    assert.equal(completionPost.user_id, state.bridgeUser.id);
+    assert.equal(agent.requests.length, 1);
+    assert.equal(agent.requests[0]?.prompt, "fix the thing");
+    assert.equal(
+      path.resolve(agent.requests[0]?.session.workingDirectory ?? ""),
+      path.resolve(aliasDir),
+    );
+
+    // No picker should ever have been posted for this thread.
+    const posts = await fetchRecentPosts(state, state.channel.id, state.memberUser.token);
+    assert.equal(
+      posts.some(
+        (post) =>
+          post.root_id === created.id &&
+          /Choose a working directory/.test(post.message),
+      ),
+      false,
+    );
+  } finally {
+    await chatAdapter.stop();
+  }
+});
+
+mattermostTest(
+  "Mattermost Claude per-folder resume picker E2E attaches the fixture session",
+  async () => {
+    const state = JSON.parse(await fs.readFile(stateFile, "utf8")) as BootstrapState;
+    const webhookToken = "mm-e2e-resume-picker-hook";
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-mm-e2e-resume-"));
+    const projectDir = path.join(repoRoot, "resume-project");
+    await fs.mkdir(projectDir, { recursive: true });
+    const fixtureSessionId = "cccc3333-cccc-cccc-cccc-cccccccccccc";
+    const claudeProjectsDir = await seedClaudeProjectSessions(projectDir, [
+      { id: fixtureSessionId, summary: "fix login", mtimeSeconds: 2000 },
+    ]);
+    const agent = new RecordingE2EAgent("claude-code");
+    const { chatAdapter } = await startMattermostBridge({
+      state,
+      webhookToken,
+      agent,
+      configOverrides: {
+        agentKind: "claude-code",
+        allowedDirectories: [repoRoot],
+        repoAliases: { resume: projectDir },
+        defaultWorkingDirectory: repoRoot,
+        claudeProjectsDir,
+      },
+    });
+
+    try {
+      const created = await apiRequest<MattermostPost>(
+        state.serverUrl,
+        "/api/v4/posts",
+        state.memberUser.token,
+        {
+          method: "POST",
+          body: {
+            channel_id: state.channel.id,
+            message: "bridge resume picker root",
+          },
+        },
+      );
+
+      // Bind the directory first via the inline alias token (no picker, since
+      // repoAliases has a single entry and this exercises the flow (b)
+      // directory-confirm path before the Claude resume picker fires).
+      await dispatchMattermostWebhook({
+        adapter: chatAdapter,
+        webhookToken,
+        channelId: state.channel.id,
+        userId: state.memberUser.id,
+        postId: created.id,
+        text: "resume fix the login bug",
+      });
+
+      const resumePickerPost = await waitForThreadPost(
+        state,
+        state.channel.id,
+        state.memberUser.token,
+        (post) =>
+          post.root_id === created.id &&
+          /has previous Claude Code sessions/.test(post.message),
+      );
+      assert.match(resumePickerPost.message, new RegExp(fixtureSessionId));
+      assert.match(resumePickerPost.message, /fix login/);
+      assert.equal(agent.requests.length, 0);
+
+      await dispatchMattermostWebhook({
+        adapter: chatAdapter,
+        webhookToken,
+        channelId: state.channel.id,
+        userId: state.memberUser.id,
+        postId: created.id,
+        text: "1",
+      });
+
+      const completionPost = await waitForThreadPost(
+        state,
+        state.channel.id,
+        state.memberUser.token,
+        (post) => post.root_id === created.id && post.message === "done",
+      );
+      assert.equal(completionPost.user_id, state.bridgeUser.id);
+      assert.equal(agent.requests.length, 1);
+      assert.equal(agent.requests[0]?.prompt, "fix the login bug");
+      assert.equal(
+        agent.requests[0]?.session.agentState?.claudeSessionId,
+        fixtureSessionId,
+      );
+      assert.equal(
+        path.resolve(agent.requests[0]?.session.workingDirectory ?? ""),
+        path.resolve(projectDir),
+      );
+    } finally {
+      await chatAdapter.stop();
+    }
+  },
+);
+
+mattermostTest(
+  "Mattermost channel-default E2E skips the picker for new threads until cleared",
+  async () => {
+    const state = JSON.parse(await fs.readFile(stateFile, "utf8")) as BootstrapState;
+    const webhookToken = "mm-e2e-channel-default-hook";
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cab-mm-e2e-channel-default-"));
+    const defaultDir = path.join(repoRoot, "default-project");
+    const otherDir = path.join(repoRoot, "other-project");
+    await fs.mkdir(defaultDir, { recursive: true });
+    await fs.mkdir(otherDir, { recursive: true });
+    const agent = new RecordingE2EAgent("codex");
+    const { chatAdapter } = await startMattermostBridge({
+      state,
+      webhookToken,
+      agent,
+      configOverrides: {
+        allowedDirectories: [repoRoot],
+        repoAliases: { deflt: defaultDir, other: otherDir },
+        defaultWorkingDirectory: repoRoot,
+      },
+    });
+
+    try {
+      // Set the channel default from a setup thread.
+      const setupRoot = await apiRequest<MattermostPost>(
+        state.serverUrl,
+        "/api/v4/posts",
+        state.memberUser.token,
+        {
+          method: "POST",
+          body: {
+            channel_id: state.channel.id,
+            message: "bridge channel-default setup root",
+          },
+        },
+      );
+      await dispatchMattermostWebhook({
+        adapter: chatAdapter,
+        webhookToken,
+        channelId: state.channel.id,
+        userId: state.memberUser.id,
+        postId: setupRoot.id,
+        text: "channel-default deflt",
+      });
+      await waitForThreadPost(
+        state,
+        state.channel.id,
+        state.memberUser.token,
+        (post) =>
+          post.root_id === setupRoot.id &&
+          /Channel default working directory set to/.test(post.message),
+      );
+
+      // A brand-new thread in the same channel should skip the picker and run
+      // immediately in the channel default directory.
+      const newThreadRoot = await apiRequest<MattermostPost>(
+        state.serverUrl,
+        "/api/v4/posts",
+        state.memberUser.token,
+        {
+          method: "POST",
+          body: {
+            channel_id: state.channel.id,
+            message: "bridge channel-default new thread root",
+          },
+        },
+      );
+      await dispatchMattermostWebhook({
+        adapter: chatAdapter,
+        webhookToken,
+        channelId: state.channel.id,
+        userId: state.memberUser.id,
+        postId: newThreadRoot.id,
+        text: "build the feature",
+      });
+
+      const completionPost = await waitForThreadPost(
+        state,
+        state.channel.id,
+        state.memberUser.token,
+        (post) => post.root_id === newThreadRoot.id && post.message === "done",
+      );
+      assert.equal(completionPost.user_id, state.bridgeUser.id);
+      assert.equal(agent.requests.length, 1);
+      assert.equal(
+        path.resolve(agent.requests[0]?.session.workingDirectory ?? ""),
+        path.resolve(defaultDir),
+      );
+
+      const postsAfterDefault = await fetchRecentPosts(state, state.channel.id, state.memberUser.token);
+      assert.equal(
+        postsAfterDefault.some(
+          (post) =>
+            post.root_id === newThreadRoot.id &&
+            /Choose a working directory/.test(post.message),
+        ),
+        false,
+      );
+
+      // Clear the channel default; a subsequent new thread should see the
+      // picker again.
+      const clearRoot = await apiRequest<MattermostPost>(
+        state.serverUrl,
+        "/api/v4/posts",
+        state.memberUser.token,
+        {
+          method: "POST",
+          body: {
+            channel_id: state.channel.id,
+            message: "bridge channel-default clear root",
+          },
+        },
+      );
+      await dispatchMattermostWebhook({
+        adapter: chatAdapter,
+        webhookToken,
+        channelId: state.channel.id,
+        userId: state.memberUser.id,
+        postId: clearRoot.id,
+        text: "channel-default clear",
+      });
+      await waitForThreadPost(
+        state,
+        state.channel.id,
+        state.memberUser.token,
+        (post) =>
+          post.root_id === clearRoot.id &&
+          /Channel default working directory cleared/.test(post.message),
+      );
+
+      const afterClearRoot = await apiRequest<MattermostPost>(
+        state.serverUrl,
+        "/api/v4/posts",
+        state.memberUser.token,
+        {
+          method: "POST",
+          body: {
+            channel_id: state.channel.id,
+            message: "bridge channel-default after-clear root",
+          },
+        },
+      );
+      await dispatchMattermostWebhook({
+        adapter: chatAdapter,
+        webhookToken,
+        channelId: state.channel.id,
+        userId: state.memberUser.id,
+        postId: afterClearRoot.id,
+        text: "do more work",
+      });
+
+      const pickerAgain = await waitForThreadPost(
+        state,
+        state.channel.id,
+        state.memberUser.token,
+        (post) =>
+          post.root_id === afterClearRoot.id &&
+          /Choose a working directory for this thread/.test(post.message),
+      );
+      assert.ok(pickerAgain);
+      // Still only the one completed request from before the clear.
+      assert.equal(agent.requests.length, 1);
+    } finally {
+      await chatAdapter.stop();
+    }
+  },
+);
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 async function postToPath(input: { port: number; path: string; body: string }): Promise<string> {
   return await new Promise<string>((resolve, reject) => {
