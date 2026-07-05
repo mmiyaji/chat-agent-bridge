@@ -389,10 +389,234 @@ test("admin-server integration scenarios", async () => {
       const onboarding = await getText(port, "/admin/onboarding");
       assert.equal(onboarding.statusCode, 200);
       assert.match(onboarding.body, /Bridge Onboarding/);
+      assert.match(onboarding.body, /data-testid="onboarding-step-1"/);
+      assert.match(onboarding.body, /data-testid="onboarding-step-2"/);
+      assert.match(onboarding.body, /data-testid="onboarding-step-3"/);
+      assert.match(onboarding.body, /data-testid="onboarding-step-4"/);
+      assert.match(onboarding.body, /data-testid="provider-card-mattermost"/);
+      assert.match(onboarding.body, /data-testid="provider-card-slack"/);
+      assert.match(onboarding.body, /data-testid="agent-card-claude-code"/);
+      assert.match(onboarding.body, /data-testid="test-connection"/);
       const terms = await getText(port, "/admin/terms");
       assert.equal(terms.statusCode, 200);
       const privacy = await getText(port, "/admin/privacy");
       assert.equal(privacy.statusCode, 200);
+
+      const settingsPage = await getText(port, "/admin/settings");
+      assert.equal(settingsPage.statusCode, 200);
+      assert.match(settingsPage.body, /data-testid="settings-group-basics"/);
+      assert.match(settingsPage.body, /data-testid="settings-group-connection"/);
+      assert.match(settingsPage.body, /data-testid="settings-group-agent-tuning"/);
+      assert.match(settingsPage.body, /data-testid="settings-group-server-ports"/);
+      assert.match(settingsPage.body, /data-testid="settings-group-secret-cleanup"/);
+    } finally {
+      await admin.stop();
+    }
+  }
+
+  {
+    // Dashboard setup-incomplete banner: shown when the selected provider is
+    // missing required connection settings, absent once they are filled in.
+    const store = new InMemoryStateStore();
+    const incompleteConfig = createConfig();
+    incompleteConfig.chatProvider = "mattermost";
+    delete incompleteConfig.mattermostServerUrl;
+    delete incompleteConfig.mattermostBotToken;
+    const incompleteAdmin = new AdminServer({
+      config: incompleteConfig,
+      stateStore: store,
+      auditLogger: new RecordingAuditLogger(),
+      bridge: createBridge(store).bridge,
+    });
+    await incompleteAdmin.start();
+    try {
+      const port = incompleteAdmin.getListeningPort();
+      assert.ok(port);
+      const dashboard = await getText(port, "/admin");
+      assert.equal(dashboard.statusCode, 200);
+      assert.match(dashboard.body, /data-testid="setup-incomplete-banner"/);
+      assert.match(dashboard.body, /Setup incomplete/);
+      assert.match(dashboard.body, /Mattermost server URL/);
+      assert.match(dashboard.body, /Mattermost bot token/);
+      assert.match(dashboard.body, /data-testid="connection-chip"/);
+    } finally {
+      await incompleteAdmin.stop();
+    }
+
+    const completeConfig = createConfig();
+    completeConfig.chatProvider = "mattermost";
+    completeConfig.mattermostServerUrl = "https://chat.example.test";
+    completeConfig.mattermostBotToken = "token-value";
+    const completeAdmin = new AdminServer({
+      config: completeConfig,
+      stateStore: new InMemoryStateStore(),
+      auditLogger: new RecordingAuditLogger(),
+      bridge: createBridge(store).bridge,
+    });
+    await completeAdmin.start();
+    try {
+      const port = completeAdmin.getListeningPort();
+      assert.ok(port);
+      const dashboard = await getText(port, "/admin");
+      assert.equal(dashboard.statusCode, 200);
+      assert.doesNotMatch(dashboard.body, /data-testid="setup-incomplete-banner"/);
+    } finally {
+      await completeAdmin.stop();
+    }
+  }
+
+  {
+    // /admin/api/test-connection: success with supplied values, fallback to
+    // stored config, failure without leaking tokens, and the Slack path.
+    const store = new InMemoryStateStore();
+    let capturedUrl;
+    let capturedHeaders;
+    const admin = new AdminServer(
+      {
+        config: createConfig(),
+        stateStore: store,
+        auditLogger: new RecordingAuditLogger(),
+        bridge: createBridge(store).bridge,
+      },
+      {
+        testConnectionFetch: async (input) => {
+          capturedUrl = input.url;
+          capturedHeaders = input.headers;
+          return { username: "bot-user" };
+        },
+      },
+    );
+    await admin.start();
+    try {
+      const port = admin.getListeningPort();
+      assert.ok(port);
+      const response = await postJson(
+        port,
+        "/admin/api/test-connection",
+        JSON.stringify({
+          provider: "mattermost",
+          serverUrl: "https://chat.example.test",
+          botToken: "secret-token",
+        }),
+      );
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.body.ok, true);
+      assert.equal(response.body.details.username, "bot-user");
+      assert.match(capturedUrl ?? "", /\/api\/v4\/users\/me$/);
+      assert.equal(capturedHeaders?.authorization, "Bearer secret-token");
+      assert.doesNotMatch(JSON.stringify(response.body), /secret-token/);
+    } finally {
+      await admin.stop();
+    }
+  }
+
+  {
+    const store = new InMemoryStateStore();
+    const config = createConfig();
+    config.mattermostServerUrl = "https://stored.example.test";
+    config.mattermostBotToken = "stored-token";
+    let capturedHeaders;
+    const admin = new AdminServer(
+      {
+        config,
+        stateStore: store,
+        auditLogger: new RecordingAuditLogger(),
+        bridge: createBridge(store).bridge,
+      },
+      {
+        testConnectionFetch: async (input) => {
+          capturedHeaders = input.headers;
+          return { username: "stored-user" };
+        },
+      },
+    );
+    await admin.start();
+    try {
+      const port = admin.getListeningPort();
+      assert.ok(port);
+      const response = await postJson(
+        port,
+        "/admin/api/test-connection",
+        JSON.stringify({ provider: "mattermost" }),
+      );
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.body.ok, true);
+      assert.equal(response.body.details.username, "stored-user");
+      assert.equal(capturedHeaders?.authorization, "Bearer stored-token");
+    } finally {
+      await admin.stop();
+    }
+  }
+
+  {
+    const store = new InMemoryStateStore();
+    const admin = new AdminServer(
+      {
+        config: createConfig(),
+        stateStore: store,
+        auditLogger: new RecordingAuditLogger(),
+        bridge: createBridge(store).bridge,
+      },
+      {
+        testConnectionFetch: async () => {
+          throw new Error("Mattermost API HTTP error: 401");
+        },
+      },
+    );
+    await admin.start();
+    try {
+      const port = admin.getListeningPort();
+      assert.ok(port);
+      const response = await postJson(
+        port,
+        "/admin/api/test-connection",
+        JSON.stringify({
+          provider: "mattermost",
+          serverUrl: "https://chat.example.test",
+          botToken: "bad-token",
+        }),
+      );
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.body.ok, false);
+      assert.match(response.body.error, /401/);
+      assert.doesNotMatch(JSON.stringify(response.body), /bad-token/);
+    } finally {
+      await admin.stop();
+    }
+  }
+
+  {
+    const store = new InMemoryStateStore();
+    let capturedUrl;
+    const admin = new AdminServer(
+      {
+        config: createConfig(),
+        stateStore: store,
+        auditLogger: new RecordingAuditLogger(),
+        bridge: createBridge(store).bridge,
+      },
+      {
+        testConnectionFetch: async (input) => {
+          capturedUrl = input.url;
+          return { ok: true, user: "slack-user", team: "slack-team" };
+        },
+      },
+    );
+    await admin.start();
+    try {
+      const port = admin.getListeningPort();
+      assert.ok(port);
+      const response = await postJson(
+        port,
+        "/admin/api/test-connection",
+        JSON.stringify({ provider: "slack", slackBotToken: "xoxb-secret" }),
+      );
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.body.ok, true);
+      assert.equal(response.body.details.user, "slack-user");
+      assert.equal(response.body.details.team, "slack-team");
+      assert.equal(capturedUrl, "https://slack.com/api/auth.test");
+      assert.doesNotMatch(JSON.stringify(response.body), /xoxb-secret/);
     } finally {
       await admin.stop();
     }

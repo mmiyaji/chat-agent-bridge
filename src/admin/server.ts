@@ -1,4 +1,5 @@
 ﻿import http, { IncomingMessage, ServerResponse } from "node:http";
+import https from "node:https";
 import fs from "node:fs";
 import path from "node:path";
 import { AuditLogger } from "../core/audit.js";
@@ -11,12 +12,74 @@ import { updatePersistedSettings } from "../config/settings-io.js";
 import { AppConfig, ExecutionRecord, JsonValue, SessionBinding } from "../core/types.js";
 import { StateStore } from "../state/state-store.js";
 import { ChatConnectionStatus } from "../adapters/chat.js";
+import { escapeHtml, renderAdminFooter, renderAdminFooterScript } from "./server-shared.js";
+import { RuntimeSettingsPayload } from "./server-types.js";
+import { renderOnboardingPage } from "./onboarding-page.js";
 
 interface AdminServerDeps {
   config: AppConfig;
   stateStore: StateStore;
   auditLogger: AuditLogger;
   bridge: BridgeService;
+}
+
+interface AdminServerDependencies {
+  /**
+   * Injectable HTTP layer for the /admin/api/test-connection endpoint, so
+   * tests can stub network calls without reaching real chat providers.
+   * Mirrors the `mattermostApiFetch` dependency on MattermostAdapter.
+   */
+  testConnectionFetch?: typeof fetchJsonWithTimeout;
+}
+
+const TEST_CONNECTION_TIMEOUT_MS = 8000;
+
+async function fetchJsonWithTimeout<T>(input: {
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  body?: string;
+  timeoutMs?: number;
+}): Promise<T> {
+  return await new Promise<T>((resolve, reject) => {
+    const url = new URL(input.url);
+    const requestModule = url.protocol === "http:" ? http : https;
+    const request = requestModule.request(
+      {
+        protocol: url.protocol,
+        hostname: url.hostname,
+        port: url.port || undefined,
+        path: `${url.pathname}${url.search}`,
+        method: input.method,
+        headers: input.headers,
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        response.on("end", () => {
+          const body = Buffer.concat(chunks).toString("utf8");
+          if ((response.statusCode ?? 500) >= 400) {
+            reject(new Error(`HTTP error: ${response.statusCode ?? 500}`));
+            return;
+          }
+
+          try {
+            resolve(JSON.parse(body || "{}") as T);
+          } catch {
+            reject(new Error("Response was not valid JSON."));
+          }
+        });
+      },
+    );
+
+    request.on("error", reject);
+    request.setTimeout(input.timeoutMs ?? TEST_CONNECTION_TIMEOUT_MS, () => {
+      request.destroy(new Error(`Request timed out after ${input.timeoutMs ?? TEST_CONNECTION_TIMEOUT_MS}ms`));
+    });
+    request.end(input.body ?? "");
+  });
 }
 
 interface DashboardData {
@@ -27,6 +90,43 @@ interface DashboardData {
   repoAliases?: Record<string, string>;
   environment?: EnvironmentPayload;
   warnings?: string[];
+  setupStatus: SetupStatus;
+}
+
+interface SetupStatus {
+  complete: boolean;
+  missing: string[];
+}
+
+/**
+ * Computes what a first-time user still needs to configure before the
+ * selected chat provider can actually connect. Drives the dashboard's setup
+ * banner (item 4 of the admin UI redesign).
+ */
+function computeSetupStatus(config: AppConfig): SetupStatus {
+  const missing: string[] = [];
+  if (config.chatProvider === "mattermost") {
+    if (!config.mattermostServerUrl) {
+      missing.push("Mattermost server URL");
+    }
+    if (!config.mattermostBotToken) {
+      missing.push("Mattermost bot token");
+    }
+  } else if (config.chatProvider === "slack") {
+    if (!config.slackBotToken) {
+      missing.push("Slack bot token");
+    }
+    if (config.slackMode === "socket" && !config.slackAppToken) {
+      missing.push("Slack app token (required for socket mode)");
+    }
+    if (config.slackMode === "http" && !config.slackSigningSecret) {
+      missing.push("Slack signing secret (required for http mode)");
+    }
+  }
+  return {
+    complete: missing.length === 0,
+    missing,
+  };
 }
 
 interface EnvironmentPayload {
@@ -38,69 +138,6 @@ interface EnvironmentPayload {
   agentKind: AppConfig["agentKind"];
   chatProvider: AppConfig["chatProvider"];
   agentEnvironmentVariables: string[];
-}
-
-interface RuntimeSettingsPayload {
-  agentKind: AppConfig["agentKind"];
-  defaultApprovalPolicy: AppConfig["defaultApprovalPolicy"];
-  networkAccess: AppConfig["networkAccess"];
-  chatProvider: AppConfig["chatProvider"];
-  slackAllowedUserIds: string;
-  mattermostAllowedUserIds: string;
-  slackMode: AppConfig["slackMode"];
-  mattermostMode: AppConfig["mattermostMode"];
-  mattermostActorMode: NonNullable<AppConfig["mattermostActorMode"]>;
-  host: AppConfig["host"];
-  port: AppConfig["port"];
-  adminHost: NonNullable<AppConfig["adminHost"]>;
-  adminPort: NonNullable<AppConfig["adminPort"]>;
-  defaultWorkingDirectory: AppConfig["defaultWorkingDirectory"];
-  /** Allowed working-directory roots, one absolute path per line. */
-  allowedDirectories: string;
-  mattermostServerUrl?: NonNullable<AppConfig["mattermostServerUrl"]>;
-  mattermostActionBaseUrl?: NonNullable<AppConfig["mattermostActionBaseUrl"]>;
-  mattermostDmOnly: boolean;
-  hasSlackBotToken: boolean;
-  hasSlackAppToken: boolean;
-  hasSlackSigningSecret: boolean;
-  hasMattermostBotToken: boolean;
-  hasMattermostWebhookToken: boolean;
-  slackBotToken?: string;
-  slackAppToken?: string;
-  slackSigningSecret?: string;
-  mattermostBotToken?: string;
-  mattermostWebhookToken?: string;
-  clearSlackBotToken?: boolean;
-  clearSlackAppToken?: boolean;
-  clearSlackSigningSecret?: boolean;
-  clearMattermostBotToken?: boolean;
-  clearMattermostWebhookToken?: boolean;
-  codexModel: AppConfig["codexModel"];
-  codexMaxTurns: AppConfig["codexMaxTurns"];
-  codexCommandTimeoutMs: AppConfig["codexCommandTimeoutMs"];
-  codexMaxRuntimeMs: AppConfig["codexMaxRuntimeMs"];
-  codexMaxOutputLength: AppConfig["codexMaxOutputLength"];
-  cursorCommand: NonNullable<AppConfig["cursorCommand"]>;
-  cursorModel: NonNullable<AppConfig["cursorModel"]>;
-  cursorCommandTimeoutMs: NonNullable<AppConfig["cursorCommandTimeoutMs"]>;
-  cursorMaxRuntimeMs: NonNullable<AppConfig["cursorMaxRuntimeMs"]>;
-  geminiCommand: NonNullable<AppConfig["geminiCommand"]>;
-  geminiModel: AppConfig["geminiModel"];
-  geminiCommandTimeoutMs: NonNullable<AppConfig["geminiCommandTimeoutMs"]>;
-  geminiMaxRuntimeMs: NonNullable<AppConfig["geminiMaxRuntimeMs"]>;
-  claudeModel: AppConfig["claudeModel"];
-  claudeMaxTurns: AppConfig["claudeMaxTurns"];
-  claudeCommandTimeoutMs: AppConfig["claudeCommandTimeoutMs"];
-  claudeMaxRuntimeMs: AppConfig["claudeMaxRuntimeMs"];
-  agentCommands: {
-    codex: ReturnType<typeof resolveCommand>;
-    "claude-code": ReturnType<typeof resolveCommand>;
-    cursor: ReturnType<typeof resolveCommand>;
-    gemini: ReturnType<typeof resolveCommand>;
-  };
-  autoSplitThreadUserMessageCount: AppConfig["autoSplitThreadUserMessageCount"];
-  settingsFile: string;
-  settingsSavedAt?: string;
 }
 
 function writeJson(response: ServerResponse, statusCode: number, body: unknown): void {
@@ -127,15 +164,6 @@ async function readRequestBody(request: IncomingMessage): Promise<string> {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
   return Buffer.concat(chunks).toString("utf8");
-}
-
-function escapeHtml(text: string | number): string {
-  return String(text)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 }
 
 function readApprovalPolicyOverride(session: SessionBinding): string | undefined {
@@ -426,84 +454,6 @@ function buildDashboardWarning(message: string): string {
   return `<div class="warning-banner" data-testid="dashboard-warning">${escapeHtml(message)}</div>`;
 }
 
-const ADMIN_GITHUB_URL = "https://github.com/mmiyaji/chat-agent-bridge";
-const ADMIN_AUTHOR_NAME = "mmiyaji";
-
-function renderAdminFooter(): string {
-  const year = new Date().getFullYear();
-  return `
-    <footer class="site-footer">
-      <div class="footer-links">
-        <a href="/admin/terms">Terms</a>
-        <a href="/admin/privacy">Privacy</a>
-        <span>Author: ${escapeHtml(ADMIN_AUTHOR_NAME)}</span>
-        <span>&copy; ${escapeHtml(year)}</span>
-        <a href="${escapeHtml(ADMIN_GITHUB_URL)}" target="_blank" rel="noreferrer">GitHub</a>
-      </div>
-      <div class="footer-controls">
-        <label>
-          Language
-          <select id="footer-language">
-            <option value="en">English</option>
-            <option value="ja">日本語</option>
-          </select>
-        </label>
-        <label>
-          Theme
-          <select id="footer-theme">
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-            <option value="system">System</option>
-          </select>
-        </label>
-      </div>
-    </footer>`;
-}
-
-function renderAdminFooterScript(): string {
-  return `
-      const footerTheme = document.getElementById("footer-theme");
-      const footerLanguage = document.getElementById("footer-language");
-      const THEME_STORAGE_KEY = "bridge-admin-theme";
-      const LANGUAGE_STORAGE_KEY = "bridge-admin-language";
-
-      function applyTheme(theme) {
-        const resolved = theme || "dark";
-        document.documentElement.dataset.theme = resolved;
-        if (footerTheme) {
-          footerTheme.value = resolved;
-        }
-      }
-
-      function applyLanguage(language) {
-        const resolved = language || "en";
-        document.documentElement.lang = resolved;
-        if (footerLanguage) {
-          footerLanguage.value = resolved;
-        }
-        const jaOption = document.querySelector("#footer-language option[value='ja']");
-        if (jaOption) {
-          jaOption.textContent = "日本語";
-        }
-      }
-
-      applyTheme(localStorage.getItem(THEME_STORAGE_KEY) || "dark");
-      applyLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY) || "en");
-
-      footerTheme?.addEventListener("change", (event) => {
-        const value = event.target.value;
-        localStorage.setItem(THEME_STORAGE_KEY, value);
-        applyTheme(value);
-      });
-
-      footerLanguage?.addEventListener("change", (event) => {
-        const value = event.target.value;
-        localStorage.setItem(LANGUAGE_STORAGE_KEY, value);
-        applyLanguage(value);
-      });
-  `;
-}
-
 function renderAdminLegalPage(input: { title: string; body: string }): string {
   return `<!doctype html>
 <html lang="en">
@@ -663,6 +613,29 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
     input.warnings && input.warnings.length > 0
       ? input.warnings.map((warning) => buildDashboardWarning(warning)).join("")
       : "";
+  const setupBannerMarkup =
+    !isSettingsView && !input.setupStatus.complete
+      ? `<div class="warning-banner" data-testid="setup-incomplete-banner">
+          <strong>Setup incomplete &mdash; ${input.setupStatus.missing.length} required setting${input.setupStatus.missing.length === 1 ? "" : "s"} missing.</strong>
+          <ul>${input.setupStatus.missing.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          <a href="/admin/onboarding">Finish setup in the onboarding wizard</a>
+        </div>`
+      : "";
+  const connectionChipState = connectionStatus
+    ? connectionStatus.mode === "http"
+      ? "gray"
+      : connectionStatus.connected
+        ? "green"
+        : "red"
+    : "gray";
+  const connectionChipLabel = connectionStatus
+    ? connectionStatus.mode === "http"
+      ? `HTTP listener (${escapeHtml(connectionStatus.provider)})`
+      : connectionStatus.connected
+        ? `Connected (${escapeHtml(connectionStatus.mode)})`
+        : `Disconnected${connectionStatus.lastError ? ` — ${escapeHtml(connectionStatus.lastError)}` : ""}`
+    : "Unknown";
+  const connectionChipMarkup = `<span class="connection-chip connection-chip-${connectionChipState}" data-testid="connection-chip">${connectionChipLabel}</span>`;
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -876,6 +849,38 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         background: rgba(245, 158, 11, 0.14);
         color: #fde68a;
       }
+      .warning-banner ul {
+        margin: 8px 0;
+        padding-left: 20px;
+      }
+      .warning-banner a {
+        color: var(--accent);
+      }
+      .connection-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid var(--line);
+      }
+      .connection-chip-green {
+        color: var(--success);
+        border-color: rgba(74, 222, 128, 0.5);
+        background: rgba(74, 222, 128, 0.12);
+      }
+      .connection-chip-red {
+        color: var(--fail);
+        border-color: rgba(248, 113, 113, 0.5);
+        background: rgba(248, 113, 113, 0.12);
+      }
+      .connection-chip-gray {
+        color: var(--muted);
+        border-color: var(--line);
+        background: var(--panel-alt);
+      }
       .table-wrap {
         width: 100%;
         overflow-x: auto;
@@ -1003,6 +1008,41 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
         border-radius: 16px;
         padding: 16px;
         background: var(--panel-alt);
+      }
+      details.settings-block[data-testid^="settings-agent-tuning-"] {
+        margin-top: 12px;
+        padding: 10px 16px;
+      }
+      .settings-block summary {
+        cursor: pointer;
+        list-style: none;
+      }
+      .settings-block summary::-webkit-details-marker {
+        display: none;
+      }
+      .settings-block summary h2 {
+        display: inline;
+      }
+      .test-result {
+        margin-top: 10px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        display: none;
+        font-size: 13px;
+      }
+      .test-result.is-visible {
+        display: block;
+      }
+      .test-result.is-success {
+        border-color: rgba(74, 222, 128, 0.5);
+        background: rgba(74, 222, 128, 0.12);
+        color: var(--success);
+      }
+      .test-result.is-failure {
+        border-color: rgba(248, 113, 113, 0.5);
+        background: rgba(248, 113, 113, 0.12);
+        color: var(--fail);
       }
       .environment-grid {
         display: grid;
@@ -1294,10 +1334,12 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
   <body>
     <main>
       ${warningsMarkup}
+      ${setupBannerMarkup}
       <div class="hero">
         <div class="hero-copy">
           <h1>Bridge Admin</h1>
           <p>${isSettingsView ? "Bridge configuration and connection settings." : "Sessions, approvals, and failures from the local bridge state."}</p>
+          ${!isSettingsView ? connectionChipMarkup : ""}
         </div>
         <div class="hero-side">
           <nav class="nav" aria-label="Admin navigation">
@@ -1936,150 +1978,210 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           cursor: { command: settings.cursorCommand || "cursor-agent --trust", executable: "cursor-agent", status: "not_found" },
           gemini: { command: settings.geminiCommand || "gemini --approval-mode yolo", executable: "gemini", status: "not_found" },
         };
-        document.getElementById("settings").innerHTML =
-          '<div class="settings-stack">' +
-          '<section class="settings-block">' +
-          '<div class="section-head"><div><h2>Defaults</h2><p>These apply to new sessions unless a thread overrides them.</p></div></div>' +
+        const isMattermost = settings.chatProvider === "mattermost";
+
+        // --- Basics: always visible, top of the page. ---
+        const basicsMarkup =
+          '<section class="settings-block" data-testid="settings-group-basics">' +
+          '<div class="section-head"><div><h2>Basics</h2><p>The handful of settings almost every setup needs. <code>Allowed directory roots</code> and <code>Default approval</code> apply immediately; everything else here needs a restart.</p></div></div>' +
           '<div class="settings-grid">' +
             renderFieldWithHint(
-              '<div class="field"><label for="settings-agent">Default agent</label><select id="settings-agent" data-testid="settings-agent"><option value="codex"' + (settings.agentKind === "codex" ? " selected" : "") + '>codex</option><option value="claude-code"' + (settings.agentKind === "claude-code" ? " selected" : "") + '>claude</option><option value="cursor"' + (settings.agentKind === "cursor" ? " selected" : "") + '>cursor</option><option value="gemini"' + (settings.agentKind === "gemini" ? " selected" : "") + '>gemini</option></select></div>',
-              'Used when a new session starts and nothing in the thread overrides it.'
+              '<div class="field"><label for="settings-provider">Chat provider</label><select id="settings-provider" data-testid="settings-provider"><option value="slack"' + (settings.chatProvider === "slack" ? " selected" : "") + '>Slack</option><option value="mattermost"' + (settings.chatProvider === "mattermost" ? " selected" : "") + '>Mattermost</option></select></div>',
+              'The chat app the bridge listens on. Changing this needs a restart.'
             ) +
             renderFieldWithHint(
-              '<div class="field"><label for="settings-approval">Default approval</label><select id="settings-approval" data-testid="settings-approval"><option value="manual"' + (settings.defaultApprovalPolicy === "manual" ? " selected" : "") + '>manual</option><option value="on-failure"' + (settings.defaultApprovalPolicy === "on-failure" ? " selected" : "") + '>on-failure</option><option value="never"' + (settings.defaultApprovalPolicy === "never" ? " selected" : "") + '>allow</option></select></div>',
-              '<code>manual</code> always asks before write actions. <code>on-failure</code> retries with approval only when needed. <code>allow</code> runs without approval.'
+              '<div class="field"><label for="settings-agent">Default agent</label><select id="settings-agent" data-testid="settings-agent"><option value="codex"' + (settings.agentKind === "codex" ? " selected" : "") + '>Codex</option><option value="claude-code"' + (settings.agentKind === "claude-code" ? " selected" : "") + '>Claude Code</option><option value="cursor"' + (settings.agentKind === "cursor" ? " selected" : "") + '>Cursor</option><option value="gemini"' + (settings.agentKind === "gemini" ? " selected" : "") + '>Gemini</option></select></div>',
+              'Which coding agent runs new sessions by default.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-approval">Approval policy</label><select id="settings-approval" data-testid="settings-approval"><option value="never"' + (settings.defaultApprovalPolicy === "never" ? " selected" : "") + '>allow</option><option value="manual"' + (settings.defaultApprovalPolicy === "manual" ? " selected" : "") + '>manual</option><option value="on-failure"' + (settings.defaultApprovalPolicy === "on-failure" ? " selected" : "") + '>on-failure</option></select></div>',
+              '<code>allow</code> lets the agent act without asking. <code>manual</code> is read-only plan mode: it proposes changes and waits for your approval. <code>on-failure</code> behaves like allow but asks for approval only if a step fails. Applies immediately.'
             ) +
             renderFieldWithHint(
               '<div class="field"><label for="settings-network">Network access</label><select id="settings-network" data-testid="settings-network"><option value="enabled"' + (settings.networkAccess === "enabled" ? " selected" : "") + '>enabled</option><option value="disabled"' + (settings.networkAccess === "disabled" ? " selected" : "") + '>disabled</option></select></div>',
-              'Controls whether future agent runs may access external network resources.'
+              'Whether future agent runs may reach the internet.'
             ) +
           "</div>" +
+          '<div class="settings-subgrid">' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-workdir">Default working directory</label><input id="settings-workdir" data-testid="settings-workdir" type="text" value="' + escapeHtml(settings.defaultWorkingDirectory) + '" /></div>',
+              'Base folder used when a new thread does not choose another workspace.'
+            ) +
+          "</div>" +
+          '<div class="settings-subgrid">' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-allowed-dirs">Allowed directory roots</label><textarea id="settings-allowed-dirs" data-testid="settings-allowed-dirs" rows="4" placeholder="C:/repo&#10;C:/work">' + escapeHtml(settings.allowedDirectories || "") + '</textarea></div>',
+              'One absolute path per line: the folders agents are allowed to work in. Applies immediately and repo aliases are recomputed. If the <code>CAB_ALLOWED_DIRS</code> environment variable is set, it takes precedence again at the next restart.'
+            ) +
+          "</div>" +
+          "</section>";
+
+        // --- Connection: only the selected provider's fields, open by default. ---
+        const connectionMarkup =
+          '<details class="settings-block" open data-testid="settings-group-connection">' +
+          '<summary><h2>Connection</h2><p>Fields for the currently selected chat provider. The other provider stays collapsed below.</p></summary>' +
+          '<div class="settings-subgrid" id="connection-mattermost" data-testid="connection-mattermost"' + (isMattermost ? "" : ' style="display:none"') + '>' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-server">Mattermost server URL</label><input id="settings-mm-server" data-testid="settings-mm-server" type="text" value="' + escapeHtml(settings.mattermostServerUrl || "") + '" /></div>',
+              'Base URL of your Mattermost workspace, for example <code>https://chat.example.com</code>.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-bot-token">Mattermost bot token</label><input id="settings-mm-bot-token" data-testid="settings-mm-bot-token" type="password" placeholder="' + (settings.hasMattermostBotToken ? "stored" : "not set") + '" /></div>',
+              'Bearer token used for Mattermost API access. In <code>self</code> actor mode this is your own Personal Access Token (PAT), a token tied to your user account instead of a bot.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mattermost-mode">Mode</label><select id="settings-mattermost-mode" data-testid="settings-mattermost-mode"><option value="websocket"' + (settings.mattermostMode === "websocket" ? " selected" : "") + '>websocket</option><option value="http"' + (settings.mattermostMode === "http" ? " selected" : "") + '>http</option></select></div>',
+              '"websocket" keeps a live connection open and is recommended. "http" is for webhook-style entry points and needs the webhook token below.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-actor-mode">Actor mode</label><select id="settings-mm-actor-mode" data-testid="settings-mm-actor-mode"><option value="bot"' + (settings.mattermostActorMode === "bot" ? " selected" : "") + '>bot</option><option value="self"' + (settings.mattermostActorMode === "self" ? " selected" : "") + '>self</option></select></div>',
+              '"bot" is for bot or service-account tokens. "self" is for your own account token and only reacts in your self-DM.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-webhook-token">Webhook token</label><input id="settings-mm-webhook-token" data-testid="settings-mm-webhook-token" type="password" placeholder="' + (settings.hasMattermostWebhookToken ? "stored" : "not set") + '" /></div>',
+              'Only needed for HTTP webhook entrypoints. Websocket mode usually does not use this token.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-action-base">Action base URL</label><input id="settings-mm-action-base" data-testid="settings-mm-action-base" type="text" value="' + escapeHtml(settings.mattermostActionBaseUrl || "") + '" /></div>',
+              'Public bridge base URL for button clicks. The bridge appends <code>/mattermost/actions</code> automatically. Not needed for basic text replies.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-mm-allowed-user-ids">Allowed user IDs</label><textarea id="settings-mm-allowed-user-ids" data-testid="settings-mm-allowed-user-ids" rows="4" placeholder="user-id-1&#10;user-id-2">' + escapeHtml(settings.mattermostAllowedUserIds || "") + '</textarea></div>',
+              'Optional. When set, only these Mattermost user IDs can trigger the bridge. One ID per line, or separate with commas / semicolons.'
+            ) +
+            '<div class="actions"><button type="button" id="test-connection-mattermost" data-testid="test-connection-mattermost">Test connection</button></div>' +
+            '<div id="test-connection-result-mattermost" class="test-result" data-testid="test-connection-result-mattermost"></div>' +
+          "</div>" +
+          '<div class="settings-subgrid" id="connection-slack" data-testid="connection-slack"' + (isMattermost ? ' style="display:none"' : "") + '>' +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-slack-mode">Mode</label><select id="settings-slack-mode" data-testid="settings-slack-mode"><option value="socket"' + (settings.slackMode === "socket" ? " selected" : "") + '>socket</option><option value="http"' + (settings.slackMode === "http" ? " selected" : "") + '>http</option></select></div>',
+              '"socket" keeps a live connection open and needs no public URL &mdash; recommended for most setups. "http" expects Slack to call your bridge over a public URL and needs the signing secret.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-slack-bot-token">Bot token</label><input id="settings-slack-bot-token" data-testid="settings-slack-bot-token" type="password" placeholder="' + (settings.hasSlackBotToken ? "stored" : "not set") + '" /></div>',
+              'Used to post replies and call Slack APIs. Usually starts with <code>xoxb-</code>.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-slack-app-token">App token</label><input id="settings-slack-app-token" data-testid="settings-slack-app-token" type="password" placeholder="' + (settings.hasSlackAppToken ? "stored" : "not set") + '" /></div>',
+              'Required for socket mode. Usually starts with <code>xapp-</code>.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-slack-signing-secret">Signing secret</label><input id="settings-slack-signing-secret" data-testid="settings-slack-signing-secret" type="password" placeholder="' + (settings.hasSlackSigningSecret ? "stored" : "not set") + '" /></div>',
+              'Used to verify inbound HTTP requests from Slack. Not needed for pure socket mode.'
+            ) +
+            renderFieldWithHint(
+              '<div class="field"><label for="settings-slack-allowed-user-ids">Allowed user IDs</label><textarea id="settings-slack-allowed-user-ids" data-testid="settings-slack-allowed-user-ids" rows="4" placeholder="U01234567&#10;U07654321">' + escapeHtml(settings.slackAllowedUserIds || "") + '</textarea></div>',
+              'Optional. When set, only these Slack user IDs can trigger the bridge. One ID per line, or separate with commas / semicolons.'
+            ) +
+            '<div class="actions"><button type="button" id="test-connection-slack" data-testid="test-connection-slack">Test connection</button></div>' +
+            '<div id="test-connection-result-slack" class="test-result" data-testid="test-connection-result-slack"></div>' +
+          "</div>" +
+          "</details>";
+
+        // --- Agent tuning: only the selected agent's fields expanded. ---
+        function agentTuningSection(id, label, description, open, fields) {
+          return '<details class="settings-block"' + (open ? " open" : "") + ' data-testid="settings-agent-tuning-' + id + '">' +
+            '<summary><h2>' + label + '</h2><p>' + description + '</p></summary>' +
+            '<div class="settings-subgrid">' + fields + "</div>" +
+          "</details>";
+        }
+        const codexFields =
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-codex-model">Model</label><input id="settings-codex-model" data-testid="settings-codex-model" type="text" value="' + escapeHtml(settings.codexModel) + '" /></div>',
+            'The model name passed to Codex for new runs.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-codex-turns">Max turns</label><input id="settings-codex-turns" data-testid="settings-codex-turns" type="number" min="1" value="' + escapeHtml(settings.codexMaxTurns) + '" /></div>',
+            'Upper bound for tool or reasoning turns in one request.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-codex-timeout">Command timeout ms</label><input id="settings-codex-timeout" data-testid="settings-codex-timeout" type="number" min="1" value="' + escapeHtml(settings.codexCommandTimeoutMs) + '" /></div>',
+            'Idle timeout. Long tasks may continue as long as output keeps flowing.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-codex-runtime">Max runtime ms</label><input id="settings-codex-runtime" data-testid="settings-codex-runtime" type="number" min="1" value="' + escapeHtml(settings.codexMaxRuntimeMs) + '" /></div>',
+            'Hard stop for the total wall-clock runtime of one Codex request.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-codex-output">Max output length</label><input id="settings-codex-output" data-testid="settings-codex-output" type="number" min="1" value="' + escapeHtml(settings.codexMaxOutputLength) + '" /></div>',
+            'Truncates very large CLI output before it is stored or posted back.'
+          );
+        const cursorFields =
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-cursor-command">Command</label><input id="settings-cursor-command" data-testid="settings-cursor-command" type="text" value="' + escapeHtml(settings.cursorCommand) + '" /></div>',
+            'A non-interactive Cursor CLI command such as <code>cursor-agent --trust</code>.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-cursor-model">Model</label><input id="settings-cursor-model" data-testid="settings-cursor-model" type="text" value="' + escapeHtml(settings.cursorModel) + '" /></div>',
+            'Model passed as <code>--model</code>. Use <code>Auto</code> for plans that cannot use named models.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-cursor-timeout">Command timeout ms</label><input id="settings-cursor-timeout" data-testid="settings-cursor-timeout" type="number" min="1" value="' + escapeHtml(settings.cursorCommandTimeoutMs) + '" /></div>',
+            'Idle timeout for Cursor runs.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-cursor-runtime">Max runtime ms</label><input id="settings-cursor-runtime" data-testid="settings-cursor-runtime" type="number" min="1" value="' + escapeHtml(settings.cursorMaxRuntimeMs) + '" /></div>',
+            'Hard stop for total runtime, even if Cursor still emits output.'
+          );
+        const geminiFields =
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-gemini-command">Command</label><input id="settings-gemini-command" data-testid="settings-gemini-command" type="text" value="' + escapeHtml(settings.geminiCommand) + '" /></div>',
+            'A non-interactive Gemini CLI command such as <code>gemini --approval-mode yolo</code>.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-gemini-model">Model</label><input id="settings-gemini-model" data-testid="settings-gemini-model" type="text" value="' + escapeHtml(settings.geminiModel || "") + '" /></div>',
+            'Optional model passed as <code>--model</code>. Leave blank to use the CLI default.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-gemini-timeout">Command timeout ms</label><input id="settings-gemini-timeout" data-testid="settings-gemini-timeout" type="number" min="1" value="' + escapeHtml(settings.geminiCommandTimeoutMs) + '" /></div>',
+            'Idle timeout for Gemini runs.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-gemini-runtime">Max runtime ms</label><input id="settings-gemini-runtime" data-testid="settings-gemini-runtime" type="number" min="1" value="' + escapeHtml(settings.geminiMaxRuntimeMs) + '" /></div>',
+            'Hard stop for total runtime, even if Gemini still emits output.'
+          );
+        const claudeFields =
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-claude-model">Model</label><input id="settings-claude-model" data-testid="settings-claude-model" type="text" value="' + escapeHtml(settings.claudeModel) + '" /></div>',
+            'The model name passed to Claude Code for new runs.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-claude-turns">Max turns</label><input id="settings-claude-turns" data-testid="settings-claude-turns" type="number" min="0" value="' + escapeHtml(settings.claudeMaxTurns) + '" /></div>',
+            'Upper bound for one Claude request (0 = unlimited).'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-claude-timeout">Command timeout ms</label><input id="settings-claude-timeout" data-testid="settings-claude-timeout" type="number" min="1" value="' + escapeHtml(settings.claudeCommandTimeoutMs) + '" /></div>',
+            'Idle timeout for Claude runs.'
+          ) +
+          renderFieldWithHint(
+            '<div class="field"><label for="settings-claude-runtime">Max runtime ms</label><input id="settings-claude-runtime" data-testid="settings-claude-runtime" type="number" min="1" value="' + escapeHtml(settings.claudeMaxRuntimeMs) + '" /></div>',
+            'Hard stop for total runtime, even if the run still emits progress.'
+          );
+        const agentTuningMarkup =
+          '<section class="settings-block" data-testid="settings-group-agent-tuning">' +
+          '<div class="section-head"><div><h2>Agent tuning</h2><p>Model and timeout settings per agent. The currently selected default agent (<code>' + escapeHtml(settings.agentKind) + '</code>) is expanded below; the others stay collapsed.</p></div></div>' +
+          agentTuningSection("claude-code", "Claude Code", "Applied to future Claude runs.", settings.agentKind === "claude-code", claudeFields) +
+          agentTuningSection("codex", "Codex", "Applied to future Codex runs.", settings.agentKind === "codex", codexFields) +
+          agentTuningSection("cursor", "Cursor", "Applied to future Cursor runs.", settings.agentKind === "cursor", cursorFields) +
+          agentTuningSection("gemini", "Gemini CLI", "Applied to future Gemini runs.", settings.agentKind === "gemini", geminiFields) +
           '<div class="settings-subgrid">' +
             renderFieldWithHint(
               '<div class="field"><label for="settings-auto-split-count">Auto-split after user messages</label><input id="settings-auto-split-count" data-testid="settings-auto-split-count" type="number" min="1" value="' + escapeHtml(settings.autoSplitThreadUserMessageCount) + '" /></div>',
               'Starts a fresh agent session after this many user messages in one thread to avoid overly long context.'
             ) +
           "</div>" +
-          "</section>" +
-          '<section class="settings-block"><div class="section-head"><div><h2>Codex</h2><p>Applied to future Codex runs.</p></div></div>' +
-          '<div class="settings-subgrid">' +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-codex-model">Model</label><input id="settings-codex-model" data-testid="settings-codex-model" type="text" value="' + escapeHtml(settings.codexModel) + '" /></div>',
-              'The model name passed to Codex for new runs.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-codex-turns">Max turns</label><input id="settings-codex-turns" data-testid="settings-codex-turns" type="number" min="1" value="' + escapeHtml(settings.codexMaxTurns) + '" /></div>',
-              'Upper bound for tool or reasoning turns in one request.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-codex-timeout">Command timeout ms</label><input id="settings-codex-timeout" data-testid="settings-codex-timeout" type="number" min="1" value="' + escapeHtml(settings.codexCommandTimeoutMs) + '" /></div>',
-              'Idle timeout. Long tasks may continue as long as output keeps flowing.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-codex-runtime">Max runtime ms</label><input id="settings-codex-runtime" data-testid="settings-codex-runtime" type="number" min="1" value="' + escapeHtml(settings.codexMaxRuntimeMs) + '" /></div>',
-              'Hard stop for the total wall-clock runtime of one Codex request.'
-            ) +
-          "</div>" +
-          '<div class="settings-subgrid">' +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-codex-output">Max output length</label><input id="settings-codex-output" data-testid="settings-codex-output" type="number" min="1" value="' + escapeHtml(settings.codexMaxOutputLength) + '" /></div>',
-              'Truncates very large CLI output before it is stored or posted back.'
-            ) +
-          "</div>" +
-          "</section>" +
-          '<section class="settings-block"><div class="section-head"><div><h2>Cursor</h2><p>Applied to future Cursor runs.</p></div></div>' +
-          '<div class="settings-subgrid">' +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-cursor-command">Command</label><input id="settings-cursor-command" data-testid="settings-cursor-command" type="text" value="' + escapeHtml(settings.cursorCommand) + '" /></div>',
-              'A non-interactive Cursor CLI command such as <code>cursor-agent --trust</code>. The default includes <code>--trust</code> for workspace trust.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-cursor-model">Model</label><input id="settings-cursor-model" data-testid="settings-cursor-model" type="text" value="' + escapeHtml(settings.cursorModel) + '" /></div>',
-              'Model passed as <code>--model</code>. Use <code>Auto</code> for plans that cannot use named models.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-cursor-timeout">Command timeout ms</label><input id="settings-cursor-timeout" data-testid="settings-cursor-timeout" type="number" min="1" value="' + escapeHtml(settings.cursorCommandTimeoutMs) + '" /></div>',
-              'Idle timeout for Cursor runs.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-cursor-runtime">Max runtime ms</label><input id="settings-cursor-runtime" data-testid="settings-cursor-runtime" type="number" min="1" value="' + escapeHtml(settings.cursorMaxRuntimeMs) + '" /></div>',
-              'Hard stop for total runtime, even if Cursor still emits output.'
-            ) +
-          "</div>" +
-          "</section>" +
-          '<section class="settings-block"><div class="section-head"><div><h2>Gemini CLI</h2><p>Applied to future Gemini runs.</p></div></div>' +
-          '<div class="settings-subgrid">' +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-gemini-command">Command</label><input id="settings-gemini-command" data-testid="settings-gemini-command" type="text" value="' + escapeHtml(settings.geminiCommand) + '" /></div>',
-              'A non-interactive Gemini CLI command such as <code>gemini --approval-mode yolo</code>.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-gemini-model">Model</label><input id="settings-gemini-model" data-testid="settings-gemini-model" type="text" value="' + escapeHtml(settings.geminiModel || "") + '" /></div>',
-              'Optional model passed as <code>--model</code>. Leave blank to use the CLI default.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-gemini-timeout">Command timeout ms</label><input id="settings-gemini-timeout" data-testid="settings-gemini-timeout" type="number" min="1" value="' + escapeHtml(settings.geminiCommandTimeoutMs) + '" /></div>',
-              'Idle timeout for Gemini runs.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-gemini-runtime">Max runtime ms</label><input id="settings-gemini-runtime" data-testid="settings-gemini-runtime" type="number" min="1" value="' + escapeHtml(settings.geminiMaxRuntimeMs) + '" /></div>',
-              'Hard stop for total runtime, even if Gemini still emits output.'
-            ) +
-          "</div>" +
-          "</section>" +
-          '<section class="settings-block"><div class="section-head"><div><h2>Claude Code</h2><p>Applied to future Claude runs.</p></div></div>' +
-          '<div class="settings-subgrid">' +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-claude-model">Model</label><input id="settings-claude-model" data-testid="settings-claude-model" type="text" value="' + escapeHtml(settings.claudeModel) + '" /></div>',
-              'The model name passed to Claude Code for new runs.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-claude-turns">Max turns</label><input id="settings-claude-turns" data-testid="settings-claude-turns" type="number" min="0" value="' + escapeHtml(settings.claudeMaxTurns) + '" /></div>',
-              'Upper bound for one Claude request (0 = unlimited).'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-claude-timeout">Command timeout ms</label><input id="settings-claude-timeout" data-testid="settings-claude-timeout" type="number" min="1" value="' + escapeHtml(settings.claudeCommandTimeoutMs) + '" /></div>',
-              'Idle timeout for Claude runs.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-claude-runtime">Max runtime ms</label><input id="settings-claude-runtime" data-testid="settings-claude-runtime" type="number" min="1" value="' + escapeHtml(settings.claudeMaxRuntimeMs) + '" /></div>',
-              'Hard stop for total runtime, even if the run still emits progress.'
-            ) +
-          "</div>" +
-          "</section>" +
-          '<section class="settings-block"><div class="section-head"><div><h2>CLI resolution</h2><p>Shows which executable each agent command resolves to on this host.</p></div></div>' +
           '<div class="card-list">' +
             renderCommandResolutionCard("Codex", agentCommands.codex) +
             renderCommandResolutionCard("Claude Code", agentCommands["claude-code"]) +
             renderCommandResolutionCard("Cursor", agentCommands.cursor) +
             renderCommandResolutionCard("Gemini CLI", agentCommands.gemini) +
           "</div>" +
-          "</section>" +
-          '<section class="settings-block"><div class="section-head"><div><h2>Bridge transport</h2><p>Saved immediately, applied after bridge restart.</p></div></div>' +
-          '<div class="settings-subgrid">' +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-provider">Chat provider</label><select id="settings-provider" data-testid="settings-provider"><option value="slack"' + (settings.chatProvider === "slack" ? " selected" : "") + '>slack</option><option value="mattermost"' + (settings.chatProvider === "mattermost" ? " selected" : "") + '>mattermost</option></select></div>',
-              'Chooses which chat adapter the bridge should listen to after restart.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-slack-mode">Slack mode</label><select id="settings-slack-mode" data-testid="settings-slack-mode"><option value="http"' + (settings.slackMode === "http" ? " selected" : "") + '>http</option><option value="socket"' + (settings.slackMode === "socket" ? " selected" : "") + '>socket</option></select></div>',
-              '<code>socket</code> avoids public callback URLs. <code>http</code> expects Slack to call your bridge over HTTP.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-mattermost-mode">Mattermost mode</label><select id="settings-mattermost-mode" data-testid="settings-mattermost-mode"><option value="http"' + (settings.mattermostMode === "http" ? " selected" : "") + '>http</option><option value="websocket"' + (settings.mattermostMode === "websocket" ? " selected" : "") + '>websocket</option></select></div>',
-              '<code>websocket</code> keeps a live connection to Mattermost. <code>http</code> is for webhook-style entrypoints.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-workdir">Default workdir</label><input id="settings-workdir" data-testid="settings-workdir" type="text" value="' + escapeHtml(settings.defaultWorkingDirectory) + '" /></div>',
-              'Base repository or folder used when a new thread does not choose another workspace.'
-            ) +
-          "</div>" +
-          '<div class="settings-subgrid">' +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-allowed-dirs">Allowed directory roots</label><textarea id="settings-allowed-dirs" data-testid="settings-allowed-dirs" rows="4" placeholder="C:/repo&#10;C:/work">' + escapeHtml(settings.allowedDirectories || "") + '</textarea></div>',
-              'One absolute path per line. Changes apply immediately and repo aliases are recomputed. If the <code>CAB_ALLOWED_DIRS</code> environment variable is set, it takes precedence again at the next restart.'
-            ) +
-          "</div>" +
+          "</section>";
+
+        // --- Server & ports: collapsed. ---
+        const serverPortsMarkup =
+          '<details class="settings-block" data-testid="settings-group-server-ports">' +
+          '<summary><h2>Server &amp; ports</h2><p>Network interfaces and ports. Needs a restart to apply.</p></summary>' +
           '<div class="settings-subgrid">' +
             renderFieldWithHint(
               '<div class="field"><label for="settings-host">Bridge host</label><input id="settings-host" data-testid="settings-host" type="text" value="' + escapeHtml(settings.host) + '" /></div>',
@@ -2098,55 +2200,12 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
               'Port for the admin dashboard and runtime APIs.'
             ) +
           "</div>" +
-          "</section>" +
-          '<section class="settings-block"><div class="section-head"><div><h2>Connections</h2><p>Secrets stay masked. Enter a new value only when rotating it.</p></div></div>' +
-          '<div class="settings-subgrid">' +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-mm-server">Mattermost server URL</label><input id="settings-mm-server" data-testid="settings-mm-server" type="text" value="' + escapeHtml(settings.mattermostServerUrl || "") + '" /></div>',
-              'Base URL of your Mattermost workspace, for example <code>https://chat.example.com</code>.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-mm-action-base">Mattermost action base URL</label><input id="settings-mm-action-base" data-testid="settings-mm-action-base" type="text" value="' + escapeHtml(settings.mattermostActionBaseUrl || "") + '" /></div>',
-              'Public bridge base URL for button clicks. The bridge appends <code>/mattermost/actions</code> automatically.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-mm-actor-mode">Mattermost actor mode</label><select id="settings-mm-actor-mode" data-testid="settings-mm-actor-mode"><option value="bot"' + (settings.mattermostActorMode === "bot" ? " selected" : "") + '>bot</option><option value="self"' + (settings.mattermostActorMode === "self" ? " selected" : "") + '>self</option></select></div>',
-              '<code>bot</code> is for bot or service-account tokens. <code>self</code> is for your own account token and only reacts in your self-DM.'
-            ) +
-          "</div>" +
-          '<div class="settings-subgrid">' +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-slack-bot-token">Slack bot token</label><input id="settings-slack-bot-token" data-testid="settings-slack-bot-token" type="password" placeholder="' + (settings.hasSlackBotToken ? "stored" : "not set") + '" /></div>',
-              'Used to post replies and call Slack APIs. Usually starts with <code>xoxb-</code>.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-slack-app-token">Slack app token</label><input id="settings-slack-app-token" data-testid="settings-slack-app-token" type="password" placeholder="' + (settings.hasSlackAppToken ? "stored" : "not set") + '" /></div>',
-              'Required for Slack Socket Mode. Usually starts with <code>xapp-</code>.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-slack-signing-secret">Slack signing secret</label><input id="settings-slack-signing-secret" data-testid="settings-slack-signing-secret" type="password" placeholder="' + (settings.hasSlackSigningSecret ? "stored" : "not set") + '" /></div>',
-              'Used to verify inbound HTTP requests from Slack. Not needed for pure Socket Mode operation.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-mm-bot-token">Mattermost bot token</label><input id="settings-mm-bot-token" data-testid="settings-mm-bot-token" type="password" placeholder="' + (settings.hasMattermostBotToken ? "stored" : "not set") + '" /></div>',
-              'This field accepts the bearer token used for Mattermost API access. In <code>self</code> mode this is where your PAT goes.'
-            ) +
-          "</div>" +
-          '<div class="settings-subgrid">' +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-mm-webhook-token">Mattermost webhook token</label><input id="settings-mm-webhook-token" data-testid="settings-mm-webhook-token" type="password" placeholder="' + (settings.hasMattermostWebhookToken ? "stored" : "not set") + '" /></div>',
-              'Only needed for HTTP webhook entrypoints. Websocket mode usually does not use this token.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-slack-allowed-user-ids">Slack allowed user IDs</label><textarea id="settings-slack-allowed-user-ids" data-testid="settings-slack-allowed-user-ids" rows="4" placeholder="U01234567&#10;U07654321">' + escapeHtml(settings.slackAllowedUserIds || "") + '</textarea></div>',
-              'Optional. When set, only these Slack user IDs can trigger the bridge. One ID per line, or separate with commas / semicolons.'
-            ) +
-            renderFieldWithHint(
-              '<div class="field"><label for="settings-mm-allowed-user-ids">Mattermost allowed user IDs</label><textarea id="settings-mm-allowed-user-ids" data-testid="settings-mm-allowed-user-ids" rows="4" placeholder="user-id-1&#10;user-id-2">' + escapeHtml(settings.mattermostAllowedUserIds || "") + '</textarea></div>',
-              'Optional. Applied only in Mattermost bot mode. One user ID per line, or separate with commas / semicolons.'
-            ) +
-          "</div>" +
-          '<div class="section-head"><div><h2>Secret cleanup</h2><p>These do not clear immediately. They are applied only when you save settings.</p></div></div>' +
+          "</details>";
+
+        // --- Secret cleanup: collapsed, behavior unchanged. ---
+        const secretCleanupMarkup =
+          '<details class="settings-block" data-testid="settings-group-secret-cleanup">' +
+          '<summary><h2>Secret cleanup</h2><p>These do not clear immediately. They are applied only when you save settings.</p></summary>' +
           '<div class="secret-reset-list">' +
             renderSecretResetItem("clear-slack-bot-token", "Slack bot token", "Remove the stored bot token on the next save.") +
             renderSecretResetItem("clear-slack-app-token", "Slack app token", "Remove the stored app token on the next save.") +
@@ -2154,8 +2213,10 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             renderSecretResetItem("clear-mm-bot-token", "Mattermost bearer token", "Remove the stored Mattermost bearer token on the next save.") +
             renderSecretResetItem("clear-mm-webhook-token", "Mattermost webhook token", "Remove the stored webhook token on the next save.") +
           "</div>" +
-          "</section>" +
-          '<section class="settings-block"><div class="section-head"><div><h2>Current summary</h2><p>Read-only values from the currently loaded runtime settings.</p></div></div>' +
+          "</details>";
+
+        const summaryMarkup =
+          '<section class="settings-block" data-testid="settings-group-summary"><div class="section-head"><div><h2>Current summary</h2><p>Read-only values from the currently loaded runtime settings.</p></div></div>' +
           '<div class="detail-grid">' +
             '<div class="detail-card"><strong>Chat provider</strong><span>' + escapeHtml(settings.chatProvider) + "</span></div>" +
             '<div class="detail-card"><strong>Slack mode</strong><span>' + escapeHtml(settings.slackMode) + "</span></div>" +
@@ -2166,10 +2227,80 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
             '<div class="detail-card"><strong>Last saved</strong><span>' + escapeHtml(settings.settingsSavedAt || "not saved yet") + "</span></div>" +
           "</div>" +
           '<div class="detail-actions"><button id="save-settings" data-testid="save-settings">Save runtime settings</button><button id="restart-bridge" data-testid="restart-bridge">Restart bridge</button></div>' +
-          "</section>" +
+          "</section>";
+
+        document.getElementById("settings").innerHTML =
+          '<div class="settings-stack">' +
+          '<p class="muted-note">Allowed directory roots and approval policy apply immediately. Provider, mode, tokens, and ports need a bridge restart.</p>' +
+          basicsMarkup +
+          connectionMarkup +
+          agentTuningMarkup +
+          serverPortsMarkup +
+          secretCleanupMarkup +
+          summaryMarkup +
           "</div>";
         syncSecretToggleStates();
         applyLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY) || "en");
+
+        const providerSelect = document.getElementById("settings-provider");
+        if (providerSelect) {
+          providerSelect.addEventListener("change", () => {
+            const nowMattermost = providerSelect.value === "mattermost";
+            document.getElementById("connection-mattermost").style.display = nowMattermost ? "" : "none";
+            document.getElementById("connection-slack").style.display = nowMattermost ? "none" : "";
+          });
+        }
+        const testMattermostButton = document.getElementById("test-connection-mattermost");
+        if (testMattermostButton) {
+          testMattermostButton.addEventListener("click", () => {
+            void runSettingsConnectionTest("mattermost");
+          });
+        }
+        const testSlackButton = document.getElementById("test-connection-slack");
+        if (testSlackButton) {
+          testSlackButton.addEventListener("click", () => {
+            void runSettingsConnectionTest("slack");
+          });
+        }
+      }
+
+      async function runSettingsConnectionTest(provider) {
+        const resultEl = document.getElementById("test-connection-result-" + provider);
+        if (!resultEl) {
+          return;
+        }
+        resultEl.className = "test-result is-visible";
+        resultEl.textContent = "Testing...";
+        try {
+          const payload = provider === "mattermost"
+            ? {
+                provider: "mattermost",
+                serverUrl: document.getElementById("settings-mm-server").value.trim() || undefined,
+                botToken: document.getElementById("settings-mm-bot-token").value.trim() || undefined,
+              }
+            : {
+                provider: "slack",
+                slackBotToken: document.getElementById("settings-slack-bot-token").value.trim() || undefined,
+              };
+          const response = await fetch("/admin/api/test-connection", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const body = await response.json();
+          if (body.ok) {
+            const details = body.details || {};
+            const label = details.username || details.user || details.team || "connected";
+            resultEl.textContent = "Connected as " + label + ".";
+            resultEl.className = "test-result is-visible is-success";
+          } else {
+            resultEl.textContent = body.error || "Connection failed.";
+            resultEl.className = "test-result is-visible is-failure";
+          }
+        } catch (error) {
+          resultEl.textContent = error instanceof Error ? error.message : "Connection failed.";
+          resultEl.className = "test-result is-visible is-failure";
+        }
       }
 
       async function loadSessionDetail(sessionId) {
@@ -2486,317 +2617,21 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
 </html>`;
 }
 
-function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
-  const provider = settings.chatProvider;
-  const mattermostActorMode = settings.mattermostActorMode ?? "bot";
-  return `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chat Agent Bridge Onboarding</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        font-family: "Segoe UI", sans-serif;
-        --bg: #0f172a;
-        --panel: rgba(15, 23, 42, 0.9);
-        --panel-alt: rgba(30, 41, 59, 0.7);
-        --ink: #e2e8f0;
-        --muted: #94a3b8;
-        --line: #334155;
-        --accent: #38bdf8;
-      }
-      :root[data-theme="light"] {
-        color-scheme: light;
-        --bg: #f4f7fb;
-        --panel: rgba(255, 255, 255, 0.96);
-        --panel-alt: rgba(241, 245, 249, 0.92);
-        --ink: #0f172a;
-        --muted: #475569;
-        --line: #cbd5e1;
-        --accent: #0ea5e9;
-      }
-      body { margin: 0; background: var(--bg); color: var(--ink); }
-      main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
-      .hero { display: flex; justify-content: space-between; gap: 20px; align-items: start; margin-bottom: 24px; }
-      .hero-copy { max-width: 640px; }
-      .hero h1 { margin: 0 0 8px; font-size: 32px; }
-      .hero p { margin: 0; color: var(--muted); line-height: 1.6; }
-      .hero-side { display: grid; gap: 12px; justify-items: end; }
-      .hero-meta { color: var(--muted); font-size: 12px; }
-      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-top: 20px; }
-      .steps { display: grid; gap: 16px; }
-      .step h2 { margin: 0 0 6px; font-size: 18px; }
-      .step p { margin: 0 0 12px; color: var(--muted); }
-      .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-      label { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
-      input, select { width: 100%; box-sizing: border-box; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-alt); color: var(--ink); padding: 10px 12px; }
-      .hint { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
-      .card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--panel-alt); }
-      .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
-      button, .link-button { border: 0; border-radius: 999px; padding: 10px 16px; background: var(--accent); color: #082f49; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
-      .secondary { background: transparent; border: 1px solid var(--line); color: var(--ink); }
-      .flash { margin-top: 16px; min-height: 22px; color: var(--accent); }
-      .hidden { display: none; }
-      code { background: rgba(15, 23, 42, 0.9); padding: 2px 6px; border-radius: 6px; }
-      .nav { display: inline-flex; gap: 8px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-alt); margin-bottom: 20px; }
-      .nav a { color: var(--ink); text-decoration: none; padding: 8px 14px; border-radius: 999px; }
-      .nav a.is-active { background: rgba(56, 189, 248, 0.16); border: 1px solid var(--line); }
-      .site-footer { margin-top: 18px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px; color: var(--muted); }
-      .footer-links, .footer-controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-      .site-footer a { color: var(--accent); }
-      .footer-controls label { display: inline-flex; gap: 8px; align-items: center; }
-      .footer-controls select { border-radius: 999px; border: 1px solid var(--line); background: var(--panel-alt); color: var(--ink); padding: 6px 10px; }
-      @media (max-width: 720px) {
-        .hero {
-          flex-direction: column;
-        }
-        .hero-side {
-          justify-items: start;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <section class="hero">
-        <div class="hero-copy">
-          <h1>Bridge Onboarding</h1>
-          <p>Set the minimum runtime configuration without digging through every setting. Start here, save, then move to the full settings page only if you need deeper tuning.</p>
-        </div>
-        <div class="hero-side">
-          <nav class="nav" aria-label="Admin navigation">
-            <a href="/admin">Dashboard</a>
-            <a href="/admin/settings">Settings</a>
-            <a href="/admin/onboarding" class="is-active">Onboarding</a>
-          </nav>
-          <div class="hero-meta">Guided setup</div>
-        </div>
-      </section>
-      <section class="panel steps">
-        <div class="step">
-          <h2>1. Choose how chat reaches the bridge</h2>
-          <div class="grid">
-            <label>
-              Chat provider
-              <select id="provider">
-                <option value="slack"${provider === "slack" ? " selected" : ""}>Slack</option>
-                <option value="mattermost"${provider === "mattermost" ? " selected" : ""}>Mattermost</option>
-              </select>
-            </label>
-            <label>
-              Default agent
-              <select id="agent">
-                <option value="codex"${settings.agentKind === "codex" ? " selected" : ""}>Codex</option>
-                <option value="claude-code"${settings.agentKind === "claude-code" ? " selected" : ""}>Claude Code</option>
-                <option value="cursor"${settings.agentKind === "cursor" ? " selected" : ""}>Cursor</option>
-                <option value="gemini"${settings.agentKind === "gemini" ? " selected" : ""}>Gemini CLI</option>
-              </select>
-            </label>
-            <label>
-              Default approval
-              <select id="approval">
-                <option value="manual"${settings.defaultApprovalPolicy === "manual" ? " selected" : ""}>manual</option>
-                <option value="on-failure"${settings.defaultApprovalPolicy === "on-failure" ? " selected" : ""}>on-failure</option>
-                <option value="never"${settings.defaultApprovalPolicy === "never" ? " selected" : ""}>allow</option>
-              </select>
-            </label>
-            <label>
-              Network access
-              <select id="network">
-                <option value="enabled"${settings.networkAccess === "enabled" ? " selected" : ""}>enabled</option>
-                <option value="disabled"${settings.networkAccess === "disabled" ? " selected" : ""}>disabled</option>
-              </select>
-            </label>
-          </div>
-        </div>
-
-        <div class="step">
-          <h2>2. Choose transport mode</h2>
-          <div id="slack-card" class="card">
-            <div class="grid">
-              <label>
-                Slack mode
-                <select id="slack-mode">
-                  <option value="http"${settings.slackMode === "http" ? " selected" : ""}>http</option>
-                  <option value="socket"${settings.slackMode === "socket" ? " selected" : ""}>socket</option>
-                </select>
-              </label>
-            </div>
-            <div class="hint">Use <code>socket</code> when you want to avoid tunnels and public callback URLs.</div>
-          </div>
-
-          <div id="mattermost-card" class="card">
-            <div class="grid">
-              <label>
-                Mattermost mode
-                <select id="mattermost-mode">
-                  <option value="http"${settings.mattermostMode === "http" ? " selected" : ""}>http</option>
-                  <option value="websocket"${settings.mattermostMode === "websocket" ? " selected" : ""}>websocket</option>
-                </select>
-              </label>
-              <label>
-                Mattermost actor mode
-                <select id="mattermost-actor-mode">
-                  <option value="bot"${mattermostActorMode === "bot" ? " selected" : ""}>bot</option>
-                  <option value="self"${mattermostActorMode === "self" ? " selected" : ""}>self</option>
-                </select>
-              </label>
-            </div>
-            <div class="hint"><code>bot</code> is for bot or service-account tokens. <code>self</code> is for your own Mattermost account token when you cannot create a bot. In <code>self</code> mode the bridge only reacts in your self-DM, and you still need to mention yourself to trigger it.</div>
-          </div>
-        </div>
-
-        <div class="step">
-          <h2>3. Fill only the required connection values</h2>
-          <div id="slack-secrets" class="card">
-            <div class="grid">
-              <label>
-                Slack bot token
-                <input id="slack-bot-token" type="password" placeholder="${settings.hasSlackBotToken ? "stored" : "xoxb-..."}" />
-              </label>
-              <label>
-                Slack app token
-                <input id="slack-app-token" type="password" placeholder="${settings.hasSlackAppToken ? "stored" : "xapp-..."}" />
-              </label>
-              <label>
-                Slack signing secret
-                <input id="slack-signing-secret" type="password" placeholder="${settings.hasSlackSigningSecret ? "stored" : "optional for socket mode"}" />
-              </label>
-            </div>
-          </div>
-
-          <div id="mattermost-secrets" class="card">
-            <div class="grid">
-              <label>
-                Mattermost server URL
-                <input id="mattermost-server-url" type="text" value="${escapeHtml(settings.mattermostServerUrl || "")}" placeholder="http://mattermost.example:8065" />
-              </label>
-              <label>
-                Mattermost bearer token
-                <input id="mattermost-bot-token" type="password" placeholder="${settings.hasMattermostBotToken ? "stored" : "token"}" />
-              </label>
-              <label>
-                Mattermost webhook token
-                <input id="mattermost-webhook-token" type="password" placeholder="${settings.hasMattermostWebhookToken ? "stored" : "required in http mode"}" />
-              </label>
-              <label>
-                Mattermost action base URL
-                <input id="mattermost-action-base-url" type="text" value="${escapeHtml(settings.mattermostActionBaseUrl || "")}" placeholder="http://bridge-host:8787" />
-              </label>
-            </div>
-            <div class="hint"><strong>PAT goes into</strong> <code>Mattermost bearer token</code>. Use a bot token in <code>bot</code> mode, or your own Personal Access Token in <code>self</code> mode.</div>
-            <div class="hint"><code>Mattermost webhook token</code> is only needed for HTTP slash/webhook entrypoints. In websocket mode you usually do not need it.</div>
-            <div class="hint"><code>Mattermost action base URL</code> is the public base URL that Mattermost can call for button clicks. Enter only the base, for example <code>https://bridge.example.com</code>; the bridge appends <code>/mattermost/actions</code> automatically.</div>
-          </div>
-        </div>
-
-        <div class="step">
-          <h2>4. Confirm workspace defaults</h2>
-          <div class="grid">
-            <label>
-              Default workdir
-              <input id="default-workdir" type="text" value="${escapeHtml(settings.defaultWorkingDirectory)}" />
-            </label>
-            <label>
-              Bridge host
-              <input id="host" type="text" value="${escapeHtml(settings.host)}" />
-            </label>
-            <label>
-              Bridge port
-              <input id="port" type="number" min="1" value="${escapeHtml(settings.port)}" />
-            </label>
-            <label>
-              Admin port
-              <input id="admin-port" type="number" min="1" value="${escapeHtml(settings.adminPort)}" />
-            </label>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button id="save-onboarding">Apply onboarding settings</button>
-          <a class="link-button secondary" href="/admin/settings">Open full settings</a>
-          <a class="link-button secondary" href="/admin">Back to dashboard</a>
-        </div>
-        <div id="flash" class="flash"></div>
-      </section>
-      ${renderAdminFooter()}
-    </main>
-    <script>
-${renderAdminFooterScript()}
-      const provider = document.getElementById("provider");
-      const slackCard = document.getElementById("slack-card");
-      const slackSecrets = document.getElementById("slack-secrets");
-      const mattermostCard = document.getElementById("mattermost-card");
-      const mattermostSecrets = document.getElementById("mattermost-secrets");
-      const flash = document.getElementById("flash");
-
-      function renderProviderState() {
-        const isSlack = provider.value === "slack";
-        slackCard.classList.toggle("hidden", !isSlack);
-        slackSecrets.classList.toggle("hidden", !isSlack);
-        mattermostCard.classList.toggle("hidden", isSlack);
-        mattermostSecrets.classList.toggle("hidden", isSlack);
-      }
-
-      provider.addEventListener("change", renderProviderState);
-      renderProviderState();
-
-      document.getElementById("save-onboarding").addEventListener("click", async () => {
-        const payload = {
-          chatProvider: provider.value,
-          agentKind: document.getElementById("agent").value,
-          defaultApprovalPolicy: document.getElementById("approval").value,
-          networkAccess: document.getElementById("network").value,
-          slackMode: document.getElementById("slack-mode").value,
-          mattermostMode: document.getElementById("mattermost-mode").value,
-          mattermostActorMode: document.getElementById("mattermost-actor-mode").value,
-          defaultWorkingDirectory: document.getElementById("default-workdir").value.trim(),
-          host: document.getElementById("host").value.trim(),
-          port: Number.parseInt(document.getElementById("port").value, 10),
-          adminHost: "${escapeHtml(settings.adminHost)}",
-          adminPort: Number.parseInt(document.getElementById("admin-port").value, 10),
-          slackBotToken: document.getElementById("slack-bot-token").value.trim() || undefined,
-          slackAppToken: document.getElementById("slack-app-token").value.trim() || undefined,
-          slackSigningSecret: document.getElementById("slack-signing-secret").value.trim() || undefined,
-          mattermostServerUrl: document.getElementById("mattermost-server-url").value.trim() || undefined,
-          mattermostBotToken: document.getElementById("mattermost-bot-token").value.trim() || undefined,
-          mattermostWebhookToken: document.getElementById("mattermost-webhook-token").value.trim() || undefined,
-          mattermostActionBaseUrl: document.getElementById("mattermost-action-base-url").value.trim() || undefined
-        };
-
-        const response = await fetch("/admin/api/settings", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-          flash.textContent = "Failed to save onboarding settings.";
-          return;
-        }
-
-        flash.textContent = "Onboarding settings applied. Restart the bridge if you changed transport settings.";
-      });
-    </script>
-  </body>
-</html>`;
-}
-
 export class AdminServer {
   private readonly config: AdminServerDeps["config"];
   private readonly stateStore: StateStore;
   private readonly auditLogger: AuditLogger;
   private readonly bridge: BridgeService;
+  private readonly testConnectionFetch: typeof fetchJsonWithTimeout;
   private server: http.Server | undefined;
   private readonly sockets = new Set<{ destroy(): void; on(event: "close", listener: () => void): void }>();
 
-  constructor(deps: AdminServerDeps) {
+  constructor(deps: AdminServerDeps, dependencies?: AdminServerDependencies) {
     this.config = deps.config;
     this.stateStore = deps.stateStore;
     this.auditLogger = deps.auditLogger;
     this.bridge = deps.bridge;
+    this.testConnectionFetch = dependencies?.testConnectionFetch ?? fetchJsonWithTimeout;
   }
 
   async start(): Promise<void> {
@@ -2993,6 +2828,11 @@ export class AdminServer {
       return;
     }
 
+    if (request.method === "POST" && url.pathname === "/admin/api/test-connection") {
+      await this.handleTestConnection(request, response);
+      return;
+    }
+
     writeJson(response, 404, { error: "Not found" });
   }
 
@@ -3094,6 +2934,7 @@ export class AdminServer {
       approvals,
       failures,
       repoAliases: this.config.repoAliases,
+      setupStatus: computeSetupStatus(this.config),
       ...(environment ? { environment } : {}),
       ...(warnings.length > 0 ? { warnings } : {}),
       ...(connectionStatus ? { connectionStatus } : {}),
@@ -3791,6 +3632,110 @@ export class AdminServer {
       ok: true,
       status: "queued",
     });
+  }
+
+  /**
+   * Tests a chat provider connection using either the values supplied in the
+   * request body or, when absent, the currently stored config values. This
+   * lets users verify already-saved credentials without retyping them. The
+   * result is returned as 200 JSON data (`ok: true|false`) rather than an
+   * HTTP error status, and tokens are never echoed back.
+   */
+  private async handleTestConnection(
+    request: IncomingMessage,
+    response: ServerResponse,
+  ): Promise<void> {
+    let payload: {
+      provider?: string;
+      serverUrl?: string;
+      botToken?: string;
+      slackBotToken?: string;
+    } = {};
+    try {
+      const body = await readRequestBody(request);
+      payload = body ? (JSON.parse(body) as typeof payload) : {};
+    } catch {
+      writeJson(response, 400, { error: "Invalid JSON body" });
+      return;
+    }
+
+    if (payload.provider === "mattermost") {
+      const serverUrl = payload.serverUrl || this.config.mattermostServerUrl;
+      const botToken = payload.botToken || this.config.mattermostBotToken;
+      if (!serverUrl || !botToken) {
+        writeJson(response, 200, {
+          ok: false,
+          error: "Server URL and bot token are required to test the Mattermost connection.",
+        });
+        return;
+      }
+
+      try {
+        const user = await this.testConnectionFetch<{ username?: string }>({
+          url: new URL("/api/v4/users/me", serverUrl).toString(),
+          method: "GET",
+          headers: { authorization: `Bearer ${botToken}` },
+        });
+        writeJson(response, 200, {
+          ok: true,
+          details: { username: user.username ?? "unknown" },
+        });
+      } catch (error) {
+        writeJson(response, 200, {
+          ok: false,
+          error: error instanceof Error ? error.message : "Mattermost connection test failed.",
+        });
+      }
+      return;
+    }
+
+    if (payload.provider === "slack") {
+      const botToken = payload.slackBotToken || this.config.slackBotToken;
+      if (!botToken) {
+        writeJson(response, 200, {
+          ok: false,
+          error: "A bot token is required to test the Slack connection.",
+        });
+        return;
+      }
+
+      try {
+        const result = await this.testConnectionFetch<{
+          ok?: boolean;
+          error?: string;
+          user?: string;
+          team?: string;
+        }>({
+          url: "https://slack.com/api/auth.test",
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${botToken}`,
+            "content-type": "application/json; charset=utf-8",
+          },
+          body: "{}",
+        });
+        if (!result.ok) {
+          writeJson(response, 200, {
+            ok: false,
+            error: result.error ?? "Slack rejected the token.",
+          });
+          return;
+        }
+
+        writeJson(response, 200, {
+          ok: true,
+          details: { user: result.user ?? "unknown", team: result.team ?? "unknown" },
+        });
+      } catch (error) {
+        writeJson(response, 200, {
+          ok: false,
+          error: error instanceof Error ? error.message : "Slack connection test failed.",
+        });
+      }
+      return;
+    }
+
+    writeJson(response, 400, { error: "Invalid provider" });
   }
 
   private async handleMetrics(response: ServerResponse): Promise<void> {
