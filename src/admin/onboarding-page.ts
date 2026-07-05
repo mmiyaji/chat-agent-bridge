@@ -72,6 +72,10 @@ export function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
         background: var(--panel-alt);
         cursor: pointer;
         text-align: left;
+        display: block;
+        width: 100%;
+        font: inherit;
+        color: var(--ink);
       }
       .provider-card h3 { margin: 0 0 6px; font-size: 17px; }
       .provider-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
@@ -84,6 +88,10 @@ export function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
         background: var(--panel-alt);
         cursor: pointer;
         text-align: left;
+        display: block;
+        width: 100%;
+        font: inherit;
+        color: var(--ink);
       }
       .agent-card h3 { margin: 0 0 4px; font-size: 15px; }
       .agent-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
