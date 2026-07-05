@@ -18,6 +18,8 @@
     "service:restart": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-restart.ps1",
     "service:restart:build": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-restart.ps1 -Build",
     "service:status": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-status.ps1",
+    "service:install-autostart": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-install-autostart.ps1",
+    "service:uninstall-autostart": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/bridge-uninstall-autostart.ps1",
     "prestart": "node --preserve-symlinks --preserve-symlinks-main ./node_modules/typescript/bin/tsc -p tsconfig.json",
     "start": "set CAB_OPEN_ADMIN=1&& node dist/index.js",
     "test": "node --preserve-symlinks --preserve-symlinks-main ./scripts/run-tests.mjs",

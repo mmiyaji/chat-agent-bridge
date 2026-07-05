@@ -33,6 +33,8 @@ Start Mattermost:
 npm run mattermost:up
 ```
 
+The `cab-mattermost-preview` container runs with `restart: unless-stopped`, so Docker Desktop brings it back automatically after a host reboot or Docker restart. Its healthcheck probes `GET /api/v4/system/ping` over a raw TCP socket (the `mattermost-preview` image ships without `curl` or `wget`), so `docker ps` now reports an accurate `healthy`/`unhealthy` status instead of always showing unhealthy.
+
 Bootstrap the local test workspace:
 
 ```powershell

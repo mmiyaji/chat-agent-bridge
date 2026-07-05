@@ -83,6 +83,21 @@ Service mode stores runtime files under `data/runtime/`.
 
 `CAB_ALLOWED_DIRS` and the resulting repo aliases also drive the first-mention working-directory flow: an alias or absolute path in the first message of a thread must resolve under `CAB_ALLOWED_DIRS` to be accepted, and the numbered directory picker offered when no directory is given lists these same aliases.
 
+### Allowed roots precedence
+
+Allowed directory roots can also be changed at runtime, without a restart:
+
+- from chat: `allow-dirs` (list roots and aliases), `allow-dir <absolute-path>` (add a root), `allow-dir remove <absolute-path>` (remove a root; refuses to remove the last remaining root or a root that would orphan the current default working directory)
+- from the Admin UI: the "Allowed directory roots" textarea under Bridge transport settings (one absolute path per line)
+
+Both paths apply immediately, recompute repo aliases, and persist the result to the settings file (`allowedDirs`). The precedence at each restart is:
+
+1. `CAB_ALLOWED_DIRS` environment variable, if set
+2. the persisted `allowedDirs` value in the settings file
+3. the current working directory, as a last-resort default
+
+So if `CAB_ALLOWED_DIRS` is set in the environment, it always wins again the next time the bridge restarts, even after a runtime `allow-dir` change.
+
 ## Agent-specific environment variables
 
 ### Codex

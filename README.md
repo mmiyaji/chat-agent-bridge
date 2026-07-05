@@ -19,6 +19,7 @@ The current implementation is Windows-first and is developed and validated prima
 - Picks the working directory from the first message of a thread, or offers a numbered repo picker when none is given
 - Offers to resume a prior Claude Code session for the bound folder, based on the real `~/.claude/projects` session store
 - Remembers a default working directory per chat channel
+- Lets you add or remove allowed directory roots at runtime from chat or the Admin UI, without a restart
 - Supports Slack and Mattermost chat adapters
 - Supports Codex, Claude Code, Cursor, and Gemini CLI agent adapters
 - Adds approvals, audit logging, repo targeting, and an admin surface
@@ -57,6 +58,12 @@ Or run it as a detached service:
 ```powershell
 npm run service:start
 npm run service:status
+```
+
+To start the bridge automatically at Windows logon:
+
+```powershell
+npm run service:install-autostart
 ```
 
 ## Typical first-mention flow
@@ -99,6 +106,8 @@ npm run service:status
 npm run service:restart
 npm run service:restart:build
 npm run service:stop
+npm run service:install-autostart
+npm run service:uninstall-autostart
 ```
 
 ## Architecture
@@ -182,6 +191,8 @@ flowchart TD
 - In Mattermost, `MATTERMOST_ACTOR_MODE=self` is intended for user-token operation, accepts only self-DMs, and still requires a mention in that self-DM
 - Claude Code resume candidates are read from `~/.claude/projects/<encoded-cwd>/*.jsonl` (override with `CAB_CLAUDE_PROJECTS_DIR`); only directories inside `CAB_ALLOWED_DIRS` are ever accepted as a working directory
 - The Admin UI has a read-only Environment panel (`GET /admin/api/environment`) showing allowed roots, repo aliases, channel defaults, and the `CHAT_AGENT_BRIDGE_*` variable names passed to agents
+- Allowed directory roots can be changed at runtime: from chat with `allow-dir <absolute-path>` / `allow-dir remove <absolute-path>` / `allow-dirs`, or from the Admin UI's "Allowed directory roots" field. Changes apply immediately and are persisted, but the `CAB_ALLOWED_DIRS` environment variable takes precedence again on the next restart if set. See [docs/install.md](docs/install.md) for the full precedence order
+- `npm run service:install-autostart` registers a Windows Task Scheduler task that starts the bridge at logon; `npm run service:uninstall-autostart` removes it. See [docs/operations.md](docs/operations.md)
 
 ## Disclaimer
 

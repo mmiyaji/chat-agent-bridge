@@ -8,6 +8,8 @@ npm run service:status
 npm run service:restart
 npm run service:restart:build
 npm run service:stop
+npm run service:install-autostart
+npm run service:uninstall-autostart
 ```
 
 Behavior:
@@ -15,6 +17,22 @@ Behavior:
 - `service:start` starts the bridge as a detached Node process
 - `service:restart` performs a fast restart without rebuilding
 - `service:restart:build` rebuilds before restarting
+- `service:install-autostart` registers a Windows Task Scheduler task named `ChatAgentBridge` that starts the bridge at logon for the current user
+- `service:uninstall-autostart` removes that scheduled task
+
+### Windows logon autostart
+
+`npm run service:install-autostart` runs `scripts/bridge-install-autostart.ps1`, which registers a Task Scheduler task (`ChatAgentBridge`) that:
+
+- triggers at logon of the current user
+- runs `scripts/bridge-start.ps1 -SkipBuild`, so it starts the already-built `dist/` output rather than rebuilding on every logon
+- restarts up to 3 times with a 1-minute interval if the process exits unexpectedly
+- has no execution time limit, since the bridge is expected to run indefinitely
+- is allowed to run and continue on battery power
+
+Because it starts with `-SkipBuild`, after pulling new code you still need to rebuild and restart once, for example with `npm run service:restart:build`. The autostart task will then keep starting that build at every subsequent logon.
+
+Re-running `npm run service:install-autostart` replaces the existing task (it is idempotent). To test the task without logging off, run `Start-ScheduledTask -TaskName ChatAgentBridge`. To remove it, run `npm run service:uninstall-autostart`.
 
 `service:stop` (and the restart scripts) only ever stop process IDs that were independently validated as genuine bridge processes (`node.exe` running `dist/index.js`), whether that PID came from `bridge.pid` or from process discovery. A stale `bridge.pid` pointing at a dead or reused PID is removed but never used to kill an unrelated process.
 
@@ -83,6 +101,9 @@ These are the most useful during day-to-day operation:
 - `approvals`
 - `failures [count]`
 - `repos`
+- `allow-dirs`
+- `allow-dir <absolute-path>`
+- `allow-dir remove <absolute-path>`
 - `repo <alias>`
 - `cwd <path>`
 - `channel-default <alias|path>` / `channel-default clear` / `channel-default`

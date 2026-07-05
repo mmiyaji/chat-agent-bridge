@@ -19,6 +19,7 @@ Chat Agent Bridge は、チャットスレッドからローカル PC 上の開�
 - スレッドの最初のメッセージから working directory を決定し、指定がなければ番号付きの repo picker を出す
 - 紐付いた folder に過去の Claude Code session があれば、`~/.claude/projects` の実データから resume 候補を提示する
 - チャンネルごとに既定の working directory を記憶する
+- allowed directory root をチャットまたは Admin UI から実行時に追加・削除できる（再起動不要）
 - Slack と Mattermost の chat adapter を使う
 - Codex、Claude Code、Cursor、Gemini CLI の agent adapter を使う
 - 承認フロー、監査ログ、repo 切り替え、Admin UI を提供する
@@ -55,6 +56,12 @@ detached service として動かす場合:
 ```powershell
 npm run service:start
 npm run service:status
+```
+
+Windows ログオン時に bridge を自動起動する場合:
+
+```powershell
+npm run service:install-autostart
 ```
 
 ## 最初のメンションから始まる典型的な流れ
@@ -97,6 +104,8 @@ npm run service:status
 npm run service:restart
 npm run service:restart:build
 npm run service:stop
+npm run service:install-autostart
+npm run service:uninstall-autostart
 ```
 
 ## アーキテクチャ
@@ -176,6 +185,8 @@ flowchart TD
 - Mattermost の `MATTERMOST_ACTOR_MODE=self` は user token 運用向けで、self-DM でもメンションが必要です
 - Claude Code の resume 候補は `~/.claude/projects/<encoded-cwd>/*.jsonl` から読み込みます（`CAB_CLAUDE_PROJECTS_DIR` で変更可能）。working directory として受理されるのは `CAB_ALLOWED_DIRS` 配下のみです
 - Admin UI には read-only の Environment パネル（`GET /admin/api/environment`）があり、allowed roots、repo alias、channel default、agent に渡す `CHAT_AGENT_BRIDGE_*` 変数名を確認できます
+- allowed directory root は実行時に変更できます。チャットからは `allow-dir <absolute-path>` / `allow-dir remove <absolute-path>` / `allow-dirs`、Admin UI からは「Allowed directory roots」欄です。変更は即時反映・永続化されますが、`CAB_ALLOWED_DIRS` 環境変数が設定されていれば次回再起動時に再び優先されます。優先順位の詳細は [docs/install.md](docs/install.md) を参照してください
+- `npm run service:install-autostart` で Windows ログオン時に bridge を起動する scheduled task を登録できます。`npm run service:uninstall-autostart` で解除できます。詳細は [docs/operations.md](docs/operations.md) を参照してください
 
 ## 免責事項
 
