@@ -144,7 +144,8 @@ export function renderControlCenterPage(): string {
 
         <section class="page is-active" id="page-overview" aria-labelledby="page-title">
           <div class="intro"><div><h2>チャットとエージェントの稼働状況</h2><p>Slack または Mattermost の会話を、ローカルのコーディングエージェントへつなぎます。ここでは接続状態と、会話ごとの実行状況を確認できます。</p></div></div>
-          <div class="grid status-grid">
+          <div class="notice section" id="setup-guide" role="status" aria-live="polite" data-testid="setup-guide"><strong id="setup-title">接続を確認しています</strong><p id="setup-detail"></p><button class="button" type="button" data-goto="connections" id="setup-action">設定画面を開く</button></div>
+          <div class="grid status-grid section">
           <article class="card" aria-labelledby="overview-chat-title"><div class="card-head"><div class="card-title"><div class="service-mark" aria-hidden="true">話</div><div><h3 id="overview-chat-title">チャット</h3><p id="overview-chat-name">読み込み中</p></div></div><span class="state" id="overview-chat-state" data-testid="overview-chat-state" data-state="unknown">確認中</span></div><div class="card-detail" id="overview-chat-detail">接続状態を取得しています。</div><div class="card-actions"><button class="button primary" type="button" data-goto="connections">接続を管理</button></div></article>
             <article class="card" aria-labelledby="overview-agent-title"><div class="card-head"><div class="card-title"><div class="service-mark" aria-hidden="true">AI</div><div><h3 id="overview-agent-title">コーディングエージェント</h3><p id="overview-agent-name">読み込み中</p></div></div><span class="state" id="overview-agent-state" data-testid="overview-agent-state" data-state="unknown">確認中</span></div><div class="card-detail" id="overview-agent-detail">エージェントの状態を取得しています。</div><div class="card-actions"><button class="button primary" type="button" data-goto="connections">設定を管理</button></div></article>
           </div>
@@ -202,6 +203,15 @@ export function renderControlCenterPage(): string {
         <section class="page" id="page-sessions" aria-labelledby="page-title">
           <div class="intro"><div><h2>会話セッション</h2><p>チャット上で継続しているエージェント会話と、直近の実行結果を確認します。会話の返信は元のチャットスレッドに届きます。</p></div><div class="filters"><label class="field"><span class="nav-label">状態</span><select id="session-filter" aria-label="状態で絞り込み"><option value="all">すべて</option><option value="running">実行中</option><option value="completed">完了</option><option value="waiting_for_approval">承認待ち</option><option value="failed">失敗</option></select></label><label class="field"><span class="nav-label">検索</span><input id="session-search" type="search" aria-label="セッションを検索" placeholder="ID、チャンネル、依頼内容" /></label></div></div>
           <div id="sessions-table" data-testid="sessions-container"><div class="load-line">セッションを読み込み中…</div></div>
+          <div class="filters section">
+            <label class="field">チャット<select id="session-provider" aria-label="チャットで絞り込み"><option value="all">すべて</option><option value="slack">Slack</option><option value="mattermost">Mattermost</option></select></label>
+            <span id="session-match-count" class="hint" role="status" aria-live="polite"></span>
+          </div>
+          <p id="session-no-matches" class="empty" hidden>条件に一致するセッションはありません。状態やチャットの絞り込み、検索語を変更してください。</p>
+          <section id="session-detail" class="section card" hidden aria-labelledby="session-detail-title" data-testid="session-detail">
+            <div class="card-head"><h2 id="session-detail-title">実行履歴</h2><button class="button" id="close-session-detail" type="button">詳細を閉じる</button></div>
+            <div id="session-detail-content"></div>
+          </section>
           <div class="section"><div class="section-head"><h2>承認待ち</h2><span class="state" id="approval-count" data-state="unknown">確認中</span></div><div id="approvals-list" data-testid="approvals-list"><div class="load-line">読み込み中…</div></div></div>
           <div class="section"><div class="section-head"><h2>最近のエラー</h2></div><div id="failures-list" data-testid="failures-list"><div class="load-line">読み込み中…</div></div></div>
         </section>
@@ -231,8 +241,47 @@ export function renderControlCenterPage(): string {
         };
         function setPill(id, meta) { const pill = $(id); pill.textContent = meta.label; pill.dataset.state = meta.state; }
         function formatDate(value) { if (!value) return '日時未設定'; const date = new Date(value); return Number.isNaN(date.valueOf()) ? String(value) : new Intl.DateTimeFormat('ja-JP', { dateStyle: 'medium', timeStyle: 'short' }).format(date); }
-        function sessionStatus(session) { return session?.latestExecution?.status || (session?.pendingApproval ? 'waiting_for_approval' : 'idle'); }
-        const statusLabel = (status) => ({ running: '実行中', completed: '完了', failed: '失敗', waiting_for_approval: '承認待ち', cancelled: 'キャンセル', rejected: '却下', idle: '待機中' }[status] || status || '待機中');
+        function updateSetupGuide() {
+          const chat = state.connections?.chat;
+          const agent = state.connections?.agent;
+          let title, detail;
+          if (state.loadErrors.settings || state.loadErrors.connections || !state.settings || !state.connections) {
+            title = '接続状態を確認できません'; detail = '「更新」を押して再確認してください。';
+          } else if (!state.settings.defaultWorkingDirectory || !state.settings.allowedDirectories) {
+            title = '1. 作業フォルダーを設定してください'; detail = '「エージェントと作業範囲」で既定の作業フォルダーと許可するフォルダーを保存してください。';
+          } else if (agent?.state !== 'connected' || agent?.kind !== state.settings.agentKind) {
+            title = '2. エージェントを確認してください'; detail = 'CLIをインストールしてログインし、「エージェントを確認」を押してください。既存の会話には、その会話で使用したエージェントを接続します。';
+          } else if (!((chat?.connected || chat?.state === 'listening') && chat?.provider === state.settings.chatProvider)) {
+            title = '3. チャットを接続してください'; detail = 'SlackまたはMattermostの接続情報を保存し、「チャットに接続」を押してください。エラーの場合は接続情報を確認して再接続してください。';
+          } else {
+            title = 'チャットから依頼できます'; detail = 'チャットでボットにメンションして依頼を送ってください。以後は同じスレッドで会話を続けられます。';
+          }
+          $('setup-title').textContent = title;
+          $('setup-detail').textContent = detail;
+        }
+        let detailRequest = 0;
+        async function openSessionDetail(sessionId) {
+          const request = ++detailRequest;
+          $('session-detail').hidden = false;
+          $('session-detail-title').textContent = '実行履歴: ' + sessionId;
+          $('close-session-detail').focus();
+          $('session-detail-content').textContent = '読み込み中…';
+          try {
+            const payload = await fetchJson('/admin/api/sessions/' + encodeURIComponent(sessionId));
+            if (request !== detailRequest) return;
+            const history = Array.isArray(payload.executionHistory) ? payload.executionHistory : [];
+            $('session-detail-content').innerHTML = '<p class="card-detail">' + escapeHtml(payload.session?.workingDirectory || '') + '</p>' + (history.length ? history.map((entry) => '<article class="notice section"><strong>' + escapeHtml(statusLabel(entry.status)) + ' · ' + escapeHtml(formatDate(entry.updatedAt)) + '</strong><p>' + escapeHtml(entry.prompt) + '</p><p style="white-space:pre-wrap">' + escapeHtml(entry.error || entry.summary || '結果はまだありません。') + '</p></article>').join('') : '<p class="empty">実行履歴はまだありません。</p>');
+          } catch (error) {
+            if (request === detailRequest) $('session-detail-content').textContent = error.message || '実行履歴を読み込めませんでした。詳細を開き直して再試行してください。';
+          }
+        }
+        function sessionStatus(session) {
+          const pending = state.approvals.filter((entry) => entry.sessionId === session.sessionId);
+          if (pending.some((entry) => entry.kind === 'input')) return 'waiting_for_input';
+          if (pending.length || session?.pendingApproval) return 'waiting_for_approval';
+          return session?.latestExecution?.status || 'idle';
+        }
+        const statusLabel = (status) => ({ running: '実行中', completed: '完了', failed: '失敗', waiting_for_approval: '承認待ち', waiting_for_input: '回答待ち', cancelled: 'キャンセル', rejected: '却下', idle: '待機中' }[status] || status || '待機中');
         function renderSessionRows(sessions, compact = false) {
           if (state.loadErrors.sessions) return '<div class="load-error" data-testid="sessions-load-error">セッションを読み込めませんでした。更新してもう一度お試しください。</div>';
           if (!sessions.length) return '<div class="empty" data-testid="sessions-empty">セッションはまだありません。チャットからエージェントにメンションすると、ここに会話が表示されます。</div>';
@@ -253,14 +302,14 @@ export function renderControlCenterPage(): string {
           return '<div class="table-wrap"><table data-testid="sessions-table"><thead><tr><th scope="col">会話 / 依頼</th><th scope="col">サービス</th><th scope="col">状態</th><th scope="col">作業フォルダー</th><th scope="col">最終更新</th></tr></thead><tbody>' + sessions.map((session) => {
             const status = sessionStatus(session);
             const summary = session.latestExecution?.summary || session.latestExecution?.prompt || session.pendingApproval?.prompt || '継続中の会話';
-            return '<tr data-status="' + escapeHtml(status) + '" data-search="' + escapeHtml([session.sessionId, session.provider, session.channelId, summary, session.agent].join(' ').toLowerCase()) + '"><td><strong>' + escapeHtml(session.sessionId) + '</strong><br />' + escapeHtml(summary) + '</td><td>' + escapeHtml(labels[session.provider] || session.provider) + ' · ' + escapeHtml(labels[session.agent] || session.agent) + '</td><td><span class="session-state" data-status="' + escapeHtml(status) + '">' + escapeHtml(statusLabel(status)) + '</span></td><td>' + escapeHtml(session.workingDirectory || '—') + '</td><td>' + escapeHtml(formatDate(session.updatedAt)) + '</td></tr>';
+            return '<tr data-provider="' + escapeHtml(session.provider) + '" data-status="' + escapeHtml(status) + '" data-search="' + escapeHtml([session.sessionId, session.provider, session.channelId, session.workingDirectory, session.latestExecution?.prompt, summary, session.agent].join(' ').toLowerCase()) + '"><td><button class="button" type="button" data-session-detail="' + escapeHtml(session.sessionId) + '" aria-label="実行履歴を開く: ' + escapeHtml(session.sessionId) + '">' + escapeHtml(session.sessionId) + '</button><br />' + escapeHtml(summary) + '</td><td>' + escapeHtml(labels[session.provider] || session.provider) + ' · ' + escapeHtml(labels[session.agent] || session.agent) + '</td><td><span class="session-state" data-status="' + escapeHtml(status) + '">' + escapeHtml(statusLabel(status)) + '</span></td><td>' + escapeHtml(session.workingDirectory || '—') + '</td><td>' + escapeHtml(formatDate(session.updatedAt)) + '</td></tr>';
           }).join('') + '</tbody></table></div>';
         }
         function renderApprovals() {
           if (state.loadErrors.approvals) return '<div class="load-error" data-testid="approvals-load-error">承認待ちを読み込めませんでした。</div>';
           $('approval-count').textContent = state.approvals.length + ' 件'; $('approval-count').dataset.state = state.approvals.length ? 'connecting' : 'connected';
           if (!state.approvals.length) return '<div class="empty" data-testid="approvals-empty">承認待ちはありません。</div>';
-          return '<div class="grid">' + state.approvals.map((entry) => '<article class="card"><div class="card-head"><div><h3>' + escapeHtml(entry.prompt || '操作の承認') + '</h3><p>' + escapeHtml(entry.sessionId) + ' · ' + escapeHtml(labels[entry.provider] || entry.provider) + '</p></div><span class="state" data-state="connecting">承認待ち</span></div><p class="card-detail">' + escapeHtml(entry.reason || 'エージェントが作業の承認を待っています。') + '<br />' + escapeHtml(formatDate(entry.requestedAt)) + '</p></article>').join('') + '</div>';
+          return '<div class="grid">' + state.approvals.map((entry) => '<article class="card"><div class="card-head"><div><h3>' + escapeHtml(entry.prompt || '操作の承認') + '</h3><p>' + escapeHtml(entry.sessionId || '') + ' · ' + escapeHtml(labels[entry.provider] || entry.provider) + '</p></div><span class="state" data-state="connecting">' + (entry.kind === 'input' ? '回答待ち' : '承認待ち') + '</span></div><p class="card-detail">' + escapeHtml(entry.reason || 'エージェントが作業の承認を待っています。') + '<br />' + escapeHtml(entry.expiresAt ? '有効期限: ' + formatDate(entry.expiresAt) : formatDate(entry.requestedAt)) + '</p></article>').join('') + '</div>';
         }
         function renderFailures() {
           if (state.loadErrors.failures) return '<div class="load-error" data-testid="failures-load-error">エラー履歴を読み込めませんでした。</div>';
@@ -269,7 +318,14 @@ export function renderControlCenterPage(): string {
         }
         function applySessionFilters() {
           const filter = $('session-filter').value; const query = $('session-search').value.trim().toLowerCase();
-          document.querySelectorAll('#sessions-table tbody tr').forEach((row) => { row.hidden = (filter !== 'all' && row.dataset.status !== filter) || (query && !row.dataset.search.includes(query)); });
+          const provider = $('session-provider').value;
+          let visible = 0;
+          document.querySelectorAll('#sessions-table tbody tr').forEach((row) => {
+            row.hidden = (filter !== 'all' && row.dataset.status !== filter) || (provider !== 'all' && row.dataset.provider !== provider) || Boolean(query && !row.dataset.search.includes(query));
+            if (!row.hidden) visible++;
+          });
+          $('session-match-count').textContent = visible + ' / ' + state.sessions.length + ' 件';
+          $('session-no-matches').hidden = state.loadErrors.sessions || !state.sessions.length || visible > 0;
         }
         function updateOverview() {
           const chat = state.connections?.chat || null; const agent = state.connections?.agent || null;
@@ -285,6 +341,8 @@ export function renderControlCenterPage(): string {
           if (!alerts.length) alerts.push('<div class="notice"><strong>対応が必要な項目はありません</strong>接続状態とセッションを定期的に確認しています。</div>');
           $('overview-alerts').innerHTML = alerts.join('');
           $('sessions-table').innerHTML = renderTable(state.sessions); $('approvals-list').innerHTML = renderApprovals(); $('failures-list').innerHTML = renderFailures();
+          applySessionFilters();
+          updateSetupGuide();
           $('last-updated').textContent = '最終更新 ' + formatDate(state.lastUpdated);
           $('connect-chat').disabled = state.busy || chatMeta.state === 'connected' || chatMeta.state === 'listening'; $('disconnect-chat').disabled = state.busy || (!chat || chatMeta.state === 'disconnected');
           $('connect-agent').disabled = state.busy || agentMeta.state === 'connected'; $('disconnect-agent').disabled = state.busy || (!agent || agentMeta.state === 'disconnected');
@@ -336,6 +394,10 @@ export function renderControlCenterPage(): string {
         $('save-chat').addEventListener('click', () => saveSettings('chat')); $('save-agent').addEventListener('click', () => saveSettings('agent'));
         $('connect-chat').addEventListener('click', () => connectionAction('chat', 'connect')); $('disconnect-chat').addEventListener('click', () => connectionAction('chat', 'disconnect')); $('connect-agent').addEventListener('click', () => connectionAction('agent', 'connect')); $('disconnect-agent').addEventListener('click', () => connectionAction('agent', 'disconnect'));
         $('refresh-button').addEventListener('click', loadStatus); $('connection-refresh').addEventListener('click', loadStatus); $('session-filter').addEventListener('change', applySessionFilters); $('session-search').addEventListener('input', applySessionFilters);
+        [['waiting_for_input', '回答待ち'], ['idle', '待機中'], ['cancelled', 'キャンセル'], ['rejected', '却下']].forEach(([value, label]) => { const option = document.createElement('option'); option.value = value; option.textContent = label; $('session-filter').append(option); });
+        $('session-provider').addEventListener('change', applySessionFilters);
+        $('sessions-table').addEventListener('click', (event) => { const button = event.target.closest('[data-session-detail]'); if (button) openSessionDetail(button.dataset.sessionDetail); });
+        $('close-session-detail').addEventListener('click', () => { detailRequest++; $('session-detail').hidden = true; document.querySelector('.nav [data-page="sessions"]').focus(); });
         loadStatus(); window.setInterval(loadStatus, 10000);
       })();
     </script>

@@ -48,7 +48,7 @@ const sessions = [
   },
 ];
 
-async function mockApi(page, { connections, saveResponse, actionError } = {}) {
+async function mockApi(page, { connections, saveResponse, actionError, sessionEntries = sessions, approvals, executionHistory = [] } = {}) {
   const calls = [];
   await page.route("**/admin/api/**", async (route) => {
     const request = route.request();
@@ -68,8 +68,9 @@ async function mockApi(page, { connections, saveResponse, actionError } = {}) {
       await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: actionError }) });
       return;
     }
-    else if (path === "/admin/api/sessions") payload = { sessions };
-    else if (path === "/admin/api/approvals") payload = { approvals: [{ sessionId: "session-e2e-2", provider: "slack", agent: "codex", prompt: "Update deployment config", reason: "Write approval required", requestedAt: "2026-09-29T02:01:00.000Z" }] };
+    else if (path === "/admin/api/sessions") payload = { sessions: sessionEntries };
+    else if (path.startsWith("/admin/api/sessions/")) payload = { session: sessionEntries.find(entry => entry.sessionId === decodeURIComponent(path.slice("/admin/api/sessions/".length))), executionHistory };
+    else if (path === "/admin/api/approvals") payload = { approvals: approvals ?? [{ sessionId: "session-e2e-2", provider: "slack", agent: "codex", prompt: "Update deployment config", reason: "Write approval required", requestedAt: "2026-09-29T02:01:00.000Z" }] };
     else if (path === "/admin/api/failures") payload = { failures: [] };
     else payload = { ok: true };
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(payload) });
@@ -127,4 +128,53 @@ test("connection failures are shown as text and layout fits a phone viewport", a
   await expect(page.locator("#chat-message img")).toHaveCount(0);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test("setup guidance reflects disconnected and ready transports", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/admin");
+  await expect(page.getByTestId("setup-guide")).toContainText("2. エージェントを確認");
+  await page.getByRole("button", { name: "設定画面を開く" }).click();
+  await expect(page.getByTestId("connect-agent")).toBeVisible();
+  await page.route("**/admin/api/connections", route => route.fulfill({ json: {
+    chat: { provider: "slack", state: "connected", connected: true },
+    agent: { kind: "codex", state: "connected" }, busy: false,
+  } }));
+  await page.getByRole("button", { name: "更新", exact: true }).click();
+  await page.getByRole("button", { name: "概要", exact: true }).click();
+  await expect(page.getByTestId("setup-guide")).toContainText("チャットから依頼できます");
+});
+
+test("filters preserve provider and folder searches on refresh and show native input waits", async ({ page }) => {
+  await mockApi(page, {
+    sessionEntries: [...sessions, { ...sessions[0], sessionId: "mm-session", provider: "mattermost", workingDirectory: "D:/work/mobile", latestExecution: { status: "running", prompt: "Mobile task" } }],
+    approvals: [{ sessionId: "mm-session", kind: "input", prompt: "Choose a target", reason: "Reply in chat" }],
+  });
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "会話セッション", exact: true }).click();
+  await page.getByLabel("チャットで絞り込み").selectOption("mattermost");
+  await page.getByLabel("状態で絞り込み").selectOption("waiting_for_input");
+  await page.getByLabel("セッションを検索").fill("D:/work/mobile");
+  await expect(page.locator("#sessions-table tbody tr:visible")).toHaveCount(1);
+  await expect(page.locator("#sessions-table tbody tr:visible")).toContainText("回答待ち");
+  await page.getByRole("button", { name: "更新", exact: true }).click();
+  await expect(page.locator("#session-match-count")).toHaveText("1 / 3 件");
+  await expect(page.locator("#sessions-table tbody tr:visible")).toHaveCount(1);
+  await page.getByLabel("セッションを検索").fill("missing-folder");
+  await expect(page.locator("#session-no-matches")).toBeVisible();
+  await expect(page.locator("#sessions-table tbody tr:visible")).toHaveCount(0);
+});
+
+test("session history renders tool output safely and handles missing sessions", async ({ page }) => {
+  await mockApi(page, { executionHistory: [{ status: "failed", prompt: "Release notes", error: '<img src=x onerror="alert(1)"> Failed', updatedAt: "2026-10-02T00:00:00Z" }] });
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "会話セッション", exact: true }).click();
+  await page.getByRole("button", { name: "実行履歴を開く: session-e2e-1", exact: true }).click();
+  await expect(page.getByTestId("session-detail")).toContainText("Failed");
+  await expect(page.locator("#session-detail img")).toHaveCount(0);
+  await page.getByRole("button", { name: "詳細を閉じる" }).click();
+  await expect(page.getByTestId("session-detail")).toBeHidden();
+  await page.route("**/admin/api/sessions/session-e2e-2", route => route.fulfill({ status: 404, json: { error: "Session not found" } }));
+  await page.getByRole("button", { name: "実行履歴を開く: session-e2e-2", exact: true }).click();
+  await expect(page.getByTestId("session-detail")).toContainText("Session not found");
 });
