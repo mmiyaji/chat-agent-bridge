@@ -3,6 +3,8 @@
  * It deliberately uses plain HTML, CSS and browser APIs so the bridge has no
  * additional frontend runtime dependency.
  */
+import { workbenchStyle } from "./workbench-style.js";
+
 export function renderControlCenterPage(): string {
   return `<!doctype html>
 <html lang="ja">
@@ -124,6 +126,7 @@ export function renderControlCenterPage(): string {
       @media (max-width: 680px) { .topline { align-items: start; } .top-actions { flex-direction: column; align-items: end; } .refresh-note { display: none; } .status-grid, .form-layout { grid-template-columns: 1fr; } .stats { gap: 8px; } .stat { padding: 12px; } .stat strong { font-size: 20px; } .session-row { grid-template-columns: minmax(0,1fr) auto; gap: 8px 12px; } .session-row .session-meta { grid-column: 1; } .session-row .session-state { grid-column: 2; grid-row: 1; } .session-row .session-open { grid-column: 2; grid-row: 2; } .field-grid { grid-template-columns: 1fr; } .field.full { grid-column: auto; } .intro { display: block; } .filters { margin-top: 12px; } }
       @media (max-width: 680px) { .nav button { flex-shrink: 0; } .topline { flex-wrap: wrap; } }
       @media (prefers-reduced-motion: no-preference) { .button, .nav button { transition: background-color .14s ease, border-color .14s ease; } }
+      ${workbenchStyle}
     </style>
   </head>
   <body>
@@ -260,17 +263,24 @@ export function renderControlCenterPage(): string {
           $('setup-detail').textContent = detail;
         }
         let detailRequest = 0;
+        let selectedSessionId = null;
         async function openSessionDetail(sessionId) {
+          selectedSessionId = sessionId;
+          document.querySelectorAll('.conversation').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.sessionDetail === sessionId)));
           const request = ++detailRequest;
           $('session-detail').hidden = false;
-          $('session-detail-title').textContent = '実行履歴: ' + sessionId;
+          const selected = state.sessions.find((session) => session.sessionId === sessionId);
+          $('session-detail-title').textContent = selected?.latestExecution?.prompt || selected?.pendingApproval?.prompt || sessionId;
+          $('detail-placeholder').hidden = true;
           $('close-session-detail').focus();
           $('session-detail-content').textContent = '読み込み中…';
           try {
             const payload = await fetchJson('/admin/api/sessions/' + encodeURIComponent(sessionId));
             if (request !== detailRequest) return;
             const history = Array.isArray(payload.executionHistory) ? payload.executionHistory : [];
-            $('session-detail-content').innerHTML = '<p class="card-detail">' + escapeHtml(payload.session?.workingDirectory || '') + '</p>' + (history.length ? history.map((entry) => '<article class="notice section"><strong>' + escapeHtml(statusLabel(entry.status)) + ' · ' + escapeHtml(formatDate(entry.updatedAt)) + '</strong><p>' + escapeHtml(entry.prompt) + '</p><p style="white-space:pre-wrap">' + escapeHtml(entry.error || entry.summary || '結果はまだありません。') + '</p></article>').join('') : '<p class="empty">実行履歴はまだありません。</p>');
+            const pending = state.approvals.filter((entry) => entry.sessionId === sessionId);
+            const meta = [labels[selected?.provider], labels[selected?.agent], payload.session?.workingDirectory].filter(Boolean).join(' · ');
+            $('session-detail-content').innerHTML = '<p class="card-detail">' + escapeHtml(meta) + '</p>' + pending.map((entry) => '<div class="notice warning"><strong>' + (entry.kind === 'input' ? 'エージェントからの質問' : 'エージェントからの承認要求') + '</strong><p>' + escapeHtml(entry.prompt) + '</p><p>' + escapeHtml(entry.reason || '元のチャットスレッドで返信してください。') + '</p></div>').join('') + '<h3>実行履歴</h3>' + (history.length ? history.map((entry) => '<article class="notice section"><strong>' + escapeHtml(formatDate(entry.updatedAt)) + ' · ' + escapeHtml(statusLabel(entry.status)) + '</strong><p>' + escapeHtml(entry.prompt) + '</p><p style="white-space:pre-wrap">' + escapeHtml(entry.error || entry.summary || '結果はまだありません。') + '</p></article>').join('') : '<p class="empty">実行履歴はまだありません。</p>');
           } catch (error) {
             if (request === detailRequest) $('session-detail-content').textContent = error.message || '実行履歴を読み込めませんでした。詳細を開き直して再試行してください。';
           }
@@ -299,11 +309,12 @@ export function renderControlCenterPage(): string {
         function renderTable(sessions) {
           if (state.loadErrors.sessions) return '<div class="load-error" data-testid="sessions-load-error">セッションを読み込めませんでした。更新してもう一度お試しください。</div>';
           if (!sessions.length) return '<div class="empty" data-testid="sessions-table-empty">セッションはまだありません。チャットから最初の依頼を送ると、ここに表示されます。</div>';
-          return '<div class="table-wrap"><table data-testid="sessions-table"><thead><tr><th scope="col">会話 / 依頼</th><th scope="col">サービス</th><th scope="col">状態</th><th scope="col">作業フォルダー</th><th scope="col">最終更新</th></tr></thead><tbody>' + sessions.map((session) => {
+          return '<div data-testid="sessions-table">' + sessions.map((session) => {
             const status = sessionStatus(session);
-            const summary = session.latestExecution?.summary || session.latestExecution?.prompt || session.pendingApproval?.prompt || '継続中の会話';
-            return '<tr data-provider="' + escapeHtml(session.provider) + '" data-status="' + escapeHtml(status) + '" data-search="' + escapeHtml([session.sessionId, session.provider, session.channelId, session.workingDirectory, session.latestExecution?.prompt, summary, session.agent].join(' ').toLowerCase()) + '"><td><button class="button" type="button" data-session-detail="' + escapeHtml(session.sessionId) + '" aria-label="実行履歴を開く: ' + escapeHtml(session.sessionId) + '">' + escapeHtml(session.sessionId) + '</button><br />' + escapeHtml(summary) + '</td><td>' + escapeHtml(labels[session.provider] || session.provider) + ' · ' + escapeHtml(labels[session.agent] || session.agent) + '</td><td><span class="session-state" data-status="' + escapeHtml(status) + '">' + escapeHtml(statusLabel(status)) + '</span></td><td>' + escapeHtml(session.workingDirectory || '—') + '</td><td>' + escapeHtml(formatDate(session.updatedAt)) + '</td></tr>';
-          }).join('') + '</tbody></table></div>';
+            const title = session.latestExecution?.prompt || session.pendingApproval?.prompt || '継続中の会話';
+            const search = [session.sessionId, session.provider, session.channelId, session.workingDirectory, title, session.latestExecution?.summary, session.agent].join(' ').toLowerCase();
+            return '<button class="conversation" type="button" aria-pressed="' + String(selectedSessionId === session.sessionId) + '" data-session-detail="' + escapeHtml(session.sessionId) + '" aria-label="実行履歴を開く: ' + escapeHtml(session.sessionId) + '" data-provider="' + escapeHtml(session.provider) + '" data-status="' + escapeHtml(status) + '" data-search="' + escapeHtml(search) + '"><strong>' + escapeHtml(title) + '</strong><span class="row-meta"><span>' + escapeHtml(labels[session.provider] || session.provider) + ' · ' + escapeHtml(session.channelId) + '</span><span class="session-state" data-status="' + escapeHtml(status) + '">' + escapeHtml(statusLabel(status)) + '</span></span><span class="row-meta">' + escapeHtml(formatDate(session.updatedAt)) + '</span></button>';
+          }).join('') + '</div>';
         }
         function renderApprovals() {
           if (state.loadErrors.approvals) return '<div class="load-error" data-testid="approvals-load-error">承認待ちを読み込めませんでした。</div>';
@@ -320,7 +331,7 @@ export function renderControlCenterPage(): string {
           const filter = $('session-filter').value; const query = $('session-search').value.trim().toLowerCase();
           const provider = $('session-provider').value;
           let visible = 0;
-          document.querySelectorAll('#sessions-table tbody tr').forEach((row) => {
+          document.querySelectorAll('#sessions-table .conversation').forEach((row) => {
             row.hidden = (filter !== 'all' && row.dataset.status !== filter) || (provider !== 'all' && row.dataset.provider !== provider) || Boolean(query && !row.dataset.search.includes(query));
             if (!row.hidden) visible++;
           });
@@ -330,6 +341,7 @@ export function renderControlCenterPage(): string {
         function updateOverview() {
           const chat = state.connections?.chat || null; const agent = state.connections?.agent || null;
           const chatMeta = statusMeta(chat); const agentMeta = statusMeta(agent, true);
+          document.querySelector('.footer > span').textContent = (labels[chat?.provider] || 'チャット') + ': ' + chatMeta.label + '  /  ' + (labels[agent?.kind] || 'エージェント') + ': ' + agentMeta.label;
           setPill('overview-chat-state', chatMeta); setPill('chat-state', chatMeta); $('overview-chat-name').textContent = labels[state.settings?.chatProvider] || state.settings?.chatProvider || 'チャット'; $('overview-chat-detail').textContent = chatMeta.detail; $('connection-summary').textContent = chatMeta.detail + (agent ? ' / ' + agentMeta.detail : '');
           setPill('overview-agent-state', agentMeta); setPill('agent-state', agentMeta); $('overview-agent-name').textContent = labels[state.settings?.agentKind] || state.settings?.agentKind || 'エージェント'; $('overview-agent-detail').textContent = [agentMeta.detail, agent?.model ? 'モデル: ' + agent.model : '', agent?.authenticated === false ? 'CLI の認証を確認してください。' : ''].filter(Boolean).join(' · ');
           $('stat-sessions').textContent = String(state.sessions.length); $('stat-running').textContent = String(state.sessions.filter((item) => sessionStatus(item) === 'running').length); $('stat-approvals').textContent = String(state.approvals.length);
@@ -397,7 +409,14 @@ export function renderControlCenterPage(): string {
         [['waiting_for_input', '回答待ち'], ['idle', '待機中'], ['cancelled', 'キャンセル'], ['rejected', '却下']].forEach(([value, label]) => { const option = document.createElement('option'); option.value = value; option.textContent = label; $('session-filter').append(option); });
         $('session-provider').addEventListener('change', applySessionFilters);
         $('sessions-table').addEventListener('click', (event) => { const button = event.target.closest('[data-session-detail]'); if (button) openSessionDetail(button.dataset.sessionDetail); });
-        $('close-session-detail').addEventListener('click', () => { detailRequest++; $('session-detail').hidden = true; document.querySelector('.nav [data-page="sessions"]').focus(); });
+        $('close-session-detail').addEventListener('click', () => { detailRequest++; selectedSessionId = null; $('session-detail').hidden = true; $('detail-placeholder').hidden = false; document.querySelector('.nav [data-page="sessions"]').focus(); });
+        const workbench = document.createElement('div'); workbench.className = 'workbench';
+        const conversationPane = document.createElement('div'); conversationPane.className = 'conversation-pane';
+        const detailPane = document.createElement('div'); detailPane.className = 'detail-pane';
+        const intro = document.querySelector('#page-sessions .intro');
+        conversationPane.append(intro.querySelector('.filters'), $('session-provider').closest('.filters'), $('sessions-table'), $('session-no-matches'));
+        const placeholder = document.createElement('div'); placeholder.id = 'detail-placeholder'; placeholder.className = 'detail-placeholder'; placeholder.textContent = '左の会話を選択すると、実行履歴と確認が必要な項目を表示します。';
+        detailPane.append(placeholder, $('session-detail')); workbench.append(conversationPane, detailPane); intro.replaceWith(workbench);
         loadStatus(); window.setInterval(loadStatus, 10000);
       })();
     </script>

@@ -95,8 +95,8 @@ test("control center shows real connection and conversation state across tabs", 
   await expect(page.getByTestId("sessions-table")).toContainText("Update deployment config");
   await expect(page.getByTestId("approvals-list")).toContainText("承認待ち");
   await page.getByLabel("状態で絞り込み").selectOption("completed");
-  await expect(page.locator("#sessions-table tbody tr:visible")).toHaveCount(1);
-  await expect(page.locator("#sessions-table tbody tr:visible")).toContainText("Release notes");
+  await expect(page.locator("#sessions-table .conversation:visible")).toHaveCount(1);
+  await expect(page.locator("#sessions-table .conversation:visible")).toContainText("Release notes");
 });
 
 test("settings save and connection actions use the admin request header", async ({ page }) => {
@@ -155,14 +155,14 @@ test("filters preserve provider and folder searches on refresh and show native i
   await page.getByLabel("チャットで絞り込み").selectOption("mattermost");
   await page.getByLabel("状態で絞り込み").selectOption("waiting_for_input");
   await page.getByLabel("セッションを検索").fill("D:/work/mobile");
-  await expect(page.locator("#sessions-table tbody tr:visible")).toHaveCount(1);
-  await expect(page.locator("#sessions-table tbody tr:visible")).toContainText("回答待ち");
+  await expect(page.locator("#sessions-table .conversation:visible")).toHaveCount(1);
+  await expect(page.locator("#sessions-table .conversation:visible")).toContainText("回答待ち");
   await page.getByRole("button", { name: "更新", exact: true }).click();
   await expect(page.locator("#session-match-count")).toHaveText("1 / 3 件");
-  await expect(page.locator("#sessions-table tbody tr:visible")).toHaveCount(1);
+  await expect(page.locator("#sessions-table .conversation:visible")).toHaveCount(1);
   await page.getByLabel("セッションを検索").fill("missing-folder");
   await expect(page.locator("#session-no-matches")).toBeVisible();
-  await expect(page.locator("#sessions-table tbody tr:visible")).toHaveCount(0);
+  await expect(page.locator("#sessions-table .conversation:visible")).toHaveCount(0);
 });
 
 test("session history renders tool output safely and handles missing sessions", async ({ page }) => {

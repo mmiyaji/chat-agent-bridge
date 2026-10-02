@@ -4,6 +4,8 @@ import path from "node:path";
 import { AdminServer } from "../src/admin/server.js";
 import { BridgeService } from "../src/core/bridge-service.js";
 import { SessionManager } from "../src/core/session-manager.js";
+import { ConnectionManager } from "../src/core/connection-manager.js";
+import { createAppConfig } from "../src/config/env.js";
 import { AppConfig, ExecutionRecord, SessionBinding } from "../src/core/types.js";
 import {
   InMemoryStateStore,
@@ -107,7 +109,8 @@ async function main(): Promise<void> {
     process.env.CAB_RESTART_COMPLETION_FILE = path.join(tempRoot, "restart-completion.jsonl");
   }
 
-  const config = createConfig(port);
+  const config = { ...createAppConfig({ CAB_SETTINGS_FILE: path.join(path.dirname(process.env.CAB_RESTART_COMPLETION_FILE!), 'admin-settings.json') }), ...createConfig(port) };
+  config.settingsFile = path.join(path.dirname(process.env.CAB_RESTART_COMPLETION_FILE!), 'admin-settings.json');
   const store = new InMemoryStateStore();
   await store.initialize();
   await store.upsertSession(createSession());
@@ -158,12 +161,15 @@ async function main(): Promise<void> {
     },
   });
   await bridge.start();
+  const connections = new ConnectionManager(config, { codex: codexAgent, 'claude-code': claudeAgent }, () => new RecordingChatAdapter(), async () => ({ authenticated: true, statusText: 'プレビュー用エージェント' }));
+  await connections.start(async () => undefined);
 
   const admin = new AdminServer({
     config,
     stateStore: store,
     auditLogger,
     bridge,
+    connections,
   });
   await admin.start();
 
