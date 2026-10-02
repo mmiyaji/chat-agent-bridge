@@ -5,6 +5,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "package:exe": "npm run check && node scripts/build-exe.mjs",
+    "test:exe": "node scripts/test-exe.mjs",
     "build": "node --preserve-symlinks --preserve-symlinks-main ./node_modules/typescript/bin/tsc -p tsconfig.json",
     "check": "node --preserve-symlinks --preserve-symlinks-main ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
     "dev": "node --preserve-symlinks --preserve-symlinks-main ./node_modules/tsx/dist/cli.mjs src/index.ts",
@@ -33,8 +35,10 @@
     "@playwright/test": "^1.56.1",
     "@types/node": "^24.6.0",
     "@types/ws": "^8.18.1",
+    "esbuild": "0.28.2",
+    "postject": "1.0.0-alpha.6",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "ws": "^8.20.0"
+    "ws": "8.21.0"
   }
 }

@@ -1,5 +1,12 @@
 # Chat Agent Bridge
 
+Windows用の単体実行ファイルに対応しています。`npm run package:exe` で生成した `release/ChatAgentBridge.exe` をダブルクリックし、表示された管理画面URLをブラウザーで開いてください。自動起動は `--open-browser` で指定できます。利用時のNode.js/npmは不要です。詳しくは [実行ファイル版の使い方](docs/executable.ja.md) を参照してください。
+
+## 新しい接続管理画面
+
+起動後の管理画面でエージェントとSlack/Mattermostを設定し、接続・切断できます。CodexはApp Serverに対応し、承認・追加入力を同じチャットスレッドから返せます。詳しくは [接続管理とハーネス](docs/harness-modernization.md) を参照してください。
+
+
 - Languages: [English](README.md) / [Japanese](README.ja.md)
 
 Chat Agent Bridge は、チャットスレッドからローカル PC 上の開発エージェントを継続操作するためのローカル bridge サービスです。
