@@ -275,7 +275,7 @@ test("admin-server integration scenarios", async () => {
       const failuresResponse = await getJson(port, "/admin/api/failures?limit=1");
       assert.equal(failuresResponse.statusCode, 200);
       assert.equal(failuresResponse.body.failures.length, 1);
-      const dashboard = await getText(port, "/admin");
+      const dashboard = await getText(port, "/admin/legacy");
       assert.equal(dashboard.statusCode, 200);
       assert.match(dashboard.body, /Bridge Admin/);
       const settingsPage = await getText(port, "/admin/settings");
@@ -340,7 +340,7 @@ test("admin-server integration scenarios", async () => {
       assert.doesNotMatch(serialized, /xoxb-super-secret/);
       assert.doesNotMatch(serialized, /TOKEN|SECRET|PASSWORD/i);
 
-      const dashboard = await getText(port, "/admin");
+      const dashboard = await getText(port, "/admin/legacy");
       assert.match(dashboard.body, /data-testid="environment-panel"/);
       assert.match(dashboard.body, /data-testid="environment-channel-defaults"/);
     } finally {
@@ -362,7 +362,7 @@ test("admin-server integration scenarios", async () => {
     try {
       const port = admin.getListeningPort();
       assert.ok(port);
-      const dashboard = await getText(port, "/admin");
+      const dashboard = await getText(port, "/admin/legacy");
       assert.equal(dashboard.statusCode, 200);
       assert.match(dashboard.body, /dashboard-warning/);
       const session = await getJson(port, "/admin/api/sessions/session-1");
@@ -432,7 +432,7 @@ test("admin-server integration scenarios", async () => {
     try {
       const port = incompleteAdmin.getListeningPort();
       assert.ok(port);
-      const dashboard = await getText(port, "/admin");
+      const dashboard = await getText(port, "/admin/legacy");
       assert.equal(dashboard.statusCode, 200);
       assert.match(dashboard.body, /data-testid="setup-incomplete-banner"/);
       assert.match(dashboard.body, /Setup incomplete/);
@@ -457,7 +457,7 @@ test("admin-server integration scenarios", async () => {
     try {
       const port = completeAdmin.getListeningPort();
       assert.ok(port);
-      const dashboard = await getText(port, "/admin");
+      const dashboard = await getText(port, "/admin/legacy");
       assert.equal(dashboard.statusCode, 200);
       assert.doesNotMatch(dashboard.body, /data-testid="setup-incomplete-banner"/);
     } finally {

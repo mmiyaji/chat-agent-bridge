@@ -475,6 +475,93 @@ test("MattermostAdapter accepts websocket posted events", async () => {
   await adapter.stop();
 });
 
+test("MattermostAdapter deduplicates valid websocket posts by post id", async () => {
+  let messageHandler: ((event: { data?: unknown }) => void) | undefined;
+  const auditLogger = new RecordingAuditLogger();
+  const adapter = new MattermostAdapter(
+    {
+      port: 0,
+      host: "127.0.0.1",
+      defaultWorkingDirectory: "C:/repo",
+      mattermostMode: "websocket",
+      mattermostActorMode: "self",
+      mattermostServerUrl: "https://mattermost.example.local",
+      mattermostBotToken: "user-token",
+    },
+    auditLogger,
+    {
+      mattermostApiFetch: async <T>(input: {
+        url: string;
+        method: string;
+        headers: Record<string, string>;
+        body?: string;
+      }) => {
+        if (/\/api\/v4\/users\/me$/.test(input.url)) {
+          return { id: "user-1", username: "me" } as T;
+        }
+        if (/\/api\/v4\/channels\/dm-1\/members$/.test(input.url)) {
+          return [{ user_id: "user-1" }] as T;
+        }
+        return { id: "dm-1", type: "D" } as T;
+      },
+      socketFactory: () => ({
+        addEventListener: (type, listener) => {
+          if (type === "open") {
+            queueMicrotask(() => listener({}));
+          } else if (type === "message") {
+            messageHandler = listener;
+          }
+        },
+        send: (data) => {
+          const frame = JSON.parse(data) as { action?: string; seq?: number };
+          if (frame.action === "authentication_challenge") {
+            queueMicrotask(() => messageHandler?.({
+              data: JSON.stringify({ status: "OK", seq_reply: frame.seq }),
+            }));
+          }
+        },
+        close: () => undefined,
+      }),
+    },
+  );
+
+  const received: string[] = [];
+  await adapter.start(async (message) => {
+    received.push(message.text);
+  });
+
+  const postEvent = (message: string) => {
+    messageHandler?.({
+      data: JSON.stringify({
+        event: "posted",
+        data: {
+          post: JSON.stringify({
+            id: "post-replayed",
+            channel_id: "dm-1",
+            root_id: "",
+            user_id: "user-1",
+            message,
+          }),
+        },
+      }),
+    });
+  };
+
+  // An unrelated update must not reserve the post id before it becomes a
+  // valid, authorized mention. Replayed valid events should dispatch once.
+  postEvent("plain message without a mention");
+  postEvent("@me please continue");
+  postEvent("@me please continue");
+  await waitForMicrotasks();
+
+  assert.deepEqual(received, ["please continue"]);
+  assert.equal(
+    auditLogger.events.filter((event) => event.type === "mattermost.websocket.duplicate").length,
+    1,
+  );
+  await adapter.stop();
+});
+
 test("MattermostAdapter requires mentions for self-DM posts in self mode", async () => {
   let messageHandler: ((event: { data?: unknown }) => void) | undefined;
   const adapter = new MattermostAdapter(

@@ -161,3 +161,59 @@ test("FileStateStore recovers from truncated json without crashing", async () =>
     dirEntries.some((entry) => entry.startsWith("state.json.corrupt.") && entry.endsWith(".json")),
   );
 });
+
+test("FileStateStore serializes concurrent session, execution, and channel updates", async () => {
+  const { store, stateFile } = await createStore();
+  const sessions = Array.from({ length: 8 }, (_, index) => ({
+    ...createSession(),
+    sessionId: `session-${index}`,
+    thread: { provider: "slack" as const, channelId: `C${index}`, threadId: `T${index}` },
+  }));
+  const records = Array.from({ length: 8 }, (_, index) =>
+    createExecutionRecord(`exec-${index}`, `2026-03-30T01:${String(index).padStart(2, "0")}:00.000Z`, "completed"),
+  );
+
+  await Promise.all([
+    ...sessions.map((session) => store.upsertSession(session)),
+    ...records.map((record) => store.upsertExecutionRecord(record)),
+    ...Array.from({ length: 8 }, (_, index) =>
+      store.setChannelDefaultWorkingDirectory("slack", `C${index}`, `C:/repo/${index}`),
+    ),
+  ]);
+
+  assert.deepEqual(
+    (await store.listSessions()).map((session) => session.sessionId).sort(),
+    sessions.map((session) => session.sessionId).sort(),
+  );
+  assert.deepEqual(
+    (await store.listExecutionRecords()).map((record) => record.executionId).sort(),
+    records.map((record) => record.executionId).sort(),
+  );
+  assert.equal(Object.keys(await store.listChannelDefaultWorkingDirectories()).length, 8);
+
+  const reloaded = new FileStateStore(stateFile);
+  await reloaded.initialize();
+  assert.equal((await reloaded.listSessions()).length, 8);
+  assert.equal((await reloaded.listExecutionRecords()).length, 8);
+  assert.equal(Object.keys(await reloaded.listChannelDefaultWorkingDirectories()).length, 8);
+});
+
+test("FileStateStore rejects a mutation when atomic persistence fails", async () => {
+  const { store } = await createStore();
+  const originalRename = fs.rename;
+  fs.rename = async () => {
+    throw Object.assign(new Error("disk unavailable"), { code: "EIO" });
+  };
+
+  try {
+    await assert.rejects(store.upsertSession(createSession()), /disk unavailable/);
+  } finally {
+    fs.rename = originalRename;
+  }
+
+  await store.upsertSession({ ...createSession(), sessionId: "session-after-recovery" });
+  assert.deepEqual(
+    (await store.listSessions()).map((session) => session.sessionId),
+    ["session-after-recovery"],
+  );
+});

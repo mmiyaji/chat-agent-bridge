@@ -74,6 +74,28 @@ export interface AgentExecutionRequest {
   networkAccess: NetworkAccess;
   allowedDirectories: string[];
   onActivity?: (update?: AgentProgressUpdate) => void | Promise<void>;
+  onRequest?: (request: AgentExecutionRequestCallbackRequest) => Promise<AgentExecutionRequestCallbackResult>;
+}
+
+export interface AgentRequestQuestion {
+  id: string;
+  question: string;
+  options?: string[];
+  multiSelect?: boolean;
+}
+
+/** A request made by a running native agent that needs a chat user's response. */
+export interface AgentExecutionRequestCallbackRequest {
+  id: string;
+  kind: "approval" | "input";
+  title: string;
+  detail: string;
+  questions?: AgentRequestQuestion[];
+}
+
+export interface AgentExecutionRequestCallbackResult {
+  decision?: "accept" | "decline";
+  answers?: Record<string, string[]>;
 }
 
 export interface AgentProgressUpdate {

@@ -15,12 +15,15 @@ import { ChatConnectionStatus } from "../adapters/chat.js";
 import { escapeHtml, renderAdminFooter, renderAdminFooterScript } from "./server-shared.js";
 import { RuntimeSettingsPayload } from "./server-types.js";
 import { renderOnboardingPage } from "./onboarding-page.js";
+import { renderControlCenterPage } from "./control-center-page.js";
+import { ConnectionManager } from "../core/connection-manager.js";
 
 interface AdminServerDeps {
   config: AppConfig;
   stateStore: StateStore;
   auditLogger: AuditLogger;
   bridge: BridgeService;
+  connections?: ConnectionManager;
 }
 
 interface AdminServerDependencies {
@@ -2622,6 +2625,7 @@ export class AdminServer {
   private readonly stateStore: StateStore;
   private readonly auditLogger: AuditLogger;
   private readonly bridge: BridgeService;
+  private readonly connections: ConnectionManager | undefined;
   private readonly testConnectionFetch: typeof fetchJsonWithTimeout;
   private server: http.Server | undefined;
   private readonly sockets = new Set<{ destroy(): void; on(event: "close", listener: () => void): void }>();
@@ -2631,6 +2635,7 @@ export class AdminServer {
     this.stateStore = deps.stateStore;
     this.auditLogger = deps.auditLogger;
     this.bridge = deps.bridge;
+    this.connections = deps.connections;
     this.testConnectionFetch = dependencies?.testConnectionFetch ?? fetchJsonWithTimeout;
   }
 
@@ -2705,6 +2710,33 @@ export class AdminServer {
 
   private async handleRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
     const url = new URL(request.url ?? "/", "http://localhost");
+    // Local admin APIs must not accept cross-origin browser requests.
+    const origin = request.headers.origin;
+    if (origin && origin !== `http://${request.headers.host}`) {
+      writeJson(response, 403, { error: "Cross-origin admin requests are not allowed." });
+      return;
+    }
+    if (url.pathname.startsWith("/admin/api/connections")) {
+      if (!this.connections) { writeJson(response, 503, { error: "Connection manager unavailable." }); return; }
+      if (request.method === "GET" && url.pathname === "/admin/api/connections") {
+        writeJson(response, 200, { ...this.connections.snapshot(), nativeRequests: this.bridge.getPendingNativeRequests() }); return;
+      }
+      if (request.method === "POST") {
+        if (request.headers["x-cab-request"] !== "admin") { writeJson(response, 403, { error: "Missing admin request header." }); return; }
+        const actions: Record<string, () => Promise<void>> = {
+          "/admin/api/connections/chat/connect": () => this.connections!.connectChat(),
+          "/admin/api/connections/chat/disconnect": () => this.connections!.disconnectChat(),
+          "/admin/api/connections/agent/connect": () => this.connections!.connectAgent(),
+          "/admin/api/connections/agent/disconnect": () => this.connections!.disconnectAgent(),
+        };
+        const action = actions[url.pathname];
+        if (!action) { writeJson(response, 404, { error: "Not found" }); return; }
+        if (this.connections.busy) { writeJson(response, 409, { error: "実行中です。完了またはチャットでキャンセルしてから再試行してください。" }); return; }
+        try { await action(); writeJson(response, 200, this.connections.snapshot()); }
+        catch (error) { writeJson(response, 400, { error: error instanceof Error ? error.message : String(error) }); }
+        return;
+      }
+    }
     if (request.method === "GET" && url.pathname === "/admin/healthz") {
       writeJson(response, 200, { ok: true });
       return;
@@ -2716,6 +2748,11 @@ export class AdminServer {
     }
 
     if (request.method === "GET" && url.pathname === "/admin") {
+      writeHtml(response, 200, renderControlCenterPage());
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/admin/legacy") {
       writeHtml(response, 200, renderDashboard(await this.readDashboardData(), "dashboard"));
       return;
     }
@@ -2819,6 +2856,9 @@ export class AdminServer {
     }
 
     if (request.method === "POST" && url.pathname === "/admin/api/settings") {
+      if (this.connections?.busy) {
+        writeJson(response, 409, { error: "実行中の設定は変更できません。完了後に再試行してください。" }); return;
+      }
       await this.handleUpdateSettings(request, response);
       return;
     }
@@ -2999,8 +3039,15 @@ export class AdminServer {
   }
 
   private async handleListApprovals(response: ServerResponse): Promise<void> {
+    const sessions = await this.stateStore.listSessions();
+    const native = this.bridge.getPendingNativeRequests().map((request) => {
+      const session = sessions.find((entry) => entry.thread.provider === request.thread.provider && entry.thread.channelId === request.thread.channelId && entry.thread.threadId === request.thread.threadId);
+      return { sessionId: session?.sessionId, provider: request.thread.provider, agent: session?.agent, prompt: request.title,
+        reason: request.kind === "approval" ? `チャットで approve ${request.id} または reject ${request.id} と返信してください。` : `チャットで answer ${request.id} と質問への回答を返信してください。`,
+        requestId: request.id, kind: request.kind, expiresAt: request.expiresAt };
+    });
     writeJson(response, 200, {
-      approvals: (await this.readDashboardData()).approvals,
+      approvals: [...(await this.readDashboardData()).approvals, ...native],
     });
   }
 

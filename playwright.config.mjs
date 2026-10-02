@@ -10,6 +10,7 @@ export default defineConfig({
   use: {
     baseURL,
     headless: true,
+    ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}),
   },
   webServer: {
     command:

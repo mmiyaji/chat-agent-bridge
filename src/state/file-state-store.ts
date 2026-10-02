@@ -1,92 +1,91 @@
 import fs from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 import path from "node:path";
 import { ChatThreadRef, ExecutionRecord, SessionBinding, StateSnapshot } from "../core/types.js";
 import { StateStore } from "./state-store.js";
 
 const MAX_EXECUTION_HISTORY = 500;
 const ARCHIVE_THRESHOLD = 600;
-const DEBOUNCE_MS = 100;
-
 function channelDefaultKey(provider: string, channelId: string): string {
   return `${provider}:${channelId}`;
 }
 
 export class FileStateStore implements StateStore {
-  private readonly tempFilePath: string;
-
   private readonly corruptFilePrefix: string;
 
-  private pendingWrite: Promise<void> = Promise.resolve();
+  private operations: Promise<void> = Promise.resolve();
 
   private lastKnownSnapshot: StateSnapshot = { sessions: [], executionHistory: [] };
 
-  private debounceTimer: NodeJS.Timeout | undefined;
-  private debouncedSnapshot: StateSnapshot | undefined;
-  private debounceResolvers: Array<() => void> = [];
-
   constructor(private readonly filePath: string) {
-    this.tempFilePath = `${this.filePath}.tmp`;
     this.corruptFilePrefix = `${this.filePath}.corrupt`;
   }
 
   async initialize(): Promise<void> {
-    await fs.mkdir(path.dirname(this.filePath), { recursive: true });
-
-    try {
-      await fs.access(this.filePath);
-    } catch {
-      await this.writeSnapshot({ sessions: [], executionHistory: [] });
-    }
+    return this.serialize(async () => {
+      await fs.mkdir(path.dirname(this.filePath), { recursive: true });
+      try {
+        await fs.access(this.filePath);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        await this.writeSnapshot({ sessions: [], executionHistory: [] });
+      }
+    });
   }
 
   async findSessionByThread(thread: ChatThreadRef): Promise<SessionBinding | undefined> {
-    const snapshot = await this.readSnapshot();
-
-    return snapshot.sessions.find((session) => {
-      return (
-        session.thread.provider === thread.provider &&
-        session.thread.channelId === thread.channelId &&
-        session.thread.threadId === thread.threadId
-      );
+    return this.serialize(async () => {
+      const snapshot = await this.readSnapshot();
+      return snapshot.sessions.find((session) => {
+        return (
+          session.thread.provider === thread.provider &&
+          session.thread.channelId === thread.channelId &&
+          session.thread.threadId === thread.threadId
+        );
+      });
     });
   }
 
   async upsertSession(session: SessionBinding): Promise<void> {
-    const snapshot = await this.readSnapshot();
-    const nextSessions = snapshot.sessions.filter(
-      (candidate) => candidate.sessionId !== session.sessionId,
-    );
-    nextSessions.push(session);
+    return this.serialize(async () => {
+      const snapshot = await this.readSnapshot();
+      const nextSessions = snapshot.sessions.filter(
+        (candidate) => candidate.sessionId !== session.sessionId,
+      );
+      nextSessions.push(session);
 
-    await this.writeSnapshot({
-      ...snapshot,
-      sessions: nextSessions,
+      await this.writeSnapshot({
+        ...snapshot,
+        sessions: nextSessions,
+      });
     });
   }
 
   async listSessions(): Promise<SessionBinding[]> {
-    const snapshot = await this.readSnapshot();
-    return snapshot.sessions;
+    return this.serialize(async () => (await this.readSnapshot()).sessions);
   }
 
   async upsertExecutionRecord(record: ExecutionRecord): Promise<void> {
-    const snapshot = await this.readSnapshot();
-    const nextHistory = snapshot.executionHistory.filter(
-      (candidate) => candidate.executionId !== record.executionId,
-    );
-    nextHistory.push(record);
+    return this.serialize(async () => {
+      const snapshot = await this.readSnapshot();
+      const nextHistory = snapshot.executionHistory.filter(
+        (candidate) => candidate.executionId !== record.executionId,
+      );
+      nextHistory.push(record);
 
-    const trimmed =
-      nextHistory.length > ARCHIVE_THRESHOLD
-        ? nextHistory
-            .slice()
-            .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-            .slice(nextHistory.length - MAX_EXECUTION_HISTORY)
-        : nextHistory;
+      const trimmed =
+        nextHistory.length > ARCHIVE_THRESHOLD
+          ? nextHistory
+              .slice()
+              .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+              .slice(nextHistory.length - MAX_EXECUTION_HISTORY)
+          : nextHistory;
 
-    await this.writeSnapshot({
-      ...snapshot,
-      executionHistory: trimmed,
+      await this.writeSnapshot({
+        ...snapshot,
+        executionHistory: trimmed,
+      });
     });
   }
 
@@ -94,8 +93,10 @@ export class FileStateStore implements StateStore {
     provider: string,
     channelId: string,
   ): Promise<string | undefined> {
-    const snapshot = await this.readSnapshot();
-    return snapshot.channelDefaults?.[channelDefaultKey(provider, channelId)];
+    return this.serialize(async () => {
+      const snapshot = await this.readSnapshot();
+      return snapshot.channelDefaults?.[channelDefaultKey(provider, channelId)];
+    });
   }
 
   async setChannelDefaultWorkingDirectory(
@@ -103,13 +104,15 @@ export class FileStateStore implements StateStore {
     channelId: string,
     workingDirectory: string,
   ): Promise<void> {
-    const snapshot = await this.readSnapshot();
-    await this.writeSnapshot({
-      ...snapshot,
-      channelDefaults: {
-        ...(snapshot.channelDefaults ?? {}),
-        [channelDefaultKey(provider, channelId)]: workingDirectory,
-      },
+    return this.serialize(async () => {
+      const snapshot = await this.readSnapshot();
+      await this.writeSnapshot({
+        ...snapshot,
+        channelDefaults: {
+          ...(snapshot.channelDefaults ?? {}),
+          [channelDefaultKey(provider, channelId)]: workingDirectory,
+        },
+      });
     });
   }
 
@@ -117,41 +120,55 @@ export class FileStateStore implements StateStore {
     provider: string,
     channelId: string,
   ): Promise<void> {
-    const snapshot = await this.readSnapshot();
-    if (!snapshot.channelDefaults) {
-      return;
-    }
-    const nextChannelDefaults = { ...snapshot.channelDefaults };
-    delete nextChannelDefaults[channelDefaultKey(provider, channelId)];
-    await this.writeSnapshot({
-      ...snapshot,
-      channelDefaults: nextChannelDefaults,
+    return this.serialize(async () => {
+      const snapshot = await this.readSnapshot();
+      if (!snapshot.channelDefaults) {
+        return;
+      }
+      const nextChannelDefaults = { ...snapshot.channelDefaults };
+      delete nextChannelDefaults[channelDefaultKey(provider, channelId)];
+      await this.writeSnapshot({
+        ...snapshot,
+        channelDefaults: nextChannelDefaults,
+      });
     });
   }
 
   async listChannelDefaultWorkingDirectories(): Promise<Record<string, string>> {
-    const snapshot = await this.readSnapshot();
-    return { ...(snapshot.channelDefaults ?? {}) };
+    return this.serialize(async () => {
+      const snapshot = await this.readSnapshot();
+      return { ...(snapshot.channelDefaults ?? {}) };
+    });
   }
 
   async listExecutionRecords(input?: {
     sessionId?: string;
     limit?: number;
   }): Promise<ExecutionRecord[]> {
-    const snapshot = await this.readSnapshot();
-    const filtered = input?.sessionId
-      ? snapshot.executionHistory.filter((record) => record.sessionId === input.sessionId)
-      : snapshot.executionHistory;
+    return this.serialize(async () => {
+      const snapshot = await this.readSnapshot();
+      const filtered = input?.sessionId
+        ? snapshot.executionHistory.filter((record) => record.sessionId === input.sessionId)
+        : snapshot.executionHistory;
 
-    const sorted = [...filtered].sort((left, right) => {
-      return right.createdAt.localeCompare(left.createdAt);
+      const sorted = [...filtered].sort((left, right) => {
+        return right.createdAt.localeCompare(left.createdAt);
+      });
+
+      if (!input?.limit || input.limit < 1) {
+        return sorted;
+      }
+
+      return sorted.slice(0, input.limit);
     });
+  }
 
-    if (!input?.limit || input.limit < 1) {
-      return sorted;
-    }
-
-    return sorted.slice(0, input.limit);
+  private serialize<T>(operation: () => Promise<T>): Promise<T> {
+    const result = this.operations.then(operation);
+    // Keep the queue usable after a rejected operation while still returning
+    // the original rejection to the caller that issued it.
+    this.operations = result.then(() => undefined, () => undefined);
+    return result;
   }
 
   private async readSnapshot(): Promise<StateSnapshot> {
@@ -186,43 +203,23 @@ export class FileStateStore implements StateStore {
   }
 
   private async writeSnapshot(snapshot: StateSnapshot): Promise<void> {
-    this.lastKnownSnapshot = snapshot;
-    this.debouncedSnapshot = snapshot;
-
-    return new Promise<void>((resolve) => {
-      this.debounceResolvers.push(resolve);
-      if (this.debounceTimer) {
-        clearTimeout(this.debounceTimer);
-      }
-      this.debounceTimer = setTimeout(() => {
-        this.debounceTimer = undefined;
-        void this.flushWrite();
-      }, DEBOUNCE_MS);
-    });
-  }
-
-  private async flushWrite(): Promise<void> {
-    const snapshot = this.debouncedSnapshot;
-    const resolvers = this.debounceResolvers;
-    this.debouncedSnapshot = undefined;
-    this.debounceResolvers = [];
-    if (!snapshot) {
-      for (const resolve of resolvers) resolve();
-      return;
-    }
-
-    const writeOperation = this.pendingWrite.catch(() => undefined).then(async () => {
-      const serialized = JSON.stringify(snapshot, null, 2);
-      await fs.writeFile(this.tempFilePath, serialized, "utf8");
-      await fs.rename(this.tempFilePath, this.filePath);
-      this.lastKnownSnapshot = snapshot;
-    });
-
-    this.pendingWrite = writeOperation;
+    const tempFilePath = `${this.filePath}.${process.pid}.${randomUUID()}.tmp`;
     try {
-      await writeOperation;
+      const serialized = JSON.stringify(snapshot, null, 2);
+      await fs.writeFile(tempFilePath, serialized, { encoding: "utf8", flag: "wx" });
+      // Windows scanners can briefly hold the destination without delete sharing.
+      // Keep the previous snapshot intact and retry the atomic rename, never unlink it.
+      for (let attempt = 0; ; attempt++) {
+        try { await fs.rename(tempFilePath, this.filePath); break; }
+        catch (error) {
+          const code = (error as NodeJS.ErrnoException).code;
+          if (process.platform !== "win32" || attempt >= 5 || !["EPERM", "EACCES", "EBUSY"].includes(code ?? "")) throw error;
+          await delay(20 * (attempt + 1));
+        }
+      }
+      this.lastKnownSnapshot = snapshot;
     } finally {
-      for (const resolve of resolvers) resolve();
+      await fs.rm(tempFilePath, { force: true }).catch(() => undefined);
     }
   }
 

@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import http, { IncomingMessage, ServerResponse } from "node:http";
 import https from "node:https";
-import { createRequire } from "node:module";
+import { WebSocket } from "ws";
 import querystring from "node:querystring";
 import { AuditLogger, NoopAuditLogger } from "../../core/audit.js";
 import { logger } from "../../core/logger.js";
@@ -14,10 +14,10 @@ import {
   ChatMessageOptions,
 } from "../chat.js";
 
-const require = createRequire(import.meta.url);
-
 const MATTERMOST_API_TIMEOUT_MS = 15000;
 const MATTERMOST_PING_INTERVAL_MS = 30000;
+const MATTERMOST_POST_DEDUPE_TTL_MS = 10 * 60_000;
+const MAX_SEEN_MATTERMOST_POSTS = 5_000;
 
 interface MattermostWebhookPayload {
   token?: string;
@@ -207,6 +207,7 @@ export class MattermostAdapter implements ChatAdapter {
   private stopped = false;
   private readonly channelTypeCache = new Map<string, string>();
   private readonly selfDmChannelCache = new Map<string, boolean>();
+  private readonly seenWebsocketPostIds = new Map<string, number>();
   private readonly actionToken = crypto.randomUUID();
   private connectionStatus: ChatConnectionStatus;
 
@@ -270,11 +271,7 @@ export class MattermostAdapter implements ChatAdapter {
       ((url) => {
         const WebSocketCtor =
           (globalThis as { WebSocket?: new (url: string) => MattermostSocketLike }).WebSocket ??
-          (
-            require("ws") as {
-              WebSocket?: new (url: string) => MattermostSocketLike;
-            }
-          ).WebSocket;
+          (WebSocket as unknown as new (url: string) => MattermostSocketLike);
         if (!WebSocketCtor) {
           throw new Error("No WebSocket implementation is available in this Node runtime.");
         }
@@ -902,6 +899,15 @@ export class MattermostAdapter implements ChatAdapter {
       return;
     }
 
+    if (this.hasSeenWebsocketPost(post.id)) {
+      await this.auditLogger.log({
+        type: "mattermost.websocket.duplicate",
+        postId: post.id,
+        channelId: post.channel_id,
+      });
+      return;
+    }
+
     const incomingMessage: IncomingChatMessage = {
       thread: {
         provider: "mattermost",
@@ -929,6 +935,31 @@ export class MattermostAdapter implements ChatAdapter {
         });
       });
     }
+  }
+
+  private hasSeenWebsocketPost(postId: string): boolean {
+    const now = Date.now();
+    const expiresBefore = now - MATTERMOST_POST_DEDUPE_TTL_MS;
+    for (const [seenPostId, seenAt] of this.seenWebsocketPostIds) {
+      if (seenAt > expiresBefore) {
+        break;
+      }
+      this.seenWebsocketPostIds.delete(seenPostId);
+    }
+
+    if (this.seenWebsocketPostIds.has(postId)) {
+      return true;
+    }
+
+    while (this.seenWebsocketPostIds.size >= MAX_SEEN_MATTERMOST_POSTS) {
+      const oldestPostId = this.seenWebsocketPostIds.keys().next().value;
+      if (oldestPostId === undefined) {
+        break;
+      }
+      this.seenWebsocketPostIds.delete(oldestPostId);
+    }
+    this.seenWebsocketPostIds.set(postId, now);
+    return false;
   }
 
   private async readPost(postId: string): Promise<MattermostPost | undefined> {

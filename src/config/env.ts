@@ -64,6 +64,7 @@ function parseSlackMode(value: string | undefined): SlackMode {
   switch (value) {
     case undefined:
     case "":
+      return "socket";
     case "http":
       return "http";
     case "socket":
@@ -77,6 +78,7 @@ function parseMattermostMode(value: string | undefined): MattermostMode {
   switch (value) {
     case undefined:
     case "":
+      return "websocket";
     case "http":
       return "http";
     case "websocket":
@@ -427,7 +429,7 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
       readSettingString(env.MATTERMOST_ACTOR_MODE, persisted, "mattermostActorMode"),
     ),
     port: parseInteger("CAB_PORT", readSettingInteger(env.CAB_PORT, persisted, "port"), 8787),
-    host: readSettingString(env.CAB_HOST, persisted, "host") ?? "0.0.0.0",
+    host: readSettingString(env.CAB_HOST, persisted, "host") ?? "127.0.0.1",
     adminPort: parseInteger(
       "CAB_ADMIN_PORT",
       readSettingInteger(env.CAB_ADMIN_PORT, persisted, "adminPort"),
@@ -436,7 +438,7 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     adminHost:
       readSettingString(env.CAB_ADMIN_HOST, persisted, "adminHost") ??
       readSettingString(env.CAB_HOST, persisted, "host") ??
-      "0.0.0.0",
+      "127.0.0.1",
     defaultWorkingDirectory: path.resolve(
       readSettingString(env.CAB_DEFAULT_WORKDIR, persisted, "defaultWorkingDirectory") ??
         defaultAllowedDirectory,
@@ -453,7 +455,7 @@ export function createAppConfig(env: NodeJS.ProcessEnv): AppConfig {
     claudeProjectsDir: path.resolve(
       env.CAB_CLAUDE_PROJECTS_DIR ?? defaultClaudeProjectsDir(),
     ),
-    codexModel: readSettingString(env.CAB_CODEX_MODEL, persisted, "codexModel") ?? "gpt-5.4",
+    codexModel: readSettingString(env.CAB_CODEX_MODEL, persisted, "codexModel") ?? "auto",
     codexMaxTurns: parseInteger(
       "CAB_CODEX_MAX_TURNS",
       readSettingInteger(env.CAB_CODEX_MAX_TURNS, persisted, "codexMaxTurns"),

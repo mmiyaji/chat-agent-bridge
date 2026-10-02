@@ -89,6 +89,8 @@ function createMattermostBridgeConfig(
 ): AppConfig {
   return {
     chatProvider: "mattermost",
+    slackAllowedUserIds: [],
+    mattermostAllowedUserIds: [state.memberUser.id],
     agentKind: "codex",
     allowedDirectories: [process.cwd()],
     repoAliases: {},
@@ -144,6 +146,56 @@ class ApprovalE2EAgent implements Agent {
     return {
       sessionId: request.session.sessionId,
       summary: "Applied the requested changes.",
+    };
+  }
+
+  async cancelExecution(): Promise<boolean> {
+    return false;
+  }
+}
+
+class NativeRequestE2EAgent implements Agent {
+  readonly kind = "codex" as const;
+  readonly capabilities = {
+    manualApproval: true,
+    writeApprovalRerun: false,
+    networkAccessControl: false,
+  } as const;
+  readonly requests: AgentExecutionRequest[] = [];
+  approvalDecision?: "accept" | "decline";
+  inputAnswers?: Record<string, string[]>;
+
+  async execute(request: AgentExecutionRequest): Promise<AgentExecutionResult> {
+    this.requests.push(request);
+    if (!request.onRequest) {
+      throw new Error("Bridge did not supply the native request callback.");
+    }
+
+    const approval = await request.onRequest({
+      id: "native-approval-e2e",
+      kind: "approval",
+      title: "Approve a workspace command",
+      detail: "The agent needs permission to run its planned command.",
+    });
+    this.approvalDecision = approval.decision;
+    if (approval.decision !== "accept") {
+      return { sessionId: request.session.sessionId, summary: "Native approval was declined." };
+    }
+
+    const input = await request.onRequest({
+      id: "native-input-e2e",
+      kind: "input",
+      title: "Provide run details",
+      detail: "Answer both questions so the agent can continue.",
+      questions: [
+        { id: "workspace", question: "Which workspace?", options: ["client", "server"] },
+        { id: "reason", question: "What is the goal?" },
+      ],
+    });
+    this.inputAnswers = input.answers;
+    return {
+      sessionId: request.session.sessionId,
+      summary: `Native requests completed: ${input.answers?.workspace?.[0] ?? ""} / ${input.answers?.reason?.[0] ?? ""}.`,
     };
   }
 
@@ -718,6 +770,100 @@ mattermostTest("Mattermost approval button E2E reruns the pending request", asyn
     assert.equal(agent.requests[1]?.approvalPolicy, "never");
   } finally {
     await chatAdapter.stop();
+  }
+});
+
+mattermostTest("Mattermost websocket E2E resolves native approval and multi-question input in one run", async () => {
+  const state = JSON.parse(await fs.readFile(stateFile, "utf8")) as BootstrapState;
+  const agent = new NativeRequestE2EAgent();
+  const { bridge, chatAdapter } = await startMattermostBridge({
+    state,
+    webhookToken: "mm-e2e-native-request-hook",
+    agent,
+    configOverrides: {
+      mattermostMode: "websocket",
+      mattermostActorMode: "bot",
+    },
+  });
+
+  try {
+    const created = await apiRequest<MattermostPost>(
+      state.serverUrl,
+      "/api/v4/posts",
+      state.memberUser.token,
+      {
+        method: "POST",
+        body: {
+          channel_id: state.channel.id,
+          message: `@${state.bridgeUser.username} run the native request integration`,
+        },
+      },
+    );
+
+    await waitForThreadPost(
+      state,
+      state.channel.id,
+      state.memberUser.token,
+      (post) => post.root_id === created.id && /Approve a workspace command/.test(post.message),
+    );
+
+    // These actual Mattermost replies exercise the websocket adapter's thread
+    // reply route and its optional leading bot-mention normalization.
+    await apiRequest<MattermostPost>(state.serverUrl, "/api/v4/posts", state.memberUser.token, {
+      method: "POST",
+      body: {
+        channel_id: state.channel.id,
+        root_id: created.id,
+        message: `@${state.bridgeUser.username} approve native-approval-e2e`,
+      },
+    });
+
+    await waitForThreadPost(
+      state,
+      state.channel.id,
+      state.memberUser.token,
+      (post) => post.root_id === created.id && /Provide run details/.test(post.message),
+    );
+
+    await apiRequest<MattermostPost>(state.serverUrl, "/api/v4/posts", state.memberUser.token, {
+      method: "POST",
+      body: {
+        channel_id: state.channel.id,
+        root_id: created.id,
+        message: `@${state.bridgeUser.username} answer native-input-e2e workspace client`,
+      },
+    });
+    await waitForThreadPost(
+      state,
+      state.channel.id,
+      state.memberUser.token,
+      (post) => post.root_id === created.id && /Answer received for `workspace`/.test(post.message),
+    );
+
+    await apiRequest<MattermostPost>(state.serverUrl, "/api/v4/posts", state.memberUser.token, {
+      method: "POST",
+      body: {
+        channel_id: state.channel.id,
+        root_id: created.id,
+        message: `@${state.bridgeUser.username} answer native-input-e2e reason validate changes`,
+      },
+    });
+
+    const completion = await waitForThreadPost(
+      state,
+      state.channel.id,
+      state.memberUser.token,
+      (post) => post.root_id === created.id && post.message === "Native requests completed: client / validate changes.",
+    );
+    assert.equal(completion.user_id, state.bridgeUser.id);
+    assert.equal(agent.requests.length, 1, "approval and user input continue the same agent execution");
+    assert.equal(agent.approvalDecision, "accept");
+    assert.deepEqual(agent.inputAnswers, {
+      workspace: ["client"],
+      reason: ["validate changes"],
+    });
+  } finally {
+    await bridge.stop();
   }
 });
 

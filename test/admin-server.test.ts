@@ -276,7 +276,7 @@ test("AdminServer server-renders dashboard data and action controls", async () =
   const port = admin.getListeningPort();
   assert.ok(port);
 
-  const response = await getText(port, "/admin");
+  const response = await getText(port, "/admin/legacy");
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /Bridge Admin/);
   assert.match(response.body, /data-testid="sessions-table"/);
@@ -336,7 +336,7 @@ test("AdminServer degrades gracefully when execution history cannot be read", as
   const port = admin.getListeningPort();
   assert.ok(port);
 
-  const dashboard = await getText(port, "/admin");
+  const dashboard = await getText(port, "/admin/legacy");
   assert.equal(dashboard.statusCode, 200);
   assert.match(dashboard.body, /data-testid="dashboard-warning"/);
   assert.match(dashboard.body, /Execution history could not be fully loaded/);
@@ -437,7 +437,7 @@ test("AdminServer dashboard shows a setup-incomplete banner when required settin
   const port = admin.getListeningPort();
   assert.ok(port);
 
-  const response = await getText(port, "/admin");
+  const response = await getText(port, "/admin/legacy");
   assert.equal(response.statusCode, 200);
   assert.match(response.body, /data-testid="setup-incomplete-banner"/);
   assert.match(response.body, /Setup incomplete/);
@@ -465,7 +465,7 @@ test("AdminServer dashboard hides the setup banner once required settings are pr
   const port = admin.getListeningPort();
   assert.ok(port);
 
-  const response = await getText(port, "/admin");
+  const response = await getText(port, "/admin/legacy");
   assert.equal(response.statusCode, 200);
   assert.doesNotMatch(response.body, /data-testid="setup-incomplete-banner"/);
 

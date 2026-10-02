@@ -29,6 +29,9 @@ import { updatePersistedSettings } from "../config/settings-io.js";
 import { SessionManager } from "./session-manager.js";
 import {
   AgentProgressUpdate,
+  AgentExecutionRequestCallbackRequest,
+  AgentExecutionRequestCallbackResult,
+  AgentRequestQuestion,
   ApprovalPolicy,
   AppConfig,
   ExecutionRecord,
@@ -53,6 +56,27 @@ interface BridgeServiceDeps {
     actor?: string;
     reason?: string;
   }) => void;
+  /** Test seam; production requests remain bounded to at most ten minutes. */
+  nativeRequestTimeoutMs?: number;
+}
+
+interface PendingNativeRequest {
+  request: AgentExecutionRequestCallbackRequest;
+  thread: IncomingChatMessage["thread"];
+  requesterUserId: string;
+  expiresAt: number;
+  resolve: (result: AgentExecutionRequestCallbackResult) => void;
+  timer: NodeJS.Timeout;
+  answers: Record<string, string[]>;
+}
+
+export interface PendingNativeRequestSummary {
+  id: string;
+  kind: "approval" | "input";
+  title: string;
+  thread: IncomingChatMessage["thread"];
+  expiresAt: string;
+  unansweredQuestionIds: string[];
 }
 
 interface SessionPickerState {
@@ -233,6 +257,8 @@ function readWorkdirPicker(
 const PROGRESS_UPDATE_INTERVAL_MS = 20_000;
 const MAX_PROGRESS_LINES = 4;
 const RESTART_COMPLETION_FLUSH_INTERVAL_MS = 2_000;
+const DEFAULT_NATIVE_REQUEST_TIMEOUT_MS = 10 * 60_000;
+const MAX_NATIVE_REQUEST_TIMEOUT_MS = 10 * 60_000;
 const PROGRESS_COPY = {
   heading: {
     running: "Received your request for session",
@@ -519,20 +545,59 @@ export class BridgeService {
   private readonly restartCompletionFilePath =
     process.env.CAB_RESTART_COMPLETION_FILE ??
     path.resolve(process.cwd(), "data", "runtime", "restart-completion.jsonl");
-  private restartCompletionFlushTimer?: NodeJS.Timeout;
+  private restartCompletionFlushTimer: NodeJS.Timeout | undefined;
   private restartCompletionFlushInFlight = false;
+  private readonly pendingNativeRequests = new Map<string, PendingNativeRequest>();
 
   constructor(private readonly deps: BridgeServiceDeps) {}
 
-  async start(): Promise<void> {
+  async start(options: { connectChat?: boolean } = {}): Promise<void> {
     await this.deps.stateStore.initialize();
     await this.reconcileInterruptedExecutions();
+    if (options.connectChat === false) {
+      return;
+    }
     await this.deps.chatAdapter.start(async (message) => this.handleMessage(message));
     await this.flushPendingRestartCompletions();
+    this.startRestartCompletionFlushTimer();
+  }
+
+  async stop(): Promise<void> {
+    this.rejectPendingNativeRequests("bridge-stopped");
+    if (this.restartCompletionFlushTimer) {
+      clearInterval(this.restartCompletionFlushTimer);
+      this.restartCompletionFlushTimer = undefined;
+    }
+    await this.deps.chatAdapter.stop?.();
+  }
+
+  private startRestartCompletionFlushTimer(): void {
+    if (this.restartCompletionFlushTimer) {
+      clearInterval(this.restartCompletionFlushTimer);
+    }
     this.restartCompletionFlushTimer = setInterval(() => {
       void this.flushPendingRestartCompletions();
     }, RESTART_COMPLETION_FLUSH_INTERVAL_MS);
     this.restartCompletionFlushTimer.unref();
+  }
+
+  /** Read-only, non-secret request metadata for optional admin inspection. */
+  getPendingNativeRequests(): PendingNativeRequestSummary[] {
+    return [...this.pendingNativeRequests.values()].map((pending) => ({
+      id: pending.request.id,
+      kind: pending.request.kind,
+      title: pending.request.title,
+      thread: { ...pending.thread },
+      expiresAt: new Date(pending.expiresAt).toISOString(),
+      unansweredQuestionIds: (pending.request.questions ?? [])
+        .map((question) => question.id)
+        .filter((id) => !pending.answers[id]),
+    }));
+  }
+
+  /** Reject outstanding native requests when the chat transport disconnects. */
+  rejectPendingNativeAgentRequests(reason = "chat-disconnected"): void {
+    this.rejectPendingNativeRequests(reason);
   }
 
   async dispatchAdminAction(
@@ -821,6 +886,10 @@ export class BridgeService {
       return;
     }
 
+    if (await this.handleNativeRequestReply(message)) {
+      return;
+    }
+
     const existingSession = await this.deps.sessionManager.getByThread(message.thread);
     const newSessionWorkingDirectory = existingSession
       ? existingSession.workingDirectory
@@ -955,7 +1024,13 @@ export class BridgeService {
           networkAccess: this.deps.config.networkAccess,
           allowedDirectories: this.deps.config.allowedDirectories,
           onActivity: progress.onActivity,
+          onRequest: (request) => this.requestNativeAgentResponse({
+            request,
+            thread: responseThread,
+            requesterUserId: message.userId,
+          }),
         });
+        this.rejectPendingNativeRequests("execution-finished", responseThread);
 
         const persistInput: Parameters<BridgeService["persistSessionAfterRun"]>[1] = {
           prompt: promptText,
@@ -1020,6 +1095,7 @@ export class BridgeService {
           );
         }
       } catch (error) {
+        this.rejectPendingNativeRequests("execution-finished", responseThread);
         if (error instanceof AgentExecutionCancelledError) {
           await progress?.finish("cancelled", "cancelled").catch(() => undefined);
           if (executionRecord) {
@@ -1113,6 +1189,236 @@ export class BridgeService {
       return this.deps.config.mattermostAllowedUserIds.includes(message.userId);
     }
 
+    return true;
+  }
+
+  private async requestNativeAgentResponse(input: {
+    request: AgentExecutionRequestCallbackRequest;
+    thread: IncomingChatMessage["thread"];
+    requesterUserId: string;
+  }): Promise<AgentExecutionRequestCallbackResult> {
+    const connection = this.getChatConnectionStatus();
+    if (connection && connection.state === "disconnected") {
+      return this.emptyNativeRequestResult(input.request.kind);
+    }
+
+    const questions = input.request.kind === "input"
+      ? (input.request.questions?.length
+        ? input.request.questions
+        : [{ id: "response", question: input.request.detail || input.request.title }])
+      : [];
+    const key = this.nativeRequestKey(input.thread, input.request.id);
+    const timeoutMs = Math.max(
+      0,
+      Math.min(this.deps.nativeRequestTimeoutMs ?? DEFAULT_NATIVE_REQUEST_TIMEOUT_MS, MAX_NATIVE_REQUEST_TIMEOUT_MS),
+    );
+
+    return new Promise<AgentExecutionRequestCallbackResult>((resolve) => {
+      const pending: PendingNativeRequest = {
+        request: { ...input.request, ...(questions.length ? { questions } : {}) },
+        thread: { ...input.thread },
+        requesterUserId: input.requesterUserId,
+        expiresAt: Date.now() + timeoutMs,
+        resolve,
+        timer: setTimeout(() => {
+          void this.finishNativeRequest(key, this.emptyNativeRequestResult(input.request.kind), "expired");
+        }, timeoutMs),
+        answers: {},
+      };
+      this.pendingNativeRequests.set(key, pending);
+      void this.postNativeRequest(pending).catch(async () => {
+        await this.finishNativeRequest(key, this.emptyNativeRequestResult(input.request.kind), "post-failed");
+      });
+    });
+  }
+
+  private nativeRequestKey(thread: IncomingChatMessage["thread"], id: string): string {
+    return `${thread.provider}:${thread.channelId}:${thread.threadId}:${id}`;
+  }
+
+  private emptyNativeRequestResult(
+    kind: AgentExecutionRequestCallbackRequest["kind"],
+  ): AgentExecutionRequestCallbackResult {
+    return kind === "approval" ? { decision: "decline" } : { answers: {} };
+  }
+
+  private async postNativeRequest(pending: PendingNativeRequest): Promise<void> {
+    const lines = [
+      pending.request.kind === "approval" ? "Agent approval required" : "Agent input required",
+      `Request: \`${pending.request.id}\``,
+      pending.request.title,
+      pending.request.detail,
+    ].filter((line) => line.length > 0);
+
+    if (pending.request.kind === "approval") {
+      lines.push(
+        `Reply \`approve ${pending.request.id}\` to allow, or \`reject ${pending.request.id}\` to deny. This request expires in 10 minutes.`,
+      );
+    } else {
+      const questions = pending.request.questions ?? [];
+      for (const [index, question] of questions.entries()) {
+        lines.push(`${index + 1}. [${question.id}] ${question.question}${question.options?.length ? `\nOptions: ${question.options.join(", ")}` : ""}`);
+      }
+      lines.push(
+        questions.length > 1
+          ? `Reply \`answer ${pending.request.id} <question-id> <your answer>\` for each question.`
+          : `Reply \`answer ${pending.request.id} <your answer>\`.`,
+        "This request expires in 10 minutes.",
+      );
+    }
+
+    await this.deps.chatAdapter.postThreadMessage(pending.thread, lines.join("\n"));
+    await this.deps.auditLogger.log({
+      type: "bridge.agent-request.opened",
+      kind: pending.request.kind,
+      sessionThreadId: pending.thread.threadId,
+    });
+  }
+
+  private async finishNativeRequest(
+    key: string,
+    result: AgentExecutionRequestCallbackResult,
+    reason: string,
+  ): Promise<boolean> {
+    const pending = this.pendingNativeRequests.get(key);
+    if (!pending) {
+      return false;
+    }
+    this.pendingNativeRequests.delete(key);
+    clearTimeout(pending.timer);
+    pending.resolve(result);
+    await this.deps.auditLogger.log({
+      type: "bridge.agent-request.closed",
+      kind: pending.request.kind,
+      reason,
+      sessionThreadId: pending.thread.threadId,
+    });
+    return true;
+  }
+
+  private rejectPendingNativeRequests(reason: string, thread?: IncomingChatMessage["thread"]): void {
+    for (const [key, pending] of this.pendingNativeRequests) {
+      if (thread && !this.sameThread(thread, pending.thread)) {
+        continue;
+      }
+      void this.finishNativeRequest(
+        key,
+        this.emptyNativeRequestResult(pending.request.kind),
+        reason,
+      );
+    }
+  }
+
+  private sameThread(
+    left: IncomingChatMessage["thread"],
+    right: IncomingChatMessage["thread"],
+  ): boolean {
+    return left.provider === right.provider && left.channelId === right.channelId && left.threadId === right.threadId;
+  }
+
+  private async handleNativeRequestReply(message: IncomingChatMessage): Promise<boolean> {
+    const text = message.text.trim();
+    const approvalMatch = /^(approve|reject)(?:\s+(\S+))?$/i.exec(text);
+    if (approvalMatch) {
+      const action = approvalMatch[1]?.toLowerCase() ?? "";
+      const requestedId = approvalMatch[2];
+      const candidates = [...this.pendingNativeRequests.entries()].filter(([, pending]) =>
+        pending.request.kind === "approval" && this.sameThread(message.thread, pending.thread),
+      );
+      const selected = requestedId
+        ? candidates.find(([, pending]) => pending.request.id === requestedId)
+        : candidates.length === 1 ? candidates[0] : undefined;
+      if (!selected) {
+        if (!requestedId && candidates.length === 0) {
+          return false; // Preserve legacy approval-rerun commands.
+        }
+        await this.deps.chatAdapter.postThreadMessage(message.thread, "No matching pending agent approval was found in this thread.");
+        return true;
+      }
+      const [key, pending] = selected;
+      if (message.userId !== pending.requesterUserId) {
+        await this.deps.chatAdapter.postThreadMessage(message.thread, "Only the user who started this request can respond to it.");
+        return true;
+      }
+      const accepted = action === "approve";
+      await this.finishNativeRequest(
+        key,
+        { decision: accepted ? "accept" : "decline" },
+        accepted ? "accepted" : "declined",
+      );
+      await this.deps.chatAdapter.postThreadMessage(
+        message.thread,
+        accepted ? `Approval \`${pending.request.id}\` accepted. The running agent will continue.` : `Approval \`${pending.request.id}\` rejected.`,
+      );
+      return true;
+    }
+
+    if (!/^answer(?:\s+|$)/i.test(text)) {
+      return false;
+    }
+    const remainder = text.replace(/^answer\s*/i, "").trim();
+    if (!remainder) {
+      await this.deps.chatAdapter.postThreadMessage(message.thread, "Use `answer <request-id> <your answer>` for a pending agent question.");
+      return true;
+    }
+    const candidates = [...this.pendingNativeRequests.entries()].filter(([, pending]) =>
+      pending.request.kind === "input" && this.sameThread(message.thread, pending.thread),
+    );
+    if (candidates.length === 0) {
+      await this.deps.chatAdapter.postThreadMessage(message.thread, "No pending agent input request was found in this thread.");
+      return true;
+    }
+
+    let selected: [string, PendingNativeRequest] | undefined;
+    let answerBody = remainder;
+    let explicitRequestId: string | undefined;
+    const firstSpace = remainder.search(/\s/);
+    const firstToken = firstSpace < 0 ? remainder : remainder.slice(0, firstSpace);
+    const matchingRequest = candidates.find(([, pending]) => pending.request.id === firstToken);
+    if (matchingRequest) {
+      selected = matchingRequest;
+      explicitRequestId = firstToken;
+      answerBody = firstSpace < 0 ? "" : remainder.slice(firstSpace).trim();
+    } else {
+      await this.deps.chatAdapter.postThreadMessage(message.thread, "No matching pending agent input request was found. Include its request id: `answer <request-id> <your answer>`.");
+      return true;
+    }
+
+    if (!selected || !answerBody) {
+      await this.deps.chatAdapter.postThreadMessage(message.thread, "Include an answer after the request id.");
+      return true;
+    }
+    const [key, pending] = selected;
+    if (message.userId !== pending.requesterUserId) {
+      await this.deps.chatAdapter.postThreadMessage(message.thread, "Only the user who started this request can respond to it.");
+      return true;
+    }
+
+    const questions = pending.request.questions ?? [];
+    let question: AgentRequestQuestion | undefined;
+    let answer = answerBody;
+    if (explicitRequestId && questions.length > 1) {
+      const questionTokenEnd = answerBody.search(/\s/);
+      const questionId = questionTokenEnd < 0 ? answerBody : answerBody.slice(0, questionTokenEnd);
+      question = questions.find((candidate) => candidate.id === questionId);
+      answer = questionTokenEnd < 0 ? "" : answerBody.slice(questionTokenEnd).trim();
+    } else {
+      question = questions.find((candidate) => !pending.answers[candidate.id]);
+    }
+    if (!question || !answer) {
+      await this.deps.chatAdapter.postThreadMessage(message.thread, "That request does not have an unanswered question matching this reply.");
+      return true;
+    }
+    pending.answers[question.id] = question.multiSelect
+      ? answer.split(",").map((part) => part.trim()).filter(Boolean)
+      : [answer];
+    const complete = questions.length > 0 && questions.every((item) => pending.answers[item.id]?.length);
+    if (complete) {
+      await this.finishNativeRequest(key, { answers: { ...pending.answers } }, "answered");
+      await this.deps.chatAdapter.postThreadMessage(message.thread, `Agent input \`${pending.request.id}\` received. The running agent will continue.`);
+    } else {
+      await this.deps.chatAdapter.postThreadMessage(message.thread, `Answer received for \`${question.id}\`. Reply with the next question using \`answer ${pending.request.id} <question-id> <your answer>\`.`);
+    }
     return true;
   }
 
@@ -1674,6 +1980,7 @@ export class BridgeService {
     message: IncomingChatMessage,
     command: Extract<BridgeCommand, { kind: "cancel" }>,
   ): Promise<void> {
+    this.rejectPendingNativeRequests("execution-cancelled", message.thread);
     const cancelled = await this.resolveSessionAgent(session).cancelExecution(session.sessionId);
     await this.deps.auditLogger.log({
       type: "bridge.command.cancel",
@@ -2534,7 +2841,13 @@ export class BridgeService {
         networkAccess: this.deps.config.networkAccess,
         allowedDirectories: this.deps.config.allowedDirectories,
         onActivity: progress.onActivity,
+        onRequest: (request) => this.requestNativeAgentResponse({
+          request,
+          thread: message.thread,
+          requesterUserId: message.userId,
+        }),
       });
+      this.rejectPendingNativeRequests("execution-finished", message.thread);
 
       const persistInput: Parameters<BridgeService["persistSessionAfterRun"]>[1] = {
         prompt: pendingApproval.prompt,
@@ -2559,6 +2872,7 @@ export class BridgeService {
       });
       await this.deps.chatAdapter.postThreadMessage(message.thread, result.summary);
     } catch (error) {
+      this.rejectPendingNativeRequests("execution-finished", message.thread);
       if (error instanceof AgentExecutionCancelledError) {
         await progress?.finish("cancelled", "cancelled").catch(() => undefined);
         await this.deps.stateStore.upsertExecutionRecord(

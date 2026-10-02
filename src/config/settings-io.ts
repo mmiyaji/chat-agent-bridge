@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 
 /**
  * Persisted admin/runtime settings are a flat JSON object of scalar values.
@@ -46,5 +47,11 @@ export function updatePersistedSettings(
   }
 
   fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
-  fs.writeFileSync(settingsFile, JSON.stringify(next, null, 2), "utf8");
+  const temporary = `${settingsFile}.${randomUUID()}.tmp`;
+  try {
+    fs.writeFileSync(temporary, JSON.stringify(next, null, 2), { encoding: "utf8", flag: "wx", mode: 0o600 });
+    fs.renameSync(temporary, settingsFile);
+  } finally {
+    fs.rmSync(temporary, { force: true });
+  }
 }
