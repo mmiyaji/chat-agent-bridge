@@ -2033,7 +2033,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
               'Bearer token used for Mattermost API access. In <code>self</code> actor mode this is your own Personal Access Token (PAT), a token tied to your user account instead of a bot.'
             ) +
             renderFieldWithHint(
-              '<div class="field"><label for="settings-mattermost-mode">Mode</label><select id="settings-mattermost-mode" data-testid="settings-mattermost-mode"><option value="websocket"' + (settings.mattermostMode === "websocket" ? " selected" : "") + '>websocket</option><option value="http"' + (settings.mattermostMode === "http" ? " selected" : "") + '>http</option></select></div>',
+              '<div class="field"><label for="settings-mattermost-mode">Mode</label><select id="settings-mattermost-mode" data-testid="settings-mattermost-mode"><option value="websocket"' + (settings.mattermostMode === "websocket" ? " selected" : "") + '>WebSocket (recommended)</option><option value="http"' + (settings.mattermostMode === "http" ? " selected" : "") + '>Webhook receiver (HTTP/HTTPS)</option></select></div>',
               '"websocket" keeps a live connection open and is recommended. "http" is for webhook-style entry points and needs the webhook token below.'
             ) +
             renderFieldWithHint(
@@ -2057,7 +2057,7 @@ function renderDashboard(input: DashboardData, view: "dashboard" | "settings"): 
           "</div>" +
           '<div class="settings-subgrid" id="connection-slack" data-testid="connection-slack"' + (isMattermost ? ' style="display:none"' : "") + '>' +
             renderFieldWithHint(
-              '<div class="field"><label for="settings-slack-mode">Mode</label><select id="settings-slack-mode" data-testid="settings-slack-mode"><option value="socket"' + (settings.slackMode === "socket" ? " selected" : "") + '>socket</option><option value="http"' + (settings.slackMode === "http" ? " selected" : "") + '>http</option></select></div>',
+              '<div class="field"><label for="settings-slack-mode">Mode</label><select id="settings-slack-mode" data-testid="settings-slack-mode"><option value="socket"' + (settings.slackMode === "socket" ? " selected" : "") + '>Socket Mode (no public URL)</option><option value="http"' + (settings.slackMode === "http" ? " selected" : "") + '>Request URL (HTTPS)</option></select></div>',
               '"socket" keeps a live connection open and needs no public URL &mdash; recommended for most setups. "http" expects Slack to call your bridge over a public URL and needs the signing secret.'
             ) +
             renderFieldWithHint(

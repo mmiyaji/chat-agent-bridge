@@ -194,8 +194,8 @@ export function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
                 <label>
                   Mode
                   <select id="mattermost-mode" data-testid="mattermost-mode">
-                    <option value="websocket"${settings.mattermostMode === "websocket" ? " selected" : ""}>websocket</option>
-                    <option value="http"${settings.mattermostMode === "http" ? " selected" : ""}>http</option>
+                    <option value="websocket"${settings.mattermostMode === "websocket" ? " selected" : ""}>WebSocket (recommended)</option>
+                    <option value="http"${settings.mattermostMode === "http" ? " selected" : ""}>Webhook receiver (HTTP/HTTPS)</option>
                   </select>
                 </label>
                 <label>
@@ -223,8 +223,8 @@ export function renderOnboardingPage(settings: RuntimeSettingsPayload): string {
               <label>
                 Mode
                 <select id="slack-mode" data-testid="slack-mode">
-                  <option value="socket"${settings.slackMode === "socket" ? " selected" : ""}>socket</option>
-                  <option value="http"${settings.slackMode === "http" ? " selected" : ""}>http</option>
+                  <option value="socket"${settings.slackMode === "socket" ? " selected" : ""}>Socket Mode (no public URL)</option>
+                  <option value="http"${settings.slackMode === "http" ? " selected" : ""}>Request URL (HTTPS)</option>
                 </select>
               </label>
               <label>

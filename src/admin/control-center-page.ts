@@ -164,25 +164,25 @@ export function renderControlCenterPage(): string {
               <article class="card"><div class="card-head"><div><h3>チャット接続</h3><p>Slack Socket Mode または Mattermost WebSocket を利用できます。</p></div><span class="state" id="chat-state" data-state="unknown">確認中</span></div>
                 <div class="field-grid">
                   <div class="field"><label for="chat-provider">チャットサービス</label><select id="chat-provider" data-testid="chat-provider"><option value="slack">Slack</option><option value="mattermost">Mattermost</option></select></div>
-                  <div class="field" id="slack-mode-field"><label for="slack-mode">Slack 接続方式</label><select id="slack-mode" data-testid="slack-mode"><option value="socket">Socket Mode（推奨）</option><option value="http">HTTP</option></select></div>
+                  <div class="field" id="slack-mode-field"><label for="slack-mode">Slack イベント受信方式</label><select id="slack-mode" data-testid="slack-mode"><option value="socket">Socket Mode（推奨・公開URL不要）</option><option value="http">Request URL方式（HTTPS）</option></select><p class="hint" id="slack-mode-hint">Socket Mode は、このPCからSlackへ接続してイベントを受信します。</p></div>
                 </div>
                 <div class="provider-fields" id="slack-fields">
                   <div class="field-grid">
                     <div class="field"><label for="slack-bot-token">Bot token</label><input id="slack-bot-token" type="password" autocomplete="new-password" placeholder="xoxb-… または保存済み" data-testid="slack-bot-token" /><p class="hint">保存済みのトークンは入力欄に戻しません。空欄なら現在の値を使います。</p></div>
-                    <div class="field" id="slack-app-token-field"><label for="slack-app-token">App token</label><input id="slack-app-token" type="password" autocomplete="new-password" placeholder="xapp-… または保存済み" data-testid="slack-app-token" /><p class="hint">Socket Mode の接続に必要です。</p></div>
-                    <div class="field" id="slack-signing-field"><label for="slack-signing-secret">Signing secret</label><input id="slack-signing-secret" type="password" autocomplete="new-password" placeholder="保存済み・HTTP モードで使用" data-testid="slack-signing-secret" /></div>
-                    <div class="field full"><label for="slack-users">許可するユーザー ID</label><textarea id="slack-users" data-testid="slack-users" placeholder="U01234567 を1行ずつ入力"></textarea><p class="hint">空欄の場合は環境設定のアクセス制御に従います。</p></div>
+                    <div class="field" id="slack-app-token-field"><label for="slack-app-token">アプリレベルトークン（App-level token）</label><input id="slack-app-token" type="password" autocomplete="new-password" placeholder="xapp-… または保存済み" data-testid="slack-app-token" /><p class="hint">Socket Mode の接続に必要です。</p></div>
+                    <div class="field" id="slack-signing-field"><label for="slack-signing-secret">署名検証用シークレット（Signing Secret）</label><input id="slack-signing-secret" type="password" autocomplete="new-password" placeholder="Request URL方式で使用" data-testid="slack-signing-secret" /><p class="hint">Slackから届いたリクエストの署名を検証します。APIトークンとは別の値です。</p></div>
+                    <div class="field full"><label for="slack-users">許可するユーザー ID</label><textarea id="slack-users" data-testid="slack-users" placeholder="U01234567 を1行ずつ入力"></textarea><p class="hint">制限する場合はユーザーIDを指定してください。許可リストが空の場合、ユーザーによる制限はありません。</p></div>
                   </div>
                 </div>
                 <div class="provider-fields" id="mattermost-fields" hidden>
                   <div class="field-grid">
                     <div class="field full"><label for="mm-url">Mattermost サーバー URL</label><input id="mm-url" type="url" placeholder="https://chat.example.com" data-testid="mattermost-url" /><p class="hint">末尾の API パスを含めず、サーバーの URL を入力します。</p></div>
-                    <div class="field"><label for="mm-mode">接続方式</label><select id="mm-mode" data-testid="mattermost-mode"><option value="websocket">WebSocket（推奨）</option><option value="http">HTTP</option></select></div>
-                    <div class="field"><label for="mm-actor">接続アカウント</label><select id="mm-actor" data-testid="mattermost-actor"><option value="bot">Bot アカウント</option><option value="self">自分のアカウント</option></select></div>
+                    <div class="field"><label for="mm-mode">イベント受信方式</label><select id="mm-mode" data-testid="mattermost-mode"><option value="websocket">WebSocket（推奨・常時接続）</option><option value="http">Webhook受信（HTTP/HTTPS）</option></select><p class="hint">WebSocket はこのPCから接続します。Webhook方式はMattermostから到達できる受信URLが必要です。HTTPSは別途リバースプロキシなどで終端します。</p></div>
+                    <div class="field"><label for="mm-actor">接続アカウント</label><select id="mm-actor" data-testid="mattermost-actor"><option value="bot">Bot／サービスアカウント</option><option value="self">自分のアカウント（自分宛てDMのみ）</option></select></div>
                     <div class="field full"><label for="mm-token">Bot / Personal access token</label><input id="mm-token" type="password" autocomplete="new-password" placeholder="トークン" data-testid="mattermost-token" /><p class="hint" id="mm-token-hint">保存済みのトークンは入力欄に戻しません。空欄なら現在の値を使います。</p></div>
                     <div class="field full"><label for="mm-users">許可するユーザー ID</label><textarea id="mm-users" data-testid="mattermost-users" placeholder="ユーザー ID を1行ずつ入力"></textarea></div>
-                    <div class="field"><label for="mm-webhook">Webhook token（HTTP のみ）</label><input id="mm-webhook" type="password" autocomplete="new-password" placeholder="必要な場合のみ" data-testid="mattermost-webhook-token" /></div>
-                    <div class="field"><label for="mm-action-url">Action base URL（任意）</label><input id="mm-action-url" type="url" placeholder="https://bridge.example.com" data-testid="mattermost-action-url" /></div>
+                    <div class="field"><label for="mm-webhook">Webhook検証トークン（Webhook方式のみ）</label><input id="mm-webhook" type="password" autocomplete="new-password" placeholder="必要な場合のみ" data-testid="mattermost-webhook-token" /></div>
+                    <div class="field"><label for="mm-action-url">ボタン操作のコールバック基底URL（任意）</label><input id="mm-action-url" type="url" placeholder="https://bridge.example.com" data-testid="mattermost-action-url" /><p class="hint">MattermostからこのPCへボタン操作を送るためのURLです。通常のテキスト返信には不要です。</p></div>
                   </div>
                 </div>
                 <div class="save-row"><button class="button primary" id="save-chat" type="button" data-testid="save-chat">設定を保存</button><button class="button primary" id="connect-chat" type="button" data-testid="connect-chat">チャットに接続</button><button class="button danger" id="disconnect-chat" type="button" data-testid="disconnect-chat">切断</button></div><div class="message" id="chat-message" data-testid="chat-message" role="status" aria-live="polite"></div>
@@ -368,7 +368,14 @@ export function renderControlCenterPage(): string {
           $('mm-token-hint').textContent = state.settings.hasMattermostBotToken ? 'トークンは保存済みです。空欄のままなら現在の値を使います。' : 'Mattermost の Bot または Personal access token を入力します。';
           updateProviderFields();
         }
-        function updateProviderFields() { const isSlack = $('chat-provider').value === 'slack'; $('slack-fields').hidden = !isSlack; $('mattermost-fields').hidden = isSlack; $('slack-mode-field').hidden = !isSlack; $('slack-app-token-field').hidden = !isSlack || $('slack-mode').value !== 'socket'; $('slack-signing-field').hidden = !isSlack || $('slack-mode').value !== 'http'; }
+        function updateProviderFields() {
+          const isSlack = $('chat-provider').value === 'slack';
+          $('slack-fields').hidden = !isSlack; $('mattermost-fields').hidden = isSlack; $('slack-mode-field').hidden = !isSlack;
+          $('slack-app-token-field').hidden = !isSlack || $('slack-mode').value !== 'socket'; $('slack-signing-field').hidden = !isSlack || $('slack-mode').value !== 'http';
+          $('slack-mode-hint').textContent = $('slack-mode').value === 'socket'
+            ? 'このPCからSlackへ接続します。公開URLの設定は不要です。'
+            : 'Slackからイベントを受信する公開HTTPS URLが必要です。アプリ内のHTTP待受へ、リバースプロキシやトンネルなどで転送してください。Slack側のRequest URLは /slack/events に対応させます。';
+        }
         function settingsPayload(kind) {
           const payload = { agentKind: $('agent-kind').value, defaultWorkingDirectory: $('default-workdir').value.trim(), allowedDirectories: $('allowed-dirs').value.trim(), defaultApprovalPolicy: $('approval-policy').value, networkAccess: $('network-access').value };
           if (kind === 'agent') { const modelKey = { codex: 'codexModel', 'claude-code': 'claudeModel', cursor: 'cursorModel', gemini: 'geminiModel' }[payload.agentKind]; payload[modelKey] = $('agent-model').value.trim(); return payload; }
