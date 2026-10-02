@@ -17,6 +17,7 @@ import { RuntimeSettingsPayload } from "./server-types.js";
 import { renderOnboardingPage } from "./onboarding-page.js";
 import { renderControlCenterPage } from "./control-center-page.js";
 import { ConnectionManager } from "../core/connection-manager.js";
+import { listAgentModels } from "./model-catalog.js";
 
 interface AdminServerDeps {
   config: AppConfig;
@@ -2714,6 +2715,14 @@ export class AdminServer {
     const origin = request.headers.origin;
     if (origin && origin !== `http://${request.headers.host}`) {
       writeJson(response, 403, { error: "Cross-origin admin requests are not allowed." });
+      return;
+    }
+    if (request.method === "POST" && url.pathname === "/admin/api/models") {
+      if (request.headers["x-cab-request"] !== "admin") { writeJson(response, 403, { error: "Missing admin request header." }); return; }
+      const agent = url.searchParams.get("agent") ?? this.config.agentKind;
+      if (!["codex", "cursor", "claude-code", "gemini"].includes(agent)) { writeJson(response, 400, { error: "Unknown agent." }); return; }
+      try { writeJson(response, 200, { agent, models: await listAgentModels(this.config, agent) }); }
+      catch { writeJson(response, 503, { error: "モデル一覧を取得できませんでした。CLIのインストール・認証を確認してください。未対応のエージェントはモデルIDを手入力してください。" }); }
       return;
     }
     if (url.pathname.startsWith("/admin/api/connections")) {

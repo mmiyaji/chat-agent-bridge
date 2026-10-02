@@ -192,7 +192,7 @@ export function renderControlCenterPage(): string {
               <article class="card"><div class="card-head"><div><h3>エージェントと作業範囲</h3><p>会話から新しい依頼を受けたときに使う設定です。</p></div><span class="state" id="agent-state" data-state="unknown">確認中</span></div>
                 <div class="field-grid">
                   <div class="field"><label for="agent-kind">エージェント</label><select id="agent-kind" data-testid="agent-kind"><option value="codex">OpenAI Codex</option><option value="claude-code">Claude Code</option><option value="cursor">Cursor</option><option value="gemini">Gemini CLI</option></select></div>
-                  <div class="field"><label for="agent-model">モデル</label><input id="agent-model" type="text" placeholder="CLI の既定モデル" data-testid="agent-model" /></div>
+                  <div class="field"><label for="agent-model">モデル</label><input id="agent-model" type="text" placeholder="CLI の既定モデル" data-testid="agent-model" /><button class="button" id="fetch-models" type="button" data-testid="fetch-models">モデル一覧を取得</button><select id="model-options" aria-label="取得したモデル一覧" hidden><option value="">モデルを選択</option></select><p class="hint" id="model-message" role="status" aria-live="polite">一覧から選択するか、モデルIDを手入力できます。空欄はCLIの既定モデルです。</p></div>
                   <div class="field full"><label for="default-workdir">既定の作業ディレクトリ</label><input id="default-workdir" type="text" placeholder="C:/work/project" data-testid="default-workdir" /><p class="hint">エージェントが作業する既定フォルダーを指定します。</p></div>
                   <div class="field full"><label for="allowed-dirs">許可するディレクトリ</label><textarea id="allowed-dirs" data-testid="allowed-dirs" placeholder="C:/work/project を1行ずつ入力"></textarea><p class="hint">会話から指定できる作業フォルダーを制限します。</p></div>
                   <div class="field"><label for="approval-policy">承認ポリシー</label><select id="approval-policy" data-testid="approval-policy"><option value="manual">手動承認</option><option value="on-failure">失敗時に確認</option><option value="never">自動実行</option></select></div>
@@ -369,6 +369,7 @@ export function renderControlCenterPage(): string {
           const models = { codex: state.settings.codexModel, 'claude-code': state.settings.claudeModel, cursor: state.settings.cursorModel, gemini: state.settings.geminiModel }; $('agent-model').value = models[$('agent-kind').value] || '';
           $('mm-token-hint').textContent = state.settings.hasMattermostBotToken ? 'トークンは保存済みです。空欄のままなら現在の値を使います。' : 'Mattermost の Bot または Personal access token を入力します。';
           updateProviderFields();
+          resetModelOptions();
         }
         function updateProviderFields() {
           const isSlack = $('chat-provider').value === 'slack';
@@ -377,6 +378,36 @@ export function renderControlCenterPage(): string {
           $('slack-mode-hint').textContent = $('slack-mode').value === 'socket'
             ? 'このPCからSlackへ接続します。公開URLの設定は不要です。'
             : 'Slackからイベントを受信する公開HTTPS URLが必要です。アプリ内のHTTP待受へ、リバースプロキシやトンネルなどで転送してください。Slack側のRequest URLは /slack/events に対応させます。';
+        }
+        let modelRequest = 0;
+        function resetModelOptions() {
+          modelRequest++;
+          $('model-options').hidden = true;
+          $('model-options').replaceChildren(new Option('モデルを選択', ''));
+          const supported = ['codex', 'cursor'].includes($('agent-kind').value);
+          $('fetch-models').disabled = !supported;
+          $('fetch-models').textContent = 'モデル一覧を取得';
+          $('model-message').textContent = supported ? '一覧から選択するか、モデルIDを手入力できます。空欄はCLIの既定モデルです。' : 'このエージェントの一覧取得には未対応です。モデルIDを手入力してください。';
+        }
+        async function fetchModels() {
+          const agent = $('agent-kind').value;
+          const request = ++modelRequest;
+          $('fetch-models').disabled = true;
+          $('fetch-models').textContent = '取得中…';
+          $('model-options').hidden = true;
+          $('model-message').textContent = 'CLIからモデル一覧を取得しています…';
+          try {
+            const result = await fetchJson('/admin/api/models?agent=' + encodeURIComponent(agent), { method: 'POST' });
+            if (request !== modelRequest) return;
+            const models = Array.isArray(result.models) ? result.models.filter((model) => typeof model.id === 'string' && model.id) : [];
+            $('model-options').replaceChildren(new Option('モデルを選択', ''), ...models.map((model) => new Option(model.label === model.id ? model.id : model.label + ' (' + model.id + ')', model.id)));
+            $('model-options').hidden = !models.length;
+            $('model-message').textContent = models.length ? models.length + '件取得しました。選択後に「設定を保存」で反映します。' : '利用できるモデルが見つかりませんでした。CLIの認証を確認するか、手入力してください。';
+          } catch (error) {
+            if (request === modelRequest) $('model-message').textContent = error.message || '一覧を取得できませんでした。手入力できます。';
+          } finally {
+            if (request === modelRequest) { $('fetch-models').disabled = false; $('fetch-models').textContent = 'モデル一覧を取得'; }
+          }
         }
         function settingsPayload(kind) {
           const payload = { agentKind: $('agent-kind').value, defaultWorkingDirectory: $('default-workdir').value.trim(), allowedDirectories: $('allowed-dirs').value.trim(), defaultApprovalPolicy: $('approval-policy').value, networkAccess: $('network-access').value };
@@ -412,6 +443,9 @@ export function renderControlCenterPage(): string {
         function showPage(page) { state.activePage = page; document.querySelectorAll('.page').forEach((section) => { section.classList.toggle('is-active', section.id === 'page-' + page); }); document.querySelectorAll('.nav [data-page]').forEach((button) => { if (button.dataset.page === page) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); }); $('page-title').textContent = ({ overview: '概要', connections: '接続と設定', sessions: '会話セッション' })[page] || '概要'; }
         document.querySelectorAll('.nav [data-page], [data-goto]').forEach((button) => button.addEventListener('click', (event) => { event.preventDefault(); showPage(button.dataset.page || button.dataset.goto); }));
         $('chat-provider').addEventListener('change', updateProviderFields); $('slack-mode').addEventListener('change', updateProviderFields); $('agent-kind').addEventListener('change', () => { const modelKey = { codex: 'codexModel', 'claude-code': 'claudeModel', cursor: 'cursorModel', gemini: 'geminiModel' }[$('agent-kind').value]; $('agent-model').value = state.settings?.[modelKey] || ''; });
+        $('agent-kind').addEventListener('change', resetModelOptions);
+        $('fetch-models').addEventListener('click', fetchModels);
+        $('model-options').addEventListener('change', () => { if ($('model-options').value) $('agent-model').value = $('model-options').value; });
         $('save-chat').addEventListener('click', () => saveSettings('chat')); $('save-agent').addEventListener('click', () => saveSettings('agent'));
         $('connect-chat').addEventListener('click', () => connectionAction('chat', 'connect')); $('disconnect-chat').addEventListener('click', () => connectionAction('chat', 'disconnect')); $('connect-agent').addEventListener('click', () => connectionAction('agent', 'connect')); $('disconnect-agent').addEventListener('click', () => connectionAction('agent', 'disconnect'));
         $('refresh-button').addEventListener('click', loadStatus); $('connection-refresh').addEventListener('click', loadStatus); $('session-filter').addEventListener('change', applySessionFilters); $('session-search').addEventListener('input', applySessionFilters);

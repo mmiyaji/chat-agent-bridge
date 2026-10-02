@@ -19,6 +19,10 @@ test("control center API connects, reports, disconnects, and rejects cross-origi
   await server.start();
   const base = `http://127.0.0.1:${server.getListeningPort()}`;
   try {
+    const modelsPath = base + '/admin/api/models?agent=codex';
+    assert.equal((await fetch(modelsPath, { method: 'POST' })).status, 403);
+    assert.equal((await fetch(modelsPath, { method: 'POST', headers: { 'x-cab-request': 'admin', origin: 'https://untrusted.example' } })).status, 403);
+    assert.equal((await fetch(base + '/admin/api/models?agent=invalid', { method: 'POST', headers: { 'x-cab-request': 'admin' } })).status, 400);
     const path = base + "/admin/api/connections/agent/connect";
     assert.equal((await fetch(path, { method: "POST" })).status, 403);
     assert.equal((await fetch(path, { method: "POST", headers: { "x-cab-request": "admin", origin: "https://untrusted.example" } })).status, 403);

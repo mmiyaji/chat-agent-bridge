@@ -100,6 +100,32 @@ export class CodexAppServerAgent implements Agent {
     }
   }
 
+  async listModels(): Promise<Array<{ id: string; label: string }>> {
+    const client = this.createClient(process.cwd());
+    try {
+      await this.initialize(client);
+      const models: Array<{ id: string; label: string }> = [];
+      let cursor: string | undefined;
+      const seen = new Set<string>();
+      do {
+        const result = valueAsRecord(await client.request("model/list", { limit: 100, includeHidden: false, ...(cursor ? { cursor } : {}) }));
+        for (const item of Array.isArray(result.data) ? result.data : []) {
+          const model = valueAsRecord(item);
+          const id = model.model ?? model.id;
+          if (nonEmptyString(id) && !models.some((entry) => entry.id === id)) models.push({ id, label: nonEmptyString(model.displayName) ? model.displayName : id });
+        }
+        cursor = nonEmptyString(result.nextCursor) ? result.nextCursor : undefined;
+        if (cursor && seen.has(cursor)) throw new Error("モデル一覧のページ情報が不正です。");
+        if (cursor) seen.add(cursor);
+        if (seen.size > 20) throw new Error("モデル一覧が大きすぎます。");
+      } while (cursor);
+      return models;
+    } finally {
+      this.clients.delete(client);
+      await client.dispose();
+    }
+  }
+
   async execute(request: AgentExecutionRequest): Promise<AgentExecutionResult> {
     const client = this.createClient(request.session.workingDirectory);
     const active: ActiveRun = {

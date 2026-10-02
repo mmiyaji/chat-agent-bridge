@@ -85,6 +85,13 @@ function createConfig(): AppConfig {
   };
 }
 
+test('model catalog reads CLI models without starting a conversation', async () => {
+  const server = new FakeAppServer();
+  const agent = new CodexAppServerAgent(createConfig(), { command: 'fake-codex', spawnProcess: () => server as never });
+  assert.deepEqual(await agent.listModels(), [{ id: 'gpt-default', label: 'gpt-default' }]);
+  assert.deepEqual(server.requests.map(request => request.method), ['initialize', 'model/list']);
+});
+
 function createRequest(agentState?: AgentExecutionRequest["session"]["agentState"], onRequest?: AgentExecutionRequest["onRequest"]): AgentExecutionRequest {
   return {
     session: { sessionId: "session-1", thread: { provider: "slack", channelId: "C1", threadId: "T1" }, agent: "codex", workingDirectory: "/repo", createdAt: "now", updatedAt: "now", ...(agentState ? { agentState } : {}) },

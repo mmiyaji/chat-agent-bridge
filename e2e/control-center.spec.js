@@ -58,6 +58,7 @@ async function mockApi(page, { connections, saveResponse, actionError, sessionEn
     calls.push({ path, method, headers: request.headers(), body: request.postDataJSON?.() });
     let payload;
     if (path === "/admin/api/settings" && method === "GET") payload = { settings };
+    else if (path === "/admin/api/models") payload = { models: [{ id: 'gpt-choice', label: 'Choice' }, { id: 'gpt-other', label: 'Other' }] };
     else if (path === "/admin/api/settings" && method === "POST") payload = saveResponse || { settings: { ...settings, chatProvider: request.postDataJSON().chatProvider || settings.chatProvider } };
     else if (path === "/admin/api/connections" && method === "GET") payload = connections || {
       chat: { provider: "slack", mode: "socket", connected: false, state: "disconnected", statusText: "未接続" },
@@ -77,6 +78,37 @@ async function mockApi(page, { connections, saveResponse, actionError, sessionEn
   });
   return calls;
 }
+
+test('model list is fetched only on demand and selected model is saved', async ({ page }) => {
+  const calls = await mockApi(page);
+  await page.goto('/admin');
+  await page.getByRole('button', { name: '接続と設定', exact: true }).click();
+  await expect(page.getByTestId('agent-model')).toHaveValue('gpt-test');
+  expect(calls.filter(call => call.path === '/admin/api/models')).toHaveLength(0);
+  await page.getByTestId('fetch-models').click();
+  await expect(page.getByLabel('取得したモデル一覧')).toBeVisible();
+  await expect(page.getByTestId('agent-model')).toHaveValue('gpt-test');
+  await page.getByLabel('取得したモデル一覧').selectOption('gpt-choice');
+  await page.getByTestId('save-agent').click();
+  await expect.poll(() => calls.find(call => call.path === '/admin/api/settings' && call.method === 'POST')?.body.codexModel).toBe('gpt-choice');
+  expect(calls.find(call => call.path === '/admin/api/models').headers['x-cab-request']).toBe('admin');
+  await page.getByTestId('agent-kind').selectOption('claude-code');
+  await expect(page.getByTestId('fetch-models')).toBeDisabled();
+  await expect(page.getByLabel('取得したモデル一覧')).toBeHidden();
+});
+
+test('model fetch failure preserves manual input', async ({ page }) => {
+  await mockApi(page);
+  await page.route('**/admin/api/models?*', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'CLIの認証を確認してください' }) }));
+  await page.goto('/admin');
+  await page.getByRole('button', { name: '接続と設定', exact: true }).click();
+  await expect(page.getByTestId('agent-model')).toHaveValue('gpt-test');
+  await page.getByTestId('agent-model').fill('custom-model');
+  await page.getByTestId('fetch-models').click();
+  await expect(page.locator('#model-message')).toContainText('CLIの認証');
+  await expect(page.getByTestId('agent-model')).toHaveValue('custom-model');
+  await expect(page.getByTestId('fetch-models')).toBeEnabled();
+});
 
 test("control center shows real connection and conversation state across tabs", async ({ page }) => {
   await mockApi(page, { connections: {
