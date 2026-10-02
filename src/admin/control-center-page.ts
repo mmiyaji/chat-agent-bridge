@@ -88,10 +88,12 @@ export function renderControlCenterPage(): string {
       .form-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr); gap: 16px; align-items: start; }
       .form-stack { display: grid; gap: 16px; }
       .field-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin-top: 17px; }
-      .field { display: grid; gap: 6px; min-width: 0; }
+      .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
       .field.full { grid-column: 1/-1; }
       .field label { font-size: 12px; color: #53675f; font-weight: 700; }
       .field input, .field select, .field textarea { width: 100%; min-width: 0; border: 1px solid #cbd9d2; border-radius: 8px; background: #fff; color: #1e332c; padding: 10px 11px; }
+      .field input, .field select { height: 44px; flex-shrink: 0; }
+      .field-grid > .field:not(.full) > label { min-height: 36px; display: flex; align-items: flex-end; }
       .field textarea { min-height: 76px; resize: vertical; }
       .field input::placeholder, .field textarea::placeholder { color: #93a19b; }
       .hint { margin: 7px 0 0; color: #788982; font-size: 11px; line-height: 1.55; }
@@ -164,7 +166,7 @@ export function renderControlCenterPage(): string {
               <article class="card"><div class="card-head"><div><h3>チャット接続</h3><p>Slack Socket Mode または Mattermost WebSocket を利用できます。</p></div><span class="state" id="chat-state" data-state="unknown">確認中</span></div>
                 <div class="field-grid">
                   <div class="field"><label for="chat-provider">チャットサービス</label><select id="chat-provider" data-testid="chat-provider"><option value="slack">Slack</option><option value="mattermost">Mattermost</option></select></div>
-                  <div class="field" id="slack-mode-field"><label for="slack-mode">Slack イベント受信方式</label><select id="slack-mode" data-testid="slack-mode"><option value="socket">Socket Mode（推奨・公開URL不要）</option><option value="http">Request URL方式（HTTPS）</option></select><p class="hint" id="slack-mode-hint">Socket Mode は、このPCからSlackへ接続してイベントを受信します。</p></div>
+                  <div class="field" id="slack-mode-field"><label for="slack-mode">Slack イベント受信方式</label><select id="slack-mode" data-testid="slack-mode"><option value="socket">Socket Mode（推奨）</option><option value="http">Request URL方式（HTTPS）</option></select><p class="hint" id="slack-mode-hint">Socket Mode は、このPCからSlackへ接続してイベントを受信します。</p></div>
                 </div>
                 <div class="provider-fields" id="slack-fields">
                   <div class="field-grid">

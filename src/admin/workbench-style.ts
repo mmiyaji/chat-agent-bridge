@@ -51,5 +51,5 @@ main { padding: 26px 30px 60px; } .content { max-width: none; }
 .session-state[data-status=waiting_for_input], .session-state[data-status=waiting_for_approval], .session-state[data-status=running] { color: #edc16f; }
 .session-state[data-status=completed] { color: #9ccbaf; } .session-state[data-status=failed] { color: #edaaa1; }
 @media(max-width:850px) { .sidebar { height: auto; min-height: 64px; flex-wrap: wrap; padding: 16px; } .nav { gap: 20px; height: 40px; } main { padding: 20px 16px 80px; } .workbench { grid-template-columns: 270px minmax(0,1fr); } .detail-pane { padding-left: 20px; } .footer { padding: 12px 16px; } }
-@media(max-width:680px) { .workbench { grid-template-columns: 1fr; } .conversation-pane { border: 0; padding: 0; } .detail-pane { border-top: 1px solid #3a3d42; padding: 24px 0; margin-top: 24px; } .nav { overflow-x: auto; } .brand small { display: none; } .footer { flex-wrap: wrap; gap: 4px; } }
+@media(max-width:680px) { .workbench { grid-template-columns: 1fr; } .conversation-pane { border: 0; padding: 0; } .detail-pane { border-top: 1px solid #3a3d42; padding: 24px 0; margin-top: 24px; } .nav { overflow-x: auto; } .brand small { display: none; } .field-grid > .field:not(.full) > label { min-height: 0; } .footer { position: static; flex-wrap: wrap; gap: 4px; } }
 `;
