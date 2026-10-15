@@ -2,6 +2,11 @@ using ChatAgentBridge.Core;
 
 namespace ChatAgentBridge.Transports;
 
+public interface IChatConnectionEvents
+{
+    event Action? Connected;
+}
+
 public sealed record ChatRequest(
     string Provider,
     string ChannelId,

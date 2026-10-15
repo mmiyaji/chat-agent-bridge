@@ -6,8 +6,9 @@ using ChatAgentBridge.Core;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed class MattermostWebSocketTransport : IChatTransport
+public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnectionEvents
 {
+    public event Action? Connected;
     private const int MaxMessageBytes = 1024 * 1024;
     private const string Trigger = "!cab";
     private readonly HttpClient _http = TransportHttp.CreateClient();
@@ -54,6 +55,8 @@ public sealed class MattermostWebSocketTransport : IChatTransport
             var envelope = document.RootElement;
             if (envelope.TryGetProperty("status", out var authStatus) && authStatus.ValueKind == JsonValueKind.String && authStatus.GetString() != "OK")
                 throw new InvalidOperationException("Mattermost WebSocket authentication failed.");
+            if (envelope.TryGetProperty("seq_reply", out var sequence) && sequence.TryGetInt32(out var replySequence) && replySequence == 1 && authStatus.ValueKind == JsonValueKind.String && authStatus.GetString() == "OK")
+                Connected?.Invoke();
             if (!envelope.TryGetProperty("event", out var eventName) || eventName.GetString() != "posted") continue;
             if (!envelope.TryGetProperty("data", out var data) || !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
 

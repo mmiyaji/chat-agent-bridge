@@ -7,8 +7,9 @@ using ChatAgentBridge.Core;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed class SlackSocketModeTransport : IChatTransport
+public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEvents
 {
+    public event Action? Connected;
     private const int MaxMessageBytes = 1024 * 1024;
     private static readonly Uri ApiBase = new("https://slack.com/api/");
     private readonly HttpClient _http = TransportHttp.CreateClient();
@@ -37,6 +38,7 @@ public sealed class SlackSocketModeTransport : IChatTransport
         try { await socket.ConnectAsync(socketUri, cancellationToken).ConfigureAwait(false); }
         catch (OperationCanceledException) { throw; }
         catch (WebSocketException) { throw new InvalidOperationException("Slack Socket Mode connection failed."); }
+        Connected?.Invoke();
         while (!cancellationToken.IsCancellationRequested && socket.State == WebSocketState.Open)
         {
             JsonDocument? received;
