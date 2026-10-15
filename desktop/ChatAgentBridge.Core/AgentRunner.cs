@@ -6,7 +6,12 @@ namespace ChatAgentBridge.Core;
 
 public sealed record AgentRunResult(bool Success, int ExitCode, string Output, string Error);
 
-public sealed class AgentRunner
+public interface IAgentRunner
+{
+    Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt, CancellationToken cancellationToken = default);
+}
+
+public sealed class AgentRunner : IAgentRunner
 {
     private const int MaxCapturedCharacters = 1_000_000;
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> WorkspaceGates = new(

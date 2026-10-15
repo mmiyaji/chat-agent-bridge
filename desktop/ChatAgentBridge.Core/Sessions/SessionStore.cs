@@ -1,0 +1,162 @@
+using System.Collections.Concurrent;
+using System.Text.Json;
+
+namespace ChatAgentBridge.Core.Sessions;
+
+public sealed class SessionStore
+{
+    private const int CurrentSchemaVersion = 1;
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> PathGates = new(
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<(string Path, SessionKey Key), SemaphoreSlim> SessionGates = new();
+    private readonly string _filePath;
+    private readonly SemaphoreSlim _gate;
+
+    public SessionStore(string? directory = null)
+    {
+        DirectoryPath = Path.GetFullPath(directory ?? new SettingsStore().DirectoryPath);
+        _filePath = Path.Combine(DirectoryPath, "sessions.json");
+        _gate = PathGates.GetOrAdd(_filePath, static _ => new SemaphoreSlim(1, 1));
+    }
+
+    public string DirectoryPath { get; }
+
+    internal async Task<T> WithSessionLockAsync<T>(SessionKey key,
+        Func<CancellationToken, Task<T>> action, CancellationToken cancellationToken)
+    {
+        ValidateKey(key);
+        ArgumentNullException.ThrowIfNull(action);
+        var path = OperatingSystem.IsWindows() ? _filePath.ToUpperInvariant() : _filePath;
+        var gate = SessionGates.GetOrAdd((path, key), static _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try { return await action(cancellationToken).ConfigureAwait(false); }
+        finally { gate.Release(); }
+    }
+
+    public async Task<IReadOnlyList<SessionBinding>> ListAsync(CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try { return (await ReadAsync(cancellationToken).ConfigureAwait(false)).ToArray(); }
+        finally { _gate.Release(); }
+    }
+
+    public async Task<SessionBinding?> FindAsync(SessionKey key, CancellationToken cancellationToken = default)
+    {
+        ValidateKey(key);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try { return (await ReadAsync(cancellationToken).ConfigureAwait(false)).FirstOrDefault(item => item.Key == key); }
+        finally { _gate.Release(); }
+    }
+
+    public async Task SaveAsync(SessionBinding binding, CancellationToken cancellationToken = default)
+    {
+        ValidateBinding(binding);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var bindings = await ReadAsync(cancellationToken).ConfigureAwait(false);
+            var existingIndex = bindings.FindIndex(item => item.Key == binding.Key);
+            if (existingIndex >= 0) bindings[existingIndex] = binding;
+            else bindings.Add(binding);
+            await WriteAsync(bindings, cancellationToken).ConfigureAwait(false);
+        }
+        finally { _gate.Release(); }
+    }
+
+    public async Task RemoveAsync(SessionKey key, CancellationToken cancellationToken = default)
+    {
+        ValidateKey(key);
+        await WithSessionLockAsync(key, async token =>
+        {
+            await _gate.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                var bindings = await ReadAsync(token).ConfigureAwait(false);
+                if (bindings.RemoveAll(item => item.Key == key) > 0)
+                    await WriteAsync(bindings, token).ConfigureAwait(false);
+            }
+            finally { _gate.Release(); }
+            return true;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<List<SessionBinding>> ReadAsync(CancellationToken cancellationToken)
+    {
+        if (!File.Exists(_filePath)) return [];
+        try
+        {
+            await using var stream = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var document = await JsonSerializer.DeserializeAsync<StoredSessions>(stream, JsonOptions, cancellationToken)
+                .ConfigureAwait(false);
+            if (document is null) throw new InvalidDataException("Session store is empty or invalid.");
+            if (document.SchemaVersion != CurrentSchemaVersion)
+                throw new InvalidDataException($"Session store schema version {document.SchemaVersion} is unsupported; expected {CurrentSchemaVersion}.");
+            if (document.Bindings is null) throw new InvalidDataException("Session store has no bindings collection.");
+            var keys = new HashSet<SessionKey>();
+            foreach (var binding in document.Bindings)
+            {
+                ValidateBinding(binding);
+                if (!keys.Add(binding.Key)) throw new InvalidDataException("Session store contains duplicate session keys.");
+            }
+            return document.Bindings;
+        }
+        catch (JsonException ex) { throw new InvalidDataException("Session store contains invalid JSON.", ex); }
+        catch (ArgumentException ex) { throw new InvalidDataException("Session store contains an invalid session binding.", ex); }
+    }
+
+    private async Task WriteAsync(List<SessionBinding> bindings, CancellationToken cancellationToken)
+    {
+        Directory.CreateDirectory(DirectoryPath);
+        var temp = Path.Combine(DirectoryPath, $"sessions.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                4096, FileOptions.Asynchronous | FileOptions.WriteThrough))
+            {
+                await JsonSerializer.SerializeAsync(stream, new StoredSessions
+                {
+                    SchemaVersion = CurrentSchemaVersion,
+                    Bindings = bindings
+                }, JsonOptions, cancellationToken).ConfigureAwait(false);
+                await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+            if (File.Exists(_filePath)) File.Move(temp, _filePath, overwrite: true);
+            else File.Move(temp, _filePath);
+        }
+        finally { if (File.Exists(temp)) File.Delete(temp); }
+    }
+
+    private static void ValidateBinding(SessionBinding? binding)
+    {
+        if (binding is null) throw new ArgumentException("Session binding is required.");
+        ValidateKey(binding.Key);
+        if (string.IsNullOrWhiteSpace(binding.WorkspaceRoot) || !Path.IsPathFullyQualified(binding.WorkspaceRoot))
+            throw new ArgumentException("Session workspace must be an absolute path.");
+        if (string.IsNullOrWhiteSpace(binding.AgentExecutable)) throw new ArgumentException("Session executable is required.");
+        if (binding.AgentArguments is null) throw new ArgumentException("Session arguments are required.");
+        if (!Guid.TryParse(binding.SessionId, out _)) throw new ArgumentException("Session id must be a GUID.");
+    }
+
+    private static void ValidateKey(SessionKey? key)
+    {
+        if (key is null) throw new ArgumentException("Session key is required.");
+        ValidateIdentifier(key.Provider, "provider");
+        ValidateIdentifier(key.ChannelId, "channel id");
+        ValidateIdentifier(key.ThreadId, "thread id");
+    }
+
+    private static void ValidateIdentifier(string? value, string name)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length > 256 || value is "." or ".." ||
+            value.Any(char.IsControl) || value.IndexOfAny(['/', '\\', '\0', ':']) >= 0)
+            throw new ArgumentException($"Session {name} is invalid.");
+    }
+
+    private sealed class StoredSessions
+    {
+        public int? SchemaVersion { get; set; }
+        public List<SessionBinding>? Bindings { get; set; }
+    }
+}

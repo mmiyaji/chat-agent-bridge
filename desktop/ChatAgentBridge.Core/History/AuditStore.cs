@@ -1,0 +1,78 @@
+namespace ChatAgentBridge.Core.History;
+
+public sealed class AuditStore
+{
+    private static readonly HashSet<string> AllowedKinds = new(StringComparer.Ordinal)
+    {
+        "received", "approved", "rejected", "started", "completed", "failed", "cancelled", "reply_sent",
+        "reply_failed", "detached"
+    };
+    private readonly string _filePath;
+
+    public AuditStore(string? directory = null)
+    {
+        var dataDirectory = directory ?? new SettingsStore().DirectoryPath;
+        _filePath = Path.Combine(Path.GetFullPath(dataDirectory), "audit.json");
+    }
+
+    public async Task AppendAsync(AuditEvent record, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        Validate(record);
+        var gate = HistoryFileStore.LockFor(_filePath);
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var file = await ReadFileAsync(cancellationToken).ConfigureAwait(false);
+            var records = file.Records!.ToList();
+            records.Add(record);
+            records = records.OrderBy(item => item.Timestamp).TakeLast(HistoryFileStore.MaxRecords).ToList();
+            await HistoryFileStore.WriteAtomicAsync(_filePath,
+                new AuditDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = records }, cancellationToken).ConfigureAwait(false);
+        }
+        finally { gate.Release(); }
+    }
+
+    public async Task<IReadOnlyList<AuditEvent>> ListAsync(CancellationToken cancellationToken = default)
+    {
+        var gate = HistoryFileStore.LockFor(_filePath);
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var file = await ReadFileAsync(cancellationToken).ConfigureAwait(false);
+            return file.Records!.OrderByDescending(item => item.Timestamp).ToArray();
+        }
+        finally { gate.Release(); }
+    }
+
+    private async Task<AuditDocument> ReadFileAsync(CancellationToken ct)
+    {
+        var file = await HistoryFileStore.ReadAsync(_filePath, static () => new AuditDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = [] }, ct).ConfigureAwait(false);
+        HistoryFileStore.CheckSchema(file.SchemaVersion);
+        var records = HistoryFileStore.ValidateLoadedRecords(file.Records);
+        foreach (var record in records) ValidateLoaded(record);
+        return file;
+    }
+
+    private static void Validate(AuditEvent record)
+    {
+        if (record.Timestamp == default) throw new ArgumentException("Audit timestamp is required.", nameof(record));
+        if (!AllowedKinds.Contains(record.Kind)) throw new ArgumentException("Audit kind is not allowlisted.", nameof(record));
+        HistoryFileStore.ValidateSource(record.Source);
+        HistoryFileStore.ValidateText(record.ChannelId, nameof(record.ChannelId), 256);
+        HistoryFileStore.ValidateText(record.ThreadId, nameof(record.ThreadId), 256);
+    }
+
+    private static void ValidateLoaded(AuditEvent? record)
+    {
+        if (record is null) throw new InvalidDataException("History file contains a null audit event.");
+        try { Validate(record); }
+        catch (ArgumentException ex) { throw new InvalidDataException("History file contains an invalid audit event.", ex); }
+    }
+
+    private sealed class AuditDocument
+    {
+        public int? SchemaVersion { get; set; }
+        public List<AuditEvent>? Records { get; set; }
+    }
+}
