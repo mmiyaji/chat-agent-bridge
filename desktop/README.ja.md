@@ -87,6 +87,8 @@ UIテストは最初に空の隔離ディレクトリを指定します。`-Test
 
 セットアップ表示の検証は、別の空の保存先で起動したアプリに対して `./desktop/SetupStepperSmokeTest.ps1 -AppPid 12345 -DataDirectory 'C:\TestData\SetupStepper'` を実行します。リポジトリのNode.js開発依存関係を使ったループバックの模擬Mattermostへ接続し、未保存・保存失敗・接続中・接続完了・切断時の進捗を確認します。外部サービスやAIモデルは呼び出しません。
 
+ランダム操作の検証は、空の隔離保存先で起動後に `./desktop/MonkeyTest.ps1 -AppPid 12345 -DataDirectory 'C:\TestData\Monkey'` を実行します。既定は固定シード2個・各120操作です。画面遷移、設定入力、保存・再読み込み、サイズ変更などを組み合わせ、操作ログ・結果・失敗時の画像を `desktop/artifacts/monkey-*` に保存します。AI実行・モデル候補取得・外部チャットへの接続・Windows自動起動の変更は対象に含めません。再実行時はテスト専用マーカーがある保存先の設定を初期化します。
+
 ### Docker Mattermostとの実通信テスト
 
 ```powershell
