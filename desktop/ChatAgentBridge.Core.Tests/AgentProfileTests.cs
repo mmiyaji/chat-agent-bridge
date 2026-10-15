@@ -32,6 +32,29 @@ public sealed class AgentProfileTests
     }
 
     [Fact]
+    public void ReasoningEffortIsForwardedAsSeparateProviderArgumentsAndExistingConfigIsPreserved()
+    {
+        var codex = AgentProfile.BuildInvocation(new BridgeSettings
+        {
+            AgentArguments = "exec --json - -c model_reasoning_effort=old -c model=fixture",
+            AgentReasoningEffort = " HIGH "
+        });
+        Assert.Equal(new[] { "exec", "--json", "-", "-c", "model=fixture", "-c", "model_reasoning_effort=\"high\"" }, codex.Arguments);
+        var claude = AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = "claude", AgentReasoningEffort = "xhigh" });
+        Assert.Equal(new[] { "--print", "--output-format", "stream-json", "--verbose", "--effort", "xhigh" }, claude.Arguments);
+    }
+
+    [Theory]
+    [InlineData("x\" && whoami", null)]
+    [InlineData("UPPER", "upper")]
+    [InlineData("  future_2-level ", "future_2-level")]
+    public void ReasoningEffortNormalizationAcceptsFutureTokensSafely(string value, string? expected)
+    {
+        if (expected is null) Assert.Throws<ArgumentException>(() => AgentProfile.NormalizeReasoningEffort(value));
+        else Assert.Equal(expected, AgentProfile.NormalizeReasoningEffort(value));
+    }
+
+    [Fact]
     public void LegacyCustomExecutableAndArgumentsRemainUntouched()
     {
         var invocation = AgentProfile.BuildInvocation(new BridgeSettings

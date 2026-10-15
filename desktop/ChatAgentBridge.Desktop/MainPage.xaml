@@ -86,6 +86,9 @@
                                         <ComboBoxItem Content="その他のCLI（詳細設定）" Tag="custom" AutomationProperties.AutomationId="ProviderOptionCustom" />
                                     </ComboBox>
                                     <TextBox Header="モデル名（空欄ならCLIの既定値）" MaxLength="256" Text="{x:Bind ViewModel.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" AutomationProperties.AutomationId="AgentModel" AutomationProperties.Name="モデル名" />
+                                    <ComboBox Header="推論の強さ（CLIの候補）" ItemsSource="{x:Bind ViewModel.ReasoningEffortCandidates, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.SelectedReasoningEffort, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ReasoningEffortCandidates" AutomationProperties.Name="推論レベル候補" />
+                                    <TextBlock Text="{x:Bind ViewModel.ModelEffortStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ReasoningEffortStatus" />
+                                    <TextBlock Text="候補を取得すると、現在のモデルがCLIから報告した推論レベルだけを選べます。「CLIの既定値」を選ぶと、強さの指定をCLIに任せます。モデル別の対応が未取得の場合は保存値をそのまま保持します。" TextWrapping="Wrap" />
                                     <TextBlock Text="契約で使えるモデル名やエイリアスを入力します。モデルによって料金・速度・精度が変わります。保存済みの会話ごとに変える場合は「履歴と会話」から指定できます。" TextWrapping="Wrap" />
                                     <StackPanel Spacing="8">
                                         <Button Content="CLIモデル候補を取得" Command="{x:Bind ViewModel.ModelCatalog.FetchModelsCommand}" IsEnabled="{x:Bind ViewModel.CanFetchModelCandidates, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="FetchModels" />

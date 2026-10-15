@@ -9,6 +9,13 @@ namespace ChatAgentBridge.Core;
 public sealed record ModelOption(string Id, string DisplayName, string Description, bool IsDefault)
 {
     public string SelectionLabel => $"{DisplayName} ({Id})";
+    public IReadOnlyList<ReasoningEffortOption> SupportedReasoningEfforts { get; init; } = Array.Empty<ReasoningEffortOption>();
+    public string? DefaultReasoningEffort { get; init; }
+}
+
+public sealed record ReasoningEffortOption(string Id, string Description)
+{
+    public string SelectionLabel => string.IsNullOrWhiteSpace(Description) ? Id : $"{Id} · {Description}";
 }
 
 public sealed class ModelCatalogException(string message, Exception? innerException = null)
@@ -197,7 +204,12 @@ public sealed class ModelCatalogService
                     if (!seen.Add(id)) continue;
                     var name = String(row, "displayName");
                     models.Add(new(id, string.IsNullOrWhiteSpace(name) ? id : Truncate(name, 256)!,
-                        Truncate(String(row, "description"), 2048) ?? "", id.Equals("default", StringComparison.OrdinalIgnoreCase)));
+                        Truncate(String(row, "description"), 2048) ?? "", id.Equals("default", StringComparison.OrdinalIgnoreCase))
+                    {
+                        SupportedReasoningEfforts = row.TryGetProperty("supportsEffort", out var supportsEffort) && supportsEffort.ValueKind == JsonValueKind.False
+                            ? Array.Empty<ReasoningEffortOption>() : ParseClaudeEfforts(row),
+                        DefaultReasoningEffort = null
+                    });
                     if (models.Count >= MaxModels) break;
                 }
                 return models;
@@ -278,7 +290,11 @@ public sealed class ModelCatalogService
             var hidden = row.TryGetProperty("hidden", out var hiddenValue) && hiddenValue.ValueKind == JsonValueKind.True;
             if (hidden) continue;
             result.Add(new(id, string.IsNullOrWhiteSpace(displayName) ? id : displayName,
-                description ?? "", row.TryGetProperty("isDefault", out var defaultValue) && defaultValue.ValueKind == JsonValueKind.True));
+                description ?? "", row.TryGetProperty("isDefault", out var defaultValue) && defaultValue.ValueKind == JsonValueKind.True)
+            {
+                SupportedReasoningEfforts = ParseCodexEfforts(row),
+                DefaultReasoningEffort = NormalizeCatalogEffort(String(row, "defaultReasoningEffort"))
+            });
         }
         nextCursor = response.TryGetProperty("nextCursor", out var cursorValue) && cursorValue.ValueKind == JsonValueKind.String
             ? cursorValue.GetString() : null;
@@ -288,6 +304,39 @@ public sealed class ModelCatalogService
     private static string? String(JsonElement value, string name)
         => value.ValueKind == JsonValueKind.Object && value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String
             ? property.GetString() : null;
+
+    private static IReadOnlyList<ReasoningEffortOption> ParseCodexEfforts(JsonElement row)
+    {
+        if (!row.TryGetProperty("supportedReasoningEfforts", out var values) || values.ValueKind != JsonValueKind.Array) return Array.Empty<ReasoningEffortOption>();
+        var result = new List<ReasoningEffortOption>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var value in values.EnumerateArray())
+        {
+            var effort = NormalizeCatalogEffort(String(value, "reasoningEffort"));
+            if (effort is null || !seen.Add(effort)) continue;
+            result.Add(new(effort, Truncate(String(value, "description"), 2048) ?? ""));
+        }
+        return result;
+    }
+
+    private static IReadOnlyList<ReasoningEffortOption> ParseClaudeEfforts(JsonElement row)
+    {
+        if (!row.TryGetProperty("supportedEffortLevels", out var values) || values.ValueKind != JsonValueKind.Array) return Array.Empty<ReasoningEffortOption>();
+        var result = new List<ReasoningEffortOption>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var value in values.EnumerateArray())
+        {
+            var effort = NormalizeCatalogEffort(value.ValueKind == JsonValueKind.String ? value.GetString() : null);
+            if (effort is not null && seen.Add(effort)) result.Add(new(effort, ""));
+        }
+        return result;
+    }
+
+    private static string? NormalizeCatalogEffort(string? value)
+    {
+        try { return AgentProfile.NormalizeReasoningEffort(value); }
+        catch (ArgumentException) { return null; }
+    }
 
     private static string? Truncate(string? value, int max) => value is null || value.Length <= max ? value : value[..max];
 

@@ -36,11 +36,13 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
         if (!Directory.Exists(workspace)) throw new DirectoryNotFoundException($"Workspace directory does not exist: {workspace}");
         if (string.IsNullOrWhiteSpace(settings.AgentExecutable)) throw new ArgumentException("A Codex executable is required.", nameof(settings));
         string? model;
+        string? effort;
         try
         {
             if (AgentProfile.ResolveProvider(settings) != AgentProfile.Codex)
                 return new(new AgentRunResult(false, -1, "", "Codex App Server requires the Codex provider."), options.SessionId);
             model = AgentProfile.NormalizeModel(settings.AgentModel);
+            effort = AgentProfile.NormalizeReasoningEffort(settings.AgentReasoningEffort);
         }
         catch (ArgumentException ex) { return new(new AgentRunResult(false, -1, "", ex.Message), options.SessionId); }
 
@@ -57,7 +59,7 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
         {
             if (_pool is not null)
             {
-                var key = BuildPoolKey(settings, workspace, model);
+                var key = BuildPoolKey(settings, workspace, model, effort);
                 pooledLease = await _pool.AcquireAsync(key, _processFactory, settings.AgentExecutable, workspace,
                     InitializeAsync, cancellationToken).ConfigureAwait(false);
                 process = pooledLease.Process;
@@ -174,6 +176,7 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                     ["sandboxPolicy"] = new { type = "workspaceWrite", writableRoots = new[] { workspace }, networkAccess = false }
                 };
                 if (model is not null) turnParameters["model"] = model;
+                if (effort is not null) turnParameters["effort"] = effort;
                 turnRequestSent = true;
                 var turnStart = await client.RequestAsync("turn/start", turnParameters, cancellationToken).ConfigureAwait(false);
                 turnId = StringAt(turnStart, "turn", "id") ?? StringAt(turnStart, "turnId");
@@ -246,11 +249,11 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
         await client.NotifyAsync("initialized", cancellationToken: ct).ConfigureAwait(false);
     }
 
-    private static string BuildPoolKey(BridgeSettings settings, string workspace, string? model)
+    private static string BuildPoolKey(BridgeSettings settings, string workspace, string? model, string? effort)
     {
         static string NormalizePath(string value) => OperatingSystem.IsWindows() ? value.ToUpperInvariant() : value;
         return string.Join("\u001f", NormalizePath(workspace), NormalizePath(Path.GetFullPath(settings.AgentExecutable)),
-            settings.AgentProvider, settings.AgentMode, settings.AgentArguments, model ?? "");
+            settings.AgentProvider, settings.AgentMode, settings.AgentArguments, model ?? "", effort ?? "");
     }
 
     private static TokenCounters? ParseCounters(JsonElement value)

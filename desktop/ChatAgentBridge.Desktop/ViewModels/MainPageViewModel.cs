@@ -2,6 +2,7 @@ using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.AppServer;
 using ChatAgentBridge_Desktop.ModelSelection;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -17,12 +18,24 @@ public partial class MainPageViewModel : ObservableObject
     private CancellationTokenSource? _runCancellation;
     private BridgeSettings? _settings;
     private bool _closing;
+    private bool _initializingSettings;
+    private bool _applyingCatalogSelection;
+    private string? _effortModel;
+    private bool _hasCatalogForCurrentModel;
+    private bool _unsupportedSavedEffort;
 
     public ModelCatalogViewModel ModelCatalog { get; }
+    public ObservableCollection<ReasoningEffortChoice> ReasoningEffortCandidates { get; } = [];
 
     public MainPageViewModel()
     {
-        ModelCatalog = new ModelCatalogViewModel(CreateSettingsSnapshot, option => AgentModel = option.Id);
+        ReasoningEffortCandidates.Add(ReasoningEffortChoice.Default);
+        ModelCatalog = new ModelCatalogViewModel(CreateSettingsSnapshot, ApplyCatalogModelSelection);
+        ModelCatalog.PropertyChanged += (_, e) =>
+        {
+            if ((e.PropertyName == nameof(ModelCatalog.Status) || e.PropertyName == nameof(ModelCatalog.IsLoading)) && !ModelCatalog.IsLoading)
+                PopulateGlobalEfforts();
+        };
     }
 
     [ObservableProperty]
@@ -61,6 +74,38 @@ public partial class MainPageViewModel : ObservableObject
     public bool SupportsModel => !IsCustomProvider;
     public bool CanFetchModelCandidates => SupportsModel && IsSettingsLoaded && !IsRunning && !_closing;
     [ObservableProperty] public partial string AgentModel { get; set; } = "";
+    partial void OnAgentModelChanged(string value)
+    {
+        if (!_initializingSettings && !_applyingCatalogSelection && IsSettingsLoaded &&
+            !string.Equals(_effortModel, NormalizeModel(value), StringComparison.Ordinal))
+        {
+            AgentReasoningEffort = null;
+            _unsupportedSavedEffort = false;
+            _effortModel = NormalizeModel(value);
+        }
+        if (!_applyingCatalogSelection) PopulateGlobalEfforts();
+    }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveSettingsCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RunCommand))]
+    public partial ReasoningEffortChoice? SelectedReasoningEffort { get; set; }
+    partial void OnSelectedReasoningEffortChanged(ReasoningEffortChoice? value)
+    {
+        if (value is null) return;
+        AgentReasoningEffort = value.Id;
+        _unsupportedSavedEffort = false;
+        ModelEffortStatus = "";
+        SaveSettingsCommand.NotifyCanExecuteChanged();
+        RunCommand.NotifyCanExecuteChanged();
+    }
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveSettingsCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RunCommand))]
+    public partial string? AgentReasoningEffort { get; set; }
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasModelEffortStatus))]
+    public partial string ModelEffortStatus { get; set; } = "";
+    public bool HasModelEffortStatus => !string.IsNullOrWhiteSpace(ModelEffortStatus);
     [ObservableProperty] public partial string AutoConnectProvider { get; set; } = "none";
     [ObservableProperty] public partial bool StartWithWindows { get; set; }
     [ObservableProperty] public partial bool CanChangeStartup { get; set; }
@@ -101,7 +146,17 @@ public partial class MainPageViewModel : ObservableObject
             AgentExecutable = _settings.AgentExecutable;
             AgentArguments = _settings.AgentArguments;
             AgentProvider = _settings.AgentProvider;
+            _initializingSettings = true;
             AgentModel = _settings.AgentModel ?? "";
+            AgentReasoningEffort = _settings.AgentReasoningEffort;
+            _effortModel = NormalizeModel(AgentModel);
+            _unsupportedSavedEffort = false;
+            _hasCatalogForCurrentModel = false;
+            SelectedReasoningEffort = null;
+            ModelEffortStatus = _settings.AgentReasoningEffort is { Length: > 0 } savedEffort
+                ? $"保存済みの推論レベル: {savedEffort}（モデル候補を取得するまで対応状況は未確認です）"
+                : "CLIの既定値を使用します。";
+            _initializingSettings = false;
             AutoConnectProvider = _settings.AutoConnectProvider;
             UseAppServer = _settings.AgentMode == "app-server";
             MattermostServerUrl = _settings.MattermostServerUrl;
@@ -141,6 +196,7 @@ public partial class MainPageViewModel : ObservableObject
         if (IsLoading) return;
         UseAppServer = false;
         AgentModel = "";
+        AgentReasoningEffort = null;
         AgentExecutable = value == "claude" ? "claude" : value == "codex" ? "codex" : AgentExecutable;
         AgentArguments = value == "claude" ? "--print --output-format stream-json --verbose" : value == "codex" ? "exec --json -" : AgentArguments;
     }
@@ -167,7 +223,7 @@ public partial class MainPageViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanSaveSettings))]
     private async Task SaveSettingsAsync()
     {
-        if (_closing || !IsSettingsLoaded || IsRunning || _settings is null) return;
+        if (_closing || !IsSettingsLoaded || IsRunning || _settings is null || _unsupportedSavedEffort) return;
         try
         {
             _settings = CreateSettingsSnapshot();
@@ -184,7 +240,7 @@ public partial class MainPageViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task RunAsync()
     {
-        if (_closing || !IsSettingsLoaded || IsRunning || _settings is null) return;
+        if (_closing || !IsSettingsLoaded || IsRunning || _settings is null || _unsupportedSavedEffort) return;
         var promptSnapshot = Prompt;
         var settingsSnapshot = CreateSettingsSnapshot();
         if (string.IsNullOrWhiteSpace(promptSnapshot))
@@ -227,6 +283,7 @@ public partial class MainPageViewModel : ObservableObject
             Source = "local",
             WorkspaceRoot = settingsSnapshot.WorkspaceRoot,
             AgentModel = settingsSnapshot.AgentModel,
+            AgentReasoningEffort = settingsSnapshot.AgentReasoningEffort,
             Status = "running"
         };
         var runCancellation = new CancellationTokenSource();
@@ -350,8 +407,8 @@ public partial class MainPageViewModel : ObservableObject
         }
     }
 
-    private bool CanRun() => IsSettingsLoaded && !IsRunning;
-    private bool CanSaveSettings() => IsSettingsLoaded && !IsLoading && !IsRunning;
+    private bool CanRun() => IsSettingsLoaded && !IsRunning && !_unsupportedSavedEffort;
+    private bool CanSaveSettings() => IsSettingsLoaded && !IsLoading && !IsRunning && !_unsupportedSavedEffort;
     private bool CanReloadSettings() => !IsLoading && !IsRunning;
 
     [RelayCommand(CanExecute = nameof(IsRunning))]
@@ -385,6 +442,7 @@ public partial class MainPageViewModel : ObservableObject
         AgentArguments = AgentArguments.Trim(),
         AgentProvider = AgentProvider,
         AgentModel = string.IsNullOrWhiteSpace(AgentModel) ? null : AgentModel.Trim(),
+        AgentReasoningEffort = AgentReasoningEffort,
         AutoConnectProvider = AutoConnectProvider,
         AgentMode = UseAppServer ? "app-server" : "exec",
         MattermostServerUrl = MattermostServerUrl.Trim(),
@@ -397,7 +455,62 @@ public partial class MainPageViewModel : ObservableObject
 
     private void UpdateSavedAgentSummary() => SavedAgentSummary = string.IsNullOrWhiteSpace(AgentExecutable)
         ? "エージェントは未設定です"
-        : $"{AgentExecutable} / モデル: {(string.IsNullOrWhiteSpace(AgentModel) ? "CLIの既定値" : AgentModel)} / {(UseAppServer ? "対話的な操作確認" : "完了まで実行")}";
+        : $"{AgentExecutable} / モデル: {(string.IsNullOrWhiteSpace(AgentModel) ? "CLIの既定値" : AgentModel)} / 推論レベル: {AgentReasoningEffort ?? "CLIの既定値"} / {(UseAppServer ? "対話的な操作確認" : "完了まで実行")}";
+
+    private void ApplyCatalogModelSelection(ModelOption option)
+    {
+        var previous = NormalizeModel(AgentModel);
+        _applyingCatalogSelection = true;
+        AgentModel = option.Id;
+        _applyingCatalogSelection = false;
+        if (!string.Equals(previous, NormalizeModel(option.Id), StringComparison.Ordinal))
+        {
+            AgentReasoningEffort = null;
+            _effortModel = NormalizeModel(option.Id);
+            _unsupportedSavedEffort = false;
+        }
+        PopulateGlobalEfforts(option);
+    }
+
+    private void PopulateGlobalEfforts(ModelOption? knownModel = null)
+    {
+        var modelId = NormalizeModel(AgentModel);
+        var model = knownModel is not null && string.Equals(knownModel.Id, modelId, StringComparison.Ordinal)
+            ? knownModel
+            : ModelCatalog.Models.FirstOrDefault(option => string.Equals(option.Id, modelId, StringComparison.Ordinal));
+        ReasoningEffortCandidates.Clear();
+        ReasoningEffortCandidates.Add(ReasoningEffortChoice.Default);
+        _hasCatalogForCurrentModel = model is not null && !ModelCatalog.IsLoading;
+        if (model is not null)
+            foreach (var effort in model.SupportedReasoningEfforts)
+                ReasoningEffortCandidates.Add(new(effort.Id, effort.SelectionLabel));
+
+        if (string.IsNullOrWhiteSpace(AgentReasoningEffort))
+        {
+            _unsupportedSavedEffort = false;
+            SelectedReasoningEffort = ReasoningEffortCandidates[0];
+            ModelEffortStatus = "CLIの既定値を使用します。";
+        }
+        else if (!_hasCatalogForCurrentModel)
+        {
+            _unsupportedSavedEffort = false;
+            SelectedReasoningEffort = null;
+            ModelEffortStatus = $"保存済みの推論レベル: {AgentReasoningEffort}（モデル候補を取得するまで対応状況は未確認です）";
+        }
+        else
+        {
+            var selected = ReasoningEffortCandidates.FirstOrDefault(item => string.Equals(item.Id, AgentReasoningEffort, StringComparison.Ordinal));
+            SelectedReasoningEffort = selected;
+            _unsupportedSavedEffort = selected is null;
+            ModelEffortStatus = selected is null
+                ? $"保存済みの推論レベル「{AgentReasoningEffort}」は、このモデルのCLI候補にありません。CLIの既定値を選ぶか、対応候補を選択してください。"
+                : $"保存済みの推論レベル: {selected.SelectionLabel}";
+        }
+        SaveSettingsCommand.NotifyCanExecuteChanged();
+        RunCommand.NotifyCanExecuteChanged();
+    }
+
+    private static string? NormalizeModel(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private void SetStatus(string title, string message, string severity)
     {
@@ -406,4 +519,10 @@ public partial class MainPageViewModel : ObservableObject
         StatusSeverity = severity;
         IsStatusOpen = true;
     }
+}
+
+public sealed record ReasoningEffortChoice(string? Id, string SelectionLabel)
+{
+    public static ReasoningEffortChoice Default { get; } = new(null, "CLIの既定値");
+    public static ReasoningEffortChoice InheritDefault { get; } = new(null, "エージェント設定に従う");
 }

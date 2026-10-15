@@ -75,6 +75,7 @@ public sealed class ExecutionHistoryStore
         HistoryFileStore.ValidateText(record.WorkspaceRoot, nameof(record.WorkspaceRoot), 2048);
         HistoryFileStore.ValidateText(record.SessionId, nameof(record.SessionId), 256);
         HistoryFileStore.ValidateText(record.AgentModel, nameof(record.AgentModel), 256);
+        _ = AgentProfile.NormalizeReasoningEffort(record.AgentReasoningEffort);
         if (record.Usage is { } usage)
         {
             if (new[] { usage.InputTokens, usage.OutputTokens, usage.CachedInputTokens, usage.CacheWriteInputTokens }.Any(value => value < 0))

@@ -32,7 +32,7 @@ public sealed class CoreTests
             var settings = new BridgeSettings
             {
                 WorkspaceRoot = "C:/workspace", AgentArguments = "exec --json -",
-                AgentModel = "gpt-5.4", AutoConnectProvider = "slack",
+                AgentModel = "gpt-5.4", AgentReasoningEffort = "future_level", AutoConnectProvider = "slack",
                 MattermostServerUrl = "https://chat.example", MattermostChannelId = "abc",
                 MattermostToken = OperatingSystem.IsWindows() ? "mm-secret" : "",
                 SlackBotToken = OperatingSystem.IsWindows() ? "slack-secret" : "",
@@ -57,6 +57,7 @@ public sealed class CoreTests
             Assert.Equal(AgentProfile.Custom, settings.AgentProvider);
             Assert.Equal("-NoProfile -File legacy.ps1", settings.AgentArguments);
             Assert.Null(settings.AgentModel);
+            Assert.Null(settings.AgentReasoningEffort);
             Assert.Equal("none", settings.AutoConnectProvider);
         }
         finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }

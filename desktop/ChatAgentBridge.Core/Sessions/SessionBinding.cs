@@ -9,4 +9,5 @@ public sealed record SessionBinding(
     string AgentArguments,
     string SessionId,
     DateTimeOffset UpdatedAt,
-    string? Model = null);
+    string? Model = null,
+    string? ReasoningEffort = null);

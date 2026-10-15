@@ -30,13 +30,18 @@ public sealed class AppServerSessionRunner(SessionStore store, IAppServerRunner?
             if (options?.SessionId is not null && options.SessionId != existing?.SessionId)
                 throw new ArgumentException("A session ID must come from the saved conversation binding.", nameof(options));
             var effectiveOptions = (options ?? new AppServerRunOptions()) with { SessionId = existing?.SessionId };
-            var run = await _runner.RunAsync(settings with { WorkspaceRoot = workspace, AgentModel = existing?.Model ?? settings.AgentModel }, prompt, effectiveOptions, token).ConfigureAwait(false);
+            var effectiveEffort = existing?.ReasoningEffort ??
+                (existing?.Model is null || string.Equals(AgentProfile.NormalizeModel(existing.Model), AgentProfile.NormalizeModel(settings.AgentModel), StringComparison.Ordinal)
+                    ? AgentProfile.NormalizeReasoningEffort(settings.AgentReasoningEffort) : null);
+            var run = await _runner.RunAsync(settings with { WorkspaceRoot = workspace, AgentModel = existing?.Model ?? settings.AgentModel,
+                AgentReasoningEffort = effectiveEffort }, prompt, effectiveOptions, token).ConfigureAwait(false);
             if (!Guid.TryParse(run.SessionId, out var actualId) || actualId == Guid.Empty)
                 return Fail(run.Result, "App Server did not return a valid session id.");
             if (existing is not null && Guid.Parse(existing.SessionId) != actualId)
                 return Fail(run.Result, "App Server returned a different session id. The saved binding was retained.");
 
-            await store.SaveAsync(new SessionBinding(key, workspace, executable, "app-server", actualId.ToString("D"), DateTimeOffset.UtcNow, existing?.Model), CancellationToken.None).ConfigureAwait(false);
+            await store.SaveAsync(new SessionBinding(key, workspace, executable, "app-server", actualId.ToString("D"), DateTimeOffset.UtcNow,
+                existing?.Model, existing?.ReasoningEffort), CancellationToken.None).ConfigureAwait(false);
             return run.Result;
         }, cancellationToken);
     }

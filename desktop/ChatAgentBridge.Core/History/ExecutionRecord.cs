@@ -15,6 +15,7 @@ public sealed record ExecutionRecord
     public int? ExitCode { get; init; }
     public string? SessionId { get; init; }
     public string? AgentModel { get; init; }
+    public string? AgentReasoningEffort { get; init; }
     public AgentUsage? Usage { get; init; }
     public AgentExecutionMetrics? Metrics { get; init; }
 }

@@ -62,7 +62,8 @@ public sealed class SessionAgentRunner
                 AgentArguments = tracksCodex
                     ? $"exec resume --json {Guid.Parse(existing.SessionId):D} -"
                     : $"--resume {Guid.Parse(existing.SessionId):D}",
-                AgentModel = existing.Model ?? settings.AgentModel
+                AgentModel = existing.Model ?? settings.AgentModel,
+                AgentReasoningEffort = EffectiveEffort(existing, settings)
             };
             var resumed = await _runner.RunAsync(resumedSettings, prompt, cancellationToken).ConfigureAwait(false);
             var resumedClaude = tracksClaude ? resumed.Claude ?? ClaudeOutputParser.Parse(resumed.Output) : null;
@@ -95,6 +96,7 @@ public sealed class SessionAgentRunner
         }
 
         var newSettings = settings with { WorkspaceRoot = workspace, AgentModel = existing?.Model ?? settings.AgentModel,
+            AgentReasoningEffort = existing is null ? settings.AgentReasoningEffort : EffectiveEffort(existing, settings),
             AgentArguments = tracksClaude ? "" : settings.AgentArguments };
         var result = await _runner.RunAsync(newSettings, prompt, cancellationToken).ConfigureAwait(false);
         var claudeOutput = tracksClaude ? result.Claude ?? ClaudeOutputParser.Parse(result.Output) : null;
@@ -122,6 +124,15 @@ public sealed class SessionAgentRunner
                 ? tracksCodex ? "Codex reported turn.failed and returned no valid thread id." : "Claude Code reported a failed turn without a valid session id."
                 : tracksCodex ? "Codex completed without a valid thread.started session id; this turn cannot be resumed safely." : "Claude Code completed without a valid session id; this turn cannot be resumed safely.");
         return result;
+    }
+
+    private static string? EffectiveEffort(SessionBinding session, BridgeSettings settings)
+    {
+        if (session.ReasoningEffort is not null) return session.ReasoningEffort;
+        var globalModel = AgentProfile.NormalizeModel(settings.AgentModel);
+        return session.Model is null || string.Equals(AgentProfile.NormalizeModel(session.Model), globalModel, StringComparison.Ordinal)
+            ? AgentProfile.NormalizeReasoningEffort(settings.AgentReasoningEffort)
+            : null;
     }
 
     private static AgentRunResult FailClosed(AgentRunResult result, string message)

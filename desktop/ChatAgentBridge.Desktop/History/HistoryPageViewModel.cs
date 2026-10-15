@@ -8,6 +8,8 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace ChatAgentBridge_Desktop.History;
 
+public sealed record ModelExecutionSelection(string? Model, string? ReasoningEffort);
+
 public sealed record ExecutionHistoryRow(ExecutionRecord Record)
 {
     public string Started => Record.StartedAt.ToLocalTime().ToString("g");
@@ -25,6 +27,7 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record)
     public string Workspace => $"作業フォルダー: {Record.WorkspaceRoot}";
     public string Session => $"セッション ID: {Record.SessionId ?? "—"}";
     public string Model => $"指定モデル: {Record.AgentModel ?? "既定モデル"}";
+    public string ReasoningEffort => $"推論レベル: {Record.AgentReasoningEffort ?? "CLIの既定値"}";
     public string Usage => UsageSummaryFormatter.Format(Record.Usage, Record.Metrics);
     public string Conversation => $"会話: チャンネル {Record.ChannelId} / スレッド {Record.ThreadId} / ユーザー {Record.UserId}";
 
@@ -87,6 +90,7 @@ public sealed record SessionHistoryRow(SessionBinding Binding)
     public string Model => string.IsNullOrWhiteSpace(Binding.Model)
         ? "次回の実行モデル: 既定モデルを使用"
         : $"次回の実行モデル: {Binding.Model}";
+    public string ReasoningEffort => $"次回の推論レベル: {Binding.ReasoningEffort ?? "エージェント設定を継承（モデルが異なる場合はCLIの既定値）"}";
     public string Updated => Binding.UpdatedAt.ToLocalTime().ToString("g");
 }
 
@@ -95,6 +99,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     private readonly ExecutionHistoryStore _executionStore = new();
     private readonly AuditStore _auditStore = new();
     private readonly SessionStore _sessionStore = new();
+    private readonly SettingsStore _settingsStore = new();
 
     public ObservableCollection<ExecutionHistoryRow> Executions { get; } = [];
     public ObservableCollection<AuditHistoryRow> AuditEvents { get; } = [];
@@ -110,8 +115,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     [ObservableProperty] public partial string Status { get; set; } = "履歴とセッションを読み込んでいます。";
 
     public Func<SessionHistoryRow, Task<bool>>? ConfirmDetachAsync { get; set; }
-    /// <summary>Returns null to cancel, empty text to clear the override, or a model ID to save.</summary>
-    public Func<SessionHistoryRow, Task<string?>>? EditSessionModelAsync { get; set; }
+    public Func<SessionHistoryRow, BridgeSettings, Task<ModelExecutionSelection?>>? EditSessionModelAsync { get; set; }
 
     [RelayCommand(CanExecute = nameof(CanRefresh))]
     public async Task RefreshAsync()
@@ -203,11 +207,13 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            var model = await EditSessionModelAsync(selected);
-            if (model is null) return;
-            await _sessionStore.UpdateModelAsync(selected.Binding.Key,
-                string.IsNullOrWhiteSpace(model) ? null : model.Trim(), CancellationToken.None);
-            await RefreshContentsAsync("次回の実行モデルを保存しました。");
+            var settings = await _settingsStore.LoadAsync();
+            var selection = await EditSessionModelAsync(selected, settings);
+            if (selection is null) return;
+            await _sessionStore.UpdateModelAndEffortAsync(selected.Binding.Key,
+                string.IsNullOrWhiteSpace(selection.Model) ? null : selection.Model.Trim(),
+                selection.ReasoningEffort, CancellationToken.None);
+            await RefreshContentsAsync("次回の実行モデルを保存しました。推論レベルも更新しました。");
             SelectedSession = Sessions.FirstOrDefault(row => row.Binding.Key == selected.Binding.Key);
         }
         catch

@@ -285,6 +285,38 @@ public sealed class SessionTests
     }
 
     [Fact]
+    public async Task SessionStore_ModelAndEffortOverrideAreAtomicAndClearingFollowsCompatibleGlobalDefault()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var key = Key();
+            var id = Guid.NewGuid();
+            var store = new SessionStore(directory);
+            await store.SaveAsync(Binding(key, id));
+            await store.UpdateModelAndEffortAsync(key, "alternate", "future-level");
+            var binding = (await store.FindAsync(key))!;
+            Assert.Equal("alternate", binding.Model);
+            Assert.Equal("future-level", binding.ReasoningEffort);
+
+            var fake = new FakeAgentRunner((_, _) => Task.FromResult(Success(id)));
+            var runner = new SessionAgentRunner(store, fake);
+            await runner.RunAsync(key, Settings with { AgentModel = "global", AgentReasoningEffort = "high" }, "override");
+            Assert.Equal("future-level", fake.Calls.Single().Settings.AgentReasoningEffort);
+
+            await store.UpdateModelAndEffortAsync(key, "alternate", null);
+            await runner.RunAsync(key, Settings with { AgentModel = "global", AgentReasoningEffort = "high" }, "different model");
+            Assert.Null(fake.Calls.Last().Settings.AgentReasoningEffort);
+
+            await store.UpdateModelAndEffortAsync(key, null, null);
+            await runner.RunAsync(key, Settings with { AgentModel = "global", AgentReasoningEffort = "high" }, "reset");
+            Assert.Null((await store.FindAsync(key))!.ReasoningEffort);
+            Assert.Equal("high", fake.Calls.Last().Settings.AgentReasoningEffort);
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
     public void CodexOutputParser_ExtractsSessionAndFinalAgentMessage()
     {
         var id = Guid.NewGuid();

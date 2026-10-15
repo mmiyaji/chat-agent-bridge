@@ -83,9 +83,18 @@ public sealed class SessionStore
 
     /// <summary>Sets or clears a per-session model override. Null follows the current provider default.</summary>
     public Task UpdateModelAsync(SessionKey key, string? model, CancellationToken cancellationToken = default)
+        => UpdateModelAndEffortAsync(key, model, null, preserveReasoningEffort: true, cancellationToken);
+
+    /// <summary>Atomically sets or clears a per-session model and reasoning effort override.</summary>
+    public Task UpdateModelAndEffortAsync(SessionKey key, string? model, string? effort, CancellationToken cancellationToken = default)
+        => UpdateModelAndEffortAsync(key, model, effort, preserveReasoningEffort: false, cancellationToken);
+
+    private Task UpdateModelAndEffortAsync(SessionKey key, string? model, string? effort,
+        bool preserveReasoningEffort, CancellationToken cancellationToken)
     {
         ValidateKey(key);
         model = AgentProfile.NormalizeModel(model);
+        effort = AgentProfile.NormalizeReasoningEffort(effort);
         return WithSessionLockAsync(key, async token =>
         {
             await _gate.WaitAsync(token).ConfigureAwait(false);
@@ -94,7 +103,13 @@ public sealed class SessionStore
                 var bindings = await ReadAsync(token).ConfigureAwait(false);
                 var index = bindings.FindIndex(item => item.Key == key);
                 if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
-                bindings[index] = bindings[index] with { Model = model, UpdatedAt = DateTimeOffset.UtcNow };
+                var current = bindings[index];
+                bindings[index] = current with
+                {
+                    Model = model,
+                    ReasoningEffort = preserveReasoningEffort ? current.ReasoningEffort : effort,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
                 await WriteAsync(bindings, token).ConfigureAwait(false);
             }
             finally { _gate.Release(); }
@@ -158,6 +173,7 @@ public sealed class SessionStore
         if (binding.AgentArguments is null) throw new ArgumentException("Session arguments are required.");
         if (!Guid.TryParse(binding.SessionId, out _)) throw new ArgumentException("Session id must be a GUID.");
         _ = AgentProfile.NormalizeModel(binding.Model);
+        _ = AgentProfile.NormalizeReasoningEffort(binding.ReasoningEffort);
     }
 
     private static void ValidateKey(SessionKey? key)

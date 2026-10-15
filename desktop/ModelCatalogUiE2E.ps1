@@ -24,12 +24,12 @@ function Wait([string]$Id, [string]$Value = '') {
     UI $args
 }
 function Pass([string]$Name) { $results.Add(@{name=$Name; passed=$true}) }
-function Select-Candidate([string]$ComboId, [string]$Label) {
+function Select-Candidate([string]$ComboId, [string]$Label, [switch]$Prefix) {
     UI @('invoke',$ComboId)
     $tree = (& winapp ui inspect $ComboId -a $AppPid --depth 5 --json) | ConvertFrom-Json
     function Find-Item($Nodes) {
         foreach ($node in $Nodes) {
-            if ($node.type -eq 'ListItem' -and $node.name -eq $Label) { $node.selector }
+            if ($node.type -eq 'ListItem' -and ($node.name -eq $Label -or ($Prefix -and $node.name.StartsWith($Label + ' ')))) { $node.selector }
             if ($node.children) { Find-Item $node.children }
         }
     }
@@ -64,6 +64,8 @@ try {
         $providerLabel = if ($provider -eq 'codex') { 'Codex' } else { 'Claude' }
         Select-Candidate 'ModelCandidates' "Fixture $providerLabel Small (fixture-$provider-small)"
         Wait 'AgentModel' "fixture-$provider-small"
+        Select-Candidate 'ReasoningEffortCandidates' 'low' -Prefix
+        Pass "$provider reasoning effort is chosen from the selected model CLI candidates"
         Pass "$provider CLI candidates leave manual text intact until selected"
     }
     $step = 'save selected ID and retain manual entry'
@@ -71,11 +73,13 @@ try {
     Wait 'Title' '設定を保存しました'
     $saved = Get-Content (Join-Path $dataPath 'settings.json') -Raw | ConvertFrom-Json
     if ($saved.AgentModel -ne 'fixture-claude-small') { throw 'Selection saved a label instead of a model ID.' }
+    if ($saved.AgentReasoningEffort -ne 'low') { throw 'Selected reasoning effort did not persist.' }
     UI @('set-value','AgentModel','manual-custom-model')
     UI @('invoke','SaveSettings')
     Wait 'Title' '設定を保存しました'
     $saved = Get-Content (Join-Path $dataPath 'settings.json') -Raw | ConvertFrom-Json
     if ($saved.AgentModel -ne 'manual-custom-model') { throw 'Manual model entry was not preserved.' }
+    if ($saved.AgentReasoningEffort) { throw 'Manual model edit retained the previous model reasoning effort.' }
     Pass 'Selected IDs and manually entered IDs both persist'
 
     $step = 'session override candidates'
@@ -99,11 +103,35 @@ try {
     Wait 'SessionModelCatalogStatus' '件'
     Select-Candidate 'SessionModelCandidates' 'Fixture Codex Large (fixture-codex-large)'
     Wait 'SessionModelOverride' 'fixture-codex-large'
+    Select-Candidate 'SessionReasoningEffortCandidates' 'xhigh' -Prefix
     UI @('invoke','PrimaryButton')
     Wait 'HistoryStatus' '次回の実行モデルを保存しました'
+    UI @('wait-for','EditSessionModel','-p','IsEnabled','--value','True','-t','5000')
     $saved = Get-Content $sessionPath -Raw | ConvertFrom-Json
     if ($saved.Bindings[0].Model -ne 'fixture-codex-large') { throw 'Session candidate was not persisted.' }
+    if ($saved.Bindings[0].ReasoningEffort -ne 'xhigh') { throw 'Session reasoning effort was not persisted.' }
     Pass 'Session picker uses the saved session CLI independently of global provider'
+
+    $step = 'preserve session effort without refetching'
+    UI @('invoke','EditSessionModel')
+    Wait 'SessionModelDialog'
+    UI @('invoke','PrimaryButton')
+    Wait 'HistoryStatus' '次回の実行モデルを保存しました'
+    UI @('wait-for','EditSessionModel','-p','IsEnabled','--value','True','-t','5000')
+    $saved = Get-Content $sessionPath -Raw | ConvertFrom-Json
+    if ($saved.Bindings[0].ReasoningEffort -ne 'xhigh') { throw 'Saving an untouched session erased the saved effort.' }
+    Pass 'Opening and saving a session without fetching preserves its effort override'
+
+    $step = 'reset session effort'
+    UI @('invoke','EditSessionModel')
+    Wait 'SessionModelDialog'
+    Select-Candidate 'SessionReasoningEffortCandidates' 'エージェント設定に従う'
+    UI @('invoke','PrimaryButton')
+    Wait 'HistoryStatus' '次回の実行モデルを保存しました'
+    UI @('wait-for','EditSessionModel','-p','IsEnabled','--value','True','-t','5000')
+    $saved = Get-Content $sessionPath -Raw | ConvertFrom-Json
+    if ($saved.Bindings[0].ReasoningEffort) { throw 'Session effort reset did not persist.' }
+    Pass 'Session effort override can be explicitly cleared'
 
     foreach ($file in @('history.json','audit.json')) {
         if (Test-Path (Join-Path $dataPath $file)) { throw 'Catalog retrieval unexpectedly executed an agent.' }
@@ -119,6 +147,26 @@ try {
     Wait 'AgentModel' 'manual-model-after-failure'
     UI @('wait-for','FetchModels','-p','IsEnabled','--value','True','-t','5000')
     Pass 'Failed lookup retains manual text and permits another lookup'
+
+    $step = 'record selected effort on an offline execution'
+    UI @('set-value','AgentExecutable',(Join-Path $fixturePath 'claude.exe'))
+    UI @('invoke','FetchModels')
+    Wait 'ModelCatalogStatus' '件'
+    Select-Candidate 'ModelCandidates' 'Fixture Claude Small (fixture-claude-small)'
+    Select-Candidate 'ReasoningEffortCandidates' 'low' -Prefix
+    UI @('invoke','SaveSettings')
+    Wait 'Title' '設定を保存しました'
+    UI @('invoke','NavWorkbench')
+    UI @('set-value','Prompt','offline-effort-check')
+    UI @('invoke','RunAgent')
+    Wait 'RunConfirmation'
+    UI @('invoke','PrimaryButton')
+    Wait 'AgentOutput' 'claude-e2e: new'
+    Wait 'LocalUsageSummary' '入力トークン合計: 40'
+    $history = Get-Content (Join-Path $dataPath 'history.json') -Raw | ConvertFrom-Json
+    $record = $history.Records | Where-Object Status -eq 'completed' | Select-Object -First 1
+    if ($record.AgentReasoningEffort -ne 'low') { throw 'Execution history did not retain the chosen effort.' }
+    Pass 'Offline execution records the selected reasoning effort in history'
 }
 catch { $results.Add(@{name=$step;passed=$false;error='Inspect the isolated UI test state; raw CLI output is omitted.'}) }
 finally { $results | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $artifactRoot 'model-catalog-ui-results.json') -Encoding utf8 }

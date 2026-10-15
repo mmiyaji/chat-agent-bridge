@@ -131,6 +131,14 @@ Windowsログイン時の自動起動と、アプリ起動後のチャット自�
 
 CodexはApp Serverの `model/list`、Claude Codeはstream-jsonの初期化応答から取得します。一覧取得では依頼文や推論要求を送らず、取得後は専用プロセスを終了します。自動取得・定期ポーリングは行いません。表示される一覧はCLIが提示した候補であり、契約上の利用可否や料金を保証するものではありません。[Codex公式仕様](https://learn.chatgpt.com/docs/app-server)、[Claude公式SDKの初期化処理](https://github.com/anthropics/claude-agent-sdk-python/blob/main/src/claude_agent_sdk/_internal/query.py)
 
+### 推論の強さを選ぶ
+
+CLIモデル候補を取得してモデルを選ぶと、そのモデルの「推論の強さ」を選べます。候補はCodexの `supportedReasoningEfforts` とClaude Codeの `supportedEffortLevels` から取得し、アプリ側の固定リストは使いません。CLIが候補を返さないモデルでは既定値のみを使います。強さを上げると応答時間やトークン消費が増えることがあります。
+
+未指定の場合はCLIに設定を任せます。モデル名を変更すると以前の推論指定は解除されます。保存済みの値は候補取得前にも表示しますが、CLIが現在の候補として確認したものとは区別します。会話別のモデル変更画面でも選択でき、モデルと推論の強さをまとめて保存します。会話別の指定がない場合はエージェント設定を使いますが、会話に別モデルを指定した場合は、そのモデルのCLI設定に任せます。
+
+Codexの通常実行では `model_reasoning_effort` 設定、App Serverでは `turn/start.effort`、Claude Codeでは `--effort` に渡します。CLI自身の設定ファイルは変更しません。[Codex App Server](https://learn.chatgpt.com/docs/app-server)、[Claude Code CLI](https://code.claude.com/docs/en/cli-reference)
+
 ## 利用量と起動効率
 
 手動実行・チャット受信の結果と「履歴と会話」に、CLIが報告する入力・出力・キャッシュ読込／書込トークン、観測範囲、起動・初期化・待機・合計時間を表示します。未報告の値は「未取得」です。指定モデルと、利用量に実際に報告されたモデルは区別します。依頼本文と実行結果は実行履歴に保存しません。

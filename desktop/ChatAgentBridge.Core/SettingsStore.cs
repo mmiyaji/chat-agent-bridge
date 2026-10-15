@@ -51,6 +51,7 @@ public sealed class SettingsStore
                 AgentMode = stored.AgentMode ?? "exec",
                 AgentProvider = provider,
                 AgentModel = AgentProfile.NormalizeModel(stored.AgentModel),
+                AgentReasoningEffort = AgentProfile.NormalizeReasoningEffort(stored.AgentReasoningEffort),
                 AutoConnectProvider = autoConnect,
                 MattermostServerUrl = stored.MattermostServerUrl ?? "",
                 MattermostChannelId = stored.MattermostChannelId ?? "",
@@ -61,6 +62,8 @@ public sealed class SettingsStore
             };
             if (provider == AgentProfile.Custom && settings.AgentModel is not null)
                 throw new InvalidDataException("A custom agent cannot use a provider model override.");
+            if (provider == AgentProfile.Custom && settings.AgentReasoningEffort is not null)
+                throw new InvalidDataException("A custom agent cannot use a provider reasoning effort override.");
             return settings;
         }
         catch (JsonException ex) { throw new InvalidDataException("Settings file contains invalid JSON.", ex); }
@@ -78,8 +81,11 @@ public sealed class SettingsStore
         if (settings.AutoConnectProvider is not ("none" or "mattermost" or "slack"))
             throw new ArgumentException("Auto-connect provider must be none, mattermost, or slack.", nameof(settings));
         var model = AgentProfile.NormalizeModel(settings.AgentModel);
+        var effort = AgentProfile.NormalizeReasoningEffort(settings.AgentReasoningEffort);
         if (provider == AgentProfile.Custom && model is not null)
             throw new ArgumentException("A custom agent cannot use a provider model override.", nameof(settings));
+        if (provider == AgentProfile.Custom && effort is not null)
+            throw new ArgumentException("A custom agent cannot use a provider reasoning effort override.", nameof(settings));
         Directory.CreateDirectory(DirectoryPath);
         var stored = new StoredSettings
         {
@@ -90,6 +96,7 @@ public sealed class SettingsStore
             AgentMode = settings.AgentMode,
             AgentProvider = provider,
             AgentModel = model,
+            AgentReasoningEffort = effort,
             AutoConnectProvider = settings.AutoConnectProvider,
             MattermostServerUrl = settings.MattermostServerUrl,
             MattermostChannelId = settings.MattermostChannelId,
@@ -156,6 +163,7 @@ public sealed class SettingsStore
         public string? AgentMode { get; set; }
         public string? AgentProvider { get; set; }
         public string? AgentModel { get; set; }
+        public string? AgentReasoningEffort { get; set; }
         public string? AutoConnectProvider { get; set; }
         public string? MattermostServerUrl { get; set; }
         public string? MattermostChannelId { get; set; }

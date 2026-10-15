@@ -189,8 +189,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var token = _execution.Token;
             var key = new SessionKey(item.Request.Provider, item.Request.ChannelId, item.Request.ThreadId);
             var binding = await _sessions.FindAsync(key, token);
+            var requestedModel = binding?.Model ?? item.Settings.AgentModel;
+            var requestedEffort = binding?.ReasoningEffort ??
+                (binding?.Model is null || string.Equals(binding.Model, item.Settings.AgentModel, StringComparison.Ordinal)
+                    ? item.Settings.AgentReasoningEffort : null);
             item.SessionLabel = binding is null ? "新規会話（Codex・Claude Codeでは継続先を保存します）" : $"継続セッション: {binding.SessionId}";
-            item.SessionLabel += $"\n実行モデル: {binding?.Model ?? item.Settings.AgentModel ?? "CLIの既定値"}";
+            item.SessionLabel += $"\n実行モデル: {requestedModel ?? "CLIの既定値"} / 推論レベル: {requestedEffort ?? "CLIの既定値"}";
             if (ConfirmAsync is null || !await ConfirmAsync(item)) return;
             if (item.State != "承認待ち" || token.IsCancellationRequested) return;
             record = new ExecutionRecord
@@ -199,7 +203,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 ChannelId = item.Request.ChannelId, ThreadId = item.Request.ThreadId,
                 UserId = item.Request.UserId, WorkspaceRoot = item.Workspace,
                 SessionId = binding?.SessionId, Status = "running",
-                AgentModel = binding?.Model ?? item.Settings.AgentModel
+                AgentModel = requestedModel,
+                AgentReasoningEffort = requestedEffort
             };
             await _history.RecordAsync(record, _execution.Token);
             item.ExecutionId = record.Id;
@@ -221,7 +226,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.ResultText = reply.Length > 4001 ? reply[..4001] : reply;
             item.State = result.Success ? "完了" : $"失敗 ({result.ExitCode})";
             var updated = await _sessions.FindAsync(key);
-            if (updated is not null) item.SessionLabel = $"継続セッション: {updated.SessionId}";
+            if (updated is not null) item.SessionLabel = $"継続セッション: {updated.SessionId}\n実行モデル: {requestedModel ?? "CLIの既定値"} / 推論レベル: {requestedEffort ?? "CLIの既定値"}";
             record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = result.Success ? "completed" : "failed", ExitCode = result.ExitCode, SessionId = updated?.SessionId, Usage = result.Usage, Metrics = result.Metrics };
             await _history.RecordAsync(record);
             await AuditAsync(record.Status, item.Request, record.Id);

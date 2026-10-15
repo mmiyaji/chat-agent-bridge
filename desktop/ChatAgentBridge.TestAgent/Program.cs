@@ -28,8 +28,8 @@ if (args.Contains("--input-format") && Array.IndexOf(args, "--input-format") + 1
                     models = new object[]
                     {
                         "malformed-row",
-                        new { value = "fixture-claude-small", displayName = "Fixture Claude Small", description = "Quick fixture model" },
-                        new { value = "fixture-claude-large", displayName = "Fixture Claude Large", description = "Long context fixture model" }
+                        new { value = "fixture-claude-small", displayName = "Fixture Claude Small", description = "Quick fixture model", supportsEffort = true, supportedEffortLevels = new[] { "low", "medium" } },
+                        new { value = "fixture-claude-large", displayName = "Fixture Claude Large", description = "Long context fixture model", supportsEffort = true, supportedEffortLevels = new[] { "high", "max" } }
                     }
                 }
             }
@@ -92,8 +92,8 @@ while (await Console.In.ReadLineAsync() is { } line)
                     {
                         data = new[]
                         {
-                            new { id = "fixture-codex-small", model = "fixture-codex-small", displayName = "Fixture Codex Small", description = "Quick fixture model", isDefault = true, hidden = false },
-                            new { id = "fixture-codex-large", model = "fixture-codex-large", displayName = "Fixture Codex Large", description = "Long context fixture model", isDefault = false, hidden = false }
+                            new { id = "fixture-codex-small", model = "fixture-codex-small", displayName = "Fixture Codex Small", description = "Quick fixture model", isDefault = true, hidden = false, supportedReasoningEfforts = new[] { new { reasoningEffort = "low", description = "Fast" }, new { reasoningEffort = "medium", description = "Balanced" } }, defaultReasoningEffort = "low" },
+                            new { id = "fixture-codex-large", model = "fixture-codex-large", displayName = "Fixture Codex Large", description = "Long context fixture model", isDefault = false, hidden = false, supportedReasoningEfforts = new[] { new { reasoningEffort = "high", description = "Deep" }, new { reasoningEffort = "xhigh", description = "Maximum depth" } }, defaultReasoningEffort = "high" }
                         },
                         nextCursor = (string?)null
                     }

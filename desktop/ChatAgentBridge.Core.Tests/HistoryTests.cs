@@ -12,10 +12,12 @@ public sealed class HistoryTests
         var id = Guid.NewGuid();
         var store = new ExecutionHistoryStore(directory.Path);
         await store.RecordAsync(new ExecutionRecord { Id = id, StartedAt = DateTimeOffset.UtcNow, Status = "running", Source = "slack" });
+        Assert.Null(Assert.Single(await store.ListAsync()).AgentReasoningEffort);
         var updated = new ExecutionRecord
         {
             Id = id, StartedAt = DateTimeOffset.UtcNow, FinishedAt = DateTimeOffset.UtcNow.AddSeconds(1),
-            Status = "completed", ExitCode = 0, Source = "slack", ChannelId = "C1", ThreadId = "T1"
+            Status = "completed", ExitCode = 0, Source = "slack", ChannelId = "C1", ThreadId = "T1",
+            AgentReasoningEffort = "future-level"
         };
         await store.RecordAsync(updated);
 
@@ -24,6 +26,7 @@ public sealed class HistoryTests
         Assert.Equal(id, only.Id);
         Assert.Equal("completed", only.Status);
         Assert.Equal("C1", only.ChannelId);
+        Assert.Equal("future-level", only.AgentReasoningEffort);
     }
 
     [Fact]

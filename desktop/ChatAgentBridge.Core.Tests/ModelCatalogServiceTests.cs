@@ -23,9 +23,9 @@ public sealed class ModelCatalogServiceTests
             if (parameters.Value.TryGetProperty("cursor", out var cursor))
             {
                 Assert.Equal("page-2", cursor.GetString());
-                return Result("""{"data":[{"id":"fixture-codex-large","displayName":"Fixture Codex Large","description":"Long context","isDefault":false,"hidden":false}],"nextCursor":null}""");
+                return Result("""{"data":[{"id":"fixture-codex-large","displayName":"Fixture Codex Large","description":"Long context","isDefault":false,"hidden":false,"supportedReasoningEfforts":[{"reasoningEffort":"high","description":"Deep"},{"reasoningEffort":"xhigh","description":"Maximum"}],"defaultReasoningEffort":"high"}],"nextCursor":null}""");
             }
-            return Result("""{"data":[{"id":"fixture-codex-small","displayName":"Fixture Codex Small","description":"Quick","isDefault":true,"hidden":false},{"id":"hidden","displayName":"Hidden","hidden":true}],"nextCursor":"page-2"}""");
+            return Result("""{"data":[{"id":"fixture-codex-small","displayName":"Fixture Codex Small","description":"Quick","isDefault":true,"hidden":false,"supportedReasoningEfforts":[{"reasoningEffort":"low","description":"Fast"},{"reasoningEffort":"medium","description":"Balanced"}]},{"id":"hidden","displayName":"Hidden","hidden":true}],"nextCursor":"page-2"}""");
         });
         var process = new FakeProcess(client);
         var service = new ModelCatalogService(new FakeFactory(process));
@@ -33,12 +33,24 @@ public sealed class ModelCatalogServiceTests
         var models = await service.GetModelsAsync(Settings(workspace.Path));
 
         Assert.Collection(models,
-            model => { Assert.Equal("fixture-codex-small", model.Id); Assert.Equal("Fixture Codex Small (fixture-codex-small)", model.SelectionLabel); Assert.True(model.IsDefault); },
-            model => { Assert.Equal("fixture-codex-large", model.Id); Assert.Equal("Long context", model.Description); });
+            model => { Assert.Equal("fixture-codex-small", model.Id); Assert.Equal("Fixture Codex Small (fixture-codex-small)", model.SelectionLabel); Assert.True(model.IsDefault); Assert.Equal(new[] { "low", "medium" }, model.SupportedReasoningEfforts.Select(item => item.Id)); },
+            model => { Assert.Equal("fixture-codex-large", model.Id); Assert.Equal("Long context", model.Description); Assert.Equal("high", model.DefaultReasoningEffort); Assert.Equal("xhigh · Maximum", model.SupportedReasoningEfforts[1].SelectionLabel); });
         Assert.Equal(new[] { "initialize", "model/list", "model/list" }, client.RequestedMethods);
         Assert.Equal(new[] { "initialized" }, client.Notifications);
         Assert.True(client.Disposed);
         Assert.True(process.Disposed);
+    }
+
+    [Fact]
+    public async Task CatalogDoesNotInventEffortsWhenTheCliOmitsThem()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var client = new FakeClient((method, _, _) => Task.FromResult(method == "initialize"
+            ? Result("{}") : Result("""{"data":[{"id":"no-effort-model"}],"nextCursor":null}""")));
+        var service = new ModelCatalogService(new FakeFactory(new FakeProcess(client)));
+        var model = Assert.Single(await service.GetModelsAsync(Settings(workspace.Path)));
+        Assert.Empty(model.SupportedReasoningEfforts);
+        Assert.Null(model.DefaultReasoningEffort);
     }
 
     [Fact]
@@ -176,8 +188,8 @@ public sealed class ModelCatalogServiceTests
         var models = await new ModelCatalogService().GetModelsAsync(settings).WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.Collection(models,
-            model => { Assert.Equal("fixture-claude-small", model.Id); Assert.Equal("Fixture Claude Small", model.DisplayName); },
-            model => { Assert.Equal("fixture-claude-large", model.Id); Assert.Equal("Fixture Claude Large", model.DisplayName); });
+            model => { Assert.Equal("fixture-claude-small", model.Id); Assert.Equal("Fixture Claude Small", model.DisplayName); Assert.Equal(new[] { "low", "medium" }, model.SupportedReasoningEfforts.Select(item => item.Id)); Assert.Null(model.DefaultReasoningEffort); },
+            model => { Assert.Equal("fixture-claude-large", model.Id); Assert.Equal("Fixture Claude Large", model.DisplayName); Assert.Equal(new[] { "high", "max" }, model.SupportedReasoningEfforts.Select(item => item.Id)); });
     }
 
     [Fact]

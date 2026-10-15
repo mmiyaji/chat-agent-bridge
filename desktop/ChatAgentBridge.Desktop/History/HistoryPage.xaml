@@ -49,6 +49,7 @@
                                         <TextBlock Text="{x:Bind Workspace}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         <TextBlock Text="{x:Bind Conversation}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         <TextBlock Text="{x:Bind Model}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                        <TextBlock Text="{x:Bind ReasoningEffort}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         <TextBlock Text="{x:Bind Usage}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         <TextBlock Text="{x:Bind Session}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                     </StackPanel>
@@ -89,6 +90,7 @@
                                         <TextBlock Text="{x:Bind Workspace}" TextWrapping="Wrap" />
                                         <TextBlock Text="{x:Bind AgentAndSession}" TextWrapping="Wrap" />
                                         <TextBlock Text="{x:Bind Model}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{x:Bind ReasoningEffort}" TextWrapping="Wrap" />
                                         <TextBlock Text="{x:Bind Updated}" Style="{StaticResource CaptionTextBlockStyle}" />
                                     </StackPanel>
                                 </DataTemplate>

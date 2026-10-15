@@ -8,6 +8,7 @@ public sealed record BridgeSettings
     public string AgentMode { get; init; } = "exec";
     public string AgentProvider { get; init; } = AgentProfile.Codex;
     public string? AgentModel { get; init; }
+    public string? AgentReasoningEffort { get; init; }
     public string AutoConnectProvider { get; init; } = "none";
     public string MattermostServerUrl { get; init; } = "";
     public string MattermostChannelId { get; init; } = "";

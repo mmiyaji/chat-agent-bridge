@@ -129,6 +129,8 @@ public sealed partial class MainPage : Page
                         new TextBlock { Text = settings.WorkspaceRoot, TextWrapping = TextWrapping.Wrap },
                         new TextBlock { Text = "実行ファイルと引数", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
                         new TextBlock { Text = $"{settings.AgentExecutable} {(settings.AgentMode == "app-server" ? "app-server" : settings.AgentArguments)}".Trim(), TextWrapping = TextWrapping.Wrap },
+                        new TextBlock { Text = "モデルと推論レベル", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        new TextBlock { Text = $"{settings.AgentModel ?? "CLIの既定値"} / {settings.AgentReasoningEffort ?? "CLIの既定値"}", TextWrapping = TextWrapping.Wrap },
                         new TextBlock { Text = "プロンプト", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
                         new TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap }
                     }
