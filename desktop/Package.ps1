@@ -4,7 +4,9 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $project = Join-Path $PSScriptRoot 'ChatAgentBridge.Desktop/ChatAgentBridge.Desktop.csproj'
-$output = Join-Path $PSScriptRoot "artifacts/publish/$Architecture"
+# Package a fresh layout each time. winapp run creates an AppX child layout;
+# reusing its parent can package that stale copy even when winapp reports exclusion.
+$output = Join-Path $PSScriptRoot "artifacts/package-layout/$Architecture/$([Guid]::NewGuid().ToString('N'))"
 $package = Join-Path $PSScriptRoot "artifacts/ChatAgentBridge.WinUI.$Architecture.msix"
 
 & dotnet publish $project -c Release -p:Platform=$Architecture -r "win-$($Architecture.ToLowerInvariant())" --self-contained true -p:WindowsAppSDKSelfContained=true -o $output
@@ -17,5 +19,12 @@ $packageArgs = @('package', $output, '--manifest', $manifest, '--output', $packa
 if ($Certificate) { $packageArgs += @('--cert', (Resolve-Path -LiteralPath $Certificate).Path) }
 & winapp @packageArgs
 if ($LASTEXITCODE -ne 0) { throw 'MSIX packaging failed.' }
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$archive = [System.IO.Compression.ZipFile]::OpenRead($package)
+try {
+    if ($archive.Entries | Where-Object { $_.FullName -match '^(?i:AppX)/|ChatAgentBridge\.TestAgent|mattermost-e2e\.json' }) {
+        throw 'Package contains a nested development layout or a test fixture.'
+    }
+} finally { $archive.Dispose() }
 Write-Output "Created: $package"
 Write-Output 'Development identity only. Replace Identity with Partner Center values before Store submission.'
