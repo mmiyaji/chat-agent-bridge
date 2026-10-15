@@ -35,11 +35,14 @@ public sealed class SettingsStore
             if (stored is null) throw new InvalidDataException("Settings file is empty or invalid.");
             if (stored.SchemaVersion != CurrentSchemaVersion)
                 throw new InvalidDataException($"Settings schema version {stored.SchemaVersion} is unsupported; expected {CurrentSchemaVersion}.");
+            if (stored.AgentMode is not (null or "exec" or "app-server"))
+                throw new InvalidDataException("Settings contain an unsupported agent mode.");
             return new BridgeSettings
             {
                 WorkspaceRoot = stored.WorkspaceRoot ?? "",
                 AgentExecutable = stored.AgentExecutable ?? "codex",
                 AgentArguments = stored.AgentArguments ?? "exec --json -",
+                AgentMode = stored.AgentMode ?? "exec",
                 MattermostServerUrl = stored.MattermostServerUrl ?? "",
                 MattermostChannelId = stored.MattermostChannelId ?? "",
                 MattermostToken = Unprotect(stored.MattermostToken),
@@ -56,6 +59,8 @@ public sealed class SettingsStore
     public async Task SaveAsync(BridgeSettings settings, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        if (settings.AgentMode is not ("exec" or "app-server"))
+            throw new ArgumentException("Agent mode must be exec or app-server.", nameof(settings));
         Directory.CreateDirectory(DirectoryPath);
         var stored = new StoredSettings
         {
@@ -63,6 +68,7 @@ public sealed class SettingsStore
             WorkspaceRoot = settings.WorkspaceRoot,
             AgentExecutable = settings.AgentExecutable,
             AgentArguments = settings.AgentArguments,
+            AgentMode = settings.AgentMode,
             MattermostServerUrl = settings.MattermostServerUrl,
             MattermostChannelId = settings.MattermostChannelId,
             MattermostToken = Protect(settings.MattermostToken),
@@ -118,6 +124,7 @@ public sealed class SettingsStore
         public string? WorkspaceRoot { get; set; }
         public string? AgentExecutable { get; set; }
         public string? AgentArguments { get; set; }
+        public string? AgentMode { get; set; }
         public string? MattermostServerUrl { get; set; }
         public string? MattermostChannelId { get; set; }
         public string? MattermostToken { get; set; }

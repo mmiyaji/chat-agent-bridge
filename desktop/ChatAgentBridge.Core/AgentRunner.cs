@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text;
-using System.Collections.Concurrent;
 
 namespace ChatAgentBridge.Core;
 
@@ -14,8 +13,6 @@ public interface IAgentRunner
 public sealed class AgentRunner : IAgentRunner
 {
     private const int MaxCapturedCharacters = 1_000_000;
-    private static readonly ConcurrentDictionary<string, SemaphoreSlim> WorkspaceGates = new(
-        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
     public async Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
         CancellationToken cancellationToken = default)
@@ -32,13 +29,8 @@ public sealed class AgentRunner : IAgentRunner
         if (string.IsNullOrWhiteSpace(settings.AgentExecutable))
             throw new ArgumentException("An agent executable is required.", nameof(settings));
 
-        var gate = WorkspaceGates.GetOrAdd(workspace, static _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            return await RunLockedAsync(settings, workspace, prompt, cancellationToken).ConfigureAwait(false);
-        }
-        finally { gate.Release(); }
+        using var workspaceLease = await AgentWorkspaceGate.AcquireAsync(workspace, cancellationToken).ConfigureAwait(false);
+        return await RunLockedAsync(settings, workspace, prompt, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<AgentRunResult> RunLockedAsync(BridgeSettings settings, string workspace, string prompt,
