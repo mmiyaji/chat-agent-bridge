@@ -22,6 +22,10 @@ if ($LASTEXITCODE -ne 0) { throw 'MSIX packaging failed.' }
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [System.IO.Compression.ZipFile]::OpenRead($package)
 try {
+    $entryNames = @($archive.Entries | ForEach-Object { $_.FullName.Replace('\', '/') })
+    foreach ($required in @('AppIcon.ico', 'StoreLogo.png', 'Square44x44Logo.scale-200.png', 'Square150x150Logo.scale-200.png', 'Wide310x150Logo.scale-200.png', 'SplashScreen.scale-200.png')) {
+        if ($entryNames -notcontains "Assets/$required") { throw "Package is missing required app icon asset: $required" }
+    }
     if ($archive.Entries | Where-Object { $_.FullName -match '^(?i:AppX)/|ChatAgentBridge\.TestAgent|mattermost-e2e\.json' }) {
         throw 'Package contains a nested development layout or a test fixture.'
     }

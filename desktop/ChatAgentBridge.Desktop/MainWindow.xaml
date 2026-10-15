@@ -20,7 +20,7 @@
 
         <TitleBar x:Name="AppTitleBar" Title="Chat Agent Bridge">
             <TitleBar.IconSource>
-                <ImageIconSource ImageSource="Assets/AppIcon.ico" />
+                <ImageIconSource ImageSource="ms-appx:///Assets/StoreLogo.png" />
             </TitleBar.IconSource>
         </TitleBar>
 
