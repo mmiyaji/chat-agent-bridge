@@ -6,6 +6,8 @@
 
 概要画面には、別の端末からSlack／Mattermostを窓口として、起動中のローカルPCのCodex／Claude Code CLIへ依頼する構成図と操作手順を表示します。依頼する端末でデスクトップアプリを使えない場合のチャット経由の操作窓口です。現在はPCでの実行確認と結果共有の確認が必要です。
 
+セットアップの進捗は「エージェントと存在する作業フォルダーを保存」「SlackまたはMattermostの接続情報を保存」「チャットへの接続成功」の3段階で表示します。各ステップのボタンから該当画面へ移動できます。未保存の編集は完了数に含めず、接続処理中も接続完了とは区別します。CLIのインストール・ログイン・実行可否を自動確認するものではありません。切断すると接続ステップは未完了に戻ります。
+
 図の編集元は `docs/assets/overview/OverviewArchitecture.svg`、アプリが読み込む画像は `Assets/OverviewArchitecture.png` です。更新時はリポジトリの開発依存関係とMicrosoft EdgeがあるWindows環境で `node desktop/ExportOverviewDiagram.mjs` を実行します。ブラウザーは画像書出し時のみ使用し、アプリ実行時には不要です。
 
 - `ChatAgentBridge.Desktop`: WinUI 3、MVVM、概要・手動実行画面・接続設定・チャット受信・履歴とセッション。
@@ -82,6 +84,8 @@ winapp run .\desktop\ChatAgentBridge.Desktop\bin\x64\Debug\net10.0-windows10.0.2
 旧 TypeScript 版の設定・セッション・履歴は自動インポートしません。既存データを上書きしないよう保存先を分けています。破損設定や復号エラーでは実行・保存を停止し、ファイルを修復後に再読み込みしてください。
 
 UIテストは最初に空の隔離ディレクトリを指定します。`-TestSessionDetach` はテスト用のセッション関連付けを作って解除を確認するため、新しい空の保存先で実行してください。実在するCodexセッションやモデルは呼び出しません。
+
+セットアップ表示の検証は、別の空の保存先で起動したアプリに対して `./desktop/SetupStepperSmokeTest.ps1 -AppPid 12345 -DataDirectory 'C:\TestData\SetupStepper'` を実行します。リポジトリのNode.js開発依存関係を使ったループバックの模擬Mattermostへ接続し、未保存・保存失敗・接続中・接続完了・切断時の進捗を確認します。外部サービスやAIモデルは呼び出しません。
 
 ### Docker Mattermostとの実通信テスト
 

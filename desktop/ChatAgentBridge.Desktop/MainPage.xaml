@@ -56,6 +56,28 @@
                                     <TextBlock Text="Chat Agent Bridge" Style="{StaticResource TitleTextBlockStyle}" />
                                     <TextBlock Text="CodexやClaude Codeのデスクトップアプリを使えない端末から、Slack/Mattermostを窓口に、起動中のローカルPCのAIエージェントへ依頼できます。" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
                                 </StackPanel>
+                                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                                    <StackPanel Spacing="12">
+                                        <Grid ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBlock Text="セットアップの進行状況" Style="{StaticResource SubtitleTextBlockStyle}" /><TextBlock Grid.Column="1" Text="{x:Bind ViewModel.SetupCompletionSummary, Mode=OneWay}" AutomationProperties.AutomationId="SetupCompletionSummary" /></Grid>
+                                        <ProgressBar Value="{x:Bind ViewModel.SetupProgressValue, Mode=OneWay}" IsIndeterminate="{x:Bind ViewModel.IsLoading, Mode=OneWay}" Minimum="0" Maximum="100" AutomationProperties.Name="セットアップの進行状況" AutomationProperties.AutomationId="SetupProgress" />
+                                        <Grid ColumnSpacing="12" RowSpacing="8">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                            <TextBlock Grid.Row="0" Text="1" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Top" />
+                                            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4"><TextBlock Text="エージェントと作業フォルダー" Style="{StaticResource BodyStrongTextBlockStyle}" /><TextBlock Text="{x:Bind ViewModel.SetupStepOneStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupStepOneStatus" /></StackPanel>
+                                            <Button Grid.Row="0" Grid.Column="2" Content="エージェント設定" Click="OpenAgentSettings_Click" AutomationProperties.AutomationId="SetupAgentLink" />
+                                            <TextBlock Grid.Row="1" Text="2" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Top" />
+                                            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Text="チャット接続情報" Style="{StaticResource BodyStrongTextBlockStyle}" /><TextBlock Text="{x:Bind ViewModel.SetupStepTwoStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupStepTwoStatus" /></StackPanel>
+                                            <Button Grid.Row="1" Grid.Column="2" Content="接続設定" Click="OpenConnections_Click" AutomationProperties.AutomationId="SetupConnectionsLink" />
+                                            <TextBlock Grid.Row="2" Text="3" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Top" />
+                                            <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4"><TextBlock Text="チャットへ接続" Style="{StaticResource BodyStrongTextBlockStyle}" /><TextBlock Text="{x:Bind ViewModel.SetupStepThreeStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupStepThreeStatus" /></StackPanel>
+                                            <Button Grid.Row="2" Grid.Column="2" Content="チャット受信" Click="OpenChat_Click" AutomationProperties.AutomationId="SetupChatLink" />
+                                        </Grid>
+                                        <TextBlock Text="{x:Bind ViewModel.SetupNextAction, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupNextAction" />
+                                        <TextBlock Text="{x:Bind ViewModel.SetupDraftNotice, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSetupDraftNotice), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupDraftNotice" />
+                                        <Button Content="設定を再読み込み" Click="ReloadSettings_Click" IsEnabled="{x:Bind local:MainPage.CanReloadSettings(ViewModel.IsLoading, ViewModel.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SetupReloadSettings" />
+                                    </StackPanel>
+                                </Border>
                                 <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                     <StackPanel Spacing="16">
                                         <TextBlock Text="チャットを窓口に、ローカルPCへ依頼" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" />

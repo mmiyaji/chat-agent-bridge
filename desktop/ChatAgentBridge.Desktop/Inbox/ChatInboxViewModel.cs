@@ -46,6 +46,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [ObservableProperty] public partial string OverflowNotice { get; set; } = "";
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
     public partial bool IsConnected { get; set; }
+    [ObservableProperty] public partial bool IsConnectionConfirmed { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
     public partial bool IsExecuting { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
@@ -74,6 +75,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         if (IsConnected || _closing) { await transport.DisposeAsync(); return; }
         IsConnected = true;
+        IsConnectionConfirmed = false;
         Status = "接続準備中…";
         try
         {
@@ -88,19 +90,25 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             Requests.Clear();
             Selected = null;
             _transport = transport;
-            _connection = new CancellationTokenSource();
+            var connection = new CancellationTokenSource();
+            _connection = connection;
             if (transport is IChatConnectionEvents events)
                 events.Connected += () => App.DispatcherQueue.TryEnqueue(() =>
                 {
-                    if (ReferenceEquals(_transport, transport)) Status = "接続しました。チャットからの依頼を待っています。";
+                    if (ReferenceEquals(_transport, transport) && !connection.IsCancellationRequested && !_closing)
+                    {
+                        IsConnectionConfirmed = true;
+                        Status = "接続しました。チャットからの依頼を待っています。";
+                    }
                 });
             Status = "接続処理中／受信待ち。失敗時はここに表示します。";
-            _receiveTask = ReceiveAsync(transport, settings, _connection);
+            _receiveTask = ReceiveAsync(transport, settings, connection);
         }
         catch (Exception)
         {
             await transport.DisposeAsync();
             Status = "接続できません。保存済みの作業フォルダー・接続設定を確認してください。";
+            IsConnectionConfirmed = false;
             IsConnected = false;
         }
     }
@@ -148,6 +156,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         }
         finally
         {
+            IsConnectionConfirmed = false;
             connection.Cancel();
             foreach (var item in Requests.Where(item => item.State == "承認待ち")) item.State = "接続終了・再受信が必要";
             ApproveCommand.NotifyCanExecuteChanged();
@@ -160,6 +169,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (ReferenceEquals(_transport, transport)) _transport = null;
             if (ReferenceEquals(_connection, connection)) _connection = null;
             connection.Dispose();
+            IsConnectionConfirmed = false;
             IsConnected = false;
         }
     }
@@ -169,6 +179,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         var connection = _connection;
         var receive = _receiveTask;
+        IsConnectionConfirmed = false;
         connection?.Cancel();
         _execution?.Cancel();
         if (receive is not null) await receive;

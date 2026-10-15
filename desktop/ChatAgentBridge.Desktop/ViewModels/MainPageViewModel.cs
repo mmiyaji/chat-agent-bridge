@@ -23,6 +23,9 @@ public partial class MainPageViewModel : ObservableObject
     private string? _effortModel;
     private bool _hasCatalogForCurrentModel;
     private bool _unsupportedSavedEffort;
+    private bool _chatConnectionConfirmed;
+    private bool _chatConnectionPreparing;
+    private bool _savedWorkspaceExists;
 
     public ModelCatalogViewModel ModelCatalog { get; }
     public ObservableCollection<ReasoningEffortChoice> ReasoningEffortCandidates { get; } = [];
@@ -35,6 +38,15 @@ public partial class MainPageViewModel : ObservableObject
         {
             if ((e.PropertyName == nameof(ModelCatalog.Status) || e.PropertyName == nameof(ModelCatalog.IsLoading)) && !ModelCatalog.IsLoading)
                 PopulateGlobalEfforts();
+        };
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(IsLoading) or nameof(IsSettingsLoaded) or nameof(WorkspaceRoot) or
+                nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
+                nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AutoConnectProvider) or nameof(RequireApproval) or
+                nameof(MattermostServerUrl) or nameof(MattermostChannelId) or nameof(MattermostToken) or
+                nameof(SlackBotToken) or nameof(SlackAppToken))
+                RefreshSetupStepper();
         };
     }
 
@@ -125,6 +137,22 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string UsageSummary { get; set; } = "トークン利用量は実行後に表示します。未取得の値は0として扱いません。";
     [ObservableProperty] public partial string SettingsLocation { get; set; } = string.Empty;
     [ObservableProperty] public partial string SavedAgentSummary { get; set; } = "未読み込み";
+    [ObservableProperty] public partial double SetupProgressValue { get; set; }
+    [ObservableProperty] public partial string SetupStepOneStatus { get; set; } = "設定を読み込んでいます。";
+    [ObservableProperty] public partial string SetupStepTwoStatus { get; set; } = "設定を読み込んでいます。";
+    [ObservableProperty] public partial string SetupStepThreeStatus { get; set; } = "接続状態を確認しています。";
+    [ObservableProperty] public partial string SetupCompletionSummary { get; set; } = "設定を確認しています。";
+    [ObservableProperty] public partial string SetupNextAction { get; set; } = "保存済みの設定を確認しています。";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasSetupDraftNotice))]
+    public partial string SetupDraftNotice { get; set; } = "";
+    public bool HasSetupDraftNotice => !string.IsNullOrEmpty(SetupDraftNotice);
+
+    public void SetChatConnectionState(bool connected, bool connecting)
+    {
+        _chatConnectionConfirmed = connected;
+        _chatConnectionPreparing = connecting;
+        RefreshSetupStepper();
+    }
 
     public Func<BridgeSettings, string, Task<bool>>? ConfirmExecutionAsync { get; set; }
     public Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? ServerApprovalHandler { get; set; }
@@ -142,6 +170,7 @@ public partial class MainPageViewModel : ObservableObject
         try
         {
             _settings = await _settingsStore.LoadAsync();
+            _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
             WorkspaceRoot = _settings.WorkspaceRoot;
             AgentExecutable = _settings.AgentExecutable;
             AgentArguments = _settings.AgentArguments;
@@ -167,6 +196,7 @@ public partial class MainPageViewModel : ObservableObject
             RequireApproval = _settings.RequireApproval;
             SettingsLocation = _settingsStore.DirectoryPath;
             UpdateSavedAgentSummary();
+            RefreshSetupStepper();
             StatusTitle = "設定を読み込みました";
             StatusMessage = "ワークスペースとエージェントを設定して実行できます。";
             StatusSeverity = "Success";
@@ -226,9 +256,12 @@ public partial class MainPageViewModel : ObservableObject
         if (_closing || !IsSettingsLoaded || IsRunning || _settings is null || _unsupportedSavedEffort) return;
         try
         {
-            _settings = CreateSettingsSnapshot();
-            await _settingsStore.SaveAsync(_settings);
+            var snapshot = CreateSettingsSnapshot();
+            await _settingsStore.SaveAsync(snapshot);
+            _settings = snapshot;
+            _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
             UpdateSavedAgentSummary();
+            RefreshSetupStepper();
             SetStatus("設定を保存しました", "「チャット受信」から接続してください。接続中の場合は再接続すると反映されます。", "Success");
         }
         catch (Exception ex)
@@ -432,7 +465,55 @@ public partial class MainPageViewModel : ObservableObject
     public void SetMattermostToken(string value)
     {
         MattermostToken = value;
-        if (_settings is not null) _settings = _settings with { MattermostToken = value };
+        RefreshSetupStepper();
+    }
+
+    private void RefreshSetupStepper()
+    {
+        if (IsLoading)
+        {
+            SetupProgressValue = 0;
+            SetupStepOneStatus = SetupStepTwoStatus = "設定を読み込んでいます。";
+            SetupStepThreeStatus = "接続状態を確認しています。";
+            SetupCompletionSummary = "設定を読み込んでいます。";
+            SetupNextAction = "保存済みの設定を確認しています。";
+            SetupDraftNotice = "";
+            return;
+        }
+        if (!IsSettingsLoaded || _settings is null)
+        {
+            SetupProgressValue = 0;
+            SetupStepOneStatus = "設定を読み込めません。再読み込みしてください。";
+            SetupStepTwoStatus = SetupStepThreeStatus = "設定を確認できません。";
+            SetupCompletionSummary = "設定を確認できません。";
+            SetupNextAction = "設定ファイルを確認してから再読み込みしてください。";
+            SetupDraftNotice = "";
+            return;
+        }
+
+        var agentReady = !string.IsNullOrWhiteSpace(_settings.AgentExecutable) && !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && _savedWorkspaceExists;
+        var connectionReady = (!string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) && !string.IsNullOrWhiteSpace(_settings.MattermostChannelId) && !string.IsNullOrWhiteSpace(_settings.MattermostToken)) ||
+            (!string.IsNullOrWhiteSpace(_settings.SlackBotToken) && !string.IsNullOrWhiteSpace(_settings.SlackAppToken));
+        SetupStepOneStatus = agentReady ? "完了：保存済み。CLIやログイン状態はここでは確認していません。"
+            : string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) ? "次のステップ：エージェントと作業フォルダーを設定して保存します。"
+            : !_savedWorkspaceExists ? "次のステップ：保存された作業フォルダーが見つかりません。既存のフォルダーを指定して保存します。"
+            : "次のステップ：エージェントの実行ファイルを設定して保存します。";
+        SetupStepTwoStatus = connectionReady ? "完了：接続情報を保存済み。"
+            : agentReady ? "次のステップ：SlackまたはMattermostの接続情報を保存します。"
+            : "未設定：ステップ1の後に接続情報を保存します。";
+        SetupStepThreeStatus = _chatConnectionConfirmed ? "完了：チャットからの依頼を待っています。"
+            : _chatConnectionPreparing ? "接続中：接続先の応答を待っています。"
+            : agentReady && connectionReady ? "次のステップ：保存済みの接続先へ接続します。"
+            : "未設定：接続情報を保存した後に接続します。";
+        var completed = (agentReady ? 1 : 0) + (connectionReady ? 1 : 0) + (_chatConnectionConfirmed ? 1 : 0);
+        SetupCompletionSummary = $"{completed} / 3 完了";
+        SetupProgressValue = completed / 3d * 100;
+        SetupNextAction = !agentReady ? "次の操作：エージェントと既存の作業フォルダーを設定して保存します。"
+            : !connectionReady ? "次の操作：接続設定を保存します。"
+            : !_chatConnectionConfirmed ? "次の操作：チャット受信で保存済みの接続先へ接続します。"
+            : "セットアップ完了。別の端末からチャットで依頼できます。";
+        var draft = CreateSettingsSnapshot();
+        SetupDraftNotice = _settings != draft ? "未保存の変更があります。ステップには保存済みの設定だけを反映しています。" : "";
     }
 
     private BridgeSettings CreateSettingsSnapshot() => _settings! with

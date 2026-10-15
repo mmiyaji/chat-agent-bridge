@@ -1,4 +1,5 @@
 using ChatAgentBridge_Desktop.ViewModels;
+using ChatAgentBridge_Desktop.Inbox;
 using ChatAgentBridge.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -30,6 +31,11 @@ public sealed partial class MainPage : Page
                 SlackBotTokenBox.Password = ViewModel.SlackBotToken;
                 SlackAppTokenBox.Password = ViewModel.SlackAppToken;
             }
+        };
+        InboxPage.ViewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName is nameof(ChatInboxViewModel.IsConnectionConfirmed) or nameof(ChatInboxViewModel.IsConnected))
+                ViewModel.SetChatConnectionState(InboxPage.ViewModel.IsConnectionConfirmed, InboxPage.ViewModel.IsConnected);
         };
         Loaded += MainPage_Loaded;
         ViewModel.ConfirmExecutionAsync = ConfirmExecutionAsync;
@@ -99,6 +105,12 @@ public sealed partial class MainPage : Page
 
     private void OpenAgentSettings_Click(object sender, RoutedEventArgs e) =>
         MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "agent");
+
+    private void OpenConnections_Click(object sender, RoutedEventArgs e) =>
+        MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "connections");
+
+    private void OpenChat_Click(object sender, RoutedEventArgs e) =>
+        MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "chat");
 
     private async void StartupToggle_Toggled(object sender, RoutedEventArgs e)
     {
