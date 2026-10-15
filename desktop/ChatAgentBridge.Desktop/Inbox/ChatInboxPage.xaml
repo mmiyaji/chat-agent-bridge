@@ -14,7 +14,7 @@
         </Grid.RowDefinitions>
         <StackPanel Spacing="8">
             <TextBlock Text="チャット受信" Style="{StaticResource TitleTextBlockStyle}"/>
-            <TextBlock Text="依頼をこのPCで承認して実行します。標準のCodex exec設定ではスレッドごとに会話を継続します。本文は確認してから共有できます。自動再接続は未対応です。" TextWrapping="Wrap"/>
+            <TextBlock Text="依頼をこのPCで承認して実行します。Codex標準exec・App Serverではスレッドごとに会話を継続します。App Serverの操作許可はPCまたは元の依頼者が同じスレッドで回答できます。本文は確認してから共有できます。自動再接続は未対応です。" TextWrapping="Wrap"/>
         </StackPanel>
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
             <Button Content="Mattermostに接続" Command="{x:Bind ViewModel.ConnectMattermostCommand}" AutomationProperties.AutomationId="ConnectMattermost"/>

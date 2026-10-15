@@ -7,7 +7,8 @@
 - `ChatAgentBridge.Desktop`: WinUI 3、MVVM、概要・ワークベンチ・接続設定・チャット受信・履歴とセッション。
 - `ChatAgentBridge.Core`: 設定、Windows DPAPI、CLI実行・停止・排他、Codexセッション継続、履歴と監査の永続化。
 - `ChatAgentBridge.Transports`: Slack Socket Mode / Mattermost WebSocket。受信と返信を担当し、エージェントを直接実行しません。
-- `*.Tests`: CLI・保存・イベントフィルターの自動テスト。外部サービスへの送信や有料エージェント呼び出しは行いません。
+- `*.Tests`: CLI・保存・イベントフィルター・承認の自動テスト。実通信テストは明示的に有効化した場合だけ実行します。
+- `ChatAgentBridge.TestAgent`: モデルを呼ばずにApp Serverの承認・追加入力を再現する開発専用プロセス。配布パッケージには含めません。
 
 ## ビルド・起動
 
@@ -28,7 +29,7 @@ dotnet test desktop/ChatAgentBridge.Transports.Tests/ChatAgentBridge.Transports.
 
 ## 使い方
 
-1. ワークベンチで既存の作業フォルダー、エージェント実行ファイル、引数を指定して設定を保存します。Codex の既定引数は `exec --json -` です。任意の CLI を設定する場合は標準入力からプロンプトを受け取れる形式を指定してください。プロバイダー別の対話プロトコルはまだありません。
+1. ワークベンチで既存の作業フォルダー、エージェント実行ファイル、引数を指定して設定を保存します。Codex の既定引数は `exec --json -` です。任意の CLI を設定する場合は標準入力からプロンプトを受け取れる形式を指定してください。Codexの対話的な承認・追加入力を使う場合は「Codex App Serverを使う」をオンにします。このモードの引数は固定です。
 2. 接続設定で認証情報を入力して保存します。Mattermost には対象チャンネル ID も指定します。HTTPS、またはローカルホストの HTTP が利用できます。
 3. チャット受信からどちらかのプロバイダーへ接続します。設定変更後は切断・再接続してください。接続はアプリ起動のたびに明示的に開始します。
 4. Mattermost では指定チャンネルに `!cab 依頼内容` を投稿します。Slack では bot をメンション、またはスレッド返信に `!cab 依頼内容` を投稿します。必要な bot 権限・イベント購読・Socket Mode の設定は別途必要です。
@@ -45,6 +46,14 @@ dotnet test desktop/ChatAgentBridge.Transports.Tests/ChatAgentBridge.Transports.
 ワークスペースや実行ファイル・引数を変更した場合は、保存済みセッションをそのまま別設定で使いません。「履歴とセッション」で切り離してから新規依頼を実行してください。切り離しは関連付けだけを削除し、Codex自身のセッションや実行履歴は削除しません。実行中の同じスレッドの処理があれば、終了まで待って解除します。
 
 任意のCLI・カスタム引数・ワークベンチからの実行は、現在は単発実行です。新規実行を途中でキャンセルし、CLIのセッションIDを取得できなかった場合、その新規セッションはbridgeに紐付きません。Codex自身のセッション保存はCLIの設定に従います。
+
+### App Serverの承認と追加入力
+
+App Serverモードでは `thread/start` / `thread/resume` / `turn/start` を使い、チャットスレッドへの関連付けを保存します。execとの切替には関連付けの解除が必要です。ワークベンチは単発実行です。[公式App Server仕様](https://learn.chatgpt.com/docs/app-server)
+
+コマンド実行・ファイル変更の許可はPCのダイアログ、または元の依頼者による同じスレッドへの `!cab approve <コード>` / `!cab reject <コード>` で回答できます。最初の回答だけが有効で、5分経過・切断・キャンセルは拒否します。最初の依頼の実行確認は引き続きPCで必要です。追加入力はPC上の選択肢・テキスト欄で回答し、チャットには転送しません。
+
+実行設定は承認ポリシー `on-request`、sandbox `workspaceWrite`、ネットワーク無効を要求します。追加権限の要求は付与せず、未対応の要求や別thread/turnへの要求は拒否します。外部CLI側が実際に適用する制限と対応バージョンは、実Codexでの検証が残っています。
 
 ### 履歴と監査
 
@@ -67,6 +76,25 @@ winapp run .\desktop\ChatAgentBridge.Desktop\bin\x64\Debug\net10.0-windows10.0.2
 旧 TypeScript 版の設定・セッション・履歴は自動インポートしません。既存データを上書きしないよう保存先を分けています。破損設定や復号エラーでは実行・保存を停止し、ファイルを修復後に再読み込みしてください。
 
 UIテストは最初に空の隔離ディレクトリを指定します。`-TestSessionDetach` はテスト用のセッション関連付けを作って解除を確認するため、新しい空の保存先で実行してください。実在するCodexセッションやモデルは呼び出しません。
+
+### Docker Mattermostとの実通信テスト
+
+```powershell
+.\desktop\StartMattermostE2E.ps1
+$env:CAB_ENABLE_NATIVE_MATTERMOST_E2E = '1'
+$env:CAB_NATIVE_MATTERMOST_STATE_FILE = Join-Path $PWD 'desktop/artifacts/mattermost-e2e.json'
+dotnet test desktop/ChatAgentBridge.Transports.Tests/ChatAgentBridge.Transports.Tests.csproj
+```
+
+専用の `cab-winui-e2e` を `http://127.0.0.1:8070` で起動し、固定digestの開発用Mattermostイメージを使います。既存コンテナーやデータを削除しません。認証情報はGit対象外の `desktop/artifacts/mattermost-e2e.json` に保存するため、このファイルを共有しないでください。
+
+WinUIからの通し確認は、`desktop/artifacts` の下の新しい空フォルダーを `--data-dir` にしてアプリを起動し、次を実行します。接続設定・承認・追加入力・本文送信を操作するため、通常利用のデータフォルダーでは実行しないでください。
+
+```powershell
+.\desktop\MattermostUiE2E.ps1 -AppPid 12345 -DataDirectory "$PWD\desktop\artifacts\ui-e2e-fresh"
+```
+
+このUIテストはテスト専用のApp Serverプロセスをビルドし、Mattermostへの投稿と返信を実際に行います。AIモデルは呼び出しません。詳細結果は `desktop/artifacts/mattermost-ui-e2e-results.json` に保存します。
 
 ## MSIX
 

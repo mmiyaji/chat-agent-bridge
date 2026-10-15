@@ -1,5 +1,6 @@
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
+using ChatAgentBridge.Core.AppServer;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -9,6 +10,7 @@ public partial class MainPageViewModel : ObservableObject
 {
     private readonly SettingsStore _settingsStore = new();
     private readonly AgentRunner _agentRunner = new();
+    private readonly CodexAppServerRunner _appServerRunner = new();
     private readonly ExecutionHistoryStore _executionHistoryStore = new();
     private readonly AuditStore _auditStore = new();
     private CancellationTokenSource? _runCancellation;
@@ -39,6 +41,9 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string WorkspaceRoot { get; set; } = string.Empty;
     [ObservableProperty] public partial string AgentExecutable { get; set; } = "codex";
     [ObservableProperty] public partial string AgentArguments { get; set; } = "exec --json -";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsExecMode))]
+    public partial bool UseAppServer { get; set; }
+    public bool IsExecMode => !UseAppServer;
     [ObservableProperty] public partial string MattermostServerUrl { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostChannelId { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackBotToken { get; set; } = string.Empty;
@@ -50,6 +55,8 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string SavedAgentSummary { get; set; } = "未読み込み";
 
     public Func<BridgeSettings, string, Task<bool>>? ConfirmExecutionAsync { get; set; }
+    public Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? ServerApprovalHandler { get; set; }
+    public Func<AppServerInput, CancellationToken, Task<IReadOnlyDictionary<string, string[]>?>>? ServerInputHandler { get; set; }
     public string MattermostToken { get; private set; } = string.Empty;
 
     public async Task LoadAsync()
@@ -66,6 +73,7 @@ public partial class MainPageViewModel : ObservableObject
             WorkspaceRoot = _settings.WorkspaceRoot;
             AgentExecutable = _settings.AgentExecutable;
             AgentArguments = _settings.AgentArguments;
+            UseAppServer = _settings.AgentMode == "app-server";
             MattermostServerUrl = _settings.MattermostServerUrl;
             MattermostChannelId = _settings.MattermostChannelId;
             MattermostToken = _settings.MattermostToken;
@@ -178,6 +186,7 @@ public partial class MainPageViewModel : ObservableObject
 
         var finalStatus = "failed";
         int? exitCode = null;
+        string? sessionId = null;
         var auditWriteFailed = !await TryAppendAuditAsync(execution, "started");
         if (_closing || runCancellation.IsCancellationRequested)
         {
@@ -192,7 +201,15 @@ public partial class MainPageViewModel : ObservableObject
             SetStatus("実行中", "キャンセルするには「キャンセル」を選択してください。", "Informational");
             try
             {
-                var result = await _agentRunner.RunAsync(settingsSnapshot, promptSnapshot, runCancellation.Token);
+                AgentRunResult result;
+                if (settingsSnapshot.AgentMode == "app-server")
+                {
+                    var run = await _appServerRunner.RunAsync(settingsSnapshot, promptSnapshot,
+                        new AppServerRunOptions(ApprovalHandler: ServerApprovalHandler, InputHandler: ServerInputHandler), runCancellation.Token);
+                    result = run.Result;
+                    sessionId = run.SessionId;
+                }
+                else result = await _agentRunner.RunAsync(settingsSnapshot, promptSnapshot, runCancellation.Token);
                 exitCode = result.ExitCode;
                 finalStatus = result.Success ? "completed" : "failed";
                 Output = result.Success || string.IsNullOrWhiteSpace(result.Error)
@@ -221,7 +238,8 @@ public partial class MainPageViewModel : ObservableObject
         {
             FinishedAt = DateTimeOffset.UtcNow,
             Status = finalStatus,
-            ExitCode = exitCode
+            ExitCode = exitCode,
+            SessionId = sessionId
         };
         try
         {
@@ -282,6 +300,7 @@ public partial class MainPageViewModel : ObservableObject
         WorkspaceRoot = WorkspaceRoot.Trim(),
         AgentExecutable = AgentExecutable.Trim(),
         AgentArguments = AgentArguments.Trim(),
+        AgentMode = UseAppServer ? "app-server" : "exec",
         MattermostServerUrl = MattermostServerUrl.Trim(),
         MattermostChannelId = MattermostChannelId.Trim(),
         MattermostToken = MattermostToken,
@@ -292,7 +311,7 @@ public partial class MainPageViewModel : ObservableObject
 
     private void UpdateSavedAgentSummary() => SavedAgentSummary = string.IsNullOrWhiteSpace(AgentExecutable)
         ? "エージェントは未設定です"
-        : $"{AgentExecutable} {AgentArguments}".Trim();
+        : $"{AgentExecutable} {(UseAppServer ? "app-server" : AgentArguments)}".Trim();
 
     private void SetStatus(string title, string message, string severity)
     {

@@ -12,12 +12,12 @@
 |---|---|---|
 | 機能棚卸し・構成決定 | 完了 | 本文の機能対応表。WinUI / Core / Transports の3層に分離 |
 | ネイティブUI・コア | 実装・Debugビルド確認済み | XAML/MVVM、設定保存・再読み込み、DPAPI、CLI実行・停止・同一フォルダー排他 |
-| チャット受信 | 実装・単体テスト済み | Slack Socket Mode、Mattermost WebSocket、フィルター・重複排除、PC上での承認・拒否・実行、状態返信 |
-| Codexセッション継続 | 実装・単体検証済み | 標準exec設定でスレッド別に保存・再開。設定不一致と再開ID不一致を拒否。解除は実行と排他 |
+| チャット受信 | Mattermost実通信確認済み | Slack Socket Mode、Mattermost WebSocket、フィルター・重複排除、PC上での承認・拒否・実行、状態返信。専用Docker環境で受信・返信・再接続を検証 |
+| Codexセッション継続 | 実装・プロセス検証済み | 標準exec・App Serverでスレッド別に保存・再開。設定不一致と再開ID不一致を拒否。解除は実行と排他 |
 | 履歴・監査 | 実装・UI確認済み | メタデータのみ各500件、破損検出、中断表示。セッション解除・本文共有の操作を追加 |
-| 自動テスト | 成功 | Core 36件、Transports 7件。ネットワークなし、有料モデル実行なし |
-| 起動・UI・MSIX | 確認済み | Debug警告0、UI操作7項目成功。今回の変更を含むRelease MSIXを生成 |
-| 既存機能の完全移行 | 未完了 | App Server承認、複数root、全チャットコマンド、他agent継続、旧設定インポート、接続回復 |
+| 自動テスト | 成功 | Core 47件、Transports 15件。App Serverはオフライン実プロセス、MattermostはDocker実通信。有料モデル実行なし |
+| 起動・UI・MSIX | 確認済み | Debug/Releaseビルド、既存UI操作7項目とMattermost通し確認9項目成功。Release MSIX約104MiB、開発レイアウト混入検査を追加 |
+| 既存機能の完全移行 | 未完了 | 追加入力のチャット転送、複数root、全チャットコマンド、他agent継続、旧設定インポート、自動接続回復 |
 | Store提出 | 未実施 | 正式identity、ブランド素材、ポリシー・プライバシー、実サービスE2E、クリーン環境検証が必要 |
 
 実装作業は主に軽量モデル `gpt-6-luna` に範囲を分けて委任し、リードが統合とレビューを担当した。価格差や節約率は計測していない。
@@ -152,3 +152,15 @@
 - App Serverのプロトコル承認、他agentの会話継続、実サービスの認証・受信・返信、署名済みMSIXの新規インストール／更新は引き続き未検証。
 
 - `ce479ec fix: stop native agent immediately on cancellation`: ウィンドウ終了時のasync処理待ちに依存せず、キャンセル要求で子プロセスを即時停止。変更後のCoreテスト36件が成功。
+
+### Docker Mattermost / App Serverの追加実装
+
+- `9a87769`: 履歴画面、セッション切り離し、確認後の結果本文共有。
+- `bf4c5c8`: App ServerのJSONL通信、新規・再開、コマンド・ファイル承認、追加入力、execと共通の作業フォルダー排他。Core 47件成功。実プロセスのオフラインfixtureで承認・入力・完了・再開後の拒否を確認。
+- `b1a0cb9`: 同じ依頼者・provider・channel・threadに限定した一回限りの承認コード、実接続状態通知、専用Docker Mattermost起動手順。実通信を有効化したTransportsテスト15件成功。
+- `9a05c50`: 再利用したpublishフォルダーの `AppX` がMSIXへ重複混入する問題を修正。新しいレイアウトで毎回生成し、nested AppX・テストプロセス・認証fixtureの混入を拒否。再生成したMSIXは約104MiB。
+- Dockerは `cab-winui-e2e` / `127.0.0.1:8070` を利用。既存の8065–8069番の環境を停止・初期化していない。
+- App ServerはローカルCodexの生成schemaと公式仕様を参照した。実Codexモデルの呼び出し、Slackの実接続、Store提出とクリーン環境検証は未実施。
+- 最新Releaseのpackaged起動で `MattermostUiE2E.ps1` の9項目が成功。DPAPI保存、実接続、受信のPC承認、チャットの一回限りコードでの操作許可（PCの許可ボタンを押さずダイアログが閉じること）、追加入力、同じthreadへの確認後の本文共有、session保存、本文・トークンを含まない履歴を検証。
+- 同じReleaseで別の空データフォルダーを使い、既存 `SmokeTest.ps1 -TestSessionDetach` も7項目すべて成功。
+- UIテスト専用プロセスはself-containedで配布アプリと別に生成する。アプリ起動時と開発シェルで見える.NETランタイムの差により、framework-dependent fixtureが起動できない問題を通し確認で発見して修正した。

@@ -82,6 +82,8 @@
                                 <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                     <StackPanel Spacing="16">
                                         <TextBlock Text="実行環境" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                        <ToggleSwitch Header="Codex App Serverを使う" IsOn="{x:Bind ViewModel.UseAppServer, Mode=TwoWay}" AutomationProperties.Name="Codex App Serverを使う" AutomationProperties.AutomationId="UseAppServer" />
+                                        <TextBlock Text="App Serverでは実行中の承認と追加入力を確認できます。起動引数はapp-serverに固定します。" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
                                         <StackPanel Spacing="8">
                                             <TextBlock Text="ワークスペースのパス" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                             <TextBox Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="例: C:\\Projects\\my-app" AutomationProperties.Name="ワークスペースのパス" AutomationProperties.AutomationId="WorkspaceRoot" />
@@ -94,7 +96,7 @@
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Spacing="8">
                                                 <TextBlock Text="引数" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                                <TextBox Text="{x:Bind ViewModel.AgentArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="exec --json -" AutomationProperties.Name="エージェント引数" AutomationProperties.AutomationId="AgentArguments" />
+                                                <TextBox Text="{x:Bind ViewModel.AgentArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.IsExecMode, Mode=OneWay}" PlaceholderText="exec --json -" AutomationProperties.Name="エージェント引数" AutomationProperties.AutomationId="AgentArguments" />
                                             </StackPanel>
                                         </Grid>
                                         <ToggleSwitch Header="実行前に確認する" IsOn="{x:Bind ViewModel.RequireApproval, Mode=TwoWay}" AutomationProperties.Name="実行前に確認する" AutomationProperties.AutomationId="RequireApproval" />

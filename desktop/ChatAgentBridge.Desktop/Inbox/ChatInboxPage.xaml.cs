@@ -11,6 +11,9 @@ public sealed partial class ChatInboxPage : Page
         InitializeComponent();
         ViewModel.ConfirmAsync = ConfirmAsync;
         ViewModel.ConfirmReplyAsync = ConfirmReplyAsync;
+        var serverDialogs = new AppServerUi.AppServerDialogs(() => XamlRoot);
+        ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
+        ViewModel.ServerInputHandler = serverDialogs.InputAsync;
         Loaded += (_, _) => App.Window.Closed += WindowClosed;
     }
 
@@ -24,7 +27,7 @@ public sealed partial class ChatInboxPage : Page
             {
                 Content = new TextBlock
                 {
-                    Text = $"{item.Source}\nスレッド: {item.Request.ThreadId}\n{item.SessionLabel}\n作業フォルダー: {item.Workspace}\nエージェント: {item.Settings.AgentExecutable} {item.Settings.AgentArguments}\n\n{item.Prompt}",
+                    Text = $"{item.Source}\nスレッド: {item.Request.ThreadId}\n{item.SessionLabel}\n作業フォルダー: {item.Workspace}\nエージェント: {item.Settings.AgentExecutable} {(item.Settings.AgentMode == "app-server" ? "app-server" : item.Settings.AgentArguments)}\n\n{item.Prompt}",
                     TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap
                 },
                 MaxHeight = 400
@@ -33,6 +36,7 @@ public sealed partial class ChatInboxPage : Page
             CloseButtonText = "キャンセル",
             DefaultButton = ContentDialogButton.Close
         };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(dialog, "ChatRunConfirmation");
         return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 

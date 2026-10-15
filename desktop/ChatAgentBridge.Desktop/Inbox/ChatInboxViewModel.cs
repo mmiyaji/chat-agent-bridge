@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
+using ChatAgentBridge.Core.AppServer;
 using ChatAgentBridge.Core.Sessions;
 using ChatAgentBridge.Transports;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -27,6 +28,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private readonly SettingsStore _store = new();
     private readonly SessionStore _sessions = new();
     private readonly SessionAgentRunner _runner;
+    private readonly AppServerSessionRunner _serverRunner;
+    private readonly ChatApprovalBroker _approvalBroker = new();
     private readonly ExecutionHistoryStore _history = new();
     private readonly AuditStore _audit = new();
     private CancellationTokenSource? _connection;
@@ -48,8 +51,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public partial InboxItem? Selected { get; set; }
     public Func<InboxItem, Task<bool>>? ConfirmAsync { get; set; }
     public Func<InboxItem, string, Task<bool>>? ConfirmReplyAsync { get; set; }
+    public Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? ServerApprovalHandler { get; set; }
+    public Func<AppServerInput, CancellationToken, Task<IReadOnlyDictionary<string, string[]>?>>? ServerInputHandler { get; set; }
 
-    public ChatInboxViewModel() => _runner = new SessionAgentRunner(_sessions);
+    public ChatInboxViewModel()
+    {
+        _runner = new SessionAgentRunner(_sessions);
+        _serverRunner = new AppServerSessionRunner(_sessions);
+    }
 
     private bool CanConnect() => !IsConnected && !IsExecuting;
     private bool CanApprove() => !IsExecuting && Selected?.State == "承認待ち";
@@ -79,6 +88,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             Selected = null;
             _transport = transport;
             _connection = new CancellationTokenSource();
+            if (transport is IChatConnectionEvents events)
+                events.Connected += () => App.DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (ReferenceEquals(_transport, transport)) Status = "接続しました。チャットからの依頼を待っています。";
+                });
             Status = "接続処理中／受信待ち。失敗時はここに表示します。";
             _receiveTask = ReceiveAsync(transport, settings, _connection);
         }
@@ -98,6 +112,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await transport.RunAsync(settings, async (request, token) =>
             {
                 await AuditAsync("received", request, null, token);
+                if (_approvalBroker.TryHandle(request)) return;
                 var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (!App.DispatcherQueue.TryEnqueue(() =>
                 {
@@ -173,7 +188,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var token = _execution.Token;
             var key = new SessionKey(item.Request.Provider, item.Request.ChannelId, item.Request.ThreadId);
             var binding = await _sessions.FindAsync(key, token);
-            item.SessionLabel = binding is null ? "新規セッション（標準のCodex exec設定のみ継続可能）" : $"継続セッション: {binding.SessionId}";
+            item.SessionLabel = binding is null ? "新規セッション（Codex標準exec / App Serverで継続可能）" : $"継続セッション: {binding.SessionId}";
             if (ConfirmAsync is null || !await ConfirmAsync(item)) return;
             if (item.State != "承認待ち" || token.IsCancellationRequested) return;
             record = new ExecutionRecord
@@ -189,7 +204,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await AuditAsync("started", item.Request, record.Id, _execution.Token);
             item.State = "実行中";
             Output = "エージェントを実行しています…";
-            var result = await _runner.RunAsync(key, item.Settings, item.Request.Text, _execution.Token);
+            var result = item.Settings.AgentMode == "app-server"
+                ? await _serverRunner.RunAsync(key, item.Settings, item.Request.Text,
+                    new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: ServerInputHandler), _execution.Token)
+                : await _runner.RunAsync(key, item.Settings, item.Request.Text, _execution.Token);
             Output = result.Output + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
             item.ResultText = ExtractReply(result.Output);
             item.State = result.Success ? "完了" : $"失敗 ({result.ExitCode})";
@@ -271,6 +289,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
 
     private Task AuditAsync(string kind, ChatRequest request, Guid? executionId, CancellationToken token = default) =>
         _audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, kind, executionId, request.Provider, request.ChannelId, request.ThreadId), token);
+
+    private async Task<AppServerDecision> HandleApprovalAsync(InboxItem item, AppServerApproval approval, CancellationToken token)
+    {
+        var decision = await _approvalBroker.RequestAsync(item.Transport, item.Request, approval, ServerApprovalHandler, token);
+        try { await AuditAsync(decision == AppServerDecision.Accept ? "approved" : "rejected", item.Request, item.ExecutionId, token); }
+        catch (Exception) { return AppServerDecision.Decline; }
+        return decision;
+    }
 
     private async Task FinishFailureAsync(ExecutionRecord record, string status, ChatRequest request)
     {

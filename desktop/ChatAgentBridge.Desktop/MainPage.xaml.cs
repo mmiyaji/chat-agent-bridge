@@ -32,6 +32,9 @@ public sealed partial class MainPage : Page
         };
         Loaded += MainPage_Loaded;
         ViewModel.ConfirmExecutionAsync = ConfirmExecutionAsync;
+        var serverDialogs = new AppServerUi.AppServerDialogs(() => XamlRoot);
+        ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
+        ViewModel.ServerInputHandler = serverDialogs.InputAsync;
         MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
     }
 
@@ -109,7 +112,7 @@ public sealed partial class MainPage : Page
                         new TextBlock { Text = "ワークスペース", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
                         new TextBlock { Text = settings.WorkspaceRoot, TextWrapping = TextWrapping.Wrap },
                         new TextBlock { Text = "実行ファイルと引数", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
-                        new TextBlock { Text = $"{settings.AgentExecutable} {settings.AgentArguments}".Trim(), TextWrapping = TextWrapping.Wrap },
+                        new TextBlock { Text = $"{settings.AgentExecutable} {(settings.AgentMode == "app-server" ? "app-server" : settings.AgentArguments)}".Trim(), TextWrapping = TextWrapping.Wrap },
                         new TextBlock { Text = "プロンプト", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
                         new TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap }
                     }
