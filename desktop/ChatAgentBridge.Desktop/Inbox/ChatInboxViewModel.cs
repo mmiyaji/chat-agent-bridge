@@ -42,6 +42,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public ObservableCollection<InboxItem> Requests { get; } = [];
     [ObservableProperty] public partial string Status { get; set; } = "切断中。接続設定を保存してから接続してください。";
     [ObservableProperty] public partial string Output { get; set; } = "受信した依頼は自動実行されません。選択して内容を確認し、承認してください。";
+    [ObservableProperty] public partial string UsageSummary { get; set; } = "利用量は実行後に表示します。";
     [ObservableProperty] public partial string OverflowNotice { get; set; } = "";
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
     public partial bool IsConnected { get; set; }
@@ -188,7 +189,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var token = _execution.Token;
             var key = new SessionKey(item.Request.Provider, item.Request.ChannelId, item.Request.ThreadId);
             var binding = await _sessions.FindAsync(key, token);
-            item.SessionLabel = binding is null ? "新規セッション（Codex標準exec / App Serverで継続可能）" : $"継続セッション: {binding.SessionId}";
+            item.SessionLabel = binding is null ? "新規会話（Codex・Claude Codeでは継続先を保存します）" : $"継続セッション: {binding.SessionId}";
             item.SessionLabel += $"\n実行モデル: {binding?.Model ?? item.Settings.AgentModel ?? "CLIの既定値"}";
             if (ConfirmAsync is null || !await ConfirmAsync(item)) return;
             if (item.State != "承認待ち" || token.IsCancellationRequested) return;
@@ -206,11 +207,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await AuditAsync("started", item.Request, record.Id, _execution.Token);
             item.State = "実行中";
             Output = "エージェントを実行しています…";
+            UsageSummary = "実行中。利用量は完了後に表示します。";
             var result = item.Settings.AgentMode == "app-server"
                 ? await _serverRunner.RunAsync(key, item.Settings, item.Request.Text,
                     new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: ServerInputHandler), _execution.Token)
                 : await _runner.RunAsync(key, item.Settings, item.Request.Text, _execution.Token);
-            Output = (result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
+            Output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
+            UsageSummary = UsageUi.UsageSummaryFormatter.Format(result.Usage, result.Metrics);
             if (result.HasOutputTruncated) Output += "\n（出力ログの表示上限を超えたため、一部を省略しています。）";
             // Only a bounded preview can be shared. Retaining full outputs for 100 inbox
             // items otherwise holds up to 100 million characters until eviction.
@@ -219,7 +222,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.State = result.Success ? "完了" : $"失敗 ({result.ExitCode})";
             var updated = await _sessions.FindAsync(key);
             if (updated is not null) item.SessionLabel = $"継続セッション: {updated.SessionId}";
-            record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = result.Success ? "completed" : "failed", ExitCode = result.ExitCode, SessionId = updated?.SessionId };
+            record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = result.Success ? "completed" : "failed", ExitCode = result.ExitCode, SessionId = updated?.SessionId, Usage = result.Usage, Metrics = result.Metrics };
             await _history.RecordAsync(record);
             await AuditAsync(record.Status, item.Request, record.Id);
             try
@@ -237,11 +240,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         catch (OperationCanceledException)
         {
             item.State = "キャンセル"; Status = "実行をキャンセルしました。";
+            UsageSummary = UsageUi.UsageSummaryFormatter.Format(null, null);
             if (record is not null) await FinishFailureAsync(record, "cancelled", item.Request);
         }
         catch (Exception)
         {
             if (record?.Status == "running" || record is null) item.State = "実行／記録エラー";
+            UsageSummary = UsageUi.UsageSummaryFormatter.Format(null, null);
             Status = "実行または履歴の記録に失敗しました。設定を変更した場合は、履歴画面で保存セッションを切り離してから再度依頼してください。ローカル結果も確認してください。";
             if (record is not null && record.Status == "running") await FinishFailureAsync(record, "failed", item.Request);
         }
@@ -316,6 +321,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
 
     private static string ExtractReply(AgentRunResult result)
     {
+        if (result.Claude is { } claude) return claude.FinalMessage ?? "";
         var parsed = result.Codex ?? CodexOutputParser.Parse(result.Output);
         return parsed.FinalMessage ?? (parsed.HasEvents ? "" : result.Output);
     }

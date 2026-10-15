@@ -86,11 +86,11 @@
                                         <ComboBoxItem Content="その他のCLI（詳細設定）" Tag="custom" AutomationProperties.AutomationId="ProviderOptionCustom" />
                                     </ComboBox>
                                     <TextBox Header="モデル名（空欄ならCLIの既定値）" MaxLength="256" Text="{x:Bind ViewModel.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" AutomationProperties.AutomationId="AgentModel" AutomationProperties.Name="モデル名" />
-                                    <TextBlock Text="契約で使えるモデル名やエイリアスを入力します。モデルによって料金・速度・精度が変わります。保存済みCodexの会話ごとに変える場合は「履歴と会話」から指定できます。" TextWrapping="Wrap" />
+                                    <TextBlock Text="契約で使えるモデル名やエイリアスを入力します。モデルによって料金・速度・精度が変わります。保存済みの会話ごとに変える場合は「履歴と会話」から指定できます。" TextWrapping="Wrap" />
                                     <TextBox Header="作業フォルダー" Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="例: C:\Projects\my-app" AutomationProperties.AutomationId="WorkspaceRoot" AutomationProperties.Name="作業フォルダー" />
                                     <TextBlock Text="エージェントがファイルを読み書きするプロジェクトのフォルダーです。チャットからこの場所を変更することはできません。" TextWrapping="Wrap" />
                                     <ToggleSwitch Header="実行中の操作許可・質問を画面で受け取る（Codex専用）" IsOn="{x:Bind ViewModel.UseAppServer, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.IsCodexProvider, Mode=OneWay}" AutomationProperties.AutomationId="UseAppServer" />
-                                    <TextBlock Text="オンではCodex App Serverを利用します。オフではCLIへ依頼を渡して完了を待ちます。Claude Codeは単発実行で、途中の質問には対応しません。" TextWrapping="Wrap" />
+                                    <TextBlock Text="オンではCodex App Serverを利用します。オフではCLIへ依頼を渡して完了を待ちます。Claude Codeも会話を継続しますが、実行中の追加質問には対応しません。" TextWrapping="Wrap" />
                                     <ToggleSwitch Header="手動実行の前に内容を確認する" IsOn="{x:Bind ViewModel.RequireApproval, Mode=TwoWay}" AutomationProperties.AutomationId="RequireApproval" />
                                     <TextBlock Text="チャットから届いた依頼は、この設定にかかわらず毎回PCで確認します。" TextWrapping="Wrap" />
                                     <Expander Header="詳細：CLIの場所と起動引数" HorizontalAlignment="Stretch" IsExpanded="True" AutomationProperties.AutomationId="AgentAdvanced">
@@ -123,6 +123,7 @@
                                     <Button Content="実行を停止" Command="{x:Bind ViewModel.CancelRunCommand}" AutomationProperties.AutomationId="CancelAgent" />
                                 </StackPanel>
                                 <TextBox Header="実行結果（このPCのみ）" Text="{x:Bind ViewModel.Output, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="160" MaxHeight="400" AutomationProperties.AutomationId="AgentOutput" />
+                                <TextBlock Text="{x:Bind ViewModel.UsageSummary, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="LocalUsageSummary" />
                             </StackPanel>
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
                                 <StackPanel Spacing="4">

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.Sessions;
+using ChatAgentBridge_Desktop.UsageUi;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -23,7 +24,8 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record)
     public string Summary => $"{Started} · {Source} · {Status}";
     public string Workspace => $"作業フォルダー: {Record.WorkspaceRoot}";
     public string Session => $"セッション ID: {Record.SessionId ?? "—"}";
-    public string Model => $"実行モデル: {Record.AgentModel ?? "既定モデル"}";
+    public string Model => $"指定モデル: {Record.AgentModel ?? "既定モデル"}";
+    public string Usage => UsageSummaryFormatter.Format(Record.Usage, Record.Metrics);
     public string Conversation => $"会話: チャンネル {Record.ChannelId} / スレッド {Record.ThreadId} / ユーザー {Record.UserId}";
 
     private static string SourceLabel(string source) => source switch

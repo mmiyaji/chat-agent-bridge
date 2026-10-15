@@ -62,6 +62,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial bool RequireApproval { get; set; } = true;
     [ObservableProperty] public partial string Prompt { get; set; } = string.Empty;
     [ObservableProperty] public partial string Output { get; set; } = "実行結果はここに表示されます。";
+    [ObservableProperty] public partial string UsageSummary { get; set; } = "トークン利用量は実行後に表示します。未取得の値は0として扱いません。";
     [ObservableProperty] public partial string SettingsLocation { get; set; } = string.Empty;
     [ObservableProperty] public partial string SavedAgentSummary { get; set; } = "未読み込み";
 
@@ -123,7 +124,7 @@ public partial class MainPageViewModel : ObservableObject
         UseAppServer = false;
         AgentModel = "";
         AgentExecutable = value == "claude" ? "claude" : value == "codex" ? "codex" : AgentExecutable;
-        AgentArguments = value == "claude" ? "--print --output-format text" : value == "codex" ? "exec --json -" : AgentArguments;
+        AgentArguments = value == "claude" ? "--print --output-format stream-json --verbose" : value == "codex" ? "exec --json -" : AgentArguments;
     }
 
     public async Task RefreshStartupAsync()
@@ -230,6 +231,8 @@ public partial class MainPageViewModel : ObservableObject
         var finalStatus = "failed";
         int? exitCode = null;
         string? sessionId = null;
+        AgentUsage? usage = null;
+        AgentExecutionMetrics? metrics = null;
         var auditWriteFailed = !await TryAppendAuditAsync(execution, "started");
         if (_closing || runCancellation.IsCancellationRequested)
         {
@@ -241,6 +244,7 @@ public partial class MainPageViewModel : ObservableObject
         else
         {
             Output = "エージェントを実行しています…";
+            UsageSummary = "実行中。利用量は完了後に表示します。";
             SetStatus("実行中", "キャンセルするには「キャンセル」を選択してください。", "Informational");
             try
             {
@@ -254,8 +258,12 @@ public partial class MainPageViewModel : ObservableObject
                 }
                 else result = await _agentRunner.RunAsync(settingsSnapshot, promptSnapshot, runCancellation.Token);
                 exitCode = result.ExitCode;
+                sessionId ??= result.Claude?.SessionId ?? result.Codex?.SessionId;
+                usage = result.Usage;
+                metrics = result.Metrics;
+                UsageSummary = UsageUi.UsageSummaryFormatter.Format(usage, metrics);
                 finalStatus = result.Success ? "completed" : "failed";
-                var displayOutput = result.Codex?.FinalMessage ?? result.Output;
+                var displayOutput = result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output;
                 Output = result.Success || string.IsNullOrWhiteSpace(result.Error)
                     ? displayOutput
                     : $"{displayOutput}{(string.IsNullOrEmpty(displayOutput) ? string.Empty : Environment.NewLine)}{result.Error}";
@@ -284,8 +292,11 @@ public partial class MainPageViewModel : ObservableObject
             FinishedAt = DateTimeOffset.UtcNow,
             Status = finalStatus,
             ExitCode = exitCode,
-            SessionId = sessionId
+            SessionId = sessionId,
+            Usage = usage,
+            Metrics = metrics
         };
+        UsageSummary = UsageUi.UsageSummaryFormatter.Format(usage, metrics);
         try
         {
             await _executionHistoryStore.RecordAsync(finalizedRecord, CancellationToken.None);

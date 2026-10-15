@@ -8,7 +8,7 @@
       <StackPanel Padding="24" Spacing="16">
         <StackPanel Spacing="8">
             <TextBlock Text="チャット受信" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="チャットの依頼は、確認してからこのPCで実行します。Codexの会話はスレッドごとに継続し、実行結果は確認後に共有できます。App Serverの操作許可はPCまたは元の依頼者が同じスレッドで回答でき、追加質問にはPC画面から回答します。自動再接続は未対応です。"
+            <TextBlock Text="チャットの依頼は、確認してからこのPCで実行します。Codex・Claude Codeの会話はスレッドごとに継続し、実行結果は確認後に共有できます。App Serverの操作許可はPCまたは元の依頼者が同じスレッドで回答でき、追加質問にはPC画面から回答します。自動再接続は未対応です。"
                        TextWrapping="Wrap" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -60,6 +60,7 @@
         <TextBox Header="実行結果（このPCにのみ表示）" Text="{x:Bind ViewModel.Output, Mode=OneWay}"
                  IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="140" MaxHeight="260"
                  ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="ChatOutput"/>
+        <TextBlock Text="{x:Bind ViewModel.UsageSummary, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="ChatUsageSummary" />
       </StackPanel>
     </ScrollViewer>
 </Page>

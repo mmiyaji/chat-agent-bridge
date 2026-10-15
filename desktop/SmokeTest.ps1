@@ -49,7 +49,7 @@ Check 'Claude profile and model persist without running a paid model' {
     Invoke-UI @('wait-for', 'Title', '--value', '設定を保存しました', '--contains', '-t', '3000')
     $saved = Get-Content -LiteralPath (Join-Path $DataDirectory 'settings.json') -Raw | ConvertFrom-Json
     if ($saved.AgentProvider -ne 'claude' -or $saved.AgentExecutable -ne 'claude' -or
-        $saved.AgentArguments -ne '--print --output-format text' -or $saved.AgentModel -ne 'claude-smoke-model') {
+        $saved.AgentArguments -ne '--print --output-format stream-json --verbose' -or $saved.AgentModel -ne 'claude-smoke-model') {
         throw 'Claude profile executable, arguments, or model were not persisted.'
     }
 }

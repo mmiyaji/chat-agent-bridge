@@ -38,5 +38,6 @@ public sealed partial class MainWindow : Window
     private void MainWindow_Closed(object sender, WindowEventArgs args)
     {
         if (RootFrame.Content is MainPage page) page.ViewModel.CancelForWindowClose();
+        ChatAgentBridge.Core.AppServer.CodexAppServerRunner.ShutdownSharedProcesses();
     }
 }

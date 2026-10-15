@@ -36,6 +36,8 @@
                     <TextBlock Text="実行履歴" Style="{StaticResource SubtitleTextBlockStyle}" />
                     <TextBlock Text="実行した日時、状態、作業フォルダー、会話とセッション ID を表示します。"
                                TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Text="トークン数はプロバイダーの報告値で、料金そのものではありません。未報告の項目は「未取得」と表示します。観測範囲は今回のターン・直近の依頼・スレッド累計で異なる場合があります。"
+                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
                     <Grid>
                         <ListView ItemsSource="{x:Bind ViewModel.Executions, Mode=OneWay}" MaxHeight="220"
                                   AutomationProperties.Name="実行履歴" AutomationProperties.AutomationId="ExecutionHistoryList">
@@ -47,6 +49,7 @@
                                         <TextBlock Text="{x:Bind Workspace}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         <TextBlock Text="{x:Bind Conversation}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         <TextBlock Text="{x:Bind Model}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                        <TextBlock Text="{x:Bind Usage}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         <TextBlock Text="{x:Bind Session}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                     </StackPanel>
                                 </DataTemplate>
