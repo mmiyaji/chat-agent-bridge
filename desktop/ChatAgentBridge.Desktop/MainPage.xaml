@@ -87,6 +87,14 @@
                                     </ComboBox>
                                     <TextBox Header="モデル名（空欄ならCLIの既定値）" MaxLength="256" Text="{x:Bind ViewModel.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" AutomationProperties.AutomationId="AgentModel" AutomationProperties.Name="モデル名" />
                                     <TextBlock Text="契約で使えるモデル名やエイリアスを入力します。モデルによって料金・速度・精度が変わります。保存済みの会話ごとに変える場合は「履歴と会話」から指定できます。" TextWrapping="Wrap" />
+                                    <StackPanel Spacing="8">
+                                        <Button Content="CLIモデル候補を取得" Command="{x:Bind ViewModel.ModelCatalog.FetchModelsCommand}" IsEnabled="{x:Bind ViewModel.CanFetchModelCandidates, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="FetchModels" />
+                                        <ProgressRing IsActive="{x:Bind ViewModel.ModelCatalog.IsLoading, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.ModelCatalog.IsLoading), Mode=OneWay}" Width="20" Height="20" HorizontalAlignment="Left" />
+                                        <Button Content="取得をキャンセル" Command="{x:Bind ViewModel.ModelCatalog.CancelFetchCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="CancelFetchModels" />
+                                        <ComboBox Header="CLIが提示したモデル候補" ItemsSource="{x:Bind ViewModel.ModelCatalog.Models, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.ModelCatalog.SelectedModel, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ModelCandidates" AutomationProperties.Name="モデル候補" />
+                                        <TextBlock Text="{x:Bind ViewModel.ModelCatalog.Status, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ModelCatalogStatus" />
+                                        <TextBlock Text="候補はCLIの報告値です。契約上の利用可否は実行時に確認されます。" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                                    </StackPanel>
                                     <TextBox Header="作業フォルダー" Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="例: C:\Projects\my-app" AutomationProperties.AutomationId="WorkspaceRoot" AutomationProperties.Name="作業フォルダー" />
                                     <TextBlock Text="エージェントがファイルを読み書きするプロジェクトのフォルダーです。チャットからこの場所を変更することはできません。" TextWrapping="Wrap" />
                                     <ToggleSwitch Header="実行中の操作許可・質問を画面で受け取る（Codex専用）" IsOn="{x:Bind ViewModel.UseAppServer, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.IsCodexProvider, Mode=OneWay}" AutomationProperties.AutomationId="UseAppServer" />

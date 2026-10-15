@@ -1,6 +1,43 @@
 using System.Text.Json;
 
 // Offline E2E fixture only. No model calls, command execution, file changes or networking.
+if (args.Contains("--input-format") && Array.IndexOf(args, "--input-format") + 1 < args.Length
+    && args[Array.IndexOf(args, "--input-format") + 1] == "stream-json")
+{
+    while (await Console.In.ReadLineAsync() is { } line)
+    {
+        using var requestDocument = JsonDocument.Parse(line);
+        var requestRoot = requestDocument.RootElement;
+        if (requestRoot.GetProperty("type").GetString() != "control_request"
+            || requestRoot.GetProperty("request").GetProperty("subtype").GetString() != "initialize") continue;
+        var requestId = requestRoot.GetProperty("request_id").GetString();
+        if (Environment.GetEnvironmentVariable("CAB_TEST_AGENT_CLAUDE_OVERSIZED") == "1")
+        {
+            await Console.Out.WriteLineAsync(new string('x', 256 * 1024 + 1));
+            await Console.Out.FlushAsync();
+        }
+        await WriteAsync(new
+        {
+            type = "control_response",
+            response = new
+            {
+                subtype = "success",
+                request_id = Environment.GetEnvironmentVariable("CAB_TEST_AGENT_CLAUDE_MISMATCH") == "1" ? "wrong-request-id" : requestId,
+                response = new
+                {
+                    models = new object[]
+                    {
+                        "malformed-row",
+                        new { value = "fixture-claude-small", displayName = "Fixture Claude Small", description = "Quick fixture model" },
+                        new { value = "fixture-claude-large", displayName = "Fixture Claude Large", description = "Long context fixture model" }
+                    }
+                }
+            }
+        });
+        break;
+    }
+    return;
+}
 if (args.Contains("--print"))
 {
     var resumeIndex = Array.IndexOf(args, "--resume");
@@ -47,6 +84,21 @@ while (await Console.In.ReadLineAsync() is { } line)
                 await WriteAsync(new { id, result = new { userAgent = "offline-test-agent", platformFamily = "windows", platformOs = "windows" } });
                 break;
             case "initialized": break;
+            case "model/list":
+                await WriteAsync(new
+                {
+                    id,
+                    result = new
+                    {
+                        data = new[]
+                        {
+                            new { id = "fixture-codex-small", model = "fixture-codex-small", displayName = "Fixture Codex Small", description = "Quick fixture model", isDefault = true, hidden = false },
+                            new { id = "fixture-codex-large", model = "fixture-codex-large", displayName = "Fixture Codex Large", description = "Long context fixture model", isDefault = false, hidden = false }
+                        },
+                        nextCursor = (string?)null
+                    }
+                });
+                break;
             case "thread/start":
             case "thread/resume":
                 if (name == "thread/resume") threadId = parameters.GetProperty("threadId").GetString()!;

@@ -1,6 +1,7 @@
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.AppServer;
+using ChatAgentBridge_Desktop.ModelSelection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -17,6 +18,13 @@ public partial class MainPageViewModel : ObservableObject
     private BridgeSettings? _settings;
     private bool _closing;
 
+    public ModelCatalogViewModel ModelCatalog { get; }
+
+    public MainPageViewModel()
+    {
+        ModelCatalog = new ModelCatalogViewModel(CreateSettingsSnapshot, option => AgentModel = option.Id);
+    }
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ReloadSettingsCommand))]
     [NotifyCanExecuteChangedFor(nameof(SaveSettingsCommand))]
@@ -27,11 +35,13 @@ public partial class MainPageViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(CancelRunCommand))]
     [NotifyCanExecuteChangedFor(nameof(SaveSettingsCommand))]
     [NotifyCanExecuteChangedFor(nameof(ReloadSettingsCommand))]
+    [NotifyPropertyChangedFor(nameof(CanFetchModelCandidates))]
     public partial bool IsRunning { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RunCommand))]
     [NotifyCanExecuteChangedFor(nameof(SaveSettingsCommand))]
+    [NotifyPropertyChangedFor(nameof(CanFetchModelCandidates))]
     public partial bool IsSettingsLoaded { get; set; }
 
     [ObservableProperty] public partial string StatusTitle { get; set; } = "設定を読み込んでいます";
@@ -39,13 +49,17 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string StatusSeverity { get; set; } = "Informational";
     [ObservableProperty] public partial bool IsStatusOpen { get; set; } = true;
     [ObservableProperty] public partial string WorkspaceRoot { get; set; } = string.Empty;
+    partial void OnWorkspaceRootChanged(string value) => InvalidateModelCatalog();
     [ObservableProperty] public partial string AgentExecutable { get; set; } = "codex";
+    partial void OnAgentExecutableChanged(string value) => InvalidateModelCatalog();
     [ObservableProperty] public partial string AgentArguments { get; set; } = "exec --json -";
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(SupportsModel))]
+    partial void OnAgentArgumentsChanged(string value) => InvalidateModelCatalog();
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates))]
     public partial string AgentProvider { get; set; } = "codex";
     public bool IsCodexProvider => AgentProvider == "codex";
     public bool IsCustomProvider => AgentProvider == "custom";
     public bool SupportsModel => !IsCustomProvider;
+    public bool CanFetchModelCandidates => SupportsModel && IsSettingsLoaded && !IsRunning && !_closing;
     [ObservableProperty] public partial string AgentModel { get; set; } = "";
     [ObservableProperty] public partial string AutoConnectProvider { get; set; } = "none";
     [ObservableProperty] public partial bool StartWithWindows { get; set; }
@@ -54,6 +68,7 @@ public partial class MainPageViewModel : ObservableObject
     private readonly Startup.StartupTaskService _startup = new();
     [ObservableProperty, NotifyPropertyChangedFor(nameof(IsExecMode))]
     public partial bool UseAppServer { get; set; }
+    partial void OnUseAppServerChanged(bool value) => InvalidateModelCatalog();
     public bool IsExecMode => !UseAppServer;
     [ObservableProperty] public partial string MattermostServerUrl { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostChannelId { get; set; } = string.Empty;
@@ -120,6 +135,9 @@ public partial class MainPageViewModel : ObservableObject
 
     partial void OnAgentProviderChanged(string value)
     {
+        InvalidateModelCatalog();
+        if (value == "custom")
+            ModelCatalog.Status = "このCLIでは候補を取得できません。モデル名を直接入力してください。";
         if (IsLoading) return;
         UseAppServer = false;
         AgentModel = "";
@@ -343,6 +361,15 @@ public partial class MainPageViewModel : ObservableObject
     {
         _closing = true;
         _runCancellation?.Cancel();
+        ModelCatalog.Dispose();
+    }
+
+    public void CancelModelCatalogLookup() => ModelCatalog.CancelLookup();
+
+    private void InvalidateModelCatalog()
+    {
+        if (ModelCatalog is not null)
+            ModelCatalog.Invalidate();
     }
 
     public void SetMattermostToken(string value)

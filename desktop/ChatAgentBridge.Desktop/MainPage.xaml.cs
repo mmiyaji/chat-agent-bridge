@@ -86,6 +86,7 @@ public sealed partial class MainPage : Page
         IsConnectionsSelected = tag == "connections";
         IsChatSelected = tag == "chat";
         IsHistorySelected = tag == "history";
+        if (!IsAgentSelected) ViewModel.CancelModelCatalogLookup();
         ViewModel.IsStatusOpen = false;
         Bindings.Update();
         if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshAsync();
