@@ -8,4 +8,5 @@ public sealed record SessionBinding(
     string AgentExecutable,
     string AgentArguments,
     string SessionId,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    string? Model = null);

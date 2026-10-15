@@ -81,6 +81,27 @@ public sealed class SessionStore
         }, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Sets or clears a per-session model override. Null follows the current provider default.</summary>
+    public Task UpdateModelAsync(SessionKey key, string? model, CancellationToken cancellationToken = default)
+    {
+        ValidateKey(key);
+        model = AgentProfile.NormalizeModel(model);
+        return WithSessionLockAsync(key, async token =>
+        {
+            await _gate.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                var bindings = await ReadAsync(token).ConfigureAwait(false);
+                var index = bindings.FindIndex(item => item.Key == key);
+                if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
+                bindings[index] = bindings[index] with { Model = model, UpdatedAt = DateTimeOffset.UtcNow };
+                await WriteAsync(bindings, token).ConfigureAwait(false);
+            }
+            finally { _gate.Release(); }
+            return true;
+        }, cancellationToken);
+    }
+
     private async Task<List<SessionBinding>> ReadAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(_filePath)) return [];
@@ -137,6 +158,7 @@ public sealed class SessionStore
         if (string.IsNullOrWhiteSpace(binding.AgentExecutable)) throw new ArgumentException("Session executable is required.");
         if (binding.AgentArguments is null) throw new ArgumentException("Session arguments are required.");
         if (!Guid.TryParse(binding.SessionId, out _)) throw new ArgumentException("Session id must be a GUID.");
+        _ = AgentProfile.NormalizeModel(binding.Model);
     }
 
     private static void ValidateKey(SessionKey? key)

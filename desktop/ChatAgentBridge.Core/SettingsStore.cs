@@ -37,12 +37,21 @@ public sealed class SettingsStore
                 throw new InvalidDataException($"Settings schema version {stored.SchemaVersion} is unsupported; expected {CurrentSchemaVersion}.");
             if (stored.AgentMode is not (null or "exec" or "app-server"))
                 throw new InvalidDataException("Settings contain an unsupported agent mode.");
-            return new BridgeSettings
+            var provider = stored.AgentProvider ?? InferLegacyProvider(stored.AgentExecutable ?? "codex");
+            if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Custom))
+                throw new InvalidDataException("Settings contain an unsupported agent provider.");
+            var autoConnect = stored.AutoConnectProvider ?? "none";
+            if (autoConnect is not ("none" or "mattermost" or "slack"))
+                throw new InvalidDataException("Settings contain an unsupported auto-connect provider.");
+            var settings = new BridgeSettings
             {
                 WorkspaceRoot = stored.WorkspaceRoot ?? "",
                 AgentExecutable = stored.AgentExecutable ?? "codex",
                 AgentArguments = stored.AgentArguments ?? "exec --json -",
                 AgentMode = stored.AgentMode ?? "exec",
+                AgentProvider = provider,
+                AgentModel = AgentProfile.NormalizeModel(stored.AgentModel),
+                AutoConnectProvider = autoConnect,
                 MattermostServerUrl = stored.MattermostServerUrl ?? "",
                 MattermostChannelId = stored.MattermostChannelId ?? "",
                 MattermostToken = Unprotect(stored.MattermostToken),
@@ -50,10 +59,14 @@ public sealed class SettingsStore
                 SlackAppToken = Unprotect(stored.SlackAppToken),
                 RequireApproval = stored.RequireApproval
             };
+            if (provider == AgentProfile.Custom && settings.AgentModel is not null)
+                throw new InvalidDataException("A custom agent cannot use a provider model override.");
+            return settings;
         }
         catch (JsonException ex) { throw new InvalidDataException("Settings file contains invalid JSON.", ex); }
         catch (CryptographicException ex) { throw new InvalidDataException("A protected token in settings could not be decrypted for this Windows user.", ex); }
         catch (FormatException ex) { throw new InvalidDataException("A protected token in settings is malformed.", ex); }
+        catch (ArgumentException ex) { throw new InvalidDataException("Settings contain an invalid provider or model value.", ex); }
     }
 
     public async Task SaveAsync(BridgeSettings settings, CancellationToken cancellationToken = default)
@@ -61,6 +74,12 @@ public sealed class SettingsStore
         ArgumentNullException.ThrowIfNull(settings);
         if (settings.AgentMode is not ("exec" or "app-server"))
             throw new ArgumentException("Agent mode must be exec or app-server.", nameof(settings));
+        var provider = AgentProfile.ResolveProvider(settings);
+        if (settings.AutoConnectProvider is not ("none" or "mattermost" or "slack"))
+            throw new ArgumentException("Auto-connect provider must be none, mattermost, or slack.", nameof(settings));
+        var model = AgentProfile.NormalizeModel(settings.AgentModel);
+        if (provider == AgentProfile.Custom && model is not null)
+            throw new ArgumentException("A custom agent cannot use a provider model override.", nameof(settings));
         Directory.CreateDirectory(DirectoryPath);
         var stored = new StoredSettings
         {
@@ -69,6 +88,9 @@ public sealed class SettingsStore
             AgentExecutable = settings.AgentExecutable,
             AgentArguments = settings.AgentArguments,
             AgentMode = settings.AgentMode,
+            AgentProvider = provider,
+            AgentModel = model,
+            AutoConnectProvider = settings.AutoConnectProvider,
             MattermostServerUrl = settings.MattermostServerUrl,
             MattermostChannelId = settings.MattermostChannelId,
             MattermostToken = Protect(settings.MattermostToken),
@@ -112,6 +134,14 @@ public sealed class SettingsStore
         return Encoding.UTF8.GetString(UnprotectWindows(bytes));
     }
 
+    private static string InferLegacyProvider(string executable)
+    {
+        var leaf = Path.GetFileName(executable.Trim().Trim('"'));
+        return new[] { "codex", "codex.exe", "codex.cmd", "codex.ps1" }
+            .Contains(leaf, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)
+            ? AgentProfile.Codex : AgentProfile.Custom;
+    }
+
     [SupportedOSPlatform("windows")]
     private static byte[] ProtectWindows(byte[] value) => ProtectedData.Protect(value, null, DataProtectionScope.CurrentUser);
 
@@ -125,6 +155,9 @@ public sealed class SettingsStore
         public string? AgentExecutable { get; set; }
         public string? AgentArguments { get; set; }
         public string? AgentMode { get; set; }
+        public string? AgentProvider { get; set; }
+        public string? AgentModel { get; set; }
+        public string? AutoConnectProvider { get; set; }
         public string? MattermostServerUrl { get; set; }
         public string? MattermostChannelId { get; set; }
         public string? MattermostToken { get; set; }

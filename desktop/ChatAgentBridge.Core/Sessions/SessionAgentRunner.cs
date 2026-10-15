@@ -34,7 +34,7 @@ public sealed class SessionAgentRunner
         {
             return new AgentRunResult(false, -1, "", $"Agent arguments are invalid: {ex.Message}");
         }
-        var tracksCodex = IsCodexExecutable(settings.AgentExecutable) &&
+        var tracksCodex = AgentProfile.ResolveProvider(settings) == AgentProfile.Codex && IsCodexExecutable(settings.AgentExecutable) &&
             arguments.SequenceEqual(DefaultCodexArguments, StringComparer.Ordinal);
         if (!tracksCodex)
         {
@@ -55,7 +55,8 @@ public sealed class SessionAgentRunner
             var resumedSettings = settings with
             {
                 WorkspaceRoot = workspace,
-                AgentArguments = $"exec resume --json {Guid.Parse(existing.SessionId):D} -"
+                AgentArguments = $"exec resume --json {Guid.Parse(existing.SessionId):D} -",
+                AgentModel = existing.Model ?? settings.AgentModel
             };
             var resumed = await _runner.RunAsync(resumedSettings, prompt, cancellationToken).ConfigureAwait(false);
             var resumeOutput = CodexOutputParser.Parse(resumed.Output);
@@ -73,7 +74,7 @@ public sealed class SessionAgentRunner
             return resumed;
         }
 
-        var newSettings = settings with { WorkspaceRoot = workspace };
+        var newSettings = settings with { WorkspaceRoot = workspace, AgentModel = existing?.Model ?? settings.AgentModel };
         var result = await _runner.RunAsync(newSettings, prompt, cancellationToken).ConfigureAwait(false);
         var output = CodexOutputParser.Parse(result.Output);
         if (output.SessionId is not null)

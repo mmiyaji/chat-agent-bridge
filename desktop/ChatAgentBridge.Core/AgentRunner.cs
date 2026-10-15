@@ -38,8 +38,12 @@ public sealed class AgentRunner : IAgentRunner
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        AgentInvocation invocation;
+        try { invocation = AgentProfile.BuildInvocation(settings); }
+        catch (Exception ex) when (ex is ArgumentException or FormatException)
+        { return new AgentRunResult(false, -1, "", ex.Message); }
         string executable;
-        try { executable = CodexExecutableResolver.Resolve(settings.AgentExecutable); }
+        try { executable = CodexExecutableResolver.Resolve(invocation.Executable); }
         catch (InvalidOperationException ex) { return new AgentRunResult(false, -1, "", ex.Message); }
         var start = new ProcessStartInfo
         {
@@ -54,7 +58,7 @@ public sealed class AgentRunner : IAgentRunner
             StandardErrorEncoding = new UTF8Encoding(false),
             CreateNoWindow = true
         };
-        foreach (var argument in AgentArgumentParser.Parse(settings.AgentArguments)) start.ArgumentList.Add(argument);
+        foreach (var argument in invocation.Arguments) start.ArgumentList.Add(argument);
 
         using var process = new Process { StartInfo = start, EnableRaisingEvents = true };
         try

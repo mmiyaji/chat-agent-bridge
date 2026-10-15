@@ -32,7 +32,7 @@ public sealed class AppServerTests
         var runner = new CodexAppServerRunner(fake);
         var approvals = 0;
         var inputs = 0;
-        var result = await runner.RunAsync(new BridgeSettings { WorkspaceRoot = temp.Path }, "hello", new AppServerRunOptions(
+        var result = await runner.RunAsync(new BridgeSettings { WorkspaceRoot = temp.Path, AgentModel = "gpt-5.4" }, "hello", new AppServerRunOptions(
             ApprovalHandler: (a, _) => { approvals++; Assert.Equal("echo safe", a.Command); return Task.FromResult(AppServerDecision.Accept); },
             InputHandler: (q, _) => { inputs++; Assert.Equal("Pick", q.Questions[0].Question); return Task.FromResult<IReadOnlyDictionary<string, string[]>?>(new Dictionary<string, string[]> { ["choice"] = ["alpha"] }); }));
 
@@ -48,6 +48,7 @@ public sealed class AppServerTests
         Assert.Equal("workspace-write", start.Parameters.GetProperty("sandbox").GetString());
         var turn = fake.Client.Requests.Single(r => r.Method == "turn/start");
         Assert.False(turn.Parameters.GetProperty("sandboxPolicy").GetProperty("networkAccess").GetBoolean());
+        Assert.Equal("gpt-5.4", turn.Parameters.GetProperty("model").GetString());
     }
 
     [Fact]

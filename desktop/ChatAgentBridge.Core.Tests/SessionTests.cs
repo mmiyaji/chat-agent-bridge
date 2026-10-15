@@ -258,6 +258,33 @@ public sealed class SessionTests
     }
 
     [Fact]
+    public async Task SessionStore_ModelOverrideUpdatesAtomicallyAndRunnerUsesItUntilCleared()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var key = Key();
+            var id = Guid.NewGuid();
+            var store = new SessionStore(directory);
+            await store.SaveAsync(Binding(key, id));
+            await store.UpdateModelAsync(key, "session-model");
+            Assert.Equal("session-model", (await store.FindAsync(key))!.Model);
+
+            var fake = new FakeAgentRunner((_, _) => Task.FromResult(Success(id)));
+            var runner = new SessionAgentRunner(store, fake);
+            Assert.True((await runner.RunAsync(key, Settings with { AgentModel = "global-model" }, "override turn")).Success);
+            Assert.Equal("session-model", fake.Calls.Single().Settings.AgentModel);
+
+            await store.UpdateModelAsync(key, null);
+            Assert.Null((await store.FindAsync(key))!.Model);
+            Assert.True((await runner.RunAsync(key, Settings with { AgentModel = "global-model" }, "default turn")).Success);
+            Assert.Equal("global-model", fake.Calls.Last().Settings.AgentModel);
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => store.UpdateModelAsync(Key(thread: "missing"), "x"));
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
     public void CodexOutputParser_ExtractsSessionAndFinalAgentMessage()
     {
         var id = Guid.NewGuid();

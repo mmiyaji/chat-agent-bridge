@@ -32,6 +32,7 @@ public sealed class CoreTests
             var settings = new BridgeSettings
             {
                 WorkspaceRoot = "C:/workspace", AgentArguments = "exec --json -",
+                AgentModel = "gpt-5.4", AutoConnectProvider = "slack",
                 MattermostServerUrl = "https://chat.example", MattermostChannelId = "abc",
                 MattermostToken = OperatingSystem.IsWindows() ? "mm-secret" : "",
                 SlackBotToken = OperatingSystem.IsWindows() ? "slack-secret" : "",
@@ -39,6 +40,24 @@ public sealed class CoreTests
             };
             await store.SaveAsync(settings);
             Assert.Equal(settings, await store.LoadAsync());
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SettingsStore_InfersLegacyCustomProviderAndDefaultsNewFields()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(path);
+            await File.WriteAllTextAsync(Path.Combine(path, "settings.json"),
+                "{\"SchemaVersion\":1,\"AgentExecutable\":\"powershell.exe\",\"AgentArguments\":\"-NoProfile -File legacy.ps1\"}");
+            var settings = await new SettingsStore(path).LoadAsync();
+            Assert.Equal(AgentProfile.Custom, settings.AgentProvider);
+            Assert.Equal("-NoProfile -File legacy.ps1", settings.AgentArguments);
+            Assert.Null(settings.AgentModel);
+            Assert.Equal("none", settings.AutoConnectProvider);
         }
         finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
     }

@@ -23,6 +23,14 @@ public sealed class CodexAppServerRunner : IAppServerRunner
         var workspace = Path.TrimEndingDirectorySeparator(Path.GetFullPath(settings.WorkspaceRoot));
         if (!Directory.Exists(workspace)) throw new DirectoryNotFoundException($"Workspace directory does not exist: {workspace}");
         if (string.IsNullOrWhiteSpace(settings.AgentExecutable)) throw new ArgumentException("A Codex executable is required.", nameof(settings));
+        string? model;
+        try
+        {
+            if (AgentProfile.ResolveProvider(settings) != AgentProfile.Codex)
+                return new(new AgentRunResult(false, -1, "", "Codex App Server requires the Codex provider."), options.SessionId);
+            model = AgentProfile.NormalizeModel(settings.AgentModel);
+        }
+        catch (ArgumentException ex) { return new(new AgentRunResult(false, -1, "", ex.Message), options.SessionId); }
 
         using var workspaceLease = await AgentWorkspaceGate.AcquireAsync(workspace, cancellationToken).ConfigureAwait(false);
         IAppServerProcess process;
@@ -99,14 +107,15 @@ public sealed class CodexAppServerRunner : IAppServerRunner
                     return Fail("Codex resumed a different thread than the saved session. The existing session was preserved; detach it explicitly to start a new one.", options.SessionId);
 
                 turnFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
-                var turnParameters = new
+                var turnParameters = new Dictionary<string, object?>
                 {
-                    threadId,
-                    input = new[] { new { type = "text", text = prompt } },
-                    cwd = workspace,
-                    approvalPolicy = "on-request",
-                    sandboxPolicy = new { type = "workspaceWrite", writableRoots = new[] { workspace }, networkAccess = false }
+                    ["threadId"] = threadId,
+                    ["input"] = new[] { new { type = "text", text = prompt } },
+                    ["cwd"] = workspace,
+                    ["approvalPolicy"] = "on-request",
+                    ["sandboxPolicy"] = new { type = "workspaceWrite", writableRoots = new[] { workspace }, networkAccess = false }
                 };
+                if (model is not null) turnParameters["model"] = model;
                 var turnStart = await client.RequestAsync("turn/start", turnParameters, cancellationToken).ConfigureAwait(false);
                 turnId = StringAt(turnStart, "turn", "id") ?? StringAt(turnStart, "turnId");
                 var completed = await WaitForTurnAsync(turnFinished.Task, process, cancellationToken).ConfigureAwait(false);

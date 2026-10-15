@@ -13,6 +13,8 @@ public sealed class AppServerSessionRunner(SessionStore store, IAppServerRunner?
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(prompt);
         if (settings.AgentMode != "app-server") throw new ArgumentException("App Server mode is required.", nameof(settings));
+        if (AgentProfile.ResolveProvider(settings) != AgentProfile.Codex)
+            throw new InvalidOperationException("Codex App Server requires the Codex provider. Select Codex or detach the saved session before changing providers.");
         return store.WithSessionLockAsync(key, async token =>
         {
             var existing = await store.FindAsync(key, token).ConfigureAwait(false);
@@ -28,13 +30,13 @@ public sealed class AppServerSessionRunner(SessionStore store, IAppServerRunner?
             if (options?.SessionId is not null && options.SessionId != existing?.SessionId)
                 throw new ArgumentException("A session ID must come from the saved conversation binding.", nameof(options));
             var effectiveOptions = (options ?? new AppServerRunOptions()) with { SessionId = existing?.SessionId };
-            var run = await _runner.RunAsync(settings with { WorkspaceRoot = workspace }, prompt, effectiveOptions, token).ConfigureAwait(false);
+            var run = await _runner.RunAsync(settings with { WorkspaceRoot = workspace, AgentModel = existing?.Model ?? settings.AgentModel }, prompt, effectiveOptions, token).ConfigureAwait(false);
             if (!Guid.TryParse(run.SessionId, out var actualId) || actualId == Guid.Empty)
                 return Fail(run.Result, "App Server did not return a valid session id.");
             if (existing is not null && Guid.Parse(existing.SessionId) != actualId)
                 return Fail(run.Result, "App Server returned a different session id. The saved binding was retained.");
 
-            await store.SaveAsync(new SessionBinding(key, workspace, executable, "app-server", actualId.ToString("D"), DateTimeOffset.UtcNow), CancellationToken.None).ConfigureAwait(false);
+            await store.SaveAsync(new SessionBinding(key, workspace, executable, "app-server", actualId.ToString("D"), DateTimeOffset.UtcNow, existing?.Model), CancellationToken.None).ConfigureAwait(false);
             return run.Result;
         }, cancellationToken);
     }

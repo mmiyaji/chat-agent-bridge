@@ -74,6 +74,7 @@ public sealed class ExecutionHistoryStore
         HistoryFileStore.ValidateText(record.UserId, nameof(record.UserId), 256);
         HistoryFileStore.ValidateText(record.WorkspaceRoot, nameof(record.WorkspaceRoot), 2048);
         HistoryFileStore.ValidateText(record.SessionId, nameof(record.SessionId), 256);
+        HistoryFileStore.ValidateText(record.AgentModel, nameof(record.AgentModel), 256);
     }
 
     private static void ValidateLoaded(ExecutionRecord? record)

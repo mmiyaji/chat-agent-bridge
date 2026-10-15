@@ -14,4 +14,5 @@ public sealed record ExecutionRecord
     public string Status { get; init; } = "running";
     public int? ExitCode { get; init; }
     public string? SessionId { get; init; }
+    public string? AgentModel { get; init; }
 }
