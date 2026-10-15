@@ -1,0 +1,14 @@
+namespace ChatAgentBridge.Core;
+
+public sealed record BridgeSettings
+{
+    public string WorkspaceRoot { get; init; } = "";
+    public string AgentExecutable { get; init; } = "codex";
+    public string AgentArguments { get; init; } = "exec --json -";
+    public string MattermostServerUrl { get; init; } = "";
+    public string MattermostChannelId { get; init; } = "";
+    public string MattermostToken { get; init; } = "";
+    public string SlackBotToken { get; init; } = "";
+    public string SlackAppToken { get; init; } = "";
+    public bool RequireApproval { get; init; } = true;
+}

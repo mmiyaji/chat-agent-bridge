@@ -1,0 +1,231 @@
+using ChatAgentBridge.Core;
+
+namespace ChatAgentBridge.Core.Tests;
+
+public sealed class CoreTests
+{
+    [Fact]
+    public void ArgumentParser_PreservesQuotedArguments()
+    {
+        var result = AgentArgumentParser.Parse("exec --json \"two words\" -");
+        Assert.Equal(new[] { "exec", "--json", "two words", "-" }, result);
+    }
+
+    [Fact]
+    public void ArgumentParser_PreservesBackslashesBeforeClosingQuote()
+    {
+        var result = AgentArgumentParser.Parse("--path \"C:\\folder\\\\\"");
+        Assert.Equal(new[] { "--path", "C:\\folder\\" }, result);
+    }
+
+    [Fact]
+    public void ArgumentParser_RejectsUnterminatedQuote()
+        => Assert.Throws<FormatException>(() => AgentArgumentParser.Parse("exec \"unfinished"));
+
+    [Fact]
+    public async Task SettingsStore_RoundTripsSettings()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new SettingsStore(path);
+            var settings = new BridgeSettings
+            {
+                WorkspaceRoot = "C:/workspace", AgentArguments = "exec --json -",
+                MattermostServerUrl = "https://chat.example", MattermostChannelId = "abc",
+                MattermostToken = OperatingSystem.IsWindows() ? "mm-secret" : "",
+                SlackBotToken = OperatingSystem.IsWindows() ? "slack-secret" : "",
+                SlackAppToken = OperatingSystem.IsWindows() ? "app-secret" : "", RequireApproval = false
+            };
+            await store.SaveAsync(settings);
+            Assert.Equal(settings, await store.LoadAsync());
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
+    public void SettingsStore_DefaultPathHonorsWinUiOverride()
+    {
+        var previous = Environment.GetEnvironmentVariable("CAB_WINUI_DATA_DIR");
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", path);
+            Assert.Equal(Path.GetFullPath(path), new SettingsStore().DirectoryPath);
+        }
+        finally { Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", previous); }
+    }
+
+    [Fact]
+    public async Task SettingsStore_ProtectsTokensOnWindows()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new SettingsStore(path);
+            await store.SaveAsync(new BridgeSettings { MattermostToken = "distinct-mm-secret", SlackBotToken = "distinct-slack-secret" });
+            var contents = await File.ReadAllTextAsync(Path.Combine(path, "settings.json"));
+            Assert.DoesNotContain("distinct-mm-secret", contents);
+            Assert.DoesNotContain("distinct-slack-secret", contents);
+            Assert.Contains("dpapi:", contents);
+            Assert.Contains("\"SchemaVersion\": 1", contents);
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SettingsStore_RejectsCorruptedJson()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(path);
+            await File.WriteAllTextAsync(Path.Combine(path, "settings.json"), "{");
+            await Assert.ThrowsAsync<InvalidDataException>(() => new SettingsStore(path).LoadAsync());
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SettingsStore_RejectsUnsupportedSchemaVersion()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(path);
+            await File.WriteAllTextAsync(Path.Combine(path, "settings.json"), "{\"SchemaVersion\":99}");
+            var error = await Assert.ThrowsAsync<InvalidDataException>(() => new SettingsStore(path).LoadAsync());
+            Assert.Contains("version 99", error.Message);
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SettingsStore_RefusesPlaintextTokensOffWindows()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => new SettingsStore(path).SaveAsync(
+                new BridgeSettings { MattermostToken = "secret" }));
+            Assert.False(File.Exists(Path.Combine(path, "settings.json")));
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
+    public async Task AgentRunner_RejectsMissingWorkspace()
+    {
+        var runner = new AgentRunner();
+        await Assert.ThrowsAsync<DirectoryNotFoundException>(() => runner.RunAsync(
+            new BridgeSettings { WorkspaceRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")) }, "hello"));
+    }
+
+    [Fact]
+    public async Task AgentRunner_ReturnsLaunchAndNonzeroFailures()
+    {
+        var runner = new AgentRunner();
+        var workspace = Path.GetTempPath();
+        var missing = await runner.RunAsync(new BridgeSettings { WorkspaceRoot = workspace, AgentExecutable = "no-such-agent-executable" }, "hello");
+        Assert.False(missing.Success);
+        Assert.NotEqual(0, missing.ExitCode);
+
+        if (OperatingSystem.IsWindows())
+        {
+            var result = await runner.RunAsync(new BridgeSettings
+            {
+                WorkspaceRoot = workspace, AgentExecutable = "cmd.exe", AgentArguments = "/d /c exit 7"
+            }, "hello");
+            Assert.False(result.Success);
+            Assert.Equal(7, result.ExitCode);
+        }
+    }
+
+    [Fact]
+    public void CodexResolver_NeverReturnsWindowsShellShim()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var shim = (Environment.GetEnvironmentVariable("PATH") ?? "")
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .Select(directory => Path.Combine(directory.Trim('"'), "codex.cmd"))
+            .FirstOrDefault(File.Exists);
+        if (shim is null) return;
+        try
+        {
+            var native = CodexExecutableResolver.Resolve(shim);
+            Assert.EndsWith(".exe", native, StringComparison.OrdinalIgnoreCase);
+            Assert.True(File.Exists(native));
+        }
+        catch (InvalidOperationException error)
+        {
+            Assert.Contains("codex.exe", error.Message, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public async Task AgentRunner_CancellationKillsProcessTree()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(path);
+        var pidFile = Path.Combine(path, "pid.txt");
+        var scriptFile = Path.Combine(path, "wait.ps1");
+        await File.WriteAllTextAsync(scriptFile, $"Set-Content -LiteralPath '{pidFile}' -Value $PID; Start-Sleep -Seconds 30");
+        using var cancellation = new CancellationTokenSource();
+        var runner = new AgentRunner();
+        var run = runner.RunAsync(new BridgeSettings
+        {
+            WorkspaceRoot = path, AgentExecutable = "powershell.exe", AgentArguments = $"-NoProfile -NonInteractive -File \"{scriptFile}\""
+        }, "hello", cancellation.Token);
+        try
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(10);
+            while (!File.Exists(pidFile) && DateTime.UtcNow < deadline) await Task.Delay(50);
+            Assert.True(File.Exists(pidFile), "PowerShell did not write its process id.");
+            var pid = int.Parse(await File.ReadAllTextAsync(pidFile));
+            cancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run);
+            for (var attempt = 0; attempt < 30 && ProcessExists(pid); attempt++) await Task.Delay(50);
+            Assert.False(ProcessExists(pid), $"Cancelled process {pid} is still running.");
+        }
+        finally
+        {
+            cancellation.Cancel();
+            try { await run; } catch (OperationCanceledException) { }
+            if (Directory.Exists(path)) Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task AgentRunner_SerializesRunsForSameWorkspaceAcrossInstances()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(path);
+        var events = Path.Combine(path, "events.txt");
+        var script = Path.Combine(path, "record.ps1");
+        var quotedEventsPath = events.Replace("'", "''", StringComparison.Ordinal);
+        await File.WriteAllTextAsync(script,
+            $"Add-Content -LiteralPath '{quotedEventsPath}' -Value start; Start-Sleep -Milliseconds 600; Add-Content -LiteralPath '{quotedEventsPath}' -Value end");
+        try
+        {
+            var settings = new BridgeSettings
+            {
+                WorkspaceRoot = path, AgentExecutable = "powershell.exe",
+                AgentArguments = $"-NoProfile -NonInteractive -File \"{script}\""
+            };
+            var results = await Task.WhenAll(new AgentRunner().RunAsync(settings, "one"), new AgentRunner().RunAsync(settings, "two"));
+            Assert.All(results, result => Assert.True(result.Success, result.Error));
+            Assert.Equal(new[] { "start", "end", "start", "end" }, await File.ReadAllLinesAsync(events));
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    private static bool ProcessExists(int pid)
+    {
+        try { using var process = System.Diagnostics.Process.GetProcessById(pid); return !process.HasExited; }
+        catch (ArgumentException) { return false; }
+    }
+}
