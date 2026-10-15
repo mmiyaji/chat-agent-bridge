@@ -107,8 +107,7 @@ public sealed class SettingsStore
                 await JsonSerializer.SerializeAsync(stream, stored, JsonOptions, cancellationToken).ConfigureAwait(false);
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
-            if (File.Exists(_filePath)) File.Move(tempPath, _filePath, overwrite: true);
-            else File.Move(tempPath, _filePath);
+            await AtomicFile.ReplaceAsync(tempPath, _filePath, cancellationToken).ConfigureAwait(false);
         }
         finally { if (File.Exists(tempPath)) File.Delete(tempPath); }
     }

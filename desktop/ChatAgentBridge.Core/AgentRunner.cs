@@ -5,7 +5,12 @@ using ChatAgentBridge.Core.Sessions;
 namespace ChatAgentBridge.Core;
 
 public sealed record AgentRunResult(bool Success, int ExitCode, string Output, string Error,
-    CodexOutput? Codex = null, bool HasOutputTruncated = false);
+    CodexOutput? Codex = null, bool HasOutputTruncated = false)
+{
+    public ClaudeOutput? Claude { get; init; }
+    public AgentUsage? Usage { get; init; }
+    public AgentExecutionMetrics? Metrics { get; init; }
+}
 
 public interface IAgentRunner
 {
@@ -19,6 +24,7 @@ public sealed class AgentRunner : IAgentRunner
     public async Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
         CancellationToken cancellationToken = default)
     {
+        var totalTimer = Stopwatch.StartNew();
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(prompt);
         cancellationToken.ThrowIfCancellationRequested();
@@ -31,8 +37,18 @@ public sealed class AgentRunner : IAgentRunner
         if (string.IsNullOrWhiteSpace(settings.AgentExecutable))
             throw new ArgumentException("An agent executable is required.", nameof(settings));
 
+        var queueTimer = Stopwatch.StartNew();
         using var workspaceLease = await AgentWorkspaceGate.AcquireAsync(workspace, cancellationToken).ConfigureAwait(false);
-        return await RunLockedAsync(settings, workspace, prompt, cancellationToken).ConfigureAwait(false);
+        var queueMilliseconds = queueTimer.Elapsed.TotalMilliseconds;
+        var result = await RunLockedAsync(settings, workspace, prompt, cancellationToken).ConfigureAwait(false);
+        return result with
+        {
+            Metrics = (result.Metrics ?? new AgentExecutionMetrics()) with
+            {
+                QueueMilliseconds = queueMilliseconds,
+                TotalMilliseconds = totalTimer.Elapsed.TotalMilliseconds
+            }
+        };
     }
 
     private static async Task<AgentRunResult> RunLockedAsync(BridgeSettings settings, string workspace, string prompt,
@@ -63,6 +79,7 @@ public sealed class AgentRunner : IAgentRunner
         foreach (var argument in invocation.Arguments) start.ArgumentList.Add(argument);
 
         using var process = new Process { StartInfo = start, EnableRaisingEvents = true };
+        var processStartTimer = Stopwatch.StartNew();
         try
         {
             if (!process.Start()) return new AgentRunResult(false, -1, "", "Agent process did not start.");
@@ -71,6 +88,7 @@ public sealed class AgentRunner : IAgentRunner
         {
             return new AgentRunResult(false, -1, "", ex.Message);
         }
+        var processStartMilliseconds = processStartTimer.Elapsed.TotalMilliseconds;
 
         // Window shutdown can end the UI process before an async catch resumes.
         // Kill synchronously when cancellation is requested so the child cannot outlive it.
@@ -81,7 +99,8 @@ public sealed class AgentRunner : IAgentRunner
             catch (System.ComponentModel.Win32Exception) { }
         });
 
-        var stdout = ReadBoundedAsync(process.StandardOutput, MaxCapturedCharacters, invocation.Provider == AgentProfile.Codex);
+        var stdout = ReadBoundedAsync(process.StandardOutput, MaxCapturedCharacters,
+            invocation.Provider == AgentProfile.Codex, invocation.Provider == AgentProfile.Claude);
         var stderr = ReadBoundedTextAsync(process.StandardError, MaxCapturedCharacters);
         try
         {
@@ -107,17 +126,43 @@ public sealed class AgentRunner : IAgentRunner
             throw;
         }
 
-        var (output, codex, outputTruncated) = await stdout.ConfigureAwait(false);
+        var (output, codex, claude, outputTruncated) = await stdout.ConfigureAwait(false);
         var error = await stderr.ConfigureAwait(false);
-        return new AgentRunResult(process.ExitCode == 0, process.ExitCode, output, error, codex, outputTruncated);
+        var usage = codex?.Usage ?? claude?.Usage;
+        var success = process.ExitCode == 0;
+        var exitCode = process.ExitCode;
+        if (success && invocation.Provider == AgentProfile.Claude && claude?.HasResult != true)
+        {
+            success = false;
+            exitCode = -1;
+            error = AppendError(error, "Claude Code exited successfully without a terminal result event.");
+        }
+        if (success && invocation.Provider == AgentProfile.Claude && claude?.TurnFailed == true)
+        {
+            success = false;
+            exitCode = -1;
+            error = AppendError(error, "Claude Code reported a failed result event.");
+        }
+        return new AgentRunResult(success, exitCode, output, error, codex, outputTruncated)
+        {
+            Claude = claude,
+            Usage = usage,
+            Metrics = new AgentExecutionMetrics { ProcessStartMilliseconds = processStartMilliseconds }
+        };
     }
 
-    private static async Task<(string Output, CodexOutput? Codex, bool Truncated)> ReadBoundedAsync(StreamReader reader, int limit, bool parseCodex)
+    private static string AppendError(string error, string message)
+        => string.IsNullOrWhiteSpace(error) ? message : error + Environment.NewLine + message;
+
+    private static async Task<(string Output, CodexOutput? Codex, ClaudeOutput? Claude, bool Truncated)> ReadBoundedAsync(
+        StreamReader reader, int limit, bool parseCodex, bool parseClaude)
     {
         var builder = new StringBuilder(Math.Min(limit, 16_384));
         var buffer = new char[8192];
-        var line = parseCodex ? new StringBuilder(1024) : null;
-        var parser = parseCodex ? new CodexOutputParser.Accumulator() : null;
+        var parseEvents = parseCodex || parseClaude;
+        var line = parseEvents ? new StringBuilder(1024) : null;
+        var codexParser = parseCodex ? new CodexOutputParser.Accumulator() : null;
+        var claudeParser = parseClaude ? new ClaudeOutputParser.Accumulator() : null;
         var droppingLongLine = false;
         var truncated = false;
         while (true)
@@ -128,13 +173,18 @@ public sealed class AgentRunner : IAgentRunner
             if (keep > 0) builder.Append(buffer, 0, keep);
             if (keep < read) truncated = true;
 
-            if (!parseCodex) continue;
+            if (!parseEvents) continue;
             for (var i = 0; i < read; i++)
             {
                 var ch = buffer[i];
                 if (ch == '\n')
                 {
-                    if (!droppingLongLine) parser!.AddLine(line!.ToString());
+                    if (!droppingLongLine)
+                    {
+                        var text = line!.ToString();
+                        codexParser?.AddLine(text);
+                        claudeParser?.AddLine(text);
+                    }
                     line!.Clear();
                     droppingLongLine = false;
                 }
@@ -145,8 +195,12 @@ public sealed class AgentRunner : IAgentRunner
                 }
             }
         }
-        if (!droppingLongLine && line is { Length: > 0 }) parser!.AddLine(line.ToString());
-        return (builder.ToString(), parser?.Snapshot(), truncated);
+        if (!droppingLongLine && line is { Length: > 0 })
+        {
+            codexParser?.AddLine(line.ToString());
+            claudeParser?.AddLine(line.ToString());
+        }
+        return (builder.ToString(), codexParser?.Snapshot(), claudeParser?.Snapshot(), truncated);
     }
 
     private static async Task<string> ReadBoundedTextAsync(StreamReader reader, int limit)

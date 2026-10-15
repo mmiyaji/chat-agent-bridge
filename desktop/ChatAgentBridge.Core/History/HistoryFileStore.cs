@@ -57,7 +57,7 @@ internal static class HistoryFileStore
                 await JsonSerializer.SerializeAsync(stream, value, JsonOptions, ct).ConfigureAwait(false);
                 await stream.FlushAsync(ct).ConfigureAwait(false);
             }
-            File.Move(tempPath, path, overwrite: true);
+            await AtomicFile.ReplaceAsync(tempPath, path, ct).ConfigureAwait(false);
         }
         finally { if (File.Exists(tempPath)) File.Delete(tempPath); }
     }

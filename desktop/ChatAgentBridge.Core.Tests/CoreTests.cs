@@ -159,6 +159,10 @@ public sealed class CoreTests
             }, "hello");
             Assert.False(result.Success);
             Assert.Equal(7, result.ExitCode);
+            Assert.NotNull(result.Metrics);
+            Assert.True(result.Metrics.ProcessStartMilliseconds >= 0);
+            Assert.True(result.Metrics.QueueMilliseconds >= 0);
+            Assert.True(result.Metrics.TotalMilliseconds >= result.Metrics.ProcessStartMilliseconds);
         }
     }
 

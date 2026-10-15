@@ -143,8 +143,7 @@ public sealed class SessionStore
                 }, JsonOptions, cancellationToken).ConfigureAwait(false);
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
-            if (File.Exists(_filePath)) File.Move(temp, _filePath, overwrite: true);
-            else File.Move(temp, _filePath);
+            await AtomicFile.ReplaceAsync(temp, _filePath, cancellationToken).ConfigureAwait(false);
         }
         finally { if (File.Exists(temp)) File.Delete(temp); }
     }

@@ -1,6 +1,24 @@
 using System.Text.Json;
 
 // Offline E2E fixture only. No model calls, command execution, file changes or networking.
+if (args.Contains("--print"))
+{
+    var resumeIndex = Array.IndexOf(args, "--resume");
+    var session = resumeIndex >= 0 ? args[resumeIndex + 1] : Guid.NewGuid().ToString("D");
+    var modelIndex = Array.IndexOf(args, "--model");
+    var model = modelIndex >= 0 ? args[modelIndex + 1] : "fixture-claude";
+    var text = await Console.In.ReadToEndAsync();
+    var fixtureCalls = resumeIndex >= 0 ? 2 : 1;
+    await WriteAsync(new { type = "system", subtype = "init", session_id = session, model });
+    await WriteAsync(new
+    {
+        type = "result", subtype = "success", session_id = session,
+        result = $"claude-e2e: {(resumeIndex >= 0 ? "resumed" : "new")}; prompt={text}",
+        usage = new { input_tokens = 10 * fixtureCalls, output_tokens = 5 * fixtureCalls, cache_read_input_tokens = 30 * fixtureCalls, cache_creation_input_tokens = 0 },
+        modelUsage = new Dictionary<string, object> { [model] = new { } }
+    });
+    return;
+}
 if (args is not ["app-server", ..])
 {
     Console.Write(await Console.In.ReadToEndAsync());
@@ -12,6 +30,8 @@ var turnId = "fixture-turn";
 var inputPending = false;
 var approvalPending = false;
 var prompt = "";
+var fixtureTurnCount = 0;
+var fixtureThreadTurns = new Dictionary<string, int>();
 while (await Console.In.ReadLineAsync() is { } line)
 {
     using var document = JsonDocument.Parse(line);
@@ -30,9 +50,12 @@ while (await Console.In.ReadLineAsync() is { } line)
             case "thread/start":
             case "thread/resume":
                 if (name == "thread/resume") threadId = parameters.GetProperty("threadId").GetString()!;
+                else threadId = Guid.NewGuid().ToString("D");
                 await WriteAsync(new { id, result = new { thread = new { id = threadId }, cwd = parameters.GetProperty("cwd").GetString() } });
                 break;
             case "turn/start":
+                turnId = "fixture-turn-" + (++fixtureTurnCount);
+                fixtureThreadTurns[threadId] = fixtureThreadTurns.GetValueOrDefault(threadId) + 1;
                 prompt = parameters.GetProperty("input")[0].GetProperty("text").GetString() ?? "";
                 await WriteAsync(new { id, result = new { turn = new { id = turnId, status = "inProgress", items = Array.Empty<object>() } } });
                 await WriteAsync(new { method = "turn/started", @params = new { threadId, turn = new { id = turnId, status = "inProgress" } } });
@@ -91,6 +114,21 @@ while (await Console.In.ReadLineAsync() is { } line)
 async Task CompleteAsync(string status, string text)
 {
     var item = new { id = "fixture-response", type = "agentMessage", text };
+    var threadTurns = fixtureThreadTurns.GetValueOrDefault(threadId);
+    await WriteAsync(new
+    {
+        method = "thread/tokenUsage/updated",
+        @params = new
+        {
+            threadId, turnId,
+            tokenUsage = new
+            {
+                total = new { inputTokens = 100 * threadTurns, outputTokens = 5 * threadTurns, cachedInputTokens = 75 * threadTurns, reasoningOutputTokens = 0, totalTokens = 105 * threadTurns },
+                last = new { inputTokens = 100, outputTokens = 5, cachedInputTokens = 75, reasoningOutputTokens = 0, totalTokens = 105 },
+                modelContextWindow = 10000
+            }
+        }
+    });
     await WriteAsync(new { method = "item/completed", @params = new { threadId, turnId, item } });
     await WriteAsync(new { method = "turn/completed", @params = new { threadId, turn = new { id = turnId, status, items = new[] { item } } } });
 }

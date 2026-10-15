@@ -75,6 +75,18 @@ public sealed class ExecutionHistoryStore
         HistoryFileStore.ValidateText(record.WorkspaceRoot, nameof(record.WorkspaceRoot), 2048);
         HistoryFileStore.ValidateText(record.SessionId, nameof(record.SessionId), 256);
         HistoryFileStore.ValidateText(record.AgentModel, nameof(record.AgentModel), 256);
+        if (record.Usage is { } usage)
+        {
+            if (new[] { usage.InputTokens, usage.OutputTokens, usage.CachedInputTokens, usage.CacheWriteInputTokens }.Any(value => value < 0))
+                throw new ArgumentException("Token counts cannot be negative.", nameof(record));
+            if (usage.Scope is not ("turn" or "last-request" or "thread-total"))
+                throw new ArgumentException("Unknown usage observation scope.", nameof(record));
+            HistoryFileStore.ValidateText(usage.Source, nameof(usage.Source), 64);
+            HistoryFileStore.ValidateText(usage.Model, nameof(usage.Model), 256);
+        }
+        if (record.Metrics is { } metrics && new[] { metrics.ProcessStartMilliseconds, metrics.InitializeMilliseconds, metrics.TotalMilliseconds, metrics.QueueMilliseconds }
+            .Any(value => value is double milliseconds && (!double.IsFinite(milliseconds) || milliseconds < 0)))
+            throw new ArgumentException("Execution durations must be finite and nonnegative.", nameof(record));
     }
 
     private static void ValidateLoaded(ExecutionRecord? record)

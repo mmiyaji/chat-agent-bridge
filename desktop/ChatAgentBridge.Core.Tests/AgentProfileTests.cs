@@ -24,11 +24,11 @@ public sealed class AgentProfileTests
     }
 
     [Fact]
-    public void ClaudeProfileUsesPrintTextAndSeparateModelArguments()
+    public void ClaudeProfileUsesStreamJsonAndSeparateModelArguments()
     {
         var invocation = AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = "claude", AgentModel = "sonnet" });
         Assert.Equal("claude", invocation.Executable);
-        Assert.Equal(new[] { "--print", "--output-format", "text", "--model", "sonnet" }, invocation.Arguments);
+        Assert.Equal(new[] { "--print", "--output-format", "stream-json", "--verbose", "--model", "sonnet" }, invocation.Arguments);
     }
 
     [Fact]

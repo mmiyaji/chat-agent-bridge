@@ -5,6 +5,7 @@ namespace ChatAgentBridge.Core.Sessions;
 public sealed class SessionAgentRunner
 {
     private static readonly string[] DefaultCodexArguments = ["exec", "--json", "-"];
+    private const string ClaudeSessionMarker = "claude-stream-json-v1";
     private readonly SessionStore _store;
     private readonly IAgentRunner _runner;
 
@@ -28,67 +29,98 @@ public sealed class SessionAgentRunner
         CancellationToken cancellationToken)
     {
         var existing = await _store.FindAsync(key, cancellationToken).ConfigureAwait(false);
+        var provider = AgentProfile.ResolveProvider(settings);
         IReadOnlyList<string> arguments;
-        try { arguments = AgentArgumentParser.Parse(settings.AgentArguments); }
+        try { arguments = provider == AgentProfile.Claude ? Array.Empty<string>() : AgentArgumentParser.Parse(settings.AgentArguments); }
         catch (FormatException ex)
         {
             return new AgentRunResult(false, -1, "", $"Agent arguments are invalid: {ex.Message}");
         }
-        var tracksCodex = AgentProfile.ResolveProvider(settings) == AgentProfile.Codex && IsCodexExecutable(settings.AgentExecutable) &&
+        var tracksCodex = provider == AgentProfile.Codex && IsCodexExecutable(settings.AgentExecutable) &&
             arguments.SequenceEqual(DefaultCodexArguments, StringComparer.Ordinal);
-        if (!tracksCodex)
+        var tracksClaude = provider == AgentProfile.Claude && settings.AgentMode == "exec";
+        if (!tracksCodex && !tracksClaude)
         {
             if (existing is not null)
-                throw new InvalidOperationException("This chat thread has a saved Codex session. Restore the default Codex arguments or detach the saved session before using custom agent arguments.");
+                throw new InvalidOperationException("This chat thread has a saved agent session. Restore the saved provider settings or detach the saved session before changing agent arguments.");
             return await _runner.RunAsync(settings, prompt, cancellationToken).ConfigureAwait(false);
         }
 
         var workspace = NormalizeWorkspace(settings.WorkspaceRoot);
-        var executable = NormalizeExecutableIdentity(settings.AgentExecutable, workspace);
+        var executable = NormalizeExecutableIdentity(AgentProfile.ResolveEffectiveExecutable(settings), workspace);
         if (existing is not null)
         {
             if (!SamePath(existing.WorkspaceRoot, workspace) ||
                 !SameExecutable(existing.AgentExecutable, executable) ||
-                !AgentArgumentParser.Parse(existing.AgentArguments).SequenceEqual(DefaultCodexArguments, StringComparer.Ordinal))
-                throw new InvalidOperationException("The saved Codex session is bound to a different workspace or executable. Detach the session before changing its settings.");
+                (tracksCodex && !AgentArgumentParser.Parse(existing.AgentArguments).SequenceEqual(DefaultCodexArguments, StringComparer.Ordinal)) ||
+                (tracksClaude && !string.Equals(existing.AgentArguments, ClaudeSessionMarker, StringComparison.Ordinal)))
+                throw new InvalidOperationException("The saved agent session is bound to different provider settings, workspace, or executable. Detach the session before changing its settings.");
 
             var resumedSettings = settings with
             {
                 WorkspaceRoot = workspace,
-                AgentArguments = $"exec resume --json {Guid.Parse(existing.SessionId):D} -",
+                AgentArguments = tracksCodex
+                    ? $"exec resume --json {Guid.Parse(existing.SessionId):D} -"
+                    : $"--resume {Guid.Parse(existing.SessionId):D}",
                 AgentModel = existing.Model ?? settings.AgentModel
             };
             var resumed = await _runner.RunAsync(resumedSettings, prompt, cancellationToken).ConfigureAwait(false);
-            var resumeOutput = resumed.Codex ?? CodexOutputParser.Parse(resumed.Output);
-            if (resumeOutput.TurnFailed && resumed.Success)
-                resumed = FailClosed(resumed, "Codex reported turn.failed while resuming the saved thread.");
-            if (resumeOutput.SessionId is not null)
+            var resumedClaude = tracksClaude ? resumed.Claude ?? ClaudeOutputParser.Parse(resumed.Output) : null;
+            if (tracksClaude && resumed.Success && resumedClaude?.HasResult != true)
+                resumed = FailClosed(resumed, "Claude Code exited successfully without a terminal result event; the saved session was retained.");
+            var resumeSessionId = tracksCodex
+                ? (resumed.Codex ?? CodexOutputParser.Parse(resumed.Output)).SessionId
+                : resumedClaude!.SessionId;
+            var resumeFailed = tracksCodex
+                ? (resumed.Codex ?? CodexOutputParser.Parse(resumed.Output)).TurnFailed
+                : resumedClaude!.TurnFailed;
+            if (resumeFailed && resumed.Success)
+                resumed = FailClosed(resumed, tracksCodex
+                    ? "Codex reported turn.failed while resuming the saved thread."
+                    : "Claude Code reported a failed turn while resuming the saved session.");
+            if (resumeSessionId is not null)
             {
-                if (!Guid.TryParse(existing.SessionId, out var savedId) || Guid.Parse(resumeOutput.SessionId) != savedId)
-                    return FailClosed(resumed, "Codex returned a different thread id while resuming; the saved binding was retained.");
+                if (!Guid.TryParse(existing.SessionId, out var savedId) || Guid.Parse(resumeSessionId) != savedId)
+                    return FailClosed(resumed, tracksCodex
+                        ? "Codex returned a different thread id while resuming; the saved binding was retained."
+                        : "Claude Code returned a different session id while resuming; the saved binding was retained.");
                 if (resumed.Success)
                     await _store.SaveAsync(existing with { UpdatedAt = DateTimeOffset.UtcNow }, CancellationToken.None).ConfigureAwait(false);
             }
-            if (resumeOutput.SessionId is null && resumed.Success)
-                return FailClosed(resumed, "Codex did not confirm the saved thread id while resuming; the saved binding was retained.");
+            if (resumeSessionId is null && resumed.Success)
+                return FailClosed(resumed, tracksCodex
+                    ? "Codex did not confirm the saved thread id while resuming; the saved binding was retained."
+                    : "Claude Code did not confirm the saved session id while resuming; the saved binding was retained.");
             return resumed;
         }
 
-        var newSettings = settings with { WorkspaceRoot = workspace, AgentModel = existing?.Model ?? settings.AgentModel };
+        var newSettings = settings with { WorkspaceRoot = workspace, AgentModel = existing?.Model ?? settings.AgentModel,
+            AgentArguments = tracksClaude ? "" : settings.AgentArguments };
         var result = await _runner.RunAsync(newSettings, prompt, cancellationToken).ConfigureAwait(false);
-        var output = result.Codex ?? CodexOutputParser.Parse(result.Output);
-        if (output.SessionId is not null)
+        var claudeOutput = tracksClaude ? result.Claude ?? ClaudeOutputParser.Parse(result.Output) : null;
+        if (tracksClaude && result.Success && claudeOutput?.HasResult != true)
+            result = FailClosed(result, "Claude Code exited successfully without a terminal result event.");
+        var newSessionId = tracksCodex
+            ? (result.Codex ?? CodexOutputParser.Parse(result.Output)).SessionId
+            : claudeOutput!.SessionId;
+        var turnFailed = tracksCodex
+            ? (result.Codex ?? CodexOutputParser.Parse(result.Output)).TurnFailed
+            : claudeOutput!.TurnFailed;
+        if (newSessionId is not null)
         {
-            await _store.SaveAsync(new SessionBinding(key, workspace, executable, settings.AgentArguments,
-                output.SessionId, DateTimeOffset.UtcNow), CancellationToken.None).ConfigureAwait(false);
-            if (output.TurnFailed && result.Success)
-                return FailClosed(result, "Codex reported turn.failed for this turn; the session was saved so it can be resumed.");
+            var sessionArguments = tracksCodex ? settings.AgentArguments : ClaudeSessionMarker;
+            await _store.SaveAsync(new SessionBinding(key, workspace, executable, sessionArguments,
+                newSessionId, DateTimeOffset.UtcNow), CancellationToken.None).ConfigureAwait(false);
+            if (turnFailed && result.Success)
+                return FailClosed(result, tracksCodex
+                    ? "Codex reported turn.failed; the session was saved so it can be resumed."
+                    : "Claude Code reported a failed turn; the session was saved so it can be resumed.");
             return result;
         }
         if (result.Success)
-            return FailClosed(result, output.TurnFailed
-                ? "Codex reported turn.failed and returned no valid thread id."
-                : "Codex completed without a valid thread.started session id; this turn cannot be resumed safely.");
+            return FailClosed(result, turnFailed
+                ? tracksCodex ? "Codex reported turn.failed and returned no valid thread id." : "Claude Code reported a failed turn without a valid session id."
+                : tracksCodex ? "Codex completed without a valid thread.started session id; this turn cannot be resumed safely." : "Claude Code completed without a valid session id; this turn cannot be resumed safely.");
         return result;
     }
 

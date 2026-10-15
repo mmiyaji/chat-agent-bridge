@@ -7,6 +7,97 @@ namespace ChatAgentBridge.Core.Tests;
 public sealed class AppServerTests
 {
     [Fact]
+    public async Task FailedPooledTurnAndChangedModelRequireFreshProcesses()
+    {
+        using var temp = new TempDirectory();
+        var fake = new FakeProcessFactory();
+        var count = 0;
+        fake.Client.OnTurnStart = (client, _) =>
+        {
+            var turnId = "turn-" + (++count);
+            client.RaiseNotification("turn/started", new { threadId = FakeClient.ThreadId, turn = new { id = turnId } });
+            client.RaiseNotification("turn/completed", new { threadId = FakeClient.ThreadId, turn = new { id = turnId, status = count == 2 ? "failed" : "completed" } });
+            return Task.CompletedTask;
+        };
+        using var runner = new CodexAppServerRunner(fake, enableProcessReuse: true);
+        var settings = new BridgeSettings { WorkspaceRoot = temp.Path, AgentModel = "fixture-a" };
+        var first = await runner.RunAsync(settings, "one").WaitAsync(TimeSpan.FromSeconds(5));
+        var failure = await runner.RunAsync(settings, "two").WaitAsync(TimeSpan.FromSeconds(5));
+        var recovered = await runner.RunAsync(settings, "three").WaitAsync(TimeSpan.FromSeconds(5));
+        var changed = await runner.RunAsync(settings with { AgentModel = "fixture-b" }, "four").WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(first.Result.Success);
+        Assert.False(failure.Result.Success);
+        Assert.True(failure.Result.Metrics!.ProcessReused);
+        Assert.False(recovered.Result.Metrics!.ProcessReused);
+        Assert.False(changed.Result.Metrics!.ProcessReused);
+        Assert.Equal(3, fake.StartCount);
+    }
+
+    [Fact]
+    public async Task ReusesInitializedProcessForSequentialTurnsWithSameSettings()
+    {
+        using var temp = new TempDirectory();
+        var fake = new FakeProcessFactory();
+        var calls = 0;
+        fake.Client.OnTurnStart = (client, _) =>
+        {
+            var turn = $"turn-{++calls}";
+            client.RaiseNotification("turn/started", new { threadId = FakeClient.ThreadId, turn = new { id = turn } });
+            client.RaiseNotification("turn/completed", new { threadId = FakeClient.ThreadId, turn = new { id = turn, status = "completed" } });
+            return Task.CompletedTask;
+        };
+        using var runner = new CodexAppServerRunner(fake, enableProcessReuse: true);
+        var settings = new BridgeSettings { WorkspaceRoot = temp.Path, AgentModel = "gpt-5.4" };
+
+        var first = await runner.RunAsync(settings, "first").WaitAsync(TimeSpan.FromSeconds(5));
+        var second = await runner.RunAsync(settings, "second").WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(first.Result.Success);
+        Assert.True(second.Result.Success);
+        Assert.Equal(1, fake.StartCount);
+        Assert.Equal(1, fake.Client.Requests.Count(r => r.Method == "initialize"));
+        Assert.False(first.Result.Metrics!.ProcessReused);
+        Assert.True(second.Result.Metrics!.ProcessReused);
+    }
+
+    [Fact]
+    public async Task IgnoresUsageSnapshotsFromOtherThreadsWhenComputingResumedTurnDelta()
+    {
+        using var temp = new TempDirectory();
+        var sessionId = Guid.NewGuid().ToString("D");
+        var fake = new FakeProcessFactory { ThreadIdOverride = sessionId };
+        fake.Client.OnTurnStart = (client, _) =>
+        {
+            client.RaiseNotification("thread/tokenUsage/updated", new
+            {
+                threadId = Guid.NewGuid().ToString("D"), turnId = "foreign-turn",
+                tokenUsage = new { last = new { inputTokens = 1L }, total = new { inputTokens = 9000L } }
+            });
+            client.RaiseNotification("thread/tokenUsage/updated", new
+            {
+                threadId = sessionId, turnId = "previous-turn",
+                tokenUsage = new { last = new { inputTokens = 70L }, total = new { inputTokens = 100L } }
+            });
+            client.RaiseNotification("turn/started", new { threadId = sessionId, turn = new { id = "turn-1" } });
+            client.RaiseNotification("thread/tokenUsage/updated", new
+            {
+                threadId = sessionId, turnId = "turn-1",
+                tokenUsage = new { last = new { inputTokens = 20L }, total = new { inputTokens = 120L } }
+            });
+            client.RaiseNotification("turn/completed", new { threadId = sessionId, turn = new { id = "turn-1", status = "completed" } });
+            return Task.CompletedTask;
+        };
+
+        var result = await new CodexAppServerRunner(fake).RunAsync(
+            new BridgeSettings { WorkspaceRoot = temp.Path }, "resume",
+            new AppServerRunOptions(SessionId: sessionId)).WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(result.Result.Success);
+        Assert.Equal("turn", result.Result.Usage!.Scope);
+        Assert.Equal(20, result.Result.Usage.InputTokens);
+    }
+
+    [Fact]
     public async Task RunsTurnWithApprovalAndInputAndUsesRestrictedWorkspacePolicy()
     {
         using var temp = new TempDirectory();
@@ -94,10 +185,11 @@ public sealed class AppServerTests
             client.RaiseNotification("turn/started", new { threadId = FakeClient.ThreadId, turn = new { id = "turn-1" } });
             var response = await client.RaiseAsync("item/tool/requestUserInput", new { threadId = FakeClient.ThreadId, turnId = "turn-1", itemId = "i", questions = Array.Empty<object>() }, ct);
             Assert.Equal(-32800, response.GetProperty("__errorCode").GetInt32());
-            client.RaiseNotification("turn/completed", new { turn = new { id = "t", status = "failed" } });
+            client.RaiseNotification("turn/completed", new { threadId = FakeClient.ThreadId, turn = new { id = "turn-1", status = "failed" } });
         };
         var result = await new CodexAppServerRunner(fake).RunAsync(new BridgeSettings { WorkspaceRoot = temp.Path }, "x",
-            new AppServerRunOptions(InputHandler: (_, _) => Task.FromResult<IReadOnlyDictionary<string, string[]>?>(null)));
+            new AppServerRunOptions(InputHandler: (_, _) => Task.FromResult<IReadOnlyDictionary<string, string[]>?>(null)))
+            .WaitAsync(TimeSpan.FromSeconds(5));
         Assert.False(result.Result.Success);
     }
 
@@ -105,8 +197,10 @@ public sealed class AppServerTests
     {
         public FakeClient Client { get; } = new();
         public string? ThreadIdOverride { get; init; }
+        public int StartCount { get; private set; }
         public Task<IAppServerProcess> StartAsync(string executable, string workspace, CancellationToken cancellationToken = default)
         {
+            StartCount++;
             Client.Workspace = workspace;
             Client.ThreadIdOverride = ThreadIdOverride;
             return Task.FromResult<IAppServerProcess>(new FakeProcess(Client));
@@ -116,7 +210,7 @@ public sealed class AppServerTests
     private sealed class FakeProcess(FakeClient client) : IAppServerProcess
     {
         public IAppServerRpcClient Client => client;
-        public Task<int?> ExitCode => Task.FromResult<int?>(null);
+        public Task<int?> ExitCode { get; } = new TaskCompletionSource<int?>(TaskCreationOptions.RunContinuationsAsynchronously).Task;
         public Task<string> StandardError => Task.FromResult("");
         public void KillTree() { }
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;

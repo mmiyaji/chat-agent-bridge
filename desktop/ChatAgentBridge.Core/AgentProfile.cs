@@ -38,9 +38,10 @@ public static class AgentProfile
 
         if (provider == Claude)
         {
-            var arguments = new List<string> { "--print", "--output-format", "text" };
-            if (model is not null) { arguments.Add("--model"); arguments.Add(model); }
-            return new AgentInvocation(EffectiveExecutable(settings, provider), arguments, model, provider);
+            string? sessionId = null;
+            var configured = AgentArgumentParser.Parse(settings.AgentArguments);
+            if (configured.Count == 2 && configured[0] == "--resume") sessionId = configured[1];
+            return new AgentInvocation(EffectiveExecutable(settings, provider), BuildClaudeArguments(model, sessionId), model, provider);
         }
 
         var parsed = AgentArgumentParser.Parse(settings.AgentArguments);
@@ -60,6 +61,19 @@ public static class AgentProfile
 
     public static string ResolveEffectiveExecutable(BridgeSettings settings)
         => EffectiveExecutable(settings, ResolveProvider(settings));
+
+    internal static IReadOnlyList<string> BuildClaudeArguments(string? model, string? sessionId = null)
+    {
+        var arguments = new List<string> { "--print", "--output-format", "stream-json", "--verbose" };
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            if (!Guid.TryParse(sessionId, out var id)) throw new ArgumentException("Claude session id must be a GUID.", nameof(sessionId));
+            arguments.Add("--resume");
+            arguments.Add(id.ToString("D"));
+        }
+        if (model is not null) { arguments.Add("--model"); arguments.Add(model); }
+        return arguments;
+    }
 
     private static string EffectiveExecutable(BridgeSettings settings, string provider)
     {

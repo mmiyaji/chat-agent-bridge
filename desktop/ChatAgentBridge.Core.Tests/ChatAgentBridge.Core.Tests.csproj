@@ -20,6 +20,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ChatAgentBridge.Core\ChatAgentBridge.Core.csproj" />
+    <ProjectReference Include="..\ChatAgentBridge.TestAgent\ChatAgentBridge.TestAgent.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\ChatAgentBridge.Desktop\UsageUi\UsageSummaryFormatter.cs" Link="UsageUi\UsageSummaryFormatter.cs" />
   </ItemGroup>
 
 </Project>
