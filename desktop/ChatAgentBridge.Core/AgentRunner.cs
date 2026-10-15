@@ -74,6 +74,15 @@ public sealed class AgentRunner : IAgentRunner
             return new AgentRunResult(false, -1, "", ex.Message);
         }
 
+        // Window shutdown can end the UI process before an async catch resumes.
+        // Kill synchronously when cancellation is requested so the child cannot outlive it.
+        using var cancellationRegistration = cancellationToken.Register(() =>
+        {
+            try { process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { }
+            catch (System.ComponentModel.Win32Exception) { }
+        });
+
         var stdout = ReadBoundedAsync(process.StandardOutput, MaxCapturedCharacters);
         var stderr = ReadBoundedAsync(process.StandardError, MaxCapturedCharacters);
         try
