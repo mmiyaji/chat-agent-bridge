@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="ChatAgentBridge.Core.Tests/ChatAgentBridge.Core.Tests.csproj" />
+  <Project Path="ChatAgentBridge.Core/ChatAgentBridge.Core.csproj" />
+  <Project Path="ChatAgentBridge.Desktop/ChatAgentBridge.Desktop.csproj" />
+  <Project Path="ChatAgentBridge.Transports.Tests/ChatAgentBridge.Transports.Tests.csproj" />
+  <Project Path="ChatAgentBridge.Transports/ChatAgentBridge.Transports.csproj" />
+</Solution>

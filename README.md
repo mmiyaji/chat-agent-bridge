@@ -1,5 +1,7 @@
 # Chat Agent Bridge
 
+> This branch develops the native WinUI 3 / C# application. See the [desktop guide (Japanese)](desktop/README.ja.md) and [migration plan](docs/winui-migration-plan.ja.md). The documentation below describes the original TypeScript implementation retained during migration.
+
 Build a standalone Windows x64 executable with `npm run package:exe`. Double-click `release/ChatAgentBridge.exe`, then open the displayed control center URL. Browser launch is opt-in via `--open-browser`. Node.js/npm are not required on the target machine. Agent CLIs still require separate installation. See [executable instructions (Japanese)](docs/executable.ja.md).
 
 The new connection control center manages Slack/Mattermost and local agent connections. Codex uses App Server with native chat approvals and input. See [connection control center](docs/harness-modernization.md).

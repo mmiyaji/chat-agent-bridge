@@ -1,5 +1,7 @@
 # Chat Agent Bridge
 
+> このブランチでは WinUI 3 / C# ネイティブ版を開発しています。ビルド・起動手順は [desktop/README.ja.md](desktop/README.ja.md)、機能対応と進捗は [移行計画](docs/winui-migration-plan.ja.md) を参照してください。以下は移行元の TypeScript 版の説明です。
+
 Windows用の単体実行ファイルに対応しています。`npm run package:exe` で生成した `release/ChatAgentBridge.exe` をダブルクリックし、表示された管理画面URLをブラウザーで開いてください。自動起動は `--open-browser` で指定できます。利用時のNode.js/npmは不要です。詳しくは [実行ファイル版の使い方](docs/executable.ja.md) を参照してください。
 
 ## 新しい接続管理画面

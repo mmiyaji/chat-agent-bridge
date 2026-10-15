@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "ChatAgentBridge.Desktop (Package)": {
+      "commandName": "MsixPackage"
+    }
+  }
+}
