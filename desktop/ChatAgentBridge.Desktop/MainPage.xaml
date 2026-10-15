@@ -54,12 +54,14 @@
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsOverviewSelected), Mode=OneTime}">
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Chat Agent Bridge" Style="{StaticResource TitleTextBlockStyle}" />
-                                    <TextBlock Text="Windows ネイティブ版の設定とローカルエージェント実行を管理します。" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+                                    <TextBlock Text="CodexやClaude Codeのデスクトップアプリを使えない端末から、Slack/Mattermostを窓口に、起動中のローカルPCのAIエージェントへ依頼できます。" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
                                 </StackPanel>
                                 <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                                    <StackPanel Spacing="12">
-                                        <TextBlock Text="はじめに" Style="{StaticResource SubtitleTextBlockStyle}" />
-                                        <TextBlock Text="1. エージェント設定でCLI・モデル・作業フォルダーを保存します。&#x0a;2. 手動で実行するか、接続設定を保存してチャットへ接続します。&#x0a;3. チャットの依頼はPCで確認し、許可した内容だけを実行します。" TextWrapping="Wrap" />
+                                    <StackPanel Spacing="16">
+                                        <TextBlock Text="チャットを窓口に、ローカルPCへ依頼" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" />
+                                        <Image Source="ms-appx:///Assets/OverviewArchitecture.png" Stretch="Uniform" MaxWidth="1040" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="OverviewArchitecture" AutomationProperties.Name="別の端末のSlackまたはMattermostから依頼し、起動中のPCのChat Agent Bridgeが受け取ります。PCで確認後、Codex CLIまたはClaude Code CLIを実行し、確認して共有した結果を同じスレッドで受け取ります。" />
+                                        <TextBlock Text="図の説明：スマートフォンやブラウザーからSlackまたはMattermostへ送った依頼を、チャット経由で起動中のローカルPCのChat Agent Bridgeが受け取り、Codex CLIまたはClaude Code CLIを設定済みプロジェクトで実行します。結果は同じチャットへ返ります。AI処理の場所はCLIやモデルの提供形態によります。" TextWrapping="Wrap" />
+                                        <TextBlock Text="1. エージェント設定でCLI・モデル・作業フォルダーを設定します。&#x0a;2. 接続設定を保存し、チャット受信からSlackまたはMattermostへ接続します。&#x0a;3. 別の端末から依頼を送ります。Mattermostは対象チャンネルで !cab 依頼内容、SlackはBotへのメンションまたはスレッドへの返信に !cab 依頼内容を含めます。&#x0a;4. PCで依頼を確認して実行し、結果を確認して共有を承認すると、同じスレッドへ返ります。&#x0a;&#x0a;ローカルPCではこのアプリを起動し、SlackまたはMattermostとの接続を保ってください。" TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Border>
                                 <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">

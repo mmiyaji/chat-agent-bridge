@@ -4,6 +4,10 @@
 
 ## 構成
 
+概要画面には、別の端末からSlack／Mattermostを窓口として、起動中のローカルPCのCodex／Claude Code CLIへ依頼する構成図と操作手順を表示します。依頼する端末でデスクトップアプリを使えない場合のチャット経由の操作窓口です。現在はPCでの実行確認と結果共有の確認が必要です。
+
+図の編集元は `docs/assets/overview/OverviewArchitecture.svg`、アプリが読み込む画像は `Assets/OverviewArchitecture.png` です。更新時はリポジトリの開発依存関係とMicrosoft EdgeがあるWindows環境で `node desktop/ExportOverviewDiagram.mjs` を実行します。ブラウザーは画像書出し時のみ使用し、アプリ実行時には不要です。
+
 - `ChatAgentBridge.Desktop`: WinUI 3、MVVM、概要・手動実行画面・接続設定・チャット受信・履歴とセッション。
 - `ChatAgentBridge.Core`: 設定、Windows DPAPI、CLI実行・停止・排他、Codexセッション継続、履歴と監査の永続化。
 - `ChatAgentBridge.Transports`: Slack Socket Mode / Mattermost WebSocket。受信と返信を担当し、エージェントを直接実行しません。

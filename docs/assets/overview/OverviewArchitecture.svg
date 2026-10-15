@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="500" viewBox="0 0 1080 500" role="img" aria-labelledby="title desc">
+  <title id="title">チャットからローカルPCのAIエージェントへ依頼する流れ</title>
+  <desc id="desc">別端末のSlackまたはMattermostを窓口に、起動中のローカルPCにあるChat Agent BridgeがCodex CLIまたはClaude Code CLIを設定済みプロジェクトで実行し、結果を同じチャットへ返します。</desc>
+  <defs>
+    <marker id="arrowBlue" markerWidth="6" markerHeight="6" refX="10" refY="6" viewBox="0 0 12 12" orient="auto"><path d="M1 1 L11 6 L1 11 Z" fill="#2864A5"/></marker>
+    <marker id="arrowSlate" markerWidth="6" markerHeight="6" refX="10" refY="6" viewBox="0 0 12 12" orient="auto"><path d="M1 1 L11 6 L1 11 Z" fill="#526579"/></marker>
+  </defs>
+  <rect width="1080" height="500" rx="18" fill="#FFFFFF"/>
+
+  <!-- Remote endpoint -->
+  <text x="32" y="42" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="27" font-weight="700" fill="#23364A">別の端末</text>
+  <rect x="32" y="62" width="235" height="340" rx="16" fill="#F5F8FB" stroke="#CAD5E0" stroke-width="2"/>
+  <rect x="51" y="91" width="81" height="139" rx="13" fill="#FFFFFF" stroke="#8293A5" stroke-width="3"/>
+  <line x1="76" y1="108" x2="107" y2="108" stroke="#CAD5E0" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="91" cy="211" r="5" fill="#8293A5"/>
+  <rect x="151" y="99" width="97" height="64" rx="8" fill="#FFFFFF" stroke="#8293A5" stroke-width="3"/>
+  <line x1="198" y1="164" x2="198" y2="179" stroke="#8293A5" stroke-width="3"/>
+  <line x1="176" y1="180" x2="220" y2="180" stroke="#8293A5" stroke-width="3" stroke-linecap="round"/>
+  <text x="51" y="267" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="24" font-weight="700" fill="#23364A">スマートフォン /</text>
+  <text x="51" y="301" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="27" font-weight="700" fill="#23364A">ブラウザー</text>
+  <text x="51" y="347" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" fill="#526579">チャットへ依頼</text>
+
+  <!-- Chat intermediary -->
+  <rect x="296" y="136" width="211" height="225" rx="16" fill="#EEF5FC" stroke="#A9C4DF" stroke-width="2"/>
+  <path d="M333 174 h64 a13 13 0 0 1 13 13 v25 a13 13 0 0 1-13 13 h-22 l-15 14 v-14 h-27 a13 13 0 0 1-13-13 v-25 a13 13 0 0 1 13-13z" fill="#FFFFFF" stroke="#2864A5" stroke-width="3"/>
+  <path d="M386 226 h57 a12 12 0 0 1 12 12 v20 a12 12 0 0 1-12 12 h-20 l-13 12 v-12 h-24 a12 12 0 0 1-12-12 v-20 a12 12 0 0 1 12-12z" fill="#DDEAF6" stroke="#2864A5" stroke-width="3"/>
+  <text x="317" y="310" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" font-weight="700" fill="#23364A">Slack または</text><text x="317" y="343" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" font-weight="700" fill="#23364A">Mattermost</text>
+  <text x="328" y="394" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="24" fill="#526579">チャットが仲介</text>
+
+  <!-- Request and result travel between chat and bridge -->
+  <path d="M269 181 H292" fill="none" stroke="#2864A5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+  <path d="M296 282 H273" fill="none" stroke="#526579" stroke-width="4" marker-end="url(#arrowSlate)"/>
+  <path d="M509 181 H555" fill="none" stroke="#2864A5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+  <path d="M555 282 H511" fill="none" stroke="#526579" stroke-width="4" marker-end="url(#arrowSlate)"/>
+  <text x="512" y="154" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="20" font-weight="700" fill="#2864A5">依頼</text>
+  <text x="507" y="319" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="20" font-weight="700" fill="#526579">結果</text>
+
+  <!-- Local PC and components -->
+  <rect x="566" y="34" width="482" height="414" rx="20" fill="#F7F9FB" stroke="#8293A5" stroke-width="3"/>
+  <rect x="583" y="49" width="448" height="49" rx="10" fill="#E9EEF3"/>
+  <text x="601" y="82" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="28" font-weight="700" fill="#23364A">ローカルPC（アプリ起動中）</text>
+  <rect x="593" y="120" width="205" height="103" rx="12" fill="#EAF3FB" stroke="#A9C4DF" stroke-width="2"/>
+  <rect x="612" y="140" width="35" height="31" rx="5" fill="#2864A5"/>
+  <path d="M620 149 h19 M620 156 h14 M620 163 h10" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+  <text x="657" y="157" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" font-weight="700" fill="#23364A">Chat Agent</text>
+  <text x="657" y="188" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" font-weight="700" fill="#23364A">Bridge</text>
+  <text x="610" y="211" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="22" fill="#526579">PCで依頼を確認</text>
+
+  <path d="M697 226 V258 H812" fill="none" stroke="#2864A5" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <rect x="819" y="120" width="207" height="146" rx="12" fill="#FFFFFF" stroke="#AEBBC8" stroke-width="2"/>
+  <text x="837" y="154" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="23" font-weight="700" fill="#23364A">AIエージェント</text>
+  <rect x="837" y="173" width="169" height="36" rx="7" fill="#EEF5FC"/>
+  <text x="851" y="199" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="24" fill="#23364A">Codex CLI</text>
+  <rect x="837" y="218" width="169" height="36" rx="7" fill="#EEF5FC"/>
+  <text x="851" y="244" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="21" fill="#23364A">Claude Code CLI</text>
+
+  <path d="M924 269 V287" fill="none" stroke="#2864A5" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <rect x="593" y="291" width="433" height="92" rx="12" fill="#FFFFFF" stroke="#AEBBC8" stroke-width="2"/>
+  <path d="M617 317 h29 l10 11 h35 v34 h-74z" fill="#DDEAF6" stroke="#526579" stroke-width="2" stroke-linejoin="round"/>
+  <text x="706" y="329" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" font-weight="700" fill="#23364A">設定済みプロジェクト</text>
+  <text x="706" y="363" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="23" fill="#526579">ローカルの作業フォルダー</text>
+  <text x="593" y="421" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="19" fill="#526579">AIモデルとの接続は各CLIの設定に従います</text>
+</svg>
