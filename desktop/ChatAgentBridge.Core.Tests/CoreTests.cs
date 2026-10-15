@@ -163,6 +163,42 @@ public sealed class CoreTests
     }
 
     [Fact]
+    public async Task AgentRunner_ParsesCodexEventsBeyondCapturedOutputLimit()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(path);
+        var script = Path.Combine(path, "emit.ps1");
+        var codexHost = Path.Combine(path, "codex.exe");
+        var powershellHost = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
+        File.Copy(powershellHost, codexHost);
+        var sessionId = Guid.NewGuid();
+        var jsonLines = string.Join("\n", new[]
+        {
+            $"{{\"type\":\"thread.started\",\"thread_id\":\"{sessionId:D}\"}}",
+            "{\"type\":\"turn.failed\"}",
+            "{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":\"final answer after cap\"}}"
+        });
+        await File.WriteAllTextAsync(script,
+            "$ProgressPreference='SilentlyContinue'; Write-Output ('x' * 2097173); Write-Output @'\n" + jsonLines + "\n'@");
+        try
+        {
+            var result = await new AgentRunner().RunAsync(new BridgeSettings
+            {
+                WorkspaceRoot = path, AgentExecutable = codexHost, AgentProvider = AgentProfile.Codex,
+                AgentArguments = $"-NoProfile -NonInteractive -File \"{script}\""
+            }, "ignored");
+            Assert.True(result.Success, result.Error);
+            Assert.True(result.HasOutputTruncated);
+            Assert.NotNull(result.Codex);
+            Assert.Equal(sessionId.ToString("D"), result.Codex.SessionId);
+            Assert.Equal("final answer after cap", result.Codex.FinalMessage);
+            Assert.True(result.Codex.TurnFailed);
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
     public void CodexResolver_NeverReturnsWindowsShellShim()
     {
         if (!OperatingSystem.IsWindows()) return;

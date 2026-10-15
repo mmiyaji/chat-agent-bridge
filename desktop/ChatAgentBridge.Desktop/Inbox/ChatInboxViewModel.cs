@@ -210,8 +210,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 ? await _serverRunner.RunAsync(key, item.Settings, item.Request.Text,
                     new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: ServerInputHandler), _execution.Token)
                 : await _runner.RunAsync(key, item.Settings, item.Request.Text, _execution.Token);
-            Output = result.Output + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
-            item.ResultText = ExtractReply(result.Output);
+            Output = (result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
+            if (result.HasOutputTruncated) Output += "\n（出力ログの表示上限を超えたため、一部を省略しています。）";
+            // Only a bounded preview can be shared. Retaining full outputs for 100 inbox
+            // items otherwise holds up to 100 million characters until eviction.
+            var reply = ExtractReply(result);
+            item.ResultText = reply.Length > 4001 ? reply[..4001] : reply;
             item.State = result.Success ? "完了" : $"失敗 ({result.ExitCode})";
             var updated = await _sessions.FindAsync(key);
             if (updated is not null) item.SessionLabel = $"継続セッション: {updated.SessionId}";
@@ -310,10 +314,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         catch (Exception) { Status += " 履歴・監査の保存にも失敗しました。"; }
     }
 
-    private static string ExtractReply(string output)
+    private static string ExtractReply(AgentRunResult result)
     {
-        var parsed = CodexOutputParser.Parse(output);
-        return parsed.FinalMessage ?? (parsed.HasEvents ? "" : output);
+        var parsed = result.Codex ?? CodexOutputParser.Parse(result.Output);
+        return parsed.FinalMessage ?? (parsed.HasEvents ? "" : result.Output);
     }
 
     [RelayCommand(CanExecute = nameof(IsExecuting))]

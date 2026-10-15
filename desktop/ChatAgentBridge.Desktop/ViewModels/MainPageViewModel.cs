@@ -255,9 +255,11 @@ public partial class MainPageViewModel : ObservableObject
                 else result = await _agentRunner.RunAsync(settingsSnapshot, promptSnapshot, runCancellation.Token);
                 exitCode = result.ExitCode;
                 finalStatus = result.Success ? "completed" : "failed";
+                var displayOutput = result.Codex?.FinalMessage ?? result.Output;
                 Output = result.Success || string.IsNullOrWhiteSpace(result.Error)
-                    ? result.Output
-                    : $"{result.Output}{(string.IsNullOrEmpty(result.Output) ? string.Empty : Environment.NewLine)}{result.Error}";
+                    ? displayOutput
+                    : $"{displayOutput}{(string.IsNullOrEmpty(displayOutput) ? string.Empty : Environment.NewLine)}{result.Error}";
+                if (result.HasOutputTruncated) Output += "\n（出力ログの表示上限を超えたため、一部を省略しています。）";
                 if (result.Success)
                     SetStatus("実行が完了しました", $"終了コード: {result.ExitCode}", "Success");
                 else

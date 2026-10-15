@@ -59,7 +59,7 @@ public sealed class SessionAgentRunner
                 AgentModel = existing.Model ?? settings.AgentModel
             };
             var resumed = await _runner.RunAsync(resumedSettings, prompt, cancellationToken).ConfigureAwait(false);
-            var resumeOutput = CodexOutputParser.Parse(resumed.Output);
+            var resumeOutput = resumed.Codex ?? CodexOutputParser.Parse(resumed.Output);
             if (resumeOutput.TurnFailed && resumed.Success)
                 resumed = FailClosed(resumed, "Codex reported turn.failed while resuming the saved thread.");
             if (resumeOutput.SessionId is not null)
@@ -76,7 +76,7 @@ public sealed class SessionAgentRunner
 
         var newSettings = settings with { WorkspaceRoot = workspace, AgentModel = existing?.Model ?? settings.AgentModel };
         var result = await _runner.RunAsync(newSettings, prompt, cancellationToken).ConfigureAwait(false);
-        var output = CodexOutputParser.Parse(result.Output);
+        var output = result.Codex ?? CodexOutputParser.Parse(result.Output);
         if (output.SessionId is not null)
         {
             await _store.SaveAsync(new SessionBinding(key, workspace, executable, settings.AgentArguments,

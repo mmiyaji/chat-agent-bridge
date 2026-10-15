@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using System.Text;
+using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Core;
 
-public sealed record AgentRunResult(bool Success, int ExitCode, string Output, string Error);
+public sealed record AgentRunResult(bool Success, int ExitCode, string Output, string Error,
+    CodexOutput? Codex = null, bool HasOutputTruncated = false);
 
 public interface IAgentRunner
 {
@@ -79,8 +81,8 @@ public sealed class AgentRunner : IAgentRunner
             catch (System.ComponentModel.Win32Exception) { }
         });
 
-        var stdout = ReadBoundedAsync(process.StandardOutput, MaxCapturedCharacters);
-        var stderr = ReadBoundedAsync(process.StandardError, MaxCapturedCharacters);
+        var stdout = ReadBoundedAsync(process.StandardOutput, MaxCapturedCharacters, invocation.Provider == AgentProfile.Codex);
+        var stderr = ReadBoundedTextAsync(process.StandardError, MaxCapturedCharacters);
         try
         {
             try
@@ -105,12 +107,49 @@ public sealed class AgentRunner : IAgentRunner
             throw;
         }
 
-        var output = await stdout.ConfigureAwait(false);
+        var (output, codex, outputTruncated) = await stdout.ConfigureAwait(false);
         var error = await stderr.ConfigureAwait(false);
-        return new AgentRunResult(process.ExitCode == 0, process.ExitCode, output, error);
+        return new AgentRunResult(process.ExitCode == 0, process.ExitCode, output, error, codex, outputTruncated);
     }
 
-    private static async Task<string> ReadBoundedAsync(StreamReader reader, int limit)
+    private static async Task<(string Output, CodexOutput? Codex, bool Truncated)> ReadBoundedAsync(StreamReader reader, int limit, bool parseCodex)
+    {
+        var builder = new StringBuilder(Math.Min(limit, 16_384));
+        var buffer = new char[8192];
+        var line = parseCodex ? new StringBuilder(1024) : null;
+        var parser = parseCodex ? new CodexOutputParser.Accumulator() : null;
+        var droppingLongLine = false;
+        var truncated = false;
+        while (true)
+        {
+            var read = await reader.ReadAsync(buffer.AsMemory()).ConfigureAwait(false);
+            if (read == 0) break;
+            var keep = Math.Min(read, limit - builder.Length);
+            if (keep > 0) builder.Append(buffer, 0, keep);
+            if (keep < read) truncated = true;
+
+            if (!parseCodex) continue;
+            for (var i = 0; i < read; i++)
+            {
+                var ch = buffer[i];
+                if (ch == '\n')
+                {
+                    if (!droppingLongLine) parser!.AddLine(line!.ToString());
+                    line!.Clear();
+                    droppingLongLine = false;
+                }
+                else if (!droppingLongLine)
+                {
+                    if (line!.Length < CodexOutputParser.MaxLineCharacters) line.Append(ch);
+                    else { line.Clear(); droppingLongLine = true; }
+                }
+            }
+        }
+        if (!droppingLongLine && line is { Length: > 0 }) parser!.AddLine(line.ToString());
+        return (builder.ToString(), parser?.Snapshot(), truncated);
+    }
+
+    private static async Task<string> ReadBoundedTextAsync(StreamReader reader, int limit)
     {
         var builder = new StringBuilder(Math.Min(limit, 16_384));
         var buffer = new char[8192];
