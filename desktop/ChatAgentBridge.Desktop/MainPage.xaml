@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:ChatAgentBridge_Desktop"
     xmlns:inbox="using:ChatAgentBridge_Desktop.Inbox"
+    xmlns:history="using:ChatAgentBridge_Desktop.History"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Grid>
@@ -27,6 +28,7 @@
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Setting" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="チャット受信" Tag="chat" AutomationProperties.AutomationId="NavChat" Icon="Message" />
+                <NavigationViewItem Content="履歴とセッション" Tag="history" AutomationProperties.AutomationId="NavHistory" Icon="Clock" />
             </NavigationView.MenuItems>
             <NavigationView.Content>
                 <Grid Padding="28,20,32,28">
@@ -55,7 +57,7 @@
                                 <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                     <StackPanel Spacing="12">
                                         <TextBlock Text="移行状況" Style="{StaticResource SubtitleTextBlockStyle}" />
-                                        <TextBlock Text="ネイティブ画面とローカルのエージェント実行を利用できます。Mattermost と Slack の接続設定は保存できますが、「チャット受信」から受信し、PC上で承認して実行できます。セッション継続は未移行です。" TextWrapping="Wrap" />
+                                        <TextBlock Text="ネイティブ画面とローカルのエージェント実行を利用できます。Mattermost と Slack の依頼は「チャット受信」で承認して実行できます。Codex のセッション継続はチャット依頼で利用し、ワークベンチの任意引数には適用しません。履歴には実行メタデータのみを保存します。" TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Border>
                                 <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
@@ -66,7 +68,7 @@
                                         <TextBlock Text="ワークスペース" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                         <TextBlock Text="{x:Bind ViewModel.WorkspaceRoot, Mode=OneWay}" TextWrapping="Wrap" />
                                         <TextBlock Text="設定の保存先" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                        <TextBlock Text="{x:Bind ViewModel.SettingsLocation, Mode=OneWay}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{x:Bind ViewModel.SettingsLocation, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SettingsLocation" />
                                     </StackPanel>
                                 </Border>
                                 <Button Content="ワークベンチを開く" Click="OpenWorkbench_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="OpenWorkbench" />
@@ -143,6 +145,7 @@
                         </Grid>
                     </ScrollViewer>
                     <inbox:ChatInboxPage x:Name="InboxPage" Grid.Row="2" Visibility="{x:Bind local:MainPage.ToVisibility(IsChatSelected), Mode=OneTime}" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" />
+                    <history:HistoryPage x:Name="HistoryPage" Grid.Row="2" Visibility="{x:Bind local:MainPage.ToVisibility(IsHistorySelected), Mode=OneTime}" />
                 </Grid>
             </NavigationView.Content>
         </NavigationView>

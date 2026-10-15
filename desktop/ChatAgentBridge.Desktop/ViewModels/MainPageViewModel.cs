@@ -1,4 +1,5 @@
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.History;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -8,6 +9,8 @@ public partial class MainPageViewModel : ObservableObject
 {
     private readonly SettingsStore _settingsStore = new();
     private readonly AgentRunner _agentRunner = new();
+    private readonly ExecutionHistoryStore _executionHistoryStore = new();
+    private readonly AuditStore _auditStore = new();
     private CancellationTokenSource? _runCancellation;
     private BridgeSettings? _settings;
     private bool _closing;
@@ -148,35 +151,110 @@ public partial class MainPageViewModel : ObservableObject
         }
 
         if (_closing) { IsRunning = false; return; }
-        _runCancellation = new CancellationTokenSource();
-        Output = "エージェントを実行しています…";
-        SetStatus("実行中", "キャンセルするには「キャンセル」を選択してください。", "Informational");
+        var execution = new ExecutionRecord
+        {
+            Id = Guid.NewGuid(),
+            StartedAt = DateTimeOffset.UtcNow,
+            Source = "local",
+            WorkspaceRoot = settingsSnapshot.WorkspaceRoot,
+            Status = "running"
+        };
+        var runCancellation = new CancellationTokenSource();
+        _runCancellation = runCancellation;
         try
         {
-            var result = await _agentRunner.RunAsync(settingsSnapshot, promptSnapshot, _runCancellation.Token);
-            Output = result.Success || string.IsNullOrWhiteSpace(result.Error)
-                ? result.Output
-                : $"{result.Output}{(string.IsNullOrEmpty(result.Output) ? string.Empty : Environment.NewLine)}{result.Error}";
-            if (result.Success)
-                SetStatus("実行が完了しました", $"終了コード: {result.ExitCode}", "Success");
-            else
-                SetStatus("実行に失敗しました", $"終了コード: {result.ExitCode}", "Error");
+            await _executionHistoryStore.RecordAsync(execution);
         }
-        catch (OperationCanceledException)
+        catch
         {
-            Output = "実行をキャンセルしました。";
-            SetStatus("実行をキャンセルしました", "エージェントプロセスを停止しました。", "Warning");
-        }
-        catch (Exception ex)
-        {
-            Output = ex.ToString();
-            SetStatus("実行に失敗しました", ex.Message, "Error");
-        }
-        finally
-        {
+            _executionHistoryStore.EndTracking(execution.Id);
             _runCancellation?.Dispose();
             _runCancellation = null;
+            Output = "実行は開始されませんでした。実行履歴を保存できません。";
+            SetStatus("履歴を保存できず実行を停止しました", "データ保存先の空き容量とアクセス権を確認してください。", "Error");
             IsRunning = false;
+            return;
+        }
+
+        var finalStatus = "failed";
+        int? exitCode = null;
+        var auditWriteFailed = !await TryAppendAuditAsync(execution, "started");
+        if (_closing || runCancellation.IsCancellationRequested)
+        {
+            finalStatus = "cancelled";
+            SetStatus("実行を取り消しました", _closing
+                ? "ウィンドウが閉じられたため、エージェントを開始しませんでした。"
+                : "実行開始前にキャンセルされました。", "Warning");
+        }
+        else
+        {
+            Output = "エージェントを実行しています…";
+            SetStatus("実行中", "キャンセルするには「キャンセル」を選択してください。", "Informational");
+            try
+            {
+                var result = await _agentRunner.RunAsync(settingsSnapshot, promptSnapshot, runCancellation.Token);
+                exitCode = result.ExitCode;
+                finalStatus = result.Success ? "completed" : "failed";
+                Output = result.Success || string.IsNullOrWhiteSpace(result.Error)
+                    ? result.Output
+                    : $"{result.Output}{(string.IsNullOrEmpty(result.Output) ? string.Empty : Environment.NewLine)}{result.Error}";
+                if (result.Success)
+                    SetStatus("実行が完了しました", $"終了コード: {result.ExitCode}", "Success");
+                else
+                    SetStatus("実行に失敗しました", $"終了コード: {result.ExitCode}", "Error");
+            }
+            catch (OperationCanceledException)
+            {
+                finalStatus = "cancelled";
+                Output = "実行をキャンセルしました。";
+                SetStatus("実行をキャンセルしました", "エージェントプロセスを停止しました。", "Warning");
+            }
+            catch (Exception ex)
+            {
+                finalStatus = "failed";
+                Output = ex.ToString();
+                SetStatus("実行に失敗しました", ex.Message, "Error");
+            }
+        }
+
+        var finalizedRecord = execution with
+        {
+            FinishedAt = DateTimeOffset.UtcNow,
+            Status = finalStatus,
+            ExitCode = exitCode
+        };
+        try
+        {
+            await _executionHistoryStore.RecordAsync(finalizedRecord, CancellationToken.None);
+        }
+        catch
+        {
+            StatusMessage = $"{StatusMessage} 実行は終了しましたが、履歴の終了状態を保存できませんでした。";
+            StatusSeverity = "Warning";
+        }
+        auditWriteFailed |= !await TryAppendAuditAsync(finalizedRecord, finalStatus);
+        if (auditWriteFailed)
+        {
+            StatusMessage = $"{StatusMessage} 監査記録を保存できませんでした。";
+            StatusSeverity = "Warning";
+        }
+        _executionHistoryStore.EndTracking(execution.Id);
+        _runCancellation?.Dispose();
+        _runCancellation = null;
+        IsRunning = false;
+    }
+
+    private async Task<bool> TryAppendAuditAsync(ExecutionRecord execution, string kind)
+    {
+        try
+        {
+            await _auditStore.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, kind, execution.Id,
+                execution.Source, execution.ChannelId, execution.ThreadId), CancellationToken.None);
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 

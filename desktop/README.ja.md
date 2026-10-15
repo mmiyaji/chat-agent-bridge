@@ -4,8 +4,8 @@
 
 ## 構成
 
-- `ChatAgentBridge.Desktop`: WinUI 3、MVVM、概要・ワークベンチ・接続設定・チャット受信。
-- `ChatAgentBridge.Core`: 設定、Windows DPAPI による秘密情報保護、CLI の標準入出力・停止・同一作業フォルダーの実行排他。
+- `ChatAgentBridge.Desktop`: WinUI 3、MVVM、概要・ワークベンチ・接続設定・チャット受信・履歴とセッション。
+- `ChatAgentBridge.Core`: 設定、Windows DPAPI、CLI実行・停止・排他、Codexセッション継続、履歴と監査の永続化。
 - `ChatAgentBridge.Transports`: Slack Socket Mode / Mattermost WebSocket。受信と返信を担当し、エージェントを直接実行しません。
 - `*.Tests`: CLI・保存・イベントフィルターの自動テスト。外部サービスへの送信や有料エージェント呼び出しは行いません。
 
@@ -34,7 +34,21 @@ dotnet test desktop/ChatAgentBridge.Transports.Tests/ChatAgentBridge.Transports.
 4. Mattermost では指定チャンネルに `!cab 依頼内容` を投稿します。Slack では bot をメンション、またはスレッド返信に `!cab 依頼内容` を投稿します。必要な bot 権限・イベント購読・Socket Mode の設定は別途必要です。
 5. PC に表示された依頼を選択し、「内容を確認して実行」で作業フォルダーと実行内容を承認します。チャット受信では確認設定にかかわらず毎回承認が必要です。
 
-返信は完了／失敗の状態だけを送ります。CLI 出力はローカル画面で確認します。許可フォルダーは保存した単一ワークスペースで固定し、チャットから実行ファイル・引数・フォルダーを変更できません。これは CLI 自体のファイルアクセスを OS で制限する機構ではありません。
+自動返信は完了／失敗の状態だけです。結果本文は「結果をスレッドに送信」で元の送信先と本文を確認してから共有できます。長い本文は先頭4,000文字まで送ります。Codexでは最終エージェントメッセージを抽出し、ツール出力だけのイベント列は本文として送りません。
+
+許可フォルダーは保存した単一ワークスペースで固定し、チャットから実行ファイル・引数・フォルダーを変更できません。これは CLI 自体のファイルアクセスを OS で制限する機構ではありません。
+
+### Codexセッションの継続
+
+実行ファイルがCodexで、引数が標準の `exec --json -` の場合、プロバイダー・チャンネル・スレッドごとにセッションIDを保存します。同じスレッドの次の依頼はそのIDで `exec resume --json <id> -` を使い、アプリ再起動後も継続できます。[公式の非対話モード仕様](https://learn.chatgpt.com/docs/non-interactive-mode)
+
+ワークスペースや実行ファイル・引数を変更した場合は、保存済みセッションをそのまま別設定で使いません。「履歴とセッション」で切り離してから新規依頼を実行してください。切り離しは関連付けだけを削除し、Codex自身のセッションや実行履歴は削除しません。実行中の同じスレッドの処理があれば、終了まで待って解除します。
+
+任意のCLI・カスタム引数・ワークベンチからの実行は、現在は単発実行です。新規実行を途中でキャンセルし、CLIのセッションIDを取得できなかった場合、その新規セッションはbridgeに紐付きません。Codex自身のセッション保存はCLIの設定に従います。
+
+### 履歴と監査
+
+`history.json` に実行時刻・状態・終了コード・スレッド・ワークスペース・セッションID、`audit.json` に受信・承認・拒否・実行・共有・解除のメタデータをそれぞれ最大500件保存します。プロンプト・結果本文・トークン・例外本文はこれらのファイルへ保存しません。異常終了後に残った実行中記録は「中断」と表示します。終了状態の保存に失敗した場合も実行結果とは分けて警告します。
 
 接続エラーでは認証情報を含む可能性のあるサーバー応答を表示しません。接続先・権限・ネットワークを確認して再接続してください。アプリを閉じると受信と実行を停止します。トレイ常駐・自動再接続・自動起動はまだありません。
 
@@ -47,10 +61,12 @@ dotnet test desktop/ChatAgentBridge.Transports.Tests/ChatAgentBridge.Transports.
 ```powershell
 winapp run .\desktop\ChatAgentBridge.Desktop\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64 --detach --json -- --data-dir 'C:\TestData\ChatAgentBridge'
 # 返された ProcessId を使い、同じ保存先でUI操作テストを実行:
-.\desktop\SmokeTest.ps1 -AppPid 12345 -DataDirectory 'C:\TestData\ChatAgentBridge'
+.\desktop\SmokeTest.ps1 -AppPid 12345 -DataDirectory 'C:\TestData\ChatAgentBridge' -TestSessionDetach
 ```
 
 旧 TypeScript 版の設定・セッション・履歴は自動インポートしません。既存データを上書きしないよう保存先を分けています。破損設定や復号エラーでは実行・保存を停止し、ファイルを修復後に再読み込みしてください。
+
+UIテストは最初に空の隔離ディレクトリを指定します。`-TestSessionDetach` はテスト用のセッション関連付けを作って解除を確認するため、新しい空の保存先で実行してください。実在するCodexセッションやモデルは呼び出しません。
 
 ## MSIX
 

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="ChatAgentBridge_Desktop.History.HistoryPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:vm="using:ChatAgentBridge_Desktop.History"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Grid Padding="28,20,32,28" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid ColumnSpacing="16">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <StackPanel Spacing="4">
+                <TextBlock Text="履歴とセッション" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="保存するのは実行と会話のメタデータです。プロンプトと実行結果は履歴に保存しません。" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="更新" Command="{x:Bind ViewModel.RefreshCommand}" VerticalAlignment="Center" AutomationProperties.AutomationId="RefreshHistory" />
+        </Grid>
+        <TextBlock Grid.Row="1" Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="HistoryStatus" />
+        <Grid Grid.Row="2" ColumnSpacing="20">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="1.15*" /><ColumnDefinition Width="1.35*" /></Grid.ColumnDefinitions>
+            <Grid Grid.Column="0" RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="2*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="1.3*" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="実行履歴" Style="{StaticResource SubtitleTextBlockStyle}" />
+                <ListView Grid.Row="1" ItemsSource="{x:Bind ViewModel.Executions, Mode=OneWay}" AutomationProperties.Name="実行履歴" AutomationProperties.AutomationId="ExecutionHistoryList">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ExecutionHistoryRow">
+                            <Grid Margin="8,6" ColumnSpacing="10">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Bind Started}" VerticalAlignment="Top" />
+                                <StackPanel Grid.Column="1" Spacing="3">
+                                    <TextBlock Text="{x:Bind Source}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind Workspace}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind Conversation}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind Session}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="{x:Bind Status}" VerticalAlignment="Top" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <TextBlock Grid.Row="2" Text="監査イベント" Style="{StaticResource SubtitleTextBlockStyle}" />
+                <ListView Grid.Row="3" ItemsSource="{x:Bind ViewModel.AuditEvents, Mode=OneWay}" AutomationProperties.Name="監査イベント" AutomationProperties.AutomationId="AuditHistoryList">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AuditHistoryRow">
+                            <Grid Margin="8,5" RowSpacing="3">
+                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Bind Timestamp}" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind Kind}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock Grid.Row="1" Text="{x:Bind Source}" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{x:Bind Conversation}" TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+            <Grid Grid.Column="1" RowSpacing="8">
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="保存済みセッション" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="切り離す" ToolTipService.ToolTip="選択したセッションを切り離す" Command="{x:Bind ViewModel.DetachSelectedSessionCommand}" AutomationProperties.AutomationId="DetachSession" />
+                </Grid>
+                <ListView Grid.Row="1" ItemsSource="{x:Bind ViewModel.Sessions, Mode=OneWay}"
+                          SelectedItem="{x:Bind ViewModel.SelectedSession, Mode=TwoWay}"
+                          AutomationProperties.Name="保存済みセッション" AutomationProperties.AutomationId="SavedSessionsList">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SessionHistoryRow">
+                            <Grid Margin="10,8" ColumnSpacing="12" RowSpacing="4">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                <TextBlock Text="{x:Bind Provider}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind Updated}" VerticalAlignment="Top" />
+                                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{x:Bind Conversation}" TextWrapping="Wrap" />
+                                <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{x:Bind AgentAndSession}" TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Grid>
+    </Grid>
+</Page>

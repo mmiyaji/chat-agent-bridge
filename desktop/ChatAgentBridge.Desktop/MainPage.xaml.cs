@@ -15,7 +15,8 @@ public sealed partial class MainPage : Page
     public bool IsWorkbenchSelected { get; private set; }
     public bool IsConnectionsSelected { get; private set; }
     public bool IsChatSelected { get; private set; }
-    public bool IsFormSelected => !IsChatSelected;
+    public bool IsHistorySelected { get; private set; }
+    public bool IsFormSelected => !IsChatSelected && !IsHistorySelected;
 
     public MainPage()
     {
@@ -70,7 +71,9 @@ public sealed partial class MainPage : Page
         IsWorkbenchSelected = tag == "workbench";
         IsConnectionsSelected = tag == "connections";
         IsChatSelected = tag == "chat";
+        IsHistorySelected = tag == "history";
         Bindings.Update();
+        if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshAsync();
     }
 
     private void OpenWorkbench_Click(object sender, RoutedEventArgs e)
@@ -80,6 +83,7 @@ public sealed partial class MainPage : Page
         IsWorkbenchSelected = true;
         IsConnectionsSelected = false;
         IsChatSelected = false;
+        IsHistorySelected = false;
         Bindings.Update();
     }
 
