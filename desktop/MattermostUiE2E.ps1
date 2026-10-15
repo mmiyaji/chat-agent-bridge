@@ -25,6 +25,11 @@ function Invoke-UI([string[]]$Arguments) {
     if ($LASTEXITCODE -ne 0) { throw "winapp UI action failed at $($Arguments[0])." }
 }
 
+function Select-ComboItem([string]$AutomationId, [string]$ItemAutomationId) {
+    Invoke-UI @('invoke', $AutomationId)
+    Invoke-UI @('invoke', $ItemAutomationId)
+}
+
 function Wait-UI([string]$AutomationId, [string]$Value = '', [int]$TimeoutMs = 30000) {
     $args = @('wait-for', $AutomationId, '-t', "$TimeoutMs")
     if ($Value.Length -gt 0) { $args += @('--value', $Value, '--contains') }
@@ -116,10 +121,13 @@ try {
     Add-Pass 'App is using isolated data directory'
 
     $currentStep = 'configure-app-server'
-    Invoke-UI @('invoke', 'NavWorkbench')
+    Invoke-UI @('invoke', 'NavAgentSettings')
+    Wait-UI 'AgentProvider'
+    Select-ComboItem 'AgentProvider' 'ProviderOptionCodex'
     Wait-UI 'UseAppServer'
     Invoke-UI @('set-value', 'WorkspaceRoot', $workspace)
     Invoke-UI @('set-value', 'AgentExecutable', $testAgentPath)
+    Invoke-UI @('set-value', 'AgentModel', '')
     $persistedSettingsPath = Join-Path $dataPath 'settings.json'
     $persistedMode = if (Test-Path -LiteralPath $persistedSettingsPath) {
         (Get-Content -LiteralPath $persistedSettingsPath -Raw | ConvertFrom-Json).AgentMode
@@ -128,6 +136,11 @@ try {
     Invoke-UI @('wait-for', 'AgentArguments', '-p', 'IsEnabled', '--value', 'False', '-t', '3000')
     Invoke-UI @('invoke', 'SaveSettings')
     Wait-UI 'Title' '設定を保存しました'
+    $savedAgent = Get-Content -LiteralPath $persistedSettingsPath -Raw | ConvertFrom-Json
+    if ($savedAgent.AgentProvider -ne 'codex' -or $savedAgent.AgentExecutable -ne $testAgentPath -or
+        $savedAgent.AgentMode -ne 'app-server' -or $savedAgent.AgentModel) {
+        throw 'Codex test-agent profile was not saved as expected.'
+    }
 
     $currentStep = 'configure-mattermost'
     Invoke-UI @('invoke', 'NavConnections')

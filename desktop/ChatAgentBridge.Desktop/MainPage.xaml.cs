@@ -13,6 +13,7 @@ public sealed partial class MainPage : Page
     public MainPageViewModel ViewModel { get; } = new();
     public bool IsOverviewSelected { get; private set; } = true;
     public bool IsWorkbenchSelected { get; private set; }
+    public bool IsAgentSelected { get; private set; }
     public bool IsConnectionsSelected { get; private set; }
     public bool IsChatSelected { get; private set; }
     public bool IsHistorySelected { get; private set; }
@@ -35,6 +36,7 @@ public sealed partial class MainPage : Page
         var serverDialogs = new AppServerUi.AppServerDialogs(() => XamlRoot);
         ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
         ViewModel.ServerInputHandler = serverDialogs.InputAsync;
+        HistoryPage.AgentSettingsRequested += () => OpenAgentSettings_Click(this, new RoutedEventArgs());
         MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
     }
 
@@ -57,6 +59,14 @@ public sealed partial class MainPage : Page
         MattermostTokenBox.Password = ViewModel.MattermostToken;
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
+        await ViewModel.RefreshStartupAsync();
+        if (ViewModel.IsSettingsLoaded)
+        {
+            if (ViewModel.AutoConnectProvider is "mattermost" or "slack")
+                MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "chat");
+            if (ViewModel.AutoConnectProvider == "mattermost") await InboxPage.ViewModel.ConnectMattermostCommand.ExecuteAsync(null);
+            else if (ViewModel.AutoConnectProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
+        }
     }
 
     private async void ReloadSettings_Click(object sender, RoutedEventArgs e)
@@ -72,22 +82,27 @@ public sealed partial class MainPage : Page
         if (args.SelectedItem is not NavigationViewItem item || item.Tag is not string tag) return;
         IsOverviewSelected = tag == "overview";
         IsWorkbenchSelected = tag == "workbench";
+        IsAgentSelected = tag == "agent";
         IsConnectionsSelected = tag == "connections";
         IsChatSelected = tag == "chat";
         IsHistorySelected = tag == "history";
+        ViewModel.IsStatusOpen = false;
         Bindings.Update();
         if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshAsync();
     }
 
     private void OpenWorkbench_Click(object sender, RoutedEventArgs e)
     {
-        MainNavigation.SelectedItem = MainNavigation.MenuItems[1];
-        IsOverviewSelected = false;
-        IsWorkbenchSelected = true;
-        IsConnectionsSelected = false;
-        IsChatSelected = false;
-        IsHistorySelected = false;
-        Bindings.Update();
+        MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "workbench");
+    }
+
+    private void OpenAgentSettings_Click(object sender, RoutedEventArgs e) =>
+        MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "agent");
+
+    private async void StartupToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleSwitch toggle && ViewModel.CanChangeStartup)
+            await ViewModel.ChangeStartupAsync(toggle.IsOn);
     }
 
     private void MattermostTokenBox_PasswordChanged(object sender, RoutedEventArgs e) => ViewModel.SetMattermostToken(MattermostTokenBox.Password);

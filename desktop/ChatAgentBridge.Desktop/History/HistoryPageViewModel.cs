@@ -10,7 +10,7 @@ namespace ChatAgentBridge_Desktop.History;
 public sealed record ExecutionHistoryRow(ExecutionRecord Record)
 {
     public string Started => Record.StartedAt.ToLocalTime().ToString("g");
-    public string Source => string.IsNullOrWhiteSpace(Record.Source) ? "ローカル" : Record.Source;
+    public string Source => SourceLabel(Record.Source);
     public string Status => Record.Status switch
     {
         "running" => "実行中または前回中断",
@@ -20,29 +20,71 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record)
         "interrupted" => "中断",
         _ => Record.Status
     };
-    public string Workspace => Record.WorkspaceRoot;
-    public string Session => Record.SessionId ?? "—";
-    public string Conversation => string.Join(" / ", new[] { Record.ChannelId, Record.ThreadId, Record.UserId }.Where(static value => !string.IsNullOrWhiteSpace(value)));
+    public string Summary => $"{Started} · {Source} · {Status}";
+    public string Workspace => $"作業フォルダー: {Record.WorkspaceRoot}";
+    public string Session => $"セッション ID: {Record.SessionId ?? "—"}";
+    public string Model => $"実行モデル: {Record.AgentModel ?? "既定モデル"}";
+    public string Conversation => $"会話: チャンネル {Record.ChannelId} / スレッド {Record.ThreadId} / ユーザー {Record.UserId}";
+
+    private static string SourceLabel(string source) => source switch
+    {
+        "local" => "ローカル",
+        "slack" => "Slack",
+        "mattermost" => "Mattermost",
+        _ => string.IsNullOrWhiteSpace(source) ? "不明な提供元" : source
+    };
 }
 
 public sealed record AuditHistoryRow(AuditEvent Record)
 {
     public string Timestamp => Record.Timestamp.ToLocalTime().ToString("g");
-    public string Kind => Record.Kind;
-    public string Source => string.IsNullOrWhiteSpace(Record.Source) ? "ローカル" : Record.Source;
-    public string Conversation => string.Join(" / ", new[] { Record.ChannelId, Record.ThreadId }.Where(static value => !string.IsNullOrWhiteSpace(value)));
+    public string Kind => Record.Kind switch
+    {
+        "received" => "依頼を受信",
+        "approved" => "承認",
+        "rejected" => "拒否",
+        "started" => "実行を開始",
+        "completed" => "実行が完了",
+        "failed" => "実行に失敗",
+        "cancelled" => "実行をキャンセル",
+        "reply_failed" => "状態通知に失敗",
+        "reply_sent" => "結果を送信",
+        "detached" => "セッションを切り離し",
+        _ => "その他の操作"
+    };
+    public string Source => Record.Source switch
+    {
+        "local" => "ローカル",
+        "slack" => "Slack",
+        "mattermost" => "Mattermost",
+        _ => "提供元不明"
+    };
+    public string Summary => $"{Timestamp} · {Source} · {Kind}";
+    public string Conversation => $"会話: チャンネル {Record.ChannelId} / スレッド {Record.ThreadId}";
 }
 
 public sealed record SessionHistoryRow(SessionBinding Binding)
 {
-    public string Provider => Binding.Key.Provider;
+    public string Provider => Binding.Key.Provider switch
+    {
+        "mattermost" => "Mattermost",
+        "slack" => "Slack",
+        "local" => "ローカル",
+        _ => "提供元不明"
+    };
     public string ChannelId => Binding.Key.ChannelId;
     public string ThreadId => Binding.Key.ThreadId;
     public string Workspace => Binding.WorkspaceRoot;
-    public string Agent => $"{Binding.AgentExecutable} {Binding.AgentArguments}".Trim();
+    public string Agent => Binding.AgentArguments == "app-server"
+        ? "Codex App Server"
+        : $"{Binding.AgentExecutable} {Binding.AgentArguments}".Trim();
     public string SessionId => Binding.SessionId;
     public string Conversation => $"{ChannelId} / {ThreadId}";
     public string AgentAndSession => $"{Agent} / {SessionId}";
+    public string ModelOverride => Binding.Model ?? string.Empty;
+    public string Model => string.IsNullOrWhiteSpace(Binding.Model)
+        ? "次回の実行モデル: 既定モデルを使用"
+        : $"次回の実行モデル: {Binding.Model}";
     public string Updated => Binding.UpdatedAt.ToLocalTime().ToString("g");
 }
 
@@ -55,14 +97,19 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public ObservableCollection<ExecutionHistoryRow> Executions { get; } = [];
     public ObservableCollection<AuditHistoryRow> AuditEvents { get; } = [];
     public ObservableCollection<SessionHistoryRow> Sessions { get; } = [];
+    [ObservableProperty] public partial bool HasExecutions { get; set; }
+    [ObservableProperty] public partial bool HasSessions { get; set; }
+    [ObservableProperty] public partial bool HasAuditEvents { get; set; }
 
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand))]
     public partial SessionHistoryRow? SelectedSession { get; set; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand)), NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand)), NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand))]
     public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string Status { get; set; } = "履歴とセッションを読み込んでいます。";
 
     public Func<SessionHistoryRow, Task<bool>>? ConfirmDetachAsync { get; set; }
+    /// <summary>Returns null to cancel, empty text to clear the override, or a model ID to save.</summary>
+    public Func<SessionHistoryRow, Task<string?>>? EditSessionModelAsync { get; set; }
 
     [RelayCommand(CanExecute = nameof(CanRefresh))]
     public async Task RefreshAsync()
@@ -83,6 +130,9 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             AuditEvents.Clear();
             foreach (var audit in auditEvents.OrderByDescending(static item => item.Timestamp))
                 AuditEvents.Add(new AuditHistoryRow(audit));
+            HasExecutions = Executions.Count > 0;
+            HasSessions = Sessions.Count > 0;
+            HasAuditEvents = AuditEvents.Count > 0;
             SelectedSession = null;
             Status = $"実行 {Executions.Count} 件、セッション {Sessions.Count} 件、監査イベント {AuditEvents.Count} 件";
         }
@@ -141,6 +191,29 @@ public sealed partial class HistoryPageViewModel : ObservableObject
 
     private bool CanRefresh() => !IsBusy;
     private bool CanDetachSelectedSession() => SelectedSession is not null && !IsBusy;
+    private bool CanEditSelectedSessionModel() => SelectedSession is not null && !IsBusy;
+
+    [RelayCommand(CanExecute = nameof(CanEditSelectedSessionModel))]
+    private async Task EditSelectedSessionModelAsync()
+    {
+        var selected = SelectedSession;
+        if (selected is null || IsBusy || EditSessionModelAsync is null) return;
+        IsBusy = true;
+        try
+        {
+            var model = await EditSessionModelAsync(selected);
+            if (model is null) return;
+            await _sessionStore.UpdateModelAsync(selected.Binding.Key,
+                string.IsNullOrWhiteSpace(model) ? null : model.Trim(), CancellationToken.None);
+            await RefreshContentsAsync("次回の実行モデルを保存しました。");
+            SelectedSession = Sessions.FirstOrDefault(row => row.Binding.Key == selected.Binding.Key);
+        }
+        catch
+        {
+            Status = "次回の実行モデルを保存できませんでした。セッションが残っているか確認してください。";
+        }
+        finally { IsBusy = false; }
+    }
 
     private async Task RefreshContentsAsync(string successMessage)
     {
@@ -154,6 +227,9 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         AuditEvents.Clear();
         foreach (var audit in auditEvents.OrderByDescending(static item => item.Timestamp))
             AuditEvents.Add(new AuditHistoryRow(audit));
+        HasExecutions = Executions.Count > 0;
+        HasSessions = Sessions.Count > 0;
+        HasAuditEvents = AuditEvents.Count > 0;
         SelectedSession = null;
         Status = $"{successMessage} 実行 {Executions.Count} 件、セッション {Sessions.Count} 件、監査イベント {AuditEvents.Count} 件";
     }

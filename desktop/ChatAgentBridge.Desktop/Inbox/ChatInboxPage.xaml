@@ -3,29 +3,27 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:inbox="using:ChatAgentBridge_Desktop.Inbox">
-    <Grid Padding="24" RowSpacing="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="2*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <ScrollViewer AutomationProperties.AutomationId="ChatScroll" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto"
+                  HorizontalScrollBarVisibility="Disabled" IsVerticalScrollChainingEnabled="True">
+      <StackPanel Padding="24" Spacing="16">
         <StackPanel Spacing="8">
-            <TextBlock Text="チャット受信" Style="{StaticResource TitleTextBlockStyle}"/>
-            <TextBlock Text="依頼をこのPCで承認して実行します。Codex標準exec・App Serverではスレッドごとに会話を継続します。App Serverの操作許可はPCまたは元の依頼者が同じスレッドで回答できます。本文は確認してから共有できます。自動再接続は未対応です。" TextWrapping="Wrap"/>
+            <TextBlock Text="チャット受信" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock Text="チャットの依頼は、確認してからこのPCで実行します。Codexの会話はスレッドごとに継続し、実行結果は確認後に共有できます。App Serverの操作許可はPCまたは元の依頼者が同じスレッドで回答でき、追加質問にはPC画面から回答します。自動再接続は未対応です。"
+                       TextWrapping="Wrap" />
         </StackPanel>
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Content="Mattermostに接続" Command="{x:Bind ViewModel.ConnectMattermostCommand}" AutomationProperties.AutomationId="ConnectMattermost"/>
             <Button Content="Slackに接続" Command="{x:Bind ViewModel.ConnectSlackCommand}" AutomationProperties.AutomationId="ConnectSlack"/>
             <Button Content="切断" Command="{x:Bind ViewModel.DisconnectCommand}" AutomationProperties.AutomationId="DisconnectChat"/>
         </StackPanel>
-        <StackPanel Grid.Row="2" Spacing="4">
+        <StackPanel Spacing="4">
             <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ChatStatus"/>
             <TextBlock Text="{x:Bind ViewModel.OverflowNotice, Mode=OneWay}" TextWrapping="Wrap"/>
         </StackPanel>
-        <ListView Grid.Row="3" ItemsSource="{x:Bind ViewModel.Requests}" SelectedItem="{x:Bind ViewModel.Selected, Mode=TwoWay}" SelectionMode="Single" AutomationProperties.AutomationId="ChatRequests" AutomationProperties.Name="受信した依頼">
+        <TextBlock Text="対象チャットに !cab 依頼内容 を投稿すると、ここに依頼が届きます。依頼を選び「内容を確認して実行」を押してください。SlackではBotへのメンションでも受信します。" TextWrapping="Wrap" />
+        <ListView ItemsSource="{x:Bind ViewModel.Requests}" SelectedItem="{x:Bind ViewModel.Selected, Mode=TwoWay}"
+                  SelectionMode="Single" MinHeight="120" MaxHeight="240"
+                  AutomationProperties.AutomationId="ChatRequests" AutomationProperties.Name="受信した依頼">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="inbox:InboxItem">
                     <StackPanel Spacing="4" Padding="4">
@@ -38,12 +36,30 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-        <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8">
-            <Button Content="内容を確認して実行" Command="{x:Bind ViewModel.ApproveCommand}" AutomationProperties.AutomationId="ApproveChat"/>
-            <Button Content="拒否" Command="{x:Bind ViewModel.RejectCommand}" AutomationProperties.AutomationId="RejectChat"/>
-            <Button Content="実行を停止" Command="{x:Bind ViewModel.CancelCommand}" AutomationProperties.AutomationId="CancelChat"/>
-            <Button Content="結果をスレッドに送信" Command="{x:Bind ViewModel.SendResultCommand}" AutomationProperties.AutomationId="SendChatResult"/>
-        </StackPanel>
-        <TextBox Grid.Row="5" Header="実行結果（このPCにのみ表示）" Text="{x:Bind ViewModel.Output, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="ChatOutput"/>
-    </Grid>
+        <Grid ColumnSpacing="8" RowSpacing="6">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+            <Button Grid.Row="0" Grid.Column="0" HorizontalAlignment="Stretch"
+                    Command="{x:Bind ViewModel.ApproveCommand}"
+                    AutomationProperties.AutomationId="ApproveChat">
+                <Button.Content><TextBlock Text="内容を確認して実行" TextWrapping="Wrap" TextAlignment="Center"/></Button.Content>
+            </Button>
+            <Button Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"
+                    Command="{x:Bind ViewModel.RejectCommand}" AutomationProperties.AutomationId="RejectChat">
+                <Button.Content><TextBlock Text="拒否" TextWrapping="Wrap" TextAlignment="Center"/></Button.Content>
+            </Button>
+            <Button Grid.Row="1" Grid.Column="0" HorizontalAlignment="Stretch"
+                    Command="{x:Bind ViewModel.CancelCommand}" AutomationProperties.AutomationId="CancelChat">
+                <Button.Content><TextBlock Text="実行を停止" TextWrapping="Wrap" TextAlignment="Center"/></Button.Content>
+            </Button>
+            <Button Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch"
+                    Command="{x:Bind ViewModel.SendResultCommand}" AutomationProperties.AutomationId="SendChatResult">
+                <Button.Content><TextBlock Text="結果をスレッドに送信" TextWrapping="Wrap" TextAlignment="Center"/></Button.Content>
+            </Button>
+        </Grid>
+        <TextBox Header="実行結果（このPCにのみ表示）" Text="{x:Bind ViewModel.Output, Mode=OneWay}"
+                 IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="140" MaxHeight="260"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="ChatOutput"/>
+      </StackPanel>
+    </ScrollViewer>
 </Page>

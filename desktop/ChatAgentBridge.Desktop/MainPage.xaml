@@ -13,7 +13,7 @@
         <NavigationView x:Name="MainNavigation"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
-                        PaneDisplayMode="Left"
+                        PaneDisplayMode="Auto" OpenPaneLength="240"
                         SelectionChanged="MainNavigation_SelectionChanged"
                         AutomationProperties.Name="メイン ナビゲーション"
                         AutomationProperties.AutomationId="MainNavigation">
@@ -21,17 +21,18 @@
                 <NavigationViewItem Content="概要" Tag="overview" AutomationProperties.Name="概要" AutomationProperties.AutomationId="NavOverview">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Home" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Content="ワークベンチ" Tag="workbench" AutomationProperties.Name="ワークベンチ" AutomationProperties.AutomationId="NavWorkbench">
+                <NavigationViewItem Content="手動で実行" Tag="workbench" AutomationProperties.Name="手動で実行" AutomationProperties.AutomationId="NavWorkbench">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Play" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem Content="エージェント設定" Tag="agent" AutomationProperties.AutomationId="NavAgentSettings" Icon="Setting" />
                 <NavigationViewItem Content="接続設定" Tag="connections" AutomationProperties.Name="接続設定" AutomationProperties.AutomationId="NavConnections">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Setting" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="チャット受信" Tag="chat" AutomationProperties.AutomationId="NavChat" Icon="Message" />
-                <NavigationViewItem Content="履歴とセッション" Tag="history" AutomationProperties.AutomationId="NavHistory" Icon="Clock" />
+                <NavigationViewItem Content="履歴と会話" Tag="history" AutomationProperties.AutomationId="NavHistory" Icon="Clock" />
             </NavigationView.MenuItems>
             <NavigationView.Content>
-                <Grid Padding="28,20,32,28">
+                <Grid Padding="16">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -47,7 +48,8 @@
                             Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsSettingsLoaded), Mode=OneWay}"
                             HorizontalAlignment="Left" AutomationProperties.AutomationId="ReloadSettings" />
 
-                    <ScrollViewer Grid.Row="2" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" VerticalScrollBarVisibility="Auto">
+                    <Button Grid.Row="1" Content="エージェント設定を保存" Margin="0,0,0,12" Command="{x:Bind ViewModel.SaveSettingsCommand}" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}" AutomationProperties.AutomationId="SaveSettings" />
+                    <ScrollViewer Grid.Row="2" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <Grid MaxWidth="1040" HorizontalAlignment="Stretch">
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsOverviewSelected), Mode=OneTime}">
                                 <StackPanel Spacing="4">
@@ -56,8 +58,8 @@
                                 </StackPanel>
                                 <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                     <StackPanel Spacing="12">
-                                        <TextBlock Text="移行状況" Style="{StaticResource SubtitleTextBlockStyle}" />
-                                        <TextBlock Text="ネイティブ画面とローカルのエージェント実行を利用できます。Mattermost と Slack の依頼は「チャット受信」で承認して実行できます。Codex のセッション継続はチャット依頼で利用し、ワークベンチの任意引数には適用しません。履歴には実行メタデータのみを保存します。" TextWrapping="Wrap" />
+                                        <TextBlock Text="はじめに" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="1. エージェント設定でCLI・モデル・作業フォルダーを保存します。&#x0a;2. 手動で実行するか、接続設定を保存してチャットへ接続します。&#x0a;3. チャットの依頼はPCで確認し、許可した内容だけを実行します。" TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Border>
                                 <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
@@ -71,57 +73,57 @@
                                         <TextBlock Text="{x:Bind ViewModel.SettingsLocation, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SettingsLocation" />
                                     </StackPanel>
                                 </Border>
-                                <Button Content="ワークベンチを開く" Click="OpenWorkbench_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="OpenWorkbench" />
+                                <Button Content="手動で実行する" Click="OpenWorkbench_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="OpenWorkbench" />
                             </StackPanel>
 
-                            <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsWorkbenchSelected), Mode=OneTime}">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Text="ワークベンチ" Style="{StaticResource TitleTextBlockStyle}" />
-                                    <TextBlock Text="設定したローカルエージェントにプロンプトを渡して実行します。" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+                            <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
+                                <TextBlock Text="エージェント設定" Style="{StaticResource TitleTextBlockStyle}" />
+                                <TextBlock Text="このアプリから次に実行するCLIとモデルを設定します。CLI自身の設定ファイルは変更しません。利用前にCLIのインストールとログインが必要です。" TextWrapping="Wrap" />
+                                <StackPanel Spacing="12">
+                                    <ComboBox Header="使うエージェント" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="AgentProvider" AutomationProperties.Name="使うエージェント">
+                                        <ComboBoxItem Content="Codex CLI" Tag="codex" AutomationProperties.AutomationId="ProviderOptionCodex" />
+                                        <ComboBoxItem Content="Claude Code CLI" Tag="claude" AutomationProperties.AutomationId="ProviderOptionClaude" />
+                                        <ComboBoxItem Content="その他のCLI（詳細設定）" Tag="custom" AutomationProperties.AutomationId="ProviderOptionCustom" />
+                                    </ComboBox>
+                                    <TextBox Header="モデル名（空欄ならCLIの既定値）" MaxLength="256" Text="{x:Bind ViewModel.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" AutomationProperties.AutomationId="AgentModel" AutomationProperties.Name="モデル名" />
+                                    <TextBlock Text="契約で使えるモデル名やエイリアスを入力します。モデルによって料金・速度・精度が変わります。保存済みCodexの会話ごとに変える場合は「履歴と会話」から指定できます。" TextWrapping="Wrap" />
+                                    <TextBox Header="作業フォルダー" Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="例: C:\Projects\my-app" AutomationProperties.AutomationId="WorkspaceRoot" AutomationProperties.Name="作業フォルダー" />
+                                    <TextBlock Text="エージェントがファイルを読み書きするプロジェクトのフォルダーです。チャットからこの場所を変更することはできません。" TextWrapping="Wrap" />
+                                    <ToggleSwitch Header="実行中の操作許可・質問を画面で受け取る（Codex専用）" IsOn="{x:Bind ViewModel.UseAppServer, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.IsCodexProvider, Mode=OneWay}" AutomationProperties.AutomationId="UseAppServer" />
+                                    <TextBlock Text="オンではCodex App Serverを利用します。オフではCLIへ依頼を渡して完了を待ちます。Claude Codeは単発実行で、途中の質問には対応しません。" TextWrapping="Wrap" />
+                                    <ToggleSwitch Header="手動実行の前に内容を確認する" IsOn="{x:Bind ViewModel.RequireApproval, Mode=TwoWay}" AutomationProperties.AutomationId="RequireApproval" />
+                                    <TextBlock Text="チャットから届いた依頼は、この設定にかかわらず毎回PCで確認します。" TextWrapping="Wrap" />
+                                    <Expander Header="詳細：CLIの場所と起動引数" HorizontalAlignment="Stretch" IsExpanded="True" AutomationProperties.AutomationId="AgentAdvanced">
+                                        <StackPanel Spacing="12">
+                                            <TextBox Header="CLI実行ファイル" Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="AgentExecutable" AutomationProperties.Name="CLI実行ファイル" />
+                                            <TextBlock Text="通常はcodexまたはclaudeです。見つからない場合は実行ファイルのフルパスを指定してください。" TextWrapping="Wrap" />
+                                            <TextBox Header="その他のCLIの起動引数" Text="{x:Bind ViewModel.AgentArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" IsEnabled="{x:Bind ViewModel.IsCustomProvider, Mode=OneWay}" AutomationProperties.AutomationId="AgentArguments" />
+                                            <TextBlock Text="Codex・Claude Codeの標準引数とモデル指定はアプリが組み立てます。その他のCLIは標準入力から依頼文を受け取れる形式を指定してください。" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Expander>
+                                    <TextBlock Text="起動と接続" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                    <ToggleSwitch Header="Windowsログイン時にこのアプリを起動" IsOn="{x:Bind ViewModel.StartWithWindows, Mode=OneWay}" Toggled="StartupToggle_Toggled" IsEnabled="{x:Bind ViewModel.CanChangeStartup, Mode=OneWay}" AutomationProperties.AutomationId="StartWithWindows" />
+                                    <TextBlock Text="{x:Bind ViewModel.StartupStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="StartupStatus" />
+                                    <ComboBox Header="アプリ起動後に自動接続するチャット" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AutoConnectProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="AutoConnectProvider">
+                                        <ComboBoxItem Content="接続しない" Tag="none" AutomationProperties.AutomationId="AutoConnectOptionNone" />
+                                        <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="AutoConnectOptionMattermost" />
+                                        <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="AutoConnectOptionSlack" />
+                                    </ComboBox>
+                                    <TextBlock Text="接続情報を保存したチャットへ、次回のアプリ起動時に接続します。依頼の自動実行や、ウィンドウを閉じた後の常駐は行いません。" TextWrapping="Wrap" />
                                 </StackPanel>
-                                <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                                    <StackPanel Spacing="16">
-                                        <TextBlock Text="実行環境" Style="{StaticResource SubtitleTextBlockStyle}" />
-                                        <ToggleSwitch Header="Codex App Serverを使う" IsOn="{x:Bind ViewModel.UseAppServer, Mode=TwoWay}" AutomationProperties.Name="Codex App Serverを使う" AutomationProperties.AutomationId="UseAppServer" />
-                                        <TextBlock Text="App Serverでは実行中の承認と追加入力を確認できます。起動引数はapp-serverに固定します。" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
-                                        <StackPanel Spacing="8">
-                                            <TextBlock Text="ワークスペースのパス" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                            <TextBox Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="例: C:\\Projects\\my-app" AutomationProperties.Name="ワークスペースのパス" AutomationProperties.AutomationId="WorkspaceRoot" />
-                                        </StackPanel>
-                                        <Grid ColumnSpacing="12">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /></Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0" Spacing="8">
-                                                <TextBlock Text="実行ファイル" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                                <TextBox Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="codex" AutomationProperties.Name="エージェント実行ファイル" AutomationProperties.AutomationId="AgentExecutable" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1" Spacing="8">
-                                                <TextBlock Text="引数" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                                <TextBox Text="{x:Bind ViewModel.AgentArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.IsExecMode, Mode=OneWay}" PlaceholderText="exec --json -" AutomationProperties.Name="エージェント引数" AutomationProperties.AutomationId="AgentArguments" />
-                                            </StackPanel>
-                                        </Grid>
-                                        <ToggleSwitch Header="実行前に確認する" IsOn="{x:Bind ViewModel.RequireApproval, Mode=TwoWay}" AutomationProperties.Name="実行前に確認する" AutomationProperties.AutomationId="RequireApproval" />
-                                        <StackPanel Spacing="8">
-                                            <TextBlock Text="プロンプト" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                            <TextBox Text="{x:Bind ViewModel.Prompt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                     PlaceholderText="エージェントに依頼する内容を入力"
-                                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="120"
-                                                     AutomationProperties.Name="エージェントへのプロンプト" AutomationProperties.AutomationId="Prompt" />
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Button Content="実行" Command="{x:Bind ViewModel.RunCommand}" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" AutomationProperties.AutomationId="RunAgent" />
-                                            <Button Content="キャンセル" Command="{x:Bind ViewModel.CancelRunCommand}" AutomationProperties.AutomationId="CancelAgent" />
-                                            <Button Content="設定を保存" Command="{x:Bind ViewModel.SaveSettingsCommand}" AutomationProperties.AutomationId="SaveSettings" />
-                                        </StackPanel>
-                                    </StackPanel>
-                                </Border>
-                                <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                                    <StackPanel Spacing="12">
-                                        <TextBlock Text="実行結果" Style="{StaticResource SubtitleTextBlockStyle}" />
-                                        <TextBox Text="{x:Bind ViewModel.Output, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="180" AutomationProperties.Name="エージェントの実行結果" AutomationProperties.AutomationId="AgentOutput" />
-                                    </StackPanel>
-                                </Border>
                             </StackPanel>
-
+                            <StackPanel Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsWorkbenchSelected), Mode=OneTime}">
+                                <TextBlock Text="手動で実行" Style="{StaticResource TitleTextBlockStyle}" />
+                                <TextBlock Text="このPCからエージェントに依頼します。実行するCLI・モデル・作業フォルダーは「エージェント設定」で変更できます。" TextWrapping="Wrap" />
+                                <TextBlock Text="{x:Bind ViewModel.SavedAgentSummary, Mode=OneWay}" TextWrapping="Wrap" />
+                                <HyperlinkButton Content="エージェント設定を開く" Click="OpenAgentSettings_Click" AutomationProperties.AutomationId="OpenAgentSettings" />
+                                <TextBox Header="依頼内容" Text="{x:Bind ViewModel.Prompt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="100" MaxHeight="180" AutomationProperties.AutomationId="Prompt" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="実行" Command="{x:Bind ViewModel.RunCommand}" AutomationProperties.AutomationId="RunAgent" />
+                                    <Button Content="実行を停止" Command="{x:Bind ViewModel.CancelRunCommand}" AutomationProperties.AutomationId="CancelAgent" />
+                                </StackPanel>
+                                <TextBox Header="実行結果（このPCのみ）" Text="{x:Bind ViewModel.Output, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="160" MaxHeight="400" AutomationProperties.AutomationId="AgentOutput" />
+                            </StackPanel>
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="接続設定" Style="{StaticResource TitleTextBlockStyle}" />
@@ -129,17 +131,17 @@
                                 </StackPanel>
                                 <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                     <StackPanel Spacing="16">
-                                        <TextBlock Text="Mattermost" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Mattermost" Style="{StaticResource SubtitleTextBlockStyle}" /><TextBlock Text="サーバーURLは利用中のMattermostのアドレスです。チャンネルIDは表示名とは異なる識別子で、このチャンネルだけを受信します。接続するユーザーの権限で読み取り・投稿するため、そのユーザーを対象チャンネルへ参加させてください。" TextWrapping="Wrap" />
                                         <StackPanel Spacing="8"><TextBlock Text="サーバー URL" Style="{StaticResource BodyStrongTextBlockStyle}" /><TextBox Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com" AutomationProperties.Name="Mattermost サーバー URL" AutomationProperties.AutomationId="MattermostServerUrl" /></StackPanel>
-                                        <StackPanel Spacing="8"><TextBlock Text="チャンネル ID" Style="{StaticResource BodyStrongTextBlockStyle}" /><TextBox Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Mattermost チャンネル ID" AutomationProperties.AutomationId="MattermostChannelId" /></StackPanel>
-                                        <StackPanel Spacing="8"><TextBlock Text="アクセストークン" Style="{StaticResource BodyStrongTextBlockStyle}" /><PasswordBox x:Name="MattermostTokenBox" PasswordChanged="MattermostTokenBox_PasswordChanged" AutomationProperties.Name="Mattermost アクセストークン" AutomationProperties.AutomationId="MattermostToken" /></StackPanel>
+                                        <StackPanel Spacing="8"><TextBlock Text="受信するチャンネルのID" Style="{StaticResource BodyStrongTextBlockStyle}" /><TextBox Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Mattermost チャンネル ID" AutomationProperties.AutomationId="MattermostChannelId" /></StackPanel>
+                                        <StackPanel Spacing="8"><TextBlock Text="接続するユーザーのアクセストークン" Style="{StaticResource BodyStrongTextBlockStyle}" /><PasswordBox x:Name="MattermostTokenBox" PasswordChanged="MattermostTokenBox_PasswordChanged" AutomationProperties.Name="Mattermost アクセストークン" AutomationProperties.AutomationId="MattermostToken" /></StackPanel>
                                     </StackPanel>
                                 </Border>
                                 <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                     <StackPanel Spacing="16">
-                                        <TextBlock Text="Slack" Style="{StaticResource SubtitleTextBlockStyle}" />
-                                        <StackPanel Spacing="8"><TextBlock Text="Bot トークン" Style="{StaticResource BodyStrongTextBlockStyle}" /><PasswordBox x:Name="SlackBotTokenBox" PasswordChanged="SlackBotTokenBox_PasswordChanged" AutomationProperties.Name="Slack Bot トークン" AutomationProperties.AutomationId="SlackBotToken" /></StackPanel>
-                                        <StackPanel Spacing="8"><TextBlock Text="App トークン" Style="{StaticResource BodyStrongTextBlockStyle}" /><PasswordBox x:Name="SlackAppTokenBox" PasswordChanged="SlackAppTokenBox_PasswordChanged" AutomationProperties.Name="Slack App トークン" AutomationProperties.AutomationId="SlackAppToken" /></StackPanel>
+                                        <TextBlock Text="Slack" Style="{StaticResource SubtitleTextBlockStyle}" /><TextBlock Text="Botトークンは投稿用、AppトークンはSocket Modeで依頼を受信するために使います。Slackアプリ側の権限・イベント購読の設定と、Botのチャンネル参加が必要です。" TextWrapping="Wrap" />
+                                        <StackPanel Spacing="8"><TextBlock Text="Botトークン（xoxb-で始まる値）" Style="{StaticResource BodyStrongTextBlockStyle}" /><PasswordBox x:Name="SlackBotTokenBox" PasswordChanged="SlackBotTokenBox_PasswordChanged" AutomationProperties.Name="Slack Bot トークン" AutomationProperties.AutomationId="SlackBotToken" /></StackPanel>
+                                        <StackPanel Spacing="8"><TextBlock Text="Socket Mode用Appトークン（xapp-で始まる値）" Style="{StaticResource BodyStrongTextBlockStyle}" /><PasswordBox x:Name="SlackAppTokenBox" PasswordChanged="SlackAppTokenBox_PasswordChanged" AutomationProperties.Name="Slack App トークン" AutomationProperties.AutomationId="SlackAppToken" /></StackPanel>
                                     </StackPanel>
                                 </Border>
                                 <Button Content="接続設定を保存" Command="{x:Bind ViewModel.SaveSettingsCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SaveConnections" />

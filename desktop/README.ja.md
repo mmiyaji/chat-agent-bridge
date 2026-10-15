@@ -4,7 +4,7 @@
 
 ## 構成
 
-- `ChatAgentBridge.Desktop`: WinUI 3、MVVM、概要・ワークベンチ・接続設定・チャット受信・履歴とセッション。
+- `ChatAgentBridge.Desktop`: WinUI 3、MVVM、概要・手動実行画面・接続設定・チャット受信・履歴とセッション。
 - `ChatAgentBridge.Core`: 設定、Windows DPAPI、CLI実行・停止・排他、Codexセッション継続、履歴と監査の永続化。
 - `ChatAgentBridge.Transports`: Slack Socket Mode / Mattermost WebSocket。受信と返信を担当し、エージェントを直接実行しません。
 - `*.Tests`: CLI・保存・イベントフィルター・承認の自動テスト。実通信テストは明示的に有効化した場合だけ実行します。
@@ -29,7 +29,7 @@ dotnet test desktop/ChatAgentBridge.Transports.Tests/ChatAgentBridge.Transports.
 
 ## 使い方
 
-1. ワークベンチで既存の作業フォルダー、エージェント実行ファイル、引数を指定して設定を保存します。Codex の既定引数は `exec --json -` です。任意の CLI を設定する場合は標準入力からプロンプトを受け取れる形式を指定してください。Codexの対話的な承認・追加入力を使う場合は「Codex App Serverを使う」をオンにします。このモードの引数は固定です。
+1. 「エージェント設定」でCLI・モデル・作業フォルダーを指定して保存します。Codex CLI、Claude Code CLI、その他のCLIを選べます。モデル名が空欄ならCLIの既定値を使います。Codex の既定引数は `exec --json -` です。任意の CLI を設定する場合は標準入力からプロンプトを受け取れる形式を指定してください。Codexの対話的な承認・追加入力を使う場合は「Codex App Serverを使う」をオンにします。このモードの引数は固定です。
 2. 接続設定で認証情報を入力して保存します。Mattermost には対象チャンネル ID も指定します。HTTPS、またはローカルホストの HTTP が利用できます。
 3. チャット受信からどちらかのプロバイダーへ接続します。設定変更後は切断・再接続してください。接続はアプリ起動のたびに明示的に開始します。
 4. Mattermost では指定チャンネルに `!cab 依頼内容` を投稿します。Slack では bot をメンション、またはスレッド返信に `!cab 依頼内容` を投稿します。必要な bot 権限・イベント購読・Socket Mode の設定は別途必要です。
@@ -45,11 +45,11 @@ dotnet test desktop/ChatAgentBridge.Transports.Tests/ChatAgentBridge.Transports.
 
 ワークスペースや実行ファイル・引数を変更した場合は、保存済みセッションをそのまま別設定で使いません。「履歴とセッション」で切り離してから新規依頼を実行してください。切り離しは関連付けだけを削除し、Codex自身のセッションや実行履歴は削除しません。実行中の同じスレッドの処理があれば、終了まで待って解除します。
 
-任意のCLI・カスタム引数・ワークベンチからの実行は、現在は単発実行です。新規実行を途中でキャンセルし、CLIのセッションIDを取得できなかった場合、その新規セッションはbridgeに紐付きません。Codex自身のセッション保存はCLIの設定に従います。
+任意のCLI・カスタム引数・手動実行画面からの実行は、現在は単発実行です。新規実行を途中でキャンセルし、CLIのセッションIDを取得できなかった場合、その新規セッションはbridgeに紐付きません。Codex自身のセッション保存はCLIの設定に従います。
 
 ### App Serverの承認と追加入力
 
-App Serverモードでは `thread/start` / `thread/resume` / `turn/start` を使い、チャットスレッドへの関連付けを保存します。execとの切替には関連付けの解除が必要です。ワークベンチは単発実行です。[公式App Server仕様](https://learn.chatgpt.com/docs/app-server)
+App Serverモードでは `thread/start` / `thread/resume` / `turn/start` を使い、チャットスレッドへの関連付けを保存します。execとの切替には関連付けの解除が必要です。手動実行画面は単発実行です。[公式App Server仕様](https://learn.chatgpt.com/docs/app-server)
 
 コマンド実行・ファイル変更の許可はPCのダイアログ、または元の依頼者による同じスレッドへの `!cab approve <コード>` / `!cab reject <コード>` で回答できます。最初の回答だけが有効で、5分経過・切断・キャンセルは拒否します。最初の依頼の実行確認は引き続きPCで必要です。追加入力はPC上の選択肢・テキスト欄で回答し、チャットには転送しません。
 
@@ -109,3 +109,14 @@ WinUIからの通し確認は、`desktop/artifacts` の下の新しい空フォ�
 manifest の identity / publisher は開発用です。Store 提出時には Partner Center の値、正式なアイコン、説明、プライバシーポリシー、依存関係と対象 OS の確認が必要です。パッケージ生成と Store 審査通過は別の確認です。
 
 未移行機能と段階別の進捗は [移行計画](../docs/winui-migration-plan.ja.md) を参照してください。
+
+
+## 起動設定・モデル設定（2026-10-16）
+
+「エージェント設定」のモデル名は、このアプリがCLIを起動する際に指定します。Codexは `--model` またはApp Serverのturnパラメーター、Claude Codeは `--print --output-format text --model` を使用し、依頼文は標準入力で渡します。CLI自身の設定ファイルやログイン情報は変更しません。「その他のCLI」は手動の引数をそのまま使います。
+
+「履歴と会話」から既定のエージェント設定を開けます。保存済みCodexの会話を選び「次回の実行モデルを設定」を使うと、その会話にだけ適用するモデルを指定できます。空欄で保存すると既定モデルへ戻ります。実行中の会話では終了を待って変更し、実行中のモデルは切り替えません。Claude Codeは現在単発実行で、会話継続は未対応です。
+
+Windowsログイン時の自動起動と、アプリ起動後のチャット自動接続は別の設定です。自動起動の変更はWindowsのStartupTaskに即時反映し、OSで無効にした場合はタスクマネージャーの案内を表示します。自動接続先は設定保存後、次回起動から適用します。初期値はいずれも無効です。ウィンドウを閉じた後の常駐や、依頼の無確認実行は行いません。
+
+接続中に既定のCLI・モデルを変更した場合は、切断して再接続してください。会話ごとのモデル上書きは次回の実行開始時に読み直します。

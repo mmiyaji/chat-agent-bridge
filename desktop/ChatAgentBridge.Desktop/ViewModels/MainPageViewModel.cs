@@ -41,6 +41,17 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string WorkspaceRoot { get; set; } = string.Empty;
     [ObservableProperty] public partial string AgentExecutable { get; set; } = "codex";
     [ObservableProperty] public partial string AgentArguments { get; set; } = "exec --json -";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(SupportsModel))]
+    public partial string AgentProvider { get; set; } = "codex";
+    public bool IsCodexProvider => AgentProvider == "codex";
+    public bool IsCustomProvider => AgentProvider == "custom";
+    public bool SupportsModel => !IsCustomProvider;
+    [ObservableProperty] public partial string AgentModel { get; set; } = "";
+    [ObservableProperty] public partial string AutoConnectProvider { get; set; } = "none";
+    [ObservableProperty] public partial bool StartWithWindows { get; set; }
+    [ObservableProperty] public partial bool CanChangeStartup { get; set; }
+    [ObservableProperty] public partial string StartupStatus { get; set; } = "Windowsの起動設定を確認しています…";
+    private readonly Startup.StartupTaskService _startup = new();
     [ObservableProperty, NotifyPropertyChangedFor(nameof(IsExecMode))]
     public partial bool UseAppServer { get; set; }
     public bool IsExecMode => !UseAppServer;
@@ -73,6 +84,9 @@ public partial class MainPageViewModel : ObservableObject
             WorkspaceRoot = _settings.WorkspaceRoot;
             AgentExecutable = _settings.AgentExecutable;
             AgentArguments = _settings.AgentArguments;
+            AgentProvider = _settings.AgentProvider;
+            AgentModel = _settings.AgentModel ?? "";
+            AutoConnectProvider = _settings.AutoConnectProvider;
             UseAppServer = _settings.AgentMode == "app-server";
             MattermostServerUrl = _settings.MattermostServerUrl;
             MattermostChannelId = _settings.MattermostChannelId;
@@ -102,6 +116,34 @@ public partial class MainPageViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(CanReloadSettings))]
     public Task ReloadSettingsAsync() => LoadAsync();
+
+    partial void OnAgentProviderChanged(string value)
+    {
+        if (IsLoading) return;
+        UseAppServer = false;
+        AgentModel = "";
+        AgentExecutable = value == "claude" ? "claude" : value == "codex" ? "codex" : AgentExecutable;
+        AgentArguments = value == "claude" ? "--print --output-format text" : value == "codex" ? "exec --json -" : AgentArguments;
+    }
+
+    public async Task RefreshStartupAsync()
+    {
+        CanChangeStartup = false;
+        var result = await _startup.GetStateAsync();
+        StartWithWindows = result.IsEnabled;
+        StartupStatus = result.Message;
+        CanChangeStartup = result.State is Startup.StartupState.Enabled or Startup.StartupState.Disabled;
+    }
+
+    public async Task ChangeStartupAsync(bool enabled)
+    {
+        if (!CanChangeStartup || enabled == StartWithWindows) return;
+        CanChangeStartup = false;
+        var result = await _startup.SetEnabledAsync(enabled);
+        StartWithWindows = result.IsEnabled;
+        StartupStatus = result.Message;
+        CanChangeStartup = result.State is Startup.StartupState.Enabled or Startup.StartupState.Disabled;
+    }
 
     [RelayCommand(CanExecute = nameof(CanSaveSettings))]
     private async Task SaveSettingsAsync()
@@ -165,6 +207,7 @@ public partial class MainPageViewModel : ObservableObject
             StartedAt = DateTimeOffset.UtcNow,
             Source = "local",
             WorkspaceRoot = settingsSnapshot.WorkspaceRoot,
+            AgentModel = settingsSnapshot.AgentModel,
             Status = "running"
         };
         var runCancellation = new CancellationTokenSource();
@@ -300,6 +343,9 @@ public partial class MainPageViewModel : ObservableObject
         WorkspaceRoot = WorkspaceRoot.Trim(),
         AgentExecutable = AgentExecutable.Trim(),
         AgentArguments = AgentArguments.Trim(),
+        AgentProvider = AgentProvider,
+        AgentModel = string.IsNullOrWhiteSpace(AgentModel) ? null : AgentModel.Trim(),
+        AutoConnectProvider = AutoConnectProvider,
         AgentMode = UseAppServer ? "app-server" : "exec",
         MattermostServerUrl = MattermostServerUrl.Trim(),
         MattermostChannelId = MattermostChannelId.Trim(),
@@ -311,7 +357,7 @@ public partial class MainPageViewModel : ObservableObject
 
     private void UpdateSavedAgentSummary() => SavedAgentSummary = string.IsNullOrWhiteSpace(AgentExecutable)
         ? "エージェントは未設定です"
-        : $"{AgentExecutable} {(UseAppServer ? "app-server" : AgentArguments)}".Trim();
+        : $"{AgentExecutable} / モデル: {(string.IsNullOrWhiteSpace(AgentModel) ? "CLIの既定値" : AgentModel)} / {(UseAppServer ? "対話的な操作確認" : "完了まで実行")}";
 
     private void SetStatus(string title, string message, string severity)
     {

@@ -17,6 +17,10 @@ function Invoke-UI([string[]]$Arguments) {
     & winapp ui @Arguments -a $AppPid
     if ($LASTEXITCODE -ne 0) { throw "UI command failed: $($Arguments[0])" }
 }
+function Select-ComboItem([string]$AutomationId, [string]$ItemAutomationId) {
+    Invoke-UI @('invoke', $AutomationId)
+    Invoke-UI @('invoke', $ItemAutomationId)
+}
 function Check([string]$Name, [scriptblock]$Action) {
     try { & $Action; $results.Add(@{ name = $Name; passed = $true }) }
     catch { $results.Add(@{ name = $Name; passed = $false; error = $_.Exception.Message }) }
@@ -28,18 +32,43 @@ Invoke-UI @('wait-for', 'SettingsLocation', '--value', [System.IO.Path]::GetFull
 
 Check 'Navigation and initialized settings' {
     Invoke-UI @('wait-for', 'NavOverview', '-t', '5000')
-    Invoke-UI @('invoke', 'NavWorkbench')
+    Invoke-UI @('invoke', 'NavAgentSettings')
+    Invoke-UI @('wait-for', 'AgentProvider', '-t', '3000')
     Invoke-UI @('wait-for', 'WorkspaceRoot', '-t', '3000')
+    Invoke-UI @('invoke', 'NavWorkbench')
+    Invoke-UI @('wait-for', 'Prompt', '-t', '3000')
     Invoke-UI @('wait-for', 'RunAgent', '-p', 'IsEnabled', '--value', 'True', '-t', '3000')
 }
-Check 'Save isolated settings' {
+
+Check 'Claude profile and model persist without running a paid model' {
+    Invoke-UI @('invoke', 'NavAgentSettings')
+    Select-ComboItem 'AgentProvider' 'ProviderOptionClaude'
+    Invoke-UI @('wait-for', 'AgentExecutable', '--value', 'claude', '-t', '3000')
+    Invoke-UI @('set-value', 'AgentModel', 'claude-smoke-model')
+    Invoke-UI @('invoke', 'SaveSettings')
+    Invoke-UI @('wait-for', 'Title', '--value', '設定を保存しました', '--contains', '-t', '3000')
+    $saved = Get-Content -LiteralPath (Join-Path $DataDirectory 'settings.json') -Raw | ConvertFrom-Json
+    if ($saved.AgentProvider -ne 'claude' -or $saved.AgentExecutable -ne 'claude' -or
+        $saved.AgentArguments -ne '--print --output-format text' -or $saved.AgentModel -ne 'claude-smoke-model') {
+        throw 'Claude profile executable, arguments, or model were not persisted.'
+    }
+}
+
+Check 'Select custom PowerShell fixture and save isolated settings' {
+    Invoke-UI @('invoke', 'NavAgentSettings')
+    Select-ComboItem 'AgentProvider' 'ProviderOptionCustom'
     Invoke-UI @('set-value', 'WorkspaceRoot', $DataDirectory)
     Invoke-UI @('set-value', 'AgentExecutable', 'powershell.exe')
     Invoke-UI @('set-value', 'AgentArguments', '-NoProfile -NonInteractive -Command "[Console]::Write([Console]::In.ReadToEnd())"')
     Invoke-UI @('invoke', 'SaveSettings')
     Invoke-UI @('wait-for', 'Title', '--value', '設定を保存しました', '--contains', '-t', '3000')
     $saved = Get-Content -LiteralPath (Join-Path $DataDirectory 'settings.json') -Raw | ConvertFrom-Json
-    if ($saved.WorkspaceRoot -ne $DataDirectory) { throw 'Workspace was not persisted.' }
+    if ($saved.AgentProvider -ne 'custom' -or $saved.AgentModel -or $saved.WorkspaceRoot -ne $DataDirectory -or
+        $saved.AgentExecutable -ne 'powershell.exe' -or $saved.AgentArguments -ne '-NoProfile -NonInteractive -Command "[Console]::Write([Console]::In.ReadToEnd())"') {
+        throw 'Custom PowerShell profile or workspace was not persisted.'
+    }
+    Invoke-UI @('invoke', 'NavWorkbench')
+    Invoke-UI @('wait-for', 'RunAgent', '-p', 'IsEnabled', '--value', 'True', '-t', '3000')
 }
 Check 'Confirmation can cancel without running' {
     Invoke-UI @('set-value', 'Prompt', 'winui-smoke-no-model')
@@ -92,6 +121,16 @@ if ($TestSessionDetach) {
         Invoke-UI @('invoke', 'RefreshHistory')
         Invoke-UI @('wait-for', $sessionId, '-t', '3000')
         Invoke-UI @('click', $sessionId)
+        Invoke-UI @('scroll', 'HistoryScroll', '--to', 'bottom')
+        Invoke-UI @('scroll-into-view', 'EditSessionModel')
+        Invoke-UI @('wait-for', 'EditSessionModel', '-p', 'IsEnabled', '--value', 'True', '-t', '3000')
+        Invoke-UI @('invoke', 'EditSessionModel')
+        Invoke-UI @('wait-for', 'SessionModelDialog', '-t', '3000')
+        Invoke-UI @('set-value', 'SessionModelOverride', 'smoke-session-model')
+        Invoke-UI @('invoke', 'PrimaryButton')
+        Invoke-UI @('wait-for', 'HistoryStatus', '--value', '次回の実行モデルを保存しました', '--contains', '-t', '5000')
+        $saved = Get-Content -LiteralPath $sessionPath -Raw | ConvertFrom-Json
+        if ($saved.Bindings[0].Model -ne 'smoke-session-model') { throw 'Session model override did not persist.' }
         Invoke-UI @('wait-for', 'DetachSession', '-p', 'IsEnabled', '--value', 'True', '-t', '3000')
         Invoke-UI @('invoke', 'DetachSession')
         Invoke-UI @('wait-for', 'DetachSessionConfirmation', '-t', '3000')

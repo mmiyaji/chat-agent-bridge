@@ -189,6 +189,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var key = new SessionKey(item.Request.Provider, item.Request.ChannelId, item.Request.ThreadId);
             var binding = await _sessions.FindAsync(key, token);
             item.SessionLabel = binding is null ? "新規セッション（Codex標準exec / App Serverで継続可能）" : $"継続セッション: {binding.SessionId}";
+            item.SessionLabel += $"\n実行モデル: {binding?.Model ?? item.Settings.AgentModel ?? "CLIの既定値"}";
             if (ConfirmAsync is null || !await ConfirmAsync(item)) return;
             if (item.State != "承認待ち" || token.IsCancellationRequested) return;
             record = new ExecutionRecord
@@ -196,7 +197,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 StartedAt = DateTimeOffset.UtcNow, Source = item.Request.Provider,
                 ChannelId = item.Request.ChannelId, ThreadId = item.Request.ThreadId,
                 UserId = item.Request.UserId, WorkspaceRoot = item.Workspace,
-                SessionId = binding?.SessionId, Status = "running"
+                SessionId = binding?.SessionId, Status = "running",
+                AgentModel = binding?.Model ?? item.Settings.AgentModel
             };
             await _history.RecordAsync(record, _execution.Token);
             item.ExecutionId = record.Id;
