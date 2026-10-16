@@ -10,6 +10,8 @@ namespace ChatAgentBridge_Desktop;
 public sealed partial class MainPage : Page
 {
     private bool _hasLoaded;
+    private string? _selectedNavigationTag;
+    private int _scrollResetGeneration;
 
     public MainPageViewModel ViewModel { get; } = new();
     public bool IsOverviewSelected { get; private set; } = true;
@@ -86,6 +88,8 @@ public sealed partial class MainPage : Page
     private void MainNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         if (args.SelectedItem is not NavigationViewItem item || item.Tag is not string tag) return;
+        var pageChanged = !string.Equals(_selectedNavigationTag, tag, StringComparison.Ordinal);
+        _selectedNavigationTag = tag;
         IsOverviewSelected = tag == "overview";
         IsWorkbenchSelected = tag == "workbench";
         IsAgentSelected = tag == "agent";
@@ -95,6 +99,20 @@ public sealed partial class MainPage : Page
         if (!IsAgentSelected) ViewModel.CancelModelCatalogLookup();
         ViewModel.IsStatusOpen = false;
         Bindings.Update();
+        if (pageChanged && _hasLoaded)
+        {
+            var generation = ++_scrollResetGeneration;
+            if (IsFormSelected)
+            {
+                DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+                {
+                    if (generation != _scrollResetGeneration || !IsFormSelected) return;
+                    MainNavigation.UpdateLayout();
+                    MainContentScroll.UpdateLayout();
+                    MainContentScroll.ChangeView(0, 0, null, true);
+                });
+            }
+        }
         if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshAsync();
     }
 

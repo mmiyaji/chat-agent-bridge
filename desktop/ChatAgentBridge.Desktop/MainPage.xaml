@@ -49,7 +49,7 @@
                             HorizontalAlignment="Left" AutomationProperties.AutomationId="ReloadSettings" />
 
                     <Button Grid.Row="1" Content="エージェント設定を保存" Margin="0,0,0,12" Command="{x:Bind ViewModel.SaveSettingsCommand}" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}" AutomationProperties.AutomationId="SaveSettings" />
-                    <ScrollViewer Grid.Row="2" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ScrollViewer x:Name="MainContentScroll" Grid.Row="2" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="MainContentScroll" AutomationProperties.Name="メイン コンテンツ">
                         <Grid MaxWidth="1040" HorizontalAlignment="Stretch">
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsOverviewSelected), Mode=OneTime}">
                                 <StackPanel Spacing="4">
