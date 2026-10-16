@@ -42,15 +42,27 @@ public sealed class ChatApprovalBrokerTests
         Assert.Equal(AppServerDecision.Decline, await request.WaitAsync(TimeSpan.FromSeconds(2)));
     }
 
-    [Fact]
-    public async Task WrongScopeControlIsConsumedButCannotApprove()
+    [Theory]
+    [InlineData("user")]
+    [InlineData("channel")]
+    [InlineData("thread")]
+    [InlineData("provider")]
+    public async Task WrongScopeControlIsConsumedButCannotApprove(string changedScope)
     {
         var broker = new ChatApprovalBroker(TimeSpan.FromSeconds(3));
         var transport = new FakeTransport();
         Task<AppServerDecision> request = broker.RequestAsync(transport, Origin, Approval, null);
         string code = await GetCodeAsync(transport);
 
-        Assert.True(broker.TryHandle(Origin with { UserId = "other-user", Text = $"approve {code}" }));
+        var otherScope = changedScope switch
+        {
+            "user" => Origin with { UserId = "other-user" },
+            "channel" => Origin with { ChannelId = "other-channel" },
+            "thread" => Origin with { ThreadId = "other-thread" },
+            "provider" => Origin with { Provider = "slack" },
+            _ => throw new ArgumentOutOfRangeException(nameof(changedScope))
+        };
+        Assert.True(broker.TryHandle(otherScope with { Text = $"approve {code}" }));
         Assert.False(request.IsCompleted);
         Assert.True(broker.TryHandle(Origin with { Text = $"approve {code}" }));
         Assert.Equal(AppServerDecision.Accept, await request.WaitAsync(TimeSpan.FromSeconds(2)));
