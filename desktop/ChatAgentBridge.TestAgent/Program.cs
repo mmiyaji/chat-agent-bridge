@@ -1,6 +1,19 @@
 using System.Text.Json;
 
 // Offline E2E fixture only. No model calls, command execution, file changes or networking.
+if (args is ["--version"])
+{
+    var exeName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "");
+    var fixtureVersion = Environment.GetEnvironmentVariable("CAB_TEST_AGENT_VERSION");
+    var version = fixtureVersion ?? (exeName.Equals("codex", StringComparison.OrdinalIgnoreCase)
+        ? "codex-cli 1.2.3 (offline fixture)"
+        : exeName.Equals("claude", StringComparison.OrdinalIgnoreCase)
+            ? "Claude Code 1.2.3 (offline fixture)"
+            : "ChatAgentBridge.TestAgent 1.2.3 (offline fixture)");
+    await Console.Out.WriteLineAsync(version);
+    return;
+}
+
 if (args.Contains("--input-format") && Array.IndexOf(args, "--input-format") + 1 < args.Length
     && args[Array.IndexOf(args, "--input-format") + 1] == "stream-json")
 {
