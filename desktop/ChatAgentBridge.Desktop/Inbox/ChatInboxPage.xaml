@@ -21,7 +21,7 @@
             <TextBlock Text="{x:Bind ViewModel.OverflowNotice, Mode=OneWay}" TextWrapping="Wrap"/>
             <TextBlock Text="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="NotificationStatus"/>
         </StackPanel>
-        <TextBlock Text="対象チャットに !cab 依頼内容 を投稿すると、ここに依頼が届きます。依頼を選び「内容を確認して実行」を押してください。SlackではBotへのメンションでも受信します。" TextWrapping="Wrap" />
+        <TextBlock Text="Mattermostでは !cab 依頼内容、SlackではBotへのメンションで依頼を始めます。Slackで保存済みの会話を続ける場合は、同じ本人が同じスレッドへ普通に返信できます。新しい会話や保存前の返信にはメンションまたは !cab を付けてください。各依頼はPCまたはWindows通知で承認してから実行します。" TextWrapping="Wrap" />
         <ListView ItemsSource="{x:Bind ViewModel.Requests}" SelectedItem="{x:Bind ViewModel.Selected, Mode=TwoWay}"
                   SelectionMode="Single" MinHeight="120" MaxHeight="240"
                   AutomationProperties.AutomationId="ChatRequests" AutomationProperties.Name="受信した依頼">

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text.Json.Serialization;
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
@@ -25,6 +26,7 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
         if (string.IsNullOrWhiteSpace(settings.SlackBotToken) || string.IsNullOrWhiteSpace(settings.SlackAppToken))
             throw new InvalidOperationException("Slack bot and app tokens are required for Socket Mode.");
         _botToken = settings.SlackBotToken.Trim();
+        var sessions = new SessionStore();
         var appToken = settings.SlackAppToken.Trim();
         var identity = await SlackApiAsync<AuthTestResponse>("auth.test", settings.SlackBotToken.Trim(), null, cancellationToken).ConfigureAwait(false);
         if (!identity.Ok || string.IsNullOrWhiteSpace(identity.UserId)) throw new InvalidOperationException("Slack bot token validation failed.");
@@ -60,8 +62,8 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
             {
                 await SendAsync(socket, new { envelope_id = envelopeId }, cancellationToken).ConfigureAwait(false);
                 if (!envelope.TryGetProperty("payload", out var payload) || !payload.TryGetProperty("event", out var evt)) continue;
-                var request = ParseRequest(evt, _botUserId);
-                if (request is null || !ChatAccessPolicy.IsAllowed(settings, "slack", request.UserId) || !_seen.TryAdd(request.MessageId)) continue;
+                var request = await ParseRequestAsync(evt, _botUserId, settings, sessions, cancellationToken).ConfigureAwait(false);
+                if (request is null || !_seen.TryAdd(request.MessageId)) continue;
                 await onRequest(request, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -82,7 +84,7 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
         return ValueTask.CompletedTask;
     }
 
-    internal static ChatRequest? ParseRequest(JsonElement evt, string? botUserId)
+    internal static ChatRequest? ParseRequest(JsonElement evt, string? botUserId, bool allowPlainThreadReplies = false)
     {
         if (!TryString(evt, "type", out var eventType) || !TryString(evt, "channel", out var channel) ||
             !TryString(evt, "user", out var user) || !TryString(evt, "text", out var text) ||
@@ -95,7 +97,7 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
         var isThreadReply = !string.IsNullOrWhiteSpace(threadTimestamp) && threadTimestamp != timestamp;
         var mentionsBot = ContainsBotMention(text, botUserId);
         var hasTrigger = StartsWithTrigger(text);
-        if (eventType == "message" && (!isThreadReply || (!hasTrigger && !mentionsBot))) return null;
+        if (eventType == "message" && (!isThreadReply || (!allowPlainThreadReplies && !hasTrigger && !mentionsBot))) return null;
         if (eventType == "app_mention" && !mentionsBot) return null;
 
         var root = threadTimestamp ?? timestamp;
@@ -103,6 +105,20 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
         if (StartsWithTrigger(normalized)) normalized = normalized[Trigger.Length..].Trim();
         if (normalized.Length == 0) return null;
         return new ChatRequest("slack", channel, root, user, normalized, timestamp);
+    }
+
+    internal static async Task<ChatRequest?> ParseRequestAsync(JsonElement evt, string? botUserId,
+        BridgeSettings settings, SessionStore sessions, CancellationToken cancellationToken = default)
+    {
+        var request = ParseRequest(evt, botUserId);
+        if (request is not null)
+            return ChatAccessPolicy.IsAllowed(settings, "slack", request.UserId) ? request : null;
+
+        var continuation = ParseRequest(evt, botUserId, allowPlainThreadReplies: true);
+        if (continuation is null || !ChatAccessPolicy.IsAllowed(settings, "slack", continuation.UserId)) return null;
+
+        var key = ChatSessionScope.Create("slack", continuation.ChannelId, continuation.ThreadId, continuation.UserId);
+        return await sessions.FindAsync(key, cancellationToken).ConfigureAwait(false) is null ? null : continuation;
     }
 
     private async Task<T> SlackApiAsync<T>(string method, string token, object? body, CancellationToken ct)
