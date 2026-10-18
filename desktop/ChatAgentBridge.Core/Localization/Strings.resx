@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="TrustedWorkspaceRequired" xml:space="preserve"><value>The workspace must exist and be inside a trusted workspace root.</value></data>
+  <data name="NativeCliRequired" xml:space="preserve"><value>CLI verification requires a native executable. Specify the executable path.</value></data>
+  <data name="CliNotFound" xml:space="preserve"><value>CLI executable was not found. Check the executable path or PATH.</value></data>
+  <data name="CliStartFailed" xml:space="preserve"><value>The CLI process could not be started.</value></data>
+  <data name="CliLaunchFailed" xml:space="preserve"><value>The CLI could not be launched. Check the executable and permissions.</value></data>
+  <data name="CliVersionTimeout" xml:space="preserve"><value>CLI version verification timed out. Check the CLI and try again.</value></data>
+  <data name="CliVersionUnavailable" xml:space="preserve"><value>Could not get valid version information from the CLI. Check that it is installed.</value></data>
+  <data name="CliProviderMismatch" xml:space="preserve"><value>The executable version information does not match {0}. Specify the correct CLI executable.</value></data>
+  <data name="ApprovalPermissionLine" xml:space="preserve"><value>Approve: !cab approve {0}</value></data>
+  <data name="ApprovalRejectLine" xml:space="preserve"><value>Reject: !cab reject {0}</value></data>
+  <data name="ApprovalRequestTitle" xml:space="preserve"><value>Codex is requesting permission to perform an action.</value></data>
+  <data name="ApprovalMethodLabel" xml:space="preserve"><value>Method</value></data>
+  <data name="ApprovalDescriptionLabel" xml:space="preserve"><value>Description</value></data>
+  <data name="ApprovalCommandLabel" xml:space="preserve"><value>Command</value></data>
+  <data name="ApprovalWorkingDirectoryLabel" xml:space="preserve"><value>Working directory</value></data>
+  <data name="UsageMissing" xml:space="preserve"><value>Usage: not reported by the provider</value></data>
+  <data name="UsageScopeSource" xml:space="preserve"><value>Usage scope: {0} · Source: {1}</value></data>
+  <data name="UsageModel" xml:space="preserve"><value>Usage model: {0}</value></data>
+  <data name="UsageInputTotal" xml:space="preserve"><value>Total input tokens: {0}</value></data>
+  <data name="UsageInputNormalAndTotal" xml:space="preserve"><value>Regular input tokens: {0} · Total input tokens: {1}</value></data>
+  <data name="UsageOutputTokens" xml:space="preserve"><value>Output tokens: {0}</value></data>
+  <data name="UsageCachedInputTokens" xml:space="preserve"><value>Cached input tokens: {0}</value></data>
+  <data name="UsageCacheWriteTokens" xml:space="preserve"><value>Cache-write input tokens: {0}</value></data>
+  <data name="UsageCacheHitRate" xml:space="preserve"><value>Cache reuse rate (share of input tokens): {0}</value></data>
+  <data name="UsageProcessStart" xml:space="preserve"><value>Process start {0}</value></data>
+  <data name="UsageInitialize" xml:space="preserve"><value>Initialization {0}</value></data>
+  <data name="UsageQueue" xml:space="preserve"><value>Queue {0}</value></data>
+  <data name="UsageTotal" xml:space="preserve"><value>Total {0}</value></data>
+  <data name="UsageExecutionTime" xml:space="preserve"><value>Execution time: {0}</value></data>
+  <data name="UsageProcessReused" xml:space="preserve"><value>Process: reused</value></data>
+  <data name="UsageProcessNew" xml:space="preserve"><value>Process: newly started</value></data>
+  <data name="UsageDisclaimer" xml:space="preserve"><value>Usage is reported by the CLI. It is not a measure of cost or subscription allowance consumed.</value></data>
+  <data name="UsageScopeTurn" xml:space="preserve"><value>This turn</value></data>
+  <data name="UsageScopeLastRequest" xml:space="preserve"><value>Most recent API request (not the entire execution)</value></data>
+  <data name="UsageScopeThreadTotal" xml:space="preserve"><value>Conversation total (includes past executions)</value></data>
+  <data name="Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="CodexCli" xml:space="preserve"><value>Codex CLI</value></data>
+  <data name="ClaudeCodeCli" xml:space="preserve"><value>Claude Code CLI</value></data>
+  <data name="CodexAppServer" xml:space="preserve"><value>Codex App Server</value></data>
+  <data name="NotReported" xml:space="preserve"><value>Not reported</value></data>
+</root>

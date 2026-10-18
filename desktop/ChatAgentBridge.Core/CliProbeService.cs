@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
+using ChatAgentBridge.Core.Localization;
 
 namespace ChatAgentBridge.Core;
 
@@ -26,7 +27,7 @@ public sealed class CliProbeService
         var configured = AgentProfile.ResolveEffectiveExecutable(settings);
         var cwd = settings.WorkspaceRoot;
         if (string.IsNullOrWhiteSpace(cwd) || !Path.IsPathFullyQualified(cwd) || !Directory.Exists(cwd) || !ExecutionPolicy.IsWorkspaceTrusted(settings, cwd))
-            throw new InvalidOperationException("CLI確認には、存在する絶対パスで信頼済みのワークスペースを指定してください。");
+            throw new InvalidOperationException(CoreText.Get("TrustedWorkspaceRequired"));
 
         // Use the same native Codex resolution as actual runs and model discovery.
         // In particular, an npm shim must resolve to codex.exe without starting a shell.
@@ -40,9 +41,9 @@ public sealed class CliProbeService
         if (extension.Equals(".cmd", StringComparison.OrdinalIgnoreCase) ||
             extension.Equals(".bat", StringComparison.OrdinalIgnoreCase) ||
             extension.Equals(".ps1", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("CLIの確認にはネイティブ実行ファイルが必要です。実行ファイルのパスを指定してください。");
+            throw new InvalidOperationException(CoreText.Get("NativeCliRequired"));
         var executable = ResolveExecutable(probeExecutable, Path.GetFullPath(cwd));
-        if (executable is null) throw new FileNotFoundException("CLI実行ファイルが見つかりません。実行ファイルのパスまたは PATH を確認してください。", configured);
+        if (executable is null) throw new FileNotFoundException(CoreText.Get("CliNotFound"), configured);
 
         using var process = new Process
         {
@@ -62,11 +63,11 @@ public sealed class CliProbeService
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            if (!process.Start()) throw new InvalidOperationException("CLIプロセスを開始できませんでした。");
+            if (!process.Start()) throw new InvalidOperationException(CoreText.Get("CliStartFailed"));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            throw new InvalidOperationException("CLIを起動できません。実行ファイルとアクセス権を確認してください。", ex);
+            throw new InvalidOperationException(CoreText.Get("CliLaunchFailed"), ex);
         }
 
         using var timeoutSource = new CancellationTokenSource(_timeout);
@@ -85,12 +86,12 @@ public sealed class CliProbeService
             TryKill(process);
             await BoundedCleanupAsync(process, stdout, stderr).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            throw new TimeoutException("CLIのバージョン確認がタイムアウトしました。CLIの状態を確認して再試行してください。");
+            throw new TimeoutException(CoreText.Get("CliVersionTimeout"));
         }
         var output = await stdout.ConfigureAwait(false);
         var version = Sanitize(output);
         if (process.ExitCode != 0 || version.Length == 0)
-            throw new InvalidOperationException("CLIから有効なバージョン情報を取得できませんでした。CLIのインストール状態を確認してください。");
+            throw new InvalidOperationException(CoreText.Get("CliVersionUnavailable"));
 
         var recognized = provider switch
         {
@@ -99,7 +100,7 @@ public sealed class CliProbeService
             _ => false
         };
         if ((provider is AgentProfile.Codex or AgentProfile.Claude) && !recognized)
-            throw new InvalidOperationException($"実行ファイルのバージョン情報が {provider} と一致しません。正しいCLI実行ファイルを指定してください。");
+            throw new InvalidOperationException(CoreText.Get("CliProviderMismatch", provider));
         return new CliProbeResult(executable, version, recognized);
     }
 

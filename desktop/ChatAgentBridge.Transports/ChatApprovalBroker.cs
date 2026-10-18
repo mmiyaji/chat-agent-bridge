@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using ChatAgentBridge.Core.Localization;
 using ChatAgentBridge.Core.AppServer;
 
 namespace ChatAgentBridge.Transports;
@@ -144,14 +145,14 @@ public sealed class ChatApprovalBroker
 
     private static string FormatRequest(AppServerApproval approval, string code)
     {
-        string footer = $"\n許可: !cab approve {code}\n拒否: !cab reject {code}";
+        string footer = $"\n{CoreText.Get("ApprovalPermissionLine", code)}\n{CoreText.Get("ApprovalRejectLine", code)}";
         var builder = new StringBuilder();
-        builder.AppendLine("Codex が操作の許可を求めています。");
+        builder.AppendLine(CoreText.Get("ApprovalRequestTitle"));
         int remaining = 3000 - builder.Length - footer.Length;
-        Append("メソッド", approval.Method);
-        Append("説明", approval.Description);
-        Append("コマンド", approval.Command);
-        Append("作業フォルダー", approval.WorkingDirectory);
+        Append(CoreText.Get("ApprovalMethodLabel"), approval.Method);
+        Append(CoreText.Get("ApprovalDescriptionLabel"), approval.Description);
+        Append(CoreText.Get("ApprovalCommandLabel"), approval.Command);
+        Append(CoreText.Get("ApprovalWorkingDirectoryLabel"), approval.WorkingDirectory);
         builder.Append(footer);
         return builder.ToString();
 
