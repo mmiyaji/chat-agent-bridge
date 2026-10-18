@@ -553,21 +553,24 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await AuditAsync(record.Status, item.Request, record.Id);
             try
             {
-                await item.Transport.ReplyAsync(item.Request,
-                    DesktopText.Get("InboxExecutionStateChatNotice", item.StateDisplay), _execution.Token);
+                if (!await CheckAccessAsync(item, token)) return;
                 Status = needsLogin ? DesktopText.Get("InboxClaudeLoginRequired")
                     : result.Success ? DesktopText.Get("InboxResultReady")
                     : DesktopText.Get("InboxExecutionFailed");
-                if (result.Success && effectiveSettings.ChatResultMode == "auto" && item.ResultText.Length > 0 &&
-                    await CheckAccessAsync(item, token))
+                if (result.Success && effectiveSettings.ChatResultMode == "auto" && item.ResultText.Length > 0)
                 {
                     await item.Transport.ReplyAsync(item.Request, BoundedReply(item.ResultText), token);
                     await AuditAsync("reply_sent", item.Request, record.Id, token);
                     Status = DesktopText.Get("InboxResultAutoShared");
                 }
-                else if (effectiveSettings.ChatResultMode == "none")
-                    Status = result.Success ? DesktopText.Get("InboxResultPrivateSuccess")
-                        : DesktopText.Get("InboxResultPrivateFailed");
+                else
+                {
+                    await item.Transport.ReplyAsync(item.Request,
+                        DesktopText.Get("InboxExecutionStateChatNotice", item.StateDisplay), token);
+                    if (effectiveSettings.ChatResultMode == "none")
+                        Status = result.Success ? DesktopText.Get("InboxResultPrivateSuccess")
+                            : DesktopText.Get("InboxResultPrivateFailed");
+                }
             }
             catch (Exception)
             {
