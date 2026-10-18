@@ -21,6 +21,8 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     [ObservableProperty] public partial string SessionLabel { get; set; } = "実行前にセッションを確認します";
     [ObservableProperty] public partial string ResultText { get; set; } = "";
     public Guid? ExecutionId { get; set; }
+    public string? ExecutionPolicyFingerprint { get; set; }
+    public bool AllowsResultSharing { get; set; } = true;
 }
 
 public sealed partial class ChatInboxViewModel : ObservableObject
@@ -42,6 +44,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private bool _disconnecting;
     private bool _closing;
     private InboxItem? _notificationApprovedItem;
+    private InboxItem? _automaticallyApprovedItem;
+    private bool _processingPolicies;
+    private readonly HashSet<InboxItem> _notifiedRequests = [];
+    private readonly HashSet<InboxItem> _automaticallyAttempted = [];
     private int _droppedCount;
 
     public ObservableCollection<InboxItem> Requests { get; } = [];
@@ -49,7 +55,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public event Action? ConnectionEnded;
     [ObservableProperty] public partial string NotificationStatus { get; set; } = "";
     [ObservableProperty] public partial string Status { get; set; } = "切断中。接続設定を保存してから接続してください。";
-    [ObservableProperty] public partial string Output { get; set; } = "受信した依頼は自動実行されません。選択して内容を確認し、承認してください。";
+    [ObservableProperty] public partial string Output { get; set; } = "実行結果はここに表示されます。依頼の実行と結果共有は、会話の承認・共有設定に従います。";
     [ObservableProperty] public partial string UsageSummary { get; set; } = "利用量は実行後に表示します。";
     [ObservableProperty] public partial string OverflowNotice { get; set; } = "";
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
@@ -58,6 +64,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public partial bool IsConnectionConfirmed { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
     public partial bool IsExecuting { get; set; }
+    partial void OnIsExecutingChanged(bool value)
+    {
+        if (!value) _ = ProcessPendingPoliciesAsync();
+    }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
     public partial InboxItem? Selected { get; set; }
     public Func<InboxItem, Task<bool>>? ConfirmAsync { get; set; }
@@ -107,6 +117,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 throw new InvalidOperationException("作業フォルダーを設定し、保存してください。");
             // Reconnection invalidates pending work from the previous connection.
             Requests.Clear();
+            _notifiedRequests.Clear();
+            _automaticallyAttempted.Clear();
             Selected = null;
             _transport = transport;
             var connection = new CancellationTokenSource();
@@ -161,10 +173,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                                 return;
                             }
                             Requests.Remove(completed);
+                            _notifiedRequests.Remove(completed);
+                            _automaticallyAttempted.Remove(completed);
                         }
                         var item = new InboxItem(request, transport, settings);
                         Requests.Add(item);
-                        RequestReceived?.Invoke(item);
+                        _ = ProcessPendingPoliciesAsync();
                         Status = $"依頼を受信しました。{request.Provider} の承認待ちを確認してください。";
                     }
                     completion.TrySetResult();
@@ -228,6 +242,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         IsExecuting = true;
         _activeItem = item;
         var approvedByNotification = ReferenceEquals(_notificationApprovedItem, item);
+        var approvedAutomatically = ReferenceEquals(_automaticallyApprovedItem, item);
         ExecutionRecord? record = null;
         try
         {
@@ -238,14 +253,24 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (!await CheckAccessAsync(item, token)) return;
             var key = CreateSessionKey(item);
             var binding = await _sessions.FindAsync(key, token);
-            var requestedModel = binding?.Model ?? item.Settings.AgentModel;
-            var requestedEffort = binding?.ReasoningEffort ??
-                (binding?.Model is null || string.Equals(binding.Model, item.Settings.AgentModel, StringComparison.Ordinal)
-                    ? item.Settings.AgentReasoningEffort : null);
+            var effectiveSettings = ConversationExecutionPolicy.GetEffectiveSettings(item.Settings, binding);
+            if (!ExecutionPolicy.IsWorkspaceTrusted(effectiveSettings, effectiveSettings.WorkspaceRoot))
+                throw new InvalidOperationException("作業フォルダーが信頼フォルダーの範囲外です。");
+            if (approvedAutomatically && ConversationExecutionPolicy.RequiresApproval(key, effectiveSettings, binding))
+            {
+                if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
+                Status = "会話の実行設定が変わったため、改めて承認が必要です。";
+                return;
+            }
+            item.ExecutionPolicyFingerprint = ConversationExecutionPolicy.GetFingerprint(key, effectiveSettings);
+            item.AllowsResultSharing = effectiveSettings.ChatResultMode != "none";
+            var requestedModel = effectiveSettings.AgentModel;
+            var requestedEffort = effectiveSettings.AgentReasoningEffort;
             item.SessionLabel = binding is null ? "新規会話（Codex・Claude Codeでは継続先を保存します）" : $"継続セッション: {binding.SessionId}";
             item.SessionLabel += $"\n実行モデル: {requestedModel ?? "CLIの既定値"} / 推論レベル: {requestedEffort ?? "CLIの既定値"}";
             item.SessionLabel += $"\n会話の所有者: {item.Request.UserId}";
-            if (!approvedByNotification && (ConfirmAsync is null || !await ConfirmAsync(item))) return;
+            item.SessionLabel += $"\n承認: {ApprovalLabel(effectiveSettings.ChatApprovalMode)} / 結果: {ResultLabel(effectiveSettings.ChatResultMode)} / 操作権限: {PermissionLabel(effectiveSettings.AgentPermissionMode)}";
+            if (!approvedByNotification && !approvedAutomatically && (ConfirmAsync is null || !await ConfirmAsync(item))) return;
             if (item.State != "承認待ち" || token.IsCancellationRequested) return;
             if (!await CheckAccessAsync(item, token)) return;
             record = new ExecutionRecord
@@ -264,10 +289,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.State = "実行中";
             Output = "エージェントを実行しています…";
             UsageSummary = "実行中。利用量は完了後に表示します。";
-            var result = item.Settings.AgentMode == "app-server"
-                ? await _serverRunner.RunAsync(key, item.Settings, item.Request.Text,
+            var result = effectiveSettings.AgentMode == "app-server"
+                ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
                     new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: ServerInputHandler), _execution.Token)
-                : await _runner.RunAsync(key, item.Settings, item.Request.Text, _execution.Token);
+                : await _runner.RunAsync(key, effectiveSettings, item.Request.Text, _execution.Token);
             Output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
             var needsLogin = !result.Success && item.Settings.AgentProvider == AgentProfile.Claude &&
                 (Output.Contains("Not logged in", StringComparison.OrdinalIgnoreCase) ||
@@ -282,6 +307,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.ResultText = reply.Length > 4001 ? reply[..4001] : reply;
             item.State = result.Success ? "完了" : $"失敗 ({result.ExitCode})";
             var updated = await _sessions.FindAsync(key);
+            if (result.Success && !approvedAutomatically && effectiveSettings.ChatApprovalMode == "first" && updated is not null &&
+                await CheckAccessAsync(item, token))
+                await _sessions.SetFirstApprovalFingerprintAsync(key, item.ExecutionPolicyFingerprint!, token);
             if (updated is not null) item.SessionLabel = $"継続セッション: {updated.SessionId}\n実行モデル: {requestedModel ?? "CLIの既定値"} / 推論レベル: {requestedEffort ?? "CLIの既定値"}";
             record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = result.Success ? "completed" : "failed", ExitCode = result.ExitCode, SessionId = updated?.SessionId, Usage = result.Usage, Metrics = result.Metrics };
             await _history.RecordAsync(record);
@@ -293,6 +321,16 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 Status = needsLogin ? "Claude Codeが未ログインのため実行できませんでした。実行結果欄のログイン手順を確認してください。"
                     : result.Success ? "実行結果を確認できます。本文を共有する場合は「結果をスレッドに送信」を選択してください。"
                     : "実行に失敗しました。実行結果欄のエラーを確認してから再度依頼してください。";
+                if (result.Success && effectiveSettings.ChatResultMode == "auto" && item.ResultText.Length > 0 &&
+                    await CheckAccessAsync(item, token))
+                {
+                    await item.Transport.ReplyAsync(item.Request, BoundedReply(item.ResultText), token);
+                    await AuditAsync("reply_sent", item.Request, record.Id, token);
+                    Status = "設定に従って結果本文を元のスレッドへ自動返信しました。スレッドの閲覧者全員に公開されます。";
+                }
+                else if (effectiveSettings.ChatResultMode == "none")
+                    Status = result.Success ? "実行を完了しました。結果本文はPC上のみ表示します。会話の設定で共有は無効です。"
+                        : "実行に失敗しました。実行結果欄を確認してください。結果本文の共有は会話の設定で無効です。";
             }
             catch (Exception)
             {
@@ -363,14 +401,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (CanApprove()) await RejectCommand.ExecuteAsync(null);
     }
 
-    private bool CanSendResult() => !IsExecuting && IsConnectionConfirmed && Selected is { ResultText.Length: > 0 } item && ReferenceEquals(item.Transport, _transport);
+    private bool CanSendResult() => !IsExecuting && IsConnectionConfirmed && Selected is { ResultText.Length: > 0, AllowsResultSharing: true } item && ReferenceEquals(item.Transport, _transport);
 
     [RelayCommand(CanExecute = nameof(CanSendResult))]
     private async Task SendResultAsync()
     {
         var item = Selected;
         if (item is null || !CanSendResult()) return;
-        var text = item.ResultText.Length > 4000 ? item.ResultText[..4000] + "\n（長いため省略。全文はPC上で確認してください。）" : item.ResultText;
+        var text = BoundedReply(item.ResultText);
         IsExecuting = true;
         _activeItem = item;
         try
@@ -410,7 +448,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
 
     private static bool HasAccess(BridgeSettings current, ChatRequest request, BridgeSettings received)
     {
-        if (!ChatAccessPolicy.IsAllowed(current, request.Provider, request.UserId)) return false;
+        if (!ChatAccessPolicy.IsAllowedRequest(current, request.Provider, request.UserId, request.ChannelId, request.ThreadId) ||
+            !SameExecutionDefaults(current, received)) return false;
         if (request.Provider == "mattermost")
             return current.MattermostChannelId == request.ChannelId && received.MattermostChannelId == request.ChannelId &&
                 current.MattermostToken == received.MattermostToken &&
@@ -424,6 +463,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         try
         {
             var settings = await _store.LoadAsync();
+            var previous = Volatile.Read(ref _accessSettings);
             Volatile.Write(ref _accessSettings, settings);
             foreach (var item in Requests.Where(item => !HasAccess(settings, item.Request, item.Settings)))
             {
@@ -431,6 +471,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 item.ResultText = "";
             }
             if (_activeItem is { } active && !HasAccess(settings, active.Request, active.Settings)) _execution?.Cancel();
+            if (IsConnected && previous is not null && !SameExecutionDefaults(previous, settings))
+                Status = "実行設定を変更しました。保留中の依頼は実行しません。切断して再接続し、必要な依頼を再投稿してください。";
         }
         catch (Exception)
         {
@@ -448,12 +490,20 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         var settings = await _store.LoadAsync(token);
         Volatile.Write(ref _accessSettings, settings);
-        if (HasAccess(settings, item.Request, item.Settings)) return true;
+        var allowed = HasAccess(settings, item.Request, item.Settings);
+        if (allowed && item.ExecutionPolicyFingerprint is { } fingerprint)
+        {
+            var key = CreateSessionKey(item);
+            var binding = await _sessions.FindAsync(key, token);
+            var effective = ConversationExecutionPolicy.GetEffectiveSettings(settings, binding);
+            allowed = fingerprint == ConversationExecutionPolicy.GetFingerprint(key, effective);
+        }
+        if (allowed) return true;
         App.DispatcherQueue.TryEnqueue(() =>
         {
             item.State = "許可取り消し・実行不可";
             item.ResultText = "";
-            Status = "許可ユーザーまたは接続設定が変更されたため、実行・結果共有を停止しました。";
+            Status = "許可範囲または実行・会話設定が変更されたため、実行・結果共有を停止しました。設定確認後に再接続・再投稿してください。";
         });
         return false;
     }
@@ -496,6 +546,82 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         var parsed = result.Codex ?? CodexOutputParser.Parse(result.Output);
         return parsed.FinalMessage ?? (parsed.HasEvents ? "" : result.Output);
     }
+
+    private async Task ProcessPendingPoliciesAsync()
+    {
+        if (_processingPolicies || IsExecuting || !IsConnectionConfirmed || _closing) return;
+        _processingPolicies = true;
+        try
+        {
+            await Task.Yield();
+            if (IsExecuting || !IsConnectionConfirmed || _closing) return;
+            // New requests can arrive while an earlier execution awaits the CLI.
+            // Take snapshots and serialize all automatic execution through the same command.
+            foreach (var item in Requests.ToArray())
+            {
+                if (_closing || !IsConnectionConfirmed || IsExecuting) break;
+                if (item.State != "承認待ち" || _automaticallyAttempted.Contains(item)) continue;
+                if (!await CheckAccessAsync(item, _connection?.Token ?? CancellationToken.None)) continue;
+                var key = CreateSessionKey(item);
+                var binding = await _sessions.FindAsync(key);
+                var effective = ConversationExecutionPolicy.GetEffectiveSettings(item.Settings, binding);
+                if (ConversationExecutionPolicy.RequiresApproval(key, effective, binding))
+                {
+                    if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
+                    continue;
+                }
+                _automaticallyAttempted.Add(item);
+                if (_notifiedRequests.Remove(item))
+                {
+                    // First-turn consent can authorize replies that arrived while it was pending.
+                    // Resolve their obsolete approval toasts before starting them automatically.
+                    item.State = "自動実行を準備";
+                    item.State = "承認待ち";
+                }
+                if (!Requests.Contains(item) || !ReferenceEquals(item.Transport, _transport)) continue;
+                Selected = item;
+                _automaticallyApprovedItem = item;
+                try { if (CanApprove()) await ApproveCommand.ExecuteAsync(null); }
+                finally { _automaticallyApprovedItem = null; }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception)
+        {
+            Status = "実行ポリシーを確認できないため自動実行を停止しました。設定・会話の関連付けを確認してください。";
+            foreach (var item in Requests.Where(item => item.State == "承認待ち"))
+                if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
+        }
+        finally
+        {
+            _processingPolicies = false;
+            if (!_closing && !IsExecuting && IsConnectionConfirmed && Requests.Any(item => item.State == "承認待ち" &&
+                !_notifiedRequests.Contains(item) && !_automaticallyAttempted.Contains(item)))
+            {
+                await Task.Yield();
+                _ = ProcessPendingPoliciesAsync();
+            }
+        }
+    }
+
+    private static bool SameExecutionDefaults(BridgeSettings left, BridgeSettings right) =>
+        left.WorkspaceRoot == right.WorkspaceRoot && left.AgentExecutable == right.AgentExecutable &&
+        left.AgentArguments == right.AgentArguments && left.AgentMode == right.AgentMode && left.AgentProvider == right.AgentProvider &&
+        left.AgentModel == right.AgentModel && left.AgentReasoningEffort == right.AgentReasoningEffort &&
+        left.AgentPermissionMode == right.AgentPermissionMode && left.AllowAgentNetwork == right.AllowAgentNetwork &&
+        left.TrustedWorkspaceRoots == right.TrustedWorkspaceRoots && left.ChatApprovalMode == right.ChatApprovalMode &&
+        left.ChatResultMode == right.ChatResultMode && left.ShareApprovalsInChat == right.ShareApprovalsInChat;
+
+    private static string BoundedReply(string text) => text.Length > 4000
+        ? text[..4000] + "\n（長いため省略。全文はPC上で確認してください。）" : text;
+
+    private static string ApprovalLabel(string mode) => mode switch { "auto" => "自動", "first" => "開始時のみ", _ => "毎回" };
+    private static string ResultLabel(string mode) => mode switch { "auto" => "自動返信", "none" => "共有しない", _ => "手動共有" };
+    private static string PermissionLabel(string mode) => mode switch
+    {
+        "read-only" => "読み取り・計画のみ", "workspace-write" => "編集を自動許可",
+        "full-access" => "フルアクセス", "ask" => "操作ごとに確認", _ => "CLIの既定値"
+    };
 
     [RelayCommand(CanExecute = nameof(IsExecuting))]
     private void Cancel() => _execution?.Cancel();

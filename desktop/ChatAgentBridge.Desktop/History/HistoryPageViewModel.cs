@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace ChatAgentBridge_Desktop.History;
 
 public sealed record ModelExecutionSelection(string? Model, string? ReasoningEffort);
+public sealed record SessionPolicySelection(string? ChatApprovalMode, string? ChatResultMode, string? AgentPermissionMode);
 
 public sealed record ExecutionHistoryRow(ExecutionRecord Record)
 {
@@ -91,7 +92,16 @@ public sealed record SessionHistoryRow(SessionBinding Binding)
         ? "次回の実行モデル: 既定モデルを使用"
         : $"次回の実行モデル: {Binding.Model}";
     public string ReasoningEffort => $"次回の推論レベル: {Binding.ReasoningEffort ?? "エージェント設定を継承（モデルが異なる場合はCLIの既定値）"}";
+    public string ExecutionPolicy => $"会話ポリシー: 承認 {PolicyLabel(Binding.ChatApprovalMode, "毎回確認", "first", "最初だけ確認", "auto", "自動承認")} / 結果 {PolicyLabel(Binding.ChatResultMode, "手動で確認して共有", "auto", "自動共有", "none", "共有しない")} / AI操作 {PermissionLabel(Binding.AgentPermissionMode)}";
     public string Updated => Binding.UpdatedAt.ToLocalTime().ToString("g");
+
+    private static string PolicyLabel(string? value, string defaultLabel, string keyOne, string labelOne, string keyTwo, string labelTwo) =>
+        value is null ? "全体設定" : value == keyOne ? labelOne : value == keyTwo ? labelTwo : defaultLabel;
+    private static string PermissionLabel(string? value) => value switch
+    {
+        null => "全体設定", "read-only" => "読み取り・計画のみ", "workspace-write" => "フォルダー内の編集を自動許可",
+        "full-access" => "フルアクセス", "ask" => "操作ごとに確認", _ => "CLI既定"
+    };
 }
 
 public sealed partial class HistoryPageViewModel : ObservableObject
@@ -108,14 +118,15 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     [ObservableProperty] public partial bool HasSessions { get; set; }
     [ObservableProperty] public partial bool HasAuditEvents { get; set; }
 
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand))]
     public partial SessionHistoryRow? SelectedSession { get; set; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand)), NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand)), NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand))]
     public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string Status { get; set; } = "履歴とセッションを読み込んでいます。";
 
     public Func<SessionHistoryRow, Task<bool>>? ConfirmDetachAsync { get; set; }
     public Func<SessionHistoryRow, BridgeSettings, Task<ModelExecutionSelection?>>? EditSessionModelAsync { get; set; }
+    public Func<SessionHistoryRow, BridgeSettings, Task<SessionPolicySelection?>>? EditSessionPolicyAsync { get; set; }
 
     [RelayCommand(CanExecute = nameof(CanRefresh))]
     public async Task RefreshAsync()
@@ -198,6 +209,30 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     private bool CanRefresh() => !IsBusy;
     private bool CanDetachSelectedSession() => SelectedSession is not null && !IsBusy;
     private bool CanEditSelectedSessionModel() => SelectedSession is not null && !IsBusy;
+    private bool CanEditSelectedSessionPolicy() => SelectedSession is not null && !IsBusy;
+
+    [RelayCommand(CanExecute = nameof(CanEditSelectedSessionPolicy))]
+    private async Task EditSelectedSessionPolicyAsync()
+    {
+        var selected = SelectedSession;
+        if (selected is null || IsBusy || EditSessionPolicyAsync is null) return;
+        IsBusy = true;
+        try
+        {
+            var settings = await _settingsStore.LoadAsync();
+            var selection = await EditSessionPolicyAsync(selected, settings);
+            if (selection is null) return;
+            await _sessionStore.UpdateExecutionPolicyAsync(selected.Binding.Key, selection.ChatApprovalMode,
+                selection.ChatResultMode, selection.AgentPermissionMode, CancellationToken.None);
+            await RefreshContentsAsync("この会話の実行ポリシーを保存しました。");
+            SelectedSession = Sessions.FirstOrDefault(row => row.Binding.Key == selected.Binding.Key);
+        }
+        catch (Exception ex)
+        {
+            Status = $"この会話の実行ポリシーを保存できませんでした: {ex.Message}";
+        }
+        finally { IsBusy = false; }
+    }
 
     [RelayCommand(CanExecute = nameof(CanEditSelectedSessionModel))]
     private async Task EditSelectedSessionModelAsync()

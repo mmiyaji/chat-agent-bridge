@@ -66,7 +66,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
             if (!envelope.TryGetProperty("data", out var data) || !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
 
             var request = ParsePost(postJson.GetString()!, settings.MattermostChannelId, _currentUserId ?? "", isBot: false);
-            if (request is null || !ChatAccessPolicy.IsAllowed(settings, "mattermost", request.UserId) || !_seen.TryAdd(request.MessageId)) continue;
+            if (request is null || !ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", request.UserId, request.ChannelId, request.ThreadId) || !_seen.TryAdd(request.MessageId)) continue;
 
             var authorRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
                 new Uri(root, $"api/v4/users/{Uri.EscapeDataString(request.UserId)}"), token);

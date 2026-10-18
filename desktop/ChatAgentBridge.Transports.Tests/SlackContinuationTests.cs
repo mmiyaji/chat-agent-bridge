@@ -20,6 +20,10 @@ public sealed class SlackContinuationTests
         Assert.NotNull(request);
         Assert.Equal("continue this", request.Text);
         Assert.Equal("10.0", request.ThreadId);
+        Assert.Null(await SlackSocketModeTransport.ParseRequestAsync(evt.RootElement, "UBOT",
+            Settings("U1") with { SlackAllowedChannelIds = "C2" }, new SessionStore(directory.Path)));
+        Assert.Null(await SlackSocketModeTransport.ParseRequestAsync(evt.RootElement, "UBOT",
+            Settings("U1") with { SlackAllowedThreadIds = "99.0" }, new SessionStore(directory.Path)));
     }
 
     [Fact]

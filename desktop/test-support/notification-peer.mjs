@@ -14,7 +14,7 @@ const server = http.createServer(async (req, res) => {
     const chunks = []; for await (const chunk of req) chunks.push(chunk);
     const input = JSON.parse(Buffer.concat(chunks).toString());
     const post = { id: `notification-${++sequence}`, user_id: input.user ?? 'test-member',
-      channel_id: 'test-channel', root_id: '', message: `!cab ${input.text ?? 'notification offline test'}`, type: '' };
+      channel_id: 'test-channel', root_id: input.thread ?? '', message: `!cab ${input.text ?? 'notification offline test'}`, type: '' };
     for (const ws of sockets.clients) if (ws.readyState === ws.OPEN)
       ws.send(JSON.stringify({ event: 'posted', data: { post: JSON.stringify(post) } }));
     res.end(JSON.stringify({ id: post.id })); return;

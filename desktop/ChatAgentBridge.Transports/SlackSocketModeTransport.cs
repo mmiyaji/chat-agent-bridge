@@ -112,10 +112,10 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
     {
         var request = ParseRequest(evt, botUserId);
         if (request is not null)
-            return ChatAccessPolicy.IsAllowed(settings, "slack", request.UserId) ? request : null;
+            return ChatAccessPolicy.IsAllowedRequest(settings, "slack", request.UserId, request.ChannelId, request.ThreadId) ? request : null;
 
         var continuation = ParseRequest(evt, botUserId, allowPlainThreadReplies: true);
-        if (continuation is null || !ChatAccessPolicy.IsAllowed(settings, "slack", continuation.UserId)) return null;
+        if (continuation is null || !ChatAccessPolicy.IsAllowedRequest(settings, "slack", continuation.UserId, continuation.ChannelId, continuation.ThreadId)) return null;
 
         var key = ChatSessionScope.Create("slack", continuation.ChannelId, continuation.ThreadId, continuation.UserId);
         return await sessions.FindAsync(key, cancellationToken).ConfigureAwait(false) is null ? null : continuation;

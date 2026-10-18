@@ -103,6 +103,63 @@
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
                                 <TextBlock Text="エージェント設定" Style="{StaticResource TitleTextBlockStyle}" />
                                 <TextBlock Text="このアプリから次に実行するCLIとモデルを設定します。CLI自身の設定ファイルは変更しません。利用前にCLIのインストールとログインが必要です。" TextWrapping="Wrap" />
+                                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="ExecutionPolicyOverview">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="依頼が実行され、結果が届くまで" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                        <StackPanel Spacing="8" AutomationProperties.AutomationId="ExecutionPolicyFlow">
+                                            <Border Padding="10" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"><TextBlock Text="1  アカウント・チャンネル・スレッドの許可" TextWrapping="Wrap" /></Border>
+                                            <TextBlock Text="↓" HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                                            <Border Padding="10" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"><TextBlock Text="2  会話の承認方法（毎回 / 最初だけ / 自動）" TextWrapping="Wrap" /></Border>
+                                            <TextBlock Text="↓" HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                                            <Border Padding="10" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"><TextBlock Text="3  信頼する作業フォルダーとAIの操作許可" TextWrapping="Wrap" /></Border>
+                                            <TextBlock Text="↓" HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                                            <Border Padding="10" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"><TextBlock Text="4  実行後、設定に応じて結果を共有" TextWrapping="Wrap" /></Border>
+                                        </StackPanel>
+                                        <TextBlock Text="現在の設定" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Text="{x:Bind ViewModel.ExecutionPolicySummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ExecutionPolicySummary" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="TrustedWorkspaceCard">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="信頼する作業フォルダー" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="信頼するフォルダーを絶対パスで1行ずつ指定します。指定すると、その中にある作業フォルダーだけで実行できます。空欄なら現在の作業フォルダーを信頼します。この制限は実行の起点の確認で、CLIによるファイルアクセスをOSで隔離するものではありません。" TextWrapping="Wrap" />
+                                        <TextBox Header="信頼するフォルダー（絶対パス、1行1つ）" Text="{x:Bind ViewModel.TrustedWorkspaceRoots, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" AutomationProperties.AutomationId="TrustedWorkspaceRoots" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="AgentPermissionCard">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="AIツールの操作許可" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                        <ComboBox Header="CLIの許可モード" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentPermissionMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.Name="AIツールの操作許可" AutomationProperties.AutomationId="AgentPermissionMode">
+                                            <ComboBoxItem Content="CLI既定" Tag="inherit" /><ComboBoxItem Content="読み取り・計画のみ" Tag="read-only" /><ComboBoxItem Content="フォルダー内の編集を自動許可" Tag="workspace-write" /><ComboBoxItem Content="フルアクセス" Tag="full-access" /><ComboBoxItem Content="操作ごとに確認（Codex App Server）" Tag="ask" IsEnabled="{x:Bind local:MainPage.SupportsOperationApproval(ViewModel.IsCodexProvider, ViewModel.UseAppServer), Mode=OneWay}" />
+                                        </ComboBox>
+                                        <TextBlock Text="Claude Codeでは読み取り・計画のみがplan、フォルダー内の編集がacceptEditsに対応します。どちらもOSのサンドボックスを設定しません。「操作ごとに確認」はCodex App Server利用時だけ選べます。" TextWrapping="Wrap" />
+                                        <TextBlock Text="フルアクセスはCLIの許可確認を迂回する場合があります。内容を理解したうえで選択してください。" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <ToggleSwitch Header="Codex CLIのツールネットワークを許可" IsOn="{x:Bind ViewModel.AllowAgentNetwork, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.CanConfigureAgentNetwork, Mode=OneWay}" AutomationProperties.AutomationId="AllowAgentNetwork" />
+                                        <TextBlock Text="Codexのツールが使うネットワーク設定です。モデルAPIへの接続や、Claude Codeのネットワーク設定は制御しません。" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="ChatApprovalCard">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="チャット依頼の承認と結果共有" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                        <ComboBox Header="会話ごとの承認" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatApprovalMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ChatApprovalMode">
+                                            <ComboBoxItem Content="毎回確認" Tag="always" /><ComboBoxItem Content="最初だけ確認" Tag="first" /><ComboBoxItem Content="自動承認" Tag="auto" />
+                                        </ComboBox>
+                                        <TextBlock Text="最初だけ確認は、同じ会話の以降の依頼を自動承認します。自動承認では会話から届いた依頼を確認画面なしで実行します。" TextWrapping="Wrap" />
+                                        <ComboBox Header="実行結果の共有" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatResultMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ChatResultMode">
+                                            <ComboBoxItem Content="手動で確認して共有" Tag="manual" /><ComboBoxItem Content="自動共有" Tag="auto" /><ComboBoxItem Content="共有しない" Tag="none" />
+                                        </ComboBox>
+                                        <TextBlock Text="自動共有は成功時の結果本文を元のスレッドへ返信します。スレッドの閲覧者全員に公開されます。「共有しない」では本文の手動送信も無効です。" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="ChatScopeCard">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="チャットのアカウント・会話範囲" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="接続設定で許可したユーザーIDは引き続き必須です。ここでは追加で対象チャンネルやスレッドを絞れます。空欄は追加の制限なしです。各欄にIDを1行ずつ入力します。" TextWrapping="Wrap" />
+                                        <TextBox Header="SlackチャンネルID" Text="{x:Bind ViewModel.SlackAllowedChannelIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="SlackAllowedChannelIds" />
+                                        <TextBox Header="SlackスレッドID" Text="{x:Bind ViewModel.SlackAllowedThreadIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="SlackAllowedThreadIds" />
+                                        <TextBox Header="MattermostスレッドID" Text="{x:Bind ViewModel.MattermostAllowedThreadIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="MattermostAllowedThreadIds" />
+                                    </StackPanel>
+                                </Border>
                                 <StackPanel Spacing="12">
                                     <ComboBox Header="使うエージェント" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="AgentProvider" AutomationProperties.Name="使うエージェント">
                                         <ComboBoxItem Content="Codex CLI" Tag="codex" AutomationProperties.AutomationId="ProviderOptionCodex" />
@@ -127,7 +184,7 @@
                                     <ToggleSwitch Header="実行中の操作許可・質問を画面で受け取る（Codex専用）" IsOn="{x:Bind ViewModel.UseAppServer, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.IsCodexProvider, Mode=OneWay}" AutomationProperties.AutomationId="UseAppServer" />
                                     <TextBlock Text="オンではCodex App Serverを利用します。オフではCLIへ依頼を渡して完了を待ちます。Claude Codeも会話を継続しますが、実行中の追加質問には対応しません。" TextWrapping="Wrap" />
                                     <ToggleSwitch Header="手動実行の前に内容を確認する" IsOn="{x:Bind ViewModel.RequireApproval, Mode=TwoWay}" AutomationProperties.AutomationId="RequireApproval" />
-                                    <TextBlock Text="チャットから届いた依頼は、この設定にかかわらず毎回PCで確認します。" TextWrapping="Wrap" />
+                                    <TextBlock Text="チャットから届いた依頼の承認方法は、上の「会話ごとの承認」で設定します。" TextWrapping="Wrap" />
                                     <Expander Header="詳細：CLIの場所と起動引数" HorizontalAlignment="Stretch" IsExpanded="True" AutomationProperties.AutomationId="AgentAdvanced">
                                         <StackPanel Spacing="12">
                                             <TextBox Header="CLI実行ファイル" Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="AgentExecutable" AutomationProperties.Name="CLI実行ファイル" />

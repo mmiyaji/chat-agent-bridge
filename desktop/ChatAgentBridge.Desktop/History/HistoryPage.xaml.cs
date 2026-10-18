@@ -20,6 +20,7 @@ public sealed partial class HistoryPage : Page
         InitializeComponent();
         ViewModel.ConfirmDetachAsync = ConfirmDetachAsync;
         ViewModel.EditSessionModelAsync = EditSessionModelAsync;
+        ViewModel.EditSessionPolicyAsync = EditSessionPolicyAsync;
         Loaded += HistoryPage_Loaded;
     }
 
@@ -283,4 +284,68 @@ public sealed partial class HistoryPage : Page
             catalog.Dispose();
         }
     }
+
+    private async Task<SessionPolicySelection?> EditSessionPolicyAsync(SessionHistoryRow session, BridgeSettings globalSettings)
+    {
+        ComboBox CreateChoice(string automationId, string header, string? current, params (string? Value, string Label)[] choices)
+        {
+            var combo = new ComboBox { Header = header, HorizontalAlignment = HorizontalAlignment.Stretch, SelectedValuePath = "Tag" };
+            foreach (var (value, label) in choices)
+                combo.Items.Add(new ComboBoxItem { Content = label, Tag = value ?? "<global>" });
+            combo.SelectedValue = current ?? "<global>";
+            AutomationProperties.SetAutomationId(combo, automationId);
+            AutomationProperties.SetName(combo, header);
+            return combo;
+        }
+
+        var binding = session.Binding;
+        var approval = CreateChoice("SessionChatApprovalMode", "この会話の依頼承認", binding.ChatApprovalMode,
+            (null, "全体設定を使う"), ("always", "毎回確認"), ("first", "最初だけ確認"), ("auto", "自動承認"));
+        var result = CreateChoice("SessionChatResultMode", "実行結果の共有", binding.ChatResultMode,
+            (null, "全体設定を使う"), ("manual", "手動で確認して共有"), ("auto", "自動共有"), ("none", "共有しない"));
+        var permission = CreateChoice("SessionAgentPermissionMode", "AIツールの操作許可", binding.AgentPermissionMode,
+            (null, "全体設定を使う"), ("inherit", "CLI既定"), ("read-only", "読み取り・計画のみ"),
+            ("workspace-write", "フォルダー内の編集を自動許可"), ("full-access", "フルアクセス"), ("ask", "操作ごとに確認"));
+        foreach (var item in permission.Items.OfType<ComboBoxItem>())
+            if (string.Equals(item.Tag as string, "ask", StringComparison.Ordinal))
+                item.IsEnabled = string.Equals(binding.AgentArguments, "app-server", StringComparison.OrdinalIgnoreCase);
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = "この会話の実行ポリシー",
+            Content = new ScrollViewer
+            {
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                MaxHeight = 520,
+                Content = new StackPanel
+                {
+                    Spacing = 12,
+                    Children =
+                    {
+                        new TextBlock { Text = $"会話: {session.Conversation}\n「全体設定を使う」を選ぶと、承認は{ApprovalLabel(globalSettings.ChatApprovalMode)}、結果共有は{ResultLabel(globalSettings.ChatResultMode)}、AI操作は{PermissionLabel(globalSettings.AgentPermissionMode)}になります。", TextWrapping = TextWrapping.Wrap },
+                        approval,
+                        result,
+                        permission,
+                        new TextBlock { Text = "自動承認ではこの会話から届く依頼を確認画面なしで実行します。フルアクセスはCLIの許可確認を迂回する場合があります。Claude CodeのモードはOSのサンドボックスを設定しません。「操作ごとに確認」はCodex App Serverだけで利用できます。", TextWrapping = TextWrapping.Wrap }
+                    }
+                }
+            },
+            PrimaryButtonText = "保存",
+            CloseButtonText = "キャンセル",
+            DefaultButton = ContentDialogButton.Close
+        };
+        AutomationProperties.SetAutomationId(dialog, "SessionExecutionPolicyDialog");
+        AutomationProperties.SetName(dialog, "会話ごとの実行ポリシーを設定");
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return null;
+        static string? ReadChoice(ComboBox combo) => string.Equals(combo.SelectedValue as string, "<global>", StringComparison.Ordinal) ? null : combo.SelectedValue as string;
+        return new SessionPolicySelection(ReadChoice(approval), ReadChoice(result), ReadChoice(permission));
+    }
+
+    private static string ApprovalLabel(string value) => value switch { "first" => "最初だけ確認", "auto" => "自動承認", _ => "毎回確認" };
+    private static string ResultLabel(string value) => value switch { "auto" => "自動共有", "none" => "共有しない", _ => "手動で確認して共有" };
+    private static string PermissionLabel(string value) => value switch
+    {
+        "read-only" => "読み取り・計画のみ", "workspace-write" => "フォルダー内の編集を自動許可",
+        "full-access" => "フルアクセス", "ask" => "操作ごとに確認", _ => "CLI既定"
+    };
 }

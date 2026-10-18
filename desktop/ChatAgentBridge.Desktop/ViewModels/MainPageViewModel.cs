@@ -45,8 +45,16 @@ public partial class MainPageViewModel : ObservableObject
                 nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
                 nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AutoConnectProvider) or nameof(RequireApproval) or
                 nameof(MattermostServerUrl) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
-                nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat))
+                nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat) or
+                nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or nameof(ChatApprovalMode) or
+                nameof(ChatResultMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
                 RefreshSetupStepper();
+            if (e.PropertyName is nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or
+                nameof(ChatApprovalMode) or nameof(ChatResultMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds) or nameof(AgentProvider) or nameof(UseAppServer))
+            {
+                OnPropertyChanged(nameof(ExecutionPolicySummary));
+                OnPropertyChanged(nameof(CanConfigureAgentNetwork));
+            }
         };
     }
 
@@ -136,6 +144,21 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string SlackAllowedUserIds { get; set; } = string.Empty;
     [ObservableProperty] public partial bool ShareApprovalsInChat { get; set; }
     [ObservableProperty] public partial bool RequireApproval { get; set; } = true;
+    [ObservableProperty] public partial string AgentPermissionMode { get; set; } = "inherit";
+    [ObservableProperty] public partial bool AllowAgentNetwork { get; set; }
+    [ObservableProperty] public partial string TrustedWorkspaceRoots { get; set; } = string.Empty;
+    [ObservableProperty] public partial string ChatApprovalMode { get; set; } = "always";
+    [ObservableProperty] public partial string ChatResultMode { get; set; } = "manual";
+    [ObservableProperty] public partial string SlackAllowedChannelIds { get; set; } = string.Empty;
+    [ObservableProperty] public partial string SlackAllowedThreadIds { get; set; } = string.Empty;
+    [ObservableProperty] public partial string MattermostAllowedThreadIds { get; set; } = string.Empty;
+    public bool CanConfigureAgentNetwork => IsCodexProvider && AgentPermissionMode is "workspace-write" or "ask";
+    private string NetworkPolicyLabel => !IsCodexProvider ? "CLI側で管理（アプリから制限しません）"
+        : AgentPermissionMode == "full-access" ? "フルアクセスのため制限なし"
+        : AgentPermissionMode == "inherit" && !UseAppServer ? "CLIの設定を使用"
+        : AgentPermissionMode is "inherit" or "read-only" ? "不許可"
+        : AllowAgentNetwork ? "許可" : "不許可";
+    public string ExecutionPolicySummary => $"依頼の範囲: {(!string.IsNullOrWhiteSpace(SlackAllowedChannelIds) || !string.IsNullOrWhiteSpace(SlackAllowedThreadIds) || !string.IsNullOrWhiteSpace(MattermostAllowedThreadIds) ? "指定した会話に限定" : "ユーザー許可リストの範囲内")}。承認: {ChatApprovalLabel(ChatApprovalMode)}。作業フォルダー: {(string.IsNullOrWhiteSpace(TrustedWorkspaceRoots) ? "現在の作業フォルダーのみ" : "指定した信頼フォルダーに限定")}。AIの操作: {PermissionLabel(AgentPermissionMode)}。ツールのネットワーク: {NetworkPolicyLabel}。結果: {ResultLabel(ChatResultMode)}。";
     [ObservableProperty] public partial string Prompt { get; set; } = string.Empty;
     [ObservableProperty] public partial string Output { get; set; } = "実行結果はここに表示されます。";
     [ObservableProperty] public partial string UsageSummary { get; set; } = "トークン利用量は実行後に表示します。未取得の値は0として扱いません。";
@@ -202,6 +225,14 @@ public partial class MainPageViewModel : ObservableObject
             SlackAllowedUserIds = _settings.SlackAllowedUserIds;
             ShareApprovalsInChat = _settings.ShareApprovalsInChat;
             RequireApproval = _settings.RequireApproval;
+            AgentPermissionMode = _settings.AgentPermissionMode;
+            AllowAgentNetwork = _settings.AllowAgentNetwork;
+            TrustedWorkspaceRoots = _settings.TrustedWorkspaceRoots;
+            ChatApprovalMode = _settings.ChatApprovalMode;
+            ChatResultMode = _settings.ChatResultMode;
+            SlackAllowedChannelIds = _settings.SlackAllowedChannelIds;
+            SlackAllowedThreadIds = _settings.SlackAllowedThreadIds;
+            MattermostAllowedThreadIds = _settings.MattermostAllowedThreadIds;
             SettingsLocation = _settingsStore.DirectoryPath;
             UpdateSavedAgentSummary();
             RefreshSetupStepper();
@@ -269,17 +300,32 @@ public partial class MainPageViewModel : ObservableObject
             var snapshot = CreateSettingsSnapshot() with
             {
                 MattermostAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(MattermostAllowedUserIds),
-                SlackAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(SlackAllowedUserIds)
+                SlackAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(SlackAllowedUserIds),
+                SlackAllowedChannelIds = ChatAccessPolicy.NormalizeScopes(SlackAllowedChannelIds),
+                SlackAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(SlackAllowedThreadIds),
+                MattermostAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(MattermostAllowedThreadIds),
+                TrustedWorkspaceRoots = ExecutionPolicy.NormalizeTrustedRoots(TrustedWorkspaceRoots),
+                AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(AgentPermissionMode),
+                ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode),
+                ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(ChatResultMode)
             };
+            _ = AgentProfile.BuildInvocation(snapshot);
             await _settingsStore.SaveAsync(snapshot);
             _settings = snapshot;
             saved = true;
             MattermostAllowedUserIds = snapshot.MattermostAllowedUserIds;
             SlackAllowedUserIds = snapshot.SlackAllowedUserIds;
+            SlackAllowedChannelIds = snapshot.SlackAllowedChannelIds;
+            SlackAllowedThreadIds = snapshot.SlackAllowedThreadIds;
+            MattermostAllowedThreadIds = snapshot.MattermostAllowedThreadIds;
+            TrustedWorkspaceRoots = snapshot.TrustedWorkspaceRoots;
+            AgentPermissionMode = snapshot.AgentPermissionMode;
+            ChatApprovalMode = snapshot.ChatApprovalMode;
+            ChatResultMode = snapshot.ChatResultMode;
             _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
             UpdateSavedAgentSummary();
             RefreshSetupStepper();
-            SetStatus("設定を保存しました", "「チャット受信」から接続してください。接続中の場合は再接続すると反映されます。", "Success");
+            SetStatus("設定を保存しました", "変更をチャット接続へ反映するには、「チャット受信」で再接続してください。", "Success");
         }
         catch (Exception ex)
         {
@@ -562,8 +608,26 @@ public partial class MainPageViewModel : ObservableObject
         MattermostAllowedUserIds = MattermostAllowedUserIds,
         SlackAllowedUserIds = SlackAllowedUserIds,
         ShareApprovalsInChat = ShareApprovalsInChat,
-        RequireApproval = RequireApproval
+        RequireApproval = RequireApproval,
+        AgentPermissionMode = AgentPermissionMode,
+        AllowAgentNetwork = AllowAgentNetwork,
+        TrustedWorkspaceRoots = TrustedWorkspaceRoots,
+        ChatApprovalMode = ChatApprovalMode,
+        ChatResultMode = ChatResultMode,
+        SlackAllowedChannelIds = SlackAllowedChannelIds,
+        SlackAllowedThreadIds = SlackAllowedThreadIds,
+        MattermostAllowedThreadIds = MattermostAllowedThreadIds
     };
+
+    private static string PermissionLabel(string value) => value switch
+    {
+        "read-only" => "読み取り・計画のみ", "workspace-write" => "フォルダー内の編集を自動許可",
+        "full-access" => "フルアクセス", "ask" => "操作ごとに確認", _ => "CLI既定"
+    };
+    private static string ChatApprovalLabel(string value) => value switch
+    { "first" => "最初だけ確認", "auto" => "自動承認", _ => "毎回確認" };
+    private static string ResultLabel(string value) => value switch
+    { "auto" => "自動共有", "none" => "共有しない", _ => "手動で確認して共有" };
 
     private void UpdateSavedAgentSummary() => SavedAgentSummary = string.IsNullOrWhiteSpace(AgentExecutable)
         ? "エージェントは未設定です"

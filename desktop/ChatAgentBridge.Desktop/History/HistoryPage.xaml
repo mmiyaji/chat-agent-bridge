@@ -72,6 +72,10 @@
                                 AutomationProperties.AutomationId="EditSessionModel">
                             <Button.Content><TextBlock Text="次回の実行モデルを設定" TextWrapping="Wrap" /></Button.Content>
                         </Button>
+                        <Button HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.EditSelectedSessionPolicyCommand}"
+                                AutomationProperties.AutomationId="EditSessionExecutionPolicy">
+                            <Button.Content><TextBlock Text="この会話の承認・操作・共有を設定" TextWrapping="Wrap" /></Button.Content>
+                        </Button>
                         <Button HorizontalAlignment="Stretch" ToolTipService.ToolTip="選択したセッションを切り離す"
                                 Command="{x:Bind ViewModel.DetachSelectedSessionCommand}"
                                 AutomationProperties.AutomationId="DetachSession">
@@ -91,6 +95,7 @@
                                         <TextBlock Text="{x:Bind AgentAndSession}" TextWrapping="Wrap" />
                                         <TextBlock Text="{x:Bind Model}" TextWrapping="Wrap" />
                                         <TextBlock Text="{x:Bind ReasoningEffort}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{x:Bind ExecutionPolicy}" TextWrapping="Wrap" />
                                         <TextBlock Text="{x:Bind Updated}" Style="{StaticResource CaptionTextBlockStyle}" />
                                     </StackPanel>
                                 </DataTemplate>

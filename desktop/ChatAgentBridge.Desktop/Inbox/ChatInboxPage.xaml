@@ -8,7 +8,7 @@
       <StackPanel Padding="24" Spacing="16">
         <StackPanel Spacing="8">
             <TextBlock Text="チャット受信" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="許可ユーザーの依頼を、確認してからこのPCで実行します。会話はユーザー・接続先・スレッドごとに継続し、結果本文は確認後に共有できます。操作許可は初期設定ではPCだけに表示します。チャットでの承認を有効にすると、操作内容もスレッドの閲覧者全員に公開されます。切断中の依頼は再接続後に再投稿してください。"
+            <TextBlock Text="許可された範囲の依頼を、会話の承認設定に従ってこのPCで実行します。初期設定は毎回確認・結果本文は手動共有です。会話はユーザー・接続先・スレッドごとに分離します。操作承認は初期設定ではPCだけに表示し、公開を有効にすると詳細がスレッドの閲覧者全員に見えます。切断中の依頼は再投稿してください。"
                        TextWrapping="Wrap" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -21,7 +21,7 @@
             <TextBlock Text="{x:Bind ViewModel.OverflowNotice, Mode=OneWay}" TextWrapping="Wrap"/>
             <TextBlock Text="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="NotificationStatus"/>
         </StackPanel>
-        <TextBlock Text="Mattermostでは !cab 依頼内容、SlackではBotへのメンションで依頼を始めます。Slackで保存済みの会話を続ける場合は、同じ本人が同じスレッドへ普通に返信できます。新しい会話や保存前の返信にはメンションまたは !cab を付けてください。各依頼はPCまたはWindows通知で承認してから実行します。" TextWrapping="Wrap" />
+        <TextBlock Text="Mattermostでは !cab 依頼内容、SlackではBotへのメンションで依頼を始めます。Slackで保存済みの会話を続ける場合は、同じ本人が同じスレッドへ普通に返信できます。新しい会話や保存前の返信にはメンションまたは !cab を付けてください。承認が必要な依頼はPCまたはWindows通知で確認します。" TextWrapping="Wrap" />
         <ListView ItemsSource="{x:Bind ViewModel.Requests}" SelectedItem="{x:Bind ViewModel.Selected, Mode=TwoWay}"
                   SelectionMode="Single" MinHeight="120" MaxHeight="240"
                   AutomationProperties.AutomationId="ChatRequests" AutomationProperties.Name="受信した依頼">

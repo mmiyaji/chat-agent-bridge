@@ -62,6 +62,8 @@ public sealed partial class MainPage : Page
         _ => InfoBarSeverity.Informational
     };
 
+    public static bool SupportsOperationApproval(bool isCodexProvider, bool useAppServer) => isCodexProvider && useAppServer;
+
     private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
         if (_hasLoaded) return;
