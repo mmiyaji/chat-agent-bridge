@@ -87,8 +87,15 @@ public sealed record SessionHistoryRow(SessionBinding Binding)
         ? "Codex App Server"
         : $"{Binding.AgentExecutable} {Binding.AgentArguments}".Trim();
     public string SessionId => Binding.SessionId;
-    public string Conversation => DesktopText.Get("HistorySessionConversation", ChannelId, ThreadId, Environment.NewLine,
-        Binding.Key.UserId ?? DesktopText.Get("LegacyUnknownOwner"));
+    public string UserId => Binding.Key.UserId ?? DesktopText.Get("LegacyUnknownOwner");
+    public string Origin => Binding.Key.Origin ?? DesktopText.Get("HistoryUnknownOrigin");
+    public string WorkspaceName => Path.GetFileName(Binding.WorkspaceRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) is { Length: > 0 } name
+        ? name : Binding.WorkspaceRoot;
+    public string ConversationLabel => DesktopText.Get("HistorySessionConversation", ChannelId, ThreadId, Environment.NewLine, UserId);
+    public string Conversation => ConversationLabel;
+    public string ListTitle => $"{Provider} · {UserId}";
+    public string ListLocation => DesktopText.Get("ConversationLocation", ChannelId, ThreadId);
+    public override string ToString() => $"{ListTitle} · {WorkspaceName} · {ListLocation} · {Updated}";
     public string AgentAndSession => $"{Agent} / {SessionId}";
     public string ModelOverride => Binding.Model ?? string.Empty;
     public string Model => string.IsNullOrWhiteSpace(Binding.Model)
@@ -97,6 +104,7 @@ public sealed record SessionHistoryRow(SessionBinding Binding)
     public string ReasoningEffort => DesktopText.Get("HistoryNextReasoning", Binding.ReasoningEffort ?? DesktopText.Get("InheritAgentEffort"));
     public string ExecutionPolicy => DesktopText.Get("HistoryExecutionPolicy", PolicyLabel(Binding.ChatApprovalMode, DesktopText.Get("AskEveryTime"), "first", DesktopText.Get("AskFirstTime"), "auto", DesktopText.Get("AutoApprove")), PolicyLabel(Binding.ChatResultMode, DesktopText.Get("ManualShare"), "auto", DesktopText.Get("AutoShare"), "none", DesktopText.Get("NoSharing")), PermissionLabel(Binding.AgentPermissionMode));
     public string Updated => Binding.UpdatedAt.ToLocalTime().ToString("g");
+    public string SearchIndex => string.Join("\n", Provider, ChannelId, ThreadId, UserId, Workspace, SessionId, Agent, ModelOverride, ReasoningEffort, ExecutionPolicy, Origin);
 
     private static string PolicyLabel(string? value, string defaultLabel, string keyOne, string labelOne, string keyTwo, string labelTwo) =>
         value is null ? DesktopText.Get("GlobalSetting") : value == keyOne ? labelOne : value == keyTwo ? labelTwo : defaultLabel;
@@ -117,8 +125,14 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public ObservableCollection<ExecutionHistoryRow> Executions { get; } = [];
     public ObservableCollection<AuditHistoryRow> AuditEvents { get; } = [];
     public ObservableCollection<SessionHistoryRow> Sessions { get; } = [];
+    public ObservableCollection<SessionHistoryRow> FilteredSessions { get; } = [];
+    public IReadOnlyList<string> ProviderFilters { get; } = [DesktopText.Get("HistoryProviderAll"), "Slack", "Mattermost", DesktopText.Get("Local")];
+    [ObservableProperty] public partial string SearchQuery { get; set; } = string.Empty;
+    [ObservableProperty] public partial string ProviderFilter { get; set; } = DesktopText.Get("HistoryProviderAll");
+    [ObservableProperty] public partial bool IsNarrow { get; set; }
     [ObservableProperty] public partial bool HasExecutions { get; set; }
     [ObservableProperty] public partial bool HasSessions { get; set; }
+    [ObservableProperty] public partial bool HasFilteredSessions { get; set; }
     [ObservableProperty] public partial bool HasAuditEvents { get; set; }
 
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand))]
@@ -130,6 +144,75 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public Func<SessionHistoryRow, Task<bool>>? ConfirmDetachAsync { get; set; }
     public Func<SessionHistoryRow, BridgeSettings, Task<ModelExecutionSelection?>>? EditSessionModelAsync { get; set; }
     public Func<SessionHistoryRow, BridgeSettings, Task<SessionPolicySelection?>>? EditSessionPolicyAsync { get; set; }
+
+    public string ConversationsTabTitle => DesktopText.Get("HistoryConversationsTab", Sessions.Count);
+    public string ExecutionsTabTitle => DesktopText.Get("HistoryExecutionsTab", Executions.Count);
+    public string AuditTabTitle => DesktopText.Get("HistoryAuditTab", AuditEvents.Count);
+    public string SearchLabel => DesktopText.Get("HistorySearchLabel");
+    public string SearchPlaceholder => DesktopText.Get("HistorySearchPlaceholder");
+    public string ProviderLabel => DesktopText.Get("HistoryProviderLabel");
+    public string SessionResultSummary => DesktopText.Get("HistorySessionResults", FilteredSessions.Count, Sessions.Count);
+    public string SessionListEmptyText => Sessions.Count == 0 ? DesktopText.Get("HistoryNoSessions") : DesktopText.Get("HistoryNoSessionMatches");
+    public string SelectedSessionTitle => SelectedSession is null ? DesktopText.Get("HistorySelectConversation") :
+        DesktopText.Get("HistorySelectedSessionTitle", SelectedSession.Provider, SelectedSession.WorkspaceName);
+    public string NoSessionSelectedText => DesktopText.Get("HistorySelectConversationHint");
+    public string ChannelIdLabel => DesktopText.Get("HistoryChannelIdLabel");
+    public string ThreadIdLabel => DesktopText.Get("HistoryThreadIdLabel");
+    public string UserIdLabel => DesktopText.Get("HistoryUserIdLabel");
+    public string OriginLabel => DesktopText.Get("HistoryOriginLabel");
+    public string WorkspacePathLabel => DesktopText.Get("HistoryWorkspacePathLabel");
+    public string AgentLabel => DesktopText.Get("HistoryAgentLabel");
+    public string SessionIdLabel => DesktopText.Get("HistorySessionIdLabel");
+    public string BackToConversationsLabel => DesktopText.Get("HistoryBackToConversations");
+    public string ContinueInOriginalThreadHint => DesktopText.Get("HistoryContinueInOriginalThread");
+    public string ConversationHeading => DesktopText.Get("HistoryConversationHeading");
+    public string RuntimeHeading => DesktopText.Get("HistoryRuntimeHeading");
+    public string PolicyHeading => DesktopText.Get("HistoryPolicyHeading");
+    public string IdentifiersHeading => DesktopText.Get("HistoryIdentifiersHeading");
+    public string ActionsHeading => DesktopText.Get("HistoryActionsHeading");
+    public string EditModelLabel => DesktopText.Get("HistoryEditNextModel");
+    public string EditPolicyLabel => DesktopText.Get("HistoryEditPolicy");
+    public string StartFreshLabel => DesktopText.Get("HistoryStartFresh");
+    public string ExecutionSummary => DesktopText.Get("HistoryExecutionSummary", Executions.Count);
+    public string NoExecutionsText => DesktopText.Get("HistoryNoExecutions");
+    public string NoAuditText => DesktopText.Get("HistoryNoAudit");
+
+    partial void OnSearchQueryChanged(string value) => ApplySessionFilter();
+    partial void OnProviderFilterChanged(string value) => ApplySessionFilter();
+    partial void OnSelectedSessionChanged(SessionHistoryRow? value)
+    {
+        OnPropertyChanged(nameof(HasSelectedSession));
+        OnPropertyChanged(nameof(SelectedSessionTitle));
+    }
+    public bool HasSelectedSession => SelectedSession is not null;
+
+    private void NotifySummariesChanged()
+    {
+        OnPropertyChanged(nameof(ConversationsTabTitle));
+        OnPropertyChanged(nameof(ExecutionsTabTitle));
+        OnPropertyChanged(nameof(AuditTabTitle));
+        OnPropertyChanged(nameof(SessionResultSummary));
+        OnPropertyChanged(nameof(SessionListEmptyText));
+        OnPropertyChanged(nameof(ExecutionSummary));
+    }
+
+    private void ApplySessionFilter()
+    {
+        var selectedKey = SelectedSession?.Binding.Key;
+        var query = SearchQuery.Trim();
+        var provider = ProviderFilter;
+        var matches = Sessions.Where(row =>
+            (provider == DesktopText.Get("HistoryProviderAll") || row.Provider.Equals(provider, StringComparison.OrdinalIgnoreCase)) &&
+            (query.Length == 0 || row.SearchIndex.Contains(query, StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(static row => row.Binding.UpdatedAt).ToArray();
+
+        FilteredSessions.Clear();
+        foreach (var row in matches) FilteredSessions.Add(row);
+        HasFilteredSessions = matches.Length > 0;
+        SelectedSession = selectedKey is null ? null : matches.FirstOrDefault(row => row.Binding.Key == selectedKey);
+        OnPropertyChanged(nameof(SessionResultSummary));
+        OnPropertyChanged(nameof(SessionListEmptyText));
+    }
 
     [RelayCommand(CanExecute = nameof(CanRefresh))]
     public async Task RefreshAsync()
@@ -143,17 +226,20 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             var sessions = await _sessionStore.ListAsync();
             var auditEvents = await _auditStore.ListAsync();
 
+            var selectedKey = SelectedSession?.Binding.Key;
             Executions.Clear();
             foreach (var record in executions) Executions.Add(new ExecutionHistoryRow(record));
             Sessions.Clear();
-            foreach (var binding in sessions) Sessions.Add(new SessionHistoryRow(binding));
+            foreach (var binding in sessions.OrderByDescending(static item => item.UpdatedAt)) Sessions.Add(new SessionHistoryRow(binding));
             AuditEvents.Clear();
             foreach (var audit in auditEvents.OrderByDescending(static item => item.Timestamp))
                 AuditEvents.Add(new AuditHistoryRow(audit));
             HasExecutions = Executions.Count > 0;
             HasSessions = Sessions.Count > 0;
             HasAuditEvents = AuditEvents.Count > 0;
-            SelectedSession = null;
+            SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
+            ApplySessionFilter();
+            NotifySummariesChanged();
             Status = DesktopText.Get("HistoryCounts", Executions.Count, Sessions.Count, AuditEvents.Count);
         }
         catch (Exception ex)
@@ -266,17 +352,20 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         var executions = await _executionStore.ListAsync();
         var sessions = await _sessionStore.ListAsync();
         var auditEvents = await _auditStore.ListAsync();
+        var selectedKey = SelectedSession?.Binding.Key;
         Executions.Clear();
         foreach (var record in executions) Executions.Add(new ExecutionHistoryRow(record));
         Sessions.Clear();
-        foreach (var binding in sessions) Sessions.Add(new SessionHistoryRow(binding));
+        foreach (var binding in sessions.OrderByDescending(static item => item.UpdatedAt)) Sessions.Add(new SessionHistoryRow(binding));
         AuditEvents.Clear();
         foreach (var audit in auditEvents.OrderByDescending(static item => item.Timestamp))
             AuditEvents.Add(new AuditHistoryRow(audit));
         HasExecutions = Executions.Count > 0;
         HasSessions = Sessions.Count > 0;
         HasAuditEvents = AuditEvents.Count > 0;
-        SelectedSession = null;
+        SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
+        ApplySessionFilter();
+        NotifySummariesChanged();
         Status = DesktopText.Get("HistorySuccessCounts", successMessage, Executions.Count, Sessions.Count, AuditEvents.Count);
     }
 }

@@ -33,8 +33,8 @@ public sealed partial class ChatInboxViewModel
             item.State = "フォルダー変更済み";
             item.ResultText = "";
             item.AllowsResultSharing = false;
-            Output = DesktopText.Get("WorkspaceChangedOutput", path);
-            UsageSummary = DesktopText.Get("WorkspaceChangeNoUsage");
+            item.FullOutput = DesktopText.Get("WorkspaceChangedOutput", path);
+            item.Usage = DesktopText.Get("WorkspaceChangeNoUsage");
             await AuditAsync("workspace_changed", item.Request, null, token);
             if (await CheckAccessAsync(item, token))
                 await item.Transport.ReplyAsync(item.Request, DesktopText.Get("WorkspaceChangedChatReply", path), token);
@@ -55,7 +55,7 @@ public sealed partial class ChatInboxViewModel
                 return;
             }
             item.State = "フォルダー変更不可";
-            Output = ex.Message;
+            item.FullOutput = ex.Message;
             Status = DesktopText.Get("WorkspaceChangeFailed");
             if (await CheckAccessAsync(item, token))
                 await item.Transport.ReplyAsync(item.Request, DesktopText.Get("WorkspaceChangeFailedChatReply"), token);

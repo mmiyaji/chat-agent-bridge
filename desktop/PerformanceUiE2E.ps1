@@ -12,6 +12,7 @@ $resultsPath = Join-Path $artifactRoot 'performance-ui-results.json'
 $markerName = '.cab-performance-ui-e2e'
 $results = [System.Collections.Generic.List[object]]::new()
 $currentStep = 'preflight'
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 
 function Assert-UnderArtifactRoot([string]$Path) {
     $prefix = $artifactRoot.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
@@ -34,6 +35,28 @@ function Wait-UI([string]$Selector, [string]$Value = '', [int]$TimeoutMs = 30000
 function Select-ComboItem([string]$AutomationId, [string]$ItemAutomationId) {
     Invoke-UI @('invoke', $AutomationId)
     Invoke-UI @('invoke', $ItemAutomationId)
+}
+
+function Expand-LatestExecutionDetails {
+    $window = (Get-Process -Id $AppPid).MainWindowHandle
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($window)
+    $listCondition = [System.Windows.Automation.PropertyCondition]::new(
+        [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'ExecutionHistoryList')
+    $list = $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $listCondition)
+    if ($null -eq $list) { throw 'Execution history list was not available for detail expansion.' }
+
+    $expanderCondition = [System.Windows.Automation.PropertyCondition]::new(
+        [System.Windows.Automation.AutomationElement]::ClassNameProperty, 'Expander')
+    $expanders = $list.FindAll([System.Windows.Automation.TreeScope]::Descendants, $expanderCondition)
+    if ($expanders.Count -eq 0) { throw 'No realized execution detail expander was found.' }
+
+    # ExecutionHistoryList is newest first; expand realized rows so usage fields become visible to UIA.
+    foreach ($expander in $expanders) {
+        $pattern = $expander.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern)
+        if ($pattern.Current.ExpandCollapseState -ne [System.Windows.Automation.ExpandCollapseState]::Expanded) {
+            $pattern.Expand()
+        }
+    }
 }
 
 function Add-Pass([string]$Name) { $results.Add(@{ name = $Name; passed = $true }) }
@@ -128,7 +151,9 @@ try {
 
     $currentStep = 'verify-history-usage-display'
     Invoke-UI @('invoke', 'NavHistory')
+    Invoke-UI @('invoke', 'ExecutionHistoryTab')
     Wait-UI 'ExecutionHistoryList'
+    Expand-LatestExecutionDetails
     Wait-UI '入力トークン合計: 40' '' 10000
     Wait-UI 'キャッシュ再利用率（入力トークン比）: 75.0%' '' 5000
     Wait-UI '会話累計（過去の実行を含む）' '' 5000

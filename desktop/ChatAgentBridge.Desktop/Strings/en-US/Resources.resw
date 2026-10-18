@@ -438,7 +438,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>History and conversations</value>
   </data>
   <data name="historyHistoryPageTextBlock002.Text" xml:space="preserve">
-    <value>Stores execution time, status, and working folder. Request and result text are not saved.</value>
+    <value>Manage saved conversations. Request text and execution output are not saved.</value>
   </data>
   <data name="AgentSettingsFromHistory.Content" xml:space="preserve">
     <value>Open agent settings</value>
@@ -501,7 +501,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Chat inbox</value>
   </data>
   <data name="inboxChatInboxPageTextBlock002.Text" xml:space="preserve">
-    <value>Allowed requests run on this PC according to your approval settings. By default, each request needs approval and results are shared manually. Conversations are separated by user, connection, and thread. Tool approvals appear only on this PC unless you enable sharing their details to the thread. Repost requests sent while disconnected.</value>
+    <value>Review incoming requests by conversation. Reply in the original chat thread to continue.</value>
   </data>
   <data name="ConnectMattermost.Content" xml:space="preserve">
     <value>Connect to Mattermost</value>
@@ -786,4 +786,27 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AboutTerms.Content" xml:space="preserve"><value>Terms of use</value></data>
   <data name="AboutPrivacy.Content" xml:space="preserve"><value>Privacy policy</value></data>
   <data name="AboutExit.Content" xml:space="preserve"><value>Exit application</value></data>
+  <data name="InboxConversationsHeading.Text" xml:space="preserve"><value>Conversations</value></data>
+  <data name="InboxConversationHelp.Text" xml:space="preserve"><value>Search by sender, channel, thread, or message. New activity appears first.</value></data>
+  <data name="InboxSearch.Header" xml:space="preserve"><value>Search</value></data>
+  <data name="InboxSearch.PlaceholderText" xml:space="preserve"><value>Search conversations</value></data>
+  <data name="InboxStateFilter.Header" xml:space="preserve"><value>State</value></data>
+  <data name="InboxStateFilter.PlaceholderText" xml:space="preserve"><value>Filter by state</value></data>
+  <data name="InboxFilterAll.Content" xml:space="preserve"><value>All</value></data>
+  <data name="InboxFilterPending.Content" xml:space="preserve"><value>Approval pending</value></data>
+  <data name="InboxFilterActive.Content" xml:space="preserve"><value>Running</value></data>
+  <data name="InboxFilterCompleted.Content" xml:space="preserve"><value>Finished</value></data>
+  <data name="InboxOpenConversation.Content" xml:space="preserve"><value>Open</value></data>
+  <data name="InboxBackToConversations.Content" xml:space="preserve"><value>Back</value></data>
+  <data name="InboxSameThreadHelp.Text" xml:space="preserve"><value>Continue by replying in the original chat thread.</value></data>
+  <data name="InboxRequestLabel.Text" xml:space="preserve"><value>Request</value></data>
+  <data name="InboxRequestPicker.PlaceholderText" xml:space="preserve"><value>Choose a request</value></data>
+  <data name="InboxPromptLabel.Text" xml:space="preserve"><value>Request details</value></data>
+  <data name="InboxContextLabel.Text" xml:space="preserve"><value>Execution and conversation details</value></data>
+  <data name="InboxResultLabel.Text" xml:space="preserve"><value>Execution result</value></data>
+  <data name="InboxApprove.Content" xml:space="preserve"><value>Approve / run</value></data>
+  <data name="InboxReject.Content" xml:space="preserve"><value>Reject</value></data>
+  <data name="InboxStop.Content" xml:space="preserve"><value>Stop</value></data>
+  <data name="InboxShare.Content" xml:space="preserve"><value>Share result</value></data>
+  <data name="InboxConnectionDetails.Header" xml:space="preserve"><value>Connection and notification details</value></data>
 </root>

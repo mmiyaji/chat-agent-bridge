@@ -112,7 +112,7 @@ function Node-ContainsText($Node, [string]$Text) {
     if ($Node -is [pscustomobject]) {
         foreach ($propertyName in @('name','value','text')) {
             $candidate = $Node.$propertyName
-            if ($null -ne $candidate -and [string]::Equals([string]$candidate, $Text, [StringComparison]::Ordinal)) { return $true }
+            if ($null -ne $candidate -and ([string]$candidate).Contains($Text, [StringComparison]::Ordinal)) { return $true }
         }
         foreach ($property in $Node.PSObject.Properties) { if (Node-ContainsText $property.Value $Text) { return $true } }
     }
@@ -122,7 +122,7 @@ function Node-ContainsText($Node, [string]$Text) {
 function Wait-RequestVisible([string]$Text, [int]$TimeoutSeconds = 25) {
     $until = [DateTimeOffset]::UtcNow.AddSeconds($TimeoutSeconds)
     while ([DateTimeOffset]::UtcNow -lt $until) {
-        $tree = Invoke-UiProcess @('inspect','ChatRequests','--json','-d','8')
+        $tree = Invoke-UiProcess @('inspect','InboxConversations','--json','-d','10')
         if ($tree.ExitCode -eq 0) {
             try { $document = $tree.Output | ConvertFrom-Json; $selector = Find-RequestListItemSelector $document $Text; if ($selector) { return $selector } } catch { }
         }
@@ -134,6 +134,23 @@ function Wait-RequestVisible([string]$Text, [int]$TimeoutSeconds = 25) {
 function Select-Request([string]$Text) {
     $selector = Wait-RequestVisible $Text
     Invoke-UI @('invoke', $selector)
+    if (-not (Wait-Value 'InboxSelectedPrompt' $Text 5)) {
+        $pickerPreview = $Text.Replace("`r",' ').Replace("`n",' ')
+        $pickerPreview = $pickerPreview.Substring(0, [Math]::Min($pickerPreview.Length, 80))
+        Invoke-UI @('invoke', 'ChatRequests')
+        $until = [DateTimeOffset]::UtcNow.AddSeconds(10)
+        $requestSelector = $null
+        while ([DateTimeOffset]::UtcNow -lt $until -and -not $requestSelector) {
+            $tree = Invoke-UiProcess @('inspect','ChatRequests','--json','-d','8')
+            if ($tree.ExitCode -eq 0) {
+                try { $document = $tree.Output | ConvertFrom-Json; $requestSelector = Find-RequestListItemSelector $document $pickerPreview } catch { }
+            }
+            if (-not $requestSelector) { Start-Sleep -Milliseconds 200 }
+        }
+        if (-not $requestSelector) { throw 'The target request was not available in its conversation picker.' }
+        Invoke-UI @('invoke', $requestSelector)
+        if (-not (Wait-Value 'InboxSelectedPrompt' $Text 5)) { throw 'The target conversation request was not selected.' }
+    }
 }
 
 function Get-HistoryRecords {

@@ -64,7 +64,7 @@ function Wait-Enabled([string]$AutomationId, [int]$TimeoutMs = 10000) {
 function Wait-RequestVisible([string]$Prompt, [int]$TimeoutSeconds = 25) {
     $until = [DateTimeOffset]::UtcNow.AddSeconds($TimeoutSeconds)
     while ([DateTimeOffset]::UtcNow -lt $until) {
-        $tree = Invoke-UiProcess @('inspect','ChatRequests','--json','-d','8')
+        $tree = Invoke-UiProcess @('inspect','InboxConversations','--json','-d','10')
         if ($tree.ExitCode -eq 0) {
             try {
                 $document = $tree.Output | ConvertFrom-Json
@@ -100,12 +100,42 @@ function Find-RequestListItemSelector($Node, [string]$Prompt) {
 }
 
 function Select-Request([string]$Prompt) {
-    $script:currentSubstep = 'inspect pending request ListItem'
+    $script:currentSubstep = 'inspect target conversation row'
     $requestItem = Wait-RequestVisible $Prompt
-    $script:currentSubstep = 'select pending request ListItem'
+    $script:currentSubstep = 'open target conversation'
     Invoke-UI @('invoke',$requestItem.selector)
+    $script:currentSubstep = 'select target request in conversation picker if needed'
+    if (-not (Wait-SelectedPrompt $Prompt 5)) {
+        $pickerPreview = $Prompt.Replace("`r",' ').Replace("`n",' ')
+        $pickerPreview = $pickerPreview.Substring(0, [Math]::Min($pickerPreview.Length, 80))
+        Invoke-UI @('invoke','ChatRequests')
+        $until = [DateTimeOffset]::UtcNow.AddSeconds(10)
+        $requestSelector = $null
+        while ([DateTimeOffset]::UtcNow -lt $until -and -not $requestSelector) {
+            $tree = Invoke-UiProcess @('inspect','ChatRequests','--json','-d','8')
+            if ($tree.ExitCode -eq 0) {
+                try { $document = $tree.Output | ConvertFrom-Json; $requestSelector = Find-RequestListItemSelector $document $pickerPreview } catch { }
+            }
+            if (-not $requestSelector) { Start-Sleep -Milliseconds 200 }
+        }
+        if (-not $requestSelector) { throw 'The target request was not available in its conversation picker.' }
+        Invoke-UI @('invoke',$requestSelector)
+        if (-not (Wait-SelectedPrompt $Prompt 5)) { throw 'The target conversation request was not selected.' }
+    }
     $script:currentSubstep = 'wait for local approval action to enable'
     Wait-Enabled 'ApproveChat' 10000
+}
+
+function Wait-SelectedPrompt([string]$Prompt, [int]$TimeoutSeconds = 15) {
+    $until = [DateTimeOffset]::UtcNow.AddSeconds($TimeoutSeconds)
+    while ([DateTimeOffset]::UtcNow -lt $until) {
+        $value = Invoke-UiProcess @('get-value','InboxSelectedPrompt','--json')
+        if ($value.ExitCode -eq 0) {
+            try { if ([string]::Equals([string]($value.Output | ConvertFrom-Json).text, $Prompt, [StringComparison]::Ordinal)) { return $true } } catch { }
+        }
+        Start-Sleep -Milliseconds 200
+    }
+    return $false
 }
 
 function Get-Property([string]$AutomationId, [string]$Property) {

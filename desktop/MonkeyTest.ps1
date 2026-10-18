@@ -431,7 +431,7 @@ $categoryNames = @{
                             'workbench' { 'AgentOutput' }
                             'agent' { 'AutoConnectProvider' }
                             'connections' { 'SlackAppToken' }
-                            'chat' { 'ChatUsageSummary' }
+                            'chat' { 'InboxConversations' }
                             'history' { 'HistoryStatus' }
                             'about' { 'AboutScroll' }
                         }

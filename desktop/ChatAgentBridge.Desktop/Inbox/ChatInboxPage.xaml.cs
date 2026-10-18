@@ -17,6 +17,11 @@ public sealed partial class ChatInboxPage : Page
         ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
         ViewModel.ServerInputHandler = serverDialogs.InputAsync;
         ViewModel.RequestReceived += NotifyRequest;
+        ViewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(ViewModel.Selected))
+                DispatcherQueue.TryEnqueue(() => InboxDetailScroll.ChangeView(null, 0, null, true));
+        };
         ViewModel.ConnectionEnded += () => App.PendingRequestNotifications.ClearAll();
         App.PendingRequestNotifications.StatusChanged += () =>
             ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
@@ -26,12 +31,74 @@ public sealed partial class ChatInboxPage : Page
 
     private Task OpenInboxAsync(InboxItem item)
     {
-        if (ViewModel.Requests.Contains(item)) ViewModel.Selected = item;
+        if (ViewModel.Requests.Contains(item))
+        {
+            ViewModel.RevealRequest(item);
+        }
         OpenRequested?.Invoke();
         App.Window.Activate();
         if (App.Window.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
             presenter.Restore();
         return Task.CompletedTask;
+    }
+
+    public static Microsoft.UI.Xaml.Visibility ConversationPaneVisibility(bool wide, bool detailOpen) =>
+        wide || !detailOpen ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    public static Microsoft.UI.Xaml.Visibility DetailPaneVisibility(bool wide, bool detailOpen) =>
+        wide || detailOpen ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    public static Microsoft.UI.Xaml.Visibility BackButtonVisibility(bool wide) =>
+        wide ? Microsoft.UI.Xaml.Visibility.Collapsed : Microsoft.UI.Xaml.Visibility.Visible;
+    public static Microsoft.UI.Xaml.Visibility VisibleWhen(bool value) => value ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+    public static Microsoft.UI.Xaml.Visibility HiddenWhen(bool value) => value ? Microsoft.UI.Xaml.Visibility.Collapsed : Microsoft.UI.Xaml.Visibility.Visible;
+
+    private void Page_SizeChanged(object sender, Microsoft.UI.Xaml.SizeChangedEventArgs e)
+    {
+        ViewModel.IsWideLayout = e.NewSize.Width >= 840;
+        if (ViewModel.IsWideLayout)
+        {
+            BodyGrid.ColumnDefinitions[0].Width = new Microsoft.UI.Xaml.GridLength(2, Microsoft.UI.Xaml.GridUnitType.Star);
+            BodyGrid.ColumnDefinitions[1].Width = new Microsoft.UI.Xaml.GridLength(3, Microsoft.UI.Xaml.GridUnitType.Star);
+            Microsoft.UI.Xaml.Controls.Grid.SetColumn(DetailPane, 1);
+            Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(DetailPane, 1);
+        }
+        else
+        {
+            BodyGrid.ColumnDefinitions[0].Width = new Microsoft.UI.Xaml.GridLength(1, Microsoft.UI.Xaml.GridUnitType.Star);
+            BodyGrid.ColumnDefinitions[1].Width = new Microsoft.UI.Xaml.GridLength(0);
+            Microsoft.UI.Xaml.Controls.Grid.SetColumn(DetailPane, 0);
+            Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(DetailPane, 2);
+        }
+    }
+
+    private void Conversation_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is InboxConversation conversation) OpenConversation(conversation);
+    }
+
+    private void Conversation_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is ListView { SelectedItem: InboxConversation conversation }) ViewModel.SelectedConversation = conversation;
+    }
+
+    private void Conversation_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key is Windows.System.VirtualKey.Enter or Windows.System.VirtualKey.Space && ViewModel.SelectedConversation is { } conversation)
+        {
+            OpenConversation(conversation);
+            e.Handled = true;
+        }
+    }
+
+    private void OpenConversation(InboxConversation conversation)
+    {
+        ViewModel.OpenConversation(conversation);
+        if (!ViewModel.IsWideLayout) DispatcherQueue.TryEnqueue(() => InboxBackButton.Focus(Microsoft.UI.Xaml.FocusState.Programmatic));
+    }
+
+    private void BackToConversations_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        ViewModel.BackToConversations();
+        ConversationList.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
     }
 
     private void NotifyRequest(InboxItem item)

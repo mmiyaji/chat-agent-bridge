@@ -94,6 +94,7 @@ Check 'Connections and chat navigation' {
 }
 Check 'Durable execution metadata and history navigation' {
     Invoke-UI @('invoke', 'NavHistory')
+    Invoke-UI @('invoke', 'ExecutionHistoryTab')
     Invoke-UI @('wait-for', 'ExecutionHistoryList', '-t', '3000')
     Invoke-UI @('wait-for', 'HistoryStatus', '--value', '実行', '--contains', '-t', '3000')
     $path = Join-Path $DataDirectory 'history.json'
@@ -118,10 +119,10 @@ if ($TestSessionDetach) {
             })
         }
         $fixture | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $sessionPath -Encoding utf8
+        Invoke-UI @('invoke', 'SavedConversationsTab')
         Invoke-UI @('invoke', 'RefreshHistory')
-        Invoke-UI @('wait-for', $sessionId, '-t', '3000')
-        Invoke-UI @('click', $sessionId)
-        Invoke-UI @('scroll', 'HistoryScroll', '--to', 'bottom')
+        Invoke-UI @('wait-for', 'SavedSessionsList', '-t', '3000')
+        Invoke-UI @('click', 'smoke-thread')
         Invoke-UI @('scroll-into-view', 'EditSessionModel')
         Invoke-UI @('wait-for', 'EditSessionModel', '-p', 'IsEnabled', '--value', 'True', '-t', '3000')
         Invoke-UI @('invoke', 'EditSessionModel')

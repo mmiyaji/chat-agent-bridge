@@ -123,7 +123,7 @@
   <data name="AskPerAction" xml:space="preserve"><value>Ask for each action</value></data>
   <data name="HistoryLoading" xml:space="preserve"><value>Loading history and sessions.</value></data>
   <data name="HistoryRefreshing" xml:space="preserve"><value>Refreshing history and sessions…</value></data>
-  <data name="HistoryCounts" xml:space="preserve"><value>{0} executions, {1} sessions, {2} audit events</value></data>
+  <data name="HistoryCounts" xml:space="preserve"><value>{0} executions · {1} conversations · {2} activity records</value></data>
   <data name="HistoryLoadFailed" xml:space="preserve"><value>Could not load history: {0}</value></data>
   <data name="HistoryDetaching" xml:space="preserve"><value>Detaching session…</value></data>
   <data name="HistoryDetachedAuditFailed" xml:space="preserve"><value>Session detached, but the audit record could not be saved. Execution history is retained.</value></data>
@@ -134,7 +134,7 @@
   <data name="HistoryPolicySaveFailed" xml:space="preserve"><value>Could not save this conversation's execution policy: {0}</value></data>
   <data name="HistoryModelSaved" xml:space="preserve"><value>Saved the next execution model and updated reasoning effort.</value></data>
   <data name="HistoryModelSaveFailed" xml:space="preserve"><value>Could not save the next execution model. Check that the session still exists.</value></data>
-  <data name="HistorySuccessCounts" xml:space="preserve"><value>{0} {1} executions, {2} sessions, {3} audit events</value></data>
+  <data name="HistorySuccessCounts" xml:space="preserve"><value>{0} {1} executions · {2} conversations · {3} activity records</value></data>
   <data name="WorkspacePathInstruction" xml:space="preserve"><value>Enter an existing absolute folder path on the first line, for example: !cab folder C:\Projects\my-app. Paths with spaces may be enclosed in double quotes.</value></data>
   <data name="WorkspaceOutsideTrustedRoots" xml:space="preserve"><value>The destination is outside the trusted folders. In the PC agent settings, check and save an allowed parent folder, then reconnect.</value></data>
   <data name="WorkspaceChangePrompt" xml:space="preserve"><value>Change workspace (the AI will not run)&#10;Before: {0}&#10;After: {1}&#10;Owner: {2}&#10;Applies only to this user and thread. Saved conversation, model, and approval overrides will be cleared, and the next request will start a new AI session. Execution history will remain.</value></data>
@@ -273,4 +273,49 @@
   <data name="AboutExitTitle" xml:space="preserve"><value>Exit Chat Agent Bridge?</value></data>
   <data name="AboutExitMessage" xml:space="preserve"><value>Exiting cancels active work and disconnects chats.</value></data>
   <data name="AboutExitConfirm" xml:space="preserve"><value>Exit</value></data>
+  <data name="HistoryProviderAll" xml:space="preserve"><value>All services</value></data>
+  <data name="HistoryUnknownOrigin" xml:space="preserve"><value>Unknown connection</value></data>
+  <data name="HistoryConversationsTab" xml:space="preserve"><value>Conversations ({0})</value></data>
+  <data name="HistoryExecutionsTab" xml:space="preserve"><value>Executions ({0})</value></data>
+  <data name="HistoryAuditTab" xml:space="preserve"><value>Audit ({0})</value></data>
+  <data name="HistorySearchLabel" xml:space="preserve"><value>Search saved conversations</value></data>
+  <data name="HistorySearchPlaceholder" xml:space="preserve"><value>User, thread, workspace, session, model, and more</value></data>
+  <data name="HistoryProviderLabel" xml:space="preserve"><value>Chat service</value></data>
+  <data name="HistorySessionResults" xml:space="preserve"><value>Showing {0} of {1} conversations</value></data>
+  <data name="HistoryNoSessions" xml:space="preserve"><value>No saved conversations yet.</value></data>
+  <data name="HistoryNoSessionMatches" xml:space="preserve"><value>No conversations match these filters.</value></data>
+  <data name="HistorySelectConversation" xml:space="preserve"><value>Select a conversation</value></data>
+  <data name="HistorySelectedSessionTitle" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="HistorySelectConversationHint" xml:space="preserve"><value>Choose a saved conversation to see its identifiers, workspace, agent, model, and execution policy.</value></data>
+  <data name="HistoryChannelIdLabel" xml:space="preserve"><value>Channel ID</value></data>
+  <data name="HistoryThreadIdLabel" xml:space="preserve"><value>Thread ID</value></data>
+  <data name="HistoryUserIdLabel" xml:space="preserve"><value>User ID</value></data>
+  <data name="HistoryOriginLabel" xml:space="preserve"><value>Connection identifier</value></data>
+  <data name="HistoryWorkspacePathLabel" xml:space="preserve"><value>Workspace folder</value></data>
+  <data name="HistoryAgentLabel" xml:space="preserve"><value>Agent</value></data>
+  <data name="HistorySessionIdLabel" xml:space="preserve"><value>Session ID</value></data>
+  <data name="HistoryBackToConversations" xml:space="preserve"><value>Back to conversations</value></data>
+  <data name="HistoryContinueInOriginalThread" xml:space="preserve"><value>To continue this conversation, reply in the same original chat thread.</value></data>
+  <data name="HistoryConversationHeading" xml:space="preserve"><value>Conversation</value></data>
+  <data name="HistoryRuntimeHeading" xml:space="preserve"><value>Workspace and agent</value></data>
+  <data name="HistoryPolicyHeading" xml:space="preserve"><value>Approval and result sharing</value></data>
+  <data name="HistoryIdentifiersHeading" xml:space="preserve"><value>Conversation identifiers</value></data>
+  <data name="HistoryActionsHeading" xml:space="preserve"><value>Conversation actions</value></data>
+  <data name="HistoryEditNextModel" xml:space="preserve"><value>Model and effort</value></data>
+  <data name="HistoryEditPolicy" xml:space="preserve"><value>Approval and sharing</value></data>
+  <data name="HistoryStartFresh" xml:space="preserve"><value>Start fresh next time</value></data>
+  <data name="HistoryExecutionSummary" xml:space="preserve"><value>Recent executions ({0})</value></data>
+  <data name="HistoryNoExecutions" xml:space="preserve"><value>No execution history yet.</value></data>
+  <data name="HistoryNoAudit" xml:space="preserve"><value>No audit events yet.</value></data>
+  <data name="HistoryStartFreshWarning" xml:space="preserve"><value>This removes the saved session association so the next message in this same chat thread starts a new conversation. It does not delete remote chat history or execution history.</value></data>
+  <data name="InboxSelectConversation" xml:space="preserve"><value>Select a conversation to view its request and result.</value></data>
+  <data name="InboxConversationCount" xml:space="preserve"><value>{0} conversations</value></data>
+  <data name="InboxRequestCount" xml:space="preserve"><value>{0} requests</value></data>
+  <data name="InboxOutputDisplayTruncated" xml:space="preserve"><value>[The displayed output was shortened to keep the inbox responsive.]</value></data>
+  <data name="HistoryStartFreshTitle" xml:space="preserve"><value>Start a new conversation next time?</value></data>
+  <data name="ConversationLocation" xml:space="preserve"><value>Channel: {0} · Thread: {1}</value></data>
+  <data name="InboxWaitingForRequests" xml:space="preserve"><value>Connect above to receive requests from allowed users.</value></data>
+  <data name="InboxNoMatches" xml:space="preserve"><value>No conversations match. Change your search or state filter.</value></data>
+  <data name="InboxOneConversation" xml:space="preserve"><value>1 conversation</value></data>
+  <data name="InboxOneRequest" xml:space="preserve"><value>1 request</value></data>
 </root>

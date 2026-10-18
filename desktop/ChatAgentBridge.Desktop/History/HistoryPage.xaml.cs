@@ -2,6 +2,7 @@ using ChatAgentBridge_Desktop.History;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Navigation;
 using ChatAgentBridge.Core;
 using ChatAgentBridge_Desktop.ModelSelection;
 using ChatAgentBridge_Desktop.Localization;
@@ -11,8 +12,8 @@ namespace ChatAgentBridge_Desktop.History;
 
 public sealed partial class HistoryPage : Page
 {
-    private bool _loaded;
-
+    private bool _showDetailOnNarrow;
+    private ChatAgentBridge.Core.Sessions.SessionKey? _lastDetailKey;
     public HistoryPageViewModel ViewModel { get; } = new();
     public event Action? AgentSettingsRequested;
 
@@ -22,19 +23,109 @@ public sealed partial class HistoryPage : Page
         ViewModel.ConfirmDetachAsync = ConfirmDetachAsync;
         ViewModel.EditSessionModelAsync = EditSessionModelAsync;
         ViewModel.EditSessionPolicyAsync = EditSessionPolicyAsync;
-        Loaded += HistoryPage_Loaded;
+        ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        SizeChanged += Page_SizeChanged;
+        UpdateResponsiveLayout();
     }
 
     public static Visibility EmptyToVisibility(bool hasItems) =>
         hasItems ? Visibility.Collapsed : Visibility.Visible;
+    public static Visibility BoolToVisibility(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
 
     private void AgentSettingsRequested_Click(object sender, RoutedEventArgs e) => AgentSettingsRequested?.Invoke();
 
-    private async void HistoryPage_Loaded(object sender, RoutedEventArgs e)
+    protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
-        if (_loaded) return;
-        _loaded = true;
+        base.OnNavigatedTo(e);
         await ViewModel.RefreshAsync();
+    }
+
+    private void SessionSearchBox_TextChanged(object sender, TextChangedEventArgs e) =>
+        ViewModel.SearchQuery = SessionSearchBox.Text;
+
+    private void ProviderFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ProviderFilter.SelectedItem is string provider) ViewModel.ProviderFilter = provider;
+    }
+
+    private void SavedSessionsList_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is not SessionHistoryRow row) return;
+        ViewModel.SelectedSession = row;
+        _showDetailOnNarrow = true;
+        UpdateResponsiveLayout();
+        if (ViewModel.IsNarrow) DispatcherQueue.TryEnqueue(() => BackToSessionsButton.Focus(FocusState.Programmatic));
+    }
+
+    private void SavedSessionsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is ListView { SelectedItem: SessionHistoryRow row }) ViewModel.SelectedSession = row;
+    }
+
+    private void SavedSessionsList_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key is Windows.System.VirtualKey.Enter or Windows.System.VirtualKey.Space && ViewModel.SelectedSession is not null)
+        {
+            _showDetailOnNarrow = true;
+            UpdateResponsiveLayout();
+            if (ViewModel.IsNarrow) DispatcherQueue.TryEnqueue(() => BackToSessionsButton.Focus(FocusState.Programmatic));
+            e.Handled = true;
+        }
+    }
+
+    private void HistoryPivot_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        UpdateResponsiveLayout();
+
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ViewModel.SelectedSession))
+        {
+            if (ViewModel.SelectedSession is null) _showDetailOnNarrow = false;
+            if (ViewModel.SelectedSession is { } selected && _lastDetailKey != selected.Binding.Key)
+            {
+                _lastDetailKey = selected.Binding.Key;
+                DispatcherQueue.TryEnqueue(() => SessionDetailScroll.ChangeView(null, 0, null, true));
+            }
+        }
+        if (e.PropertyName is nameof(ViewModel.SelectedSession) or nameof(ViewModel.IsNarrow))
+            UpdateResponsiveLayout();
+    }
+
+    private void Page_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        ViewModel.IsNarrow = e.NewSize.Width < 800;
+        UpdateResponsiveLayout();
+    }
+
+    private void BackToSessions_Click(object sender, RoutedEventArgs e)
+    {
+        _showDetailOnNarrow = false;
+        UpdateResponsiveLayout();
+        SessionList.Focus(FocusState.Programmatic);
+    }
+
+    private void UpdateResponsiveLayout()
+    {
+        if (SessionListPane is null || SessionDetailPane is null) return;
+        var narrow = ViewModel.IsNarrow;
+        var showDetail = ViewModel.SelectedSession is not null && _showDetailOnNarrow;
+        SessionListPane.Visibility = narrow && showDetail ? Visibility.Collapsed : Visibility.Visible;
+        SessionDetailPane.Visibility = narrow && !showDetail ? Visibility.Collapsed : Visibility.Visible;
+        SessionListColumn.Width = new GridLength(narrow ? 1 : 340, narrow ? GridUnitType.Star : GridUnitType.Pixel);
+        SessionDetailColumn.Width = new GridLength(narrow ? 0 : 1, narrow ? GridUnitType.Pixel : GridUnitType.Star);
+        Grid.SetColumn(SessionDetailPane, narrow ? 0 : 1);
+        Grid.SetColumnSpan(SessionDetailPane, narrow ? 2 : 1);
+        Grid.SetColumnSpan(SessionListPane, narrow ? 2 : 1);
+        var stackFilters = ActualWidth < 600;
+        Grid.SetColumn(HistoryHeaderActions, stackFilters ? 0 : 1);
+        Grid.SetRow(HistoryHeaderActions, stackFilters ? 1 : 0);
+        ProviderFilterColumn.Width = new GridLength(stackFilters ? 0 : 180);
+        Grid.SetColumnSpan(SessionSearchBox, stackFilters ? 2 : 1);
+        Grid.SetColumn(ProviderFilter, stackFilters ? 0 : 1);
+        Grid.SetRow(ProviderFilter, stackFilters ? 1 : 0);
+        Grid.SetColumnSpan(ProviderFilter, stackFilters ? 2 : 1);
+        if (BackToSessionsButton is not null)
+            BackToSessionsButton.Visibility = narrow && showDetail ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async Task<bool> ConfirmDetachAsync(SessionHistoryRow session)
@@ -43,7 +134,7 @@ public sealed partial class HistoryPage : Page
         {
             RequestedTheme = App.Appearance.RequestedTheme,
             XamlRoot = XamlRoot,
-            Title = DesktopText.Get("ConfirmDetachTitle"),
+            Title = DesktopText.Get("HistoryStartFreshTitle"),
             Content = new StackPanel
             {
                 Spacing = 8,
@@ -53,15 +144,15 @@ public sealed partial class HistoryPage : Page
                     new TextBlock { Text = DesktopText.Get("HistoryChannelId", session.ChannelId), TextWrapping = TextWrapping.Wrap },
                     new TextBlock { Text = DesktopText.Get("HistoryThreadId", session.ThreadId), TextWrapping = TextWrapping.Wrap },
                     new TextBlock { Text = DesktopText.Get("HistorySessionId", session.SessionId), TextWrapping = TextWrapping.Wrap },
-                    new TextBlock { Text = DesktopText.Get("HistoryDetachWarning"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) }
+                    new TextBlock { Text = DesktopText.Get("HistoryStartFreshWarning"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) }
                 }
             },
-            PrimaryButtonText = DesktopText.Get("Detach"),
+            PrimaryButtonText = DesktopText.Get("HistoryStartFresh"),
             CloseButtonText = DesktopText.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close
         };
         AutomationProperties.SetAutomationId(dialog, "DetachSessionConfirmation");
-        AutomationProperties.SetName(dialog, DesktopText.Get("ConfirmDetachTitle"));
+        AutomationProperties.SetName(dialog, DesktopText.Get("HistoryStartFreshTitle"));
         return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 

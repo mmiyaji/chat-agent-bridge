@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.AppServer;
@@ -17,6 +19,7 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public BridgeSettings Settings { get; } = settings;
     public string Source => $"{Request.Provider} / {Request.ChannelId} / {Request.UserId}";
     public string Prompt => Request.Text;
+    public DateTimeOffset ReceivedAt { get; } = DateTimeOffset.Now;
     [ObservableProperty] public partial string Workspace { get; set; } = settings.WorkspaceRoot;
     [ObservableProperty] public partial string State { get; set; } = "承認待ち";
     public string StateDisplay => State switch
@@ -37,16 +40,40 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
         _ when State.StartsWith("失敗 (", StringComparison.Ordinal) => DesktopText.Get("ApprovalFailed", State[4..^1]),
         _ => State
     };
-    partial void OnStateChanged(string value) => OnPropertyChanged(nameof(StateDisplay));
+    partial void OnStateChanged(string value)
+    {
+        OnPropertyChanged(nameof(StateDisplay));
+        OnPropertyChanged(nameof(RequestLabel));
+    }
+    public string RequestLabel => $"{ReceivedAt:t} · {StateDisplay} · {Prompt.Replace('\r', ' ').Replace('\n', ' ')[..Math.Min(Prompt.Length, 80)]}";
     [ObservableProperty] public partial string SessionLabel { get; set; } = DesktopText.Get("InboxSessionPreflight");
     [ObservableProperty] public partial string ResultText { get; set; } = "";
+    [ObservableProperty] public partial string FullOutput { get; set; } = DesktopText.Get("InboxOutputIntro");
+    [ObservableProperty] public partial string Usage { get; set; } = DesktopText.Get("UsageAfterExecution");
     public Guid? ExecutionId { get; set; }
     public string? ExecutionPolicyFingerprint { get; set; }
     public bool AllowsResultSharing { get; set; } = true;
 }
 
+public sealed partial class InboxConversation(string key) : ObservableObject
+{
+    public string Key { get; } = key;
+    public ObservableCollection<InboxItem> Requests { get; } = [];
+    [ObservableProperty] public partial string Identity { get; set; } = "";
+    [ObservableProperty] public partial string Title { get; set; } = "";
+    [ObservableProperty] public partial string Location { get; set; } = "";
+    [ObservableProperty] public partial string LatestPrompt { get; set; } = "";
+    [ObservableProperty] public partial string StateSummary { get; set; } = "";
+    [ObservableProperty] public partial string Activity { get; set; } = "";
+    [ObservableProperty] public partial int RequestCount { get; set; }
+    public string RequestCountLabel => DesktopText.Get(RequestCount == 1 ? "InboxOneRequest" : "InboxRequestCount", RequestCount);
+    public override string ToString() => $"{Title} · {StateSummary} · {RequestCountLabel} · {Location}";
+    partial void OnRequestCountChanged(int value) => OnPropertyChanged(nameof(RequestCountLabel));
+}
+
 public sealed partial class ChatInboxViewModel : ObservableObject
 {
+    private const int MaxDisplayedOutputCharacters = 64_000;
     private readonly SettingsStore _store = new();
     private readonly SessionStore _sessions = new();
     private readonly SessionAgentRunner _runner;
@@ -68,15 +95,15 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private bool _processingPolicies;
     private readonly HashSet<InboxItem> _notifiedRequests = [];
     private readonly HashSet<InboxItem> _automaticallyAttempted = [];
+    private readonly Dictionary<InboxItem, PropertyChangedEventHandler> _requestHandlers = [];
     private int _droppedCount;
 
     public ObservableCollection<InboxItem> Requests { get; } = [];
+    public ObservableCollection<InboxConversation> Conversations { get; } = [];
     public event Action<InboxItem>? RequestReceived;
     public event Action? ConnectionEnded;
     [ObservableProperty] public partial string NotificationStatus { get; set; } = "";
     [ObservableProperty] public partial string Status { get; set; } = DesktopText.Get("InboxDisconnected");
-    [ObservableProperty] public partial string Output { get; set; } = DesktopText.Get("InboxOutputIntro");
-    [ObservableProperty] public partial string UsageSummary { get; set; } = DesktopText.Get("UsageAfterExecution");
     [ObservableProperty] public partial string OverflowNotice { get; set; } = "";
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
     public partial bool IsConnected { get; set; }
@@ -90,6 +117,145 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
     public partial InboxItem? Selected { get; set; }
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
+    public partial InboxConversation? SelectedConversation { get; set; }
+    [ObservableProperty] public partial string SearchText { get; set; } = "";
+    [ObservableProperty] public partial string StateFilter { get; set; } = "all";
+    [ObservableProperty] public partial bool IsDetailOpen { get; set; }
+    [ObservableProperty] public partial bool IsWideLayout { get; set; } = true;
+    public ObservableCollection<InboxConversation> VisibleConversations { get; } = [];
+    public IEnumerable<InboxItem> ConversationRequests => SelectedConversation?.Requests ?? [];
+    public string SelectedOutput => Selected?.FullOutput ?? DesktopText.Get("InboxSelectConversation");
+    public string SelectedUsage => Selected?.Usage ?? DesktopText.Get("UsageAfterExecution");
+    public string ConversationCountLabel => DesktopText.Get(VisibleConversations.Count == 1 ? "InboxOneConversation" : "InboxConversationCount", VisibleConversations.Count);
+    public string SelectedRequestCountLabel => DesktopText.Get(SelectedConversation?.Requests.Count == 1 ? "InboxOneRequest" : "InboxRequestCount", SelectedConversation?.Requests.Count ?? 0);
+    public bool HasSelectedConversation => SelectedConversation is not null;
+    public bool HasVisibleConversations => VisibleConversations.Count > 0;
+    public string EmptyListMessage => DesktopText.Get(Requests.Count == 0 ? "InboxWaitingForRequests" : "InboxNoMatches");
+    partial void OnSelectedChanged(InboxItem? value)
+    {
+        OnPropertyChanged(nameof(SelectedOutput));
+        OnPropertyChanged(nameof(SelectedUsage));
+        ApproveCommand.NotifyCanExecuteChanged(); RejectCommand.NotifyCanExecuteChanged();
+        CancelCommand.NotifyCanExecuteChanged(); SendResultCommand.NotifyCanExecuteChanged();
+    }
+    partial void OnSelectedConversationChanged(InboxConversation? value)
+    {
+        OnPropertyChanged(nameof(ConversationRequests));
+        OnPropertyChanged(nameof(SelectedRequestCountLabel));
+        OnPropertyChanged(nameof(HasSelectedConversation));
+        if (value is not null && (Selected is null || !value.Requests.Contains(Selected))) Selected = PreferredRequest(value);
+        ApproveCommand.NotifyCanExecuteChanged(); RejectCommand.NotifyCanExecuteChanged();
+        CancelCommand.NotifyCanExecuteChanged(); SendResultCommand.NotifyCanExecuteChanged();
+    }
+    partial void OnSearchTextChanged(string value) => RefreshVisibleConversations();
+    partial void OnStateFilterChanged(string value) => RefreshVisibleConversations();
+    private bool CanCancel() => IsExecuting && Selected is not null && ReferenceEquals(Selected, _activeItem) && _execution is { IsCancellationRequested: false };
+    public void OpenConversation(InboxConversation? conversation)
+    {
+        if (conversation is null) return;
+        SelectedConversation = conversation;
+        if (Selected is null || !conversation.Requests.Contains(Selected)) Selected = PreferredRequest(conversation);
+        IsDetailOpen = true;
+    }
+    public void BackToConversations() => IsDetailOpen = false;
+    private static InboxItem? PreferredRequest(InboxConversation conversation) =>
+        conversation.Requests.FirstOrDefault(item => item.State == "実行中") ??
+        conversation.Requests.FirstOrDefault(item => item.State == "承認待ち") ?? conversation.Requests.LastOrDefault();
+    public void SelectRequest(InboxItem? item)
+    {
+        if (item is null) return;
+        Selected = item;
+        SelectedConversation = Conversations.FirstOrDefault(conversation => conversation.Requests.Contains(item));
+    }
+    public void RevealRequest(InboxItem? item)
+    {
+        SearchText = "";
+        StateFilter = "all";
+        SelectRequest(item);
+        IsDetailOpen = true;
+    }
+    private bool MatchesFilter(InboxConversation conversation)
+    {
+        var latest = conversation.Requests.LastOrDefault();
+        if (latest is null) return false;
+        if (StateFilter == "pending" && !conversation.Requests.Any(item => item.State == "承認待ち")) return false;
+        if (StateFilter == "active" && !conversation.Requests.Any(item => item.State == "実行中")) return false;
+        if (StateFilter == "completed" && !conversation.Requests.Any(item => item.State is not ("承認待ち" or "実行中" or "自動実行を準備"))) return false;
+        var query = SearchText.Trim();
+        return query.Length == 0 || conversation.Identity.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+            conversation.Requests.Any(item => item.Prompt.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+                item.Workspace.Contains(query, StringComparison.CurrentCultureIgnoreCase));
+    }
+    private void RefreshVisibleConversations()
+    {
+        var wanted = Conversations.Where(MatchesFilter).ToArray();
+        foreach (var old in VisibleConversations.Where(item => !wanted.Contains(item)).ToArray()) VisibleConversations.Remove(old);
+        for (var index = 0; index < wanted.Length; index++)
+        {
+            var current = VisibleConversations.IndexOf(wanted[index]);
+            if (current < 0) VisibleConversations.Insert(index, wanted[index]);
+            else if (current != index) VisibleConversations.Move(current, index);
+        }
+        if (SelectedConversation is not null && !wanted.Contains(SelectedConversation))
+        {
+            SelectedConversation = null;
+            Selected = null;
+            IsDetailOpen = false;
+        }
+        OnPropertyChanged(nameof(ConversationCountLabel));
+        OnPropertyChanged(nameof(HasVisibleConversations));
+        OnPropertyChanged(nameof(EmptyListMessage));
+    }
+    private static string ConversationKey(InboxItem item) => System.Text.Json.JsonSerializer.Serialize(CreateSessionKey(item));
+    private void RefreshConversations()
+    {
+        var groups = Requests.GroupBy(ConversationKey).ToDictionary(group => group.Key, group => group.OrderBy(item => item.ReceivedAt).ToArray());
+        foreach (var existing in Conversations.Where(item => !groups.ContainsKey(item.Key)).ToArray()) Conversations.Remove(existing);
+        foreach (var group in groups.OrderByDescending(pair => pair.Value[^1].ReceivedAt))
+        {
+            var conversation = Conversations.FirstOrDefault(item => item.Key == group.Key);
+            if (conversation is null)
+            {
+                conversation = new InboxConversation(group.Key);
+                Conversations.Add(conversation);
+            }
+            var items = group.Value;
+            foreach (var oldRequest in conversation.Requests.Where(request => !items.Contains(request)).ToArray())
+                conversation.Requests.Remove(oldRequest);
+            for (var index = 0; index < items.Length; index++)
+            {
+                var current = conversation.Requests.IndexOf(items[index]);
+                if (current < 0) conversation.Requests.Insert(index, items[index]);
+                else if (current != index) conversation.Requests.Move(current, index);
+            }
+            var latest = items[^1];
+            conversation.Identity = $"{latest.Request.Provider}  /  {latest.Request.ChannelId}  /  {latest.Request.ThreadId}  /  {latest.Request.UserId}";
+            var provider = latest.Request.Provider == "mattermost" ? "Mattermost" : latest.Request.Provider == "slack" ? "Slack" : latest.Request.Provider;
+            conversation.Title = $"{provider} · {latest.Request.UserId}";
+            conversation.Location = DesktopText.Get("ConversationLocation", latest.Request.ChannelId, latest.Request.ThreadId);
+            conversation.LatestPrompt = latest.Prompt;
+            conversation.StateSummary = items.FirstOrDefault(item => item.State == "実行中")?.StateDisplay ??
+                items.FirstOrDefault(item => item.State == "承認待ち")?.StateDisplay ?? latest.StateDisplay;
+            conversation.Activity = latest.ReceivedAt.ToString("g", System.Globalization.CultureInfo.CurrentCulture);
+            conversation.RequestCount = items.Length;
+        }
+        var sorted = Conversations.OrderByDescending(item => item.Requests.LastOrDefault()?.ReceivedAt).ToArray();
+        for (var index = 0; index < sorted.Length; index++)
+        {
+            var current = Conversations.IndexOf(sorted[index]);
+            if (current != index) Conversations.Move(current, index);
+        }
+        RefreshVisibleConversations();
+        OnPropertyChanged(nameof(ConversationRequests));
+        OnPropertyChanged(nameof(SelectedRequestCountLabel));
+        if (SelectedConversation is not null && !Conversations.Contains(SelectedConversation))
+        {
+            SelectedConversation = null; Selected = null; IsDetailOpen = false;
+        }
+        else if (SelectedConversation is not null && (Selected is null || !SelectedConversation.Requests.Contains(Selected)))
+            Selected = PreferredRequest(SelectedConversation);
+    }
     public Func<InboxItem, Task<bool>>? ConfirmAsync { get; set; }
     public Func<InboxItem, string, Task<bool>>? ConfirmReplyAsync { get; set; }
     public Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? ServerApprovalHandler { get; set; }
@@ -99,6 +265,41 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         _runner = new SessionAgentRunner(_sessions);
         _serverRunner = new AppServerSessionRunner(_sessions);
+        Requests.CollectionChanged += Requests_CollectionChanged;
+    }
+
+    private void Requests_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == NotifyCollectionChangedAction.Reset)
+        {
+            foreach (var pair in _requestHandlers) pair.Key.PropertyChanged -= pair.Value;
+            _requestHandlers.Clear();
+        }
+        else if (e.OldItems is not null)
+        {
+            foreach (InboxItem item in e.OldItems)
+            {
+                if (_requestHandlers.Remove(item, out var handler)) item.PropertyChanged -= handler;
+            }
+        }
+        if (e.NewItems is not null)
+        {
+            foreach (InboxItem item in e.NewItems)
+            {
+                PropertyChangedEventHandler handler = (_, args) =>
+                {
+                    if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.Workspace)) RefreshConversations();
+                    if (ReferenceEquals(item, Selected))
+                    {
+                        if (args.PropertyName == nameof(InboxItem.FullOutput)) OnPropertyChanged(nameof(SelectedOutput));
+                        if (args.PropertyName == nameof(InboxItem.Usage)) OnPropertyChanged(nameof(SelectedUsage));
+                    }
+                };
+                item.PropertyChanged += handler;
+                _requestHandlers[item] = handler;
+            }
+        }
+        RefreshConversations();
     }
 
     private bool CanConnect() => !IsConnected && !IsExecuting;
@@ -137,6 +338,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 throw new InvalidOperationException(DesktopText.Get("WorkspaceConfigureAndSave"));
             // Reconnection invalidates pending work from the previous connection.
             Requests.Clear();
+            Conversations.Clear();
             _notifiedRequests.Clear();
             _automaticallyAttempted.Clear();
             Selected = null;
@@ -269,6 +471,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var connection = _connection;
             if (connection is null || connection.IsCancellationRequested) return;
             _execution = CancellationTokenSource.CreateLinkedTokenSource(connection.Token);
+            CancelCommand.NotifyCanExecuteChanged();
             var token = _execution.Token;
             if (!await CheckAccessAsync(item, token)) return;
             if (WorkspaceChatCommand.TryParse(item.Prompt, out var requestedWorkspace))
@@ -314,22 +517,22 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await AuditAsync("approved", item.Request, record.Id, _execution.Token);
             await AuditAsync("started", item.Request, record.Id, _execution.Token);
             item.State = "実行中";
-            Output = DesktopText.Get("InboxAgentRunning");
-            UsageSummary = DesktopText.Get("UsageRunning");
+            item.FullOutput = DesktopText.Get("InboxAgentRunning");
+            item.Usage = DesktopText.Get("UsageRunning");
             var result = effectiveSettings.AgentMode == "app-server"
                 ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
                     new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: ServerInputHandler), _execution.Token)
                 : await _runner.RunAsync(key, effectiveSettings, item.Request.Text, _execution.Token);
-            Output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
+            var output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
             var needsLogin = !result.Success && item.Settings.AgentProvider == AgentProfile.Claude &&
-                (Output.Contains("Not logged in", StringComparison.OrdinalIgnoreCase) ||
-                 Output.Contains("Please run /login", StringComparison.OrdinalIgnoreCase));
+                (output.Contains("Not logged in", StringComparison.OrdinalIgnoreCase) ||
+                 output.Contains("Please run /login", StringComparison.OrdinalIgnoreCase));
             if (needsLogin)
-                Output = DesktopText.Get("InboxClaudeLoginInstructions") + Environment.NewLine + Environment.NewLine + Output;
-            UsageSummary = UsageUi.UsageSummaryFormatter.Format(result.Usage, result.Metrics);
-            if (result.HasOutputTruncated) Output += Environment.NewLine + DesktopText.Get("InboxOutputTruncated");
-            // Only a bounded preview can be shared. Retaining full outputs for 100 inbox
-            // items otherwise holds up to 100 million characters until eviction.
+                output = DesktopText.Get("InboxClaudeLoginInstructions") + Environment.NewLine + Environment.NewLine + output;
+            item.Usage = UsageUi.UsageSummaryFormatter.Format(result.Usage, result.Metrics);
+            if (result.HasOutputTruncated) output += Environment.NewLine + DesktopText.Get("InboxOutputTruncated");
+            item.FullOutput = BoundOutput(output);
+            // Keep the reply preview and displayed output bounded for the 100-item inbox cap.
             var reply = ExtractReply(result);
             item.ResultText = reply.Length > 4001 ? reply[..4001] : reply;
             item.State = result.Success ? "完了" : $"失敗 ({result.ExitCode})";
@@ -369,14 +572,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         catch (OperationCanceledException)
         {
             item.State = "キャンセル"; Status = DesktopText.Get("InboxExecutionCancelled");
-            UsageSummary = UsageUi.UsageSummaryFormatter.Format(null, null);
+            item.Usage = UsageUi.UsageSummaryFormatter.Format(null, null);
             if (record is not null) await FinishFailureAsync(record, "cancelled", item.Request);
             await NotifyRequestAsync(item, DesktopText.Get("InboxCancelChatNotice"));
         }
         catch (Exception)
         {
             if (record?.Status == "running" || record is null) item.State = "実行／記録エラー";
-            UsageSummary = UsageUi.UsageSummaryFormatter.Format(null, null);
+            item.Usage = UsageUi.UsageSummaryFormatter.Format(null, null);
             Status = DesktopText.Get("InboxExecutionRecordFailed");
             if (record is not null && record.Status == "running") await FinishFailureAsync(record, "failed", item.Request);
         }
@@ -415,7 +618,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public async Task ApproveNotificationAsync(InboxItem item)
     {
         if (!Requests.Contains(item) || IsExecuting || !IsConnectionConfirmed || item.State != "承認待ち") return;
-        Selected = item;
+        RevealRequest(item);
         if (!CanApprove()) return;
         _notificationApprovedItem = item;
         try { await ApproveCommand.ExecuteAsync(null); }
@@ -425,7 +628,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public async Task RejectNotificationAsync(InboxItem item)
     {
         if (!Requests.Contains(item) || IsExecuting || !IsConnectionConfirmed || item.State != "承認待ち") return;
-        Selected = item;
+        RevealRequest(item);
         if (CanApprove()) await RejectCommand.ExecuteAsync(null);
     }
 
@@ -442,6 +645,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         try
         {
             _execution = CancellationTokenSource.CreateLinkedTokenSource(_connection!.Token);
+            CancelCommand.NotifyCanExecuteChanged();
             var token = _execution.Token;
             if (!await CheckAccessAsync(item, token)) return;
             if (ConfirmReplyAsync is null || !await ConfirmReplyAsync(item, text) || token.IsCancellationRequested) return;
@@ -613,7 +817,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     item.State = "承認待ち";
                 }
                 if (!Requests.Contains(item) || !ReferenceEquals(item.Transport, _transport)) continue;
-                Selected = item;
+                RevealRequest(item);
                 _automaticallyApprovedItem = item;
                 try { if (CanApprove()) await ApproveCommand.ExecuteAsync(null); }
                 finally { _automaticallyApprovedItem = null; }
@@ -649,6 +853,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private static string BoundedReply(string text) => text.Length > 4000
         ? text[..4000] + Environment.NewLine + DesktopText.Get("InboxLongTextTruncated") : text;
 
+    private static string BoundOutput(string text)
+    {
+        if (text.Length <= MaxDisplayedOutputCharacters) return text;
+        var suffix = Environment.NewLine + DesktopText.Get("InboxOutputDisplayTruncated");
+        return text[..(MaxDisplayedOutputCharacters - suffix.Length)] + suffix;
+    }
+
     private static string ApprovalLabel(string mode) => mode switch { "auto" => DesktopText.Get("Auto"), "first" => DesktopText.Get("AtStartupOnly"), _ => DesktopText.Get("EveryTime") };
     private static string ResultLabel(string mode) => mode switch { "auto" => DesktopText.Get("AutoReply"), "none" => DesktopText.Get("NoSharing"), _ => DesktopText.Get("ManualShareShort") };
     private static string PermissionLabel(string mode) => mode switch
@@ -657,7 +868,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         "full-access" => DesktopText.Get("FullAccess"), "ask" => DesktopText.Get("AskPerAction"), _ => DesktopText.Get("CliDefault")
     };
 
-    [RelayCommand(CanExecute = nameof(IsExecuting))]
+    [RelayCommand(CanExecute = nameof(CanCancel))]
     private void Cancel() => _execution?.Cancel();
 
     public void Close()

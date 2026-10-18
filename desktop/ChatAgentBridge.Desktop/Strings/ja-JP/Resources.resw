@@ -438,7 +438,7 @@
     <value>履歴と会話</value>
   </data>
   <data name="historyHistoryPageTextBlock002.Text" xml:space="preserve">
-    <value>日時・状態・作業フォルダーを保存します。本文や実行結果は保存しません。</value>
+    <value>保存済みの会話を管理します。依頼本文や実行結果は保存しません。</value>
   </data>
   <data name="AgentSettingsFromHistory.Content" xml:space="preserve">
     <value>エージェント設定を開く</value>
@@ -501,7 +501,7 @@
     <value>チャット受信</value>
   </data>
   <data name="inboxChatInboxPageTextBlock002.Text" xml:space="preserve">
-    <value>許可された範囲の依頼を、会話の承認設定に従ってこのPCで実行します。初期設定は毎回確認・結果本文は手動共有です。会話はユーザー・接続先・スレッドごとに分離します。操作承認は初期設定ではPCだけに表示し、公開を有効にすると詳細がスレッドの閲覧者全員に見えます。切断中の依頼は再投稿してください。</value>
+    <value>届いた依頼を会話ごとに確認します。会話を続けるには、元のチャットスレッドに返信してください。</value>
   </data>
   <data name="ConnectMattermost.Content" xml:space="preserve">
     <value>Mattermostに接続</value>
@@ -786,4 +786,27 @@
   <data name="AboutTerms.Content" xml:space="preserve"><value>利用規約</value></data>
   <data name="AboutPrivacy.Content" xml:space="preserve"><value>プライバシーポリシー</value></data>
   <data name="AboutExit.Content" xml:space="preserve"><value>アプリを終了</value></data>
+  <data name="InboxConversationsHeading.Text" xml:space="preserve"><value>会話</value></data>
+  <data name="InboxConversationHelp.Text" xml:space="preserve"><value>送信者、チャンネル、スレッド、メッセージを検索できます。新しい会話が先に表示されます。</value></data>
+  <data name="InboxSearch.Header" xml:space="preserve"><value>検索</value></data>
+  <data name="InboxSearch.PlaceholderText" xml:space="preserve"><value>会話を検索</value></data>
+  <data name="InboxStateFilter.Header" xml:space="preserve"><value>状態</value></data>
+  <data name="InboxStateFilter.PlaceholderText" xml:space="preserve"><value>状態で絞り込み</value></data>
+  <data name="InboxFilterAll.Content" xml:space="preserve"><value>すべて</value></data>
+  <data name="InboxFilterPending.Content" xml:space="preserve"><value>承認待ち</value></data>
+  <data name="InboxFilterActive.Content" xml:space="preserve"><value>実行中</value></data>
+  <data name="InboxFilterCompleted.Content" xml:space="preserve"><value>終了済み</value></data>
+  <data name="InboxOpenConversation.Content" xml:space="preserve"><value>開く</value></data>
+  <data name="InboxBackToConversations.Content" xml:space="preserve"><value>戻る</value></data>
+  <data name="InboxSameThreadHelp.Text" xml:space="preserve"><value>続けるには、元のチャットスレッドに返信してください。</value></data>
+  <data name="InboxRequestLabel.Text" xml:space="preserve"><value>依頼</value></data>
+  <data name="InboxRequestPicker.PlaceholderText" xml:space="preserve"><value>依頼を選択</value></data>
+  <data name="InboxPromptLabel.Text" xml:space="preserve"><value>依頼内容</value></data>
+  <data name="InboxContextLabel.Text" xml:space="preserve"><value>実行先と会話情報</value></data>
+  <data name="InboxResultLabel.Text" xml:space="preserve"><value>実行結果</value></data>
+  <data name="InboxApprove.Content" xml:space="preserve"><value>承認して実行</value></data>
+  <data name="InboxReject.Content" xml:space="preserve"><value>拒否</value></data>
+  <data name="InboxStop.Content" xml:space="preserve"><value>停止</value></data>
+  <data name="InboxShare.Content" xml:space="preserve"><value>結果を共有</value></data>
+  <data name="InboxConnectionDetails.Header" xml:space="preserve"><value>接続と通知の詳細</value></data>
 </root>

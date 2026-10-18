@@ -92,10 +92,10 @@ try {
     $sessionPath = Join-Path $dataPath 'sessions.json'
     $sessions | ConvertTo-Json -Depth 8 | Set-Content $sessionPath -Encoding utf8
     UI @('invoke','NavHistory')
+    UI @('invoke','SavedConversationsTab')
     UI @('invoke','RefreshHistory')
-    Wait $sessionId
-    UI @('click',$sessionId)
-    UI @('scroll','HistoryScroll','--to','bottom')
+    Wait 'SavedSessionsList'
+    UI @('click','model-catalog-thread')
     UI @('scroll-into-view','EditSessionModel')
     UI @('invoke','EditSessionModel')
     Wait 'SessionModelDialog'

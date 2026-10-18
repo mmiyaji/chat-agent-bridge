@@ -7,131 +7,211 @@
     xmlns:vm="using:ChatAgentBridge_Desktop.History"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
-    <Grid Padding="24,18,24,24" RowSpacing="12">
+    <Grid Padding="20,12,20,18" RowSpacing="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Spacing="8">
-            <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock001" />
-            <TextBlock
-                       Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap"  x:Uid="historyHistoryPageTextBlock002" />
-            <StackPanel Spacing="6">
-                <Button  HorizontalAlignment="Left" Click="AgentSettingsRequested_Click"
-                        AutomationProperties.AutomationId="AgentSettingsFromHistory"  x:Uid="AgentSettingsFromHistory" />
-                <Button  HorizontalAlignment="Left" Command="{x:Bind ViewModel.RefreshCommand}"
-                        AutomationProperties.AutomationId="RefreshHistory"  x:Uid="RefreshHistory" />
+        <Grid ColumnSpacing="12">
+            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource TitleTextBlockStyle}" x:Uid="historyHistoryPageTextBlock001" />
+                <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="historyHistoryPageTextBlock002" />
             </StackPanel>
-        </StackPanel>
+            <StackPanel x:Name="HistoryHeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Click="AgentSettingsRequested_Click" AutomationProperties.AutomationId="AgentSettingsFromHistory" x:Uid="AgentSettingsFromHistory" />
+                <Button Command="{x:Bind ViewModel.RefreshCommand}" AutomationProperties.AutomationId="RefreshHistory" x:Uid="RefreshHistory" />
+            </StackPanel>
+        </Grid>
+
         <TextBlock Grid.Row="1" Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap"
                    AutomationProperties.AutomationId="HistoryStatus" />
 
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto"
-                      HorizontalScrollBarVisibility="Disabled" IsVerticalScrollChainingEnabled="True"
-                      AutomationProperties.AutomationId="HistoryScroll">
-            <StackPanel Spacing="18">
-                <StackPanel Spacing="6">
-                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock003" />
-                    <TextBlock
-                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock004" />
-                    <TextBlock
-                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock005" />
-                    <Grid>
-                        <ListView ItemsSource="{x:Bind ViewModel.Executions, Mode=OneWay}" MaxHeight="220"
-                                   AutomationProperties.AutomationId="ExecutionHistoryList" x:Uid="ExecutionHistoryList">
+        <Pivot Grid.Row="2" x:Name="HistoryPivot" SelectionChanged="HistoryPivot_SelectionChanged" AutomationProperties.AutomationId="HistorySectionSelector">
+            <PivotItem x:Name="ConversationsTab" Header="{x:Bind ViewModel.ConversationsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="SavedConversationsTab">
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid x:Name="SessionFilters" ColumnSpacing="8" RowSpacing="8">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition x:Name="ProviderFilterColumn" Width="180" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="SessionSearchBox" Header="{x:Bind ViewModel.SearchLabel, Mode=OneWay}"
+                                 PlaceholderText="{x:Bind ViewModel.SearchPlaceholder, Mode=OneWay}"
+                                 TextChanged="SessionSearchBox_TextChanged" AutomationProperties.AutomationId="SavedSessionsSearch" />
+                        <ComboBox x:Name="ProviderFilter" Grid.Column="1" Header="{x:Bind ViewModel.ProviderLabel, Mode=OneWay}"
+                                  ItemsSource="{x:Bind ViewModel.ProviderFilters, Mode=OneWay}"
+                                  SelectedIndex="0" SelectionChanged="ProviderFilter_SelectionChanged"
+                                  AutomationProperties.AutomationId="SavedSessionsProviderFilter" />
+                    </Grid>
+
+                    <Grid x:Name="SessionBrowser" Grid.Row="1" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="SessionListColumn" Width="340" />
+                            <ColumnDefinition x:Name="SessionDetailColumn" Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid x:Name="SessionListPane" RowSpacing="5" AutomationProperties.AutomationId="SavedSessionListPane">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="{x:Bind ViewModel.SessionResultSummary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="SavedSessionsCount" />
+                            <Grid Grid.Row="1">
+                                <ListView x:Name="SessionList" ItemsSource="{x:Bind ViewModel.FilteredSessions, Mode=OneWay}"
+                                          SelectedItem="{x:Bind ViewModel.SelectedSession, Mode=OneWay}" SelectionChanged="SavedSessionsList_SelectionChanged"
+                                          SelectionMode="Single" IsItemClickEnabled="True" ItemClick="SavedSessionsList_ItemClick" KeyDown="SavedSessionsList_KeyDown"
+                                          AutomationProperties.AutomationId="SavedSessionsList"
+                                          AutomationProperties.Name="{x:Bind ViewModel.ConversationsTabTitle, Mode=OneWay}">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:SessionHistoryRow">
+                                            <Grid Margin="8,7" RowSpacing="2">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Grid ColumnSpacing="8">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{x:Bind ListTitle}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Grid.Column="1" Text="{x:Bind Updated}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                                </Grid>
+                                                <TextBlock Grid.Row="1" Text="{x:Bind WorkspaceName}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Grid.Row="2" Text="{x:Bind ListLocation}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ConversationLabel}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                                <TextBlock Margin="12" VerticalAlignment="Center" TextWrapping="Wrap"
+                                           Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasFilteredSessions), Mode=OneWay}"
+                                           Text="{x:Bind ViewModel.SessionListEmptyText, Mode=OneWay}" AutomationProperties.AutomationId="EmptySavedSessions" />
+                            </Grid>
+                        </Grid>
+
+                        <Grid x:Name="SessionDetailPane" Grid.Column="1" RowSpacing="8" AutomationProperties.AutomationId="SavedSessionDetails">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <Button x:Name="BackToSessionsButton" Click="BackToSessions_Click" AutomationProperties.AutomationId="BackToSessionsButton"
+                                        Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsNarrow), Mode=OneWay}"
+                                        Content="{x:Bind ViewModel.BackToConversationsLabel, Mode=OneWay}" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.SelectedSessionTitle, Mode=OneWay}"
+                                           Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                            </Grid>
+                            <ScrollViewer x:Name="SessionDetailScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <Grid>
+                                    <Grid x:Name="SessionDetailContent" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}" RowSpacing="12">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="{x:Bind ViewModel.ConversationHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                            <TextBlock Text="{x:Bind ViewModel.UserIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                            <TextBlock Text="{x:Bind ViewModel.SelectedSession.UserId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                            <TextBlock Text="{x:Bind ViewModel.SelectedSession.Updated, Mode=OneWay, FallbackValue=''}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                            <TextBlock Text="{x:Bind ViewModel.ContinueInOriginalThreadHint, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Row="1" Spacing="4">
+                                            <TextBlock Text="{x:Bind ViewModel.RuntimeHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                            <TextBlock Text="{x:Bind ViewModel.WorkspacePathLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                            <TextBlock Text="{x:Bind ViewModel.SelectedSession.Workspace, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                            <TextBlock Text="{x:Bind ViewModel.AgentLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                            <TextBlock Text="{x:Bind ViewModel.SelectedSession.Agent, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                            <TextBlock Text="{x:Bind ViewModel.SelectedSession.Model, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                            <TextBlock Text="{x:Bind ViewModel.SelectedSession.ReasoningEffort, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Row="2" Spacing="4">
+                                            <TextBlock Text="{x:Bind ViewModel.PolicyHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                            <TextBlock Text="{x:Bind ViewModel.SelectedSession.ExecutionPolicy, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                        </StackPanel>
+                                        <Expander Grid.Row="3" Header="{x:Bind ViewModel.IdentifiersHeading, Mode=OneWay}" IsExpanded="False" AutomationProperties.AutomationId="SessionIdentifiers">
+                                            <StackPanel Spacing="4" Margin="0,4,0,0">
+                                                <TextBlock Text="{x:Bind ViewModel.ChannelIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.SelectedSession.ChannelId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind ViewModel.ThreadIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.SelectedSession.ThreadId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind ViewModel.OriginLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.SelectedSession.Origin, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind ViewModel.SessionIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                                <TextBlock x:Name="SelectedSessionIdText" Text="{x:Bind ViewModel.SelectedSession.SessionId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="SelectedSessionId" />
+                                            </StackPanel>
+                                        </Expander>
+                                    </Grid>
+                                    <TextBlock x:Name="NoSessionSelectedText" Text="{x:Bind ViewModel.NoSessionSelectedText, Mode=OneWay}"
+                                               TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
+                                               Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}" />
+                                </Grid>
+                            </ScrollViewer>
+                            <Grid Grid.Row="2" ColumnSpacing="8" RowSpacing="8" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                <Button Command="{x:Bind ViewModel.EditSelectedSessionModelCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.EditModelLabel, Mode=OneWay}" AutomationProperties.AutomationId="EditSessionModel" />
+                                <Button Grid.Column="1" Command="{x:Bind ViewModel.EditSelectedSessionPolicyCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.EditPolicyLabel, Mode=OneWay}" AutomationProperties.AutomationId="EditSessionExecutionPolicy" />
+                                <Button Grid.Row="1" Grid.ColumnSpan="2" Command="{x:Bind ViewModel.DetachSelectedSessionCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.StartFreshLabel, Mode=OneWay}" AutomationProperties.AutomationId="DetachSession" />
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </PivotItem>
+
+            <PivotItem Header="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryTab">
+                <Grid RowSpacing="6">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                    <TextBlock Text="{x:Bind ViewModel.ExecutionSummary, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <Grid Grid.Row="1">
+                        <ListView ItemsSource="{x:Bind ViewModel.Executions, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryList"
+                                  AutomationProperties.Name="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ExecutionHistoryRow">
-                                    <StackPanel Margin="8,6" Spacing="4">
-                                        <TextBlock Text="{x:Bind Summary}" Style="{StaticResource BodyStrongTextBlockStyle}"
-                                                   TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                        <TextBlock Text="{x:Bind Workspace}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                        <TextBlock Text="{x:Bind Conversation}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                        <TextBlock Text="{x:Bind Model}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                        <TextBlock Text="{x:Bind ReasoningEffort}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                        <TextBlock Text="{x:Bind Usage}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                        <TextBlock Text="{x:Bind Session}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
-                        <TextBlock
-                                   TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
-                                   Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasExecutions), Mode=OneWay}"
-                                   AutomationProperties.AutomationId="EmptyExecutionHistory"  x:Uid="EmptyExecutionHistory" />
-                    </Grid>
-                </StackPanel>
-
-                <StackPanel Spacing="6">
-                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock006" />
-                    <TextBlock
-                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock007" />
-                    <StackPanel Spacing="6">
-                        <Button HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.EditSelectedSessionModelCommand}"
-                                AutomationProperties.AutomationId="EditSessionModel">
-                            <Button.Content><TextBlock  TextWrapping="Wrap"  x:Uid="historyHistoryPageTextBlock008" /></Button.Content>
-                        </Button>
-                        <Button HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.EditSelectedSessionPolicyCommand}"
-                                AutomationProperties.AutomationId="EditSessionExecutionPolicy">
-                            <Button.Content><TextBlock  TextWrapping="Wrap"  x:Uid="historyHistoryPageTextBlock009" /></Button.Content>
-                        </Button>
-                        <Button HorizontalAlignment="Stretch"
-                                Command="{x:Bind ViewModel.DetachSelectedSessionCommand}"
-                                AutomationProperties.AutomationId="DetachSession" x:Uid="DetachSession">
-                            <Button.Content><TextBlock  TextWrapping="Wrap"  x:Uid="historyHistoryPageTextBlock010" /></Button.Content>
-                        </Button>
-                    </StackPanel>
-                    <Grid>
-                        <ListView MaxHeight="250" ItemsSource="{x:Bind ViewModel.Sessions, Mode=OneWay}"
-                                  SelectedItem="{x:Bind ViewModel.SelectedSession, Mode=TwoWay}"
-                                   AutomationProperties.AutomationId="SavedSessionsList" x:Uid="SavedSessionsList">
-                            <ListView.ItemTemplate>
-                                <DataTemplate x:DataType="vm:SessionHistoryRow">
-                                    <StackPanel Margin="8,6" Spacing="4">
-                                        <TextBlock Text="{x:Bind Provider}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <StackPanel Margin="8,6" Spacing="3">
+                                        <TextBlock Text="{x:Bind Summary}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
                                         <TextBlock Text="{x:Bind Conversation}" TextWrapping="Wrap" />
-                                        <TextBlock Text="{x:Bind Workspace}" TextWrapping="Wrap" />
-                                        <TextBlock Text="{x:Bind AgentAndSession}" TextWrapping="Wrap" />
-                                        <TextBlock Text="{x:Bind Model}" TextWrapping="Wrap" />
-                                        <TextBlock Text="{x:Bind ReasoningEffort}" TextWrapping="Wrap" />
-                                        <TextBlock Text="{x:Bind ExecutionPolicy}" TextWrapping="Wrap" />
-                                        <TextBlock Text="{x:Bind Updated}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <Expander Header="{x:Bind Model}" IsExpanded="False">
+                                            <StackPanel Spacing="3" Margin="0,4,0,0">
+                                                <TextBlock Text="{x:Bind Workspace}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind ReasoningEffort}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind Usage}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind Session}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                            </StackPanel>
+                                        </Expander>
                                     </StackPanel>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
-                        <TextBlock
-                                   TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
-                                   Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasSessions), Mode=OneWay}"
-                                   AutomationProperties.AutomationId="EmptySavedSessions"  x:Uid="EmptySavedSessions" />
+                        <TextBlock Text="{x:Bind ViewModel.NoExecutionsText, Mode=OneWay}" TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
+                                   Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasExecutions), Mode=OneWay}" AutomationProperties.AutomationId="EmptyExecutionHistory" />
                     </Grid>
-                </StackPanel>
+                </Grid>
+            </PivotItem>
 
-                <StackPanel Spacing="6">
-                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock011" />
-                    <TextBlock
-                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock012" />
-                    <Grid>
-                        <ListView MaxHeight="220" ItemsSource="{x:Bind ViewModel.AuditEvents, Mode=OneWay}"
-                                   AutomationProperties.AutomationId="AuditHistoryList" x:Uid="AuditHistoryList">
-                            <ListView.ItemTemplate>
-                                <DataTemplate x:DataType="vm:AuditHistoryRow">
-                                    <StackPanel Margin="8,6" Spacing="4">
-                                        <TextBlock Text="{x:Bind Summary}" Style="{StaticResource BodyStrongTextBlockStyle}"
-                                                   TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                        <TextBlock Text="{x:Bind Conversation}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
-                        <TextBlock
-                                   TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
-                                   Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasAuditEvents), Mode=OneWay}"
-                                   AutomationProperties.AutomationId="EmptyAuditHistory"  x:Uid="EmptyAuditHistory" />
-                    </Grid>
-                </StackPanel>
-            </StackPanel>
-        </ScrollViewer>
+            <PivotItem Header="{x:Bind ViewModel.AuditTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="AuditHistoryTab">
+                <Grid>
+                    <ListView ItemsSource="{x:Bind ViewModel.AuditEvents, Mode=OneWay}" AutomationProperties.AutomationId="AuditHistoryList"
+                              AutomationProperties.Name="{x:Bind ViewModel.AuditTabTitle, Mode=OneWay}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AuditHistoryRow">
+                                <StackPanel Margin="8,6" Spacing="3">
+                                    <TextBlock Text="{x:Bind Summary}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind Conversation}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <TextBlock Text="{x:Bind ViewModel.NoAuditText, Mode=OneWay}" TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
+                               Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasAuditEvents), Mode=OneWay}" AutomationProperties.AutomationId="EmptyAuditHistory" />
+                </Grid>
+            </PivotItem>
+        </Pivot>
     </Grid>
 </Page>

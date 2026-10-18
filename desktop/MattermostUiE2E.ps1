@@ -115,17 +115,81 @@ function Get-HistoryCount {
     return @($history.Records).Count
 }
 
-function Scroll-PromptIntoView([string]$AutomationId) {
+function Node-ContainsPrompt($Node, [string]$Prompt) {
+    if ($null -eq $Node) { return $false }
+    if ($Node -is [System.Collections.IEnumerable] -and $Node -isnot [string] -and $Node -isnot [pscustomobject]) {
+        foreach ($child in $Node) { if (Node-ContainsPrompt $child $Prompt) { return $true } }
+    } elseif ($Node -is [pscustomobject]) {
+        foreach ($name in @('name','value','text')) {
+            if ($null -ne $Node.$name -and ([string]$Node.$name).Contains($Prompt, [StringComparison]::Ordinal)) { return $true }
+        }
+        foreach ($property in $Node.PSObject.Properties) { if (Node-ContainsPrompt $property.Value $Prompt) { return $true } }
+    }
+    return $false
+}
+
+function Find-ConversationRowSelector($Node, [string]$Prompt) {
+    if ($null -eq $Node) { return $null }
+    if ($Node -is [System.Collections.IEnumerable] -and $Node -isnot [string] -and $Node -isnot [pscustomobject]) {
+        foreach ($child in $Node) { $found = Find-ConversationRowSelector $child $Prompt; if ($found) { return $found } }
+    } elseif ($Node -is [pscustomobject]) {
+        if ($Node.type -eq 'ListItem' -and $Node.selector -and (Node-ContainsPrompt $Node $Prompt)) { return [string]$Node.selector }
+        foreach ($property in $Node.PSObject.Properties) { $found = Find-ConversationRowSelector $property.Value $Prompt; if ($found) { return $found } }
+    }
+    return $null
+}
+
+function Find-RequestPickerSelector($Node, [string]$Prompt) { Find-ConversationRowSelector $Node $Prompt }
+
+function Wait-RequestVisible([string]$Prompt) {
     $deadline = [DateTime]::UtcNow.AddSeconds(20)
     do {
-        & winapp ui scroll-into-view $AutomationId -a $AppPid *> $null
-        if ($LASTEXITCODE -eq 0) { return }
-        # A new WebSocket event may not have arrived yet. A short list has no
-        # scroll range; only finding the actual request completes this helper.
-        & winapp ui scroll ChatRequests --to bottom -a $AppPid *> $null
+        $tree = Invoke-UiProcess @('inspect','InboxConversations','--json','-d','10')
+        if ($tree.ExitCode -eq 0) {
+            try {
+                $selector = Find-ConversationRowSelector ($tree.Output | ConvertFrom-Json) $Prompt
+                if ($selector) { return $selector }
+            } catch { }
+        }
+        & winapp ui scroll InboxConversations --to bottom -a $AppPid *> $null
         Start-Sleep -Milliseconds 150
     } while ([DateTime]::UtcNow -lt $deadline)
-    throw 'The incoming workflow request did not become selectable.'
+    throw 'The incoming workflow conversation did not appear.'
+}
+
+function Wait-SelectedPrompt([string]$Prompt, [int]$TimeoutSeconds = 15) {
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+    do {
+        $value = Invoke-UiProcess @('get-value','InboxSelectedPrompt','--json')
+        if ($value.ExitCode -eq 0) {
+            try { if ([string]::Equals([string]($value.Output | ConvertFrom-Json).text, $Prompt, [StringComparison]::Ordinal)) { return $true } } catch { }
+        }
+        Start-Sleep -Milliseconds 200
+    } while ([DateTime]::UtcNow -lt $deadline)
+    return $false
+}
+
+function Select-WorkflowRequest([string]$Prompt) {
+    $conversationSelector = Wait-RequestVisible $Prompt
+    Invoke-UI @('invoke',$conversationSelector)
+    if (-not (Wait-SelectedPrompt $Prompt 5)) {
+        $pickerPreview = $Prompt.Replace("`r",' ').Replace("`n",' ')
+        $pickerPreview = $pickerPreview.Substring(0, [Math]::Min($pickerPreview.Length, 80))
+        Invoke-UI @('invoke','ChatRequests')
+        $deadline = [DateTime]::UtcNow.AddSeconds(10)
+        $requestSelector = $null
+        do {
+            $tree = Invoke-UiProcess @('inspect','ChatRequests','--json','-d','8')
+            if ($tree.ExitCode -eq 0) {
+                try { $requestSelector = Find-RequestPickerSelector ($tree.Output | ConvertFrom-Json) $pickerPreview } catch { }
+            }
+            if (-not $requestSelector) { Start-Sleep -Milliseconds 200 }
+        } while ([DateTime]::UtcNow -lt $deadline -and -not $requestSelector)
+        if (-not $requestSelector) { throw 'The target workflow request was not available in its conversation picker.' }
+        Invoke-UI @('invoke',$requestSelector)
+        if (-not (Wait-SelectedPrompt $Prompt 5)) { throw 'The target workflow request was not selected.' }
+    }
+    Wait-UI 'ApproveChat'
 }
 
 function Invoke-WorkflowTurn([string]$AuthorToken, [string]$Prompt, [string]$RootPostId, [string]$ExpectedSessionId, [bool]$TryOtherMemberApproval, [bool]$CancelSharing) {
@@ -138,15 +202,12 @@ function Invoke-WorkflowTurn([string]$AuthorToken, [string]$Prompt, [string]$Roo
     $turnRootId = if ([string]::IsNullOrWhiteSpace($RootPostId)) { [string]$created.id } else { $RootPostId }
     if ([string]::IsNullOrWhiteSpace($turnRootId)) { throw 'Mattermost did not return the workflow root post ID.' }
     $historyCountBeforeApproval = Get-HistoryCount
-    Scroll-PromptIntoView $Prompt
-    Wait-UI $Prompt '' 30000
+    Select-WorkflowRequest $Prompt
     Start-Sleep -Milliseconds 700
     if ((Get-HistoryCount) -ne $historyCountBeforeApproval) {
         throw 'A request entered execution history before local approval.'
     }
     Add-Pass 'Request did not enter execution history before local approval'
-    Invoke-UI @('click', $Prompt)
-    Wait-UI 'ApproveChat'
     Invoke-UI @('invoke', 'ApproveChat')
     Wait-UI 'ChatRunConfirmation'
     Invoke-UI @('invoke', 'PrimaryButton')

@@ -123,7 +123,7 @@
   <data name="AskPerAction" xml:space="preserve"><value>操作ごとに確認</value></data>
   <data name="HistoryLoading" xml:space="preserve"><value>履歴とセッションを読み込んでいます。</value></data>
   <data name="HistoryRefreshing" xml:space="preserve"><value>履歴とセッションを更新しています…</value></data>
-  <data name="HistoryCounts" xml:space="preserve"><value>実行 {0} 件、セッション {1} 件、監査イベント {2} 件</value></data>
+  <data name="HistoryCounts" xml:space="preserve"><value>実行 {0} 件・会話 {1} 件・操作記録 {2} 件</value></data>
   <data name="HistoryLoadFailed" xml:space="preserve"><value>履歴を読み込めませんでした: {0}</value></data>
   <data name="HistoryDetaching" xml:space="preserve"><value>セッションを切り離しています…</value></data>
   <data name="HistoryDetachedAuditFailed" xml:space="preserve"><value>セッションを切り離しましたが、監査記録に失敗しました。実行履歴は保持されています。</value></data>
@@ -134,7 +134,7 @@
   <data name="HistoryPolicySaveFailed" xml:space="preserve"><value>この会話の実行ポリシーを保存できませんでした: {0}</value></data>
   <data name="HistoryModelSaved" xml:space="preserve"><value>次回の実行モデルを保存しました。推論レベルも更新しました。</value></data>
   <data name="HistoryModelSaveFailed" xml:space="preserve"><value>次回の実行モデルを保存できませんでした。セッションが残っているか確認してください。</value></data>
-  <data name="HistorySuccessCounts" xml:space="preserve"><value>{0} 実行 {1} 件、セッション {2} 件、監査イベント {3} 件</value></data>
+  <data name="HistorySuccessCounts" xml:space="preserve"><value>{0} 実行 {1} 件・会話 {2} 件・操作記録 {3} 件</value></data>
   <data name="WorkspacePathInstruction" xml:space="preserve"><value>!cab folder C:\Projects\my-app のように、存在するフォルダーの絶対パスを1行目に指定してください。空白を含むパスは二重引用符で囲めます。</value></data>
   <data name="WorkspaceOutsideTrustedRoots" xml:space="preserve"><value>変更先は信頼フォルダーの範囲外です。PCのエージェント設定で、許可する親フォルダーを確認・保存してから再接続してください。</value></data>
   <data name="WorkspaceChangePrompt" xml:space="preserve"><value>作業フォルダーの変更（AIは実行しません）&#10;変更前: {0}&#10;変更後: {1}&#10;所有者: {2}&#10;このユーザー・スレッドだけに適用します。保存済みの会話・モデル・承認の上書きは解除し、次の依頼は新しいAIセッションで開始します。実行履歴は残ります。</value></data>
@@ -273,4 +273,49 @@
   <data name="AboutExitTitle" xml:space="preserve"><value>Chat Agent Bridge を終了しますか？</value></data>
   <data name="AboutExitMessage" xml:space="preserve"><value>終了すると、実行中の作業をキャンセルし、チャット接続を切断します。</value></data>
   <data name="AboutExitConfirm" xml:space="preserve"><value>終了</value></data>
+  <data name="HistoryProviderAll" xml:space="preserve"><value>すべてのサービス</value></data>
+  <data name="HistoryUnknownOrigin" xml:space="preserve"><value>接続先不明</value></data>
+  <data name="HistoryConversationsTab" xml:space="preserve"><value>会話 ({0})</value></data>
+  <data name="HistoryExecutionsTab" xml:space="preserve"><value>実行 ({0})</value></data>
+  <data name="HistoryAuditTab" xml:space="preserve"><value>操作記録 ({0})</value></data>
+  <data name="HistorySearchLabel" xml:space="preserve"><value>保存済みの会話を検索</value></data>
+  <data name="HistorySearchPlaceholder" xml:space="preserve"><value>利用者・スレッド・作業フォルダーなど</value></data>
+  <data name="HistoryProviderLabel" xml:space="preserve"><value>チャットサービス</value></data>
+  <data name="HistorySessionResults" xml:space="preserve"><value>会話 {1} 件中 {0} 件を表示</value></data>
+  <data name="HistoryNoSessions" xml:space="preserve"><value>保存済みの会話はまだありません。</value></data>
+  <data name="HistoryNoSessionMatches" xml:space="preserve"><value>条件に一致する会話はありません。</value></data>
+  <data name="HistorySelectConversation" xml:space="preserve"><value>会話を選択</value></data>
+  <data name="HistorySelectedSessionTitle" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="HistorySelectConversationHint" xml:space="preserve"><value>保存済みの会話を選択すると、識別子、ワークスペース、エージェント、モデル、実行ポリシーを確認できます。</value></data>
+  <data name="HistoryChannelIdLabel" xml:space="preserve"><value>チャンネル ID</value></data>
+  <data name="HistoryThreadIdLabel" xml:space="preserve"><value>スレッド ID</value></data>
+  <data name="HistoryUserIdLabel" xml:space="preserve"><value>ユーザー ID</value></data>
+  <data name="HistoryOriginLabel" xml:space="preserve"><value>接続先の識別子</value></data>
+  <data name="HistoryWorkspacePathLabel" xml:space="preserve"><value>作業フォルダー</value></data>
+  <data name="HistoryAgentLabel" xml:space="preserve"><value>エージェント</value></data>
+  <data name="HistorySessionIdLabel" xml:space="preserve"><value>セッション ID</value></data>
+  <data name="HistoryBackToConversations" xml:space="preserve"><value>会話一覧に戻る</value></data>
+  <data name="HistoryContinueInOriginalThread" xml:space="preserve"><value>この会話を続けるには、元のチャットスレッドに返信してください。</value></data>
+  <data name="HistoryConversationHeading" xml:space="preserve"><value>会話</value></data>
+  <data name="HistoryRuntimeHeading" xml:space="preserve"><value>作業フォルダーとエージェント</value></data>
+  <data name="HistoryPolicyHeading" xml:space="preserve"><value>承認と結果の共有</value></data>
+  <data name="HistoryIdentifiersHeading" xml:space="preserve"><value>会話の識別情報</value></data>
+  <data name="HistoryActionsHeading" xml:space="preserve"><value>会話の操作</value></data>
+  <data name="HistoryEditNextModel" xml:space="preserve"><value>モデルと推論</value></data>
+  <data name="HistoryEditPolicy" xml:space="preserve"><value>承認と共有</value></data>
+  <data name="HistoryStartFresh" xml:space="preserve"><value>次回は新しい会話</value></data>
+  <data name="HistoryExecutionSummary" xml:space="preserve"><value>最近の実行 ({0})</value></data>
+  <data name="HistoryNoExecutions" xml:space="preserve"><value>実行履歴はまだありません。</value></data>
+  <data name="HistoryNoAudit" xml:space="preserve"><value>操作記録はまだありません。</value></data>
+  <data name="HistoryStartFreshWarning" xml:space="preserve"><value>保存済みセッションとの関連付けを解除します。同じチャットスレッドに次のメッセージを送ると、新しい会話が始まります。リモートのチャット履歴や実行履歴は削除されません。</value></data>
+  <data name="InboxSelectConversation" xml:space="preserve"><value>会話を選択すると、リクエストと結果が表示されます。</value></data>
+  <data name="InboxConversationCount" xml:space="preserve"><value>会話 {0} 件</value></data>
+  <data name="InboxRequestCount" xml:space="preserve"><value>依頼 {0} 件</value></data>
+  <data name="InboxOutputDisplayTruncated" xml:space="preserve"><value>[受信トレイの応答性を保つため、表示する出力を短縮しました。]</value></data>
+  <data name="HistoryStartFreshTitle" xml:space="preserve"><value>次回は新しい会話で始めますか？</value></data>
+  <data name="ConversationLocation" xml:space="preserve"><value>チャンネル: {0} · スレッド: {1}</value></data>
+  <data name="InboxWaitingForRequests" xml:space="preserve"><value>接続すると、許可された利用者からの依頼がここに表示されます。</value></data>
+  <data name="InboxNoMatches" xml:space="preserve"><value>条件に一致する会話はありません。検索や状態の絞り込みを変更してください。</value></data>
+  <data name="InboxOneConversation" xml:space="preserve"><value>会話 1 件</value></data>
+  <data name="InboxOneRequest" xml:space="preserve"><value>依頼 1 件</value></data>
 </root>
