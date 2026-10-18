@@ -581,6 +581,20 @@ AIの操作権限: {8}</value>
   <data name="OverviewCliAccessibleName" xml:space="preserve">
     <value>CLIの確認：{0}。エージェント設定を開いて確認。</value>
   </data>
+  <data name="OverviewStartupEnabled" xml:space="preserve"><value>有効</value></data>
+  <data name="OverviewStartupOff" xml:space="preserve"><value>オフ</value></data>
+  <data name="OverviewStartupDisabledByUser" xml:space="preserve"><value>Windowsの設定で無効</value></data>
+  <data name="OverviewStartupDisabledByPolicy" xml:space="preserve"><value>組織のポリシーで無効</value></data>
+  <data name="OverviewStartupUnavailable" xml:space="preserve"><value>利用できません</value></data>
+  <data name="OverviewStartupError" xml:space="preserve"><value>起動設定を確認できません</value></data>
+  <data name="OverviewStartupAccessibleName" xml:space="preserve"><value>Windowsサインイン時の起動：{0}。詳細は起動設定を確認。</value></data>
+  <data name="OverviewAutoConnectOff" xml:space="preserve"><value>オフ</value></data>
+  <data name="OverviewAutoConnectSlackReady" xml:space="preserve"><value>オン：Slack</value></data>
+  <data name="OverviewAutoConnectMattermostReady" xml:space="preserve"><value>オン：Mattermost</value></data>
+  <data name="OverviewAutoConnectNeedsSlack" xml:space="preserve"><value>Slack接続の設定が必要</value></data>
+  <data name="OverviewAutoConnectNeedsMattermost" xml:space="preserve"><value>Mattermost接続の設定が必要</value></data>
+  <data name="OverviewAutoConnectError" xml:space="preserve"><value>保存済み設定を読み込めません</value></data>
+  <data name="OverviewAutoConnectAccessibleName" xml:space="preserve"><value>アプリ起動時のチャット接続：{0}。接続設定を開く。</value></data>
   <data name="OverviewError" xml:space="preserve"><value>異常・要確認</value></data>
   <data name="OverviewConnectionError" xml:space="preserve"><value>接続エラー</value></data>
   <data name="LanguageRestartTitle" xml:space="preserve"><value>再起動が必要です</value></data>

@@ -581,6 +581,20 @@ AI permissions: {8}</value>
   <data name="OverviewCliAccessibleName" xml:space="preserve">
     <value>CLI verification: {0}. Open agent settings to check.</value>
   </data>
+  <data name="OverviewStartupEnabled" xml:space="preserve"><value>Ready</value></data>
+  <data name="OverviewStartupOff" xml:space="preserve"><value>Off</value></data>
+  <data name="OverviewStartupDisabledByUser" xml:space="preserve"><value>Disabled in Windows settings</value></data>
+  <data name="OverviewStartupDisabledByPolicy" xml:space="preserve"><value>Disabled by organization policy</value></data>
+  <data name="OverviewStartupUnavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="OverviewStartupError" xml:space="preserve"><value>Could not check startup setting</value></data>
+  <data name="OverviewStartupAccessibleName" xml:space="preserve"><value>Windows sign-in startup: {0}. Open startup settings for details.</value></data>
+  <data name="OverviewAutoConnectOff" xml:space="preserve"><value>Off</value></data>
+  <data name="OverviewAutoConnectSlackReady" xml:space="preserve"><value>On: Slack</value></data>
+  <data name="OverviewAutoConnectMattermostReady" xml:space="preserve"><value>On: Mattermost</value></data>
+  <data name="OverviewAutoConnectNeedsSlack" xml:space="preserve"><value>Set up Slack connection</value></data>
+  <data name="OverviewAutoConnectNeedsMattermost" xml:space="preserve"><value>Set up Mattermost connection</value></data>
+  <data name="OverviewAutoConnectError" xml:space="preserve"><value>Could not load saved settings</value></data>
+  <data name="OverviewAutoConnectAccessibleName" xml:space="preserve"><value>Automatic chat connection: {0}. Open connection settings.</value></data>
   <data name="OverviewError" xml:space="preserve"><value>Needs attention</value></data>
   <data name="OverviewConnectionError" xml:space="preserve"><value>Connection failed</value></data>
   <data name="LanguageRestartTitle" xml:space="preserve"><value>Restart required</value></data>

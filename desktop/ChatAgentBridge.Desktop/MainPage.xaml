@@ -85,7 +85,7 @@
                                         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="OverviewStatusHeading" x:Uid="OverviewStatusHeading" />
                                         <Grid ColumnSpacing="12" RowSpacing="12">
                                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                                             <Button Grid.Row="0" Grid.Column="0" Click="OpenAgentSettings_Click" AutomationProperties.Name="{x:Bind ViewModel.OverviewAgentAccessibleName, Mode=OneWay}" AutomationProperties.AutomationId="OverviewAgentTile" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12">
                                                 <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><FontIcon Style="{x:Bind local:MainPage.OverviewIconStyle(ViewModel.OverviewAgentIconState), Mode=OneWay}" AutomationProperties.AutomationId="OverviewAgentIcon" Glyph="{x:Bind ViewModel.OverviewAgentGlyph, Mode=OneWay}" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" /><StackPanel Grid.Column="1" Spacing="2"><TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="OverviewAgentLabel" x:Uid="OverviewAgentLabel" /><TextBlock Text="{x:Bind ViewModel.OverviewAgentStatus, Mode=OneWay}" TextWrapping="Wrap" /></StackPanel></Grid>
                                             </Button>
@@ -97,6 +97,28 @@
                                             </Button>
                                             <Button Grid.Row="1" Grid.Column="1" Click="OpenAgentSettings_Click" AutomationProperties.Name="{x:Bind ViewModel.OverviewCliAccessibleName, Mode=OneWay}" AutomationProperties.AutomationId="OverviewCliTile" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12">
                                                 <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><FontIcon Style="{x:Bind local:MainPage.OverviewIconStyle(ViewModel.OverviewCliIconState), Mode=OneWay}" AutomationProperties.AutomationId="OverviewCliIcon" Glyph="{x:Bind ViewModel.OverviewCliGlyph, Mode=OneWay}" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" /><StackPanel Grid.Column="1" Spacing="2"><TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="OverviewCliLabel" x:Uid="OverviewCliLabel" /><TextBlock Text="{x:Bind ViewModel.OverviewCliStatus, Mode=OneWay}" TextWrapping="Wrap" /></StackPanel></Grid>
+                                            </Button>
+                                            <Button Grid.Row="2" Grid.Column="0" Click="OpenStartupSettings_Click" ToolTipService.ToolTip="{x:Bind ViewModel.StartupStatus, Mode=OneWay}" AutomationProperties.Name="{x:Bind ViewModel.OverviewStartupAccessibleName, Mode=OneWay}" AutomationProperties.AutomationId="OverviewStartupTile" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12">
+                                                <Grid ColumnSpacing="8">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                    <FontIcon Style="{x:Bind local:MainPage.OverviewIconStyle(ViewModel.OverviewStartupIconState), Mode=OneWay}" Glyph="{x:Bind ViewModel.OverviewStartupGlyph, Mode=OneWay}" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" />
+                                                    <StackPanel Grid.Column="1" Spacing="2">
+                                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewStartupLabel" />
+                                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewStartupHint" />
+                                                        <TextBlock Text="{x:Bind ViewModel.OverviewStartupStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="OverviewStartupStatus" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Button>
+                                            <Button Grid.Row="2" Grid.Column="1" Click="OpenAutoConnectSettings_Click" AutomationProperties.Name="{x:Bind ViewModel.OverviewAutoConnectAccessibleName, Mode=OneWay}" AutomationProperties.AutomationId="OverviewAutoConnectTile" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12">
+                                                <Grid ColumnSpacing="8">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                    <FontIcon Style="{x:Bind local:MainPage.OverviewIconStyle(ViewModel.OverviewAutoConnectIconState), Mode=OneWay}" Glyph="{x:Bind ViewModel.OverviewAutoConnectGlyph, Mode=OneWay}" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" />
+                                                    <StackPanel Grid.Column="1" Spacing="2">
+                                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewAutoConnectLabel" />
+                                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewAutoConnectHint" />
+                                                        <TextBlock Text="{x:Bind ViewModel.OverviewAutoConnectStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="OverviewAutoConnectStatus" />
+                                                    </StackPanel>
+                                                </Grid>
                                             </Button>
                                         </Grid>
                                         <TextBlock Text="{x:Bind ViewModel.SetupNextAction, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="OverviewNextAction" />
@@ -343,9 +365,9 @@
                                 <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" x:Name="StartupSettingsCard" AutomationProperties.AutomationId="StartupCard">
                                     <StackPanel Spacing="12">
                                         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="StartupHeading" x:Uid="StartupHeading" />
-                                        <ToggleSwitch  IsOn="{x:Bind ViewModel.StartWithWindows, Mode=OneWay}" Toggled="StartupToggle_Toggled" IsEnabled="{x:Bind ViewModel.CanChangeStartup, Mode=OneWay}" AutomationProperties.AutomationId="StartWithWindows"  x:Uid="StartWithWindows" />
+                                        <ToggleSwitch x:Name="StartupToggle" IsOn="{x:Bind ViewModel.StartWithWindows, Mode=OneWay}" Toggled="StartupToggle_Toggled" IsEnabled="{x:Bind ViewModel.CanChangeStartup, Mode=OneWay}" AutomationProperties.AutomationId="StartWithWindows"  x:Uid="StartWithWindows" />
                                         <TextBlock Text="{x:Bind ViewModel.StartupStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="StartupStatus" />
-                                        <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AutoConnectProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="AutoConnectProvider" x:Uid="AutoConnectProvider">
+                                        <ComboBox x:Name="AutoConnectProviderPicker" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AutoConnectProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="AutoConnectProvider" x:Uid="AutoConnectProvider">
                                             <ComboBoxItem  Tag="none" AutomationProperties.AutomationId="AutoConnectOptionNone"  x:Uid="AutoConnectOptionNone" />
                                             <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="AutoConnectOptionMattermost" />
                                             <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="AutoConnectOptionSlack" />

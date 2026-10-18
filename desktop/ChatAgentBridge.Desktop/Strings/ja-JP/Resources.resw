@@ -901,4 +901,8 @@
   <data name="UsageDay.Header" xml:space="preserve"><value>日付</value></data>
   <data name="UsageDay.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>利用量を確認する日付</value></data>
   <data name="UsageAccountingNote.Text" xml:space="preserve"><value>トークン数は入力（キャッシュの読み込み・書き込みを1回ずつ含む）＋出力で、両方の報告がある実行のみを合計します。キャッシュヒット率は、報告されたキャッシュ読み込み÷対応する入力合計です。率の単純平均ではなくトークン数で重み付けし、入力0では率を出しません。未報告は推測せず、CLIが報告した値を使います。請求額やアカウントの残量ではありません。複数モデルの内訳が不明な場合はモデル未報告として扱います。</value></data>
+  <data name="OverviewStartupLabel.Text" xml:space="preserve"><value>自動起動</value></data>
+  <data name="OverviewStartupHint.Text" xml:space="preserve"><value>Windowsへのサインイン時</value></data>
+  <data name="OverviewAutoConnectLabel.Text" xml:space="preserve"><value>自動接続</value></data>
+  <data name="OverviewAutoConnectHint.Text" xml:space="preserve"><value>このアプリの起動時</value></data>
 </root>

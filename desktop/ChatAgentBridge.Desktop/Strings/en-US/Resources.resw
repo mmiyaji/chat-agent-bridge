@@ -901,4 +901,8 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="UsageDay.Header" xml:space="preserve"><value>Date</value></data>
   <data name="UsageDay.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Usage detail date</value></data>
   <data name="UsageAccountingNote.Text" xml:space="preserve"><value>Tokens = input (including cache reads/writes once) + output, for executions reporting both. Cache hit rate = reported cache reads ÷ corresponding total input; weighted by tokens, not averaged percentages. No input means no rate. Missing reports stay unknown; these are CLI-reported counts, not billing or account limits. Multi-model attribution unavailable from the CLI stays unknown.</value></data>
+  <data name="OverviewStartupLabel.Text" xml:space="preserve"><value>Automatic startup</value></data>
+  <data name="OverviewStartupHint.Text" xml:space="preserve"><value>At Windows sign-in</value></data>
+  <data name="OverviewAutoConnectLabel.Text" xml:space="preserve"><value>Automatic connection</value></data>
+  <data name="OverviewAutoConnectHint.Text" xml:space="preserve"><value>When this app opens</value></data>
 </root>

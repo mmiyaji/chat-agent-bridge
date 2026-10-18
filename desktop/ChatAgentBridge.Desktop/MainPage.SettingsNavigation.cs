@@ -6,6 +6,26 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
+    private void OpenStartupSettings_Click(object sender, RoutedEventArgs e) => OpenAutomaticSettings(false);
+    private void OpenAutoConnectSettings_Click(object sender, RoutedEventArgs e) => OpenAutomaticSettings(true);
+
+    private void OpenAutomaticSettings(bool focusConnection)
+    {
+        OpenConnections_Click(this, new RoutedEventArgs());
+        // Navigation first queues its scroll reset. Run the section jump after it.
+        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        {
+            if (!IsConnectionsSelected) return;
+            StartupSettingsCard.StartBringIntoView(new BringIntoViewOptions
+            {
+                VerticalAlignmentRatio = 0,
+                AnimationDesired = false
+            });
+            Control target = focusConnection ? AutoConnectProviderPicker : StartupToggle;
+            if (target.IsEnabled) target.Focus(FocusState.Programmatic);
+        });
+    }
+
     public static Visibility ActionButtonsVisibility(bool selected, bool settingsLoaded) =>
         ToVisibility(selected && settingsLoaded);
 

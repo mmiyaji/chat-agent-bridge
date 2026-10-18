@@ -31,6 +31,7 @@ public partial class MainPageViewModel : ObservableObject
     private bool _lastSaveSucceeded;
     private bool _adjustingAgentPermissionMode;
     private bool _agentPermissionModeAdjusted;
+    private Startup.StartupState? _startupState;
 
     public ModelCatalogViewModel ModelCatalog { get; }
     public ObservableCollection<ReasoningEffortChoice> ReasoningEffortCandidates { get; } = [];
@@ -325,10 +326,14 @@ public partial class MainPageViewModel : ObservableObject
     public async Task RefreshStartupAsync()
     {
         CanChangeStartup = false;
+        _startupState = null;
+        RefreshOverviewStatus();
         var result = await _startup.GetStateAsync();
+        _startupState = result.State;
         StartWithWindows = result.IsEnabled;
         StartupStatus = result.Message;
         CanChangeStartup = result.State is Startup.StartupState.Enabled or Startup.StartupState.Disabled;
+        RefreshOverviewStatus();
     }
 
     public async Task ChangeStartupAsync(bool enabled)
@@ -336,9 +341,11 @@ public partial class MainPageViewModel : ObservableObject
         if (!CanChangeStartup || enabled == StartWithWindows) return;
         CanChangeStartup = false;
         var result = await _startup.SetEnabledAsync(enabled);
+        _startupState = result.State;
         StartWithWindows = result.IsEnabled;
         StartupStatus = result.Message;
         CanChangeStartup = result.State is Startup.StartupState.Enabled or Startup.StartupState.Disabled;
+        RefreshOverviewStatus();
     }
 
     [RelayCommand(CanExecute = nameof(CanSaveSettings))]

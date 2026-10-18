@@ -194,6 +194,7 @@ public sealed partial class MainPage : Page
             }
         }
         if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshAsync();
+        if (pageChanged && IsOverviewSelected && _hasLoaded) _ = ViewModel.RefreshStartupAsync();
         if (pageChanged && IsAboutSelected) AboutPage.ResetScroll();
     }
 
