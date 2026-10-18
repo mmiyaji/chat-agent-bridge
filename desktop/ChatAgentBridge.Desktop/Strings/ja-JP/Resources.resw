@@ -854,4 +854,16 @@
   <data name="JumpApproval.Content" xml:space="preserve"><value>承認と結果の返信</value></data>
   <data name="JumpScope.Content" xml:space="preserve"><value>許可する会話</value></data>
   <data name="JumpStartup.Content" xml:space="preserve"><value>起動と自動接続</value></data>
+  <data name="BrowseAgentExecutable.Content" xml:space="preserve"><value>参照…</value></data>
+  <data name="BrowseAgentExecutable.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>ネイティブCLI実行ファイルを選択</value></data>
+  <data name="WizardBrowseAgentExecutable.Content" xml:space="preserve"><value>参照…</value></data>
+  <data name="WizardBrowseAgentExecutable.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>ネイティブCLI実行ファイルを選択</value></data>
+  <data name="BrowseAgentExecutableHelp.Text" xml:space="preserve"><value>選択後はCLIチェックで起動とバージョンを確認してください。</value></data>
+  <data name="WizardBrowseAgentExecutableHelp.Text" xml:space="preserve"><value>選択後はCLIチェックで起動とバージョンを確認してください。</value></data>
+  <data name="ReloadProcessEnvironment.Content" xml:space="preserve"><value>環境変数を再読み込み</value></data>
+  <data name="ReloadProcessEnvironment.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>環境変数を再読み込み</value></data>
+  <data name="WizardReloadProcessEnvironment.Content" xml:space="preserve"><value>環境変数を再読み込み</value></data>
+  <data name="WizardReloadProcessEnvironment.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>環境変数を再読み込み</value></data>
+  <data name="ReloadProcessEnvironmentHelp.Text" xml:space="preserve"><value>CLIのインストール・更新後などに使います。アプリを再起動せず、次のCLI実行へPATHなどの変更を反映します。</value></data>
+  <data name="WizardReloadProcessEnvironmentHelp.Text" xml:space="preserve"><value>CLIのインストール・更新後などに使います。アプリを再起動せず、次のCLI実行へPATHなどの変更を反映します。</value></data>
 </root>

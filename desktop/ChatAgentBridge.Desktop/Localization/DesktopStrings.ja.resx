@@ -318,4 +318,7 @@
   <data name="InboxNoMatches" xml:space="preserve"><value>条件に一致する会話はありません。検索や状態の絞り込みを変更してください。</value></data>
   <data name="InboxOneConversation" xml:space="preserve"><value>会話 1 件</value></data>
   <data name="InboxOneRequest" xml:space="preserve"><value>依頼 1 件</value></data>
+  <data name="ChooseExecutable" xml:space="preserve"><value>実行ファイルを選択</value></data>
+  <data name="ExecutablePickerFailedTitle" xml:space="preserve"><value>ファイル選択画面を開けませんでした</value></data>
+  <data name="ExecutablePickerFailedMessage" xml:space="preserve"><value>ネイティブ実行ファイルを選択して、もう一度お試しください。</value></data>
 </root>

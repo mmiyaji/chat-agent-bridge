@@ -318,4 +318,7 @@
   <data name="InboxNoMatches" xml:space="preserve"><value>No conversations match. Change your search or state filter.</value></data>
   <data name="InboxOneConversation" xml:space="preserve"><value>1 conversation</value></data>
   <data name="InboxOneRequest" xml:space="preserve"><value>1 request</value></data>
+  <data name="ChooseExecutable" xml:space="preserve"><value>Choose executable</value></data>
+  <data name="ExecutablePickerFailedTitle" xml:space="preserve"><value>Could not open file picker</value></data>
+  <data name="ExecutablePickerFailedMessage" xml:space="preserve"><value>Select a native executable file and try again.</value></data>
 </root>

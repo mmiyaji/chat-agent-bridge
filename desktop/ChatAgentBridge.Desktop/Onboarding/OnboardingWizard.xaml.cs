@@ -12,11 +12,13 @@ public sealed partial class OnboardingWizard : UserControl
 {
     public MainPageViewModel ViewModel { get; }
     public ChatInboxViewModel Inbox { get; }
+    private readonly Action _reloadProcessEnvironment;
 
-    public OnboardingWizard(MainPageViewModel viewModel, ChatInboxViewModel inbox)
+    public OnboardingWizard(MainPageViewModel viewModel, ChatInboxViewModel inbox, Action reloadProcessEnvironment)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         Inbox = inbox ?? throw new ArgumentNullException(nameof(inbox));
+        _reloadProcessEnvironment = reloadProcessEnvironment ?? throw new ArgumentNullException(nameof(reloadProcessEnvironment));
         InitializeComponent();
         IntroHost.Content = new OnboardingIntro(ViewModel);
         Loaded += OnLoaded;
@@ -64,6 +66,32 @@ public sealed partial class OnboardingWizard : UserControl
     public static Visibility ToVisibility(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
     public static bool Not(bool value) => !value;
     public static bool SupportsOperationApproval(bool isCodex, bool useAppServer) => isCodex && useAppServer;
+    public static bool EnvironmentReloadAllowed(bool isLoading, bool isRunning, bool isCheckingCli,
+        bool isCatalogLoading, bool isOnboardingBusy, bool isInboxExecuting, bool isSaving) =>
+        MainPage.EnvironmentReloadAllowed(isLoading, isRunning, isCheckingCli, isCatalogLoading, isOnboardingBusy, isInboxExecuting, isSaving);
+
+    private void ReloadProcessEnvironment_Click(object sender, RoutedEventArgs e) => _reloadProcessEnvironment();
+
+    private async void BrowseAgentExecutable_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.XamlRoot is null) return;
+        button.IsEnabled = false;
+        try
+        {
+            var picker = new FileOpenPicker(button.XamlRoot.ContentIslandEnvironment.AppWindowId)
+            {
+                CommitButtonText = DesktopText.Get("ChooseExecutable")
+            };
+            MainPage.ConfigureExecutablePicker(picker, ViewModel.AgentProvider);
+            var file = await picker.PickSingleFileAsync();
+            if (file is not null) ViewModel.AgentExecutable = file.Path;
+        }
+        catch
+        {
+            SetWizardStatus(DesktopText.Get("ExecutablePickerFailedTitle"), DesktopText.Get("ExecutablePickerFailedMessage"), "Error");
+        }
+        finally { button.IsEnabled = true; }
+    }
 
     public static InfoBarSeverity ToInfoBarSeverity(string? severity) => severity switch
     {

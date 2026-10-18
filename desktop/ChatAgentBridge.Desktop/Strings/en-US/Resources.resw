@@ -854,4 +854,16 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="JumpApproval.Content" xml:space="preserve"><value>Approval and replies</value></data>
   <data name="JumpScope.Content" xml:space="preserve"><value>Allowed conversations</value></data>
   <data name="JumpStartup.Content" xml:space="preserve"><value>Startup and auto-connect</value></data>
+  <data name="BrowseAgentExecutable.Content" xml:space="preserve"><value>Browse…</value></data>
+  <data name="BrowseAgentExecutable.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Browse for native CLI executable</value></data>
+  <data name="WizardBrowseAgentExecutable.Content" xml:space="preserve"><value>Browse…</value></data>
+  <data name="WizardBrowseAgentExecutable.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Browse for native CLI executable</value></data>
+  <data name="BrowseAgentExecutableHelp.Text" xml:space="preserve"><value>Select a CLI file, then use Check CLI to verify it.</value></data>
+  <data name="WizardBrowseAgentExecutableHelp.Text" xml:space="preserve"><value>Select a CLI file, then use Check CLI to verify it.</value></data>
+  <data name="ReloadProcessEnvironment.Content" xml:space="preserve"><value>Reload environment variables</value></data>
+  <data name="ReloadProcessEnvironment.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Reload environment variables</value></data>
+  <data name="WizardReloadProcessEnvironment.Content" xml:space="preserve"><value>Reload environment variables</value></data>
+  <data name="WizardReloadProcessEnvironment.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Reload environment variables</value></data>
+  <data name="ReloadProcessEnvironmentHelp.Text" xml:space="preserve"><value>Use this after installing or updating a CLI. PATH changes apply to the next CLI process without restarting this app.</value></data>
+  <data name="WizardReloadProcessEnvironmentHelp.Text" xml:space="preserve"><value>Use this after installing or updating a CLI. PATH changes apply to the next CLI process without restarting this app.</value></data>
 </root>

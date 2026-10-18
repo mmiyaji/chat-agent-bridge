@@ -186,13 +186,19 @@
                                     <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="BasicProviderHelp" />
                                     <Expander  HorizontalAlignment="Stretch" IsExpanded="True" AutomationProperties.AutomationId="AgentAdvanced" x:Uid="AgentAdvanced">
                                         <StackPanel Spacing="12">
-                                            <TextBox  Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="AgentExecutable"   x:Uid="AgentExecutable" />
+                                            <TextBox  Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="AgentExecutable" x:Uid="AgentExecutable" />
+                                            <Button Click="BrowseAgentExecutable_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="BrowseAgentExecutable" x:Uid="BrowseAgentExecutable" />
+                                            <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="BrowseAgentExecutableHelp" x:Uid="BrowseAgentExecutableHelp" />
                                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock017" x:Uid="chatAgentBridgeDesktopMainPageTextBlock017" />
                                             <TextBox  Text="{x:Bind ViewModel.AgentArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" IsEnabled="{x:Bind ViewModel.IsArgumentsEditable, Mode=OneWay}" AutomationProperties.AutomationId="AgentArguments"  x:Uid="AgentArguments" />
                                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock018" x:Uid="chatAgentBridgeDesktopMainPageTextBlock018" />
                                         </StackPanel>
                                     </Expander>
                                     <Button  Command="{x:Bind ViewModel.CheckCliCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SettingsCheckCli"  x:Uid="SettingsCheckCli" />
+                                    <StackPanel Spacing="8">
+                                        <Button Click="ReloadProcessEnvironment_Click" IsEnabled="{x:Bind local:MainPage.EnvironmentReloadAllowed(ViewModel.IsLoading, ViewModel.IsRunning, ViewModel.IsCheckingCli, ViewModel.ModelCatalog.IsLoading, ViewModel.IsOnboardingBusy, InboxPage.ViewModel.IsExecuting, ViewModel.SaveSettingsCommand.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ReloadProcessEnvironment" x:Uid="ReloadProcessEnvironment" />
+                                        <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="ReloadProcessEnvironmentHelp" x:Uid="ReloadProcessEnvironmentHelp" />
+                                    </StackPanel>
                                     <TextBlock Text="{x:Bind ViewModel.CliVersion, Mode=OneWay}" TextWrapping="Wrap" />
                                     <TextBlock Text="{x:Bind ViewModel.CliExecutablePath, Mode=OneWay}" TextWrapping="Wrap" />
                                     <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SettingsCliCheckSummary" />

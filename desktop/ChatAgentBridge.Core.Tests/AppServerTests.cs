@@ -7,6 +7,36 @@ namespace ChatAgentBridge.Core.Tests;
 public sealed class AppServerTests
 {
     [Fact]
+    public async Task ClearingIdleProcessesPreservesActiveLeaseAndAllowsFreshLaunchAndReuse()
+    {
+        using var temp = new TempDirectory();
+        using var pool = new AppServerProcessPool();
+        var factory = new FakeProcessFactory();
+        var active = await pool.AcquireAsync("same-settings", factory, "codex", temp.Path,
+            (_, _) => Task.CompletedTask, CancellationToken.None);
+        var firstProcess = (FakeProcess)active.Process;
+
+        pool.ClearIdle();
+        Assert.False(firstProcess.WasKilled);
+        await active.ReleaseAsync(keep: true);
+        pool.ClearIdle();
+        Assert.True(firstProcess.WasKilled);
+
+        var fresh = await pool.AcquireAsync("same-settings", factory, "codex", temp.Path,
+            (_, _) => Task.CompletedTask, CancellationToken.None);
+        var freshProcess = fresh.Process;
+        Assert.NotSame(firstProcess, freshProcess);
+        Assert.False(fresh.Reused);
+        await fresh.ReleaseAsync(keep: true);
+        var reused = await pool.AcquireAsync("same-settings", factory, "codex", temp.Path,
+            (_, _) => Task.CompletedTask, CancellationToken.None);
+        Assert.Same(freshProcess, reused.Process);
+        Assert.True(reused.Reused);
+        Assert.Equal(2, factory.StartCount);
+        await reused.ReleaseAsync(keep: true);
+    }
+
+    [Fact]
     public async Task FailedPooledTurnAndChangedModelRequireFreshProcesses()
     {
         using var temp = new TempDirectory();
@@ -268,10 +298,11 @@ public sealed class AppServerTests
 
     private sealed class FakeProcess(FakeClient client) : IAppServerProcess
     {
+        public bool WasKilled { get; private set; }
         public IAppServerRpcClient Client => client;
         public Task<int?> ExitCode { get; } = new TaskCompletionSource<int?>(TaskCreationOptions.RunContinuationsAsynchronously).Task;
         public Task<string> StandardError => Task.FromResult("");
-        public void KillTree() { }
+        public void KillTree() => WasKilled = true;
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 

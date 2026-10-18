@@ -586,4 +586,9 @@ AIの操作権限: {8}</value>
   <data name="LanguageRestartTitle" xml:space="preserve"><value>再起動が必要です</value></data>
   <data name="LanguageRestartBusy" xml:space="preserve"><value>処理中の作業を完了し、設定を保存してから再起動してください。</value></data>
   <data name="LanguageRestartFailed" xml:space="preserve"><value>自動再起動できませんでした。アプリを終了して起動し直すと、保存した言語が反映されます。</value></data>
+  <data name="EnvironmentReloadedCliHelp" xml:space="preserve"><value>プロセス環境を更新しました。CLIを確認して、実行ファイルとモデルを再確認してください。</value></data>
+  <data name="EnvironmentReloadedTitle" xml:space="preserve"><value>環境を更新しました</value></data>
+  <data name="EnvironmentReloadedMessage" xml:space="preserve"><value>今後起動するCLIでは、更新後のWindows PATHとユーザーまたはシステム設定が使われます。保存済みCLIパラメーターは変更されていません。CLIを確認して検証してください。</value></data>
+  <data name="EnvironmentReloadFailedTitle" xml:space="preserve"><value>環境を更新できませんでした</value></data>
+  <data name="EnvironmentReloadFailedMessage" xml:space="preserve"><value>現在のユーザー環境をWindowsから取得できませんでした。CLI設定は変更されていません。</value></data>
 </root>

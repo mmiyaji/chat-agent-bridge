@@ -21,6 +21,8 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
 
     /// <summary>Synchronously kills pooled children during application shutdown.</summary>
     public static void ShutdownSharedProcesses() => SharedPool.Dispose();
+    /// <summary>Releases idle children without shutting down future App Server execution.</summary>
+    public static void ClearSharedIdleProcesses() => SharedPool.ClearIdle();
     public void Dispose() { if (_ownsPool) _pool?.Dispose(); }
 
     public async Task<AppServerRunResult> RunAsync(BridgeSettings settings, string prompt,

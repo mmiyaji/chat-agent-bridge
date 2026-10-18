@@ -586,4 +586,9 @@ AI permissions: {8}</value>
   <data name="LanguageRestartTitle" xml:space="preserve"><value>Restart required</value></data>
   <data name="LanguageRestartBusy" xml:space="preserve"><value>Finish pending work and save settings before restarting.</value></data>
   <data name="LanguageRestartFailed" xml:space="preserve"><value>Automatic restart was unavailable. Close and reopen the app to apply the saved language.</value></data>
+  <data name="EnvironmentReloadedCliHelp" xml:space="preserve"><value>The process environment was refreshed. Run Check CLI to verify the executable and models.</value></data>
+  <data name="EnvironmentReloadedTitle" xml:space="preserve"><value>Environment refreshed</value></data>
+  <data name="EnvironmentReloadedMessage" xml:space="preserve"><value>Future CLI launches will use your updated Windows PATH and user or system settings. Saved CLI parameters were not changed. Run Check CLI to verify.</value></data>
+  <data name="EnvironmentReloadFailedTitle" xml:space="preserve"><value>Could not refresh environment</value></data>
+  <data name="EnvironmentReloadFailedMessage" xml:space="preserve"><value>Windows could not provide the current user environment. No CLI settings were changed.</value></data>
 </root>

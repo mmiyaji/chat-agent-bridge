@@ -32,7 +32,7 @@ public sealed partial class MainPage : Page
         InitializeComponent();
         InitializeLanguageRestart();
         UpdateNavigationContentOffset();
-        _wizard = new Onboarding.OnboardingWizard(ViewModel, InboxPage.ViewModel);
+        _wizard = new Onboarding.OnboardingWizard(ViewModel, InboxPage.ViewModel, ReloadProcessEnvironment);
         WizardHost.Content = _wizard;
         ViewModel.PropertyChanged += (_, args) =>
         {

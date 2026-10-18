@@ -47,6 +47,18 @@ public partial class MainPageViewModel
         if (property is nameof(AgentProvider) or nameof(AgentModel) or nameof(AgentReasoningEffort) or nameof(WorkspaceRoot) or nameof(ChatApprovalMode) or nameof(ChatResultMode) or nameof(AgentPermissionMode) or nameof(AutoConnectProvider))
             OnPropertyChanged(nameof(WizardSummary));
     }
+
+    /// <summary>Invalidates process-dependent CLI results after refreshing PATH and user environment.</summary>
+    public void OnProcessEnvironmentReloaded()
+    {
+        CliCheckSucceeded = false;
+        CliCheckFailed = false;
+        _checkedCliSignature = null;
+        CliVersion = ViewModelText.Get("NotChecked");
+        CliExecutablePath = "";
+        CliCheckSummary = ViewModelText.Get("EnvironmentReloadedCliHelp");
+        InvalidateModelCatalog();
+    }
     [RelayCommand(CanExecute = nameof(CanCheckCli))]
     private async Task CheckCliAsync()
     {

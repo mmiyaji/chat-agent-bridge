@@ -120,6 +120,21 @@ internal sealed class AppServerProcessPool : IDisposable
         foreach (var process in expired) KillAndDispose(process);
     }
 
+    /// <summary>Drops idle children so future launches inherit refreshed process settings.</summary>
+    public void ClearIdle()
+    {
+        List<IAppServerProcess> processes = [];
+        lock (_sync)
+        {
+            foreach (var entry in _entries.Values.Where(entry => !entry.Busy).ToArray())
+            {
+                _entries.Remove(entry.Key);
+                if (entry.Process is not null) processes.Add(entry.Process);
+            }
+        }
+        foreach (var process in processes) KillAndDispose(process);
+    }
+
     public void Dispose()
     {
         List<IAppServerProcess> processes;
