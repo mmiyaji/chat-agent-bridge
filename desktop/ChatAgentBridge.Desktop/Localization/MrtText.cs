@@ -41,6 +41,8 @@ internal static class MrtText
                 ApplyElement(element, culture);
             if (current is ComboBox combo)
                 foreach (var item in combo.Items.OfType<ComboBoxItem>()) ApplyElement(item, culture);
+            if (current is RadioButtons radios)
+                foreach (var item in radios.Items.OfType<DependencyObject>()) pending.Push(item);
             // The shell is collapsed while onboarding is visible. Include logical
             // content so labels that have not been templated yet also change.
             if (current is NavigationView navigation)
@@ -67,6 +69,7 @@ internal static class MrtText
             case TextBlock textBlock: Apply(id, "Text", culture, value => textBlock.Text = value); break;
             case Button button: Apply(id, "Content", culture, value => button.Content = value); break;
             case CheckBox checkBox: Apply(id, "Content", culture, value => checkBox.Content = value); break;
+            case RadioButton radio: Apply(id, "Content", culture, value => radio.Content = value); break;
             case ComboBox comboBox: Apply(id, "Header", culture, value => comboBox.Header = value); break;
             case ComboBoxItem item: Apply(id, "Content", culture, value => item.Content = value); break;
             case PasswordBox passwordBox:

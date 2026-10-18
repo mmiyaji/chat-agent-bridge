@@ -43,7 +43,9 @@ function Scroll-ToElement([string]$Id) {
         $target=Find $Id
         if ($target) {
             $rect=$target.Current.BoundingRectangle; $viewport=$scroll.Current.BoundingRectangle
-            if ($rect.Height -gt 0 -and -not $target.Current.IsOffscreen -and $rect.Top -ge $viewport.Top -and $rect.Bottom -le $viewport.Bottom) { return }
+            # WinUI can report content-sized UIA bounds after changing pages.
+            $viewportBottom=[Math]::Min($viewport.Bottom,$window.Current.BoundingRectangle.Bottom-8)
+            if ($rect.Height -gt 0 -and -not $target.Current.IsOffscreen -and $rect.Top -ge $viewport.Top -and $rect.Bottom -le $viewportBottom) { return }
         }
         if (-not $pattern.Current.VerticallyScrollable -or $pattern.Current.VerticalScrollPercent -ge 100) { break }
         $pattern.Scroll([Windows.Automation.ScrollAmount]::NoAmount,[Windows.Automation.ScrollAmount]::LargeIncrement)

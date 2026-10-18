@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory)][int]$AppPid,
     [Parameter(Mandatory)][string]$DataDirectory,
     [int[]]$Seeds = @(18743, 90211),
@@ -173,6 +173,7 @@ function Exercise-PolicyControl([string]$Kind, [Random]$Random) {
             return "permission=$choice (draft only)"
         }
         'approval' {
+            Open-Page 'NavConnections' 'MattermostServerUrl'
             $choice = @('毎回確認', '最初だけ確認')[$Random.Next(2)]
             [void](Invoke-UI @('ui', 'invoke', 'ChatApprovalMode'))
             Select-VisibleChoice $choice
@@ -429,7 +430,7 @@ $categoryNames = @{
                         $scrollTarget = switch ($target.name) {
                             'overview' { 'SettingsLocation' }
                             'workbench' { 'AgentOutput' }
-                            'agent' { 'AutoConnectProvider' }
+                            'agent' { 'SettingsCheckCli' }
                             'connections' { 'SlackAppToken' }
                             'chat' { 'InboxConversations' }
                             'history' { 'HistoryStatus' }

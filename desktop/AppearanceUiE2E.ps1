@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][string]$Layout, [Parameter(Mandatory)][string]$DataDir)
+﻿param([Parameter(Mandatory)][string]$Layout, [Parameter(Mandatory)][string]$DataDir)
 $ErrorActionPreference = 'Stop'
 $layoutPath = [IO.Path]::GetFullPath($Layout)
 $dataPath = [IO.Path]::GetFullPath($DataDir)
@@ -25,7 +25,38 @@ public static class AppearanceLayoutNative {
     [DllImport("user32.dll", SetLastError=true)] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int width, int height, uint flags);
 }
 '@
+Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+function Scroll-ToElement([string]$Id) {
+    # Scroll the viewport through UIA, without Home/End keystrokes that can
+    # change a focused ComboBox selection.
+    $window=[Windows.Automation.AutomationElement]::FromHandle((Get-Process -Id $script:appPid).MainWindowHandle)
+    function Find([string]$TargetId) {
+        $condition=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$TargetId)
+        return $window.FindFirst([Windows.Automation.TreeScope]::Descendants,$condition)
+    }
+    $initialTarget=Find $Id
+    if ($initialTarget -and $initialTarget.Current.IsKeyboardFocusable) { $initialTarget.SetFocus() }
+    $next=Find 'OnboardingNext'
+    $scroll=Find $(if ($next -and -not $next.Current.IsOffscreen -and $next.Current.BoundingRectangle.Height -gt 0) { 'WizardScroll' } else { 'MainContentScroll' })
+    if (-not $scroll) { throw "No test viewport for $Id" }
+    $pattern=$scroll.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
+    if ($pattern.Current.VerticallyScrollable) { $pattern.SetScrollPercent(-1,0); Start-Sleep -Milliseconds 80 }
+    for ($attempt=0;$attempt -lt 35;$attempt++) {
+        $target=Find $Id
+        if ($target) {
+            $rect=$target.Current.BoundingRectangle; $viewport=$scroll.Current.BoundingRectangle
+            # WinUI can report content-sized UIA bounds after changing pages.
+            $viewportBottom=[Math]::Min($viewport.Bottom,$window.Current.BoundingRectangle.Bottom-8)
+            if ($rect.Height -gt 0 -and -not $target.Current.IsOffscreen -and $rect.Top -ge $viewport.Top -and $rect.Bottom -le $viewportBottom) { return }
+        }
+        if (-not $pattern.Current.VerticallyScrollable -or $pattern.Current.VerticalScrollPercent -ge 100) { break }
+        $pattern.Scroll([Windows.Automation.ScrollAmount]::NoAmount,[Windows.Automation.ScrollAmount]::LargeIncrement)
+        Start-Sleep -Milliseconds 80
+    }
+    throw "Could not scroll test viewport to $Id"
+}
 function UI([string[]]$Arguments) {
+    if ($Arguments[0] -eq 'scroll-into-view') { Scroll-ToElement $Arguments[1]; return '' }
     $result = & winapp ui @Arguments -a $script:appPid --json 2>$null
     if ($LASTEXITCODE -ne 0) { throw "UI action failed: $($Arguments[0]) $($Arguments[1])" }
     return $result
@@ -60,10 +91,10 @@ function Resize([int]$Width,[int]$Height) {
     Start-Sleep -Milliseconds 250
 }
 function Select-Theme([string]$Theme) {
-    UI @('invoke','NavAgentSettings') | Out-Null
+    UI @('invoke','NavAppearance') | Out-Null
     $id = @{system='ThemeSystem';light='ThemeLight';dark='ThemeDark'}[$Theme]
     UI @('scroll-into-view',$id) | Out-Null
-    # Selection can disable its UIA element while saving; verify persisted outcome.
+    # Verify the persisted theme after UIA selection.
     & winapp ui invoke $id -a $script:appPid --json 2>$null | Out-Null
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds(5)
     do {
@@ -88,7 +119,7 @@ try {
         Resize 720 600
         Capture "$theme-settings-narrow.png" | Out-Null
         Resize 1160 860
-        foreach ($page in @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory')) {
+        foreach ($page in @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAppearance')) {
             UI @('invoke',$page) | Out-Null
             Assert-Theme $theme (Capture "$theme-$page.png")
         }
@@ -115,7 +146,7 @@ try {
     Stop-Process -Id $script:appPid
     @{Language='ja'} | ConvertTo-Json | Set-Content (Join-Path $dataPath 'language.json')
     Launch
-    UI @('invoke','NavAgentSettings') | Out-Null
+    UI @('invoke','NavAppearance') | Out-Null
     foreach ($entry in @{ThemeSystem='システムに合わせる';ThemeLight='ライト';ThemeDark='ダーク'}.GetEnumerator()) {
         $label = (UI @('get-property',$entry.Key,'-p','Name') | ConvertFrom-Json).properties.Name
         Assert ($label -eq $entry.Value) 'The appearance option was not localized into Japanese.'

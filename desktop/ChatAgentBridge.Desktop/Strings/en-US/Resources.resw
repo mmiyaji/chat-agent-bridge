@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <root>
   <data name="MainNavigation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Main navigation</value>
@@ -321,7 +321,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Check contents before manual execution</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock041.Text" xml:space="preserve">
-    <value>The approval method for requests received from chat is set in "Approval for each conversation" above.</value>
+    <value>The approval method for requests received from chat is configured in Connection settings.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock042.Text" xml:space="preserve">
     <value>Start and connect</value>
@@ -741,7 +741,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Connect to this chat when starting the app</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock025.Text" xml:space="preserve">
-    <value>The setting to launch the app itself when logging in to Windows can be changed in "Agent Settings" after completing the initial settings.</value>
+    <value>The setting to launch the app itself when logging in to Windows can be changed in Connection settings after completing the initial settings.</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock026.Text" xml:space="preserve">
     <value>Settings summary</value>
@@ -758,8 +758,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="OnboardingPrevious.Content" xml:space="preserve">
     <value>Back</value>
   </data>
-  <data name="AppearanceHeading.Text" xml:space="preserve"><value>Appearance</value></data>
-  <data name="AppTheme.Header" xml:space="preserve"><value>Color theme</value></data>
   <data name="AppTheme.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Color theme</value></data>
   <data name="ThemeSystem.Content" xml:space="preserve"><value>Use system setting</value></data>
   <data name="ThemeLight.Content" xml:space="preserve"><value>Light</value></data>
@@ -842,4 +840,12 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="OverviewCliDetailsTitle.Text" xml:space="preserve">
     <value>CLI verification details</value>
   </data>
+  <data name="NavAppearance.Content" xml:space="preserve"><value>Appearance</value></data>
+  <data name="NavAppearance.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Appearance</value></data>
+  <data name="AppearancePageTitle.Text" xml:space="preserve"><value>Appearance</value></data>
+  <data name="AppearancePageDescription.Text" xml:space="preserve"><value>Choose the display language and color theme used by this app.</value></data>
+  <data name="AppThemeCardHeading.Text" xml:space="preserve"><value>Color theme</value></data>
+  <data name="ConnectionCredentialsHeading.Text" xml:space="preserve"><value>Chat connection credentials</value></data>
+  <data name="ChatPoliciesHeading.Text" xml:space="preserve"><value>Chat approval and access</value></data>
+  <data name="StartupHeading.Text" xml:space="preserve"><value>Startup and auto-connect</value></data>
 </root>

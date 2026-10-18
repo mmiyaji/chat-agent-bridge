@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory)][int]$AppPid,
     [Parameter(Mandatory)][string]$DataDirectory,
     [ValidateSet('ja','en')][string]$Language = 'ja'
@@ -54,11 +54,11 @@ function Heading([string]$Name) {
     return $visible[0].Current.BoundingRectangle
 }
 $labels = if ($Language -eq 'ja') {
-    @('Chat Agent Bridge','手動で実行','エージェント設定','接続設定','チャット受信','履歴と会話','情報')
+    @('Chat Agent Bridge','手動で実行','エージェント設定','接続設定','チャット受信','履歴と会話','外観','情報')
 } else {
-    @('Chat Agent Bridge','Run manually','Agent settings','Connection settings','Chat inbox','History and conversations','About')
+    @('Chat Agent Bridge','Run manually','Agent settings','Connection settings','Chat inbox','History and conversations','Appearance','About')
 }
-$pages = @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAbout')
+$pages = @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAppearance','NavAbout')
 $overviewOffsets = @{}
 try {
     Navigate 'NavOverview'

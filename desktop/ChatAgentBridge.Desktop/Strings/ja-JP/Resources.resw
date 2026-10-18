@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <root>
   <data name="MainNavigation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>メイン ナビゲーション</value>
@@ -321,7 +321,7 @@
     <value>手動実行の前に内容を確認する</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock041.Text" xml:space="preserve">
-    <value>チャットから届いた依頼の承認方法は、上の「会話ごとの承認」で設定します。</value>
+    <value>チャットから届いた依頼の承認方法は「接続設定」で設定します。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock042.Text" xml:space="preserve">
     <value>起動と接続</value>
@@ -741,7 +741,7 @@
     <value>アプリ起動時に、このチャットへ接続する</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock025.Text" xml:space="preserve">
-    <value>Windowsへのログイン時にアプリ自体を起動する設定は、初期設定の完了後に「エージェント設定」で変更できます。</value>
+    <value>Windowsへのログイン時にアプリ自体を起動する設定は、初期設定の完了後に「接続設定」で変更できます。</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock026.Text" xml:space="preserve">
     <value>設定内容</value>
@@ -758,9 +758,7 @@
   <data name="OnboardingPrevious.Content" xml:space="preserve">
     <value>戻る</value>
   </data>
-  <data name="AppearanceHeading.Text" xml:space="preserve"><value>外観</value></data>
-  <data name="AppTheme.Header" xml:space="preserve"><value>配色テーマ</value></data>
-  <data name="AppTheme.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>配色テーマ</value></data>
+  <data name="AppTheme.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>カラーテーマ</value></data>
   <data name="ThemeSystem.Content" xml:space="preserve"><value>システムに合わせる</value></data>
   <data name="ThemeLight.Content" xml:space="preserve"><value>ライト</value></data>
   <data name="ThemeDark.Content" xml:space="preserve"><value>ダーク</value></data>
@@ -842,4 +840,12 @@
   <data name="OverviewCliDetailsTitle.Text" xml:space="preserve">
     <value>CLIの確認内容</value>
   </data>
+  <data name="NavAppearance.Content" xml:space="preserve"><value>外観</value></data>
+  <data name="NavAppearance.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>外観</value></data>
+  <data name="AppearancePageTitle.Text" xml:space="preserve"><value>外観</value></data>
+  <data name="AppearancePageDescription.Text" xml:space="preserve"><value>アプリの表示言語と配色テーマを設定します。</value></data>
+  <data name="AppThemeCardHeading.Text" xml:space="preserve"><value>カラーテーマ</value></data>
+  <data name="ConnectionCredentialsHeading.Text" xml:space="preserve"><value>チャット接続情報</value></data>
+  <data name="ChatPoliciesHeading.Text" xml:space="preserve"><value>チャットの承認と利用範囲</value></data>
+  <data name="StartupHeading.Text" xml:space="preserve"><value>起動と自動接続</value></data>
 </root>

@@ -20,10 +20,12 @@ public sealed partial class MainPage : Page
     public bool IsWorkbenchSelected { get; private set; }
     public bool IsAgentSelected { get; private set; }
     public bool IsConnectionsSelected { get; private set; }
+    public bool IsAppearanceSelected { get; private set; }
     public bool IsChatSelected { get; private set; }
     public bool IsHistorySelected { get; private set; }
     public bool IsAboutSelected { get; private set; }
     public bool IsFormSelected => !IsChatSelected && !IsHistorySelected && !IsAboutSelected;
+    public static bool CanUseForm(bool isAppearanceSelected, bool isSettingsLoaded) => isAppearanceSelected || isSettingsLoaded;
 
     public MainPage()
     {
@@ -170,6 +172,7 @@ public sealed partial class MainPage : Page
         IsWorkbenchSelected = tag == "workbench";
         IsAgentSelected = tag == "agent";
         IsConnectionsSelected = tag == "connections";
+        IsAppearanceSelected = tag == "appearance";
         IsChatSelected = tag == "chat";
         IsHistorySelected = tag == "history";
         IsAboutSelected = tag == "about";
