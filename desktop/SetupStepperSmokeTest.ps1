@@ -114,6 +114,7 @@ try {
         Invoke-UI @('set-value', 'MattermostServerUrl', $serverInfo.url)
         Invoke-UI @('set-value', 'MattermostChannelId', 'stepper-test-channel')
         Invoke-UI @('set-value', 'MattermostToken', 'stepper-fake-token')
+        Invoke-UI @('set-value', 'MattermostAllowedUserIds', 'stepper-test-user')
         Save-Connections
         Open-Overview
         Assert-StepCount '2'

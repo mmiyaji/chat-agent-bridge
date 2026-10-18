@@ -1,6 +1,6 @@
 namespace ChatAgentBridge.Core.Sessions;
 
-public sealed record SessionKey(string Provider, string ChannelId, string ThreadId);
+public sealed record SessionKey(string Provider, string ChannelId, string ThreadId, string? UserId = null, string? Origin = null);
 
 public sealed record SessionBinding(
     SessionKey Key,

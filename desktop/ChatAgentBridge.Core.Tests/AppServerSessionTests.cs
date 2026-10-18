@@ -31,6 +31,40 @@ public sealed class AppServerSessionTests
     }
 
     [Fact]
+    public async Task ScopedAppServerSessionRunner_ResumesAcrossInstancesForSameOwner()
+    {
+        using var temp = new TempDirectory();
+        var store = new SessionStore(temp.Path);
+        var key = ChatSessionScope.Create("mattermost", "channel-1", "thread-1", "user-1", "https://chat.example/team");
+        var id = Guid.NewGuid();
+        var fake = new FakeRunner(id.ToString("D"), id.ToString("D"));
+
+        Assert.True((await new AppServerSessionRunner(store, fake).RunAsync(key, Settings(temp.Path), "first")).Success);
+        Assert.True((await new AppServerSessionRunner(new SessionStore(temp.Path), fake).RunAsync(key, Settings(temp.Path), "follow-up")).Success);
+        Assert.Null(fake.Calls[0].Options?.SessionId);
+        Assert.Equal(id.ToString("D"), fake.Calls[1].Options?.SessionId);
+    }
+
+    [Fact]
+    public async Task ScopedAppServerSessionRunner_DoesNotResumeLegacyUnownedBinding()
+    {
+        using var temp = new TempDirectory();
+        var store = new SessionStore(temp.Path);
+        var legacyKey = Key();
+        var legacyId = Guid.NewGuid();
+        await store.SaveAsync(new SessionBinding(legacyKey, Path.GetFullPath(temp.Path), "codex", "app-server",
+            legacyId.ToString("D"), DateTimeOffset.UtcNow));
+        var key = ChatSessionScope.Create("mattermost", "channel-1", "thread-1", "user-1", "https://chat.example/team");
+        var newId = Guid.NewGuid();
+        var fake = new FakeRunner(newId.ToString("D"));
+
+        Assert.True((await new AppServerSessionRunner(store, fake).RunAsync(key, Settings(temp.Path), "owned session")).Success);
+        Assert.Null(fake.Calls.Single().Options?.SessionId);
+        Assert.Equal(legacyId.ToString("D"), (await store.FindAsync(legacyKey))!.SessionId);
+        Assert.Equal(newId.ToString("D"), (await store.FindAsync(key))!.SessionId);
+    }
+
+    [Fact]
     public async Task SessionRunnerPreservesBindingWhenReturnedIdIsMissingOrDifferent()
     {
         using var temp = new TempDirectory();

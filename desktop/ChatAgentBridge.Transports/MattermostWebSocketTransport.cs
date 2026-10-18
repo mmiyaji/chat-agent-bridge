@@ -6,7 +6,7 @@ using ChatAgentBridge.Core;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnectionEvents
+public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnectionEvents, IChatConnectionNotifications
 {
     public event Action? Connected;
     private const int MaxMessageBytes = 1024 * 1024;
@@ -16,6 +16,8 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
     private string? _currentUserId;
     private Uri? _serverUri;
     private string? _token;
+    private string? _channelId;
+    private CancellationTokenSource? _runLifetime;
     private bool _disposed;
 
     public async Task RunAsync(BridgeSettings settings, Func<ChatRequest, CancellationToken, Task> onRequest, CancellationToken cancellationToken)
@@ -31,6 +33,9 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
         var token = settings.MattermostToken.Trim();
         _serverUri = root;
         _token = token;
+        _channelId = settings.MattermostChannelId;
+        _runLifetime?.Dispose();
+        _runLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var meRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get, new Uri(root, "api/v4/users/me"), token);
         var me = await TransportHttp.SendJsonAsync<MattermostUser>(_http, meRequest, cancellationToken).ConfigureAwait(false);
         _currentUserId = me.Id;
@@ -61,7 +66,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
             if (!envelope.TryGetProperty("data", out var data) || !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
 
             var request = ParsePost(postJson.GetString()!, settings.MattermostChannelId, _currentUserId ?? "", isBot: false);
-            if (request is null || !_seen.TryAdd(request.MessageId)) continue;
+            if (request is null || !ChatAccessPolicy.IsAllowed(settings, "mattermost", request.UserId) || !_seen.TryAdd(request.MessageId)) continue;
 
             var authorRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
                 new Uri(root, $"api/v4/users/{Uri.EscapeDataString(request.UserId)}"), token);
@@ -72,6 +77,23 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
 
             await onRequest(request, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    public async Task NotifyConnectionAsync(BridgeSettings settings, string message, CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        CancellationToken runToken = _runLifetime?.Token ?? new CancellationToken(canceled: true);
+        if (runToken.IsCancellationRequested) throw new OperationCanceledException(runToken);
+        if (!string.Equals(settings.MattermostChannelId, _channelId, StringComparison.Ordinal))
+            throw new InvalidOperationException("Mattermost notification settings do not match the active connection.");
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(runToken, cancellationToken);
+        var root = _serverUri ?? throw new InvalidOperationException("Mattermost is not connected.");
+        var token = _token ?? throw new InvalidOperationException("Mattermost is not connected.");
+        using var body = TransportHttp.JsonContent(new { channel_id = settings.MattermostChannelId, root_id = "", message });
+        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(root, "api/v4/posts")) { Content = body };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        using var response = await _http.SendAsync(request, linked.Token).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode) throw new InvalidOperationException($"Mattermost status notice failed with HTTP {(int)response.StatusCode}.");
     }
 
     public async Task ReplyAsync(ChatRequest request, string text, CancellationToken cancellationToken)
@@ -90,7 +112,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
 
     public ValueTask DisposeAsync()
     {
-        if (!_disposed) { _disposed = true; _http.Dispose(); }
+        if (!_disposed) { _disposed = true; _runLifetime?.Cancel(); _http.Dispose(); }
         return ValueTask.CompletedTask;
     }
 

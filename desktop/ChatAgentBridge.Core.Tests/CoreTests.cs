@@ -36,10 +36,16 @@ public sealed class CoreTests
                 MattermostServerUrl = "https://chat.example", MattermostChannelId = "abc",
                 MattermostToken = OperatingSystem.IsWindows() ? "mm-secret" : "",
                 SlackBotToken = OperatingSystem.IsWindows() ? "slack-secret" : "",
-                SlackAppToken = OperatingSystem.IsWindows() ? "app-secret" : "", RequireApproval = false
+                SlackAppToken = OperatingSystem.IsWindows() ? "app-secret" : "", RequireApproval = false,
+                MattermostAllowedUserIds = "mm-user-1; mm-user-2",
+                SlackAllowedUserIds = "U12345\nU67890", ShareApprovalsInChat = true
             };
             await store.SaveAsync(settings);
-            Assert.Equal(settings, await store.LoadAsync());
+            Assert.Equal(settings with
+            {
+                MattermostAllowedUserIds = "mm-user-1,mm-user-2",
+                SlackAllowedUserIds = "U12345,U67890"
+            }, await store.LoadAsync());
         }
         finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
     }
@@ -59,6 +65,29 @@ public sealed class CoreTests
             Assert.Null(settings.AgentModel);
             Assert.Null(settings.AgentReasoningEffort);
             Assert.Equal("none", settings.AutoConnectProvider);
+            Assert.Equal("", settings.MattermostAllowedUserIds);
+            Assert.Equal("", settings.SlackAllowedUserIds);
+            Assert.False(settings.ShareApprovalsInChat);
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SettingsStore_NormalizesAllowedUsersAndRejectsInvalidLists()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new SettingsStore(path);
+            await store.SaveAsync(new BridgeSettings { MattermostAllowedUserIds = " first;second\nfirst ", SlackAllowedUserIds = " U123, U456 ", ShareApprovalsInChat = true });
+            var loaded = await store.LoadAsync();
+            Assert.Equal("first,second", loaded.MattermostAllowedUserIds);
+            Assert.Equal("U123,U456", loaded.SlackAllowedUserIds);
+            Assert.True(loaded.ShareApprovalsInChat);
+            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(new BridgeSettings { SlackAllowedUserIds = "@name" }));
+
+            await File.WriteAllTextAsync(Path.Combine(path, "settings.json"), "{\"SchemaVersion\":1,\"MattermostAllowedUserIds\":\"@name\"}");
+            await Assert.ThrowsAsync<InvalidDataException>(() => store.LoadAsync());
         }
         finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
     }

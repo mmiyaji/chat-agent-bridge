@@ -58,6 +58,9 @@ public sealed class SettingsStore
                 MattermostToken = Unprotect(stored.MattermostToken),
                 SlackBotToken = Unprotect(stored.SlackBotToken),
                 SlackAppToken = Unprotect(stored.SlackAppToken),
+                MattermostAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(stored.MattermostAllowedUserIds ?? ""),
+                SlackAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(stored.SlackAllowedUserIds ?? ""),
+                ShareApprovalsInChat = stored.ShareApprovalsInChat,
                 RequireApproval = stored.RequireApproval
             };
             if (provider == AgentProfile.Custom && settings.AgentModel is not null)
@@ -68,7 +71,7 @@ public sealed class SettingsStore
         }
         catch (JsonException ex) { throw new InvalidDataException("Settings file contains invalid JSON.", ex); }
         catch (CryptographicException ex) { throw new InvalidDataException("A protected token in settings could not be decrypted for this Windows user.", ex); }
-        catch (FormatException ex) { throw new InvalidDataException("A protected token in settings is malformed.", ex); }
+        catch (FormatException ex) { throw new InvalidDataException("Settings contain a malformed protected token or invalid allowed-user list.", ex); }
         catch (ArgumentException ex) { throw new InvalidDataException("Settings contain an invalid provider or model value.", ex); }
     }
 
@@ -82,6 +85,14 @@ public sealed class SettingsStore
             throw new ArgumentException("Auto-connect provider must be none, mattermost, or slack.", nameof(settings));
         var model = AgentProfile.NormalizeModel(settings.AgentModel);
         var effort = AgentProfile.NormalizeReasoningEffort(settings.AgentReasoningEffort);
+        string mattermostAllowedUsers;
+        string slackAllowedUsers;
+        try
+        {
+            mattermostAllowedUsers = ChatAccessPolicy.NormalizeAllowedUsers(settings.MattermostAllowedUserIds);
+            slackAllowedUsers = ChatAccessPolicy.NormalizeAllowedUsers(settings.SlackAllowedUserIds);
+        }
+        catch (FormatException ex) { throw new ArgumentException("Allowed-user IDs are invalid: " + ex.Message, nameof(settings), ex); }
         if (provider == AgentProfile.Custom && model is not null)
             throw new ArgumentException("A custom agent cannot use a provider model override.", nameof(settings));
         if (provider == AgentProfile.Custom && effort is not null)
@@ -103,6 +114,9 @@ public sealed class SettingsStore
             MattermostToken = Protect(settings.MattermostToken),
             SlackBotToken = Protect(settings.SlackBotToken),
             SlackAppToken = Protect(settings.SlackAppToken),
+            MattermostAllowedUserIds = mattermostAllowedUsers,
+            SlackAllowedUserIds = slackAllowedUsers,
+            ShareApprovalsInChat = settings.ShareApprovalsInChat,
             RequireApproval = settings.RequireApproval
         };
         var tempPath = Path.Combine(DirectoryPath, $"settings.{Guid.NewGuid():N}.tmp");
@@ -170,6 +184,9 @@ public sealed class SettingsStore
         public string? MattermostToken { get; set; }
         public string? SlackBotToken { get; set; }
         public string? SlackAppToken { get; set; }
+        public string? MattermostAllowedUserIds { get; set; }
+        public string? SlackAllowedUserIds { get; set; }
+        public bool ShareApprovalsInChat { get; set; }
         public bool RequireApproval { get; set; } = true;
     }
 }

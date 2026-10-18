@@ -182,6 +182,24 @@ public sealed class SessionStore
         ValidateIdentifier(key.Provider, "provider");
         ValidateIdentifier(key.ChannelId, "channel id");
         ValidateIdentifier(key.ThreadId, "thread id");
+        if ((key.UserId is null) != (key.Origin is null))
+            throw new ArgumentException("Session user id and origin must either both be present or both be absent.");
+        if (key.UserId is not null)
+        {
+            ValidateScopedIdentity(key.UserId, "user id");
+            ValidateScopedIdentity(key.Origin!, "origin");
+            if (key.Provider.Equals("slack", StringComparison.OrdinalIgnoreCase) && key.Origin != "slack")
+                throw new ArgumentException("Slack session origin must be 'slack'.");
+            if (key.Provider.Equals("mattermost", StringComparison.OrdinalIgnoreCase) &&
+                (key.Origin!.Length != 64 || key.Origin.Any(c => !Uri.IsHexDigit(c))))
+                throw new ArgumentException("Mattermost session origin must be a SHA-256 hex digest.");
+        }
+    }
+
+    private static void ValidateScopedIdentity(string value, string name)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length > 256 || value.Any(char.IsControl))
+            throw new ArgumentException($"Session {name} is invalid.");
     }
 
     private static void ValidateIdentifier(string? value, string name)

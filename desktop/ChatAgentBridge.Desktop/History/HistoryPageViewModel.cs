@@ -84,7 +84,7 @@ public sealed record SessionHistoryRow(SessionBinding Binding)
         ? "Codex App Server"
         : $"{Binding.AgentExecutable} {Binding.AgentArguments}".Trim();
     public string SessionId => Binding.SessionId;
-    public string Conversation => $"{ChannelId} / {ThreadId}";
+    public string Conversation => $"{ChannelId} / {ThreadId}\n会話の所有者: {Binding.Key.UserId ?? "旧形式・所有者不明（自動継続しません）"}";
     public string AgentAndSession => $"{Agent} / {SessionId}";
     public string ModelOverride => Binding.Model ?? string.Empty;
     public string Model => string.IsNullOrWhiteSpace(Binding.Model)

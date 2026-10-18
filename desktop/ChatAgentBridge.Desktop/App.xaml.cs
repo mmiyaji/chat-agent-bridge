@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using ChatAgentBridge_Desktop.Notifications;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -27,6 +28,9 @@ public partial class App : Application
     /// <see cref="Windows.System.DispatcherQueue"/>.
     /// </summary>
     public static Microsoft.UI.Dispatching.DispatcherQueue DispatcherQueue { get; private set; } = null!;
+
+    /// <summary>In-memory notification callbacks for pending chat decisions.</summary>
+    public static PendingRequestNotificationService PendingRequestNotifications { get; private set; } = null!;
 
     /// <summary>
     /// The native window handle (HWND). Use for file pickers,
@@ -59,8 +63,13 @@ public partial class App : Application
             Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", launchArguments[1]);
         else if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CAB_WINUI_DATA_DIR")))
             Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", Windows.Storage.ApplicationData.Current.LocalFolder.Path);
-        Window = new MainWindow();
+
         DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        PendingRequestNotifications = new PendingRequestNotificationService(DispatcherQueue);
+        PendingRequestNotifications.Initialize();
+
+        Window = new MainWindow();
+        Window.Closed += (_, _) => PendingRequestNotifications.Shutdown();
         Window.Activate();
     }
 }

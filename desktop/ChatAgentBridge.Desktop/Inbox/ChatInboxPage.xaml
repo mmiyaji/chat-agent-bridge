@@ -8,7 +8,7 @@
       <StackPanel Padding="24" Spacing="16">
         <StackPanel Spacing="8">
             <TextBlock Text="チャット受信" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="チャットの依頼は、確認してからこのPCで実行します。Codex・Claude Codeの会話はスレッドごとに継続し、実行結果は確認後に共有できます。App Serverの操作許可はPCまたは元の依頼者が同じスレッドで回答でき、追加質問にはPC画面から回答します。自動再接続は未対応です。"
+            <TextBlock Text="許可ユーザーの依頼を、確認してからこのPCで実行します。会話はユーザー・接続先・スレッドごとに継続し、結果本文は確認後に共有できます。操作許可は初期設定ではPCだけに表示します。チャットでの承認を有効にすると、操作内容もスレッドの閲覧者全員に公開されます。切断中の依頼は再接続後に再投稿してください。"
                        TextWrapping="Wrap" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -19,6 +19,7 @@
         <StackPanel Spacing="4">
             <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ChatStatus"/>
             <TextBlock Text="{x:Bind ViewModel.OverflowNotice, Mode=OneWay}" TextWrapping="Wrap"/>
+            <TextBlock Text="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="NotificationStatus"/>
         </StackPanel>
         <TextBlock Text="対象チャットに !cab 依頼内容 を投稿すると、ここに依頼が届きます。依頼を選び「内容を確認して実行」を押してください。SlackではBotへのメンションでも受信します。" TextWrapping="Wrap" />
         <ListView ItemsSource="{x:Bind ViewModel.Requests}" SelectedItem="{x:Bind ViewModel.Selected, Mode=TwoWay}"

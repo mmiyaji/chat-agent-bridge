@@ -25,7 +25,8 @@ public sealed class MattermostIntegrationTests
         {
             MattermostServerUrl = state.ServerUrl,
             MattermostChannelId = state.Channel.Id,
-            MattermostToken = state.BridgeUser.Token
+            MattermostToken = state.BridgeUser.Token,
+            MattermostAllowedUserIds = state.MemberUser.Id
         };
 
         using var http = new HttpClient { Timeout = OperationTimeout };
@@ -52,6 +53,8 @@ public sealed class MattermostIntegrationTests
             await PostAsync(http, state, state.BridgeUser.Token, state.Channel.Id, "!cab self message", null, cancellation.Token);
             await PostAsync(http, state, state.MemberUser.Token, state.Channel.Id, "ordinary message", null, cancellation.Token);
             await PostAsync(http, state, state.MemberUser.Token, otherChannelId, "!cab wrong channel", null, cancellation.Token);
+            if (!string.IsNullOrWhiteSpace(state.UnauthorizedUser.Token))
+                await PostAsync(http, state, state.UnauthorizedUser.Token, state.Channel.Id, "!cab unlisted user", null, cancellation.Token);
             await Task.Delay(TimeSpan.FromMilliseconds(800), cancellation.Token);
             Assert.False(accepted.Reader.TryRead(out _));
 
@@ -70,6 +73,9 @@ public sealed class MattermostIntegrationTests
             Assert.Contains(thread.RootElement.GetProperty("posts").EnumerateObject(), item =>
                 item.Value.TryGetProperty("message", out var message) && message.GetString() == replyText &&
                 item.Value.TryGetProperty("root_id", out var rootId) && rootId.GetString() == postId);
+
+            const string noticeText = "Chat Agent Bridge: integration connection notice";
+            await transport.NotifyConnectionAsync(settings, noticeText, cancellation.Token);
 
             transport.Connected -= firstConnectedHandler;
             firstRunCancellation.Cancel();
@@ -193,6 +199,7 @@ public sealed class MattermostIntegrationTests
         public MattermostChannel Channel { get; set; } = new();
         public BootstrapUser BridgeUser { get; set; } = new();
         public BootstrapUser MemberUser { get; set; } = new();
+        public BootstrapUser UnauthorizedUser { get; set; } = new();
     }
 
     private sealed class MattermostTeam { public string Id { get; set; } = ""; }

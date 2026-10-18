@@ -15,5 +15,8 @@ public sealed record BridgeSettings
     public string MattermostToken { get; init; } = "";
     public string SlackBotToken { get; init; } = "";
     public string SlackAppToken { get; init; } = "";
+    public string MattermostAllowedUserIds { get; init; } = "";
+    public string SlackAllowedUserIds { get; init; } = "";
+    public bool ShareApprovalsInChat { get; init; }
     public bool RequireApproval { get; init; } = true;
 }

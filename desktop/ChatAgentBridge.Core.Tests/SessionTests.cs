@@ -36,6 +36,75 @@ public sealed class SessionTests
     }
 
     [Fact]
+    public async Task ScopedSessionRunner_ResumesAcrossInstancesForSameUserAndThread()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var key = ChatSessionScope.Create("mattermost", "channel-1", "thread-1", "user-1", "https://chat.example/base");
+            var id = Guid.NewGuid();
+            var fake = new FakeAgentRunner((_, _) => Task.FromResult(Success(id)));
+            Assert.True((await new SessionAgentRunner(new SessionStore(directory), fake).RunAsync(key, Settings, "first")).Success);
+            Assert.True((await new SessionAgentRunner(new SessionStore(directory), fake).RunAsync(key, Settings, "again")).Success);
+            Assert.Equal($"exec resume --json {id:D} -", fake.Calls[1].Settings.AgentArguments);
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task ScopedSessions_IsolateUsersAndMattermostServers()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var store = new SessionStore(directory);
+            var first = ChatSessionScope.Create("mattermost", "channel-1", "thread-1", "user-1", "https://chat.example/base");
+            var otherUser = ChatSessionScope.Create("mattermost", "channel-1", "thread-1", "user-2", "https://chat.example/base");
+            var otherServer = ChatSessionScope.Create("mattermost", "channel-1", "thread-1", "user-1", "https://chat.example/other");
+            await store.SaveAsync(Binding(first, Guid.NewGuid()));
+            await store.SaveAsync(Binding(otherUser, Guid.NewGuid()));
+            await store.SaveAsync(Binding(otherServer, Guid.NewGuid()));
+            Assert.Equal(3, (await store.ListAsync()).Count);
+            Assert.NotEqual((await store.FindAsync(first))!.SessionId, (await store.FindAsync(otherUser))!.SessionId);
+            Assert.NotEqual((await store.FindAsync(first))!.SessionId, (await store.FindAsync(otherServer))!.SessionId);
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task ScopedSessionRunner_DoesNotResumeLegacyUnownedBinding()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var legacyKey = Key();
+            var key = ChatSessionScope.Create("mattermost", "channel-1", "thread-1", "user-1", "https://chat.example");
+            var oldId = Guid.NewGuid();
+            var newId = Guid.NewGuid();
+            await new SessionStore(directory).SaveAsync(Binding(legacyKey, oldId));
+            var fake = new FakeAgentRunner((_, _) => Task.FromResult(Success(newId)));
+            var result = await new SessionAgentRunner(new SessionStore(directory), fake).RunAsync(key, Settings, "new owned session");
+            Assert.True(result.Success);
+            Assert.Equal("exec --json -", fake.Calls.Single().Settings.AgentArguments);
+            Assert.Equal(oldId.ToString("D"), (await new SessionStore(directory).FindAsync(legacyKey))!.SessionId);
+            Assert.Equal(newId.ToString("D"), (await new SessionStore(directory).FindAsync(key))!.SessionId);
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task ScopedSessionKey_RejectsMissingOrMalformedUserAndServerIdentity()
+    {
+        Assert.Throws<ArgumentException>(() => ChatSessionScope.Create("slack", "channel", "thread", " "));
+        Assert.Throws<ArgumentException>(() => ChatSessionScope.Create("mattermost", "channel", "thread", "user", "not a URL"));
+        var store = new SessionStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+        await Assert.ThrowsAsync<ArgumentException>(() => store.FindAsync(
+            new SessionKey("slack", "channel", "thread", "user", "not-slack")));
+        await Assert.ThrowsAsync<ArgumentException>(() => store.FindAsync(
+            new SessionKey("slack", "channel", "thread", "bad\nuser", "slack")));
+    }
+
+    [Fact]
     public async Task SessionRunner_PreservesSessionStartedByFailedTurn()
     {
         var directory = NewDirectory();

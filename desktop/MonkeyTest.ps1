@@ -82,8 +82,10 @@ function Get-SavedProgress {
     $agentReady = -not [string]::IsNullOrWhiteSpace($saved.AgentExecutable) -and
         -not [string]::IsNullOrWhiteSpace($saved.WorkspaceRoot) -and (Test-Path -LiteralPath $saved.WorkspaceRoot -PathType Container)
     $mattermostReady = -not [string]::IsNullOrWhiteSpace($saved.MattermostServerUrl) -and
-        -not [string]::IsNullOrWhiteSpace($saved.MattermostChannelId) -and -not [string]::IsNullOrWhiteSpace($saved.MattermostToken)
-    $slackReady = -not [string]::IsNullOrWhiteSpace($saved.SlackBotToken) -and -not [string]::IsNullOrWhiteSpace($saved.SlackAppToken)
+        -not [string]::IsNullOrWhiteSpace($saved.MattermostChannelId) -and -not [string]::IsNullOrWhiteSpace($saved.MattermostToken) -and
+        -not [string]::IsNullOrWhiteSpace($saved.MattermostAllowedUserIds)
+    $slackReady = -not [string]::IsNullOrWhiteSpace($saved.SlackBotToken) -and -not [string]::IsNullOrWhiteSpace($saved.SlackAppToken) -and
+        -not [string]::IsNullOrWhiteSpace($saved.SlackAllowedUserIds)
     return [int]$agentReady + [int]($mattermostReady -or $slackReady)
 }
 function Assert-SavedProgress {

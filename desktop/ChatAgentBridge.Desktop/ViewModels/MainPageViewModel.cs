@@ -44,8 +44,8 @@ public partial class MainPageViewModel : ObservableObject
             if (e.PropertyName is nameof(IsLoading) or nameof(IsSettingsLoaded) or nameof(WorkspaceRoot) or
                 nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
                 nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AutoConnectProvider) or nameof(RequireApproval) or
-                nameof(MattermostServerUrl) or nameof(MattermostChannelId) or nameof(MattermostToken) or
-                nameof(SlackBotToken) or nameof(SlackAppToken))
+                nameof(MattermostServerUrl) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
+                nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat))
                 RefreshSetupStepper();
         };
     }
@@ -79,7 +79,7 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnAgentExecutableChanged(string value) => InvalidateModelCatalog();
     [ObservableProperty] public partial string AgentArguments { get; set; } = "exec --json -";
     partial void OnAgentArgumentsChanged(string value) => InvalidateModelCatalog();
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat))]
     public partial string AgentProvider { get; set; } = "codex";
     public bool IsCodexProvider => AgentProvider == "codex";
     public bool IsCustomProvider => AgentProvider == "custom";
@@ -123,14 +123,18 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial bool CanChangeStartup { get; set; }
     [ObservableProperty] public partial string StartupStatus { get; set; } = "Windowsの起動設定を確認しています…";
     private readonly Startup.StartupTaskService _startup = new();
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsExecMode))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsExecMode)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat))]
     public partial bool UseAppServer { get; set; }
     partial void OnUseAppServerChanged(bool value) => InvalidateModelCatalog();
     public bool IsExecMode => !UseAppServer;
+    public bool CanShareApprovalsInChat => IsCodexProvider && UseAppServer;
     [ObservableProperty] public partial string MattermostServerUrl { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostChannelId { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackBotToken { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackAppToken { get; set; } = string.Empty;
+    [ObservableProperty] public partial string MattermostAllowedUserIds { get; set; } = string.Empty;
+    [ObservableProperty] public partial string SlackAllowedUserIds { get; set; } = string.Empty;
+    [ObservableProperty] public partial bool ShareApprovalsInChat { get; set; }
     [ObservableProperty] public partial bool RequireApproval { get; set; } = true;
     [ObservableProperty] public partial string Prompt { get; set; } = string.Empty;
     [ObservableProperty] public partial string Output { get; set; } = "実行結果はここに表示されます。";
@@ -158,6 +162,7 @@ public partial class MainPageViewModel : ObservableObject
     public Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? ServerApprovalHandler { get; set; }
     public Func<AppServerInput, CancellationToken, Task<IReadOnlyDictionary<string, string[]>?>>? ServerInputHandler { get; set; }
     public string MattermostToken { get; private set; } = string.Empty;
+    public event Action? SettingsSaved;
 
     public async Task LoadAsync()
     {
@@ -193,6 +198,9 @@ public partial class MainPageViewModel : ObservableObject
             MattermostToken = _settings.MattermostToken;
             SlackBotToken = _settings.SlackBotToken;
             SlackAppToken = _settings.SlackAppToken;
+            MattermostAllowedUserIds = _settings.MattermostAllowedUserIds;
+            SlackAllowedUserIds = _settings.SlackAllowedUserIds;
+            ShareApprovalsInChat = _settings.ShareApprovalsInChat;
             RequireApproval = _settings.RequireApproval;
             SettingsLocation = _settingsStore.DirectoryPath;
             UpdateSavedAgentSummary();
@@ -213,6 +221,7 @@ public partial class MainPageViewModel : ObservableObject
         {
             IsLoading = false;
         }
+        if (IsSettingsLoaded) SettingsSaved?.Invoke();
     }
 
     [RelayCommand(CanExecute = nameof(CanReloadSettings))]
@@ -254,11 +263,19 @@ public partial class MainPageViewModel : ObservableObject
     private async Task SaveSettingsAsync()
     {
         if (_closing || !IsSettingsLoaded || IsRunning || _settings is null || _unsupportedSavedEffort) return;
+        var saved = false;
         try
         {
-            var snapshot = CreateSettingsSnapshot();
+            var snapshot = CreateSettingsSnapshot() with
+            {
+                MattermostAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(MattermostAllowedUserIds),
+                SlackAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(SlackAllowedUserIds)
+            };
             await _settingsStore.SaveAsync(snapshot);
             _settings = snapshot;
+            saved = true;
+            MattermostAllowedUserIds = snapshot.MattermostAllowedUserIds;
+            SlackAllowedUserIds = snapshot.SlackAllowedUserIds;
             _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
             UpdateSavedAgentSummary();
             RefreshSetupStepper();
@@ -268,6 +285,7 @@ public partial class MainPageViewModel : ObservableObject
         {
             SetStatus("設定を保存できませんでした", ex.Message, "Error");
         }
+        if (saved) SettingsSaved?.Invoke();
     }
 
     [RelayCommand(CanExecute = nameof(CanRun))]
@@ -492,14 +510,18 @@ public partial class MainPageViewModel : ObservableObject
         }
 
         var agentReady = !string.IsNullOrWhiteSpace(_settings.AgentExecutable) && !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && _savedWorkspaceExists;
-        var connectionReady = (!string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) && !string.IsNullOrWhiteSpace(_settings.MattermostChannelId) && !string.IsNullOrWhiteSpace(_settings.MattermostToken)) ||
-            (!string.IsNullOrWhiteSpace(_settings.SlackBotToken) && !string.IsNullOrWhiteSpace(_settings.SlackAppToken));
+        var mattermostCredentials = !string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) && !string.IsNullOrWhiteSpace(_settings.MattermostChannelId) && !string.IsNullOrWhiteSpace(_settings.MattermostToken);
+        var slackCredentials = !string.IsNullOrWhiteSpace(_settings.SlackBotToken) && !string.IsNullOrWhiteSpace(_settings.SlackAppToken);
+        var mattermostAllowed = HasAllowedUsers(_settings.MattermostAllowedUserIds);
+        var slackAllowed = HasAllowedUsers(_settings.SlackAllowedUserIds);
+        var connectionReady = (mattermostCredentials && mattermostAllowed) || (slackCredentials && slackAllowed);
         SetupStepOneStatus = agentReady ? "完了：保存済み。CLIやログイン状態はここでは確認していません。"
             : string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) ? "次のステップ：エージェントと作業フォルダーを設定して保存します。"
             : !_savedWorkspaceExists ? "次のステップ：保存された作業フォルダーが見つかりません。既存のフォルダーを指定して保存します。"
             : "次のステップ：エージェントの実行ファイルを設定して保存します。";
-        SetupStepTwoStatus = connectionReady ? "完了：接続情報を保存済み。"
-            : agentReady ? "次のステップ：SlackまたはMattermostの接続情報を保存します。"
+        SetupStepTwoStatus = connectionReady ? "完了：接続情報と許可するユーザーIDを保存済み。"
+            : mattermostCredentials && !mattermostAllowed || slackCredentials && !slackAllowed ? "次のステップ：接続先ごとに許可するユーザーIDを1行1人で設定します。空欄では全員を拒否します。"
+            : agentReady ? "次のステップ：SlackまたはMattermostの接続情報と許可するユーザーIDを保存します。"
             : "未設定：ステップ1の後に接続情報を保存します。";
         SetupStepThreeStatus = _chatConnectionConfirmed ? "完了：チャットからの依頼を待っています。"
             : _chatConnectionPreparing ? "接続中：接続先の応答を待っています。"
@@ -513,7 +535,13 @@ public partial class MainPageViewModel : ObservableObject
             : !_chatConnectionConfirmed ? "次の操作：チャット受信で保存済みの接続先へ接続します。"
             : "セットアップ完了。別の端末からチャットで依頼できます。";
         var draft = CreateSettingsSnapshot();
-        SetupDraftNotice = _settings != draft ? "未保存の変更があります。ステップには保存済みの設定だけを反映しています。" : "";
+        SetupDraftNotice = _settings != draft ? "接続先、許可するユーザーID、操作承認の共有を含む未保存の変更があります。ステップには保存済みの設定だけを反映しています。" : "";
+    }
+
+    private static bool HasAllowedUsers(string value)
+    {
+        try { return ChatAccessPolicy.NormalizeAllowedUsers(value).Length > 0; }
+        catch (FormatException) { return false; }
     }
 
     private BridgeSettings CreateSettingsSnapshot() => _settings! with
@@ -531,6 +559,9 @@ public partial class MainPageViewModel : ObservableObject
         MattermostToken = MattermostToken,
         SlackBotToken = SlackBotToken,
         SlackAppToken = SlackAppToken,
+        MattermostAllowedUserIds = MattermostAllowedUserIds,
+        SlackAllowedUserIds = SlackAllowedUserIds,
+        ShareApprovalsInChat = ShareApprovalsInChat,
         RequireApproval = RequireApproval
     };
 

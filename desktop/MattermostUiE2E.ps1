@@ -99,12 +99,12 @@ function Wait-ThreadPost([string]$RootPostId, [scriptblock]$Predicate, [int]$Tim
 function Add-Pass([string]$Name) { $results.Add(@{ name = $Name; passed = $true }) }
 function Add-Check([string]$Name, [bool]$Passed) { $results.Add(@{ name = $Name; passed = $Passed }) }
 
-function Get-SessionBinding([string]$RootPostId) {
+function Get-SessionBinding([string]$RootPostId, [string]$UserId = $state.memberUser.id) {
     $sessionPath = Join-Path $dataPath 'sessions.json'
     if (-not (Test-Path -LiteralPath $sessionPath)) { return $null }
     $store = Get-Content -LiteralPath $sessionPath -Raw | ConvertFrom-Json
     return @($store.Bindings | Where-Object {
-        $_.Key.Provider -eq 'mattermost' -and $_.Key.ChannelId -eq $state.channel.id -and $_.Key.ThreadId -eq $RootPostId
+        $_.Key.Provider -eq 'mattermost' -and $_.Key.UserId -eq $UserId -and $_.Key.ChannelId -eq $state.channel.id -and $_.Key.ThreadId -eq $RootPostId
     } | Select-Object -First 1)[0]
 }
 
@@ -163,8 +163,7 @@ function Invoke-WorkflowTurn([string]$AuthorToken, [string]$Prompt, [string]$Roo
     $visibleToOtherMember = $false
     $otherMemberPosts = Get-ThreadPosts $turnRootId $state.unauthorizedUser.token
     $visibleToOtherMember = @($otherMemberPosts | Where-Object { [string]$_.message -match [regex]::Escape($approvalCode) }).Count -gt 0
-    if (-not $visibleToOtherMember) { throw 'The channel participant could not read the pending thread approval metadata.' }
-    $findings.Add('A third channel participant could read the pending approval code and metadata before result sharing.')
+    if (-not $visibleToOtherMember) { throw 'The channel participant could not read shared pending approval metadata.' }
 
     $wrongMemberAccepted = $false
     if ($TryOtherMemberApproval) {
@@ -192,7 +191,8 @@ function Invoke-WorkflowTurn([string]$AuthorToken, [string]$Prompt, [string]$Roo
     Invoke-UI @('invoke', 'PrimaryButton')
     Wait-UI 'ChatOutput' "app-server-e2e: approved; answer=alpha; prompt=$Prompt" 35000
 
-    $binding = Get-SessionBinding $turnRootId
+    $authorId = if ($AuthorToken -eq $state.unauthorizedUser.token) { $state.unauthorizedUser.id } else { $state.memberUser.id }
+    $binding = Get-SessionBinding $turnRootId $authorId
     if ($null -eq $binding -or -not $binding.SessionId) { throw 'Workflow session binding was not persisted.' }
     if ($ExpectedSessionId -and $binding.SessionId -ne $ExpectedSessionId) { throw 'Same-thread workflow did not reuse its saved session.' }
 
@@ -292,6 +292,7 @@ try {
     if ($state.serverUrl -notmatch '^http://(127\.0\.0\.1|localhost):8070/?$') {
         throw 'Mattermost UI E2E is restricted to the isolated localhost:8070 fixture.'
     }
+    if (-not $state.memberUser.id -or -not $state.unauthorizedUser.id) { throw 'Mattermost fixture is missing participant IDs.' }
     $null = Get-Process -Id $AppPid
     $testAgentPath = Ensure-TestAgentHost
     $workspace = Join-Path $dataPath 'workspace'
@@ -329,6 +330,9 @@ try {
     Wait-UI 'MattermostServerUrl'
     Invoke-UI @('set-value', 'MattermostServerUrl', $state.serverUrl)
     Invoke-UI @('set-value', 'MattermostChannelId', $state.channel.id)
+    Invoke-UI @('set-value', 'MattermostAllowedUserIds', "$($state.memberUser.id),$($state.unauthorizedUser.id)")
+    $preConnectionSettings = Get-Content -LiteralPath (Join-Path $dataPath 'settings.json') -Raw | ConvertFrom-Json
+    if (-not $preConnectionSettings.ShareApprovalsInChat) { Invoke-UI @('invoke', 'ShareApprovalsInChat') }
     # Keep the credential inside this process; suppress all native command output.
     Invoke-UI @('set-value', 'MattermostToken', $state.bridgeUser.token)
     Invoke-UI @('invoke', 'SaveConnections')
@@ -429,17 +433,15 @@ try {
 
     $currentStep = 'third-user-same-thread'
     $thirdUserPrompt = 'workflow-third-user-' + [guid]::NewGuid().ToString('N').Substring(0, 8)
-    $thirdUserTurn = Invoke-WorkflowTurn $state.unauthorizedUser.token $thirdUserPrompt $rootPostId ([string]$initialBinding.SessionId) $true $true
-    if ($thirdUserTurn.RootPostId -eq $rootPostId -and $thirdUserTurn.SessionId -eq $initialBinding.SessionId) {
-        $findings.Add('A different channel participant could initiate a request on the existing root and continue its saved agent session after local approval.')
-    }
+    $thirdUserTurn = Invoke-WorkflowTurn $state.unauthorizedUser.token $thirdUserPrompt $rootPostId '' $true $true
+    Add-Check 'Third user received an isolated session on the same thread' ($thirdUserTurn.SessionId -ne $initialBinding.SessionId)
     Add-Check 'Third-user consumed approval code did not start another turn' (-not $thirdUserTurn.ReplayStartedNewTurn)
 
     $currentStep = 'verify-session-persistence'
     $sessionPath = Join-Path $dataPath 'sessions.json'
     if (-not (Test-Path -LiteralPath $sessionPath)) { throw 'App Server session binding was not persisted.' }
     $sessionStore = Get-Content -LiteralPath $sessionPath -Raw | ConvertFrom-Json
-    $binding = @($sessionStore.Bindings | Where-Object { $_.Key.Provider -eq 'mattermost' -and $_.Key.ChannelId -eq $state.channel.id -and $_.Key.ThreadId -eq $rootPostId }) | Select-Object -First 1
+    $binding = @($sessionStore.Bindings | Where-Object { $_.Key.Provider -eq 'mattermost' -and $_.Key.UserId -eq $state.memberUser.id -and $_.Key.ChannelId -eq $state.channel.id -and $_.Key.ThreadId -eq $rootPostId }) | Select-Object -First 1
     if ($null -eq $binding -or $binding.AgentArguments -ne 'app-server' -or -not $binding.SessionId) {
         throw 'Expected the conversation to persist an App Server session binding.'
     }
@@ -460,6 +462,51 @@ try {
         }
     }
     Add-Pass 'History and audit exclude prompt, output, and token content'
+
+    $currentStep = 'member-only-allowlist-denies-third-user'
+    Invoke-UI @('invoke', 'NavConnections')
+    Invoke-UI @('set-value', 'MattermostAllowedUserIds', [string]$state.memberUser.id)
+    Invoke-UI @('invoke', 'SaveConnections')
+    Wait-UI 'Title' '設定を保存しました'
+    Invoke-UI @('invoke', 'NavChat')
+    Invoke-UI @('invoke', 'DisconnectChat')
+    Invoke-UI @('wait-for', 'ConnectMattermost', '-p', 'IsEnabled', '--value', 'True', '-t', '10000')
+    Invoke-UI @('invoke', 'ConnectMattermost')
+    Wait-UI 'ChatStatus' '接続しました' 35000
+    $auditPath = Join-Path $dataPath 'audit.json'
+    $auditBeforeDenied = @( (Get-Content -LiteralPath $auditPath -Raw | ConvertFrom-Json).Records ).Count
+    $deniedPrompt = 'workflow-denied-' + [guid]::NewGuid().ToString('N').Substring(0, 8)
+    $null = Invoke-MM 'Post' '/api/v4/posts' $state.unauthorizedUser.token @{
+        channel_id = $state.channel.id
+        message = "!cab $deniedPrompt"
+    }
+    Start-Sleep -Seconds 2
+    $auditAfterDenied = @( (Get-Content -LiteralPath $auditPath -Raw | ConvertFrom-Json).Records ).Count
+    if ($auditAfterDenied -ne $auditBeforeDenied) { throw 'A user outside the member-only allowlist was accepted.' }
+    Add-Pass 'Member-only allowlist denied the other fixture user'
+
+    $currentStep = 'empty-allowlist-refusal'
+    Invoke-UI @('invoke', 'DisconnectChat')
+    Invoke-UI @('wait-for', 'ConnectMattermost', '-p', 'IsEnabled', '--value', 'True', '-t', '10000')
+    Invoke-UI @('invoke', 'NavConnections')
+    Invoke-UI @('set-value', 'MattermostAllowedUserIds', '')
+    Invoke-UI @('invoke', 'SaveConnections')
+    Wait-UI 'Title' '設定を保存しました'
+    Invoke-UI @('invoke', 'NavChat')
+    Invoke-UI @('invoke', 'ConnectMattermost')
+    Wait-UI 'ChatStatus' '空欄では依頼を受け付けません' 10000
+    & winapp ui wait-for DisconnectChat -p IsEnabled --value True -t 1000 -a $AppPid *> $null
+    if ($LASTEXITCODE -eq 0) { throw 'Mattermost connected with an empty allowlist.' }
+    Add-Pass 'Empty allowlist showed an explanatory refusal and stayed disconnected'
+
+    Invoke-UI @('invoke', 'NavConnections')
+    Invoke-UI @('set-value', 'MattermostAllowedUserIds', "$($state.memberUser.id),$($state.unauthorizedUser.id)")
+    Invoke-UI @('invoke', 'SaveConnections')
+    Wait-UI 'Title' '設定を保存しました'
+    Invoke-UI @('invoke', 'NavChat')
+    Invoke-UI @('invoke', 'ConnectMattermost')
+    Wait-UI 'ChatStatus' '接続しました' 35000
+    Add-Pass 'Restored the saved allowlist and Mattermost connection after access checks'
 
     $failedChecks = @($results | Where-Object { -not $_.passed })
     $result = @{

@@ -11,13 +11,43 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
     private static readonly SemaphoreSlim DialogGate = new(1, 1);
     private readonly Func<XamlRoot?> _root = root;
 
-    public Task<AppServerDecision> ApproveAsync(AppServerApproval approval, CancellationToken cancellationToken = default)
+    public async Task<AppServerDecision> ApproveAsync(AppServerApproval approval, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(approval);
-        return ShowAsync(
-            xamlRoot => BuildApprovalDialog(xamlRoot, approval),
-            AppServerDecision.Decline,
-            cancellationToken);
+        using var localCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var quickDecision = new TaskCompletionSource<AppServerDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
+        string token = "";
+        try
+        {
+            await OnUiAsync(() =>
+            {
+                App.PendingRequestNotifications.TryNotifyPendingRequest(Notifications.PendingNotificationKind.AiApproval,
+                    () => { quickDecision.TrySetResult(AppServerDecision.Accept); return Task.CompletedTask; },
+                    () => { quickDecision.TrySetResult(AppServerDecision.Decline); return Task.CompletedTask; },
+                    () => { App.Window.Activate(); return Task.CompletedTask; }, out token);
+            });
+            var local = ShowAsync(xamlRoot => BuildApprovalDialog(xamlRoot, approval),
+                AppServerDecision.Decline, localCancellation.Token);
+            var winner = await Task.WhenAny(local, quickDecision.Task).ConfigureAwait(false);
+            if (cancellationToken.IsCancellationRequested) return AppServerDecision.Decline;
+            return await (winner == quickDecision.Task ? quickDecision.Task : local).ConfigureAwait(false);
+        }
+        finally
+        {
+            localCancellation.Cancel();
+            await OnUiAsync(() => App.PendingRequestNotifications.Resolve(token));
+        }
+    }
+
+    private static Task OnUiAsync(Action action)
+    {
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!App.DispatcherQueue.TryEnqueue(() =>
+        {
+            try { action(); completion.TrySetResult(); }
+            catch (Exception ex) { completion.TrySetException(ex); }
+        })) completion.TrySetCanceled();
+        return completion.Task;
     }
 
     public Task<IReadOnlyDictionary<string, string[]>?> InputAsync(AppServerInput input, CancellationToken cancellationToken = default)

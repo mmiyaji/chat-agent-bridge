@@ -61,7 +61,7 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
                 await SendAsync(socket, new { envelope_id = envelopeId }, cancellationToken).ConfigureAwait(false);
                 if (!envelope.TryGetProperty("payload", out var payload) || !payload.TryGetProperty("event", out var evt)) continue;
                 var request = ParseRequest(evt, _botUserId);
-                if (request is null || !_seen.TryAdd(request.MessageId)) continue;
+                if (request is null || !ChatAccessPolicy.IsAllowed(settings, "slack", request.UserId) || !_seen.TryAdd(request.MessageId)) continue;
                 await onRequest(request, cancellationToken).ConfigureAwait(false);
             }
         }

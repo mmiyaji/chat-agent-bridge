@@ -28,12 +28,30 @@ public sealed class ChatApprovalBroker
         ChatRequest origin,
         AppServerApproval approval,
         Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? localHandler,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool publishToThread = false)
     {
         ArgumentNullException.ThrowIfNull(transport);
         ArgumentNullException.ThrowIfNull(origin);
         ArgumentNullException.ThrowIfNull(approval);
         cancellationToken.ThrowIfCancellationRequested();
+
+        // Approval details and control codes are private by default. A local
+        // decision callback is the only available decision source unless the
+        // caller explicitly opts into publishing this request to chat.
+        if (!publishToThread)
+        {
+            if (localHandler is null) return AppServerDecision.Decline;
+            using var localCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            using var localTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            Task<AppServerDecision> local = InvokeLocalAsync(localHandler, approval, localCancellation.Token);
+            Task timeout = Task.Delay(_timeout, localTimeout.Token);
+            Task winner = await Task.WhenAny(local, timeout).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            localCancellation.Cancel();
+            localTimeout.Cancel();
+            return winner == local ? await local.ConfigureAwait(false) : AppServerDecision.Decline;
+        }
 
         var pending = new PendingApproval(origin);
         lock (_sync)

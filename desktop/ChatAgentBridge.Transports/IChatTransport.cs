@@ -7,6 +7,11 @@ public interface IChatConnectionEvents
     event Action? Connected;
 }
 
+public interface IChatConnectionNotifications
+{
+    Task NotifyConnectionAsync(BridgeSettings settings, string message, CancellationToken cancellationToken);
+}
+
 public sealed record ChatRequest(
     string Provider,
     string ChannelId,

@@ -17,7 +17,7 @@ public sealed class ChatApprovalBrokerTests
     {
         var broker = new ChatApprovalBroker(TimeSpan.FromSeconds(3));
         var transport = new FakeTransport();
-        Task<AppServerDecision> request = broker.RequestAsync(transport, Origin, Approval, null);
+        Task<AppServerDecision> request = broker.RequestAsync(transport, Origin, Approval, null, publishToThread: true);
         string code = await GetCodeAsync(transport);
 
         Assert.True(broker.TryHandle(Origin with { Text = $"!cab {verb} {code}" }));
@@ -31,7 +31,7 @@ public sealed class ChatApprovalBrokerTests
         var broker = new ChatApprovalBroker(TimeSpan.FromSeconds(3));
         var transport = new FakeTransport();
         Task<AppServerDecision> request = broker.RequestAsync(transport, Origin,
-            Approval with { Description = new string('d', 5000), Command = new string('c', 5000) }, null);
+            Approval with { Description = new string('d', 5000), Command = new string('c', 5000) }, null, publishToThread: true);
         string text = await transport.LastReply.Task.WaitAsync(TimeSpan.FromSeconds(2));
         string code = await GetCodeAsync(transport);
 
@@ -51,7 +51,7 @@ public sealed class ChatApprovalBrokerTests
     {
         var broker = new ChatApprovalBroker(TimeSpan.FromSeconds(3));
         var transport = new FakeTransport();
-        Task<AppServerDecision> request = broker.RequestAsync(transport, Origin, Approval, null);
+        Task<AppServerDecision> request = broker.RequestAsync(transport, Origin, Approval, null, publishToThread: true);
         string code = await GetCodeAsync(transport);
 
         var otherScope = changedScope switch
@@ -73,13 +73,13 @@ public sealed class ChatApprovalBrokerTests
     {
         var broker = new ChatApprovalBroker(TimeSpan.FromSeconds(3));
         var firstTransport = new FakeTransport();
-        Task<AppServerDecision> first = broker.RequestAsync(firstTransport, Origin, Approval, null);
+        Task<AppServerDecision> first = broker.RequestAsync(firstTransport, Origin, Approval, null, publishToThread: true);
         string oldCode = await GetCodeAsync(firstTransport);
         broker.TryHandle(Origin with { Text = $"reject {oldCode}" });
         Assert.Equal(AppServerDecision.Decline, await first.WaitAsync(TimeSpan.FromSeconds(2)));
 
         var secondTransport = new FakeTransport();
-        Task<AppServerDecision> second = broker.RequestAsync(secondTransport, Origin, Approval, null);
+        Task<AppServerDecision> second = broker.RequestAsync(secondTransport, Origin, Approval, null, publishToThread: true);
         string newCode = await GetCodeAsync(secondTransport);
         Assert.NotEqual(oldCode, newCode);
         Assert.True(broker.TryHandle(Origin with { Text = $"approve {oldCode}" }));
@@ -101,7 +101,7 @@ public sealed class ChatApprovalBrokerTests
             try { await Task.Delay(Timeout.Infinite, token); }
             catch (OperationCanceledException) { callbackCancelled.SetResult(); throw; }
             return AppServerDecision.Decline;
-        });
+        }, publishToThread: true);
         string code = await GetCodeAsync(transport);
         await callbackStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
 
@@ -116,18 +116,78 @@ public sealed class ChatApprovalBrokerTests
         var broker = new ChatApprovalBroker(TimeSpan.FromSeconds(3));
         var transport = new FakeTransport();
         using var cancellation = new CancellationTokenSource();
-        Task<AppServerDecision> request = broker.RequestAsync(transport, Origin, Approval, null, cancellation.Token);
+        Task<AppServerDecision> request = broker.RequestAsync(transport, Origin, Approval, null, cancellation.Token, publishToThread: true);
         string code = await GetCodeAsync(transport);
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => request);
         Assert.True(broker.TryHandle(Origin with { Text = $"approve {code}" }));
         var nextTransport = new FakeTransport();
-        Task<AppServerDecision> next = broker.RequestAsync(nextTransport, Origin, Approval, null);
+        Task<AppServerDecision> next = broker.RequestAsync(nextTransport, Origin, Approval, null, publishToThread: true);
         string nextCode = await GetCodeAsync(nextTransport);
         Assert.NotEqual(code, nextCode);
         broker.TryHandle(Origin with { Text = $"reject {nextCode}" });
         Assert.Equal(AppServerDecision.Decline, await next.WaitAsync(TimeSpan.FromSeconds(2)));
+    }
+
+    [Fact]
+    public async Task ApprovalIsPrivateByDefaultAndNullLocalHandlerDeclines()
+    {
+        var transport = new FakeTransport();
+        var broker = new ChatApprovalBroker(TimeSpan.FromMilliseconds(200));
+        var decision = await broker.RequestAsync(transport, Origin, Approval, null);
+        Assert.Equal(AppServerDecision.Decline, decision);
+        Assert.False(transport.LastReply.Task.IsCompleted);
+    }
+
+    [Fact]
+    public async Task PrivateApprovalUsesOnlyLocalHandler()
+    {
+        var transport = new FakeTransport();
+        var broker = new ChatApprovalBroker(TimeSpan.FromSeconds(2));
+        var decision = await broker.RequestAsync(transport, Origin, Approval,
+            (_, _) => Task.FromResult(AppServerDecision.Accept));
+        Assert.Equal(AppServerDecision.Accept, decision);
+        Assert.False(transport.LastReply.Task.IsCompleted);
+    }
+
+    [Fact]
+    public async Task PrivateApprovalTimesOutAndCancelsLocalHandler()
+    {
+        var transport = new FakeTransport();
+        var broker = new ChatApprovalBroker(TimeSpan.FromMilliseconds(50));
+        var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var decision = await broker.RequestAsync(transport, Origin, Approval, async (_, token) =>
+        {
+            try { await Task.Delay(Timeout.Infinite, token); }
+            catch (OperationCanceledException) { cancelled.TrySetResult(); throw; }
+            return AppServerDecision.Accept;
+        });
+        Assert.Equal(AppServerDecision.Decline, decision);
+        await cancelled.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.False(transport.LastReply.Task.IsCompleted);
+    }
+
+    [Fact]
+    public async Task PrivateApprovalPropagatesCallerCancellationToLocalHandler()
+    {
+        var transport = new FakeTransport();
+        var broker = new ChatApprovalBroker(TimeSpan.FromSeconds(5));
+        using var cancellation = new CancellationTokenSource();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task<AppServerDecision> request = broker.RequestAsync(transport, Origin, Approval, async (_, token) =>
+        {
+            started.TrySetResult();
+            try { await Task.Delay(Timeout.Infinite, token); }
+            catch (OperationCanceledException) { cancelled.TrySetResult(); throw; }
+            return AppServerDecision.Accept;
+        }, cancellation.Token);
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => request);
+        await cancelled.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.False(transport.LastReply.Task.IsCompleted);
     }
 
     private static async Task<string> GetCodeAsync(FakeTransport transport)

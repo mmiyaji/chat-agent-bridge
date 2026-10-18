@@ -5,6 +5,7 @@ namespace ChatAgentBridge_Desktop.Inbox;
 public sealed partial class ChatInboxPage : Page
 {
     public ChatInboxViewModel ViewModel { get; } = new();
+    public event Action? OpenRequested;
 
     public ChatInboxPage()
     {
@@ -14,7 +15,45 @@ public sealed partial class ChatInboxPage : Page
         var serverDialogs = new AppServerUi.AppServerDialogs(() => XamlRoot);
         ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
         ViewModel.ServerInputHandler = serverDialogs.InputAsync;
+        ViewModel.RequestReceived += NotifyRequest;
+        ViewModel.ConnectionEnded += () => App.PendingRequestNotifications.ClearAll();
+        App.PendingRequestNotifications.StatusChanged += () =>
+            ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
+        ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
         Loaded += (_, _) => App.Window.Closed += WindowClosed;
+    }
+
+    private Task OpenInboxAsync(InboxItem item)
+    {
+        if (ViewModel.Requests.Contains(item)) ViewModel.Selected = item;
+        OpenRequested?.Invoke();
+        App.Window.Activate();
+        if (App.Window.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+            presenter.Restore();
+        return Task.CompletedTask;
+    }
+
+    private void NotifyRequest(InboxItem item)
+    {
+        var notifications = App.PendingRequestNotifications;
+        if (!notifications.TryNotifyPendingRequest(Notifications.PendingNotificationKind.ChatRequest,
+            () => ViewModel.ApproveNotificationAsync(item),
+            () => ViewModel.RejectNotificationAsync(item),
+            () => OpenInboxAsync(item), out var token))
+        {
+            ViewModel.NotificationStatus = notifications.Status;
+            return;
+        }
+        System.ComponentModel.PropertyChangedEventHandler? resolved = null;
+        resolved = (_, args) =>
+        {
+            if (args.PropertyName == nameof(InboxItem.State) && item.State != "承認待ち")
+            {
+                notifications.Resolve(token);
+                item.PropertyChanged -= resolved;
+            }
+        };
+        item.PropertyChanged += resolved;
     }
 
     private async Task<bool> ConfirmAsync(InboxItem item)
@@ -51,7 +90,7 @@ public sealed partial class ChatInboxPage : Page
                 MaxHeight = 400,
                 Content = new TextBlock
                 {
-                    Text = $"送信先: {item.Source}\nスレッド: {item.Request.ThreadId}\n\n{text}",
+                    Text = $"この結果はスレッドの閲覧者全員に公開されます。依頼者だけへのDMではありません。\n送信先: {item.Source}\nスレッド: {item.Request.ThreadId}\n\n{text}",
                     TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap,
                     IsTextSelectionEnabled = true
                 }

@@ -39,6 +39,9 @@ public sealed partial class MainPage : Page
             if (args.PropertyName is nameof(ChatInboxViewModel.IsConnectionConfirmed) or nameof(ChatInboxViewModel.IsConnected))
                 ViewModel.SetChatConnectionState(InboxPage.ViewModel.IsConnectionConfirmed, InboxPage.ViewModel.IsConnected);
         };
+        ViewModel.SettingsSaved += () => _ = InboxPage.ViewModel.RefreshAccessAsync();
+        InboxPage.OpenRequested += () => MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>()
+            .First(item => item.Tag as string == "chat");
         Loaded += MainPage_Loaded;
         ViewModel.ConfirmExecutionAsync = ConfirmExecutionAsync;
         var serverDialogs = new AppServerUi.AppServerDialogs(() => XamlRoot);
