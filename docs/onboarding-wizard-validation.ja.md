@@ -13,4 +13,4 @@ Core 164件、Transport 27件が成功。空の状態からのUI検証6項目、
 
 確認用スクリプト：`desktop/WizardUiE2E.ps1`、`desktop/WizardLayoutUiE2E.ps1`。Slackの実サービスへの新規投稿や、AIによる作業実行は今回のオンボーディング検証に含めていない。
 
-規約・プライバシーポリシーは開発プレビュー用の文面である。配布前に提供者名・問い合わせ先を確定し、文面を確認する。無保証と法令上免除できない責任の区別は、[消費者庁の逐条解説](https://www.caa.go.jp/policies/policy/consumer_system/consumer_contract_act/annotations)を参照した。既存利用者への新たな同意強制や、全実行経路を対象とする法的同意ゲートは今回の変更に含めない。
+規約・プライバシーポリシーは開発プレビュー用の文面である。提供者名 mmiyaji と問い合わせ先 mail@ruhenheim.org を2026-10-18.1版に反映した。配布前に文面を確認する。無保証と法令上免除できない責任の区別は、[消費者庁の逐条解説](https://www.caa.go.jp/policies/policy/consumer_system/consumer_contract_act/annotations)を参照した。既存利用者への新たな同意強制や、全実行経路を対象とする法的同意ゲートは今回の変更に含めない。

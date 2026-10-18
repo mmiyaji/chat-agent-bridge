@@ -6,7 +6,7 @@ public sealed record OnboardingConsent(string PolicyVersion, DateTimeOffset Acce
 
 public sealed class OnboardingConsentStore
 {
-    public const string CurrentPolicyVersion = "2026-10-18";
+    public const string CurrentPolicyVersion = "2026-10-18.1";
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly string _filePath;
 
