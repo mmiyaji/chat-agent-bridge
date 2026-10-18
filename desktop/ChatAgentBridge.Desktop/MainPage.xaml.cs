@@ -48,6 +48,8 @@ public sealed partial class MainPage : Page
         ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
         ViewModel.ServerInputHandler = serverDialogs.InputAsync;
         HistoryPage.AgentSettingsRequested += () => OpenAgentSettings_Click(this, new RoutedEventArgs());
+        ViewModel.OnboardingNavigateRequested += step => MainNavigation.SelectedItem = MainNavigation.MenuItems
+            .OfType<NavigationViewItem>().First(item => item.Tag as string == (step == 0 ? "agent" : step == 1 ? "connections" : "chat"));
         MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
     }
 
@@ -73,7 +75,8 @@ public sealed partial class MainPage : Page
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
         await ViewModel.RefreshStartupAsync();
-        if (ViewModel.IsSettingsLoaded)
+        await ViewModel.InitializeOnboardingAsync();
+        if (ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive)
         {
             if (ViewModel.AutoConnectProvider is "mattermost" or "slack")
                 MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "chat");
@@ -88,6 +91,23 @@ public sealed partial class MainPage : Page
         MattermostTokenBox.Password = ViewModel.MattermostToken;
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
+    }
+
+    private async void BrowseWorkspace_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var picker = new Microsoft.Windows.Storage.Pickers.FolderPicker(App.Window.AppWindow.Id);
+            var result = await picker.PickSingleFolderAsync();
+            if (result is not null) ViewModel.WorkspaceRoot = result.Path;
+        }
+        catch (Exception)
+        {
+            ViewModel.StatusTitle = "フォルダーを選択できませんでした";
+            ViewModel.StatusMessage = "作業フォルダー欄に絶対パスを直接入力することもできます。";
+            ViewModel.StatusSeverity = "Error";
+            ViewModel.IsStatusOpen = true;
+        }
     }
 
     private void MainNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

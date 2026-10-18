@@ -36,20 +36,33 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
+                    <Border Grid.Row="1" Margin="0,0,0,12" Padding="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsOnboardingActive), Mode=OneWay}" AutomationProperties.AutomationId="OnboardingGuide">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{x:Bind ViewModel.OnboardingProgress, Mode=OneWay}" AutomationProperties.AutomationId="OnboardingProgress" />
+                            <TextBlock Text="{x:Bind ViewModel.OnboardingTitle, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="OnboardingTitle" />
+                            <TextBlock Text="{x:Bind ViewModel.OnboardingDescription, Mode=OneWay}" TextWrapping="Wrap" />
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <Button Content="戻る" Command="{x:Bind ViewModel.PreviousOnboardingCommand}" AutomationProperties.AutomationId="OnboardingPrevious" />
+                                <Button Content="{x:Bind ViewModel.OnboardingNextLabel, Mode=OneWay}" Command="{x:Bind ViewModel.NextOnboardingCommand}" AutomationProperties.AutomationId="OnboardingNext" />
+                                <Button Content="あとで設定" Command="{x:Bind ViewModel.DeferOnboardingCommand}" AutomationProperties.AutomationId="OnboardingDefer" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                     <InfoBar Grid.Row="0" Margin="0,0,0,16" AutomationProperties.AutomationId="ExecutionStatus"
                              IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
                              Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.StatusSeverity), Mode=OneWay}"
                              Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
                              Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
-                    <Button Grid.Row="1" Margin="0,0,0,12" Content="設定を再読み込み" Click="ReloadSettings_Click"
+                    <Button Grid.Row="2" Margin="0,0,0,12" Content="設定を再読み込み" Click="ReloadSettings_Click"
                             IsEnabled="{x:Bind local:MainPage.CanReloadSettings(ViewModel.IsLoading, ViewModel.IsRunning), Mode=OneWay}"
                             Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsSettingsLoaded), Mode=OneWay}"
                             HorizontalAlignment="Left" AutomationProperties.AutomationId="ReloadSettings" />
 
-                    <Button Grid.Row="1" Content="エージェント設定を保存" Margin="0,0,0,12" Command="{x:Bind ViewModel.SaveSettingsCommand}" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}" AutomationProperties.AutomationId="SaveSettings" />
-                    <ScrollViewer x:Name="MainContentScroll" Grid.Row="2" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="MainContentScroll" AutomationProperties.Name="メイン コンテンツ">
+                    <Button Grid.Row="2" Content="エージェント設定を保存" Margin="0,0,0,12" Command="{x:Bind ViewModel.SaveSettingsCommand}" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}" AutomationProperties.AutomationId="SaveSettings" />
+                    <ScrollViewer x:Name="MainContentScroll" Grid.Row="3" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="MainContentScroll" AutomationProperties.Name="メイン コンテンツ">
                         <Grid MaxWidth="1040" HorizontalAlignment="Stretch">
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsOverviewSelected), Mode=OneTime}">
                                 <StackPanel Spacing="4">
@@ -75,6 +88,7 @@
                                         </Grid>
                                         <TextBlock Text="{x:Bind ViewModel.SetupNextAction, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupNextAction" />
                                         <TextBlock Text="{x:Bind ViewModel.SetupDraftNotice, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSetupDraftNotice), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupDraftNotice" />
+                                        <Button Content="初期設定ガイドを開く" Command="{x:Bind ViewModel.StartOnboardingCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="StartOnboarding" />
                                         <Button Content="設定を再読み込み" Click="ReloadSettings_Click" IsEnabled="{x:Bind local:MainPage.CanReloadSettings(ViewModel.IsLoading, ViewModel.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SetupReloadSettings" />
                                     </StackPanel>
                                 </Border>
@@ -103,6 +117,29 @@
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
                                 <TextBlock Text="エージェント設定" Style="{StaticResource TitleTextBlockStyle}" />
                                 <TextBlock Text="このアプリから次に実行するCLIとモデルを設定します。CLI自身の設定ファイルは変更しません。利用前にCLIのインストールとログインが必要です。" TextWrapping="Wrap" />
+                                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" AutomationProperties.AutomationId="WorkspaceCard">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="最初に使う作業フォルダー" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                        <TextBox Header="作業フォルダー（絶対パス）" Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="例: C:\Projects\my-app" AutomationProperties.AutomationId="WorkspaceRoot" AutomationProperties.Name="作業フォルダー" />
+                                        <Button Content="フォルダーを選択…" Click="BrowseWorkspace_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="BrowseWorkspace" />
+                                        <TextBlock Text="選択後は設定を保存し、接続中なら再接続してください。既存の会話の作業先は自動変更しません。Slackでは !cab folder C:\Projects\my-app で、そのユーザー・スレッドの作業先を変更できます。PCで承認すると新しいAI会話として開始します。" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                                <StackPanel Spacing="12">
+                                    <ComboBox Header="使うエージェント" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="AgentProvider" AutomationProperties.Name="使うエージェント">
+                                        <ComboBoxItem Content="Codex CLI" Tag="codex" AutomationProperties.AutomationId="ProviderOptionCodex" />
+                                        <ComboBoxItem Content="Claude Code CLI" Tag="claude" AutomationProperties.AutomationId="ProviderOptionClaude" />
+                                        <ComboBoxItem Content="その他のCLI（詳細設定）" Tag="custom" AutomationProperties.AutomationId="ProviderOptionCustom" />
+                                    </ComboBox>
+                                    <Expander Header="詳細：CLIの場所と起動引数" HorizontalAlignment="Stretch" IsExpanded="True" AutomationProperties.AutomationId="AgentAdvanced">
+                                        <StackPanel Spacing="12">
+                                            <TextBox Header="CLI実行ファイル" Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="AgentExecutable" AutomationProperties.Name="CLI実行ファイル" />
+                                            <TextBlock Text="通常はcodexまたはclaudeです。見つからない場合は実行ファイルのフルパスを指定してください。" TextWrapping="Wrap" />
+                                            <TextBox Header="その他のCLIの起動引数" Text="{x:Bind ViewModel.AgentArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" IsEnabled="{x:Bind ViewModel.IsCustomProvider, Mode=OneWay}" AutomationProperties.AutomationId="AgentArguments" />
+                                            <TextBlock Text="Codex・Claude Codeの標準引数とモデル指定はアプリが組み立てます。その他のCLIは標準入力から依頼文を受け取れる形式を指定してください。" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Expander>
+                                </StackPanel>
                                 <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="ExecutionPolicyOverview">
                                     <StackPanel Spacing="10">
                                         <TextBlock Text="依頼が実行され、結果が届くまで" Style="{StaticResource SubtitleTextBlockStyle}" />
@@ -161,11 +198,7 @@
                                     </StackPanel>
                                 </Border>
                                 <StackPanel Spacing="12">
-                                    <ComboBox Header="使うエージェント" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="AgentProvider" AutomationProperties.Name="使うエージェント">
-                                        <ComboBoxItem Content="Codex CLI" Tag="codex" AutomationProperties.AutomationId="ProviderOptionCodex" />
-                                        <ComboBoxItem Content="Claude Code CLI" Tag="claude" AutomationProperties.AutomationId="ProviderOptionClaude" />
-                                        <ComboBoxItem Content="その他のCLI（詳細設定）" Tag="custom" AutomationProperties.AutomationId="ProviderOptionCustom" />
-                                    </ComboBox>
+
                                     <TextBox Header="モデル名（空欄ならCLIの既定値）" MaxLength="256" Text="{x:Bind ViewModel.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" AutomationProperties.AutomationId="AgentModel" AutomationProperties.Name="モデル名" />
                                     <ComboBox Header="推論の強さ（CLIの候補）" ItemsSource="{x:Bind ViewModel.ReasoningEffortCandidates, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.SelectedReasoningEffort, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ReasoningEffortCandidates" AutomationProperties.Name="推論レベル候補" />
                                     <TextBlock Text="{x:Bind ViewModel.ModelEffortStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ReasoningEffortStatus" />
@@ -179,20 +212,12 @@
                                         <TextBlock Text="{x:Bind ViewModel.ModelCatalog.Status, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ModelCatalogStatus" />
                                         <TextBlock Text="候補はCLIの報告値です。契約上の利用可否は実行時に確認されます。" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
                                     </StackPanel>
-                                    <TextBox Header="作業フォルダー" Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="例: C:\Projects\my-app" AutomationProperties.AutomationId="WorkspaceRoot" AutomationProperties.Name="作業フォルダー" />
                                     <TextBlock Text="エージェントがファイルを読み書きするプロジェクトのフォルダーです。チャットからこの場所を変更することはできません。" TextWrapping="Wrap" />
                                     <ToggleSwitch Header="実行中の操作許可・質問を画面で受け取る（Codex専用）" IsOn="{x:Bind ViewModel.UseAppServer, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.IsCodexProvider, Mode=OneWay}" AutomationProperties.AutomationId="UseAppServer" />
                                     <TextBlock Text="オンではCodex App Serverを利用します。オフではCLIへ依頼を渡して完了を待ちます。Claude Codeも会話を継続しますが、実行中の追加質問には対応しません。" TextWrapping="Wrap" />
                                     <ToggleSwitch Header="手動実行の前に内容を確認する" IsOn="{x:Bind ViewModel.RequireApproval, Mode=TwoWay}" AutomationProperties.AutomationId="RequireApproval" />
                                     <TextBlock Text="チャットから届いた依頼の承認方法は、上の「会話ごとの承認」で設定します。" TextWrapping="Wrap" />
-                                    <Expander Header="詳細：CLIの場所と起動引数" HorizontalAlignment="Stretch" IsExpanded="True" AutomationProperties.AutomationId="AgentAdvanced">
-                                        <StackPanel Spacing="12">
-                                            <TextBox Header="CLI実行ファイル" Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="AgentExecutable" AutomationProperties.Name="CLI実行ファイル" />
-                                            <TextBlock Text="通常はcodexまたはclaudeです。見つからない場合は実行ファイルのフルパスを指定してください。" TextWrapping="Wrap" />
-                                            <TextBox Header="その他のCLIの起動引数" Text="{x:Bind ViewModel.AgentArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" IsEnabled="{x:Bind ViewModel.IsCustomProvider, Mode=OneWay}" AutomationProperties.AutomationId="AgentArguments" />
-                                            <TextBlock Text="Codex・Claude Codeの標準引数とモデル指定はアプリが組み立てます。その他のCLIは標準入力から依頼文を受け取れる形式を指定してください。" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Expander>
+
                                     <TextBlock Text="起動と接続" Style="{StaticResource SubtitleTextBlockStyle}" />
                                     <ToggleSwitch Header="Windowsログイン時にこのアプリを起動" IsOn="{x:Bind ViewModel.StartWithWindows, Mode=OneWay}" Toggled="StartupToggle_Toggled" IsEnabled="{x:Bind ViewModel.CanChangeStartup, Mode=OneWay}" AutomationProperties.AutomationId="StartWithWindows" />
                                     <TextBlock Text="{x:Bind ViewModel.StartupStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="StartupStatus" />
@@ -201,7 +226,7 @@
                                         <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="AutoConnectOptionMattermost" />
                                         <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="AutoConnectOptionSlack" />
                                     </ComboBox>
-                                    <TextBlock Text="接続情報を保存したチャットへ、次回のアプリ起動時に接続します。依頼の自動実行や、ウィンドウを閉じた後の常駐は行いません。" TextWrapping="Wrap" />
+                                    <TextBlock Text="接続情報を保存したチャットへ、次回のアプリ起動時に接続します。依頼の実行は会話の承認設定に従います。ウィンドウを閉じた後は依頼を受信しません。" TextWrapping="Wrap" />
                                 </StackPanel>
                             </StackPanel>
                             <StackPanel Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsWorkbenchSelected), Mode=OneTime}">
@@ -250,8 +275,8 @@
                             </StackPanel>
                         </Grid>
                     </ScrollViewer>
-                    <inbox:ChatInboxPage x:Name="InboxPage" Grid.Row="2" Visibility="{x:Bind local:MainPage.ToVisibility(IsChatSelected), Mode=OneTime}" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" />
-                    <history:HistoryPage x:Name="HistoryPage" Grid.Row="2" Visibility="{x:Bind local:MainPage.ToVisibility(IsHistorySelected), Mode=OneTime}" />
+                    <inbox:ChatInboxPage x:Name="InboxPage" Grid.Row="3" Visibility="{x:Bind local:MainPage.ToVisibility(IsChatSelected), Mode=OneTime}" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" />
+                    <history:HistoryPage x:Name="HistoryPage" Grid.Row="3" Visibility="{x:Bind local:MainPage.ToVisibility(IsHistorySelected), Mode=OneTime}" />
                 </Grid>
             </NavigationView.Content>
         </NavigationView>

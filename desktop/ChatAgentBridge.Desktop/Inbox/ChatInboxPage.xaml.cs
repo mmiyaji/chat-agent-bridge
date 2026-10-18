@@ -58,10 +58,11 @@ public sealed partial class ChatInboxPage : Page
 
     private async Task<bool> ConfirmAsync(InboxItem item)
     {
+        var changesWorkspace = ChatAgentBridge.Core.WorkspaceChatCommand.TryParse(item.Prompt, out _);
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "ローカルエージェントで実行しますか？",
+            Title = changesWorkspace ? "この会話の作業フォルダーを変更しますか？" : "ローカルエージェントで実行しますか？",
             Content = new ScrollViewer
             {
                 Content = new TextBlock
@@ -71,7 +72,7 @@ public sealed partial class ChatInboxPage : Page
                 },
                 MaxHeight = 400
             },
-            PrimaryButtonText = "実行",
+            PrimaryButtonText = changesWorkspace ? "変更" : "実行",
             CloseButtonText = "キャンセル",
             DefaultButton = ContentDialogButton.Close
         };

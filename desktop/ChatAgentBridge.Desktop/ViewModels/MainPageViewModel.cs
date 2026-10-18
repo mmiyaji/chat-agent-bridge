@@ -26,6 +26,7 @@ public partial class MainPageViewModel : ObservableObject
     private bool _chatConnectionConfirmed;
     private bool _chatConnectionPreparing;
     private bool _savedWorkspaceExists;
+    private bool _lastSaveSucceeded;
 
     public ModelCatalogViewModel ModelCatalog { get; }
     public ObservableCollection<ReasoningEffortChoice> ReasoningEffortCandidates { get; } = [];
@@ -41,6 +42,13 @@ public partial class MainPageViewModel : ObservableObject
         };
         PropertyChanged += (_, e) =>
         {
+            if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning))
+            {
+                StartOnboardingCommand.NotifyCanExecuteChanged();
+                PreviousOnboardingCommand.NotifyCanExecuteChanged();
+                NextOnboardingCommand.NotifyCanExecuteChanged();
+                DeferOnboardingCommand.NotifyCanExecuteChanged();
+            }
             if (e.PropertyName is nameof(IsLoading) or nameof(IsSettingsLoaded) or nameof(WorkspaceRoot) or
                 nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
                 nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AutoConnectProvider) or nameof(RequireApproval) or
@@ -293,6 +301,7 @@ public partial class MainPageViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanSaveSettings))]
     private async Task SaveSettingsAsync()
     {
+        _lastSaveSucceeded = false;
         if (_closing || !IsSettingsLoaded || IsRunning || _settings is null || _unsupportedSavedEffort) return;
         var saved = false;
         try
@@ -309,10 +318,18 @@ public partial class MainPageViewModel : ObservableObject
                 ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode),
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(ChatResultMode)
             };
+            if (!string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot))
+            {
+                if (!Path.IsPathFullyQualified(snapshot.WorkspaceRoot) || !Directory.Exists(snapshot.WorkspaceRoot))
+                    throw new InvalidOperationException("作業フォルダーには、存在するフォルダーの絶対パスを指定してください。");
+                if (!ExecutionPolicy.IsWorkspaceTrusted(snapshot, snapshot.WorkspaceRoot))
+                    throw new InvalidOperationException("作業フォルダーが信頼フォルダーの範囲外です。先に信頼するフォルダーを確認してください。");
+            }
             _ = AgentProfile.BuildInvocation(snapshot);
             await _settingsStore.SaveAsync(snapshot);
             _settings = snapshot;
             saved = true;
+            _lastSaveSucceeded = true;
             MattermostAllowedUserIds = snapshot.MattermostAllowedUserIds;
             SlackAllowedUserIds = snapshot.SlackAllowedUserIds;
             SlackAllowedChannelIds = snapshot.SlackAllowedChannelIds;

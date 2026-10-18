@@ -56,6 +56,7 @@ public sealed record AuditHistoryRow(AuditEvent Record)
         "reply_failed" => "状態通知に失敗",
         "reply_sent" => "結果を送信",
         "detached" => "セッションを切り離し",
+        "workspace_changed" => "作業フォルダーを変更",
         _ => "その他の操作"
     };
     public string Source => Record.Source switch

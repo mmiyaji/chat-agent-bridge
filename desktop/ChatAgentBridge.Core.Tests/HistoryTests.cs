@@ -6,6 +6,15 @@ namespace ChatAgentBridge.Core.Tests;
 public sealed class HistoryTests
 {
     [Fact]
+    public async Task WorkspaceChangeAuditCanBeRecordedAndReloaded()
+    {
+        using var directory = new TemporaryDirectory();
+        var record = new AuditEvent(DateTimeOffset.UtcNow, "workspace_changed", null, "slack", "C1", "T1");
+        await new AuditStore(directory.Path).AppendAsync(record);
+        Assert.Equal(record, Assert.Single(await new AuditStore(directory.Path).ListAsync()));
+    }
+
+    [Fact]
     public async Task ExecutionHistory_ReplacesByIdAndSurvivesReload()
     {
         using var directory = new TemporaryDirectory();

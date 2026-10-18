@@ -178,6 +178,10 @@ try {
     $marker = Join-Path $fixtureHost '.cab-offline-test-agent'
     $hostDll = Join-Path $fixtureHost 'ChatAgentBridge.TestAgent.dll'
     $builtDll = Join-Path $PSScriptRoot 'ChatAgentBridge.TestAgent/bin/Debug/net10.0/ChatAgentBridge.TestAgent.dll'
+    $runtimeConfig = Get-Content -LiteralPath (Join-Path $fixtureHost 'ChatAgentBridge.TestAgent.runtimeconfig.json') -Raw | ConvertFrom-Json
+    if ($runtimeConfig.runtimeOptions.includedFrameworks) {
+        $builtDll = Join-Path $PSScriptRoot 'ChatAgentBridge.TestAgent/bin/Debug/net10.0/win-x64/ChatAgentBridge.TestAgent.dll'
+    }
     if (-not (Test-Path -LiteralPath $marker) -or -not (Test-Path -LiteralPath $expectedClaude) -or
         -not (Test-Path -LiteralPath $hostDll) -or -not (Test-Path -LiteralPath $builtDll) -or
         (Get-FileHash -LiteralPath $hostDll -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $builtDll -Algorithm SHA256).Hash -or

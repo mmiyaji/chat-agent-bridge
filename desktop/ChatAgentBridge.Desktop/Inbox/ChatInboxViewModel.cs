@@ -16,7 +16,7 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public BridgeSettings Settings { get; } = settings;
     public string Source => $"{Request.Provider} / {Request.ChannelId} / {Request.UserId}";
     public string Prompt => Request.Text;
-    public string Workspace => Settings.WorkspaceRoot;
+    [ObservableProperty] public partial string Workspace { get; set; } = settings.WorkspaceRoot;
     [ObservableProperty] public partial string State { get; set; } = "承認待ち";
     [ObservableProperty] public partial string SessionLabel { get; set; } = "実行前にセッションを確認します";
     [ObservableProperty] public partial string ResultText { get; set; } = "";
@@ -251,9 +251,16 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             _execution = CancellationTokenSource.CreateLinkedTokenSource(connection.Token);
             var token = _execution.Token;
             if (!await CheckAccessAsync(item, token)) return;
+            if (WorkspaceChatCommand.TryParse(item.Prompt, out var requestedWorkspace))
+            {
+                await ChangeWorkspaceAsync(item, requestedWorkspace, approvedByNotification, token);
+                return;
+            }
             var key = CreateSessionKey(item);
             var binding = await _sessions.FindAsync(key, token);
-            var effectiveSettings = ConversationExecutionPolicy.GetEffectiveSettings(item.Settings, binding);
+            var workspaceSettings = await _sessions.ApplyWorkspaceAsync(key, item.Settings, token);
+            var effectiveSettings = ConversationExecutionPolicy.GetEffectiveSettings(workspaceSettings, binding);
+            item.Workspace = effectiveSettings.WorkspaceRoot;
             if (!ExecutionPolicy.IsWorkspaceTrusted(effectiveSettings, effectiveSettings.WorkspaceRoot))
                 throw new InvalidOperationException("作業フォルダーが信頼フォルダーの範囲外です。");
             if (approvedAutomatically && ConversationExecutionPolicy.RequiresApproval(key, effectiveSettings, binding))
@@ -349,7 +356,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             if (record?.Status == "running" || record is null) item.State = "実行／記録エラー";
             UsageSummary = UsageUi.UsageSummaryFormatter.Format(null, null);
-            Status = "実行または履歴の記録に失敗しました。設定を変更した場合は、履歴画面で保存セッションを切り離してから再度依頼してください。ローカル結果も確認してください。";
+            Status = "実行または履歴の記録に失敗しました。作業先を変える場合は !cab folder 絶対パス で変更するか、履歴画面で保存セッションを切り離してから再度依頼してください。ローカル結果も確認してください。";
             if (record is not null && record.Status == "running") await FinishFailureAsync(record, "failed", item.Request);
         }
         finally
@@ -495,7 +502,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             var key = CreateSessionKey(item);
             var binding = await _sessions.FindAsync(key, token);
-            var effective = ConversationExecutionPolicy.GetEffectiveSettings(settings, binding);
+            var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, settings, token), binding);
             allowed = fingerprint == ConversationExecutionPolicy.GetFingerprint(key, effective);
         }
         if (allowed) return true;
@@ -562,9 +569,15 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (_closing || !IsConnectionConfirmed || IsExecuting) break;
                 if (item.State != "承認待ち" || _automaticallyAttempted.Contains(item)) continue;
                 if (!await CheckAccessAsync(item, _connection?.Token ?? CancellationToken.None)) continue;
+                if (WorkspaceChatCommand.TryParse(item.Prompt, out _))
+                {
+                    if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
+                    continue;
+                }
                 var key = CreateSessionKey(item);
                 var binding = await _sessions.FindAsync(key);
-                var effective = ConversationExecutionPolicy.GetEffectiveSettings(item.Settings, binding);
+                var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, item.Settings), binding);
+                item.Workspace = effective.WorkspaceRoot;
                 if (ConversationExecutionPolicy.RequiresApproval(key, effective, binding))
                 {
                     if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
