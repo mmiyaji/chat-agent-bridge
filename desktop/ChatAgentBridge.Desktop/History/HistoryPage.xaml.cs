@@ -20,6 +20,13 @@ public sealed partial class HistoryPage : Page
     public HistoryPage()
     {
         InitializeComponent();
+        var activity = new ActivityDashboard(ViewModel);
+        activity.OpenDayRequested += () =>
+        {
+            ViewModel.ShowExecutionsForActivityDay();
+            HistoryPivot.SelectedItem = ExecutionsTab;
+        };
+        ActivityHost.Content = activity;
         ViewModel.ConfirmDetachAsync = ConfirmDetachAsync;
         ViewModel.EditSessionModelAsync = EditSessionModelAsync;
         ViewModel.EditSessionPolicyAsync = EditSessionPolicyAsync;

@@ -145,8 +145,8 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public Func<SessionHistoryRow, BridgeSettings, Task<ModelExecutionSelection?>>? EditSessionModelAsync { get; set; }
     public Func<SessionHistoryRow, BridgeSettings, Task<SessionPolicySelection?>>? EditSessionPolicyAsync { get; set; }
 
-    public string ConversationsTabTitle => DesktopText.Get("HistoryConversationsTab", Sessions.Count);
-    public string ExecutionsTabTitle => DesktopText.Get("HistoryExecutionsTab", Executions.Count);
+    public string ConversationsTabTitle => DesktopText.Get(IsNarrow ? "ActivityChatsTabCompact" : "HistoryConversationsTab", Sessions.Count);
+    public string ExecutionsTabTitle => DesktopText.Get(IsNarrow ? "ActivityRunsTabCompact" : "HistoryExecutionsTab", Executions.Count);
     public string AuditTabTitle => DesktopText.Get("HistoryAuditTab", AuditEvents.Count);
     public string SearchLabel => DesktopText.Get("HistorySearchLabel");
     public string SearchPlaceholder => DesktopText.Get("HistorySearchPlaceholder");
@@ -173,11 +173,14 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public string EditModelLabel => DesktopText.Get("HistoryEditNextModel");
     public string EditPolicyLabel => DesktopText.Get("HistoryEditPolicy");
     public string StartFreshLabel => DesktopText.Get("HistoryStartFresh");
-    public string ExecutionSummary => DesktopText.Get("HistoryExecutionSummary", Executions.Count);
+    public string ExecutionSummary => ExecutionDayFilter is { } date
+        ? DesktopText.Get("ActivityFilteredExecutions", date.ToString("D"), Executions.Count)
+        : DesktopText.Get("HistoryExecutionSummary", Executions.Count);
     public string NoExecutionsText => DesktopText.Get("HistoryNoExecutions");
     public string NoAuditText => DesktopText.Get("HistoryNoAudit");
 
     partial void OnSearchQueryChanged(string value) => ApplySessionFilter();
+    partial void OnIsNarrowChanged(bool value) => NotifySummariesChanged();
     partial void OnProviderFilterChanged(string value) => ApplySessionFilter();
     partial void OnSelectedSessionChanged(SessionHistoryRow? value)
     {
@@ -227,8 +230,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             var auditEvents = await _auditStore.ListAsync();
 
             var selectedKey = SelectedSession?.Binding.Key;
-            Executions.Clear();
-            foreach (var record in executions) Executions.Add(new ExecutionHistoryRow(record));
+            SetExecutionRecords(executions);
             Sessions.Clear();
             foreach (var binding in sessions.OrderByDescending(static item => item.UpdatedAt)) Sessions.Add(new SessionHistoryRow(binding));
             AuditEvents.Clear();
@@ -353,8 +355,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         var sessions = await _sessionStore.ListAsync();
         var auditEvents = await _auditStore.ListAsync();
         var selectedKey = SelectedSession?.Binding.Key;
-        Executions.Clear();
-        foreach (var record in executions) Executions.Add(new ExecutionHistoryRow(record));
+        SetExecutionRecords(executions);
         Sessions.Clear();
         foreach (var binding in sessions.OrderByDescending(static item => item.UpdatedAt)) Sessions.Add(new SessionHistoryRow(binding));
         AuditEvents.Clear();

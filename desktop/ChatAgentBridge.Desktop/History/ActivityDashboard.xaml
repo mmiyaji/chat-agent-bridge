@@ -1,0 +1,129 @@
+<UserControl
+    x:Class="ChatAgentBridge_Desktop.History.ActivityDashboard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ChatAgentBridge_Desktop.History">
+    <UserControl.Resources>
+        <DataTemplate x:Key="ActivityBarTemplate" x:DataType="local:ActivityBarRow">
+            <StackPanel Spacing="4" Margin="0,0,0,12" AutomationProperties.Name="{x:Bind AccessibleLabel}">
+                <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="{x:Bind Label}" TextWrapping="Wrap" />
+                    <TextBlock Grid.Column="1" Text="{x:Bind CountLabel}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+                </Grid>
+                <ProgressBar Minimum="0" Maximum="100" Value="{x:Bind Percent}" Height="8" AutomationProperties.Name="{x:Bind AccessibleLabel}" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="ActivityScroll">
+        <StackPanel Spacing="16" Padding="0,8,8,16">
+            <Grid ColumnSpacing="12" RowSpacing="8">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <StackPanel Spacing="4">
+                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="ActivityHeading" />
+                    <TextBlock Text="{x:Bind ViewModel.ActivityRange, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ActivityDateRange" />
+                </StackPanel>
+                <ComboBox Grid.Column="1" SelectedIndex="{x:Bind ViewModel.ActivityRangeIndex, Mode=TwoWay}"
+                          VerticalAlignment="Center" AutomationProperties.AutomationId="ActivityPeriod" x:Uid="ActivityPeriod">
+                    <ComboBoxItem Content="{x:Bind ViewModel.Activity30DaysLabel}" AutomationProperties.AutomationId="ActivityPeriod30" />
+                    <ComboBoxItem Content="{x:Bind ViewModel.Activity90DaysLabel}" AutomationProperties.AutomationId="ActivityPeriod90" />
+                    <ComboBoxItem Content="{x:Bind ViewModel.Activity365DaysLabel}" AutomationProperties.AutomationId="ActivityPeriod365" />
+                </ComboBox>
+            </Grid>
+
+            <TextBlock Visibility="{x:Bind local:HistoryPage.EmptyToVisibility(ViewModel.HasActivity), Mode=OneWay}" TextWrapping="Wrap" x:Uid="ActivityEmpty" AutomationProperties.AutomationId="ActivityEmpty" />
+
+            <Grid x:Name="SummaryGrid" ColumnSpacing="8" RowSpacing="8">
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <Border Style="{StaticResource ActivityCardStyle}">
+                    <StackPanel Spacing="4"><TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ActivityTotalLabel" /><TextBlock Text="{x:Bind ViewModel.ActivityTotal, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="ActivityTotal" /></StackPanel>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource ActivityCardStyle}">
+                    <StackPanel Spacing="4"><TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ActivityActiveDaysLabel" /><TextBlock Text="{x:Bind ViewModel.ActivityActiveDays, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="ActivityActiveDays" /></StackPanel>
+                </Border>
+                <Border x:Name="StreakCard" Grid.Column="2" Style="{StaticResource ActivityCardStyle}">
+                    <StackPanel Spacing="4"><TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ActivityStreakLabel" /><TextBlock Text="{x:Bind ViewModel.ActivityStreak, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="ActivityStreak" /></StackPanel>
+                </Border>
+                <Border x:Name="PeakCard" Grid.Column="3" Style="{StaticResource ActivityCardStyle}">
+                    <StackPanel Spacing="4"><TextBlock Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ActivityPeakLabel" /><TextBlock Text="{x:Bind ViewModel.ActivityPeak, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="ActivityPeak" /></StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Style="{StaticResource ActivityCardStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="ActivityCalendarHeading" />
+                    <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ActivityCalendarHelp" />
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="32" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <ItemsRepeater ItemsSource="{x:Bind WeekdayLabels}">
+                            <ItemsRepeater.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{x:Bind}" Height="24" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" /></DataTemplate></ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+                        <GridView x:Name="CalendarGrid" Grid.Column="1" Height="192" Padding="0" ItemsSource="{x:Bind ViewModel.ActivityCalendar, Mode=OneWay}"
+                                  SelectedItem="{x:Bind ViewModel.SelectedActivityDay, Mode=OneWay}" SelectionChanged="CalendarGrid_SelectionChanged" ContainerContentChanging="CalendarGrid_ContainerContentChanging"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollMode="Enabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollMode="Disabled"
+                                  SelectionMode="Single" AutomationProperties.AutomationId="ActivityCalendar" x:Uid="ActivityCalendar">
+                            <GridView.ItemsPanel><ItemsPanelTemplate><ItemsWrapGrid Orientation="Vertical" MaximumRowsOrColumns="7" /></ItemsPanelTemplate></GridView.ItemsPanel>
+                            <GridView.ItemContainerStyle><Style TargetType="GridViewItem"><Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" /><Setter Property="MinWidth" Value="24" /><Setter Property="MinHeight" Value="24" /><Setter Property="Margin" Value="0" /><Setter Property="Padding" Value="2" /></Style></GridView.ItemContainerStyle>
+                            <GridView.ItemTemplate>
+                                <DataTemplate x:DataType="local:ActivityCalendarCell">
+                                    <Border Width="18" Height="18" Style="{x:Bind local:ActivityDashboard.HeatStyle(Level)}" ToolTipService.ToolTip="{x:Bind Label}"
+                                            AutomationProperties.Name="{x:Bind Label}" AutomationProperties.AutomationId="ActivityDayCell" />
+                                </DataTemplate>
+                            </GridView.ItemTemplate>
+                        </GridView>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Left" AutomationProperties.AutomationId="ActivityLegend">
+                        <Border Width="12" Height="12" Style="{StaticResource ActivityHeat0}" /><TextBlock Text="0" Style="{StaticResource CaptionTextBlockStyle}" Margin="0,0,8,0" />
+                        <Border Width="12" Height="12" Style="{StaticResource ActivityHeat1}" /><TextBlock Text="1" Style="{StaticResource CaptionTextBlockStyle}" Margin="0,0,8,0" />
+                        <Border Width="12" Height="12" Style="{StaticResource ActivityHeat2}" /><TextBlock Text="2–3" Style="{StaticResource CaptionTextBlockStyle}" Margin="0,0,8,0" />
+                        <Border Width="12" Height="12" Style="{StaticResource ActivityHeat3}" /><TextBlock Text="4–7" Style="{StaticResource CaptionTextBlockStyle}" Margin="0,0,8,0" />
+                        <Border Width="12" Height="12" Style="{StaticResource ActivityHeat4}" /><TextBlock Text="8+" Style="{StaticResource CaptionTextBlockStyle}" />
+                    </StackPanel>
+                    <TextBlock Text="{x:Bind ViewModel.SelectedActivityDayText, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ActivitySelectedDay" />
+                    <Button Click="OpenDay_Click" IsEnabled="{x:Bind ViewModel.CanOpenActivityDay, Mode=OneWay}" AutomationProperties.AutomationId="ActivityOpenDay" x:Uid="ActivityOpenDay" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="ActivityDailyHistogram" x:Uid="ActivityHistogramContainer">
+                <StackPanel Spacing="12">
+                    <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="ActivityDailyHeading" />
+                        <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.ActivityDailyScale, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" AutomationProperties.AutomationId="ActivityDailyScale" />
+                    </Grid>
+                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.ActivityDaily}">
+                        <ItemsRepeater.Layout><UniformGridLayout MaximumRowsOrColumns="28" MinItemWidth="8" ItemsStretch="Fill" /></ItemsRepeater.Layout>
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="local:ActivityDailyBar">
+                                <Grid Height="100" ToolTipService.ToolTip="{x:Bind Label}" AutomationProperties.Name="{x:Bind Label}">
+                                    <Border Height="1" VerticalAlignment="Bottom" Background="{ThemeResource ControlStrongStrokeColorDefaultBrush}" />
+                                    <Border Height="{x:Bind Height}" MinWidth="4" MaxWidth="16" Margin="2,0" VerticalAlignment="Bottom" Background="{ThemeResource AccentFillColorDefaultBrush}" CornerRadius="2" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBlock Text="{x:Bind ViewModel.ActivityDailyStart, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" /><TextBlock Grid.Column="1" Text="{x:Bind ViewModel.ActivityDailyEnd, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" /></Grid>
+                </StackPanel>
+            </Border>
+
+            <Grid x:Name="BreakdownGrid" ColumnSpacing="16" RowSpacing="16">
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <Border x:Name="WeekdayCard" Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="ActivityWeekdayChart" x:Uid="ActivityWeekdayContainer">
+                    <StackPanel Spacing="12"><TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="ActivityWeekdaysHeading" />
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.ActivityWeekdays}" ItemTemplate="{StaticResource ActivityBarTemplate}" />
+                    </StackPanel>
+                </Border>
+                <Border x:Name="ModelCard" Grid.Column="1" Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="ActivityModelChart" x:Uid="ActivityModelContainer">
+                    <StackPanel Spacing="12"><TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="ActivityModelsHeading" />
+                        <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ActivityModelsHelp" />
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.ActivityModels}" ItemTemplate="{StaticResource ActivityBarTemplate}" />
+                        <TextBlock Visibility="{x:Bind local:HistoryPage.EmptyToVisibility(ViewModel.HasActivity), Mode=OneWay}" TextWrapping="Wrap" x:Uid="ActivityEmptyModels" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+            <TextBlock Text="{x:Bind ViewModel.ActivityOutcomes, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="ActivityOutcomes" />
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ActivityScopeNote" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

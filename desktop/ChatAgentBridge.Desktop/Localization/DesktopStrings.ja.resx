@@ -321,4 +321,20 @@
   <data name="ChooseExecutable" xml:space="preserve"><value>実行ファイルを選択</value></data>
   <data name="ExecutablePickerFailedTitle" xml:space="preserve"><value>ファイル選択画面を開けませんでした</value></data>
   <data name="ExecutablePickerFailedMessage" xml:space="preserve"><value>ネイティブ実行ファイルを選択して、もう一度お試しください。</value></data>
+  <data name="Activity30Days" xml:space="preserve"><value>30日</value></data>
+  <data name="Activity365Days" xml:space="preserve"><value>1年</value></data>
+  <data name="Activity90Days" xml:space="preserve"><value>90日</value></data>
+  <data name="ActivityDayCount" xml:space="preserve"><value>{0}：{1:N0}回</value></data>
+  <data name="ActivityDays" xml:space="preserve"><value>{0:N0}日</value></data>
+  <data name="ActivityFilteredExecutions" xml:space="preserve"><value>{0}：保存済みの実行 {1:N0}件</value></data>
+  <data name="ActivityNoPeak" xml:space="preserve"><value>まだ記録がありません</value></data>
+  <data name="ActivityOutcomes" xml:space="preserve"><value>この期間：完了 {0:N0}回・失敗 {1:N0}回・中止 {2:N0}回・実行中／中断 {3:N0}回</value></data>
+  <data name="ActivityPeakValue" xml:space="preserve"><value>{0}・{1:N0}回</value></data>
+  <data name="ActivityRunCount" xml:space="preserve"><value>{0:N0}回</value></data>
+  <data name="ActivitySelectDay" xml:space="preserve"><value>日付を選ぶと、その日の利用状況を確認できます。</value></data>
+  <data name="ActivityTabTitle" xml:space="preserve"><value>利用状況</value></data>
+  <data name="ActivityUnknownModel" xml:space="preserve"><value>既定／モデル未記録</value></data>
+  <data name="ActivityDailyScale" xml:space="preserve"><value>最大 {0:N0}回／日</value></data>
+  <data name="ActivityChatsTabCompact" xml:space="preserve"><value>会話 ({0})</value></data>
+  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>実行 ({0})</value></data>
 </root>

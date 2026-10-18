@@ -866,4 +866,25 @@
   <data name="WizardReloadProcessEnvironment.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>環境変数を再読み込み</value></data>
   <data name="ReloadProcessEnvironmentHelp.Text" xml:space="preserve"><value>CLIのインストール・更新後などに使います。アプリを再起動せず、次のCLI実行へPATHなどの変更を反映します。</value></data>
   <data name="WizardReloadProcessEnvironmentHelp.Text" xml:space="preserve"><value>CLIのインストール・更新後などに使います。アプリを再起動せず、次のCLI実行へPATHなどの変更を反映します。</value></data>
+  <data name="ActivityActiveDaysLabel.Text" xml:space="preserve"><value>利用した日</value></data>
+  <data name="ActivityCalendar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>日別のAI実行回数。矢印キーで日付を選択できます。</value></data>
+  <data name="ActivityCalendarHeading.Text" xml:space="preserve"><value>日別の利用カレンダー</value></data>
+  <data name="ActivityCalendarHelp.Text" xml:space="preserve"><value>色の強さが、その日の実行回数を表します。日付はクリックや矢印キーで選択でき、その日の履歴を開けます。</value></data>
+  <data name="ActivityDailyHeading.Text" xml:space="preserve"><value>日別の実行回数・直近28日</value></data>
+  <data name="ActivityEmpty.Text" xml:space="preserve"><value>最初の実行が、このカレンダーの最初の一マスになります。AIを使ってから、また振り返ってみてください。</value></data>
+  <data name="ActivityEmptyModels.Text" xml:space="preserve"><value>実行すると、モデルごとの利用状況が表示されます。</value></data>
+  <data name="ActivityHeading.Text" xml:space="preserve"><value>毎日の積み重ね</value></data>
+  <data name="ActivityModelsHeading.Text" xml:space="preserve"><value>よく使うモデル</value></data>
+  <data name="ActivityModelsHelp.Text" xml:space="preserve"><value>記録されたモデル名の上位5件。棒の長さは実行回数です。</value></data>
+  <data name="ActivityOpenDay.Content" xml:space="preserve"><value>この日の実行履歴を見る</value></data>
+  <data name="ActivityPeakLabel.Text" xml:space="preserve"><value>最も使った日</value></data>
+  <data name="ActivityPeriod.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>利用状況の集計期間</value></data>
+  <data name="ActivityScopeNote.Text" xml:space="preserve"><value>このアプリに保存された最新500件までの実行を、PCの開始日で集計します。失敗・中止も回数に含みます。CLIを直接使った分や保存期間外の記録は含みません。連続利用日数は選択期間内の記録です。</value></data>
+  <data name="ActivityStreakLabel.Text" xml:space="preserve"><value>期間内の最長連続利用</value></data>
+  <data name="ActivityTotalLabel.Text" xml:space="preserve"><value>AI実行回数</value></data>
+  <data name="ActivityWeekdaysHeading.Text" xml:space="preserve"><value>曜日ごとの利用傾向</value></data>
+  <data name="ClearExecutionDayFilter.Content" xml:space="preserve"><value>日付の絞り込みを解除</value></data>
+  <data name="ActivityHistogramContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>日別の実行回数グラフ</value></data>
+  <data name="ActivityWeekdayContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>曜日ごとの利用傾向グラフ</value></data>
+  <data name="ActivityModelContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>モデルごとの実行回数グラフ</value></data>
 </root>

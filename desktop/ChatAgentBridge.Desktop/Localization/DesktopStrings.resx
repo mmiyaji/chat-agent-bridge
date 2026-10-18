@@ -321,4 +321,20 @@
   <data name="ChooseExecutable" xml:space="preserve"><value>Choose executable</value></data>
   <data name="ExecutablePickerFailedTitle" xml:space="preserve"><value>Could not open file picker</value></data>
   <data name="ExecutablePickerFailedMessage" xml:space="preserve"><value>Select a native executable file and try again.</value></data>
+  <data name="Activity30Days" xml:space="preserve"><value>30 days</value></data>
+  <data name="Activity365Days" xml:space="preserve"><value>1 year</value></data>
+  <data name="Activity90Days" xml:space="preserve"><value>90 days</value></data>
+  <data name="ActivityDayCount" xml:space="preserve"><value>{0}: {1:N0} runs</value></data>
+  <data name="ActivityDays" xml:space="preserve"><value>{0:N0} days</value></data>
+  <data name="ActivityFilteredExecutions" xml:space="preserve"><value>{0}: {1:N0} saved executions</value></data>
+  <data name="ActivityNoPeak" xml:space="preserve"><value>No activity yet</value></data>
+  <data name="ActivityOutcomes" xml:space="preserve"><value>In this period: {0:N0} completed · {1:N0} failed · {2:N0} cancelled · {3:N0} running / interrupted</value></data>
+  <data name="ActivityPeakValue" xml:space="preserve"><value>{0} · {1:N0} runs</value></data>
+  <data name="ActivityRunCount" xml:space="preserve"><value>{0:N0} runs</value></data>
+  <data name="ActivitySelectDay" xml:space="preserve"><value>Select a date to explore your activity.</value></data>
+  <data name="ActivityTabTitle" xml:space="preserve"><value>Activity</value></data>
+  <data name="ActivityUnknownModel" xml:space="preserve"><value>Default / not recorded</value></data>
+  <data name="ActivityDailyScale" xml:space="preserve"><value>Peak: {0:N0} runs/day</value></data>
+  <data name="ActivityChatsTabCompact" xml:space="preserve"><value>Chats ({0})</value></data>
+  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>Runs ({0})</value></data>
 </root>

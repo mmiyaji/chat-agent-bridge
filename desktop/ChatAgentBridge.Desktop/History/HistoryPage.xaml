@@ -170,11 +170,16 @@
                 </Grid>
             </PivotItem>
 
-            <PivotItem Header="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryTab">
+            <PivotItem Header="{x:Bind ViewModel.ActivityTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ActivityTab">
+                <ContentControl x:Name="ActivityHost" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+            </PivotItem>
+
+            <PivotItem x:Name="ExecutionsTab" Header="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryTab">
                 <Grid RowSpacing="6">
-                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                     <TextBlock Text="{x:Bind ViewModel.ExecutionSummary, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
-                    <Grid Grid.Row="1">
+                    <Button Grid.Row="1" Command="{x:Bind ViewModel.ClearExecutionDayFilterCommand}" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasExecutionDayFilter), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ClearExecutionDayFilter" x:Uid="ClearExecutionDayFilter" />
+                    <Grid Grid.Row="2">
                         <ListView ItemsSource="{x:Bind ViewModel.Executions, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryList"
                                   AutomationProperties.Name="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}">
                             <ListView.ItemTemplate>

@@ -866,4 +866,25 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="WizardReloadProcessEnvironment.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Reload environment variables</value></data>
   <data name="ReloadProcessEnvironmentHelp.Text" xml:space="preserve"><value>Use this after installing or updating a CLI. PATH changes apply to the next CLI process without restarting this app.</value></data>
   <data name="WizardReloadProcessEnvironmentHelp.Text" xml:space="preserve"><value>Use this after installing or updating a CLI. PATH changes apply to the next CLI process without restarting this app.</value></data>
+  <data name="ActivityActiveDaysLabel.Text" xml:space="preserve"><value>Active days</value></data>
+  <data name="ActivityCalendar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Daily AI runs. Use arrow keys to select a date.</value></data>
+  <data name="ActivityCalendarHeading.Text" xml:space="preserve"><value>Activity calendar</value></data>
+  <data name="ActivityCalendarHelp.Text" xml:space="preserve"><value>Color intensity shows the number of runs. Select a day or use the arrow keys, then open its execution history.</value></data>
+  <data name="ActivityDailyHeading.Text" xml:space="preserve"><value>Daily runs · last 28 days</value></data>
+  <data name="ActivityEmpty.Text" xml:space="preserve"><value>Your first run will light up this calendar. Try an agent, then come back to see your progress.</value></data>
+  <data name="ActivityEmptyModels.Text" xml:space="preserve"><value>Model activity will appear after your first run.</value></data>
+  <data name="ActivityHeading.Text" xml:space="preserve"><value>Your activity, day by day</value></data>
+  <data name="ActivityModelsHeading.Text" xml:space="preserve"><value>Models you use most</value></data>
+  <data name="ActivityModelsHelp.Text" xml:space="preserve"><value>Top 5 model labels by number of runs.</value></data>
+  <data name="ActivityOpenDay.Content" xml:space="preserve"><value>View executions for this day</value></data>
+  <data name="ActivityPeakLabel.Text" xml:space="preserve"><value>Your busiest day</value></data>
+  <data name="ActivityPeriod.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Activity period</value></data>
+  <data name="ActivityScopeNote.Text" xml:space="preserve"><value>Based on up to 500 saved executions in this app, grouped by local start date. Failed and cancelled runs are included. Direct CLI usage and older discarded records are not included. Streaks cover the selected period only.</value></data>
+  <data name="ActivityStreakLabel.Text" xml:space="preserve"><value>Longest streak in period</value></data>
+  <data name="ActivityTotalLabel.Text" xml:space="preserve"><value>AI runs</value></data>
+  <data name="ActivityWeekdaysHeading.Text" xml:space="preserve"><value>Your weekly rhythm</value></data>
+  <data name="ClearExecutionDayFilter.Content" xml:space="preserve"><value>Show all dates</value></data>
+  <data name="ActivityHistogramContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Daily run histogram</value></data>
+  <data name="ActivityWeekdayContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Runs by weekday</value></data>
+  <data name="ActivityModelContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Runs by model</value></data>
 </root>

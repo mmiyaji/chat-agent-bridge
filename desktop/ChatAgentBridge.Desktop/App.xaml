@@ -12,21 +12,44 @@
             </ResourceDictionary.MergedDictionaries>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="#D5E8D4" />
+                    <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="#A5D6A3" />
+                    <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="#60B570" />
+                    <SolidColorBrush x:Key="ActivityHeatPeakBrush" Color="#267D40" />
                     <SolidColorBrush x:Key="OverviewReadyIconBrush" Color="#5E7B38" />
                     <SolidColorBrush x:Key="OverviewAttentionIconBrush" Color="#8A741F" />
                     <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="#B45B5B" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="#294734" />
+                    <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="#376C43" />
+                    <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="#4D9D59" />
+                    <SolidColorBrush x:Key="ActivityHeatPeakBrush" Color="#82D587" />
                     <SolidColorBrush x:Key="OverviewReadyIconBrush" Color="#A8C583" />
                     <SolidColorBrush x:Key="OverviewAttentionIconBrush" Color="#D1BD79" />
                     <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="#D99B9B" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="ActivityHeatPeakBrush" Color="{ThemeResource SystemColorHighlightColor}" />
                     <SolidColorBrush x:Key="OverviewReadyIconBrush" Color="{ThemeResource SystemColorButtonTextColor}" />
                     <SolidColorBrush x:Key="OverviewAttentionIconBrush" Color="{ThemeResource SystemColorButtonTextColor}" />
                     <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="{ThemeResource SystemColorButtonTextColor}" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
+            <Style x:Key="ActivityCardStyle" TargetType="Border">
+                <Setter Property="Padding" Value="16" /><Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
+                <Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            </Style>
+            <Style x:Key="ActivityHeat0" TargetType="Border"><Setter Property="CornerRadius" Value="2" /><Setter Property="BorderThickness" Value="1" /><Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}" /><Setter Property="Background" Value="{ThemeResource ControlFillColorSecondaryBrush}" /></Style>
+            <Style x:Key="ActivityHeat1" TargetType="Border" BasedOn="{StaticResource ActivityHeat0}"><Setter Property="Background" Value="{ThemeResource ActivityHeatLowBrush}" /></Style>
+            <Style x:Key="ActivityHeat2" TargetType="Border" BasedOn="{StaticResource ActivityHeat0}"><Setter Property="Background" Value="{ThemeResource ActivityHeatMediumBrush}" /></Style>
+            <Style x:Key="ActivityHeat3" TargetType="Border" BasedOn="{StaticResource ActivityHeat0}"><Setter Property="Background" Value="{ThemeResource ActivityHeatHighBrush}" /></Style>
+            <Style x:Key="ActivityHeat4" TargetType="Border" BasedOn="{StaticResource ActivityHeat0}"><Setter Property="Background" Value="{ThemeResource ActivityHeatPeakBrush}" /></Style>
+            <Style x:Key="ActivityHeatOutside" TargetType="Border"><Setter Property="Background" Value="Transparent" /></Style>
             <Style x:Key="OverviewReadyIconStyle" TargetType="FontIcon">
                 <Setter Property="Foreground" Value="{ThemeResource OverviewReadyIconBrush}" />
             </Style>
