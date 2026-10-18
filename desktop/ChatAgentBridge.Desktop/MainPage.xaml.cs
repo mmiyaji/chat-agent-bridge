@@ -13,6 +13,7 @@ public sealed partial class MainPage : Page
     private bool _hasLoaded;
     private string? _selectedNavigationTag;
     private int _scrollResetGeneration;
+    private bool _handlingStartupToggle;
     private readonly Onboarding.OnboardingWizard _wizard;
 
     public MainPageViewModel ViewModel { get; } = new();
@@ -214,8 +215,18 @@ public sealed partial class MainPage : Page
 
     private async void StartupToggle_Toggled(object sender, RoutedEventArgs e)
     {
-        if (sender is ToggleSwitch toggle && ViewModel.CanChangeStartup)
+        if (_handlingStartupToggle || sender is not ToggleSwitch toggle || !ViewModel.CanChangeStartup) return;
+        _handlingStartupToggle = true;
+        try
+        {
             await ViewModel.ChangeStartupAsync(toggle.IsOn);
+        }
+        finally
+        {
+            // Updating IsOn can itself raise Toggled; keep the handler guarded.
+            toggle.IsOn = ViewModel.StartWithWindows;
+            _handlingStartupToggle = false;
+        }
     }
 
     private void MattermostTokenBox_PasswordChanged(object sender, RoutedEventArgs e) => ViewModel.SetMattermostToken(MattermostTokenBox.Password);

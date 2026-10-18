@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\ChatAgentBridge.Desktop\Startup\StartupOperationGuard.cs" Link="Startup\StartupOperationGuard.cs" />
     <Compile Include="..\ChatAgentBridge.Desktop\UsageUi\UsageSummaryFormatter.cs" Link="UsageUi\UsageSummaryFormatter.cs" />
     <Compile Include="..\ChatAgentBridge.Desktop\ProcessEnvironmentRefresher.cs" Link="Desktop\ProcessEnvironmentRefresher.cs" />
   </ItemGroup>

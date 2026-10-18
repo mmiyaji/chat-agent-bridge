@@ -32,6 +32,7 @@ public partial class MainPageViewModel : ObservableObject
     private bool _adjustingAgentPermissionMode;
     private bool _agentPermissionModeAdjusted;
     private Startup.StartupState? _startupState;
+    private readonly Startup.StartupOperationGuard _startupOperations = new();
 
     public ModelCatalogViewModel ModelCatalog { get; }
     public ObservableCollection<ReasoningEffortChoice> ReasoningEffortCandidates { get; } = [];
@@ -325,27 +326,59 @@ public partial class MainPageViewModel : ObservableObject
 
     public async Task RefreshStartupAsync()
     {
+        var operation = _startupOperations.TryEnter();
+        if (operation is null) return;
         CanChangeStartup = false;
         _startupState = null;
         RefreshOverviewStatus();
-        var result = await _startup.GetStateAsync();
-        _startupState = result.State;
-        StartWithWindows = result.IsEnabled;
-        StartupStatus = result.Message;
-        CanChangeStartup = result.State is Startup.StartupState.Enabled or Startup.StartupState.Disabled;
-        RefreshOverviewStatus();
+        try
+        {
+            ApplyStartupResult(await _startup.GetStateAsync());
+        }
+        finally
+        {
+            FinishStartupOperation(operation);
+        }
     }
 
     public async Task ChangeStartupAsync(bool enabled)
     {
         if (!CanChangeStartup || enabled == StartWithWindows) return;
+        var operation = _startupOperations.TryEnter();
+        if (operation is null) return;
         CanChangeStartup = false;
-        var result = await _startup.SetEnabledAsync(enabled);
+        _startupState = null;
+        StartupStatus = ViewModelText.Get("ChangingStartupSettings");
+        RefreshOverviewStatus();
+        try
+        {
+            var result = await _startup.SetEnabledAsync(enabled);
+            // A fast OS response must not turn a double-click into enable + disable.
+            // Keep the shared guard and disabled control through the settling interval.
+            await Task.Delay(TimeSpan.FromMilliseconds(600));
+            ApplyStartupResult(result);
+        }
+        finally
+        {
+            FinishStartupOperation(operation);
+        }
+    }
+
+    private void ApplyStartupResult(Startup.StartupTaskStatusResult result)
+    {
         _startupState = result.State;
         StartWithWindows = result.IsEnabled;
         StartupStatus = result.Message;
-        CanChangeStartup = result.State is Startup.StartupState.Enabled or Startup.StartupState.Disabled;
         RefreshOverviewStatus();
+    }
+
+    private void FinishStartupOperation(IDisposable operation)
+    {
+        // A refused change may leave the model value unchanged. Still restore the
+        // one-way-bound toggle from the actual result before accepting more input.
+        OnPropertyChanged(nameof(StartWithWindows));
+        operation.Dispose();
+        CanChangeStartup = _startupState is Startup.StartupState.Enabled or Startup.StartupState.Disabled;
     }
 
     [RelayCommand(CanExecute = nameof(CanSaveSettings))]

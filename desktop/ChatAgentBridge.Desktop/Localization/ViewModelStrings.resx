@@ -605,4 +605,5 @@ AI permissions: {8}</value>
   <data name="EnvironmentReloadedMessage" xml:space="preserve"><value>Future CLI launches will use your updated Windows PATH and user or system settings. Saved CLI parameters were not changed. Run Check CLI to verify.</value></data>
   <data name="EnvironmentReloadFailedTitle" xml:space="preserve"><value>Could not refresh environment</value></data>
   <data name="EnvironmentReloadFailedMessage" xml:space="preserve"><value>Windows could not provide the current user environment. No CLI settings were changed.</value></data>
+  <data name="ChangingStartupSettings" xml:space="preserve"><value>Changing the Windows startup setting…</value></data>
 </root>
