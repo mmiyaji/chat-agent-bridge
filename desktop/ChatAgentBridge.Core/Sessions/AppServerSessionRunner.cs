@@ -17,6 +17,7 @@ public sealed class AppServerSessionRunner(SessionStore store, IAppServerRunner?
             throw new InvalidOperationException("Codex App Server requires the Codex provider. Select Codex or detach the saved session before changing providers.");
         return store.WithSessionLockAsync(key, async token =>
         {
+            settings = await store.ApplyWorkspaceAsync(key, settings, token).ConfigureAwait(false);
             var existing = await store.FindAsync(key, token).ConfigureAwait(false);
             if (existing?.AgentPermissionMode is not null)
                 settings = settings with { AgentPermissionMode = existing.AgentPermissionMode };

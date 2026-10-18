@@ -118,7 +118,8 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
         if (continuation is null || !ChatAccessPolicy.IsAllowedRequest(settings, "slack", continuation.UserId, continuation.ChannelId, continuation.ThreadId)) return null;
 
         var key = ChatSessionScope.Create("slack", continuation.ChannelId, continuation.ThreadId, continuation.UserId);
-        return await sessions.FindAsync(key, cancellationToken).ConfigureAwait(false) is null ? null : continuation;
+        return await sessions.FindAsync(key, cancellationToken).ConfigureAwait(false) is not null ||
+            await sessions.FindWorkspaceAsync(key, cancellationToken).ConfigureAwait(false) is not null ? continuation : null;
     }
 
     private async Task<T> SlackApiAsync<T>(string method, string token, object? body, CancellationToken ct)

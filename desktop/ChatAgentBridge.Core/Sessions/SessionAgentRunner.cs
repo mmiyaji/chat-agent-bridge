@@ -28,6 +28,7 @@ public sealed class SessionAgentRunner
     private async Task<AgentRunResult> RunLockedAsync(SessionKey key, BridgeSettings settings, string prompt,
         CancellationToken cancellationToken)
     {
+        settings = await _store.ApplyWorkspaceAsync(key, settings, cancellationToken).ConfigureAwait(false);
         var existing = await _store.FindAsync(key, cancellationToken).ConfigureAwait(false);
         if (existing?.AgentPermissionMode is not null)
             settings = settings with { AgentPermissionMode = existing.AgentPermissionMode };

@@ -8,6 +8,21 @@ namespace ChatAgentBridge.Transports.Tests;
 public sealed class SlackContinuationTests
 {
     [Fact]
+    public async Task Approved_workspace_allows_only_its_owner_to_start_the_fresh_session_with_a_plain_reply()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new SessionStore(directory.Path);
+        var key = ChatSessionScope.Create("slack", "C1", "10.0", "U1");
+        await store.ChangeWorkspaceAsync(key, directory.Path, new BridgeSettings { WorkspaceRoot = directory.Path });
+        using var own = Event("U1", "C1", "10.2", "10.0", "start in new folder");
+        Assert.NotNull(await SlackSocketModeTransport.ParseRequestAsync(own.RootElement, "UBOT", Settings("U1,U2"), store));
+        using var other = Event("U2", "C1", "10.3", "10.0", "steal context");
+        Assert.Null(await SlackSocketModeTransport.ParseRequestAsync(other.RootElement, "UBOT", Settings("U1,U2"), store));
+        Assert.Null(await SlackSocketModeTransport.ParseRequestAsync(own.RootElement, "UBOT",
+            Settings("U1") with { SlackAllowedThreadIds = "99.0" }, store));
+    }
+
+    [Fact]
     public async Task Plain_reply_continues_exact_users_persisted_session()
     {
         using var directory = new TemporaryDirectory();

@@ -37,7 +37,7 @@ public sealed class SessionStore
     public async Task<IReadOnlyList<SessionBinding>> ListAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try { return (await ReadAsync(cancellationToken).ConfigureAwait(false)).ToArray(); }
+        try { return (await ReadAsync(cancellationToken).ConfigureAwait(false)).Bindings!.ToArray(); }
         finally { _gate.Release(); }
     }
 
@@ -45,8 +45,59 @@ public sealed class SessionStore
     {
         ValidateKey(key);
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try { return (await ReadAsync(cancellationToken).ConfigureAwait(false)).FirstOrDefault(item => item.Key == key); }
+        try { return (await ReadAsync(cancellationToken).ConfigureAwait(false)).Bindings!.FirstOrDefault(item => item.Key == key); }
         finally { _gate.Release(); }
+    }
+
+    public async Task<string?> FindWorkspaceAsync(SessionKey key, CancellationToken cancellationToken = default)
+    {
+        ValidateKey(key);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try { return (await ReadAsync(cancellationToken).ConfigureAwait(false)).Workspaces!.FirstOrDefault(item => item.Key == key)?.WorkspaceRoot; }
+        finally { _gate.Release(); }
+    }
+
+    public Task ChangeWorkspaceAsync(SessionKey key, string workspace, BridgeSettings settings,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateKey(key);
+        ArgumentNullException.ThrowIfNull(settings);
+        if (string.IsNullOrWhiteSpace(workspace) || !Path.IsPathFullyQualified(workspace) || !Directory.Exists(workspace))
+            throw new ArgumentException("Workspace must be an existing absolute directory.", nameof(workspace));
+        var fullWorkspace = Path.GetFullPath(workspace);
+        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, fullWorkspace))
+            throw new ArgumentException("Workspace is outside the trusted workspace roots.", nameof(workspace));
+        return WithSessionLockAsync(key, async token =>
+        {
+            await _gate.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                var document = await ReadAsync(token).ConfigureAwait(false);
+                var workspaces = document.Workspaces!;
+                var index = workspaces.FindIndex(item => item.Key == key);
+                var value = new WorkspaceOverride(key, fullWorkspace);
+                if (index < 0) workspaces.Add(value); else workspaces[index] = value;
+                document.Bindings!.RemoveAll(item => item.Key == key);
+                await WriteAsync(document, token).ConfigureAwait(false);
+            }
+            finally { _gate.Release(); }
+            return true;
+        }, cancellationToken);
+    }
+
+    public async Task<BridgeSettings> ApplyWorkspaceAsync(SessionKey key, BridgeSettings settings,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateKey(key);
+        ArgumentNullException.ThrowIfNull(settings);
+        var workspace = await FindWorkspaceAsync(key, cancellationToken).ConfigureAwait(false);
+        if (workspace is null) return settings;
+        if (!Directory.Exists(workspace) || !ExecutionPolicy.IsWorkspaceTrusted(settings, workspace))
+            throw new InvalidOperationException("The conversation workspace is no longer available or trusted.");
+        var roots = settings.TrustedWorkspaceRoots;
+        if (string.IsNullOrWhiteSpace(roots) && !string.IsNullOrWhiteSpace(settings.WorkspaceRoot))
+            roots = Path.GetFullPath(settings.WorkspaceRoot);
+        return settings with { WorkspaceRoot = workspace, TrustedWorkspaceRoots = roots };
     }
 
     public async Task SaveAsync(SessionBinding binding, CancellationToken cancellationToken = default)
@@ -55,11 +106,12 @@ public sealed class SessionStore
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var bindings = await ReadAsync(cancellationToken).ConfigureAwait(false);
+            var document = await ReadAsync(cancellationToken).ConfigureAwait(false);
+            var bindings = document.Bindings!;
             var existingIndex = bindings.FindIndex(item => item.Key == binding.Key);
             if (existingIndex >= 0) bindings[existingIndex] = binding;
             else bindings.Add(binding);
-            await WriteAsync(bindings, cancellationToken).ConfigureAwait(false);
+            await WriteAsync(document, cancellationToken).ConfigureAwait(false);
         }
         finally { _gate.Release(); }
     }
@@ -72,9 +124,10 @@ public sealed class SessionStore
             await _gate.WaitAsync(token).ConfigureAwait(false);
             try
             {
-                var bindings = await ReadAsync(token).ConfigureAwait(false);
+                var document = await ReadAsync(token).ConfigureAwait(false);
+                var bindings = document.Bindings!;
                 if (bindings.RemoveAll(item => item.Key == key) > 0)
-                    await WriteAsync(bindings, token).ConfigureAwait(false);
+                    await WriteAsync(document, token).ConfigureAwait(false);
             }
             finally { _gate.Release(); }
             return true;
@@ -100,7 +153,8 @@ public sealed class SessionStore
             await _gate.WaitAsync(token).ConfigureAwait(false);
             try
             {
-                var bindings = await ReadAsync(token).ConfigureAwait(false);
+                var document = await ReadAsync(token).ConfigureAwait(false);
+                var bindings = document.Bindings!;
                 var index = bindings.FindIndex(item => item.Key == key);
                 if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
                 var current = bindings[index];
@@ -110,7 +164,7 @@ public sealed class SessionStore
                     ReasoningEffort = preserveReasoningEffort ? current.ReasoningEffort : effort,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
-                await WriteAsync(bindings, token).ConfigureAwait(false);
+                await WriteAsync(document, token).ConfigureAwait(false);
             }
             finally { _gate.Release(); }
             return true;
@@ -130,7 +184,8 @@ public sealed class SessionStore
             await _gate.WaitAsync(token).ConfigureAwait(false);
             try
             {
-                var bindings = await ReadAsync(token).ConfigureAwait(false);
+                var document = await ReadAsync(token).ConfigureAwait(false);
+                var bindings = document.Bindings!;
                 var index = bindings.FindIndex(item => item.Key == key);
                 if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
                 bindings[index] = bindings[index] with
@@ -141,7 +196,7 @@ public sealed class SessionStore
                     FirstApprovalFingerprint = null,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
-                await WriteAsync(bindings, token).ConfigureAwait(false);
+                await WriteAsync(document, token).ConfigureAwait(false);
             }
             finally { _gate.Release(); }
             return true;
@@ -160,20 +215,21 @@ public sealed class SessionStore
             await _gate.WaitAsync(token).ConfigureAwait(false);
             try
             {
-                var bindings = await ReadAsync(token).ConfigureAwait(false);
+                var document = await ReadAsync(token).ConfigureAwait(false);
+                var bindings = document.Bindings!;
                 var index = bindings.FindIndex(item => item.Key == key);
                 if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
                 bindings[index] = bindings[index] with { FirstApprovalFingerprint = fingerprint, UpdatedAt = DateTimeOffset.UtcNow };
-                await WriteAsync(bindings, token).ConfigureAwait(false);
+                await WriteAsync(document, token).ConfigureAwait(false);
             }
             finally { _gate.Release(); }
             return true;
         }, cancellationToken);
     }
 
-    private async Task<List<SessionBinding>> ReadAsync(CancellationToken cancellationToken)
+    private async Task<StoredSessions> ReadAsync(CancellationToken cancellationToken)
     {
-        if (!File.Exists(_filePath)) return [];
+        if (!File.Exists(_filePath)) return new StoredSessions { SchemaVersion = CurrentSchemaVersion, Bindings = [], Workspaces = [] };
         try
         {
             await using var stream = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
@@ -190,13 +246,22 @@ public sealed class SessionStore
                 ValidateBinding(binding);
                 if (!keys.Add(binding.Key)) throw new InvalidDataException("Session store contains duplicate session keys.");
             }
-            return document.Bindings;
+            document.Workspaces ??= [];
+            var workspaceKeys = new HashSet<SessionKey>();
+            foreach (var workspace in document.Workspaces)
+            {
+                ValidateKey(workspace.Key);
+                if (string.IsNullOrWhiteSpace(workspace.WorkspaceRoot) || !Path.IsPathFullyQualified(workspace.WorkspaceRoot))
+                    throw new InvalidDataException("Session store contains an invalid workspace override.");
+                if (!workspaceKeys.Add(workspace.Key)) throw new InvalidDataException("Session store contains duplicate workspace overrides.");
+            }
+            return document;
         }
         catch (JsonException ex) { throw new InvalidDataException("Session store contains invalid JSON.", ex); }
         catch (ArgumentException ex) { throw new InvalidDataException("Session store contains an invalid session binding.", ex); }
     }
 
-    private async Task WriteAsync(List<SessionBinding> bindings, CancellationToken cancellationToken)
+    private async Task WriteAsync(StoredSessions document, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(DirectoryPath);
         var temp = Path.Combine(DirectoryPath, $"sessions.{Guid.NewGuid():N}.tmp");
@@ -205,11 +270,8 @@ public sealed class SessionStore
             await using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None,
                 4096, FileOptions.Asynchronous | FileOptions.WriteThrough))
             {
-                await JsonSerializer.SerializeAsync(stream, new StoredSessions
-                {
-                    SchemaVersion = CurrentSchemaVersion,
-                    Bindings = bindings
-                }, JsonOptions, cancellationToken).ConfigureAwait(false);
+                document.SchemaVersion = CurrentSchemaVersion;
+                await JsonSerializer.SerializeAsync(stream, document, JsonOptions, cancellationToken).ConfigureAwait(false);
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             await AtomicFile.ReplaceAsync(temp, _filePath, cancellationToken).ConfigureAwait(false);
@@ -273,5 +335,8 @@ public sealed class SessionStore
     {
         public int? SchemaVersion { get; set; }
         public List<SessionBinding>? Bindings { get; set; }
+        public List<WorkspaceOverride>? Workspaces { get; set; }
     }
+
+    private sealed record WorkspaceOverride(SessionKey Key, string WorkspaceRoot);
 }

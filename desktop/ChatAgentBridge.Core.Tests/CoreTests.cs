@@ -271,13 +271,26 @@ public sealed class CoreTests
         try
         {
             var deadline = DateTime.UtcNow.AddSeconds(10);
-            while (!File.Exists(pidFile) && DateTime.UtcNow < deadline) await Task.Delay(50);
-            Assert.True(File.Exists(pidFile), "PowerShell did not write its process id.");
-            var pid = int.Parse(await File.ReadAllTextAsync(pidFile));
+            int? pid = null;
+            while (pid is null && DateTime.UtcNow < deadline)
+            {
+                try
+                {
+                    var contents = await File.ReadAllTextAsync(pidFile);
+                    if (int.TryParse(contents, out var candidate) && candidate > 0 && ProcessExists(candidate))
+                        pid = candidate;
+                }
+                catch (IOException)
+                {
+                    // PowerShell may still hold the file while writing the process id.
+                }
+                if (pid is null) await Task.Delay(50);
+            }
+            Assert.True(pid.HasValue, "PowerShell did not write a complete, readable process id within 10 seconds.");
             cancellation.Cancel();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run);
-            for (var attempt = 0; attempt < 30 && ProcessExists(pid); attempt++) await Task.Delay(50);
-            Assert.False(ProcessExists(pid), $"Cancelled process {pid} is still running.");
+            for (var attempt = 0; attempt < 30 && ProcessExists(pid.Value); attempt++) await Task.Delay(50);
+            Assert.False(ProcessExists(pid.Value), $"Cancelled process {pid.Value} is still running.");
         }
         finally
         {
