@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory)][int]$AppPid,
     [Parameter(Mandatory)][string]$DataDirectory,
     [ValidateSet('ja','en')][string]$Language = 'ja'
@@ -21,6 +21,8 @@ public static class ResponsiveNavigationNative {
 $output = Join-Path $artifacts ('responsive-navigation-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory $output | Out-Null
 $checks = [Collections.Generic.List[object]]::new()
+& winapp ui wait-for AppTitleBar -a $AppPid -t 10000 --json 2>$null | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'Application window did not become ready.' }
 $window = (Get-Process -Id $AppPid).MainWindowHandle
 $scale = [ResponsiveNavigationNative]::GetDpiForWindow($window) / 96.0
 function UI([string[]]$Arguments) {

@@ -70,7 +70,10 @@ internal static class MrtText
             case Button button: Apply(id, "Content", culture, value => button.Content = value); break;
             case CheckBox checkBox: Apply(id, "Content", culture, value => checkBox.Content = value); break;
             case RadioButton radio: Apply(id, "Content", culture, value => radio.Content = value); break;
-            case ComboBox comboBox: Apply(id, "Header", culture, value => comboBox.Header = value); break;
+            case ComboBox comboBox:
+                Apply(id, "Header", culture, value => comboBox.Header = value);
+                Apply(id, "PlaceholderText", culture, value => comboBox.PlaceholderText = value);
+                break;
             case ComboBoxItem item: Apply(id, "Content", culture, value => item.Content = value); break;
             case PasswordBox passwordBox:
                 Apply(id, "Header", culture, value => passwordBox.Header = value);

@@ -2,13 +2,17 @@
     [Parameter(Mandatory)][int]$AppPid,
     [Parameter(Mandatory)][string]$DataDirectory,
     [int[]]$Seeds = @(18743, 90211),
-    [ValidateRange(20, 250)][int]$ActionsPerSeed = 120
+    [ValidateRange(28, 250)][int]$ActionsPerSeed = 56
 )
 $ErrorActionPreference = 'Stop'
 $DataDirectory = [IO.Path]::GetFullPath($DataDirectory)
 $process = Get-Process -Id $AppPid -ErrorAction Stop
 if ($process.ProcessName -ne 'ChatAgentBridge.Desktop') { throw "PID $AppPid is not ChatAgentBridge.Desktop." }
 if ($Seeds.Count -ne 2) { throw 'Provide exactly two deterministic seeds.' }
+$artifactRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
+$dataPrefix = $artifactRoot.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+if (-not $DataDirectory.StartsWith($dataPrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'The isolated --data-dir must be inside desktop/artifacts.' }
+if (-not $process.Path.StartsWith($artifactRoot.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'The app executable must come from a staged package inside desktop/artifacts.' }
 $dataMarker = Join-Path $DataDirectory '.cab-monkey-test'
 if (-not (Test-Path -LiteralPath $DataDirectory)) { [IO.Directory]::CreateDirectory($DataDirectory) | Out-Null }
 if (-not (Test-Path -LiteralPath $dataMarker)) {
@@ -38,6 +42,10 @@ $currentIndex = 0
 $windowHwnd = 0L
 
 function Invoke-UI([string[]]$Arguments, [int]$TimeoutMs = 8000) {
+    if ($Arguments.Count -ge 3 -and $Arguments[0] -eq 'ui' -and $Arguments[1] -eq 'scroll-into-view') {
+        Scroll-ToElement $Arguments[2]
+        return ''
+    }
     $script:uiCommandCount++
     $start = [Diagnostics.ProcessStartInfo]::new()
     $start.FileName = (Get-Command winapp -ErrorAction Stop).Source
@@ -75,16 +83,91 @@ function Wait-UI([string]$Id, [string]$Value = '', [int]$TimeoutMs = 5000, [swit
         }
     }
 }
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+function Scroll-ToElement([string]$Id) {
+    $window = [Windows.Automation.AutomationElement]::FromHandle([IntPtr]$windowHwnd)
+    $find = { param($TargetId) $window.FindFirst([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, $TargetId)) }
+    $target = & $find $Id
+    $windowRect = $window.Current.BoundingRectangle
+    $rect = if ($target) { $target.Current.BoundingRectangle } else { [Windows.Rect]::Empty }
+    $windowBottom = $windowRect.Bottom - 8
+    if (-not $target.Current.IsOffscreen -and $rect.Height -gt 0 -and $rect.Top -ge $windowRect.Top -and $rect.Bottom -le $windowBottom -and
+        $rect.Left -ge $windowRect.Left -and $rect.Right -le $windowRect.Right) { return }
+
+    # Walk up from the target so pages with their own ScrollViewer (such as
+    # About) work even when they do not contain MainContentScroll.
+    $scroll = $null
+    $pattern = $null
+    $walker = [Windows.Automation.TreeWalker]::ControlViewWalker
+    $ancestor = $target
+    while ($ancestor) {
+        try {
+            $candidate = $ancestor.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
+            if ($candidate.Current.VerticallyScrollable) { $scroll = $ancestor; $pattern = $candidate; break }
+        } catch { }
+        $ancestor = $walker.GetParent($ancestor)
+        if ($ancestor -and $ancestor.Current.NativeWindowHandle -eq $window.Current.NativeWindowHandle) { break }
+    }
+    if (-not $scroll) {
+        # Expander children can be absent from the UIA tree until their card is rendered.
+        foreach ($viewportId in @('MainContentScroll','AboutScroll')) {
+            $candidate = & $find $viewportId
+            if ($candidate -and -not $candidate.Current.IsOffscreen -and $candidate.Current.BoundingRectangle.Height -gt 0) {
+                try { $pattern = $candidate.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern); $scroll=$candidate; break } catch { }
+            }
+        }
+    }
+    if (-not $scroll) { throw "No scrollable viewport contains '$Id'." }
+    if ($pattern.Current.VerticallyScrollable) { $pattern.SetScrollPercent(-1, 0); Start-Sleep -Milliseconds 80 }
+    for ($attempt = 0; $attempt -lt 35; $attempt++) {
+        $target = & $find $Id
+        if ($target) {
+            $rect = $target.Current.BoundingRectangle; $viewport = $scroll.Current.BoundingRectangle
+            $viewportBottom = [Math]::Min($viewport.Bottom, $window.Current.BoundingRectangle.Bottom - 8)
+            if ($rect.Height -gt 0 -and -not $target.Current.IsOffscreen -and $rect.Top -ge $viewport.Top -and $rect.Bottom -le $viewportBottom) { return }
+        }
+        if (-not $pattern.Current.VerticallyScrollable -or $pattern.Current.VerticalScrollPercent -ge 100) { break }
+        $pattern.Scroll([Windows.Automation.ScrollAmount]::NoAmount, [Windows.Automation.ScrollAmount]::LargeIncrement)
+        Start-Sleep -Milliseconds 80
+    }
+    throw "Could not scroll the main content viewport to $Id."
+}
 function Open-Page([string]$NavId, [string]$Anchor) {
+    $window = [Windows.Automation.AutomationElement]::FromHandle([IntPtr]$windowHwnd)
+    $nav = $window.FindFirst([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, $NavId))
+    if (-not $nav -or $nav.Current.IsOffscreen -or $nav.Current.BoundingRectangle.Width -le 0) {
+        [void](Invoke-UI @('ui', 'invoke', 'TogglePaneButton'))
+        Wait-UI $NavId
+        Start-Sleep -Milliseconds 300
+    }
     [void](Invoke-UI @('ui', 'invoke', $NavId))
-    [void](Invoke-UI @('ui', 'scroll-into-view', $Anchor))
+    Start-Sleep -Milliseconds 200
+    if ($NavId -eq 'NavOverview' -and $Anchor -ne 'OverviewDetailsExpander') {
+        $details = $window.FindFirst([Windows.Automation.TreeScope]::Descendants,
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, 'OverviewDetailsExpander'))
+        $details.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+        Start-Sleep -Milliseconds 160
+    }
+    Scroll-ToElement $Anchor
     Wait-UI $Anchor
     if ($script:currentCoverage) {
         $page = @($targets | Where-Object nav -eq $NavId | Select-Object -First 1)
         if ($page.Count) { $name = $page[0].name; $script:currentCoverage.pages[$name] = 1 + [int]$script:currentCoverage.pages[$name] }
     }
 }
-function Go-Overview { Open-Page 'NavOverview' 'SetupCompletionSummary' }
+function Go-Overview([switch]$RespectCollapse) {
+    $anchor = if ($RespectCollapse) { 'OverviewDetailsExpander' } else { 'SetupCompletionSummary' }
+    Open-Page 'NavOverview' $anchor
+}
+function Get-OverviewDetailsExpanded {
+    $window = [Windows.Automation.AutomationElement]::FromHandle([IntPtr]$windowHwnd)
+    $control = $window.FindFirst([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, 'OverviewDetailsExpander'))
+    if (-not $control) { throw 'Overview details expander is missing.' }
+    return $control.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Expanded
+}
 function Select-VisibleChoice([string]$Label) {
     $windows = Invoke-UI @('ui','list-windows','--json') | ConvertFrom-Json
     $popup = @($windows | Where-Object title -eq 'PopupHost')
@@ -96,10 +179,15 @@ function Select-VisibleChoice([string]$Label) {
     [void](Invoke-UI (@('ui','invoke',$selectors[0]) + $scope))
 }
 function Set-Theme([string]$ThemeId) {
-    Open-Page 'NavAgentSettings' 'AgentProvider'
+    Open-Page 'NavAppearance' 'AppearancePageTitle'
     $theme = switch ($ThemeId) { 'ThemeSystem' { 'system' } 'ThemeLight' { 'light' } 'ThemeDark' { 'dark' } default { throw "Unknown theme '$ThemeId'." } }
-    [void](Invoke-UI @('ui', 'scroll-into-view', $ThemeId))
-    [void](Invoke-UI @('ui', 'invoke', $ThemeId))
+    Scroll-ToElement $ThemeId
+    $element = [Windows.Automation.AutomationElement]::FromHandle([IntPtr]$windowHwnd).FindFirst([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, $ThemeId))
+    if (-not $element) { throw "Theme choice '$ThemeId' is missing." }
+    $selection = $element.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)
+    if (-not $selection.Current.IsSelected) { $selection.Select() }
+    if (-not $selection.Current.IsSelected) { throw "Theme choice '$ThemeId' did not become selected." }
     $path = Join-Path $DataDirectory 'appearance.json'
     if ($theme -eq 'system' -and -not (Test-Path -LiteralPath $path -PathType Leaf)) { return }
     $deadline = [DateTime]::UtcNow.AddSeconds(8)
@@ -173,12 +261,20 @@ function Exercise-PolicyControl([string]$Kind, [Random]$Random) {
             return "permission=$choice (draft only)"
         }
         'approval' {
-            Open-Page 'NavConnections' 'MattermostServerUrl'
+            Open-Page 'NavConnections' 'ChatApprovalMode'
             $choice = @('毎回確認', '最初だけ確認')[$Random.Next(2)]
             [void](Invoke-UI @('ui', 'invoke', 'ChatApprovalMode'))
             Select-VisibleChoice $choice
             Wait-UI 'ChatApprovalMode' $choice 3000
             return "approval=$choice (draft only)"
+        }
+        'result' {
+            Open-Page 'NavConnections' 'ChatResultMode'
+            $choice = @('手動で確認して共有', '共有しない')[$Random.Next(2)]
+            [void](Invoke-UI @('ui', 'invoke', 'ChatResultMode'))
+            Select-VisibleChoice $choice
+            Wait-UI 'ChatResultMode' $choice 3000
+            return "result-sharing=$choice (draft only)"
         }
         default { throw "Unknown policy control '$Kind'." }
     }
@@ -208,6 +304,8 @@ function Resize-App([int]$Width, [int]$Height) {
     $scale = if ($dpi -gt 0) { $dpi / 96.0 } else { 1.0 }
     if (-not [MonkeyNative]::SetWindowPos([IntPtr]$windowHwnd, [IntPtr]::Zero, 40, 40,
             [int]($Width * $scale), [int]($Height * $scale), 0x0010)) { throw 'SetWindowPos failed.' }
+    # Auto pane mode is recalculated after native resize; do not target the old pane tree.
+    Start-Sleep -Milliseconds 350
 }
 function Record-Action([int]$Seed, [int]$Index, [string]$Kind, [string]$Detail, [string]$Status, [string]$Error = '') {
     $entry = @{ seed = $Seed; index = $Index; kind = $Kind; detail = $Detail; status = $Status }
@@ -227,18 +325,22 @@ public static class MonkeyNative {
 
 try {
 # Confirm this PID reads exactly the caller-provided test directory before any input changes.
-[void](Invoke-UI @('ui', 'invoke', 'NavOverview'))
-Wait-UI 'SettingsLocation' $DataDirectory
+Wait-UI 'AppTitleBar'
 $windowList = Invoke-UI @('ui', 'list-windows', '--json') | ConvertFrom-Json
 $mainWindow = @($windowList | Where-Object { $_.title -ne 'PopupHost' } | Select-Object -First 1)
 if ($mainWindow.Count -ne 1 -or -not $mainWindow[0].hwnd) { throw 'Could not identify the app main window for resize coverage.' }
 $windowHwnd = [long]$mainWindow[0].hwnd
+Resize-App 1160 800
+[void](Invoke-UI @('ui', 'invoke', 'NavOverview'))
+Wait-UI 'SettingsLocation' $DataDirectory
+if (-not (Get-OverviewDetailsExpanded)) { throw 'Overview details should be expanded on initial load.' }
 
 $targets = @(
     @{ nav='NavOverview'; anchor='SetupCompletionSummary'; name='overview' },
     @{ nav='NavWorkbench'; anchor='Prompt'; name='workbench' },
     @{ nav='NavAgentSettings'; anchor='AgentProvider'; name='agent' },
-    @{ nav='NavConnections'; anchor='MattermostServerUrl'; name='connections' },
+    @{ nav='NavConnections'; anchor='ChatApprovalMode'; name='connections' },
+    @{ nav='NavAppearance'; anchor='AppearancePageTitle'; name='appearance' },
     @{ nav='NavChat'; anchor='ConnectMattermost'; name='chat' },
     @{ nav='NavHistory'; anchor='HistoryStatus'; name='history' },
     @{ nav='NavAbout'; anchor='AboutProduct'; name='about' }
@@ -249,7 +351,7 @@ $providerChoices = @(@('codex','ProviderOptionCodex'), @('claude','ProviderOptio
 $categoryNames = @{
     0='navigation'; 1='setup-links'; 2='agent-drafts'; 3='connection-drafts'; 4='provider-choices'
     5='saves'; 6='reloads'; 7='resizes'; 8='rapid-navigation'; 9='scroll-and-long-drafts'
-    10='about-dialogs'; 11='themes'; 12='policy-controls'
+    10='about-dialogs'; 11='themes'; 12='policy-controls'; 13='overview-details'
 }
 
     foreach ($seed in $Seeds) {
@@ -263,7 +365,7 @@ $categoryNames = @{
         }
         $rng = [Random]::new($seed)
         $script:currentCoverage = @{
-            pages = @{ overview=0; workbench=0; agent=0; connections=0; chat=0; history=0; about=0 }
+            pages = @{ overview=0; workbench=0; agent=0; connections=0; appearance=0; chat=0; history=0; about=0 }
             categories = @{}
             aboutDialogs = @{}
             themes = @{}
@@ -274,6 +376,9 @@ $categoryNames = @{
         $coverageBySeed["$seed"] = $script:currentCoverage
         $pageCounts = @{}
         foreach ($target in $targets) { Open-Page $target.nav $target.anchor }
+        Go-Overview
+        if (-not (Get-OverviewDetailsExpanded)) { throw 'Overview details should be expanded on initial load.' }
+        if ((Invoke-UI @('ui','get-property','NavAppearance','-p','Name','--json') | ConvertFrom-Json).properties.Name -ne '外観') { throw 'Monkey fixture should render Japanese Appearance navigation.' }
         foreach ($draft in @(@('NavAgentSettings','WorkspaceRoot'), @('NavConnections','MattermostChannelId'))) {
             Open-Page $draft[0] $draft[1]
             [void](Invoke-UI @('ui','set-value',$draft[1],''))
@@ -292,16 +397,16 @@ $categoryNames = @{
             Exercise-AboutDialog $kind
             $script:currentCoverage.aboutDialogs[$kind] = 1 + [int]$script:currentCoverage.aboutDialogs[$kind]
         }
-        foreach ($policyKind in (@('inference', 'permission', 'approval') | Sort-Object { $rng.Next() })) {
+        foreach ($policyKind in (@('inference', 'permission', 'approval', 'result') | Sort-Object { $rng.Next() })) {
             [void](Exercise-PolicyControl $policyKind $rng)
             $script:currentCoverage.policies[$policyKind] = 1 + [int]$script:currentCoverage.policies[$policyKind]
         }
         $categoryOrder = @()
-        $resizes = @(@(720,600), @(1160,800))
+        $resizes = @(@(500,600), @(720,600), @(1160,800))
         for ($i = 1; $i -le $ActionsPerSeed; $i++) {
             $currentIndex = $i
-            if ((($i - 1) % 13) -eq 0) { $categoryOrder = @(0..12 | Sort-Object { $rng.Next() }) }
-            $category = $categoryOrder[($i - 1) % 13]
+            if ((($i - 1) % 14) -eq 0) { $categoryOrder = @(0..13 | Sort-Object { $rng.Next() }) }
+            $category = $categoryOrder[($i - 1) % 14]
             $categoryName = $categoryNames[$category]
             $script:currentCoverage.categories[$categoryName] = 1 + [int]$script:currentCoverage.categories[$categoryName]
             $status = 'PASS'
@@ -354,12 +459,14 @@ $categoryNames = @{
                     }
                     3 {
                         Open-Page 'NavConnections' 'MattermostServerUrl'
-                        $field = @('MattermostServerUrl','MattermostChannelId','MattermostToken','SlackBotToken','SlackAppToken')[$rng.Next(5)]
+                        $field = @('MattermostServerUrl','MattermostChannelId','MattermostToken','SlackBotToken','SlackAppToken','SlackAllowedChannelIds','SlackAllowedThreadIds','MattermostAllowedThreadIds')[$rng.Next(8)]
                         $value = switch ($field) {
                             'MattermostServerUrl' { @('', "https://example.invalid/$seed/$i", "http://localhost.invalid/雪/$i")[$rng.Next(3)] }
                             'MattermostChannelId' { @('', "channel-$seed-$i", "チャンネル-$i")[$rng.Next(3)] }
+                            { $_ -in @('SlackAllowedChannelIds','SlackAllowedThreadIds','MattermostAllowedThreadIds') } { @('', "scope-$seed-$i,thread.$i")[$rng.Next(2)] }
                             default { @('', "fake-$field-$seed-$i-雪")[$rng.Next(2)] }
                         }
+                        [void](Invoke-UI @('ui','scroll-into-view',$field))
                         [void](Invoke-UI @('ui','set-value',$field,$value))
                         if ($field -notmatch 'Token$') { Wait-UI $field $value 3000 -CheckValue }
                         Assert-SavedProgress
@@ -372,8 +479,6 @@ $categoryNames = @{
                         [void](Invoke-UI @('ui','invoke','AgentProvider'))
                         [void](Invoke-UI @('ui','invoke',$choice[1]))
                         if ($choice[0] -eq 'custom') {
-                            [void](Invoke-UI @('ui','scroll-into-view','AgentModel'))
-                            Wait-UI 'AgentModel' 'False' 3000 -Property 'IsEnabled'
                             [void](Invoke-UI @('ui','scroll-into-view','AgentArguments'))
                             Wait-UI 'AgentArguments' 'True' 3000 -Property 'IsEnabled'
                         }
@@ -384,13 +489,41 @@ $categoryNames = @{
                     5 {
                         $target = if ($rng.Next(2) -eq 0) { $targets[2] } else { $targets[3] }
                         Open-Page $target.nav $target.anchor
+                        if ($target.name -eq 'agent') {
+                            [void](Invoke-UI @('ui','invoke','AgentProvider'))
+                            [void](Invoke-UI @('ui','invoke','ProviderOptionCustom'))
+                            [void](Invoke-UI @('ui','set-value','WorkspaceRoot',$DataDirectory))
+                            [void](Invoke-UI @('ui','set-value','AgentExecutable','powershell.exe'))
+                            [void](Invoke-UI @('ui','set-value','AgentArguments',''))
+                        } else {
+                            foreach ($field in @('MattermostServerUrl','MattermostChannelId','MattermostToken','SlackBotToken','SlackAppToken')) {
+                                [void](Invoke-UI @('ui','set-value',$field,''))
+                            }
+                        }
                         $saveButton = if ($target.name -eq 'agent') { 'SaveSettings' } else { 'SaveConnections' }
+                        $settingsPath = Join-Path $DataDirectory 'settings.json'
+                        $beforeHash = if (Test-Path -LiteralPath $settingsPath) { (Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash } else { '' }
                         [void](Invoke-UI @('ui','invoke',$saveButton))
-                        Wait-UI 'Title' '設定を保存しました' 5000 -Contains
-                        Assert-SavedProgress
-                        $saved = Get-Content -LiteralPath (Join-Path $DataDirectory 'settings.json') -Raw | ConvertFrom-Json
-                        if ($null -eq $saved.SchemaVersion) { throw 'Saved settings JSON is missing SchemaVersion.' }
-                        $detail = "$($target.name) saved and reloaded"
+                        $deadline=[DateTimeOffset]::UtcNow.AddSeconds(5)
+                        $saveStatus=$null
+                        do {
+                            $window=[Windows.Automation.AutomationElement]::FromHandle([IntPtr]$windowHwnd)
+                            $condition=[Windows.Automation.OrCondition]::new(
+                                [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty,'設定を保存しました'),
+                                [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty,'設定を保存できませんでした'))
+                            $saveStatus=$window.FindFirst([Windows.Automation.TreeScope]::Descendants,$condition)
+                            if ($saveStatus) { break }
+                            Start-Sleep -Milliseconds 100
+                        } while ([DateTimeOffset]::UtcNow -lt $deadline)
+                        if (-not $saveStatus) { throw 'Saving did not display a success or validation message.' }
+                        Start-Sleep -Milliseconds 200
+                        $afterHash = if (Test-Path -LiteralPath $settingsPath) { (Get-FileHash -LiteralPath $settingsPath -Algorithm SHA256).Hash } else { '' }
+                        $saveSucceeded=$saveStatus.Current.Name -eq '設定を保存しました'
+                        if (-not $saveSucceeded -and $afterHash -ne $beforeHash) { throw 'Rejected draft changed persisted settings.' }
+                        if ($saveSucceeded) { Assert-SavedProgress }
+                        $saved = if (Test-Path -LiteralPath $settingsPath) { Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json } else { $null }
+                        if ($saved -and $null -eq $saved.SchemaVersion) { throw 'Saved settings JSON is missing SchemaVersion.' }
+                        $detail = if ($saveSucceeded) { "$($target.name) saved and confirmed" } else { "$($target.name) validation rejected draft; persisted settings unchanged" }
                         $coverage.saves = 1 + [int]$coverage.saves
                     }
                     6 {
@@ -401,15 +534,17 @@ $categoryNames = @{
                         $coverage.reloads = 1 + [int]$coverage.reloads
                     }
                     7 {
-                        $size = $resizes[$rng.Next($resizes.Count)]
+                        $size = $resizes[[int]$coverage.resizes % $resizes.Count]
                         Resize-App $size[0] $size[1]
-                        Wait-UI 'NavOverview' '' 4000
+                        Open-Page 'NavAppearance' 'AppearancePageTitle'
+                        Scroll-ToElement 'ThemeDark'
+                        [void](Invoke-UI @('ui','screenshot','-o',(Join-Path $runDirectory "appearance-seed-$seed-action-$i-$($size[0]).png")) 12000)
                         $detail = "$($size[0])x$($size[1])"
                         $coverage.resizes = 1 + [int]$coverage.resizes
                     }
                     8 {
                         $order = @($targets | Sort-Object { $rng.Next() })
-                        foreach ($target in ($order | Select-Object -First 3)) { [void](Invoke-UI @('ui','invoke',$target.nav)) }
+                        foreach ($target in ($order | Select-Object -First 3)) { Open-Page $target.nav $target.anchor }
                         $target = $order[2]
                         Wait-UI $target.anchor
                         $detail = 'rapid navigation: ' + (($order | Select-Object -First 3 | ForEach-Object name) -join ',')
@@ -434,7 +569,8 @@ $categoryNames = @{
                             'connections' { 'SlackAppToken' }
                             'chat' { 'InboxConversations' }
                             'history' { 'HistoryStatus' }
-                            'about' { 'AboutScroll' }
+                            'about' { 'AboutProduct' }
+                            'appearance' { 'ThemeDark' }
                         }
                         [void](Invoke-UI @('ui','scroll-into-view',$scrollTarget))
                         $detail = "scroll $($target.name)"
@@ -456,12 +592,33 @@ $categoryNames = @{
                         $coverage.themes = 1 + [int]$coverage.themes
                     }
                     12 {
-                        $policyKind = @('inference', 'permission', 'approval')[$rng.Next(3)]
+                        $policyKind = @('inference', 'permission', 'approval', 'result')[$rng.Next(4)]
                         $policyDetail = Exercise-PolicyControl $policyKind $rng
                         Assert-SavedProgress
                         $script:currentCoverage.policies[$policyKind] = 1 + [int]$script:currentCoverage.policies[$policyKind]
                         $detail = $policyDetail
                         $coverage.policies = 1 + [int]$coverage.policies
+                    }
+                    13 {
+                        Go-Overview
+                        if (-not (Get-OverviewDetailsExpanded)) { throw 'Overview details were not expanded after navigation.' }
+                        $window = [Windows.Automation.AutomationElement]::FromHandle([IntPtr]$windowHwnd)
+                        $details = $window.FindFirst([Windows.Automation.TreeScope]::Descendants,
+                            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, 'OverviewDetailsExpander'))
+                        $pattern = $details.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+                        $pattern.Collapse()
+                        if (Get-OverviewDetailsExpanded) { throw 'Overview details did not collapse.' }
+                        Open-Page 'NavAppearance' 'AppearancePageTitle'
+                        Go-Overview -RespectCollapse
+                        if (Get-OverviewDetailsExpanded) { throw 'Collapsed overview details did not persist across navigation.' }
+                        $details = [Windows.Automation.AutomationElement]::FromHandle([IntPtr]$windowHwnd).FindFirst([Windows.Automation.TreeScope]::Descendants,
+                            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, 'OverviewDetailsExpander'))
+                        $details.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+                        Open-Page 'NavWorkbench' 'Prompt'
+                        Go-Overview
+                        if (-not (Get-OverviewDetailsExpanded)) { throw 'Expanded overview details did not persist across navigation.' }
+                        $detail = 'overview details collapse/expand and navigation persistence'
+                        $script:currentCoverage.detailsInteractions = 1 + [int]$script:currentCoverage.detailsInteractions
                     }
                 }
                 Record-Action $seed $i $category $detail $status
@@ -479,7 +636,8 @@ $categoryNames = @{
         foreach ($target in $targets) { if (-not $script:currentCoverage.pages[$target.name]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="Page not exercised: $($target.name)" }) } }
         foreach ($kind in @('changelog', 'terms', 'privacy', 'exit-cancel')) { if (-not $script:currentCoverage.aboutDialogs[$kind]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="About dialog not exercised: $kind" }) } }
         foreach ($themeId in @('ThemeSystem', 'ThemeLight', 'ThemeDark')) { if (-not $script:currentCoverage.themes[$themeId]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="Theme not exercised: $themeId" }) } }
-        foreach ($policyKind in @('inference', 'permission', 'approval')) { if (-not $script:currentCoverage.policies[$policyKind]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="Policy control not exercised: $policyKind" }) } }
+        foreach ($policyKind in @('inference', 'permission', 'approval', 'result')) { if (-not $script:currentCoverage.policies[$policyKind]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="Policy control not exercised: $policyKind" }) } }
+        if (-not $script:currentCoverage.detailsInteractions) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error='Overview details collapse/expand persistence was not exercised.' }) }
         Go-Overview
         Set-Theme 'ThemeSystem'
         Resize-App 1160 800

@@ -848,4 +848,10 @@
   <data name="ConnectionCredentialsHeading.Text" xml:space="preserve"><value>チャット接続情報</value></data>
   <data name="ChatPoliciesHeading.Text" xml:space="preserve"><value>チャットの承認と利用範囲</value></data>
   <data name="StartupHeading.Text" xml:space="preserve"><value>起動と自動接続</value></data>
+  <data name="ConnectionsJump.Header" xml:space="preserve"><value>設定項目へ移動</value></data>
+  <data name="ConnectionsJump.PlaceholderText" xml:space="preserve"><value>項目を選択</value></data>
+  <data name="ConnectionsJump.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>チャットの設定項目へ移動</value></data>
+  <data name="JumpApproval.Content" xml:space="preserve"><value>承認と結果の返信</value></data>
+  <data name="JumpScope.Content" xml:space="preserve"><value>許可する会話</value></data>
+  <data name="JumpStartup.Content" xml:space="preserve"><value>起動と自動接続</value></data>
 </root>

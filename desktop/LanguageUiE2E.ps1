@@ -8,6 +8,7 @@ if (-not $dataPath.StartsWith($artifacts + [IO.Path]::DirectorySeparatorChar, [S
 if (Test-Path (Join-Path $dataPath 'settings.json')) { throw 'Start with no saved bridge settings.' }
 $output = Join-Path $artifacts 'language-review'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $dataPath 'work') -Force | Out-Null
 $checks = [Collections.Generic.List[object]]::new()
 $script:appPid = 0
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
@@ -238,7 +239,9 @@ try {
     UI @('wait-for','NavOverview','-t','5000') | Out-Null
     Assert ((Name 'NavOverview') -eq '概要') 'Japanese navigation was not restored.'
     UI @('invoke','NavOverview') | Out-Null
-    UI @('invoke','OverviewDetailsExpander') | Out-Null
+    $window=[Windows.Automation.AutomationElement]::FromHandle((Get-Process -Id $script:appPid).MainWindowHandle)
+    $details=$window.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,'OverviewDetailsExpander'))
+    $details.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
     UI @('scroll-into-view','StartOnboarding') | Out-Null
     UI @('invoke','StartOnboarding') | Out-Null
     Wait-Text 'OnboardingTitle' 'はじめに'

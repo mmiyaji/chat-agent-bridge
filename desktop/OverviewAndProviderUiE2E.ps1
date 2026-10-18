@@ -213,7 +213,8 @@ try {
     Check (($null -eq $banner) -or -not (Visible $banner)) 'Initial settings success does not leave a permanent status banner.'
     $details=Element 'OverviewDetailsExpander'
     $expand=$details.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern)
-    Check ($expand.Current.ExpandCollapseState -eq [System.Windows.Automation.ExpandCollapseState]::Collapsed) 'Setup details start collapsed.'
+    Check ($expand.Current.ExpandCollapseState -eq [System.Windows.Automation.ExpandCollapseState]::Expanded) 'Setup details start expanded.'
+    $expand.Collapse(); Start-Sleep -Milliseconds 350
     Check (-not (Visible (Element 'SetupProgress' -Optional))) 'Collapsed details hide the detailed setup stepper.'
     Capture "$Language-overview-compact.png"
 

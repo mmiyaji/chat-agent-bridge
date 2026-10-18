@@ -107,6 +107,13 @@ function Theme([string]$Name) {
 try {
     Launch
     Resize 1160 860
+    $details=(Element 'OverviewDetailsExpander').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+    Assert ($details.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Expanded) 'Setup details should start expanded.'
+    $details.Collapse()
+    Go 'NavAppearance'; Go 'NavOverview'
+    Assert ($details.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) 'Navigation reopened deliberately collapsed details.'
+    $details.Expand()
+    $checks.Add(@{name='Setup details start open and respect collapse choice across navigation';passed=$true})
     $settingsFile=Join-Path $dataPath 'settings.json'
     $savedHash=(Get-FileHash $settingsFile).Hash
     Go 'NavAgentSettings'
@@ -188,6 +195,17 @@ try {
     Theme 'light'
     Assert ((Get-FileHash $settingsFile).Hash -eq $invalidHash) 'Appearance overwrote invalid bridge settings.'
     $checks.Add(@{name='Appearance remains usable independently of unreadable bridge settings';passed=$true})
+    Resize 500 600
+    foreach ($page in @('NavAgentSettings','NavConnections')) {
+        Go $page
+        Assert (Visible (Element 'ReloadSettings')) 'Settings recovery action disappeared.'
+        Assert ((Element 'ReloadSettings').Current.IsEnabled) 'Settings recovery action is disabled.'
+        foreach ($id in @('SaveSettings','SaveConnections','ConnectionsJump')) {
+            Assert (-not (Visible (Element $id))) "Unavailable settings action obscures recovery: $id"
+        }
+    }
+    Capture 'ja-unreadable-connection-recovery-500.png'
+    $checks.Add(@{name='Unreadable settings expose recovery without overlapping save or navigation controls';passed=$true})
 } catch { $checks.Add(@{name='Settings placement UI';passed=$false;detail=$_.Exception.Message}) }
 finally {
     @{checks=@($checks);passed=(@($checks|Where-Object{-not $_.passed}).Count -eq 0);appPid=$script:appPid} | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $output 'ui-results.json')

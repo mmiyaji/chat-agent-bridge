@@ -34,6 +34,11 @@
                    AutomationProperties.AutomationId="HistoryStatus" />
 
         <Pivot Grid.Row="2" x:Name="HistoryPivot" SelectionChanged="HistoryPivot_SelectionChanged" AutomationProperties.AutomationId="HistorySectionSelector">
+            <Pivot.HeaderTemplate>
+                <DataTemplate x:DataType="x:String">
+                    <TextBlock Text="{x:Bind Mode=OneTime}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                </DataTemplate>
+            </Pivot.HeaderTemplate>
             <PivotItem x:Name="ConversationsTab" Header="{x:Bind ViewModel.ConversationsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="SavedConversationsTab">
                 <Grid RowSpacing="8">
                     <Grid.RowDefinitions>
