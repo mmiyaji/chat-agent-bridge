@@ -24,17 +24,24 @@ public sealed class CliProbeService
         ArgumentNullException.ThrowIfNull(settings);
         var provider = AgentProfile.ResolveProvider(settings);
         var configured = AgentProfile.ResolveEffectiveExecutable(settings);
-        if ((provider is AgentProfile.Codex or AgentProfile.Claude) &&
-            (Path.GetExtension(configured).Equals(".cmd", StringComparison.OrdinalIgnoreCase) ||
-             Path.GetExtension(configured).Equals(".bat", StringComparison.OrdinalIgnoreCase) ||
-             Path.GetExtension(configured).Equals(".ps1", StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidOperationException("CLIの確認にはネイティブ実行ファイルが必要です。実行ファイルのパスを指定してください。");
-
         var cwd = settings.WorkspaceRoot;
         if (string.IsNullOrWhiteSpace(cwd) || !Path.IsPathFullyQualified(cwd) || !Directory.Exists(cwd) || !ExecutionPolicy.IsWorkspaceTrusted(settings, cwd))
             throw new InvalidOperationException("CLI確認には、存在する絶対パスで信頼済みのワークスペースを指定してください。");
 
-        var executable = ResolveExecutable(configured, Path.GetFullPath(cwd));
+        // Use the same native Codex resolution as actual runs and model discovery.
+        // In particular, an npm shim must resolve to codex.exe without starting a shell.
+        var probeExecutable = configured;
+        if (!Path.IsPathFullyQualified(probeExecutable) &&
+            (probeExecutable.Contains(Path.DirectorySeparatorChar) || probeExecutable.Contains(Path.AltDirectorySeparatorChar)))
+            probeExecutable = Path.GetFullPath(probeExecutable, Path.GetFullPath(cwd));
+        if (provider == AgentProfile.Codex)
+            probeExecutable = CodexExecutableResolver.Resolve(probeExecutable);
+        var extension = Path.GetExtension(probeExecutable);
+        if (extension.Equals(".cmd", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".bat", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".ps1", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("CLIの確認にはネイティブ実行ファイルが必要です。実行ファイルのパスを指定してください。");
+        var executable = ResolveExecutable(probeExecutable, Path.GetFullPath(cwd));
         if (executable is null) throw new FileNotFoundException("CLI実行ファイルが見つかりません。実行ファイルのパスまたは PATH を確認してください。", configured);
 
         using var process = new Process

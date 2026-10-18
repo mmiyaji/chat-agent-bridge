@@ -7,8 +7,9 @@ public sealed record OnboardingProgress(int Step, string Status);
 
 public sealed class OnboardingProgressStore
 {
-    private const int CurrentSchemaVersion = 2;
+    private const int CurrentSchemaVersion = 3;
     private const int LegacySchemaVersion = 1;
+    private const int PreviousSchemaVersion = 2;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly string _filePath;
 
@@ -34,13 +35,19 @@ public sealed class OnboardingProgressStore
             var stored = await JsonSerializer.DeserializeAsync<StoredProgress>(stream, JsonOptions, cancellationToken)
                 .ConfigureAwait(false);
             if (stored is null) throw new InvalidDataException("Onboarding progress file is empty or invalid.");
-            if (stored.SchemaVersion == LegacySchemaVersion)
+            if (stored.SchemaVersion is LegacySchemaVersion or PreviousSchemaVersion)
             {
-                // Schema 1's step numbering predates the four-step wizard. Preserve the
-                // status while translating its later steps into the new flow.
-                if (stored.Step is < 0 or > 2)
-                    throw new InvalidDataException("Onboarding progress schema 1 step must be from 0 through 2.");
-                var migratedStep = stored.Step switch { 0 => 0, 1 => 2, 2 => 3, _ => throw new InvalidDataException() };
+                var migratedStep = stored.SchemaVersion switch
+                {
+                    LegacySchemaVersion => stored.Step switch
+                    {
+                        0 => 1, 1 => 3, 2 => 4,
+                        _ => throw new InvalidDataException("Onboarding progress schema 1 step must be from 0 through 2.")
+                    },
+                    PreviousSchemaVersion when stored.Step is >= 0 and <= 3 => stored.Step + 1,
+                    PreviousSchemaVersion => throw new InvalidDataException("Onboarding progress schema 2 step must be from 0 through 3."),
+                    _ => throw new InvalidDataException()
+                };
                 Validate(migratedStep, stored.Status, invalidData: true);
                 return new OnboardingProgress(migratedStep, stored.Status!);
             }
@@ -86,9 +93,9 @@ public sealed class OnboardingProgressStore
 
     private static void Validate(int step, string? status, bool invalidData)
     {
-        var valid = step is >= 0 and <= 3 && status is "active" or "deferred" or "completed";
+        var valid = step is >= 0 and <= 4 && status is "active" or "deferred" or "completed";
         if (valid) return;
-        var message = "Onboarding progress must have a step from 0 through 3 and a status of active, deferred, or completed.";
+        var message = "Onboarding progress must have a step from 0 through 4 and a status of active, deferred, or completed.";
         if (invalidData) throw new InvalidDataException(message);
         throw new ArgumentException(message, "progress");
     }

@@ -1,0 +1,124 @@
+using ChatAgentBridge_Desktop.Inbox;
+using ChatAgentBridge_Desktop.ViewModels;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.Windows.Storage.Pickers;
+
+namespace ChatAgentBridge_Desktop.Onboarding;
+
+public sealed partial class OnboardingWizard : UserControl
+{
+    public MainPageViewModel ViewModel { get; }
+    public ChatInboxViewModel Inbox { get; }
+
+    public OnboardingWizard(MainPageViewModel viewModel, ChatInboxViewModel inbox)
+    {
+        ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+        Inbox = inbox ?? throw new ArgumentNullException(nameof(inbox));
+        InitializeComponent();
+        IntroHost.Content = new OnboardingIntro(ViewModel);
+
+        SyncSecrets();
+    }
+
+    public void ResetScroll()
+    {
+        WizardScrollViewer.ChangeView(null, 0, null, true);
+        DispatcherQueue.TryEnqueue(() => WizardScrollViewer.ChangeView(null, 0, null, true));
+    }
+
+    public void SyncSecrets()
+    {
+        SlackBotTokenBox.Password = ViewModel.SlackBotToken;
+        SlackAppTokenBox.Password = ViewModel.SlackAppToken;
+        MattermostTokenBox.Password = ViewModel.MattermostToken;
+    }
+
+    public static Visibility ToVisibility(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
+    public static bool Not(bool value) => !value;
+    public static bool SupportsOperationApproval(bool isCodex, bool useAppServer) => isCodex && useAppServer;
+
+    public static InfoBarSeverity ToInfoBarSeverity(string? severity) => severity switch
+    {
+        "Success" => InfoBarSeverity.Success,
+        "Warning" => InfoBarSeverity.Warning,
+        "Error" => InfoBarSeverity.Error,
+        _ => InfoBarSeverity.Informational
+    };
+
+    private async void PickWorkspaceFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.XamlRoot is null) return;
+
+        button.IsEnabled = false;
+        try
+        {
+            var picker = new FolderPicker(button.XamlRoot.ContentIslandEnvironment.AppWindowId)
+            {
+                CommitButtonText = "このフォルダーを選択"
+            };
+            var folder = await picker.PickSingleFolderAsync();
+            if (folder is not null)
+                ViewModel.WorkspaceRoot = folder.Path;
+        }
+        catch (Exception ex)
+        {
+            SetWizardStatus("フォルダーを選択できませんでした", ex.Message, "Error");
+        }
+        finally
+        {
+            button.IsEnabled = true;
+        }
+    }
+
+    private void SlackBotTokenBox_PasswordChanged(object sender, RoutedEventArgs e) =>
+        ViewModel.SlackBotToken = SlackBotTokenBox.Password;
+
+    private void SlackAppTokenBox_PasswordChanged(object sender, RoutedEventArgs e) =>
+        ViewModel.SlackAppToken = SlackAppTokenBox.Password;
+
+    private void MattermostTokenBox_PasswordChanged(object sender, RoutedEventArgs e) =>
+        ViewModel.SetMattermostToken(MattermostTokenBox.Password);
+
+    private async void ConnectSlack_Click(object sender, RoutedEventArgs e) =>
+        await ConnectSelectedProviderAsync("slack");
+
+    private async void ConnectMattermost_Click(object sender, RoutedEventArgs e) =>
+        await ConnectSelectedProviderAsync("mattermost");
+
+    private async Task ConnectSelectedProviderAsync(string provider)
+    {
+        if (ViewModel.IsOnboardingBusy) return;
+        if (Inbox.IsExecuting)
+        {
+            SetWizardStatus("接続できません", "実行中の作業が終わってから接続してください。", "Warning");
+            return;
+        }
+
+        ViewModel.IsOnboardingBusy = true;
+        try
+        {
+            if (!await ViewModel.SaveWizardConnectionSettingsAsync()) return;
+            if (Inbox.IsConnected)
+                await Inbox.DisconnectCommand.ExecuteAsync(null);
+            if (provider == "slack")
+                await Inbox.ConnectSlackCommand.ExecuteAsync(null);
+            else
+                await Inbox.ConnectMattermostCommand.ExecuteAsync(null);
+            if (Inbox.IsConnected) ViewModel.RememberWizardConnectionSettings(provider);
+        }
+        catch
+        {
+            SetWizardStatus("接続できませんでした", "接続情報とネットワークを確認して再接続してください。", "Error");
+        }
+        finally { ViewModel.IsOnboardingBusy = false; }
+    }
+
+    private void SetWizardStatus(string title, string message, string severity)
+    {
+        ViewModel.StatusTitle = title;
+        ViewModel.StatusMessage = message;
+        ViewModel.StatusSeverity = severity;
+        ViewModel.IsStatusOpen = true;
+    }
+}

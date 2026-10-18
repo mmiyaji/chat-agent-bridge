@@ -42,12 +42,14 @@ public partial class MainPageViewModel : ObservableObject
         };
         PropertyChanged += (_, e) =>
         {
+            WizardSettingChanged(e.PropertyName);
             if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning))
             {
                 StartOnboardingCommand.NotifyCanExecuteChanged();
                 PreviousOnboardingCommand.NotifyCanExecuteChanged();
                 NextOnboardingCommand.NotifyCanExecuteChanged();
                 DeferOnboardingCommand.NotifyCanExecuteChanged();
+                CheckCliCommand.NotifyCanExecuteChanged();
             }
             if (e.PropertyName is nameof(IsLoading) or nameof(IsSettingsLoaded) or nameof(WorkspaceRoot) or
                 nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
@@ -134,7 +136,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasModelEffortStatus))]
     public partial string ModelEffortStatus { get; set; } = "";
     public bool HasModelEffortStatus => !string.IsNullOrWhiteSpace(ModelEffortStatus);
-    [ObservableProperty] public partial string AutoConnectProvider { get; set; } = "none";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(WizardAutoConnect))] public partial string AutoConnectProvider { get; set; } = "none";
     [ObservableProperty] public partial bool StartWithWindows { get; set; }
     [ObservableProperty] public partial bool CanChangeStartup { get; set; }
     [ObservableProperty] public partial string StartupStatus { get; set; } = "Windowsの起動設定を確認しています…";
@@ -185,6 +187,7 @@ public partial class MainPageViewModel : ObservableObject
     public void SetChatConnectionState(bool connected, bool connecting)
     {
         _chatConnectionConfirmed = connected;
+        if (!connected) ClearWizardConnection();
         _chatConnectionPreparing = connecting;
         RefreshSetupStepper();
     }
@@ -532,6 +535,7 @@ public partial class MainPageViewModel : ObservableObject
     {
         _closing = true;
         _runCancellation?.Cancel();
+        CancelCliCheck();
         ModelCatalog.Dispose();
     }
 

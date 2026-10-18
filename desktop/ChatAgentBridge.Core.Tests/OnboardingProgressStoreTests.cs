@@ -24,7 +24,7 @@ public sealed class OnboardingProgressStoreTests
     {
         using var temp = new TempDirectory();
         var store = new OnboardingProgressStore(temp.Path);
-        var expected = new OnboardingProgress(3, "active");
+        var expected = new OnboardingProgress(4, "active");
 
         await store.SaveAsync(expected);
 
@@ -35,7 +35,7 @@ public sealed class OnboardingProgressStoreTests
 
     [Theory]
     [InlineData("{")]
-    [InlineData("{\"schemaVersion\":3,\"step\":0,\"status\":\"active\"}")]
+    [InlineData("{\"schemaVersion\":4,\"step\":0,\"status\":\"active\"}")]
     [InlineData("{\"schemaVersion\":1,\"step\":3,\"status\":\"active\"}")]
     [InlineData("{\"schemaVersion\":1,\"step\":0,\"status\":\"unknown\"}")]
     public async Task LoadRejectsCorruptOrUnsupportedProgressWithoutOverwriting(string contents)
@@ -51,7 +51,7 @@ public sealed class OnboardingProgressStoreTests
 
     [Theory]
     [InlineData(-1, "active")]
-    [InlineData(4, "active")]
+    [InlineData(5, "active")]
     [InlineData(0, "unknown")]
     public async Task SaveRejectsInvalidProgress(int step, string status)
     {
@@ -63,10 +63,10 @@ public sealed class OnboardingProgressStoreTests
     }
 
     [Theory]
-    [InlineData(0, 0, "active")]
-    [InlineData(1, 2, "deferred")]
-    [InlineData(2, 3, "completed")]
-    public async Task LoadsSchema1ProgressWithNewStepMappingAndSavesAsSchema2(int oldStep, int newStep, string status)
+    [InlineData(0, 1, "active")]
+    [InlineData(1, 3, "deferred")]
+    [InlineData(2, 4, "completed")]
+    public async Task LoadsSchema1ProgressWithNewStepMappingAndSavesAsSchema3(int oldStep, int newStep, string status)
     {
         using var temp = new TempDirectory();
         var path = Path.Combine(temp.Path, "onboarding.json");
@@ -79,8 +79,23 @@ public sealed class OnboardingProgressStoreTests
         await store.SaveAsync(expected);
 
         using var saved = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(path));
-        Assert.Equal(2, saved.RootElement.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(3, saved.RootElement.GetProperty("schemaVersion").GetInt32());
         Assert.Equal(expected, await store.LoadAsync());
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(1, 2)]
+    [InlineData(2, 3)]
+    [InlineData(3, 4)]
+    public async Task LoadsSchema2ProgressByAdvancingStep(int oldStep, int newStep)
+    {
+        using var temp = new TempDirectory();
+        var path = Path.Combine(temp.Path, "onboarding.json");
+        await File.WriteAllTextAsync(path, $"{{\"schemaVersion\":2,\"step\":{oldStep},\"status\":\"active\"}}");
+        var store = new OnboardingProgressStore(temp.Path);
+
+        Assert.Equal(new OnboardingProgress(newStep, "active"), await store.LoadAsync());
     }
 
     private sealed class TempDirectory : IDisposable

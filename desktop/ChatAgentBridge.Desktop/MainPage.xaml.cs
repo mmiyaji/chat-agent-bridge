@@ -12,6 +12,7 @@ public sealed partial class MainPage : Page
     private bool _hasLoaded;
     private string? _selectedNavigationTag;
     private int _scrollResetGeneration;
+    private readonly Onboarding.OnboardingWizard _wizard;
 
     public MainPageViewModel ViewModel { get; } = new();
     public bool IsOverviewSelected { get; private set; } = true;
@@ -25,13 +26,25 @@ public sealed partial class MainPage : Page
     public MainPage()
     {
         InitializeComponent();
+        _wizard = new Onboarding.OnboardingWizard(ViewModel, InboxPage.ViewModel);
+        WizardHost.Content = _wizard;
         ViewModel.PropertyChanged += (_, args) =>
         {
+            if (ViewModel.IsOnboardingActive && ViewModel.IsStatusOpen && args.PropertyName is nameof(ViewModel.IsStatusOpen) or nameof(ViewModel.StatusTitle) or nameof(ViewModel.StatusMessage))
+                _wizard.ResetScroll();
             if (args.PropertyName == nameof(ViewModel.IsSettingsLoaded) && ViewModel.IsSettingsLoaded)
             {
                 MattermostTokenBox.Password = ViewModel.MattermostToken;
                 SlackBotTokenBox.Password = ViewModel.SlackBotToken;
                 SlackAppTokenBox.Password = ViewModel.SlackAppToken;
+                _wizard.SyncSecrets();
+            }
+            if (args.PropertyName == nameof(ViewModel.IsOnboardingActive))
+            {
+                MattermostTokenBox.Password = ViewModel.MattermostToken;
+                SlackBotTokenBox.Password = ViewModel.SlackBotToken;
+                SlackAppTokenBox.Password = ViewModel.SlackAppToken;
+                _wizard.SyncSecrets();
             }
         };
         InboxPage.ViewModel.PropertyChanged += (_, args) =>
@@ -48,12 +61,13 @@ public sealed partial class MainPage : Page
         ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
         ViewModel.ServerInputHandler = serverDialogs.InputAsync;
         HistoryPage.AgentSettingsRequested += () => OpenAgentSettings_Click(this, new RoutedEventArgs());
-        ViewModel.OnboardingNavigateRequested += step => MainNavigation.SelectedItem = MainNavigation.MenuItems
-            .OfType<NavigationViewItem>().First(item => item.Tag as string == (step == 0 ? "agent" : step == 1 ? "connections" : "chat"));
+        ViewModel.OnboardingNavigateRequested += _ => _wizard.ResetScroll();
         MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+    private async void ShowTerms_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: false);
+    private async void ShowPrivacy_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: true);
     public static Visibility ToHiddenVisibility(bool visible) => visible ? Visibility.Collapsed : Visibility.Visible;
     public static bool CanReloadSettings(bool isLoading, bool isRunning) => !isLoading && !isRunning;
     public static InfoBarSeverity ToInfoBarSeverity(string severity) => severity switch

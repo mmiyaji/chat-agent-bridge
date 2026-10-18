@@ -10,7 +10,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Grid>
-        <NavigationView x:Name="MainNavigation"
+        <NavigationView x:Name="MainNavigation" Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsOnboardingActive), Mode=OneWay}"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
                         PaneDisplayMode="Auto" OpenPaneLength="240"
@@ -39,18 +39,6 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <Border Grid.Row="1" Margin="0,0,0,12" Padding="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsOnboardingActive), Mode=OneWay}" AutomationProperties.AutomationId="OnboardingGuide">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="{x:Bind ViewModel.OnboardingProgress, Mode=OneWay}" AutomationProperties.AutomationId="OnboardingProgress" />
-                            <TextBlock Text="{x:Bind ViewModel.OnboardingTitle, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="OnboardingTitle" />
-                            <TextBlock Text="{x:Bind ViewModel.OnboardingDescription, Mode=OneWay}" TextWrapping="Wrap" />
-                            <StackPanel Spacing="8" Orientation="Horizontal">
-                                <Button Content="戻る" Command="{x:Bind ViewModel.PreviousOnboardingCommand}" AutomationProperties.AutomationId="OnboardingPrevious" />
-                                <Button Content="{x:Bind ViewModel.OnboardingNextLabel, Mode=OneWay}" Command="{x:Bind ViewModel.NextOnboardingCommand}" AutomationProperties.AutomationId="OnboardingNext" />
-                                <Button Content="あとで設定" Command="{x:Bind ViewModel.DeferOnboardingCommand}" AutomationProperties.AutomationId="OnboardingDefer" />
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
                     <InfoBar Grid.Row="0" Margin="0,0,0,16" AutomationProperties.AutomationId="ExecutionStatus"
                              IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
                              Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.StatusSeverity), Mode=OneWay}"
@@ -89,6 +77,8 @@
                                         <TextBlock Text="{x:Bind ViewModel.SetupNextAction, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupNextAction" />
                                         <TextBlock Text="{x:Bind ViewModel.SetupDraftNotice, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSetupDraftNotice), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupDraftNotice" />
                                         <Button Content="初期設定ガイドを開く" Command="{x:Bind ViewModel.StartOnboardingCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="StartOnboarding" />
+                                        <Button Content="利用規約" Click="ShowTerms_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="OverviewTerms" />
+                                        <Button Content="プライバシーポリシー" Click="ShowPrivacy_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="OverviewPrivacy" />
                                         <Button Content="設定を再読み込み" Click="ReloadSettings_Click" IsEnabled="{x:Bind local:MainPage.CanReloadSettings(ViewModel.IsLoading, ViewModel.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SetupReloadSettings" />
                                     </StackPanel>
                                 </Border>
@@ -139,6 +129,11 @@
                                             <TextBlock Text="Codex・Claude Codeの標準引数とモデル指定はアプリが組み立てます。その他のCLIは標準入力から依頼文を受け取れる形式を指定してください。" TextWrapping="Wrap" />
                                         </StackPanel>
                                     </Expander>
+                                    <Button Content="CLIをチェック（バージョン・モデル）" Command="{x:Bind ViewModel.CheckCliCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SettingsCheckCli" />
+                                    <TextBlock Text="{x:Bind ViewModel.CliVersion, Mode=OneWay}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind ViewModel.CliExecutablePath, Mode=OneWay}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SettingsCliCheckSummary" />
+
                                 </StackPanel>
                                 <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="ExecutionPolicyOverview">
                                     <StackPanel Spacing="10">
@@ -280,5 +275,6 @@
                 </Grid>
             </NavigationView.Content>
         </NavigationView>
+        <ContentControl x:Name="WizardHost" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsOnboardingActive), Mode=OneWay}" AutomationProperties.AutomationId="WizardHost" />
     </Grid>
 </Page>
