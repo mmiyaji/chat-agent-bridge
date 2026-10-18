@@ -8,6 +8,7 @@
     xmlns:inbox="using:ChatAgentBridge_Desktop.Inbox"
     xmlns:history="using:ChatAgentBridge_Desktop.History"
     xmlns:localization="using:ChatAgentBridge_Desktop.Localization"
+    xmlns:appearance="using:ChatAgentBridge_Desktop.Appearance"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Grid>
@@ -106,9 +107,10 @@
                             </StackPanel>
 
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
-                                <localization:LanguageSettings />
                                 <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  x:Uid="chatAgentBridgeDesktopMainPageTextBlock013" />
                                 <TextBlock  TextWrapping="Wrap"  x:Uid="chatAgentBridgeDesktopMainPageTextBlock014" />
+                                <localization:LanguageSettings />
+                                <appearance:AppearanceSettings />
                                 <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" AutomationProperties.AutomationId="WorkspaceCard">
                                     <StackPanel Spacing="8">
                                         <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="chatAgentBridgeDesktopMainPageTextBlock015" />

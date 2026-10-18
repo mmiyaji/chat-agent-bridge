@@ -758,4 +758,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="OnboardingPrevious.Content" xml:space="preserve">
     <value>Back</value>
   </data>
+  <data name="AppearanceHeading.Text" xml:space="preserve"><value>Appearance</value></data>
+  <data name="AppTheme.Header" xml:space="preserve"><value>Color theme</value></data>
+  <data name="AppTheme.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Color theme</value></data>
+  <data name="ThemeSystem.Content" xml:space="preserve"><value>Use system setting</value></data>
+  <data name="ThemeLight.Content" xml:space="preserve"><value>Light</value></data>
+  <data name="ThemeDark.Content" xml:space="preserve"><value>Dark</value></data>
 </root>

@@ -24,6 +24,7 @@ public sealed partial class MainWindow : Window
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+        App.Appearance.Attach(this, WindowRoot);
 
         AppWindow.SetIcon("Assets/AppIcon.ico");
         var hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
@@ -37,6 +38,7 @@ public sealed partial class MainWindow : Window
 
     private void MainWindow_Closed(object sender, WindowEventArgs args)
     {
+        App.Appearance.Dispose();
         if (RootFrame.Content is MainPage page) page.ViewModel.CancelForWindowClose();
         ChatAgentBridge.Core.AppServer.CodexAppServerRunner.ShutdownSharedProcesses();
     }

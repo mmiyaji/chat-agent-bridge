@@ -1,0 +1,19 @@
+<UserControl
+    x:Class="ChatAgentBridge_Desktop.Appearance.AppearanceSettings"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+        <StackPanel Spacing="12">
+            <TextBlock x:Uid="AppearanceHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
+            <RadioButtons x:Name="ThemeChoices" x:Uid="AppTheme" SelectionChanged="ThemeChoices_SelectionChanged"
+                          AutomationProperties.AutomationId="AppTheme">
+                <RadioButton x:Uid="ThemeSystem" Tag="system" AutomationProperties.AutomationId="ThemeSystem" />
+                <RadioButton x:Uid="ThemeLight" Tag="light" AutomationProperties.AutomationId="ThemeLight" />
+                <RadioButton x:Uid="ThemeDark" Tag="dark" AutomationProperties.AutomationId="ThemeDark" />
+            </RadioButtons>
+            <TextBlock x:Name="ThemeStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="AppThemeStatus" />
+        </StackPanel>
+    </Border>
+</UserControl>

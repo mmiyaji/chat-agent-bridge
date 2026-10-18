@@ -254,4 +254,8 @@
   <data name="WaitForExecutionToFinish" xml:space="preserve"><value>Wait for the current execution to finish before connecting.</value></data>
   <data name="ConnectionFailed" xml:space="preserve"><value>Could not connect</value></data>
   <data name="CheckConnectionAndNetwork" xml:space="preserve"><value>Check the connection settings and network, then reconnect.</value></data>
+  <data name="AppearanceSaved" xml:space="preserve"><value>Applied and saved. Changes take effect immediately; no restart is needed.</value></data>
+  <data name="AppearanceFollowsSystem" xml:space="preserve"><value>Follows the Windows app color setting, including changes while this app is running.</value></data>
+  <data name="AppearanceReadFailed" xml:space="preserve"><value>Could not read the saved theme. The Windows setting is used. Select a theme to save it again.</value></data>
+  <data name="AppearanceSaveFailed" xml:space="preserve"><value>Could not save the theme. The previous setting is still in use. Check access to the settings folder and try again.</value></data>
 </root>

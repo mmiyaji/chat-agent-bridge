@@ -173,6 +173,7 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
             PrimaryButtonText = DesktopText.Get("Allow"),
             CloseButtonText = DesktopText.Get("Deny"),
             DefaultButton = ContentDialogButton.Close,
+            RequestedTheme = App.Appearance.RequestedTheme,
             XamlRoot = xamlRoot
         };
         AutomationProperties.SetAutomationId(dialog, "AppServerApprovalDialog");
@@ -278,6 +279,7 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
             CloseButtonText = DesktopText.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close,
             IsPrimaryButtonEnabled = false,
+            RequestedTheme = App.Appearance.RequestedTheme,
             XamlRoot = xamlRoot
         };
         AutomationProperties.SetAutomationId(dialog, "AppServerInputDialog");

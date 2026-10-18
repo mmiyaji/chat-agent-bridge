@@ -41,6 +41,7 @@ public sealed partial class HistoryPage : Page
     {
         var dialog = new ContentDialog
         {
+            RequestedTheme = App.Appearance.RequestedTheme,
             XamlRoot = XamlRoot,
             Title = DesktopText.Get("ConfirmDetachTitle"),
             Content = new StackPanel
@@ -237,6 +238,7 @@ public sealed partial class HistoryPage : Page
         cancel.IsEnabled = false;
         dialog = new ContentDialog
         {
+            RequestedTheme = App.Appearance.RequestedTheme,
             XamlRoot = XamlRoot,
             Title = DesktopText.Get("NextExecutionModel"),
             Content = new ScrollViewer
@@ -312,6 +314,7 @@ public sealed partial class HistoryPage : Page
                 item.IsEnabled = string.Equals(binding.AgentArguments, "app-server", StringComparison.OrdinalIgnoreCase);
         var dialog = new ContentDialog
         {
+            RequestedTheme = App.Appearance.RequestedTheme,
             XamlRoot = XamlRoot,
             Title = DesktopText.Get("ConversationExecutionPolicy"),
             Content = new ScrollViewer

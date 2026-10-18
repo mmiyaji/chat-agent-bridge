@@ -254,4 +254,8 @@
   <data name="WaitForExecutionToFinish" xml:space="preserve"><value>実行中の作業が終わってから接続してください。</value></data>
   <data name="ConnectionFailed" xml:space="preserve"><value>接続できませんでした</value></data>
   <data name="CheckConnectionAndNetwork" xml:space="preserve"><value>接続情報とネットワークを確認して再接続してください。</value></data>
+  <data name="AppearanceSaved" xml:space="preserve"><value>反映・保存しました。選ぶとすぐに切り替わり、再起動は不要です。</value></data>
+  <data name="AppearanceFollowsSystem" xml:space="preserve"><value>Windowsのアプリの配色設定に合わせます。アプリ起動中の変更にも追従します。</value></data>
+  <data name="AppearanceReadFailed" xml:space="preserve"><value>保存済みのテーマを読み込めなかったため、Windowsの設定に合わせています。選び直すと再保存できます。</value></data>
+  <data name="AppearanceSaveFailed" xml:space="preserve"><value>テーマを保存できませんでした。以前の設定を維持しています。設定フォルダーへのアクセスを確認して再試行してください。</value></data>
 </root>

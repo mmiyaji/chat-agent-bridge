@@ -758,4 +758,10 @@
   <data name="OnboardingPrevious.Content" xml:space="preserve">
     <value>戻る</value>
   </data>
+  <data name="AppearanceHeading.Text" xml:space="preserve"><value>外観</value></data>
+  <data name="AppTheme.Header" xml:space="preserve"><value>配色テーマ</value></data>
+  <data name="AppTheme.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>配色テーマ</value></data>
+  <data name="ThemeSystem.Content" xml:space="preserve"><value>システムに合わせる</value></data>
+  <data name="ThemeLight.Content" xml:space="preserve"><value>ライト</value></data>
+  <data name="ThemeDark.Content" xml:space="preserve"><value>ダーク</value></data>
 </root>

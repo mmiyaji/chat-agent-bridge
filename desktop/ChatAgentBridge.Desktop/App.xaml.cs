@@ -33,6 +33,7 @@ public partial class App : Application
     /// <summary>In-memory notification callbacks for pending chat decisions.</summary>
     public static PendingRequestNotificationService PendingRequestNotifications { get; private set; } = null!;
     public static string SystemLanguageTag { get; private set; } = "en-US";
+    public static Appearance.AppAppearance Appearance { get; private set; } = null!;
 
     /// <summary>
     /// The native window handle (HWND). Use for file pickers,
@@ -79,6 +80,8 @@ public partial class App : Application
         Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language.Name;
 
         DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        Appearance = new(new ChatAgentBridge.Core.Appearance.AppearancePreferencesStore(new ChatAgentBridge.Core.SettingsStore()));
+        await Appearance.InitializeAsync();
         PendingRequestNotifications = new PendingRequestNotificationService(DispatcherQueue);
         PendingRequestNotifications.Initialize();
 

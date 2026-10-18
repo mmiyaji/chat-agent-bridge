@@ -40,6 +40,7 @@ public static class PolicyDialog
             panel.Children.Add(close);
             var dialog = new ContentDialog
             {
+                RequestedTheme = App.Appearance.RequestedTheme,
                 XamlRoot = xamlRoot,
                 Title = DesktopText.Get(privacy ? "PrivacyPolicy" : "TermsOfUse"),
                 Content = panel

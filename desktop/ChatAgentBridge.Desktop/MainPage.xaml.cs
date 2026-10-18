@@ -184,6 +184,7 @@ public sealed partial class MainPage : Page
     {
         var dialog = new ContentDialog
         {
+            RequestedTheme = App.Appearance.RequestedTheme,
             XamlRoot = XamlRoot,
             Title = ViewModelText.Get("ExecutionConfirmTitle"),
             Content = new ScrollViewer

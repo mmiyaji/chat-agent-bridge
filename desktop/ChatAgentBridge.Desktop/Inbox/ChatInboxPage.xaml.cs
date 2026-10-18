@@ -62,6 +62,7 @@ public sealed partial class ChatInboxPage : Page
         var changesWorkspace = ChatAgentBridge.Core.WorkspaceChatCommand.TryParse(item.Prompt, out _);
         var dialog = new ContentDialog
         {
+            RequestedTheme = App.Appearance.RequestedTheme,
             XamlRoot = XamlRoot,
             Title = DesktopText.Get(changesWorkspace ? "InboxConfirmWorkspaceTitle" : "InboxConfirmRunTitle"),
             Content = new ScrollViewer
@@ -86,6 +87,7 @@ public sealed partial class ChatInboxPage : Page
     {
         var dialog = new ContentDialog
         {
+            RequestedTheme = App.Appearance.RequestedTheme,
             XamlRoot = XamlRoot,
             Title = DesktopText.Get("ConfirmSendResultTitle"),
             Content = new ScrollViewer
