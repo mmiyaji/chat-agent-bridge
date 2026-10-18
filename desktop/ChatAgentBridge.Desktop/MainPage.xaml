@@ -17,6 +17,7 @@
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
                         PaneDisplayMode="Auto" OpenPaneLength="240"
+                        DisplayModeChanged="MainNavigation_DisplayModeChanged"
                         SelectionChanged="MainNavigation_SelectionChanged"
 
                         AutomationProperties.AutomationId="MainNavigation" x:Uid="MainNavigation">
@@ -40,7 +41,7 @@
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
             <NavigationView.Content>
-                <Grid Padding="16">
+                <Grid x:Name="MainContentGrid" Padding="16">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -171,9 +172,10 @@
                                 <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="AgentPermissionCard">
                                     <StackPanel Spacing="8">
                                         <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="chatAgentBridgeDesktopMainPageTextBlock027" />
-                                        <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentPermissionMode, Mode=TwoWay}" HorizontalAlignment="Stretch"  AutomationProperties.AutomationId="AgentPermissionMode" x:Uid="AgentPermissionMode">
+                                        <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentPermissionMode, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.CanConfigureAgentPermission, Mode=OneWay}" HorizontalAlignment="Stretch"  AutomationProperties.AutomationId="AgentPermissionMode" x:Uid="AgentPermissionMode">
                                             <ComboBoxItem  Tag="inherit"  x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem001" /><ComboBoxItem  Tag="read-only"  x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem002" /><ComboBoxItem  Tag="workspace-write"  x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem003" /><ComboBoxItem  Tag="full-access"  x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem004" /><ComboBoxItem  Tag="ask" IsEnabled="{x:Bind local:MainPage.SupportsOperationApproval(ViewModel.IsCodexProvider, ViewModel.UseAppServer), Mode=OneWay}"  x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem005" />
                                         </ComboBox>
+                                        <TextBlock Text="{x:Bind ViewModel.AgentPermissionStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="AgentPermissionStatus" />
                                         <TextBlock  TextWrapping="Wrap"  x:Uid="chatAgentBridgeDesktopMainPageTextBlock028" />
                                         <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="chatAgentBridgeDesktopMainPageTextBlock029" />
                                         <ToggleSwitch  IsOn="{x:Bind ViewModel.AllowAgentNetwork, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.CanConfigureAgentNetwork, Mode=OneWay}" AutomationProperties.AutomationId="AllowAgentNetwork"  x:Uid="AllowAgentNetwork" />

@@ -189,6 +189,15 @@
   <data name="ExecutionPolicySummary" xml:space="preserve">
     <value>依頼の範囲: {0}。承認: {1}。作業フォルダー: {2}。AIの操作: {3}。ツールのネットワーク: {4}。結果: {5}。</value>
   </data>
+  <data name="AskPermissionChangedToReadOnly" xml:space="preserve">
+    <value>「操作ごとに確認」はCodex App Serverが必要です。確認フローを利用できないため、読み取り専用に変更しました。</value>
+  </data>
+  <data name="CodexExecutableRequiredForAgentSettings" xml:space="preserve">
+    <value>この権限、モデル、推論レベルの設定にはCodexが必要です。codex.exeなどのCodex実行ファイルを選ぶか、別のCLIを選んでそのCLIの設定を使用してください。</value>
+  </data>
+  <data name="CustomPermissionModeManagedByCli" xml:space="preserve">
+    <value>カスタムCLIの権限はCLI自身の設定で管理されます。このアプリはカスタムコマンドにエージェント権限モードを適用しません。</value>
+  </data>
   <data name="ExitCode" xml:space="preserve">
     <value>終了コード: {0}</value>
   </data>
@@ -225,8 +234,8 @@
   <data name="ModelAndReasoning" xml:space="preserve">
     <value>モデルと推論レベル</value>
   </data>
-  <data name="ModelsUnavailableEnterManually" xml:space="preserve">
-    <value>このCLIでは候補を取得できません。モデル名を直接入力してください。</value>
+  <data name="CustomModelSettingsManagedByCli" xml:space="preserve">
+    <value>その他のCLIでは、モデルと推論の強さをCLI自身の設定や起動引数で指定してください。このアプリのモデル入力欄は利用できません。</value>
   </data>
   <data name="NetworkManagedByCli" xml:space="preserve">
     <value>CLI側で管理（アプリから制限しません）</value>

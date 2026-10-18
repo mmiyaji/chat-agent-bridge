@@ -28,6 +28,8 @@ public partial class MainPageViewModel : ObservableObject
     private bool _chatConnectionPreparing;
     private bool _savedWorkspaceExists;
     private bool _lastSaveSucceeded;
+    private bool _adjustingAgentPermissionMode;
+    private bool _agentPermissionModeAdjusted;
 
     public ModelCatalogViewModel ModelCatalog { get; }
     public ObservableCollection<ReasoningEffortChoice> ReasoningEffortCandidates { get; } = [];
@@ -65,6 +67,8 @@ public partial class MainPageViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(ExecutionPolicySummary));
                 OnPropertyChanged(nameof(CanConfigureAgentNetwork));
+                OnPropertyChanged(nameof(CanConfigureAgentPermission));
+                OnPropertyChanged(nameof(AgentPermissionStatus));
             }
         };
     }
@@ -98,7 +102,7 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnAgentExecutableChanged(string value) => InvalidateModelCatalog();
     [ObservableProperty] public partial string AgentArguments { get; set; } = "exec --json -";
     partial void OnAgentArgumentsChanged(string value) => InvalidateModelCatalog();
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat)), NotifyPropertyChangedFor(nameof(CanConfigureAgentPermission)), NotifyPropertyChangedFor(nameof(AgentPermissionStatus))]
     public partial string AgentProvider { get; set; } = "codex";
     public bool IsCodexProvider => AgentProvider == "codex";
     public bool IsCustomProvider => AgentProvider == "custom";
@@ -142,9 +146,14 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial bool CanChangeStartup { get; set; }
     [ObservableProperty] public partial string StartupStatus { get; set; } = ViewModelText.Get("CheckingStartupSettings");
     private readonly Startup.StartupTaskService _startup = new();
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsExecMode)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsExecMode)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat)), NotifyPropertyChangedFor(nameof(CanConfigureAgentPermission)), NotifyPropertyChangedFor(nameof(AgentPermissionStatus))]
     public partial bool UseAppServer { get; set; }
-    partial void OnUseAppServerChanged(bool value) => InvalidateModelCatalog();
+    partial void OnUseAppServerChanged(bool value)
+    {
+        InvalidateModelCatalog();
+        if (!value && !_initializingSettings && !IsLoading && AgentPermissionMode == "ask")
+            SetAgentPermissionModeAfterCapabilityLoss();
+    }
     public bool IsExecMode => !UseAppServer;
     public bool CanShareApprovalsInChat => IsCodexProvider && UseAppServer;
     [ObservableProperty] public partial string MattermostServerUrl { get; set; } = string.Empty;
@@ -156,6 +165,13 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial bool ShareApprovalsInChat { get; set; }
     [ObservableProperty] public partial bool RequireApproval { get; set; } = true;
     [ObservableProperty] public partial string AgentPermissionMode { get; set; } = "inherit";
+    partial void OnAgentPermissionModeChanged(string value)
+    {
+        if (!_adjustingAgentPermissionMode) _agentPermissionModeAdjusted = false;
+        OnPropertyChanged(nameof(CanConfigureAgentNetwork));
+        OnPropertyChanged(nameof(AgentPermissionStatus));
+        OnPropertyChanged(nameof(ExecutionPolicySummary));
+    }
     [ObservableProperty] public partial bool AllowAgentNetwork { get; set; }
     [ObservableProperty] public partial string TrustedWorkspaceRoots { get; set; } = string.Empty;
     [ObservableProperty] public partial string ChatApprovalMode { get; set; } = "always";
@@ -164,6 +180,9 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string SlackAllowedThreadIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostAllowedThreadIds { get; set; } = string.Empty;
     public bool CanConfigureAgentNetwork => IsCodexProvider && AgentPermissionMode is "workspace-write" or "ask";
+    public bool CanConfigureAgentPermission => !IsCustomProvider;
+    public string AgentPermissionStatus => IsCustomProvider ? ViewModelText.Get("CustomPermissionModeManagedByCli")
+        : _agentPermissionModeAdjusted ? ViewModelText.Get("AskPermissionChangedToReadOnly") : string.Empty;
     private string NetworkPolicyLabel => !IsCodexProvider ? ViewModelText.Get("NetworkManagedByCli")
         : AgentPermissionMode == "full-access" ? ViewModelText.Get("NetworkUnrestrictedFullAccess")
         : AgentPermissionMode == "inherit" && !UseAppServer ? ViewModelText.Get("UseCliNetworkSettings")
@@ -277,10 +296,9 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnAgentProviderChanged(string value)
     {
         InvalidateModelCatalog();
-        if (value == "custom")
-            ModelCatalog.Status = ViewModelText.Get("ModelsUnavailableEnterManually");
         if (IsLoading) return;
         UseAppServer = false;
+        if (value == "custom") SetAgentPermissionMode("inherit", adjusted: false);
         AgentModel = "";
         AgentReasoningEffort = null;
         AgentExecutable = value == "claude" ? "claude" : value == "codex" ? "codex" : AgentExecutable;
@@ -333,6 +351,10 @@ public partial class MainPageViewModel : ObservableObject
                 if (!ExecutionPolicy.IsWorkspaceTrusted(snapshot, snapshot.WorkspaceRoot))
                     throw new InvalidOperationException(ViewModelText.Get("WorkspaceOutsideTrustedRoots"));
             }
+            if (snapshot.AgentProvider == AgentProfile.Codex && AgentProfile.ResolveProvider(snapshot) == AgentProfile.Custom &&
+                (snapshot.AgentPermissionMode != "inherit" ||
+                 snapshot.AgentModel is not null || snapshot.AgentReasoningEffort is not null))
+                throw new InvalidOperationException(ViewModelText.Get("CodexExecutableRequiredForAgentSettings"));
             _ = AgentProfile.BuildInvocation(snapshot);
             await _settingsStore.SaveAsync(snapshot);
             _settings = snapshot;
@@ -549,7 +571,7 @@ public partial class MainPageViewModel : ObservableObject
     private void InvalidateModelCatalog()
     {
         if (ModelCatalog is not null)
-            ModelCatalog.Invalidate();
+            ModelCatalog.Invalidate(IsCustomProvider ? ViewModelText.Get("CustomModelSettingsManagedByCli") : null);
     }
 
     public void SetMattermostToken(string value)
@@ -713,6 +735,17 @@ public partial class MainPageViewModel : ObservableObject
     }
 
     private static string? NormalizeModel(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private void SetAgentPermissionModeAfterCapabilityLoss() => SetAgentPermissionMode("read-only", adjusted: true);
+
+    private void SetAgentPermissionMode(string value, bool adjusted)
+    {
+        _agentPermissionModeAdjusted = adjusted;
+        _adjustingAgentPermissionMode = true;
+        AgentPermissionMode = value;
+        _adjustingAgentPermissionMode = false;
+        OnPropertyChanged(nameof(AgentPermissionStatus));
+    }
 
     private void SetStatus(string title, string message, string severity)
     {

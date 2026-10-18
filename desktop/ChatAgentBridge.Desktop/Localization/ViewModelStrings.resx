@@ -189,6 +189,15 @@
   <data name="ExecutionPolicySummary" xml:space="preserve">
     <value>Request scope: {0}. Approval: {1}. Workspace: {2}. Agent actions: {3}. Tool network: {4}. Results: {5}.</value>
   </data>
+  <data name="AskPermissionChangedToReadOnly" xml:space="preserve">
+    <value>“Ask before each action” requires Codex App Server. This mode changed to read-only because that approval flow is unavailable.</value>
+  </data>
+  <data name="CodexExecutableRequiredForAgentSettings" xml:space="preserve">
+    <value>These permission, model, or reasoning settings require Codex. Select a Codex executable (such as codex.exe), or choose another CLI and use its own settings.</value>
+  </data>
+  <data name="CustomPermissionModeManagedByCli" xml:space="preserve">
+    <value>Custom CLI permissions are controlled by that CLI's own settings. This app does not apply agent permission modes to custom commands.</value>
+  </data>
   <data name="ExitCode" xml:space="preserve">
     <value>Exit code: {0}</value>
   </data>
@@ -225,8 +234,8 @@
   <data name="ModelAndReasoning" xml:space="preserve">
     <value>Model and reasoning effort</value>
   </data>
-  <data name="ModelsUnavailableEnterManually" xml:space="preserve">
-    <value>This CLI cannot list model options. Enter the model name manually.</value>
+  <data name="CustomModelSettingsManagedByCli" xml:space="preserve">
+    <value>For a custom CLI, set the model and reasoning effort in that CLI's own settings or launch arguments. This app's model fields are unavailable.</value>
   </data>
   <data name="NetworkManagedByCli" xml:space="preserve">
     <value>Managed by the CLI (the app does not restrict it)</value>

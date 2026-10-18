@@ -30,6 +30,7 @@ $actions = [Collections.Generic.List[object]]::new()
 $failures = [Collections.Generic.List[object]]::new()
 $coverage = @{}
 $coverageBySeed = @{}
+$completedSeeds = [Collections.Generic.List[int]]::new()
 $script:currentCoverage = $null
 $script:uiCommandCount = 0
 $currentSeed = 0
@@ -59,15 +60,24 @@ function Invoke-UI([string[]]$Arguments, [int]$TimeoutMs = 8000) {
     if ($child.ExitCode -ne 0) { throw "winapp ui exit $($child.ExitCode): $($Arguments -join ' ') $stderr $stdout" }
     return $stdout.Trim()
 }
-function Wait-UI([string]$Id, [string]$Value = '', [int]$TimeoutMs = 5000, [switch]$Contains, [string]$Property = '') {
+function Wait-UI([string]$Id, [string]$Value = '', [int]$TimeoutMs = 5000, [switch]$Contains, [switch]$Gone, [switch]$CheckValue, [string]$Property = '') {
     $args = @('ui', 'wait-for', $Id)
+    if ($Gone) { $args += '--gone' }
     if ($Property) { $args += @('-p', $Property) }
     if ($Value -ne '') { $args += @('--value', $Value); if ($Contains) { $args += '--contains' } }
     $args += @('-t', "$TimeoutMs")
     [void](Invoke-UI $args ($TimeoutMs + 1000))
+    if ($CheckValue -and $Value -eq '' -and -not $Property -and -not $Gone) {
+        # get-value falls back to the field label when its value is empty.
+        $actual = Invoke-UI @('ui','get-property',$Id,'-p','Value','--json') | ConvertFrom-Json
+        if ($actual.properties.PSObject.Properties.Name -notcontains 'Value' -or $actual.properties.Value -ne '') {
+            throw "Expected an empty value for '$Id'."
+        }
+    }
 }
 function Open-Page([string]$NavId, [string]$Anchor) {
     [void](Invoke-UI @('ui', 'invoke', $NavId))
+    [void](Invoke-UI @('ui', 'scroll-into-view', $Anchor))
     Wait-UI $Anchor
     if ($script:currentCoverage) {
         $page = @($targets | Where-Object nav -eq $NavId | Select-Object -First 1)
@@ -75,6 +85,103 @@ function Open-Page([string]$NavId, [string]$Anchor) {
     }
 }
 function Go-Overview { Open-Page 'NavOverview' 'SetupCompletionSummary' }
+function Select-VisibleChoice([string]$Label) {
+    $windows = Invoke-UI @('ui','list-windows','--json') | ConvertFrom-Json
+    $popup = @($windows | Where-Object title -eq 'PopupHost')
+    if ($popup.Count -ne 1) { throw "Expected one open choice popup for '$Label'." }
+    $scope = @('-w', "$($popup[0].hwnd)")
+    $found = Invoke-UI (@('ui','search',$Label,'--json') + $scope) | ConvertFrom-Json
+    $selectors = @($found.matches | Where-Object { $_.type -eq 'ListItem' -and $_.name -eq $Label -and $_.isEnabled -and -not $_.isOffscreen } | Select-Object -ExpandProperty selector -Unique)
+    if ($selectors.Count -ne 1) { throw "Expected one visible choice '$Label'." }
+    [void](Invoke-UI (@('ui','invoke',$selectors[0]) + $scope))
+}
+function Set-Theme([string]$ThemeId) {
+    Open-Page 'NavAgentSettings' 'AgentProvider'
+    $theme = switch ($ThemeId) { 'ThemeSystem' { 'system' } 'ThemeLight' { 'light' } 'ThemeDark' { 'dark' } default { throw "Unknown theme '$ThemeId'." } }
+    [void](Invoke-UI @('ui', 'scroll-into-view', $ThemeId))
+    [void](Invoke-UI @('ui', 'invoke', $ThemeId))
+    $path = Join-Path $DataDirectory 'appearance.json'
+    if ($theme -eq 'system' -and -not (Test-Path -LiteralPath $path -PathType Leaf)) { return }
+    $deadline = [DateTime]::UtcNow.AddSeconds(8)
+    do {
+        if (Test-Path -LiteralPath $path -PathType Leaf) {
+            try {
+                $saved = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+                if ($saved.Theme -eq $theme) { return }
+            }
+            catch { }
+        }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw "Theme '$theme' was not persisted to the isolated data directory."
+}
+function Exercise-AboutDialog([string]$Kind) {
+    Open-Page 'NavAbout' 'AboutProduct'
+    $button = @{changelog='AboutChangelog';terms='AboutTerms';privacy='AboutPrivacy';'exit-cancel'='AboutExit'}[$Kind]
+    if ($button) { [void](Invoke-UI @('ui', 'scroll-into-view', $button)) }
+    switch ($Kind) {
+        'changelog' {
+            [void](Invoke-UI @('ui', 'invoke', 'AboutChangelog'))
+            Wait-UI 'AboutChangelogDialog'
+            Wait-UI 'CloseButton' '' 5000
+            [void](Invoke-UI @('ui', 'invoke', 'CloseButton'))
+            Wait-UI 'AboutChangelogDialog' '' 5000 -Gone
+        }
+        'terms' {
+            [void](Invoke-UI @('ui', 'invoke', 'AboutTerms'))
+            Wait-UI 'PolicyDialog'
+            Wait-UI 'PolicyBody'
+            [void](Invoke-UI @('ui', 'invoke', 'PolicyClose'))
+            Wait-UI 'PolicyDialog' '' 5000 -Gone
+        }
+        'privacy' {
+            [void](Invoke-UI @('ui', 'invoke', 'AboutPrivacy'))
+            Wait-UI 'PolicyDialog'
+            Wait-UI 'PolicyBody'
+            [void](Invoke-UI @('ui', 'invoke', 'PolicyClose'))
+            Wait-UI 'PolicyDialog' '' 5000 -Gone
+        }
+        'exit-cancel' {
+            [void](Invoke-UI @('ui', 'invoke', 'AboutExit'))
+            Wait-UI 'AboutExitConfirmation'
+            Wait-UI 'CloseButton' '' 5000
+            [void](Invoke-UI @('ui', 'invoke', 'CloseButton'))
+            Wait-UI 'AboutExitConfirmation' '' 5000 -Gone
+            if (-not (Get-Process -Id $AppPid -ErrorAction SilentlyContinue)) { throw 'Canceling the exit dialog closed the app.' }
+        }
+        default { throw "Unknown About dialog kind '$Kind'." }
+    }
+}
+function Exercise-PolicyControl([string]$Kind, [Random]$Random) {
+    Open-Page 'NavAgentSettings' 'AgentProvider'
+    [void](Invoke-UI @('ui', 'invoke', 'AgentProvider'))
+    [void](Invoke-UI @('ui', 'invoke', 'ProviderOptionCodex'))
+    Wait-UI 'ReasoningEffortCandidates' 'True' 3000 -Property 'IsEnabled'
+    switch ($Kind) {
+        'inference' {
+            [void](Invoke-UI @('ui', 'scroll-into-view', 'ReasoningEffortCandidates'))
+            [void](Invoke-UI @('ui', 'invoke', 'ReasoningEffortCandidates'))
+            Select-VisibleChoice 'CLIの既定値'
+            Wait-UI 'ReasoningEffortCandidates' 'CLIの既定値' 3000
+            return 'inference=CLIの既定値 (draft only)'
+        }
+        'permission' {
+            $choice = @('読み取り・計画のみ', 'フォルダー内の編集を自動許可')[$Random.Next(2)]
+            [void](Invoke-UI @('ui', 'invoke', 'AgentPermissionMode'))
+            Select-VisibleChoice $choice
+            Wait-UI 'AgentPermissionMode' $choice 3000
+            return "permission=$choice (draft only)"
+        }
+        'approval' {
+            $choice = @('毎回確認', '最初だけ確認')[$Random.Next(2)]
+            [void](Invoke-UI @('ui', 'invoke', 'ChatApprovalMode'))
+            Select-VisibleChoice $choice
+            Wait-UI 'ChatApprovalMode' $choice 3000
+            return "approval=$choice (draft only)"
+        }
+        default { throw "Unknown policy control '$Kind'." }
+    }
+}
 function Get-SavedProgress {
     $path = Join-Path $DataDirectory 'settings.json'
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return 0 }
@@ -117,6 +224,7 @@ public static class MonkeyNative {
 }
 '@
 
+try {
 # Confirm this PID reads exactly the caller-provided test directory before any input changes.
 [void](Invoke-UI @('ui', 'invoke', 'NavOverview'))
 Wait-UI 'SettingsLocation' $DataDirectory
@@ -131,15 +239,21 @@ $targets = @(
     @{ nav='NavAgentSettings'; anchor='AgentProvider'; name='agent' },
     @{ nav='NavConnections'; anchor='MattermostServerUrl'; name='connections' },
     @{ nav='NavChat'; anchor='ConnectMattermost'; name='chat' },
-    @{ nav='NavHistory'; anchor='HistoryStatus'; name='history' }
+    @{ nav='NavHistory'; anchor='HistoryStatus'; name='history' },
+    @{ nav='NavAbout'; anchor='AboutProduct'; name='about' }
 )
 $workspaceChoices = @($DataDirectory, '', (Join-Path $DataDirectory 'mock-雪-😀'))
 [IO.Directory]::CreateDirectory($workspaceChoices[2]) | Out-Null
 $providerChoices = @(@('codex','ProviderOptionCodex'), @('claude','ProviderOptionClaude'), @('custom','ProviderOptionCustom'))
+$categoryNames = @{
+    0='navigation'; 1='setup-links'; 2='agent-drafts'; 3='connection-drafts'; 4='provider-choices'
+    5='saves'; 6='reloads'; 7='resizes'; 8='rapid-navigation'; 9='scroll-and-long-drafts'
+    10='about-dialogs'; 11='themes'; 12='policy-controls'
+}
 
-try {
     foreach ($seed in $Seeds) {
         $currentSeed = $seed
+        $currentIndex = 0
         if ((Get-SavedProgress) -ne 0 -or (Test-Path -LiteralPath (Join-Path $DataDirectory 'settings.json'))) {
             Remove-Item -LiteralPath (Join-Path $DataDirectory 'settings.json') -Force -ErrorAction SilentlyContinue
             Go-Overview
@@ -147,15 +261,48 @@ try {
             Wait-UI 'SetupCompletionSummary' '0 / 3 完了'
         }
         $rng = [Random]::new($seed)
-        $script:currentCoverage = @{ pages = @{ overview=0; workbench=0; agent=0; connections=0; chat=0; history=0 }; categories=@{} }
+        $script:currentCoverage = @{
+            pages = @{ overview=0; workbench=0; agent=0; connections=0; chat=0; history=0; about=0 }
+            categories = @{}
+            aboutDialogs = @{}
+            themes = @{}
+            policies = @{}
+            longUnicodeDrafts = 0
+            emptyDrafts = 0
+        }
+        $coverageBySeed["$seed"] = $script:currentCoverage
         $pageCounts = @{}
         foreach ($target in $targets) { Open-Page $target.nav $target.anchor }
+        foreach ($draft in @(@('NavAgentSettings','WorkspaceRoot'), @('NavConnections','MattermostChannelId'))) {
+            Open-Page $draft[0] $draft[1]
+            [void](Invoke-UI @('ui','set-value',$draft[1],''))
+            Wait-UI $draft[1] '' 3000 -CheckValue
+            $script:currentCoverage.emptyDrafts++
+        }
+        Assert-SavedProgress
+        foreach ($themeId in @('ThemeSystem', 'ThemeLight', 'ThemeDark')) {
+            Go-Overview
+            Set-Theme $themeId
+            $script:currentCoverage.themes[$themeId] = 1 + [int]$script:currentCoverage.themes[$themeId]
+        }
+        Go-Overview
+        Set-Theme 'ThemeSystem'
+        foreach ($kind in (@('changelog', 'terms', 'privacy', 'exit-cancel') | Sort-Object { $rng.Next() })) {
+            Exercise-AboutDialog $kind
+            $script:currentCoverage.aboutDialogs[$kind] = 1 + [int]$script:currentCoverage.aboutDialogs[$kind]
+        }
+        foreach ($policyKind in (@('inference', 'permission', 'approval') | Sort-Object { $rng.Next() })) {
+            [void](Exercise-PolicyControl $policyKind $rng)
+            $script:currentCoverage.policies[$policyKind] = 1 + [int]$script:currentCoverage.policies[$policyKind]
+        }
         $categoryOrder = @()
         $resizes = @(@(720,600), @(1160,800))
         for ($i = 1; $i -le $ActionsPerSeed; $i++) {
             $currentIndex = $i
-            if ((($i - 1) % 10) -eq 0) { $categoryOrder = @(0..9 | Sort-Object { $rng.Next() }) }
-            $category = $categoryOrder[($i - 1) % 10]
+            if ((($i - 1) % 13) -eq 0) { $categoryOrder = @(0..12 | Sort-Object { $rng.Next() }) }
+            $category = $categoryOrder[($i - 1) % 13]
+            $categoryName = $categoryNames[$category]
+            $script:currentCoverage.categories[$categoryName] = 1 + [int]$script:currentCoverage.categories[$categoryName]
             $status = 'PASS'
             $detail = ''
             try {
@@ -182,20 +329,24 @@ try {
                         if ($field -eq 'AgentModel') {
                             [void](Invoke-UI @('ui','invoke','AgentProvider'))
                             [void](Invoke-UI @('ui','invoke','ProviderOptionCodex'))
+                            [void](Invoke-UI @('ui','scroll-into-view','AgentModel'))
                             Wait-UI 'AgentModel' 'True' 3000 -Property 'IsEnabled'
                         }
                         elseif ($field -eq 'AgentArguments') {
                             [void](Invoke-UI @('ui','invoke','AgentProvider'))
                             [void](Invoke-UI @('ui','invoke','ProviderOptionCustom'))
+                            [void](Invoke-UI @('ui','scroll-into-view','AgentArguments'))
                             Wait-UI 'AgentArguments' 'True' 3000 -Property 'IsEnabled'
                         }
                         $value = switch ($field) {
                             'AgentModel' { "model-雪-$seed-$i" }
-                            'AgentExecutable' { "never-run-$seed-$i.exe" }
+                            'AgentExecutable' { Join-Path $DataDirectory "never-run-雪-$seed-$i/codex.exe" }
                             'AgentArguments' { "--fixture 雪-$seed-$i" }
                             'WorkspaceRoot' { $workspaceChoices[$rng.Next($workspaceChoices.Count)] }
                         }
+                        [void](Invoke-UI @('ui','scroll-into-view',$field))
                         [void](Invoke-UI @('ui','set-value',$field,$value))
+                        Wait-UI $field $value 3000 -CheckValue
                         Assert-SavedProgress
                         $detail = "$field (draft only)"
                         $coverage.agentDrafts = 1 + [int]$coverage.agentDrafts
@@ -209,6 +360,7 @@ try {
                             default { @('', "fake-$field-$seed-$i-雪")[$rng.Next(2)] }
                         }
                         [void](Invoke-UI @('ui','set-value',$field,$value))
+                        if ($field -notmatch 'Token$') { Wait-UI $field $value 3000 -CheckValue }
                         Assert-SavedProgress
                         $detail = "$field (fake/draft only)"
                         $coverage.connectionDrafts = 1 + [int]$coverage.connectionDrafts
@@ -219,7 +371,9 @@ try {
                         [void](Invoke-UI @('ui','invoke','AgentProvider'))
                         [void](Invoke-UI @('ui','invoke',$choice[1]))
                         if ($choice[0] -eq 'custom') {
+                            [void](Invoke-UI @('ui','scroll-into-view','AgentModel'))
                             Wait-UI 'AgentModel' 'False' 3000 -Property 'IsEnabled'
+                            [void](Invoke-UI @('ui','scroll-into-view','AgentArguments'))
                             Wait-UI 'AgentArguments' 'True' 3000 -Property 'IsEnabled'
                         }
                         Assert-SavedProgress
@@ -235,7 +389,7 @@ try {
                         Assert-SavedProgress
                         $saved = Get-Content -LiteralPath (Join-Path $DataDirectory 'settings.json') -Raw | ConvertFrom-Json
                         if ($null -eq $saved.SchemaVersion) { throw 'Saved settings JSON is missing SchemaVersion.' }
-                        $detail = "$target.name saved and reloaded"
+                        $detail = "$($target.name) saved and reloaded"
                         $coverage.saves = 1 + [int]$coverage.saves
                     }
                     6 {
@@ -261,12 +415,14 @@ try {
                         $coverage.rapidNav = 1 + [int]$coverage.rapidNav
                     }
                     9 {
-                        if (($i % 20) -eq 9) {
+                        if ($script:currentCoverage.longUnicodeDrafts -eq 0 -or ($i % 20) -eq 9) {
                             Open-Page 'NavWorkbench' 'Prompt'
                             $prompt = ('長文の動作確認・雪🙂 ' * 120) + " seed=$seed action=$i"
                             [void](Invoke-UI @('ui','set-value','Prompt',$prompt))
+                            Wait-UI 'Prompt' $prompt 3000 -CheckValue
                             Assert-SavedProgress
                             $coverage.longUnicodeDrafts = 1 + [int]$coverage.longUnicodeDrafts
+                            $script:currentCoverage.longUnicodeDrafts++
                         }
                         $target = $targets[$rng.Next($targets.Count)]
                         Open-Page $target.nav $target.anchor
@@ -277,10 +433,34 @@ try {
                             'connections' { 'SlackAppToken' }
                             'chat' { 'ChatUsageSummary' }
                             'history' { 'HistoryStatus' }
+                            'about' { 'AboutScroll' }
                         }
                         [void](Invoke-UI @('ui','scroll-into-view',$scrollTarget))
                         $detail = "scroll $($target.name)"
                         $coverage.scrolls = 1 + [int]$coverage.scrolls
+                    }
+                    10 {
+                        $kind = @('changelog', 'terms', 'privacy', 'exit-cancel')[$rng.Next(4)]
+                        Exercise-AboutDialog $kind
+                        $script:currentCoverage.aboutDialogs[$kind] = 1 + [int]$script:currentCoverage.aboutDialogs[$kind]
+                        $detail = "About dialog=$kind (safe close)"
+                        $coverage.aboutDialogs = 1 + [int]$coverage.aboutDialogs
+                    }
+                    11 {
+                        $themeId = @('ThemeSystem', 'ThemeLight', 'ThemeDark')[$rng.Next(3)]
+                        Go-Overview
+                        Set-Theme $themeId
+                        $script:currentCoverage.themes[$themeId] = 1 + [int]$script:currentCoverage.themes[$themeId]
+                        $detail = "theme=$themeId"
+                        $coverage.themes = 1 + [int]$coverage.themes
+                    }
+                    12 {
+                        $policyKind = @('inference', 'permission', 'approval')[$rng.Next(3)]
+                        $policyDetail = Exercise-PolicyControl $policyKind $rng
+                        Assert-SavedProgress
+                        $script:currentCoverage.policies[$policyKind] = 1 + [int]$script:currentCoverage.policies[$policyKind]
+                        $detail = $policyDetail
+                        $coverage.policies = 1 + [int]$coverage.policies
                     }
                 }
                 Record-Action $seed $i $category $detail $status
@@ -296,11 +476,16 @@ try {
             if (($i % 20) -eq 0) { Write-Output "seed=$seed action=$i/$ActionsPerSeed failures=$($failures.Count)" }
         }
         foreach ($target in $targets) { if (-not $script:currentCoverage.pages[$target.name]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="Page not exercised: $($target.name)" }) } }
-        $coverageBySeed["$seed"] = $script:currentCoverage
+        foreach ($kind in @('changelog', 'terms', 'privacy', 'exit-cancel')) { if (-not $script:currentCoverage.aboutDialogs[$kind]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="About dialog not exercised: $kind" }) } }
+        foreach ($themeId in @('ThemeSystem', 'ThemeLight', 'ThemeDark')) { if (-not $script:currentCoverage.themes[$themeId]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="Theme not exercised: $themeId" }) } }
+        foreach ($policyKind in @('inference', 'permission', 'approval')) { if (-not $script:currentCoverage.policies[$policyKind]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="Policy control not exercised: $policyKind" }) } }
+        Go-Overview
+        Set-Theme 'ThemeSystem'
         Resize-App 1160 800
         Go-Overview
         Assert-SavedProgress
         [void](Invoke-UI @('ui','screenshot','-o',(Join-Path $runDirectory "final-seed-$seed.png")) 12000)
+        $completedSeeds.Add([int]$seed)
         if ($seed -ne $Seeds[-1]) {
             Remove-Item -LiteralPath (Join-Path $DataDirectory 'settings.json') -Force -ErrorAction SilentlyContinue
             [void](Invoke-UI @('ui','invoke','SetupReloadSettings'))
@@ -308,12 +493,27 @@ try {
         }
     }
 }
+catch {
+    $failure = @{
+        seed = $currentSeed
+        index = $currentIndex
+        category = 'harness'
+        detail = 'The run stopped before completing all scheduled actions.'
+        error = $_.Exception.Message
+    }
+    $failures.Add($failure)
+    try { Record-Action $currentSeed $currentIndex 'harness' $failure.detail 'FAIL' $failure.error } catch { }
+}
 finally {
+    $completed = $completedSeeds.Count -eq $Seeds.Count
+    $passed = $completed -and $failures.Count -eq 0
+    $status = if ($passed) { 'PASS' } elseif ($completed) { 'FAIL' } else { 'INCOMPLETE' }
     $summary = @{
         appPid = $AppPid; dataDirectory = $DataDirectory; seeds = $Seeds; actionsPerSeed = $ActionsPerSeed
+        status = $status; passed = $passed; completed = $completed; completedSeeds = $completedSeeds
         randomizedActionCount = $actions.Count; uiCommandCount = $script:uiCommandCount; failures = $failures; coverage = $coverage; coverageBySeed=$coverageBySeed; actionLog = $logPath
     }
     $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $resultsPath -Encoding utf8
     Write-Output "Monkey results: $resultsPath"
 }
-if ($failures.Count) { exit 1 }
+if (-not $summary.passed) { exit 1 }

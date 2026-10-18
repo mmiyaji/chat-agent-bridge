@@ -129,7 +129,9 @@ UIテストは最初に空の隔離ディレクトリを指定します。`-Test
 
 CLIチェックは依頼を実行せず、fixtureによるモデル候補確認を含みます。テスト結果とスクリーンショットは `desktop/artifacts/onboarding-wizard-review` に保存されます。
 
-ランダム操作の検証は、空の隔離保存先で起動後に `./desktop/MonkeyTest.ps1 -AppPid 12345 -DataDirectory 'C:\TestData\Monkey'` を実行します。既定は固定シード2個・各120操作です。画面遷移、設定入力、保存・再読み込み、サイズ変更などを組み合わせ、操作ログ・結果・失敗時の画像を `desktop/artifacts/monkey-*` に保存します。AI実行・モデル候補取得・外部チャットへの接続・Windows自動起動の変更は対象に含めません。再実行時はテスト専用マーカーがある保存先の設定を初期化します。
+ランダム操作の検証は、空の隔離保存先で起動し、初期設定ガイドを「後で設定」にしてから `./desktop/MonkeyTest.ps1 -AppPid 12345 -DataDirectory '<隔離保存先の絶対パス>'` を実行します。既定は固定シード2個・各120操作です。情報を含む7画面の遷移、設定入力、保存・再読み込み、サイズ変更、3種類のテーマ、規約・更新内容・終了キャンセル、権限・承認・推論の選択を組み合わせます。操作ログ・完了状態・画面別の網羅状況・失敗時の画像を `desktop/artifacts/monkey-*` に保存します。AI実行・モデル候補取得・外部チャットへの接続・Windows自動起動の変更は対象に含めません。再実行時はテスト専用マーカーがある保存先の設定を初期化します。
+
+`ResponsiveNavigationUiE2E.ps1 -AppPid <PID> -DataDirectory <隔離保存先> -Language ja` は7画面を幅500・720・1160 DIPで往復し、メニューボタンと見出しの重なり、および拡大後の余白の復帰を検証します。英語画面には `-Language en` を指定します。`ProviderPermissionUiE2E.ps1` は日本語画面でCLI切り替え、App Serverの承認モードの保存・再読み込み、非対応の実行ファイルへの案内を確認します。これら2本は、`desktop/artifacts` 配下かつMonkeyTestの `.cab-monkey-test` マーカーがある専用保存先を要求します。
 
 画面切り替え時のスクロール位置は `./desktop/NavigationScrollSmokeTest.ps1 -AppPid 12345 -DataDirectory 'C:\TestData\Scroll'` で検証します。720×600と1160×800で実際に下へスクロールしてから切り替え、遷移先のスクロール位置が先頭になることと、同じ画面を選び直しても位置が維持されることを確認します。手動実行画面にはスクロール範囲を作るためテスト用の複数行テキストを入力しますが、実行はしません。
 

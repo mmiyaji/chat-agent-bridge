@@ -28,6 +28,7 @@ public sealed partial class MainPage : Page
     public MainPage()
     {
         InitializeComponent();
+        UpdateNavigationContentOffset();
         _wizard = new Onboarding.OnboardingWizard(ViewModel, InboxPage.ViewModel);
         WizardHost.Content = _wizard;
         ViewModel.PropertyChanged += (_, args) =>
@@ -68,6 +69,19 @@ public sealed partial class MainPage : Page
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+
+    private void MainNavigation_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args) =>
+        UpdateNavigationContentOffset();
+
+    private void UpdateNavigationContentOffset()
+    {
+        if (MainContentGrid is null || MainNavigation is null) return;
+
+        MainContentGrid.Margin = MainNavigation.DisplayMode == NavigationViewDisplayMode.Minimal
+            ? new Thickness(0, 48, 0, 0)
+            : new Thickness(0);
+    }
+
     private async void ShowTerms_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: false);
     private async void ShowPrivacy_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: true);
     public static Visibility ToHiddenVisibility(bool visible) => visible ? Visibility.Collapsed : Visibility.Visible;
