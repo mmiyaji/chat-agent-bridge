@@ -37,7 +37,7 @@ public sealed class ClaudeUsageTests
         Assert.False(parsed.Usage.InputIncludesCache);
         Assert.Equal(24, parsed.Usage.TotalInputTokens);
         Assert.Equal("claude-sonnet-current", parsed.Usage.Model);
-        Assert.Equal("thread-total", parsed.Usage.Scope);
+        Assert.Equal("turn", parsed.Usage.Scope);
         Assert.True(parsed.HasResult);
 
         var incomplete = ClaudeOutputParser.Parse("{\"type\":\"result\",\"result\":\"x\",\"usage\":{\"input_tokens\":10}}");
@@ -131,7 +131,7 @@ public sealed class ClaudeUsageTests
             Assert.Equal(savedId, resumed.Claude!.SessionId);
             Assert.Contains("claude-e2e: resumed", resumed.Claude.FinalMessage);
             Assert.Contains("prompt=second offline prompt", resumed.Claude.FinalMessage);
-            Assert.Equal("thread-total", resumed.Usage!.Scope);
+            Assert.Equal("turn", resumed.Usage!.Scope);
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
     }

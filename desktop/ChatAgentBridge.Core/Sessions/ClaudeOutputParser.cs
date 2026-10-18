@@ -65,7 +65,7 @@ public static class ClaudeOutputParser
                         CachedInputTokens = ReadCounter(usage, "cache_read_input_tokens"),
                         CacheWriteInputTokens = ReadCounter(usage, "cache_creation_input_tokens"),
                         InputIncludesCache = false,
-                        Scope = "thread-total",
+                        Scope = "turn",
                         Source = "claude.stream-json",
                         Model = ReadUsageModel(root)
                     };

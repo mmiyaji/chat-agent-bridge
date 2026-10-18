@@ -1,6 +1,6 @@
 namespace ChatAgentBridge.Core.History;
 
-/// <summary>Durable execution metadata only. Prompt, output, tokens, and error text are intentionally absent.</summary>
+/// <summary>Durable execution metadata and usage counters. Prompts, output, credentials, and error text are absent.</summary>
 public sealed record ExecutionRecord
 {
     public Guid Id { get; init; } = Guid.NewGuid();

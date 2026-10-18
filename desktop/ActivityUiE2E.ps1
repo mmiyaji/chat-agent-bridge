@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][int]$AppProcessId,[Parameter(Mandatory)][string]$DataDir,[ValidateSet('ja','en')][string]$Language='ja')
+param([Parameter(Mandatory)][int]$AppProcessId,[Parameter(Mandatory)][string]$DataDir,[ValidateSet('ja','en')][string]$Language='ja',[switch]$OnlyHelpers)
 $ErrorActionPreference='Stop'
 $dataPath=[IO.Path]::GetFullPath($DataDir)
 $artifacts=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
@@ -49,7 +49,7 @@ function Scroll-To([string]$Id){
     Assert ([bool]$scroll) "Missing viewport for $Id"
     $sp=$scroll.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
     if($sp.Current.VerticallyScrollable){$sp.SetScrollPercent(-1,0);Start-Sleep -Milliseconds 150}
-    for($i=0;$i -lt 35;$i++){
+    for($i=0;$i -lt 55;$i++){
         $target=Element $Id
         if($target){
             $r=$target.Current.BoundingRectangle;$v=$scroll.Current.BoundingRectangle
@@ -57,8 +57,8 @@ function Scroll-To([string]$Id){
             if((Visible $target) -and $r.Top -ge $v.Top -and $r.Bottom -le $bottom){return}
         }
         if(-not $sp.Current.VerticallyScrollable -or $sp.Current.VerticalScrollPercent -ge 100){break}
-        $sp.Scroll([Windows.Automation.ScrollAmount]::NoAmount,[Windows.Automation.ScrollAmount]::SmallIncrement)
-        Start-Sleep -Milliseconds 80
+        $sp.SetScrollPercent(-1,[Math]::Min(100,$sp.Current.VerticalScrollPercent+2))
+        Start-Sleep -Milliseconds 100
     }
     throw "Could not expose $Id"
 }
@@ -87,6 +87,7 @@ function Period([string]$Name,[int]$Count){
     Wait-Text 'ActivityTotal' ($expected.ToString('N0'))
     Assert ((Value 'ActivityTotal') -eq $expected.ToString('N0')) "Incorrect total for $Name"
 }
+if($OnlyHelpers){return}
 try {
     Activity
     foreach($range in @(90,30,365,90,30,365,90)){

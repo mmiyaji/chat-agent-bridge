@@ -337,4 +337,24 @@
   <data name="ActivityDailyScale" xml:space="preserve"><value>最大 {0:N0}回／日</value></data>
   <data name="ActivityChatsTabCompact" xml:space="preserve"><value>会話 ({0})</value></data>
   <data name="ActivityRunsTabCompact" xml:space="preserve"><value>実行 ({0})</value></data>
+  <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}：選択期間外</value></data>
+  <data name="UsageTokens" xml:space="preserve"><value>トークン消費量</value></data>
+  <data name="UsageCache" xml:space="preserve"><value>キャッシュヒット率</value></data>
+  <data name="UsageTurn" xml:space="preserve"><value>実行ごと</value></data>
+  <data name="UsageRequest" xml:space="preserve"><value>最後のリクエストのみ</value></data>
+  <data name="UsageUnknown" xml:space="preserve"><value>未報告</value></data>
+  <data name="UsageNoRuns" xml:space="preserve"><value>実行なし</value></data>
+  <data name="UsagePercent" xml:space="preserve"><value>{0}%</value></data>
+  <data name="UsageHeadline" xml:space="preserve"><value>報告済みトークン：{0} ／ キャッシュヒット率：{1}</value></data>
+  <data name="UsageCoverage" xml:space="preserve"><value>報告状況：トークン {0}/{1}件・キャッシュ {2}/{1}件 ／ 集計範囲が異なるため除外：{3}件</value></data>
+  <data name="UsageTurnNote" xml:space="preserve"><value>実行単位の報告を集計します。最後のリクエストだけの値や、セッション全体の累積値は混ぜません。</value></data>
+  <data name="UsageRequestNote" xml:space="preserve"><value>部分的な利用量です。各実行の最後のリクエストだけを集計し、実行全体の消費量は表しません。</value></data>
+  <data name="UsageRecentRange" xml:space="preserve"><value>日別・直近28日（{0} ～ {1}）</value></data>
+  <data name="UsageDetails" xml:space="preserve"><value>入力（キャッシュ込み）：{0} ／ 出力：{1} ／ キャッシュ読み込み：{2} ／ キャッシュ書き込み：{3}</value></data>
+  <data name="UsageDayDetails" xml:space="preserve"><value>{0}
+{1}</value></data>
+  <data name="UsageBarLabel" xml:space="preserve"><value>{0}：{1}
+{2}</value></data>
+  <data name="UsageBarDetails" xml:space="preserve"><value>{0}
+{1}</value></data>
 </root>

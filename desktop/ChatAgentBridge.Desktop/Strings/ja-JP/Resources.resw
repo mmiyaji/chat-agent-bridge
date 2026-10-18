@@ -887,4 +887,18 @@
   <data name="ActivityHistogramContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>日別の実行回数グラフ</value></data>
   <data name="ActivityWeekdayContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>曜日ごとの利用傾向グラフ</value></data>
   <data name="ActivityModelContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>モデルごとの実行回数グラフ</value></data>
+  <data name="ActivityOutsideLegend.Text" xml:space="preserve"><value>– は選択期間外です。週の位置がわかるように枠を表示します。</value></data>
+  <data name="UsageHeading.Text" xml:space="preserve"><value>トークンとキャッシュ</value></data>
+  <data name="UsageMetric.Header" xml:space="preserve"><value>グラフの指標</value></data>
+  <data name="UsageMetric.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>グラフの指標</value></data>
+  <data name="UsageScope.Header" xml:space="preserve"><value>集計する報告範囲</value></data>
+  <data name="UsageScope.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>集計する報告範囲</value></data>
+  <data name="UsageDailyChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>日別のトークン消費量またはキャッシュヒット率</value></data>
+  <data name="UsageModelChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>モデル別のトークン消費量またはキャッシュヒット率</value></data>
+  <data name="UsageModelsHeading.Text" xml:space="preserve"><value>報告されたモデル別・選択期間の合計</value></data>
+  <data name="UsageDailyHelp.Text" xml:space="preserve"><value>バーにマウスを重ねると日付と報告値を確認できます。0 は報告値0、? は未報告、· は実行なしです。直近28日より前の日付も下の詳細から選べます。</value></data>
+  <data name="UsageDayExpander.Header" xml:space="preserve"><value>日別の詳細・選択期間のすべての日付</value></data>
+  <data name="UsageDay.Header" xml:space="preserve"><value>日付</value></data>
+  <data name="UsageDay.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>利用量を確認する日付</value></data>
+  <data name="UsageAccountingNote.Text" xml:space="preserve"><value>トークン数は入力（キャッシュの読み込み・書き込みを1回ずつ含む）＋出力で、両方の報告がある実行のみを合計します。キャッシュヒット率は、報告されたキャッシュ読み込み÷対応する入力合計です。率の単純平均ではなくトークン数で重み付けし、入力0では率を出しません。未報告は推測せず、CLIが報告した値を使います。請求額やアカウントの残量ではありません。複数モデルの内訳が不明な場合はモデル未報告として扱います。</value></data>
 </root>

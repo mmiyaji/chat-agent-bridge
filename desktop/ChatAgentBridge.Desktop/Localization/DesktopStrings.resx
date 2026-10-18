@@ -337,4 +337,24 @@
   <data name="ActivityDailyScale" xml:space="preserve"><value>Peak: {0:N0} runs/day</value></data>
   <data name="ActivityChatsTabCompact" xml:space="preserve"><value>Chats ({0})</value></data>
   <data name="ActivityRunsTabCompact" xml:space="preserve"><value>Runs ({0})</value></data>
+  <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}: outside the selected period</value></data>
+  <data name="UsageTokens" xml:space="preserve"><value>Token consumption</value></data>
+  <data name="UsageCache" xml:space="preserve"><value>Cache hit rate</value></data>
+  <data name="UsageTurn" xml:space="preserve"><value>Per execution</value></data>
+  <data name="UsageRequest" xml:space="preserve"><value>Last request only</value></data>
+  <data name="UsageUnknown" xml:space="preserve"><value>Not reported</value></data>
+  <data name="UsageNoRuns" xml:space="preserve"><value>No executions</value></data>
+  <data name="UsagePercent" xml:space="preserve"><value>{0}%</value></data>
+  <data name="UsageHeadline" xml:space="preserve"><value>Reported tokens: {0} · Cache hit rate: {1}</value></data>
+  <data name="UsageCoverage" xml:space="preserve"><value>Coverage: tokens {0}/{1} executions · cache {2}/{1} · different scope excluded: {3}</value></data>
+  <data name="UsageTurnNote" xml:space="preserve"><value>Per-execution reports only. CLI reports for the last request or cumulative session totals are excluded.</value></data>
+  <data name="UsageRequestNote" xml:space="preserve"><value>Partial usage: only the last request of each execution. This is not the full execution total.</value></data>
+  <data name="UsageRecentRange" xml:space="preserve"><value>Daily · last 28 days ({0}–{1})</value></data>
+  <data name="UsageDetails" xml:space="preserve"><value>Input (including cache): {0} · Output: {1} · Cache read: {2} · Cache write: {3}</value></data>
+  <data name="UsageDayDetails" xml:space="preserve"><value>{0}
+{1}</value></data>
+  <data name="UsageBarLabel" xml:space="preserve"><value>{0}: {1}
+{2}</value></data>
+  <data name="UsageBarDetails" xml:space="preserve"><value>{0}
+{1}</value></data>
 </root>

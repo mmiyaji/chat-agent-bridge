@@ -49,7 +49,7 @@
             <Style x:Key="ActivityHeat2" TargetType="Border" BasedOn="{StaticResource ActivityHeat0}"><Setter Property="Background" Value="{ThemeResource ActivityHeatMediumBrush}" /></Style>
             <Style x:Key="ActivityHeat3" TargetType="Border" BasedOn="{StaticResource ActivityHeat0}"><Setter Property="Background" Value="{ThemeResource ActivityHeatHighBrush}" /></Style>
             <Style x:Key="ActivityHeat4" TargetType="Border" BasedOn="{StaticResource ActivityHeat0}"><Setter Property="Background" Value="{ThemeResource ActivityHeatPeakBrush}" /></Style>
-            <Style x:Key="ActivityHeatOutside" TargetType="Border"><Setter Property="Background" Value="Transparent" /></Style>
+            <Style x:Key="ActivityHeatOutside" TargetType="Border" BasedOn="{StaticResource ActivityHeat0}"><Setter Property="Background" Value="Transparent" /></Style>
             <Style x:Key="OverviewReadyIconStyle" TargetType="FontIcon">
                 <Setter Property="Foreground" Value="{ThemeResource OverviewReadyIconBrush}" />
             </Style>

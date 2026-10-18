@@ -10,7 +10,8 @@ namespace ChatAgentBridge_Desktop.History;
 public sealed record ActivityCalendarCell(DateOnly Date, int Count, bool InRange)
 {
     public int Level => !InRange ? -1 : Count switch { 0 => 0, 1 => 1, < 4 => 2, < 8 => 3, _ => 4 };
-    public string Label => InRange ? DesktopText.Get("ActivityDayCount", Date.ToString("D"), Count) : Date.ToString("D");
+    public string Label => InRange ? DesktopText.Get("ActivityDayCount", Date.ToString("D"), Count) : DesktopText.Get("ActivityOutsideDay", Date.ToString("D"));
+    public string OutsideText => InRange ? "" : "–";
 }
 public sealed record ActivityBarRow(string Label, int Count, int Maximum)
 {
@@ -100,6 +101,7 @@ public sealed partial class HistoryPageViewModel
         var recent = _activity.Days.TakeLast(28).ToArray();
         var maxDay = Math.Max(1, recent.Max(day => day.Count));
         foreach (var day in recent) ActivityDaily.Add(new(day.Date, day.Count, maxDay));
+        RebuildUsage();
         foreach (var name in new[] { nameof(ActivityRange), nameof(ActivityTotal), nameof(ActivityActiveDays), nameof(ActivityStreak),
                      nameof(ActivityPeak), nameof(ActivityOutcomes), nameof(HasActivity), nameof(ActivityDailyStart), nameof(ActivityDailyEnd), nameof(ActivityDailyScale) })
             OnPropertyChanged(name);

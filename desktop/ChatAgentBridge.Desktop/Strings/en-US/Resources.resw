@@ -887,4 +887,18 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ActivityHistogramContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Daily run histogram</value></data>
   <data name="ActivityWeekdayContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Runs by weekday</value></data>
   <data name="ActivityModelContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Runs by model</value></data>
+  <data name="ActivityOutsideLegend.Text" xml:space="preserve"><value>– = outside selected period; outlined cells preserve the week layout.</value></data>
+  <data name="UsageHeading.Text" xml:space="preserve"><value>Tokens and cache</value></data>
+  <data name="UsageMetric.Header" xml:space="preserve"><value>Chart metric</value></data>
+  <data name="UsageMetric.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Chart metric</value></data>
+  <data name="UsageScope.Header" xml:space="preserve"><value>Report scope</value></data>
+  <data name="UsageScope.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Report scope</value></data>
+  <data name="UsageDailyChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Daily tokens or cache hit rate</value></data>
+  <data name="UsageModelChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Tokens or cache hit rate by model</value></data>
+  <data name="UsageModelsHeading.Text" xml:space="preserve"><value>By reported model · selected period</value></data>
+  <data name="UsageDailyHelp.Text" xml:space="preserve"><value>Hover a bar for its date and reported values. 0 = reported zero; ? = not reported; · = no executions. Earlier dates in this period are available below.</value></data>
+  <data name="UsageDayExpander.Header" xml:space="preserve"><value>Daily details · all dates in this period</value></data>
+  <data name="UsageDay.Header" xml:space="preserve"><value>Date</value></data>
+  <data name="UsageDay.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Usage detail date</value></data>
+  <data name="UsageAccountingNote.Text" xml:space="preserve"><value>Tokens = input (including cache reads/writes once) + output, for executions reporting both. Cache hit rate = reported cache reads ÷ corresponding total input; weighted by tokens, not averaged percentages. No input means no rate. Missing reports stay unknown; these are CLI-reported counts, not billing or account limits. Multi-model attribution unavailable from the CLI stays unknown.</value></data>
 </root>
