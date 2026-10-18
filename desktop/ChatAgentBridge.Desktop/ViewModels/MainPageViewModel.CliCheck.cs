@@ -14,6 +14,7 @@ public partial class MainPageViewModel
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(CheckCliCommand)), NotifyCanExecuteChangedFor(nameof(CancelCliCheckCommand))]
     public partial bool IsCheckingCli { get; set; }
     [ObservableProperty] public partial bool CliCheckSucceeded { get; set; }
+    [ObservableProperty] public partial bool CliCheckFailed { get; set; }
     [ObservableProperty] public partial string CliVersion { get; set; } = ViewModelText.Get("NotChecked");
     [ObservableProperty] public partial string CliExecutablePath { get; set; } = "";
     [ObservableProperty] public partial string CliCheckSummary { get; set; } = ViewModelText.Get("CliCheckIntro");
@@ -55,6 +56,7 @@ public partial class MainPageViewModel
         var generation = ++_cliCheckGeneration;
         var signature = CurrentCliSignature();
         CliCheckSucceeded = false;
+        CliCheckFailed = false;
         _checkedCliSignature = null;
         CliVersion = ViewModelText.Get("Checking");
         CliExecutablePath = "";
@@ -68,7 +70,7 @@ public partial class MainPageViewModel
             if (generation != _cliCheckGeneration || signature != CurrentCliSignature()) return;
             CliVersion = result.Version;
             CliExecutablePath = result.Executable;
-            if (!IsCustomProvider && !result.ProviderRecognized) { CliCheckSummary = ViewModelText.Get("UnrecognizedCliProvider"); return; }
+            if (!IsCustomProvider && !result.ProviderRecognized) { CliCheckFailed = true; CliCheckSummary = ViewModelText.Get("UnrecognizedCliProvider"); return; }
             if (IsBasicProvider)
             {
                 ModelCatalog.Invalidate(ViewModelText.Get("BasicModelManagedByCli"));
@@ -80,7 +82,7 @@ public partial class MainPageViewModel
             CliCheckSummary = ViewModelText.Get("CliStartedFetchingModels");
             await ModelCatalog.FetchModelsCommand.ExecuteAsync(null);
             if (generation != _cliCheckGeneration || cancellation.IsCancellationRequested || signature != CurrentCliSignature()) return;
-            if (ModelCatalog.Models.Count == 0) { CliCheckSummary = ViewModelText.Get("CliModelsUnavailable"); return; }
+            if (ModelCatalog.Models.Count == 0) { CliCheckFailed = true; CliCheckSummary = ViewModelText.Get("CliModelsUnavailable"); return; }
             ModelCatalog.SelectedModel = ModelCatalog.Models.FirstOrDefault(model => string.Equals(model.Id, AgentModel?.Trim(), StringComparison.Ordinal));
             CliCheckSucceeded = true;
             _checkedCliSignature = signature;
@@ -92,6 +94,7 @@ public partial class MainPageViewModel
             if (generation == _cliCheckGeneration)
             {
                 CliVersion = ViewModelText.Get("CliUnconfirmed");
+                CliCheckFailed = true;
                 CliCheckSummary = ex is TimeoutException ? ViewModelText.Get("CliTimeout") : ViewModelText.Get("CliCheckFailedDetails", ex.Message);
             }
         }
@@ -111,6 +114,7 @@ public partial class MainPageViewModel
         ModelCatalog.CancelLookup();
         IsCheckingCli = false;
         CliCheckSucceeded = false;
+        CliCheckFailed = false;
         _checkedCliSignature = null;
         CliCheckSummary = ViewModelText.Get("CliCheckCancelled");
     }

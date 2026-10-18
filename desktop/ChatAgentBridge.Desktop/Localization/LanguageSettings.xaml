@@ -6,10 +6,10 @@
         <ComboBox x:Name="LanguagePicker" Header="Language / 表示言語" HorizontalAlignment="Stretch"
                   SelectedValuePath="Tag" SelectionChanged="LanguagePicker_SelectionChanged"
                   AutomationProperties.AutomationId="DisplayLanguage">
-            <ComboBoxItem x:Name="SystemLanguageOption" Content="System default / システムに合わせる" Tag="system" />
-            <ComboBoxItem Content="日本語" Tag="ja" />
+            <ComboBoxItem x:Name="SystemLanguageOption" Content="システムに合わせる (System default)" Tag="system" />
+            <ComboBoxItem Content="日本語 (Japanese)" Tag="ja" />
             <ComboBoxItem Content="English" Tag="en" />
         </ComboBox>
-        <TextBlock x:Name="LanguageStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="DisplayLanguageStatus" />
+        <TextBlock x:Name="LanguageStatus" TextWrapping="Wrap" Visibility="Collapsed" AutomationProperties.AutomationId="DisplayLanguageStatus" />
     </StackPanel>
 </UserControl>

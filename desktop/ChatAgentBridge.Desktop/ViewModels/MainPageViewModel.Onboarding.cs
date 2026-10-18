@@ -51,7 +51,7 @@ public partial class MainPageViewModel
         _ => ViewModelText.Get("WizardSafetyDescription")
     };
     public string OnboardingNextLabel => OnboardingStep == 0 ? ViewModelText.Get("ConsentAndContinue") : OnboardingStep == 4 ? ViewModelText.Get("SaveAndFinish") : ViewModelText.Get("SaveAndContinue");
-    public string OnboardingProgress => $"[{Math.Clamp(OnboardingStep, 0, 4) + 1} / 5]";
+    public string OnboardingProgress => $"[{Math.Clamp(OnboardingStep, 0, 4) + 1}/5]";
     public string WizardSummary => ViewModelText.Get("WizardSummary", AgentProviderDisplayName, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, string.IsNullOrWhiteSpace(AgentReasoningEffort) ? ViewModelText.Get("DefaultCliValue") : AgentReasoningEffort, WorkspaceRoot, IsWizardSlack ? "Slack" : "Mattermost", ViewModelText.Get(WizardAutoConnect ? "Enabled" : "Disabled"), ChatApprovalLabel(ChatApprovalMode), ResultLabel(ChatResultMode), PermissionLabel(AgentPermissionMode));
     public event Action<int>? OnboardingNavigateRequested;
 

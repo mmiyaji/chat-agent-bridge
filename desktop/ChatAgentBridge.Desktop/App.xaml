@@ -10,7 +10,35 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
-            <!-- Other app resources here -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="OverviewReadyIconBrush" Color="#5E7B38" />
+                    <SolidColorBrush x:Key="OverviewAttentionIconBrush" Color="#8A741F" />
+                    <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="#B45B5B" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="OverviewReadyIconBrush" Color="#A8C583" />
+                    <SolidColorBrush x:Key="OverviewAttentionIconBrush" Color="#D1BD79" />
+                    <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="#D99B9B" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="OverviewReadyIconBrush" Color="{ThemeResource SystemColorButtonTextColor}" />
+                    <SolidColorBrush x:Key="OverviewAttentionIconBrush" Color="{ThemeResource SystemColorButtonTextColor}" />
+                    <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="{ThemeResource SystemColorButtonTextColor}" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+            <Style x:Key="OverviewReadyIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource OverviewReadyIconBrush}" />
+            </Style>
+            <Style x:Key="OverviewAttentionIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource OverviewAttentionIconBrush}" />
+            </Style>
+            <Style x:Key="OverviewErrorIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource OverviewErrorIconBrush}" />
+            </Style>
+            <Style x:Key="OverviewNeutralIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

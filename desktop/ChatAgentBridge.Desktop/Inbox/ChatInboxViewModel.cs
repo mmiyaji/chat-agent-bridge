@@ -109,6 +109,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public partial bool IsConnected { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
     public partial bool IsConnectionConfirmed { get; set; }
+    [ObservableProperty] public partial bool HasConnectionError { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
     public partial bool IsExecuting { get; set; }
     partial void OnIsExecutingChanged(bool value)
@@ -314,6 +315,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private async Task ConnectAsync(IChatTransport transport)
     {
         if (IsConnected || _closing) { await transport.DisposeAsync(); return; }
+        HasConnectionError = false;
         IsConnected = true;
         _disconnecting = false;
         IsConnectionConfirmed = false;
@@ -363,6 +365,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             await transport.DisposeAsync();
             Status = DesktopText.Get("InboxConnectionFailed");
+            HasConnectionError = true;
             IsConnectionConfirmed = false;
             IsConnected = false;
         }
@@ -408,12 +411,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await completion.Task;
             }, cancellationToken);
             Status = DesktopText.Get("InboxConnectionEnded");
+            HasConnectionError = !_disconnecting && !_closing && !cancellationToken.IsCancellationRequested;
         }
         catch (OperationCanceledException) { Status = DesktopText.Get("InboxDisconnectedNotice"); }
         catch (Exception)
         {
             // Provider error payloads can contain tokens or socket URLs.
             Status = DesktopText.Get("InboxReconnectFailed");
+            HasConnectionError = true;
         }
         finally
         {
@@ -443,6 +448,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         var connection = _connection;
         var receive = _receiveTask;
         _disconnecting = true;
+        HasConnectionError = false;
         var wasConfirmed = IsConnectionConfirmed;
         IsConnectionConfirmed = false;
         _execution?.Cancel();

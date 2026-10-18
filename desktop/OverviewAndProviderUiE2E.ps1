@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory)][int]$AppPid,
     [Parameter(Mandatory)][string]$DataDir,
     [ValidateSet('en','ja')][string]$Language = 'en',
@@ -32,6 +32,8 @@ function Scroll-ToElement([string]$Id) {
         $condition=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$TargetId)
         return $window.FindFirst([Windows.Automation.TreeScope]::Descendants,$condition)
     }
+    $initialTarget=Find $Id
+    if ($initialTarget -and $initialTarget.Current.IsKeyboardFocusable) { $initialTarget.SetFocus() }
     $next=Find 'OnboardingNext'
     $scroll=Find $(if ($next -and -not $next.Current.IsOffscreen -and $next.Current.BoundingRectangle.Height -gt 0) { 'WizardScroll' } else { 'MainContentScroll' })
     if (-not $scroll) { throw "No test viewport for $Id" }
@@ -176,7 +178,7 @@ try {
     if (-not (Test-Path -LiteralPath $dotnet -PathType Leaf) -or [IO.Path]::GetFileNameWithoutExtension($dotnet) -ne 'dotnet') { throw 'FixtureExe must be dotnet; the test only runs its version check.' }
 
     Wait-Element 'OnboardingDefer' | Out-Null
-    Select-ComboItem 'DisplayLanguage' $(if ($Language -eq 'ja') { '日本語' } else { 'English' })
+    Select-ComboItem 'DisplayLanguage' $(if ($Language -eq 'ja') { '日本語 (Japanese)' } else { 'English' })
     $languagePath=Join-Path $dataPath 'language.json'; $languageUntil=[DateTimeOffset]::UtcNow.AddSeconds(8); $languageSaved=$false
     do {
         if (Test-Path -LiteralPath $languagePath) {
@@ -187,7 +189,7 @@ try {
     } while ([DateTimeOffset]::UtcNow -lt $languageUntil)
     Check $languageSaved "The $Language language selection persisted before entering the overview."
     UI @('scroll-into-view','WizardAcceptTerms') | Out-Null
-    Click 'WizardAcceptTerms'; Click 'WizardAcceptPrivacy'; Click 'OnboardingNext'; Wait-Step '[2 / 5]'
+    Click 'WizardAcceptTerms'; Click 'WizardAcceptPrivacy'; Click 'OnboardingNext'; Wait-Step '[2/5]'
     UI @('set-value','WizardWorkspaceRoot',(Join-Path $dataPath 'work')) | Out-Null
     Select-ComboItem 'WizardAgentProvider' 'Gemini CLI'
     Wait-Value 'WizardAgentExecutable' 'gemini'
@@ -196,12 +198,12 @@ try {
     Select-ComboItem 'WizardAgentProvider' $(if ($Language -eq 'ja') { 'その他のCLI（カスタム）' } else { 'Other CLI (custom)' })
     UI @('set-value','WizardAgentExecutable',$dotnet) | Out-Null
     UI @('set-value','WizardAgentArguments','') | Out-Null
-    Click 'OnboardingNext'; Wait-Step '[3 / 5]'
+    Click 'OnboardingNext'; Wait-Step '[3/5]'
     Click 'CheckCli'
     $until=[DateTimeOffset]::UtcNow.AddSeconds(15)
     do { if ((Value 'CliVersion') -match '^\d+\.\d+\.\d+') { break }; Start-Sleep -Milliseconds 150 } while ([DateTimeOffset]::UtcNow -lt $until)
     Check ((Value 'CliVersion') -match '^\d+\.\d+\.\d+') 'The wizard checks a custom CLI version without requiring a model catalog.'
-    Click 'OnboardingNext'; Wait-Step '[4 / 5]'
+    Click 'OnboardingNext'; Wait-Step '[4/5]'
     Check $true 'Gemini, GitHub Copilot and a custom CLI can be selected in the wizard and a checked custom CLI advances to chat setup.'
     Click 'OnboardingDefer'
     foreach ($id in @('OverviewAgentTile','OverviewConnectionTile','OverviewChatTile','OverviewCliTile','OverviewNextAction')) { Wait-Element $id | Out-Null }

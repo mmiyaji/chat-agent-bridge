@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -581,4 +581,9 @@ AI permissions: {8}</value>
   <data name="OverviewCliAccessibleName" xml:space="preserve">
     <value>CLI verification: {0}. Open agent settings to check.</value>
   </data>
+  <data name="OverviewError" xml:space="preserve"><value>Needs attention</value></data>
+  <data name="OverviewConnectionError" xml:space="preserve"><value>Connection failed</value></data>
+  <data name="LanguageRestartTitle" xml:space="preserve"><value>Restart required</value></data>
+  <data name="LanguageRestartBusy" xml:space="preserve"><value>Finish pending work and save settings before restarting.</value></data>
+  <data name="LanguageRestartFailed" xml:space="preserve"><value>Automatic restart was unavailable. Close and reopen the app to apply the saved language.</value></data>
 </root>

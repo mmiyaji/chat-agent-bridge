@@ -19,7 +19,7 @@
     <value>Current display language: {0}. Restart the app after changing this setting.</value>
   </data>
   <data name="RestartRequired" xml:space="preserve">
-    <value>Saved. Restart the app to apply the display language.</value>
+    <value>Saved. Restart to apply.</value>
   </data>
   <data name="ReadFailed" xml:space="preserve">
     <value>The language preference could not be read. Check language.json in the app data folder; it has not been overwritten.</value>
@@ -27,7 +27,19 @@
   <data name="SaveFailed" xml:space="preserve">
     <value>The display language could not be saved. Check write access to the app data folder.</value>
   </data>
-  <data name="AppliedImmediately" xml:space="preserve">
-    <value>Current display language: {0}. Setup and consent documents use this language immediately.</value>
+  <data name="RestartDialogTitle" xml:space="preserve">
+    <value>表示言語を変更するには再起動が必要です (Restart to change the display language)</value>
+  </data>
+  <data name="RestartDialogMessage" xml:space="preserve">
+    <value>表示言語を反映するにはアプリの再起動が必要です。チャット接続はいったん切断されます。保存済みの設定は保持されます。 (Restart the app to apply the display language. Chat connections will disconnect temporarily. Saved settings will be kept.)</value>
+  </data>
+  <data name="RestartDialogRestartNow" xml:space="preserve">
+    <value>今すぐ再起動 (Restart now)</value>
+  </data>
+  <data name="RestartDialogLater" xml:space="preserve">
+    <value>後で (Later)</value>
+  </data>
+  <data name="RestartDialogBusy" xml:space="preserve">
+    <value>再起動する前に、処理中の作業を完了し、設定を保存してください。 (Finish pending work and save settings before restarting.)</value>
   </data>
 </root>

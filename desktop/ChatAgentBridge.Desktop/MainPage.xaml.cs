@@ -28,6 +28,7 @@ public sealed partial class MainPage : Page
     public MainPage()
     {
         InitializeComponent();
+        InitializeLanguageRestart();
         UpdateNavigationContentOffset();
         _wizard = new Onboarding.OnboardingWizard(ViewModel, InboxPage.ViewModel);
         WizardHost.Content = _wizard;
@@ -52,8 +53,8 @@ public sealed partial class MainPage : Page
         };
         InboxPage.ViewModel.PropertyChanged += (_, args) =>
         {
-            if (args.PropertyName is nameof(ChatInboxViewModel.IsConnectionConfirmed) or nameof(ChatInboxViewModel.IsConnected))
-                ViewModel.SetChatConnectionState(InboxPage.ViewModel.IsConnectionConfirmed, InboxPage.ViewModel.IsConnected);
+            if (args.PropertyName is nameof(ChatInboxViewModel.IsConnectionConfirmed) or nameof(ChatInboxViewModel.IsConnected) or nameof(ChatInboxViewModel.HasConnectionError))
+                ViewModel.SetChatConnectionState(InboxPage.ViewModel.IsConnectionConfirmed, InboxPage.ViewModel.IsConnected, InboxPage.ViewModel.HasConnectionError);
         };
         ViewModel.SettingsSaved += () => _ = InboxPage.ViewModel.RefreshAccessAsync();
         InboxPage.OpenRequested += () => MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>()
@@ -82,6 +83,13 @@ public sealed partial class MainPage : Page
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+    public static Style OverviewIconStyle(OverviewIconState state) => (Style)Application.Current.Resources[state switch
+    {
+        OverviewIconState.Ready => "OverviewReadyIconStyle",
+        OverviewIconState.Attention => "OverviewAttentionIconStyle",
+        OverviewIconState.Error => "OverviewErrorIconStyle",
+        _ => "OverviewNeutralIconStyle"
+    }];
 
     private void MainNavigation_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args) =>
         UpdateNavigationContentOffset();

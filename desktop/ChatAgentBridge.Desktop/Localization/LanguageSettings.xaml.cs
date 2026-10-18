@@ -20,6 +20,9 @@ public sealed partial class LanguageSettings : UserControl
     private long _preferenceGeneration;
     private string _savedLanguage = "system";
 
+    public Func<bool>? CanRestartNow { get; set; }
+    public event Action? RestartRequested;
+
     /// <summary>When true, selecting a language updates this process immediately. Used by the initial consent step.</summary>
     public bool ApplyImmediately { get; set; }
 
@@ -46,17 +49,17 @@ public sealed partial class LanguageSettings : UserControl
             var language = generationBeforeLoad == _preferenceGeneration ? preference.Language : _savedLanguage;
             _savedLanguage = language;
             SetSelectedLanguage(language);
-            if (ApplyImmediately && AppLanguage.Select(language, App.SystemLanguageTag).Name == CultureInfo.CurrentUICulture.Name)
-                LanguageStatus.Text = string.Format(CultureInfo.CurrentCulture, Text("AppliedImmediately"), AppLanguage.IsJapanese ? "日本語" : "English");
+            if (ApplyImmediately)
+                SetStatus(string.Empty, visible: false);
             else
-                LanguageStatus.Text = AppLanguage.Select(language, App.SystemLanguageTag).Name == CultureInfo.CurrentUICulture.Name
-                    ? string.Format(CultureInfo.CurrentCulture, Text("CurrentLanguage"), AppLanguage.IsJapanese ? "日本語" : "English")
-                    : Text("RestartRequired");
+                SetStatus(AppLanguage.Select(language, App.SystemLanguageTag).Name == CultureInfo.CurrentUICulture.Name
+                        ? string.Format(CultureInfo.CurrentCulture, Text("CurrentLanguage"), AppLanguage.IsJapanese ? "日本語" : "English")
+                        : Text("RestartRequired"));
             LanguagePicker.IsEnabled = true;
         }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException or ArgumentException)
         {
-            LanguageStatus.Text = Text("ReadFailed");
+            SetStatus(Text("ReadFailed"));
             LanguagePicker.IsEnabled = false;
         }
         finally { _loading = false; }
@@ -81,7 +84,7 @@ public sealed partial class LanguageSettings : UserControl
         _applyingProgrammaticSelection = true;
         try
         {
-            LanguageStatus.Text = string.Format(culture, Text("AppliedImmediately"), AppLanguage.IsJapanese ? "日本語" : "English");
+            SetStatus(string.Empty, visible: false);
             SetSelectedLanguage(_savedLanguage);
         }
         finally
@@ -99,7 +102,7 @@ public sealed partial class LanguageSettings : UserControl
             _preferenceGeneration++;
             _savedLanguage = language;
             SetSelectedLanguage(language);
-            LanguageStatus.Text = Text("RestartRequired");
+            SetStatus(ApplyImmediately ? string.Empty : Text("RestartRequired"), visible: !ApplyImmediately);
         }
         finally { _loading = false; }
     }
@@ -117,12 +120,48 @@ public sealed partial class LanguageSettings : UserControl
         });
     }
 
+    private void SetStatus(string message, bool visible = true)
+    {
+        LanguageStatus.Text = message;
+        LanguageStatus.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async Task ShowRestartDialogAsync()
+    {
+        var canRestart = CanRestartNow?.Invoke() == true;
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            RequestedTheme = App.Appearance.RequestedTheme,
+            Title = Text("RestartDialogTitle"),
+            Content = canRestart
+                ? Text("RestartDialogMessage")
+                : $"{Text("RestartDialogMessage")}\n\n{Text("RestartDialogBusy")}",
+            PrimaryButtonText = Text("RestartDialogRestartNow"),
+            SecondaryButtonText = Text("RestartDialogLater"),
+            DefaultButton = ContentDialogButton.Secondary,
+            IsPrimaryButtonEnabled = canRestart
+        };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(dialog, "LanguageRestartDialog");
+        dialog.PrimaryButtonClick += (_, args) =>
+        {
+            if (CanRestartNow?.Invoke() == true) return;
+            args.Cancel = true;
+            dialog.IsPrimaryButtonEnabled = false;
+            dialog.Content = $"{Text("RestartDialogMessage")}\n\n{Text("RestartDialogBusy")}";
+        };
+
+        var result = await dialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+            RestartRequested?.Invoke();
+    }
+
     private async void LanguagePicker_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
         if (_loading || _saving || _applyingProgrammaticSelection ||
             LanguagePicker.SelectedValue is not string language || language == _savedLanguage) return;
         _saving = true;
-        LanguagePicker.IsEnabled = false;
+        // Keep an open popup enabled until WinUI commits its selection on close.
         try
         {
             await _store.SaveAsync(new LanguagePreferences(language));
@@ -136,7 +175,8 @@ public sealed partial class LanguageSettings : UserControl
             }
             else
             {
-                LanguageStatus.Text = Text("RestartRequired");
+                SetStatus(Text("RestartRequired"));
+                await ShowRestartDialogAsync();
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
@@ -144,8 +184,8 @@ public sealed partial class LanguageSettings : UserControl
             _loading = true;
             SetSelectedLanguage(_savedLanguage);
             _loading = false;
-            LanguageStatus.Text = Text("SaveFailed");
+            SetStatus(Text("SaveFailed"));
         }
-        finally { _saving = false; LanguagePicker.IsEnabled = true; }
+        finally { _saving = false; }
     }
 }

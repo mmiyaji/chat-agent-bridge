@@ -19,7 +19,7 @@
     <value>現在の表示言語：{0}。変更はアプリの再起動後に反映されます。</value>
   </data>
   <data name="RestartRequired" xml:space="preserve">
-    <value>保存しました。表示言語の変更は、アプリを再起動すると反映されます。</value>
+    <value>保存しました。反映するには再起動してください。</value>
   </data>
   <data name="ReadFailed" xml:space="preserve">
     <value>表示言語の設定を読み込めませんでした。アプリのデータフォルダーのlanguage.jsonを確認してください。ファイルは上書きしていません。</value>
@@ -27,7 +27,19 @@
   <data name="SaveFailed" xml:space="preserve">
     <value>表示言語を保存できませんでした。アプリのデータフォルダーへの書き込み権限を確認してください。</value>
   </data>
-  <data name="AppliedImmediately" xml:space="preserve">
-    <value>現在の表示言語：{0}。初期設定と利用条件の表示にすぐ反映します。</value>
+  <data name="RestartDialogTitle" xml:space="preserve">
+    <value>表示言語を変更するには再起動が必要です (Restart to change the display language)</value>
+  </data>
+  <data name="RestartDialogMessage" xml:space="preserve">
+    <value>表示言語を反映するにはアプリの再起動が必要です。チャット接続はいったん切断されます。保存済みの設定は保持されます。 (Restart the app to apply the display language. Chat connections will disconnect temporarily. Saved settings will be kept.)</value>
+  </data>
+  <data name="RestartDialogRestartNow" xml:space="preserve">
+    <value>今すぐ再起動 (Restart now)</value>
+  </data>
+  <data name="RestartDialogLater" xml:space="preserve">
+    <value>後で (Later)</value>
+  </data>
+  <data name="RestartDialogBusy" xml:space="preserve">
+    <value>再起動する前に、処理中の作業を完了し、設定を保存してください。 (Finish pending work and save settings before restarting.)</value>
   </data>
 </root>

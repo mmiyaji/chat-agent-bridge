@@ -26,6 +26,7 @@ public partial class MainPageViewModel : ObservableObject
     private bool _unsupportedSavedEffort;
     private bool _chatConnectionConfirmed;
     private bool _chatConnectionPreparing;
+    private bool _chatConnectionFailed;
     private bool _savedWorkspaceExists;
     private bool _lastSaveSucceeded;
     private bool _adjustingAgentPermissionMode;
@@ -46,7 +47,7 @@ public partial class MainPageViewModel : ObservableObject
         PropertyChanged += (_, e) =>
         {
             WizardSettingChanged(e.PropertyName);
-            if (e.PropertyName is nameof(CliCheckSucceeded) or nameof(IsCheckingCli) or nameof(CliVersion))
+            if (e.PropertyName is nameof(CliCheckSucceeded) or nameof(CliCheckFailed) or nameof(IsCheckingCli) or nameof(CliVersion))
                 RefreshOverviewStatus();
             if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning))
             {
@@ -218,11 +219,12 @@ public partial class MainPageViewModel : ObservableObject
     public partial string SetupDraftNotice { get; set; } = "";
     public bool HasSetupDraftNotice => !string.IsNullOrEmpty(SetupDraftNotice);
 
-    public void SetChatConnectionState(bool connected, bool connecting)
+    public void SetChatConnectionState(bool connected, bool connecting, bool failed = false)
     {
         _chatConnectionConfirmed = connected;
         if (!connected) ClearWizardConnection();
         _chatConnectionPreparing = connecting;
+        _chatConnectionFailed = failed;
         RefreshSetupStepper();
     }
 
