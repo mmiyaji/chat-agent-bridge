@@ -271,7 +271,12 @@
                                     <StackPanel Spacing="8">
                                         <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock025" x:Uid="chatAgentBridgeDesktopMainPageTextBlock025" />
                                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock026" x:Uid="chatAgentBridgeDesktopMainPageTextBlock026" />
-                                        <TextBox  Text="{x:Bind ViewModel.TrustedWorkspaceRoots, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" AutomationProperties.AutomationId="TrustedWorkspaceRoots"  x:Uid="TrustedWorkspaceRoots" />
+                                        <TextBox  Text="{x:Bind ViewModel.TrustedWorkspaceRoots, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" MaxHeight="180" AutomationProperties.AutomationId="TrustedWorkspaceRoots"  x:Uid="TrustedWorkspaceRoots" />
+                                        <StackPanel Spacing="8">
+                                            <Button Click="ChooseTrustedFolder_Click" IsEnabled="{x:Bind ViewModel.CanStartTrustedFolderPick, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ChooseTrustedFolder" x:Uid="ChooseTrustedFolder" />
+                                            <Button Click="AddCurrentWorkspaceTrustedFolder_Click" IsEnabled="{x:Bind ViewModel.CanStartTrustedFolderPick, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="AddCurrentWorkspaceTrustedFolder" x:Uid="AddCurrentWorkspaceTrustedFolder" />
+                                        </StackPanel>
+                                        <TextBlock Text="{x:Bind ViewModel.TrustedFolderStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="TrustedFolderStatus" />
                                     </StackPanel>
                                 </Border>
                                 <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="AgentPermissionCard" Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsBasicProvider), Mode=OneWay}">

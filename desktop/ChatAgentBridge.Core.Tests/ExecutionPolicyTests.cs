@@ -24,16 +24,19 @@ public sealed class ExecutionPolicyTests
         var sibling = Path.Combine(parent, "workspace-escape");
         Directory.CreateDirectory(root);
         Directory.CreateDirectory(sibling);
-        Directory.CreateDirectory(Path.Combine(root, "child"));
+        var grandchild = Path.Combine(root, "child", "grandchild");
+        Directory.CreateDirectory(grandchild);
         try
         {
             var settings = new BridgeSettings { WorkspaceRoot = root };
             Assert.True(ExecutionPolicy.IsWorkspaceTrusted(settings, root));
             Assert.True(ExecutionPolicy.IsWorkspaceTrusted(settings, Path.Combine(root, "child")));
+            Assert.True(ExecutionPolicy.IsWorkspaceTrusted(settings, grandchild));
             Assert.False(ExecutionPolicy.IsWorkspaceTrusted(settings, sibling));
             Assert.False(ExecutionPolicy.IsWorkspaceTrusted(settings, Path.Combine(parent, "elsewhere")));
             Assert.False(ExecutionPolicy.IsWorkspaceTrusted(settings with { TrustedWorkspaceRoots = sibling }, root));
             Assert.True(ExecutionPolicy.IsWorkspaceTrusted(settings with { WorkspaceRoot = sibling, TrustedWorkspaceRoots = root }, Path.Combine(root, "child")));
+            Assert.True(ExecutionPolicy.IsWorkspaceTrusted(settings with { WorkspaceRoot = sibling, TrustedWorkspaceRoots = root }, grandchild));
         }
         finally { Directory.Delete(parent, recursive: true); }
     }

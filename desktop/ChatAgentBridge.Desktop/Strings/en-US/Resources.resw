@@ -186,10 +186,22 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Trusted working folders</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock026.Text" xml:space="preserve">
-    <value>Enter one trusted folder per line using absolute paths. Requests can start only in folders within these roots. If blank, the current working folder is trusted. This check controls where execution starts; it does not provide an OS sandbox for CLI file access.</value>
+    <value>A trusted folder includes all of its descendant folders, so choosing a parent covers its children. If this list is empty, the current work folder and its descendants are trusted. Enter one path per line; edit the list to remove paths. Click Save to apply. This controls where execution starts; it does not isolate CLI file access from the OS.</value>
   </data>
   <data name="TrustedWorkspaceRoots.Header" xml:space="preserve">
     <value>Trusted folders (absolute paths, one per line)</value>
+  </data>
+  <data name="ChooseTrustedFolder.Content" xml:space="preserve">
+    <value>Choose folder to add</value>
+  </data>
+  <data name="ChooseTrustedFolder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Choose folder to add</value>
+  </data>
+  <data name="AddCurrentWorkspaceTrustedFolder.Content" xml:space="preserve">
+    <value>Add current work folder</value>
+  </data>
+  <data name="AddCurrentWorkspaceTrustedFolder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Add current work folder</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock027.Text" xml:space="preserve">
     <value>AI tool permissions</value>

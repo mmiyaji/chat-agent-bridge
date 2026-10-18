@@ -186,10 +186,22 @@
     <value>信頼する作業フォルダー</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock026.Text" xml:space="preserve">
-    <value>信頼するフォルダーを絶対パスで1行ずつ指定します。指定すると、その中にある作業フォルダーだけで実行できます。空欄なら現在の作業フォルダーを信頼します。この制限は実行の起点の確認で、CLIによるファイルアクセスをOSで隔離するものではありません。</value>
+    <value>信頼したフォルダーとその配下すべてで実行できます。親フォルダーを選ぶと、その配下も対象になります。一覧が空の場合は現在の作業フォルダーとその配下が信頼されます。絶対パスを1行ずつ入力し、削除するときは一覧を編集してください。変更を適用するには［保存］をクリックします。これは実行の起点を制限するもので、CLIのファイルアクセスをOSから隔離するものではありません。</value>
   </data>
   <data name="TrustedWorkspaceRoots.Header" xml:space="preserve">
     <value>信頼するフォルダー（絶対パス、1行1つ）</value>
+  </data>
+  <data name="ChooseTrustedFolder.Content" xml:space="preserve">
+    <value>追加するフォルダーを選択</value>
+  </data>
+  <data name="ChooseTrustedFolder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>追加するフォルダーを選択</value>
+  </data>
+  <data name="AddCurrentWorkspaceTrustedFolder.Content" xml:space="preserve">
+    <value>現在の作業フォルダーを追加</value>
+  </data>
+  <data name="AddCurrentWorkspaceTrustedFolder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>現在の作業フォルダーを追加</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock027.Text" xml:space="preserve">
     <value>AIツールの操作許可</value>

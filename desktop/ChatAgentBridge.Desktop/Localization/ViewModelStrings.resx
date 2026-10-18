@@ -606,4 +606,9 @@ AI permissions: {8}</value>
   <data name="EnvironmentReloadFailedTitle" xml:space="preserve"><value>Could not refresh environment</value></data>
   <data name="EnvironmentReloadFailedMessage" xml:space="preserve"><value>Windows could not provide the current user environment. No CLI settings were changed.</value></data>
   <data name="ChangingStartupSettings" xml:space="preserve"><value>Changing the Windows startup setting…</value></data>
+  <data name="TrustedFolderAdded" xml:space="preserve"><value>Folder added. Click Save to apply this change.</value></data>
+  <data name="TrustedFolderAlreadyListed" xml:space="preserve"><value>This folder is already in the trusted list.</value></data>
+  <data name="TrustedFolderInvalid" xml:space="preserve"><value>Choose an existing folder with a full path.</value></data>
+  <data name="TrustedFolderRootsInvalid" xml:space="preserve"><value>Fix the existing entries so each is a valid full path, then try again.</value></data>
+  <data name="TrustedFolderPickerFailed" xml:space="preserve"><value>The folder picker could not be opened. You can enter a full path in the list.</value></data>
 </root>
