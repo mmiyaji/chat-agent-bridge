@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="SystemDefault" xml:space="preserve">
+    <value>System default</value>
+  </data>
+  <data name="CurrentLanguage" xml:space="preserve">
+    <value>Current display language: {0}. Restart the app after changing this setting.</value>
+  </data>
+  <data name="RestartRequired" xml:space="preserve">
+    <value>Saved. Restart the app to apply the display language.</value>
+  </data>
+  <data name="ReadFailed" xml:space="preserve">
+    <value>The language preference could not be read. Check language.json in the app data folder; it has not been overwritten.</value>
+  </data>
+  <data name="SaveFailed" xml:space="preserve">
+    <value>The display language could not be saved. Check write access to the app data folder.</value>
+  </data>
+</root>

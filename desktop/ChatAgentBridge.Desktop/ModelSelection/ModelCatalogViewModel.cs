@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using ChatAgentBridge.Core;
+using ChatAgentBridge_Desktop.Localization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -27,7 +28,7 @@ public sealed partial class ModelCatalogViewModel : ObservableObject, IDisposabl
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasStatus))]
-    public partial string Status { get; set; } = "必要なときに候補を取得できます。CLIの候補です。利用権限や料金は保証されません。";
+    public partial string Status { get; set; } = DesktopText.Get("ModelCatalogAvailable");
 
     public bool HasStatus => !string.IsNullOrWhiteSpace(Status);
 
@@ -50,17 +51,17 @@ public sealed partial class ModelCatalogViewModel : ObservableObject, IDisposabl
         _generation++;
         CancelCurrentLookup();
         IsLoading = false;
-        Status = "画面を離れたため、モデル候補の取得をキャンセルしました。";
+        Status = DesktopText.Get("ModelCatalogCancelledLeaving");
     }
 
-    public void Invalidate(string message = "設定が変わりました。候補をもう一度取得してください。")
+    public void Invalidate(string? message = null)
     {
         _generation++;
         CancelCurrentLookup();
         IsLoading = false;
         Models.Clear();
         SelectedModel = null;
-        Status = message;
+        Status = message ?? DesktopText.Get("ModelCatalogSettingsChanged");
     }
 
     [RelayCommand(CanExecute = nameof(CanFetch))]
@@ -73,7 +74,7 @@ public sealed partial class ModelCatalogViewModel : ObservableObject, IDisposabl
         _lookupCancellation = cancellation;
         Models.Clear();
         SelectedModel = null;
-        Status = "CLIからモデル候補を取得しています…";
+        Status = DesktopText.Get("ModelCatalogLoading");
         IsLoading = true;
         try
         {
@@ -81,23 +82,23 @@ public sealed partial class ModelCatalogViewModel : ObservableObject, IDisposabl
             if (string.Equals(settings.AgentProvider, "custom", StringComparison.OrdinalIgnoreCase))
             {
                 if (generation == _generation)
-                    Status = "このCLIでは候補を取得できません。モデル名を直接入力してください。";
+                    Status = DesktopText.Get("ModelCatalogUnsupported");
                 return;
             }
             var models = await _service.GetModelsAsync(settings, cancellation.Token);
             if (generation != _generation || cancellation.IsCancellationRequested) return;
             foreach (var model in models) Models.Add(model);
             Status = models.Count == 0
-                ? "モデル候補はありませんでした。モデル名を直接入力できます。"
-                : $"{models.Count} 件の候補があります。選択するとモデル名に反映されます。";
+                ? DesktopText.Get("ModelCatalogEmpty")
+                : DesktopText.Get("ModelCatalogFound", models.Count);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
-            if (generation == _generation) Status = "モデル候補の取得をキャンセルしました。";
+            if (generation == _generation) Status = DesktopText.Get("ModelCatalogCancelled");
         }
         catch
         {
-            if (generation == _generation) Status = "候補を取得できませんでした。CLIの設定を確認するか、モデル名を直接入力してください。";
+            if (generation == _generation) Status = DesktopText.Get("ModelCatalogFailed");
         }
         finally
         {

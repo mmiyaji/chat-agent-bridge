@@ -4,7 +4,7 @@ namespace ChatAgentBridge_Desktop.Onboarding;
 public static class PolicyText
 {
     public const string Version = ChatAgentBridge.Core.OnboardingConsentStore.CurrentPolicyVersion;
-    public const string Terms = """
+    private const string JapaneseTerms = """
         Chat Agent Bridge 利用規約（開発プレビュー）
         文書バージョン：2026-10-18.1
         提供者：mmiyaji
@@ -29,7 +29,7 @@ public static class PolicyText
         同意しない場合は初期設定を完了せず、アプリを終了してください。利用を終了する場合はチャット接続とWindows起動設定を解除してください。本規約とプライバシーポリシーは概要画面から再確認できます。お問い合わせは、提供者 mmiyaji（mail@ruhenheim.org）へご連絡ください。
         """;
 
-    public const string Privacy = """
+    private const string JapanesePrivacy = """
         Chat Agent Bridge プライバシーポリシー（開発プレビュー）
         文書バージョン：2026-10-18.1
         提供者：mmiyaji
@@ -54,5 +54,60 @@ public static class PolicyText
 
         6. お問い合わせ
         本アプリのデータの取扱いに関するお問い合わせは、提供者 mmiyaji（mail@ruhenheim.org）へご連絡ください。公開チャットや公開の問い合わせ欄に、トークン、依頼・結果の機密情報を掲載しないでください。
+        """;
+
+    public static string Terms => ChatAgentBridge.Core.Localization.AppLanguage.IsJapanese ? JapaneseTerms : EnglishTerms;
+    public static string Privacy => ChatAgentBridge.Core.Localization.AppLanguage.IsJapanese ? JapanesePrivacy : EnglishPrivacy;
+
+    private const string EnglishTerms = """
+        Chat Agent Bridge Terms of Use (Development Preview)
+        Document version: 2026-10-18.1
+        Provider: mmiyaji
+        Contact: mail@ruhenheim.org
+
+        1. About this application
+        This unofficial tool lets you operate an AI agent CLI on a Windows PC you control through Slack or Mattermost. It is not an official product of OpenAI, Anthropic, Slack, Mattermost, or any other service. The terms and policies of each external service also apply.
+
+        2. As-is; no warranties
+        The application is provided "as is." To the extent permitted by applicable law, no express or implied warranties are made regarding operation, availability, continued provision, fitness for a particular purpose, accuracy or completeness of AI output, security, data retention, or non-infringement of third-party rights. Interruptions, defects, or changes to external services or CLIs may make the application unavailable.
+
+        3. User responsibility
+        Check your working folders, permissions, authorized users, connection targets, approval method, and result-sharing destination. AI may change or delete files and run commands or network operations. Keep necessary backups and review requests and results. If you choose automatic approval, full access, or automatic sharing, understand what review those settings skip. Do not use the application with accounts, data, or PCs you are not authorized to access.
+
+        4. Costs and external services
+        Costs and usage limits for AI and chat services, communications, and other services are governed by your agreements with those providers. The CLI check verifies startup, version, and model options; it does not guarantee successful AI execution, authentication, usage rights, or pricing.
+
+        5. Limitation of liability
+        To the extent permitted by applicable law, the provider is not liable for losses or damages arising from use of this application. These terms do not exclude or limit liability for intentional acts, gross negligence, or other liability that cannot legally be excluded or limited. They do not remove rights you have under applicable law.
+
+        6. Ending use and reviewing these terms
+        If you do not agree, do not complete setup and close the application. To stop using it, disconnect chat connections and turn off the Windows startup setting. You can review these terms and the Privacy Policy again from the Overview screen. For questions, contact provider mmiyaji at mail@ruhenheim.org.
+        """;
+
+    private const string EnglishPrivacy = """
+        Chat Agent Bridge Privacy Policy (Development Preview)
+        Document version: 2026-10-18.1
+        Provider: mmiyaji
+        Contact: mail@ruhenheim.org
+
+        1. Information handled and purposes
+        The application connects chat services configured by you with a local CLI to run requests, continue conversations, control access, and show status. It handles request text, execution results, account, channel and thread IDs, settings such as working folders and models, session identifiers, execution status, and usage information.
+
+        2. Storage on this PC
+        Connection and execution settings, session associations, execution history and audit information, and the version and date of documents you accepted are stored in this Windows user's application data folder. Connection tokens are encrypted with Windows DPAPI. Bridge history and audit files ordinarily do not store request or result text, but can include working paths and identifiers. Text is handled in memory for display and processing, and may also be stored separately by a CLI or external service. Encryption does not guarantee protection from a PC administrator or a compromised PC.
+
+        3. External communications and sharing
+        The application exchanges requests, responses, and connection status with Slack or the Mattermost server you configure. During execution, it passes the request and information needed for the task to the selected CLI. Depending on its configuration and provider policies, the CLI may send data to AI services. Running a CLI on a local PC does not mean that all AI processing or data storage happens on that PC. Review the privacy policies and agreements of each external service.
+
+        Results shared to chat and details of operation approvals are visible to people who can view that channel or thread. The authorized-user setting does not limit who can view posts on the chat service. Connection and disconnection notices that do not include message text may also be sent.
+
+        4. Information sent to the provider
+        This development preview does not include automatic sending of usage information or conversation text to a bridge-operated analytics or advertising service. Information handling by the OS, distribution store, CLI, chat, and AI services is governed by each provider's policies. If you send information to the provider, for example in a support request, limit it to what is needed and remove tokens and secrets.
+
+        5. Retention, deletion, and stopping use
+        Stored data may remain on the PC until you delete it. You can delete bridge-stored information by closing the application and deleting the data in the settings storage location shown on the Overview screen. Uninstallation behavior depends on the Windows distribution method. Deleting bridge data does not delete conversation history held by chat or AI services or the CLI; manage that history in each service or CLI.
+
+        6. Contact
+        For questions about this application's handling of data, contact provider mmiyaji at mail@ruhenheim.org. Do not post tokens or confidential request or result information in public chats or public support fields.
         """;
 }

@@ -2,6 +2,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 using System.Collections.Concurrent;
+using ChatAgentBridge_Desktop.Localization;
 
 namespace ChatAgentBridge_Desktop.Notifications;
 
@@ -23,7 +24,7 @@ public sealed class PendingRequestNotificationService
     private bool _registered;
     private bool _available;
     private bool _shutdown;
-    private string _status = "Windows 通知はまだ初期化されていません。";
+    private string _status = DesktopText.Get("NotificationNotInitialized");
 
     public PendingRequestNotificationService(DispatcherQueue dispatcherQueue)
     {
@@ -58,12 +59,12 @@ public sealed class PendingRequestNotificationService
             if (!string.Equals(setting, "Enabled", StringComparison.Ordinal))
             {
                 _available = false;
-                SetStatus($"Windows 通知は無効です（{setting}）。Windows の通知設定を確認してください。");
+                SetStatus(DesktopText.Get("NotificationDisabled", setting));
                 return false;
             }
 
             _available = true;
-            SetStatus("Windows 通知を利用できます。");
+            SetStatus(DesktopText.Get("NotificationAvailable"));
             return true;
         }
         catch (Exception ex)
@@ -71,7 +72,7 @@ public sealed class PendingRequestNotificationService
             _manager.NotificationInvoked -= OnNotificationInvoked;
             _registered = false;
             _available = false;
-            SetStatus($"Windows 通知を初期化できませんでした: {ex.Message}");
+            SetStatus(DesktopText.Get("NotificationInitializeFailed", ex.Message));
             return false;
         }
     }
@@ -103,19 +104,19 @@ public sealed class PendingRequestNotificationService
             {
                 _pending.TryRemove(candidate, out _);
                 RemoveToast(candidate);
-                SetStatus("Windows 通知を表示できませんでした。Windows の通知設定を確認してください。");
+                SetStatus(DesktopText.Get("NotificationShowFailed"));
                 return false;
             }
             entry.NotificationTag = candidate;
             token = candidate;
             _ = ExpireAfterAsync(candidate, PendingLifetime);
-            SetStatus("承認待ちの Windows 通知を表示しました。有効期限は 5 分です。");
+            SetStatus(DesktopText.Get("NotificationPendingShown"));
             return true;
         }
         catch (Exception ex)
         {
             _pending.TryRemove(candidate, out _);
-            SetStatus($"Windows 通知を表示できませんでした: {ex.Message}");
+            SetStatus(DesktopText.Get("NotificationShowFailedWithError", ex.Message));
             return false;
         }
     }
@@ -158,22 +159,22 @@ public sealed class PendingRequestNotificationService
             }
             catch (Exception ex)
             {
-                SetStatus($"Windows 通知の終了処理に失敗しました: {ex.Message}");
+                SetStatus(DesktopText.Get("NotificationShutdownFailed", ex.Message));
             }
             finally
             {
                 _registered = false;
             }
         }
-        SetStatus("Windows 通知を停止しました。");
+        SetStatus(DesktopText.Get("NotificationStopped"));
     }
 
     private static AppNotification BuildNotification(PendingNotificationKind kind, string token)
     {
         (string title, string body) = kind switch
         {
-            PendingNotificationKind.ChatRequest => ("チャット依頼", "応答待ちのチャット依頼があります。"),
-            PendingNotificationKind.AiApproval => ("AI 操作の承認", "承認すると保存済みの PC 設定で実行します。"),
+            PendingNotificationKind.ChatRequest => (DesktopText.Get("NotificationChatRequestTitle"), DesktopText.Get("NotificationChatRequestBody")),
+            PendingNotificationKind.AiApproval => (DesktopText.Get("NotificationAiApprovalTitle"), DesktopText.Get("NotificationAiApprovalBody")),
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
 
@@ -182,8 +183,8 @@ public sealed class PendingRequestNotificationService
             .AddArgument(ActionArgument, "open")
             .AddText(title)
             .AddText(body)
-            .AddButton(CreateButton("承認して実行", token, "approve"))
-            .AddButton(CreateButton("拒否", token, "decline"))
+            .AddButton(CreateButton(DesktopText.Get("ApproveAndRun"), token, "approve"))
+            .AddButton(CreateButton(DesktopText.Get("Deny"), token, "decline"))
             .SetDuration(AppNotificationDuration.Long)
             .BuildNotification();
 
@@ -209,7 +210,7 @@ public sealed class PendingRequestNotificationService
         }
 
         if (!_dispatcherQueue.TryEnqueue(() => _ = HandleInvocationAsync(token, action)))
-            SetStatus("Windows 通知の操作を UI スレッドへ渡せませんでした。");
+            SetStatus(DesktopText.Get("NotificationDispatchFailed"));
     }
 
     private async Task HandleInvocationAsync(string token, string action)
@@ -220,7 +221,7 @@ public sealed class PendingRequestNotificationService
         if (entry.ExpiresAt <= DateTimeOffset.UtcNow)
         {
             Resolve(token);
-            SetStatus("通知の有効期限が切れています。アプリを開いて最新の状態を確認してください。");
+            SetStatus(DesktopText.Get("NotificationExpiredOpenApp"));
             return;
         }
 
@@ -241,7 +242,7 @@ public sealed class PendingRequestNotificationService
         }
         catch (Exception ex)
         {
-            SetStatus($"Windows 通知の操作を完了できませんでした: {ex.Message}");
+            SetStatus(DesktopText.Get("NotificationActionFailed", ex.Message));
         }
     }
 
@@ -251,7 +252,7 @@ public sealed class PendingRequestNotificationService
         if (_pending.TryRemove(token, out PendingEntry? entry))
         {
             RemoveToast(entry.NotificationTag);
-            SetStatus("Windows 通知の有効期限が切れました。");
+            SetStatus(DesktopText.Get("NotificationExpired"));
         }
     }
 
@@ -268,14 +269,14 @@ public sealed class PendingRequestNotificationService
             }
             catch (Exception ex)
             {
-                SetStatus($"Windows 通知を閉じられませんでした: {ex.Message}");
+                SetStatus(DesktopText.Get("NotificationCloseFailed", ex.Message));
             }
         }
 
         if (!_dispatcherQueue.HasThreadAccess)
         {
             if (!_dispatcherQueue.TryEnqueue(Remove))
-                SetStatus("Windows 通知を閉じる処理を UI スレッドへ渡せませんでした。");
+                SetStatus(DesktopText.Get("NotificationCloseDispatchFailed"));
             return;
         }
 

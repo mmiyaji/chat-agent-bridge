@@ -1,0 +1,518 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AgentNotConfigured" xml:space="preserve">
+    <value>エージェントは未設定です</value>
+  </data>
+  <data name="AgentProcessStopped" xml:space="preserve">
+    <value>エージェントプロセスを停止しました。</value>
+  </data>
+  <data name="AgentRunning" xml:space="preserve">
+    <value>エージェントを実行しています…</value>
+  </data>
+  <data name="Allowed" xml:space="preserve">
+    <value>許可</value>
+  </data>
+  <data name="AllowedUsersOnly" xml:space="preserve">
+    <value>ユーザー許可リストの範囲内</value>
+  </data>
+  <data name="ApprovalAutomatic" xml:space="preserve">
+    <value>自動承認</value>
+  </data>
+  <data name="ApprovalEveryTime" xml:space="preserve">
+    <value>毎回確認</value>
+  </data>
+  <data name="ApprovalFirstOnly" xml:space="preserve">
+    <value>最初だけ確認</value>
+  </data>
+  <data name="AuditRecordSaveFailed" xml:space="preserve">
+    <value>監査記録を保存できませんでした。</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="CancelExecutionInstruction" xml:space="preserve">
+    <value>キャンセルするには「キャンセル」を選択してください。</value>
+  </data>
+  <data name="CannotStartExecution" xml:space="preserve">
+    <value>実行を開始できません</value>
+  </data>
+  <data name="CannotStartExecutionDetails" xml:space="preserve">
+    <value>確認ダイアログを表示できないため、安全のため実行を停止しました。</value>
+  </data>
+  <data name="ChatConnectionRequired" xml:space="preserve">
+    <value>チャットへの接続が必要です</value>
+  </data>
+  <data name="ChatConnectionRequiredDetails" xml:space="preserve">
+    <value>この画面の接続ボタンを押し、「接続しました」と表示されてから完了してください。</value>
+  </data>
+  <data name="CheckCliAndModel" xml:space="preserve">
+    <value>CLIとモデルを確認してください</value>
+  </data>
+  <data name="CheckConnectionDetails" xml:space="preserve">
+    <value>接続情報を確認してください</value>
+  </data>
+  <data name="CheckSettingsFileAndReload" xml:space="preserve">
+    <value>設定ファイルを確認してから再読み込みしてください。</value>
+  </data>
+  <data name="CheckWorkspace" xml:space="preserve">
+    <value>作業フォルダーを確認してください</value>
+  </data>
+  <data name="CheckWorkspaceDetails" xml:space="preserve">
+    <value>存在するフォルダーの絶対パスを入力するか、「フォルダーを選択」で指定してください。</value>
+  </data>
+  <data name="Checking" xml:space="preserve">
+    <value>確認中…</value>
+  </data>
+  <data name="CheckingCliVersion" xml:space="preserve">
+    <value>CLIの起動とバージョンを確認しています…</value>
+  </data>
+  <data name="CheckingConnectionState" xml:space="preserve">
+    <value>接続状態を確認しています。</value>
+  </data>
+  <data name="CheckingSavedSettings" xml:space="preserve">
+    <value>保存済みの設定を確認しています。</value>
+  </data>
+  <data name="CheckingSettings" xml:space="preserve">
+    <value>設定を確認しています。</value>
+  </data>
+  <data name="CheckingStartupSettings" xml:space="preserve">
+    <value>Windowsの起動設定を確認しています…</value>
+  </data>
+  <data name="CliCheckCancelled" xml:space="preserve">
+    <value>CLIのチェックをキャンセルしました。再実行できます。</value>
+  </data>
+  <data name="CliCheckFailed" xml:space="preserve">
+    <value>CLIを確認できませんでした。選択したAIと実行ファイルが合っているか、CLIがインストール済みか確認してください。</value>
+  </data>
+  <data name="CliCheckIntro" xml:space="preserve">
+    <value>CLIをチェックすると、起動・バージョン・モデル候補を確認できます。</value>
+  </data>
+  <data name="CliCheckSucceeded" xml:space="preserve">
+    <value>CLIの起動・種類・バージョンと、{0}件のモデル候補を確認しました。AIの作業実行や利用権限の確認は行っていません。</value>
+  </data>
+  <data name="CliModelsUnavailable" xml:space="preserve">
+    <value>バージョンは確認できましたが、モデル候補を取得できませんでした。CLIへのログインとネットワークを確認し、再チェックしてください。</value>
+  </data>
+  <data name="CliSettingsChanged" xml:space="preserve">
+    <value>CLIまたは作業フォルダーの設定が変わりました。もう一度チェックしてください。</value>
+  </data>
+  <data name="CliStartedFetchingModels" xml:space="preserve">
+    <value>CLIを起動できました。続いてモデル候補を確認しています…</value>
+  </data>
+  <data name="CliTimeout" xml:space="preserve">
+    <value>CLIの応答が時間内にありませんでした。CLIの場所とログイン状態を確認し、再実行してください。</value>
+  </data>
+  <data name="CliUnconfirmed" xml:space="preserve">
+    <value>確認できませんでした</value>
+  </data>
+  <data name="ConfirmationDialogFailed" xml:space="preserve">
+    <value>確認ダイアログを表示できませんでした</value>
+  </data>
+  <data name="ConsentAndContinue" xml:space="preserve">
+    <value>同意して次へ</value>
+  </data>
+  <data name="ConsentInstructions" xml:space="preserve">
+    <value>文書を開いて内容をご確認ください。同意しない場合は、後で設定するかアプリを終了できます。</value>
+  </data>
+  <data name="ConsentInstructionsWizard" xml:space="preserve">
+    <value>文書を開いて内容をご確認ください。このガイドでは両方に同意してから進みます。</value>
+  </data>
+  <data name="ConsentRequired" xml:space="preserve">
+    <value>利用条件への同意が必要です</value>
+  </data>
+  <data name="ConsentRequiredDetails" xml:space="preserve">
+    <value>利用規約とプライバシーポリシーの両方を確認し、同意する場合はチェックを入れてください。</value>
+  </data>
+  <data name="ConsentSaved" xml:space="preserve">
+    <value>文書バージョン {0} への同意をこのPCに保存しました。</value>
+  </data>
+  <data name="CurrentWorkspaceOnly" xml:space="preserve">
+    <value>現在の作業フォルダーのみ</value>
+  </data>
+  <data name="DefaultCliValue" xml:space="preserve">
+    <value>CLIの既定値</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>有効</value>
+  </data>
+  <data name="ExecutableAndArguments" xml:space="preserve">
+    <value>実行ファイルと引数</value>
+  </data>
+  <data name="ExecutionCancelled" xml:space="preserve">
+    <value>実行をキャンセルしました</value>
+  </data>
+  <data name="ExecutionCancelledAtDialog" xml:space="preserve">
+    <value>確認ダイアログでキャンセルされました。</value>
+  </data>
+  <data name="ExecutionCancelledBeforeStart" xml:space="preserve">
+    <value>実行開始前にキャンセルされました。</value>
+  </data>
+  <data name="ExecutionCompleted" xml:space="preserve">
+    <value>実行が完了しました</value>
+  </data>
+  <data name="ExecutionConfirmAutomationName" xml:space="preserve">
+    <value>エージェント実行の確認</value>
+  </data>
+  <data name="ExecutionConfirmIntro" xml:space="preserve">
+    <value>次の内容をローカルエージェントに渡します。</value>
+  </data>
+  <data name="ExecutionConfirmTitle" xml:space="preserve">
+    <value>エージェントを実行しますか？</value>
+  </data>
+  <data name="ExecutionFailed" xml:space="preserve">
+    <value>実行に失敗しました</value>
+  </data>
+  <data name="ExecutionHistoryFinalStateSaveFailed" xml:space="preserve">
+    <value>実行は終了しましたが、履歴の終了状態を保存できませんでした。</value>
+  </data>
+  <data name="ExecutionNotStartedHistoryFailed" xml:space="preserve">
+    <value>実行は開始されませんでした。実行履歴を保存できません。</value>
+  </data>
+  <data name="ExecutionNotStartedWindowClosed" xml:space="preserve">
+    <value>ウィンドウが閉じられたため、エージェントを開始しませんでした。</value>
+  </data>
+  <data name="ExecutionOutputPlaceholder" xml:space="preserve">
+    <value>実行結果はここに表示されます。</value>
+  </data>
+  <data name="ExecutionPolicySummary" xml:space="preserve">
+    <value>依頼の範囲: {0}。承認: {1}。作業フォルダー: {2}。AIの操作: {3}。ツールのネットワーク: {4}。結果: {5}。</value>
+  </data>
+  <data name="ExitCode" xml:space="preserve">
+    <value>終了コード: {0}</value>
+  </data>
+  <data name="FetchingModelsWithCliCheck" xml:space="preserve">
+    <value>CLIのチェックと合わせてモデル候補を取得します。</value>
+  </data>
+  <data name="FolderPickerFailedMessage" xml:space="preserve">
+    <value>作業フォルダー欄に絶対パスを直接入力することもできます。</value>
+  </data>
+  <data name="FolderPickerFailedTitle" xml:space="preserve">
+    <value>フォルダーを選択できませんでした</value>
+  </data>
+  <data name="HistorySaveFailed" xml:space="preserve">
+    <value>履歴を保存できず実行を停止しました</value>
+  </data>
+  <data name="HistorySaveFailedDetails" xml:space="preserve">
+    <value>データ保存先の空き容量とアクセス権を確認してください。</value>
+  </data>
+  <data name="InheritAgentSettings" xml:space="preserve">
+    <value>エージェント設定に従う</value>
+  </data>
+  <data name="InteractiveExecution" xml:space="preserve">
+    <value>対話的な操作確認</value>
+  </data>
+  <data name="LoadingSettings" xml:space="preserve">
+    <value>設定を読み込んでいます</value>
+  </data>
+  <data name="LoadingSettingsPeriod" xml:space="preserve">
+    <value>設定を読み込んでいます。</value>
+  </data>
+  <data name="MissingChatConfig" xml:space="preserve">
+    <value>選択したチャットの接続情報と許可するユーザーIDが必要です。</value>
+  </data>
+  <data name="ModelAndReasoning" xml:space="preserve">
+    <value>モデルと推論レベル</value>
+  </data>
+  <data name="ModelsUnavailableEnterManually" xml:space="preserve">
+    <value>このCLIでは候補を取得できません。モデル名を直接入力してください。</value>
+  </data>
+  <data name="NetworkManagedByCli" xml:space="preserve">
+    <value>CLI側で管理（アプリから制限しません）</value>
+  </data>
+  <data name="NetworkUnrestrictedFullAccess" xml:space="preserve">
+    <value>フルアクセスのため制限なし</value>
+  </data>
+  <data name="NextConfigureAgentWorkspace" xml:space="preserve">
+    <value>次の操作：エージェントと既存の作業フォルダーを設定して保存します。</value>
+  </data>
+  <data name="NextConnectToChat" xml:space="preserve">
+    <value>次の操作：チャット受信で保存済みの接続先へ接続します。</value>
+  </data>
+  <data name="NextSaveConnection" xml:space="preserve">
+    <value>次の操作：接続設定を保存します。</value>
+  </data>
+  <data name="NotAllowed" xml:space="preserve">
+    <value>不許可</value>
+  </data>
+  <data name="NotChecked" xml:space="preserve">
+    <value>未確認</value>
+  </data>
+  <data name="NotLoaded" xml:space="preserve">
+    <value>未読み込み</value>
+  </data>
+  <data name="OutputTruncated" xml:space="preserve">
+    <value>（出力ログの表示上限を超えたため、一部を省略しています。）</value>
+  </data>
+  <data name="PermissionAsk" xml:space="preserve">
+    <value>操作ごとに確認</value>
+  </data>
+  <data name="PermissionCliDefault" xml:space="preserve">
+    <value>CLI既定</value>
+  </data>
+  <data name="PermissionFullAccess" xml:space="preserve">
+    <value>フルアクセス</value>
+  </data>
+  <data name="PermissionReadOnly" xml:space="preserve">
+    <value>読み取り・計画のみ</value>
+  </data>
+  <data name="PermissionWorkspaceWrite" xml:space="preserve">
+    <value>フォルダー内の編集を自動許可</value>
+  </data>
+  <data name="Prompt" xml:space="preserve">
+    <value>プロンプト</value>
+  </data>
+  <data name="PromptRequired" xml:space="preserve">
+    <value>プロンプトを入力してください</value>
+  </data>
+  <data name="PromptRequiredDetails" xml:space="preserve">
+    <value>実行する内容を入力してから開始してください。</value>
+  </data>
+  <data name="RecheckCli" xml:space="preserve">
+    <value>CLIを再確認してください</value>
+  </data>
+  <data name="RecheckCliDetails" xml:space="preserve">
+    <value>AIまたは作業フォルダーの設定が変わりました。ステップ3へ戻ってチェックしてください。</value>
+  </data>
+  <data name="ReconnectWithChangedSettings" xml:space="preserve">
+    <value>変更した設定で再接続してください</value>
+  </data>
+  <data name="ReconnectWithChangedSettingsDetails" xml:space="preserve">
+    <value>この画面の接続ボタンを押すと、現在の設定を保存して再接続します。</value>
+  </data>
+  <data name="ResultAutomatic" xml:space="preserve">
+    <value>自動共有</value>
+  </data>
+  <data name="ResultDoNotShare" xml:space="preserve">
+    <value>共有しない</value>
+  </data>
+  <data name="ResultManual" xml:space="preserve">
+    <value>手動で確認して共有</value>
+  </data>
+  <data name="ReviewConsent" xml:space="preserve">
+    <value>利用条件を確認してください</value>
+  </data>
+  <data name="ReviewConsentDetails" xml:space="preserve">
+    <value>最初のページへ戻り、利用規約とプライバシーポリシーをご確認ください。</value>
+  </data>
+  <data name="ReviewSettings" xml:space="preserve">
+    <value>設定内容を確認してください</value>
+  </data>
+  <data name="ReviewSettingsDetails" xml:space="preserve">
+    <value>CLIチェックと選択したチャットの接続情報が必要です。</value>
+  </data>
+  <data name="Run" xml:space="preserve">
+    <value>実行</value>
+  </data>
+  <data name="RunCliCheckDetails" xml:space="preserve">
+    <value>「CLIをチェック」でバージョンとモデル候補を確認してください。失敗した場合はCLIの場所・ログイン状態を確認して再実行できます。</value>
+  </data>
+  <data name="Running" xml:space="preserve">
+    <value>実行中</value>
+  </data>
+  <data name="SaveAndContinue" xml:space="preserve">
+    <value>保存して次へ</value>
+  </data>
+  <data name="SaveAndFinish" xml:space="preserve">
+    <value>設定を保存して完了</value>
+  </data>
+  <data name="SavedAgentSummary" xml:space="preserve">
+    <value>{0} / モデル: {1} / 推論レベル: {2} / {3}</value>
+  </data>
+  <data name="SavedEffort" xml:space="preserve">
+    <value>保存済みの推論レベル: {0}</value>
+  </data>
+  <data name="SavedEffortPending" xml:space="preserve">
+    <value>保存済みの推論レベル: {0}（モデル候補を取得するまで対応状況は未確認です）</value>
+  </data>
+  <data name="SavedEffortUnsupported" xml:space="preserve">
+    <value>保存済みの推論レベル「{0}」は、このモデルのCLI候補にありません。CLIの既定値を選ぶか、対応候補を選択してください。</value>
+  </data>
+  <data name="SelectAgent" xml:space="preserve">
+    <value>AIを選択してください</value>
+  </data>
+  <data name="SelectAgentDetails" xml:space="preserve">
+    <value>このウィザードではCodexまたはClaude Codeを設定できます。</value>
+  </data>
+  <data name="SelectedModelUnavailable" xml:space="preserve">
+    <value>入力したモデルはCLIの候補にありません。候補から選択するか、モデル名を空欄にしてCLIの既定値を使ってください。</value>
+  </data>
+  <data name="SettingsLoadFailed" xml:space="preserve">
+    <value>設定を読み込めませんでした</value>
+  </data>
+  <data name="SettingsLoadFailedDetails" xml:space="preserve">
+    <value>設定ファイルを確認してから再読み込みしてください。{0}</value>
+  </data>
+  <data name="SettingsLoaded" xml:space="preserve">
+    <value>設定を読み込みました</value>
+  </data>
+  <data name="SettingsLoadedDetails" xml:space="preserve">
+    <value>ワークスペースとエージェントを設定して実行できます。</value>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>設定を保存できませんでした</value>
+  </data>
+  <data name="SettingsSaved" xml:space="preserve">
+    <value>設定を保存しました</value>
+  </data>
+  <data name="SettingsSavedReconnect" xml:space="preserve">
+    <value>変更をチャット接続へ反映するには、「チャット受信」で再接続してください。</value>
+  </data>
+  <data name="SettingsSavedReconnectDetails" xml:space="preserve">
+    <value>承認設定などの変更を反映するため、一度切断してこの画面から再接続してください。</value>
+  </data>
+  <data name="SetupAgentReady" xml:space="preserve">
+    <value>完了：保存済み。CLIやログイン状態はここでは確認していません。</value>
+  </data>
+  <data name="SetupAgentWorkspaceMissing" xml:space="preserve">
+    <value>次のステップ：エージェントと作業フォルダーを設定して保存します。</value>
+  </data>
+  <data name="SetupAllowedUsersMissing" xml:space="preserve">
+    <value>次のステップ：接続先ごとに許可するユーザーIDを1行1人で設定します。空欄では全員を拒否します。</value>
+  </data>
+  <data name="SetupChatAfterStepOne" xml:space="preserve">
+    <value>未設定：ステップ1の後に接続情報を保存します。</value>
+  </data>
+  <data name="SetupChatConfigMissing" xml:space="preserve">
+    <value>次のステップ：SlackまたはMattermostの接続情報と許可するユーザーIDを保存します。</value>
+  </data>
+  <data name="SetupChatConfigSaved" xml:space="preserve">
+    <value>完了：接続情報と許可するユーザーIDを保存済み。</value>
+  </data>
+  <data name="SetupCompleteReadyForChat" xml:space="preserve">
+    <value>セットアップ完了。別の端末からチャットで依頼できます。</value>
+  </data>
+  <data name="SetupCompletionSummary" xml:space="preserve">
+    <value>{0} / 3 完了</value>
+  </data>
+  <data name="SetupConnectAfterSaving" xml:space="preserve">
+    <value>未設定：接続情報を保存した後に接続します。</value>
+  </data>
+  <data name="SetupConnectSavedDestination" xml:space="preserve">
+    <value>次のステップ：保存済みの接続先へ接続します。</value>
+  </data>
+  <data name="SetupConnecting" xml:space="preserve">
+    <value>接続中：接続先の応答を待っています。</value>
+  </data>
+  <data name="SetupExecutableMissing" xml:space="preserve">
+    <value>次のステップ：エージェントの実行ファイルを設定して保存します。</value>
+  </data>
+  <data name="SetupWaitingForChatRequest" xml:space="preserve">
+    <value>完了：チャットからの依頼を待っています。</value>
+  </data>
+  <data name="SetupWorkspaceNotFound" xml:space="preserve">
+    <value>次のステップ：保存された作業フォルダーが見つかりません。既存のフォルダーを指定して保存します。</value>
+  </data>
+  <data name="SlackConnectionFields" xml:space="preserve">
+    <value>Botトークン・Appトークン・許可するユーザーIDを入力してください。</value>
+  </data>
+  <data name="SpecifiedConversationsOnly" xml:space="preserve">
+    <value>指定した会話に限定</value>
+  </data>
+  <data name="TrustedWorkspacesOnly" xml:space="preserve">
+    <value>指定した信頼フォルダーに限定</value>
+  </data>
+  <data name="UnableToCheckSettings" xml:space="preserve">
+    <value>設定を確認できません。</value>
+  </data>
+  <data name="UnableToLoadSettingsReload" xml:space="preserve">
+    <value>設定を読み込めません。再読み込みしてください。</value>
+  </data>
+  <data name="UnrecognizedCliProvider" xml:space="preserve">
+    <value>バージョン応答はありましたが、このCLIのモデル候補を確認できません。CodexまたはClaude Codeを選んでください。</value>
+  </data>
+  <data name="UnsavedSetupChanges" xml:space="preserve">
+    <value>接続先、許可するユーザーID、操作承認の共有を含む未保存の変更があります。ステップには保存済みの設定だけを反映しています。</value>
+  </data>
+  <data name="UsagePlaceholder" xml:space="preserve">
+    <value>トークン利用量は実行後に表示します。未取得の値は0として扱いません。</value>
+  </data>
+  <data name="UsageWhileRunning" xml:space="preserve">
+    <value>実行中。利用量は完了後に表示します。</value>
+  </data>
+  <data name="UseCliNetworkSettings" xml:space="preserve">
+    <value>CLIの設定を使用</value>
+  </data>
+  <data name="UseDefaultCliValue" xml:space="preserve">
+    <value>CLIの既定値を使用します。</value>
+  </data>
+  <data name="WizardAgentDescription" xml:space="preserve">
+    <value>このPCで使うAIと、作業するフォルダーを選びます。CLIのインストールとログインは事前に必要です。</value>
+  </data>
+  <data name="WizardChatDescription" xml:space="preserve">
+    <value>SlackまたはMattermostを選び、接続情報と利用を許可する本人のユーザーIDを入力します。</value>
+  </data>
+  <data name="WizardCliDescription" xml:space="preserve">
+    <value>チェックを実行し、CLIの種類・バージョン・モデル候補を確認します。AIへ作業の依頼は送りません。</value>
+  </data>
+  <data name="WizardComplete" xml:space="preserve">
+    <value>初期設定が完了しました</value>
+  </data>
+  <data name="WizardCompleteDetails" xml:space="preserve">
+    <value>チャットから依頼できます。CLIチェックではAIの作業実行は行っていません。</value>
+  </data>
+  <data name="WizardIntroDescription" xml:space="preserve">
+    <value>仕組みと利用条件を確認してから、このPCの初期設定へ進みます。</value>
+  </data>
+  <data name="WizardProgressLoadFailed" xml:space="preserve">
+    <value>初期設定の進行状況を読み込めませんでした</value>
+  </data>
+  <data name="WizardProgressLoadFailedDetails" xml:space="preserve">
+    <value>保存済みの案内データを確認してください。設定は上書きしていません。</value>
+  </data>
+  <data name="WizardSafetyDescription" xml:space="preserve">
+    <value>依頼の承認と結果の共有方法を確認し、選んだチャットに接続して完了します。</value>
+  </data>
+  <data name="WizardSaveFailed" xml:space="preserve">
+    <value>初期設定を保存できませんでした</value>
+  </data>
+  <data name="WizardSaveFailedDetails" xml:space="preserve">
+    <value>入力内容と設定フォルダーへの書き込み権限を確認してください。</value>
+  </data>
+  <data name="WizardStepAgent" xml:space="preserve">
+    <value>AIと作業フォルダー</value>
+  </data>
+  <data name="WizardStepChat" xml:space="preserve">
+    <value>チャットの接続情報</value>
+  </data>
+  <data name="WizardStepCli" xml:space="preserve">
+    <value>CLIの確認とモデル</value>
+  </data>
+  <data name="WizardStepIntro" xml:space="preserve">
+    <value>はじめに・利用条件</value>
+  </data>
+  <data name="WizardStepSafety" xml:space="preserve">
+    <value>承認設定と接続確認</value>
+  </data>
+  <data name="WizardSummary" xml:space="preserve">
+    <value>AI: {0} / モデル: {1}
+推論の強さ: {2}
+作業フォルダー: {3}
+チャット: {4} / アプリ起動時の接続: {5}
+依頼の承認: {6} / 結果: {7}
+AIの操作権限: {8}</value>
+  </data>
+  <data name="Workspace" xml:space="preserve">
+    <value>ワークスペース</value>
+  </data>
+  <data name="WorkspaceMustBeExistingAbsolutePath" xml:space="preserve">
+    <value>作業フォルダーには、存在するフォルダーの絶対パスを指定してください。</value>
+  </data>
+  <data name="WorkspaceOutsideTrustedRoots" xml:space="preserve">
+    <value>作業フォルダーが信頼フォルダーの範囲外です。先に信頼するフォルダーを確認してください。</value>
+  </data>
+  <data name="RunToCompletion" xml:space="preserve"><value>完了まで実行</value></data>
+  <data name="Disabled" xml:space="preserve"><value>無効</value></data>
+  <data name="MattermostConnectionFields" xml:space="preserve"><value>サーバーURL・チャンネルID・トークン・許可するユーザーIDを入力してください。</value></data>
+</root>

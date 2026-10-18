@@ -3,6 +3,7 @@ using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.AppServer;
 using ChatAgentBridge.Core.Sessions;
+using ChatAgentBridge_Desktop.Localization;
 using ChatAgentBridge.Transports;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -18,7 +19,26 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public string Prompt => Request.Text;
     [ObservableProperty] public partial string Workspace { get; set; } = settings.WorkspaceRoot;
     [ObservableProperty] public partial string State { get; set; } = "承認待ち";
-    [ObservableProperty] public partial string SessionLabel { get; set; } = "実行前にセッションを確認します";
+    public string StateDisplay => State switch
+    {
+        "承認待ち" => DesktopText.Get("ApprovalPending"),
+        "実行中" => DesktopText.Get("ApprovalRunning"),
+        "完了" => DesktopText.Get("ApprovalCompleted"),
+        "キャンセル" => DesktopText.Get("ApprovalCancelled"),
+        "拒否" => DesktopText.Get("ApprovalRejected"),
+        "実行／記録エラー" => DesktopText.Get("ApprovalExecutionError"),
+        "許可取り消し・実行不可" => DesktopText.Get("ApprovalCancelledPermission"),
+        "許可設定を確認できず実行不可" => DesktopText.Get("ApprovalPermissionUnavailable"),
+        "自動実行を準備" => DesktopText.Get("ApprovalPreparing"),
+        "接続終了・再受信が必要" => DesktopText.Get("ApprovalConnectionEnded"),
+        "作業先変更・再投稿が必要" => DesktopText.Get("ApprovalWorkspaceNeedsResubmit"),
+        "フォルダー変更済み" => DesktopText.Get("ApprovalWorkspaceChanged"),
+        "フォルダー変更不可" => DesktopText.Get("ApprovalWorkspaceChangeFailed"),
+        _ when State.StartsWith("失敗 (", StringComparison.Ordinal) => DesktopText.Get("ApprovalFailed", State[4..^1]),
+        _ => State
+    };
+    partial void OnStateChanged(string value) => OnPropertyChanged(nameof(StateDisplay));
+    [ObservableProperty] public partial string SessionLabel { get; set; } = DesktopText.Get("InboxSessionPreflight");
     [ObservableProperty] public partial string ResultText { get; set; } = "";
     public Guid? ExecutionId { get; set; }
     public string? ExecutionPolicyFingerprint { get; set; }
@@ -54,9 +74,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public event Action<InboxItem>? RequestReceived;
     public event Action? ConnectionEnded;
     [ObservableProperty] public partial string NotificationStatus { get; set; } = "";
-    [ObservableProperty] public partial string Status { get; set; } = "切断中。接続設定を保存してから接続してください。";
-    [ObservableProperty] public partial string Output { get; set; } = "実行結果はここに表示されます。依頼の実行と結果共有は、会話の承認・共有設定に従います。";
-    [ObservableProperty] public partial string UsageSummary { get; set; } = "利用量は実行後に表示します。";
+    [ObservableProperty] public partial string Status { get; set; } = DesktopText.Get("InboxDisconnected");
+    [ObservableProperty] public partial string Output { get; set; } = DesktopText.Get("InboxOutputIntro");
+    [ObservableProperty] public partial string UsageSummary { get; set; } = DesktopText.Get("UsageAfterExecution");
     [ObservableProperty] public partial string OverflowNotice { get; set; } = "";
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
     public partial bool IsConnected { get; set; }
@@ -96,7 +116,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         IsConnected = true;
         _disconnecting = false;
         IsConnectionConfirmed = false;
-        Status = "接続準備中…";
+        Status = DesktopText.Get("InboxPreparingConnection");
         try
         {
             var settings = await _store.LoadAsync();
@@ -105,7 +125,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             {
                 await transport.DisposeAsync();
                 IsConnected = false;
-                Status = "接続設定で許可するユーザーIDを登録し、保存してください。空欄では依頼を受け付けません。";
+                Status = DesktopText.Get("InboxAllowedUsersRequired");
                 return;
             }
             Volatile.Write(ref _accessSettings, settings);
@@ -114,7 +134,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await _sessions.ListAsync();
             if (_closing) { await transport.DisposeAsync(); IsConnected = false; return; }
             if (string.IsNullOrWhiteSpace(settings.WorkspaceRoot) || !Directory.Exists(settings.WorkspaceRoot))
-                throw new InvalidOperationException("作業フォルダーを設定し、保存してください。");
+                throw new InvalidOperationException(DesktopText.Get("WorkspaceConfigureAndSave"));
             // Reconnection invalidates pending work from the previous connection.
             Requests.Clear();
             _notifiedRequests.Clear();
@@ -129,18 +149,18 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     if (ReferenceEquals(_transport, transport) && !connection.IsCancellationRequested && !_closing)
                     {
                         IsConnectionConfirmed = true;
-                        Status = "接続しました。許可ユーザーの依頼を待っています。切断中の依頼は再投稿してください。";
+                        Status = DesktopText.Get("InboxConnectedWaiting");
                         _connectionNotice = NotifyConnectionAsync(transport, settings,
-                            "Chat Agent Bridge: 接続しました。許可されたユーザーの依頼をPCで確認してから実行します。切断中に投稿した依頼は取り込まれないため、必要な依頼は再投稿してください。");
+                            DesktopText.Get("InboxConnectedChatNotice"));
                     }
                 });
-            Status = "接続処理中／受信待ち。失敗時はここに表示します。";
+            Status = DesktopText.Get("InboxConnectingWaiting");
             _receiveTask = ReceiveAsync(transport, settings, connection);
         }
         catch (Exception)
         {
             await transport.DisposeAsync();
-            Status = "接続できません。保存済みの作業フォルダー・接続設定を確認してください。";
+            Status = DesktopText.Get("InboxConnectionFailed");
             IsConnectionConfirmed = false;
             IsConnected = false;
         }
@@ -168,7 +188,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                             if (completed is null)
                             {
                                 _droppedCount++;
-                                OverflowNotice = $"上限により未受理: {_droppedCount}件。最後: {request.Provider} / {request.ChannelId} / {request.MessageId}。処理後にチャットから再送してください。";
+                                OverflowNotice = DesktopText.Get("InboxOverflow", _droppedCount, request.Provider, request.ChannelId, request.MessageId);
                                 completion.TrySetResult();
                                 return;
                             }
@@ -179,19 +199,19 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                         var item = new InboxItem(request, transport, settings);
                         Requests.Add(item);
                         _ = ProcessPendingPoliciesAsync();
-                        Status = $"依頼を受信しました。{request.Provider} の承認待ちを確認してください。";
+                        Status = DesktopText.Get("InboxRequestReceived", request.Provider);
                     }
                     completion.TrySetResult();
                 })) completion.TrySetCanceled();
                 await completion.Task;
             }, cancellationToken);
-            Status = "接続が終了しました。再接続後、未実行の依頼を再投稿してください。";
+            Status = DesktopText.Get("InboxConnectionEnded");
         }
-        catch (OperationCanceledException) { Status = "切断しました。切断中の依頼は受信しません。再接続後、未実行の依頼を再投稿してください。"; }
+        catch (OperationCanceledException) { Status = DesktopText.Get("InboxDisconnectedNotice"); }
         catch (Exception)
         {
             // Provider error payloads can contain tokens or socket URLs.
-            Status = "接続に失敗しました。認証情報・接続先・ネットワークを確認し、再接続後に未実行の依頼を再投稿してください。";
+            Status = DesktopText.Get("InboxReconnectFailed");
         }
         finally
         {
@@ -228,7 +248,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             await _connectionNotice;
             await NotifyConnectionAsync(transport, settings,
-                "Chat Agent Bridge: 切断します。未実行の依頼・切断中に投稿する依頼は実行されません。再接続の通知後に必要な依頼を再投稿してください。");
+                DesktopText.Get("InboxDisconnectChatNotice"));
         }
         connection?.Cancel();
         if (receive is not null) await receive;
@@ -262,21 +282,21 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var effectiveSettings = ConversationExecutionPolicy.GetEffectiveSettings(workspaceSettings, binding);
             item.Workspace = effectiveSettings.WorkspaceRoot;
             if (!ExecutionPolicy.IsWorkspaceTrusted(effectiveSettings, effectiveSettings.WorkspaceRoot))
-                throw new InvalidOperationException("作業フォルダーが信頼フォルダーの範囲外です。");
+                throw new InvalidOperationException(DesktopText.Get("WorkspaceOutsideTrustedRootsShort"));
             if (approvedAutomatically && ConversationExecutionPolicy.RequiresApproval(key, effectiveSettings, binding))
             {
                 if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
-                Status = "会話の実行設定が変わったため、改めて承認が必要です。";
+                Status = DesktopText.Get("InboxApprovalRequiredAgain");
                 return;
             }
             item.ExecutionPolicyFingerprint = ConversationExecutionPolicy.GetFingerprint(key, effectiveSettings);
             item.AllowsResultSharing = effectiveSettings.ChatResultMode != "none";
             var requestedModel = effectiveSettings.AgentModel;
             var requestedEffort = effectiveSettings.AgentReasoningEffort;
-            item.SessionLabel = binding is null ? "新規会話（Codex・Claude Codeでは継続先を保存します）" : $"継続セッション: {binding.SessionId}";
-            item.SessionLabel += $"\n実行モデル: {requestedModel ?? "CLIの既定値"} / 推論レベル: {requestedEffort ?? "CLIの既定値"}";
-            item.SessionLabel += $"\n会話の所有者: {item.Request.UserId}";
-            item.SessionLabel += $"\n承認: {ApprovalLabel(effectiveSettings.ChatApprovalMode)} / 結果: {ResultLabel(effectiveSettings.ChatResultMode)} / 操作権限: {PermissionLabel(effectiveSettings.AgentPermissionMode)}";
+            item.SessionLabel = binding is null ? DesktopText.Get("InboxNewConversation") : DesktopText.Get("InboxContinueSession", binding.SessionId);
+            item.SessionLabel += DesktopText.Get("InboxSessionModel", requestedModel ?? DesktopText.Get("CliDefault"), requestedEffort ?? DesktopText.Get("CliDefault"));
+            item.SessionLabel += DesktopText.Get("InboxConversationOwner", item.Request.UserId);
+            item.SessionLabel += DesktopText.Get("InboxSessionPolicy", ApprovalLabel(effectiveSettings.ChatApprovalMode), ResultLabel(effectiveSettings.ChatResultMode), PermissionLabel(effectiveSettings.AgentPermissionMode));
             if (!approvedByNotification && !approvedAutomatically && (ConfirmAsync is null || !await ConfirmAsync(item))) return;
             if (item.State != "承認待ち" || token.IsCancellationRequested) return;
             if (!await CheckAccessAsync(item, token)) return;
@@ -294,8 +314,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await AuditAsync("approved", item.Request, record.Id, _execution.Token);
             await AuditAsync("started", item.Request, record.Id, _execution.Token);
             item.State = "実行中";
-            Output = "エージェントを実行しています…";
-            UsageSummary = "実行中。利用量は完了後に表示します。";
+            Output = DesktopText.Get("InboxAgentRunning");
+            UsageSummary = DesktopText.Get("UsageRunning");
             var result = effectiveSettings.AgentMode == "app-server"
                 ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
                     new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: ServerInputHandler), _execution.Token)
@@ -305,9 +325,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 (Output.Contains("Not logged in", StringComparison.OrdinalIgnoreCase) ||
                  Output.Contains("Please run /login", StringComparison.OrdinalIgnoreCase));
             if (needsLogin)
-                Output = "Claude Codeが未ログインです。このWindowsユーザーでターミナルからClaude Codeを起動し、/login を完了してから再度依頼してください。Slackへの再ログインは不要です。\n\n" + Output;
+                Output = DesktopText.Get("InboxClaudeLoginInstructions") + Environment.NewLine + Environment.NewLine + Output;
             UsageSummary = UsageUi.UsageSummaryFormatter.Format(result.Usage, result.Metrics);
-            if (result.HasOutputTruncated) Output += "\n（出力ログの表示上限を超えたため、一部を省略しています。）";
+            if (result.HasOutputTruncated) Output += Environment.NewLine + DesktopText.Get("InboxOutputTruncated");
             // Only a bounded preview can be shared. Retaining full outputs for 100 inbox
             // items otherwise holds up to 100 million characters until eviction.
             var reply = ExtractReply(result);
@@ -317,46 +337,47 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (result.Success && !approvedAutomatically && effectiveSettings.ChatApprovalMode == "first" && updated is not null &&
                 await CheckAccessAsync(item, token))
                 await _sessions.SetFirstApprovalFingerprintAsync(key, item.ExecutionPolicyFingerprint!, token);
-            if (updated is not null) item.SessionLabel = $"継続セッション: {updated.SessionId}\n実行モデル: {requestedModel ?? "CLIの既定値"} / 推論レベル: {requestedEffort ?? "CLIの既定値"}";
+            if (updated is not null) item.SessionLabel = DesktopText.Get("InboxUpdatedSessionLabel", updated.SessionId,
+                requestedModel ?? DesktopText.Get("CliDefault"), requestedEffort ?? DesktopText.Get("CliDefault"));
             record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = result.Success ? "completed" : "failed", ExitCode = result.ExitCode, SessionId = updated?.SessionId, Usage = result.Usage, Metrics = result.Metrics };
             await _history.RecordAsync(record);
             await AuditAsync(record.Status, item.Request, record.Id);
             try
             {
                 await item.Transport.ReplyAsync(item.Request,
-                    $"Chat Agent Bridge: {item.State}。結果はローカルのWinUI画面で確認してください。", _execution.Token);
-                Status = needsLogin ? "Claude Codeが未ログインのため実行できませんでした。実行結果欄のログイン手順を確認してください。"
-                    : result.Success ? "実行結果を確認できます。本文を共有する場合は「結果をスレッドに送信」を選択してください。"
-                    : "実行に失敗しました。実行結果欄のエラーを確認してから再度依頼してください。";
+                    DesktopText.Get("InboxExecutionStateChatNotice", item.StateDisplay), _execution.Token);
+                Status = needsLogin ? DesktopText.Get("InboxClaudeLoginRequired")
+                    : result.Success ? DesktopText.Get("InboxResultReady")
+                    : DesktopText.Get("InboxExecutionFailed");
                 if (result.Success && effectiveSettings.ChatResultMode == "auto" && item.ResultText.Length > 0 &&
                     await CheckAccessAsync(item, token))
                 {
                     await item.Transport.ReplyAsync(item.Request, BoundedReply(item.ResultText), token);
                     await AuditAsync("reply_sent", item.Request, record.Id, token);
-                    Status = "設定に従って結果本文を元のスレッドへ自動返信しました。スレッドの閲覧者全員に公開されます。";
+                    Status = DesktopText.Get("InboxResultAutoShared");
                 }
                 else if (effectiveSettings.ChatResultMode == "none")
-                    Status = result.Success ? "実行を完了しました。結果本文はPC上のみ表示します。会話の設定で共有は無効です。"
-                        : "実行に失敗しました。実行結果欄を確認してください。結果本文の共有は会話の設定で無効です。";
+                    Status = result.Success ? DesktopText.Get("InboxResultPrivateSuccess")
+                        : DesktopText.Get("InboxResultPrivateFailed");
             }
             catch (Exception)
             {
-                Status = "実行は終了しましたが、チャットへの状態通知に失敗しました。ローカル結果は保持しています。";
+                Status = DesktopText.Get("InboxStatusReplyFailed");
                 await AuditAsync("reply_failed", item.Request, record.Id);
             }
         }
         catch (OperationCanceledException)
         {
-            item.State = "キャンセル"; Status = "実行をキャンセルしました。";
+            item.State = "キャンセル"; Status = DesktopText.Get("InboxExecutionCancelled");
             UsageSummary = UsageUi.UsageSummaryFormatter.Format(null, null);
             if (record is not null) await FinishFailureAsync(record, "cancelled", item.Request);
-            await NotifyRequestAsync(item, "Chat Agent Bridge: PCで実行をキャンセルしました。結果本文は送信していません。");
+            await NotifyRequestAsync(item, DesktopText.Get("InboxCancelChatNotice"));
         }
         catch (Exception)
         {
             if (record?.Status == "running" || record is null) item.State = "実行／記録エラー";
             UsageSummary = UsageUi.UsageSummaryFormatter.Format(null, null);
-            Status = "実行または履歴の記録に失敗しました。作業先を変える場合は !cab folder 絶対パス で変更するか、履歴画面で保存セッションを切り離してから再度依頼してください。ローカル結果も確認してください。";
+            Status = DesktopText.Get("InboxExecutionRecordFailed");
             if (record is not null && record.Status == "running") await FinishFailureAsync(record, "failed", item.Request);
         }
         finally
@@ -382,10 +403,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             await AuditAsync("rejected", item.Request, null);
             item.State = "拒否";
-            Status = "依頼を拒否しました。実行していません。";
-            await NotifyRequestAsync(item, "Chat Agent Bridge: PCで依頼を拒否しました。実行していません。");
+            Status = DesktopText.Get("InboxRequestRejected");
+            await NotifyRequestAsync(item, DesktopText.Get("InboxRejectChatNotice"));
         }
-        catch (Exception) { Status = "拒否の記録に失敗しました。依頼は実行していません。"; }
+        catch (Exception) { Status = DesktopText.Get("InboxRejectRecordFailed"); }
         finally { IsExecuting = false; }
         ApproveCommand.NotifyCanExecuteChanged();
         RejectCommand.NotifyCanExecuteChanged();
@@ -427,10 +448,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (!await CheckAccessAsync(item, token)) return;
             await item.Transport.ReplyAsync(item.Request, text, token);
             await AuditAsync("reply_sent", item.Request, item.ExecutionId);
-            Status = "結果本文を元のスレッドへ送信しました。";
+            Status = DesktopText.Get("InboxResultSent");
         }
-        catch (OperationCanceledException) { Status = "結果の送信をキャンセルしました。"; }
-        catch (Exception) { Status = "結果の送信または監査記録に失敗しました。再送前にスレッドを確認してください。"; }
+        catch (OperationCanceledException) { Status = DesktopText.Get("InboxResultSendCancelled"); }
+        catch (Exception) { Status = DesktopText.Get("InboxResultSendFailed"); }
         finally { _execution?.Dispose(); _execution = null; _activeItem = null; IsExecuting = false; }
     }
 
@@ -479,14 +500,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             }
             if (_activeItem is { } active && !HasAccess(settings, active.Request, active.Settings)) _execution?.Cancel();
             if (IsConnected && previous is not null && !SameExecutionDefaults(previous, settings))
-                Status = "実行設定を変更しました。保留中の依頼は実行しません。切断して再接続し、必要な依頼を再投稿してください。";
+                Status = DesktopText.Get("InboxExecutionSettingsChanged");
         }
         catch (Exception)
         {
             Volatile.Write(ref _accessSettings, null);
             _execution?.Cancel();
             foreach (var item in Requests) { if (item.State == "承認待ち") item.State = "許可設定を確認できず実行不可"; item.ResultText = ""; }
-            Status = "許可設定を読み込めません。依頼の実行・結果共有を停止しました。設定を修復して再接続してください。";
+            Status = DesktopText.Get("InboxPermissionsUnavailable");
         }
         ApproveCommand.NotifyCanExecuteChanged();
         RejectCommand.NotifyCanExecuteChanged();
@@ -510,7 +531,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             item.State = "許可取り消し・実行不可";
             item.ResultText = "";
-            Status = "許可範囲または実行・会話設定が変更されたため、実行・結果共有を停止しました。設定確認後に再接続・再投稿してください。";
+            Status = DesktopText.Get("InboxExecutionPausedSettingsChanged");
         });
         return false;
     }
@@ -523,7 +544,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             await item.Transport.ReplyAsync(item.Request, message, timeout.Token);
         }
-        catch (Exception) { Status += " チャットへの状態通知に失敗しました。"; }
+        catch (Exception) { Status += " " + DesktopText.Get("InboxStatusNoticeFailed"); }
     }
 
     private async Task NotifyConnectionAsync(IChatTransport transport, BridgeSettings settings, string message)
@@ -534,7 +555,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             await notifications.NotifyConnectionAsync(settings, message, timeout.Token);
         }
-        catch (Exception) { if (!_closing) Status += " 接続状態のチャット通知に失敗しました。"; }
+        catch (Exception) { if (!_closing) Status += " " + DesktopText.Get("InboxConnectionNoticeFailed"); }
     }
 
     private async Task FinishFailureAsync(ExecutionRecord record, string status, ChatRequest request)
@@ -544,7 +565,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await _history.RecordAsync(record with { FinishedAt = DateTimeOffset.UtcNow, Status = status });
             await AuditAsync(status, request, record.Id);
         }
-        catch (Exception) { Status += " 履歴・監査の保存にも失敗しました。"; }
+        catch (Exception) { Status += " " + DesktopText.Get("InboxAuditSaveFailed"); }
     }
 
     private static string ExtractReply(AgentRunResult result)
@@ -601,7 +622,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         catch (OperationCanceledException) { }
         catch (Exception)
         {
-            Status = "実行ポリシーを確認できないため自動実行を停止しました。設定・会話の関連付けを確認してください。";
+            Status = DesktopText.Get("InboxAutomaticExecutionPaused");
             foreach (var item in Requests.Where(item => item.State == "承認待ち"))
                 if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
         }
@@ -626,14 +647,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         left.ChatResultMode == right.ChatResultMode && left.ShareApprovalsInChat == right.ShareApprovalsInChat;
 
     private static string BoundedReply(string text) => text.Length > 4000
-        ? text[..4000] + "\n（長いため省略。全文はPC上で確認してください。）" : text;
+        ? text[..4000] + Environment.NewLine + DesktopText.Get("InboxLongTextTruncated") : text;
 
-    private static string ApprovalLabel(string mode) => mode switch { "auto" => "自動", "first" => "開始時のみ", _ => "毎回" };
-    private static string ResultLabel(string mode) => mode switch { "auto" => "自動返信", "none" => "共有しない", _ => "手動共有" };
+    private static string ApprovalLabel(string mode) => mode switch { "auto" => DesktopText.Get("Auto"), "first" => DesktopText.Get("AtStartupOnly"), _ => DesktopText.Get("EveryTime") };
+    private static string ResultLabel(string mode) => mode switch { "auto" => DesktopText.Get("AutoReply"), "none" => DesktopText.Get("NoSharing"), _ => DesktopText.Get("ManualShareShort") };
     private static string PermissionLabel(string mode) => mode switch
     {
-        "read-only" => "読み取り・計画のみ", "workspace-write" => "編集を自動許可",
-        "full-access" => "フルアクセス", "ask" => "操作ごとに確認", _ => "CLIの既定値"
+        "read-only" => DesktopText.Get("ReadAndPlanOnly"), "workspace-write" => DesktopText.Get("AutoAllowEdits"),
+        "full-access" => DesktopText.Get("FullAccess"), "ask" => DesktopText.Get("AskPerAction"), _ => DesktopText.Get("CliDefault")
     };
 
     [RelayCommand(CanExecute = nameof(IsExecuting))]

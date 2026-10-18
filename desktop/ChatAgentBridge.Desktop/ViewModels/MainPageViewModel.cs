@@ -2,6 +2,7 @@ using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.AppServer;
 using ChatAgentBridge_Desktop.ModelSelection;
+using ChatAgentBridge_Desktop.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -87,8 +88,8 @@ public partial class MainPageViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanFetchModelCandidates))]
     public partial bool IsSettingsLoaded { get; set; }
 
-    [ObservableProperty] public partial string StatusTitle { get; set; } = "設定を読み込んでいます";
-    [ObservableProperty] public partial string StatusMessage { get; set; } = "保存済みの設定を確認しています。";
+    [ObservableProperty] public partial string StatusTitle { get; set; } = ViewModelText.Get("LoadingSettings");
+    [ObservableProperty] public partial string StatusMessage { get; set; } = ViewModelText.Get("CheckingSavedSettings");
     [ObservableProperty] public partial string StatusSeverity { get; set; } = "Informational";
     [ObservableProperty] public partial bool IsStatusOpen { get; set; } = true;
     [ObservableProperty] public partial string WorkspaceRoot { get; set; } = string.Empty;
@@ -139,7 +140,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(WizardAutoConnect))] public partial string AutoConnectProvider { get; set; } = "none";
     [ObservableProperty] public partial bool StartWithWindows { get; set; }
     [ObservableProperty] public partial bool CanChangeStartup { get; set; }
-    [ObservableProperty] public partial string StartupStatus { get; set; } = "Windowsの起動設定を確認しています…";
+    [ObservableProperty] public partial string StartupStatus { get; set; } = ViewModelText.Get("CheckingStartupSettings");
     private readonly Startup.StartupTaskService _startup = new();
     [ObservableProperty, NotifyPropertyChangedFor(nameof(IsExecMode)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat))]
     public partial bool UseAppServer { get; set; }
@@ -163,23 +164,27 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string SlackAllowedThreadIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostAllowedThreadIds { get; set; } = string.Empty;
     public bool CanConfigureAgentNetwork => IsCodexProvider && AgentPermissionMode is "workspace-write" or "ask";
-    private string NetworkPolicyLabel => !IsCodexProvider ? "CLI側で管理（アプリから制限しません）"
-        : AgentPermissionMode == "full-access" ? "フルアクセスのため制限なし"
-        : AgentPermissionMode == "inherit" && !UseAppServer ? "CLIの設定を使用"
-        : AgentPermissionMode is "inherit" or "read-only" ? "不許可"
-        : AllowAgentNetwork ? "許可" : "不許可";
-    public string ExecutionPolicySummary => $"依頼の範囲: {(!string.IsNullOrWhiteSpace(SlackAllowedChannelIds) || !string.IsNullOrWhiteSpace(SlackAllowedThreadIds) || !string.IsNullOrWhiteSpace(MattermostAllowedThreadIds) ? "指定した会話に限定" : "ユーザー許可リストの範囲内")}。承認: {ChatApprovalLabel(ChatApprovalMode)}。作業フォルダー: {(string.IsNullOrWhiteSpace(TrustedWorkspaceRoots) ? "現在の作業フォルダーのみ" : "指定した信頼フォルダーに限定")}。AIの操作: {PermissionLabel(AgentPermissionMode)}。ツールのネットワーク: {NetworkPolicyLabel}。結果: {ResultLabel(ChatResultMode)}。";
+    private string NetworkPolicyLabel => !IsCodexProvider ? ViewModelText.Get("NetworkManagedByCli")
+        : AgentPermissionMode == "full-access" ? ViewModelText.Get("NetworkUnrestrictedFullAccess")
+        : AgentPermissionMode == "inherit" && !UseAppServer ? ViewModelText.Get("UseCliNetworkSettings")
+        : AgentPermissionMode is "inherit" or "read-only" ? ViewModelText.Get("NotAllowed")
+        : AllowAgentNetwork ? ViewModelText.Get("Allowed") : ViewModelText.Get("NotAllowed");
+    public string ExecutionPolicySummary => ViewModelText.Get("ExecutionPolicySummary",
+        !string.IsNullOrWhiteSpace(SlackAllowedChannelIds) || !string.IsNullOrWhiteSpace(SlackAllowedThreadIds) || !string.IsNullOrWhiteSpace(MattermostAllowedThreadIds) ? ViewModelText.Get("SpecifiedConversationsOnly") : ViewModelText.Get("AllowedUsersOnly"),
+        ChatApprovalLabel(ChatApprovalMode),
+        string.IsNullOrWhiteSpace(TrustedWorkspaceRoots) ? ViewModelText.Get("CurrentWorkspaceOnly") : ViewModelText.Get("TrustedWorkspacesOnly"),
+        PermissionLabel(AgentPermissionMode), NetworkPolicyLabel, ResultLabel(ChatResultMode));
     [ObservableProperty] public partial string Prompt { get; set; } = string.Empty;
-    [ObservableProperty] public partial string Output { get; set; } = "実行結果はここに表示されます。";
-    [ObservableProperty] public partial string UsageSummary { get; set; } = "トークン利用量は実行後に表示します。未取得の値は0として扱いません。";
+    [ObservableProperty] public partial string Output { get; set; } = ViewModelText.Get("ExecutionOutputPlaceholder");
+    [ObservableProperty] public partial string UsageSummary { get; set; } = ViewModelText.Get("UsagePlaceholder");
     [ObservableProperty] public partial string SettingsLocation { get; set; } = string.Empty;
-    [ObservableProperty] public partial string SavedAgentSummary { get; set; } = "未読み込み";
+    [ObservableProperty] public partial string SavedAgentSummary { get; set; } = ViewModelText.Get("NotLoaded");
     [ObservableProperty] public partial double SetupProgressValue { get; set; }
-    [ObservableProperty] public partial string SetupStepOneStatus { get; set; } = "設定を読み込んでいます。";
-    [ObservableProperty] public partial string SetupStepTwoStatus { get; set; } = "設定を読み込んでいます。";
-    [ObservableProperty] public partial string SetupStepThreeStatus { get; set; } = "接続状態を確認しています。";
-    [ObservableProperty] public partial string SetupCompletionSummary { get; set; } = "設定を確認しています。";
-    [ObservableProperty] public partial string SetupNextAction { get; set; } = "保存済みの設定を確認しています。";
+    [ObservableProperty] public partial string SetupStepOneStatus { get; set; } = ViewModelText.Get("LoadingSettingsPeriod");
+    [ObservableProperty] public partial string SetupStepTwoStatus { get; set; } = ViewModelText.Get("LoadingSettingsPeriod");
+    [ObservableProperty] public partial string SetupStepThreeStatus { get; set; } = ViewModelText.Get("CheckingConnectionState");
+    [ObservableProperty] public partial string SetupCompletionSummary { get; set; } = ViewModelText.Get("CheckingSettings");
+    [ObservableProperty] public partial string SetupNextAction { get; set; } = ViewModelText.Get("CheckingSavedSettings");
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasSetupDraftNotice))]
     public partial string SetupDraftNotice { get; set; } = "";
     public bool HasSetupDraftNotice => !string.IsNullOrEmpty(SetupDraftNotice);
@@ -202,8 +207,8 @@ public partial class MainPageViewModel : ObservableObject
     {
         IsLoading = true;
         IsSettingsLoaded = false;
-        StatusTitle = "設定を読み込んでいます";
-        StatusMessage = "保存済みの設定を確認しています。";
+        StatusTitle = ViewModelText.Get("LoadingSettings");
+        StatusMessage = ViewModelText.Get("CheckingSavedSettings");
         StatusSeverity = "Informational";
         IsStatusOpen = true;
         try
@@ -222,8 +227,8 @@ public partial class MainPageViewModel : ObservableObject
             _hasCatalogForCurrentModel = false;
             SelectedReasoningEffort = null;
             ModelEffortStatus = _settings.AgentReasoningEffort is { Length: > 0 } savedEffort
-                ? $"保存済みの推論レベル: {savedEffort}（モデル候補を取得するまで対応状況は未確認です）"
-                : "CLIの既定値を使用します。";
+                ? ViewModelText.Get("SavedEffortPending", savedEffort)
+                : ViewModelText.Get("UseDefaultCliValue");
             _initializingSettings = false;
             AutoConnectProvider = _settings.AutoConnectProvider;
             UseAppServer = _settings.AgentMode == "app-server";
@@ -247,16 +252,16 @@ public partial class MainPageViewModel : ObservableObject
             SettingsLocation = _settingsStore.DirectoryPath;
             UpdateSavedAgentSummary();
             RefreshSetupStepper();
-            StatusTitle = "設定を読み込みました";
-            StatusMessage = "ワークスペースとエージェントを設定して実行できます。";
+            StatusTitle = ViewModelText.Get("SettingsLoaded");
+            StatusMessage = ViewModelText.Get("SettingsLoadedDetails");
             StatusSeverity = "Success";
             IsSettingsLoaded = true;
         }
         catch (Exception ex)
         {
             _settings = null;
-            StatusTitle = "設定を読み込めませんでした";
-            StatusMessage = $"設定ファイルを確認してから再読み込みしてください。{ex.Message}";
+            StatusTitle = ViewModelText.Get("SettingsLoadFailed");
+            StatusMessage = ViewModelText.Get("SettingsLoadFailedDetails", ex.Message);
             StatusSeverity = "Error";
         }
         finally
@@ -273,7 +278,7 @@ public partial class MainPageViewModel : ObservableObject
     {
         InvalidateModelCatalog();
         if (value == "custom")
-            ModelCatalog.Status = "このCLIでは候補を取得できません。モデル名を直接入力してください。";
+            ModelCatalog.Status = ViewModelText.Get("ModelsUnavailableEnterManually");
         if (IsLoading) return;
         UseAppServer = false;
         AgentModel = "";
@@ -324,9 +329,9 @@ public partial class MainPageViewModel : ObservableObject
             if (!string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot))
             {
                 if (!Path.IsPathFullyQualified(snapshot.WorkspaceRoot) || !Directory.Exists(snapshot.WorkspaceRoot))
-                    throw new InvalidOperationException("作業フォルダーには、存在するフォルダーの絶対パスを指定してください。");
+                    throw new InvalidOperationException(ViewModelText.Get("WorkspaceMustBeExistingAbsolutePath"));
                 if (!ExecutionPolicy.IsWorkspaceTrusted(snapshot, snapshot.WorkspaceRoot))
-                    throw new InvalidOperationException("作業フォルダーが信頼フォルダーの範囲外です。先に信頼するフォルダーを確認してください。");
+                    throw new InvalidOperationException(ViewModelText.Get("WorkspaceOutsideTrustedRoots"));
             }
             _ = AgentProfile.BuildInvocation(snapshot);
             await _settingsStore.SaveAsync(snapshot);
@@ -345,11 +350,11 @@ public partial class MainPageViewModel : ObservableObject
             _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
             UpdateSavedAgentSummary();
             RefreshSetupStepper();
-            SetStatus("設定を保存しました", "変更をチャット接続へ反映するには、「チャット受信」で再接続してください。", "Success");
+            SetStatus(ViewModelText.Get("SettingsSaved"), ViewModelText.Get("SettingsSavedReconnect"), "Success");
         }
         catch (Exception ex)
         {
-            SetStatus("設定を保存できませんでした", ex.Message, "Error");
+            SetStatus(ViewModelText.Get("SettingsSaveFailed"), ex.Message, "Error");
         }
         if (saved) SettingsSaved?.Invoke();
     }
@@ -362,7 +367,7 @@ public partial class MainPageViewModel : ObservableObject
         var settingsSnapshot = CreateSettingsSnapshot();
         if (string.IsNullOrWhiteSpace(promptSnapshot))
         {
-            SetStatus("プロンプトを入力してください", "実行する内容を入力してから開始してください。", "Warning");
+            SetStatus(ViewModelText.Get("PromptRequired"), ViewModelText.Get("PromptRequiredDetails"), "Warning");
             return;
         }
 
@@ -371,7 +376,7 @@ public partial class MainPageViewModel : ObservableObject
         {
             if (ConfirmExecutionAsync is null)
             {
-                SetStatus("実行を開始できません", "確認ダイアログを表示できないため、安全のため実行を停止しました。", "Error");
+                SetStatus(ViewModelText.Get("CannotStartExecution"), ViewModelText.Get("CannotStartExecutionDetails"), "Error");
                 IsRunning = false;
                 return;
             }
@@ -379,14 +384,14 @@ public partial class MainPageViewModel : ObservableObject
             {
                 if (!await ConfirmExecutionAsync(settingsSnapshot, promptSnapshot))
                 {
-                    SetStatus("実行を取り消しました", "確認ダイアログでキャンセルされました。", "Informational");
+                    SetStatus(ViewModelText.Get("ExecutionCancelled"), ViewModelText.Get("ExecutionCancelledAtDialog"), "Informational");
                     IsRunning = false;
                     return;
                 }
             }
             catch (Exception ex)
             {
-                SetStatus("確認ダイアログを表示できませんでした", ex.Message, "Error");
+                SetStatus(ViewModelText.Get("ConfirmationDialogFailed"), ex.Message, "Error");
                 IsRunning = false;
                 return;
             }
@@ -414,8 +419,8 @@ public partial class MainPageViewModel : ObservableObject
             _executionHistoryStore.EndTracking(execution.Id);
             _runCancellation?.Dispose();
             _runCancellation = null;
-            Output = "実行は開始されませんでした。実行履歴を保存できません。";
-            SetStatus("履歴を保存できず実行を停止しました", "データ保存先の空き容量とアクセス権を確認してください。", "Error");
+            Output = ViewModelText.Get("ExecutionNotStartedHistoryFailed");
+            SetStatus(ViewModelText.Get("HistorySaveFailed"), ViewModelText.Get("HistorySaveFailedDetails"), "Error");
             IsRunning = false;
             return;
         }
@@ -429,15 +434,15 @@ public partial class MainPageViewModel : ObservableObject
         if (_closing || runCancellation.IsCancellationRequested)
         {
             finalStatus = "cancelled";
-            SetStatus("実行を取り消しました", _closing
-                ? "ウィンドウが閉じられたため、エージェントを開始しませんでした。"
-                : "実行開始前にキャンセルされました。", "Warning");
+            SetStatus(ViewModelText.Get("ExecutionCancelled"), _closing
+                ? ViewModelText.Get("ExecutionNotStartedWindowClosed")
+                : ViewModelText.Get("ExecutionCancelledBeforeStart"), "Warning");
         }
         else
         {
-            Output = "エージェントを実行しています…";
-            UsageSummary = "実行中。利用量は完了後に表示します。";
-            SetStatus("実行中", "キャンセルするには「キャンセル」を選択してください。", "Informational");
+            Output = ViewModelText.Get("AgentRunning");
+            UsageSummary = ViewModelText.Get("UsageWhileRunning");
+            SetStatus(ViewModelText.Get("Running"), ViewModelText.Get("CancelExecutionInstruction"), "Informational");
             try
             {
                 AgentRunResult result;
@@ -459,23 +464,23 @@ public partial class MainPageViewModel : ObservableObject
                 Output = result.Success || string.IsNullOrWhiteSpace(result.Error)
                     ? displayOutput
                     : $"{displayOutput}{(string.IsNullOrEmpty(displayOutput) ? string.Empty : Environment.NewLine)}{result.Error}";
-                if (result.HasOutputTruncated) Output += "\n（出力ログの表示上限を超えたため、一部を省略しています。）";
+                if (result.HasOutputTruncated) Output += "\n" + ViewModelText.Get("OutputTruncated");
                 if (result.Success)
-                    SetStatus("実行が完了しました", $"終了コード: {result.ExitCode}", "Success");
+                    SetStatus(ViewModelText.Get("ExecutionCompleted"), ViewModelText.Get("ExitCode", result.ExitCode), "Success");
                 else
-                    SetStatus("実行に失敗しました", $"終了コード: {result.ExitCode}", "Error");
+                    SetStatus(ViewModelText.Get("ExecutionFailed"), ViewModelText.Get("ExitCode", result.ExitCode), "Error");
             }
             catch (OperationCanceledException)
             {
                 finalStatus = "cancelled";
-                Output = "実行をキャンセルしました。";
-                SetStatus("実行をキャンセルしました", "エージェントプロセスを停止しました。", "Warning");
+                Output = ViewModelText.Get("ExecutionCancelled");
+                SetStatus(ViewModelText.Get("ExecutionCancelled"), ViewModelText.Get("AgentProcessStopped"), "Warning");
             }
             catch (Exception ex)
             {
                 finalStatus = "failed";
                 Output = ex.ToString();
-                SetStatus("実行に失敗しました", ex.Message, "Error");
+                SetStatus(ViewModelText.Get("ExecutionFailed"), ex.Message, "Error");
             }
         }
 
@@ -495,13 +500,13 @@ public partial class MainPageViewModel : ObservableObject
         }
         catch
         {
-            StatusMessage = $"{StatusMessage} 実行は終了しましたが、履歴の終了状態を保存できませんでした。";
+            StatusMessage = $"{StatusMessage} {ViewModelText.Get("ExecutionHistoryFinalStateSaveFailed")}";
             StatusSeverity = "Warning";
         }
         auditWriteFailed |= !await TryAppendAuditAsync(finalizedRecord, finalStatus);
         if (auditWriteFailed)
         {
-            StatusMessage = $"{StatusMessage} 監査記録を保存できませんでした。";
+            StatusMessage = $"{StatusMessage} {ViewModelText.Get("AuditRecordSaveFailed")}";
             StatusSeverity = "Warning";
         }
         _executionHistoryStore.EndTracking(execution.Id);
@@ -558,20 +563,20 @@ public partial class MainPageViewModel : ObservableObject
         if (IsLoading)
         {
             SetupProgressValue = 0;
-            SetupStepOneStatus = SetupStepTwoStatus = "設定を読み込んでいます。";
-            SetupStepThreeStatus = "接続状態を確認しています。";
-            SetupCompletionSummary = "設定を読み込んでいます。";
-            SetupNextAction = "保存済みの設定を確認しています。";
+            SetupStepOneStatus = SetupStepTwoStatus = ViewModelText.Get("LoadingSettingsPeriod");
+            SetupStepThreeStatus = ViewModelText.Get("CheckingConnectionState");
+            SetupCompletionSummary = ViewModelText.Get("LoadingSettingsPeriod");
+            SetupNextAction = ViewModelText.Get("CheckingSavedSettings");
             SetupDraftNotice = "";
             return;
         }
         if (!IsSettingsLoaded || _settings is null)
         {
             SetupProgressValue = 0;
-            SetupStepOneStatus = "設定を読み込めません。再読み込みしてください。";
-            SetupStepTwoStatus = SetupStepThreeStatus = "設定を確認できません。";
-            SetupCompletionSummary = "設定を確認できません。";
-            SetupNextAction = "設定ファイルを確認してから再読み込みしてください。";
+            SetupStepOneStatus = ViewModelText.Get("UnableToLoadSettingsReload");
+            SetupStepTwoStatus = SetupStepThreeStatus = ViewModelText.Get("UnableToCheckSettings");
+            SetupCompletionSummary = ViewModelText.Get("UnableToCheckSettings");
+            SetupNextAction = ViewModelText.Get("CheckSettingsFileAndReload");
             SetupDraftNotice = "";
             return;
         }
@@ -582,27 +587,27 @@ public partial class MainPageViewModel : ObservableObject
         var mattermostAllowed = HasAllowedUsers(_settings.MattermostAllowedUserIds);
         var slackAllowed = HasAllowedUsers(_settings.SlackAllowedUserIds);
         var connectionReady = (mattermostCredentials && mattermostAllowed) || (slackCredentials && slackAllowed);
-        SetupStepOneStatus = agentReady ? "完了：保存済み。CLIやログイン状態はここでは確認していません。"
-            : string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) ? "次のステップ：エージェントと作業フォルダーを設定して保存します。"
-            : !_savedWorkspaceExists ? "次のステップ：保存された作業フォルダーが見つかりません。既存のフォルダーを指定して保存します。"
-            : "次のステップ：エージェントの実行ファイルを設定して保存します。";
-        SetupStepTwoStatus = connectionReady ? "完了：接続情報と許可するユーザーIDを保存済み。"
-            : mattermostCredentials && !mattermostAllowed || slackCredentials && !slackAllowed ? "次のステップ：接続先ごとに許可するユーザーIDを1行1人で設定します。空欄では全員を拒否します。"
-            : agentReady ? "次のステップ：SlackまたはMattermostの接続情報と許可するユーザーIDを保存します。"
-            : "未設定：ステップ1の後に接続情報を保存します。";
-        SetupStepThreeStatus = _chatConnectionConfirmed ? "完了：チャットからの依頼を待っています。"
-            : _chatConnectionPreparing ? "接続中：接続先の応答を待っています。"
-            : agentReady && connectionReady ? "次のステップ：保存済みの接続先へ接続します。"
-            : "未設定：接続情報を保存した後に接続します。";
+        SetupStepOneStatus = agentReady ? ViewModelText.Get("SetupAgentReady")
+            : string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) ? ViewModelText.Get("SetupAgentWorkspaceMissing")
+            : !_savedWorkspaceExists ? ViewModelText.Get("SetupWorkspaceNotFound")
+            : ViewModelText.Get("SetupExecutableMissing");
+        SetupStepTwoStatus = connectionReady ? ViewModelText.Get("SetupChatConfigSaved")
+            : mattermostCredentials && !mattermostAllowed || slackCredentials && !slackAllowed ? ViewModelText.Get("SetupAllowedUsersMissing")
+            : agentReady ? ViewModelText.Get("SetupChatConfigMissing")
+            : ViewModelText.Get("SetupChatAfterStepOne");
+        SetupStepThreeStatus = _chatConnectionConfirmed ? ViewModelText.Get("SetupWaitingForChatRequest")
+            : _chatConnectionPreparing ? ViewModelText.Get("SetupConnecting")
+            : agentReady && connectionReady ? ViewModelText.Get("SetupConnectSavedDestination")
+            : ViewModelText.Get("SetupConnectAfterSaving");
         var completed = (agentReady ? 1 : 0) + (connectionReady ? 1 : 0) + (_chatConnectionConfirmed ? 1 : 0);
-        SetupCompletionSummary = $"{completed} / 3 完了";
+        SetupCompletionSummary = ViewModelText.Get("SetupCompletionSummary", completed);
         SetupProgressValue = completed / 3d * 100;
-        SetupNextAction = !agentReady ? "次の操作：エージェントと既存の作業フォルダーを設定して保存します。"
-            : !connectionReady ? "次の操作：接続設定を保存します。"
-            : !_chatConnectionConfirmed ? "次の操作：チャット受信で保存済みの接続先へ接続します。"
-            : "セットアップ完了。別の端末からチャットで依頼できます。";
+        SetupNextAction = !agentReady ? ViewModelText.Get("NextConfigureAgentWorkspace")
+            : !connectionReady ? ViewModelText.Get("NextSaveConnection")
+            : !_chatConnectionConfirmed ? ViewModelText.Get("NextConnectToChat")
+            : ViewModelText.Get("SetupCompleteReadyForChat");
         var draft = CreateSettingsSnapshot();
-        SetupDraftNotice = _settings != draft ? "接続先、許可するユーザーID、操作承認の共有を含む未保存の変更があります。ステップには保存済みの設定だけを反映しています。" : "";
+        SetupDraftNotice = _settings != draft ? ViewModelText.Get("UnsavedSetupChanges") : "";
     }
 
     private static bool HasAllowedUsers(string value)
@@ -642,17 +647,17 @@ public partial class MainPageViewModel : ObservableObject
 
     private static string PermissionLabel(string value) => value switch
     {
-        "read-only" => "読み取り・計画のみ", "workspace-write" => "フォルダー内の編集を自動許可",
-        "full-access" => "フルアクセス", "ask" => "操作ごとに確認", _ => "CLI既定"
+        "read-only" => ViewModelText.Get("PermissionReadOnly"), "workspace-write" => ViewModelText.Get("PermissionWorkspaceWrite"),
+        "full-access" => ViewModelText.Get("PermissionFullAccess"), "ask" => ViewModelText.Get("PermissionAsk"), _ => ViewModelText.Get("PermissionCliDefault")
     };
     private static string ChatApprovalLabel(string value) => value switch
-    { "first" => "最初だけ確認", "auto" => "自動承認", _ => "毎回確認" };
+    { "first" => ViewModelText.Get("ApprovalFirstOnly"), "auto" => ViewModelText.Get("ApprovalAutomatic"), _ => ViewModelText.Get("ApprovalEveryTime") };
     private static string ResultLabel(string value) => value switch
-    { "auto" => "自動共有", "none" => "共有しない", _ => "手動で確認して共有" };
+    { "auto" => ViewModelText.Get("ResultAutomatic"), "none" => ViewModelText.Get("ResultDoNotShare"), _ => ViewModelText.Get("ResultManual") };
 
     private void UpdateSavedAgentSummary() => SavedAgentSummary = string.IsNullOrWhiteSpace(AgentExecutable)
-        ? "エージェントは未設定です"
-        : $"{AgentExecutable} / モデル: {(string.IsNullOrWhiteSpace(AgentModel) ? "CLIの既定値" : AgentModel)} / 推論レベル: {AgentReasoningEffort ?? "CLIの既定値"} / {(UseAppServer ? "対話的な操作確認" : "完了まで実行")}";
+        ? ViewModelText.Get("AgentNotConfigured")
+        : ViewModelText.Get("SavedAgentSummary", AgentExecutable, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, AgentReasoningEffort ?? ViewModelText.Get("DefaultCliValue"), ViewModelText.Get(UseAppServer ? "InteractiveExecution" : "RunToCompletion"));
 
     private void ApplyCatalogModelSelection(ModelOption option)
     {
@@ -686,13 +691,13 @@ public partial class MainPageViewModel : ObservableObject
         {
             _unsupportedSavedEffort = false;
             SelectedReasoningEffort = ReasoningEffortCandidates[0];
-            ModelEffortStatus = "CLIの既定値を使用します。";
+            ModelEffortStatus = ViewModelText.Get("UseDefaultCliValue");
         }
         else if (!_hasCatalogForCurrentModel)
         {
             _unsupportedSavedEffort = false;
             SelectedReasoningEffort = null;
-            ModelEffortStatus = $"保存済みの推論レベル: {AgentReasoningEffort}（モデル候補を取得するまで対応状況は未確認です）";
+            ModelEffortStatus = ViewModelText.Get("SavedEffortPending", AgentReasoningEffort);
         }
         else
         {
@@ -700,8 +705,8 @@ public partial class MainPageViewModel : ObservableObject
             SelectedReasoningEffort = selected;
             _unsupportedSavedEffort = selected is null;
             ModelEffortStatus = selected is null
-                ? $"保存済みの推論レベル「{AgentReasoningEffort}」は、このモデルのCLI候補にありません。CLIの既定値を選ぶか、対応候補を選択してください。"
-                : $"保存済みの推論レベル: {selected.SelectionLabel}";
+                ? ViewModelText.Get("SavedEffortUnsupported", AgentReasoningEffort)
+                : ViewModelText.Get("SavedEffort", selected.SelectionLabel);
         }
         SaveSettingsCommand.NotifyCanExecuteChanged();
         RunCommand.NotifyCanExecuteChanged();
@@ -720,6 +725,6 @@ public partial class MainPageViewModel : ObservableObject
 
 public sealed record ReasoningEffortChoice(string? Id, string SelectionLabel)
 {
-    public static ReasoningEffortChoice Default { get; } = new(null, "CLIの既定値");
-    public static ReasoningEffortChoice InheritDefault { get; } = new(null, "エージェント設定に従う");
+    public static ReasoningEffortChoice Default { get; } = new(null, ViewModelText.Get("DefaultCliValue"));
+    public static ReasoningEffortChoice InheritDefault { get; } = new(null, ViewModelText.Get("InheritAgentSettings"));
 }

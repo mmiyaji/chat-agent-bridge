@@ -1,0 +1,761 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <data name="MainNavigation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Main navigation</value>
+  </data>
+  <data name="NavOverview.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Overview</value>
+  </data>
+  <data name="NavOverview.Content" xml:space="preserve">
+    <value>Overview</value>
+  </data>
+  <data name="NavWorkbench.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Run manually</value>
+  </data>
+  <data name="NavWorkbench.Content" xml:space="preserve">
+    <value>Run manually</value>
+  </data>
+  <data name="NavAgentSettings.Content" xml:space="preserve">
+    <value>Agent settings</value>
+  </data>
+  <data name="NavConnections.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Connection settings</value>
+  </data>
+  <data name="NavConnections.Content" xml:space="preserve">
+    <value>Connection settings</value>
+  </data>
+  <data name="NavChat.Content" xml:space="preserve">
+    <value>Chat inbox</value>
+  </data>
+  <data name="NavHistory.Content" xml:space="preserve">
+    <value>History and conversations</value>
+  </data>
+  <data name="ReloadSettings.Content" xml:space="preserve">
+    <value>Reload settings</value>
+  </data>
+  <data name="SaveSettings.Content" xml:space="preserve">
+    <value>Save agent settings</value>
+  </data>
+  <data name="MainContentScroll.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Main content</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock001.Text" xml:space="preserve">
+    <value>From a device that cannot use the Codex or Claude Code desktop apps, you can use Slack/Mattermost to request an AI agent on a running local PC.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock002.Text" xml:space="preserve">
+    <value>Setup progress</value>
+  </data>
+  <data name="SetupProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Setup progress</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock003.Text" xml:space="preserve">
+    <value>Agents and working folders</value>
+  </data>
+  <data name="SetupAgentLink.Content" xml:space="preserve">
+    <value>Agent settings</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock004.Text" xml:space="preserve">
+    <value>Chat connection information</value>
+  </data>
+  <data name="SetupConnectionsLink.Content" xml:space="preserve">
+    <value>Connection settings</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock005.Text" xml:space="preserve">
+    <value>Connect to chat</value>
+  </data>
+  <data name="SetupChatLink.Content" xml:space="preserve">
+    <value>Chat inbox</value>
+  </data>
+  <data name="StartOnboarding.Content" xml:space="preserve">
+    <value>Open setup wizard</value>
+  </data>
+  <data name="OverviewTerms.Content" xml:space="preserve">
+    <value>Terms of use</value>
+  </data>
+  <data name="OverviewPrivacy.Content" xml:space="preserve">
+    <value>Privacy policy</value>
+  </data>
+  <data name="SetupReloadSettings.Content" xml:space="preserve">
+    <value>Reload settings</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock006.Text" xml:space="preserve">
+    <value>Use chat to send requests to your PC</value>
+  </data>
+  <data name="OverviewArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Requests can be made from Slack or Mattermost on another device, and Chat Agent Bridge on the running PC will receive them. After checking on your PC, run Codex CLI or Claude Code CLI and receive the checked and shared results in the same thread.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock007.Text" xml:space="preserve">
+    <value>A request sent from a phone or browser through Slack or Mattermost reaches Chat Agent Bridge on your running PC. The bridge runs Codex CLI or Claude Code CLI in the selected project. Shared results return to the same thread. Where AI processing takes place depends on the CLI and AI service settings.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock008.Text" xml:space="preserve">
+    <value>1. Choose the CLI, model, and working folder in Agent settings.
+2. Save the chat credentials in Connection settings, then connect from Chat inbox.
+3. Send a request from another device. In Mattermost, use !cab followed by your request. In Slack, mention the bot or use !cab in a thread reply.
+4. Review and approve the request on this PC, then review and share the result to return it to the same thread.
+
+Keep this app and your local PC running to stay connected.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock009.Text" xml:space="preserve">
+    <value>Saved settings</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock010.Text" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock011.Text" xml:space="preserve">
+    <value>Workspace</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock012.Text" xml:space="preserve">
+    <value>Settings storage location</value>
+  </data>
+  <data name="OpenWorkbench.Content" xml:space="preserve">
+    <value>Run manually</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock013.Text" xml:space="preserve">
+    <value>Agent settings</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock014.Text" xml:space="preserve">
+    <value>Configure the CLI and model to run next from this app. It does not change the CLI's own configuration file. CLI installation and login are required before use.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock015.Text" xml:space="preserve">
+    <value>Default working folder</value>
+  </data>
+  <data name="WorkspaceRoot.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Working folder</value>
+  </data>
+  <data name="WorkspaceRoot.PlaceholderText" xml:space="preserve">
+    <value>Example: C:\Projects\my-app</value>
+  </data>
+  <data name="WorkspaceRoot.Header" xml:space="preserve">
+    <value>Working folder (absolute path)</value>
+  </data>
+  <data name="BrowseWorkspace.Content" xml:space="preserve">
+    <value>Select folder...</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock016.Text" xml:space="preserve">
+    <value>Save after choosing a folder, then reconnect chat if connected. Existing conversations keep their current folder. In Slack, request a folder change for your own conversation with !cab folder C:\Projects\my-app. Changes require approval on this PC and start a new AI conversation.</value>
+  </data>
+  <data name="AgentProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Agent to use</value>
+  </data>
+  <data name="AgentProvider.Header" xml:space="preserve">
+    <value>Agent to use</value>
+  </data>
+  <data name="ProviderOptionCustom.Content" xml:space="preserve">
+    <value>Other CLI (advanced settings)</value>
+  </data>
+  <data name="AgentAdvanced.Header" xml:space="preserve">
+    <value>Details: CLI location and startup arguments</value>
+  </data>
+  <data name="AgentExecutable.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>CLI executable file</value>
+  </data>
+  <data name="AgentExecutable.Header" xml:space="preserve">
+    <value>CLI executable file</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock017.Text" xml:space="preserve">
+    <value>Usually codex or claude. If it is not found, please specify the full path of the executable file.</value>
+  </data>
+  <data name="AgentArguments.Header" xml:space="preserve">
+    <value>Other CLI startup arguments</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock018.Text" xml:space="preserve">
+    <value>The standard arguments and model specifications for Codex/Claude Code are assembled by the app. For other CLIs, please specify a format that allows request text to be received from standard input.</value>
+  </data>
+  <data name="SettingsCheckCli.Content" xml:space="preserve">
+    <value>Check CLI (version and models)</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock019.Text" xml:space="preserve">
+    <value>From request to result</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock020.Text" xml:space="preserve">
+    <value>1 Check allowed accounts, channels, and threads</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock021.Text" xml:space="preserve">
+    <value>2 Approve requests: every time, first request only, or automatically</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock022.Text" xml:space="preserve">
+    <value>3 Check trusted folders and AI tool permissions</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock023.Text" xml:space="preserve">
+    <value>4 Share results according to your settings</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock024.Text" xml:space="preserve">
+    <value>Current settings</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock025.Text" xml:space="preserve">
+    <value>Trusted working folders</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock026.Text" xml:space="preserve">
+    <value>Enter one trusted folder per line using absolute paths. Requests can start only in folders within these roots. If blank, the current working folder is trusted. This check controls where execution starts; it does not provide an OS sandbox for CLI file access.</value>
+  </data>
+  <data name="TrustedWorkspaceRoots.Header" xml:space="preserve">
+    <value>Trusted folders (absolute paths, one per line)</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock027.Text" xml:space="preserve">
+    <value>AI tool permissions</value>
+  </data>
+  <data name="AgentPermissionMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>AI tool permissions</value>
+  </data>
+  <data name="AgentPermissionMode.Header" xml:space="preserve">
+    <value>CLI permission mode</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem001.Content" xml:space="preserve">
+    <value>Use CLI defaults</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem002.Content" xml:space="preserve">
+    <value>Read and plan only</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem003.Content" xml:space="preserve">
+    <value>Allow edits in the working folder</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem004.Content" xml:space="preserve">
+    <value>Full access</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem005.Content" xml:space="preserve">
+    <value>Ask for each action (Codex App Server)</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock028.Text" xml:space="preserve">
+    <value>For Claude Code, read and plan uses plan mode; allowing folder edits uses acceptEdits. These modes do not create an OS sandbox. Asking for each action is available only with Codex App Server.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock029.Text" xml:space="preserve">
+    <value>Full access may bypass CLI permission checks. Please understand the contents before making your selection.</value>
+  </data>
+  <data name="AllowAgentNetwork.Header" xml:space="preserve">
+    <value>Allow tool networking for Codex CLI</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock030.Text" xml:space="preserve">
+    <value>Network settings used by Codex tools. It does not control connections to model APIs or network settings in Claude Code.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock031.Text" xml:space="preserve">
+    <value>Chat request approval and result sharing</value>
+  </data>
+  <data name="ChatApprovalMode.Header" xml:space="preserve">
+    <value>Approval per conversation</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem006.Content" xml:space="preserve">
+    <value>Ask every time</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem007.Content" xml:space="preserve">
+    <value>Ask for the first request only</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem008.Content" xml:space="preserve">
+    <value>Approve automatically</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock032.Text" xml:space="preserve">
+    <value>First-request approval allows later requests in the same conversation to run automatically. Automatic approval runs allowed chat requests without a confirmation dialog.</value>
+  </data>
+  <data name="ChatResultMode.Header" xml:space="preserve">
+    <value>Sharing execution results</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem009.Content" xml:space="preserve">
+    <value>Review and share manually</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem010.Content" xml:space="preserve">
+    <value>Share automatically</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem011.Content" xml:space="preserve">
+    <value>Do not share</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock033.Text" xml:space="preserve">
+    <value>Automatic sharing posts successful results to the original thread, where anyone with access can read them. Choosing Do not share also disables manual sharing of result text.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock034.Text" xml:space="preserve">
+    <value>Allowed chat accounts and conversations</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock035.Text" xml:space="preserve">
+    <value>The user ID allowed in the connection settings is still required. Here you can additionally narrow down the target channels and threads. Blank fields indicate no additional restrictions. Enter the ID in each field, one line at a time.</value>
+  </data>
+  <data name="SlackAllowedChannelIds.Header" xml:space="preserve">
+    <value>Slack channel IDs</value>
+  </data>
+  <data name="SlackAllowedThreadIds.Header" xml:space="preserve">
+    <value>Slack thread IDs</value>
+  </data>
+  <data name="MattermostAllowedThreadIds.Header" xml:space="preserve">
+    <value>Mattermost thread IDs</value>
+  </data>
+  <data name="AgentModel.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Model name</value>
+  </data>
+  <data name="AgentModel.Header" xml:space="preserve">
+    <value>Model name (blank uses CLI default)</value>
+  </data>
+  <data name="ReasoningEffortCandidates.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Reasoning effort options</value>
+  </data>
+  <data name="ReasoningEffortCandidates.Header" xml:space="preserve">
+    <value>Reasoning effort (CLI options)</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock036.Text" xml:space="preserve">
+    <value>After fetching models, choose a reasoning effort reported by the CLI for the selected model. Use CLI defaults leaves the choice to the CLI. A saved value is retained until the current model options can be checked.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock037.Text" xml:space="preserve">
+    <value>Enter a model ID or alias available to your account. Cost, speed, and accuracy vary by model. To override the model for a saved conversation, open History and conversations.</value>
+  </data>
+  <data name="FetchModels.Content" xml:space="preserve">
+    <value>Fetch CLI models</value>
+  </data>
+  <data name="CancelFetchModels.Content" xml:space="preserve">
+    <value>Cancel lookup</value>
+  </data>
+  <data name="ModelCandidates.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Model options</value>
+  </data>
+  <data name="ModelCandidates.Header" xml:space="preserve">
+    <value>Models reported by the CLI</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock038.Text" xml:space="preserve">
+    <value>Options are reported by the CLI. Access for your account is checked when you run a request.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock039.Text" xml:space="preserve">
+    <value>The project folder where the agent reads and writes files. In Slack, use !cab folder followed by an absolute path to request a change within your trusted folders. Approval on this PC is required.</value>
+  </data>
+  <data name="UseAppServer.Header" xml:space="preserve">
+    <value>Review tool permissions and questions on this PC (Codex only)</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock040.Text" xml:space="preserve">
+    <value>When enabled, Codex uses App Server. Otherwise, the bridge passes the request to the CLI and waits for completion. Claude Code supports continued conversations but cannot receive answers to follow-up questions during a run.</value>
+  </data>
+  <data name="RequireApproval.Header" xml:space="preserve">
+    <value>Check contents before manual execution</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock041.Text" xml:space="preserve">
+    <value>The approval method for requests received from chat is set in "Approval for each conversation" above.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock042.Text" xml:space="preserve">
+    <value>Start and connect</value>
+  </data>
+  <data name="StartWithWindows.Header" xml:space="preserve">
+    <value>Start this app when you log in to Windows</value>
+  </data>
+  <data name="AutoConnectProvider.Header" xml:space="preserve">
+    <value>Connect automatically when the app starts</value>
+  </data>
+  <data name="AutoConnectOptionNone.Content" xml:space="preserve">
+    <value>Do not connect</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock043.Text" xml:space="preserve">
+    <value>Connect to the chat with saved connection information the next time you start the app. Execution of the request follows the approval settings of the conversation. You will not receive requests after you close the window.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock044.Text" xml:space="preserve">
+    <value>Run manually</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock045.Text" xml:space="preserve">
+    <value>Request an agent from this PC. The CLI, model, and work folder to be executed can be changed in "Agent Settings".</value>
+  </data>
+  <data name="OpenAgentSettings.Content" xml:space="preserve">
+    <value>Open agent settings</value>
+  </data>
+  <data name="Prompt.Header" xml:space="preserve">
+    <value>Request details</value>
+  </data>
+  <data name="RunAgent.Content" xml:space="preserve">
+    <value>Run</value>
+  </data>
+  <data name="CancelAgent.Content" xml:space="preserve">
+    <value>Stop execution</value>
+  </data>
+  <data name="AgentOutput.Header" xml:space="preserve">
+    <value>Execution result (this PC only)</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock046.Text" xml:space="preserve">
+    <value>Connection settings</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock047.Text" xml:space="preserve">
+    <value>Save your Mattermost or Slack credentials on this PC, then connect from Chat inbox.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock048.Text" xml:space="preserve">
+    <value>The server URL is the Mattermost address you are using. The channel ID is a different identifier than the display name and will only listen to this channel. In order to read and post with the permissions of the connected user, please have that user join the target channel.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock049.Text" xml:space="preserve">
+    <value>Server URL</value>
+  </data>
+  <data name="MattermostServerUrl.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mattermost server URL</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock050.Text" xml:space="preserve">
+    <value>Channel ID</value>
+  </data>
+  <data name="MattermostChannelId.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mattermost Channel ID</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock051.Text" xml:space="preserve">
+    <value>User access token</value>
+  </data>
+  <data name="MattermostToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mattermost access token</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock052.Text" xml:space="preserve">
+    <value>Mattermost user IDs to allow (one person per line)</value>
+  </data>
+  <data name="MattermostAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mattermost user IDs to allow (one person per line)</value>
+  </data>
+  <data name="MattermostAllowedUserIds.PlaceholderText" xml:space="preserve">
+    <value>Example: abc123xyz</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock053.Text" xml:space="preserve">
+    <value>Blank fields will reject everyone. Display names and @mentions are not allowed. Copy your user ID from your Mattermost profile. Can be separated by line breaks, spaces, commas, and semicolons.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock054.Text" xml:space="preserve">
+    <value>Bot tokens are used for posting, and App tokens are used to receive requests in Socket Mode. Permissions and event subscription settings on the Slack app side and the bot's participation in the channel are required.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock055.Text" xml:space="preserve">
+    <value>Bot token (value starting with xoxb-)</value>
+  </data>
+  <data name="SlackBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Slack Bot token</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock056.Text" xml:space="preserve">
+    <value>App token for Socket Mode (value starting with xapp-)</value>
+  </data>
+  <data name="SlackAppToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Slack app token</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock057.Text" xml:space="preserve">
+    <value>Slack user IDs to allow (one person per line)</value>
+  </data>
+  <data name="SlackAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Slack user IDs to allow (one person per line)</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock058.Text" xml:space="preserve">
+    <value>Blank fields will reject everyone. Display names and @mentions are not allowed. Copy your user ID from your Slack profile. Can be separated by line breaks, spaces, commas, and semicolons.</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock059.Text" xml:space="preserve">
+    <value>Tool approvals and privacy</value>
+  </data>
+  <data name="ShareApprovalsInChat.Header" xml:space="preserve">
+    <value>Publish operation approval details to thread</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock060.Text" xml:space="preserve">
+    <value>When enabled, the commands and working folders displayed for operation authorization on the Codex app-server will be posted to the chat thread. All participants in the thread can see it. The initial state is off.</value>
+  </data>
+  <data name="SaveConnections.Content" xml:space="preserve">
+    <value>Save connection settings</value>
+  </data>
+  <data name="historyHistoryPageTextBlock001.Text" xml:space="preserve">
+    <value>History and conversations</value>
+  </data>
+  <data name="historyHistoryPageTextBlock002.Text" xml:space="preserve">
+    <value>Stores execution time, status, and working folder. Request and result text are not saved.</value>
+  </data>
+  <data name="AgentSettingsFromHistory.Content" xml:space="preserve">
+    <value>Open agent settings</value>
+  </data>
+  <data name="RefreshHistory.Content" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="historyHistoryPageTextBlock003.Text" xml:space="preserve">
+    <value>Execution history</value>
+  </data>
+  <data name="historyHistoryPageTextBlock004.Text" xml:space="preserve">
+    <value>Displays the run date and time, status, working folder, conversation and session ID.</value>
+  </data>
+  <data name="historyHistoryPageTextBlock005.Text" xml:space="preserve">
+    <value>Token counts are reported by the CLI and do not represent cost. Missing values appear as Not reported. The scope may be one turn, the latest API request, or the conversation total.</value>
+  </data>
+  <data name="ExecutionHistoryList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Execution history</value>
+  </data>
+  <data name="EmptyExecutionHistory.Text" xml:space="preserve">
+    <value>There is no execution history yet. Once you accept and complete a chat request, your metadata will appear here.</value>
+  </data>
+  <data name="historyHistoryPageTextBlock006.Text" xml:space="preserve">
+    <value>Saved sessions</value>
+  </data>
+  <data name="historyHistoryPageTextBlock007.Text" xml:space="preserve">
+    <value>Sessions let you continue conversations. Detaching a session starts a new AI conversation next time and keeps past execution history. A blank model field uses the default model.</value>
+  </data>
+  <data name="historyHistoryPageTextBlock008.Text" xml:space="preserve">
+    <value>Set next execution model</value>
+  </data>
+  <data name="historyHistoryPageTextBlock009.Text" xml:space="preserve">
+    <value>Set approval, control, and sharing for this conversation</value>
+  </data>
+  <data name="DetachSession.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Detach selected session</value>
+  </data>
+  <data name="historyHistoryPageTextBlock010.Text" xml:space="preserve">
+    <value>Detach session</value>
+  </data>
+  <data name="SavedSessionsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Saved sessions</value>
+  </data>
+  <data name="EmptySavedSessions.Text" xml:space="preserve">
+    <value>No saved sessions. Some executions do not return a session ID, even when execution history is available.</value>
+  </data>
+  <data name="historyHistoryPageTextBlock011.Text" xml:space="preserve">
+    <value>Audit events</value>
+  </data>
+  <data name="historyHistoryPageTextBlock012.Text" xml:space="preserve">
+    <value>Records of operations such as receiving, approving, rejecting, executing, and disconnecting requests. Does not include the message body.</value>
+  </data>
+  <data name="AuditHistoryList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Audit events</value>
+  </data>
+  <data name="EmptyAuditHistory.Text" xml:space="preserve">
+    <value>There are no audit events yet. Chat actions add metadata to this list.</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock001.Text" xml:space="preserve">
+    <value>Chat inbox</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock002.Text" xml:space="preserve">
+    <value>Allowed requests run on this PC according to your approval settings. By default, each request needs approval and results are shared manually. Conversations are separated by user, connection, and thread. Tool approvals appear only on this PC unless you enable sharing their details to the thread. Repost requests sent while disconnected.</value>
+  </data>
+  <data name="ConnectMattermost.Content" xml:space="preserve">
+    <value>Connect to Mattermost</value>
+  </data>
+  <data name="ConnectSlack.Content" xml:space="preserve">
+    <value>Connect to Slack</value>
+  </data>
+  <data name="DisconnectChat.Content" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock003.Text" xml:space="preserve">
+    <value>In Mattermost, send !cab followed by your request. In Slack, mention the bot to start. The same user can continue a saved Slack conversation by replying in its thread. Use !cab folder C:\Projects\my-app to request a folder change. Changes must stay within trusted folders, require approval on this PC, and start a new AI conversation.</value>
+  </data>
+  <data name="ChatRequests.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Received requests</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock004.Text" xml:space="preserve">
+    <value>Review and run</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock005.Text" xml:space="preserve">
+    <value>Reject</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock006.Text" xml:space="preserve">
+    <value>Stop execution</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock007.Text" xml:space="preserve">
+    <value>Send results to thread</value>
+  </data>
+  <data name="ChatOutput.Header" xml:space="preserve">
+    <value>Execution result (displayed only on this PC)</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock001.Text" xml:space="preserve">
+    <value>Use PC AI from chat</value>
+  </data>
+  <data name="WizardArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Diagram showing how Slack or Mattermost makes a request to an app on a PC and the AI CLI on the PC responds.</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock002.Text" xml:space="preserve">
+    <value>Use Slack or Mattermost to send requests to Codex CLI or Claude Code CLI on this PC. Project files and the CLI stay on this PC. AI processing and data transmission follow the settings of the CLI and AI service.</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock003.Text" xml:space="preserve">
+    <value>Keep this app and your PC running while using chat. Requests and responses are sent to the selected external AI service. Review what information is sent and each service's policies.</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock004.Text" xml:space="preserve">
+    <value>This application is provided as is, and we do not guarantee the operation or AI results. Please check the terms of use for warranty and liability scope.</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock005.Text" xml:space="preserve">
+    <value>Read terms and conditions</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock006.Text" xml:space="preserve">
+    <value>Read our privacy policy</value>
+  </data>
+  <data name="WizardAcceptTerms.Content" xml:space="preserve">
+    <value>I agree to the terms of use</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock007.Text" xml:space="preserve">
+    <value>I have reviewed the privacy policy and agree to the handling of the information described.</value>
+  </data>
+  <data name="OnboardingDefer.Content" xml:space="preserve">
+    <value>Set up later</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock001.Text" xml:space="preserve">
+    <value>AI agent and working folder</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock002.Text" xml:space="preserve">
+    <value>Choose an existing folder for the AI agent to work in. Folder changes requested from chat must stay within trusted folders and require approval on this PC.</value>
+  </data>
+  <data name="WizardWorkspaceRoot.Header" xml:space="preserve">
+    <value>Working folder (absolute path)</value>
+  </data>
+  <data name="WizardPickWorkspaceFolder.Content" xml:space="preserve">
+    <value>Select folder</value>
+  </data>
+  <data name="WizardAgentProvider.Header" xml:space="preserve">
+    <value>AI agent</value>
+  </data>
+  <data name="WizardAgentExecutable.PlaceholderText" xml:space="preserve">
+    <value>Example: codex or claude</value>
+  </data>
+  <data name="WizardAgentExecutable.Header" xml:space="preserve">
+    <value>Executable file</value>
+  </data>
+  <data name="WizardUseAppServer.Header" xml:space="preserve">
+    <value>Receive confirmation of ongoing operations on your PC (Codex only)</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock003.Text" xml:space="preserve">
+    <value>A CLI is the command-line version of an AI agent. Install it and sign in from a terminal first; signing in to the desktop app is separate. Enabling Codex tool approvals uses App Server.</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock004.Text" xml:space="preserve">
+    <value>Check CLI and select model</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock005.Text" xml:space="preserve">
+    <value>You can check the CLI version. Please log in using the agent's CLI. Model candidates are the values ​​returned by the CLI.</value>
+  </data>
+  <data name="CheckCli.Content" xml:space="preserve">
+    <value>Check CLI</value>
+  </data>
+  <data name="CancelCliCheck.Content" xml:space="preserve">
+    <value>Cancel check</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock006.Text" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock007.Text" xml:space="preserve">
+    <value>Executable file location</value>
+  </data>
+  <data name="WizardModelCandidates.PlaceholderText" xml:space="preserve">
+    <value>Select model from candidates</value>
+  </data>
+  <data name="WizardModelCandidates.Header" xml:space="preserve">
+    <value>Models reported by the CLI</value>
+  </data>
+  <data name="WizardOptionalModel.Header" xml:space="preserve">
+    <value>Model name (blank uses CLI default)</value>
+  </data>
+  <data name="WizardReasoningEffort.Header" xml:space="preserve">
+    <value>Reasoning effort (CLI options)</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock008.Text" xml:space="preserve">
+    <value>Available models and reasoning efforts depend on your account and CLI. Unspecified values use CLI defaults.</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock009.Text" xml:space="preserve">
+    <value>Chat connections and authorized users</value>
+  </data>
+  <data name="WizardChatProvider.Header" xml:space="preserve">
+    <value>Connection destination</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock010.Text" xml:space="preserve">
+    <value>Slack connection information</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock011.Text" xml:space="preserve">
+    <value>Bot token (value starting with xoxb-)</value>
+  </data>
+  <data name="WizardSlackBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Slack Bot token</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock012.Text" xml:space="preserve">
+    <value>App token (value starting with xapp-)</value>
+  </data>
+  <data name="WizardSlackAppToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Slack App Token</value>
+  </data>
+  <data name="WizardSlackAllowedUserIds.Header" xml:space="preserve">
+    <value>Authorized user ID (required, one per line)</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock013.Text" xml:space="preserve">
+    <value>Slack requires both the bot token xoxb- and the app token xapp-. If the authorized user ID is empty, no requests will be accepted from anyone.</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock014.Text" xml:space="preserve">
+    <value>Open your Slack profile and choose Copy member ID from the More menu. Use this ID, not your display name or email address.</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock015.Text" xml:space="preserve">
+    <value>Mattermost connection information</value>
+  </data>
+  <data name="WizardMattermostServerUrl.Header" xml:space="preserve">
+    <value>Server URL</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock016.Text" xml:space="preserve">
+    <value>Enter the HTTPS server URL. HTTP can only be used on servers running on this PC (such as localhost).</value>
+  </data>
+  <data name="WizardMattermostChannelId.Header" xml:space="preserve">
+    <value>Channel ID</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock017.Text" xml:space="preserve">
+    <value>User access token</value>
+  </data>
+  <data name="WizardMattermostToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mattermost access token</value>
+  </data>
+  <data name="WizardMattermostAllowedUserIds.Header" xml:space="preserve">
+    <value>Authorized user ID (required, one per line)</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock018.Text" xml:space="preserve">
+    <value>The authorized user ID is your Mattermost account ID. It's not a display name. Check the channel ID from the channel information. If this field is left blank, we will not accept requests from anyone.</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock019.Text" xml:space="preserve">
+    <value>Please enter your token only on this screen. Does not output tokens in execution results.</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock020.Text" xml:space="preserve">
+    <value>Safety settings and connection confirmation</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock021.Text" xml:space="preserve">
+    <value>Select how to approve requests received from chat and share the results after execution.</value>
+  </data>
+  <data name="WizardChatApprovalMode.Header" xml:space="preserve">
+    <value>Request approval</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem001.Content" xml:space="preserve">
+    <value>Ask every time (recommended)</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem002.Content" xml:space="preserve">
+    <value>Ask for the first request only</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem003.Content" xml:space="preserve">
+    <value>Approve automatically</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock022.Text" xml:space="preserve">
+    <value>First-request approval allows later requests in the same conversation to run automatically. Automatic approval runs allowed chat requests without a confirmation dialog.</value>
+  </data>
+  <data name="WizardChatResultMode.Header" xml:space="preserve">
+    <value>Sharing execution results</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem004.Content" xml:space="preserve">
+    <value>Review and share manually (recommended)</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem005.Content" xml:space="preserve">
+    <value>Share automatically</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem006.Content" xml:space="preserve">
+    <value>Do not share</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock023.Text" xml:space="preserve">
+    <value>Automatically shared results are visible to anyone who can view the original thread. To review results on this PC before sending, choose Review and share manually.</value>
+  </data>
+  <data name="WizardAgentPermissionMode.Header" xml:space="preserve">
+    <value>AI tool permissions</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem007.Content" xml:space="preserve">
+    <value>Use CLI default values (recommended)</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem008.Content" xml:space="preserve">
+    <value>Read and plan only</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem009.Content" xml:space="preserve">
+    <value>Allow editing in working folder</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem010.Content" xml:space="preserve">
+    <value>Full access</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem011.Content" xml:space="preserve">
+    <value>Ask for each action (Codex App Server)</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock024.Text" xml:space="preserve">
+    <value>Asking for each action is available only with Codex App Server. Full access may bypass CLI permission checks.</value>
+  </data>
+  <data name="WizardAutoConnect.Header" xml:space="preserve">
+    <value>Connect to this chat when starting the app</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock025.Text" xml:space="preserve">
+    <value>The setting to launch the app itself when logging in to Windows can be changed in "Agent Settings" after completing the initial settings.</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock026.Text" xml:space="preserve">
+    <value>Settings summary</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock027.Text" xml:space="preserve">
+    <value>Chat connection</value>
+  </data>
+  <data name="WizardConnectMattermost.Content" xml:space="preserve">
+    <value>Connect to Mattermost</value>
+  </data>
+  <data name="WizardConnectSlack.Content" xml:space="preserve">
+    <value>Connect to Slack</value>
+  </data>
+  <data name="OnboardingPrevious.Content" xml:space="preserve">
+    <value>Back</value>
+  </data>
+</root>

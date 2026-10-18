@@ -1,4 +1,5 @@
 using Windows.ApplicationModel;
+using ChatAgentBridge_Desktop.Localization;
 
 namespace ChatAgentBridge_Desktop.Startup;
 
@@ -58,20 +59,20 @@ public sealed class StartupTaskService
         {
             return new StartupTaskStatusResult(
                 StartupState.Error,
-                "Windows のスタートアップ設定を変更できませんでした。アプリをパッケージ版として起動しているか確認してください。");
+                DesktopText.Get("StartupChangeError"));
         }
     }
 
     private static StartupTaskStatusResult Describe(Windows.ApplicationModel.StartupTaskState state) => state switch
     {
-        Windows.ApplicationModel.StartupTaskState.Enabled => new(StartupState.Enabled, "Windows へのサインイン時に起動します。"),
-        Windows.ApplicationModel.StartupTaskState.Disabled => new(StartupState.Disabled, "Windows へのサインイン時に起動しません。"),
-        Windows.ApplicationModel.StartupTaskState.DisabledByUser => new(StartupState.DisabledByUser, "タスク マネージャーで無効にされています。再度有効にするには、タスク マネージャーの [スタートアップ アプリ] で有効にしてください。"),
-        Windows.ApplicationModel.StartupTaskState.DisabledByPolicy => new(StartupState.DisabledByPolicy, "Windows のポリシーにより自動起動が無効です。"),
-        _ => new(StartupState.Unavailable, "この環境では Windows の自動起動を利用できません。")
+        Windows.ApplicationModel.StartupTaskState.Enabled => new(StartupState.Enabled, DesktopText.Get("StartupEnabled")),
+        Windows.ApplicationModel.StartupTaskState.Disabled => new(StartupState.Disabled, DesktopText.Get("StartupDisabled")),
+        Windows.ApplicationModel.StartupTaskState.DisabledByUser => new(StartupState.DisabledByUser, DesktopText.Get("StartupDisabledByUser")),
+        Windows.ApplicationModel.StartupTaskState.DisabledByPolicy => new(StartupState.DisabledByPolicy, DesktopText.Get("StartupDisabledByPolicy")),
+        _ => new(StartupState.Unavailable, DesktopText.Get("StartupUnavailable"))
     };
 
     private static StartupTaskStatusResult Unavailable() => new(
         StartupState.Unavailable,
-        "Windows のスタートアップ タスクを利用できません。パッケージ版アプリから設定してください。");
+        DesktopText.Get("StartupTaskUnavailable"));
 }

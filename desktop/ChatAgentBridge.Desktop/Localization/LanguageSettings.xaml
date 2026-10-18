@@ -1,0 +1,15 @@
+<UserControl
+    x:Class="ChatAgentBridge_Desktop.Localization.LanguageSettings"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Spacing="8" Margin="0,0,0,8">
+        <ComboBox x:Name="LanguagePicker" Header="Language / 表示言語" HorizontalAlignment="Stretch"
+                  SelectedValuePath="Tag" SelectionChanged="LanguagePicker_SelectionChanged"
+                  AutomationProperties.AutomationId="DisplayLanguage">
+            <ComboBoxItem x:Name="SystemLanguageOption" Content="System default" Tag="system" />
+            <ComboBoxItem Content="日本語" Tag="ja" />
+            <ComboBoxItem Content="English" Tag="en" />
+        </ComboBox>
+        <TextBlock x:Name="LanguageStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="DisplayLanguageStatus" />
+    </StackPanel>
+</UserControl>

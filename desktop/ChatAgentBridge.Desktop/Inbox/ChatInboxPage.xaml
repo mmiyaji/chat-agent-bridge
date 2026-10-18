@@ -7,24 +7,24 @@
                   HorizontalScrollBarVisibility="Disabled" IsVerticalScrollChainingEnabled="True">
       <StackPanel Padding="24" Spacing="16">
         <StackPanel Spacing="8">
-            <TextBlock Text="チャット受信" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="許可された範囲の依頼を、会話の承認設定に従ってこのPCで実行します。初期設定は毎回確認・結果本文は手動共有です。会話はユーザー・接続先・スレッドごとに分離します。操作承認は初期設定ではPCだけに表示し、公開を有効にすると詳細がスレッドの閲覧者全員に見えます。切断中の依頼は再投稿してください。"
-                       TextWrapping="Wrap" />
+            <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  x:Uid="inboxChatInboxPageTextBlock001" />
+            <TextBlock
+                       TextWrapping="Wrap"  x:Uid="inboxChatInboxPageTextBlock002" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Mattermostに接続" Command="{x:Bind ViewModel.ConnectMattermostCommand}" AutomationProperties.AutomationId="ConnectMattermost"/>
-            <Button Content="Slackに接続" Command="{x:Bind ViewModel.ConnectSlackCommand}" AutomationProperties.AutomationId="ConnectSlack"/>
-            <Button Content="切断" Command="{x:Bind ViewModel.DisconnectCommand}" AutomationProperties.AutomationId="DisconnectChat"/>
+            <Button  Command="{x:Bind ViewModel.ConnectMattermostCommand}" AutomationProperties.AutomationId="ConnectMattermost" x:Uid="ConnectMattermost" />
+            <Button  Command="{x:Bind ViewModel.ConnectSlackCommand}" AutomationProperties.AutomationId="ConnectSlack" x:Uid="ConnectSlack" />
+            <Button  Command="{x:Bind ViewModel.DisconnectCommand}" AutomationProperties.AutomationId="DisconnectChat" x:Uid="DisconnectChat" />
         </StackPanel>
         <StackPanel Spacing="4">
             <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ChatStatus"/>
             <TextBlock Text="{x:Bind ViewModel.OverflowNotice, Mode=OneWay}" TextWrapping="Wrap"/>
             <TextBlock Text="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="NotificationStatus"/>
         </StackPanel>
-        <TextBlock Text="Mattermostでは !cab 依頼内容、SlackではBotへのメンションで依頼を始めます。保存済みのSlack会話は、同じ本人が同じスレッドへ普通に返信できます。!cab folder C:\Projects\my-app で会話の作業先を変更できます。信頼フォルダーの範囲内に限り、変更には毎回PCで承認が必要です。変更後は新しいAI会話として開始します。" TextWrapping="Wrap" />
+        <TextBlock  TextWrapping="Wrap"  x:Uid="inboxChatInboxPageTextBlock003" />
         <ListView ItemsSource="{x:Bind ViewModel.Requests}" SelectedItem="{x:Bind ViewModel.Selected, Mode=TwoWay}"
                   SelectionMode="Single" MinHeight="120" MaxHeight="240"
-                  AutomationProperties.AutomationId="ChatRequests" AutomationProperties.Name="受信した依頼">
+                  AutomationProperties.AutomationId="ChatRequests"  x:Uid="ChatRequests">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="inbox:InboxItem">
                     <StackPanel Spacing="4" Padding="4">
@@ -32,7 +32,7 @@
                         <TextBlock Text="{x:Bind Prompt}" TextWrapping="Wrap" MaxLines="4"/>
                         <TextBlock Text="{x:Bind Workspace}" TextWrapping="Wrap"/>
                         <TextBlock Text="{x:Bind SessionLabel, Mode=OneWay}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{x:Bind State, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                        <TextBlock Text="{x:Bind StateDisplay, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}"/>
                     </StackPanel>
                 </DataTemplate>
             </ListView.ItemTemplate>
@@ -43,24 +43,24 @@
             <Button Grid.Row="0" Grid.Column="0" HorizontalAlignment="Stretch"
                     Command="{x:Bind ViewModel.ApproveCommand}"
                     AutomationProperties.AutomationId="ApproveChat">
-                <Button.Content><TextBlock Text="内容を確認して実行" TextWrapping="Wrap" TextAlignment="Center"/></Button.Content>
+                <Button.Content><TextBlock  TextWrapping="Wrap" TextAlignment="Center" x:Uid="inboxChatInboxPageTextBlock004" /></Button.Content>
             </Button>
             <Button Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"
                     Command="{x:Bind ViewModel.RejectCommand}" AutomationProperties.AutomationId="RejectChat">
-                <Button.Content><TextBlock Text="拒否" TextWrapping="Wrap" TextAlignment="Center"/></Button.Content>
+                <Button.Content><TextBlock  TextWrapping="Wrap" TextAlignment="Center" x:Uid="inboxChatInboxPageTextBlock005" /></Button.Content>
             </Button>
             <Button Grid.Row="1" Grid.Column="0" HorizontalAlignment="Stretch"
                     Command="{x:Bind ViewModel.CancelCommand}" AutomationProperties.AutomationId="CancelChat">
-                <Button.Content><TextBlock Text="実行を停止" TextWrapping="Wrap" TextAlignment="Center"/></Button.Content>
+                <Button.Content><TextBlock  TextWrapping="Wrap" TextAlignment="Center" x:Uid="inboxChatInboxPageTextBlock006" /></Button.Content>
             </Button>
             <Button Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch"
                     Command="{x:Bind ViewModel.SendResultCommand}" AutomationProperties.AutomationId="SendChatResult">
-                <Button.Content><TextBlock Text="結果をスレッドに送信" TextWrapping="Wrap" TextAlignment="Center"/></Button.Content>
+                <Button.Content><TextBlock  TextWrapping="Wrap" TextAlignment="Center" x:Uid="inboxChatInboxPageTextBlock007" /></Button.Content>
             </Button>
         </Grid>
-        <TextBox Header="実行結果（このPCにのみ表示）" Text="{x:Bind ViewModel.Output, Mode=OneWay}"
+        <TextBox  Text="{x:Bind ViewModel.Output, Mode=OneWay}"
                  IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="140" MaxHeight="260"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="ChatOutput"/>
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="ChatOutput" x:Uid="ChatOutput" />
         <TextBlock Text="{x:Bind ViewModel.UsageSummary, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="ChatUsageSummary" />
       </StackPanel>
     </ScrollViewer>

@@ -1,4 +1,5 @@
 using ChatAgentBridge.Core.AppServer;
+using ChatAgentBridge_Desktop.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Automation;
@@ -145,18 +146,18 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
         var body = new StackPanel { Spacing = 12 };
         body.Children.Add(new TextBlock
         {
-            Text = "Codex が次の操作の許可を求めています。内容を確認してください。",
+            Text = DesktopText.Get("AppServerApprovalPrompt"),
             TextWrapping = TextWrapping.Wrap
         });
 
         var details = new StackPanel { Spacing = 8 };
-        AddDetail(details, "メソッド", approval.Method);
-        AddDetail(details, "スレッド", approval.ThreadId);
-        AddDetail(details, "ターン", approval.TurnId);
-        AddDetail(details, "項目", approval.ItemId);
-        AddDetail(details, "説明", approval.Description);
-        AddDetail(details, "コマンド", approval.Command);
-        AddDetail(details, "作業フォルダー", approval.WorkingDirectory);
+        AddDetail(details, DesktopText.Get("Method"), approval.Method);
+        AddDetail(details, DesktopText.Get("Thread"), approval.ThreadId);
+        AddDetail(details, DesktopText.Get("Turn"), approval.TurnId);
+        AddDetail(details, DesktopText.Get("Item"), approval.ItemId);
+        AddDetail(details, DesktopText.Get("Description"), approval.Description);
+        AddDetail(details, DesktopText.Get("Command"), approval.Command);
+        AddDetail(details, DesktopText.Get("WorkingFolder"), approval.WorkingDirectory);
         var scroll = new ScrollViewer
         {
             Content = details,
@@ -167,10 +168,10 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
 
         var dialog = new ContentDialog
         {
-            Title = "操作の許可",
+            Title = DesktopText.Get("AllowOperation"),
             Content = body,
-            PrimaryButtonText = "許可",
-            CloseButtonText = "拒否",
+            PrimaryButtonText = DesktopText.Get("Allow"),
+            CloseButtonText = DesktopText.Get("Deny"),
             DefaultButton = ContentDialogButton.Close,
             XamlRoot = xamlRoot
         };
@@ -186,7 +187,7 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
         var body = new StackPanel { Spacing = 12 };
         var metadata = new TextBlock
         {
-            Text = $"スレッド: {Display(input.ThreadId)}\nターン: {Display(input.TurnId)}\n項目: {Display(input.ItemId)}",
+            Text = DesktopText.Get("InputMetadata", Display(input.ThreadId), Display(input.TurnId), Display(input.ItemId)),
             TextWrapping = TextWrapping.Wrap
         };
         body.Children.Add(metadata);
@@ -222,7 +223,7 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
                 }
                 if (question.IsOther)
                 {
-                    otherChoice = new RadioButton { Content = "その他", GroupName = $"AppServerQuestion{index}" };
+                    otherChoice = new RadioButton { Content = DesktopText.Get("Other"), GroupName = $"AppServerQuestion{index}" };
                     choices.Add(otherChoice);
                     group.Children.Add(otherChoice);
                 }
@@ -232,12 +233,12 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
             {
                 textInput = question.IsSecret ? null : new TextBox
                 {
-                    PlaceholderText = "回答を入力",
+                    PlaceholderText = DesktopText.Get("EnterAnswer"),
                     Visibility = question.Options.Count > 0 ? Visibility.Collapsed : Visibility.Visible
                 };
                 passwordInput = question.IsSecret ? new PasswordBox
                 {
-                    PlaceholderText = "回答を入力",
+                    PlaceholderText = DesktopText.Get("EnterAnswer"),
                     Visibility = question.Options.Count > 0 ? Visibility.Collapsed : Visibility.Visible
                 } : null;
                 if (textInput is not null) group.Children.Add(textInput);
@@ -271,10 +272,10 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
         };
         var dialog = new ContentDialog
         {
-            Title = "Codex への回答",
+            Title = DesktopText.Get("AnswerToCodex"),
             Content = scroll,
-            PrimaryButtonText = "送信",
-            CloseButtonText = "キャンセル",
+            PrimaryButtonText = DesktopText.Get("Send"),
+            CloseButtonText = DesktopText.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close,
             IsPrimaryButtonEnabled = false,
             XamlRoot = xamlRoot
@@ -311,7 +312,7 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
         {
             AutomationProperties.SetAutomationId(answer.Choices[choiceIndex], $"AppServerInputChoice{index}_{choiceIndex + 1}");
             AutomationProperties.SetName(answer.Choices[choiceIndex],
-                $"{answer.Question.Question}: {answer.Choices[choiceIndex].Tag as string ?? "その他"}");
+                $"{answer.Question.Question}: {answer.Choices[choiceIndex].Tag as string ?? DesktopText.Get("Other")}");
         }
         if (answer.TextInput is not null)
         {
@@ -366,7 +367,7 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
 
     private static string Display(string? value)
     {
-        if (string.IsNullOrEmpty(value)) return "(なし)";
+        if (string.IsNullOrEmpty(value)) return DesktopText.Get("None");
         const int maximum = 8000;
         return value.Length <= maximum ? value : value[..maximum] + "…";
     }

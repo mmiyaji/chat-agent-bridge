@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.Sessions;
+using ChatAgentBridge_Desktop.Localization;
 using ChatAgentBridge_Desktop.UsageUi;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -17,27 +18,27 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record)
     public string Source => SourceLabel(Record.Source);
     public string Status => Record.Status switch
     {
-        "running" => "実行中または前回中断",
-        "completed" => "完了",
-        "failed" => "失敗",
-        "cancelled" => "キャンセル",
-        "interrupted" => "中断",
+        "running" => DesktopText.Get("HistoryExecutionRunning"),
+        "completed" => DesktopText.Get("HistoryExecutionCompleted"),
+        "failed" => DesktopText.Get("HistoryExecutionFailed"),
+        "cancelled" => DesktopText.Get("HistoryExecutionCancelled"),
+        "interrupted" => DesktopText.Get("HistoryExecutionInterrupted"),
         _ => Record.Status
     };
     public string Summary => $"{Started} · {Source} · {Status}";
-    public string Workspace => $"作業フォルダー: {Record.WorkspaceRoot}";
-    public string Session => $"セッション ID: {Record.SessionId ?? "—"}";
-    public string Model => $"指定モデル: {Record.AgentModel ?? "既定モデル"}";
-    public string ReasoningEffort => $"推論レベル: {Record.AgentReasoningEffort ?? "CLIの既定値"}";
+    public string Workspace => DesktopText.Get("HistoryWorkspace", Record.WorkspaceRoot);
+    public string Session => DesktopText.Get("HistorySessionId", Record.SessionId ?? "—");
+    public string Model => DesktopText.Get("HistoryModel", Record.AgentModel ?? DesktopText.Get("DefaultModel"));
+    public string ReasoningEffort => DesktopText.Get("HistoryReasoning", Record.AgentReasoningEffort ?? DesktopText.Get("CliDefault"));
     public string Usage => UsageSummaryFormatter.Format(Record.Usage, Record.Metrics);
-    public string Conversation => $"会話: チャンネル {Record.ChannelId} / スレッド {Record.ThreadId} / ユーザー {Record.UserId}";
+    public string Conversation => DesktopText.Get("HistoryExecutionConversation", Record.ChannelId, Record.ThreadId, Record.UserId);
 
     private static string SourceLabel(string source) => source switch
     {
-        "local" => "ローカル",
+        "local" => DesktopText.Get("Local"),
         "slack" => "Slack",
         "mattermost" => "Mattermost",
-        _ => string.IsNullOrWhiteSpace(source) ? "不明な提供元" : source
+        _ => string.IsNullOrWhiteSpace(source) ? DesktopText.Get("UnknownProvider") : source
     };
 }
 
@@ -46,28 +47,28 @@ public sealed record AuditHistoryRow(AuditEvent Record)
     public string Timestamp => Record.Timestamp.ToLocalTime().ToString("g");
     public string Kind => Record.Kind switch
     {
-        "received" => "依頼を受信",
-        "approved" => "承認",
-        "rejected" => "拒否",
-        "started" => "実行を開始",
-        "completed" => "実行が完了",
-        "failed" => "実行に失敗",
-        "cancelled" => "実行をキャンセル",
-        "reply_failed" => "状態通知に失敗",
-        "reply_sent" => "結果を送信",
-        "detached" => "セッションを切り離し",
-        "workspace_changed" => "作業フォルダーを変更",
-        _ => "その他の操作"
+        "received" => DesktopText.Get("AuditReceived"),
+        "approved" => DesktopText.Get("AuditApproved"),
+        "rejected" => DesktopText.Get("AuditRejected"),
+        "started" => DesktopText.Get("AuditStarted"),
+        "completed" => DesktopText.Get("AuditCompleted"),
+        "failed" => DesktopText.Get("AuditFailed"),
+        "cancelled" => DesktopText.Get("AuditCancelled"),
+        "reply_failed" => DesktopText.Get("AuditReplyFailed"),
+        "reply_sent" => DesktopText.Get("AuditReplySent"),
+        "detached" => DesktopText.Get("AuditDetached"),
+        "workspace_changed" => DesktopText.Get("AuditWorkspaceChanged"),
+        _ => DesktopText.Get("AuditOther")
     };
     public string Source => Record.Source switch
     {
-        "local" => "ローカル",
+        "local" => DesktopText.Get("Local"),
         "slack" => "Slack",
         "mattermost" => "Mattermost",
-        _ => "提供元不明"
+        _ => DesktopText.Get("UnknownProvider")
     };
     public string Summary => $"{Timestamp} · {Source} · {Kind}";
-    public string Conversation => $"会話: チャンネル {Record.ChannelId} / スレッド {Record.ThreadId}";
+    public string Conversation => DesktopText.Get("HistoryAuditConversation", Record.ChannelId, Record.ThreadId);
 }
 
 public sealed record SessionHistoryRow(SessionBinding Binding)
@@ -76,8 +77,8 @@ public sealed record SessionHistoryRow(SessionBinding Binding)
     {
         "mattermost" => "Mattermost",
         "slack" => "Slack",
-        "local" => "ローカル",
-        _ => "提供元不明"
+        "local" => DesktopText.Get("Local"),
+        _ => DesktopText.Get("UnknownProvider")
     };
     public string ChannelId => Binding.Key.ChannelId;
     public string ThreadId => Binding.Key.ThreadId;
@@ -86,22 +87,23 @@ public sealed record SessionHistoryRow(SessionBinding Binding)
         ? "Codex App Server"
         : $"{Binding.AgentExecutable} {Binding.AgentArguments}".Trim();
     public string SessionId => Binding.SessionId;
-    public string Conversation => $"{ChannelId} / {ThreadId}\n会話の所有者: {Binding.Key.UserId ?? "旧形式・所有者不明（自動継続しません）"}";
+    public string Conversation => DesktopText.Get("HistorySessionConversation", ChannelId, ThreadId, Environment.NewLine,
+        Binding.Key.UserId ?? DesktopText.Get("LegacyUnknownOwner"));
     public string AgentAndSession => $"{Agent} / {SessionId}";
     public string ModelOverride => Binding.Model ?? string.Empty;
     public string Model => string.IsNullOrWhiteSpace(Binding.Model)
-        ? "次回の実行モデル: 既定モデルを使用"
-        : $"次回の実行モデル: {Binding.Model}";
-    public string ReasoningEffort => $"次回の推論レベル: {Binding.ReasoningEffort ?? "エージェント設定を継承（モデルが異なる場合はCLIの既定値）"}";
-    public string ExecutionPolicy => $"会話ポリシー: 承認 {PolicyLabel(Binding.ChatApprovalMode, "毎回確認", "first", "最初だけ確認", "auto", "自動承認")} / 結果 {PolicyLabel(Binding.ChatResultMode, "手動で確認して共有", "auto", "自動共有", "none", "共有しない")} / AI操作 {PermissionLabel(Binding.AgentPermissionMode)}";
+        ? DesktopText.Get("HistoryNextModelDefault")
+        : DesktopText.Get("HistoryNextModel", Binding.Model);
+    public string ReasoningEffort => DesktopText.Get("HistoryNextReasoning", Binding.ReasoningEffort ?? DesktopText.Get("InheritAgentEffort"));
+    public string ExecutionPolicy => DesktopText.Get("HistoryExecutionPolicy", PolicyLabel(Binding.ChatApprovalMode, DesktopText.Get("AskEveryTime"), "first", DesktopText.Get("AskFirstTime"), "auto", DesktopText.Get("AutoApprove")), PolicyLabel(Binding.ChatResultMode, DesktopText.Get("ManualShare"), "auto", DesktopText.Get("AutoShare"), "none", DesktopText.Get("NoSharing")), PermissionLabel(Binding.AgentPermissionMode));
     public string Updated => Binding.UpdatedAt.ToLocalTime().ToString("g");
 
     private static string PolicyLabel(string? value, string defaultLabel, string keyOne, string labelOne, string keyTwo, string labelTwo) =>
-        value is null ? "全体設定" : value == keyOne ? labelOne : value == keyTwo ? labelTwo : defaultLabel;
+        value is null ? DesktopText.Get("GlobalSetting") : value == keyOne ? labelOne : value == keyTwo ? labelTwo : defaultLabel;
     private static string PermissionLabel(string? value) => value switch
     {
-        null => "全体設定", "read-only" => "読み取り・計画のみ", "workspace-write" => "フォルダー内の編集を自動許可",
-        "full-access" => "フルアクセス", "ask" => "操作ごとに確認", _ => "CLI既定"
+        null => DesktopText.Get("GlobalSetting"), "read-only" => DesktopText.Get("ReadAndPlanOnly"), "workspace-write" => DesktopText.Get("AutoAllowWorkspaceEdits"),
+        "full-access" => DesktopText.Get("FullAccess"), "ask" => DesktopText.Get("AskPerAction"), _ => DesktopText.Get("CliDefault")
     };
 }
 
@@ -123,7 +125,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public partial SessionHistoryRow? SelectedSession { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand)), NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand))]
     public partial bool IsBusy { get; set; }
-    [ObservableProperty] public partial string Status { get; set; } = "履歴とセッションを読み込んでいます。";
+    [ObservableProperty] public partial string Status { get; set; } = DesktopText.Get("HistoryLoading");
 
     public Func<SessionHistoryRow, Task<bool>>? ConfirmDetachAsync { get; set; }
     public Func<SessionHistoryRow, BridgeSettings, Task<ModelExecutionSelection?>>? EditSessionModelAsync { get; set; }
@@ -134,7 +136,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     {
         if (IsBusy) return;
         IsBusy = true;
-        Status = "履歴とセッションを更新しています…";
+        Status = DesktopText.Get("HistoryRefreshing");
         try
         {
             var executions = await _executionStore.ListAsync();
@@ -152,11 +154,11 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             HasSessions = Sessions.Count > 0;
             HasAuditEvents = AuditEvents.Count > 0;
             SelectedSession = null;
-            Status = $"実行 {Executions.Count} 件、セッション {Sessions.Count} 件、監査イベント {AuditEvents.Count} 件";
+            Status = DesktopText.Get("HistoryCounts", Executions.Count, Sessions.Count, AuditEvents.Count);
         }
         catch (Exception ex)
         {
-            Status = $"履歴を読み込めませんでした: {ex.Message}";
+            Status = DesktopText.Get("HistoryLoadFailed", ex.Message);
         }
         finally
         {
@@ -175,7 +177,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         try
         {
             if (ConfirmDetachAsync is null || !await ConfirmDetachAsync(selected)) return;
-            Status = "セッションを切り離しています…";
+            Status = DesktopText.Get("HistoryDetaching");
             await _sessionStore.RemoveAsync(selected.Binding.Key);
             try
             {
@@ -186,20 +188,20 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             catch { auditFailed = true; }
 
             successMessage = auditFailed
-                ? "セッションを切り離しましたが、監査記録に失敗しました。実行履歴は保持されています。"
-                : "セッションを切り離しました。実行履歴は保持されています。";
+                ? DesktopText.Get("HistoryDetachedAuditFailed")
+                : DesktopText.Get("HistoryDetached");
             try
             {
                 await RefreshContentsAsync(successMessage);
             }
             catch
             {
-                Status = $"{successMessage} 切り離しは完了しましたが、一覧を更新できませんでした。";
+                Status = DesktopText.Get("HistoryRefreshAfterDetachFailed", successMessage);
             }
         }
         catch (Exception ex)
         {
-            Status = $"セッションを切り離せませんでした: {ex.Message}";
+            Status = DesktopText.Get("HistoryDetachFailed", ex.Message);
         }
         finally
         {
@@ -225,12 +227,12 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             if (selection is null) return;
             await _sessionStore.UpdateExecutionPolicyAsync(selected.Binding.Key, selection.ChatApprovalMode,
                 selection.ChatResultMode, selection.AgentPermissionMode, CancellationToken.None);
-            await RefreshContentsAsync("この会話の実行ポリシーを保存しました。");
+            await RefreshContentsAsync(DesktopText.Get("HistoryPolicySaved"));
             SelectedSession = Sessions.FirstOrDefault(row => row.Binding.Key == selected.Binding.Key);
         }
         catch (Exception ex)
         {
-            Status = $"この会話の実行ポリシーを保存できませんでした: {ex.Message}";
+            Status = DesktopText.Get("HistoryPolicySaveFailed", ex.Message);
         }
         finally { IsBusy = false; }
     }
@@ -249,12 +251,12 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             await _sessionStore.UpdateModelAndEffortAsync(selected.Binding.Key,
                 string.IsNullOrWhiteSpace(selection.Model) ? null : selection.Model.Trim(),
                 selection.ReasoningEffort, CancellationToken.None);
-            await RefreshContentsAsync("次回の実行モデルを保存しました。推論レベルも更新しました。");
+            await RefreshContentsAsync(DesktopText.Get("HistoryModelSaved"));
             SelectedSession = Sessions.FirstOrDefault(row => row.Binding.Key == selected.Binding.Key);
         }
         catch
         {
-            Status = "次回の実行モデルを保存できませんでした。セッションが残っているか確認してください。";
+            Status = DesktopText.Get("HistoryModelSaveFailed");
         }
         finally { IsBusy = false; }
     }
@@ -275,6 +277,6 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         HasSessions = Sessions.Count > 0;
         HasAuditEvents = AuditEvents.Count > 0;
         SelectedSession = null;
-        Status = $"{successMessage} 実行 {Executions.Count} 件、セッション {Sessions.Count} 件、監査イベント {AuditEvents.Count} 件";
+        Status = DesktopText.Get("HistorySuccessCounts", successMessage, Executions.Count, Sessions.Count, AuditEvents.Count);
     }
 }

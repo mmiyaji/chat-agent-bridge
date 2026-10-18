@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ApprovalPending" xml:space="preserve"><value>承認待ち</value></data>
+  <data name="ApprovalRunning" xml:space="preserve"><value>実行中</value></data>
+  <data name="ApprovalCompleted" xml:space="preserve"><value>完了</value></data>
+  <data name="ApprovalFailed" xml:space="preserve"><value>失敗 ({0})</value></data>
+  <data name="ApprovalCancelled" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="ApprovalRejected" xml:space="preserve"><value>拒否</value></data>
+  <data name="ApprovalExecutionError" xml:space="preserve"><value>実行／記録エラー</value></data>
+  <data name="ApprovalCancelledPermission" xml:space="preserve"><value>許可取り消し・実行不可</value></data>
+  <data name="ApprovalPermissionUnavailable" xml:space="preserve"><value>許可設定を確認できず実行不可</value></data>
+  <data name="ApprovalPreparing" xml:space="preserve"><value>自動実行を準備</value></data>
+  <data name="ApprovalConnectionEnded" xml:space="preserve"><value>接続終了・再受信が必要</value></data>
+  <data name="ApprovalWorkspaceNeedsResubmit" xml:space="preserve"><value>作業先変更・再投稿が必要</value></data>
+  <data name="ApprovalWorkspaceChanged" xml:space="preserve"><value>フォルダー変更済み</value></data>
+  <data name="ApprovalWorkspaceChangeFailed" xml:space="preserve"><value>フォルダー変更不可</value></data>
+  <data name="AppServerApprovalPrompt" xml:space="preserve"><value>Codex が次の操作の許可を求めています。内容を確認してください。</value></data>
+  <data name="Method" xml:space="preserve"><value>メソッド</value></data>
+  <data name="Thread" xml:space="preserve"><value>スレッド</value></data>
+  <data name="Turn" xml:space="preserve"><value>ターン</value></data>
+  <data name="Item" xml:space="preserve"><value>項目</value></data>
+  <data name="Description" xml:space="preserve"><value>説明</value></data>
+  <data name="Command" xml:space="preserve"><value>コマンド</value></data>
+  <data name="WorkingFolder" xml:space="preserve"><value>作業フォルダー</value></data>
+  <data name="AllowOperation" xml:space="preserve"><value>操作の許可</value></data>
+  <data name="Allow" xml:space="preserve"><value>許可</value></data>
+  <data name="Deny" xml:space="preserve"><value>拒否</value></data>
+  <data name="Other" xml:space="preserve"><value>その他</value></data>
+  <data name="EnterAnswer" xml:space="preserve"><value>回答を入力</value></data>
+  <data name="AnswerToCodex" xml:space="preserve"><value>Codex への回答</value></data>
+  <data name="Send" xml:space="preserve"><value>送信</value></data>
+  <data name="Cancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="None" xml:space="preserve"><value>(なし)</value></data>
+  <data name="InputMetadata" xml:space="preserve"><value>スレッド: {0} | ターン: {1} | 項目: {2}</value></data>
+  <data name="StartupEnabled" xml:space="preserve"><value>Windows へのサインイン時に起動します。</value></data>
+  <data name="StartupDisabled" xml:space="preserve"><value>Windows へのサインイン時に起動しません。</value></data>
+  <data name="StartupDisabledByUser" xml:space="preserve"><value>タスク マネージャーで無効にされています。再度有効にするには、タスク マネージャーの [スタートアップ アプリ] で有効にしてください。</value></data>
+  <data name="StartupDisabledByPolicy" xml:space="preserve"><value>Windows のポリシーにより自動起動が無効です。</value></data>
+  <data name="StartupUnavailable" xml:space="preserve"><value>この環境では Windows の自動起動を利用できません。</value></data>
+  <data name="StartupChangeError" xml:space="preserve"><value>Windows のスタートアップ設定を変更できませんでした。アプリをパッケージ版として起動しているか確認してください。</value></data>
+  <data name="StartupTaskUnavailable" xml:space="preserve"><value>Windows のスタートアップ タスクを利用できません。パッケージ版アプリから設定してください。</value></data>
+  <data name="ModelCatalogAvailable" xml:space="preserve"><value>必要なときに候補を取得できます。CLIの候補です。利用権限や料金は保証されません。</value></data>
+  <data name="ModelCatalogCancelledLeaving" xml:space="preserve"><value>画面を離れたため、モデル候補の取得をキャンセルしました。</value></data>
+  <data name="ModelCatalogSettingsChanged" xml:space="preserve"><value>設定が変わりました。候補をもう一度取得してください。</value></data>
+  <data name="ModelCatalogLoading" xml:space="preserve"><value>CLIからモデル候補を取得しています…</value></data>
+  <data name="ModelCatalogUnsupported" xml:space="preserve"><value>このCLIでは候補を取得できません。モデル名を直接入力してください。</value></data>
+  <data name="ModelCatalogEmpty" xml:space="preserve"><value>モデル候補はありませんでした。モデル名を直接入力できます。</value></data>
+  <data name="ModelCatalogFound" xml:space="preserve"><value>{0} 件の候補があります。選択するとモデル名に反映されます。</value></data>
+  <data name="ModelCatalogCancelled" xml:space="preserve"><value>モデル候補の取得をキャンセルしました。</value></data>
+  <data name="ModelCatalogFailed" xml:space="preserve"><value>候補を取得できませんでした。CLIの設定を確認するか、モデル名を直接入力してください。</value></data>
+  <data name="PolicyDocument" xml:space="preserve"><value>{0}{1}版: {2}</value></data>
+  <data name="Close" xml:space="preserve"><value>閉じる</value></data>
+  <data name="PrivacyPolicy" xml:space="preserve"><value>プライバシーポリシー</value></data>
+  <data name="TermsOfUse" xml:space="preserve"><value>利用規約</value></data>
+  <data name="NotificationNotInitialized" xml:space="preserve"><value>Windows 通知はまだ初期化されていません。</value></data>
+  <data name="NotificationDisabled" xml:space="preserve"><value>Windows 通知は無効です（{0}）。Windows の通知設定を確認してください。</value></data>
+  <data name="NotificationAvailable" xml:space="preserve"><value>Windows 通知を利用できます。</value></data>
+  <data name="NotificationInitializeFailed" xml:space="preserve"><value>Windows 通知を初期化できませんでした: {0}</value></data>
+  <data name="NotificationShowFailed" xml:space="preserve"><value>Windows 通知を表示できませんでした。Windows の通知設定を確認してください。</value></data>
+  <data name="NotificationPendingShown" xml:space="preserve"><value>承認待ちの Windows 通知を表示しました。有効期限は 5 分です。</value></data>
+  <data name="NotificationShowFailedWithError" xml:space="preserve"><value>Windows 通知を表示できませんでした: {0}</value></data>
+  <data name="NotificationShutdownFailed" xml:space="preserve"><value>Windows 通知の終了処理に失敗しました: {0}</value></data>
+  <data name="NotificationStopped" xml:space="preserve"><value>Windows 通知を停止しました。</value></data>
+  <data name="NotificationChatRequestTitle" xml:space="preserve"><value>チャット依頼</value></data>
+  <data name="NotificationChatRequestBody" xml:space="preserve"><value>応答待ちのチャット依頼があります。</value></data>
+  <data name="NotificationAiApprovalTitle" xml:space="preserve"><value>AI 操作の承認</value></data>
+  <data name="NotificationAiApprovalBody" xml:space="preserve"><value>承認すると保存済みの PC 設定で実行します。</value></data>
+  <data name="ApproveAndRun" xml:space="preserve"><value>承認して実行</value></data>
+  <data name="NotificationDispatchFailed" xml:space="preserve"><value>Windows 通知の操作を UI スレッドへ渡せませんでした。</value></data>
+  <data name="NotificationExpiredOpenApp" xml:space="preserve"><value>通知の有効期限が切れています。アプリを開いて最新の状態を確認してください。</value></data>
+  <data name="NotificationActionFailed" xml:space="preserve"><value>Windows 通知の操作を完了できませんでした: {0}</value></data>
+  <data name="NotificationExpired" xml:space="preserve"><value>Windows 通知の有効期限が切れました。</value></data>
+  <data name="NotificationCloseFailed" xml:space="preserve"><value>Windows 通知を閉じられませんでした: {0}</value></data>
+  <data name="NotificationCloseDispatchFailed" xml:space="preserve"><value>Windows 通知を閉じる処理を UI スレッドへ渡せませんでした。</value></data>
+  <data name="HistoryExecutionRunning" xml:space="preserve"><value>実行中または前回中断</value></data>
+  <data name="HistoryExecutionCompleted" xml:space="preserve"><value>完了</value></data>
+  <data name="HistoryExecutionFailed" xml:space="preserve"><value>失敗</value></data>
+  <data name="HistoryExecutionCancelled" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="HistoryExecutionInterrupted" xml:space="preserve"><value>中断</value></data>
+  <data name="HistoryWorkspace" xml:space="preserve"><value>作業フォルダー: {0}</value></data>
+  <data name="HistorySessionId" xml:space="preserve"><value>セッション ID: {0}</value></data>
+  <data name="HistoryModel" xml:space="preserve"><value>指定モデル: {0}</value></data>
+  <data name="HistoryReasoning" xml:space="preserve"><value>推論レベル: {0}</value></data>
+  <data name="HistoryExecutionConversation" xml:space="preserve"><value>会話: チャンネル {0} / スレッド {1} / ユーザー {2}</value></data>
+  <data name="HistoryAuditConversation" xml:space="preserve"><value>会話: チャンネル {0} / スレッド {1}</value></data>
+  <data name="Local" xml:space="preserve"><value>ローカル</value></data>
+  <data name="UnknownProvider" xml:space="preserve"><value>提供元不明</value></data>
+  <data name="AuditReceived" xml:space="preserve"><value>依頼を受信</value></data>
+  <data name="AuditApproved" xml:space="preserve"><value>承認</value></data>
+  <data name="AuditRejected" xml:space="preserve"><value>拒否</value></data>
+  <data name="AuditStarted" xml:space="preserve"><value>実行を開始</value></data>
+  <data name="AuditCompleted" xml:space="preserve"><value>実行が完了</value></data>
+  <data name="AuditFailed" xml:space="preserve"><value>実行に失敗</value></data>
+  <data name="AuditCancelled" xml:space="preserve"><value>実行をキャンセル</value></data>
+  <data name="AuditReplyFailed" xml:space="preserve"><value>状態通知に失敗</value></data>
+  <data name="AuditReplySent" xml:space="preserve"><value>結果を送信</value></data>
+  <data name="AuditDetached" xml:space="preserve"><value>セッションを切り離し</value></data>
+  <data name="AuditWorkspaceChanged" xml:space="preserve"><value>作業フォルダーを変更</value></data>
+  <data name="AuditOther" xml:space="preserve"><value>その他の操作</value></data>
+  <data name="HistorySessionConversation" xml:space="preserve"><value>{0} / {1}{2}会話の所有者: {3}</value></data>
+  <data name="LegacyUnknownOwner" xml:space="preserve"><value>旧形式・所有者不明（自動継続しません）</value></data>
+  <data name="DefaultModel" xml:space="preserve"><value>既定モデル</value></data>
+  <data name="CliDefault" xml:space="preserve"><value>CLIの既定値</value></data>
+  <data name="HistoryNextModelDefault" xml:space="preserve"><value>次回の実行モデル: 既定モデルを使用</value></data>
+  <data name="HistoryNextModel" xml:space="preserve"><value>次回の実行モデル: {0}</value></data>
+  <data name="HistoryNextReasoning" xml:space="preserve"><value>次回の推論レベル: {0}</value></data>
+  <data name="InheritAgentEffort" xml:space="preserve"><value>エージェント設定を継承（モデルが異なる場合はCLIの既定値）</value></data>
+  <data name="HistoryExecutionPolicy" xml:space="preserve"><value>会話ポリシー: 承認 {0} / 結果 {1} / AI操作 {2}</value></data>
+  <data name="AskEveryTime" xml:space="preserve"><value>毎回確認</value></data>
+  <data name="AskFirstTime" xml:space="preserve"><value>最初だけ確認</value></data>
+  <data name="AutoApprove" xml:space="preserve"><value>自動承認</value></data>
+  <data name="ManualShare" xml:space="preserve"><value>手動で確認して共有</value></data>
+  <data name="AutoShare" xml:space="preserve"><value>自動共有</value></data>
+  <data name="NoSharing" xml:space="preserve"><value>共有しない</value></data>
+  <data name="GlobalSetting" xml:space="preserve"><value>全体設定</value></data>
+  <data name="ReadAndPlanOnly" xml:space="preserve"><value>読み取り・計画のみ</value></data>
+  <data name="AutoAllowWorkspaceEdits" xml:space="preserve"><value>フォルダー内の編集を自動許可</value></data>
+  <data name="FullAccess" xml:space="preserve"><value>フルアクセス</value></data>
+  <data name="AskPerAction" xml:space="preserve"><value>操作ごとに確認</value></data>
+  <data name="HistoryLoading" xml:space="preserve"><value>履歴とセッションを読み込んでいます。</value></data>
+  <data name="HistoryRefreshing" xml:space="preserve"><value>履歴とセッションを更新しています…</value></data>
+  <data name="HistoryCounts" xml:space="preserve"><value>実行 {0} 件、セッション {1} 件、監査イベント {2} 件</value></data>
+  <data name="HistoryLoadFailed" xml:space="preserve"><value>履歴を読み込めませんでした: {0}</value></data>
+  <data name="HistoryDetaching" xml:space="preserve"><value>セッションを切り離しています…</value></data>
+  <data name="HistoryDetachedAuditFailed" xml:space="preserve"><value>セッションを切り離しましたが、監査記録に失敗しました。実行履歴は保持されています。</value></data>
+  <data name="HistoryDetached" xml:space="preserve"><value>セッションを切り離しました。実行履歴は保持されています。</value></data>
+  <data name="HistoryRefreshAfterDetachFailed" xml:space="preserve"><value>{0} 切り離しは完了しましたが、一覧を更新できませんでした。</value></data>
+  <data name="HistoryDetachFailed" xml:space="preserve"><value>セッションを切り離せませんでした: {0}</value></data>
+  <data name="HistoryPolicySaved" xml:space="preserve"><value>この会話の実行ポリシーを保存しました。</value></data>
+  <data name="HistoryPolicySaveFailed" xml:space="preserve"><value>この会話の実行ポリシーを保存できませんでした: {0}</value></data>
+  <data name="HistoryModelSaved" xml:space="preserve"><value>次回の実行モデルを保存しました。推論レベルも更新しました。</value></data>
+  <data name="HistoryModelSaveFailed" xml:space="preserve"><value>次回の実行モデルを保存できませんでした。セッションが残っているか確認してください。</value></data>
+  <data name="HistorySuccessCounts" xml:space="preserve"><value>{0} 実行 {1} 件、セッション {2} 件、監査イベント {3} 件</value></data>
+  <data name="WorkspacePathInstruction" xml:space="preserve"><value>!cab folder C:\Projects\my-app のように、存在するフォルダーの絶対パスを1行目に指定してください。空白を含むパスは二重引用符で囲めます。</value></data>
+  <data name="WorkspaceOutsideTrustedRoots" xml:space="preserve"><value>変更先は信頼フォルダーの範囲外です。PCのエージェント設定で、許可する親フォルダーを確認・保存してから再接続してください。</value></data>
+  <data name="WorkspaceChangePrompt" xml:space="preserve"><value>作業フォルダーの変更（AIは実行しません）&#10;変更前: {0}&#10;変更後: {1}&#10;所有者: {2}&#10;このユーザー・スレッドだけに適用します。保存済みの会話・モデル・承認の上書きは解除し、次の依頼は新しいAIセッションで開始します。実行履歴は残ります。</value></data>
+  <data name="WorkspaceChangedDuringConfirmation" xml:space="preserve"><value>確認中に作業フォルダーが変更されました。変更先を再確認して依頼し直してください。</value></data>
+  <data name="WorkspaceChangedOutput" xml:space="preserve"><value>作業フォルダーを {0} に変更しました。次の依頼は新しいAI会話として開始します。</value></data>
+  <data name="WorkspaceChangeNoUsage" xml:space="preserve"><value>設定だけを変更しました。AIの呼び出し・トークン消費はありません。</value></data>
+  <data name="WorkspaceChangedChatReply" xml:space="preserve"><value>Chat Agent Bridge: この会話の作業フォルダーを {0} に変更しました。次の依頼は新しいAI会話として開始します。</value></data>
+  <data name="WorkspaceChangeSucceeded" xml:space="preserve"><value>このユーザー・スレッドの作業フォルダーを変更しました。</value></data>
+  <data name="WorkspaceSavedNotificationInterrupted" xml:space="preserve"><value>作業フォルダーの変更は保存済みです。切断によりチャットへの通知を中断しました。</value></data>
+  <data name="WorkspaceSavedButAuditOrNotificationFailed" xml:space="preserve"><value>作業フォルダーの変更は保存済みですが、記録またはチャットへの通知に失敗しました。</value></data>
+  <data name="WorkspaceChangeFailed" xml:space="preserve"><value>作業フォルダーを変更できませんでした。実行結果欄で指定先と信頼フォルダーを確認してください。</value></data>
+  <data name="WorkspaceChangeFailedChatReply" xml:space="preserve"><value>Chat Agent Bridge: 作業フォルダーを変更できませんでした。絶対パス・フォルダーの存在・信頼範囲をPCで確認してください。AIは実行していません。</value></data>
+  <data name="InboxSessionPreflight" xml:space="preserve"><value>実行前にセッションを確認します</value></data>
+  <data name="InboxDisconnected" xml:space="preserve"><value>切断中。接続設定を保存してから接続してください。</value></data>
+  <data name="InboxOutputIntro" xml:space="preserve"><value>実行結果はここに表示されます。依頼の実行と結果共有は、会話の承認・共有設定に従います。</value></data>
+  <data name="UsageAfterExecution" xml:space="preserve"><value>利用量は実行後に表示します。</value></data>
+  <data name="InboxPreparingConnection" xml:space="preserve"><value>接続準備中…</value></data>
+  <data name="InboxAllowedUsersRequired" xml:space="preserve"><value>接続設定で許可するユーザーIDを登録し、保存してください。空欄では依頼を受け付けません。</value></data>
+  <data name="WorkspaceConfigureAndSave" xml:space="preserve"><value>作業フォルダーを設定し、保存してください。</value></data>
+  <data name="InboxConnectedWaiting" xml:space="preserve"><value>接続しました。許可ユーザーの依頼を待っています。切断中の依頼は再投稿してください。</value></data>
+  <data name="InboxConnectedChatNotice" xml:space="preserve"><value>Chat Agent Bridge: 接続しました。許可されたユーザーの依頼をPCで確認してから実行します。切断中に投稿した依頼は取り込まれないため、必要な依頼は再投稿してください。</value></data>
+  <data name="InboxConnectingWaiting" xml:space="preserve"><value>接続処理中／受信待ち。失敗時はここに表示します。</value></data>
+  <data name="InboxConnectionFailed" xml:space="preserve"><value>接続できません。保存済みの作業フォルダー・接続設定を確認してください。</value></data>
+  <data name="InboxOverflow" xml:space="preserve"><value>上限により未受理: {0}件。最後: {1} / {2} / {3}。処理後にチャットから再送してください。</value></data>
+  <data name="InboxRequestReceived" xml:space="preserve"><value>依頼を受信しました。{0} の承認待ちを確認してください。</value></data>
+  <data name="InboxConnectionEnded" xml:space="preserve"><value>接続が終了しました。再接続後、未実行の依頼を再投稿してください。</value></data>
+  <data name="InboxDisconnectedNotice" xml:space="preserve"><value>切断しました。切断中の依頼は受信しません。再接続後、未実行の依頼を再投稿してください。</value></data>
+  <data name="InboxReconnectFailed" xml:space="preserve"><value>接続に失敗しました。認証情報・接続先・ネットワークを確認し、再接続後に未実行の依頼を再投稿してください。</value></data>
+  <data name="WorkspaceOutsideTrustedRootsShort" xml:space="preserve"><value>作業フォルダーが信頼フォルダーの範囲外です。</value></data>
+  <data name="InboxApprovalRequiredAgain" xml:space="preserve"><value>会話の実行設定が変わったため、改めて承認が必要です。</value></data>
+  <data name="InboxNewConversation" xml:space="preserve"><value>新規会話（Codex・Claude Codeでは継続先を保存します）</value></data>
+  <data name="InboxContinueSession" xml:space="preserve"><value>継続セッション: {0}</value></data>
+  <data name="InboxSessionModel" xml:space="preserve"><value>&#10;実行モデル: {0} / 推論レベル: {1}</value></data>
+  <data name="InboxConversationOwner" xml:space="preserve"><value>&#10;会話の所有者: {0}</value></data>
+  <data name="InboxSessionPolicy" xml:space="preserve"><value>&#10;承認: {0} / 結果: {1} / 操作権限: {2}</value></data>
+  <data name="InboxAgentRunning" xml:space="preserve"><value>エージェントを実行しています…</value></data>
+  <data name="UsageRunning" xml:space="preserve"><value>実行中。利用量は完了後に表示します。</value></data>
+  <data name="InboxOutputTruncated" xml:space="preserve"><value>（出力ログの表示上限を超えたため、一部を省略しています。）</value></data>
+  <data name="InboxClaudeLoginRequired" xml:space="preserve"><value>Claude Codeが未ログインのため実行できませんでした。実行結果欄のログイン手順を確認してください。</value></data>
+  <data name="InboxResultReady" xml:space="preserve"><value>実行結果を確認できます。本文を共有する場合は「結果をスレッドに送信」を選択してください。</value></data>
+  <data name="InboxExecutionFailed" xml:space="preserve"><value>実行に失敗しました。実行結果欄のエラーを確認してから再度依頼してください。</value></data>
+  <data name="InboxResultAutoShared" xml:space="preserve"><value>設定に従って結果本文を元のスレッドへ自動返信しました。スレッドの閲覧者全員に公開されます。</value></data>
+  <data name="InboxResultPrivateSuccess" xml:space="preserve"><value>実行を完了しました。結果本文はPC上のみ表示します。会話の設定で共有は無効です。</value></data>
+  <data name="InboxResultPrivateFailed" xml:space="preserve"><value>実行に失敗しました。実行結果欄を確認してください。結果本文の共有は会話の設定で無効です。</value></data>
+  <data name="InboxStatusReplyFailed" xml:space="preserve"><value>実行は終了しましたが、チャットへの状態通知に失敗しました。ローカル結果は保持しています。</value></data>
+  <data name="InboxExecutionCancelled" xml:space="preserve"><value>実行をキャンセルしました。</value></data>
+  <data name="InboxCancelChatNotice" xml:space="preserve"><value>Chat Agent Bridge: PCで実行をキャンセルしました。結果本文は送信していません。</value></data>
+  <data name="InboxExecutionRecordFailed" xml:space="preserve"><value>実行または履歴の記録に失敗しました。作業先を変える場合は !cab folder 絶対パス で変更するか、履歴画面で保存セッションを切り離してから再度依頼してください。ローカル結果も確認してください。</value></data>
+  <data name="InboxRequestRejected" xml:space="preserve"><value>依頼を拒否しました。実行していません。</value></data>
+  <data name="InboxRejectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: PCで依頼を拒否しました。実行していません。</value></data>
+  <data name="InboxRejectRecordFailed" xml:space="preserve"><value>拒否の記録に失敗しました。依頼は実行していません。</value></data>
+  <data name="InboxResultSent" xml:space="preserve"><value>結果本文を元のスレッドへ送信しました。</value></data>
+  <data name="InboxResultSendCancelled" xml:space="preserve"><value>結果の送信をキャンセルしました。</value></data>
+  <data name="InboxResultSendFailed" xml:space="preserve"><value>結果の送信または監査記録に失敗しました。再送前にスレッドを確認してください。</value></data>
+  <data name="InboxExecutionSettingsChanged" xml:space="preserve"><value>実行設定を変更しました。保留中の依頼は実行しません。切断して再接続し、必要な依頼を再投稿してください。</value></data>
+  <data name="InboxPermissionsUnavailable" xml:space="preserve"><value>許可設定を読み込めません。依頼の実行・結果共有を停止しました。設定を修復して再接続してください。</value></data>
+  <data name="InboxExecutionPausedSettingsChanged" xml:space="preserve"><value>許可範囲または実行・会話設定が変更されたため、実行・結果共有を停止しました。設定確認後に再接続・再投稿してください。</value></data>
+  <data name="InboxStatusNoticeFailed" xml:space="preserve"><value>チャットへの状態通知に失敗しました。</value></data>
+  <data name="InboxConnectionNoticeFailed" xml:space="preserve"><value>接続状態のチャット通知に失敗しました。</value></data>
+  <data name="InboxAuditSaveFailed" xml:space="preserve"><value>履歴・監査の保存にも失敗しました。</value></data>
+  <data name="InboxAutomaticExecutionPaused" xml:space="preserve"><value>実行ポリシーを確認できないため自動実行を停止しました。設定・会話の関連付けを確認してください。</value></data>
+  <data name="InboxLongTextTruncated" xml:space="preserve"><value>（長いため省略。全文はPC上で確認してください。）</value></data>
+  <data name="Auto" xml:space="preserve"><value>自動</value></data>
+  <data name="AtStartupOnly" xml:space="preserve"><value>開始時のみ</value></data>
+  <data name="EveryTime" xml:space="preserve"><value>毎回</value></data>
+  <data name="AutoReply" xml:space="preserve"><value>自動返信</value></data>
+  <data name="ManualShareShort" xml:space="preserve"><value>手動共有</value></data>
+  <data name="AutoAllowEdits" xml:space="preserve"><value>編集を自動許可</value></data>
+  <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: 切断します。未実行の依頼・切断中に投稿する依頼は実行されません。再接続の通知後に必要な依頼を再投稿してください。</value></data>
+  <data name="InboxClaudeLoginInstructions" xml:space="preserve"><value>Claude Codeが未ログインです。このWindowsユーザーでターミナルからClaude Codeを起動し、/login を完了してから再度依頼してください。Slackへの再ログインは不要です。</value></data>
+  <data name="InboxUpdatedSessionLabel" xml:space="preserve"><value>継続セッション: {0}&#10;実行モデル: {1} / 推論レベル: {2}</value></data>
+  <data name="InboxExecutionStateChatNotice" xml:space="preserve"><value>Chat Agent Bridge: {0}。結果はローカルのWinUI画面で確認してください。</value></data>
+  <data name="ConfirmDetachTitle" xml:space="preserve"><value>このセッションを切り離しますか？</value></data>
+  <data name="HistoryProvider" xml:space="preserve"><value>提供元: {0}</value></data>
+  <data name="HistoryChannelId" xml:space="preserve"><value>チャンネル ID: {0}</value></data>
+  <data name="HistoryThreadId" xml:space="preserve"><value>スレッド ID: {0}</value></data>
+  <data name="HistoryDetachWarning" xml:space="preserve"><value>この会話と保存済みセッションの関連付けを削除します。実行履歴は残ります。</value></data>
+  <data name="Detach" xml:space="preserve"><value>切り離す</value></data>
+  <data name="EnterModelName" xml:space="preserve"><value>利用できるモデル名を入力</value></data>
+  <data name="NextExecutionModel" xml:space="preserve"><value>次回の実行モデル</value></data>
+  <data name="ReasoningEffortCliOptions" xml:space="preserve"><value>推論の強さ（CLIの候補）</value></data>
+  <data name="HistoryCustomCliUnsupported" xml:space="preserve"><value>このセッションのCLI形式では候補を取得できません。モデル名を直接入力できます。</value></data>
+  <data name="FetchCliModels" xml:space="preserve"><value>CLIモデル候補を取得</value></data>
+  <data name="CancelFetch" xml:space="preserve"><value>取得をキャンセル</value></data>
+  <data name="CliModelSuggestions" xml:space="preserve"><value>CLIが提示したモデル候補</value></data>
+  <data name="SessionModelSuggestions" xml:space="preserve"><value>セッションのモデル候補</value></data>
+  <data name="SessionReasoningOptions" xml:space="preserve"><value>セッションの推論レベル候補</value></data>
+  <data name="FollowAgentSettings" xml:space="preserve"><value>エージェント設定に従います。別モデルを指定した場合はCLIの設定に任せます。</value></data>
+  <data name="SelectedReasoningEffort" xml:space="preserve"><value>選択した推論レベル: {0}</value></data>
+  <data name="UseCliDefaultGetSuggestionsToCheck" xml:space="preserve"><value>CLIの既定値を使用します。モデル候補を取得すると対応状況を確認できます。</value></data>
+  <data name="SavedReasoningUnverified" xml:space="preserve"><value>保存済みの推論レベル: {0}（モデル候補を取得するまで対応状況は未確認です）</value></data>
+  <data name="SavedReasoningNotSupported" xml:space="preserve"><value>保存済みの推論レベル「{0}」はこのモデルの候補にありません。「エージェント設定に従う」か、対応候補を選択してください。</value></data>
+  <data name="SavedReasoning" xml:space="preserve"><value>保存済みの推論レベル: {0}</value></data>
+  <data name="SessionModelDialogIntro" xml:space="preserve"><value>会話: {0}&#10;この会話で次回から使うモデルと推論レベルを指定できます。モデル欄が空ならエージェント設定のモデルを使います。推論レベルが空なら、モデルがエージェント設定と同じ場合は推論レベルも継承し、異なる場合はCLIの既定値を使います。</value></data>
+  <data name="ReasoningEffortOptionsInfo" xml:space="preserve"><value>推論レベルの候補は選択モデルについてCLIが報告した値です。「エージェント設定に従う」では、同じモデルの既定設定を引き継ぎます。</value></data>
+  <data name="CliReportedOptionsInfo" xml:space="preserve"><value>候補はCLIの報告値です。契約上の利用可否は実行時に確認されます。</value></data>
+  <data name="Save" xml:space="preserve"><value>保存</value></data>
+  <data name="SetNextExecutionModel" xml:space="preserve"><value>次回の実行モデルを設定</value></data>
+  <data name="ConversationRequestApproval" xml:space="preserve"><value>この会話の依頼承認</value></data>
+  <data name="ExecutionResultSharing" xml:space="preserve"><value>実行結果の共有</value></data>
+  <data name="AiToolPermission" xml:space="preserve"><value>AIツールの操作許可</value></data>
+  <data name="UseGlobalSettings" xml:space="preserve"><value>全体設定を使う</value></data>
+  <data name="ConversationExecutionPolicy" xml:space="preserve"><value>この会話の実行ポリシー</value></data>
+  <data name="ConversationPolicyIntro" xml:space="preserve"><value>会話: {0}&#10;「全体設定を使う」を選ぶと、承認は{1}、結果共有は{2}、AI操作は{3}になります。</value></data>
+  <data name="ConversationPolicyWarning" xml:space="preserve"><value>自動承認ではこの会話から届く依頼を確認画面なしで実行します。フルアクセスはCLIの許可確認を迂回する場合があります。Claude CodeのモードはOSのサンドボックスを設定しません。「操作ごとに確認」はCodex App Serverだけで利用できます。</value></data>
+  <data name="SetConversationExecutionPolicy" xml:space="preserve"><value>会話ごとの実行ポリシーを設定</value></data>
+  <data name="InboxConfirmWorkspaceTitle" xml:space="preserve"><value>この会話の作業フォルダーを変更しますか？</value></data>
+  <data name="InboxConfirmRunTitle" xml:space="preserve"><value>ローカルエージェントで実行しますか？</value></data>
+  <data name="InboxRunConfirmBody" xml:space="preserve"><value>{0}&#10;スレッド: {1}&#10;{2}&#10;作業フォルダー: {3}&#10;エージェント: {4} {5}&#10;&#10;{6}</value></data>
+  <data name="Change" xml:space="preserve"><value>変更</value></data>
+  <data name="Run" xml:space="preserve"><value>実行</value></data>
+  <data name="ConfirmSendResultTitle" xml:space="preserve"><value>結果本文をチャットに送信しますか？</value></data>
+  <data name="ConfirmSendResultBody" xml:space="preserve"><value>この結果はスレッドの閲覧者全員に公開されます。依頼者だけへのDMではありません。&#10;送信先: {0}&#10;スレッド: {1}&#10;&#10;{2}</value></data>
+  <data name="ChooseThisFolder" xml:space="preserve"><value>このフォルダーを選択</value></data>
+  <data name="FolderPickFailed" xml:space="preserve"><value>フォルダーを選択できませんでした</value></data>
+  <data name="CannotConnect" xml:space="preserve"><value>接続できません</value></data>
+  <data name="WaitForExecutionToFinish" xml:space="preserve"><value>実行中の作業が終わってから接続してください。</value></data>
+  <data name="ConnectionFailed" xml:space="preserve"><value>接続できませんでした</value></data>
+  <data name="CheckConnectionAndNetwork" xml:space="preserve"><value>接続情報とネットワークを確認して再接続してください。</value></data>
+</root>

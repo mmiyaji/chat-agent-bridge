@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ApprovalPending" xml:space="preserve"><value>Awaiting approval</value></data>
+  <data name="ApprovalRunning" xml:space="preserve"><value>Running</value></data>
+  <data name="ApprovalCompleted" xml:space="preserve"><value>Completed</value></data>
+  <data name="ApprovalFailed" xml:space="preserve"><value>Failed ({0})</value></data>
+  <data name="ApprovalCancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="ApprovalRejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="ApprovalExecutionError" xml:space="preserve"><value>Execution or history error</value></data>
+  <data name="ApprovalCancelledPermission" xml:space="preserve"><value>Permission revoked; execution unavailable</value></data>
+  <data name="ApprovalPermissionUnavailable" xml:space="preserve"><value>Permission settings unavailable; execution disabled</value></data>
+  <data name="ApprovalPreparing" xml:space="preserve"><value>Preparing automatic execution</value></data>
+  <data name="ApprovalConnectionEnded" xml:space="preserve"><value>Connection ended; receive the request again</value></data>
+  <data name="ApprovalWorkspaceNeedsResubmit" xml:space="preserve"><value>Workspace changed; resubmit request</value></data>
+  <data name="ApprovalWorkspaceChanged" xml:space="preserve"><value>Workspace changed</value></data>
+  <data name="ApprovalWorkspaceChangeFailed" xml:space="preserve"><value>Workspace change failed</value></data>
+  <data name="AppServerApprovalPrompt" xml:space="preserve"><value>Codex is requesting permission for the following action. Review the details.</value></data>
+  <data name="Method" xml:space="preserve"><value>Method</value></data>
+  <data name="Thread" xml:space="preserve"><value>Thread</value></data>
+  <data name="Turn" xml:space="preserve"><value>Turn</value></data>
+  <data name="Item" xml:space="preserve"><value>Item</value></data>
+  <data name="Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Command" xml:space="preserve"><value>Command</value></data>
+  <data name="WorkingFolder" xml:space="preserve"><value>Working folder</value></data>
+  <data name="AllowOperation" xml:space="preserve"><value>Allow action</value></data>
+  <data name="Allow" xml:space="preserve"><value>Allow</value></data>
+  <data name="Deny" xml:space="preserve"><value>Deny</value></data>
+  <data name="Other" xml:space="preserve"><value>Other</value></data>
+  <data name="EnterAnswer" xml:space="preserve"><value>Enter an answer</value></data>
+  <data name="AnswerToCodex" xml:space="preserve"><value>Answer Codex</value></data>
+  <data name="Send" xml:space="preserve"><value>Send</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="None" xml:space="preserve"><value>(none)</value></data>
+  <data name="InputMetadata" xml:space="preserve"><value>Thread: {0} | Turn: {1} | Item: {2}</value></data>
+  <data name="StartupEnabled" xml:space="preserve"><value>Starts when you sign in to Windows.</value></data>
+  <data name="StartupDisabled" xml:space="preserve"><value>Does not start when you sign in to Windows.</value></data>
+  <data name="StartupDisabledByUser" xml:space="preserve"><value>Disabled in Task Manager. To enable it again, turn it on under Task Manager &gt; Startup apps.</value></data>
+  <data name="StartupDisabledByPolicy" xml:space="preserve"><value>Automatic startup is disabled by Windows policy.</value></data>
+  <data name="StartupUnavailable" xml:space="preserve"><value>Windows startup is unavailable in this environment.</value></data>
+  <data name="StartupChangeError" xml:space="preserve"><value>Could not change the Windows startup setting. Confirm that the app is running as a packaged app.</value></data>
+  <data name="StartupTaskUnavailable" xml:space="preserve"><value>The Windows startup task is unavailable. Configure this from the packaged app.</value></data>
+  <data name="ModelCatalogAvailable" xml:space="preserve"><value>Fetch suggestions when needed. These come from the CLI; access rights and pricing are not guaranteed.</value></data>
+  <data name="ModelCatalogCancelledLeaving" xml:space="preserve"><value>Model suggestions were canceled because you left this screen.</value></data>
+  <data name="ModelCatalogSettingsChanged" xml:space="preserve"><value>Settings changed. Fetch suggestions again.</value></data>
+  <data name="ModelCatalogLoading" xml:space="preserve"><value>Fetching model suggestions from the CLI…</value></data>
+  <data name="ModelCatalogUnsupported" xml:space="preserve"><value>This CLI does not provide suggestions. Enter a model name directly.</value></data>
+  <data name="ModelCatalogEmpty" xml:space="preserve"><value>No model suggestions were returned. You can enter a model name directly.</value></data>
+  <data name="ModelCatalogFound" xml:space="preserve"><value>{0} suggestions are available. Select one to fill in the model name.</value></data>
+  <data name="ModelCatalogCancelled" xml:space="preserve"><value>Fetching model suggestions was canceled.</value></data>
+  <data name="ModelCatalogFailed" xml:space="preserve"><value>Could not fetch suggestions. Check the CLI settings or enter a model name directly.</value></data>
+  <data name="PolicyDocument" xml:space="preserve"><value>{0}{1}Version: {2}</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="PrivacyPolicy" xml:space="preserve"><value>Privacy Policy</value></data>
+  <data name="TermsOfUse" xml:space="preserve"><value>Terms of Use</value></data>
+  <data name="NotificationNotInitialized" xml:space="preserve"><value>Windows notifications have not been initialized yet.</value></data>
+  <data name="NotificationDisabled" xml:space="preserve"><value>Windows notifications are disabled ({0}). Check Windows notification settings.</value></data>
+  <data name="NotificationAvailable" xml:space="preserve"><value>Windows notifications are available.</value></data>
+  <data name="NotificationInitializeFailed" xml:space="preserve"><value>Could not initialize Windows notifications: {0}</value></data>
+  <data name="NotificationShowFailed" xml:space="preserve"><value>Could not show a Windows notification. Check Windows notification settings.</value></data>
+  <data name="NotificationPendingShown" xml:space="preserve"><value>Showed a pending approval notification. It expires in 5 minutes.</value></data>
+  <data name="NotificationShowFailedWithError" xml:space="preserve"><value>Could not show a Windows notification: {0}</value></data>
+  <data name="NotificationShutdownFailed" xml:space="preserve"><value>Could not finish shutting down Windows notifications: {0}</value></data>
+  <data name="NotificationStopped" xml:space="preserve"><value>Windows notifications have stopped.</value></data>
+  <data name="NotificationChatRequestTitle" xml:space="preserve"><value>Chat request</value></data>
+  <data name="NotificationChatRequestBody" xml:space="preserve"><value>A chat request is waiting for a response.</value></data>
+  <data name="NotificationAiApprovalTitle" xml:space="preserve"><value>AI action approval</value></data>
+  <data name="NotificationAiApprovalBody" xml:space="preserve"><value>Approval runs the action using the saved PC settings.</value></data>
+  <data name="ApproveAndRun" xml:space="preserve"><value>Approve and run</value></data>
+  <data name="NotificationDispatchFailed" xml:space="preserve"><value>Could not dispatch the Windows notification action to the UI thread.</value></data>
+  <data name="NotificationExpiredOpenApp" xml:space="preserve"><value>The notification expired. Open the app to check the latest status.</value></data>
+  <data name="NotificationActionFailed" xml:space="preserve"><value>Could not complete the Windows notification action: {0}</value></data>
+  <data name="NotificationExpired" xml:space="preserve"><value>The Windows notification expired.</value></data>
+  <data name="NotificationCloseFailed" xml:space="preserve"><value>Could not close the Windows notification: {0}</value></data>
+  <data name="NotificationCloseDispatchFailed" xml:space="preserve"><value>Could not dispatch the Windows notification close action to the UI thread.</value></data>
+  <data name="HistoryExecutionRunning" xml:space="preserve"><value>Running or previously interrupted</value></data>
+  <data name="HistoryExecutionCompleted" xml:space="preserve"><value>Completed</value></data>
+  <data name="HistoryExecutionFailed" xml:space="preserve"><value>Failed</value></data>
+  <data name="HistoryExecutionCancelled" xml:space="preserve"><value>Canceled</value></data>
+  <data name="HistoryExecutionInterrupted" xml:space="preserve"><value>Interrupted</value></data>
+  <data name="HistoryWorkspace" xml:space="preserve"><value>Workspace: {0}</value></data>
+  <data name="HistorySessionId" xml:space="preserve"><value>Session ID: {0}</value></data>
+  <data name="HistoryModel" xml:space="preserve"><value>Selected model: {0}</value></data>
+  <data name="HistoryReasoning" xml:space="preserve"><value>Reasoning effort: {0}</value></data>
+  <data name="HistoryExecutionConversation" xml:space="preserve"><value>Conversation: channel {0} / thread {1} / user {2}</value></data>
+  <data name="HistoryAuditConversation" xml:space="preserve"><value>Conversation: channel {0} / thread {1}</value></data>
+  <data name="Local" xml:space="preserve"><value>Local</value></data>
+  <data name="UnknownProvider" xml:space="preserve"><value>Unknown provider</value></data>
+  <data name="AuditReceived" xml:space="preserve"><value>Request received</value></data>
+  <data name="AuditApproved" xml:space="preserve"><value>Approved</value></data>
+  <data name="AuditRejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="AuditStarted" xml:space="preserve"><value>Execution started</value></data>
+  <data name="AuditCompleted" xml:space="preserve"><value>Execution completed</value></data>
+  <data name="AuditFailed" xml:space="preserve"><value>Execution failed</value></data>
+  <data name="AuditCancelled" xml:space="preserve"><value>Execution canceled</value></data>
+  <data name="AuditReplyFailed" xml:space="preserve"><value>Status notification failed</value></data>
+  <data name="AuditReplySent" xml:space="preserve"><value>Result sent</value></data>
+  <data name="AuditDetached" xml:space="preserve"><value>Session detached</value></data>
+  <data name="AuditWorkspaceChanged" xml:space="preserve"><value>Workspace changed</value></data>
+  <data name="AuditOther" xml:space="preserve"><value>Other action</value></data>
+  <data name="HistorySessionConversation" xml:space="preserve"><value>{0} / {1}{2}Conversation owner: {3}</value></data>
+  <data name="LegacyUnknownOwner" xml:space="preserve"><value>Legacy record; owner unknown (will not continue automatically)</value></data>
+  <data name="DefaultModel" xml:space="preserve"><value>Default model</value></data>
+  <data name="CliDefault" xml:space="preserve"><value>CLI default</value></data>
+  <data name="HistoryNextModelDefault" xml:space="preserve"><value>Next execution model: use default</value></data>
+  <data name="HistoryNextModel" xml:space="preserve"><value>Next execution model: {0}</value></data>
+  <data name="HistoryNextReasoning" xml:space="preserve"><value>Next reasoning effort: {0}</value></data>
+  <data name="InheritAgentEffort" xml:space="preserve"><value>Inherit agent setting (CLI default if the model differs)</value></data>
+  <data name="HistoryExecutionPolicy" xml:space="preserve"><value>Conversation policy: approval {0} / results {1} / AI actions {2}</value></data>
+  <data name="AskEveryTime" xml:space="preserve"><value>Ask every time</value></data>
+  <data name="AskFirstTime" xml:space="preserve"><value>Ask first time only</value></data>
+  <data name="AutoApprove" xml:space="preserve"><value>Automatic approval</value></data>
+  <data name="ManualShare" xml:space="preserve"><value>Review and share manually</value></data>
+  <data name="AutoShare" xml:space="preserve"><value>Share automatically</value></data>
+  <data name="NoSharing" xml:space="preserve"><value>Do not share</value></data>
+  <data name="GlobalSetting" xml:space="preserve"><value>Global setting</value></data>
+  <data name="ReadAndPlanOnly" xml:space="preserve"><value>Read and plan only</value></data>
+  <data name="AutoAllowWorkspaceEdits" xml:space="preserve"><value>Automatically allow edits in the workspace</value></data>
+  <data name="FullAccess" xml:space="preserve"><value>Full access</value></data>
+  <data name="AskPerAction" xml:space="preserve"><value>Ask for each action</value></data>
+  <data name="HistoryLoading" xml:space="preserve"><value>Loading history and sessions.</value></data>
+  <data name="HistoryRefreshing" xml:space="preserve"><value>Refreshing history and sessions…</value></data>
+  <data name="HistoryCounts" xml:space="preserve"><value>{0} executions, {1} sessions, {2} audit events</value></data>
+  <data name="HistoryLoadFailed" xml:space="preserve"><value>Could not load history: {0}</value></data>
+  <data name="HistoryDetaching" xml:space="preserve"><value>Detaching session…</value></data>
+  <data name="HistoryDetachedAuditFailed" xml:space="preserve"><value>Session detached, but the audit record could not be saved. Execution history is retained.</value></data>
+  <data name="HistoryDetached" xml:space="preserve"><value>Session detached. Execution history is retained.</value></data>
+  <data name="HistoryRefreshAfterDetachFailed" xml:space="preserve"><value>{0} The detach completed, but the list could not be refreshed.</value></data>
+  <data name="HistoryDetachFailed" xml:space="preserve"><value>Could not detach session: {0}</value></data>
+  <data name="HistoryPolicySaved" xml:space="preserve"><value>Saved this conversation's execution policy.</value></data>
+  <data name="HistoryPolicySaveFailed" xml:space="preserve"><value>Could not save this conversation's execution policy: {0}</value></data>
+  <data name="HistoryModelSaved" xml:space="preserve"><value>Saved the next execution model and updated reasoning effort.</value></data>
+  <data name="HistoryModelSaveFailed" xml:space="preserve"><value>Could not save the next execution model. Check that the session still exists.</value></data>
+  <data name="HistorySuccessCounts" xml:space="preserve"><value>{0} {1} executions, {2} sessions, {3} audit events</value></data>
+  <data name="WorkspacePathInstruction" xml:space="preserve"><value>Enter an existing absolute folder path on the first line, for example: !cab folder C:\Projects\my-app. Paths with spaces may be enclosed in double quotes.</value></data>
+  <data name="WorkspaceOutsideTrustedRoots" xml:space="preserve"><value>The destination is outside the trusted folders. In the PC agent settings, check and save an allowed parent folder, then reconnect.</value></data>
+  <data name="WorkspaceChangePrompt" xml:space="preserve"><value>Change workspace (the AI will not run)&#10;Before: {0}&#10;After: {1}&#10;Owner: {2}&#10;Applies only to this user and thread. Saved conversation, model, and approval overrides will be cleared, and the next request will start a new AI session. Execution history will remain.</value></data>
+  <data name="WorkspaceChangedDuringConfirmation" xml:space="preserve"><value>The workspace changed during confirmation. Check the destination again and resubmit the request.</value></data>
+  <data name="WorkspaceChangedOutput" xml:space="preserve"><value>Changed the workspace to {0}. The next request will start a new AI conversation.</value></data>
+  <data name="WorkspaceChangeNoUsage" xml:space="preserve"><value>Only settings changed. No AI call was made and no tokens were consumed.</value></data>
+  <data name="WorkspaceChangedChatReply" xml:space="preserve"><value>Chat Agent Bridge: Changed this conversation's workspace to {0}. The next request will start a new AI conversation.</value></data>
+  <data name="WorkspaceChangeSucceeded" xml:space="preserve"><value>Changed the workspace for this user and thread.</value></data>
+  <data name="WorkspaceSavedNotificationInterrupted" xml:space="preserve"><value>The workspace change was saved, but chat notification was interrupted because the connection closed.</value></data>
+  <data name="WorkspaceSavedButAuditOrNotificationFailed" xml:space="preserve"><value>The workspace change was saved, but recording or chat notification failed.</value></data>
+  <data name="WorkspaceChangeFailed" xml:space="preserve"><value>Could not change the workspace. Check the destination and trusted folders in the execution result area.</value></data>
+  <data name="WorkspaceChangeFailedChatReply" xml:space="preserve"><value>Chat Agent Bridge: Could not change the workspace. On the PC, check the absolute path, that the folder exists, and that it is trusted. The AI was not run.</value></data>
+  <data name="InboxSessionPreflight" xml:space="preserve"><value>Checking the session before execution</value></data>
+  <data name="InboxDisconnected" xml:space="preserve"><value>Disconnected. Save connection settings before connecting.</value></data>
+  <data name="InboxOutputIntro" xml:space="preserve"><value>Execution results appear here. Requests and result sharing follow the conversation's approval and sharing settings.</value></data>
+  <data name="UsageAfterExecution" xml:space="preserve"><value>Usage appears after execution.</value></data>
+  <data name="InboxPreparingConnection" xml:space="preserve"><value>Preparing connection…</value></data>
+  <data name="InboxAllowedUsersRequired" xml:space="preserve"><value>Add and save allowed user IDs in the connection settings. Requests are not accepted when the list is empty.</value></data>
+  <data name="WorkspaceConfigureAndSave" xml:space="preserve"><value>Set a workspace and save the settings.</value></data>
+  <data name="InboxConnectedWaiting" xml:space="preserve"><value>Connected. Waiting for requests from allowed users. Resubmit requests sent while disconnected.</value></data>
+  <data name="InboxConnectedChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Connected. Requests from allowed users are checked on the PC before execution. Requests posted while disconnected are not received; resubmit any you still need.</value></data>
+  <data name="InboxConnectingWaiting" xml:space="preserve"><value>Connecting and waiting for requests. Failures will appear here.</value></data>
+  <data name="InboxConnectionFailed" xml:space="preserve"><value>Could not connect. Check the saved workspace and connection settings.</value></data>
+  <data name="InboxOverflow" xml:space="preserve"><value>Not accepted because the limit was reached: {0}. Latest: {1} / {2} / {3}. Resend from chat after processing.</value></data>
+  <data name="InboxRequestReceived" xml:space="preserve"><value>Request received from {0}. Check the pending approval.</value></data>
+  <data name="InboxConnectionEnded" xml:space="preserve"><value>The connection ended. Reconnect and resubmit any unexecuted requests.</value></data>
+  <data name="InboxDisconnectedNotice" xml:space="preserve"><value>Disconnected. Requests sent while disconnected are not received. Reconnect and resubmit any unexecuted requests.</value></data>
+  <data name="InboxReconnectFailed" xml:space="preserve"><value>Connection failed. Check credentials, destination, and network, then reconnect and resubmit any unexecuted requests.</value></data>
+  <data name="WorkspaceOutsideTrustedRootsShort" xml:space="preserve"><value>The workspace is outside the trusted folders.</value></data>
+  <data name="InboxApprovalRequiredAgain" xml:space="preserve"><value>Conversation execution settings changed, so approval is required again.</value></data>
+  <data name="InboxNewConversation" xml:space="preserve"><value>New conversation (Codex and Claude Code save the continuation session)</value></data>
+  <data name="InboxContinueSession" xml:space="preserve"><value>Continuing session: {0}</value></data>
+  <data name="InboxSessionModel" xml:space="preserve"><value>&#10;Execution model: {0} / reasoning effort: {1}</value></data>
+  <data name="InboxConversationOwner" xml:space="preserve"><value>&#10;Conversation owner: {0}</value></data>
+  <data name="InboxSessionPolicy" xml:space="preserve"><value>&#10;Approval: {0} / results: {1} / action permissions: {2}</value></data>
+  <data name="InboxAgentRunning" xml:space="preserve"><value>Agent is running…</value></data>
+  <data name="UsageRunning" xml:space="preserve"><value>Running. Usage will appear when complete.</value></data>
+  <data name="InboxOutputTruncated" xml:space="preserve"><value>(Some output was omitted because it exceeded the display limit.)</value></data>
+  <data name="InboxClaudeLoginRequired" xml:space="preserve"><value>Could not run because Claude Code is not logged in. Check the login instructions in the execution results.</value></data>
+  <data name="InboxResultReady" xml:space="preserve"><value>The result is ready. To share its text, select “Send result to thread.”</value></data>
+  <data name="InboxExecutionFailed" xml:space="preserve"><value>Execution failed. Check the error in the results and submit the request again.</value></data>
+  <data name="InboxResultAutoShared" xml:space="preserve"><value>The result text was automatically sent to the original thread as configured. It is visible to everyone who can view that thread.</value></data>
+  <data name="InboxResultPrivateSuccess" xml:space="preserve"><value>Execution completed. The result text is shown only on this PC because sharing is disabled in the conversation settings.</value></data>
+  <data name="InboxResultPrivateFailed" xml:space="preserve"><value>Execution failed. Check the results. Sharing result text is disabled in the conversation settings.</value></data>
+  <data name="InboxStatusReplyFailed" xml:space="preserve"><value>Execution ended, but the chat status notice failed. The local result is retained.</value></data>
+  <data name="InboxExecutionCancelled" xml:space="preserve"><value>Execution canceled.</value></data>
+  <data name="InboxCancelChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Execution was canceled on the PC. The result text was not sent.</value></data>
+  <data name="InboxExecutionRecordFailed" xml:space="preserve"><value>Execution or history recording failed. To change the workspace, use !cab folder followed by an absolute path, or detach the saved session in History, then resubmit. Check the local result too.</value></data>
+  <data name="InboxRequestRejected" xml:space="preserve"><value>Request rejected. It was not run.</value></data>
+  <data name="InboxRejectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Request rejected on the PC. It was not run.</value></data>
+  <data name="InboxRejectRecordFailed" xml:space="preserve"><value>Could not record the rejection. The request was not run.</value></data>
+  <data name="InboxResultSent" xml:space="preserve"><value>Result text sent to the original thread.</value></data>
+  <data name="InboxResultSendCancelled" xml:space="preserve"><value>Sending the result was canceled.</value></data>
+  <data name="InboxResultSendFailed" xml:space="preserve"><value>Could not send the result or save the audit record. Check the thread before resending.</value></data>
+  <data name="InboxExecutionSettingsChanged" xml:space="preserve"><value>Execution settings changed. Pending requests will not run. Disconnect, reconnect, and resubmit any needed requests.</value></data>
+  <data name="InboxPermissionsUnavailable" xml:space="preserve"><value>Could not load permission settings. Request execution and result sharing are stopped. Repair the settings and reconnect.</value></data>
+  <data name="InboxExecutionPausedSettingsChanged" xml:space="preserve"><value>Execution and result sharing stopped because access scope or execution and conversation settings changed. Check the settings, reconnect, and resubmit.</value></data>
+  <data name="InboxStatusNoticeFailed" xml:space="preserve"><value>Chat status notification failed.</value></data>
+  <data name="InboxConnectionNoticeFailed" xml:space="preserve"><value>Chat connection status notification failed.</value></data>
+  <data name="InboxAuditSaveFailed" xml:space="preserve"><value>Could not save history or audit data.</value></data>
+  <data name="InboxAutomaticExecutionPaused" xml:space="preserve"><value>Automatic execution stopped because the execution policy could not be verified. Check settings and conversation associations.</value></data>
+  <data name="InboxLongTextTruncated" xml:space="preserve"><value>(Text is long; the full content is available on the PC.)</value></data>
+  <data name="Auto" xml:space="preserve"><value>Automatic</value></data>
+  <data name="AtStartupOnly" xml:space="preserve"><value>At start only</value></data>
+  <data name="EveryTime" xml:space="preserve"><value>Every time</value></data>
+  <data name="AutoReply" xml:space="preserve"><value>Automatic reply</value></data>
+  <data name="ManualShareShort" xml:space="preserve"><value>Share manually</value></data>
+  <data name="AutoAllowEdits" xml:space="preserve"><value>Automatically allow edits</value></data>
+  <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Disconnecting. Unexecuted requests and requests posted while disconnected will not run. Resubmit any needed requests after the reconnect notice.</value></data>
+  <data name="InboxClaudeLoginInstructions" xml:space="preserve"><value>Claude Code is not logged in. In this Windows user account, open Claude Code in a terminal and complete /login, then submit the request again. You do not need to log in to Slack again.</value></data>
+  <data name="InboxUpdatedSessionLabel" xml:space="preserve"><value>Continuing session: {0}&#10;Execution model: {1} / reasoning effort: {2}</value></data>
+  <data name="InboxExecutionStateChatNotice" xml:space="preserve"><value>Chat Agent Bridge: {0}. Check the result in the local WinUI app.</value></data>
+  <data name="ConfirmDetachTitle" xml:space="preserve"><value>Detach this session?</value></data>
+  <data name="HistoryProvider" xml:space="preserve"><value>Provider: {0}</value></data>
+  <data name="HistoryChannelId" xml:space="preserve"><value>Channel ID: {0}</value></data>
+  <data name="HistoryThreadId" xml:space="preserve"><value>Thread ID: {0}</value></data>
+  <data name="HistoryDetachWarning" xml:space="preserve"><value>This removes the association between this conversation and its saved session. Execution history will remain.</value></data>
+  <data name="Detach" xml:space="preserve"><value>Detach</value></data>
+  <data name="EnterModelName" xml:space="preserve"><value>Enter an available model name</value></data>
+  <data name="NextExecutionModel" xml:space="preserve"><value>Next execution model</value></data>
+  <data name="ReasoningEffortCliOptions" xml:space="preserve"><value>Reasoning effort (CLI options)</value></data>
+  <data name="HistoryCustomCliUnsupported" xml:space="preserve"><value>This session's CLI format does not provide suggestions. You can enter a model name directly.</value></data>
+  <data name="FetchCliModels" xml:space="preserve"><value>Fetch CLI model suggestions</value></data>
+  <data name="CancelFetch" xml:space="preserve"><value>Cancel fetch</value></data>
+  <data name="CliModelSuggestions" xml:space="preserve"><value>Model suggestions from CLI</value></data>
+  <data name="SessionModelSuggestions" xml:space="preserve"><value>Session model suggestions</value></data>
+  <data name="SessionReasoningOptions" xml:space="preserve"><value>Session reasoning effort options</value></data>
+  <data name="FollowAgentSettings" xml:space="preserve"><value>Follow agent settings. If you choose a different model, its CLI settings apply.</value></data>
+  <data name="SelectedReasoningEffort" xml:space="preserve"><value>Selected reasoning effort: {0}</value></data>
+  <data name="UseCliDefaultGetSuggestionsToCheck" xml:space="preserve"><value>Use the CLI default. Fetch model suggestions to check support.</value></data>
+  <data name="SavedReasoningUnverified" xml:space="preserve"><value>Saved reasoning effort: {0} (support is unverified until model suggestions are fetched)</value></data>
+  <data name="SavedReasoningNotSupported" xml:space="preserve"><value>The saved reasoning effort “{0}” is not among this model's options. Choose “Follow agent settings” or select a supported option.</value></data>
+  <data name="SavedReasoning" xml:space="preserve"><value>Saved reasoning effort: {0}</value></data>
+  <data name="SessionModelDialogIntro" xml:space="preserve"><value>Conversation: {0}&#10;Choose the model and reasoning effort to use for future executions in this conversation. Leave the model field empty to use the agent's model. If the reasoning effort is empty, it is inherited when the model matches the agent setting; otherwise the CLI default is used.</value></data>
+  <data name="ReasoningEffortOptionsInfo" xml:space="preserve"><value>Reasoning effort options are reported by the CLI for the selected model. “Follow agent settings” inherits that model's default setting.</value></data>
+  <data name="CliReportedOptionsInfo" xml:space="preserve"><value>These options are reported by the CLI. Contractual availability is checked at execution time.</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="SetNextExecutionModel" xml:space="preserve"><value>Set next execution model</value></data>
+  <data name="ConversationRequestApproval" xml:space="preserve"><value>Request approval for this conversation</value></data>
+  <data name="ExecutionResultSharing" xml:space="preserve"><value>Share execution results</value></data>
+  <data name="AiToolPermission" xml:space="preserve"><value>AI tool permission</value></data>
+  <data name="UseGlobalSettings" xml:space="preserve"><value>Use global settings</value></data>
+  <data name="ConversationExecutionPolicy" xml:space="preserve"><value>Execution policy for this conversation</value></data>
+  <data name="ConversationPolicyIntro" xml:space="preserve"><value>Conversation: {0}&#10;When “Use global settings” is selected, approval is {1}, result sharing is {2}, and AI actions are {3}.</value></data>
+  <data name="ConversationPolicyWarning" xml:space="preserve"><value>Automatic approval runs requests from this conversation without a confirmation screen. Full access may bypass CLI permission checks. Claude Code modes do not configure the OS sandbox. “Ask for each action” is available only with Codex App Server.</value></data>
+  <data name="SetConversationExecutionPolicy" xml:space="preserve"><value>Set execution policy for this conversation</value></data>
+  <data name="InboxConfirmWorkspaceTitle" xml:space="preserve"><value>Change this conversation's workspace?</value></data>
+  <data name="InboxConfirmRunTitle" xml:space="preserve"><value>Run with the local agent?</value></data>
+  <data name="InboxRunConfirmBody" xml:space="preserve"><value>{0}&#10;Thread: {1}&#10;{2}&#10;Workspace: {3}&#10;Agent: {4} {5}&#10;&#10;{6}</value></data>
+  <data name="Change" xml:space="preserve"><value>Change</value></data>
+  <data name="Run" xml:space="preserve"><value>Run</value></data>
+  <data name="ConfirmSendResultTitle" xml:space="preserve"><value>Send result text to chat?</value></data>
+  <data name="ConfirmSendResultBody" xml:space="preserve"><value>This result will be visible to everyone who can view the thread, not only the requester via DM.&#10;Destination: {0}&#10;Thread: {1}&#10;&#10;{2}</value></data>
+  <data name="ChooseThisFolder" xml:space="preserve"><value>Select this folder</value></data>
+  <data name="FolderPickFailed" xml:space="preserve"><value>Could not select folder</value></data>
+  <data name="CannotConnect" xml:space="preserve"><value>Cannot connect</value></data>
+  <data name="WaitForExecutionToFinish" xml:space="preserve"><value>Wait for the current execution to finish before connecting.</value></data>
+  <data name="ConnectionFailed" xml:space="preserve"><value>Could not connect</value></data>
+  <data name="CheckConnectionAndNetwork" xml:space="preserve"><value>Check the connection settings and network, then reconnect.</value></data>
+</root>

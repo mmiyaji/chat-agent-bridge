@@ -1,6 +1,7 @@
 using ChatAgentBridge.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ChatAgentBridge_Desktop.Localization;
 
 namespace ChatAgentBridge_Desktop.ViewModels;
 
@@ -13,9 +14,9 @@ public partial class MainPageViewModel
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(CheckCliCommand)), NotifyCanExecuteChangedFor(nameof(CancelCliCheckCommand))]
     public partial bool IsCheckingCli { get; set; }
     [ObservableProperty] public partial bool CliCheckSucceeded { get; set; }
-    [ObservableProperty] public partial string CliVersion { get; set; } = "未確認";
+    [ObservableProperty] public partial string CliVersion { get; set; } = ViewModelText.Get("NotChecked");
     [ObservableProperty] public partial string CliExecutablePath { get; set; } = "";
-    [ObservableProperty] public partial string CliCheckSummary { get; set; } = "CLIをチェックすると、起動・バージョン・モデル候補を確認できます。";
+    [ObservableProperty] public partial string CliCheckSummary { get; set; } = ViewModelText.Get("CliCheckIntro");
 
     partial void OnIsCheckingCliChanged(bool value)
     {
@@ -37,9 +38,9 @@ public partial class MainPageViewModel
                 CancelCliCheck();
                 CliCheckSucceeded = false;
                 _checkedCliSignature = null;
-                CliVersion = "未確認";
+                CliVersion = ViewModelText.Get("NotChecked");
                 CliExecutablePath = "";
-                CliCheckSummary = "CLIまたは作業フォルダーの設定が変わりました。もう一度チェックしてください。";
+                CliCheckSummary = ViewModelText.Get("CliSettingsChanged");
             }
         }
         if (property is nameof(AgentProvider) or nameof(AgentModel) or nameof(AgentReasoningEffort) or nameof(WorkspaceRoot) or nameof(ChatApprovalMode) or nameof(ChatResultMode) or nameof(AgentPermissionMode) or nameof(AutoConnectProvider))
@@ -55,10 +56,10 @@ public partial class MainPageViewModel
         var signature = CurrentCliSignature();
         CliCheckSucceeded = false;
         _checkedCliSignature = null;
-        CliVersion = "確認中…";
+        CliVersion = ViewModelText.Get("Checking");
         CliExecutablePath = "";
-        CliCheckSummary = "CLIの起動とバージョンを確認しています…";
-        ModelCatalog.Invalidate("CLIのチェックと合わせてモデル候補を取得します。");
+        CliCheckSummary = ViewModelText.Get("CheckingCliVersion");
+        ModelCatalog.Invalidate(ViewModelText.Get("FetchingModelsWithCliCheck"));
         IsCheckingCli = true;
         try
         {
@@ -67,20 +68,20 @@ public partial class MainPageViewModel
             if (generation != _cliCheckGeneration || signature != CurrentCliSignature()) return;
             CliVersion = result.Version;
             CliExecutablePath = result.Executable;
-            if (!result.ProviderRecognized) { CliCheckSummary = "バージョン応答はありましたが、このCLIのモデル候補を確認できません。CodexまたはClaude Codeを選んでください。"; return; }
-            CliCheckSummary = "CLIを起動できました。続いてモデル候補を確認しています…";
+            if (!result.ProviderRecognized) { CliCheckSummary = ViewModelText.Get("UnrecognizedCliProvider"); return; }
+            CliCheckSummary = ViewModelText.Get("CliStartedFetchingModels");
             await ModelCatalog.FetchModelsCommand.ExecuteAsync(null);
             if (generation != _cliCheckGeneration || cancellation.IsCancellationRequested || signature != CurrentCliSignature()) return;
-            if (ModelCatalog.Models.Count == 0) { CliCheckSummary = "バージョンは確認できましたが、モデル候補を取得できませんでした。CLIへのログインとネットワークを確認し、再チェックしてください。"; return; }
+            if (ModelCatalog.Models.Count == 0) { CliCheckSummary = ViewModelText.Get("CliModelsUnavailable"); return; }
             ModelCatalog.SelectedModel = ModelCatalog.Models.FirstOrDefault(model => string.Equals(model.Id, AgentModel?.Trim(), StringComparison.Ordinal));
             CliCheckSucceeded = true;
             _checkedCliSignature = signature;
-            CliCheckSummary = $"CLIの起動・種類・バージョンと、{ModelCatalog.Models.Count}件のモデル候補を確認しました。AIの作業実行や利用権限の確認は行っていません。";
+            CliCheckSummary = ViewModelText.Get("CliCheckSucceeded", ModelCatalog.Models.Count);
         }
-        catch (OperationCanceledException) { if (generation == _cliCheckGeneration) CliCheckSummary = "CLIのチェックをキャンセルしました。再実行できます。"; }
+        catch (OperationCanceledException) { if (generation == _cliCheckGeneration) CliCheckSummary = ViewModelText.Get("CliCheckCancelled"); }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or ArgumentException or TimeoutException or System.ComponentModel.Win32Exception)
         {
-            if (generation == _cliCheckGeneration) { CliVersion = "確認できませんでした"; CliCheckSummary = ex is TimeoutException ? "CLIの応答が時間内にありませんでした。CLIの場所とログイン状態を確認し、再実行してください。" : "CLIを確認できませんでした。選択したAIと実行ファイルが合っているか、CLIがインストール済みか確認してください。"; }
+            if (generation == _cliCheckGeneration) { CliVersion = ViewModelText.Get("CliUnconfirmed"); CliCheckSummary = ex is TimeoutException ? ViewModelText.Get("CliTimeout") : ViewModelText.Get("CliCheckFailed"); }
         }
         finally
         {
@@ -99,6 +100,6 @@ public partial class MainPageViewModel
         IsCheckingCli = false;
         CliCheckSucceeded = false;
         _checkedCliSignature = null;
-        CliCheckSummary = "CLIのチェックをキャンセルしました。再実行できます。";
+        CliCheckSummary = ViewModelText.Get("CliCheckCancelled");
     }
 }

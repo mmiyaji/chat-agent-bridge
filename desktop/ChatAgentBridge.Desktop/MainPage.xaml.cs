@@ -1,6 +1,7 @@
 using ChatAgentBridge_Desktop.ViewModels;
 using ChatAgentBridge_Desktop.Inbox;
 using ChatAgentBridge.Core;
+using ChatAgentBridge_Desktop.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -117,8 +118,8 @@ public sealed partial class MainPage : Page
         }
         catch (Exception)
         {
-            ViewModel.StatusTitle = "フォルダーを選択できませんでした";
-            ViewModel.StatusMessage = "作業フォルダー欄に絶対パスを直接入力することもできます。";
+            ViewModel.StatusTitle = ViewModelText.Get("FolderPickerFailedTitle");
+            ViewModel.StatusMessage = ViewModelText.Get("FolderPickerFailedMessage");
             ViewModel.StatusSeverity = "Error";
             ViewModel.IsStatusOpen = true;
         }
@@ -184,7 +185,7 @@ public sealed partial class MainPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "エージェントを実行しますか？",
+            Title = ViewModelText.Get("ExecutionConfirmTitle"),
             Content = new ScrollViewer
             {
                 MaxHeight = 360,
@@ -193,24 +194,24 @@ public sealed partial class MainPage : Page
                     Spacing = 12,
                     Children =
                     {
-                        new TextBlock { Text = "次の内容をローカルエージェントに渡します。", TextWrapping = TextWrapping.Wrap },
-                        new TextBlock { Text = "ワークスペース", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        new TextBlock { Text = ViewModelText.Get("ExecutionConfirmIntro"), TextWrapping = TextWrapping.Wrap },
+                        new TextBlock { Text = ViewModelText.Get("Workspace"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
                         new TextBlock { Text = settings.WorkspaceRoot, TextWrapping = TextWrapping.Wrap },
-                        new TextBlock { Text = "実行ファイルと引数", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        new TextBlock { Text = ViewModelText.Get("ExecutableAndArguments"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
                         new TextBlock { Text = $"{settings.AgentExecutable} {(settings.AgentMode == "app-server" ? "app-server" : settings.AgentArguments)}".Trim(), TextWrapping = TextWrapping.Wrap },
-                        new TextBlock { Text = "モデルと推論レベル", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
-                        new TextBlock { Text = $"{settings.AgentModel ?? "CLIの既定値"} / {settings.AgentReasoningEffort ?? "CLIの既定値"}", TextWrapping = TextWrapping.Wrap },
-                        new TextBlock { Text = "プロンプト", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        new TextBlock { Text = ViewModelText.Get("ModelAndReasoning"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
+                        new TextBlock { Text = $"{settings.AgentModel ?? ViewModelText.Get("DefaultCliValue")} / {settings.AgentReasoningEffort ?? ViewModelText.Get("DefaultCliValue")}", TextWrapping = TextWrapping.Wrap },
+                        new TextBlock { Text = ViewModelText.Get("Prompt"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold },
                         new TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap }
                     }
                 }
             },
-            PrimaryButtonText = "実行",
-            CloseButtonText = "キャンセル",
+            PrimaryButtonText = ViewModelText.Get("Run"),
+            CloseButtonText = ViewModelText.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close
         };
         AutomationProperties.SetAutomationId(dialog, "RunConfirmation");
-        AutomationProperties.SetName(dialog, "エージェント実行の確認");
+        AutomationProperties.SetName(dialog, ViewModelText.Get("ExecutionConfirmAutomationName"));
         return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 }

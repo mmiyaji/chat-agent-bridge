@@ -23,6 +23,21 @@ public sealed class LanguagePreferencesTests
     public void SelectResolvesManualAndSystemPreferences(string? preference, string? systemLanguage, string expected)
         => Assert.Equal(expected, AppLanguage.Select(preference, systemLanguage).Name);
 
+    [Theory]
+    [InlineData("en-US", "Usage: not reported by the provider")]
+    [InlineData("fr-FR", "Usage: not reported by the provider")]
+    [InlineData("ja-JP", "使用量: 未取得（プロバイダーから報告されていません）")]
+    public void EmbeddedResourcesUseJapaneseOrEnglishFallback(string culture, string expected)
+    {
+        var previous = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo(culture);
+            Assert.Equal(expected, CoreText.Get("UsageMissing"));
+        }
+        finally { System.Globalization.CultureInfo.CurrentUICulture = previous; }
+    }
+
     [Fact]
     public async Task MissingPreferenceDefaultsToSystemWithoutTouchingSettings()
     {

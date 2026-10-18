@@ -2,6 +2,8 @@
 
 > This branch develops the native WinUI 3 / C# application. See the [desktop guide (Japanese)](desktop/README.ja.md) and [migration plan](docs/winui-migration-plan.ja.md). The documentation below describes the original TypeScript implementation retained during migration.
 
+The native app supports English and Japanese. By default it uses Japanese when the Windows preferred language is Japanese, and English for every other language. Choose **Language / 表示言語** in the first setup page or Agent settings to override this; restart the app to apply a change. CLI responses and user content retain their original language. See the [Terms of Use](docs/terms.en.md) and [Privacy Policy](docs/privacy-policy.en.md) for the development preview.
+
 Build a standalone Windows x64 executable with `npm run package:exe`. Double-click `release/ChatAgentBridge.exe`, then open the displayed control center URL. Browser launch is opt-in via `--open-browser`. Node.js/npm are not required on the target machine. Agent CLIs still require separate installation. See [executable instructions (Japanese)](docs/executable.ja.md).
 
 The new connection control center manages Slack/Mattermost and local agent connections. Codex uses App Server with native chat approvals and input. See [connection control center](docs/harness-modernization.md).

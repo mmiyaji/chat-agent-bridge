@@ -9,7 +9,7 @@
                 <TextBlock Text="{x:Bind ViewModel.OnboardingTitle, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="OnboardingTitle" />
                 <TextBlock Text="{x:Bind ViewModel.OnboardingDescription, Mode=OneWay}" TextWrapping="Wrap" />
             </StackPanel>
-            <Button Grid.Column="1" Content="後で設定" Command="{x:Bind ViewModel.DeferOnboardingCommand}" VerticalAlignment="Top" AutomationProperties.AutomationId="OnboardingDefer" />
+            <Button Grid.Column="1"  Command="{x:Bind ViewModel.DeferOnboardingCommand}" VerticalAlignment="Top" AutomationProperties.AutomationId="OnboardingDefer"  x:Uid="OnboardingDefer" />
         </Grid>
 
         <ScrollViewer x:Name="WizardScrollViewer" AutomationProperties.AutomationId="WizardScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -22,131 +22,131 @@
                 <ContentControl x:Name="IntroHost" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardIntro), Mode=OneWay}" />
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardAgentStep), Mode=OneWay}">
-                    <TextBlock Text="エージェントと作業場所" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBlock Text="AIが作業する既存フォルダーを選びます。チャットから別の作業先へ変更する場合も、信頼範囲内に限りPCの承認が必要です。" TextWrapping="Wrap" />
+                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock001" />
+                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock002" />
                     <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                        <TextBox Header="作業フォルダー（絶対パス）"
+                        <TextBox
                                  Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 TextWrapping="Wrap" AutomationProperties.AutomationId="WizardWorkspaceRoot" />
-                        <Button Grid.Column="1" Content="フォルダーを選択" Click="PickWorkspaceFolder_Click" VerticalAlignment="Bottom" AutomationProperties.AutomationId="WizardPickWorkspaceFolder" />
+                                 TextWrapping="Wrap" AutomationProperties.AutomationId="WizardWorkspaceRoot"  x:Uid="WizardWorkspaceRoot" />
+                        <Button Grid.Column="1"  Click="PickWorkspaceFolder_Click" VerticalAlignment="Bottom" AutomationProperties.AutomationId="WizardPickWorkspaceFolder"  x:Uid="WizardPickWorkspaceFolder" />
                     </Grid>
-                    <ComboBox Header="使うAI" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentProvider">
+                    <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentProvider" x:Uid="WizardAgentProvider">
                         <ComboBoxItem Content="Codex" Tag="codex" />
                         <ComboBoxItem Content="Claude Code" Tag="claude" />
                     </ComboBox>
-                    <TextBox Header="実行ファイル"
+                    <TextBox
                              Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             PlaceholderText="例: codex または claude"
-                             AutomationProperties.AutomationId="WizardAgentExecutable" />
-                    <ToggleSwitch Header="実行中の操作確認をPCで受け取る（Codexのみ）"
+
+                             AutomationProperties.AutomationId="WizardAgentExecutable"  x:Uid="WizardAgentExecutable" />
+                    <ToggleSwitch
                                   IsOn="{x:Bind ViewModel.UseAppServer, Mode=TwoWay}"
                                   IsEnabled="{x:Bind ViewModel.IsCodexProvider, Mode=OneWay}"
-                                  AutomationProperties.AutomationId="WizardUseAppServer" />
-                    <TextBlock Text="CLIは、このPCでAIを動かすコマンドライン版アプリです。先にインストールしてターミナルからログインしてください。デスクトップ版へのログインとは別です。Codexの操作確認を有効にするとApp Server方式で起動します。" TextWrapping="Wrap" />
+                                  AutomationProperties.AutomationId="WizardUseAppServer"  x:Uid="WizardUseAppServer" />
+                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock003" />
                 </StackPanel>
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardCliStep), Mode=OneWay}">
-                    <TextBlock Text="CLIを確認してモデルを選ぶ" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBlock Text="CLIのバージョンを確認できます。ログインはエージェントのCLIで済ませてください。モデル候補はCLIが返す値です。" TextWrapping="Wrap" />
+                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock004" />
+                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock005" />
                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
-                        <Button Content="CLIをチェック" Command="{x:Bind ViewModel.CheckCliCommand, Mode=OneWay}" IsEnabled="{x:Bind local:OnboardingWizard.Not(ViewModel.IsCheckingCli), Mode=OneWay}" AutomationProperties.AutomationId="CheckCli" />
-                        <Button Content="確認をキャンセル" Command="{x:Bind ViewModel.CancelCliCheckCommand, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" AutomationProperties.AutomationId="CancelCliCheck" />
+                        <Button  Command="{x:Bind ViewModel.CheckCliCommand, Mode=OneWay}" IsEnabled="{x:Bind local:OnboardingWizard.Not(ViewModel.IsCheckingCli), Mode=OneWay}" AutomationProperties.AutomationId="CheckCli"  x:Uid="CheckCli" />
+                        <Button  Command="{x:Bind ViewModel.CancelCliCheckCommand, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" AutomationProperties.AutomationId="CancelCliCheck"  x:Uid="CancelCliCheck" />
                         <ProgressRing IsActive="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" Width="20" Height="20" VerticalAlignment="Center" />
                     </StackPanel>
                     <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliCheckSummary" />
-                    <TextBlock Text="バージョン" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock006" />
                     <TextBlock Text="{x:Bind ViewModel.CliVersion, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliVersion" />
-                    <TextBlock Text="実行ファイルの場所" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock007" />
                     <TextBlock Text="{x:Bind ViewModel.CliExecutablePath, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliExecutablePath" />
                     <StackPanel Spacing="8">
                         <TextBlock Text="{x:Bind ViewModel.ModelCatalog.Status, Mode=OneWay}" TextWrapping="Wrap" />
-                        <ComboBox Header="CLIが提示したモデル候補" PlaceholderText="候補からモデルを選択" ItemsSource="{x:Bind ViewModel.ModelCatalog.Models, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.ModelCatalog.SelectedModel, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardModelCandidates" />
-                        <TextBox Header="モデル名（空欄ならCLIの既定値）" MaxLength="256" Text="{x:Bind ViewModel.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" AutomationProperties.AutomationId="WizardOptionalModel" />
-                        <ComboBox Header="推論の強さ（CLIの候補）" ItemsSource="{x:Bind ViewModel.ReasoningEffortCandidates, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.SelectedReasoningEffort, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardReasoningEffort" />
+                        <ComboBox   ItemsSource="{x:Bind ViewModel.ModelCatalog.Models, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.ModelCatalog.SelectedModel, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardModelCandidates"  x:Uid="WizardModelCandidates" />
+                        <TextBox  MaxLength="256" Text="{x:Bind ViewModel.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" AutomationProperties.AutomationId="WizardOptionalModel"  x:Uid="WizardOptionalModel" />
+                        <ComboBox  ItemsSource="{x:Bind ViewModel.ReasoningEffortCandidates, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.SelectedReasoningEffort, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardReasoningEffort"  x:Uid="WizardReasoningEffort" />
                         <TextBlock Text="{x:Bind ViewModel.ModelEffortStatus, Mode=OneWay}" TextWrapping="Wrap" />
-                        <TextBlock Text="モデルや推論レベルは契約とCLIが対応する範囲で利用できます。未設定ならCLIの既定値を使います。" TextWrapping="Wrap" />
+                        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock008" />
                     </StackPanel>
                 </StackPanel>
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardChatStep), Mode=OneWay}">
-                    <TextBlock Text="チャット接続と許可ユーザー" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <ComboBox Header="接続先" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.OnboardingChatProvider, Mode=TwoWay}" IsEnabled="{x:Bind local:OnboardingWizard.Not(Inbox.IsExecuting), Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatProvider">
+                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock009" />
+                    <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.OnboardingChatProvider, Mode=TwoWay}" IsEnabled="{x:Bind local:OnboardingWizard.Not(Inbox.IsExecuting), Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatProvider" x:Uid="WizardChatProvider">
                         <ComboBoxItem Content="Slack" Tag="slack" />
                         <ComboBoxItem Content="Mattermost" Tag="mattermost" />
                     </ComboBox>
                     <StackPanel Spacing="12" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardSlack), Mode=OneWay}">
-                        <TextBlock Text="Slackの接続情報" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock010" />
                         <StackPanel Spacing="6">
-                            <TextBlock Text="Botトークン（xoxb-で始まる値）" TextWrapping="Wrap" />
-                            <PasswordBox x:Name="SlackBotTokenBox" PasswordChanged="SlackBotTokenBox_PasswordChanged" AutomationProperties.Name="Slack Botトークン" AutomationProperties.AutomationId="WizardSlackBotToken" />
+                            <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock011" />
+                            <PasswordBox x:Name="SlackBotTokenBox" PasswordChanged="SlackBotTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardSlackBotToken"  x:Uid="WizardSlackBotToken" />
                         </StackPanel>
                         <StackPanel Spacing="6">
-                            <TextBlock Text="Appトークン（xapp-で始まる値）" TextWrapping="Wrap" />
-                            <PasswordBox x:Name="SlackAppTokenBox" PasswordChanged="SlackAppTokenBox_PasswordChanged" AutomationProperties.Name="Slack Appトークン" AutomationProperties.AutomationId="WizardSlackAppToken" />
+                            <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock012" />
+                            <PasswordBox x:Name="SlackAppTokenBox" PasswordChanged="SlackAppTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardSlackAppToken"  x:Uid="WizardSlackAppToken" />
                         </StackPanel>
-                        <TextBox Header="許可ユーザーID（必須、1行に1つ）" Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardSlackAllowedUserIds" />
-                        <TextBlock Text="SlackではBotトークン xoxb- とAppトークン xapp- の両方が必要です。許可ユーザーIDが空の場合は、誰からの依頼も受け付けません。" TextWrapping="Wrap" />
-                        <TextBlock Text="許可ユーザーIDは、Slackの自分のプロフィールを開き、その他メニューの「メンバーIDをコピー」で取得します。表示名やメールアドレスではありません。" TextWrapping="Wrap" />
+                        <TextBox  Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardSlackAllowedUserIds"  x:Uid="WizardSlackAllowedUserIds" />
+                        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock013" />
+                        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock014" />
                     </StackPanel>
                     <StackPanel Spacing="12" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardMattermost), Mode=OneWay}">
-                        <TextBlock Text="Mattermostの接続情報" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                        <TextBox Header="サーバーURL" Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com" AutomationProperties.AutomationId="WizardMattermostServerUrl" />
-                        <TextBlock Text="HTTPSのサーバーURLを入力します。HTTPは、このPCで動くサーバー（localhostなど）に限り利用できます。" TextWrapping="Wrap" />
-                        <TextBox Header="チャンネルID" Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="WizardMattermostChannelId" />
+                        <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock015" />
+                        <TextBox  Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com" AutomationProperties.AutomationId="WizardMattermostServerUrl"  x:Uid="WizardMattermostServerUrl" />
+                        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock016" />
+                        <TextBox  Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="WizardMattermostChannelId"  x:Uid="WizardMattermostChannelId" />
                         <StackPanel Spacing="6">
-                            <TextBlock Text="ユーザーアクセストークン" TextWrapping="Wrap" />
-                            <PasswordBox x:Name="MattermostTokenBox" PasswordChanged="MattermostTokenBox_PasswordChanged" AutomationProperties.Name="Mattermostアクセストークン" AutomationProperties.AutomationId="WizardMattermostToken" />
+                            <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock017" />
+                            <PasswordBox x:Name="MattermostTokenBox" PasswordChanged="MattermostTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardMattermostToken"  x:Uid="WizardMattermostToken" />
                         </StackPanel>
-                        <TextBox Header="許可ユーザーID（必須、1行に1つ）" Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardMattermostAllowedUserIds" />
-                        <TextBlock Text="許可ユーザーIDはMattermostのアカウントIDです。表示名ではありません。チャンネルIDはチャンネル情報から確認します。空欄の場合は、誰からの依頼も受け付けません。" TextWrapping="Wrap" />
+                        <TextBox  Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardMattermostAllowedUserIds"  x:Uid="WizardMattermostAllowedUserIds" />
+                        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock018" />
                     </StackPanel>
-                    <TextBlock Text="トークンはこの画面にのみ入力してください。実行結果にトークンを出力しません。" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock019" />
                 </StackPanel>
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardSafetyStep), Mode=OneWay}">
-                    <TextBlock Text="安全設定と接続確認" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBlock Text="チャットから届く依頼の承認方法と、実行後の結果共有を選びます。" TextWrapping="Wrap" />
-                    <ComboBox Header="依頼の承認" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatApprovalMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatApprovalMode">
-                        <ComboBoxItem Content="毎回確認（おすすめ）" Tag="always" />
-                        <ComboBoxItem Content="最初だけ確認" Tag="first" />
-                        <ComboBoxItem Content="自動承認" Tag="auto" />
+                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock020" />
+                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock021" />
+                    <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatApprovalMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatApprovalMode" x:Uid="WizardChatApprovalMode">
+                        <ComboBoxItem  Tag="always"  x:Uid="onboardingOnboardingWizardComboBoxItem001" />
+                        <ComboBoxItem  Tag="first"  x:Uid="onboardingOnboardingWizardComboBoxItem002" />
+                        <ComboBoxItem  Tag="auto"  x:Uid="onboardingOnboardingWizardComboBoxItem003" />
                     </ComboBox>
-                    <TextBlock Text="最初だけ確認では、同じ会話の2回目以降の依頼を自動承認します。自動承認では、会話から届いた依頼を確認画面なしで実行します。" TextWrapping="Wrap" />
-                    <ComboBox Header="実行結果の共有" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatResultMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatResultMode">
-                        <ComboBoxItem Content="手動で確認して共有（おすすめ）" Tag="manual" />
-                        <ComboBoxItem Content="自動共有" Tag="auto" />
-                        <ComboBoxItem Content="共有しない" Tag="none" />
+                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock022" />
+                    <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatResultMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatResultMode" x:Uid="WizardChatResultMode">
+                        <ComboBoxItem  Tag="manual"  x:Uid="onboardingOnboardingWizardComboBoxItem004" />
+                        <ComboBoxItem  Tag="auto"  x:Uid="onboardingOnboardingWizardComboBoxItem005" />
+                        <ComboBoxItem  Tag="none"  x:Uid="onboardingOnboardingWizardComboBoxItem006" />
                     </ComboBox>
-                    <TextBlock Text="自動共有した結果は、元のスレッドを見られる全員に公開されます。内容をPCで確認してから送る場合は「手動で確認して共有」を選びます。" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <ComboBox Header="AIの操作許可" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentPermissionMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentPermissionMode">
-                        <ComboBoxItem Content="CLIの既定値を使う（おすすめ）" Tag="inherit" />
-                        <ComboBoxItem Content="読み取り・計画のみ" Tag="read-only" />
-                        <ComboBoxItem Content="作業フォルダー内の編集を許可" Tag="workspace-write" />
-                        <ComboBoxItem Content="フルアクセス" Tag="full-access" />
-                        <ComboBoxItem Content="操作ごとに確認（Codex App Server）" Tag="ask" IsEnabled="{x:Bind local:OnboardingWizard.SupportsOperationApproval(ViewModel.IsCodexProvider, ViewModel.UseAppServer), Mode=OneWay}" />
+                    <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock023" />
+                    <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentPermissionMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentPermissionMode" x:Uid="WizardAgentPermissionMode">
+                        <ComboBoxItem  Tag="inherit"  x:Uid="onboardingOnboardingWizardComboBoxItem007" />
+                        <ComboBoxItem  Tag="read-only"  x:Uid="onboardingOnboardingWizardComboBoxItem008" />
+                        <ComboBoxItem  Tag="workspace-write"  x:Uid="onboardingOnboardingWizardComboBoxItem009" />
+                        <ComboBoxItem  Tag="full-access"  x:Uid="onboardingOnboardingWizardComboBoxItem010" />
+                        <ComboBoxItem  Tag="ask" IsEnabled="{x:Bind local:OnboardingWizard.SupportsOperationApproval(ViewModel.IsCodexProvider, ViewModel.UseAppServer), Mode=OneWay}"  x:Uid="onboardingOnboardingWizardComboBoxItem011" />
                     </ComboBox>
-                    <TextBlock Text="「操作ごとに確認」はCodex App Server利用時だけ選べます。フルアクセスはCLI側の確認を迂回する場合があります。" TextWrapping="Wrap" />
-                    <ToggleSwitch Header="アプリ起動時に、このチャットへ接続する" IsOn="{x:Bind ViewModel.WizardAutoConnect, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAutoConnect" />
-                    <TextBlock Text="Windowsへのログイン時にアプリ自体を起動する設定は、初期設定の完了後に「エージェント設定」で変更できます。" TextWrapping="Wrap" />
+                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock024" />
+                    <ToggleSwitch  IsOn="{x:Bind ViewModel.WizardAutoConnect, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAutoConnect"  x:Uid="WizardAutoConnect" />
+                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock025" />
                     <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="設定内容" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock026" />
                             <TextBlock Text="{x:Bind ViewModel.WizardSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardSummary" />
                         </StackPanel>
                     </Border>
                     <StackPanel Spacing="8">
-                        <TextBlock Text="チャット接続" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock027" />
                         <TextBlock Text="{x:Bind Inbox.Status, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardConnectionStatus" />
                         <TextBlock Text="{x:Bind Inbox.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardNotificationStatus" />
-                        <Button Content="Mattermostに接続" Click="ConnectMattermost_Click" IsEnabled="{x:Bind local:OnboardingWizard.Not(Inbox.IsExecuting), Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardMattermost), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardConnectMattermost" />
-                        <Button Content="Slackに接続" Click="ConnectSlack_Click" IsEnabled="{x:Bind local:OnboardingWizard.Not(Inbox.IsExecuting), Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardSlack), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardConnectSlack" />
+                        <Button  Click="ConnectMattermost_Click" IsEnabled="{x:Bind local:OnboardingWizard.Not(Inbox.IsExecuting), Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardMattermost), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardConnectMattermost"  x:Uid="WizardConnectMattermost" />
+                        <Button  Click="ConnectSlack_Click" IsEnabled="{x:Bind local:OnboardingWizard.Not(Inbox.IsExecuting), Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardSlack), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardConnectSlack"  x:Uid="WizardConnectSlack" />
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
 
         <Grid Grid.Row="2" ColumnSpacing="8" VerticalAlignment="Bottom"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="戻る" Command="{x:Bind ViewModel.PreviousOnboardingCommand}" AutomationProperties.AutomationId="OnboardingPrevious" />
+            <Button Grid.Column="0"  Command="{x:Bind ViewModel.PreviousOnboardingCommand}" AutomationProperties.AutomationId="OnboardingPrevious"  x:Uid="OnboardingPrevious" />
             <ProgressRing Grid.Column="2" IsActive="{x:Bind ViewModel.IsOnboardingBusy, Mode=OneWay}" Width="24" Height="24" />
             <Button Grid.Column="3" Content="{x:Bind ViewModel.OnboardingNextLabel, Mode=OneWay}" Command="{x:Bind ViewModel.NextOnboardingCommand}" Style="{StaticResource AccentButtonStyle}" AutomationProperties.AutomationId="OnboardingNext" />
         </Grid>

@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="SystemDefault" xml:space="preserve">
+    <value>システムに合わせる</value>
+  </data>
+  <data name="CurrentLanguage" xml:space="preserve">
+    <value>現在の表示言語：{0}。変更はアプリの再起動後に反映されます。</value>
+  </data>
+  <data name="RestartRequired" xml:space="preserve">
+    <value>保存しました。表示言語の変更は、アプリを再起動すると反映されます。</value>
+  </data>
+  <data name="ReadFailed" xml:space="preserve">
+    <value>表示言語の設定を読み込めませんでした。アプリのデータフォルダーのlanguage.jsonを確認してください。ファイルは上書きしていません。</value>
+  </data>
+  <data name="SaveFailed" xml:space="preserve">
+    <value>表示言語を保存できませんでした。アプリのデータフォルダーへの書き込み権限を確認してください。</value>
+  </data>
+</root>

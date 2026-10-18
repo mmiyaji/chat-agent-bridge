@@ -15,14 +15,14 @@
         </Grid.RowDefinitions>
 
         <StackPanel Spacing="8">
-            <TextBlock Text="履歴と会話" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="日時・状態・作業フォルダーを保存します。本文や実行結果は保存しません。"
-                       Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+            <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock001" />
+            <TextBlock
+                       Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap"  x:Uid="historyHistoryPageTextBlock002" />
             <StackPanel Spacing="6">
-                <Button Content="エージェント設定を開く" HorizontalAlignment="Left" Click="AgentSettingsRequested_Click"
-                        AutomationProperties.AutomationId="AgentSettingsFromHistory" />
-                <Button Content="更新" HorizontalAlignment="Left" Command="{x:Bind ViewModel.RefreshCommand}"
-                        AutomationProperties.AutomationId="RefreshHistory" />
+                <Button  HorizontalAlignment="Left" Click="AgentSettingsRequested_Click"
+                        AutomationProperties.AutomationId="AgentSettingsFromHistory"  x:Uid="AgentSettingsFromHistory" />
+                <Button  HorizontalAlignment="Left" Command="{x:Bind ViewModel.RefreshCommand}"
+                        AutomationProperties.AutomationId="RefreshHistory"  x:Uid="RefreshHistory" />
             </StackPanel>
         </StackPanel>
         <TextBlock Grid.Row="1" Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap"
@@ -33,14 +33,14 @@
                       AutomationProperties.AutomationId="HistoryScroll">
             <StackPanel Spacing="18">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="実行履歴" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBlock Text="実行した日時、状態、作業フォルダー、会話とセッション ID を表示します。"
-                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
-                    <TextBlock Text="トークン数はプロバイダーの報告値で、料金そのものではありません。未報告の項目は「未取得」と表示します。観測範囲は今回のターン・直近の依頼・スレッド累計で異なる場合があります。"
-                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock003" />
+                    <TextBlock
+                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock004" />
+                    <TextBlock
+                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock005" />
                     <Grid>
                         <ListView ItemsSource="{x:Bind ViewModel.Executions, Mode=OneWay}" MaxHeight="220"
-                                  AutomationProperties.Name="実行履歴" AutomationProperties.AutomationId="ExecutionHistoryList">
+                                   AutomationProperties.AutomationId="ExecutionHistoryList" x:Uid="ExecutionHistoryList">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ExecutionHistoryRow">
                                     <StackPanel Margin="8,6" Spacing="4">
@@ -56,36 +56,36 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
-                        <TextBlock Text="実行履歴はまだありません。チャットの依頼を承認して実行すると、メタデータがここに表示されます。"
+                        <TextBlock
                                    TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
                                    Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasExecutions), Mode=OneWay}"
-                                   AutomationProperties.AutomationId="EmptyExecutionHistory" />
+                                   AutomationProperties.AutomationId="EmptyExecutionHistory"  x:Uid="EmptyExecutionHistory" />
                     </Grid>
                 </StackPanel>
 
                 <StackPanel Spacing="6">
-                    <TextBlock Text="保存済みセッション" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBlock Text="セッションは会話の継続先です。切り離すと次回は新しい会話になり、過去の実行履歴は残ります。モデル欄が空なら既定モデルを使います。"
-                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock006" />
+                    <TextBlock
+                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock007" />
                     <StackPanel Spacing="6">
                         <Button HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.EditSelectedSessionModelCommand}"
                                 AutomationProperties.AutomationId="EditSessionModel">
-                            <Button.Content><TextBlock Text="次回の実行モデルを設定" TextWrapping="Wrap" /></Button.Content>
+                            <Button.Content><TextBlock  TextWrapping="Wrap"  x:Uid="historyHistoryPageTextBlock008" /></Button.Content>
                         </Button>
                         <Button HorizontalAlignment="Stretch" Command="{x:Bind ViewModel.EditSelectedSessionPolicyCommand}"
                                 AutomationProperties.AutomationId="EditSessionExecutionPolicy">
-                            <Button.Content><TextBlock Text="この会話の承認・操作・共有を設定" TextWrapping="Wrap" /></Button.Content>
+                            <Button.Content><TextBlock  TextWrapping="Wrap"  x:Uid="historyHistoryPageTextBlock009" /></Button.Content>
                         </Button>
-                        <Button HorizontalAlignment="Stretch" ToolTipService.ToolTip="選択したセッションを切り離す"
+                        <Button HorizontalAlignment="Stretch"
                                 Command="{x:Bind ViewModel.DetachSelectedSessionCommand}"
-                                AutomationProperties.AutomationId="DetachSession">
-                            <Button.Content><TextBlock Text="セッションを切り離す" TextWrapping="Wrap" /></Button.Content>
+                                AutomationProperties.AutomationId="DetachSession" x:Uid="DetachSession">
+                            <Button.Content><TextBlock  TextWrapping="Wrap"  x:Uid="historyHistoryPageTextBlock010" /></Button.Content>
                         </Button>
                     </StackPanel>
                     <Grid>
                         <ListView MaxHeight="250" ItemsSource="{x:Bind ViewModel.Sessions, Mode=OneWay}"
                                   SelectedItem="{x:Bind ViewModel.SelectedSession, Mode=TwoWay}"
-                                  AutomationProperties.Name="保存済みセッション" AutomationProperties.AutomationId="SavedSessionsList">
+                                   AutomationProperties.AutomationId="SavedSessionsList" x:Uid="SavedSessionsList">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="vm:SessionHistoryRow">
                                     <StackPanel Margin="8,6" Spacing="4">
@@ -101,20 +101,20 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
-                        <TextBlock Text="保存済みセッションはありません。実行履歴があっても、セッションが保存されない実行があります。"
+                        <TextBlock
                                    TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
                                    Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasSessions), Mode=OneWay}"
-                                   AutomationProperties.AutomationId="EmptySavedSessions" />
+                                   AutomationProperties.AutomationId="EmptySavedSessions"  x:Uid="EmptySavedSessions" />
                     </Grid>
                 </StackPanel>
 
                 <StackPanel Spacing="6">
-                    <TextBlock Text="監査イベント" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBlock Text="依頼の受信、承認、拒否、実行、切り離しなどの操作記録です。メッセージ本文は含みません。"
-                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock011" />
+                    <TextBlock
+                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"  x:Uid="historyHistoryPageTextBlock012" />
                     <Grid>
                         <ListView MaxHeight="220" ItemsSource="{x:Bind ViewModel.AuditEvents, Mode=OneWay}"
-                                  AutomationProperties.Name="監査イベント" AutomationProperties.AutomationId="AuditHistoryList">
+                                   AutomationProperties.AutomationId="AuditHistoryList" x:Uid="AuditHistoryList">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="vm:AuditHistoryRow">
                                     <StackPanel Margin="8,6" Spacing="4">
@@ -125,10 +125,10 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
-                        <TextBlock Text="監査イベントはまだありません。チャット操作を行うと、この一覧にメタデータが追加されます。"
+                        <TextBlock
                                    TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
                                    Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasAuditEvents), Mode=OneWay}"
-                                   AutomationProperties.AutomationId="EmptyAuditHistory" />
+                                   AutomationProperties.AutomationId="EmptyAuditHistory"  x:Uid="EmptyAuditHistory" />
                     </Grid>
                 </StackPanel>
             </StackPanel>

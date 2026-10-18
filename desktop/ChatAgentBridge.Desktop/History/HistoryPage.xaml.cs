@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using ChatAgentBridge.Core;
 using ChatAgentBridge_Desktop.ModelSelection;
+using ChatAgentBridge_Desktop.Localization;
 using System.ComponentModel;
 
 namespace ChatAgentBridge_Desktop.History;
@@ -41,25 +42,25 @@ public sealed partial class HistoryPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "このセッションを切り離しますか？",
+            Title = DesktopText.Get("ConfirmDetachTitle"),
             Content = new StackPanel
             {
                 Spacing = 8,
                 Children =
                 {
-                    new TextBlock { Text = $"提供元: {session.Provider}", TextWrapping = TextWrapping.Wrap },
-                    new TextBlock { Text = $"チャンネル ID: {session.ChannelId}", TextWrapping = TextWrapping.Wrap },
-                    new TextBlock { Text = $"スレッド ID: {session.ThreadId}", TextWrapping = TextWrapping.Wrap },
-                    new TextBlock { Text = $"セッション ID: {session.SessionId}", TextWrapping = TextWrapping.Wrap },
-                    new TextBlock { Text = "この会話と保存済みセッションの関連付けを削除します。実行履歴は残ります。", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) }
+                    new TextBlock { Text = DesktopText.Get("HistoryProvider", session.Provider), TextWrapping = TextWrapping.Wrap },
+                    new TextBlock { Text = DesktopText.Get("HistoryChannelId", session.ChannelId), TextWrapping = TextWrapping.Wrap },
+                    new TextBlock { Text = DesktopText.Get("HistoryThreadId", session.ThreadId), TextWrapping = TextWrapping.Wrap },
+                    new TextBlock { Text = DesktopText.Get("HistorySessionId", session.SessionId), TextWrapping = TextWrapping.Wrap },
+                    new TextBlock { Text = DesktopText.Get("HistoryDetachWarning"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) }
                 }
             },
-            PrimaryButtonText = "切り離す",
-            CloseButtonText = "キャンセル",
+            PrimaryButtonText = DesktopText.Get("Detach"),
+            CloseButtonText = DesktopText.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close
         };
         AutomationProperties.SetAutomationId(dialog, "DetachSessionConfirmation");
-        AutomationProperties.SetName(dialog, "セッション切り離しの確認");
+        AutomationProperties.SetName(dialog, DesktopText.Get("ConfirmDetachTitle"));
         return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 
@@ -69,10 +70,10 @@ public sealed partial class HistoryPage : Page
         {
             Text = session.ModelOverride ?? string.Empty,
             MaxLength = 256,
-            PlaceholderText = "利用できるモデル名を入力"
+            PlaceholderText = DesktopText.Get("EnterModelName")
         };
         AutomationProperties.SetAutomationId(model, "SessionModelOverride");
-        AutomationProperties.SetName(model, "次回の実行モデル");
+        AutomationProperties.SetName(model, DesktopText.Get("NextExecutionModel"));
         var binding = session.Binding;
         var isAppServer = string.Equals(binding.AgentArguments, "app-server", StringComparison.OrdinalIgnoreCase);
         var isClaude = string.Equals(binding.AgentArguments, "claude-stream-json-v1", StringComparison.Ordinal);
@@ -97,7 +98,7 @@ public sealed partial class HistoryPage : Page
         ContentDialog? dialog = null;
         var effortCandidates = new ComboBox
         {
-            Header = "推論の強さ（CLIの候補）",
+            Header = DesktopText.Get("ReasoningEffortCliOptions"),
             ItemsSource = efforts,
             DisplayMemberPath = "SelectionLabel",
             HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -126,23 +127,23 @@ public sealed partial class HistoryPage : Page
             isApplyingSelection = false;
             PopulateEfforts(option);
         });
-        if (provider == "custom") catalog.Invalidate("このセッションのCLI形式では候補を取得できません。モデル名を直接入力できます。");
-        var fetch = new Button { Content = "CLIモデル候補を取得", HorizontalAlignment = HorizontalAlignment.Left, IsEnabled = provider != "custom" };
+        if (provider == "custom") catalog.Invalidate(DesktopText.Get("HistoryCustomCliUnsupported"));
+        var fetch = new Button { Content = DesktopText.Get("FetchCliModels"), HorizontalAlignment = HorizontalAlignment.Left, IsEnabled = provider != "custom" };
         AutomationProperties.SetAutomationId(fetch, "SessionFetchModels");
         fetch.Click += (_, _) => catalog.FetchModelsCommand.Execute(null);
-        var cancel = new Button { Content = "取得をキャンセル", HorizontalAlignment = HorizontalAlignment.Left };
+        var cancel = new Button { Content = DesktopText.Get("CancelFetch"), HorizontalAlignment = HorizontalAlignment.Left };
         AutomationProperties.SetAutomationId(cancel, "SessionCancelFetchModels");
         cancel.Click += (_, _) => catalog.CancelFetchCommand.Execute(null);
         var candidates = new ComboBox
         {
-            Header = "CLIが提示したモデル候補",
+            Header = DesktopText.Get("CliModelSuggestions"),
             ItemsSource = catalog.Models,
             DisplayMemberPath = "SelectionLabel",
             HorizontalAlignment = HorizontalAlignment.Stretch,
             IsEnabled = provider != "custom"
         };
         AutomationProperties.SetAutomationId(candidates, "SessionModelCandidates");
-        AutomationProperties.SetName(candidates, "セッションのモデル候補");
+        AutomationProperties.SetName(candidates, DesktopText.Get("SessionModelSuggestions"));
         candidates.SelectionChanged += (_, _) =>
         {
             if (candidates.SelectedItem is ModelOption selected) catalog.SelectedModel = selected;
@@ -163,7 +164,7 @@ public sealed partial class HistoryPage : Page
             }
         };
         AutomationProperties.SetAutomationId(effortCandidates, "SessionReasoningEffortCandidates");
-        AutomationProperties.SetName(effortCandidates, "セッションの推論レベル候補");
+        AutomationProperties.SetName(effortCandidates, DesktopText.Get("SessionReasoningOptions"));
         effortCandidates.SelectionChanged += (_, _) =>
         {
             if (!updatingEffortSelection && effortCandidates.SelectedItem is ChatAgentBridge_Desktop.ViewModels.ReasoningEffortChoice chosen)
@@ -172,7 +173,7 @@ public sealed partial class HistoryPage : Page
                 currentEffort = chosen.Id;
                 unsupportedEffort = false;
                 dirtyEffortSelection = true;
-                effortStatus.Text = chosen.Id is null ? "エージェント設定に従います。別モデルを指定した場合はCLIの設定に任せます。" : $"選択した推論レベル: {chosen.SelectionLabel}";
+                effortStatus.Text = chosen.Id is null ? DesktopText.Get("FollowAgentSettings") : DesktopText.Get("SelectedReasoningEffort", chosen.SelectionLabel);
                 if (dialog is not null) dialog.IsPrimaryButtonEnabled = true;
             }
         };
@@ -195,15 +196,15 @@ public sealed partial class HistoryPage : Page
             {
                 unsupportedEffort = false;
                 effortStatus.Text = currentEffort is null
-                    ? "CLIの既定値を使用します。モデル候補を取得すると対応状況を確認できます。"
-                    : $"保存済みの推論レベル: {currentEffort}（モデル候補を取得するまで対応状況は未確認です）";
+                    ? DesktopText.Get("UseCliDefaultGetSuggestionsToCheck")
+                    : DesktopText.Get("SavedReasoningUnverified", currentEffort);
                 return;
             }
             unsupportedEffort = currentEffort is not null && matching is null;
             if (matching is not null) selectedEffort = matching;
             effortStatus.Text = unsupportedEffort
-                ? $"保存済みの推論レベル「{currentEffort}」はこのモデルの候補にありません。「エージェント設定に従う」か、対応候補を選択してください。"
-                : currentEffort is null ? "エージェント設定に従います。別モデルを指定した場合はCLIの設定に任せます。" : $"保存済みの推論レベル: {matching!.SelectionLabel}";
+                ? DesktopText.Get("SavedReasoningNotSupported", currentEffort)
+                : currentEffort is null ? DesktopText.Get("FollowAgentSettings") : DesktopText.Get("SavedReasoning", matching!.SelectionLabel);
             if (dialog is not null) dialog.IsPrimaryButtonEnabled = !unsupportedEffort;
         }
 
@@ -237,7 +238,7 @@ public sealed partial class HistoryPage : Page
         dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "次回の実行モデル",
+            Title = DesktopText.Get("NextExecutionModel"),
             Content = new ScrollViewer
             {
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -249,7 +250,7 @@ public sealed partial class HistoryPage : Page
                     {
                         new TextBlock
                         {
-                            Text = $"会話: {session.Conversation}\nこの会話で次回から使うモデルと推論レベルを指定できます。モデル欄が空ならエージェント設定のモデルを使います。推論レベルが空なら、モデルがエージェント設定と同じ場合は推論レベルも継承し、異なる場合はCLIの既定値を使います。",
+                            Text = DesktopText.Get("SessionModelDialogIntro", session.Conversation),
                             TextWrapping = TextWrapping.Wrap
                         },
                         model,
@@ -260,18 +261,18 @@ public sealed partial class HistoryPage : Page
                         catalogStatus,
                         effortCandidates,
                         effortStatus,
-                        new TextBlock { Text = "推論レベルの候補は選択モデルについてCLIが報告した値です。「エージェント設定に従う」では、同じモデルの既定設定を引き継ぎます。", TextWrapping = TextWrapping.Wrap },
-                        new TextBlock { Text = "候補はCLIの報告値です。契約上の利用可否は実行時に確認されます。", TextWrapping = TextWrapping.Wrap }
+                        new TextBlock { Text = DesktopText.Get("ReasoningEffortOptionsInfo"), TextWrapping = TextWrapping.Wrap },
+                        new TextBlock { Text = DesktopText.Get("CliReportedOptionsInfo"), TextWrapping = TextWrapping.Wrap }
                     }
                 }
             },
-            PrimaryButtonText = "保存",
-            CloseButtonText = "キャンセル",
+            PrimaryButtonText = DesktopText.Get("Save"),
+            CloseButtonText = DesktopText.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close
         };
         dialog.IsPrimaryButtonEnabled = !unsupportedEffort;
         AutomationProperties.SetAutomationId(dialog, "SessionModelDialog");
-        AutomationProperties.SetName(dialog, "次回の実行モデルを設定");
+        AutomationProperties.SetName(dialog, DesktopText.Get("SetNextExecutionModel"));
         try
         {
             if (await dialog.ShowAsync() != ContentDialogResult.Primary) return null;
@@ -299,20 +300,20 @@ public sealed partial class HistoryPage : Page
         }
 
         var binding = session.Binding;
-        var approval = CreateChoice("SessionChatApprovalMode", "この会話の依頼承認", binding.ChatApprovalMode,
-            (null, "全体設定を使う"), ("always", "毎回確認"), ("first", "最初だけ確認"), ("auto", "自動承認"));
-        var result = CreateChoice("SessionChatResultMode", "実行結果の共有", binding.ChatResultMode,
-            (null, "全体設定を使う"), ("manual", "手動で確認して共有"), ("auto", "自動共有"), ("none", "共有しない"));
-        var permission = CreateChoice("SessionAgentPermissionMode", "AIツールの操作許可", binding.AgentPermissionMode,
-            (null, "全体設定を使う"), ("inherit", "CLI既定"), ("read-only", "読み取り・計画のみ"),
-            ("workspace-write", "フォルダー内の編集を自動許可"), ("full-access", "フルアクセス"), ("ask", "操作ごとに確認"));
+        var approval = CreateChoice("SessionChatApprovalMode", DesktopText.Get("ConversationRequestApproval"), binding.ChatApprovalMode,
+            (null, DesktopText.Get("UseGlobalSettings")), ("always", DesktopText.Get("AskEveryTime")), ("first", DesktopText.Get("AskFirstTime")), ("auto", DesktopText.Get("AutoApprove")));
+        var result = CreateChoice("SessionChatResultMode", DesktopText.Get("ExecutionResultSharing"), binding.ChatResultMode,
+            (null, DesktopText.Get("UseGlobalSettings")), ("manual", DesktopText.Get("ManualShare")), ("auto", DesktopText.Get("AutoShare")), ("none", DesktopText.Get("NoSharing")));
+        var permission = CreateChoice("SessionAgentPermissionMode", DesktopText.Get("AiToolPermission"), binding.AgentPermissionMode,
+            (null, DesktopText.Get("UseGlobalSettings")), ("inherit", DesktopText.Get("CliDefault")), ("read-only", DesktopText.Get("ReadAndPlanOnly")),
+            ("workspace-write", DesktopText.Get("AutoAllowWorkspaceEdits")), ("full-access", DesktopText.Get("FullAccess")), ("ask", DesktopText.Get("AskPerAction")));
         foreach (var item in permission.Items.OfType<ComboBoxItem>())
             if (string.Equals(item.Tag as string, "ask", StringComparison.Ordinal))
                 item.IsEnabled = string.Equals(binding.AgentArguments, "app-server", StringComparison.OrdinalIgnoreCase);
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "この会話の実行ポリシー",
+            Title = DesktopText.Get("ConversationExecutionPolicy"),
             Content = new ScrollViewer
             {
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -322,30 +323,30 @@ public sealed partial class HistoryPage : Page
                     Spacing = 12,
                     Children =
                     {
-                        new TextBlock { Text = $"会話: {session.Conversation}\n「全体設定を使う」を選ぶと、承認は{ApprovalLabel(globalSettings.ChatApprovalMode)}、結果共有は{ResultLabel(globalSettings.ChatResultMode)}、AI操作は{PermissionLabel(globalSettings.AgentPermissionMode)}になります。", TextWrapping = TextWrapping.Wrap },
+                        new TextBlock { Text = DesktopText.Get("ConversationPolicyIntro", session.Conversation, ApprovalLabel(globalSettings.ChatApprovalMode), ResultLabel(globalSettings.ChatResultMode), PermissionLabel(globalSettings.AgentPermissionMode)), TextWrapping = TextWrapping.Wrap },
                         approval,
                         result,
                         permission,
-                        new TextBlock { Text = "自動承認ではこの会話から届く依頼を確認画面なしで実行します。フルアクセスはCLIの許可確認を迂回する場合があります。Claude CodeのモードはOSのサンドボックスを設定しません。「操作ごとに確認」はCodex App Serverだけで利用できます。", TextWrapping = TextWrapping.Wrap }
+                        new TextBlock { Text = DesktopText.Get("ConversationPolicyWarning"), TextWrapping = TextWrapping.Wrap }
                     }
                 }
             },
-            PrimaryButtonText = "保存",
-            CloseButtonText = "キャンセル",
+            PrimaryButtonText = DesktopText.Get("Save"),
+            CloseButtonText = DesktopText.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close
         };
         AutomationProperties.SetAutomationId(dialog, "SessionExecutionPolicyDialog");
-        AutomationProperties.SetName(dialog, "会話ごとの実行ポリシーを設定");
+        AutomationProperties.SetName(dialog, DesktopText.Get("SetConversationExecutionPolicy"));
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return null;
         static string? ReadChoice(ComboBox combo) => string.Equals(combo.SelectedValue as string, "<global>", StringComparison.Ordinal) ? null : combo.SelectedValue as string;
         return new SessionPolicySelection(ReadChoice(approval), ReadChoice(result), ReadChoice(permission));
     }
 
-    private static string ApprovalLabel(string value) => value switch { "first" => "最初だけ確認", "auto" => "自動承認", _ => "毎回確認" };
-    private static string ResultLabel(string value) => value switch { "auto" => "自動共有", "none" => "共有しない", _ => "手動で確認して共有" };
+    private static string ApprovalLabel(string value) => value switch { "first" => DesktopText.Get("AskFirstTime"), "auto" => DesktopText.Get("AutoApprove"), _ => DesktopText.Get("AskEveryTime") };
+    private static string ResultLabel(string value) => value switch { "auto" => DesktopText.Get("AutoShare"), "none" => DesktopText.Get("NoSharing"), _ => DesktopText.Get("ManualShare") };
     private static string PermissionLabel(string value) => value switch
     {
-        "read-only" => "読み取り・計画のみ", "workspace-write" => "フォルダー内の編集を自動許可",
-        "full-access" => "フルアクセス", "ask" => "操作ごとに確認", _ => "CLI既定"
+        "read-only" => DesktopText.Get("ReadAndPlanOnly"), "workspace-write" => DesktopText.Get("AutoAllowWorkspaceEdits"),
+        "full-access" => DesktopText.Get("FullAccess"), "ask" => DesktopText.Get("AskPerAction"), _ => DesktopText.Get("CliDefault")
     };
 }

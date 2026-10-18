@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using ChatAgentBridge_Desktop.Localization;
 
 namespace ChatAgentBridge_Desktop.Onboarding;
 
@@ -16,7 +17,8 @@ public static class PolicyDialog
         {
             var body = new TextBlock
             {
-                Text = $"{(privacy ? PolicyText.Privacy : PolicyText.Terms)}\n\n版: {PolicyText.Version}",
+                Text = DesktopText.Get("PolicyDocument", privacy ? PolicyText.Privacy : PolicyText.Terms,
+                    Environment.NewLine + Environment.NewLine, PolicyText.Version),
                 TextWrapping = TextWrapping.Wrap,
                 IsTextSelectionEnabled = true
             };
@@ -31,7 +33,7 @@ public static class PolicyDialog
             };
             AutomationProperties.SetAutomationId(scroll, "PolicyScroll");
 
-            var close = new Button { Content = "閉じる", HorizontalAlignment = HorizontalAlignment.Stretch };
+            var close = new Button { Content = DesktopText.Get("Close"), HorizontalAlignment = HorizontalAlignment.Stretch };
             AutomationProperties.SetAutomationId(close, "PolicyClose");
             var panel = new StackPanel { Spacing = 16 };
             panel.Children.Add(scroll);
@@ -39,7 +41,7 @@ public static class PolicyDialog
             var dialog = new ContentDialog
             {
                 XamlRoot = xamlRoot,
-                Title = privacy ? "プライバシーポリシー" : "利用規約",
+                Title = DesktopText.Get(privacy ? "PrivacyPolicy" : "TermsOfUse"),
                 Content = panel
             };
             AutomationProperties.SetAutomationId(dialog, "PolicyDialog");

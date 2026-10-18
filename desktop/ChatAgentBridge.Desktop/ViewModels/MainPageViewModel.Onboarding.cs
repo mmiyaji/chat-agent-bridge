@@ -1,6 +1,7 @@
 using ChatAgentBridge.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ChatAgentBridge_Desktop.Localization;
 namespace ChatAgentBridge_Desktop.ViewModels;
 
 public partial class MainPageViewModel
@@ -10,7 +11,7 @@ public partial class MainPageViewModel
     private bool _hasCurrentConsent;
     [ObservableProperty] public partial bool HasAcceptedTerms { get; set; }
     [ObservableProperty] public partial bool HasAcceptedPrivacy { get; set; }
-    [ObservableProperty] public partial string ConsentStatus { get; set; } = "文書を開いて内容をご確認ください。同意しない場合は、後で設定するかアプリを終了できます。";
+    [ObservableProperty] public partial string ConsentStatus { get; set; } = ViewModelText.Get("ConsentInstructions");
     private BridgeSettings? _wizardConnectedSettings;
     private string? _wizardConnectedProvider;
     public void ClearWizardConnection() { _wizardConnectedSettings = null; _wizardConnectedProvider = null; }
@@ -40,18 +41,18 @@ public partial class MainPageViewModel
     public bool IsWizardSlack => OnboardingChatProvider == "slack";
     public bool IsWizardMattermost => OnboardingChatProvider == "mattermost";
     public string OnboardingTitle => $"{OnboardingProgress} " + (OnboardingStep switch
-    { 0 => "はじめに・利用条件", 1 => "AIと作業フォルダー", 2 => "CLIの確認とモデル", 3 => "チャットの接続情報", _ => "承認設定と接続確認" });
+    { 0 => ViewModelText.Get("WizardStepIntro"), 1 => ViewModelText.Get("WizardStepAgent"), 2 => ViewModelText.Get("WizardStepCli"), 3 => ViewModelText.Get("WizardStepChat"), _ => ViewModelText.Get("WizardStepSafety") });
     public string OnboardingDescription => OnboardingStep switch
     {
-        0 => "仕組みと利用条件を確認してから、このPCの初期設定へ進みます。",
-        1 => "このPCで使うAIと、作業するフォルダーを選びます。CLIのインストールとログインは事前に必要です。",
-        2 => "チェックを実行し、CLIの種類・バージョン・モデル候補を確認します。AIへ作業の依頼は送りません。",
-        3 => "SlackまたはMattermostを選び、接続情報と利用を許可する本人のユーザーIDを入力します。",
-        _ => "依頼の承認と結果の共有方法を確認し、選んだチャットに接続して完了します。"
+        0 => ViewModelText.Get("WizardIntroDescription"),
+        1 => ViewModelText.Get("WizardAgentDescription"),
+        2 => ViewModelText.Get("WizardCliDescription"),
+        3 => ViewModelText.Get("WizardChatDescription"),
+        _ => ViewModelText.Get("WizardSafetyDescription")
     };
-    public string OnboardingNextLabel => OnboardingStep == 0 ? "同意して次へ" : OnboardingStep == 4 ? "設定を保存して完了" : "保存して次へ";
+    public string OnboardingNextLabel => OnboardingStep == 0 ? ViewModelText.Get("ConsentAndContinue") : OnboardingStep == 4 ? ViewModelText.Get("SaveAndFinish") : ViewModelText.Get("SaveAndContinue");
     public string OnboardingProgress => $"[{Math.Clamp(OnboardingStep, 0, 4) + 1} / 5]";
-    public string WizardSummary => $"AI: {(AgentProvider == "claude" ? "Claude Code" : "Codex")} / モデル: {(string.IsNullOrWhiteSpace(AgentModel) ? "CLIの既定値" : AgentModel)}\n推論の強さ: {(string.IsNullOrWhiteSpace(AgentReasoningEffort) ? "CLIの既定値" : AgentReasoningEffort)}\n作業フォルダー: {WorkspaceRoot}\nチャット: {(IsWizardSlack ? "Slack" : "Mattermost")} / アプリ起動時の接続: {(WizardAutoConnect ? "有効" : "無効")}\n依頼の承認: {ChatApprovalLabel(ChatApprovalMode)} / 結果: {ResultLabel(ChatResultMode)}\nAIの操作権限: {PermissionLabel(AgentPermissionMode)}";
+    public string WizardSummary => ViewModelText.Get("WizardSummary", AgentProvider == "claude" ? "Claude Code" : "Codex", string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, string.IsNullOrWhiteSpace(AgentReasoningEffort) ? ViewModelText.Get("DefaultCliValue") : AgentReasoningEffort, WorkspaceRoot, IsWizardSlack ? "Slack" : "Mattermost", ViewModelText.Get(WizardAutoConnect ? "Enabled" : "Disabled"), ChatApprovalLabel(ChatApprovalMode), ResultLabel(ChatResultMode), PermissionLabel(AgentPermissionMode));
     public event Action<int>? OnboardingNavigateRequested;
 
     public async Task InitializeOnboardingAsync()
@@ -70,7 +71,7 @@ public partial class MainPageViewModel
             IsStatusOpen = false;
             OnboardingNavigateRequested?.Invoke(OnboardingStep);
         }
-        catch { SetStatus("初期設定の進行状況を読み込めませんでした", "保存済みの案内データを確認してください。設定は上書きしていません。", "Error"); }
+        catch { SetStatus(ViewModelText.Get("WizardProgressLoadFailed"), ViewModelText.Get("WizardProgressLoadFailedDetails"), "Error"); }
     }
     private string PreferredWizardProvider() => AutoConnectProvider is "slack" or "mattermost" ? AutoConnectProvider : !string.IsNullOrWhiteSpace(MattermostToken) && string.IsNullOrWhiteSpace(SlackBotToken) ? "mattermost" : "slack";
     [RelayCommand(CanExecute = nameof(CanOnboardingAction))]
@@ -78,7 +79,7 @@ public partial class MainPageViewModel
     {
         OnboardingChatProvider = PreferredWizardProvider();
         HasAcceptedTerms = HasAcceptedPrivacy = false;
-        ConsentStatus = "文書を開いて内容をご確認ください。このガイドでは両方に同意してから進みます。";
+        ConsentStatus = ViewModelText.Get("ConsentInstructionsWizard");
         await SaveOnboardingProgressAsync("active", 0);
         OnboardingStep = 0;
         IsOnboardingActive = true;
@@ -93,39 +94,39 @@ public partial class MainPageViewModel
         IsStatusOpen = false;
         if (OnboardingStep == 0)
         {
-            if (!HasAcceptedTerms || !HasAcceptedPrivacy) { SetStatus("利用条件への同意が必要です", "利用規約とプライバシーポリシーの両方を確認し、同意する場合はチェックを入れてください。", "Warning"); return; }
+            if (!HasAcceptedTerms || !HasAcceptedPrivacy) { SetStatus(ViewModelText.Get("ConsentRequired"), ViewModelText.Get("ConsentRequiredDetails"), "Warning"); return; }
             await _onboardingConsentStore.SaveAsync(new OnboardingConsent(OnboardingConsentStore.CurrentPolicyVersion, DateTimeOffset.UtcNow));
             _hasCurrentConsent = true;
-            ConsentStatus = $"文書バージョン {OnboardingConsentStore.CurrentPolicyVersion} への同意をこのPCに保存しました。";
+            ConsentStatus = ViewModelText.Get("ConsentSaved", OnboardingConsentStore.CurrentPolicyVersion);
             await AdvanceOnboardingAsync(1);
             return;
         }
-        if (!_hasCurrentConsent || !HasAcceptedTerms || !HasAcceptedPrivacy) { SetStatus("利用条件を確認してください", "最初のページへ戻り、利用規約とプライバシーポリシーをご確認ください。", "Warning"); return; }
+        if (!_hasCurrentConsent || !HasAcceptedTerms || !HasAcceptedPrivacy) { SetStatus(ViewModelText.Get("ReviewConsent"), ViewModelText.Get("ReviewConsentDetails"), "Warning"); return; }
         if (OnboardingStep == 1)
         {
-            if (AgentProvider is not ("codex" or "claude")) { SetStatus("AIを選択してください", "このウィザードではCodexまたはClaude Codeを設定できます。", "Warning"); return; }
-            if (!Path.IsPathFullyQualified(WorkspaceRoot) || !Directory.Exists(WorkspaceRoot)) { SetStatus("作業フォルダーを確認してください", "存在するフォルダーの絶対パスを入力するか、「フォルダーを選択」で指定してください。", "Warning"); return; }
+            if (AgentProvider is not ("codex" or "claude")) { SetStatus(ViewModelText.Get("SelectAgent"), ViewModelText.Get("SelectAgentDetails"), "Warning"); return; }
+            if (!Path.IsPathFullyQualified(WorkspaceRoot) || !Directory.Exists(WorkspaceRoot)) { SetStatus(ViewModelText.Get("CheckWorkspace"), ViewModelText.Get("CheckWorkspaceDetails"), "Warning"); return; }
         }
-        if (OnboardingStep == 2 && !HasCurrentCliCheck()) { SetStatus("CLIとモデルを確認してください", CliCheckSucceeded ? "入力したモデルはCLIの候補にありません。候補から選択するか、モデル名を空欄にしてCLIの既定値を使ってください。" : "「CLIをチェック」でバージョンとモデル候補を確認してください。失敗した場合はCLIの場所・ログイン状態を確認して再実行できます。", "Warning"); return; }
-        if (OnboardingStep == 3 && !HasChosenChatConfiguration()) { SetStatus("接続情報を確認してください", IsWizardSlack ? "Botトークン・Appトークン・許可するユーザーIDを入力してください。" : "サーバーURL・チャンネルID・トークン・許可するユーザーIDを入力してください。", "Warning"); return; }
+        if (OnboardingStep == 2 && !HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("CheckCliAndModel"), CliCheckSucceeded ? ViewModelText.Get("SelectedModelUnavailable") : ViewModelText.Get("RunCliCheckDetails"), "Warning"); return; }
+        if (OnboardingStep == 3 && !HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get(IsWizardSlack ? "SlackConnectionFields" : "MattermostConnectionFields"), "Warning"); return; }
         if (OnboardingStep == 4)
         {
-            if (!HasCurrentCliCheck()) { SetStatus("CLIを再確認してください", "AIまたは作業フォルダーの設定が変わりました。ステップ3へ戻ってチェックしてください。", "Warning"); return; }
-            if (!HasChosenChatConfiguration()) { SetStatus("接続情報を確認してください", "選択したチャットの接続情報と許可するユーザーIDが必要です。", "Warning"); return; }
-            if (!_chatConnectionConfirmed) { SetStatus("チャットへの接続が必要です", "この画面の接続ボタンを押し、「接続しました」と表示されてから完了してください。", "Warning"); return; }
-            if (_wizardConnectedProvider != OnboardingChatProvider || _wizardConnectedSettings != CreateSettingsSnapshot()) { SetStatus("変更した設定で再接続してください", "この画面の接続ボタンを押すと、現在の設定を保存して再接続します。", "Warning"); return; }
-            if (_settings != CreateSettingsSnapshot()) { await SaveSettingsAsync(); if (_lastSaveSucceeded) SetStatus("設定を保存しました", "承認設定などの変更を反映するため、一度切断してこの画面から再接続してください。", "Warning"); return; }
+            if (!HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("RecheckCli"), ViewModelText.Get("RecheckCliDetails"), "Warning"); return; }
+            if (!HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get("MissingChatConfig"), "Warning"); return; }
+            if (!_chatConnectionConfirmed) { SetStatus(ViewModelText.Get("ChatConnectionRequired"), ViewModelText.Get("ChatConnectionRequiredDetails"), "Warning"); return; }
+            if (_wizardConnectedProvider != OnboardingChatProvider || _wizardConnectedSettings != CreateSettingsSnapshot()) { SetStatus(ViewModelText.Get("ReconnectWithChangedSettings"), ViewModelText.Get("ReconnectWithChangedSettingsDetails"), "Warning"); return; }
+            if (_settings != CreateSettingsSnapshot()) { await SaveSettingsAsync(); if (_lastSaveSucceeded) SetStatus(ViewModelText.Get("SettingsSaved"), ViewModelText.Get("SettingsSavedReconnectDetails"), "Warning"); return; }
         }
         await SaveSettingsAsync();
         if (!_lastSaveSucceeded) return;
         if (OnboardingStep < 4) { await AdvanceOnboardingAsync(OnboardingStep + 1); return; }
         await SaveOnboardingProgressAsync("completed", 4);
         IsOnboardingActive = false;
-        SetStatus("初期設定が完了しました", "チャットから依頼できます。CLIチェックではAIの作業実行は行っていません。", "Success");
+        SetStatus(ViewModelText.Get("WizardComplete"), ViewModelText.Get("WizardCompleteDetails"), "Success");
     });
     public async Task<bool> SaveWizardConnectionSettingsAsync()
     {
-        if (!_hasCurrentConsent || !HasAcceptedTerms || !HasAcceptedPrivacy || !HasCurrentCliCheck() || !HasChosenChatConfiguration()) { SetStatus("設定内容を確認してください", "CLIチェックと選択したチャットの接続情報が必要です。", "Warning"); return false; }
+        if (!_hasCurrentConsent || !HasAcceptedTerms || !HasAcceptedPrivacy || !HasCurrentCliCheck() || !HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("ReviewSettings"), ViewModelText.Get("ReviewSettingsDetails"), "Warning"); return false; }
         await SaveSettingsAsync();
         return _lastSaveSucceeded;
     }
@@ -157,7 +158,7 @@ public partial class MainPageViewModel
         if (!CanOnboardingAction()) return;
         IsOnboardingBusy = true;
         try { await action(); }
-        catch { SetStatus("初期設定を保存できませんでした", "入力内容と設定フォルダーへの書き込み権限を確認してください。", "Error"); }
+        catch { SetStatus(ViewModelText.Get("WizardSaveFailed"), ViewModelText.Get("WizardSaveFailedDetails"), "Error"); }
         finally { IsOnboardingBusy = false; }
     }
 }

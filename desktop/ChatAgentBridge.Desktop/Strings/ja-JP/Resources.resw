@@ -1,0 +1,761 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <data name="MainNavigation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>メイン ナビゲーション</value>
+  </data>
+  <data name="NavOverview.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>概要</value>
+  </data>
+  <data name="NavOverview.Content" xml:space="preserve">
+    <value>概要</value>
+  </data>
+  <data name="NavWorkbench.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>手動で実行</value>
+  </data>
+  <data name="NavWorkbench.Content" xml:space="preserve">
+    <value>手動で実行</value>
+  </data>
+  <data name="NavAgentSettings.Content" xml:space="preserve">
+    <value>エージェント設定</value>
+  </data>
+  <data name="NavConnections.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>接続設定</value>
+  </data>
+  <data name="NavConnections.Content" xml:space="preserve">
+    <value>接続設定</value>
+  </data>
+  <data name="NavChat.Content" xml:space="preserve">
+    <value>チャット受信</value>
+  </data>
+  <data name="NavHistory.Content" xml:space="preserve">
+    <value>履歴と会話</value>
+  </data>
+  <data name="ReloadSettings.Content" xml:space="preserve">
+    <value>設定を再読み込み</value>
+  </data>
+  <data name="SaveSettings.Content" xml:space="preserve">
+    <value>エージェント設定を保存</value>
+  </data>
+  <data name="MainContentScroll.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>メイン コンテンツ</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock001.Text" xml:space="preserve">
+    <value>CodexやClaude Codeのデスクトップアプリを使えない端末から、Slack/Mattermostを窓口に、起動中のローカルPCのAIエージェントへ依頼できます。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock002.Text" xml:space="preserve">
+    <value>セットアップの進行状況</value>
+  </data>
+  <data name="SetupProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>セットアップの進行状況</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock003.Text" xml:space="preserve">
+    <value>エージェントと作業フォルダー</value>
+  </data>
+  <data name="SetupAgentLink.Content" xml:space="preserve">
+    <value>エージェント設定</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock004.Text" xml:space="preserve">
+    <value>チャット接続情報</value>
+  </data>
+  <data name="SetupConnectionsLink.Content" xml:space="preserve">
+    <value>接続設定</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock005.Text" xml:space="preserve">
+    <value>チャットへ接続</value>
+  </data>
+  <data name="SetupChatLink.Content" xml:space="preserve">
+    <value>チャット受信</value>
+  </data>
+  <data name="StartOnboarding.Content" xml:space="preserve">
+    <value>初期設定ガイドを開く</value>
+  </data>
+  <data name="OverviewTerms.Content" xml:space="preserve">
+    <value>利用規約</value>
+  </data>
+  <data name="OverviewPrivacy.Content" xml:space="preserve">
+    <value>プライバシーポリシー</value>
+  </data>
+  <data name="SetupReloadSettings.Content" xml:space="preserve">
+    <value>設定を再読み込み</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock006.Text" xml:space="preserve">
+    <value>チャットを窓口に、ローカルPCへ依頼</value>
+  </data>
+  <data name="OverviewArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>別の端末のSlackまたはMattermostから依頼し、起動中のPCのChat Agent Bridgeが受け取ります。PCで確認後、Codex CLIまたはClaude Code CLIを実行し、確認して共有した結果を同じスレッドで受け取ります。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock007.Text" xml:space="preserve">
+    <value>図の説明：スマートフォンやブラウザーからSlackまたはMattermostへ送った依頼を、チャット経由で起動中のローカルPCのChat Agent Bridgeが受け取り、Codex CLIまたはClaude Code CLIを設定済みプロジェクトで実行します。結果は同じチャットへ返ります。AI処理の場所はCLIやモデルの提供形態によります。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock008.Text" xml:space="preserve">
+    <value>1. エージェント設定でCLI・モデル・作業フォルダーを設定します。
+2. 接続設定を保存し、チャット受信からSlackまたはMattermostへ接続します。
+3. 別の端末から依頼を送ります。Mattermostは対象チャンネルで !cab 依頼内容、SlackはBotへのメンションまたはスレッドへの返信に !cab 依頼内容を含めます。
+4. PCで依頼を確認して実行し、結果を確認して共有を承認すると、同じスレッドへ返ります。
+
+ローカルPCではこのアプリを起動し、SlackまたはMattermostとの接続を保ってください。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock009.Text" xml:space="preserve">
+    <value>保存済みの設定</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock010.Text" xml:space="preserve">
+    <value>エージェント</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock011.Text" xml:space="preserve">
+    <value>ワークスペース</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock012.Text" xml:space="preserve">
+    <value>設定の保存先</value>
+  </data>
+  <data name="OpenWorkbench.Content" xml:space="preserve">
+    <value>手動で実行する</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock013.Text" xml:space="preserve">
+    <value>エージェント設定</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock014.Text" xml:space="preserve">
+    <value>このアプリから次に実行するCLIとモデルを設定します。CLI自身の設定ファイルは変更しません。利用前にCLIのインストールとログインが必要です。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock015.Text" xml:space="preserve">
+    <value>最初に使う作業フォルダー</value>
+  </data>
+  <data name="WorkspaceRoot.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>作業フォルダー</value>
+  </data>
+  <data name="WorkspaceRoot.PlaceholderText" xml:space="preserve">
+    <value>例: C:\Projects\my-app</value>
+  </data>
+  <data name="WorkspaceRoot.Header" xml:space="preserve">
+    <value>作業フォルダー（絶対パス）</value>
+  </data>
+  <data name="BrowseWorkspace.Content" xml:space="preserve">
+    <value>フォルダーを選択…</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock016.Text" xml:space="preserve">
+    <value>選択後は設定を保存し、接続中なら再接続してください。既存の会話の作業先は自動変更しません。Slackでは !cab folder C:\Projects\my-app で、そのユーザー・スレッドの作業先を変更できます。PCで承認すると新しいAI会話として開始します。</value>
+  </data>
+  <data name="AgentProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>使うエージェント</value>
+  </data>
+  <data name="AgentProvider.Header" xml:space="preserve">
+    <value>使うエージェント</value>
+  </data>
+  <data name="ProviderOptionCustom.Content" xml:space="preserve">
+    <value>その他のCLI（詳細設定）</value>
+  </data>
+  <data name="AgentAdvanced.Header" xml:space="preserve">
+    <value>詳細：CLIの場所と起動引数</value>
+  </data>
+  <data name="AgentExecutable.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>CLI実行ファイル</value>
+  </data>
+  <data name="AgentExecutable.Header" xml:space="preserve">
+    <value>CLI実行ファイル</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock017.Text" xml:space="preserve">
+    <value>通常はcodexまたはclaudeです。見つからない場合は実行ファイルのフルパスを指定してください。</value>
+  </data>
+  <data name="AgentArguments.Header" xml:space="preserve">
+    <value>その他のCLIの起動引数</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock018.Text" xml:space="preserve">
+    <value>Codex・Claude Codeの標準引数とモデル指定はアプリが組み立てます。その他のCLIは標準入力から依頼文を受け取れる形式を指定してください。</value>
+  </data>
+  <data name="SettingsCheckCli.Content" xml:space="preserve">
+    <value>CLIをチェック（バージョン・モデル）</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock019.Text" xml:space="preserve">
+    <value>依頼が実行され、結果が届くまで</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock020.Text" xml:space="preserve">
+    <value>1  アカウント・チャンネル・スレッドの許可</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock021.Text" xml:space="preserve">
+    <value>2  会話の承認方法（毎回 / 最初だけ / 自動）</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock022.Text" xml:space="preserve">
+    <value>3  信頼する作業フォルダーとAIの操作許可</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock023.Text" xml:space="preserve">
+    <value>4  実行後、設定に応じて結果を共有</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock024.Text" xml:space="preserve">
+    <value>現在の設定</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock025.Text" xml:space="preserve">
+    <value>信頼する作業フォルダー</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock026.Text" xml:space="preserve">
+    <value>信頼するフォルダーを絶対パスで1行ずつ指定します。指定すると、その中にある作業フォルダーだけで実行できます。空欄なら現在の作業フォルダーを信頼します。この制限は実行の起点の確認で、CLIによるファイルアクセスをOSで隔離するものではありません。</value>
+  </data>
+  <data name="TrustedWorkspaceRoots.Header" xml:space="preserve">
+    <value>信頼するフォルダー（絶対パス、1行1つ）</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock027.Text" xml:space="preserve">
+    <value>AIツールの操作許可</value>
+  </data>
+  <data name="AgentPermissionMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>AIツールの操作許可</value>
+  </data>
+  <data name="AgentPermissionMode.Header" xml:space="preserve">
+    <value>CLIの許可モード</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem001.Content" xml:space="preserve">
+    <value>CLI既定</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem002.Content" xml:space="preserve">
+    <value>読み取り・計画のみ</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem003.Content" xml:space="preserve">
+    <value>フォルダー内の編集を自動許可</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem004.Content" xml:space="preserve">
+    <value>フルアクセス</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem005.Content" xml:space="preserve">
+    <value>操作ごとに確認（Codex App Server）</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock028.Text" xml:space="preserve">
+    <value>Claude Codeでは読み取り・計画のみがplan、フォルダー内の編集がacceptEditsに対応します。どちらもOSのサンドボックスを設定しません。「操作ごとに確認」はCodex App Server利用時だけ選べます。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock029.Text" xml:space="preserve">
+    <value>フルアクセスはCLIの許可確認を迂回する場合があります。内容を理解したうえで選択してください。</value>
+  </data>
+  <data name="AllowAgentNetwork.Header" xml:space="preserve">
+    <value>Codex CLIのツールネットワークを許可</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock030.Text" xml:space="preserve">
+    <value>Codexのツールが使うネットワーク設定です。モデルAPIへの接続や、Claude Codeのネットワーク設定は制御しません。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock031.Text" xml:space="preserve">
+    <value>チャット依頼の承認と結果共有</value>
+  </data>
+  <data name="ChatApprovalMode.Header" xml:space="preserve">
+    <value>会話ごとの承認</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem006.Content" xml:space="preserve">
+    <value>毎回確認</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem007.Content" xml:space="preserve">
+    <value>最初だけ確認</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem008.Content" xml:space="preserve">
+    <value>自動承認</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock032.Text" xml:space="preserve">
+    <value>最初だけ確認は、同じ会話の以降の依頼を自動承認します。自動承認では会話から届いた依頼を確認画面なしで実行します。</value>
+  </data>
+  <data name="ChatResultMode.Header" xml:space="preserve">
+    <value>実行結果の共有</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem009.Content" xml:space="preserve">
+    <value>手動で確認して共有</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem010.Content" xml:space="preserve">
+    <value>自動共有</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageComboBoxItem011.Content" xml:space="preserve">
+    <value>共有しない</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock033.Text" xml:space="preserve">
+    <value>自動共有は成功時の結果本文を元のスレッドへ返信します。スレッドの閲覧者全員に公開されます。「共有しない」では本文の手動送信も無効です。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock034.Text" xml:space="preserve">
+    <value>チャットのアカウント・会話範囲</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock035.Text" xml:space="preserve">
+    <value>接続設定で許可したユーザーIDは引き続き必須です。ここでは追加で対象チャンネルやスレッドを絞れます。空欄は追加の制限なしです。各欄にIDを1行ずつ入力します。</value>
+  </data>
+  <data name="SlackAllowedChannelIds.Header" xml:space="preserve">
+    <value>SlackチャンネルID</value>
+  </data>
+  <data name="SlackAllowedThreadIds.Header" xml:space="preserve">
+    <value>SlackスレッドID</value>
+  </data>
+  <data name="MattermostAllowedThreadIds.Header" xml:space="preserve">
+    <value>MattermostスレッドID</value>
+  </data>
+  <data name="AgentModel.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>モデル名</value>
+  </data>
+  <data name="AgentModel.Header" xml:space="preserve">
+    <value>モデル名（空欄ならCLIの既定値）</value>
+  </data>
+  <data name="ReasoningEffortCandidates.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>推論レベル候補</value>
+  </data>
+  <data name="ReasoningEffortCandidates.Header" xml:space="preserve">
+    <value>推論の強さ（CLIの候補）</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock036.Text" xml:space="preserve">
+    <value>候補を取得すると、現在のモデルがCLIから報告した推論レベルだけを選べます。「CLIの既定値」を選ぶと、強さの指定をCLIに任せます。モデル別の対応が未取得の場合は保存値をそのまま保持します。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock037.Text" xml:space="preserve">
+    <value>契約で使えるモデル名やエイリアスを入力します。モデルによって料金・速度・精度が変わります。保存済みの会話ごとに変える場合は「履歴と会話」から指定できます。</value>
+  </data>
+  <data name="FetchModels.Content" xml:space="preserve">
+    <value>CLIモデル候補を取得</value>
+  </data>
+  <data name="CancelFetchModels.Content" xml:space="preserve">
+    <value>取得をキャンセル</value>
+  </data>
+  <data name="ModelCandidates.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>モデル候補</value>
+  </data>
+  <data name="ModelCandidates.Header" xml:space="preserve">
+    <value>CLIが提示したモデル候補</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock038.Text" xml:space="preserve">
+    <value>候補はCLIの報告値です。契約上の利用可否は実行時に確認されます。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock039.Text" xml:space="preserve">
+    <value>エージェントがファイルを読み書きするプロジェクトのフォルダーです。Slackでは !cab folder に続けて絶対パスを指定すると、信頼フォルダー内の変更を依頼できます。PCでの承認が必要です。</value>
+  </data>
+  <data name="UseAppServer.Header" xml:space="preserve">
+    <value>実行中の操作許可・質問を画面で受け取る（Codex専用）</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock040.Text" xml:space="preserve">
+    <value>オンではCodex App Serverを利用します。オフではCLIへ依頼を渡して完了を待ちます。Claude Codeも会話を継続しますが、実行中の追加質問には対応しません。</value>
+  </data>
+  <data name="RequireApproval.Header" xml:space="preserve">
+    <value>手動実行の前に内容を確認する</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock041.Text" xml:space="preserve">
+    <value>チャットから届いた依頼の承認方法は、上の「会話ごとの承認」で設定します。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock042.Text" xml:space="preserve">
+    <value>起動と接続</value>
+  </data>
+  <data name="StartWithWindows.Header" xml:space="preserve">
+    <value>Windowsログイン時にこのアプリを起動</value>
+  </data>
+  <data name="AutoConnectProvider.Header" xml:space="preserve">
+    <value>アプリ起動後に自動接続するチャット</value>
+  </data>
+  <data name="AutoConnectOptionNone.Content" xml:space="preserve">
+    <value>接続しない</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock043.Text" xml:space="preserve">
+    <value>接続情報を保存したチャットへ、次回のアプリ起動時に接続します。依頼の実行は会話の承認設定に従います。ウィンドウを閉じた後は依頼を受信しません。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock044.Text" xml:space="preserve">
+    <value>手動で実行</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock045.Text" xml:space="preserve">
+    <value>このPCからエージェントに依頼します。実行するCLI・モデル・作業フォルダーは「エージェント設定」で変更できます。</value>
+  </data>
+  <data name="OpenAgentSettings.Content" xml:space="preserve">
+    <value>エージェント設定を開く</value>
+  </data>
+  <data name="Prompt.Header" xml:space="preserve">
+    <value>依頼内容</value>
+  </data>
+  <data name="RunAgent.Content" xml:space="preserve">
+    <value>実行</value>
+  </data>
+  <data name="CancelAgent.Content" xml:space="preserve">
+    <value>実行を停止</value>
+  </data>
+  <data name="AgentOutput.Header" xml:space="preserve">
+    <value>実行結果（このPCのみ）</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock046.Text" xml:space="preserve">
+    <value>接続設定</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock047.Text" xml:space="preserve">
+    <value>Mattermost と Slack の認証情報をこのデバイスに保存します。保存後に「チャット受信」から接続してください。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock048.Text" xml:space="preserve">
+    <value>サーバーURLは利用中のMattermostのアドレスです。チャンネルIDは表示名とは異なる識別子で、このチャンネルだけを受信します。接続するユーザーの権限で読み取り・投稿するため、そのユーザーを対象チャンネルへ参加させてください。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock049.Text" xml:space="preserve">
+    <value>サーバー URL</value>
+  </data>
+  <data name="MattermostServerUrl.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mattermost サーバー URL</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock050.Text" xml:space="preserve">
+    <value>受信するチャンネルのID</value>
+  </data>
+  <data name="MattermostChannelId.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mattermost チャンネル ID</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock051.Text" xml:space="preserve">
+    <value>接続するユーザーのアクセストークン</value>
+  </data>
+  <data name="MattermostToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mattermost アクセストークン</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock052.Text" xml:space="preserve">
+    <value>許可するMattermostユーザーID（1行1人）</value>
+  </data>
+  <data name="MattermostAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>許可するMattermostユーザーID（1行1人）</value>
+  </data>
+  <data name="MattermostAllowedUserIds.PlaceholderText" xml:space="preserve">
+    <value>例: abc123xyz</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock053.Text" xml:space="preserve">
+    <value>空欄は全員を拒否します。表示名や @メンションは使えません。MattermostのプロフィールからユーザーIDをコピーしてください。改行、空白、カンマ、セミコロンで区切れます。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock054.Text" xml:space="preserve">
+    <value>Botトークンは投稿用、AppトークンはSocket Modeで依頼を受信するために使います。Slackアプリ側の権限・イベント購読の設定と、Botのチャンネル参加が必要です。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock055.Text" xml:space="preserve">
+    <value>Botトークン（xoxb-で始まる値）</value>
+  </data>
+  <data name="SlackBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Slack Bot トークン</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock056.Text" xml:space="preserve">
+    <value>Socket Mode用Appトークン（xapp-で始まる値）</value>
+  </data>
+  <data name="SlackAppToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Slack App トークン</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock057.Text" xml:space="preserve">
+    <value>許可するSlackユーザーID（1行1人）</value>
+  </data>
+  <data name="SlackAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>許可するSlackユーザーID（1行1人）</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock058.Text" xml:space="preserve">
+    <value>空欄は全員を拒否します。表示名や @メンションは使えません。SlackのプロフィールからユーザーIDをコピーしてください。改行、空白、カンマ、セミコロンで区切れます。</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock059.Text" xml:space="preserve">
+    <value>操作承認とプライバシー</value>
+  </data>
+  <data name="ShareApprovalsInChat.Header" xml:space="preserve">
+    <value>操作承認の詳細をスレッドに公開</value>
+  </data>
+  <data name="chatAgentBridgeDesktopMainPageTextBlock060.Text" xml:space="preserve">
+    <value>有効にすると、Codex app-serverでの操作承認に表示されるコマンドと作業フォルダーを、チャットのスレッドへ投稿します。スレッドの参加者全員が見られます。初期状態はオフです。</value>
+  </data>
+  <data name="SaveConnections.Content" xml:space="preserve">
+    <value>接続設定を保存</value>
+  </data>
+  <data name="historyHistoryPageTextBlock001.Text" xml:space="preserve">
+    <value>履歴と会話</value>
+  </data>
+  <data name="historyHistoryPageTextBlock002.Text" xml:space="preserve">
+    <value>日時・状態・作業フォルダーを保存します。本文や実行結果は保存しません。</value>
+  </data>
+  <data name="AgentSettingsFromHistory.Content" xml:space="preserve">
+    <value>エージェント設定を開く</value>
+  </data>
+  <data name="RefreshHistory.Content" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="historyHistoryPageTextBlock003.Text" xml:space="preserve">
+    <value>実行履歴</value>
+  </data>
+  <data name="historyHistoryPageTextBlock004.Text" xml:space="preserve">
+    <value>実行した日時、状態、作業フォルダー、会話とセッション ID を表示します。</value>
+  </data>
+  <data name="historyHistoryPageTextBlock005.Text" xml:space="preserve">
+    <value>トークン数はプロバイダーの報告値で、料金そのものではありません。未報告の項目は「未取得」と表示します。観測範囲は今回のターン・直近の依頼・スレッド累計で異なる場合があります。</value>
+  </data>
+  <data name="ExecutionHistoryList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>実行履歴</value>
+  </data>
+  <data name="EmptyExecutionHistory.Text" xml:space="preserve">
+    <value>実行履歴はまだありません。チャットの依頼を承認して実行すると、メタデータがここに表示されます。</value>
+  </data>
+  <data name="historyHistoryPageTextBlock006.Text" xml:space="preserve">
+    <value>保存済みセッション</value>
+  </data>
+  <data name="historyHistoryPageTextBlock007.Text" xml:space="preserve">
+    <value>セッションは会話の継続先です。切り離すと次回は新しい会話になり、過去の実行履歴は残ります。モデル欄が空なら既定モデルを使います。</value>
+  </data>
+  <data name="historyHistoryPageTextBlock008.Text" xml:space="preserve">
+    <value>次回の実行モデルを設定</value>
+  </data>
+  <data name="historyHistoryPageTextBlock009.Text" xml:space="preserve">
+    <value>この会話の承認・操作・共有を設定</value>
+  </data>
+  <data name="DetachSession.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>選択したセッションを切り離す</value>
+  </data>
+  <data name="historyHistoryPageTextBlock010.Text" xml:space="preserve">
+    <value>セッションを切り離す</value>
+  </data>
+  <data name="SavedSessionsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>保存済みセッション</value>
+  </data>
+  <data name="EmptySavedSessions.Text" xml:space="preserve">
+    <value>保存済みセッションはありません。実行履歴があっても、セッションが保存されない実行があります。</value>
+  </data>
+  <data name="historyHistoryPageTextBlock011.Text" xml:space="preserve">
+    <value>監査イベント</value>
+  </data>
+  <data name="historyHistoryPageTextBlock012.Text" xml:space="preserve">
+    <value>依頼の受信、承認、拒否、実行、切り離しなどの操作記録です。メッセージ本文は含みません。</value>
+  </data>
+  <data name="AuditHistoryList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>監査イベント</value>
+  </data>
+  <data name="EmptyAuditHistory.Text" xml:space="preserve">
+    <value>監査イベントはまだありません。チャット操作を行うと、この一覧にメタデータが追加されます。</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock001.Text" xml:space="preserve">
+    <value>チャット受信</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock002.Text" xml:space="preserve">
+    <value>許可された範囲の依頼を、会話の承認設定に従ってこのPCで実行します。初期設定は毎回確認・結果本文は手動共有です。会話はユーザー・接続先・スレッドごとに分離します。操作承認は初期設定ではPCだけに表示し、公開を有効にすると詳細がスレッドの閲覧者全員に見えます。切断中の依頼は再投稿してください。</value>
+  </data>
+  <data name="ConnectMattermost.Content" xml:space="preserve">
+    <value>Mattermostに接続</value>
+  </data>
+  <data name="ConnectSlack.Content" xml:space="preserve">
+    <value>Slackに接続</value>
+  </data>
+  <data name="DisconnectChat.Content" xml:space="preserve">
+    <value>切断</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock003.Text" xml:space="preserve">
+    <value>Mattermostでは !cab 依頼内容、SlackではBotへのメンションで依頼を始めます。保存済みのSlack会話は、同じ本人が同じスレッドへ普通に返信できます。!cab folder C:\Projects\my-app で会話の作業先を変更できます。信頼フォルダーの範囲内に限り、変更には毎回PCで承認が必要です。変更後は新しいAI会話として開始します。</value>
+  </data>
+  <data name="ChatRequests.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>受信した依頼</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock004.Text" xml:space="preserve">
+    <value>内容を確認して実行</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock005.Text" xml:space="preserve">
+    <value>拒否</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock006.Text" xml:space="preserve">
+    <value>実行を停止</value>
+  </data>
+  <data name="inboxChatInboxPageTextBlock007.Text" xml:space="preserve">
+    <value>結果をスレッドに送信</value>
+  </data>
+  <data name="ChatOutput.Header" xml:space="preserve">
+    <value>実行結果（このPCにのみ表示）</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock001.Text" xml:space="preserve">
+    <value>PCのAIをチャットから使う</value>
+  </data>
+  <data name="WizardArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>SlackまたはMattermostからPC上のアプリへ依頼し、PC上のAI CLIが応答する仕組みを示す図</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock002.Text" xml:space="preserve">
+    <value>SlackまたはMattermostを窓口にして、このPCのCodex CLIやClaude Code CLIへ依頼を渡します。作業ファイルとCLIはこのPCにあり、AIの処理や情報の送信先はCLIと利用するAIサービスの設定に従います。</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock003.Text" xml:space="preserve">
+    <value>チャットから利用する間は、このデスクトップアプリとPCを起動したままにしてください。依頼や応答は、選んだ外部AIサービスへ送信されます。送信される情報と各サービスの取り扱いを確認してください。</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock004.Text" xml:space="preserve">
+    <value>本アプリは現状有姿で提供し、動作やAIの結果を保証しません。保証と責任の範囲は利用規約をご確認ください。</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock005.Text" xml:space="preserve">
+    <value>利用規約を読む</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock006.Text" xml:space="preserve">
+    <value>プライバシーポリシーを読む</value>
+  </data>
+  <data name="WizardAcceptTerms.Content" xml:space="preserve">
+    <value>利用規約に同意します</value>
+  </data>
+  <data name="onboardingOnboardingIntroTextBlock007.Text" xml:space="preserve">
+    <value>プライバシーポリシーを確認し、記載された情報の取扱いに同意します</value>
+  </data>
+  <data name="OnboardingDefer.Content" xml:space="preserve">
+    <value>後で設定</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock001.Text" xml:space="preserve">
+    <value>エージェントと作業場所</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock002.Text" xml:space="preserve">
+    <value>AIが作業する既存フォルダーを選びます。チャットから別の作業先へ変更する場合も、信頼範囲内に限りPCの承認が必要です。</value>
+  </data>
+  <data name="WizardWorkspaceRoot.Header" xml:space="preserve">
+    <value>作業フォルダー（絶対パス）</value>
+  </data>
+  <data name="WizardPickWorkspaceFolder.Content" xml:space="preserve">
+    <value>フォルダーを選択</value>
+  </data>
+  <data name="WizardAgentProvider.Header" xml:space="preserve">
+    <value>使うAI</value>
+  </data>
+  <data name="WizardAgentExecutable.PlaceholderText" xml:space="preserve">
+    <value>例: codex または claude</value>
+  </data>
+  <data name="WizardAgentExecutable.Header" xml:space="preserve">
+    <value>実行ファイル</value>
+  </data>
+  <data name="WizardUseAppServer.Header" xml:space="preserve">
+    <value>実行中の操作確認をPCで受け取る（Codexのみ）</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock003.Text" xml:space="preserve">
+    <value>CLIは、このPCでAIを動かすコマンドライン版アプリです。先にインストールしてターミナルからログインしてください。デスクトップ版へのログインとは別です。Codexの操作確認を有効にするとApp Server方式で起動します。</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock004.Text" xml:space="preserve">
+    <value>CLIを確認してモデルを選ぶ</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock005.Text" xml:space="preserve">
+    <value>CLIのバージョンを確認できます。ログインはエージェントのCLIで済ませてください。モデル候補はCLIが返す値です。</value>
+  </data>
+  <data name="CheckCli.Content" xml:space="preserve">
+    <value>CLIをチェック</value>
+  </data>
+  <data name="CancelCliCheck.Content" xml:space="preserve">
+    <value>確認をキャンセル</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock006.Text" xml:space="preserve">
+    <value>バージョン</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock007.Text" xml:space="preserve">
+    <value>実行ファイルの場所</value>
+  </data>
+  <data name="WizardModelCandidates.PlaceholderText" xml:space="preserve">
+    <value>候補からモデルを選択</value>
+  </data>
+  <data name="WizardModelCandidates.Header" xml:space="preserve">
+    <value>CLIが提示したモデル候補</value>
+  </data>
+  <data name="WizardOptionalModel.Header" xml:space="preserve">
+    <value>モデル名（空欄ならCLIの既定値）</value>
+  </data>
+  <data name="WizardReasoningEffort.Header" xml:space="preserve">
+    <value>推論の強さ（CLIの候補）</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock008.Text" xml:space="preserve">
+    <value>モデルや推論レベルは契約とCLIが対応する範囲で利用できます。未設定ならCLIの既定値を使います。</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock009.Text" xml:space="preserve">
+    <value>チャット接続と許可ユーザー</value>
+  </data>
+  <data name="WizardChatProvider.Header" xml:space="preserve">
+    <value>接続先</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock010.Text" xml:space="preserve">
+    <value>Slackの接続情報</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock011.Text" xml:space="preserve">
+    <value>Botトークン（xoxb-で始まる値）</value>
+  </data>
+  <data name="WizardSlackBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Slack Botトークン</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock012.Text" xml:space="preserve">
+    <value>Appトークン（xapp-で始まる値）</value>
+  </data>
+  <data name="WizardSlackAppToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Slack Appトークン</value>
+  </data>
+  <data name="WizardSlackAllowedUserIds.Header" xml:space="preserve">
+    <value>許可ユーザーID（必須、1行に1つ）</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock013.Text" xml:space="preserve">
+    <value>SlackではBotトークン xoxb- とAppトークン xapp- の両方が必要です。許可ユーザーIDが空の場合は、誰からの依頼も受け付けません。</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock014.Text" xml:space="preserve">
+    <value>許可ユーザーIDは、Slackの自分のプロフィールを開き、その他メニューの「メンバーIDをコピー」で取得します。表示名やメールアドレスではありません。</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock015.Text" xml:space="preserve">
+    <value>Mattermostの接続情報</value>
+  </data>
+  <data name="WizardMattermostServerUrl.Header" xml:space="preserve">
+    <value>サーバーURL</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock016.Text" xml:space="preserve">
+    <value>HTTPSのサーバーURLを入力します。HTTPは、このPCで動くサーバー（localhostなど）に限り利用できます。</value>
+  </data>
+  <data name="WizardMattermostChannelId.Header" xml:space="preserve">
+    <value>チャンネルID</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock017.Text" xml:space="preserve">
+    <value>ユーザーアクセストークン</value>
+  </data>
+  <data name="WizardMattermostToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mattermostアクセストークン</value>
+  </data>
+  <data name="WizardMattermostAllowedUserIds.Header" xml:space="preserve">
+    <value>許可ユーザーID（必須、1行に1つ）</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock018.Text" xml:space="preserve">
+    <value>許可ユーザーIDはMattermostのアカウントIDです。表示名ではありません。チャンネルIDはチャンネル情報から確認します。空欄の場合は、誰からの依頼も受け付けません。</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock019.Text" xml:space="preserve">
+    <value>トークンはこの画面にのみ入力してください。実行結果にトークンを出力しません。</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock020.Text" xml:space="preserve">
+    <value>安全設定と接続確認</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock021.Text" xml:space="preserve">
+    <value>チャットから届く依頼の承認方法と、実行後の結果共有を選びます。</value>
+  </data>
+  <data name="WizardChatApprovalMode.Header" xml:space="preserve">
+    <value>依頼の承認</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem001.Content" xml:space="preserve">
+    <value>毎回確認（おすすめ）</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem002.Content" xml:space="preserve">
+    <value>最初だけ確認</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem003.Content" xml:space="preserve">
+    <value>自動承認</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock022.Text" xml:space="preserve">
+    <value>最初だけ確認では、同じ会話の2回目以降の依頼を自動承認します。自動承認では、会話から届いた依頼を確認画面なしで実行します。</value>
+  </data>
+  <data name="WizardChatResultMode.Header" xml:space="preserve">
+    <value>実行結果の共有</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem004.Content" xml:space="preserve">
+    <value>手動で確認して共有（おすすめ）</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem005.Content" xml:space="preserve">
+    <value>自動共有</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem006.Content" xml:space="preserve">
+    <value>共有しない</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock023.Text" xml:space="preserve">
+    <value>自動共有した結果は、元のスレッドを見られる全員に公開されます。内容をPCで確認してから送る場合は「手動で確認して共有」を選びます。</value>
+  </data>
+  <data name="WizardAgentPermissionMode.Header" xml:space="preserve">
+    <value>AIの操作許可</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem007.Content" xml:space="preserve">
+    <value>CLIの既定値を使う（おすすめ）</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem008.Content" xml:space="preserve">
+    <value>読み取り・計画のみ</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem009.Content" xml:space="preserve">
+    <value>作業フォルダー内の編集を許可</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem010.Content" xml:space="preserve">
+    <value>フルアクセス</value>
+  </data>
+  <data name="onboardingOnboardingWizardComboBoxItem011.Content" xml:space="preserve">
+    <value>操作ごとに確認（Codex App Server）</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock024.Text" xml:space="preserve">
+    <value>「操作ごとに確認」はCodex App Server利用時だけ選べます。フルアクセスはCLI側の確認を迂回する場合があります。</value>
+  </data>
+  <data name="WizardAutoConnect.Header" xml:space="preserve">
+    <value>アプリ起動時に、このチャットへ接続する</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock025.Text" xml:space="preserve">
+    <value>Windowsへのログイン時にアプリ自体を起動する設定は、初期設定の完了後に「エージェント設定」で変更できます。</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock026.Text" xml:space="preserve">
+    <value>設定内容</value>
+  </data>
+  <data name="onboardingOnboardingWizardTextBlock027.Text" xml:space="preserve">
+    <value>チャット接続</value>
+  </data>
+  <data name="WizardConnectMattermost.Content" xml:space="preserve">
+    <value>Mattermostに接続</value>
+  </data>
+  <data name="WizardConnectSlack.Content" xml:space="preserve">
+    <value>Slackに接続</value>
+  </data>
+  <data name="OnboardingPrevious.Content" xml:space="preserve">
+    <value>戻る</value>
+  </data>
+</root>

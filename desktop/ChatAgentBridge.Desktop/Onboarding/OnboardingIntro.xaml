@@ -2,14 +2,16 @@
     x:Class="ChatAgentBridge_Desktop.Onboarding.OnboardingIntro"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:ChatAgentBridge_Desktop.Onboarding">
+    xmlns:local="using:ChatAgentBridge_Desktop.Onboarding"
+    xmlns:localization="using:ChatAgentBridge_Desktop.Localization">
     <StackPanel x:Name="IntroStackPanel" Spacing="16" HorizontalAlignment="Stretch">
-        <TextBlock Text="PCのAIをチャットから使う" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" />
-        <Image x:Name="ArchitectureImage" Source="ms-appx:///Assets/OverviewArchitecture.png" Stretch="Uniform" MaxHeight="260"
-               AutomationProperties.Name="SlackまたはMattermostからPC上のアプリへ依頼し、PC上のAI CLIが応答する仕組みを示す図" AutomationProperties.AutomationId="WizardArchitecture" />
-        <TextBlock Text="SlackまたはMattermostを窓口にして、このPCのCodex CLIやClaude Code CLIへ依頼を渡します。作業ファイルとCLIはこのPCにあり、AIの処理や情報の送信先はCLIと利用するAIサービスの設定に従います。" TextWrapping="Wrap" />
-        <TextBlock Text="チャットから利用する間は、このデスクトップアプリとPCを起動したままにしてください。依頼や応答は、選んだ外部AIサービスへ送信されます。送信される情報と各サービスの取り扱いを確認してください。" TextWrapping="Wrap" />
-        <TextBlock Text="本アプリは現状有姿で提供し、動作やAIの結果を保証しません。保証と責任の範囲は利用規約をご確認ください。" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" />
+        <localization:LanguageSettings />
+        <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock001" />
+        <Image x:Name="ArchitectureImage" Source="{x:Bind localization:LocalizedAssets.OverviewArchitecture, Mode=OneTime}" Stretch="Uniform" MaxHeight="260"
+                AutomationProperties.AutomationId="WizardArchitecture"  x:Uid="WizardArchitecture" />
+        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock002" />
+        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock003" />
+        <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingIntroTextBlock004" />
         <Grid ColumnSpacing="12" RowSpacing="8">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -21,13 +23,13 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Button x:Name="TermsButton" Grid.Row="0" Grid.Column="0" Click="ShowTerms_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardTerms">
-                <TextBlock Text="利用規約を読む" TextWrapping="Wrap" TextAlignment="Center" />
+                <TextBlock  TextWrapping="Wrap" TextAlignment="Center"  x:Uid="onboardingOnboardingIntroTextBlock005" />
             </Button>
             <Button x:Name="PrivacyButton" Grid.Row="0" Grid.Column="1" Click="ShowPrivacy_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardPrivacy">
-                <TextBlock Text="プライバシーポリシーを読む" TextWrapping="Wrap" TextAlignment="Center" />
+                <TextBlock  TextWrapping="Wrap" TextAlignment="Center"  x:Uid="onboardingOnboardingIntroTextBlock006" />
             </Button>
-            <CheckBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Content="利用規約に同意します" IsChecked="{x:Bind ViewModel.HasAcceptedTerms, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptTerms" />
-            <CheckBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" IsChecked="{x:Bind ViewModel.HasAcceptedPrivacy, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptPrivacy"><TextBlock Text="プライバシーポリシーを確認し、記載された情報の取扱いに同意します" TextWrapping="Wrap" /></CheckBox>
+            <CheckBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"  IsChecked="{x:Bind ViewModel.HasAcceptedTerms, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptTerms"  x:Uid="WizardAcceptTerms" />
+            <CheckBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" IsChecked="{x:Bind ViewModel.HasAcceptedPrivacy, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptPrivacy"><TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock007" /></CheckBox>
         </Grid>
         <TextBlock Text="{x:Bind ViewModel.ConsentStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardConsentStatus" />
     </StackPanel>

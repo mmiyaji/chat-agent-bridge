@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml.Controls;
+using ChatAgentBridge_Desktop.Localization;
 
 namespace ChatAgentBridge_Desktop.Inbox;
 
@@ -62,18 +63,19 @@ public sealed partial class ChatInboxPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = changesWorkspace ? "この会話の作業フォルダーを変更しますか？" : "ローカルエージェントで実行しますか？",
+            Title = DesktopText.Get(changesWorkspace ? "InboxConfirmWorkspaceTitle" : "InboxConfirmRunTitle"),
             Content = new ScrollViewer
             {
                 Content = new TextBlock
                 {
-                    Text = $"{item.Source}\nスレッド: {item.Request.ThreadId}\n{item.SessionLabel}\n作業フォルダー: {item.Workspace}\nエージェント: {item.Settings.AgentExecutable} {(item.Settings.AgentMode == "app-server" ? "app-server" : item.Settings.AgentArguments)}\n\n{item.Prompt}",
+                    Text = DesktopText.Get("InboxRunConfirmBody", item.Source, item.Request.ThreadId, item.SessionLabel, item.Workspace,
+                        item.Settings.AgentExecutable, item.Settings.AgentMode == "app-server" ? "app-server" : item.Settings.AgentArguments, item.Prompt),
                     TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap
                 },
                 MaxHeight = 400
             },
-            PrimaryButtonText = changesWorkspace ? "変更" : "実行",
-            CloseButtonText = "キャンセル",
+            PrimaryButtonText = DesktopText.Get(changesWorkspace ? "Change" : "Run"),
+            CloseButtonText = DesktopText.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close
         };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(dialog, "ChatRunConfirmation");
@@ -85,19 +87,19 @@ public sealed partial class ChatInboxPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "結果本文をチャットに送信しますか？",
+            Title = DesktopText.Get("ConfirmSendResultTitle"),
             Content = new ScrollViewer
             {
                 MaxHeight = 400,
                 Content = new TextBlock
                 {
-                    Text = $"この結果はスレッドの閲覧者全員に公開されます。依頼者だけへのDMではありません。\n送信先: {item.Source}\nスレッド: {item.Request.ThreadId}\n\n{text}",
+                    Text = DesktopText.Get("ConfirmSendResultBody", item.Source, item.Request.ThreadId, text),
                     TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap,
                     IsTextSelectionEnabled = true
                 }
             },
-            PrimaryButtonText = "送信",
-            CloseButtonText = "キャンセル",
+            PrimaryButtonText = DesktopText.Get("Send"),
+            CloseButtonText = DesktopText.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close
         };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(dialog, "ReplyConfirmation");

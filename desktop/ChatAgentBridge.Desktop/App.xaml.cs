@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using ChatAgentBridge_Desktop.Notifications;
+using ChatAgentBridge.Core.Localization;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -31,6 +32,7 @@ public partial class App : Application
 
     /// <summary>In-memory notification callbacks for pending chat decisions.</summary>
     public static PendingRequestNotificationService PendingRequestNotifications { get; private set; } = null!;
+    public static string SystemLanguageTag { get; private set; } = "en-US";
 
     /// <summary>
     /// The native window handle (HWND). Use for file pickers,
@@ -52,7 +54,7 @@ public partial class App : Application
     /// Invoked when the application is launched.
     /// </summary>
     /// <param name="args">Details about the launch request and process.</param>
-    protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+    protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
         // AUMID activation does not inherit the invoking terminal's environment.
         // An explicit data directory keeps packaged UI tests isolated.
@@ -63,6 +65,18 @@ public partial class App : Application
             Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", launchArguments[1]);
         else if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CAB_WINUI_DATA_DIR")))
             Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", Windows.Storage.ApplicationData.Current.LocalFolder.Path);
+
+        try { SystemLanguageTag = Windows.System.UserProfile.GlobalizationPreferences.Languages.FirstOrDefault() ?? System.Globalization.CultureInfo.InstalledUICulture.Name; }
+        catch { SystemLanguageTag = System.Globalization.CultureInfo.InstalledUICulture.Name; }
+        var languagePreference = new LanguagePreferences();
+        try { languagePreference = await new LanguagePreferencesStore(new ChatAgentBridge.Core.SettingsStore()).LoadAsync(); }
+        catch (Exception ex) when (ex is System.IO.IOException or System.Text.Json.JsonException or UnauthorizedAccessException or ArgumentException)
+        {
+            // An unreadable preference never prevents access to the language selector.
+            // Preserve the file; a later explicit preference change can repair it.
+        }
+        var language = AppLanguage.Apply(languagePreference.Language, SystemLanguageTag);
+        Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language.Name;
 
         DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         PendingRequestNotifications = new PendingRequestNotificationService(DispatcherQueue);

@@ -2,6 +2,7 @@ using ChatAgentBridge_Desktop.Inbox;
 using ChatAgentBridge_Desktop.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using ChatAgentBridge_Desktop.Localization;
 using Microsoft.Windows.Storage.Pickers;
 
 namespace ChatAgentBridge_Desktop.Onboarding;
@@ -55,7 +56,7 @@ public sealed partial class OnboardingWizard : UserControl
         {
             var picker = new FolderPicker(button.XamlRoot.ContentIslandEnvironment.AppWindowId)
             {
-                CommitButtonText = "このフォルダーを選択"
+                CommitButtonText = DesktopText.Get("ChooseThisFolder")
             };
             var folder = await picker.PickSingleFolderAsync();
             if (folder is not null)
@@ -63,7 +64,7 @@ public sealed partial class OnboardingWizard : UserControl
         }
         catch (Exception ex)
         {
-            SetWizardStatus("フォルダーを選択できませんでした", ex.Message, "Error");
+            SetWizardStatus(DesktopText.Get("FolderPickFailed"), ex.Message, "Error");
         }
         finally
         {
@@ -91,7 +92,7 @@ public sealed partial class OnboardingWizard : UserControl
         if (ViewModel.IsOnboardingBusy) return;
         if (Inbox.IsExecuting)
         {
-            SetWizardStatus("接続できません", "実行中の作業が終わってから接続してください。", "Warning");
+            SetWizardStatus(DesktopText.Get("CannotConnect"), DesktopText.Get("WaitForExecutionToFinish"), "Warning");
             return;
         }
 
@@ -109,7 +110,7 @@ public sealed partial class OnboardingWizard : UserControl
         }
         catch
         {
-            SetWizardStatus("接続できませんでした", "接続情報とネットワークを確認して再接続してください。", "Error");
+            SetWizardStatus(DesktopText.Get("ConnectionFailed"), DesktopText.Get("CheckConnectionAndNetwork"), "Error");
         }
         finally { ViewModel.IsOnboardingBusy = false; }
     }

@@ -1,0 +1,518 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AgentNotConfigured" xml:space="preserve">
+    <value>Agent is not configured</value>
+  </data>
+  <data name="AgentProcessStopped" xml:space="preserve">
+    <value>The agent process was stopped.</value>
+  </data>
+  <data name="AgentRunning" xml:space="preserve">
+    <value>The agent is running…</value>
+  </data>
+  <data name="Allowed" xml:space="preserve">
+    <value>Allowed</value>
+  </data>
+  <data name="AllowedUsersOnly" xml:space="preserve">
+    <value>Within the allowed user list</value>
+  </data>
+  <data name="ApprovalAutomatic" xml:space="preserve">
+    <value>Approve automatically</value>
+  </data>
+  <data name="ApprovalEveryTime" xml:space="preserve">
+    <value>Confirm every time</value>
+  </data>
+  <data name="ApprovalFirstOnly" xml:space="preserve">
+    <value>Confirm the first request only</value>
+  </data>
+  <data name="AuditRecordSaveFailed" xml:space="preserve">
+    <value>The audit record could not be saved.</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="CancelExecutionInstruction" xml:space="preserve">
+    <value>Select Cancel to stop the run.</value>
+  </data>
+  <data name="CannotStartExecution" xml:space="preserve">
+    <value>Cannot start execution</value>
+  </data>
+  <data name="CannotStartExecutionDetails" xml:space="preserve">
+    <value>Execution stopped for safety because the confirmation dialog could not be shown.</value>
+  </data>
+  <data name="ChatConnectionRequired" xml:space="preserve">
+    <value>Connect to chat to continue</value>
+  </data>
+  <data name="ChatConnectionRequiredDetails" xml:space="preserve">
+    <value>Select Connect on this screen and finish after it shows Connected.</value>
+  </data>
+  <data name="CheckCliAndModel" xml:space="preserve">
+    <value>Check the CLI and model</value>
+  </data>
+  <data name="CheckConnectionDetails" xml:space="preserve">
+    <value>Check the connection details</value>
+  </data>
+  <data name="CheckSettingsFileAndReload" xml:space="preserve">
+    <value>Check the settings file, then reload.</value>
+  </data>
+  <data name="CheckWorkspace" xml:space="preserve">
+    <value>Check the workspace folder</value>
+  </data>
+  <data name="CheckWorkspaceDetails" xml:space="preserve">
+    <value>Enter an absolute path to an existing folder or choose one with Select Folder.</value>
+  </data>
+  <data name="Checking" xml:space="preserve">
+    <value>Checking…</value>
+  </data>
+  <data name="CheckingCliVersion" xml:space="preserve">
+    <value>Checking that the CLI starts and reporting its version…</value>
+  </data>
+  <data name="CheckingConnectionState" xml:space="preserve">
+    <value>Checking connection status.</value>
+  </data>
+  <data name="CheckingSavedSettings" xml:space="preserve">
+    <value>Checking saved settings.</value>
+  </data>
+  <data name="CheckingSettings" xml:space="preserve">
+    <value>Checking settings.</value>
+  </data>
+  <data name="CheckingStartupSettings" xml:space="preserve">
+    <value>Checking Windows startup settings…</value>
+  </data>
+  <data name="CliCheckCancelled" xml:space="preserve">
+    <value>The CLI check was cancelled. You can run it again.</value>
+  </data>
+  <data name="CliCheckFailed" xml:space="preserve">
+    <value>Could not verify the CLI. Check that the selected agent matches the executable and that the CLI is installed.</value>
+  </data>
+  <data name="CliCheckIntro" xml:space="preserve">
+    <value>Check the CLI to verify it starts, report its version, and list model options.</value>
+  </data>
+  <data name="CliCheckSucceeded" xml:space="preserve">
+    <value>Verified the CLI startup, type, version, and {0} model options. No agent task was run and no account access was checked.</value>
+  </data>
+  <data name="CliModelsUnavailable" xml:space="preserve">
+    <value>The version was confirmed, but model options could not be retrieved. Check the CLI login and network, then try again.</value>
+  </data>
+  <data name="CliSettingsChanged" xml:space="preserve">
+    <value>The CLI or working folder settings changed. Run the check again.</value>
+  </data>
+  <data name="CliStartedFetchingModels" xml:space="preserve">
+    <value>The CLI started successfully. Checking model options…</value>
+  </data>
+  <data name="CliTimeout" xml:space="preserve">
+    <value>The CLI did not respond in time. Check its location and login, then try again.</value>
+  </data>
+  <data name="CliUnconfirmed" xml:space="preserve">
+    <value>Could not verify</value>
+  </data>
+  <data name="ConfirmationDialogFailed" xml:space="preserve">
+    <value>Could not show the confirmation dialog</value>
+  </data>
+  <data name="ConsentAndContinue" xml:space="preserve">
+    <value>Agree and continue</value>
+  </data>
+  <data name="ConsentInstructions" xml:space="preserve">
+    <value>Open and review the documents. If you do not agree, you can defer setup or close the app.</value>
+  </data>
+  <data name="ConsentInstructionsWizard" xml:space="preserve">
+    <value>Open and review both documents. This guide requires agreement to both before continuing.</value>
+  </data>
+  <data name="ConsentRequired" xml:space="preserve">
+    <value>Agreement to the terms is required</value>
+  </data>
+  <data name="ConsentRequiredDetails" xml:space="preserve">
+    <value>Review both the Terms of Use and Privacy Policy, then check the boxes if you agree.</value>
+  </data>
+  <data name="ConsentSaved" xml:space="preserve">
+    <value>Agreement to document version {0} was saved on this PC.</value>
+  </data>
+  <data name="CurrentWorkspaceOnly" xml:space="preserve">
+    <value>Current workspace only</value>
+  </data>
+  <data name="DefaultCliValue" xml:space="preserve">
+    <value>CLI default</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="ExecutableAndArguments" xml:space="preserve">
+    <value>Executable and arguments</value>
+  </data>
+  <data name="ExecutionCancelled" xml:space="preserve">
+    <value>Execution cancelled</value>
+  </data>
+  <data name="ExecutionCancelledAtDialog" xml:space="preserve">
+    <value>Cancelled in the confirmation dialog.</value>
+  </data>
+  <data name="ExecutionCancelledBeforeStart" xml:space="preserve">
+    <value>Cancelled before execution started.</value>
+  </data>
+  <data name="ExecutionCompleted" xml:space="preserve">
+    <value>Execution completed</value>
+  </data>
+  <data name="ExecutionConfirmAutomationName" xml:space="preserve">
+    <value>Confirm agent execution</value>
+  </data>
+  <data name="ExecutionConfirmIntro" xml:space="preserve">
+    <value>The following content will be sent to the local agent.</value>
+  </data>
+  <data name="ExecutionConfirmTitle" xml:space="preserve">
+    <value>Run the agent?</value>
+  </data>
+  <data name="ExecutionFailed" xml:space="preserve">
+    <value>Execution failed</value>
+  </data>
+  <data name="ExecutionHistoryFinalStateSaveFailed" xml:space="preserve">
+    <value>Execution ended, but its final history status could not be saved.</value>
+  </data>
+  <data name="ExecutionNotStartedHistoryFailed" xml:space="preserve">
+    <value>Execution did not start because its history could not be saved.</value>
+  </data>
+  <data name="ExecutionNotStartedWindowClosed" xml:space="preserve">
+    <value>The window closed, so the agent was not started.</value>
+  </data>
+  <data name="ExecutionOutputPlaceholder" xml:space="preserve">
+    <value>Execution output will appear here.</value>
+  </data>
+  <data name="ExecutionPolicySummary" xml:space="preserve">
+    <value>Request scope: {0}. Approval: {1}. Workspace: {2}. Agent actions: {3}. Tool network: {4}. Results: {5}.</value>
+  </data>
+  <data name="ExitCode" xml:space="preserve">
+    <value>Exit code: {0}</value>
+  </data>
+  <data name="FetchingModelsWithCliCheck" xml:space="preserve">
+    <value>Fetching model options along with the CLI check.</value>
+  </data>
+  <data name="FolderPickerFailedMessage" xml:space="preserve">
+    <value>You can also enter an absolute path in the working folder field.</value>
+  </data>
+  <data name="FolderPickerFailedTitle" xml:space="preserve">
+    <value>Could not select a folder.</value>
+  </data>
+  <data name="HistorySaveFailed" xml:space="preserve">
+    <value>Execution stopped because history could not be saved</value>
+  </data>
+  <data name="HistorySaveFailedDetails" xml:space="preserve">
+    <value>Check available storage and access permissions for the data folder.</value>
+  </data>
+  <data name="InheritAgentSettings" xml:space="preserve">
+    <value>Follow agent settings</value>
+  </data>
+  <data name="InteractiveExecution" xml:space="preserve">
+    <value>Interactive action approval</value>
+  </data>
+  <data name="LoadingSettings" xml:space="preserve">
+    <value>Loading settings</value>
+  </data>
+  <data name="LoadingSettingsPeriod" xml:space="preserve">
+    <value>Loading settings.</value>
+  </data>
+  <data name="MissingChatConfig" xml:space="preserve">
+    <value>The selected chat connection details and allowed user IDs are required.</value>
+  </data>
+  <data name="ModelAndReasoning" xml:space="preserve">
+    <value>Model and reasoning effort</value>
+  </data>
+  <data name="ModelsUnavailableEnterManually" xml:space="preserve">
+    <value>This CLI cannot list model options. Enter the model name manually.</value>
+  </data>
+  <data name="NetworkManagedByCli" xml:space="preserve">
+    <value>Managed by the CLI (the app does not restrict it)</value>
+  </data>
+  <data name="NetworkUnrestrictedFullAccess" xml:space="preserve">
+    <value>Unrestricted with full access</value>
+  </data>
+  <data name="NextConfigureAgentWorkspace" xml:space="preserve">
+    <value>Next: configure the agent and an existing workspace folder, then save.</value>
+  </data>
+  <data name="NextConnectToChat" xml:space="preserve">
+    <value>Next: connect to the saved destination from Chat Inbox.</value>
+  </data>
+  <data name="NextSaveConnection" xml:space="preserve">
+    <value>Next: save the connection settings.</value>
+  </data>
+  <data name="NotAllowed" xml:space="preserve">
+    <value>Not allowed</value>
+  </data>
+  <data name="NotChecked" xml:space="preserve">
+    <value>Not checked</value>
+  </data>
+  <data name="NotLoaded" xml:space="preserve">
+    <value>Not loaded</value>
+  </data>
+  <data name="OutputTruncated" xml:space="preserve">
+    <value>(Some output was omitted because the log display limit was reached.)</value>
+  </data>
+  <data name="PermissionAsk" xml:space="preserve">
+    <value>Ask before each action</value>
+  </data>
+  <data name="PermissionCliDefault" xml:space="preserve">
+    <value>CLI default</value>
+  </data>
+  <data name="PermissionFullAccess" xml:space="preserve">
+    <value>Full access</value>
+  </data>
+  <data name="PermissionReadOnly" xml:space="preserve">
+    <value>Read and plan only</value>
+  </data>
+  <data name="PermissionWorkspaceWrite" xml:space="preserve">
+    <value>Automatically allow edits in the workspace</value>
+  </data>
+  <data name="Prompt" xml:space="preserve">
+    <value>Prompt</value>
+  </data>
+  <data name="PromptRequired" xml:space="preserve">
+    <value>Enter a prompt</value>
+  </data>
+  <data name="PromptRequiredDetails" xml:space="preserve">
+    <value>Enter what you want the agent to do before starting.</value>
+  </data>
+  <data name="RecheckCli" xml:space="preserve">
+    <value>Check the CLI again</value>
+  </data>
+  <data name="RecheckCliDetails" xml:space="preserve">
+    <value>The AI or workspace settings changed. Return to step 3 and run the check again.</value>
+  </data>
+  <data name="ReconnectWithChangedSettings" xml:space="preserve">
+    <value>Reconnect with the changed settings</value>
+  </data>
+  <data name="ReconnectWithChangedSettingsDetails" xml:space="preserve">
+    <value>Select Connect here to save the current settings and reconnect.</value>
+  </data>
+  <data name="ResultAutomatic" xml:space="preserve">
+    <value>Share automatically</value>
+  </data>
+  <data name="ResultDoNotShare" xml:space="preserve">
+    <value>Do not share</value>
+  </data>
+  <data name="ResultManual" xml:space="preserve">
+    <value>Review and share manually</value>
+  </data>
+  <data name="ReviewConsent" xml:space="preserve">
+    <value>Review the terms</value>
+  </data>
+  <data name="ReviewConsentDetails" xml:space="preserve">
+    <value>Return to the first page and review the Terms of Use and Privacy Policy.</value>
+  </data>
+  <data name="ReviewSettings" xml:space="preserve">
+    <value>Review the settings</value>
+  </data>
+  <data name="ReviewSettingsDetails" xml:space="preserve">
+    <value>The CLI check and connection details for the selected chat are required.</value>
+  </data>
+  <data name="Run" xml:space="preserve">
+    <value>Run</value>
+  </data>
+  <data name="RunCliCheckDetails" xml:space="preserve">
+    <value>Use Check CLI to verify the version and model options. If it fails, check the CLI location and login, then try again.</value>
+  </data>
+  <data name="Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="SaveAndContinue" xml:space="preserve">
+    <value>Save and continue</value>
+  </data>
+  <data name="SaveAndFinish" xml:space="preserve">
+    <value>Save settings and finish</value>
+  </data>
+  <data name="SavedAgentSummary" xml:space="preserve">
+    <value>{0} / Model: {1} / Reasoning effort: {2} / {3}</value>
+  </data>
+  <data name="SavedEffort" xml:space="preserve">
+    <value>Saved reasoning effort: {0}</value>
+  </data>
+  <data name="SavedEffortPending" xml:space="preserve">
+    <value>Saved reasoning effort: {0} (support is unverified until model options are fetched)</value>
+  </data>
+  <data name="SavedEffortUnsupported" xml:space="preserve">
+    <value>Saved reasoning effort “{0}” is not available for this model in the CLI. Choose the CLI default or select a supported option.</value>
+  </data>
+  <data name="SelectAgent" xml:space="preserve">
+    <value>Select an AI</value>
+  </data>
+  <data name="SelectAgentDetails" xml:space="preserve">
+    <value>This wizard supports Codex or Claude Code.</value>
+  </data>
+  <data name="SelectedModelUnavailable" xml:space="preserve">
+    <value>The entered model is not listed by the CLI. Choose an option or clear the model name to use the CLI default.</value>
+  </data>
+  <data name="SettingsLoadFailed" xml:space="preserve">
+    <value>Could not load settings</value>
+  </data>
+  <data name="SettingsLoadFailedDetails" xml:space="preserve">
+    <value>Check the settings file and reload. {0}</value>
+  </data>
+  <data name="SettingsLoaded" xml:space="preserve">
+    <value>Settings loaded</value>
+  </data>
+  <data name="SettingsLoadedDetails" xml:space="preserve">
+    <value>Configure the workspace and agent to run a task.</value>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>Could not save settings</value>
+  </data>
+  <data name="SettingsSaved" xml:space="preserve">
+    <value>Settings saved</value>
+  </data>
+  <data name="SettingsSavedReconnect" xml:space="preserve">
+    <value>Reconnect from Chat Inbox to apply the changes to the chat connection.</value>
+  </data>
+  <data name="SettingsSavedReconnectDetails" xml:space="preserve">
+    <value>Disconnect once, then reconnect here to apply approval setting changes.</value>
+  </data>
+  <data name="SetupAgentReady" xml:space="preserve">
+    <value>Complete: saved. The CLI and login status were not checked here.</value>
+  </data>
+  <data name="SetupAgentWorkspaceMissing" xml:space="preserve">
+    <value>Next: configure the agent and workspace, then save.</value>
+  </data>
+  <data name="SetupAllowedUsersMissing" xml:space="preserve">
+    <value>Next: enter one allowed user ID per line for each connection. An empty list denies everyone.</value>
+  </data>
+  <data name="SetupChatAfterStepOne" xml:space="preserve">
+    <value>Not set: save connection details after step 1.</value>
+  </data>
+  <data name="SetupChatConfigMissing" xml:space="preserve">
+    <value>Next: save Slack or Mattermost connection details and allowed user IDs.</value>
+  </data>
+  <data name="SetupChatConfigSaved" xml:space="preserve">
+    <value>Complete: connection details and allowed user IDs are saved.</value>
+  </data>
+  <data name="SetupCompleteReadyForChat" xml:space="preserve">
+    <value>Setup complete. You can send requests from another device through chat.</value>
+  </data>
+  <data name="SetupCompletionSummary" xml:space="preserve">
+    <value>{0} / 3 complete</value>
+  </data>
+  <data name="SetupConnectAfterSaving" xml:space="preserve">
+    <value>Not set: connect after saving the connection details.</value>
+  </data>
+  <data name="SetupConnectSavedDestination" xml:space="preserve">
+    <value>Next: connect to the saved destination.</value>
+  </data>
+  <data name="SetupConnecting" xml:space="preserve">
+    <value>Connecting: waiting for the destination to respond.</value>
+  </data>
+  <data name="SetupExecutableMissing" xml:space="preserve">
+    <value>Next: set the agent executable and save.</value>
+  </data>
+  <data name="SetupWaitingForChatRequest" xml:space="preserve">
+    <value>Complete: waiting for requests from chat.</value>
+  </data>
+  <data name="SetupWorkspaceNotFound" xml:space="preserve">
+    <value>Next: the saved workspace folder was not found. Choose an existing folder and save.</value>
+  </data>
+  <data name="SlackConnectionFields" xml:space="preserve">
+    <value>Enter the bot token, app token, and allowed user IDs.</value>
+  </data>
+  <data name="SpecifiedConversationsOnly" xml:space="preserve">
+    <value>Specified conversations only</value>
+  </data>
+  <data name="TrustedWorkspacesOnly" xml:space="preserve">
+    <value>Specified trusted folders only</value>
+  </data>
+  <data name="UnableToCheckSettings" xml:space="preserve">
+    <value>Settings could not be checked.</value>
+  </data>
+  <data name="UnableToLoadSettingsReload" xml:space="preserve">
+    <value>Settings could not be loaded. Reload them.</value>
+  </data>
+  <data name="UnrecognizedCliProvider" xml:space="preserve">
+    <value>The CLI returned a version, but its model options could not be checked. Select Codex or Claude Code.</value>
+  </data>
+  <data name="UnsavedSetupChanges" xml:space="preserve">
+    <value>There are unsaved changes to connection details, allowed user IDs, or approval sharing. Only saved settings appear in the steps.</value>
+  </data>
+  <data name="UsagePlaceholder" xml:space="preserve">
+    <value>Token usage will appear after a run. Values that were not retrieved are not treated as zero.</value>
+  </data>
+  <data name="UsageWhileRunning" xml:space="preserve">
+    <value>Running. Usage will appear when complete.</value>
+  </data>
+  <data name="UseCliNetworkSettings" xml:space="preserve">
+    <value>Use CLI settings</value>
+  </data>
+  <data name="UseDefaultCliValue" xml:space="preserve">
+    <value>Using the CLI default.</value>
+  </data>
+  <data name="WizardAgentDescription" xml:space="preserve">
+    <value>Choose the AI and workspace for this PC. Install and sign in to the CLI first.</value>
+  </data>
+  <data name="WizardChatDescription" xml:space="preserve">
+    <value>Choose Slack or Mattermost, enter its connection details, and specify the user IDs allowed to use it.</value>
+  </data>
+  <data name="WizardCliDescription" xml:space="preserve">
+    <value>Run a check to verify the CLI type and version and list model options. It will not send a task to the AI.</value>
+  </data>
+  <data name="WizardComplete" xml:space="preserve">
+    <value>Setup complete</value>
+  </data>
+  <data name="WizardCompleteDetails" xml:space="preserve">
+    <value>You can now send requests through chat. The CLI check did not run an AI task.</value>
+  </data>
+  <data name="WizardIntroDescription" xml:space="preserve">
+    <value>Review how the app works and the terms before setting it up on this PC.</value>
+  </data>
+  <data name="WizardProgressLoadFailed" xml:space="preserve">
+    <value>Could not load setup progress</value>
+  </data>
+  <data name="WizardProgressLoadFailedDetails" xml:space="preserve">
+    <value>Check the saved guidance data. Your settings were not overwritten.</value>
+  </data>
+  <data name="WizardSafetyDescription" xml:space="preserve">
+    <value>Review approval and result sharing, connect to the selected chat, and finish setup.</value>
+  </data>
+  <data name="WizardSaveFailed" xml:space="preserve">
+    <value>Could not save setup</value>
+  </data>
+  <data name="WizardSaveFailedDetails" xml:space="preserve">
+    <value>Check your entries and write permissions for the settings folder.</value>
+  </data>
+  <data name="WizardStepAgent" xml:space="preserve">
+    <value>AI and workspace</value>
+  </data>
+  <data name="WizardStepChat" xml:space="preserve">
+    <value>Chat connection</value>
+  </data>
+  <data name="WizardStepCli" xml:space="preserve">
+    <value>CLI and model check</value>
+  </data>
+  <data name="WizardStepIntro" xml:space="preserve">
+    <value>Introduction and terms</value>
+  </data>
+  <data name="WizardStepSafety" xml:space="preserve">
+    <value>Approval and connection check</value>
+  </data>
+  <data name="WizardSummary" xml:space="preserve">
+    <value>AI: {0} / Model: {1}
+Reasoning effort: {2}
+Workspace: {3}
+Chat: {4} / Connect on app startup: {5}
+Request approval: {6} / Results: {7}
+AI permissions: {8}</value>
+  </data>
+  <data name="Workspace" xml:space="preserve">
+    <value>Workspace</value>
+  </data>
+  <data name="WorkspaceMustBeExistingAbsolutePath" xml:space="preserve">
+    <value>Enter an absolute path to an existing folder as the workspace.</value>
+  </data>
+  <data name="WorkspaceOutsideTrustedRoots" xml:space="preserve">
+    <value>The workspace is outside the trusted folders. Check the trusted folder settings first.</value>
+  </data>
+  <data name="RunToCompletion" xml:space="preserve"><value>Run until complete</value></data>
+  <data name="Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="MattermostConnectionFields" xml:space="preserve"><value>Enter the server URL, channel ID, token, and allowed user IDs.</value></data>
+</root>
