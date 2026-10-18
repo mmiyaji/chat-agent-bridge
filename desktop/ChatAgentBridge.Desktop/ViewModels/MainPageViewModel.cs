@@ -46,6 +46,8 @@ public partial class MainPageViewModel : ObservableObject
         PropertyChanged += (_, e) =>
         {
             WizardSettingChanged(e.PropertyName);
+            if (e.PropertyName is nameof(CliCheckSucceeded) or nameof(IsCheckingCli) or nameof(CliVersion))
+                RefreshOverviewStatus();
             if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning))
             {
                 StartOnboardingCommand.NotifyCanExecuteChanged();
@@ -102,11 +104,19 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnAgentExecutableChanged(string value) => InvalidateModelCatalog();
     [ObservableProperty] public partial string AgentArguments { get; set; } = "exec --json -";
     partial void OnAgentArgumentsChanged(string value) => InvalidateModelCatalog();
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat)), NotifyPropertyChangedFor(nameof(CanConfigureAgentPermission)), NotifyPropertyChangedFor(nameof(AgentPermissionStatus))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(IsBasicProvider)), NotifyPropertyChangedFor(nameof(IsArgumentsEditable)), NotifyPropertyChangedFor(nameof(BasicProviderHelp)), NotifyPropertyChangedFor(nameof(AgentProviderDisplayName)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat)), NotifyPropertyChangedFor(nameof(CanConfigureAgentPermission)), NotifyPropertyChangedFor(nameof(AgentPermissionStatus))]
     public partial string AgentProvider { get; set; } = "codex";
     public bool IsCodexProvider => AgentProvider == "codex";
     public bool IsCustomProvider => AgentProvider == "custom";
-    public bool SupportsModel => !IsCustomProvider;
+    public bool IsBasicProvider => AgentProvider is "gemini" or "github-copilot" or "custom";
+    public bool IsArgumentsEditable => IsBasicProvider;
+    public bool SupportsModel => AgentProvider is "codex" or "claude";
+    public string AgentProviderDisplayName => AgentProvider switch
+    {
+        "codex" => "Codex", "claude" => "Claude Code", "gemini" => "Gemini CLI",
+        "github-copilot" => "GitHub Copilot CLI", _ => ViewModelText.Get("CustomCliName")
+    };
+    public string BasicProviderHelp => ViewModelText.Get("BasicProviderHelp");
     public bool CanFetchModelCandidates => SupportsModel && IsSettingsLoaded && !IsRunning && !_closing;
     [ObservableProperty] public partial string AgentModel { get; set; } = "";
     partial void OnAgentModelChanged(string value)
@@ -180,8 +190,8 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string SlackAllowedThreadIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostAllowedThreadIds { get; set; } = string.Empty;
     public bool CanConfigureAgentNetwork => IsCodexProvider && AgentPermissionMode is "workspace-write" or "ask";
-    public bool CanConfigureAgentPermission => !IsCustomProvider;
-    public string AgentPermissionStatus => IsCustomProvider ? ViewModelText.Get("CustomPermissionModeManagedByCli")
+    public bool CanConfigureAgentPermission => !IsBasicProvider;
+    public string AgentPermissionStatus => IsBasicProvider ? ViewModelText.Get("BasicPermissionManagedByCli")
         : _agentPermissionModeAdjusted ? ViewModelText.Get("AskPermissionChangedToReadOnly") : string.Empty;
     private string NetworkPolicyLabel => !IsCodexProvider ? ViewModelText.Get("NetworkManagedByCli")
         : AgentPermissionMode == "full-access" ? ViewModelText.Get("NetworkUnrestrictedFullAccess")
@@ -274,6 +284,7 @@ public partial class MainPageViewModel : ObservableObject
             StatusTitle = ViewModelText.Get("SettingsLoaded");
             StatusMessage = ViewModelText.Get("SettingsLoadedDetails");
             StatusSeverity = "Success";
+            IsStatusOpen = false;
             IsSettingsLoaded = true;
         }
         catch (Exception ex)
@@ -298,11 +309,15 @@ public partial class MainPageViewModel : ObservableObject
         InvalidateModelCatalog();
         if (IsLoading) return;
         UseAppServer = false;
-        if (value == "custom") SetAgentPermissionMode("inherit", adjusted: false);
+        if (IsBasicProvider) SetAgentPermissionMode("inherit", adjusted: false);
         AgentModel = "";
         AgentReasoningEffort = null;
-        AgentExecutable = value == "claude" ? "claude" : value == "codex" ? "codex" : AgentExecutable;
-        AgentArguments = value == "claude" ? "--print --output-format stream-json --verbose" : value == "codex" ? "exec --json -" : AgentArguments;
+        AgentExecutable = value switch { "claude" => "claude", "codex" => "codex", "gemini" => "gemini", "github-copilot" => "copilot", _ => "" };
+        AgentArguments = value switch
+        {
+            "claude" => "--print --output-format stream-json --verbose", "codex" => "exec --json -",
+            "gemini" => AgentProfile.DefaultGeminiArguments, "github-copilot" => AgentProfile.DefaultGitHubCopilotArguments, _ => ""
+        };
     }
 
     public async Task RefreshStartupAsync()
@@ -571,7 +586,7 @@ public partial class MainPageViewModel : ObservableObject
     private void InvalidateModelCatalog()
     {
         if (ModelCatalog is not null)
-            ModelCatalog.Invalidate(IsCustomProvider ? ViewModelText.Get("CustomModelSettingsManagedByCli") : null);
+            ModelCatalog.Invalidate(IsBasicProvider ? ViewModelText.Get("BasicModelManagedByCli") : null);
     }
 
     public void SetMattermostToken(string value)
@@ -590,6 +605,7 @@ public partial class MainPageViewModel : ObservableObject
             SetupCompletionSummary = ViewModelText.Get("LoadingSettingsPeriod");
             SetupNextAction = ViewModelText.Get("CheckingSavedSettings");
             SetupDraftNotice = "";
+            RefreshOverviewStatus();
             return;
         }
         if (!IsSettingsLoaded || _settings is null)
@@ -600,6 +616,7 @@ public partial class MainPageViewModel : ObservableObject
             SetupCompletionSummary = ViewModelText.Get("UnableToCheckSettings");
             SetupNextAction = ViewModelText.Get("CheckSettingsFileAndReload");
             SetupDraftNotice = "";
+            RefreshOverviewStatus();
             return;
         }
 
@@ -630,6 +647,7 @@ public partial class MainPageViewModel : ObservableObject
             : ViewModelText.Get("SetupCompleteReadyForChat");
         var draft = CreateSettingsSnapshot();
         SetupDraftNotice = _settings != draft ? ViewModelText.Get("UnsavedSetupChanges") : "";
+        RefreshOverviewStatus();
     }
 
     private static bool HasAllowedUsers(string value)

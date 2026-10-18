@@ -352,7 +352,7 @@
     <value>Select an AI</value>
   </data>
   <data name="SelectAgentDetails" xml:space="preserve">
-    <value>This wizard supports Codex or Claude Code.</value>
+    <value>Choose a supported provider or a custom CLI, and specify its executable.</value>
   </data>
   <data name="SelectedModelUnavailable" xml:space="preserve">
     <value>The entered model is not listed by the CLI. Choose an option or clear the model name to use the CLI default.</value>
@@ -463,7 +463,7 @@
     <value>Choose Slack or Mattermost, enter its connection details, and specify the user IDs allowed to use it.</value>
   </data>
   <data name="WizardCliDescription" xml:space="preserve">
-    <value>Run a check to verify the CLI type and version and list model options. It will not send a task to the AI.</value>
+    <value>Check the CLI version. Codex and Claude Code also provide model candidates. No AI task request is sent.</value>
   </data>
   <data name="WizardComplete" xml:space="preserve">
     <value>Setup complete</value>
@@ -524,4 +524,61 @@ AI permissions: {8}</value>
   <data name="RunToCompletion" xml:space="preserve"><value>Run until complete</value></data>
   <data name="Disabled" xml:space="preserve"><value>Disabled</value></data>
   <data name="MattermostConnectionFields" xml:space="preserve"><value>Enter the server URL, channel ID, token, and allowed user IDs.</value></data>
+  <data name="CustomCliName" xml:space="preserve">
+    <value>Other CLI (custom)</value>
+  </data>
+  <data name="BasicProviderHelp" xml:space="preserve">
+    <value>Basic integration: requests are sent through standard input and replies are read from standard output. Each request starts a separate run; automatic session continuation and model/reasoning catalogs are not supported. Configure models, reasoning and execution permissions in the CLI or its arguments. Sign in through the CLI first.</value>
+  </data>
+  <data name="BasicPermissionManagedByCli" xml:space="preserve">
+    <value>Execution permissions follow the CLI configuration. The bridge does not apply a sandbox or bypass permissions for this provider. Chat request approval is configured separately.</value>
+  </data>
+  <data name="BasicModelManagedByCli" xml:space="preserve">
+    <value>Models and reasoning are managed by this CLI. Catalog lookup is unavailable for this integration.</value>
+  </data>
+  <data name="BasicCliCheckSucceeded" xml:space="preserve">
+    <value>Version check passed. Sign-in, model access and task execution have not been verified. No AI request was sent.</value>
+  </data>
+  <data name="CliCheckFailedDetails" xml:space="preserve">
+    <value>CLI check failed: {0}</value>
+  </data>
+  <data name="OverviewChecking" xml:space="preserve">
+    <value>Checking</value>
+  </data>
+  <data name="OverviewSaved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="OverviewNeedsSetup" xml:space="preserve">
+    <value>Needs setup</value>
+  </data>
+  <data name="OverviewConnected" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="OverviewConnecting" xml:space="preserve">
+    <value>Connecting</value>
+  </data>
+  <data name="OverviewOffline" xml:space="preserve">
+    <value>Disconnected</value>
+  </data>
+  <data name="OverviewCliNotChecked" xml:space="preserve">
+    <value>Not checked</value>
+  </data>
+  <data name="OverviewCliVerified" xml:space="preserve">
+    <value>Check passed</value>
+  </data>
+  <data name="OverviewCliFailed" xml:space="preserve">
+    <value>Needs review</value>
+  </data>
+  <data name="OverviewAgentAccessibleName" xml:space="preserve">
+    <value>Agent setup: {0}. Open agent settings.</value>
+  </data>
+  <data name="OverviewConnectionAccessibleName" xml:space="preserve">
+    <value>Chat setup: {0}. Open connection settings.</value>
+  </data>
+  <data name="OverviewChatAccessibleName" xml:space="preserve">
+    <value>Connection: {0}. Open chat.</value>
+  </data>
+  <data name="OverviewCliAccessibleName" xml:space="preserve">
+    <value>CLI verification: {0}. Open agent settings to check.</value>
+  </data>
 </root>

@@ -35,6 +35,17 @@ public sealed class CliProbeService
         if (!Path.IsPathFullyQualified(probeExecutable) &&
             (probeExecutable.Contains(Path.DirectorySeparatorChar) || probeExecutable.Contains(Path.AltDirectorySeparatorChar)))
             probeExecutable = Path.GetFullPath(probeExecutable, Path.GetFullPath(cwd));
+        var nodePackage = NodeCliPackageResolver.Resolve(probeExecutable, provider);
+        if (nodePackage is null)
+        {
+            var npmShim = AgentProfile.FindWindowsNpmShim(probeExecutable, provider);
+            if (npmShim is not null)
+                throw new InvalidOperationException(AgentProfile.WindowsNpmShimGuidance(npmShim, provider));
+        }
+        else
+        {
+            probeExecutable = nodePackage.Executable;
+        }
         if (provider == AgentProfile.Codex)
             probeExecutable = CodexExecutableResolver.Resolve(probeExecutable);
         var extension = Path.GetExtension(probeExecutable);
@@ -42,15 +53,60 @@ public sealed class CliProbeService
             extension.Equals(".bat", StringComparison.OrdinalIgnoreCase) ||
             extension.Equals(".ps1", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException(CoreText.Get("NativeCliRequired"));
-        var executable = ResolveExecutable(probeExecutable, Path.GetFullPath(cwd));
+        var executable = nodePackage?.Executable ?? ResolveExecutable(probeExecutable, Path.GetFullPath(cwd));
         if (executable is null) throw new FileNotFoundException(CoreText.Get("CliNotFound"), configured);
 
+        var nodePrefix = nodePackage is not null
+            ? new[] { nodePackage.EntryPoint }
+            : AgentProfile.IsNodeExecutable(executable)
+                ? AgentProfile.GetNodeProbePrefix(settings, provider) : Array.Empty<string>();
+        var (versionOutput, versionExitCode) = await RunCommandAsync(executable, Path.GetFullPath(cwd),
+            nodePrefix.Append("--version"), cancellationToken).ConfigureAwait(false);
+        var version = Sanitize(versionOutput);
+        if (versionExitCode != 0 || version.Length == 0)
+            throw new InvalidOperationException(CoreText.Get("CliVersionUnavailable"));
+
+        var recognized = nodePackage is not null
+            ? ProviderMatchesPackage(provider, nodePackage.PackageName)
+            : RecognizesProvider(provider, version);
+        if (!recognized && AgentProfile.IsBasicCliProvider(provider))
+        {
+            // Gemini and some Copilot versions print only a semver for --version. Help is
+            // non-interactive and gives us a provider identity without starting a model turn.
+            var (helpOutput, helpExitCode) = await RunCommandAsync(executable, Path.GetFullPath(cwd),
+                nodePrefix.Append("--help"), cancellationToken).ConfigureAwait(false);
+            recognized = helpExitCode == 0 && RecognizesProvider(provider, Sanitize(helpOutput));
+        }
+        if ((provider is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot) && !recognized)
+            throw new InvalidOperationException(CoreText.Get("CliProviderMismatch", provider));
+        return new CliProbeResult(executable, version, recognized);
+    }
+
+    internal static bool RecognizesProvider(string provider, string output) => provider switch
+    {
+        AgentProfile.Codex => Regex.IsMatch(output, @"\bcodex(?:[- ]cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+        AgentProfile.Claude => Regex.IsMatch(output, @"\bclaude\s+code\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+        AgentProfile.Gemini => Regex.IsMatch(output, @"\bgemini(?:\s+cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+        AgentProfile.GitHubCopilot => Regex.IsMatch(output, @"\bgithub\s+copilot(?:\s+cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+        _ => false
+    };
+
+    private static bool ProviderMatchesPackage(string provider, string packageName) => provider switch
+    {
+        AgentProfile.Gemini => packageName == "@google/gemini-cli",
+        AgentProfile.GitHubCopilot => packageName == "@github/copilot",
+        _ => false
+    };
+
+    private async Task<(string Output, int ExitCode)> RunCommandAsync(string executable, string cwd,
+        IEnumerable<string> arguments, CancellationToken cancellationToken)
+    {
         using var process = new Process
         {
             StartInfo = new ProcessStartInfo
             {
                 FileName = executable,
-                WorkingDirectory = Path.GetFullPath(cwd),
+                WorkingDirectory = cwd,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -59,7 +115,7 @@ public sealed class CliProbeService
                 StandardErrorEncoding = Encoding.UTF8
             }
         };
-        process.StartInfo.ArgumentList.Add("--version");
+        foreach (var argument in arguments) process.StartInfo.ArgumentList.Add(argument);
         cancellationToken.ThrowIfCancellationRequested();
         try
         {
@@ -76,10 +132,7 @@ public sealed class CliProbeService
         var stderr = DrainBoundedAsync(process.StandardError, OutputLimit, linked.Token);
         try
         {
-            await Task.WhenAll(
-                process.WaitForExitAsync(linked.Token),
-                stdout,
-                stderr).ConfigureAwait(false);
+            await Task.WhenAll(process.WaitForExitAsync(linked.Token), stdout, stderr).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -88,20 +141,7 @@ public sealed class CliProbeService
             cancellationToken.ThrowIfCancellationRequested();
             throw new TimeoutException(CoreText.Get("CliVersionTimeout"));
         }
-        var output = await stdout.ConfigureAwait(false);
-        var version = Sanitize(output);
-        if (process.ExitCode != 0 || version.Length == 0)
-            throw new InvalidOperationException(CoreText.Get("CliVersionUnavailable"));
-
-        var recognized = provider switch
-        {
-            AgentProfile.Codex => Regex.IsMatch(version, @"\bcodex(?:[- ]cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
-            AgentProfile.Claude => Regex.IsMatch(version, @"\bclaude\s+code\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
-            _ => false
-        };
-        if ((provider is AgentProfile.Codex or AgentProfile.Claude) && !recognized)
-            throw new InvalidOperationException(CoreText.Get("CliProviderMismatch", provider));
-        return new CliProbeResult(executable, version, recognized);
+        return (await stdout.ConfigureAwait(false), process.ExitCode);
     }
 
     private static string? ResolveExecutable(string name, string workspace)

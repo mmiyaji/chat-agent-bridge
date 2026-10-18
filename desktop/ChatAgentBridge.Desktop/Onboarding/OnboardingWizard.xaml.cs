@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using ChatAgentBridge_Desktop.Localization;
 using Microsoft.Windows.Storage.Pickers;
+using System.Globalization;
 
 namespace ChatAgentBridge_Desktop.Onboarding;
 
@@ -18,8 +19,33 @@ public sealed partial class OnboardingWizard : UserControl
         Inbox = inbox ?? throw new ArgumentNullException(nameof(inbox));
         InitializeComponent();
         IntroHost.Content = new OnboardingIntro(ViewModel);
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
 
         SyncSecrets();
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs args)
+    {
+        LanguageSettings.LanguageChanged -= OnLanguageChanged;
+        LanguageSettings.LanguageChanged += OnLanguageChanged;
+        RefreshLanguage(CultureInfo.CurrentUICulture);
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs args) =>
+        LanguageSettings.LanguageChanged -= OnLanguageChanged;
+
+    private void OnLanguageChanged(CultureInfo culture) => RefreshLanguage(culture);
+
+    /// <summary>Refreshes bound wizard text and existing x:Uid labels after an in-process language change.</summary>
+    public void RefreshLanguage(CultureInfo? culture = null)
+    {
+        culture ??= CultureInfo.CurrentUICulture;
+        ViewModel.RefreshLocalizedText();
+        Bindings.Update();
+        MrtText.Refresh(this, culture);
+        if (IntroHost.Content is OnboardingIntro intro)
+            intro.RefreshLanguage(culture);
     }
 
     public void ResetScroll()

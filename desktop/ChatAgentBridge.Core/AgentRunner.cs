@@ -63,8 +63,11 @@ public sealed class AgentRunner : IAgentRunner
         try { invocation = AgentProfile.BuildInvocation(settings); }
         catch (Exception ex) when (ex is ArgumentException or FormatException)
         { return new AgentRunResult(false, -1, "", ex.Message); }
+        NodeCliPackageResolver.Resolution? nodePackage;
+        try { nodePackage = NodeCliPackageResolver.Resolve(invocation.Executable, invocation.Provider); }
+        catch (InvalidOperationException ex) { return new AgentRunResult(false, -1, "", ex.Message); }
         string executable;
-        try { executable = CodexExecutableResolver.Resolve(invocation.Executable); }
+        try { executable = nodePackage?.Executable ?? CodexExecutableResolver.Resolve(invocation.Executable); }
         catch (InvalidOperationException ex) { return new AgentRunResult(false, -1, "", ex.Message); }
         var start = new ProcessStartInfo
         {
@@ -79,6 +82,7 @@ public sealed class AgentRunner : IAgentRunner
             StandardErrorEncoding = new UTF8Encoding(false),
             CreateNoWindow = true
         };
+        if (nodePackage is not null) start.ArgumentList.Add(nodePackage.EntryPoint);
         foreach (var argument in invocation.Arguments) start.ArgumentList.Add(argument);
 
         using var process = new Process { StartInfo = start, EnableRaisingEvents = true };

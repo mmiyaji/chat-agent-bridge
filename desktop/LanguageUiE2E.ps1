@@ -10,6 +10,7 @@ $output = Join-Path $artifacts 'language-review'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 $checks = [Collections.Generic.List[object]]::new()
 $script:appPid = 0
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -18,7 +19,33 @@ public static class LanguageLayoutNative {
     [DllImport("user32.dll", SetLastError=true)] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int width, int height, uint flags);
 }
 '@
+function Scroll-ToElement([string]$Id) {
+    # Scroll the viewport through UIA, without Home/End keystrokes that can
+    # change a focused ComboBox selection.
+    $window=[Windows.Automation.AutomationElement]::FromHandle((Get-Process -Id $script:appPid).MainWindowHandle)
+    function Find([string]$TargetId) {
+        $condition=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$TargetId)
+        return $window.FindFirst([Windows.Automation.TreeScope]::Descendants,$condition)
+    }
+    $next=Find 'OnboardingNext'
+    $scroll=Find $(if ($next -and -not $next.Current.IsOffscreen -and $next.Current.BoundingRectangle.Height -gt 0) { 'WizardScroll' } else { 'MainContentScroll' })
+    if (-not $scroll) { throw "No test viewport for $Id" }
+    $pattern=$scroll.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
+    if ($pattern.Current.VerticallyScrollable) { $pattern.SetScrollPercent(-1,0); Start-Sleep -Milliseconds 80 }
+    for ($attempt=0;$attempt -lt 35;$attempt++) {
+        $target=Find $Id
+        if ($target) {
+            $rect=$target.Current.BoundingRectangle; $viewport=$scroll.Current.BoundingRectangle
+            if ($rect.Height -gt 0 -and -not $target.Current.IsOffscreen -and $rect.Top -ge $viewport.Top -and $rect.Bottom -le $viewport.Bottom) { return }
+        }
+        if (-not $pattern.Current.VerticallyScrollable -or $pattern.Current.VerticalScrollPercent -ge 100) { break }
+        $pattern.Scroll([Windows.Automation.ScrollAmount]::NoAmount,[Windows.Automation.ScrollAmount]::LargeIncrement)
+        Start-Sleep -Milliseconds 80
+    }
+    throw "Could not scroll test viewport to $Id"
+}
 function UI([string[]]$Arguments) {
+    if ($Arguments[0] -eq 'scroll-into-view') { Scroll-ToElement $Arguments[1]; return '' }
     $result = & winapp ui @Arguments -a $script:appPid --json 2>$null
     if ($LASTEXITCODE -ne 0) { throw "UI action failed: $($Arguments[0]) $($Arguments[1])" }
     return $result
@@ -40,6 +67,14 @@ function Launch {
 function Restart { Stop-Process -Id $script:appPid; Launch }
 function Assert([bool]$Condition,[string]$Message) { if (-not $Condition) { throw $Message } }
 function Capture([string]$File) { UI @('screenshot','--focus','-o',(Join-Path $output $File)) | Out-Null }
+function Consent-Checked([string]$Id) {
+    UI @('scroll-into-view',$Id) | Out-Null
+    $window = [Windows.Automation.AutomationElement]::FromHandle((Get-Process -Id $script:appPid).MainWindowHandle)
+    $condition = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$Id)
+    $control = $window.FindFirst([Windows.Automation.TreeScope]::Descendants,$condition)
+    if (-not $control) { throw "Consent control missing: $Id" }
+    return $control.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Current.ToggleState -eq [Windows.Automation.ToggleState]::On
+}
 function Resize([int]$Width,[int]$Height) {
     $window = (Get-Process -Id $script:appPid).MainWindowHandle
     $scale = [LanguageLayoutNative]::GetDpiForWindow($window) / 96.0
@@ -66,7 +101,13 @@ function Select-Language([string[]]$Labels,[string]$Stored) {
     do {
         if (Test-Path (Join-Path $dataPath 'language.json')) {
             $preference = Get-Content (Join-Path $dataPath 'language.json') -Raw | ConvertFrom-Json
-            if ($preference.Language -eq $Stored) { return }
+            if ($preference.Language -eq $Stored) {
+                do {
+                    $ready=UI @('get-property','DisplayLanguage','-p','IsEnabled') | ConvertFrom-Json
+                    if ($ready.properties.IsEnabled -eq $true) { Start-Sleep -Milliseconds 150; return }
+                    Start-Sleep -Milliseconds 100
+                } while ([DateTimeOffset]::UtcNow -lt $deadline)
+            }
         }
         Start-Sleep -Milliseconds 100
     } while ([DateTimeOffset]::UtcNow -lt $deadline)
@@ -79,8 +120,37 @@ try {
     $expectsJapanese = $systemLanguages[0].LanguageTag -match '^ja(?:-|$)'
     Assert ((Value 'DisplayLanguageStatus').Contains($(if ($expectsJapanese) { '日本語' } else { 'English' }))) 'Initial language did not match the Windows preferred language.'
     $checks.Add(@{name='System language resolves before the initial wizard loads';passed=$true;display=(Value 'DisplayLanguageStatus')})
+    UI @('scroll-into-view','WizardAcceptTerms') | Out-Null
+    UI @('invoke','WizardAcceptTerms') | Out-Null
     Select-Language @('English') 'en'
     Assert (-not (Test-Path (Join-Path $dataPath 'settings.json'))) 'Language selection created bridge settings.'
+    Wait-Text 'OnboardingTitle' 'Introduction and terms'
+    Assert ((Name 'WizardTerms') -match '(?i)terms') 'Terms did not switch to English without restarting.'
+    Assert ((Name 'OnboardingNext') -match '(?i)agree') 'The consent action did not switch to English.'
+    Assert ((Value 'DisplayLanguageStatus') -notmatch '(?i)restart') 'Initial consent still requests a language restart.'
+    UI @('scroll-into-view','WizardTerms') | Out-Null
+    UI @('invoke','WizardTerms') | Out-Null
+    UI @('wait-for','PolicyBody','-t','3000') | Out-Null
+    Assert ((Value 'PolicyBody') -notmatch '[ぁ-んァ-ン一-龯]') 'Terms were not translated before restarting.'
+    UI @('invoke','PolicyClose') | Out-Null
+    UI @('wait-for','PolicyBody','--gone','-t','3000') | Out-Null
+    Assert (Consent-Checked 'WizardAcceptTerms') 'Language switching cleared a checked consent.'
+    Assert (-not (Consent-Checked 'WizardAcceptPrivacy')) 'Language switching accepted an unchecked consent.'
+    UI @('scroll-into-view','WizardPrivacy') | Out-Null
+    UI @('invoke','WizardPrivacy') | Out-Null
+    UI @('wait-for','PolicyBody','-t','3000') | Out-Null
+    Assert ((Value 'PolicyBody').Contains('Privacy Policy')) 'Privacy policy was not translated immediately.'
+    UI @('invoke','PolicyClose') | Out-Null
+    UI @('wait-for','PolicyBody','--gone','-t','3000') | Out-Null
+    Select-Language @('日本語') 'ja'
+    Wait-Text 'OnboardingTitle' 'はじめに'
+    Assert ((Name 'WizardTerms') -eq '利用規約を読む') 'Returning to Japanese requires a restart.'
+    Assert (Consent-Checked 'WizardAcceptTerms') 'Returning to Japanese cleared a checked consent.'
+    Assert (-not (Consent-Checked 'WizardAcceptPrivacy')) 'Returning to Japanese accepted privacy implicitly.'
+    Assert (-not (Test-Path (Join-Path $dataPath 'consent.json'))) 'Switching language persisted consent without continuing.'
+    Select-Language @('English') 'en'
+    Wait-Text 'OnboardingTitle' 'Introduction and terms'
+    $checks.Add(@{name='First consent, title, action and policy switch immediately without restart';passed=$true})
     Restart
     Wait-Text 'OnboardingTitle' '[1 / 5]'
     Assert ((Value 'OnboardingTitle') -notmatch '[ぁ-んァ-ン一-龯]') 'Dynamic wizard heading is not English.'
@@ -136,12 +206,14 @@ try {
     UI @('wait-for','NavOverview','-t','5000') | Out-Null
     Assert ((Name 'NavOverview') -eq '概要') 'Japanese navigation was not restored.'
     UI @('invoke','NavOverview') | Out-Null
+    UI @('invoke','OverviewDetailsExpander') | Out-Null
+    UI @('scroll-into-view','StartOnboarding') | Out-Null
     UI @('invoke','StartOnboarding') | Out-Null
     Wait-Text 'OnboardingTitle' 'はじめに'
     Assert ((Name 'WizardTerms') -eq '利用規約を読む') 'Japanese XAML resources were not loaded.'
     Capture 'japanese-intro.png'
     $checks.Add(@{name='Manual Japanese survives restart and preserves bridge settings';passed=$true})
-    Select-Language @('システムに合わせる','System default') 'system'
+    Select-Language @('システムに合わせる','System default','System default / システムに合わせる') 'system'
     Restart
     UI @('wait-for','DisplayLanguageStatus','-t','5000') | Out-Null
     Assert ((Value 'DisplayLanguageStatus').Contains($(if ($expectsJapanese) { '日本語' } else { 'English' }))) 'System language was not restored.'

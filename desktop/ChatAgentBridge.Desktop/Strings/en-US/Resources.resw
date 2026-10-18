@@ -162,7 +162,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>The standard arguments and model specifications for Codex/Claude Code are assembled by the app. For other CLIs, please specify a format that allows request text to be received from standard input.</value>
   </data>
   <data name="SettingsCheckCli.Content" xml:space="preserve">
-    <value>Check CLI (version and models)</value>
+    <value>Check CLI</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock019.Text" xml:space="preserve">
     <value>From request to result</value>
@@ -579,7 +579,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>AI agent</value>
   </data>
   <data name="WizardAgentExecutable.PlaceholderText" xml:space="preserve">
-    <value>Example: codex or claude</value>
+    <value>e.g. codex, claude, gemini, copilot or an executable path</value>
   </data>
   <data name="WizardAgentExecutable.Header" xml:space="preserve">
     <value>Executable file</value>
@@ -594,7 +594,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Check CLI and select model</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock005.Text" xml:space="preserve">
-    <value>You can check the CLI version. Please log in using the agent's CLI. Model candidates are the values ​​returned by the CLI.</value>
+    <value>This check does not run an AI task or verify sign-in. Codex and Claude Code can return model candidates. Other integrations check the version only.</value>
   </data>
   <data name="CheckCli.Content" xml:space="preserve">
     <value>Check CLI</value>
@@ -809,4 +809,37 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="InboxStop.Content" xml:space="preserve"><value>Stop</value></data>
   <data name="InboxShare.Content" xml:space="preserve"><value>Share result</value></data>
   <data name="InboxConnectionDetails.Header" xml:space="preserve"><value>Connection and notification details</value></data>
+  <data name="WizardCustomCli.Content" xml:space="preserve">
+    <value>Other CLI (custom)</value>
+  </data>
+  <data name="WizardAgentArguments.Header" xml:space="preserve">
+    <value>CLI arguments (prompt is passed through standard input)</value>
+  </data>
+  <data name="WizardAgentArguments.PlaceholderText" xml:space="preserve">
+    <value>Arguments for non-interactive execution</value>
+  </data>
+  <data name="OverviewStatusHeading.Text" xml:space="preserve">
+    <value>Current status</value>
+  </data>
+  <data name="OverviewAgentLabel.Text" xml:space="preserve">
+    <value>Agent setup</value>
+  </data>
+  <data name="OverviewConnectionLabel.Text" xml:space="preserve">
+    <value>Chat setup</value>
+  </data>
+  <data name="OverviewChatLabel.Text" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="OverviewCliLabel.Text" xml:space="preserve">
+    <value>CLI verification</value>
+  </data>
+  <data name="OverviewDetailsHeader.Text" xml:space="preserve">
+    <value>Setup details and architecture</value>
+  </data>
+  <data name="ChatUsageSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Token usage and cache statistics</value>
+  </data>
+  <data name="OverviewCliDetailsTitle.Text" xml:space="preserve">
+    <value>CLI verification details</value>
+  </data>
 </root>

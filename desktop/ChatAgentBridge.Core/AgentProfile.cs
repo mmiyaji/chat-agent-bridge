@@ -5,15 +5,19 @@ public static class AgentProfile
 {
     public const string Codex = "codex";
     public const string Claude = "claude";
+    public const string Gemini = "gemini";
+    public const string GitHubCopilot = "github-copilot";
     public const string Custom = "custom";
     public const string DefaultCodexArguments = "exec --json -";
+    public const string DefaultGeminiArguments = "--output-format text";
+    public const string DefaultGitHubCopilotArguments = "--silent --no-ask-user";
 
     public static string ResolveProvider(BridgeSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
         var provider = string.IsNullOrWhiteSpace(settings.AgentProvider) ? Codex : settings.AgentProvider.Trim().ToLowerInvariant();
-        if (provider is not (Codex or Claude or Custom))
-            throw new ArgumentException("Agent provider must be codex, claude, or custom.", nameof(settings));
+        if (provider is not (Codex or Claude or Gemini or GitHubCopilot or Custom))
+            throw new ArgumentException("Agent provider must be codex, claude, gemini, github-copilot, or custom.", nameof(settings));
 
         // Directly-created legacy settings often use an arbitrary executable with the old default provider.
         // Treat those as custom so their executable and arguments remain exactly as configured.
@@ -28,14 +32,16 @@ public static class AgentProfile
         var model = NormalizeModel(settings.AgentModel);
         var effort = NormalizeReasoningEffort(settings.AgentReasoningEffort);
         var permissionMode = ExecutionPolicy.NormalizePermissionMode(settings.AgentPermissionMode);
+        if (IsBasicCliProvider(provider) && permissionMode != "inherit")
+            throw new ArgumentException("Gemini CLI and GitHub Copilot CLI use their own permission settings; select inherit.", nameof(settings));
         if (provider == Custom && permissionMode != "inherit")
             throw new ArgumentException("Execution permission modes are supported only for Codex and Claude Code profiles.", nameof(settings));
         if (permissionMode == "ask" && provider == Codex && settings.AgentMode != "app-server")
             throw new ArgumentException("The ask permission mode requires Codex App Server mode, which can display approval requests. Select App Server mode or choose another permission mode.", nameof(settings));
-        if (provider == Custom && model is not null)
-            throw new ArgumentException("A model cannot be applied to a custom agent profile; choose Codex or Claude Code.", nameof(settings));
-        if (provider == Custom && effort is not null)
-            throw new ArgumentException("A reasoning effort cannot be applied to a custom agent profile; choose Codex or Claude Code.", nameof(settings));
+        if (provider is Custom or Gemini or GitHubCopilot && model is not null)
+            throw new ArgumentException("A model override is unavailable for this agent profile; choose Codex or Claude Code.", nameof(settings));
+        if (provider is Custom or Gemini or GitHubCopilot && effort is not null)
+            throw new ArgumentException("A reasoning effort override is unavailable for this agent profile; choose Codex or Claude Code.", nameof(settings));
 
         if (settings.AgentMode == "app-server")
         {
@@ -50,6 +56,15 @@ public static class AgentProfile
             var configured = AgentArgumentParser.Parse(settings.AgentArguments);
             if (configured.Count == 2 && configured[0] == "--resume") sessionId = configured[1];
             return new AgentInvocation(EffectiveExecutable(settings, provider), BuildClaudeArguments(model, sessionId, effort, permissionMode), model, provider, effort);
+        }
+
+        if (IsBasicCliProvider(provider))
+        {
+            var basicArguments = GetConfiguredCliArguments(settings.AgentArguments, provider);
+            basicArguments = provider == Gemini
+                ? SetOption(basicArguments, "--output-format", "--output-format", "text")
+                : SetOption(EnsureFlag(EnsureFlag(basicArguments, "--silent"), "--no-ask-user"), "--output-format", "--output-format", "text");
+            return new AgentInvocation(EffectiveExecutable(settings, provider), basicArguments, null, provider);
         }
 
         var parsed = AgentArgumentParser.Parse(settings.AgentArguments);
@@ -99,6 +114,61 @@ public static class AgentProfile
 
     public static string ResolveEffectiveExecutable(BridgeSettings settings)
         => EffectiveExecutable(settings, ResolveProvider(settings));
+
+    public static bool IsBasicCliProvider(string provider) => provider is Gemini or GitHubCopilot;
+
+    internal static string? FindWindowsNpmShim(string executable, string provider)
+    {
+        if (!OperatingSystem.IsWindows() || !IsBasicCliProvider(provider)) return null;
+        var command = provider == Gemini ? "gemini" : "copilot";
+        var leaf = Path.GetFileName(executable.Trim().Trim('"'));
+        if (Path.GetFileNameWithoutExtension(leaf).Equals(command, StringComparison.OrdinalIgnoreCase) &&
+            Path.GetExtension(leaf) is ".cmd" or ".bat" or ".ps1")
+            return Path.IsPathFullyQualified(executable) ? executable : Path.GetFullPath(executable);
+        if (Path.HasExtension(leaf) || !leaf.Equals(command, StringComparison.OrdinalIgnoreCase)) return null;
+        foreach (var directory in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var trimmed = directory.Trim().Trim('"');
+            if (File.Exists(Path.Combine(trimmed, command + ".exe"))) return null;
+            var candidate = Path.Combine(trimmed, command + ".cmd");
+            if (File.Exists(candidate)) return Path.GetFullPath(candidate);
+        }
+        return null;
+    }
+
+    internal static string WindowsNpmShimGuidance(string shim, string provider)
+    {
+        var cliName = provider == Gemini ? "Gemini CLI" : "GitHub Copilot CLI";
+        var entryPointHint = provider == Gemini
+            ? "For a global npm install, its entrypoint is commonly node_modules/@google/gemini-cli/dist/index.js."
+            : "Use the JavaScript entrypoint inside node_modules/@github/copilot for your installed version.";
+        return $"'{shim}' is a Windows npm command shim. The bridge does not launch command scripts. Set the executable to node.exe and the arguments to the installed {cliName} JavaScript entrypoint. {entryPointHint}";
+    }
+
+    internal static bool IsNodeExecutable(string executable)
+        => Path.GetFileNameWithoutExtension(executable.Trim().Trim('"')).Equals("node", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Arguments used for an identity-only probe of an explicit Node.js CLI configuration.</summary>
+    internal static IReadOnlyList<string> GetNodeProbePrefix(BridgeSettings settings, string provider)
+    {
+        if (settings.AgentArguments == DefaultCodexArguments || string.IsNullOrWhiteSpace(settings.AgentArguments)) return Array.Empty<string>();
+        var configured = AgentArgumentParser.Parse(settings.AgentArguments);
+        // Keep only a script and a small set of non-executing Node options. Provider task flags
+        // after the script are excluded, and code-loading/evaluation options are never probed.
+        var safeNodeOptions = new HashSet<string>(StringComparer.Ordinal)
+        { "--no-warnings", "--no-deprecation", "--trace-warnings", "--preserve-symlinks", "--enable-source-maps" };
+        var scriptIndex = -1;
+        for (var index = 0; index < configured.Count; index++)
+        {
+            if (new[] { ".js", ".mjs", ".cjs" }.Contains(Path.GetExtension(configured[index]), StringComparer.OrdinalIgnoreCase))
+            { scriptIndex = index; break; }
+            if (!safeNodeOptions.Contains(configured[index]))
+                throw new InvalidOperationException("A Node CLI version check requires a JavaScript entrypoint in AgentArguments. Only --no-warnings, --no-deprecation, --trace-warnings, --preserve-symlinks, and --enable-source-maps may precede the entrypoint.");
+        }
+        if (scriptIndex >= 0) return configured.Take(scriptIndex + 1).ToArray();
+        if (configured.Count == 0) return Array.Empty<string>();
+        throw new InvalidOperationException("A Node CLI version check requires a JavaScript entrypoint in AgentArguments; arbitrary Node code or task flags are not run during a version check.");
+    }
 
     internal static IReadOnlyList<string> BuildClaudeArguments(string? model, string? sessionId = null, string? effort = null, string permissionMode = "inherit")
     {
@@ -170,8 +240,20 @@ public static class AgentProfile
         var executable = settings.AgentExecutable.Trim();
         // Provider preset changes default executable while respecting explicit executable overrides.
         if (provider == Claude && IsCodexExecutable(executable)) return "claude";
+        if (provider == Gemini && IsCodexExecutable(executable)) return "gemini";
+        if (provider == GitHubCopilot && IsCodexExecutable(executable)) return "copilot";
         return executable;
     }
+
+    private static IReadOnlyList<string> GetConfiguredCliArguments(string? arguments, string provider)
+    {
+        if (string.IsNullOrWhiteSpace(arguments) || arguments == DefaultCodexArguments)
+            return AgentArgumentParser.Parse(provider == Gemini ? DefaultGeminiArguments : DefaultGitHubCopilotArguments);
+        return AgentArgumentParser.Parse(arguments);
+    }
+
+    private static IReadOnlyList<string> EnsureFlag(IReadOnlyList<string> arguments, string flag)
+        => arguments.Contains(flag, StringComparer.Ordinal) ? arguments : arguments.Append(flag).ToArray();
 
     private static IReadOnlyList<string> SetOption(IReadOnlyList<string> arguments, string option, string alias, string value)
     {

@@ -27,4 +27,7 @@
   <data name="SaveFailed" xml:space="preserve">
     <value>表示言語を保存できませんでした。アプリのデータフォルダーへの書き込み権限を確認してください。</value>
   </data>
+  <data name="AppliedImmediately" xml:space="preserve">
+    <value>現在の表示言語：{0}。初期設定と利用条件の表示にすぐ反映します。</value>
+  </data>
 </root>

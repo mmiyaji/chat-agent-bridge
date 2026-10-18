@@ -52,7 +52,7 @@ public partial class MainPageViewModel
     };
     public string OnboardingNextLabel => OnboardingStep == 0 ? ViewModelText.Get("ConsentAndContinue") : OnboardingStep == 4 ? ViewModelText.Get("SaveAndFinish") : ViewModelText.Get("SaveAndContinue");
     public string OnboardingProgress => $"[{Math.Clamp(OnboardingStep, 0, 4) + 1} / 5]";
-    public string WizardSummary => ViewModelText.Get("WizardSummary", AgentProvider == "claude" ? "Claude Code" : "Codex", string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, string.IsNullOrWhiteSpace(AgentReasoningEffort) ? ViewModelText.Get("DefaultCliValue") : AgentReasoningEffort, WorkspaceRoot, IsWizardSlack ? "Slack" : "Mattermost", ViewModelText.Get(WizardAutoConnect ? "Enabled" : "Disabled"), ChatApprovalLabel(ChatApprovalMode), ResultLabel(ChatResultMode), PermissionLabel(AgentPermissionMode));
+    public string WizardSummary => ViewModelText.Get("WizardSummary", AgentProviderDisplayName, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, string.IsNullOrWhiteSpace(AgentReasoningEffort) ? ViewModelText.Get("DefaultCliValue") : AgentReasoningEffort, WorkspaceRoot, IsWizardSlack ? "Slack" : "Mattermost", ViewModelText.Get(WizardAutoConnect ? "Enabled" : "Disabled"), ChatApprovalLabel(ChatApprovalMode), ResultLabel(ChatResultMode), PermissionLabel(AgentPermissionMode));
     public event Action<int>? OnboardingNavigateRequested;
 
     public async Task InitializeOnboardingAsync()
@@ -104,7 +104,7 @@ public partial class MainPageViewModel
         if (!_hasCurrentConsent || !HasAcceptedTerms || !HasAcceptedPrivacy) { SetStatus(ViewModelText.Get("ReviewConsent"), ViewModelText.Get("ReviewConsentDetails"), "Warning"); return; }
         if (OnboardingStep == 1)
         {
-            if (AgentProvider is not ("codex" or "claude")) { SetStatus(ViewModelText.Get("SelectAgent"), ViewModelText.Get("SelectAgentDetails"), "Warning"); return; }
+            if (AgentProvider is not ("codex" or "claude" or "gemini" or "github-copilot" or "custom") || string.IsNullOrWhiteSpace(AgentExecutable)) { SetStatus(ViewModelText.Get("SelectAgent"), ViewModelText.Get("SelectAgentDetails"), "Warning"); return; }
             if (!Path.IsPathFullyQualified(WorkspaceRoot) || !Directory.Exists(WorkspaceRoot)) { SetStatus(ViewModelText.Get("CheckWorkspace"), ViewModelText.Get("CheckWorkspaceDetails"), "Warning"); return; }
         }
         if (OnboardingStep == 2 && !HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("CheckCliAndModel"), CliCheckSucceeded ? ViewModelText.Get("SelectedModelUnavailable") : ViewModelText.Get("RunCliCheckDetails"), "Warning"); return; }
@@ -122,7 +122,7 @@ public partial class MainPageViewModel
         if (OnboardingStep < 4) { await AdvanceOnboardingAsync(OnboardingStep + 1); return; }
         await SaveOnboardingProgressAsync("completed", 4);
         IsOnboardingActive = false;
-        SetStatus(ViewModelText.Get("WizardComplete"), ViewModelText.Get("WizardCompleteDetails"), "Success");
+        IsStatusOpen = false;
     });
     public async Task<bool> SaveWizardConnectionSettingsAsync()
     {
@@ -133,9 +133,9 @@ public partial class MainPageViewModel
     [RelayCommand(CanExecute = nameof(CanOnboardingAction))]
     private Task DeferOnboardingAsync() => RunOnboardingActionAsync(async () =>
     {
-        CancelCliCheck();
         await SaveOnboardingProgressAsync("deferred", OnboardingStep);
         IsOnboardingActive = false;
+        IsStatusOpen = false;
     });
     private bool CanOnboardingAction() => IsSettingsLoaded && !IsLoading && !IsRunning && !IsOnboardingBusy && !IsCheckingCli;
     private bool CanGoBackInOnboarding() => CanOnboardingAction() && OnboardingStep > 0;

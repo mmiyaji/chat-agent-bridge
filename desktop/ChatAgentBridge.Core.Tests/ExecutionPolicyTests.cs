@@ -67,6 +67,33 @@ public sealed class ExecutionPolicyTests
     }
 
     [Fact]
+    public async Task SettingsStorePersistsBasicCliProvidersAndRejectsManagedOverrides()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new SettingsStore(path);
+            var settings = new BridgeSettings
+            {
+                AgentProvider = AgentProfile.Gemini,
+                AgentExecutable = "gemini",
+                AgentArguments = AgentProfile.DefaultGeminiArguments,
+                AgentPermissionMode = "inherit"
+            };
+            await store.SaveAsync(settings);
+            Assert.Equal(settings, await store.LoadAsync());
+
+            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(settings with { AgentModel = "model-x" }));
+            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(settings with { AgentReasoningEffort = "high" }));
+            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(settings with { AgentPermissionMode = "workspace-write" }));
+            var copilot = settings with { AgentProvider = AgentProfile.GitHubCopilot, AgentExecutable = "copilot", AgentArguments = AgentProfile.DefaultGitHubCopilotArguments };
+            await store.SaveAsync(copilot);
+            Assert.Equal(copilot, await store.LoadAsync());
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
     public void ChatRequestPolicyRequiresUserAndConfiguredScopes()
     {
         var settings = new BridgeSettings

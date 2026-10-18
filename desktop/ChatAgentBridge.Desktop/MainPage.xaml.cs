@@ -59,6 +59,12 @@ public sealed partial class MainPage : Page
         InboxPage.OpenRequested += () => MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>()
             .First(item => item.Tag as string == "chat");
         Loaded += MainPage_Loaded;
+        Loaded += (_, _) =>
+        {
+            LanguageSettings.LanguageChanged -= RefreshLanguage;
+            LanguageSettings.LanguageChanged += RefreshLanguage;
+        };
+        Unloaded += (_, _) => LanguageSettings.LanguageChanged -= RefreshLanguage;
         ViewModel.ConfirmExecutionAsync = ConfirmExecutionAsync;
         var serverDialogs = new AppServerUi.AppServerDialogs(() => XamlRoot);
         ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
@@ -66,6 +72,13 @@ public sealed partial class MainPage : Page
         HistoryPage.AgentSettingsRequested += () => OpenAgentSettings_Click(this, new RoutedEventArgs());
         ViewModel.OnboardingNavigateRequested += _ => _wizard.ResetScroll();
         MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
+    }
+
+    private void RefreshLanguage(System.Globalization.CultureInfo culture)
+    {
+        ViewModel.RefreshLocalizedText();
+        Bindings.Update();
+        MrtText.Refresh(this, culture);
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;

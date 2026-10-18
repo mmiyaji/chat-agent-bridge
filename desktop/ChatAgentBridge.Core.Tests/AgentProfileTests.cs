@@ -31,6 +31,54 @@ public sealed class AgentProfileTests
         Assert.Equal(new[] { "--print", "--output-format", "stream-json", "--verbose", "--model", "sonnet" }, invocation.Arguments);
     }
 
+    [Theory]
+    [InlineData(AgentProfile.Gemini, "gemini", "--output-format", "text")]
+    [InlineData(AgentProfile.GitHubCopilot, "copilot", "--silent", "--no-ask-user")]
+    public void BasicProviderProfilesUseOneShotTextArguments(string provider, string executable, string first, string second)
+    {
+        var invocation = AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = provider });
+
+        Assert.Equal(executable, invocation.Executable);
+        Assert.Equal(provider, invocation.Provider);
+        Assert.Contains(first, invocation.Arguments);
+        Assert.Contains(second, invocation.Arguments);
+        Assert.DoesNotContain(invocation.Arguments, argument => argument is "--yolo" or "--allow-all" or "--resume" or "--continue");
+        Assert.Null(invocation.Model);
+        Assert.Null(invocation.ReasoningEffort);
+    }
+
+    [Fact]
+    public void BasicProviderArgumentsStaySeparateAndRequiredFlagsOverrideConflictingValues()
+    {
+        var promptLikeValue = "text; Write-Output unsafe";
+        var invocation = AgentProfile.BuildInvocation(new BridgeSettings
+        {
+            AgentProvider = AgentProfile.Gemini,
+            AgentArguments = $"--output-format json --label \"{promptLikeValue}\""
+        });
+
+        Assert.Equal(new[] { "--label", promptLikeValue, "--output-format", "text" }, invocation.Arguments);
+
+        var copilot = AgentProfile.BuildInvocation(new BridgeSettings
+        {
+            AgentProvider = AgentProfile.GitHubCopilot,
+            AgentArguments = "--output-format json --silent"
+        });
+        Assert.Equal(1, copilot.Arguments.Count(argument => argument == "--output-format"));
+        Assert.Equal("text", copilot.Arguments.Last());
+        Assert.Contains("--no-ask-user", copilot.Arguments);
+    }
+
+    [Theory]
+    [InlineData(AgentProfile.Gemini)]
+    [InlineData(AgentProfile.GitHubCopilot)]
+    public void BasicProvidersRejectManagedModelEffortAndPermissionOverrides(string provider)
+    {
+        Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = provider, AgentModel = "model-x" }));
+        Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = provider, AgentReasoningEffort = "high" }));
+        Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = provider, AgentPermissionMode = "workspace-write" }));
+    }
+
     [Fact]
     public void ReasoningEffortIsForwardedAsSeparateProviderArgumentsAndExistingConfigIsPreserved()
     {

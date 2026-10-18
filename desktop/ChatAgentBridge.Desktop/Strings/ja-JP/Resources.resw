@@ -162,7 +162,7 @@
     <value>Codex・Claude Codeの標準引数とモデル指定はアプリが組み立てます。その他のCLIは標準入力から依頼文を受け取れる形式を指定してください。</value>
   </data>
   <data name="SettingsCheckCli.Content" xml:space="preserve">
-    <value>CLIをチェック（バージョン・モデル）</value>
+    <value>CLIをチェック</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock019.Text" xml:space="preserve">
     <value>依頼が実行され、結果が届くまで</value>
@@ -579,7 +579,7 @@
     <value>使うAI</value>
   </data>
   <data name="WizardAgentExecutable.PlaceholderText" xml:space="preserve">
-    <value>例: codex または claude</value>
+    <value>例: codex、claude、gemini、copilot、実行ファイルのパス</value>
   </data>
   <data name="WizardAgentExecutable.Header" xml:space="preserve">
     <value>実行ファイル</value>
@@ -594,7 +594,7 @@
     <value>CLIを確認してモデルを選ぶ</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock005.Text" xml:space="preserve">
-    <value>CLIのバージョンを確認できます。ログインはエージェントのCLIで済ませてください。モデル候補はCLIが返す値です。</value>
+    <value>このチェックではAIの作業実行やログイン確認は行いません。Codex・Claude Codeではモデル候補も取得し、その他の連携はバージョンのみ確認します。</value>
   </data>
   <data name="CheckCli.Content" xml:space="preserve">
     <value>CLIをチェック</value>
@@ -809,4 +809,37 @@
   <data name="InboxStop.Content" xml:space="preserve"><value>停止</value></data>
   <data name="InboxShare.Content" xml:space="preserve"><value>結果を共有</value></data>
   <data name="InboxConnectionDetails.Header" xml:space="preserve"><value>接続と通知の詳細</value></data>
+  <data name="WizardCustomCli.Content" xml:space="preserve">
+    <value>その他のCLI（カスタム）</value>
+  </data>
+  <data name="WizardAgentArguments.Header" xml:space="preserve">
+    <value>CLI起動引数（依頼は標準入力へ渡します）</value>
+  </data>
+  <data name="WizardAgentArguments.PlaceholderText" xml:space="preserve">
+    <value>非対話モードで実行するための引数</value>
+  </data>
+  <data name="OverviewStatusHeading.Text" xml:space="preserve">
+    <value>現在の状態</value>
+  </data>
+  <data name="OverviewAgentLabel.Text" xml:space="preserve">
+    <value>エージェント設定</value>
+  </data>
+  <data name="OverviewConnectionLabel.Text" xml:space="preserve">
+    <value>チャット設定</value>
+  </data>
+  <data name="OverviewChatLabel.Text" xml:space="preserve">
+    <value>接続状態</value>
+  </data>
+  <data name="OverviewCliLabel.Text" xml:space="preserve">
+    <value>CLI の確認</value>
+  </data>
+  <data name="OverviewDetailsHeader.Text" xml:space="preserve">
+    <value>セットアップの詳細と構成</value>
+  </data>
+  <data name="ChatUsageSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>トークン使用量とキャッシュ統計</value>
+  </data>
+  <data name="OverviewCliDetailsTitle.Text" xml:space="preserve">
+    <value>CLIの確認内容</value>
+  </data>
 </root>

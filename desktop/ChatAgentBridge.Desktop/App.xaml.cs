@@ -35,6 +35,14 @@ public partial class App : Application
     public static string SystemLanguageTag { get; private set; } = "en-US";
     public static Appearance.AppAppearance Appearance { get; private set; } = null!;
 
+    /// <summary>Applies a persisted language preference to this process and future MRT lookups.</summary>
+    public static System.Globalization.CultureInfo ApplyLanguagePreference(string preference)
+    {
+        var culture = AppLanguage.Apply(preference, SystemLanguageTag);
+        Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = culture.Name;
+        return culture;
+    }
+
     /// <summary>
     /// The native window handle (HWND). Use for file pickers,
     /// <c>DataTransferManager</c>, and any WinRT interop that requires
@@ -76,8 +84,7 @@ public partial class App : Application
             // An unreadable preference never prevents access to the language selector.
             // Preserve the file; a later explicit preference change can repair it.
         }
-        var language = AppLanguage.Apply(languagePreference.Language, SystemLanguageTag);
-        Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language.Name;
+        ApplyLanguagePreference(languagePreference.Language);
 
         DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         Appearance = new(new ChatAgentBridge.Core.Appearance.AppearancePreferencesStore(new ChatAgentBridge.Core.SettingsStore()));

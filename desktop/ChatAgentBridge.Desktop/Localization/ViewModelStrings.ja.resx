@@ -352,7 +352,7 @@
     <value>AIを選択してください</value>
   </data>
   <data name="SelectAgentDetails" xml:space="preserve">
-    <value>このウィザードではCodexまたはClaude Codeを設定できます。</value>
+    <value>利用するAI、またはその他のCLIを選び、実行ファイルを指定してください。</value>
   </data>
   <data name="SelectedModelUnavailable" xml:space="preserve">
     <value>入力したモデルはCLIの候補にありません。候補から選択するか、モデル名を空欄にしてCLIの既定値を使ってください。</value>
@@ -463,7 +463,7 @@
     <value>SlackまたはMattermostを選び、接続情報と利用を許可する本人のユーザーIDを入力します。</value>
   </data>
   <data name="WizardCliDescription" xml:space="preserve">
-    <value>チェックを実行し、CLIの種類・バージョン・モデル候補を確認します。AIへ作業の依頼は送りません。</value>
+    <value>CLIのバージョンを確認します。Codex・Claude Codeではモデル候補も取得します。AIへ作業の依頼は送りません。</value>
   </data>
   <data name="WizardComplete" xml:space="preserve">
     <value>初期設定が完了しました</value>
@@ -524,4 +524,61 @@ AIの操作権限: {8}</value>
   <data name="RunToCompletion" xml:space="preserve"><value>完了まで実行</value></data>
   <data name="Disabled" xml:space="preserve"><value>無効</value></data>
   <data name="MattermostConnectionFields" xml:space="preserve"><value>サーバーURL・チャンネルID・トークン・許可するユーザーIDを入力してください。</value></data>
+  <data name="CustomCliName" xml:space="preserve">
+    <value>その他のCLI（カスタム）</value>
+  </data>
+  <data name="BasicProviderHelp" xml:space="preserve">
+    <value>基本連携：依頼を標準入力へ渡し、標準出力を返信します。毎回独立した実行となり、会話の自動継続・モデル／推論候補の取得には未対応です。モデル・推論・操作権限はCLIの設定や引数で指定し、事前にCLIへログインしてください。</value>
+  </data>
+  <data name="BasicPermissionManagedByCli" xml:space="preserve">
+    <value>操作権限はCLI側の設定に従います。この連携ではアプリからサンドボックスや権限の解除を指定しません。チャットの依頼承認は別途設定できます。</value>
+  </data>
+  <data name="BasicModelManagedByCli" xml:space="preserve">
+    <value>モデル・推論の強さはCLI側で管理します。この連携では候補一覧を取得できません。</value>
+  </data>
+  <data name="BasicCliCheckSucceeded" xml:space="preserve">
+    <value>バージョン確認が完了しました。ログイン状態・モデルの利用可否・作業実行は未確認です。AIへの依頼は送信していません。</value>
+  </data>
+  <data name="CliCheckFailedDetails" xml:space="preserve">
+    <value>CLIを確認できませんでした: {0}</value>
+  </data>
+  <data name="OverviewChecking" xml:space="preserve">
+    <value>確認中</value>
+  </data>
+  <data name="OverviewSaved" xml:space="preserve">
+    <value>保存済み</value>
+  </data>
+  <data name="OverviewNeedsSetup" xml:space="preserve">
+    <value>要設定</value>
+  </data>
+  <data name="OverviewConnected" xml:space="preserve">
+    <value>接続中</value>
+  </data>
+  <data name="OverviewConnecting" xml:space="preserve">
+    <value>接続処理中</value>
+  </data>
+  <data name="OverviewOffline" xml:space="preserve">
+    <value>未接続</value>
+  </data>
+  <data name="OverviewCliNotChecked" xml:space="preserve">
+    <value>未確認</value>
+  </data>
+  <data name="OverviewCliVerified" xml:space="preserve">
+    <value>確認済み</value>
+  </data>
+  <data name="OverviewCliFailed" xml:space="preserve">
+    <value>要確認</value>
+  </data>
+  <data name="OverviewAgentAccessibleName" xml:space="preserve">
+    <value>エージェント設定：{0}。エージェント設定を開く。</value>
+  </data>
+  <data name="OverviewConnectionAccessibleName" xml:space="preserve">
+    <value>チャット設定：{0}。接続設定を開く。</value>
+  </data>
+  <data name="OverviewChatAccessibleName" xml:space="preserve">
+    <value>接続状態：{0}。チャットを開く。</value>
+  </data>
+  <data name="OverviewCliAccessibleName" xml:space="preserve">
+    <value>CLIの確認：{0}。エージェント設定を開いて確認。</value>
+  </data>
 </root>

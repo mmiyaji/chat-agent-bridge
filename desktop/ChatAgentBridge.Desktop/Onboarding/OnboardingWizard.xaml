@@ -22,8 +22,8 @@
                 <ContentControl x:Name="IntroHost" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardIntro), Mode=OneWay}" />
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardAgentStep), Mode=OneWay}">
-                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock001" />
-                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock002" />
+                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock001" x:Uid="onboardingOnboardingWizardTextBlock001" />
+                    <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock002" x:Uid="onboardingOnboardingWizardTextBlock002" />
                     <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                         <TextBox
                                  Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -33,109 +33,116 @@
                     <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentProvider" x:Uid="WizardAgentProvider">
                         <ComboBoxItem Content="Codex" Tag="codex" />
                         <ComboBoxItem Content="Claude Code" Tag="claude" />
+                        <ComboBoxItem Content="Gemini CLI" Tag="gemini" />
+                        <ComboBoxItem Content="GitHub Copilot CLI" Tag="github-copilot" />
+                        <ComboBoxItem Tag="custom" AutomationProperties.AutomationId="WizardCustomCli" x:Uid="WizardCustomCli" />
                     </ComboBox>
+                    <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" AutomationProperties.AutomationId="WizardBasicProviderHelp" />
                     <TextBox
                              Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
 
                              AutomationProperties.AutomationId="WizardAgentExecutable"  x:Uid="WizardAgentExecutable" />
+                    <TextBox Text="{x:Bind ViewModel.AgentArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsArgumentsEditable), Mode=OneWay}" TextWrapping="Wrap" AcceptsReturn="False" AutomationProperties.AutomationId="WizardAgentArguments" x:Uid="WizardAgentArguments" />
                     <ToggleSwitch
                                   IsOn="{x:Bind ViewModel.UseAppServer, Mode=TwoWay}"
                                   IsEnabled="{x:Bind ViewModel.IsCodexProvider, Mode=OneWay}"
                                   AutomationProperties.AutomationId="WizardUseAppServer"  x:Uid="WizardUseAppServer" />
-                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock003" />
+                    <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock003" x:Uid="onboardingOnboardingWizardTextBlock003" />
                 </StackPanel>
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardCliStep), Mode=OneWay}">
-                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock004" />
-                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock005" />
+                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock004" x:Uid="onboardingOnboardingWizardTextBlock004" />
+                    <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock005" x:Uid="onboardingOnboardingWizardTextBlock005" />
                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
                         <Button  Command="{x:Bind ViewModel.CheckCliCommand, Mode=OneWay}" IsEnabled="{x:Bind local:OnboardingWizard.Not(ViewModel.IsCheckingCli), Mode=OneWay}" AutomationProperties.AutomationId="CheckCli"  x:Uid="CheckCli" />
                         <Button  Command="{x:Bind ViewModel.CancelCliCheckCommand, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" AutomationProperties.AutomationId="CancelCliCheck"  x:Uid="CancelCliCheck" />
                         <ProgressRing IsActive="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" Width="20" Height="20" VerticalAlignment="Center" />
                     </StackPanel>
                     <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliCheckSummary" />
-                    <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock006" />
+                    <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock006" x:Uid="onboardingOnboardingWizardTextBlock006" />
                     <TextBlock Text="{x:Bind ViewModel.CliVersion, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliVersion" />
-                    <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock007" />
+                    <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock007" x:Uid="onboardingOnboardingWizardTextBlock007" />
                     <TextBlock Text="{x:Bind ViewModel.CliExecutablePath, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliExecutablePath" />
-                    <StackPanel Spacing="8">
+                    <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" />
+                    <StackPanel Spacing="8" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.SupportsModel), Mode=OneWay}">
                         <TextBlock Text="{x:Bind ViewModel.ModelCatalog.Status, Mode=OneWay}" TextWrapping="Wrap" />
                         <ComboBox   ItemsSource="{x:Bind ViewModel.ModelCatalog.Models, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.ModelCatalog.SelectedModel, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardModelCandidates"  x:Uid="WizardModelCandidates" />
                         <TextBox  MaxLength="256" Text="{x:Bind ViewModel.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" AutomationProperties.AutomationId="WizardOptionalModel"  x:Uid="WizardOptionalModel" />
                         <ComboBox  ItemsSource="{x:Bind ViewModel.ReasoningEffortCandidates, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.SelectedReasoningEffort, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardReasoningEffort"  x:Uid="WizardReasoningEffort" />
                         <TextBlock Text="{x:Bind ViewModel.ModelEffortStatus, Mode=OneWay}" TextWrapping="Wrap" />
-                        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock008" />
+                        <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock008" x:Uid="onboardingOnboardingWizardTextBlock008" />
                     </StackPanel>
                 </StackPanel>
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardChatStep), Mode=OneWay}">
-                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock009" />
+                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock009" x:Uid="onboardingOnboardingWizardTextBlock009" />
                     <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.OnboardingChatProvider, Mode=TwoWay}" IsEnabled="{x:Bind local:OnboardingWizard.Not(Inbox.IsExecuting), Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatProvider" x:Uid="WizardChatProvider">
                         <ComboBoxItem Content="Slack" Tag="slack" />
                         <ComboBoxItem Content="Mattermost" Tag="mattermost" />
                     </ComboBox>
                     <StackPanel Spacing="12" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardSlack), Mode=OneWay}">
-                        <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock010" />
+                        <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock010" x:Uid="onboardingOnboardingWizardTextBlock010" />
                         <StackPanel Spacing="6">
-                            <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock011" />
+                            <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock011" x:Uid="onboardingOnboardingWizardTextBlock011" />
                             <PasswordBox x:Name="SlackBotTokenBox" PasswordChanged="SlackBotTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardSlackBotToken"  x:Uid="WizardSlackBotToken" />
                         </StackPanel>
                         <StackPanel Spacing="6">
-                            <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock012" />
+                            <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock012" x:Uid="onboardingOnboardingWizardTextBlock012" />
                             <PasswordBox x:Name="SlackAppTokenBox" PasswordChanged="SlackAppTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardSlackAppToken"  x:Uid="WizardSlackAppToken" />
                         </StackPanel>
                         <TextBox  Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardSlackAllowedUserIds"  x:Uid="WizardSlackAllowedUserIds" />
-                        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock013" />
-                        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock014" />
+                        <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock013" x:Uid="onboardingOnboardingWizardTextBlock013" />
+                        <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock014" x:Uid="onboardingOnboardingWizardTextBlock014" />
                     </StackPanel>
                     <StackPanel Spacing="12" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardMattermost), Mode=OneWay}">
-                        <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock015" />
+                        <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock015" x:Uid="onboardingOnboardingWizardTextBlock015" />
                         <TextBox  Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com" AutomationProperties.AutomationId="WizardMattermostServerUrl"  x:Uid="WizardMattermostServerUrl" />
-                        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock016" />
+                        <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock016" x:Uid="onboardingOnboardingWizardTextBlock016" />
                         <TextBox  Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="WizardMattermostChannelId"  x:Uid="WizardMattermostChannelId" />
                         <StackPanel Spacing="6">
-                            <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock017" />
+                            <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock017" x:Uid="onboardingOnboardingWizardTextBlock017" />
                             <PasswordBox x:Name="MattermostTokenBox" PasswordChanged="MattermostTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardMattermostToken"  x:Uid="WizardMattermostToken" />
                         </StackPanel>
                         <TextBox  Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardMattermostAllowedUserIds"  x:Uid="WizardMattermostAllowedUserIds" />
-                        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock018" />
+                        <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock018" x:Uid="onboardingOnboardingWizardTextBlock018" />
                     </StackPanel>
-                    <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock019" />
+                    <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock019" x:Uid="onboardingOnboardingWizardTextBlock019" />
                 </StackPanel>
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardSafetyStep), Mode=OneWay}">
-                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock020" />
-                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock021" />
+                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock020" x:Uid="onboardingOnboardingWizardTextBlock020" />
+                    <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock021" x:Uid="onboardingOnboardingWizardTextBlock021" />
                     <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatApprovalMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatApprovalMode" x:Uid="WizardChatApprovalMode">
-                        <ComboBoxItem  Tag="always"  x:Uid="onboardingOnboardingWizardComboBoxItem001" />
-                        <ComboBoxItem  Tag="first"  x:Uid="onboardingOnboardingWizardComboBoxItem002" />
-                        <ComboBoxItem  Tag="auto"  x:Uid="onboardingOnboardingWizardComboBoxItem003" />
+                        <ComboBoxItem  Tag="always"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem001" x:Uid="onboardingOnboardingWizardComboBoxItem001" />
+                        <ComboBoxItem  Tag="first"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem002" x:Uid="onboardingOnboardingWizardComboBoxItem002" />
+                        <ComboBoxItem  Tag="auto"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem003" x:Uid="onboardingOnboardingWizardComboBoxItem003" />
                     </ComboBox>
-                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock022" />
+                    <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock022" x:Uid="onboardingOnboardingWizardTextBlock022" />
                     <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatResultMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatResultMode" x:Uid="WizardChatResultMode">
-                        <ComboBoxItem  Tag="manual"  x:Uid="onboardingOnboardingWizardComboBoxItem004" />
-                        <ComboBoxItem  Tag="auto"  x:Uid="onboardingOnboardingWizardComboBoxItem005" />
-                        <ComboBoxItem  Tag="none"  x:Uid="onboardingOnboardingWizardComboBoxItem006" />
+                        <ComboBoxItem  Tag="manual"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem004" x:Uid="onboardingOnboardingWizardComboBoxItem004" />
+                        <ComboBoxItem  Tag="auto"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem005" x:Uid="onboardingOnboardingWizardComboBoxItem005" />
+                        <ComboBoxItem  Tag="none"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem006" x:Uid="onboardingOnboardingWizardComboBoxItem006" />
                     </ComboBox>
-                    <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock023" />
-                    <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentPermissionMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentPermissionMode" x:Uid="WizardAgentPermissionMode">
-                        <ComboBoxItem  Tag="inherit"  x:Uid="onboardingOnboardingWizardComboBoxItem007" />
-                        <ComboBoxItem  Tag="read-only"  x:Uid="onboardingOnboardingWizardComboBoxItem008" />
-                        <ComboBoxItem  Tag="workspace-write"  x:Uid="onboardingOnboardingWizardComboBoxItem009" />
-                        <ComboBoxItem  Tag="full-access"  x:Uid="onboardingOnboardingWizardComboBoxItem010" />
-                        <ComboBoxItem  Tag="ask" IsEnabled="{x:Bind local:OnboardingWizard.SupportsOperationApproval(ViewModel.IsCodexProvider, ViewModel.UseAppServer), Mode=OneWay}"  x:Uid="onboardingOnboardingWizardComboBoxItem011" />
+                    <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock023" x:Uid="onboardingOnboardingWizardTextBlock023" />
+                    <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentPermissionMode, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.CanConfigureAgentPermission, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentPermissionMode" x:Uid="WizardAgentPermissionMode">
+                        <ComboBoxItem  Tag="inherit"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem007" x:Uid="onboardingOnboardingWizardComboBoxItem007" />
+                        <ComboBoxItem  Tag="read-only"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem008" x:Uid="onboardingOnboardingWizardComboBoxItem008" />
+                        <ComboBoxItem  Tag="workspace-write"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem009" x:Uid="onboardingOnboardingWizardComboBoxItem009" />
+                        <ComboBoxItem  Tag="full-access"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem010" x:Uid="onboardingOnboardingWizardComboBoxItem010" />
+                        <ComboBoxItem  Tag="ask" IsEnabled="{x:Bind local:OnboardingWizard.SupportsOperationApproval(ViewModel.IsCodexProvider, ViewModel.UseAppServer), Mode=OneWay}"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem011" x:Uid="onboardingOnboardingWizardComboBoxItem011" />
                     </ComboBox>
-                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock024" />
+                    <TextBlock Text="{x:Bind ViewModel.AgentPermissionStatus, Mode=OneWay}" TextWrapping="Wrap" />
+                    <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock024" x:Uid="onboardingOnboardingWizardTextBlock024" />
                     <ToggleSwitch  IsOn="{x:Bind ViewModel.WizardAutoConnect, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAutoConnect"  x:Uid="WizardAutoConnect" />
-                    <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingWizardTextBlock025" />
+                    <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock025" x:Uid="onboardingOnboardingWizardTextBlock025" />
                     <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                         <StackPanel Spacing="8">
-                            <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock026" />
+                            <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock026" x:Uid="onboardingOnboardingWizardTextBlock026" />
                             <TextBlock Text="{x:Bind ViewModel.WizardSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardSummary" />
                         </StackPanel>
                     </Border>
                     <StackPanel Spacing="8">
-                        <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingWizardTextBlock027" />
+                        <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock027" x:Uid="onboardingOnboardingWizardTextBlock027" />
                         <TextBlock Text="{x:Bind Inbox.Status, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardConnectionStatus" />
                         <TextBlock Text="{x:Bind Inbox.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardNotificationStatus" />
                         <Button  Click="ConnectMattermost_Click" IsEnabled="{x:Bind local:OnboardingWizard.Not(Inbox.IsExecuting), Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardMattermost), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardConnectMattermost"  x:Uid="WizardConnectMattermost" />

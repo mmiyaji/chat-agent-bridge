@@ -25,13 +25,13 @@ public partial class MainPageViewModel
         NextOnboardingCommand.NotifyCanExecuteChanged();
         DeferOnboardingCommand.NotifyCanExecuteChanged();
     }
-    private string CurrentCliSignature() => $"{AgentProvider}\n{AgentExecutable}\n{WorkspaceRoot}\n{UseAppServer}\n{TrustedWorkspaceRoots}";
+    private string CurrentCliSignature() => $"{AgentProvider}\n{AgentExecutable}\n{AgentArguments}\n{WorkspaceRoot}\n{UseAppServer}\n{TrustedWorkspaceRoots}";
     private bool HasCurrentCliCheck() => CliCheckSucceeded && _checkedCliSignature == CurrentCliSignature() &&
         (string.IsNullOrWhiteSpace(AgentModel) || ModelCatalog.Models.Any(model => string.Equals(model.Id, AgentModel.Trim(), StringComparison.Ordinal)));
 
     private void WizardSettingChanged(string? property)
     {
-        if (property is nameof(AgentProvider) or nameof(AgentExecutable) or nameof(WorkspaceRoot) or nameof(UseAppServer) or nameof(TrustedWorkspaceRoots))
+        if (property is nameof(AgentProvider) or nameof(AgentExecutable) or nameof(AgentArguments) or nameof(WorkspaceRoot) or nameof(UseAppServer) or nameof(TrustedWorkspaceRoots))
         {
             if (_checkedCliSignature is not null || IsCheckingCli)
             {
@@ -68,7 +68,15 @@ public partial class MainPageViewModel
             if (generation != _cliCheckGeneration || signature != CurrentCliSignature()) return;
             CliVersion = result.Version;
             CliExecutablePath = result.Executable;
-            if (!result.ProviderRecognized) { CliCheckSummary = ViewModelText.Get("UnrecognizedCliProvider"); return; }
+            if (!IsCustomProvider && !result.ProviderRecognized) { CliCheckSummary = ViewModelText.Get("UnrecognizedCliProvider"); return; }
+            if (IsBasicProvider)
+            {
+                ModelCatalog.Invalidate(ViewModelText.Get("BasicModelManagedByCli"));
+                CliCheckSucceeded = true;
+                _checkedCliSignature = signature;
+                CliCheckSummary = ViewModelText.Get("BasicCliCheckSucceeded");
+                return;
+            }
             CliCheckSummary = ViewModelText.Get("CliStartedFetchingModels");
             await ModelCatalog.FetchModelsCommand.ExecuteAsync(null);
             if (generation != _cliCheckGeneration || cancellation.IsCancellationRequested || signature != CurrentCliSignature()) return;
@@ -81,7 +89,11 @@ public partial class MainPageViewModel
         catch (OperationCanceledException) { if (generation == _cliCheckGeneration) CliCheckSummary = ViewModelText.Get("CliCheckCancelled"); }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or ArgumentException or TimeoutException or System.ComponentModel.Win32Exception)
         {
-            if (generation == _cliCheckGeneration) { CliVersion = ViewModelText.Get("CliUnconfirmed"); CliCheckSummary = ex is TimeoutException ? ViewModelText.Get("CliTimeout") : ViewModelText.Get("CliCheckFailed"); }
+            if (generation == _cliCheckGeneration)
+            {
+                CliVersion = ViewModelText.Get("CliUnconfirmed");
+                CliCheckSummary = ex is TimeoutException ? ViewModelText.Get("CliTimeout") : ViewModelText.Get("CliCheckFailedDetails", ex.Message);
+            }
         }
         finally
         {

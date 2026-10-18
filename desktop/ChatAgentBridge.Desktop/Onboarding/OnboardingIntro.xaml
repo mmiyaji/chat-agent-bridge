@@ -5,13 +5,13 @@
     xmlns:local="using:ChatAgentBridge_Desktop.Onboarding"
     xmlns:localization="using:ChatAgentBridge_Desktop.Localization">
     <StackPanel x:Name="IntroStackPanel" Spacing="16" HorizontalAlignment="Stretch">
-        <localization:LanguageSettings />
-        <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock001" />
+        <localization:LanguageSettings x:Name="IntroLanguageSettings" />
+        <TextBlock x:Name="IntroHeading" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock001" />
         <Image x:Name="ArchitectureImage" Source="{x:Bind localization:LocalizedAssets.OverviewArchitecture, Mode=OneTime}" Stretch="Uniform" MaxHeight="260"
                 AutomationProperties.AutomationId="WizardArchitecture"  x:Uid="WizardArchitecture" />
-        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock002" />
-        <TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock003" />
-        <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingIntroTextBlock004" />
+        <TextBlock x:Name="IntroDescription" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock002" />
+        <TextBlock x:Name="IntroDataNotice" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock003" />
+        <TextBlock x:Name="IntroDisclaimer" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingIntroTextBlock004" />
         <Grid ColumnSpacing="12" RowSpacing="8">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -23,13 +23,13 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Button x:Name="TermsButton" Grid.Row="0" Grid.Column="0" Click="ShowTerms_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardTerms">
-                <TextBlock  TextWrapping="Wrap" TextAlignment="Center"  x:Uid="onboardingOnboardingIntroTextBlock005" />
+                <TextBlock x:Name="TermsButtonText" TextWrapping="Wrap" TextAlignment="Center"  x:Uid="onboardingOnboardingIntroTextBlock005" />
             </Button>
             <Button x:Name="PrivacyButton" Grid.Row="0" Grid.Column="1" Click="ShowPrivacy_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardPrivacy">
-                <TextBlock  TextWrapping="Wrap" TextAlignment="Center"  x:Uid="onboardingOnboardingIntroTextBlock006" />
+                <TextBlock x:Name="PrivacyButtonText" TextWrapping="Wrap" TextAlignment="Center"  x:Uid="onboardingOnboardingIntroTextBlock006" />
             </Button>
-            <CheckBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"  IsChecked="{x:Bind ViewModel.HasAcceptedTerms, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptTerms"  x:Uid="WizardAcceptTerms" />
-            <CheckBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" IsChecked="{x:Bind ViewModel.HasAcceptedPrivacy, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptPrivacy"><TextBlock  TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock007" /></CheckBox>
+            <CheckBox x:Name="TermsConsentCheckBox" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"  IsChecked="{x:Bind ViewModel.HasAcceptedTerms, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptTerms"  x:Uid="WizardAcceptTerms" />
+            <CheckBox x:Name="PrivacyConsentCheckBox" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" IsChecked="{x:Bind ViewModel.HasAcceptedPrivacy, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptPrivacy"><TextBlock x:Name="PrivacyConsentText" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock007" /></CheckBox>
         </Grid>
         <TextBlock Text="{x:Bind ViewModel.ConsentStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardConsentStatus" />
     </StackPanel>

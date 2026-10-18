@@ -27,4 +27,7 @@
   <data name="SaveFailed" xml:space="preserve">
     <value>The display language could not be saved. Check write access to the app data folder.</value>
   </data>
+  <data name="AppliedImmediately" xml:space="preserve">
+    <value>Current display language: {0}. Setup and consent documents use this language immediately.</value>
+  </data>
 </root>
