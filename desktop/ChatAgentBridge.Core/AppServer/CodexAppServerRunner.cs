@@ -37,12 +37,14 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
         if (string.IsNullOrWhiteSpace(settings.AgentExecutable)) throw new ArgumentException("A Codex executable is required.", nameof(settings));
         string? model;
         string? effort;
+        string permissionMode;
         try
         {
             if (AgentProfile.ResolveProvider(settings) != AgentProfile.Codex)
                 return new(new AgentRunResult(false, -1, "", "Codex App Server requires the Codex provider."), options.SessionId);
             model = AgentProfile.NormalizeModel(settings.AgentModel);
             effort = AgentProfile.NormalizeReasoningEffort(settings.AgentReasoningEffort);
+            permissionMode = ExecutionPolicy.NormalizePermissionMode(settings.AgentPermissionMode);
         }
         catch (ArgumentException ex) { return new(new AgentRunResult(false, -1, "", ex.Message), options.SessionId); }
 
@@ -145,11 +147,12 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
 
             try
             {
+                var (sandbox, sandboxType, approvalPolicy) = PermissionPolicy(permissionMode);
                 var threadParameters = new Dictionary<string, object?>
                 {
                     ["cwd"] = workspace,
-                    ["approvalPolicy"] = "on-request",
-                    ["sandbox"] = "workspace-write"
+                    ["approvalPolicy"] = approvalPolicy,
+                    ["sandbox"] = sandbox
                 };
                 var threadResponse = options.SessionId is { Length: > 0 } sessionId
                     ? await client.RequestAsync("thread/resume", Add(threadParameters, "threadId", sessionId), cancellationToken).ConfigureAwait(false)
@@ -172,8 +175,8 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                     ["threadId"] = threadId,
                     ["input"] = new[] { new { type = "text", text = prompt } },
                     ["cwd"] = workspace,
-                    ["approvalPolicy"] = "on-request",
-                    ["sandboxPolicy"] = new { type = "workspaceWrite", writableRoots = new[] { workspace }, networkAccess = false }
+                    ["approvalPolicy"] = approvalPolicy,
+                    ["sandboxPolicy"] = SandboxPolicy(sandboxType, workspace, permissionMode != "inherit" && settings.AllowAgentNetwork)
                 };
                 if (model is not null) turnParameters["model"] = model;
                 if (effort is not null) turnParameters["effort"] = effort;
@@ -253,8 +256,29 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
     {
         static string NormalizePath(string value) => OperatingSystem.IsWindows() ? value.ToUpperInvariant() : value;
         return string.Join("\u001f", NormalizePath(workspace), NormalizePath(Path.GetFullPath(settings.AgentExecutable)),
-            settings.AgentProvider, settings.AgentMode, settings.AgentArguments, model ?? "", effort ?? "");
+            settings.AgentProvider, settings.AgentMode, settings.AgentArguments, model ?? "", effort ?? "",
+            ExecutionPolicy.NormalizePermissionMode(settings.AgentPermissionMode), settings.AllowAgentNetwork ? "network" : "no-network");
     }
+
+    private static (string Sandbox, string SandboxType, string ApprovalPolicy) PermissionPolicy(string permissionMode)
+        => permissionMode switch
+        {
+            "inherit" => ("workspace-write", "workspaceWrite", "on-request"),
+            "read-only" => ("read-only", "readOnly", "never"),
+            "workspace-write" => ("workspace-write", "workspaceWrite", "never"),
+            "full-access" => ("danger-full-access", "dangerFullAccess", "never"),
+            "ask" => ("workspace-write", "workspaceWrite", "on-request"),
+            _ => throw new ArgumentException($"Unsupported permission mode '{permissionMode}'.", nameof(permissionMode))
+        };
+
+    private static object SandboxPolicy(string sandboxType, string workspace, bool allowNetwork)
+        => sandboxType switch
+        {
+            "readOnly" => new { type = "readOnly" },
+            "workspaceWrite" => new { type = "workspaceWrite", writableRoots = new[] { workspace }, networkAccess = allowNetwork },
+            "dangerFullAccess" => new { type = "dangerFullAccess" },
+            _ => throw new ArgumentException($"Unsupported sandbox type '{sandboxType}'.", nameof(sandboxType))
+        };
 
     private static TokenCounters? ParseCounters(JsonElement value)
     {

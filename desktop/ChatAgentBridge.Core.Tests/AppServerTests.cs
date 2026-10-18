@@ -60,6 +60,64 @@ public sealed class AppServerTests
         Assert.True(second.Result.Metrics!.ProcessReused);
     }
 
+    [Theory]
+    [InlineData("inherit", "workspace-write", "on-request", "workspaceWrite", false)]
+    [InlineData("read-only", "read-only", "never", "readOnly", false)]
+    [InlineData("workspace-write", "workspace-write", "never", "workspaceWrite", true)]
+    [InlineData("full-access", "danger-full-access", "never", "dangerFullAccess", false)]
+    [InlineData("ask", "workspace-write", "on-request", "workspaceWrite", false)]
+    public async Task PermissionModeIsAppliedToAppServerThreadAndTurn(string mode, string sandbox, string approval,
+        string sandboxType, bool networkAllowed)
+    {
+        using var temp = new TempDirectory();
+        var fake = new FakeProcessFactory();
+        fake.Client.OnTurnStart = (client, _) =>
+        {
+            client.RaiseNotification("turn/started", new { threadId = FakeClient.ThreadId, turn = new { id = "turn-1" } });
+            client.RaiseNotification("turn/completed", new { threadId = FakeClient.ThreadId, turn = new { id = "turn-1", status = "completed" } });
+            return Task.CompletedTask;
+        };
+        var result = await new CodexAppServerRunner(fake).RunAsync(new BridgeSettings
+        {
+            WorkspaceRoot = temp.Path,
+            AgentPermissionMode = mode,
+            AllowAgentNetwork = mode == "workspace-write"
+        }, "prompt").WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(result.Result.Success);
+        var start = fake.Client.Requests.Single(r => r.Method == "thread/start").Parameters;
+        Assert.Equal(sandbox, start.GetProperty("sandbox").GetString());
+        Assert.Equal(approval, start.GetProperty("approvalPolicy").GetString());
+        var turn = fake.Client.Requests.Single(r => r.Method == "turn/start").Parameters;
+        Assert.Equal(approval, turn.GetProperty("approvalPolicy").GetString());
+        var policy = turn.GetProperty("sandboxPolicy");
+        Assert.Equal(sandboxType, policy.GetProperty("type").GetString());
+        if (sandboxType == "workspaceWrite")
+            Assert.Equal(networkAllowed, policy.GetProperty("networkAccess").GetBoolean());
+    }
+
+    [Fact]
+    public async Task PermissionChangesRequireFreshPooledProcess()
+    {
+        using var temp = new TempDirectory();
+        var fake = new FakeProcessFactory();
+        var calls = 0;
+        fake.Client.OnTurnStart = (client, _) =>
+        {
+            var turn = $"turn-{++calls}";
+            client.RaiseNotification("turn/started", new { threadId = FakeClient.ThreadId, turn = new { id = turn } });
+            client.RaiseNotification("turn/completed", new { threadId = FakeClient.ThreadId, turn = new { id = turn, status = "completed" } });
+            return Task.CompletedTask;
+        };
+        using var runner = new CodexAppServerRunner(fake, enableProcessReuse: true);
+        var settings = new BridgeSettings { WorkspaceRoot = temp.Path };
+        await runner.RunAsync(settings, "first").WaitAsync(TimeSpan.FromSeconds(5));
+        var changed = await runner.RunAsync(settings with { AgentPermissionMode = "full-access" }, "second")
+            .WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.False(changed.Result.Metrics!.ProcessReused);
+        Assert.Equal(2, fake.StartCount);
+    }
+
     [Fact]
     public async Task IgnoresUsageSnapshotsFromOtherThreadsWhenComputingResumedTurnDelta()
     {

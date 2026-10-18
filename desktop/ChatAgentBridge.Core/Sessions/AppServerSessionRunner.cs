@@ -18,7 +18,11 @@ public sealed class AppServerSessionRunner(SessionStore store, IAppServerRunner?
         return store.WithSessionLockAsync(key, async token =>
         {
             var existing = await store.FindAsync(key, token).ConfigureAwait(false);
+            if (existing?.AgentPermissionMode is not null)
+                settings = settings with { AgentPermissionMode = existing.AgentPermissionMode };
             var workspace = Path.TrimEndingDirectorySeparator(Path.GetFullPath(settings.WorkspaceRoot));
+            if (!ExecutionPolicy.IsWorkspaceTrusted(settings, workspace))
+                throw new InvalidOperationException("The selected workspace is outside the configured trusted workspace roots.");
             var executable = NormalizeExecutable(settings.AgentExecutable, workspace);
             var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             if (existing is not null &&
@@ -41,7 +45,8 @@ public sealed class AppServerSessionRunner(SessionStore store, IAppServerRunner?
                 return Fail(run.Result, "App Server returned a different session id. The saved binding was retained.");
 
             await store.SaveAsync(new SessionBinding(key, workspace, executable, "app-server", actualId.ToString("D"), DateTimeOffset.UtcNow,
-                existing?.Model, existing?.ReasoningEffort), CancellationToken.None).ConfigureAwait(false);
+                existing?.Model, existing?.ReasoningEffort, existing?.ChatApprovalMode, existing?.ChatResultMode,
+                existing?.AgentPermissionMode, existing?.FirstApprovalFingerprint), CancellationToken.None).ConfigureAwait(false);
             return run.Result;
         }, cancellationToken);
     }

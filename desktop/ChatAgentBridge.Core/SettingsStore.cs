@@ -61,7 +61,15 @@ public sealed class SettingsStore
                 MattermostAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(stored.MattermostAllowedUserIds ?? ""),
                 SlackAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(stored.SlackAllowedUserIds ?? ""),
                 ShareApprovalsInChat = stored.ShareApprovalsInChat,
-                RequireApproval = stored.RequireApproval
+                RequireApproval = stored.RequireApproval,
+                AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(stored.AgentPermissionMode),
+                AllowAgentNetwork = stored.AllowAgentNetwork,
+                TrustedWorkspaceRoots = ExecutionPolicy.NormalizeTrustedRoots(stored.TrustedWorkspaceRoots),
+                ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(stored.ChatApprovalMode),
+                ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(stored.ChatResultMode),
+                SlackAllowedChannelIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedChannelIds ?? ""),
+                SlackAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedThreadIds ?? ""),
+                MattermostAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.MattermostAllowedThreadIds ?? "")
             };
             if (provider == AgentProfile.Custom && settings.AgentModel is not null)
                 throw new InvalidDataException("A custom agent cannot use a provider model override.");
@@ -87,12 +95,21 @@ public sealed class SettingsStore
         var effort = AgentProfile.NormalizeReasoningEffort(settings.AgentReasoningEffort);
         string mattermostAllowedUsers;
         string slackAllowedUsers;
+        string slackAllowedChannels, slackAllowedThreads, mattermostAllowedThreads;
+        string permissionMode, approvalMode, resultMode, trustedRoots;
         try
         {
             mattermostAllowedUsers = ChatAccessPolicy.NormalizeAllowedUsers(settings.MattermostAllowedUserIds);
             slackAllowedUsers = ChatAccessPolicy.NormalizeAllowedUsers(settings.SlackAllowedUserIds);
+            slackAllowedChannels = ChatAccessPolicy.NormalizeScopes(settings.SlackAllowedChannelIds);
+            slackAllowedThreads = ChatAccessPolicy.NormalizeScopes(settings.SlackAllowedThreadIds);
+            mattermostAllowedThreads = ChatAccessPolicy.NormalizeScopes(settings.MattermostAllowedThreadIds);
+            permissionMode = ExecutionPolicy.NormalizePermissionMode(settings.AgentPermissionMode);
+            approvalMode = ExecutionPolicy.NormalizeChatApprovalMode(settings.ChatApprovalMode);
+            resultMode = ExecutionPolicy.NormalizeChatResultMode(settings.ChatResultMode);
+            trustedRoots = ExecutionPolicy.NormalizeTrustedRoots(settings.TrustedWorkspaceRoots);
         }
-        catch (FormatException ex) { throw new ArgumentException("Allowed-user IDs are invalid: " + ex.Message, nameof(settings), ex); }
+        catch (FormatException ex) { throw new ArgumentException("Allowed-user or scope IDs are invalid: " + ex.Message, nameof(settings), ex); }
         if (provider == AgentProfile.Custom && model is not null)
             throw new ArgumentException("A custom agent cannot use a provider model override.", nameof(settings));
         if (provider == AgentProfile.Custom && effort is not null)
@@ -117,7 +134,15 @@ public sealed class SettingsStore
             MattermostAllowedUserIds = mattermostAllowedUsers,
             SlackAllowedUserIds = slackAllowedUsers,
             ShareApprovalsInChat = settings.ShareApprovalsInChat,
-            RequireApproval = settings.RequireApproval
+            RequireApproval = settings.RequireApproval,
+            AgentPermissionMode = permissionMode,
+            AllowAgentNetwork = settings.AllowAgentNetwork,
+            TrustedWorkspaceRoots = trustedRoots,
+            ChatApprovalMode = approvalMode,
+            ChatResultMode = resultMode,
+            SlackAllowedChannelIds = slackAllowedChannels,
+            SlackAllowedThreadIds = slackAllowedThreads,
+            MattermostAllowedThreadIds = mattermostAllowedThreads
         };
         var tempPath = Path.Combine(DirectoryPath, $"settings.{Guid.NewGuid():N}.tmp");
         try
@@ -188,5 +213,13 @@ public sealed class SettingsStore
         public string? SlackAllowedUserIds { get; set; }
         public bool ShareApprovalsInChat { get; set; }
         public bool RequireApproval { get; set; } = true;
+        public string? AgentPermissionMode { get; set; }
+        public bool AllowAgentNetwork { get; set; }
+        public string? TrustedWorkspaceRoots { get; set; }
+        public string? ChatApprovalMode { get; set; }
+        public string? ChatResultMode { get; set; }
+        public string? SlackAllowedChannelIds { get; set; }
+        public string? SlackAllowedThreadIds { get; set; }
+        public string? MattermostAllowedThreadIds { get; set; }
     }
 }

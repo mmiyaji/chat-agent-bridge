@@ -117,6 +117,60 @@ public sealed class SessionStore
         }, cancellationToken);
     }
 
+    /// <summary>Atomically updates per-conversation approval, result-sharing, and agent permission overrides.</summary>
+    public Task UpdateExecutionPolicyAsync(SessionKey key, string? approval, string? result, string? permission,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateKey(key);
+        approval = approval is null ? null : ExecutionPolicy.NormalizeChatApprovalMode(approval);
+        result = result is null ? null : ExecutionPolicy.NormalizeChatResultMode(result);
+        permission = permission is null ? null : ExecutionPolicy.NormalizePermissionMode(permission);
+        return WithSessionLockAsync(key, async token =>
+        {
+            await _gate.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                var bindings = await ReadAsync(token).ConfigureAwait(false);
+                var index = bindings.FindIndex(item => item.Key == key);
+                if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
+                bindings[index] = bindings[index] with
+                {
+                    ChatApprovalMode = approval,
+                    ChatResultMode = result,
+                    AgentPermissionMode = permission,
+                    FirstApprovalFingerprint = null,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+                await WriteAsync(bindings, token).ConfigureAwait(false);
+            }
+            finally { _gate.Release(); }
+            return true;
+        }, cancellationToken);
+    }
+
+    /// <summary>Stores the settings fingerprint approved for first-only chat execution.</summary>
+    public Task SetFirstApprovalFingerprintAsync(SessionKey key, string fingerprint, CancellationToken cancellationToken = default)
+    {
+        ValidateKey(key);
+        if (fingerprint is null || fingerprint.Length != 64 || fingerprint.Any(c => !Uri.IsHexDigit(c)))
+            throw new ArgumentException("Approval fingerprint must be a 64-character hexadecimal SHA-256 value.", nameof(fingerprint));
+        fingerprint = fingerprint.ToLowerInvariant();
+        return WithSessionLockAsync(key, async token =>
+        {
+            await _gate.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                var bindings = await ReadAsync(token).ConfigureAwait(false);
+                var index = bindings.FindIndex(item => item.Key == key);
+                if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
+                bindings[index] = bindings[index] with { FirstApprovalFingerprint = fingerprint, UpdatedAt = DateTimeOffset.UtcNow };
+                await WriteAsync(bindings, token).ConfigureAwait(false);
+            }
+            finally { _gate.Release(); }
+            return true;
+        }, cancellationToken);
+    }
+
     private async Task<List<SessionBinding>> ReadAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(_filePath)) return [];
@@ -174,6 +228,12 @@ public sealed class SessionStore
         if (!Guid.TryParse(binding.SessionId, out _)) throw new ArgumentException("Session id must be a GUID.");
         _ = AgentProfile.NormalizeModel(binding.Model);
         _ = AgentProfile.NormalizeReasoningEffort(binding.ReasoningEffort);
+        _ = binding.ChatApprovalMode is null ? null : ExecutionPolicy.NormalizeChatApprovalMode(binding.ChatApprovalMode);
+        _ = binding.ChatResultMode is null ? null : ExecutionPolicy.NormalizeChatResultMode(binding.ChatResultMode);
+        _ = binding.AgentPermissionMode is null ? null : ExecutionPolicy.NormalizePermissionMode(binding.AgentPermissionMode);
+        if (binding.FirstApprovalFingerprint is not null &&
+            (binding.FirstApprovalFingerprint.Length != 64 || binding.FirstApprovalFingerprint.Any(c => !Uri.IsHexDigit(c))))
+            throw new ArgumentException("Session approval fingerprint must be a 64-character hexadecimal SHA-256 value.");
     }
 
     private static void ValidateKey(SessionKey? key)

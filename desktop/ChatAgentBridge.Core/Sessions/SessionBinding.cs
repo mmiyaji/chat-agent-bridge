@@ -10,4 +10,8 @@ public sealed record SessionBinding(
     string SessionId,
     DateTimeOffset UpdatedAt,
     string? Model = null,
-    string? ReasoningEffort = null);
+    string? ReasoningEffort = null,
+    string? ChatApprovalMode = null,
+    string? ChatResultMode = null,
+    string? AgentPermissionMode = null,
+    string? FirstApprovalFingerprint = null);

@@ -29,6 +29,8 @@ public sealed class SessionAgentRunner
         CancellationToken cancellationToken)
     {
         var existing = await _store.FindAsync(key, cancellationToken).ConfigureAwait(false);
+        if (existing?.AgentPermissionMode is not null)
+            settings = settings with { AgentPermissionMode = existing.AgentPermissionMode };
         var provider = AgentProfile.ResolveProvider(settings);
         IReadOnlyList<string> arguments;
         try { arguments = provider == AgentProfile.Claude ? Array.Empty<string>() : AgentArgumentParser.Parse(settings.AgentArguments); }
@@ -47,6 +49,8 @@ public sealed class SessionAgentRunner
         }
 
         var workspace = NormalizeWorkspace(settings.WorkspaceRoot);
+        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, workspace))
+            throw new InvalidOperationException("The selected workspace is outside the configured trusted workspace roots.");
         var executable = NormalizeExecutableIdentity(AgentProfile.ResolveEffectiveExecutable(settings), workspace);
         if (existing is not null)
         {
@@ -112,7 +116,9 @@ public sealed class SessionAgentRunner
         {
             var sessionArguments = tracksCodex ? settings.AgentArguments : ClaudeSessionMarker;
             await _store.SaveAsync(new SessionBinding(key, workspace, executable, sessionArguments,
-                newSessionId, DateTimeOffset.UtcNow), CancellationToken.None).ConfigureAwait(false);
+                newSessionId, DateTimeOffset.UtcNow,
+                existing?.Model, existing?.ReasoningEffort, existing?.ChatApprovalMode, existing?.ChatResultMode,
+                existing?.AgentPermissionMode, existing?.FirstApprovalFingerprint), CancellationToken.None).ConfigureAwait(false);
             if (turnFailed && result.Success)
                 return FailClosed(result, tracksCodex
                     ? "Codex reported turn.failed; the session was saved so it can be resumed."

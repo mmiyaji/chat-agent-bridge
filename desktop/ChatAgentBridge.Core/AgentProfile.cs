@@ -27,6 +27,11 @@ public static class AgentProfile
         var provider = ResolveProvider(settings);
         var model = NormalizeModel(settings.AgentModel);
         var effort = NormalizeReasoningEffort(settings.AgentReasoningEffort);
+        var permissionMode = ExecutionPolicy.NormalizePermissionMode(settings.AgentPermissionMode);
+        if (provider == Custom && permissionMode != "inherit")
+            throw new ArgumentException("Execution permission modes are supported only for Codex and Claude Code profiles.", nameof(settings));
+        if (permissionMode == "ask" && provider == Codex && settings.AgentMode != "app-server")
+            throw new ArgumentException("The ask permission mode requires Codex App Server mode, which can display approval requests. Select App Server mode or choose another permission mode.", nameof(settings));
         if (provider == Custom && model is not null)
             throw new ArgumentException("A model cannot be applied to a custom agent profile; choose Codex or Claude Code.", nameof(settings));
         if (provider == Custom && effort is not null)
@@ -44,7 +49,7 @@ public static class AgentProfile
             string? sessionId = null;
             var configured = AgentArgumentParser.Parse(settings.AgentArguments);
             if (configured.Count == 2 && configured[0] == "--resume") sessionId = configured[1];
-            return new AgentInvocation(EffectiveExecutable(settings, provider), BuildClaudeArguments(model, sessionId, effort), model, provider, effort);
+            return new AgentInvocation(EffectiveExecutable(settings, provider), BuildClaudeArguments(model, sessionId, effort, permissionMode), model, provider, effort);
         }
 
         var parsed = AgentArgumentParser.Parse(settings.AgentArguments);
@@ -52,6 +57,24 @@ public static class AgentProfile
             parsed = SetOption(parsed, "--model", "-m", model);
         if (provider == Codex && effort is not null)
             parsed = SetConfig(parsed, "model_reasoning_effort", effort);
+        if (provider == Codex && permissionMode != "inherit")
+        {
+            parsed = RemoveCodexPermissionOverrides(parsed);
+            var sandbox = permissionMode switch
+            {
+                "read-only" => "read-only",
+                "workspace-write" => "workspace-write",
+                "full-access" => "danger-full-access",
+                _ => throw new ArgumentException($"Permission mode '{permissionMode}' is not supported for Codex exec mode.", nameof(settings))
+            };
+            // These are global config overrides supported by both `codex exec` and `codex exec resume`.
+            // The exec-only --sandbox flag is absent from the resume subcommand, and approval flags
+            // are not accepted by the installed CLI's exec command.
+            parsed = SetConfigValue(parsed, "sandbox_mode", $"\"{sandbox}\"");
+            parsed = SetConfigValue(parsed, "approval_policy", "\"never\"");
+            if (permissionMode == "workspace-write")
+                parsed = SetConfigValue(parsed, "sandbox_workspace_write.network_access", settings.AllowAgentNetwork ? "true" : "false");
+        }
         return new AgentInvocation(EffectiveExecutable(settings, provider), parsed, model, provider, effort);
     }
 
@@ -77,7 +100,7 @@ public static class AgentProfile
     public static string ResolveEffectiveExecutable(BridgeSettings settings)
         => EffectiveExecutable(settings, ResolveProvider(settings));
 
-    internal static IReadOnlyList<string> BuildClaudeArguments(string? model, string? sessionId = null, string? effort = null)
+    internal static IReadOnlyList<string> BuildClaudeArguments(string? model, string? sessionId = null, string? effort = null, string permissionMode = "inherit")
     {
         var arguments = new List<string> { "--print", "--output-format", "stream-json", "--verbose" };
         if (!string.IsNullOrWhiteSpace(sessionId))
@@ -88,7 +111,58 @@ public static class AgentProfile
         }
         if (model is not null) { arguments.Add("--model"); arguments.Add(model); }
         if (effort is not null) { arguments.Add("--effort"); arguments.Add(effort); }
+        if (permissionMode != "inherit")
+        {
+            var claudeMode = permissionMode switch
+            {
+                "read-only" => "plan",
+                "workspace-write" => "acceptEdits",
+                "full-access" => "bypassPermissions",
+                _ => throw new ArgumentException("Claude Code cannot use the ask permission mode in this bridge because its print-mode prompts require host control RPC. Choose read-only, workspace-write, or full-access.", nameof(permissionMode))
+            };
+            arguments.Add("--permission-mode");
+            arguments.Add(claudeMode);
+            if (permissionMode == "full-access") arguments.Add("--dangerously-skip-permissions");
+        }
         return arguments;
+    }
+
+    private static IReadOnlyList<string> RemoveCodexPermissionOverrides(IReadOnlyList<string> arguments)
+    {
+        var result = new List<string>();
+        for (var index = 0; index < arguments.Count; index++)
+        {
+            var argument = arguments[index];
+            if (argument is "--sandbox" or "-s" or "--ask-for-approval" or "-a")
+            { if (index + 1 < arguments.Count) index++; continue; }
+            if (argument is "--full-auto" or "--yolo" or "--dangerously-bypass-approvals-and-sandbox") continue;
+            if (argument.StartsWith("--sandbox=", StringComparison.Ordinal) || argument.StartsWith("-s=", StringComparison.Ordinal) ||
+                argument.StartsWith("--ask-for-approval=", StringComparison.Ordinal) || argument.StartsWith("-a=", StringComparison.Ordinal)) continue;
+            if (argument == "-c" || argument == "--config")
+            {
+                if (index + 1 < arguments.Count)
+                {
+                    var config = arguments[++index];
+                    if (!IsPermissionConfig(config)) { result.Add(argument); result.Add(config); }
+                }
+                continue;
+            }
+            if (argument.StartsWith("--config=", StringComparison.Ordinal) || argument.StartsWith("-c", StringComparison.Ordinal) && argument.Length > 2)
+            {
+                var config = argument.StartsWith("--config=", StringComparison.Ordinal) ? argument[9..] : argument[2..];
+                if (!IsPermissionConfig(config)) result.Add(argument);
+                continue;
+            }
+            result.Add(argument);
+        }
+        return result;
+    }
+
+    private static bool IsPermissionConfig(string config)
+    {
+        var separator = config.IndexOf('=');
+        var key = (separator < 0 ? config : config[..separator]).Trim();
+        return key is "sandbox_mode" or "approval_policy" or "sandbox_workspace_write.network_access";
     }
 
     private static string EffectiveExecutable(BridgeSettings settings, string provider)
@@ -119,6 +193,9 @@ public static class AgentProfile
     }
 
     private static IReadOnlyList<string> SetConfig(IReadOnlyList<string> arguments, string key, string value)
+        => SetConfigValue(arguments, key, $"\"{value}\"");
+
+    private static IReadOnlyList<string> SetConfigValue(IReadOnlyList<string> arguments, string key, string tomlValue)
     {
         var result = new List<string>();
         for (var index = 0; index < arguments.Count; index++)
@@ -147,7 +224,7 @@ public static class AgentProfile
             result.Add(argument);
         }
         result.Add("-c");
-        result.Add($"{key}=\"{value}\"");
+        result.Add($"{key}={tomlValue}");
         return result;
     }
 

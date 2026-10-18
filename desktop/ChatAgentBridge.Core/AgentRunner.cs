@@ -34,6 +34,8 @@ public sealed class AgentRunner : IAgentRunner
         var workspace = Path.GetFullPath(settings.WorkspaceRoot);
         if (!System.IO.Directory.Exists(workspace))
             throw new DirectoryNotFoundException($"Workspace directory does not exist: {workspace}");
+        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, workspace))
+            throw new InvalidOperationException("作業フォルダーが信頼フォルダーの範囲外です。PCの実行設定を確認してください。");
         if (string.IsNullOrWhiteSpace(settings.AgentExecutable))
             throw new ArgumentException("An agent executable is required.", nameof(settings));
 

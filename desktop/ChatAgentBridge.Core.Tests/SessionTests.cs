@@ -386,6 +386,40 @@ public sealed class SessionTests
     }
 
     [Fact]
+    public async Task SessionStore_ExecutionOverridesAndFirstApprovalFingerprintAreAtomicAndPreservedByRunner()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var key = Key();
+            var id = Guid.NewGuid();
+            var store = new SessionStore(directory);
+            await store.SaveAsync(Binding(key, id));
+            await store.UpdateExecutionPolicyAsync(key, "first", "auto", "read-only");
+            var fingerprint = new string('a', 64);
+            await store.SetFirstApprovalFingerprintAsync(key, fingerprint);
+            var before = (await store.FindAsync(key))!;
+            Assert.Equal("first", before.ChatApprovalMode);
+            Assert.Equal("auto", before.ChatResultMode);
+            Assert.Equal("read-only", before.AgentPermissionMode);
+            Assert.Equal(fingerprint, before.FirstApprovalFingerprint);
+
+            var fake = new FakeAgentRunner((_, _) => Task.FromResult(Success(id)));
+            await new SessionAgentRunner(store, fake).RunAsync(key, Settings, "resume");
+            var after = (await store.FindAsync(key))!;
+            Assert.Equal(fingerprint, after.FirstApprovalFingerprint);
+            Assert.Equal("first", after.ChatApprovalMode);
+            Assert.Equal("read-only", after.AgentPermissionMode);
+            Assert.Equal("read-only", fake.Calls.Single().Settings.AgentPermissionMode);
+
+            await store.UpdateExecutionPolicyAsync(key, "always", "manual", null);
+            Assert.Null((await store.FindAsync(key))!.FirstApprovalFingerprint);
+            await Assert.ThrowsAsync<ArgumentException>(() => store.UpdateExecutionPolicyAsync(key, "sometimes", null, null));
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
     public void CodexOutputParser_ExtractsSessionAndFinalAgentMessage()
     {
         var id = Guid.NewGuid();
