@@ -22,7 +22,8 @@ public sealed partial class MainPage : Page
     public bool IsConnectionsSelected { get; private set; }
     public bool IsChatSelected { get; private set; }
     public bool IsHistorySelected { get; private set; }
-    public bool IsFormSelected => !IsChatSelected && !IsHistorySelected;
+    public bool IsAboutSelected { get; private set; }
+    public bool IsFormSelected => !IsChatSelected && !IsHistorySelected && !IsAboutSelected;
 
     public MainPage()
     {
@@ -136,6 +137,7 @@ public sealed partial class MainPage : Page
         IsConnectionsSelected = tag == "connections";
         IsChatSelected = tag == "chat";
         IsHistorySelected = tag == "history";
+        IsAboutSelected = tag == "about";
         if (!IsAgentSelected) ViewModel.CancelModelCatalogLookup();
         ViewModel.IsStatusOpen = false;
         Bindings.Update();
@@ -154,6 +156,7 @@ public sealed partial class MainPage : Page
             }
         }
         if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshAsync();
+        if (pageChanged && IsAboutSelected) AboutPage.ResetScroll();
     }
 
     private void OpenWorkbench_Click(object sender, RoutedEventArgs e)

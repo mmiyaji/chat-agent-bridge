@@ -258,4 +258,19 @@
   <data name="AppearanceFollowsSystem" xml:space="preserve"><value>Follows the Windows app color setting, including changes while this app is running.</value></data>
   <data name="AppearanceReadFailed" xml:space="preserve"><value>Could not read the saved theme. The Windows setting is used. Select a theme to save it again.</value></data>
   <data name="AppearanceSaveFailed" xml:space="preserve"><value>Could not save the theme. The previous setting is still in use. Check access to the settings folder and try again.</value></data>
+  <data name="AboutProductName" xml:space="preserve"><value>Chat Agent Bridge</value></data>
+  <data name="AboutUnpackaged" xml:space="preserve"><value>Unpackaged</value></data>
+  <data name="AboutStoreReady" xml:space="preserve"><value>Store distribution is available for this installation. Update checks are manual and read-only; use the Store to install an update.</value></data>
+  <data name="AboutStoreDevelopment" xml:space="preserve"><value>Development preview. Store page and update checks become available after Microsoft Store distribution.</value></data>
+  <data name="AboutStoreChecking" xml:space="preserve"><value>Checking Microsoft Store for updates…</value></data>
+  <data name="AboutStoreNoUpdates" xml:space="preserve"><value>No updates are currently available.</value></data>
+  <data name="AboutStoreUpdatesAvailable" xml:space="preserve"><value>An update is available. Open the Microsoft Store page to review and install it.</value></data>
+  <data name="AboutStoreCheckFailed" xml:space="preserve"><value>Could not check for updates. Try again later or open the Microsoft Store page.</value></data>
+  <data name="AboutStoreOpenFailed" xml:space="preserve"><value>Could not open the Microsoft Store page.</value></data>
+  <data name="AboutOpenLinkFailed" xml:space="preserve"><value>Could not open the link. Check that a browser or mail app is available.</value></data>
+  <data name="AboutChangelogTitle" xml:space="preserve"><value>What's new in the development preview</value></data>
+  <data name="AboutChangelogContent" xml:space="preserve"><value>• Added an About page with package information, support links, and legal documents.&#10;• Added light, dark, and system themes.&#10;• Added English and Japanese, with automatic language selection.&#10;• Added the guided setup wizard and consent screens.&#10;&#10;The native preview also supports Slack/Mattermost requests, user and thread access controls, conversation continuity, CLI/model/reasoning options, and usage/history information.</value></data>
+  <data name="AboutExitTitle" xml:space="preserve"><value>Exit Chat Agent Bridge?</value></data>
+  <data name="AboutExitMessage" xml:space="preserve"><value>Exiting cancels active work and disconnects chats.</value></data>
+  <data name="AboutExitConfirm" xml:space="preserve"><value>Exit</value></data>
 </root>

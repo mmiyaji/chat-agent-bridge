@@ -764,4 +764,26 @@
   <data name="ThemeSystem.Content" xml:space="preserve"><value>システムに合わせる</value></data>
   <data name="ThemeLight.Content" xml:space="preserve"><value>ライト</value></data>
   <data name="ThemeDark.Content" xml:space="preserve"><value>ダーク</value></data>
+  <data name="NavAbout.Content" xml:space="preserve"><value>情報</value></data>
+  <data name="NavAbout.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>情報</value></data>
+  <data name="AboutHeading.Text" xml:space="preserve"><value>情報</value></data>
+  <data name="AboutDescription.Text" xml:space="preserve"><value>製品情報、更新、法的情報を確認できます。</value></data>
+  <data name="AboutProductHeading.Text" xml:space="preserve"><value>アプリケーション</value></data>
+  <data name="AboutProductLabel.Text" xml:space="preserve"><value>製品</value></data>
+  <data name="AboutVersionLabel.Text" xml:space="preserve"><value>バージョン</value></data>
+  <data name="AboutPackageLabel.Text" xml:space="preserve"><value>パッケージ</value></data>
+  <data name="AboutLinksHeading.Text" xml:space="preserve"><value>リンクと作成者</value></data>
+  <data name="AboutProviderLabel.Text" xml:space="preserve"><value>作成者</value></data>
+  <data name="AboutWebsite.Content" xml:space="preserve"><value>https://ruhenheim.org</value></data>
+  <data name="AboutSupport.Content" xml:space="preserve"><value>mail@ruhenheim.org</value></data>
+  <data name="AboutRepository.Content" xml:space="preserve"><value>ソースコード</value></data>
+  <data name="AboutStoreHeading.Text" xml:space="preserve"><value>Microsoft Store</value></data>
+  <data name="AboutStorePage.Content" xml:space="preserve"><value>Store ページを開く</value></data>
+  <data name="AboutCheckUpdates.Content" xml:space="preserve"><value>更新を確認</value></data>
+  <data name="AboutLegalHeading.Text" xml:space="preserve"><value>利用規約とプライバシー</value></data>
+  <data name="AboutDataHandling.Text" xml:space="preserve"><value>このアプリは Slack または Mattermost と、設定済みのエージェント CLI との間でメッセージをやり取りします。CLI は、そのサービスの設定に従ってプロンプトや関連データを AI サービスへ送信する場合があります。</value></data>
+  <data name="AboutChangelog.Content" xml:space="preserve"><value>更新内容</value></data>
+  <data name="AboutTerms.Content" xml:space="preserve"><value>利用規約</value></data>
+  <data name="AboutPrivacy.Content" xml:space="preserve"><value>プライバシーポリシー</value></data>
+  <data name="AboutExit.Content" xml:space="preserve"><value>アプリを終了</value></data>
 </root>

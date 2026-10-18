@@ -1,0 +1,82 @@
+<Page
+    x:Class="ChatAgentBridge_Desktop.About.AboutPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Padding="24,18,24,24" RowSpacing="16" AutomationProperties.AutomationId="AboutPage">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Spacing="4">
+            <TextBlock x:Uid="AboutHeading" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock x:Uid="AboutDescription" TextWrapping="Wrap"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+        <ScrollViewer x:Name="AboutScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="AboutScroll">
+            <StackPanel Spacing="12" MaxWidth="900" HorizontalAlignment="Stretch">
+                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <TextBlock x:Uid="AboutProductHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <Grid ColumnSpacing="16" RowSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" x:Uid="AboutProductLabel" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <TextBlock x:Name="ProductValue" Grid.Row="0" Grid.Column="1" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutProduct" />
+                            <TextBlock Grid.Row="1" x:Uid="AboutVersionLabel" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <TextBlock x:Name="VersionValue" Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutVersion" />
+                            <TextBlock Grid.Row="2" x:Uid="AboutPackageLabel" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <TextBlock x:Name="PackageValue" Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutPackage" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <TextBlock x:Uid="AboutLinksHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock x:Uid="AboutProviderLabel" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Text="mmiyaji" AutomationProperties.AutomationId="AboutProvider" />
+                        <StackPanel Spacing="0">
+                            <HyperlinkButton x:Uid="AboutWebsite" AutomationProperties.AutomationId="AboutWebsite" Click="OpenLink_Click" Tag="https://ruhenheim.org" />
+                            <HyperlinkButton x:Uid="AboutSupport" AutomationProperties.AutomationId="AboutSupport" Click="OpenLink_Click" Tag="mailto:mail@ruhenheim.org" />
+                            <HyperlinkButton x:Uid="AboutRepository" AutomationProperties.AutomationId="AboutRepository" Click="OpenLink_Click" Tag="https://github.com/mmiyaji/chat-agent-bridge" />
+                        </StackPanel>
+                        <TextBlock x:Name="ActionStatus" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                    </StackPanel>
+                </Border>
+                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <StackPanel Spacing="12">
+                        <TextBlock x:Uid="AboutStoreHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock x:Name="StoreStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutStoreStatus" />
+                        <StackPanel Spacing="8" HorizontalAlignment="Left">
+                            <Button x:Name="StorePageButton" x:Uid="AboutStorePage" AutomationProperties.AutomationId="AboutStorePage" Click="OpenStore_Click" />
+                            <Button x:Name="CheckUpdatesButton" x:Uid="AboutCheckUpdates" AutomationProperties.AutomationId="AboutCheckUpdates" Click="CheckUpdates_Click" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <StackPanel Spacing="12">
+                        <TextBlock x:Uid="AboutLegalHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock x:Uid="AboutDataHandling" TextWrapping="Wrap" />
+                        <StackPanel Spacing="8" HorizontalAlignment="Left">
+                            <Button x:Uid="AboutChangelog" AutomationProperties.AutomationId="AboutChangelog" Click="Changelog_Click" />
+                            <Button x:Uid="AboutTerms" AutomationProperties.AutomationId="AboutTerms" Click="Terms_Click" />
+                            <Button x:Uid="AboutPrivacy" AutomationProperties.AutomationId="AboutPrivacy" Click="Privacy_Click" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Button x:Uid="AboutExit" HorizontalAlignment="Left" AutomationProperties.AutomationId="AboutExit" Click="Exit_Click" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

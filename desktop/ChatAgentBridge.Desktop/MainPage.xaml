@@ -9,6 +9,7 @@
     xmlns:history="using:ChatAgentBridge_Desktop.History"
     xmlns:localization="using:ChatAgentBridge_Desktop.Localization"
     xmlns:appearance="using:ChatAgentBridge_Desktop.Appearance"
+    xmlns:about="using:ChatAgentBridge_Desktop.About"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Grid>
@@ -33,6 +34,11 @@
                 <NavigationViewItem  Tag="chat" AutomationProperties.AutomationId="NavChat" Icon="Message"  x:Uid="NavChat" />
                 <NavigationViewItem  Tag="history" AutomationProperties.AutomationId="NavHistory" Icon="Clock"  x:Uid="NavHistory" />
             </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem Tag="about" AutomationProperties.AutomationId="NavAbout" x:Uid="NavAbout">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
             <NavigationView.Content>
                 <Grid Padding="16">
                     <Grid.RowDefinitions>
@@ -276,6 +282,7 @@
                     </ScrollViewer>
                     <inbox:ChatInboxPage x:Name="InboxPage" Grid.Row="3" Visibility="{x:Bind local:MainPage.ToVisibility(IsChatSelected), Mode=OneTime}" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" />
                     <history:HistoryPage x:Name="HistoryPage" Grid.Row="3" Visibility="{x:Bind local:MainPage.ToVisibility(IsHistorySelected), Mode=OneTime}" />
+                    <about:AboutPage x:Name="AboutPage" Grid.Row="3" Visibility="{x:Bind local:MainPage.ToVisibility(IsAboutSelected), Mode=OneTime}" />
                 </Grid>
             </NavigationView.Content>
         </NavigationView>

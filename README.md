@@ -6,6 +6,8 @@ The native app supports English and Japanese. By default it uses Japanese when t
 
 Choose **Agent settings → Appearance** for Light, Dark, or Use system setting. Theme changes are saved and applied immediately without restarting. The default follows the Windows app color setting.
 
+The **About** page at the bottom of the sidebar shows product and package information, provider and support links, development notes, Terms of Use, and the Privacy Policy. Store page and manual update checks are available for Microsoft Store distributions. The development preview displays its distribution status instead.
+
 Build a standalone Windows x64 executable with `npm run package:exe`. Double-click `release/ChatAgentBridge.exe`, then open the displayed control center URL. Browser launch is opt-in via `--open-browser`. Node.js/npm are not required on the target machine. Agent CLIs still require separate installation. See [executable instructions (Japanese)](docs/executable.ja.md).
 
 The new connection control center manages Slack/Mattermost and local agent connections. Codex uses App Server with native chat approvals and input. See [connection control center](docs/harness-modernization.md).
