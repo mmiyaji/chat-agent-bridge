@@ -24,6 +24,17 @@ Required bot scopes:
 - `app_mentions:read`
 - `chat:write`
 
+For names in the WinUI desktop app's history and lookup controls:
+
+- `users:read`: usernames and display names.
+- `channels:read`: public channel names.
+- `groups:read`: names of private channels the app has joined.
+- `im:read` / `mpim:read`: direct-message / group direct-message metadata, when used.
+
+Choose the read scopes for the conversation types you use. A `C`-prefixed channel ID can also identify a private channel; use the scope requested by Slack's `missing_scope` response instead of inferring privacy from the ID prefix. After changing bot scopes in **OAuth & Permissions**, reinstall the app to the intended workspace. A message-history scope alone does not grant access to channel metadata. See [Slack's Conversations API permissions](https://docs.slack.dev/apis/web-api/using-the-conversations-api/).
+
+Workspace names come from `auth.test`, which requires no additional scope. Name lookups use metadata APIs and do not require the app to read message text. The desktop app caches successful names for 24 hours; a failed lookup may remain cached for 5 minutes after a permission change. Existing IDs and allowlists continue to control execution; display names do not grant access.
+
 For Socket Mode:
 
 - app-level token with `connections:write`
