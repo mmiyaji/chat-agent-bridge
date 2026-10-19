@@ -21,7 +21,7 @@ public sealed partial class ChatInboxViewModel
             item.Workspace = path;
             item.SessionLabel = DesktopText.Get("WorkspaceChangePrompt", currentWorkspace, path, item.Request.UserId);
             // A folder change always requires a local decision, even for auto-approved conversations.
-            if (!approvedByNotification && (ConfirmAsync is null || !await ConfirmAsync(item))) return;
+            if (!approvedByNotification && (ConfirmAsync is null || !await ConfirmAsync(item, token))) return;
             if (item.State != "承認待ち" || !await CheckAccessAsync(item, token)) return;
             if (previousWorkspace != await _sessions.FindWorkspaceAsync(key, token))
                 throw new InvalidOperationException(DesktopText.Get("WorkspaceChangedDuringConfirmation"));

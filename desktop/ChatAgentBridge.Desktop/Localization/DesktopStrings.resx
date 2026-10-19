@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ChatControlNoRequests" xml:space="preserve"><value>No requests from you in this thread.</value></data>
+  <data name="ChatControlStatus" xml:space="preserve"><value>Status: {0}. Pending approval: {1}. Connection: {2}.</value></data>
+  <data name="ChatControlConnected" xml:space="preserve"><value>connected</value></data>
+  <data name="ChatControlReconnecting" xml:space="preserve"><value>reconnecting</value></data>
+  <data name="ChatControlStop" xml:space="preserve"><value>Stop requested. Running: {0}; pending cancelled: {1}.</value></data>
+  <data name="ChatControlStopNone" xml:space="preserve"><value>No running or pending requests from you in this thread.</value></data>
+  <data name="ChatControlFailed" xml:space="preserve"><value>Could not process a chat control command. Check the request on this PC.</value></data>
   <data name="InboxReconnecting" xml:space="preserve"><value>Connection lost. Retrying automatically (attempt {0}, in {1}s). New requests will wait until the connection returns.</value></data>
   <data name="InboxReconnected" xml:space="preserve"><value>Reconnected. Waiting for requests from allowed users. Requests sent while disconnected must be reposted.</value></data>
   <data name="ProgressReceived" xml:space="preserve"><value>📥 Request received. Waiting for approval on the PC or for execution to start.</value></data>

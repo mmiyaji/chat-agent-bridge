@@ -262,7 +262,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         else if (SelectedConversation is not null && (Selected is null || !SelectedConversation.Requests.Contains(Selected)))
             Selected = PreferredRequest(SelectedConversation);
     }
-    public Func<InboxItem, Task<bool>>? ConfirmAsync { get; set; }
+    public Func<InboxItem, CancellationToken, Task<bool>>? ConfirmAsync { get; set; }
     public Func<InboxItem, string, Task<bool>>? ConfirmReplyAsync { get; set; }
     public Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? ServerApprovalHandler { get; set; }
     public Func<AppServerInput, CancellationToken, Task<IReadOnlyDictionary<string, string[]>?>>? ServerInputHandler { get; set; }
@@ -378,6 +378,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (_disconnecting || accessSettings is null || !HasAccess(accessSettings, request, settings)) return;
                 await AuditAsync("received", request, null, token);
                 if (_approvalBroker.TryHandle(request)) return;
+                if (await TryHandleChatControlAsync(transport, settings, request, token)) return;
                 var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (!App.DispatcherQueue.TryEnqueue(() =>
                 {
@@ -505,7 +506,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.SessionLabel += DesktopText.Get("InboxSessionModel", requestedModel ?? DesktopText.Get("CliDefault"), requestedEffort ?? DesktopText.Get("CliDefault"));
             item.SessionLabel += DesktopText.Get("InboxConversationOwner", item.Request.UserId);
             item.SessionLabel += DesktopText.Get("InboxSessionPolicy", ApprovalLabel(effectiveSettings.ChatApprovalMode), ResultLabel(effectiveSettings.ChatResultMode), PermissionLabel(effectiveSettings.AgentPermissionMode));
-            if (!approvedByNotification && !approvedAutomatically && (ConfirmAsync is null || !await ConfirmAsync(item))) return;
+            if (!approvedByNotification && !approvedAutomatically && (ConfirmAsync is null || !await ConfirmAsync(item, token))) return;
             if (item.State != "承認待ち" || token.IsCancellationRequested) return;
             if (!await CheckAccessAsync(item, token)) return;
             record = new ExecutionRecord

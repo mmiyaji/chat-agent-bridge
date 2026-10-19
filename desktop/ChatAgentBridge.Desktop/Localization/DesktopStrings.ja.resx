@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ChatControlNoRequests" xml:space="preserve"><value>このスレッドに、あなたの依頼はありません。</value></data>
+  <data name="ChatControlStatus" xml:space="preserve"><value>状態: {0}。承認待ち: {1}件。接続: {2}。</value></data>
+  <data name="ChatControlConnected" xml:space="preserve"><value>接続済み</value></data>
+  <data name="ChatControlReconnecting" xml:space="preserve"><value>再接続中</value></data>
+  <data name="ChatControlStop" xml:space="preserve"><value>停止を要求しました。実行中: {0}件、待機中の取り消し: {1}件。</value></data>
+  <data name="ChatControlStopNone" xml:space="preserve"><value>このスレッドに、あなたの実行中・待機中の依頼はありません。</value></data>
+  <data name="ChatControlFailed" xml:space="preserve"><value>チャットの操作コマンドを処理できませんでした。このPCで依頼を確認してください。</value></data>
   <data name="InboxReconnecting" xml:space="preserve"><value>接続が切れました。自動で再接続します（{0}回目、{1}秒後）。接続が戻るまで新しい実行を待機します。</value></data>
   <data name="InboxReconnected" xml:space="preserve"><value>再接続しました。許可ユーザーの依頼を待っています。切断中に送った依頼は再投稿してください。</value></data>
   <data name="ProgressReceived" xml:space="preserve"><value>📥 依頼を受け付けました。PC側の承認または実行開始を待っています。</value></data>

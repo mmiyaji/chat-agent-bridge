@@ -124,7 +124,7 @@ public sealed partial class ChatInboxPage : Page
         item.PropertyChanged += resolved;
     }
 
-    private async Task<bool> ConfirmAsync(InboxItem item)
+    private async Task<bool> ConfirmAsync(InboxItem item, CancellationToken cancellationToken)
     {
         var changesWorkspace = ChatAgentBridge.Core.WorkspaceChatCommand.TryParse(item.Prompt, out _);
         var dialog = new ContentDialog
@@ -147,7 +147,15 @@ public sealed partial class ChatInboxPage : Page
             DefaultButton = ContentDialogButton.Close
         };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(dialog, "ChatRunConfirmation");
-        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+        cancellationToken.ThrowIfCancellationRequested();
+        using var cancellation = cancellationToken.Register(() => DispatcherQueue.TryEnqueue(() =>
+        {
+            try { dialog.Hide(); }
+            catch (InvalidOperationException) { }
+        }));
+        var result = await dialog.ShowAsync();
+        cancellationToken.ThrowIfCancellationRequested();
+        return result == ContentDialogResult.Primary;
     }
 
     private async Task<bool> ConfirmReplyAsync(InboxItem item, string text)
