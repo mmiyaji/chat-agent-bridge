@@ -72,6 +72,101 @@ public sealed class SessionTests
     }
 
     [Fact]
+    public async Task SessionDisplayName_RenamesAreTrimmedPersistedAndIsolatedByExactSessionKey()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var store = new SessionStore(directory);
+            var key = ChatSessionScope.Create("slack", "channel-1", "thread-1", "user-1");
+            var otherOwner = ChatSessionScope.Create("slack", "channel-1", "thread-1", "user-2");
+            var original = Binding(key, Guid.NewGuid()) with { DisplayName = "Old name", UpdatedAt = DateTimeOffset.UtcNow.AddDays(-1) };
+            await store.SaveAsync(original);
+            await store.SaveAsync(Binding(otherOwner, Guid.NewGuid()) with { DisplayName = "Other owner's name" });
+
+            await store.UpdateDisplayNameAsync(key, "  Renamed conversation  ");
+            var reloaded = await new SessionStore(directory).FindAsync(key);
+
+            Assert.Equal("Renamed conversation", reloaded!.DisplayName);
+            Assert.Equal(original.UpdatedAt, reloaded.UpdatedAt);
+            Assert.Equal("Other owner's name", (await store.FindAsync(otherOwner))!.DisplayName);
+
+            await store.UpdateDisplayNameAsync(key, "  ");
+            Assert.Null((await store.FindAsync(key))!.DisplayName);
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task SessionSave_PreservesCurrentDisplayNameFromStaleBinding()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var store = new SessionStore(directory);
+            var key = Key();
+            var binding = Binding(key, Guid.NewGuid());
+            await store.SaveAsync(binding);
+            await store.UpdateDisplayNameAsync(key, "  Keep this name  ");
+
+            var updated = binding with { SessionId = Guid.NewGuid().ToString(), UpdatedAt = DateTimeOffset.UtcNow };
+            await store.SaveAsync(updated);
+
+            var reloaded = await new SessionStore(directory).FindAsync(key);
+            Assert.Equal("Keep this name", reloaded!.DisplayName);
+            Assert.Equal(updated.UpdatedAt, (await store.FindAsync(key))!.UpdatedAt);
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task SessionDisplayName_RejectsControlCharactersAndNamesOverEightyCharacters()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var store = new SessionStore(directory);
+            var key = Key();
+            await store.SaveAsync(Binding(key, Guid.NewGuid()));
+            await Assert.ThrowsAsync<ArgumentException>(() => store.UpdateDisplayNameAsync(key, "bad\nname"));
+            await Assert.ThrowsAsync<ArgumentException>(() => store.UpdateDisplayNameAsync(key, new string('x', 81)));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => store.UpdateDisplayNameAsync(Key("missing"), "name"));
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task SessionRenameCompletesWhileSessionLockIsHeldAndRunnerSaveKeepsTheNewName()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var store = new SessionStore(directory);
+            var key = Key();
+            var stale = Binding(key, Guid.NewGuid());
+            await store.SaveAsync(stale);
+            var locked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var continueTurn = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var activeTurn = store.WithSessionLockAsync(key, async _ =>
+            {
+                locked.TrySetResult();
+                await continueTurn.Task.WaitAsync(cancellation.Token);
+                return true;
+            }, cancellation.Token);
+            await locked.Task.WaitAsync(cancellation.Token);
+
+            await store.UpdateDisplayNameAsync(key, "Renamed during execution", cancellation.Token);
+            continueTurn.TrySetResult();
+            await activeTurn.WaitAsync(cancellation.Token);
+            await store.SaveAsync(stale with { UpdatedAt = DateTimeOffset.UtcNow });
+
+            Assert.Equal("Renamed during execution", (await new SessionStore(directory).FindAsync(key))!.DisplayName);
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
     public async Task ScopedSessionRunner_DoesNotResumeLegacyUnownedBinding()
     {
         var directory = NewDirectory();

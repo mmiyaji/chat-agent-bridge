@@ -14,4 +14,5 @@ public sealed record SessionBinding(
     string? ChatApprovalMode = null,
     string? ChatResultMode = null,
     string? AgentPermissionMode = null,
-    string? FirstApprovalFingerprint = null);
+    string? FirstApprovalFingerprint = null,
+    string? DisplayName = null);

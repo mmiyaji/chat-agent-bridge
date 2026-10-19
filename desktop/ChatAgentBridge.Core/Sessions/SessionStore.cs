@@ -102,15 +102,46 @@ public sealed class SessionStore
 
     public async Task SaveAsync(SessionBinding binding, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(binding);
+        binding = binding with { DisplayName = NormalizeDisplayName(binding.DisplayName) };
         ValidateBinding(binding);
+        // The file gate makes the read/merge/write atomic with renames. Do not acquire the
+        // per-session gate here: runners already hold it while saving a completed turn.
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var document = await ReadAsync(cancellationToken).ConfigureAwait(false);
             var bindings = document.Bindings!;
             var existingIndex = bindings.FindIndex(item => item.Key == binding.Key);
-            if (existingIndex >= 0) bindings[existingIndex] = binding;
-            else bindings.Add(binding);
+            if (existingIndex >= 0)
+                bindings[existingIndex] = binding with { DisplayName = bindings[existingIndex].DisplayName };
+            else
+                bindings.Add(binding);
+            await WriteAsync(document, cancellationToken).ConfigureAwait(false);
+        }
+        finally { _gate.Release(); }
+    }
+
+    /// <summary>Sets or clears the local display name for an existing conversation without changing its activity time.</summary>
+    public Task UpdateDisplayNameAsync(SessionKey key, string? displayName, CancellationToken cancellationToken = default)
+    {
+        ValidateKey(key);
+        displayName = NormalizeDisplayName(displayName);
+        return UpdateDisplayNameCoreAsync(key, displayName, cancellationToken);
+    }
+
+    private async Task UpdateDisplayNameCoreAsync(SessionKey key, string? displayName, CancellationToken cancellationToken)
+    {
+        // A local display name does not change execution policy, so it uses only the file gate
+        // and remains editable while a long-running agent call holds the session gate.
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var document = await ReadAsync(cancellationToken).ConfigureAwait(false);
+            var bindings = document.Bindings!;
+            var index = bindings.FindIndex(item => item.Key == key);
+            if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
+            bindings[index] = bindings[index] with { DisplayName = displayName };
             await WriteAsync(document, cancellationToken).ConfigureAwait(false);
         }
         finally { _gate.Release(); }
@@ -296,6 +327,17 @@ public sealed class SessionStore
         if (binding.FirstApprovalFingerprint is not null &&
             (binding.FirstApprovalFingerprint.Length != 64 || binding.FirstApprovalFingerprint.Any(c => !Uri.IsHexDigit(c))))
             throw new ArgumentException("Session approval fingerprint must be a 64-character hexadecimal SHA-256 value.");
+        _ = NormalizeDisplayName(binding.DisplayName);
+    }
+
+    private static string? NormalizeDisplayName(string? value)
+    {
+        if (value is null) return null;
+        if (value.Any(char.IsControl)) throw new ArgumentException("Conversation display name cannot contain control characters.", nameof(value));
+        var normalized = value.Trim();
+        if (normalized.Length == 0) return null;
+        if (normalized.Length > 80) throw new ArgumentException("Conversation display name cannot exceed 80 characters.", nameof(value));
+        return normalized;
     }
 
     private static void ValidateKey(SessionKey? key)
