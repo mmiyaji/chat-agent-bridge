@@ -223,6 +223,36 @@ Mattermostの接続時と明示的な切断時には、対象チャンネルへ�
 
 manifest の identity / publisher は開発用です。Store 提出時には Partner Center の値、正式なアイコン、説明、プライバシーポリシー、依存関係と対象 OS の確認が必要です。パッケージ生成と Store 審査通過は別の確認です。
 
+### 開発プレビュー ZIP
+
+再配布可能な自己完結型プレビュー ZIP は、署名用の秘密鍵を含む PFX と、対応する公開 CER を指定して作成します。既定の PFX パスワードは `password` です。異なるパスワードの PFX を使う場合は `-CertificatePassword (Read-Host -AsSecureString)` を指定してください。秘密鍵は ZIP に含まれません。
+
+```powershell
+.\desktop\Create-ReleaseArchive.ps1 `
+  -Certificate 'C:\certificates\preview.pfx' `
+  -PublicCertificate 'C:\certificates\preview.cer' `
+  -ReleaseVersion '0.1.0-preview.1' `
+  -PackageVersion '0.1.0.0'
+```
+
+`-Architecture x64` が既定値です。ARM64 ビルドが利用できる場合は `-Architecture ARM64` を指定できます。成果物は `desktop/artifacts/releases` に作成されます。生成した ZIP は次のコマンドで、ZIP 内容、SHA-256、パッケージ署名、証明書の一致、固定プレビュー identity を再検証できます。
+
+```powershell
+.\desktop\Create-ReleaseArchive.ps1 -ValidateOnly -Architecture x64 -PackageVersion '0.1.0.0' -ArchivePath 'desktop/artifacts/releases/ChatAgentBridge.WinUI.Preview-0.1.0-preview.1-x64.zip'
+```
+
+既に同じ identity・version・architecture で署名済みの MSIX がある場合は `-ExistingPackage` にそのファイルを指定し、アーカイブだけを作り直せます。たとえば、次のようにします。
+
+```powershell
+.\desktop\Create-ReleaseArchive.ps1 `
+  -Certificate 'C:\certificates\preview.pfx' `
+  -PublicCertificate 'C:\certificates\preview.cer' `
+  -ExistingPackage 'desktop/artifacts/release-payload/x64/ChatAgentBridge.WinUI.Preview.msix' `
+  -Architecture x64 -PackageVersion '0.1.0.0'
+```
+
+ZIP には MSIX、公開 CER、日英のインストール案内、検証・インストール用スクリプト、SHA-256 一覧だけが入ります。初回は CER を「ローカル コンピューター > 信頼されたユーザー」に管理者として登録する必要があります。インストールスクリプトは昇格せず、実行した Windows ユーザーにだけ MSIX を追加します。自己署名プレビュー証明書は Store で信頼される証明書ではありません。開発用 identity と分けた `ChatAgentBridge.WinUI.Preview` を使うため、開発版とは別アプリとしてインストールされます。
+
 未移行機能と段階別の進捗は [移行計画](../docs/winui-migration-plan.ja.md) を参照してください。
 
 
