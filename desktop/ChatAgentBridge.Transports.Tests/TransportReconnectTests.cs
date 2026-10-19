@@ -193,6 +193,9 @@ public sealed class TransportReconnectTests
             async (_, socket, ct) =>
             {
                 await SendSocketJsonAsync(socket, "{\"type\":\"disconnect\",\"reason\":\"link_disabled\"}", ct);
+                // Keep the transport open until the client has processed the terminal event.
+                // Disposing the server socket immediately can abort the frame on Windows.
+                await Task.Delay(Timeout.InfiniteTimeSpan, ct);
             });
         using var http = new HttpClient(new SlackApiHandler(() => Interlocked.Increment(ref openCount), server.BaseUri));
         await using var transport = new SlackSocketModeTransport(http, new Uri("https://slack.test/api/"), "test-token",
