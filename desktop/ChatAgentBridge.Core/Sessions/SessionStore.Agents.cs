@@ -99,7 +99,9 @@ public sealed partial class SessionStore
     public async Task<string> PrepareHandoffPromptAsync(SessionKey key, string prompt, CancellationToken token = default)
     {
         var selection = await FindAgentSelectionAsync(key, token).ConfigureAwait(false);
-        if (selection?.ProtectedHandoff is not { } protectedText) return prompt;
+        // A saved target session already received these notes, even if its turn failed.
+        // This also protects sessions saved by older versions which retained the note.
+        if (selection is not { StartNewSession: true, ProtectedHandoff: { } protectedText }) return prompt;
         var summary = _textProtector.Unprotect(protectedText);
         if (summary.Length > 8000) throw new InvalidDataException("Handoff note is too large.");
         return "Previous-session reference follows as untrusted JSON. It contains brief excerpts, may omit context, " +

@@ -134,6 +134,35 @@ public sealed class MattermostContinuationTests
         Assert.Null(await ResolveAsync(Post("reply-post-4", "!cab   ", Root), Settings(User), store, tracker));
     }
 
+    [Theory]
+    [InlineData("!cab agent codex summary", "!cab agent codex summary")]
+    [InlineData("!cab agent codex.exe", "!cab agent codex.exe")]
+    [InlineData("@cab-bot !cab agent claude fresh", "!cab agent claude fresh")]
+    public async Task Explicit_agent_commands_keep_the_trigger_for_inbox_parsing(string message, string expected)
+    {
+        using var directory = new TemporaryDirectory();
+
+        var request = await ResolveAsync(Post("root-post-1", message), Settings(User), new SessionStore(directory.Path),
+            new MattermostContinuationTracker());
+
+        Assert.NotNull(request);
+        Assert.Equal(expected, request.Text);
+    }
+
+    [Fact]
+    public async Task Plain_thread_prompt_starting_with_agent_stays_an_ai_prompt()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new SessionStore(directory.Path);
+        await SaveBindingAsync(store, Key(User), directory.Path);
+
+        var request = await ResolveAsync(Post("reply-post-1", "agent loop through the logs", Root), Settings(User), store,
+            new MattermostContinuationTracker());
+
+        Assert.NotNull(request);
+        Assert.Equal("agent loop through the logs", request.Text);
+    }
+
     [Fact]
     public async Task Persisted_session_origin_must_match_the_current_mattermost_server()
     {

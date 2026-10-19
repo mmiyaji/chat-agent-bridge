@@ -387,6 +387,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
         if (HasTrigger(message))
         {
             text = message[Trigger.Length..].Trim();
+            if (AgentChatCommand.TryParse(message.Trim(), out _)) text = message.Trim();
             return text.Length > 0;
         }
 
@@ -401,7 +402,11 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
                 {
                     text = message[mention.Length..].Trim();
                     if (text.Length == 0) return false;
-                    if (HasTrigger(text)) text = text[Trigger.Length..].Trim();
+                    if (HasTrigger(text))
+                    {
+                        if (!AgentChatCommand.TryParse(text.Trim(), out _)) text = text[Trigger.Length..].Trim();
+                        else text = text.Trim();
+                    }
                     return text.Length > 0;
                 }
             }

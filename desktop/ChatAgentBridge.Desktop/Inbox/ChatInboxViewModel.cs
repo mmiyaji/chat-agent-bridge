@@ -769,7 +769,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (allowed && item.ExecutionPolicyFingerprint is { } fingerprint)
         {
             var key = CreateSessionKey(item);
-            var binding = await _sessions.FindAsync(key, token);
+            var binding = await _sessions.FindExecutionBindingAsync(key, token);
             var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, settings, token), binding);
             allowed = fingerprint == ConversationExecutionPolicy.GetFingerprint(key, effective);
         }

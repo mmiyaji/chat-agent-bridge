@@ -459,6 +459,12 @@ function Check-AgentSwitchStage([string]$AgentHost) {
         while (-not (Test-Path (Join-Path $script:stageData 'conversation-summaries.json')) -and [DateTime]::UtcNow -lt $until) { Start-Sleep -Milliseconds 100 }
         $summaryJson = Get-Content (Join-Path $script:stageData 'conversation-summaries.json') -Raw
         Assert-True (-not $summaryJson.Contains($script:agentSummarySentinel)) 'Conversation text was stored in plaintext'
+        # Old provider overrides must not contaminate the target's execution/access fingerprint.
+        $saved = Get-Content (Join-Path $script:stageData 'sessions.json') -Raw | ConvertFrom-Json
+        $saved.Bindings[0].Model = 'source-only-model'
+        $saved.Bindings[0].ReasoningEffort = 'high'
+        $saved.Bindings[0].AgentPermissionMode = 'read-only'
+        Write-Json 'sessions.json' $saved
         Post ('agent-choice-' + $runId) $root 'alice' 'agent codex'
         $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.message.Contains('!cab agent codex summary') }).Count -gt 0 }
     }

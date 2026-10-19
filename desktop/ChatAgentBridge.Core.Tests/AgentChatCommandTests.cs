@@ -5,10 +5,10 @@ namespace ChatAgentBridge.Core.Tests;
 public sealed class AgentChatCommandTests
 {
     [Theory]
-    [InlineData("agent", null, null)]
+    [InlineData("!cab agent", null, null)]
     [InlineData("!cab agent claude", "claude", null)]
-    [InlineData("AGENT CODEX SUMMARY", "codex", true)]
-    [InlineData("agent claude fresh", "claude", false)]
+    [InlineData("!cab AGENT CODEX SUMMARY", "codex", true)]
+    [InlineData("!cab agent claude fresh", "claude", false)]
     public void ParsesSupportedAgentSwitchCommands(string text, string? provider, bool? includeSummary)
     {
         Assert.True(AgentChatCommand.TryParse(text, out var command));
@@ -18,11 +18,11 @@ public sealed class AgentChatCommandTests
     }
 
     [Theory]
-    [InlineData("agent codex.exe", false)]
-    [InlineData("agent C:\\Tools\\codex", false)]
-    [InlineData("agent gemini", false)]
-    [InlineData("agent claude summary extra", false)]
-    [InlineData("agent claude resume", false)]
+    [InlineData("!cab agent codex.exe", false)]
+    [InlineData("!cab agent C:\\Tools\\codex", false)]
+    [InlineData("!cab agent gemini", false)]
+    [InlineData("!cab agent claude summary extra", false)]
+    [InlineData("!cab agent claude resume", false)]
     public void ReservesUnsupportedAgentSwitchesAsInvalid(string text, bool expectedValid)
     {
         Assert.True(AgentChatCommand.TryParse(text, out var command));
@@ -31,8 +31,12 @@ public sealed class AgentChatCommandTests
 
     [Theory]
     [InlineData("please agent claude")]
+    [InlineData("agent")]
+    [InlineData("agent loop through the logs and identify the failure")]
+    [InlineData("agent claude")]
     [InlineData("switch to claude")]
     [InlineData("run this task")]
+    [InlineData("!cab status")]
     public void DoesNotConsumeOrdinaryChatAsAnAgentCommand(string text)
     {
         Assert.False(AgentChatCommand.TryParse(text, out _));

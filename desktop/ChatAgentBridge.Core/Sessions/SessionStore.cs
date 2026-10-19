@@ -75,12 +75,14 @@ public sealed partial class SessionStore
             try
             {
                 var document = await ReadAsync(token).ConfigureAwait(false);
+                await ClearConversationNotesAsync(key, token).ConfigureAwait(false);
                 var workspaces = document.Workspaces!;
                 var index = workspaces.FindIndex(item => item.Key == key);
                 var value = new WorkspaceOverride(key, fullWorkspace);
                 if (index < 0) workspaces.Add(value); else workspaces[index] = value;
                 document.Bindings!.RemoveAll(item => item.Key == key);
                 document.Agents?.RemoveAll(item => item.Key == key);
+                document.ArchivedBindings?.RemoveAll(item => item.Key == key);
                 await WriteAsync(document, token).ConfigureAwait(false);
             }
             finally { _gate.Release(); }
@@ -124,7 +126,10 @@ public sealed partial class SessionStore
             if (binding.NextAgentProvider is null && document.Agents?.FirstOrDefault(item => item.Key == binding.Key) is { } selection)
             {
                 var selectionIndex = document.Agents.IndexOf(selection);
-                document.Agents[selectionIndex] = selection with { StartNewSession = false };
+                // A native target session id confirms delivery of the first prompt. Do not
+                // repeat the handoff when resuming a failed turn. Keep the approval guard
+                // until a successful authorized turn completes.
+                document.Agents[selectionIndex] = selection with { StartNewSession = false, ProtectedHandoff = null };
             }
             await WriteAsync(document, cancellationToken).ConfigureAwait(false);
         }
@@ -165,9 +170,11 @@ public sealed partial class SessionStore
             try
             {
                 var document = await ReadAsync(token).ConfigureAwait(false);
+                await ClearConversationNotesAsync(key, token).ConfigureAwait(false);
                 var bindings = document.Bindings!;
                 var removed = bindings.RemoveAll(item => item.Key == key);
                 removed += document.Agents?.RemoveAll(item => item.Key == key) ?? 0;
+                removed += document.ArchivedBindings?.RemoveAll(item => item.Key == key) ?? 0;
                 if (removed > 0)
                     await WriteAsync(document, token).ConfigureAwait(false);
             }
@@ -175,6 +182,11 @@ public sealed partial class SessionStore
             return true;
         }, cancellationToken).ConfigureAwait(false);
     }
+
+    private Task ClearConversationNotesAsync(SessionKey key, CancellationToken token) =>
+        key.Provider is "slack" or "mattermost" && key.UserId is not null && key.Origin is not null
+            ? new ConversationSummaryStore(DirectoryPath, _textProtector).ClearAsync(key, token)
+            : Task.CompletedTask;
 
     /// <summary>Sets or clears a per-session model override. Null follows the current provider default.</summary>
     public Task UpdateModelAsync(SessionKey key, string? model, CancellationToken cancellationToken = default)

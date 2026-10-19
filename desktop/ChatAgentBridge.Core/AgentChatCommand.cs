@@ -7,8 +7,9 @@ public sealed record AgentChatCommand(string? Provider, bool? IncludeSummary, bo
     {
         command = new(null, null, false);
         var value = text.Trim();
-        if (value.StartsWith("!cab", StringComparison.OrdinalIgnoreCase) && value.Length > 4 && char.IsWhiteSpace(value[4]))
-            value = value[4..].TrimStart();
+        if (!value.StartsWith("!cab", StringComparison.OrdinalIgnoreCase) || value.Length <= 4 || !char.IsWhiteSpace(value[4]))
+            return false;
+        value = value[4..].TrimStart();
         var parts = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0 || !parts[0].Equals("agent", StringComparison.OrdinalIgnoreCase)) return false;
         if (parts.Length == 1) { command = new(null, null, true); return true; }

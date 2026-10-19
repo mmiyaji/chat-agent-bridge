@@ -116,7 +116,8 @@ public sealed class ConversationAgentServiceTests : IDisposable
         Assert.Equal("claude-stream-json-v1", fresh.AgentArguments);
         Assert.Null(fresh.NextAgentProvider);
         Assert.True((await Sessions.FindAgentSelectionAsync(_key))!.RequiresApproval);
-        Assert.Contains(response, await Sessions.PrepareHandoffPromptAsync(_key, "Another turn before approval"));
+        Assert.Null((await Sessions.FindAgentSelectionAsync(_key))!.ProtectedHandoff);
+        Assert.Equal("Another turn before approval", await Sessions.PrepareHandoffPromptAsync(_key, "Another turn before approval"));
 
         await Sessions.CompleteAgentHandoffAsync(_key, newId.ToString("D"));
         var completed = (await Sessions.FindAgentSelectionAsync(_key))!;
@@ -163,6 +164,117 @@ public sealed class ConversationAgentServiceTests : IDisposable
         Assert.Equal("claude", (await Sessions.FindAsync(_key))!.NextAgentProvider);
         Assert.True((await Sessions.FindAgentSelectionAsync(_key))!.RequiresApproval);
         Assert.Contains("prior response", Assert.Single(runner.Calls).Prompt);
+    }
+
+    [Theory]
+    [InlineData("claude")]
+    [InlineData("codex")]
+    public async Task FailedTargetWithConfirmedSession_consumesNotesAndResumesWithoutDuplicateHandoff(string provider)
+    {
+        var old = Binding(_key) with
+        {
+            AgentExecutable = provider == "codex" ? "claude" : "codex",
+            AgentArguments = provider == "codex" ? "claude-stream-json-v1" : "exec --json -"
+        };
+        await Sessions.SaveAsync(old);
+        await Connections.SaveVerifiedAsync(Profile(provider));
+        await Summaries.RecordAsync(_key, provider == "codex" ? "claude" : "codex", old.SessionId, "prior request", "private handoff note");
+        await Service().SwitchAsync(old, Defaults, new(provider, true), Allow);
+        var id = Guid.NewGuid();
+        var runner = new RecordingAgentRunner((_, _) => new(false, 1, provider == "claude"
+            ? $$"""{"type":"result","subtype":"error_during_execution","session_id":"{{id:D}}","is_error":true,"result":"failed"}"""
+            : $$"""
+                {"type":"thread.started","thread_id":"{{id:D}}"}
+                {"type":"turn.failed"}
+                """, "failed"));
+        var result = await new SessionAgentRunner(Sessions, runner).RunAsync(_key, Defaults, "first target request");
+        Assert.False(result.Success);
+        Assert.Contains("private handoff note", Assert.Single(runner.Calls).Prompt);
+        Assert.Equal(id.ToString("D"), (await Sessions.FindExecutionBindingAsync(_key))!.SessionId);
+        var selection = (await Sessions.FindAgentSelectionAsync(_key))!;
+        Assert.False(selection.StartNewSession);
+        Assert.Null(selection.ProtectedHandoff);
+        Assert.True(selection.RequiresApproval); // A failed turn does not silently grant future execution.
+
+        var resumed = new RecordingAgentRunner((_, _) => provider == "claude" ? ClaudeResult(id) : new(true, 0,
+            $$"""
+                {"type":"thread.started","thread_id":"{{id:D}}"}
+                {"type":"turn.completed"}
+                """, ""));
+        await new SessionAgentRunner(new SessionStore(_directory, _protector), resumed).RunAsync(_key, Defaults, "retry after failure");
+        var next = Assert.Single(resumed.Calls);
+        Assert.Contains(id.ToString("D"), next.Settings.AgentArguments);
+        Assert.Equal("retry after failure", next.Prompt);
+    }
+
+    [Fact]
+    public async Task FailedAppServerTargetWithSession_consumesHandoffBeforeResume()
+    {
+        var old = Binding(_key) with { AgentExecutable = "claude", AgentArguments = "claude-stream-json-v1" };
+        await Sessions.SaveAsync(old);
+        await Connections.SaveVerifiedAsync(Profile("codex") with { Mode = "app-server", Arguments = "app-server" });
+        await Summaries.RecordAsync(_key, "claude", old.SessionId, "prior request", "private handoff note");
+        await Service().SwitchAsync(old, Defaults, new("codex", true), Allow);
+        var server = new RecordingServerRunner { Success = false };
+        var settings = await Sessions.ApplyWorkspaceAsync(_key, Defaults);
+        var result = await new AppServerSessionRunner(Sessions, server).RunAsync(_key, settings, "first request");
+        Assert.False(result.Success);
+        Assert.Contains("private handoff note", server.Prompt);
+        Assert.Null((await Sessions.FindAgentSelectionAsync(_key))!.ProtectedHandoff);
+        Assert.Equal("retry request", await new SessionStore(_directory, _protector).PrepareHandoffPromptAsync(_key, "retry request"));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DetachOrChangeWorkspace_removesScopedNotesPendingHandoffAndArchive(bool changeWorkspace)
+    {
+        var old = Binding(_key);
+        await Sessions.SaveAsync(old);
+        await Connections.SaveVerifiedAsync(Profile("claude"));
+        await Summaries.RecordAsync(_key, "codex", old.SessionId, "removed request", "removed note");
+        var other = _key with { UserId = "other-user" };
+        await Sessions.SaveAsync(Binding(other));
+        await Summaries.RecordAsync(other, "codex", old.SessionId, "kept request", "kept note");
+        await Service().SwitchAsync(old, Defaults, new("claude", true), Allow);
+        if (changeWorkspace)
+        {
+            var folder = Directory.CreateDirectory(Path.Combine(_workspace, "another-folder")).FullName;
+            await Sessions.ChangeWorkspaceAsync(_key, folder, Defaults);
+        }
+        else await Sessions.RemoveAsync(_key);
+
+        Assert.Null(await Sessions.FindAsync(_key));
+        Assert.Null(await Sessions.FindAgentSelectionAsync(_key));
+        Assert.Null(await new ConversationSummaryStore(_directory, _protector).FindAsync(_key));
+        Assert.NotNull(await Sessions.FindAsync(other));
+        Assert.Contains("kept note", (await Summaries.FindAsync(other))!.Text);
+        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(_directory, "sessions.json")));
+        Assert.Empty(document.RootElement.GetProperty("ArchivedBindings").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task RemovingAnOrphanedScope_alsoRemovesItsNotes()
+    {
+        await Summaries.RecordAsync(_key, "codex", "old-session", "orphaned request", "orphaned note");
+        await Sessions.RemoveAsync(_key);
+        Assert.Null(await Summaries.FindAsync(_key));
+    }
+
+    [Fact]
+    public async Task LegacyResumableSelection_doesNotInjectRetainedNotesAgain()
+    {
+        var old = Binding(_key);
+        await Sessions.SaveAsync(old);
+        await Connections.SaveVerifiedAsync(Profile("claude"));
+        await Summaries.RecordAsync(_key, "codex", old.SessionId, "prior request", "prior answer");
+        await Service().SwitchAsync(old, Defaults, new("claude", true), Allow);
+        var path = Path.Combine(_directory, "sessions.json");
+        var document = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(path))!;
+        // Older releases left ProtectedHandoff in place after saving a native target id.
+        document["Agents"]![0]!["StartNewSession"] = false;
+        await File.WriteAllTextAsync(path, document.ToJsonString());
+        Assert.Equal("retry request", await new SessionStore(_directory, _protector).PrepareHandoffPromptAsync(_key, "retry request"));
     }
 
     [Fact]
@@ -370,6 +482,7 @@ public sealed class ConversationAgentServiceTests : IDisposable
 
     private sealed class RecordingServerRunner : IAppServerRunner
     {
+        public bool Success { get; init; } = true;
         public BridgeSettings? Settings { get; private set; }
         public AppServerRunOptions? Options { get; private set; }
         public string Prompt { get; private set; } = "";
@@ -377,7 +490,7 @@ public sealed class ConversationAgentServiceTests : IDisposable
             AppServerRunOptions? options = null, CancellationToken cancellationToken = default)
         {
             Settings = settings; Prompt = prompt; Options = options;
-            return Task.FromResult(new AppServerRunResult(new AgentRunResult(true, 0, "done", ""), Guid.NewGuid().ToString("D")));
+            return Task.FromResult(new AppServerRunResult(new AgentRunResult(Success, Success ? 0 : 1, "done", ""), Guid.NewGuid().ToString("D")));
         }
     }
 }

@@ -268,7 +268,8 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTran
 
         var root = threadTimestamp ?? timestamp;
         var normalized = Regex.Replace(text, "<@[A-Z0-9]+>", " ", RegexOptions.IgnoreCase).Trim();
-        if (StartsWithTrigger(normalized)) normalized = normalized[Trigger.Length..].Trim();
+        if (StartsWithTrigger(normalized) && !AgentChatCommand.TryParse(normalized, out _))
+            normalized = normalized[Trigger.Length..].Trim();
         if (normalized.Length == 0) return null;
         return new ChatRequest("slack", channel, root, user, normalized, timestamp);
     }
