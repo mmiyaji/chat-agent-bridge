@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory)][string]$AppDirectory,
     [string]$TestAgentDirectory,
     [ValidateSet('ja','en')][string]$Language = 'ja',
-    [switch]$ControlsOnly
+    [switch]$ControlsOnly,
+    [switch]$ModelsOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,6 +58,20 @@ function Wait-UI([string]$AutomationId, [string]$Value = '', [int]$TimeoutSecond
     if ($Gone) { $arguments += '--gone' }
     elseif ($Value.Length -gt 0) { $arguments += @('--value', $Value, '--contains') }
     UI $arguments | Out-Null
+}
+
+function Select-ComboContaining([string]$Id, [string]$Text) {
+    UI @('invoke', $Id) | Out-Null
+    $tree = (UI @('inspect', $Id, '--depth', '5')) | ConvertFrom-Json
+    function Find-Choice($Nodes) {
+        foreach ($item in $Nodes) {
+            if ($item.type -eq 'ListItem' -and $item.name.Contains($Text)) { $item.selector }
+            if ($item.children) { Find-Choice $item.children }
+        }
+    }
+    $choice = @($tree.windows | ForEach-Object { Find-Choice $_.elements }) | Select-Object -First 1
+    Assert-True ([bool]$choice) "No candidate containing $Text in $Id"
+    UI @('invoke', $choice) | Out-Null
 }
 
 function New-OfflineServer {
@@ -313,6 +328,104 @@ function Check-ChatInputStage([string]$TestAgentPath) {
     }
 }
 
+function Check-ModelStage {
+    $root = 'model-root-' + $runId
+    $savedSession = $null
+    $changedPrefix = if ($script:language -eq 'ja') {'モデルを保存しました:'} else {'Model saved:'}
+    Check 'First-only approval starts an offline conversation' {
+        Post ('model-first-' + $runId) $root 'alice' 'initial request for model switch'
+        Wait-UI 'initial request for model switch'
+        UI @('click', 'initial request for model switch') | Out-Null
+        UI @('invoke', 'ApproveChat') | Out-Null
+        Wait-UI 'ChatRunConfirmation'
+        UI @('invoke', 'PrimaryButton') | Out-Null
+        Wait-UI 'ChatOutput' 'claude-e2e: new' 20
+        $script:modelInitial = (Get-Content (Join-Path $script:stageData 'sessions.json') -Raw | ConvertFrom-Json).Bindings[0]
+        Assert-True ([bool]$script:modelInitial.FirstApprovalFingerprint) 'First approval was not recorded'
+    }
+    Check 'Model catalog and malformed selections never invoke an AI turn' {
+        Post ('model-list-' + $runId) $root 'alice' 'model list'
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message.Contains('fixture-claude-large') }).Count -gt 0 }
+        Post ('model-invalid-' + $runId) $root 'alice' 'model invalid-model-id'
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message.Contains('!cab model list') -and -not $_.message.Contains('fixture-claude-large') }).Count -gt 0 }
+        $history = Get-Content (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json
+        Assert-True ($history.Records.Count -eq 1) 'A model command started an AI run'
+    }
+    Check 'Chat selection retains the session and requires first-only approval again' {
+        Post ('model-change-' + $runId) $root 'alice' 'model fixture-claude-large'
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message.StartsWith($changedPrefix) }).Count -eq 1 }
+        $saved = (Get-Content (Join-Path $script:stageData 'sessions.json') -Raw | ConvertFrom-Json).Bindings[0]
+        Assert-True ($saved.Model -eq 'fixture-claude-large' -and $saved.SessionId -eq $script:modelInitial.SessionId) 'Selection did not preserve the saved session'
+        Assert-True (-not $saved.FirstApprovalFingerprint -and -not $saved.ReasoningEffort) 'Selection retained consent or an incompatible effort'
+        Post ('model-resume-' + $runId) $root 'alice' 'continue after switching'
+        Wait-UI 'continue after switching'
+        UI @('click', 'continue after switching') | Out-Null
+        Select-ComboContaining 'ChatRequests' 'continue after switching'
+        Wait-UI 'InboxSelectedPrompt' 'continue after switching'
+        UI @('wait-for', 'ApproveChat', '-p', 'IsEnabled', '--value', 'True', '-t', '5000') | Out-Null
+        $history = Get-Content (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json
+        Assert-True ($history.Records.Count -eq 1) 'Model change bypassed first-only approval'
+        Post ('model-while-pending-' + $runId) $root 'alice' 'model default'
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.message.Contains('承認待ち依頼') -or $_.message.Contains('pending requests') }).Count -gt 0 }
+        $saved = (Get-Content (Join-Path $script:stageData 'sessions.json') -Raw | ConvertFrom-Json).Bindings[0]
+        Assert-True ($saved.Model -eq 'fixture-claude-large') 'A pending request allowed a concurrent model change'
+        UI @('invoke', 'ApproveChat') | Out-Null
+        Wait-UI 'ChatRunConfirmation'
+        UI @('invoke', 'PrimaryButton') | Out-Null
+        Wait-UI 'ChatOutput' 'claude-e2e: resumed' 20
+        $history = Get-Content (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json
+        Assert-True ($history.Records[-1].AgentModel -eq 'fixture-claude-large') 'Resume used the wrong model'
+    }
+    Check 'Other users and threads cannot alter the owners model' {
+        Post ('model-denied-' + $runId) $root 'mallory' 'model default'
+        Post ('model-other-user-' + $runId) $root 'bob' 'model fixture-claude-small'
+        Post ('model-other-thread-' + $runId) ('other-' + $root) 'alice' 'model fixture-claude-small'
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.message.Contains('初回のモデル') -or $_.message.Contains('For the first request') }).Count -ge 2 }
+        $saved = (Get-Content (Join-Path $script:stageData 'sessions.json') -Raw | ConvertFrom-Json).Bindings
+        Assert-True ($saved.Count -eq 1 -and $saved[0].Model -eq 'fixture-claude-large') 'Another scope changed the model'
+    }
+    Check 'PC conversation dialog selects CLI candidates and persists the same session' {
+        UI @('invoke', 'NavHistory') | Out-Null
+        Wait-UI 'SavedSessionsList'
+        $tree = (UI @('inspect', 'SavedSessionsList', '--depth', '4')) | ConvertFrom-Json
+        function Find-Row($Nodes) {
+            foreach ($item in $Nodes) {
+                if ($item.type -eq 'ListItem') { $item.selector }
+                if ($item.children) { Find-Row $item.children }
+            }
+        }
+        $row = @($tree.windows | ForEach-Object { Find-Row $_.elements }) | Select-Object -First 1
+        Assert-True ([bool]$row) 'No saved conversation row was found'
+        UI @('click', $row) | Out-Null
+        Wait-UI 'EditSessionModel'
+        UI @('invoke', 'EditSessionModel') | Out-Null
+        Wait-UI 'SessionModelDialog'
+        UI @('invoke', 'SessionFetchModels') | Out-Null
+        Wait-UI 'SessionModelCatalogStatus' '2'
+        Select-ComboContaining 'SessionModelCandidates' 'fixture-claude-small'
+        Capture 'model-dialog'
+        UI @('invoke', 'PrimaryButton') | Out-Null
+        Wait-UI 'HistoryStatus' $(if($script:language -eq 'ja'){'保存しました'}else{'Saved'})
+        $saved = (Get-Content (Join-Path $script:stageData 'sessions.json') -Raw | ConvertFrom-Json).Bindings[0]
+        Assert-True ($saved.Model -eq 'fixture-claude-small' -and $saved.SessionId -eq $script:modelInitial.SessionId) 'PC selection lost history or did not save'
+    }
+    Check 'Default selection restores global settings without changing history' {
+        UI @('invoke', 'NavChat') | Out-Null
+        Post ('model-default-' + $runId) $root 'alice' 'model default'
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message.StartsWith($changedPrefix) }).Count -eq 2 }
+        $saved = (Get-Content (Join-Path $script:stageData 'sessions.json') -Raw | ConvertFrom-Json).Bindings[0]
+        Assert-True (-not $saved.Model -and $saved.SessionId -eq $script:modelInitial.SessionId) 'Default did not restore inheritance'
+    }
+    Check 'Current model and command help can be read without an AI turn' {
+        Post ('model-current-' + $runId) $root 'alice' 'model'
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message.Contains('!cab model default') }).Count -gt 0 }
+        Post ('model-help-' + $runId) $root 'alice' 'command'
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message.Contains('!cab model') -and $_.message.Contains('!cab stop') }).Count -gt 0 }
+        $history = Get-Content (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json
+        Assert-True ($history.Records.Count -eq 2) 'Control commands started extra AI turns'
+    }
+}
+
 function Check-PendingConfirmationStopStage([string]$NodePath, [string]$SlowAgentPath) {
     $root = 'pending-confirmation-root-' + $runId
     $prompt = 'pending-confirmation-' + $runId
@@ -353,6 +466,9 @@ try {
         $codex = Join-Path $agentHost 'codex.exe'
         $fixtureExe = Join-Path $agentHost 'ChatAgentBridge.TestAgent.exe'
         $fixtureDll = Join-Path $agentHost 'ChatAgentBridge.TestAgent.dll'
+        if ($ModelsOnly -and (Test-Path (Join-Path $agentHost '.cab-offline-performance-fixture'))) {
+            $agentMarker = Join-Path $agentHost '.cab-offline-performance-fixture'
+        }
         foreach ($required in @($agentMarker, $codex, $fixtureExe, $fixtureDll)) {
             if (-not (Test-Path -LiteralPath $required)) { throw 'The TestAgent directory is not a complete marked offline fixture.' }
         }
@@ -360,6 +476,15 @@ try {
             throw 'codex.exe is not the marked offline TestAgent fixture.'
         }
     }
+    if ($ModelsOnly) {
+        $claude = Join-Path $agentHost 'claude.exe'
+        Assert-True ((Get-FileHash $claude).Hash -eq (Get-FileHash $fixtureExe).Hash) 'Claude executable must be the offline fixture'
+        $script:stageData = Join-Path $runRoot 'models'
+        New-Item -ItemType Directory -Path $script:stageData -Force | Out-Null
+        New-OfflineServer
+        New-App $script:stageData 'claude' $claude '' 'first'
+        Check-ModelStage
+    } else {
     $node = (Get-Command node -ErrorAction Stop).Source
     New-Item -ItemType Directory -Path $stageOneData -Force | Out-Null
     $slowAgent = Join-Path $stageOneData 'slow-agent.cjs'
@@ -392,6 +517,7 @@ process.stdin.on('end', () => setTimeout(() => {
         New-App $stageThreeData 'custom' $node ('"' + $slowAgent + '"') 'always'
         Check-PendingConfirmationStopStage $node $slowAgent
         Stop-Stage
+    }
     }
 } catch {
     $replySummary = @($script:lastFixtureSnapshot.replies | ForEach-Object { [pscustomobject]@{ root_id = $_.root_id; message = $_.message } })

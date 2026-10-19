@@ -9,6 +9,7 @@ public enum ChatControlCommandKind
     Help,
     Status,
     Stop,
+    Model,
     Answer,
     ReservedInvalid
 }
@@ -18,7 +19,8 @@ public sealed record ChatControlCommand(
     ChatControlCommandKind Kind,
     string? Code = null,
     int? QuestionNumber = null,
-    string? Answer = null)
+    string? Answer = null,
+    string? ModelArgument = null)
 {
     private static readonly Regex AnswerPattern = new(
         @"^answer\s+(?<code>[0-9a-f]{12})\s+(?<number>[1-9][0-9]{0,2})\s+(?<answer>\S[\s\S]*)$",
@@ -38,6 +40,8 @@ public sealed record ChatControlCommand(
         if (value.Length == 0) return new(ChatControlCommandKind.None);
         int commandEnd = value.IndexOfAny([' ', '\t', '\r', '\n']);
         var command = commandEnd < 0 ? value : value[..commandEnd];
+        if (command.Equals("model", StringComparison.OrdinalIgnoreCase))
+            return new(ChatControlCommandKind.Model, ModelArgument: commandEnd < 0 ? "" : value[commandEnd..].Trim());
         if ((command.Equals("help", StringComparison.OrdinalIgnoreCase) ||
              command.Equals("command", StringComparison.OrdinalIgnoreCase) ||
              command.Equals("commands", StringComparison.OrdinalIgnoreCase)) && commandEnd < 0)

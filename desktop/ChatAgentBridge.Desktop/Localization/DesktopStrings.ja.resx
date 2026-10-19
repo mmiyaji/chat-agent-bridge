@@ -236,7 +236,7 @@
   <data name="HistoryDetachWarning" xml:space="preserve"><value>この会話と保存済みセッションの関連付けを削除します。実行履歴は残ります。</value></data>
   <data name="Detach" xml:space="preserve"><value>切り離す</value></data>
   <data name="EnterModelName" xml:space="preserve"><value>利用できるモデル名を入力</value></data>
-  <data name="NextExecutionModel" xml:space="preserve"><value>次回の実行モデル</value></data>
+  <data name="NextExecutionModel" xml:space="preserve"><value>会話のモデル</value></data>
   <data name="ReasoningEffortCliOptions" xml:space="preserve"><value>推論の強さ（CLIの候補）</value></data>
   <data name="HistoryCustomCliUnsupported" xml:space="preserve"><value>このセッションのCLI形式では候補を取得できません。モデル名を直接入力できます。</value></data>
   <data name="FetchCliModels" xml:space="preserve"><value>CLIモデル候補を取得</value></data>
@@ -323,7 +323,7 @@
   <data name="HistoryPolicyHeading" xml:space="preserve"><value>承認と結果の共有</value></data>
   <data name="HistoryIdentifiersHeading" xml:space="preserve"><value>会話の識別情報</value></data>
   <data name="HistoryActionsHeading" xml:space="preserve"><value>会話の操作</value></data>
-  <data name="HistoryEditNextModel" xml:space="preserve"><value>モデルと推論</value></data>
+  <data name="HistoryEditNextModel" xml:space="preserve"><value>モデルを切り替える</value></data>
   <data name="HistoryEditPolicy" xml:space="preserve"><value>承認と共有</value></data>
   <data name="HistoryStartFresh" xml:space="preserve"><value>次回は新しい会話</value></data>
   <data name="HistoryExecutionSummary" xml:space="preserve"><value>最近の実行 ({0})</value></data>
@@ -384,7 +384,7 @@
   <data name="ChatInputTextReply" xml:space="preserve"><value>回答: !cab answer {0} {1} 回答内容</value></data>
   <data name="ChatInputOptionReply" xml:space="preserve"><value>選択肢の番号で回答: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>別の回答: !cab answer {0} {1} other 回答内容</value></data>
-  <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:&#10;&gt; !cab &lt;依頼&gt; — エージェントに依頼する&#10;&gt; !cab command / !cab commands / !cab help — この一覧を表示する&#10;&gt; !cab status — 自分の依頼状況を表示する&#10;&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す&#10;&gt; !cab folder &quot;C:\path&quot; — 作業先変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要&#10;&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）&#10;&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する&#10;&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する&#10;&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する&#10;&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効&#10;新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このスレッドにある自分の依頼だけに適用されます。</value></data>
+  <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:&#10;&gt; !cab &lt;依頼&gt; — エージェントに依頼する&#10;&gt; !cab command / !cab commands / !cab help — この一覧を表示する&#10;&gt; !cab model / !cab model list / !cab model モデルID / !cab model default — この会話のモデル確認・候補取得・変更・既定に戻す&#10;&gt; !cab status — 自分の依頼状況を表示する&#10;&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す&#10;&gt; !cab folder &quot;C:\path&quot; — 作業先変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要&#10;&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）&#10;&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する&#10;&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する&#10;&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する&#10;&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効&#10;新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このスレッドにある自分の依頼だけに適用されます。</value></data>
   <data name="HistoryWorkspaceFilterLabel" xml:space="preserve"><value>作業フォルダー</value></data>
   <data name="HistoryWorkspaceAll" xml:space="preserve"><value>すべての作業フォルダー</value></data>
   <data name="HistorySortLabel" xml:space="preserve"><value>並び順</value></data>
@@ -410,4 +410,15 @@
   <data name="HistoryUserNameUnavailable" xml:space="preserve"><value>ユーザー名未取得</value></data>
   <data name="HistoryChannelNameUnavailable" xml:space="preserve"><value>チャンネル名未取得</value></data>
   <data name="HistoryDirectMessage" xml:space="preserve"><value>ダイレクトメッセージ</value></data>
+  <data name="ChatModelCurrent" xml:space="preserve"><value>現在のモデル: {0}&#10;推論の強さ: {1}&#10;!cab model list — 候補を取得&#10;!cab model モデルID — この会話のモデルを変更&#10;!cab model default — エージェント設定に戻す</value></data>
+  <data name="ChatModelList" xml:space="preserve"><value>CLIから取得したモデル候補（5分間キャッシュ）。!cab model モデルID で選択してください:</value></data>
+  <data name="ChatModelMoreInPc" xml:space="preserve"><value>すべての候補はPCの「履歴と会話」で確認できます。</value></data>
+  <data name="ChatModelUnsupported" xml:space="preserve"><value>モデル切り替えはCodexとClaude Codeで利用できます。</value></data>
+  <data name="ChatModelBusy" xml:space="preserve"><value>実行の完了と、この会話の承認待ち依頼の処理後に、もう一度モデルを変更してください。</value></data>
+  <data name="ChatModelUnavailable" xml:space="preserve"><value>モデル候補がありません。PCでCLIとログイン状態を確認してください。</value></data>
+  <data name="ChatModelNoSession" xml:space="preserve"><value>AIとの会話があるスレッドに返信してモデルを変更してください。初回のモデルはPCの「エージェント設定」で指定できます。</value></data>
+  <data name="ChatModelChanged" xml:space="preserve"><value>モデルを保存しました: {0}&#10;このアカウント・スレッドだけに適用します。会話履歴を引き継ぎ、次の依頼から使います。以前の推論指定は解除しました。「初回のみ承認」の場合は変更後に再承認が必要です。</value></data>
+  <data name="ChatModelFailed" xml:space="preserve"><value>モデルの取得・変更ができませんでした。!cab model list で取得した正確なモデルIDを指定してください。取得できない場合はPCでCLIを確認し、会話が更新された場合は再試行してください。</value></data>
+  <data name="AuditModelChanged" xml:space="preserve"><value>会話のモデルを変更</value></data>
+  <data name="ChatModelSavedAuditFailed" xml:space="preserve"><value>モデルは保存しましたが、監査ログを記録できませんでした。</value></data>
 </root>

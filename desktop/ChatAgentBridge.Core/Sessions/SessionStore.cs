@@ -173,8 +173,13 @@ public sealed class SessionStore
     public Task UpdateModelAndEffortAsync(SessionKey key, string? model, string? effort, CancellationToken cancellationToken = default)
         => UpdateModelAndEffortAsync(key, model, effort, preserveReasoningEffort: false, cancellationToken);
 
+    /// <summary>Changes the selection only if the conversation has not changed during model discovery.</summary>
+    public Task UpdateModelAndEffortAsync(SessionBinding expected, string? model, string? effort,
+        CancellationToken cancellationToken = default)
+        => UpdateModelAndEffortAsync(expected.Key, model, effort, false, cancellationToken, expected);
+
     private Task UpdateModelAndEffortAsync(SessionKey key, string? model, string? effort,
-        bool preserveReasoningEffort, CancellationToken cancellationToken)
+        bool preserveReasoningEffort, CancellationToken cancellationToken, SessionBinding? expected = null)
     {
         ValidateKey(key);
         model = AgentProfile.NormalizeModel(model);
@@ -189,10 +194,14 @@ public sealed class SessionStore
                 var index = bindings.FindIndex(item => item.Key == key);
                 if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
                 var current = bindings[index];
+                if (expected is not null && current != expected)
+                    throw new InvalidOperationException("The conversation changed while selecting a model. Try again.");
                 bindings[index] = current with
                 {
                     Model = model,
                     ReasoningEffort = preserveReasoningEffort ? current.ReasoningEffort : effort,
+                    FirstApprovalFingerprint = current.Model == model &&
+                        (preserveReasoningEffort || current.ReasoningEffort == effort) ? current.FirstApprovalFingerprint : null,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
                 await WriteAsync(document, token).ConfigureAwait(false);

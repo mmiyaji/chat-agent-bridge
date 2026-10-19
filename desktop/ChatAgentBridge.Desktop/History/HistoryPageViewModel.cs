@@ -62,6 +62,7 @@ public sealed record AuditHistoryRow(AuditEvent Record, string? ChatLabel = null
         "reply_sent" => DesktopText.Get("AuditReplySent"),
         "detached" => DesktopText.Get("AuditDetached"),
         "workspace_changed" => DesktopText.Get("AuditWorkspaceChanged"),
+        "model_changed" => DesktopText.Get("AuditModelChanged"),
         _ => DesktopText.Get("AuditOther")
     };
     public string Source => Record.Source switch
@@ -468,7 +469,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             var settings = await _settingsStore.LoadAsync();
             var selection = await EditSessionModelAsync(selected, settings);
             if (selection is null) return;
-            await _sessionStore.UpdateModelAndEffortAsync(selected.Binding.Key,
+            await _sessionStore.UpdateModelAndEffortAsync(selected.Binding,
                 string.IsNullOrWhiteSpace(selection.Model) ? null : selection.Model.Trim(),
                 selection.ReasoningEffort, CancellationToken.None);
             await RefreshContentsAsync(DesktopText.Get("HistoryModelSaved"));

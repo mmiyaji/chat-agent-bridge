@@ -406,7 +406,11 @@ public sealed partial class HistoryPage : Page
             Title = DesktopText.Get("NextExecutionModel"),
             Content = new ScrollViewer
             {
+                HorizontalScrollMode = ScrollMode.Disabled,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Padding = new Thickness(0, 0, 12, 0),
                 MaxHeight = 560,
                 Content = new StackPanel
                 {

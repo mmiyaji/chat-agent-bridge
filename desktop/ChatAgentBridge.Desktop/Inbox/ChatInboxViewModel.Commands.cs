@@ -11,10 +11,12 @@ public sealed partial class ChatInboxViewModel
     {
         var command = ChatControlCommand.Parse(request.Text);
         if (command.Kind is ChatControlCommandKind.Answer or ChatControlCommandKind.ReservedInvalid) return true;
-        if (command.Kind is not (ChatControlCommandKind.Help or ChatControlCommandKind.Status or ChatControlCommandKind.Stop)) return false;
+        if (command.Kind is not (ChatControlCommandKind.Help or ChatControlCommandKind.Status or ChatControlCommandKind.Stop or ChatControlCommandKind.Model)) return false;
         var completion = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!App.DispatcherQueue.TryEnqueue(() =>
-            completion.TrySetResult(HandleChatControlOnUiAsync(transport, received, request, command.Kind, token))))
+            completion.TrySetResult(command.Kind == ChatControlCommandKind.Model
+                ? HandleChatModelOnUiAsync(transport, received, request, command.ModelArgument ?? "", token)
+                : HandleChatControlOnUiAsync(transport, received, request, command.Kind, token))))
             return true;
         await await completion.Task;
         return true;

@@ -17,6 +17,8 @@ public sealed class ChatControlCommandTests
     [InlineData("!cab command", ChatControlCommandKind.Help)]
     [InlineData("commands", ChatControlCommandKind.Help)]
     [InlineData("!cab commands", ChatControlCommandKind.Help)]
+    [InlineData("!cab model", ChatControlCommandKind.Model)]
+    [InlineData("model list", ChatControlCommandKind.Model)]
     public void ParsesExactStatusAndStopCommands(string text, ChatControlCommandKind expected)
     {
         Assert.Equal(expected, ChatControlCommand.Parse(text).Kind);
@@ -31,6 +33,19 @@ public sealed class ChatControlCommandTests
         Assert.Equal("012345ABCDEF", parsed.Code);
         Assert.Equal(2, parsed.QuestionNumber);
         Assert.Equal("Use option A\nwith details", parsed.Answer);
+    }
+
+    [Theory]
+    [InlineData("!cab model gpt-test", "gpt-test")]
+    [InlineData("MODEL claude-test", "claude-test")]
+    [InlineData("!cab model default", "default")]
+    [InlineData("!cab model", "")]
+    [InlineData("!cab model unknown extra", "unknown extra")]
+    public void ModelCommandsNeverBecomeAgentPrompts(string text, string argument)
+    {
+        var command = ChatControlCommand.Parse(text);
+        Assert.Equal(ChatControlCommandKind.Model, command.Kind);
+        Assert.Equal(argument, command.ModelArgument);
     }
 
     [Theory]

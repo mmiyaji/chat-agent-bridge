@@ -236,7 +236,7 @@
   <data name="HistoryDetachWarning" xml:space="preserve"><value>This removes the association between this conversation and its saved session. Execution history will remain.</value></data>
   <data name="Detach" xml:space="preserve"><value>Detach</value></data>
   <data name="EnterModelName" xml:space="preserve"><value>Enter an available model name</value></data>
-  <data name="NextExecutionModel" xml:space="preserve"><value>Next execution model</value></data>
+  <data name="NextExecutionModel" xml:space="preserve"><value>Conversation model</value></data>
   <data name="ReasoningEffortCliOptions" xml:space="preserve"><value>Reasoning effort (CLI options)</value></data>
   <data name="HistoryCustomCliUnsupported" xml:space="preserve"><value>This session's CLI format does not provide suggestions. You can enter a model name directly.</value></data>
   <data name="FetchCliModels" xml:space="preserve"><value>Fetch CLI model suggestions</value></data>
@@ -323,7 +323,7 @@
   <data name="HistoryPolicyHeading" xml:space="preserve"><value>Approval and result sharing</value></data>
   <data name="HistoryIdentifiersHeading" xml:space="preserve"><value>Conversation identifiers</value></data>
   <data name="HistoryActionsHeading" xml:space="preserve"><value>Conversation actions</value></data>
-  <data name="HistoryEditNextModel" xml:space="preserve"><value>Model and effort</value></data>
+  <data name="HistoryEditNextModel" xml:space="preserve"><value>Switch model</value></data>
   <data name="HistoryEditPolicy" xml:space="preserve"><value>Approval and sharing</value></data>
   <data name="HistoryStartFresh" xml:space="preserve"><value>Start fresh next time</value></data>
   <data name="HistoryExecutionSummary" xml:space="preserve"><value>Recent executions ({0})</value></data>
@@ -384,7 +384,7 @@
   <data name="ChatInputTextReply" xml:space="preserve"><value>Reply: !cab answer {0} {1} your answer</value></data>
   <data name="ChatInputOptionReply" xml:space="preserve"><value>Reply with an option number: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>For another answer: !cab answer {0} {1} other your answer</value></data>
-  <data name="ChatControlHelp" xml:space="preserve"><value>Commands for this account and thread:&#10;&gt; !cab &lt;request&gt; — send a request to the agent&#10;&gt; !cab command / !cab commands / !cab help — show this list&#10;&gt; !cab status — show your request status&#10;&gt; !cab stop — stop your active request and cancel your queued requests&#10;&gt; !cab folder &quot;C:\path&quot; — request a workspace change; the folder must be trusted and needs approval on this PC&#10;&gt; !cab approve CODE / !cab reject CODE — decide an approval when sharing approvals in chat is enabled (codes expire after 5 minutes; otherwise decide on this PC)&#10;&gt; !cab answer CODE question-number option-number — answer an app-server question with an option number&#10;&gt; !cab answer CODE question-number your answer — give a free-text answer&#10;&gt; !cab answer CODE question-number other your answer — give another answer when that question allows it&#10;&gt; Answers can be shared only when app-server question sharing is enabled; questions AppServer marks secret stay on this PC. Answer codes expire after 5 minutes.&#10;Start a new conversation with a new post (thread); reply in the same thread to continue it. Commands and replies apply only to your own requests in this thread.</value></data>
+  <data name="ChatControlHelp" xml:space="preserve"><value>Commands for this account and thread:&#10;&gt; !cab &lt;request&gt; — send a request to the agent&#10;&gt; !cab command / !cab commands / !cab help — show this list&#10;&gt; !cab model / !cab model list / !cab model MODEL_ID / !cab model default — view or change your conversation model&#10;&gt; !cab status — show your request status&#10;&gt; !cab stop — stop your active request and cancel your queued requests&#10;&gt; !cab folder &quot;C:\path&quot; — request a workspace change; the folder must be trusted and needs approval on this PC&#10;&gt; !cab approve CODE / !cab reject CODE — decide an approval when sharing approvals in chat is enabled (codes expire after 5 minutes; otherwise decide on this PC)&#10;&gt; !cab answer CODE question-number option-number — answer an app-server question with an option number&#10;&gt; !cab answer CODE question-number your answer — give a free-text answer&#10;&gt; !cab answer CODE question-number other your answer — give another answer when that question allows it&#10;&gt; Answers can be shared only when app-server question sharing is enabled; questions AppServer marks secret stay on this PC. Answer codes expire after 5 minutes.&#10;Start a new conversation with a new post (thread); reply in the same thread to continue it. Commands and replies apply only to your own requests in this thread.</value></data>
   <data name="HistoryWorkspaceFilterLabel" xml:space="preserve"><value>Workspace</value></data>
   <data name="HistoryWorkspaceAll" xml:space="preserve"><value>All workspaces</value></data>
   <data name="HistorySortLabel" xml:space="preserve"><value>Sort</value></data>
@@ -410,4 +410,15 @@
   <data name="HistoryUserNameUnavailable" xml:space="preserve"><value>User name unavailable</value></data>
   <data name="HistoryChannelNameUnavailable" xml:space="preserve"><value>Channel name unavailable</value></data>
   <data name="HistoryDirectMessage" xml:space="preserve"><value>Direct message</value></data>
+  <data name="ChatModelCurrent" xml:space="preserve"><value>Current model: {0}&#10;Reasoning effort: {1}&#10;!cab model list — available models&#10;!cab model MODEL_ID — change this conversation&#10;!cab model default — follow agent settings</value></data>
+  <data name="ChatModelList" xml:space="preserve"><value>Models available from the CLI (cached for 5 minutes). Use !cab model MODEL_ID to select one:</value></data>
+  <data name="ChatModelMoreInPc" xml:space="preserve"><value>See all candidates in History &amp; conversations on this PC.</value></data>
+  <data name="ChatModelUnsupported" xml:space="preserve"><value>Model selection is available for Codex and Claude Code.</value></data>
+  <data name="ChatModelBusy" xml:space="preserve"><value>Wait until execution finishes and resolve this conversation's pending requests before changing models.</value></data>
+  <data name="ChatModelUnavailable" xml:space="preserve"><value>No models were returned. Check the CLI and its sign-in status on this PC.</value></data>
+  <data name="ChatModelNoSession" xml:space="preserve"><value>Reply in a thread with an existing AI conversation to change its model. For the first request, choose the initial model in Agent settings on this PC.</value></data>
+  <data name="ChatModelChanged" xml:space="preserve"><value>Model saved: {0}&#10;This account and thread only. Conversation history is retained; the next request uses this selection. Previous reasoning effort was cleared. First-only approval is required again after the change.</value></data>
+  <data name="ChatModelFailed" xml:space="preserve"><value>Could not change or retrieve the model. Use !cab model list and select an exact model ID. Check the CLI on this PC if retrieval fails. If the conversation changed, try again.</value></data>
+  <data name="AuditModelChanged" xml:space="preserve"><value>Conversation model changed</value></data>
+  <data name="ChatModelSavedAuditFailed" xml:space="preserve"><value>The model was saved, but its audit entry could not be recorded.</value></data>
 </root>
