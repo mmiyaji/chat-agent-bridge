@@ -17,7 +17,7 @@ const server = http.createServer(async (req, res) => {
   catch { res.writeHead(400).end(); return; }
   res.setHeader('Content-Type', 'application/json');
   if (req.url === '/test/request' && req.method === 'POST') {
-    const post = { id: body.id, root_id: body.thread, channel_id: 'ui-channel', user_id: body.user, message: `${body.mention ? '@cc-agent-bot' : '!cab'} ${body.text}` };
+    const post = { id: body.id, root_id: body.thread, channel_id: 'ui-channel', user_id: body.user, message: body.plain ? body.text : `${body.mention ? '@cc-agent-bot' : '!cab'} ${body.text}` };
     for (const ws of sockets) if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ event: 'posted', data: { post: JSON.stringify(post) } }));
     res.end(JSON.stringify({ delivered: sockets.size }));
   } else if (req.url === '/test/results') {

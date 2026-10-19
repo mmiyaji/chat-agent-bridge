@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Channels;
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.Sessions;
 using ChatAgentBridge.Transports;
 
 namespace ChatAgentBridge.Transports.Tests;
@@ -60,92 +61,23 @@ public sealed class MattermostBotDmIntegrationTests
                 MattermostChannelId = unauthorizedDmId
             }, botUsername, cancellation.Token);
 
+            using var temporary = new TemporaryDirectory();
+            var workspace = Path.Combine(temporary.Path, "workspace");
+            Directory.CreateDirectory(workspace);
+            var directSessionDirectory = Path.Combine(temporary.Path, "direct-sessions");
+            var directSessions = new SessionStore(directSessionDirectory);
             var accepted = Channel.CreateUnbounded<ChatRequest>();
-            await using var transport = new MattermostWebSocketTransport();
-            using var firstRunCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
-            using var secondRunCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
-            Task? firstRun = null;
-            Task? secondRun = null;
-            var firstConnected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            Action firstConnectedHandler = () => firstConnected.TrySetResult();
-            var secondConnected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            Action secondConnectedHandler = () => secondConnected.TrySetResult();
-            transport.Connected += firstConnectedHandler;
-            try
-            {
-                firstRun = transport.RunAsync(settings,
-                    (request, ct) => accepted.Writer.WriteAsync(request, ct).AsTask(), firstRunCancellation.Token);
-                await firstConnected.Task.WaitAsync(OperationTimeout, cancellation.Token);
+            var mentionPostId = await RunDirectDmFlowAsync(http, server, state, settings, botUsername,
+                directSessions, accepted, cancellation.Token);
+            var ownerKey = ChatSessionScope.Create("mattermost", memberDmId, mentionPostId,
+                state.MemberUser.Id!, state.ServerUrl);
+            await directSessions.SaveAsync(new SessionBinding(ownerKey, Path.GetFullPath(workspace),
+                "codex", "", Guid.NewGuid().ToString("D"), DateTimeOffset.UtcNow));
 
-                using var wrongChannel = await PostAsync(http, server, state.MemberUser.Token,
-                    state.Channel.Id, $"@{botUsername} wrong channel", cancellation.Token);
-                using var ownPost = await PostAsync(http, server, botToken,
-                    memberDmId, $"@{botUsername} own message", cancellation.Token);
-                using var malformedMention = await PostAsync(http, server, state.MemberUser.Token,
-                    memberDmId, "hello @" + botUsername + " later", cancellation.Token);
-                using var wrongMention = await PostAsync(http, server, state.MemberUser.Token,
-                    memberDmId, "@cab-no-such-bot should be ignored", cancellation.Token);
-                await AssertNoRequestAsync(accepted.Reader, cancellation.Token);
-
-                const string mentionPrompt = "please inspect 日本語と🌊";
-                using var mentionedPost = await PostAsync(http, server, state.MemberUser.Token,
-                    memberDmId, $"@{botUsername} {mentionPrompt}", cancellation.Token);
-                var mentionPostId = mentionedPost.RootElement.GetProperty("id").GetString()!;
-                var mentioned = await accepted.Reader.ReadAsync(cancellation.Token).AsTask()
-                    .WaitAsync(OperationTimeout, cancellation.Token);
-                Assert.Equal("mattermost", mentioned.Provider);
-                Assert.Equal(memberDmId, mentioned.ChannelId);
-                Assert.Equal(mentionPostId, mentioned.ThreadId);
-                Assert.Equal(state.MemberUser.Id, mentioned.UserId);
-                Assert.Equal(mentionPrompt, mentioned.Text);
-
-                const string replyText = "Bot DM reply: 返信できました 🟢";
-                await transport.ReplyAsync(mentioned, replyText, cancellation.Token);
-                using var mentionThread = await GetThreadAsync(http, server, botToken, mentionPostId, cancellation.Token);
-                Assert.Contains(mentionThread.RootElement.GetProperty("posts").EnumerateObject(), item =>
-                    item.Value.TryGetProperty("message", out var message) && message.GetString() == replyText &&
-                    item.Value.TryGetProperty("root_id", out var rootId) && rootId.GetString() == mentionPostId);
-
-                using var continuationPost = await PostAsync(http, server, state.MemberUser.Token,
-                    memberDmId, $"@{botUsername} continue in this thread", cancellation.Token, mentionPostId);
-                var continuation = await accepted.Reader.ReadAsync(cancellation.Token).AsTask()
-                    .WaitAsync(OperationTimeout, cancellation.Token);
-                Assert.Equal(continuationPost.RootElement.GetProperty("id").GetString(), continuation.MessageId);
-                Assert.Equal(mentionPostId, continuation.ThreadId);
-                Assert.Equal("continue in this thread", continuation.Text);
-
-                using var fallbackPost = await PostAsync(http, server, state.MemberUser.Token,
-                    memberDmId, "!cab existing trigger fallback", cancellation.Token);
-                var fallbackPostId = fallbackPost.RootElement.GetProperty("id").GetString()!;
-                var fallback = await accepted.Reader.ReadAsync(cancellation.Token).AsTask()
-                    .WaitAsync(OperationTimeout, cancellation.Token);
-                Assert.Equal(fallbackPostId, fallback.ThreadId);
-                Assert.Equal("existing trigger fallback", fallback.Text);
-
-                transport.Connected -= firstConnectedHandler;
-                firstRunCancellation.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => firstRun.WaitAsync(OperationTimeout));
-
-                transport.Connected += secondConnectedHandler;
-                secondRun = transport.RunAsync(settings,
-                    (request, ct) => accepted.Writer.WriteAsync(request, ct).AsTask(), secondRunCancellation.Token);
-                await secondConnected.Task.WaitAsync(OperationTimeout, cancellation.Token);
-                using var reconnectedPost = await PostAsync(http, server, state.MemberUser.Token,
-                    memberDmId, $"@{botUsername} after reconnect", cancellation.Token);
-                var reconnected = await accepted.Reader.ReadAsync(cancellation.Token).AsTask()
-                    .WaitAsync(OperationTimeout, cancellation.Token);
-                Assert.Equal(reconnectedPost.RootElement.GetProperty("id").GetString(), reconnected.ThreadId);
-                Assert.Equal("after reconnect", reconnected.Text);
-            }
-            finally
-            {
-                transport.Connected -= firstConnectedHandler;
-                firstRunCancellation.Cancel();
-                transport.Connected -= secondConnectedHandler;
-                secondRunCancellation.Cancel();
-                if (firstRun is not null) await ObserveShutdownAsync(firstRun);
-                if (secondRun is not null) await ObserveShutdownAsync(secondRun);
-            }
+            var reloadedSessions = new SessionStore(directSessionDirectory);
+            Assert.NotNull(await reloadedSessions.FindAsync(ownerKey, cancellation.Token));
+            await RunPersistedDmReconnectAsync(http, server, state, settings, botUsername,
+                mentionPostId, reloadedSessions, cancellation.Token);
         }
         finally
         {
@@ -254,6 +186,139 @@ public sealed class MattermostBotDmIntegrationTests
         Assert.False(accepted.TryRead(out _));
     }
 
+    private static async Task<string> RunDirectDmFlowAsync(HttpClient http, Uri server, BootstrapState state,
+        BridgeSettings settings, string botUsername, SessionStore sessions, Channel<ChatRequest> accepted,
+        CancellationToken ct)
+    {
+        await using var transport = new MattermostWebSocketTransport(sessions);
+        using var runCancellation = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        Task? run = null;
+        var connected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Action connectedHandler = () => connected.TrySetResult();
+        transport.Connected += connectedHandler;
+        try
+        {
+            run = transport.RunAsync(settings,
+                (request, token) => accepted.Writer.WriteAsync(request, token).AsTask(), runCancellation.Token);
+            await connected.Task.WaitAsync(OperationTimeout, ct);
+
+            using var wrongChannel = await PostAsync(http, server, state.MemberUser.Token,
+                state.Channel.Id, $"@{botUsername} wrong channel", ct);
+            using var ownPost = await PostAsync(http, server, settings.MattermostToken,
+                settings.MattermostChannelId!, $"@{botUsername} own message", ct);
+            using var malformedMention = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, "hello @" + botUsername + " later", ct);
+            using var wrongMention = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, "@cab-no-such-bot should be ignored", ct);
+            await AssertNoRequestAsync(accepted.Reader, ct);
+
+            const string mentionPrompt = "please inspect 日本語と🌊";
+            using var mentionedPost = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, $"@{botUsername} {mentionPrompt}", ct);
+            var mentionPostId = mentionedPost.RootElement.GetProperty("id").GetString()!;
+            var mentioned = await accepted.Reader.ReadAsync(ct).AsTask().WaitAsync(OperationTimeout, ct);
+            Assert.Equal("mattermost", mentioned.Provider);
+            Assert.Equal(settings.MattermostChannelId, mentioned.ChannelId);
+            Assert.Equal(mentionPostId, mentioned.ThreadId);
+            Assert.Equal(state.MemberUser.Id, mentioned.UserId);
+            Assert.Equal(mentionPrompt, mentioned.Text);
+
+            var ownerKey = ChatSessionScope.Create("mattermost", settings.MattermostChannelId!, mentionPostId,
+                state.MemberUser.Id!, state.ServerUrl);
+            Assert.Null(await sessions.FindAsync(ownerKey, ct));
+            const string immediateText = "plain continuation: keep   spacing\nand this second line";
+            using var immediateReply = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, immediateText, ct, mentionPostId);
+            var immediateRequest = await accepted.Reader.ReadAsync(ct).AsTask().WaitAsync(OperationTimeout, ct);
+            Assert.Equal(immediateReply.RootElement.GetProperty("id").GetString(), immediateRequest.MessageId);
+            Assert.Equal(mentionPostId, immediateRequest.ThreadId);
+            Assert.Equal(state.MemberUser.Id, immediateRequest.UserId);
+            Assert.Equal(immediateText, immediateRequest.Text);
+
+            using var topLevelPlain = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, "normal top-level DM must be ignored", ct);
+            await AssertNoRequestAsync(accepted.Reader, ct);
+            using var unrelatedRoot = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, "unrelated thread root", ct);
+            using var unrelatedReply = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, "plain reply on an unrelated thread", ct,
+                unrelatedRoot.RootElement.GetProperty("id").GetString());
+            await AssertNoRequestAsync(accepted.Reader, ct);
+
+            using var fallbackPost = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, "!cab existing trigger fallback", ct);
+            var fallbackPostId = fallbackPost.RootElement.GetProperty("id").GetString()!;
+            var fallback = await accepted.Reader.ReadAsync(ct).AsTask().WaitAsync(OperationTimeout, ct);
+            Assert.Equal(fallbackPostId, fallback.ThreadId);
+            Assert.Equal("existing trigger fallback", fallback.Text);
+            const string fallbackReplyText = "plain reply after the !cab thread start";
+            using var fallbackReply = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, fallbackReplyText, ct, fallbackPostId);
+            var fallbackContinuation = await accepted.Reader.ReadAsync(ct).AsTask().WaitAsync(OperationTimeout, ct);
+            Assert.Equal(fallbackPostId, fallbackContinuation.ThreadId);
+            Assert.Equal(fallbackReplyText, fallbackContinuation.Text);
+
+            const string replyText = "Bot DM reply: 返信できました 🟢";
+            await transport.ReplyAsync(mentioned, replyText, ct);
+            using var mentionThread = await GetThreadAsync(http, server, settings.MattermostToken,
+                mentionPostId, ct);
+            Assert.Contains(mentionThread.RootElement.GetProperty("posts").EnumerateObject(), item =>
+                item.Value.TryGetProperty("message", out var message) && message.GetString() == replyText &&
+                item.Value.TryGetProperty("root_id", out var rootId) && rootId.GetString() == mentionPostId);
+            return mentionPostId;
+        }
+        finally
+        {
+            transport.Connected -= connectedHandler;
+            runCancellation.Cancel();
+            if (run is not null) await AssertCanceledOrCompletedAsync(run, runCancellation);
+        }
+    }
+
+    private static async Task RunPersistedDmReconnectAsync(HttpClient http, Uri server, BootstrapState state,
+        BridgeSettings settings, string botUsername, string ownerThreadId, SessionStore sessions,
+        CancellationToken ct)
+    {
+        var accepted = Channel.CreateUnbounded<ChatRequest>();
+        await using var transport = new MattermostWebSocketTransport(sessions);
+        using var runCancellation = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        Task? run = null;
+        var connected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Action connectedHandler = () => connected.TrySetResult();
+        transport.Connected += connectedHandler;
+        try
+        {
+            run = transport.RunAsync(settings,
+                (request, token) => accepted.Writer.WriteAsync(request, token).AsTask(), runCancellation.Token);
+            await connected.Task.WaitAsync(OperationTimeout, ct);
+
+            using var topLevel = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, "top-level plain DM after reconnect", ct);
+            await AssertNoRequestAsync(accepted.Reader, ct);
+            using var unrelatedRoot = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, "new unrelated root", ct);
+            using var unrelatedReply = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, "unknown root must stay ignored", ct,
+                unrelatedRoot.RootElement.GetProperty("id").GetString());
+            await AssertNoRequestAsync(accepted.Reader, ct);
+
+            const string continuedText = "persisted continuation keeps exact text: 日本語   preserved";
+            using var continuedPost = await PostAsync(http, server, state.MemberUser.Token,
+                settings.MattermostChannelId!, continuedText, ct, ownerThreadId);
+            var continuation = await accepted.Reader.ReadAsync(ct).AsTask().WaitAsync(OperationTimeout, ct);
+            Assert.Equal(continuedPost.RootElement.GetProperty("id").GetString(), continuation.MessageId);
+            Assert.Equal(ownerThreadId, continuation.ThreadId);
+            Assert.Equal(state.MemberUser.Id, continuation.UserId);
+            Assert.Equal(continuedText, continuation.Text);
+        }
+        finally
+        {
+            transport.Connected -= connectedHandler;
+            runCancellation.Cancel();
+            if (run is not null) await AssertCanceledOrCompletedAsync(run, runCancellation);
+        }
+    }
+
     private static async Task AssertUnauthorizedDmIgnoredAsync(HttpClient http, Uri server, BootstrapState state,
         BridgeSettings settings, string botUsername, CancellationToken ct)
     {
@@ -277,7 +342,7 @@ public sealed class MattermostBotDmIntegrationTests
         {
             transport.Connected -= connectedHandler;
             runCancellation.Cancel();
-            if (run is not null) await ObserveShutdownAsync(run);
+            if (run is not null) await AssertCanceledOrCompletedAsync(run, runCancellation);
         }
     }
 
@@ -311,12 +376,11 @@ public sealed class MattermostBotDmIntegrationTests
         EnsureSuccess(response, "Mattermost bot disable");
     }
 
-    private static async Task ObserveShutdownAsync(Task task)
+    private static async Task AssertCanceledOrCompletedAsync(Task task, CancellationTokenSource cancellation)
     {
-        try { await task.WaitAsync(TimeSpan.FromSeconds(5)); }
-        catch (OperationCanceledException) { }
-        catch (TimeoutException) { }
-        catch (Exception) { }
+        Assert.True(cancellation.IsCancellationRequested);
+        try { await task.WaitAsync(OperationTimeout); }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
     }
 
     private sealed class BootstrapState
@@ -347,5 +411,21 @@ public sealed class MattermostBotDmIntegrationTests
     {
         public string Id { get; set; } = "";
         public string Token { get; set; } = "";
+    }
+
+    private sealed class TemporaryDirectory : IDisposable
+    {
+        public TemporaryDirectory()
+        {
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"cab-mm-bot-e2e-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(Path);
+        }
+
+        public string Path { get; }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path)) Directory.Delete(Path, recursive: true);
+        }
     }
 }

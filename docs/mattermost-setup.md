@@ -4,11 +4,13 @@
 
 For a bot such as `cc-agent-bot`, register that bot's access token, set the **channel ID of the DM with the bot**, and look up/add the **personal account that will send requests** to allowed users. The allowlist stores internal user IDs; typing a username directly into the ID list does not resolve it. Save and reconnect after changing these settings.
 
-Start or continue a request with either `@cc-agent-bot your request` (mention at the beginning) or `!cab your request`. The username is read from the authenticated token's account, so other bot names or partial matches do not trigger execution. A root post starts a new conversation; an explicit request in that post's thread continues it for the same sender. An ordinary unmentioned message is ignored, including in DMs. Bot/self/webhook messages and unauthorized users/channels/conversations remain excluded.
+Start a request with either `@cc-agent-bot your request` (mention at the beginning) or `!cab your request`. The username is read from the authenticated token's account. After that request is received, the same sender can reply normally in the same thread, without another mention or command. Plain top-level DM posts, unstarted threads, and replies from other users are ignored. Another user can explicitly start their own separate conversation with a mention or command; they cannot inherit the first person's history. Bot/self/webhook messages and unauthorized users/channels/conversations remain excluded.
 
-日本語UIでは、Botのトークンと **そのBotとのDMのチャンネルID** を設定し、「ユーザー名から許可するユーザーを検索」から **依頼を送る個人アカウント** を検索・追加します。Bot名を許可ユーザーとして追加する必要はありません。保存・再接続後、`@cc-agent-bot 依頼内容` または `!cab 依頼内容` を送ってください。続ける場合も同じ本人が元のスレッド内でメンションまたは `!cab` を付けます。
+日本語UIでは、Botのトークンと **そのBotとのDMのチャンネルID** を設定し、「ユーザー名から許可するユーザーを検索」から **依頼を送る個人アカウント** を検索・追加します。保存・再接続後、`@cc-agent-bot 依頼内容` または `!cab 依頼内容` で開始し、続ける場合は **同じ本人が元のスレッドへ普通に返信** できます。Bot名を許可ユーザーとして追加する必要はありません。
 
 Leading bot mentions are supported from portable `v0.1.0-preview.4`. In `preview.3` and earlier, use the `!cab` prefix.
+
+Plain thread replies are implemented in the **unpublished local build** `0.1.0-preview.5`. The first explicit request enables immediate replies during the current connection, even while approval is pending. Once an AI session or approved workspace is saved, the exact owner can also continue after reconnect/restart. If disconnected before anything was saved, send another explicit mention or `!cab`. The current allowed-user/channel/thread rules and approval mode still apply to every reply. This feature does not make extra AI calls to identify a conversation.
 
 ## Native Windows app: direct connection
 

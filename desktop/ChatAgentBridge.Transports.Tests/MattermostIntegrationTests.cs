@@ -79,7 +79,7 @@ public sealed class MattermostIntegrationTests
 
             transport.Connected -= firstConnectedHandler;
             firstRunCancellation.Cancel();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => firstRun.WaitAsync(OperationTimeout));
+            await AssertCanceledOrCompletedAsync(firstRun, firstRunCancellation);
 
             transport.Connected += secondConnectedHandler;
             secondRun = transport.RunAsync(settings,
@@ -90,7 +90,7 @@ public sealed class MattermostIntegrationTests
             Assert.Equal("after reconnect", reconnected.Text);
             transport.Connected -= secondConnectedHandler;
             secondRunCancellation.Cancel();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => secondRun.WaitAsync(OperationTimeout));
+            await AssertCanceledOrCompletedAsync(secondRun, secondRunCancellation);
 
             await using var invalidTransport = new MattermostWebSocketTransport();
             const string invalidToken = "invalid-native-integration-token";
@@ -104,8 +104,8 @@ public sealed class MattermostIntegrationTests
             firstRunCancellation.Cancel();
             transport.Connected -= secondConnectedHandler;
             secondRunCancellation.Cancel();
-            if (firstRun is not null) await ObserveShutdownAsync(firstRun);
-            if (secondRun is not null) await ObserveShutdownAsync(secondRun);
+            if (firstRun is not null) await AssertCanceledOrCompletedAsync(firstRun, firstRunCancellation);
+            if (secondRun is not null) await AssertCanceledOrCompletedAsync(secondRun, secondRunCancellation);
         }
     }
 
@@ -184,12 +184,11 @@ public sealed class MattermostIntegrationTests
         return await JsonDocument.ParseAsync(stream, cancellationToken: ct);
     }
 
-    private static async Task ObserveShutdownAsync(Task task)
+    private static async Task AssertCanceledOrCompletedAsync(Task task, CancellationTokenSource cancellation)
     {
-        try { await task.WaitAsync(TimeSpan.FromSeconds(5)); }
-        catch (OperationCanceledException) { }
-        catch (TimeoutException) { }
-        catch (Exception) { }
+        Assert.True(cancellation.IsCancellationRequested);
+        try { await task.WaitAsync(OperationTimeout); }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
     }
 
     private sealed class BootstrapState

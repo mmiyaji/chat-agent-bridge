@@ -4,6 +4,7 @@ param(
     [switch]$Portable,
     [switch]$CheckMattermostProxy,
     [switch]$MattermostMentions,
+    [switch]$MattermostPlainReplies,
     [switch]$KeepRunningOnFailure
 )
 $ErrorActionPreference = 'Stop'
@@ -97,8 +98,8 @@ function Capture([string]$Name) {
     Start-Sleep -Milliseconds 300 # Let ListView insertion animations settle before visual review.
     UI @('screenshot','--focus','-w',"$($appProcess.MainWindowHandle)",'-o',(Join-Path $dataPath "$Name.png")) | Out-Null
 }
-function Post([string]$Id,[string]$Thread,[string]$User,[string]$Text) {
-    $body = @{id=$Id;thread=$Thread;user=$User;text=$Text;mention=[bool]$MattermostMentions} | ConvertTo-Json -Compress
+function Post([string]$Id,[string]$Thread,[string]$User,[string]$Text,[bool]$Plain=$false) {
+    $body = @{id=$Id;thread=$Thread;user=$User;text=$Text;mention=[bool]$MattermostMentions;plain=$Plain} | ConvertTo-Json -Compress
     $result = Invoke-RestMethod "$script:endpoint/test/request" -Method Post -ContentType 'application/json' -Body ([Text.Encoding]::UTF8.GetBytes($body))
     Assert-True ($result.delivered -eq 1) 'Expected one connected offline transport'
     Start-Sleep -Milliseconds 350
@@ -282,7 +283,13 @@ process.stdin.on('end', () => setTimeout(() => process.stdout.write('offline-res
     }
     Check 'Requests group by conversation and remain separated by requester' {
         Post 'message-1' 'shared-thread' 'alice' 'alpha initial request'
-        Post 'message-2' 'shared-thread' 'alice' 'alpha next request'
+        if ($MattermostPlainReplies) {
+            Post 'ignored-other-owner' 'shared-thread' 'bob' 'must not appear' $true
+            Post 'ignored-unknown-thread' 'unknown-thread' 'alice' 'must not appear' $true
+            Post 'ignored-plain-root' '' 'alice' 'must not appear' $true
+            UI @('wait-for','InboxConversationCount','--value','1','--contains','-t','3000') | Out-Null
+        }
+        Post 'message-2' 'shared-thread' 'alice' 'alpha next request' ([bool]$MattermostPlainReplies)
         Post 'message-3' 'shared-thread' 'bob' 'beta separate owner'
         Post 'message-4' 'other-thread' 'alice' 'gamma slow request'
         Post 'message-5' 'hidden-thread' 'mallory' 'must not appear'
@@ -294,7 +301,7 @@ process.stdin.on('end', () => setTimeout(() => process.stdout.write('offline-res
         Assert-Visible 'ApproveChat'
         Assert-Visible 'SendChatResult'
         Capture 'inbox-wide'
-        Post 'message-6' 'shared-thread' 'alice' 'alpha newly arrived request'
+        Post 'message-6' 'shared-thread' 'alice' 'alpha newly arrived request' ([bool]$MattermostPlainReplies)
         UI @('wait-for','InboxSelectedPrompt','--value','alpha initial request','--contains','-t','3000') | Out-Null
         UI @('wait-for','InboxRequestCount','--value','3','--contains','-t','3000') | Out-Null
         Set-Search 'InboxSearch' ''

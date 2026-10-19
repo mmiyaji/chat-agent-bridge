@@ -387,7 +387,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Save your Mattermost or Slack credentials on this PC, then connect from Chat inbox.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock048.Text" xml:space="preserve">
-    <value>Enter the ID of the channel to receive requests from. For a direct message with the bot, use that DM's channel ID. Start or continue requests with a leading @mention of the connected bot, or !cab followed by your request. The bot must also join any regular channel you use.</value>
+    <value>Enter the ID of the channel to receive requests from. For a bot DM, use that DM's channel ID. Start with a leading @mention or !cab followed by your request. The same sender can then continue by replying normally in that thread. The bot must also join any regular channel you use.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock049.Text" xml:space="preserve">
     <value>Server URL</value>
@@ -549,7 +549,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Disconnect</value>
   </data>
   <data name="inboxChatInboxPageTextBlock003.Text" xml:space="preserve">
-    <value>In Mattermost, start or continue requests with !cab or a leading @mention of the connected bot. In Slack, mention the bot to start; the same user can continue a saved conversation by replying in its thread. Use !cab folder C:\Projects\my-app to request a folder change. Changes must stay within trusted folders, require approval on this PC, and start a new AI conversation.</value>
+    <value>In Mattermost, start with !cab or a leading @mention of the bot. The same sender can then reply normally in that thread. Slack also accepts normal replies to a saved conversation from the same sender. Other users and unstarted threads need an explicit mention or command. Use !cab folder C:\Projects\my-app to request a folder change within trusted folders; approval on this PC is always required.</value>
   </data>
   <data name="ChatRequests.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Received requests</value>

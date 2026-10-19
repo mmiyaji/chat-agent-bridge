@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
@@ -12,6 +13,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
     private const int MaxMessageBytes = 1024 * 1024;
     private const string Trigger = "!cab";
     private HttpClient? _http;
+    private readonly SessionStore? _injectedSessionStore;
     private readonly BoundedSeenSet _seen = new(10_000);
     private string? _currentUserId;
     private Uri? _serverUri;
@@ -19,6 +21,10 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
     private string? _channelId;
     private CancellationTokenSource? _runLifetime;
     private bool _disposed;
+
+    public MattermostWebSocketTransport() { }
+
+    internal MattermostWebSocketTransport(SessionStore sessionStore) => _injectedSessionStore = sessionStore;
 
     public async Task RunAsync(BridgeSettings settings, Func<ChatRequest, CancellationToken, Task> onRequest, CancellationToken cancellationToken)
     {
@@ -38,6 +44,8 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
         _http = TransportHttp.CreateClient(settings.MattermostBypassProxy);
         _runLifetime?.Dispose();
         _runLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var sessions = _injectedSessionStore ?? new SessionStore();
+        var continuations = new MattermostContinuationTracker();
         var meRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get, new Uri(root, "api/v4/users/me"), token);
         var me = await TransportHttp.SendJsonAsync<MattermostUser>(ActiveHttp, meRequest, cancellationToken).ConfigureAwait(false);
         _currentUserId = me.Id;
@@ -68,18 +76,19 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
             if (!envelope.TryGetProperty("event", out var eventName) || eventName.GetString() != "posted") continue;
             if (!envelope.TryGetProperty("data", out var data) || !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
 
-            var request = ParsePost(postJson.GetString()!, settings.MattermostChannelId, _currentUserId ?? "", isBot: false,
-                currentUsername: me.Username);
-            if (request is null || !ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", request.UserId, request.ChannelId, request.ThreadId) || !_seen.TryAdd(request.MessageId)) continue;
-
-            var authorRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
-                new Uri(root, $"api/v4/users/{Uri.EscapeDataString(request.UserId)}"), token);
-            MattermostUser author;
-            try { author = await TransportHttp.SendJsonAsync<MattermostUser>(ActiveHttp, authorRequest, cancellationToken).ConfigureAwait(false); }
-            catch (InvalidOperationException) { continue; }
-            if (author.IsBot) continue;
-
-            await onRequest(request, cancellationToken).ConfigureAwait(false);
+            var post = postJson.GetString()!;
+            await ProcessPostAsync(post, settings, _currentUserId ?? "", me.Username, sessions, continuations, _seen,
+                async (request, ct) =>
+                {
+                    var authorRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
+                        new Uri(root, $"api/v4/users/{Uri.EscapeDataString(request.UserId)}"), token);
+                    MattermostUser author;
+                    try { author = await TransportHttp.SendJsonAsync<MattermostUser>(ActiveHttp, authorRequest, ct).ConfigureAwait(false); }
+                    catch (InvalidOperationException) { return false; }
+                    if (author.IsBot) return false;
+                    await onRequest(request, ct).ConfigureAwait(false);
+                    return true;
+                }, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -122,7 +131,8 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
 
     private HttpClient ActiveHttp => _http ?? throw new InvalidOperationException("Mattermost is not connected.");
 
-    internal static ChatRequest? ParsePost(string json, string channelFilter, string currentUserId, bool isBot, string? currentUsername = null)
+    internal static ChatRequest? ParsePost(string json, string channelFilter, string currentUserId, bool isBot,
+        string? currentUsername = null, bool allowPlainThreadReplies = false)
     {
         MattermostPost? post;
         try { post = JsonSerializer.Deserialize<MattermostPost>(json, TransportHttp.JsonOptions); }
@@ -130,13 +140,71 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
         if (post is null || string.IsNullOrWhiteSpace(post.Id) || string.IsNullOrWhiteSpace(post.UserId) ||
             !string.Equals(post.ChannelId, channelFilter, StringComparison.Ordinal) ||
             string.Equals(post.UserId, currentUserId, StringComparison.Ordinal) || isBot ||
-            string.IsNullOrWhiteSpace(post.Message) || IsFromWebhook(post) ||
-            !TryGetTriggeredText(post.Message, currentUsername, out var text)) return null;
+            string.IsNullOrWhiteSpace(post.Message) || IsFromWebhook(post)) return null;
         var threadId = string.IsNullOrWhiteSpace(post.RootId) ? post.Id : post.RootId;
+        var isThreadReply = !string.IsNullOrWhiteSpace(post.RootId) &&
+            !string.Equals(post.RootId, post.Id, StringComparison.Ordinal);
+        if (!TryGetTriggeredText(post.Message, currentUsername, allowPlainThreadReplies, isThreadReply, out var text)) return null;
         return new ChatRequest("mattermost", post.ChannelId, threadId, post.UserId, text, post.Id);
     }
 
-    private static bool TryGetTriggeredText(string message, string? currentUsername, out string text)
+    internal static async Task<bool> ProcessPostAsync(
+        string json,
+        BridgeSettings settings,
+        string currentUserId,
+        string? currentUsername,
+        SessionStore sessions,
+        MattermostContinuationTracker continuations,
+        BoundedSeenSet seen,
+        Func<ChatRequest, CancellationToken, Task<bool>> deliver,
+        CancellationToken cancellationToken = default)
+    {
+        var candidate = await ResolvePostCandidateAsync(json, settings, currentUserId, currentUsername,
+            sessions, continuations, cancellationToken).ConfigureAwait(false);
+        if (candidate is null || !seen.TryAdd(candidate.Request.MessageId)) return false;
+
+        var delivered = await deliver(candidate.Request, cancellationToken).ConfigureAwait(false);
+        if (delivered && candidate.IsExplicit)
+            continuations.Remember(CreateSessionKey(settings, candidate.Request));
+        return delivered;
+    }
+
+    internal static async Task<MattermostRequestCandidate?> ResolvePostCandidateAsync(
+        string json,
+        BridgeSettings settings,
+        string currentUserId,
+        string? currentUsername,
+        SessionStore sessions,
+        MattermostContinuationTracker continuations,
+        CancellationToken cancellationToken = default)
+    {
+        var explicitRequest = ParsePost(json, settings.MattermostChannelId, currentUserId, isBot: false, currentUsername);
+        if (explicitRequest is not null)
+        {
+            return ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", explicitRequest.UserId,
+                explicitRequest.ChannelId, explicitRequest.ThreadId)
+                ? new MattermostRequestCandidate(explicitRequest, IsExplicit: true)
+                : null;
+        }
+
+        var continuation = ParsePost(json, settings.MattermostChannelId, currentUserId, isBot: false,
+            currentUsername, allowPlainThreadReplies: true);
+        if (continuation is null || !ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", continuation.UserId,
+                continuation.ChannelId, continuation.ThreadId)) return null;
+
+        var key = CreateSessionKey(settings, continuation);
+        if (continuations.Contains(key)) return new MattermostRequestCandidate(continuation, IsExplicit: false);
+        if (await sessions.FindAsync(key, cancellationToken).ConfigureAwait(false) is not null ||
+            await sessions.FindWorkspaceAsync(key, cancellationToken).ConfigureAwait(false) is not null)
+            return new MattermostRequestCandidate(continuation, IsExplicit: false);
+        return null;
+    }
+
+    private static SessionKey CreateSessionKey(BridgeSettings settings, ChatRequest request) =>
+        ChatSessionScope.Create("mattermost", request.ChannelId, request.ThreadId, request.UserId, settings.MattermostServerUrl);
+
+    private static bool TryGetTriggeredText(string message, string? currentUsername, bool allowPlainThreadReplies,
+        bool isThreadReply, out string text)
     {
         text = string.Empty;
         if (HasTrigger(message))
@@ -146,14 +214,24 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
         }
 
         var username = currentUsername?.Trim();
-        if (string.IsNullOrEmpty(username)) return false;
-        var mention = "@" + username;
-        if (!message.StartsWith(mention, StringComparison.OrdinalIgnoreCase) || message.Length <= mention.Length ||
-            !char.IsWhiteSpace(message[mention.Length])) return false;
+        if (!string.IsNullOrEmpty(username))
+        {
+            var mention = "@" + username;
+            if (message.StartsWith(mention, StringComparison.OrdinalIgnoreCase))
+            {
+                if (message.Length == mention.Length) return false;
+                if (char.IsWhiteSpace(message[mention.Length]))
+                {
+                    text = message[mention.Length..].Trim();
+                    if (text.Length == 0) return false;
+                    if (HasTrigger(text)) text = text[Trigger.Length..].Trim();
+                    return text.Length > 0;
+                }
+            }
+        }
 
-        text = message[mention.Length..].Trim();
-        if (text.Length == 0) return false;
-        if (HasTrigger(text)) text = text[Trigger.Length..].Trim();
+        if (!allowPlainThreadReplies || !isThreadReply) return false;
+        text = message.Trim();
         return text.Length > 0;
     }
 
@@ -194,6 +272,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
         [property: JsonPropertyName("id")] string Id,
         [property: JsonPropertyName("username")] string? Username,
         [property: JsonPropertyName("is_bot")] bool IsBot);
+    internal sealed record MattermostRequestCandidate(ChatRequest Request, bool IsExplicit);
     private sealed record MattermostPost(
         [property: JsonPropertyName("id")] string Id,
         [property: JsonPropertyName("channel_id")] string ChannelId,

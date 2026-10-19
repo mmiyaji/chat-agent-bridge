@@ -387,7 +387,7 @@
     <value>Mattermost と Slack の認証情報をこのデバイスに保存します。保存後に「チャット受信」から接続してください。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock048.Text" xml:space="preserve">
-    <value>受信するチャンネルのIDを指定します。BotとのDMを使う場合は、そのDMのチャンネルIDです。接続したBotへの @メンションを先頭に付けるか、!cab 依頼内容で依頼を開始・継続します。通常のチャンネルではBotの参加も必要です。</value>
+    <value>受信するチャンネルのIDを指定します。BotとのDMを使う場合は、そのDMのチャンネルIDです。先頭の @メンションか !cab 依頼内容で開始し、開始した本人は同じスレッドへ普通に返信して続けられます。通常のチャンネルではBotの参加も必要です。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock049.Text" xml:space="preserve">
     <value>サーバー URL</value>
@@ -549,7 +549,7 @@
     <value>切断</value>
   </data>
   <data name="inboxChatInboxPageTextBlock003.Text" xml:space="preserve">
-    <value>Mattermostでは !cab 依頼内容、または接続したBotへの @メンションを先頭に付けて依頼を開始・継続します。SlackではBotへのメンションで始め、保存済みの会話は同じ本人が同じスレッドへ普通に返信できます。!cab folder C:\Projects\my-app で会話の作業先を変更できます。信頼フォルダーの範囲内に限り、変更には毎回PCで承認が必要です。変更後は新しいAI会話として開始します。</value>
+    <value>Mattermostでは !cab 依頼内容、または先頭のBotへの @メンションで始めます。開始した本人は同じスレッドへ普通に返信して続けられます。Slackも保存済みの会話は同じ本人が普通に返信できます。別ユーザーや未開始のスレッドはメンションなどで新しく依頼してください。!cab folder C:\Projects\my-app で会話の作業先を変更できます。信頼フォルダー内に限り、変更には毎回PCで承認が必要です。</value>
   </data>
   <data name="ChatRequests.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>受信した依頼</value>
