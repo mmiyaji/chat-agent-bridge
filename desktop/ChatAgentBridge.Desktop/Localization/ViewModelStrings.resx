@@ -648,4 +648,44 @@ Internal user ID: {2}</value></data>
   <data name="MattermostThreadAlreadyAllowed" xml:space="preserve"><value>Conversation {0} is already in the allowlist.</value></data>
   <data name="MattermostThreadAddedSaveNeeded" xml:space="preserve"><value>Added conversation {0}. Save settings and reconnect to apply the updated restriction.</value></data>
   <data name="MattermostThreadAllowlistInvalid" xml:space="preserve"><value>The existing conversation allowlist has an invalid ID. Correct it before adding another conversation.</value></data>
+  <data name="SlackUsernameLookupInProgress" xml:space="preserve"><value>Looking up that exact name with the configured Slack bot token…</value></data>
+  <data name="SlackUsernameLookupFound" xml:space="preserve"><value>Slack account found. Review the workspace and member ID, then choose Add this user.</value></data>
+  <data name="SlackUsernameLookupIdentity" xml:space="preserve"><value>Username: @{0}
+Full name: {1}
+Member ID: {2}
+Workspace: {3} ({4})</value></data>
+  <data name="SlackUsernameLookupInvalidUsername" xml:space="preserve"><value>Enter an exact Slack username, display name, or member ID. A leading @ is optional.</value></data>
+  <data name="SlackUsernameLookupMissingCredentials" xml:space="preserve"><value>Enter the Slack bot token before looking up a user.</value></data>
+  <data name="SlackUsernameLookupInvalidToken" xml:space="preserve"><value>Slack rejected the bot token. Check or re-enter the token.</value></data>
+  <data name="SlackUsernameLookupWrongWorkspace" xml:space="preserve"><value>The lookup returned an account from a different Slack workspace.</value></data>
+  <data name="SlackUsernameLookupMissingScope" xml:space="preserve"><value>The Slack bot token needs the {0} scope to look up users. Add the scope in the Slack app, reinstall it, then update the token if Slack provides a new one.</value></data>
+  <data name="SlackUsernameLookupRateLimited" xml:space="preserve"><value>Slack is rate limiting lookups. Wait a moment and try again.</value></data>
+  <data name="SlackUsernameLookupNotFound" xml:space="preserve"><value>No exact Slack username or member ID was found in the authenticated workspace.</value></data>
+  <data name="SlackUsernameLookupAmbiguous" xml:space="preserve"><value>Slack returned more than one exact username match. Search using the member ID instead.</value></data>
+  <data name="SlackUsernameLookupTimeout" xml:space="preserve"><value>The Slack user lookup timed out. Check the connection and try again.</value></data>
+  <data name="SlackUsernameLookupInvalidResponse" xml:space="preserve"><value>Slack returned account data that could not be verified. Try again or check the Slack app.</value></data>
+  <data name="SlackUsernameLookupNetwork" xml:space="preserve"><value>Could not reach Slack. Check the network and bot token, then try again.</value></data>
+  <data name="SlackUsernameAlreadyAllowed" xml:space="preserve"><value>@{0} is already in the allowed-user draft.</value></data>
+  <data name="SlackUsernameAddedSaveNeeded" xml:space="preserve"><value>@{0} was added to the draft. Save settings and reconnect Slack to apply it.</value></data>
+  <data name="SlackUsernameAllowlistInvalid" xml:space="preserve"><value>The allowed-user list is invalid or already has 100 users. Fix the list before adding another user.</value></data>
+  <data name="SlackThreadLookupInProgress" xml:space="preserve"><value>Checking the message link in the authenticated Slack workspace…</value></data>
+  <data name="SlackThreadLookupResolved" xml:space="preserve"><value>Conversation checked. Review the workspace and channel, then choose Add this conversation.</value></data>
+  <data name="SlackThreadLookupIdentity" xml:space="preserve"><value>Workspace: {0}
+Channel: {1}
+Conversation ID (first message): {2}</value></data>
+  <data name="SlackThreadLookupInvalidLink" xml:space="preserve"><value>Paste a valid Slack message permalink from the authenticated workspace.</value></data>
+  <data name="SlackThreadLookupMissingCredentials" xml:space="preserve"><value>Enter the Slack bot token before checking a message link.</value></data>
+  <data name="SlackThreadLookupInvalidToken" xml:space="preserve"><value>Slack rejected the bot token. Check or re-enter the token.</value></data>
+  <data name="SlackThreadLookupWrongWorkspace" xml:space="preserve"><value>This permalink belongs to a different Slack workspace than the configured bot token.</value></data>
+  <data name="SlackThreadLookupMissingScope" xml:space="preserve"><value>The Slack bot token needs the {0} scope to check this message. Add the scope in the Slack app, reinstall it, then update the token if Slack provides a new one.</value></data>
+  <data name="SlackThreadLookupRateLimited" xml:space="preserve"><value>Slack is rate limiting link checks. Wait a moment and try again.</value></data>
+  <data name="SlackThreadLookupNotFound" xml:space="preserve"><value>The message could not be found in the authenticated workspace. Check that the bot can access the channel.</value></data>
+  <data name="SlackThreadLookupWrongChannel" xml:space="preserve"><value>The message link does not resolve to a channel the configured Slack app can access.</value></data>
+  <data name="SlackThreadLookupDeleted" xml:space="preserve"><value>The linked message or its conversation root was deleted and cannot be added.</value></data>
+  <data name="SlackThreadLookupTimeout" xml:space="preserve"><value>The Slack message lookup timed out. Check the connection and try again.</value></data>
+  <data name="SlackThreadLookupInvalidResponse" xml:space="preserve"><value>Slack returned message data that could not be verified.</value></data>
+  <data name="SlackThreadLookupNetwork" xml:space="preserve"><value>Could not reach Slack. Check the network and bot token, then try again.</value></data>
+  <data name="SlackThreadAlreadyAllowed" xml:space="preserve"><value>Channel and conversation {0} are already in the allowed-scope draft.</value></data>
+  <data name="SlackThreadAddedSaveNeeded" xml:space="preserve"><value>Added channel {0} and conversation {1} to the allowlist. Save settings and reconnect Slack to apply it.</value></data>
+  <data name="SlackThreadAllowlistInvalid" xml:space="preserve"><value>The channel or thread scope list is invalid or already has 100 entries. Fix the lists before adding this conversation.</value></data>
 </root>

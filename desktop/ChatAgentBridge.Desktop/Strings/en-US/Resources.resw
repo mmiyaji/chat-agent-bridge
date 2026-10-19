@@ -454,7 +454,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Slack user IDs to allow (one person per line)</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock058.Text" xml:space="preserve">
-    <value>Blank fields will reject everyone. Display names and @mentions are not allowed. Copy your user ID from your Slack profile. Can be separated by line breaks, spaces, commas, and semicolons.</value>
+    <value>An empty list rejects everyone. Add a user through the search above, or paste an ID from Copy member ID in their Slack profile. This ID field accepts member IDs, not display names or @mentions. Enter one ID per line.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock059.Text" xml:space="preserve">
     <value>Tool approvals and privacy</value>
@@ -679,13 +679,13 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Slack App Token</value>
   </data>
   <data name="WizardSlackAllowedUserIds.Header" xml:space="preserve">
-    <value>Internal Mattermost user IDs to allow (one per line)</value>
+    <value>Allowed Slack member IDs (one per line)</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock013.Text" xml:space="preserve">
     <value>Slack requires both the bot token xoxb- and the app token xapp-. If the authorized user ID is empty, no requests will be accepted from anyone.</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock014.Text" xml:space="preserve">
-    <value>Open your Slack profile and choose Copy member ID from the More menu. Use this ID, not your display name or email address.</value>
+    <value>Add a user through the search above. For manual entry, open their Slack profile, choose Copy member ID from the More menu, and paste it into this ID field.</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock015.Text" xml:space="preserve">
     <value>Mattermost connection information</value>
@@ -939,4 +939,21 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="OverviewStartupHint.Text" xml:space="preserve"><value>At Windows sign-in</value></data>
   <data name="OverviewAutoConnectLabel.Text" xml:space="preserve"><value>Automatic connection</value></data>
   <data name="OverviewAutoConnectHint.Text" xml:space="preserve"><value>When this app opens</value></data>
+  <data name="SlackUsernameLookupLabel.Text" xml:space="preserve"><value>Find an allowed Slack user</value></data>
+  <data name="SlackUsernameLookupHelp.Text" xml:space="preserve"><value>Enter an exact Slack username, display name (for example, @alice), or member ID. Lookup shows the account and workspace. Searching grants no access; choose Add this user to update the unsaved allowlist, then save and reconnect.</value></data>
+  <data name="SlackUsernameLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slack username, display name, or member ID</value></data>
+  <data name="SlackUsernameLookupInput.PlaceholderText" xml:space="preserve"><value>@alice or U012ABCDEF</value></data>
+  <data name="LookupSlackUserButton.Content" xml:space="preserve"><value>Look up Slack user</value></data>
+  <data name="AddSlackUserButton.Content" xml:space="preserve"><value>Add this user</value></data>
+  <data name="WizardSlackUsernameLookupLabel.Text" xml:space="preserve"><value>Find an allowed Slack user</value></data>
+  <data name="WizardSlackUsernameLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slack username, display name, or member ID</value></data>
+  <data name="WizardSlackUsernameLookupInput.PlaceholderText" xml:space="preserve"><value>@alice or U012ABCDEF</value></data>
+  <data name="WizardLookupSlackUserButton.Content" xml:space="preserve"><value>Look up Slack user</value></data>
+  <data name="WizardAddSlackUserButton.Content" xml:space="preserve"><value>Add this user</value></data>
+  <data name="SlackThreadLookupLabel.Text" xml:space="preserve"><value>Find a Slack conversation from its message link</value></data>
+  <data name="SlackThreadLookupHelp.Text" xml:space="preserve"><value>Paste a Slack message permalink. The app checks the authenticated workspace and finds the actual channel and conversation root. Choose Add this conversation to add both the channel and root thread when needed, then save and reconnect. Empty channel and thread lists impose no extra conversation restriction.</value></data>
+  <data name="SlackThreadLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slack message permalink</value></data>
+  <data name="SlackThreadLookupInput.PlaceholderText" xml:space="preserve"><value>https://workspace.slack.com/archives/…/p…</value></data>
+  <data name="ResolveSlackThreadButton.Content" xml:space="preserve"><value>Check conversation</value></data>
+  <data name="AddSlackThreadButton.Content" xml:space="preserve"><value>Add this conversation</value></data>
 </root>

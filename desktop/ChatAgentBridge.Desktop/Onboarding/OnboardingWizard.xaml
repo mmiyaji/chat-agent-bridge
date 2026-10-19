@@ -94,6 +94,15 @@
                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock012" x:Uid="onboardingOnboardingWizardTextBlock012" />
                             <PasswordBox x:Name="SlackAppTokenBox" PasswordChanged="SlackAppTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardSlackAppToken"  x:Uid="WizardSlackAppToken" />
                         </StackPanel>
+                        <StackPanel Spacing="8" AutomationProperties.AutomationId="WizardSlackUsernameLookup">
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardSlackUsernameLookupLabel" />
+                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="SlackUsernameLookupHelp" />
+                            <TextBox Text="{x:Bind ViewModel.SlackUsernameLookupInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxLength="256" AutomationProperties.AutomationId="WizardSlackUsernameLookupInput" x:Uid="WizardSlackUsernameLookupInput" />
+                            <Button Command="{x:Bind ViewModel.LookupSlackUsernameCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardLookupSlackUserButton" x:Uid="WizardLookupSlackUserButton" />
+                            <TextBlock Text="{x:Bind ViewModel.SlackUsernameLookupResultText, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasSlackUsernameLookupResult), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardSlackUsernameLookupResult" />
+                            <TextBlock Text="{x:Bind ViewModel.SlackUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasSlackUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardSlackUsernameLookupStatus" />
+                            <Button Command="{x:Bind ViewModel.AddSlackUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddSlackUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardAddSlackUserButton" x:Uid="WizardAddSlackUserButton" />
+                        </StackPanel>
                         <TextBox  Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardSlackAllowedUserIds"  x:Uid="WizardSlackAllowedUserIds" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock013" x:Uid="onboardingOnboardingWizardTextBlock013" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock014" x:Uid="onboardingOnboardingWizardTextBlock014" />

@@ -648,4 +648,44 @@ AIの操作権限: {8}</value>
   <data name="MattermostThreadAlreadyAllowed" xml:space="preserve"><value>会話 {0} はすでに許可リストにあります。</value></data>
   <data name="MattermostThreadAddedSaveNeeded" xml:space="preserve"><value>会話 {0} を追加しました。新しい制限を適用するには設定を保存して再接続してください。</value></data>
   <data name="MattermostThreadAllowlistInvalid" xml:space="preserve"><value>既存の会話許可リストに無効なIDがあります。追加前に修正してください。</value></data>
+  <data name="SlackUsernameLookupInProgress" xml:space="preserve"><value>設定されたSlackボットトークンでユーザーを検索しています…</value></data>
+  <data name="SlackUsernameLookupFound" xml:space="preserve"><value>Slackアカウントが見つかりました。ワークスペースとメンバーIDを確認し、「このユーザーを追加」を選んでください。</value></data>
+  <data name="SlackUsernameLookupIdentity" xml:space="preserve"><value>ユーザー名: @{0}
+氏名: {1}
+メンバーID: {2}
+ワークスペース: {3} ({4})</value></data>
+  <data name="SlackUsernameLookupInvalidUsername" xml:space="preserve"><value>Slackのユーザー名・表示名またはメンバーIDを1つ正確に入力してください。先頭の@は省略できます。</value></data>
+  <data name="SlackUsernameLookupMissingCredentials" xml:space="preserve"><value>ユーザー検索の前にSlackボットトークンを入力してください。</value></data>
+  <data name="SlackUsernameLookupInvalidToken" xml:space="preserve"><value>Slackがボットトークンを拒否しました。トークンを確認するか再入力してください。</value></data>
+  <data name="SlackUsernameLookupWrongWorkspace" xml:space="preserve"><value>検索結果は認証中のものとは別のSlackワークスペースのアカウントです。</value></data>
+  <data name="SlackUsernameLookupMissingScope" xml:space="preserve"><value>ユーザー検索にはSlackボットトークンの「{0}」スコープが必要です。Slackアプリにスコープを追加して再インストールし、新しいトークンが発行された場合は入力し直してください。</value></data>
+  <data name="SlackUsernameLookupRateLimited" xml:space="preserve"><value>Slackが検索を一時制限しています。少し待ってから再試行してください。</value></data>
+  <data name="SlackUsernameLookupNotFound" xml:space="preserve"><value>認証中のワークスペースに一致するSlackユーザー名またはメンバーIDがありません。</value></data>
+  <data name="SlackUsernameLookupAmbiguous" xml:space="preserve"><value>Slackで同じユーザー名が複数見つかりました。メンバーIDで検索してください。</value></data>
+  <data name="SlackUsernameLookupTimeout" xml:space="preserve"><value>Slackユーザー検索がタイムアウトしました。接続を確認して再試行してください。</value></data>
+  <data name="SlackUsernameLookupInvalidResponse" xml:space="preserve"><value>Slackから確認できないアカウント情報が返されました。再試行するかSlackアプリを確認してください。</value></data>
+  <data name="SlackUsernameLookupNetwork" xml:space="preserve"><value>Slackに接続できませんでした。ネットワークとボットトークンを確認して再試行してください。</value></data>
+  <data name="SlackUsernameAlreadyAllowed" xml:space="preserve"><value>@{0}は許可ユーザーの下書きにすでに登録されています。</value></data>
+  <data name="SlackUsernameAddedSaveNeeded" xml:space="preserve"><value>@{0}を下書きに追加しました。反映するには設定を保存してSlackに再接続してください。</value></data>
+  <data name="SlackUsernameAllowlistInvalid" xml:space="preserve"><value>許可ユーザー一覧が無効か、すでに100人登録されています。追加する前に一覧を修正してください。</value></data>
+  <data name="SlackThreadLookupInProgress" xml:space="preserve"><value>認証中のSlackワークスペースでメッセージリンクを確認しています…</value></data>
+  <data name="SlackThreadLookupResolved" xml:space="preserve"><value>会話を確認しました。ワークスペースとチャンネルを確認し、「この会話を追加」を選んでください。</value></data>
+  <data name="SlackThreadLookupIdentity" xml:space="preserve"><value>ワークスペース: {0}
+チャンネル: {1}
+会話ID（最初の投稿）: {2}</value></data>
+  <data name="SlackThreadLookupInvalidLink" xml:space="preserve"><value>認証中のワークスペースに属する有効なSlackメッセージリンクを貼り付けてください。</value></data>
+  <data name="SlackThreadLookupMissingCredentials" xml:space="preserve"><value>メッセージリンクを確認する前にSlackボットトークンを入力してください。</value></data>
+  <data name="SlackThreadLookupInvalidToken" xml:space="preserve"><value>Slackがボットトークンを拒否しました。トークンを確認するか再入力してください。</value></data>
+  <data name="SlackThreadLookupWrongWorkspace" xml:space="preserve"><value>このリンクは設定されたボットトークンとは別のSlackワークスペースに属しています。</value></data>
+  <data name="SlackThreadLookupMissingScope" xml:space="preserve"><value>メッセージを確認するにはSlackボットトークンの「{0}」スコープが必要です。Slackアプリにスコープを追加して再インストールし、新しいトークンが発行された場合は入力し直してください。</value></data>
+  <data name="SlackThreadLookupRateLimited" xml:space="preserve"><value>Slackがリンク確認を一時制限しています。少し待ってから再試行してください。</value></data>
+  <data name="SlackThreadLookupNotFound" xml:space="preserve"><value>認証中のワークスペースにメッセージが見つかりません。ボットがチャンネルにアクセスできるか確認してください。</value></data>
+  <data name="SlackThreadLookupWrongChannel" xml:space="preserve"><value>リンク先のチャンネルに設定されたSlackアプリがアクセスできません。</value></data>
+  <data name="SlackThreadLookupDeleted" xml:space="preserve"><value>リンク先の投稿または会話のルートが削除されているため追加できません。</value></data>
+  <data name="SlackThreadLookupTimeout" xml:space="preserve"><value>Slackメッセージ検索がタイムアウトしました。接続を確認して再試行してください。</value></data>
+  <data name="SlackThreadLookupInvalidResponse" xml:space="preserve"><value>Slackから確認できないメッセージ情報が返されました。</value></data>
+  <data name="SlackThreadLookupNetwork" xml:space="preserve"><value>Slackに接続できませんでした。ネットワークとボットトークンを確認して再試行してください。</value></data>
+  <data name="SlackThreadAlreadyAllowed" xml:space="preserve"><value>チャンネルと会話 {0} は許可範囲の下書きにすでに登録されています。</value></data>
+  <data name="SlackThreadAddedSaveNeeded" xml:space="preserve"><value>チャンネル {0} と会話 {1} を許可リストに追加しました。反映するには設定を保存してSlackに再接続してください。</value></data>
+  <data name="SlackThreadAllowlistInvalid" xml:space="preserve"><value>チャンネルまたはスレッドの範囲一覧が無効か、すでに100件登録されています。追加する前に一覧を修正してください。</value></data>
 </root>

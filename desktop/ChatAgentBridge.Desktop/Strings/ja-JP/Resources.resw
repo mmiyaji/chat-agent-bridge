@@ -454,7 +454,7 @@
     <value>許可するSlackユーザーID（1行1人）</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock058.Text" xml:space="preserve">
-    <value>空欄は全員を拒否します。表示名や @メンションは使えません。SlackのプロフィールからユーザーIDをコピーしてください。改行、空白、カンマ、セミコロンで区切れます。</value>
+    <value>この一覧が空の場合は全員を拒否します。上の検索から追加するか、プロフィールの「メンバーIDをコピー」で取得したIDを入力します。このID欄には表示名や @メンションは入力できません。IDは1行に1つずつ入力できます。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock059.Text" xml:space="preserve">
     <value>操作承認とプライバシー</value>
@@ -679,13 +679,13 @@
     <value>Slack Appトークン</value>
   </data>
   <data name="WizardSlackAllowedUserIds.Header" xml:space="preserve">
-    <value>許可するMattermost内部ユーザーID（1行に1つ）</value>
+    <value>許可するSlackメンバーID（1行に1つ）</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock013.Text" xml:space="preserve">
     <value>SlackではBotトークン xoxb- とAppトークン xapp- の両方が必要です。許可ユーザーIDが空の場合は、誰からの依頼も受け付けません。</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock014.Text" xml:space="preserve">
-    <value>許可ユーザーIDは、Slackの自分のプロフィールを開き、その他メニューの「メンバーIDをコピー」で取得します。表示名やメールアドレスではありません。</value>
+    <value>上の検索からユーザーを追加できます。手入力する場合は、Slackのプロフィールのその他メニューで「メンバーIDをコピー」を選び、このID欄に貼り付けます。</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock015.Text" xml:space="preserve">
     <value>Mattermostの接続情報</value>
@@ -939,4 +939,21 @@
   <data name="OverviewStartupHint.Text" xml:space="preserve"><value>Windowsへのサインイン時</value></data>
   <data name="OverviewAutoConnectLabel.Text" xml:space="preserve"><value>自動接続</value></data>
   <data name="OverviewAutoConnectHint.Text" xml:space="preserve"><value>このアプリの起動時</value></data>
+  <data name="SlackUsernameLookupLabel.Text" xml:space="preserve"><value>Slackの許可ユーザーを検索</value></data>
+  <data name="SlackUsernameLookupHelp.Text" xml:space="preserve"><value>Slackのユーザー名・表示名（例: @alice）またはメンバーIDを正確に入力します。検索結果にアカウントとワークスペースが表示されます。検索だけではアクセスを許可しません。「このユーザーを追加」を選ぶと未保存の許可リストに追加されます。設定を保存して再接続してください。</value></data>
+  <data name="SlackUsernameLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slackのユーザー名・表示名またはメンバーID</value></data>
+  <data name="SlackUsernameLookupInput.PlaceholderText" xml:space="preserve"><value>@alice または U012ABCDEF</value></data>
+  <data name="LookupSlackUserButton.Content" xml:space="preserve"><value>Slackユーザーを検索</value></data>
+  <data name="AddSlackUserButton.Content" xml:space="preserve"><value>このユーザーを追加</value></data>
+  <data name="WizardSlackUsernameLookupLabel.Text" xml:space="preserve"><value>Slackの許可ユーザーを検索</value></data>
+  <data name="WizardSlackUsernameLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slackのユーザー名・表示名またはメンバーID</value></data>
+  <data name="WizardSlackUsernameLookupInput.PlaceholderText" xml:space="preserve"><value>@alice または U012ABCDEF</value></data>
+  <data name="WizardLookupSlackUserButton.Content" xml:space="preserve"><value>Slackユーザーを検索</value></data>
+  <data name="WizardAddSlackUserButton.Content" xml:space="preserve"><value>このユーザーを追加</value></data>
+  <data name="SlackThreadLookupLabel.Text" xml:space="preserve"><value>Slackの投稿リンクから会話を指定</value></data>
+  <data name="SlackThreadLookupHelp.Text" xml:space="preserve"><value>Slackのメッセージリンクを貼り付けます。認証中のワークスペースでリンクを確認し、実際のチャンネルと会話の最初の投稿を特定します。「この会話を追加」を選ぶと、必要なチャンネルとスレッドの両方を追加します。追加後、設定を保存して再接続してください。チャンネルとスレッドの一覧が空の場合、会話の追加制限はありません。</value></data>
+  <data name="SlackThreadLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slackメッセージリンク</value></data>
+  <data name="SlackThreadLookupInput.PlaceholderText" xml:space="preserve"><value>https://workspace.slack.com/archives/…/p…</value></data>
+  <data name="ResolveSlackThreadButton.Content" xml:space="preserve"><value>会話を確認</value></data>
+  <data name="AddSlackThreadButton.Content" xml:space="preserve"><value>この会話を追加</value></data>
 </root>

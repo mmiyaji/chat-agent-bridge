@@ -63,6 +63,7 @@ public partial class MainPageViewModel : ObservableObject
             {
                 RefreshMattermostUsernameLookupCommands();
                 RefreshMattermostThreadLookupCommands();
+                RefreshSlackLookupCommands();
             }
             if (e.PropertyName is nameof(IsLoading) or nameof(IsSettingsLoaded) or nameof(WorkspaceRoot) or
                 nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
@@ -627,6 +628,7 @@ public partial class MainPageViewModel : ObservableObject
         _closing = true;
         CancelMattermostUsernameLookup();
         CancelMattermostThreadLookup();
+        CancelSlackLookups();
         _runCancellation?.Cancel();
         CancelCliCheck();
         ModelCatalog.Dispose();
