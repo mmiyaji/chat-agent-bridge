@@ -26,7 +26,7 @@ public sealed partial class MainWindow : Window
         SetTitleBar(AppTitleBar);
         App.Appearance.Attach(this, WindowRoot);
 
-        AppWindow.SetIcon("Assets/AppIcon.ico");
+        AppWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
         var hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
         var scale = GetDpiForWindow(hwnd) / 96.0;
         AppWindow.Resize(new SizeInt32((int)(1160 * scale), (int)(800 * scale)));

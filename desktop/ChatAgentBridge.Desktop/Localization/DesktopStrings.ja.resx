@@ -43,6 +43,11 @@
   <data name="StartupUnavailable" xml:space="preserve"><value>この環境では Windows の自動起動を利用できません。</value></data>
   <data name="StartupChangeError" xml:space="preserve"><value>Windows のスタートアップ設定を変更できませんでした。アプリをパッケージ版として起動しているか確認してください。</value></data>
   <data name="StartupTaskUnavailable" xml:space="preserve"><value>Windows のスタートアップ タスクを利用できません。パッケージ版アプリから設定してください。</value></data>
+  <data name="StartupPortableExecutableUnavailable" xml:space="preserve"><value>ポータブル版の実行ファイルが見つからないため、自動起動を変更しませんでした。</value></data>
+  <data name="StartupPortableCommandTooLong" xml:space="preserve"><value>ポータブル版の自動起動コマンドが Windows の 260 文字制限を超えています。アプリまたはカスタム データ フォルダーのパスを短くしてから、もう一度お試しください。</value></data>
+  <data name="StartupStalePortableEntry" xml:space="preserve"><value>ポータブル版のスタートアップ登録先に実行ファイルがありません。自動起動を有効にする前に、レジストリ エディターで古い登録を削除してください。</value></data>
+  <data name="StartupOtherPortableInstall" xml:space="preserve"><value>ポータブル版のスタートアップ登録は別のインストール先またはデータ フォルダーを使用しています。そちらのインストールから自動起動を無効にしてから変更してください。</value></data>
+  <data name="StartupPortableChangeError" xml:space="preserve"><value>このユーザーのポータブル版自動起動設定を変更できませんでした。</value></data>
   <data name="ModelCatalogAvailable" xml:space="preserve"><value>必要なときに候補を取得できます。CLIの候補です。利用権限や料金は保証されません。</value></data>
   <data name="ModelCatalogCancelledLeaving" xml:space="preserve"><value>画面を離れたため、モデル候補の取得をキャンセルしました。</value></data>
   <data name="ModelCatalogSettingsChanged" xml:space="preserve"><value>設定が変わりました。候補をもう一度取得してください。</value></data>

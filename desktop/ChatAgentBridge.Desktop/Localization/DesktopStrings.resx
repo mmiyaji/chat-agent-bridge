@@ -43,6 +43,11 @@
   <data name="StartupUnavailable" xml:space="preserve"><value>Windows startup is unavailable in this environment.</value></data>
   <data name="StartupChangeError" xml:space="preserve"><value>Could not change the Windows startup setting. Confirm that the app is running as a packaged app.</value></data>
   <data name="StartupTaskUnavailable" xml:space="preserve"><value>The Windows startup task is unavailable. Configure this from the packaged app.</value></data>
+  <data name="StartupPortableExecutableUnavailable" xml:space="preserve"><value>The portable app executable could not be located. Startup was not changed.</value></data>
+  <data name="StartupPortableCommandTooLong" xml:space="preserve"><value>The portable startup command exceeds Windows' 260-character limit. Shorten the app or custom data folder path, then try again.</value></data>
+  <data name="StartupStalePortableEntry" xml:space="preserve"><value>The portable startup entry points to a missing executable. Remove the stale entry in Registry Editor before enabling startup.</value></data>
+  <data name="StartupOtherPortableInstall" xml:space="preserve"><value>The portable startup entry belongs to another installation or data folder. Disable startup from that installation before changing it here.</value></data>
+  <data name="StartupPortableChangeError" xml:space="preserve"><value>Could not change the current user's portable startup setting.</value></data>
   <data name="ModelCatalogAvailable" xml:space="preserve"><value>Fetch suggestions when needed. These come from the CLI; access rights and pricing are not guaranteed.</value></data>
   <data name="ModelCatalogCancelledLeaving" xml:space="preserve"><value>Model suggestions were canceled because you left this screen.</value></data>
   <data name="ModelCatalogSettingsChanged" xml:space="preserve"><value>Settings changed. Fetch suggestions again.</value></data>

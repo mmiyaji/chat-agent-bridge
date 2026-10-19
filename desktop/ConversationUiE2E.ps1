@@ -1,6 +1,8 @@
 param(
     [Parameter(Mandatory)][string]$AppDirectory,
-    [ValidateSet('ja','en')][string]$Language = 'ja'
+    [ValidateSet('ja','en')][string]$Language = 'ja',
+    [switch]$Portable,
+    [switch]$KeepRunningOnFailure
 )
 $ErrorActionPreference = 'Stop'
 $artifactRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
@@ -19,8 +21,8 @@ public static class ConversationUiNative {
 '@
 function Write-Json([string]$Name, $Value) { $Value | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $dataPath $Name) -Encoding utf8 }
 function UI([string[]]$Arguments) {
-    $output = & winapp ui @Arguments -a $appProcess.Id --json 2>$null
-    if ($LASTEXITCODE -ne 0) { throw "UI command failed: $($Arguments -join ' ')" }
+    $output = & winapp ui @Arguments -a $appProcess.Id --json 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "UI command failed ($LASTEXITCODE): $($Arguments -join ' '): $($output -join ' ')" }
     return $output
 }
 function Root { [System.Windows.Automation.AutomationElement]::FromHandle($appProcess.MainWindowHandle) }
@@ -140,11 +142,26 @@ process.stdin.on('end', () => setTimeout(() => process.stdout.write('offline-res
         WorkspaceRoot=$dataPath;Status='completed';ExitCode=0;SessionId=$bindings[0].SessionId
     })}
     Write-Json 'audit.json' @{SchemaVersion=1;Records=@()}
-    $launch = & winapp run $AppDirectory --detach --json --args ('--data-dir "'+$dataPath+'"') 2>$null
-    if ($LASTEXITCODE -ne 0) { throw 'Packaged app launch failed' }
-    $launch | Set-Content (Join-Path $dataPath 'launch.json')
-    $launched = $launch | ConvertFrom-Json
-    $appProcess = Get-Process -Id $launched.processId
+    if ($Portable) {
+        $portableRoot = [IO.Path]::GetFullPath($AppDirectory)
+        if (-not $portableRoot.StartsWith($artifactRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -or
+            (Test-Path (Join-Path $portableRoot 'AppxManifest.xml'))) {
+            throw 'Portable UI tests require an unpackaged payload below desktop/artifacts.'
+        }
+        $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $portableRoot 'ChatAgentBridge.Desktop.exe'))
+        $start.UseShellExecute = $false
+        $start.WorkingDirectory = [IO.Path]::GetTempPath()
+        $start.ArgumentList.Add('--data-dir')
+        $start.ArgumentList.Add($dataPath)
+        $appProcess = [Diagnostics.Process]::Start($start)
+        Write-Json 'launch.json' @{ProcessId=$appProcess.Id;Portable=$true}
+    } else {
+        $launch = & winapp run $AppDirectory --detach --json --args ('--data-dir "'+$dataPath+'"') 2>$null
+        if ($LASTEXITCODE -ne 0) { throw 'Packaged app launch failed' }
+        $launch | Set-Content (Join-Path $dataPath 'launch.json')
+        $launched = $launch | ConvertFrom-Json
+        $appProcess = Get-Process -Id $launched.processId
+    }
     UI @('wait-for','NavHistory','-t','15000') | Out-Null
     # Test steps follow below. No real chat service or AI provider is involved.
     Navigate 'NavHistory'
@@ -227,6 +244,12 @@ process.stdin.on('end', () => setTimeout(() => process.stdout.write('offline-res
         } while ([DateTime]::UtcNow -lt $deadline)
         Assert-True ($connected.connections -eq 1) 'No authenticated fixture connection'
     }
+    if ($Portable) {
+        Check 'Portable Windows notification registration succeeds' {
+            $notificationStatus = (Element 'NotificationStatus').Current.Name
+            Assert-True ($notificationStatus -match '通知を利用できます|notifications are available') "Notifications are not available: $notificationStatus"
+        }
+    }
     Check 'Requests group by conversation and remain separated by requester' {
         Post 'message-1' 'shared-thread' 'alice' 'alpha initial request'
         Post 'message-2' 'shared-thread' 'alice' 'alpha next request'
@@ -264,6 +287,8 @@ process.stdin.on('end', () => setTimeout(() => process.stdout.write('offline-res
         UI @('invoke','SendChatResult') | Out-Null
         UI @('wait-for','ReplyConfirmation','-t','3000') | Out-Null
         UI @('invoke','CloseButton') | Out-Null
+        # Closing the dialog completes the async command before its button is enabled again.
+        UI @('wait-for','SendChatResult','-p','IsEnabled','--value','True','-t','5000') | Out-Null
         $replies = (Invoke-RestMethod "$script:endpoint/test/results").replies
         Assert-True (@($replies|Where-Object message -like '*offline-result: beta*').Count -eq 0) 'Cancelling shared a result'
         UI @('invoke','SendChatResult') | Out-Null
@@ -320,8 +345,9 @@ process.stdin.on('end', () => setTimeout(() => process.stdout.write('offline-res
     Write-Output "FAIL $($_.Exception.Message)"
 } finally {
     Write-Json 'results.json' @{passed=($checks.Count -gt 0 -and @($checks|Where-Object{-not $_.passed}).Count -eq 0);checks=@($checks)}
-    if ($appProcess -and -not $appProcess.HasExited) { Stop-Process -Id $appProcess.Id }
-    if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id }
+    $keepRunning = $KeepRunningOnFailure -and @($checks|Where-Object{-not $_.passed}).Count -gt 0
+    if ($appProcess -and -not $appProcess.HasExited -and -not $keepRunning) { Stop-Process -Id $appProcess.Id }
+    if ($server -and -not $server.HasExited -and -not $keepRunning) { Stop-Process -Id $server.Id }
     Write-Output "Conversation UI results: $dataPath"
 }
 if (@($checks|Where-Object{-not $_.passed}).Count -gt 0 -or $checks.Count -eq 0) { exit 1 }

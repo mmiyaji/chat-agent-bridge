@@ -27,6 +27,7 @@
     <Compile Include="..\ChatAgentBridge.Desktop\Startup\StartupOperationGuard.cs" Link="Startup\StartupOperationGuard.cs" />
     <Compile Include="..\ChatAgentBridge.Desktop\UsageUi\UsageSummaryFormatter.cs" Link="UsageUi\UsageSummaryFormatter.cs" />
     <Compile Include="..\ChatAgentBridge.Desktop\ProcessEnvironmentRefresher.cs" Link="Desktop\ProcessEnvironmentRefresher.cs" />
+    <Compile Include="..\ChatAgentBridge.Desktop\Deployment\DeploymentRuntime.cs" Link="Desktop\DeploymentRuntime.cs" />
   </ItemGroup>
 
 </Project>

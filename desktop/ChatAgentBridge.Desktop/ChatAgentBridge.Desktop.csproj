@@ -17,6 +17,71 @@
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <!-- An explicit portable distribution; the normal MSIX build keeps its package identity. -->
+  <PropertyGroup Condition="'$(CABPortable)' == 'true'">
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+    <EnableWinAppRunSupport>false</EnableWinAppRunSupport>
+    <DefineConstants>$(DefineConstants);CAB_PORTABLE</DefineConstants>
+    <OutputPath>bin\$(Platform)\$(Configuration)\portable\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable\</IntermediateOutputPath>
+  </PropertyGroup>
+
+  <UsingTask TaskName="ExtractPortableAppNotificationResource" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll" Condition="'$(CABPortable)' == 'true'">
+    <ParameterGroup>
+      <ArchivePath ParameterType="System.String" Required="true" />
+      <DestinationFile ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.IO.Compression" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        using (var archive = new ZipArchive(File.OpenRead(ArchivePath), ZipArchiveMode.Read))
+        {
+            var entry = archive.GetEntry("Microsoft.WindowsAppRuntime.Insights.Resource.dll");
+            if (entry == null)
+            {
+                Log.LogError("The Windows App SDK runtime archive does not contain Microsoft.WindowsAppRuntime.Insights.Resource.dll.");
+            }
+            else
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(DestinationFile));
+                using (var source = entry.Open())
+                using (var destination = File.Create(DestinationFile))
+                    source.CopyTo(destination);
+            }
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <PropertyGroup Condition="'$(CABPortable)' == 'true'">
+    <_PortableWindowsAppSDKArchitecture Condition="'$(Platform)' == 'x64' or '$(RuntimeIdentifier)' == 'win-x64'">x64</_PortableWindowsAppSDKArchitecture>
+    <_PortableWindowsAppSDKArchitecture Condition="'$(Platform)' == 'ARM64' or '$(RuntimeIdentifier)' == 'win-arm64'">arm64</_PortableWindowsAppSDKArchitecture>
+    <_PortableWindowsAppSDKRuntimeArchive>$(PkgMicrosoft_WindowsAppSDK_Runtime)\tools\MSIX\win10-$(_PortableWindowsAppSDKArchitecture)\Microsoft.WindowsAppRuntime.2.msix</_PortableWindowsAppSDKRuntimeArchive>
+    <_PortableAppNotificationResource>$(IntermediateOutputPath)portable-deps\Microsoft.WindowsAppRuntime.Insights.Resource.dll</_PortableAppNotificationResource>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(CABPortable)' == 'true'">
+    <Content Include="$(_PortableAppNotificationResource)"
+             Link="Microsoft.WindowsAppRuntime.Insights.Resource.dll"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="ExtractPortableAppNotificationResource"
+          BeforeTargets="GetCopyToOutputDirectoryItems"
+          Condition="'$(CABPortable)' == 'true'">
+    <Error Condition="'$(_PortableWindowsAppSDKArchitecture)' == ''"
+           Text="CABPortable requires RuntimeIdentifier win-x64 or win-arm64 (or Platform x64 or ARM64)." />
+    <Error Condition="!Exists('$(_PortableWindowsAppSDKRuntimeArchive)')"
+           Text="The Windows App SDK Runtime MSIX was not found at '$(_PortableWindowsAppSDKRuntimeArchive)'. Restore Microsoft.WindowsAppSDK.Runtime for this project before publishing portable." />
+    <ExtractPortableAppNotificationResource ArchivePath="$(_PortableWindowsAppSDKRuntimeArchive)"
+                                             DestinationFile="$(_PortableAppNotificationResource)" />
+  </Target>
+
   <ItemGroup>
     <Content Include="Assets\OverviewArchitecture.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Assets\OverviewArchitecture.en.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

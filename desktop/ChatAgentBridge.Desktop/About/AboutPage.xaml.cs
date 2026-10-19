@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel;
 using Windows.Services.Store;
 using Windows.System;
+using ChatAgentBridge_Desktop.Deployment;
 
 namespace ChatAgentBridge_Desktop.About;
 
@@ -20,20 +21,28 @@ public sealed partial class AboutPage : Page
         InitializeComponent();
         string version;
         string packageName;
-        try
+        if (DeploymentRuntime.IsPortable)
         {
-            var package = Package.Current;
-            var packageVersion = package.Id.Version;
-            version = $"{packageVersion.Major}.{packageVersion.Minor}.{packageVersion.Build}.{packageVersion.Revision}";
-            packageName = package.Id.Name;
-            _isStorePackage = package.SignatureKind == PackageSignatureKind.Store;
-            if (_isStorePackage)
-                _storeUri = $"ms-windows-store://pdp/?PFN={Uri.EscapeDataString(package.Id.FamilyName)}";
+            version = DeploymentRuntime.GetAssemblyVersion();
+            packageName = "Portable";
         }
-        catch (InvalidOperationException)
+        else
         {
-            version = typeof(AboutPage).Assembly.GetName().Version?.ToString(4) ?? "0.0.0.0";
-            packageName = DesktopText.Get("AboutUnpackaged");
+            try
+            {
+                var package = Package.Current;
+                var packageVersion = package.Id.Version;
+                version = $"{packageVersion.Major}.{packageVersion.Minor}.{packageVersion.Build}.{packageVersion.Revision}";
+                packageName = package.Id.Name;
+                _isStorePackage = package.SignatureKind == PackageSignatureKind.Store;
+                if (_isStorePackage)
+                    _storeUri = $"ms-windows-store://pdp/?PFN={Uri.EscapeDataString(package.Id.FamilyName)}";
+            }
+            catch (InvalidOperationException)
+            {
+                version = DeploymentRuntime.GetAssemblyVersion();
+                packageName = DesktopText.Get("AboutUnpackaged");
+            }
         }
 
         ProductValue.Text = DesktopText.Get("AboutProductName");

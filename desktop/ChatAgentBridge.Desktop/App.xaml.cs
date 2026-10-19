@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using ChatAgentBridge_Desktop.Notifications;
 using ChatAgentBridge.Core.Localization;
+using ChatAgentBridge_Desktop.Deployment;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -70,10 +71,18 @@ public partial class App : Application
         IReadOnlyList<string> launchArguments = Environment.GetCommandLineArgs().Skip(1).ToArray();
         if (launchArguments.Count == 0)
             launchArguments = ChatAgentBridge.Core.AgentArgumentParser.Parse(args.Arguments);
-        if (launchArguments.Count == 2 && launchArguments[0] == "--data-dir" && System.IO.Path.IsPathFullyQualified(launchArguments[1]))
-            Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", launchArguments[1]);
-        else if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CAB_WINUI_DATA_DIR")))
-            Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", Windows.Storage.ApplicationData.Current.LocalFolder.Path);
+        string? explicitDataDirectory = launchArguments.Count == 2 && launchArguments[0] == "--data-dir" &&
+            System.IO.Path.IsPathFullyQualified(launchArguments[1]) ? launchArguments[1] : null;
+        string? packageLocalDirectory = DeploymentRuntime.IsPortable
+            ? null
+            : Windows.Storage.ApplicationData.Current.LocalFolder.Path;
+        var dataDirectory = DeploymentRuntime.ResolveDataDirectory(
+            DeploymentRuntime.IsPortable,
+            explicitDataDirectory,
+            Environment.GetEnvironmentVariable("CAB_WINUI_DATA_DIR"),
+            AppContext.BaseDirectory,
+            packageLocalDirectory);
+        Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", dataDirectory);
 
         try { SystemLanguageTag = Windows.System.UserProfile.GlobalizationPreferences.Languages.FirstOrDefault() ?? System.Globalization.CultureInfo.InstalledUICulture.Name; }
         catch { SystemLanguageTag = System.Globalization.CultureInfo.InstalledUICulture.Name; }
