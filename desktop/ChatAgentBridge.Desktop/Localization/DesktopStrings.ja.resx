@@ -301,7 +301,7 @@
   <data name="HistoryExecutionsTab" xml:space="preserve"><value>実行 ({0})</value></data>
   <data name="HistoryAuditTab" xml:space="preserve"><value>操作記録 ({0})</value></data>
   <data name="HistorySearchLabel" xml:space="preserve"><value>保存済みの会話を検索</value></data>
-  <data name="HistorySearchPlaceholder" xml:space="preserve"><value>利用者・スレッド・作業フォルダーなど</value></data>
+  <data name="HistorySearchPlaceholder" xml:space="preserve"><value>会話名・作業フォルダー・ユーザー・モデルなど</value></data>
   <data name="HistoryProviderLabel" xml:space="preserve"><value>チャットサービス</value></data>
   <data name="HistorySessionResults" xml:space="preserve"><value>会話 {1} 件中 {0} 件を表示</value></data>
   <data name="HistoryNoSessions" xml:space="preserve"><value>保存済みの会話はまだありません。</value></data>
@@ -385,4 +385,24 @@
   <data name="ChatInputOptionReply" xml:space="preserve"><value>選択肢の番号で回答: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>別の回答: !cab answer {0} {1} other 回答内容</value></data>
   <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:&#10;&gt; !cab &lt;依頼&gt; — エージェントに依頼する&#10;&gt; !cab command / !cab commands / !cab help — この一覧を表示する&#10;&gt; !cab status — 自分の依頼状況を表示する&#10;&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す&#10;&gt; !cab folder &quot;C:\path&quot; — 作業先変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要&#10;&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）&#10;&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する&#10;&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する&#10;&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する&#10;&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効&#10;新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このスレッドにある自分の依頼だけに適用されます。</value></data>
+  <data name="HistoryWorkspaceFilterLabel" xml:space="preserve"><value>作業フォルダー</value></data>
+  <data name="HistoryWorkspaceAll" xml:space="preserve"><value>すべての作業フォルダー</value></data>
+  <data name="HistorySortLabel" xml:space="preserve"><value>並び順</value></data>
+  <data name="HistorySortRecent" xml:space="preserve"><value>最近更新した順</value></data>
+  <data name="HistorySortName" xml:space="preserve"><value>会話名順</value></data>
+  <data name="HistorySortUsage" xml:space="preserve"><value>実行回数が多い順</value></data>
+  <data name="HistoryClearSessionFilters" xml:space="preserve"><value>絞り込みを解除</value></data>
+  <data name="HistoryConversationNoRuns" xml:space="preserve"><value>実行記録なし</value></data>
+  <data name="HistoryUpdatedToday" xml:space="preserve"><value>今日 · {0}</value></data>
+  <data name="HistoryUpdatedTooltip" xml:space="preserve"><value>更新日時: {0}</value></data>
+  <data name="HistoryAgentModelSummary" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="HistoryActivitySummary" xml:space="preserve"><value>最終: {0} · {1:N0}回実行</value></data>
+  <data name="HistoryConversationContext" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="HistoryRenameSession" xml:space="preserve"><value>会話名を変更</value></data>
+  <data name="HistoryRenamePlaceholder" xml:space="preserve"><value>会話名を入力</value></data>
+  <data name="HistoryRenameNameLabel" xml:space="preserve"><value>会話名</value></data>
+  <data name="HistoryRenameHelp" xml:space="preserve"><value>80文字まで。空欄にするとフォルダー名を表示します。このアプリ内の表示用の名前です。チャットのスレッド名は変更せず、会話本文も保存しません。</value></data>
+  <data name="HistoryRenameSaved" xml:space="preserve"><value>会話名を保存しました。</value></data>
+  <data name="HistoryRenameFailed" xml:space="preserve"><value>会話名を保存できませんでした: {0}</value></data>
+  <data name="CustomCliName" xml:space="preserve"><value>カスタムCLI</value></data>
 </root>

@@ -301,7 +301,7 @@
   <data name="HistoryExecutionsTab" xml:space="preserve"><value>Executions ({0})</value></data>
   <data name="HistoryAuditTab" xml:space="preserve"><value>Audit ({0})</value></data>
   <data name="HistorySearchLabel" xml:space="preserve"><value>Search saved conversations</value></data>
-  <data name="HistorySearchPlaceholder" xml:space="preserve"><value>User, thread, workspace, session, model, and more</value></data>
+  <data name="HistorySearchPlaceholder" xml:space="preserve"><value>Name, workspace, user, model, and more</value></data>
   <data name="HistoryProviderLabel" xml:space="preserve"><value>Chat service</value></data>
   <data name="HistorySessionResults" xml:space="preserve"><value>Showing {0} of {1} conversations</value></data>
   <data name="HistoryNoSessions" xml:space="preserve"><value>No saved conversations yet.</value></data>
@@ -385,4 +385,24 @@
   <data name="ChatInputOptionReply" xml:space="preserve"><value>Reply with an option number: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>For another answer: !cab answer {0} {1} other your answer</value></data>
   <data name="ChatControlHelp" xml:space="preserve"><value>Commands for this account and thread:&#10;&gt; !cab &lt;request&gt; — send a request to the agent&#10;&gt; !cab command / !cab commands / !cab help — show this list&#10;&gt; !cab status — show your request status&#10;&gt; !cab stop — stop your active request and cancel your queued requests&#10;&gt; !cab folder &quot;C:\path&quot; — request a workspace change; the folder must be trusted and needs approval on this PC&#10;&gt; !cab approve CODE / !cab reject CODE — decide an approval when sharing approvals in chat is enabled (codes expire after 5 minutes; otherwise decide on this PC)&#10;&gt; !cab answer CODE question-number option-number — answer an app-server question with an option number&#10;&gt; !cab answer CODE question-number your answer — give a free-text answer&#10;&gt; !cab answer CODE question-number other your answer — give another answer when that question allows it&#10;&gt; Answers can be shared only when app-server question sharing is enabled; questions AppServer marks secret stay on this PC. Answer codes expire after 5 minutes.&#10;Start a new conversation with a new post (thread); reply in the same thread to continue it. Commands and replies apply only to your own requests in this thread.</value></data>
+  <data name="HistoryWorkspaceFilterLabel" xml:space="preserve"><value>Workspace</value></data>
+  <data name="HistoryWorkspaceAll" xml:space="preserve"><value>All workspaces</value></data>
+  <data name="HistorySortLabel" xml:space="preserve"><value>Sort</value></data>
+  <data name="HistorySortRecent" xml:space="preserve"><value>Recently updated</value></data>
+  <data name="HistorySortName" xml:space="preserve"><value>Name</value></data>
+  <data name="HistorySortUsage" xml:space="preserve"><value>Most runs</value></data>
+  <data name="HistoryClearSessionFilters" xml:space="preserve"><value>Clear filters</value></data>
+  <data name="HistoryConversationNoRuns" xml:space="preserve"><value>No runs recorded</value></data>
+  <data name="HistoryUpdatedToday" xml:space="preserve"><value>Today · {0}</value></data>
+  <data name="HistoryUpdatedTooltip" xml:space="preserve"><value>Updated {0}</value></data>
+  <data name="HistoryAgentModelSummary" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="HistoryActivitySummary" xml:space="preserve"><value>Last: {0} · Runs: {1:N0}</value></data>
+  <data name="HistoryConversationContext" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="HistoryRenameSession" xml:space="preserve"><value>Rename conversation</value></data>
+  <data name="HistoryRenamePlaceholder" xml:space="preserve"><value>Enter a display name</value></data>
+  <data name="HistoryRenameNameLabel" xml:space="preserve"><value>Conversation name</value></data>
+  <data name="HistoryRenameHelp" xml:space="preserve"><value>Up to 80 characters. Leave blank to use the workspace name. This label is used only in this app; it does not rename the chat thread or save conversation text.</value></data>
+  <data name="HistoryRenameSaved" xml:space="preserve"><value>Conversation name saved.</value></data>
+  <data name="HistoryRenameFailed" xml:space="preserve"><value>Could not save the conversation name: {0}</value></data>
+  <data name="CustomCliName" xml:space="preserve"><value>Custom CLI</value></data>
 </root>

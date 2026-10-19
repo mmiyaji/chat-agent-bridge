@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.Sessions;
@@ -71,7 +72,8 @@ public sealed record AuditHistoryRow(AuditEvent Record)
     public string Conversation => DesktopText.Get("HistoryAuditConversation", Record.ChannelId, Record.ThreadId);
 }
 
-public sealed record SessionHistoryRow(SessionBinding Binding)
+public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCount = 0,
+    string? LatestExecutionStatus = null, string? LatestExecutedModel = null)
 {
     public string Provider => Binding.Key.Provider switch
     {
@@ -93,18 +95,75 @@ public sealed record SessionHistoryRow(SessionBinding Binding)
         ? name : Binding.WorkspaceRoot;
     public string ConversationLabel => DesktopText.Get("HistorySessionConversation", ChannelId, ThreadId, Environment.NewLine, UserId);
     public string Conversation => ConversationLabel;
-    public string ListTitle => $"{Provider} · {UserId}";
+    public string ListTitle => string.IsNullOrWhiteSpace(Binding.DisplayName) ? WorkspaceName : Binding.DisplayName;
+    public string ListIdentity => $"{Provider} · {UserId}";
+    public string ListContext => DesktopText.Get("HistoryConversationContext", WorkspaceName, AgentModelSummary);
     public string ListLocation => DesktopText.Get("ConversationLocation", ChannelId, ThreadId);
-    public override string ToString() => $"{ListTitle} · {WorkspaceName} · {ListLocation} · {Updated}";
+    public override string ToString() => $"{ListTitle} · {ListIdentity} · {ListContext} · {ActivitySummary} · {Updated}";
     public string AgentAndSession => $"{Agent} / {SessionId}";
     public string ModelOverride => Binding.Model ?? string.Empty;
+    public string AgentModelSummary => DesktopText.Get("HistoryAgentModelSummary", AgentLabel,
+        !string.IsNullOrWhiteSpace(Binding.Model) ? Binding.Model :
+        !string.IsNullOrWhiteSpace(LatestExecutedModel) ? LatestExecutedModel : DesktopText.Get("DefaultModel"));
+    public string ActivitySummary => ExecutionCount == 0
+        ? DesktopText.Get("HistoryConversationNoRuns")
+        : DesktopText.Get("HistoryActivitySummary", ExecutionStatusLabel(LatestExecutionStatus), ExecutionCount);
+    public string StatusGlyph => LatestExecutionStatus switch
+    {
+        "completed" => "\uE73E",
+        "failed" => "\uE783",
+        "cancelled" => "\uE711",
+        "running" => "\uE895",
+        "interrupted" => "\uE7BA",
+        _ => string.Empty
+    };
     public string Model => string.IsNullOrWhiteSpace(Binding.Model)
         ? DesktopText.Get("HistoryNextModelDefault")
         : DesktopText.Get("HistoryNextModel", Binding.Model);
     public string ReasoningEffort => DesktopText.Get("HistoryNextReasoning", Binding.ReasoningEffort ?? DesktopText.Get("InheritAgentEffort"));
     public string ExecutionPolicy => DesktopText.Get("HistoryExecutionPolicy", PolicyLabel(Binding.ChatApprovalMode, DesktopText.Get("AskEveryTime"), "first", DesktopText.Get("AskFirstTime"), "auto", DesktopText.Get("AutoApprove")), PolicyLabel(Binding.ChatResultMode, DesktopText.Get("ManualShare"), "auto", DesktopText.Get("AutoShare"), "none", DesktopText.Get("NoSharing")), PermissionLabel(Binding.AgentPermissionMode));
     public string Updated => Binding.UpdatedAt.ToLocalTime().ToString("g");
-    public string SearchIndex => string.Join("\n", Provider, ChannelId, ThreadId, UserId, Workspace, SessionId, Agent, ModelOverride, ReasoningEffort, ExecutionPolicy, Origin);
+    public string UpdatedCompact
+    {
+        get
+        {
+            var local = Binding.UpdatedAt.ToLocalTime();
+            return local.Date == DateTime.Now.Date
+                ? DesktopText.Get("HistoryUpdatedToday", local.ToString("HH:mm", CultureInfo.CurrentCulture))
+                : local.ToString("M/d HH:mm", CultureInfo.CurrentCulture);
+        }
+    }
+    public string UpdatedTooltip => DesktopText.Get("HistoryUpdatedTooltip", Binding.UpdatedAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture));
+    public string SearchIndex => string.Join("\n", Binding.DisplayName, Provider, ChannelId, ThreadId, UserId, WorkspaceName, Workspace,
+        SessionId, AgentLabel, ModelOverride, LatestExecutedModel, ReasoningEffort, ExecutionPolicy, Origin);
+
+    private string AgentLabel
+    {
+        get
+        {
+            if (string.Equals(Binding.AgentArguments, "app-server", StringComparison.Ordinal)) return "Codex App Server";
+            var leaf = Path.GetFileName(Binding.AgentExecutable.Trim().Trim('"'));
+            var name = Path.GetFileNameWithoutExtension(leaf);
+            return name.ToLowerInvariant() switch
+            {
+                "codex" => "Codex",
+                "claude" => "Claude Code",
+                "gemini" => "Gemini CLI",
+                "copilot" or "github-copilot" => "GitHub Copilot CLI",
+                _ => string.IsNullOrWhiteSpace(name) ? DesktopText.Get("CustomCliName") : name
+            };
+        }
+    }
+
+    private static string ExecutionStatusLabel(string? status) => status switch
+    {
+        "running" => DesktopText.Get("HistoryExecutionRunning"),
+        "completed" => DesktopText.Get("HistoryExecutionCompleted"),
+        "failed" => DesktopText.Get("HistoryExecutionFailed"),
+        "cancelled" => DesktopText.Get("HistoryExecutionCancelled"),
+        "interrupted" => DesktopText.Get("HistoryExecutionInterrupted"),
+        _ => DesktopText.Get("UnknownProvider")
+    };
 
     private static string PolicyLabel(string? value, string defaultLabel, string keyOne, string labelOne, string keyTwo, string labelTwo) =>
         value is null ? DesktopText.Get("GlobalSetting") : value == keyOne ? labelOne : value == keyTwo ? labelTwo : defaultLabel;
@@ -126,24 +185,30 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public ObservableCollection<AuditHistoryRow> AuditEvents { get; } = [];
     public ObservableCollection<SessionHistoryRow> Sessions { get; } = [];
     public ObservableCollection<SessionHistoryRow> FilteredSessions { get; } = [];
+    public ObservableCollection<string> WorkspaceFilters { get; } = [DesktopText.Get("HistoryWorkspaceAll")];
+    public IReadOnlyList<string> SessionSortOptions { get; } =
+        [DesktopText.Get("HistorySortRecent"), DesktopText.Get("HistorySortName"), DesktopText.Get("HistorySortUsage")];
     public IReadOnlyList<string> ProviderFilters { get; } = [DesktopText.Get("HistoryProviderAll"), "Slack", "Mattermost", DesktopText.Get("Local")];
     [ObservableProperty] public partial string SearchQuery { get; set; } = string.Empty;
     [ObservableProperty] public partial string ProviderFilter { get; set; } = DesktopText.Get("HistoryProviderAll");
+    [ObservableProperty] public partial string WorkspaceFilter { get; set; } = DesktopText.Get("HistoryWorkspaceAll");
+    [ObservableProperty] public partial string SessionSort { get; set; } = DesktopText.Get("HistorySortRecent");
     [ObservableProperty] public partial bool IsNarrow { get; set; }
     [ObservableProperty] public partial bool HasExecutions { get; set; }
     [ObservableProperty] public partial bool HasSessions { get; set; }
     [ObservableProperty] public partial bool HasFilteredSessions { get; set; }
     [ObservableProperty] public partial bool HasAuditEvents { get; set; }
 
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand)), NotifyCanExecuteChangedFor(nameof(RenameSelectedSessionCommand))]
     public partial SessionHistoryRow? SelectedSession { get; set; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand)), NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand)), NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand)), NotifyCanExecuteChangedFor(nameof(RenameSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(ClearSessionFiltersCommand))]
     public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string Status { get; set; } = DesktopText.Get("HistoryLoading");
 
     public Func<SessionHistoryRow, Task<bool>>? ConfirmDetachAsync { get; set; }
     public Func<SessionHistoryRow, BridgeSettings, Task<ModelExecutionSelection?>>? EditSessionModelAsync { get; set; }
     public Func<SessionHistoryRow, BridgeSettings, Task<SessionPolicySelection?>>? EditSessionPolicyAsync { get; set; }
+    public Func<SessionHistoryRow, Task<string?>>? RenameSessionAsync { get; set; }
 
     public string ConversationsTabTitle => DesktopText.Get(IsNarrow ? "ActivityChatsTabCompact" : "HistoryConversationsTab", Sessions.Count);
     public string ExecutionsTabTitle => DesktopText.Get(IsNarrow ? "ActivityRunsTabCompact" : "HistoryExecutionsTab", Executions.Count);
@@ -151,10 +216,16 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public string SearchLabel => DesktopText.Get("HistorySearchLabel");
     public string SearchPlaceholder => DesktopText.Get("HistorySearchPlaceholder");
     public string ProviderLabel => DesktopText.Get("HistoryProviderLabel");
+    public string WorkspaceFilterLabel => DesktopText.Get("HistoryWorkspaceFilterLabel");
+    public string SortLabel => DesktopText.Get("HistorySortLabel");
+    public string ClearSessionFiltersLabel => DesktopText.Get("HistoryClearSessionFilters");
+    public string RenameSessionLabel => DesktopText.Get("HistoryRenameSession");
+    public bool HasSessionFilters => !string.IsNullOrWhiteSpace(SearchQuery) ||
+        !string.Equals(ProviderFilter, DesktopText.Get("HistoryProviderAll"), StringComparison.Ordinal) ||
+        !string.Equals(WorkspaceFilter, DesktopText.Get("HistoryWorkspaceAll"), StringComparison.Ordinal);
     public string SessionResultSummary => DesktopText.Get("HistorySessionResults", FilteredSessions.Count, Sessions.Count);
     public string SessionListEmptyText => Sessions.Count == 0 ? DesktopText.Get("HistoryNoSessions") : DesktopText.Get("HistoryNoSessionMatches");
-    public string SelectedSessionTitle => SelectedSession is null ? DesktopText.Get("HistorySelectConversation") :
-        DesktopText.Get("HistorySelectedSessionTitle", SelectedSession.Provider, SelectedSession.WorkspaceName);
+    public string SelectedSessionTitle => SelectedSession?.ListTitle ?? DesktopText.Get("HistorySelectConversation");
     public string NoSessionSelectedText => DesktopText.Get("HistorySelectConversationHint");
     public string ChannelIdLabel => DesktopText.Get("HistoryChannelIdLabel");
     public string ThreadIdLabel => DesktopText.Get("HistoryThreadIdLabel");
@@ -182,10 +253,13 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     partial void OnSearchQueryChanged(string value) => ApplySessionFilter();
     partial void OnIsNarrowChanged(bool value) => NotifySummariesChanged();
     partial void OnProviderFilterChanged(string value) => ApplySessionFilter();
+    partial void OnWorkspaceFilterChanged(string value) => ApplySessionFilter();
+    partial void OnSessionSortChanged(string value) => ApplySessionFilter();
     partial void OnSelectedSessionChanged(SessionHistoryRow? value)
     {
         OnPropertyChanged(nameof(HasSelectedSession));
         OnPropertyChanged(nameof(SelectedSessionTitle));
+        RenameSelectedSessionCommand.NotifyCanExecuteChanged();
     }
     public bool HasSelectedSession => SelectedSession is not null;
 
@@ -204,18 +278,62 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         var selectedKey = SelectedSession?.Binding.Key;
         var query = SearchQuery.Trim();
         var provider = ProviderFilter;
-        var matches = Sessions.Where(row =>
+        var allWorkspaces = DesktopText.Get("HistoryWorkspaceAll");
+        var workspace = WorkspaceFilter;
+        var filtered = Sessions.Where(row =>
             (provider == DesktopText.Get("HistoryProviderAll") || row.Provider.Equals(provider, StringComparison.OrdinalIgnoreCase)) &&
+            (workspace == allWorkspaces || PathsEqual(Path.GetFullPath(row.Workspace), workspace)) &&
             (query.Length == 0 || row.SearchIndex.Contains(query, StringComparison.OrdinalIgnoreCase)))
-            .OrderByDescending(static row => row.Binding.UpdatedAt).ToArray();
+            .ToArray();
+        var matches = SessionSort switch
+        {
+            var sort when sort == DesktopText.Get("HistorySortName") => filtered
+                .OrderBy(static row => row.ListTitle, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(static row => row.WorkspaceName, StringComparer.OrdinalIgnoreCase)
+                .ThenByDescending(static row => row.Binding.UpdatedAt).ToArray(),
+            var sort when sort == DesktopText.Get("HistorySortUsage") => filtered
+                .OrderByDescending(static row => row.ExecutionCount)
+                .ThenByDescending(static row => row.Binding.UpdatedAt).ToArray(),
+            _ => filtered.OrderByDescending(static row => row.Binding.UpdatedAt).ToArray()
+        };
 
         FilteredSessions.Clear();
         foreach (var row in matches) FilteredSessions.Add(row);
         HasFilteredSessions = matches.Length > 0;
         SelectedSession = selectedKey is null ? null : matches.FirstOrDefault(row => row.Binding.Key == selectedKey);
+        OnPropertyChanged(nameof(HasSessionFilters));
         OnPropertyChanged(nameof(SessionResultSummary));
         OnPropertyChanged(nameof(SessionListEmptyText));
+        ClearSessionFiltersCommand.NotifyCanExecuteChanged();
     }
+
+    private static bool PathsEqual(string left, string right) =>
+        string.Equals(left, right, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+    private void UpdateWorkspaceFilters(IReadOnlyList<SessionBinding> bindings)
+    {
+        var previous = WorkspaceFilter;
+        var all = DesktopText.Get("HistoryWorkspaceAll");
+        var paths = bindings.Select(item => Path.GetFullPath(item.WorkspaceRoot))
+            .Distinct(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)
+            .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase).ToArray();
+        WorkspaceFilters.Clear();
+        WorkspaceFilters.Add(all);
+        foreach (var path in paths) WorkspaceFilters.Add(path);
+        WorkspaceFilter = paths.Any(path => PathsEqual(path, previous)) ? paths.First(path => PathsEqual(path, previous)) : all;
+        // Rebuilding ItemsSource can clear ComboBox selection even when the chosen value is unchanged.
+        OnPropertyChanged(nameof(WorkspaceFilter));
+    }
+
+    [RelayCommand(CanExecute = nameof(CanClearSessionFilters))]
+    private void ClearSessionFilters()
+    {
+        SearchQuery = string.Empty;
+        ProviderFilter = DesktopText.Get("HistoryProviderAll");
+        WorkspaceFilter = DesktopText.Get("HistoryWorkspaceAll");
+    }
+
+    private bool CanClearSessionFilters() => HasSessionFilters && !IsBusy;
 
     [RelayCommand(CanExecute = nameof(CanRefresh))]
     public async Task RefreshAsync()
@@ -232,7 +350,8 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             var selectedKey = SelectedSession?.Binding.Key;
             SetExecutionRecords(executions);
             Sessions.Clear();
-            foreach (var binding in sessions.OrderByDescending(static item => item.UpdatedAt)) Sessions.Add(new SessionHistoryRow(binding));
+            foreach (var row in BuildSessionRows(sessions, executions)) Sessions.Add(row);
+            UpdateWorkspaceFilters(sessions);
             AuditEvents.Clear();
             foreach (var audit in auditEvents.OrderByDescending(static item => item.Timestamp))
                 AuditEvents.Add(new AuditHistoryRow(audit));
@@ -301,6 +420,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     private bool CanDetachSelectedSession() => SelectedSession is not null && !IsBusy;
     private bool CanEditSelectedSessionModel() => SelectedSession is not null && !IsBusy;
     private bool CanEditSelectedSessionPolicy() => SelectedSession is not null && !IsBusy;
+    private bool CanRenameSelectedSession() => SelectedSession is not null && !IsBusy;
 
     [RelayCommand(CanExecute = nameof(CanEditSelectedSessionPolicy))]
     private async Task EditSelectedSessionPolicyAsync()
@@ -349,6 +469,35 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         finally { IsBusy = false; }
     }
 
+    [RelayCommand(CanExecute = nameof(CanRenameSelectedSession))]
+    private async Task RenameSelectedSessionAsync()
+    {
+        var selected = SelectedSession;
+        if (selected is null || IsBusy || RenameSessionAsync is null) return;
+        IsBusy = true;
+        try
+        {
+            var displayName = await RenameSessionAsync(selected);
+            if (displayName is null) return;
+            await _sessionStore.UpdateDisplayNameAsync(selected.Binding.Key, displayName, CancellationToken.None);
+            // An explicit rename can invalidate a search on the previous alias. Clear text search
+            // only when the renamed row no longer matches, leaving provider/workspace scopes intact.
+            if (!string.IsNullOrWhiteSpace(SearchQuery))
+            {
+                var renamed = selected with { Binding = selected.Binding with { DisplayName = displayName.Trim() } };
+                if (!renamed.SearchIndex.Contains(SearchQuery.Trim(), StringComparison.OrdinalIgnoreCase))
+                    SearchQuery = string.Empty;
+            }
+            await RefreshContentsAsync(DesktopText.Get("HistoryRenameSaved"));
+            SelectedSession = FilteredSessions.FirstOrDefault(row => row.Binding.Key == selected.Binding.Key);
+        }
+        catch (Exception ex)
+        {
+            Status = DesktopText.Get("HistoryRenameFailed", ex.Message);
+        }
+        finally { IsBusy = false; }
+    }
+
     private async Task RefreshContentsAsync(string successMessage)
     {
         var executions = await _executionStore.ListAsync();
@@ -357,7 +506,8 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         var selectedKey = SelectedSession?.Binding.Key;
         SetExecutionRecords(executions);
         Sessions.Clear();
-        foreach (var binding in sessions.OrderByDescending(static item => item.UpdatedAt)) Sessions.Add(new SessionHistoryRow(binding));
+        foreach (var row in BuildSessionRows(sessions, executions)) Sessions.Add(row);
+        UpdateWorkspaceFilters(sessions);
         AuditEvents.Clear();
         foreach (var audit in auditEvents.OrderByDescending(static item => item.Timestamp))
             AuditEvents.Add(new AuditHistoryRow(audit));
@@ -368,5 +518,80 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         ApplySessionFilter();
         NotifySummariesChanged();
         Status = DesktopText.Get("HistorySuccessCounts", successMessage, Executions.Count, Sessions.Count, AuditEvents.Count);
+    }
+
+    private static IReadOnlyList<SessionHistoryRow> BuildSessionRows(
+        IReadOnlyList<SessionBinding> bindings, IReadOnlyList<ExecutionRecord> records)
+    {
+        var ambiguous = new Dictionary<SessionExecutionIdentity, HashSet<string>>();
+        foreach (var binding in bindings)
+        {
+            if (!TryGetIdentity(binding, out var identity) || binding.Key.Origin is not { } origin) continue;
+            if (!ambiguous.TryGetValue(identity, out var origins)) ambiguous[identity] = origins = new HashSet<string>(StringComparer.Ordinal);
+            origins.Add(origin);
+        }
+        var ambiguousIdentities = ambiguous.Where(static item => item.Value.Count > 1)
+            .Select(static item => item.Key).ToHashSet();
+
+        var executions = new Dictionary<SessionExecutionIdentity, ExecutionActivityAccumulator>();
+        var seenIds = new HashSet<Guid>();
+        foreach (var record in records)
+        {
+            if (!seenIds.Add(record.Id) || !TryGetIdentity(record, out var identity)) continue;
+            if (!executions.TryGetValue(identity, out var activity)) executions[identity] = activity = new ExecutionActivityAccumulator();
+            activity.Add(record);
+        }
+
+        return bindings.Select(binding =>
+        {
+            if (!TryGetIdentity(binding, out var identity) || ambiguousIdentities.Contains(identity) || !executions.TryGetValue(identity, out var activity))
+                return new SessionHistoryRow(binding);
+            return new SessionHistoryRow(binding, activity.Count, activity.LatestStatus, activity.LatestModel);
+        }).OrderByDescending(static row => row.Binding.UpdatedAt).ToArray();
+    }
+
+    private static bool TryGetIdentity(SessionBinding binding, out SessionExecutionIdentity identity)
+    {
+        if (binding.Key.UserId is { Length: > 0 } userId && binding.Key.Origin is { Length: > 0 } &&
+            !string.IsNullOrWhiteSpace(binding.SessionId))
+        {
+            identity = new SessionExecutionIdentity(binding.Key.Provider.ToLowerInvariant(), binding.Key.ChannelId,
+                binding.Key.ThreadId, userId, binding.SessionId);
+            return true;
+        }
+        identity = default;
+        return false;
+    }
+
+    private static bool TryGetIdentity(ExecutionRecord record, out SessionExecutionIdentity identity)
+    {
+        if (!string.IsNullOrWhiteSpace(record.UserId) && !string.IsNullOrWhiteSpace(record.SessionId))
+        {
+            identity = new SessionExecutionIdentity(record.Source.ToLowerInvariant(), record.ChannelId,
+                record.ThreadId, record.UserId, record.SessionId);
+            return true;
+        }
+        identity = default;
+        return false;
+    }
+
+    private readonly record struct SessionExecutionIdentity(
+        string Provider, string ChannelId, string ThreadId, string UserId, string SessionId);
+
+    private sealed class ExecutionActivityAccumulator
+    {
+        public int Count { get; private set; }
+        public DateTimeOffset LatestStartedAt { get; private set; }
+        public string? LatestStatus { get; private set; }
+        public string? LatestModel { get; private set; }
+
+        public void Add(ExecutionRecord record)
+        {
+            Count++;
+            if (Count > 1 && record.StartedAt <= LatestStartedAt) return;
+            LatestStartedAt = record.StartedAt;
+            LatestStatus = record.Status;
+            LatestModel = string.IsNullOrWhiteSpace(record.Usage?.Model) ? record.AgentModel : record.Usage.Model;
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>Connect without a proxy</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>Turn on for a direct connection to your internal Mattermost server. When off, the system proxy settings are used. This applies to user lookup, post link checks, and sending and receiving messages. Save and reconnect after changing this setting.</value></data>
@@ -964,4 +964,5 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="SlackThreadLookupInput.PlaceholderText" xml:space="preserve"><value>https://workspace.slack.com/archives/…/p…</value></data>
   <data name="ResolveSlackThreadButton.Content" xml:space="preserve"><value>Check conversation</value></data>
   <data name="AddSlackThreadButton.Content" xml:space="preserve"><value>Add this conversation</value></data>
+  <data name="HistoryCompactFilters.Header" xml:space="preserve"><value>Filters</value></data>
 </root>

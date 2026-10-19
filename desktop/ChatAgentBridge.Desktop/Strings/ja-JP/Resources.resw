@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>プロキシを使わず直接接続</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>社内のMattermostへ直接接続する場合にオンにします。オフはシステムのプロキシ設定を使用します。ユーザー検索・投稿リンクの確認・メッセージ送受信すべてに適用します。変更後は設定を保存して再接続してください。</value></data>
@@ -964,4 +964,5 @@
   <data name="SlackThreadLookupInput.PlaceholderText" xml:space="preserve"><value>https://workspace.slack.com/archives/…/p…</value></data>
   <data name="ResolveSlackThreadButton.Content" xml:space="preserve"><value>会話を確認</value></data>
   <data name="AddSlackThreadButton.Content" xml:space="preserve"><value>この会話を追加</value></data>
+  <data name="HistoryCompactFilters.Header" xml:space="preserve"><value>絞り込み</value></data>
 </root>

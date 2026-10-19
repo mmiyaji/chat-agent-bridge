@@ -21,16 +21,17 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Spacing="2" VerticalAlignment="Center">
-                <TextBlock Style="{StaticResource TitleTextBlockStyle}" x:Uid="historyHistoryPageTextBlock001" />
-                <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="historyHistoryPageTextBlock002" />
+                <TextBlock x:Name="HistoryTitle" Style="{StaticResource TitleTextBlockStyle}" x:Uid="historyHistoryPageTextBlock001" />
+                <TextBlock x:Name="HistoryDescription" TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="historyHistoryPageTextBlock002" />
             </StackPanel>
             <StackPanel x:Name="HistoryHeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Button Click="AgentSettingsRequested_Click" AutomationProperties.AutomationId="AgentSettingsFromHistory" x:Uid="AgentSettingsFromHistory" />
+                <Button x:Name="HistoryAgentSettingsButton" Click="AgentSettingsRequested_Click" AutomationProperties.AutomationId="AgentSettingsFromHistory" x:Uid="AgentSettingsFromHistory" />
                 <Button Command="{x:Bind ViewModel.RefreshCommand}" AutomationProperties.AutomationId="RefreshHistory" x:Uid="RefreshHistory" />
             </StackPanel>
         </Grid>
 
-        <TextBlock Grid.Row="1" Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap"
+        <TextBlock x:Name="HistoryStatusText" Grid.Row="1" Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap"
+                   TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ViewModel.Status, Mode=OneWay}"
                    AutomationProperties.AutomationId="HistoryStatus" />
 
         <Pivot Grid.Row="2" x:Name="HistoryPivot" SelectionChanged="HistoryPivot_SelectionChanged" AutomationProperties.AutomationId="HistorySectionSelector">
@@ -51,18 +52,34 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition x:Name="ProviderFilterColumn" Width="180" />
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="SessionSearchBox" Header="{x:Bind ViewModel.SearchLabel, Mode=OneWay}"
+                        <TextBox x:Name="SessionSearchBox" VerticalAlignment="Top" Header="{x:Bind ViewModel.SearchLabel, Mode=OneWay}"
                                  PlaceholderText="{x:Bind ViewModel.SearchPlaceholder, Mode=OneWay}"
-                                 TextChanged="SessionSearchBox_TextChanged" AutomationProperties.AutomationId="SavedSessionsSearch" />
+                                 Text="{x:Bind ViewModel.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="SavedSessionsSearch" />
                         <ComboBox x:Name="ProviderFilter" Grid.Column="1" Header="{x:Bind ViewModel.ProviderLabel, Mode=OneWay}"
                                   ItemsSource="{x:Bind ViewModel.ProviderFilters, Mode=OneWay}"
-                                  SelectedIndex="0" SelectionChanged="ProviderFilter_SelectionChanged"
+                                  SelectedItem="{x:Bind ViewModel.ProviderFilter, Mode=TwoWay}" HorizontalAlignment="Stretch"
                                   AutomationProperties.AutomationId="SavedSessionsProviderFilter" />
+                        <Grid x:Name="AdvancedFiltersGrid" Grid.Row="1" Grid.ColumnSpan="2" ColumnSpacing="8" RowSpacing="8">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition x:Name="AdvancedSortColumn" Width="180" /></Grid.ColumnDefinitions>
+                        <ComboBox x:Name="WorkspaceFilter" Header="{x:Bind ViewModel.WorkspaceFilterLabel, Mode=OneWay}"
+                                  ItemsSource="{x:Bind ViewModel.WorkspaceFilters, Mode=OneWay}"
+                                  SelectedItem="{x:Bind ViewModel.WorkspaceFilter, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch" ToolTipService.ToolTip="{x:Bind ViewModel.WorkspaceFilter, Mode=OneWay}"
+                                  AutomationProperties.AutomationId="SavedSessionsWorkspaceFilter" />
+                        <ComboBox x:Name="SessionSort" Grid.Column="1" Header="{x:Bind ViewModel.SortLabel, Mode=OneWay}"
+                                  ItemsSource="{x:Bind ViewModel.SessionSortOptions, Mode=OneWay}"
+                                  SelectedItem="{x:Bind ViewModel.SessionSort, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SavedSessionsSort" />
+                        </Grid>
+                        <Expander x:Name="CompactFiltersExpander" Grid.Column="1" IsExpanded="False"
+                                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalAlignment="Bottom"
+                                  Visibility="Collapsed" x:Uid="HistoryCompactFilters" AutomationProperties.AutomationId="SavedSessionsAdvancedFilters" />
                     </Grid>
 
                     <Grid x:Name="SessionBrowser" Grid.Row="1" ColumnSpacing="12">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition x:Name="SessionListColumn" Width="340" />
+                            <ColumnDefinition x:Name="SessionListColumn" Width="380" />
                             <ColumnDefinition x:Name="SessionDetailColumn" Width="*" />
                         </Grid.ColumnDefinitions>
                         <Grid x:Name="SessionListPane" RowSpacing="5" AutomationProperties.AutomationId="SavedSessionListPane">
@@ -70,7 +87,14 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
-                            <TextBlock Text="{x:Bind ViewModel.SessionResultSummary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="SavedSessionsCount" />
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Bind ViewModel.SessionResultSummary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.AutomationId="SavedSessionsCount" />
+                                <Button Grid.Column="1" Command="{x:Bind ViewModel.ClearSessionFiltersCommand}"
+                                        Content="{x:Bind ViewModel.ClearSessionFiltersLabel, Mode=OneWay}"
+                                        Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSessionFilters), Mode=OneWay}"
+                                        AutomationProperties.AutomationId="ClearSessionFilters" />
+                            </Grid>
                             <Grid Grid.Row="1">
                                 <ListView x:Name="SessionList" ItemsSource="{x:Bind ViewModel.FilteredSessions, Mode=OneWay}"
                                           SelectedItem="{x:Bind ViewModel.SelectedSession, Mode=OneWay}" SelectionChanged="SavedSessionsList_SelectionChanged"
@@ -79,19 +103,25 @@
                                           AutomationProperties.Name="{x:Bind ViewModel.ConversationsTabTitle, Mode=OneWay}">
                                     <ListView.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SessionHistoryRow">
-                                            <Grid Margin="8,7" RowSpacing="2">
+                                            <Grid Margin="8,8" RowSpacing="4" ToolTipService.ToolTip="{x:Bind ConversationLabel}">
                                                 <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
                                                 <Grid ColumnSpacing="8">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                                    <TextBlock Text="{x:Bind ListTitle}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock Grid.Column="1" Text="{x:Bind Updated}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                                    <TextBlock Text="{x:Bind ListTitle}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListTitle}" />
+                                                    <TextBlock Grid.Column="1" Text="{x:Bind UpdatedCompact}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" ToolTipService.ToolTip="{x:Bind UpdatedTooltip}" />
                                                 </Grid>
-                                                <TextBlock Grid.Row="1" Text="{x:Bind WorkspaceName}" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Grid.Row="2" Text="{x:Bind ListLocation}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ConversationLabel}" />
+                                                <TextBlock Grid.Row="1" Text="{x:Bind ListIdentity}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Grid.Row="2" Text="{x:Bind ListContext}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Workspace}" />
+                                                <Grid Grid.Row="3" ColumnSpacing="6">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                    <FontIcon Glyph="{x:Bind StatusGlyph}" FontSize="12" VerticalAlignment="Center" IsHitTestVisible="False" />
+                                                    <TextBlock Grid.Column="1" Text="{x:Bind ActivitySummary}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ActivitySummary}" />
+                                                </Grid>
                                             </Grid>
                                         </DataTemplate>
                                     </ListView.ItemTemplate>
@@ -107,12 +137,19 @@
                                 <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Grid ColumnSpacing="8">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                 <Button x:Name="BackToSessionsButton" Click="BackToSessions_Click" AutomationProperties.AutomationId="BackToSessionsButton"
                                         Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsNarrow), Mode=OneWay}"
                                         Content="{x:Bind ViewModel.BackToConversationsLabel, Mode=OneWay}" />
                                 <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.SelectedSessionTitle, Mode=OneWay}"
-                                           Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                           Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                                           ToolTipService.ToolTip="{x:Bind ViewModel.SelectedSessionTitle, Mode=OneWay}" />
+                                <Button Grid.Column="2" Command="{x:Bind ViewModel.RenameSelectedSessionCommand}"
+                                        Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}"
+                                        AutomationProperties.AutomationId="RenameSession" AutomationProperties.Name="{x:Bind ViewModel.RenameSessionLabel, Mode=OneWay}"
+                                        ToolTipService.ToolTip="{x:Bind ViewModel.RenameSessionLabel, Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE70F;" />
+                                </Button>
                             </Grid>
                             <ScrollViewer x:Name="SessionDetailScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                 <Grid>
@@ -122,8 +159,8 @@
                                         </Grid.RowDefinitions>
                                         <StackPanel Spacing="4">
                                             <TextBlock Text="{x:Bind ViewModel.ConversationHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                            <TextBlock Text="{x:Bind ViewModel.UserIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
-                                            <TextBlock Text="{x:Bind ViewModel.SelectedSession.UserId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                            <TextBlock Text="{x:Bind ViewModel.SelectedSession.ListIdentity, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
+                                            <TextBlock Text="{x:Bind ViewModel.SelectedSession.ActivitySummary, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.Updated, Mode=OneWay, FallbackValue=''}" Style="{StaticResource CaptionTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.ContinueInOriginalThreadHint, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
                                         </StackPanel>

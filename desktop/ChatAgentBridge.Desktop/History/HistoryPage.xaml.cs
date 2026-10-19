@@ -30,6 +30,7 @@ public sealed partial class HistoryPage : Page
         ViewModel.ConfirmDetachAsync = ConfirmDetachAsync;
         ViewModel.EditSessionModelAsync = EditSessionModelAsync;
         ViewModel.EditSessionPolicyAsync = EditSessionPolicyAsync;
+        ViewModel.RenameSessionAsync = RenameSessionAsync;
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         SizeChanged += Page_SizeChanged;
         UpdateResponsiveLayout();
@@ -45,14 +46,6 @@ public sealed partial class HistoryPage : Page
     {
         base.OnNavigatedTo(e);
         await ViewModel.RefreshAsync();
-    }
-
-    private void SessionSearchBox_TextChanged(object sender, TextChangedEventArgs e) =>
-        ViewModel.SearchQuery = SessionSearchBox.Text;
-
-    private void ProviderFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (ProviderFilter.SelectedItem is string provider) ViewModel.ProviderFilter = provider;
     }
 
     private void SavedSessionsList_ItemClick(object sender, ItemClickEventArgs e)
@@ -118,21 +111,86 @@ public sealed partial class HistoryPage : Page
         var showDetail = ViewModel.SelectedSession is not null && _showDetailOnNarrow;
         SessionListPane.Visibility = narrow && showDetail ? Visibility.Collapsed : Visibility.Visible;
         SessionDetailPane.Visibility = narrow && !showDetail ? Visibility.Collapsed : Visibility.Visible;
-        SessionListColumn.Width = new GridLength(narrow ? 1 : 340, narrow ? GridUnitType.Star : GridUnitType.Pixel);
+        SessionListColumn.Width = new GridLength(narrow ? 1 : 380, narrow ? GridUnitType.Star : GridUnitType.Pixel);
         SessionDetailColumn.Width = new GridLength(narrow ? 0 : 1, narrow ? GridUnitType.Pixel : GridUnitType.Star);
         Grid.SetColumn(SessionDetailPane, narrow ? 0 : 1);
         Grid.SetColumnSpan(SessionDetailPane, narrow ? 2 : 1);
         Grid.SetColumnSpan(SessionListPane, narrow ? 2 : 1);
         var stackFilters = ActualWidth < 600;
-        Grid.SetColumn(HistoryHeaderActions, stackFilters ? 0 : 1);
-        Grid.SetRow(HistoryHeaderActions, stackFilters ? 1 : 0);
-        ProviderFilterColumn.Width = new GridLength(stackFilters ? 0 : 180);
-        Grid.SetColumnSpan(SessionSearchBox, stackFilters ? 2 : 1);
+        HistoryTitle.Style = (Style)Application.Current.Resources[stackFilters ? "SubtitleTextBlockStyle" : "TitleTextBlockStyle"];
+        HistoryDescription.Visibility = stackFilters ? Visibility.Collapsed : Visibility.Visible;
+        HistoryAgentSettingsButton.Visibility = stackFilters ? Visibility.Collapsed : Visibility.Visible;
+        HistoryStatusText.MaxLines = stackFilters ? 1 : 0;
+        SessionFilters.Visibility = narrow && showDetail ? Visibility.Collapsed : Visibility.Visible;
+        ProviderFilterColumn.Width = new GridLength(180);
+        Grid.SetColumnSpan(SessionSearchBox, 1);
         Grid.SetColumn(ProviderFilter, stackFilters ? 0 : 1);
-        Grid.SetRow(ProviderFilter, stackFilters ? 1 : 0);
+        Grid.SetRow(ProviderFilter, 0);
         Grid.SetColumnSpan(ProviderFilter, stackFilters ? 2 : 1);
+        ProviderFilter.VerticalAlignment = VerticalAlignment.Top;
+        Grid.SetRow(WorkspaceFilter, stackFilters ? 1 : 0);
+        Grid.SetColumnSpan(WorkspaceFilter, stackFilters ? 2 : 1);
+        AdvancedSortColumn.Width = new GridLength(stackFilters ? 0 : 180);
+        AdvancedFiltersGrid.RowSpacing = stackFilters ? 8 : 0;
+        Grid.SetRow(SessionSort, stackFilters ? 2 : 0);
+        Grid.SetColumn(SessionSort, stackFilters ? 0 : 1);
+        Grid.SetColumnSpan(SessionSort, stackFilters ? 2 : 1);
+        // Keep one set of controls/bindings while moving secondary filters into the compact disclosure.
+        if (stackFilters && !ReferenceEquals(CompactFiltersExpander.Content, AdvancedFiltersGrid))
+        {
+            SessionFilters.Children.Remove(AdvancedFiltersGrid);
+            SessionFilters.Children.Remove(ProviderFilter);
+            AdvancedFiltersGrid.Children.Add(ProviderFilter);
+            CompactFiltersExpander.Content = AdvancedFiltersGrid;
+            CompactFiltersExpander.IsExpanded = false;
+        }
+        else if (!stackFilters && ReferenceEquals(CompactFiltersExpander.Content, AdvancedFiltersGrid))
+        {
+            CompactFiltersExpander.Content = null;
+            AdvancedFiltersGrid.Children.Remove(ProviderFilter);
+            SessionFilters.Children.Add(ProviderFilter);
+            SessionFilters.Children.Add(AdvancedFiltersGrid);
+        }
+        if (narrow && showDetail) CompactFiltersExpander.IsExpanded = false;
+        CompactFiltersExpander.Visibility = stackFilters ? Visibility.Visible : Visibility.Collapsed;
         if (BackToSessionsButton is not null)
             BackToSessionsButton.Visibility = narrow && showDetail ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async Task<string?> RenameSessionAsync(SessionHistoryRow session)
+    {
+        var name = new TextBox
+        {
+            Header = DesktopText.Get("HistoryRenameNameLabel"),
+            Text = session.Binding.DisplayName ?? string.Empty,
+            PlaceholderText = session.WorkspaceName,
+            MaxLength = 80,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        AutomationProperties.SetAutomationId(name, "SessionDisplayName");
+        var dialog = new ContentDialog
+        {
+            RequestedTheme = App.Appearance.RequestedTheme,
+            XamlRoot = XamlRoot,
+            Title = DesktopText.Get("HistoryRenameSession"),
+            Content = new StackPanel
+            {
+                Spacing = 12,
+                Children =
+                {
+                    new TextBlock { Text = session.ListIdentity, TextWrapping = TextWrapping.Wrap },
+                    name,
+                    new TextBlock { Text = DesktopText.Get("HistoryRenameHelp"), TextWrapping = TextWrapping.Wrap }
+                }
+            },
+            PrimaryButtonText = DesktopText.Get("Save"),
+            CloseButtonText = DesktopText.Get("Cancel"),
+            DefaultButton = ContentDialogButton.Primary
+        };
+        AutomationProperties.SetAutomationId(dialog, "RenameSessionDialog");
+        name.TextChanged += (_, _) => dialog.IsPrimaryButtonEnabled = !name.Text.Any(char.IsControl);
+        dialog.Opened += (_, _) => { name.Focus(FocusState.Programmatic); name.SelectAll(); };
+        return await dialog.ShowAsync() == ContentDialogResult.Primary ? name.Text : null;
     }
 
     private async Task<bool> ConfirmDetachAsync(SessionHistoryRow session)
