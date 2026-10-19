@@ -276,17 +276,24 @@
     <value>チャットのアカウント・会話範囲</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock035.Text" xml:space="preserve">
-    <value>接続設定で許可したユーザーIDは引き続き必須です。ここでは追加で対象チャンネルやスレッドを絞れます。空欄は追加の制限なしです。各欄にIDを1行ずつ入力します。</value>
+    <value>接続設定で許可したユーザーIDは引き続き必要です。スレッドリストが空欄なら追加制限はありません。入力がある場合は、リスト内の既存スレッドでのみ依頼できます。新しい会話は開始できません。リストを変更したら保存して再接続してください。</value>
   </data>
   <data name="SlackAllowedChannelIds.Header" xml:space="preserve">
     <value>SlackチャンネルID</value>
   </data>
   <data name="SlackAllowedThreadIds.Header" xml:space="preserve">
-    <value>SlackスレッドID</value>
+    <value>Slackスレッドのルートタイムスタンプ</value>
   </data>
+  <data name="SlackAllowedThreadIdsHelp.Text" xml:space="preserve"><value>SlackのスレッドIDは最初のメッセージのタイムスタンプです。そのメッセージのリンクをコピーし、pの後の数字を先頭10桁と残りに分けてドットでつなぎます（例: p1234567890123456 → 1234567890.123456）。IDは1行に1つずつ入力します。</value></data>
   <data name="MattermostAllowedThreadIds.Header" xml:space="preserve">
-    <value>MattermostスレッドID</value>
+    <value>許可するMattermostの会話ID（任意）</value>
   </data>
+  <data name="MattermostThreadLookupLabel.Text" xml:space="preserve"><value>投稿リンクから会話を指定</value></data>
+  <data name="MattermostThreadLookupHelp.Text" xml:space="preserve"><value>Mattermostで投稿のメニューから「リンクをコピー」を選び、ここに貼り付けます。返信のリンクでも、会話の最初の投稿を確認します。会話のIDを確認してから「この会話を追加」を選んでください。追加後、設定を保存して再接続します。</value></data>
+  <data name="MattermostThreadLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermost投稿リンクまたはID</value></data>
+  <data name="MattermostThreadLookupInput.PlaceholderText" xml:space="preserve"><value>https://chat.example.com/team/pl/…</value></data>
+  <data name="ResolveMattermostThreadButton.Content" xml:space="preserve"><value>会話を確認</value></data>
+  <data name="AddMattermostThreadButton.Content" xml:space="preserve"><value>この会話を追加</value></data>
   <data name="AgentModel.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>モデル名</value>
   </data>

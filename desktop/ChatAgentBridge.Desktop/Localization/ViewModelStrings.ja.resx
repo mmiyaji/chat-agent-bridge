@@ -630,4 +630,22 @@ AIの操作権限: {8}</value>
   <data name="TrustedFolderInvalid" xml:space="preserve"><value>絶対パスで指定した、存在するフォルダーを選択してください。</value></data>
   <data name="TrustedFolderRootsInvalid" xml:space="preserve"><value>既存の各項目を有効な絶対パスに修正してから、もう一度お試しください。</value></data>
   <data name="TrustedFolderPickerFailed" xml:space="preserve"><value>フォルダー選択画面を開けませんでした。一覧に絶対パスを入力できます。</value></data>
+  <data name="MattermostThreadLookupIdentity" xml:space="preserve"><value>会話のID（最初の投稿）: {0} ・ チャンネルID: {1}</value></data>
+  <data name="MattermostThreadLookupInProgress" xml:space="preserve"><value>投稿と会話を確認しています…</value></data>
+  <data name="MattermostThreadLookupResolved" xml:space="preserve"><value>会話を確認しました。IDを確認して「この会話を追加」を選んでください。</value></data>
+  <data name="MattermostThreadLookupInvalidUrl" xml:space="preserve"><value>有効なHTTPS MattermostサーバーURLを入力してください（HTTPはlocalhostのみ使用できます）。</value></data>
+  <data name="MattermostThreadLookupInvalidLink" xml:space="preserve"><value>このサーバー上のMattermost投稿リンクまたは有効な投稿IDを入力してください。クエリやフラグメントを含むリンクは使用できません。</value></data>
+  <data name="MattermostThreadLookupMissingCredentials" xml:space="preserve"><value>先に接続設定でMattermostアクセストークンを入力してください。</value></data>
+  <data name="MattermostThreadLookupInvalidToken" xml:space="preserve"><value>アクセストークンをリクエストに使用できません。値を確認してください。</value></data>
+  <data name="MattermostThreadLookupUnauthorized" xml:space="preserve"><value>Mattermostがアクセストークンを拒否しました。有効なトークンか確認してください。</value></data>
+  <data name="MattermostThreadLookupForbidden" xml:space="preserve"><value>このトークンでは投稿を読み取れません。Mattermostの権限を確認してください。</value></data>
+  <data name="MattermostThreadLookupNotFound" xml:space="preserve"><value>このMattermostサーバーで投稿が見つかりません。</value></data>
+  <data name="MattermostThreadLookupWrongChannel" xml:space="preserve"><value>この投稿は設定済みのMattermostチャンネルにありません。</value></data>
+  <data name="MattermostThreadLookupDeleted" xml:space="preserve"><value>この投稿は削除されているため追加できません。</value></data>
+  <data name="MattermostThreadLookupTimeout" xml:space="preserve"><value>Mattermostから時間内に応答がありませんでした。再試行してください。</value></data>
+  <data name="MattermostThreadLookupInvalidResponse" xml:space="preserve"><value>Mattermostから返された投稿情報を確認できませんでした。</value></data>
+  <data name="MattermostThreadLookupNetwork" xml:space="preserve"><value>Mattermostに接続できません。サーバーURLと接続を確認してください。</value></data>
+  <data name="MattermostThreadAlreadyAllowed" xml:space="preserve"><value>会話 {0} はすでに許可リストにあります。</value></data>
+  <data name="MattermostThreadAddedSaveNeeded" xml:space="preserve"><value>会話 {0} を追加しました。新しい制限を適用するには設定を保存して再接続してください。</value></data>
+  <data name="MattermostThreadAllowlistInvalid" xml:space="preserve"><value>既存の会話許可リストに無効なIDがあります。追加前に修正してください。</value></data>
 </root>

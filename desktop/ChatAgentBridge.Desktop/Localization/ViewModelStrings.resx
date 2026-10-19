@@ -630,4 +630,22 @@ Internal user ID: {2}</value></data>
   <data name="TrustedFolderInvalid" xml:space="preserve"><value>Choose an existing folder with a full path.</value></data>
   <data name="TrustedFolderRootsInvalid" xml:space="preserve"><value>Fix the existing entries so each is a valid full path, then try again.</value></data>
   <data name="TrustedFolderPickerFailed" xml:space="preserve"><value>The folder picker could not be opened. You can enter a full path in the list.</value></data>
+  <data name="MattermostThreadLookupIdentity" xml:space="preserve"><value>Conversation ID (first post): {0} · Channel ID: {1}</value></data>
+  <data name="MattermostThreadLookupInProgress" xml:space="preserve"><value>Checking the post and its conversation…</value></data>
+  <data name="MattermostThreadLookupResolved" xml:space="preserve"><value>Conversation checked. Review the ID, then choose Add this conversation.</value></data>
+  <data name="MattermostThreadLookupInvalidUrl" xml:space="preserve"><value>Enter a valid HTTPS Mattermost server URL (HTTP is allowed only for localhost).</value></data>
+  <data name="MattermostThreadLookupInvalidLink" xml:space="preserve"><value>Enter a Mattermost post link from this server, or a valid post ID. Links with query strings or fragments are not accepted.</value></data>
+  <data name="MattermostThreadLookupMissingCredentials" xml:space="preserve"><value>Enter the Mattermost access token in the connection settings first.</value></data>
+  <data name="MattermostThreadLookupInvalidToken" xml:space="preserve"><value>The access token could not be used in a request. Check the token value.</value></data>
+  <data name="MattermostThreadLookupUnauthorized" xml:space="preserve"><value>Mattermost rejected the access token. Check that it is current.</value></data>
+  <data name="MattermostThreadLookupForbidden" xml:space="preserve"><value>This token cannot read that post. Check its Mattermost permissions.</value></data>
+  <data name="MattermostThreadLookupNotFound" xml:space="preserve"><value>The post could not be found on this Mattermost server.</value></data>
+  <data name="MattermostThreadLookupWrongChannel" xml:space="preserve"><value>This post does not belong to the configured Mattermost channel.</value></data>
+  <data name="MattermostThreadLookupDeleted" xml:space="preserve"><value>This post was deleted and cannot be added.</value></data>
+  <data name="MattermostThreadLookupTimeout" xml:space="preserve"><value>Mattermost did not respond in time. Try again.</value></data>
+  <data name="MattermostThreadLookupInvalidResponse" xml:space="preserve"><value>Mattermost returned post data that could not be verified.</value></data>
+  <data name="MattermostThreadLookupNetwork" xml:space="preserve"><value>Could not reach Mattermost. Check the server URL and connection.</value></data>
+  <data name="MattermostThreadAlreadyAllowed" xml:space="preserve"><value>Conversation {0} is already in the allowlist.</value></data>
+  <data name="MattermostThreadAddedSaveNeeded" xml:space="preserve"><value>Added conversation {0}. Save settings and reconnect to apply the updated restriction.</value></data>
+  <data name="MattermostThreadAllowlistInvalid" xml:space="preserve"><value>The existing conversation allowlist has an invalid ID. Correct it before adding another conversation.</value></data>
 </root>

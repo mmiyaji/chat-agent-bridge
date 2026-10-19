@@ -276,17 +276,24 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Allowed chat accounts and conversations</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock035.Text" xml:space="preserve">
-    <value>The user ID allowed in the connection settings is still required. Here you can additionally narrow down the target channels and threads. Blank fields indicate no additional restrictions. Enter the ID in each field, one line at a time.</value>
+    <value>The allowed user IDs in the connection settings are still required. A blank thread list adds no restriction. A nonempty list allows requests only in the listed existing threads; new top-level conversations are blocked. Save and reconnect after changing the lists.</value>
   </data>
   <data name="SlackAllowedChannelIds.Header" xml:space="preserve">
     <value>Slack channel IDs</value>
   </data>
   <data name="SlackAllowedThreadIds.Header" xml:space="preserve">
-    <value>Slack thread IDs</value>
+    <value>Slack thread root timestamps</value>
   </data>
+  <data name="SlackAllowedThreadIdsHelp.Text" xml:space="preserve"><value>A Slack thread ID is the timestamp of its first message. Copy that message's link, remove the p prefix from its message ID, and insert a dot after the first 10 digits: for example, p1234567890123456 becomes 1234567890.123456. Enter one ID per line.</value></data>
   <data name="MattermostAllowedThreadIds.Header" xml:space="preserve">
-    <value>Mattermost thread IDs</value>
+    <value>Allowed Mattermost conversation IDs (optional)</value>
   </data>
+  <data name="MattermostThreadLookupLabel.Text" xml:space="preserve"><value>Choose a conversation from a post link</value></data>
+  <data name="MattermostThreadLookupHelp.Text" xml:space="preserve"><value>In Mattermost, open a post's menu, choose Copy Link, and paste the link here. A reply link resolves to the conversation's first post. Check the conversation ID, then choose Add this conversation. Save settings and reconnect to apply the restriction.</value></data>
+  <data name="MattermostThreadLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermost post link or ID</value></data>
+  <data name="MattermostThreadLookupInput.PlaceholderText" xml:space="preserve"><value>https://chat.example.com/team/pl/…</value></data>
+  <data name="ResolveMattermostThreadButton.Content" xml:space="preserve"><value>Check conversation</value></data>
+  <data name="AddMattermostThreadButton.Content" xml:space="preserve"><value>Add this conversation</value></data>
   <data name="AgentModel.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Model name</value>
   </data>

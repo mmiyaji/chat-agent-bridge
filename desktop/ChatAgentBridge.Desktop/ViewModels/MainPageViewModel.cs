@@ -60,7 +60,10 @@ public partial class MainPageViewModel : ObservableObject
                 CheckCliCommand.NotifyCanExecuteChanged();
             }
             if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading))
+            {
                 RefreshMattermostUsernameLookupCommands();
+                RefreshMattermostThreadLookupCommands();
+            }
             if (e.PropertyName is nameof(IsLoading) or nameof(IsSettingsLoaded) or nameof(WorkspaceRoot) or
                 nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
                 nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AutoConnectProvider) or nameof(RequireApproval) or
@@ -285,6 +288,7 @@ public partial class MainPageViewModel : ObservableObject
             SlackAllowedThreadIds = _settings.SlackAllowedThreadIds;
             MattermostAllowedThreadIds = _settings.MattermostAllowedThreadIds;
             InvalidateMattermostUsernameLookup();
+            InvalidateMattermostThreadLookup();
             SettingsLocation = _settingsStore.DirectoryPath;
             UpdateSavedAgentSummary();
             RefreshSetupStepper();
@@ -622,6 +626,7 @@ public partial class MainPageViewModel : ObservableObject
     {
         _closing = true;
         CancelMattermostUsernameLookup();
+        CancelMattermostThreadLookup();
         _runCancellation?.Cancel();
         CancelCliCheck();
         ModelCatalog.Dispose();
@@ -639,7 +644,11 @@ public partial class MainPageViewModel : ObservableObject
     {
         var changed = !string.Equals(MattermostToken, value, StringComparison.Ordinal);
         MattermostToken = value;
-        if (changed) InvalidateMattermostUsernameLookup();
+        if (changed)
+        {
+            InvalidateMattermostUsernameLookup();
+            InvalidateMattermostThreadLookup();
+        }
         RefreshSetupStepper();
     }
 

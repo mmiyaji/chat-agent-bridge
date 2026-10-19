@@ -34,4 +34,14 @@ public sealed class ChatAccessPolicyTests
         Assert.Throws<FormatException>(() => ChatAccessPolicy.NormalizeAllowedUsers(new string('a', 129)));
         Assert.Throws<FormatException>(() => ChatAccessPolicy.NormalizeAllowedUsers(string.Join("\n", Enumerable.Range(0, 101).Select(i => "u" + i))));
     }
+
+    [Fact]
+    public void NormalizeScopes_DeduplicatesAndCapsThreadAllowlistAtOneHundredIds()
+    {
+        Assert.Equal("root1,root2", ChatAccessPolicy.NormalizeScopes("root1\nroot2\nroot1"));
+        Assert.Equal(100, ChatAccessPolicy.NormalizeScopes(string.Join("\n", Enumerable.Range(0, 100).Select(i => $"root{i}")))
+            .Split(',').Length);
+        Assert.Throws<FormatException>(() => ChatAccessPolicy.NormalizeScopes(
+            string.Join("\n", Enumerable.Range(0, 101).Select(i => $"root{i}"))));
+    }
 }

@@ -47,7 +47,11 @@ public partial class MainPageViewModel
         string.Equals(_lookupToken, MattermostToken, StringComparison.Ordinal) &&
         string.Equals(_lookupUsername, MattermostUsernameLookupInput, StringComparison.Ordinal);
 
-    partial void OnMattermostServerUrlChanged(string value) => InvalidateMattermostUsernameLookup();
+    partial void OnMattermostServerUrlChanged(string value)
+    {
+        InvalidateMattermostUsernameLookup();
+        InvalidateMattermostThreadLookup();
+    }
     partial void OnMattermostUsernameLookupInputChanged(string value) => InvalidateMattermostUsernameLookup();
 
     [RelayCommand(CanExecute = nameof(CanLookupMattermostUsername))]
