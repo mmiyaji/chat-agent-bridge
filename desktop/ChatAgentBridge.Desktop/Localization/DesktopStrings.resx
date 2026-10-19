@@ -379,4 +379,9 @@
 {2}</value></data>
   <data name="UsageBarDetails" xml:space="preserve"><value>{0}
 {1}</value></data>
+  <data name="ChatInputTitle" xml:space="preserve"><value>The AI needs an answer. Reply in this thread from the requesting account within 5 minutes, or answer on the PC.</value></data>
+  <data name="ChatInputWaiting" xml:space="preserve"><value>Waiting for your answer</value></data>
+  <data name="ChatInputTextReply" xml:space="preserve"><value>Reply: !cab answer {0} {1} your answer</value></data>
+  <data name="ChatInputOptionReply" xml:space="preserve"><value>Reply with an option number: !cab answer {0} {1} 1</value></data>
+  <data name="ChatInputOtherReply" xml:space="preserve"><value>For another answer: !cab answer {0} {1} other your answer</value></data>
 </root>

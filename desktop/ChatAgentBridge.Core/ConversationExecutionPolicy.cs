@@ -45,7 +45,12 @@ public static class ConversationExecutionPolicy
             CredentialDigest = Digest(key.Provider == "slack"
                 ? settings.SlackBotToken + "\0" + settings.SlackAppToken : settings.MattermostToken)
         });
-        return Digest(payload);
+        var baseFingerprint = Digest(payload);
+        // Keep the historical digest byte-for-byte for the default-off setting so persisted
+        // approvals remain valid when upgrading. Opting in creates a distinct consent scope.
+        return settings.ShareAgentQuestionsInChat
+            ? Digest(baseFingerprint + "\0share-agent-questions")
+            : baseFingerprint;
     }
 
     private static string Digest(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();

@@ -378,6 +378,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (_disconnecting || accessSettings is null || !HasAccess(accessSettings, request, settings)) return;
                 await AuditAsync("received", request, null, token);
                 if (_approvalBroker.TryHandle(request)) return;
+                if (await TryHandleChatAnswerAsync(transport, settings, request, token)) return;
                 if (await TryHandleChatControlAsync(transport, settings, request, token)) return;
                 var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (!App.DispatcherQueue.TryEnqueue(() =>
@@ -528,7 +529,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await StartProgressAsync(item);
             var result = effectiveSettings.AgentMode == "app-server"
                 ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
-                    new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: ServerInputHandler), _execution.Token)
+                    new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct)), _execution.Token)
                 : await _runner.RunAsync(key, effectiveSettings, item.Request.Text, _execution.Token);
             var output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
             var needsLogin = !result.Success && item.Settings.AgentProvider == AgentProfile.Claude &&
@@ -867,7 +868,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         left.AgentModel == right.AgentModel && left.AgentReasoningEffort == right.AgentReasoningEffort &&
         left.AgentPermissionMode == right.AgentPermissionMode && left.AllowAgentNetwork == right.AllowAgentNetwork &&
         left.TrustedWorkspaceRoots == right.TrustedWorkspaceRoots && left.ChatApprovalMode == right.ChatApprovalMode &&
-        left.ChatResultMode == right.ChatResultMode && left.ShareApprovalsInChat == right.ShareApprovalsInChat;
+        left.ChatResultMode == right.ChatResultMode && left.ShareApprovalsInChat == right.ShareApprovalsInChat &&
+        left.ShareAgentQuestionsInChat == right.ShareAgentQuestionsInChat;
 
     private static string BoundedReply(string text) => text.Length > 4000
         ? text[..4000] + Environment.NewLine + DesktopText.Get("InboxLongTextTruncated") : text;

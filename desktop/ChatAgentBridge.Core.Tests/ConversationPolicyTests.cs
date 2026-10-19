@@ -1,4 +1,7 @@
 using ChatAgentBridge.Core.Sessions;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace ChatAgentBridge.Core.Tests;
 
@@ -56,6 +59,31 @@ public sealed class ConversationPolicyTests
     }
 
     [Fact]
+    public void AgentQuestionSharingPreservesLegacyFingerprintWhenOffAndUsesNewScopeWhenOn()
+    {
+        var settings = Settings with
+        {
+            MattermostAllowedUserIds = "mm-user",
+            MattermostChannelId = "mm-channel",
+            MattermostAllowedThreadIds = "mm-thread",
+            SlackAllowedChannelIds = "C1",
+            SlackAllowedThreadIds = "1.0",
+            ShareApprovalsInChat = true,
+            MattermostToken = "mm-token",
+            SlackBotToken = "bot-token",
+            SlackAppToken = "app-token"
+        };
+
+        var expectedLegacy = LegacyFingerprint(Owner, settings);
+        var actualOff = ConversationExecutionPolicy.GetFingerprint(Owner, settings with { ShareAgentQuestionsInChat = false });
+        var actualOn = ConversationExecutionPolicy.GetFingerprint(Owner, settings with { ShareAgentQuestionsInChat = true });
+
+        Assert.Equal(expectedLegacy, actualOff);
+        Assert.Equal(Digest(actualOff + "\0share-agent-questions"), actualOn);
+        Assert.NotEqual(actualOff, actualOn);
+    }
+
+    [Fact]
     public void ConversationOverridesDoNotEscalateUnspecifiedDefaults()
     {
         var binding = new SessionBinding(Owner, Settings.WorkspaceRoot, "codex", "exec --json -", Guid.NewGuid().ToString(),
@@ -66,4 +94,25 @@ public sealed class ConversationPolicyTests
         Assert.Equal("read-only", effective.AgentPermissionMode);
         Assert.Equal("first", Settings.ChatApprovalMode);
     }
+
+    private static string LegacyFingerprint(SessionKey key, BridgeSettings settings)
+    {
+        var payload = JsonSerializer.Serialize(new
+        {
+            key,
+            Workspace = Path.TrimEndingDirectorySeparator(Path.GetFullPath(settings.WorkspaceRoot)),
+            settings.AgentExecutable, settings.AgentArguments, settings.AgentProvider, settings.AgentMode,
+            settings.AgentModel, settings.AgentReasoningEffort, settings.AgentPermissionMode,
+            settings.AllowAgentNetwork, settings.TrustedWorkspaceRoots, settings.ChatApprovalMode,
+            settings.ChatResultMode, settings.ShareApprovalsInChat,
+            settings.MattermostAllowedUserIds, settings.SlackAllowedUserIds,
+            settings.MattermostChannelId, settings.MattermostAllowedThreadIds,
+            settings.SlackAllowedChannelIds, settings.SlackAllowedThreadIds,
+            CredentialDigest = Digest(key.Provider == "slack"
+                ? settings.SlackBotToken + "\0" + settings.SlackAppToken : settings.MattermostToken)
+        });
+        return Digest(payload);
+    }
+
+    private static string Digest(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
 }

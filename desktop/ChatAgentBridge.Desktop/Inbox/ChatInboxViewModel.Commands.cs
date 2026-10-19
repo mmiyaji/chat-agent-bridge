@@ -72,7 +72,8 @@ public sealed partial class ChatInboxViewModel
         ChatAgentBridge.Core.Sessions.ChatSessionScope.Create(request.Provider, request.ChannelId,
             request.ThreadId, request.UserId, request.Provider == "mattermost" ? settings.MattermostServerUrl : null);
 
-    private static string ControlState(InboxItem item) => item.StateDisplay;
+    private string ControlState(InboxItem item) => _waitingForInput.ContainsKey(item)
+        ? DesktopText.Get("ChatInputWaiting") : item.StateDisplay;
 
     private async Task ReplyToControlAsync(IChatTransport transport, BridgeSettings received,
         ChatRequest request, string text, CancellationToken token)

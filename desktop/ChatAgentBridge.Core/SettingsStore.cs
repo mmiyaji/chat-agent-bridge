@@ -62,6 +62,7 @@ public sealed class SettingsStore
                 MattermostAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(stored.MattermostAllowedUserIds ?? ""),
                 SlackAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(stored.SlackAllowedUserIds ?? ""),
                 ShareApprovalsInChat = stored.ShareApprovalsInChat,
+                ShareAgentQuestionsInChat = stored.ShareAgentQuestionsInChat,
                 RequireApproval = stored.RequireApproval,
                 AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(stored.AgentPermissionMode),
                 AllowAgentNetwork = stored.AllowAgentNetwork,
@@ -148,6 +149,7 @@ public sealed class SettingsStore
             MattermostAllowedUserIds = mattermostAllowedUsers,
             SlackAllowedUserIds = slackAllowedUsers,
             ShareApprovalsInChat = settings.ShareApprovalsInChat,
+            ShareAgentQuestionsInChat = settings.ShareAgentQuestionsInChat,
             RequireApproval = settings.RequireApproval,
             AgentPermissionMode = permissionMode,
             AllowAgentNetwork = settings.AllowAgentNetwork,
@@ -227,6 +229,7 @@ public sealed class SettingsStore
         public string? MattermostAllowedUserIds { get; set; }
         public string? SlackAllowedUserIds { get; set; }
         public bool ShareApprovalsInChat { get; set; }
+        public bool ShareAgentQuestionsInChat { get; set; }
         public bool RequireApproval { get; set; } = true;
         public string? AgentPermissionMode { get; set; }
         public bool AllowAgentNetwork { get; set; }

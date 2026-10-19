@@ -19,6 +19,7 @@ public sealed record BridgeSettings
     public string MattermostAllowedUserIds { get; init; } = "";
     public string SlackAllowedUserIds { get; init; } = "";
     public bool ShareApprovalsInChat { get; init; }
+    public bool ShareAgentQuestionsInChat { get; init; }
     public bool RequireApproval { get; init; } = true;
     public string AgentPermissionMode { get; init; } = "inherit";
     public bool AllowAgentNetwork { get; init; }

@@ -467,6 +467,12 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="chatAgentBridgeDesktopMainPageTextBlock060.Text" xml:space="preserve">
     <value>When enabled, the commands and working folders displayed for operation authorization on the Codex app-server will be posted to the chat thread. All participants in the thread can see it. The initial state is off.</value>
   </data>
+  <data name="ShareAgentQuestionsInChat.Header" xml:space="preserve">
+    <value>Share nonsecret agent questions in chat</value>
+  </data>
+  <data name="ShareAgentQuestionsInChatHelp.Text" xml:space="preserve">
+    <value>When enabled, nonsecret questions and answer choices from Codex App Server are posted in this thread, where every participant can see them. Questions the app server marks as secret are answered on this PC and are never posted. This applies only to Codex App Server. Off by default. Save and reconnect for this setting to take effect.</value>
+  </data>
   <data name="SaveConnections.Content" xml:space="preserve">
     <value>Save connection settings</value>
   </data>

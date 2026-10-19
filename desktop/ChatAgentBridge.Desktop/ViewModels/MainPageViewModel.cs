@@ -69,7 +69,7 @@ public partial class MainPageViewModel : ObservableObject
                 nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
                 nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AutoConnectProvider) or nameof(RequireApproval) or
                 nameof(MattermostServerUrl) or nameof(MattermostBypassProxy) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
-                nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat) or
+                nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or
                 nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or nameof(ChatApprovalMode) or
                 nameof(ChatResultMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
                 RefreshSetupStepper();
@@ -183,6 +183,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string MattermostAllowedUserIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackAllowedUserIds { get; set; } = string.Empty;
     [ObservableProperty] public partial bool ShareApprovalsInChat { get; set; }
+    [ObservableProperty] public partial bool ShareAgentQuestionsInChat { get; set; }
     [ObservableProperty] public partial bool RequireApproval { get; set; } = true;
     [ObservableProperty] public partial string AgentPermissionMode { get; set; } = "inherit";
     partial void OnAgentPermissionModeChanged(string value)
@@ -281,6 +282,7 @@ public partial class MainPageViewModel : ObservableObject
             MattermostAllowedUserIds = _settings.MattermostAllowedUserIds;
             SlackAllowedUserIds = _settings.SlackAllowedUserIds;
             ShareApprovalsInChat = _settings.ShareApprovalsInChat;
+            ShareAgentQuestionsInChat = _settings.ShareAgentQuestionsInChat;
             RequireApproval = _settings.RequireApproval;
             AgentPermissionMode = _settings.AgentPermissionMode;
             AllowAgentNetwork = _settings.AllowAgentNetwork;
@@ -736,6 +738,7 @@ public partial class MainPageViewModel : ObservableObject
         MattermostAllowedUserIds = MattermostAllowedUserIds,
         SlackAllowedUserIds = SlackAllowedUserIds,
         ShareApprovalsInChat = ShareApprovalsInChat,
+        ShareAgentQuestionsInChat = ShareAgentQuestionsInChat,
         RequireApproval = RequireApproval,
         AgentPermissionMode = AgentPermissionMode,
         AllowAgentNetwork = AllowAgentNetwork,

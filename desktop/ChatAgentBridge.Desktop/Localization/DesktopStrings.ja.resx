@@ -379,4 +379,9 @@
 {2}</value></data>
   <data name="UsageBarDetails" xml:space="preserve"><value>{0}
 {1}</value></data>
+  <data name="ChatInputTitle" xml:space="preserve"><value>AIから質問です。5分以内に依頼したアカウントからこのスレッドで回答するか、PCで回答してください。</value></data>
+  <data name="ChatInputWaiting" xml:space="preserve"><value>質問への回答待ち</value></data>
+  <data name="ChatInputTextReply" xml:space="preserve"><value>回答: !cab answer {0} {1} 回答内容</value></data>
+  <data name="ChatInputOptionReply" xml:space="preserve"><value>選択肢の番号で回答: !cab answer {0} {1} 1</value></data>
+  <data name="ChatInputOtherReply" xml:space="preserve"><value>別の回答: !cab answer {0} {1} other 回答内容</value></data>
 </root>

@@ -467,6 +467,12 @@
   <data name="chatAgentBridgeDesktopMainPageTextBlock060.Text" xml:space="preserve">
     <value>有効にすると、Codex app-serverでの操作承認に表示されるコマンドと作業フォルダーを、チャットのスレッドへ投稿します。スレッドの参加者全員が見られます。初期状態はオフです。</value>
   </data>
+  <data name="ShareAgentQuestionsInChat.Header" xml:space="preserve">
+    <value>機密ではないAIの質問をチャットに共有</value>
+  </data>
+  <data name="ShareAgentQuestionsInChatHelp.Text" xml:space="preserve">
+    <value>有効にすると、Codex App Serverからの機密ではない質問と回答の選択肢をこのスレッドに投稿します。スレッドの参加者全員が見られます。App Serverが秘密として指定した質問はこのPCで回答し、投稿しません。この設定はCodex App Serverでのみ有効です。初期状態はオフです。反映するには保存してから再接続してください。</value>
+  </data>
   <data name="SaveConnections.Content" xml:space="preserve">
     <value>接続設定を保存</value>
   </data>

@@ -39,7 +39,7 @@ public sealed class CoreTests
                 SlackBotToken = OperatingSystem.IsWindows() ? "slack-secret" : "",
                 SlackAppToken = OperatingSystem.IsWindows() ? "app-secret" : "", RequireApproval = false,
                 MattermostAllowedUserIds = "mm-user-1; mm-user-2",
-                SlackAllowedUserIds = "U12345\nU67890", ShareApprovalsInChat = true
+                SlackAllowedUserIds = "U12345\nU67890", ShareApprovalsInChat = true, ShareAgentQuestionsInChat = true
             };
             await store.SaveAsync(settings);
             Assert.Equal(settings with
@@ -69,6 +69,7 @@ public sealed class CoreTests
             Assert.Equal("", settings.MattermostAllowedUserIds);
             Assert.Equal("", settings.SlackAllowedUserIds);
             Assert.False(settings.ShareApprovalsInChat);
+            Assert.False(settings.ShareAgentQuestionsInChat);
             Assert.False(settings.MattermostBypassProxy);
         }
         finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }

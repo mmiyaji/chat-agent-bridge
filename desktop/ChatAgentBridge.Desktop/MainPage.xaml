@@ -364,6 +364,8 @@
                                         <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock059" x:Uid="chatAgentBridgeDesktopMainPageTextBlock059" />
                                         <ToggleSwitch  IsOn="{x:Bind ViewModel.ShareApprovalsInChat, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.CanShareApprovalsInChat, Mode=OneWay}" AutomationProperties.AutomationId="ShareApprovalsInChat"  x:Uid="ShareApprovalsInChat" />
                                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock060" x:Uid="chatAgentBridgeDesktopMainPageTextBlock060" />
+                                        <ToggleSwitch IsOn="{x:Bind ViewModel.ShareAgentQuestionsInChat, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.CanShareApprovalsInChat, Mode=OneWay}" AutomationProperties.AutomationId="ShareAgentQuestionsInChat" x:Uid="ShareAgentQuestionsInChat" />
+                                        <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="ShareAgentQuestionsInChatHelp" x:Uid="ShareAgentQuestionsInChatHelp" />
                                     </StackPanel>
                                 </Border>
                                 <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="ChatPoliciesHeading" x:Uid="ChatPoliciesHeading" />
