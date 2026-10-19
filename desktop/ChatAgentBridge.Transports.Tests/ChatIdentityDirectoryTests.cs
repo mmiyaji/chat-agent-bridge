@@ -65,7 +65,7 @@ public sealed class ChatIdentityDirectoryTests
         using (var direct = ChatIdentityDirectory.CreateHandler(bypassProxy: true)) Assert.False(direct.UseProxy);
         using var directory = new ChatIdentityDirectory(handler, temp.Path);
         await directory.ResolveAsync(new BridgeSettings { MattermostServerUrl = "https://chat.example.test/", MattermostToken = "test", MattermostBypassProxy = true }, [key]);
-        Assert.Equal(2, handler.Requests.Count);
+        Assert.Equal(3, handler.Requests.Count);
         Assert.Equal("Bearer", handler.Requests[0].Headers.Authorization!.Scheme);
     }
 
@@ -269,6 +269,67 @@ public sealed class ChatIdentityDirectoryTests
         await File.WriteAllTextAsync(Path.Combine(temp.Path, "chat-identities.json"), "{\"version\":1,\"entries\":[null]}");
         var rows = await directory.ReadCachedAsync([key]);
         Assert.Equal(new ChatIdentityLabels(), rows[key]);
+    }
+
+    [Fact]
+    public async Task Mattermost_site_name_is_cached_shared_and_refreshed_without_refetching_people_or_channels()
+    {
+        using var temp = new TemporaryDirectory();
+        var siteName = "Company Chat";
+        var failSite = false;
+        var handler = new RecordingHandler(request => request.RequestUri!.AbsolutePath switch
+        {
+            "/api/v4/config/client" => failSite ? new(HttpStatusCode.Forbidden) : Json($"{{\"SiteName\":\"{siteName}\",\"UnusedSetting\":\"not-retained\"}}"),
+            $"/api/v4/users/{MmUser}" => Json($"{{\"id\":\"{MmUser}\",\"username\":\"alice\"}}"),
+            $"/api/v4/channels/{MmChannel}" => Json($"{{\"id\":\"{MmChannel}\",\"type\":\"O\",\"display_name\":\"Release room\"}}"),
+            _ => new(HttpStatusCode.NotFound)
+        });
+        var key = ChatSessionScope.Create("mattermost", MmChannel, "thread", MmUser, "https://chat.example.test/");
+        var settings = new BridgeSettings { MattermostServerUrl = "https://chat.example.test/", MattermostToken = "test-secret" };
+        using var directory = new ChatIdentityDirectory(handler, temp.Path);
+        Assert.Equal("Company Chat", (await directory.ResolveAsync(settings, [key]))[key].SiteName);
+        Assert.Equal(3, handler.Requests.Count);
+        await directory.ResolveAsync(settings, [key]);
+        Assert.Equal(3, handler.Requests.Count);
+        Assert.Equal("Company Chat", (await directory.ReadCachedAsync([key]))[key].SiteName);
+
+        var cachePath = Path.Combine(temp.Path, "chat-identities.json");
+        async Task ExpireSiteAsync()
+        {
+            var cache = JsonNode.Parse(await File.ReadAllTextAsync(cachePath))!;
+            foreach (var entry in cache["entries"]!.AsArray())
+                if (entry?["key"]?["kind"]?.GetValue<string>() == "site")
+                    entry["checkedAtUtc"] = DateTimeOffset.UtcNow.AddDays(-2).ToString("O");
+            await File.WriteAllTextAsync(cachePath, cache.ToJsonString());
+        }
+        await ExpireSiteAsync();
+        siteName = "Renamed Company Chat";
+        Assert.Equal(siteName, (await directory.ResolveAsync(settings, [key]))[key].SiteName);
+        Assert.Equal(4, handler.Requests.Count); // A shared site rename updates fresh channel labels too.
+        await ExpireSiteAsync();
+        failSite = true;
+        Assert.Equal(siteName, (await directory.ResolveAsync(settings, [key]))[key].SiteName);
+        await directory.ResolveAsync(settings, [key]);
+        Assert.Equal(5, handler.Requests.Count); // Failed site lookup is negatively cached.
+        var serialized = await File.ReadAllTextAsync(cachePath);
+        Assert.DoesNotContain("not-retained", serialized);
+        Assert.DoesNotContain("test-secret", serialized);
+    }
+
+    [Fact]
+    public async Task Mattermost_site_rate_limit_stops_other_requests_and_survives_directory_restart()
+    {
+        using var temp = new TemporaryDirectory();
+        var handler = new RecordingHandler(_ => new((HttpStatusCode)429));
+        var key = ChatSessionScope.Create("mattermost", MmChannel, "thread", MmUser, "https://chat.example.test/");
+        var settings = new BridgeSettings { MattermostServerUrl = "https://chat.example.test/", MattermostToken = "test" };
+        using (var directory = new ChatIdentityDirectory(handler, temp.Path))
+            await directory.ResolveAsync(settings, [key]);
+        Assert.Single(handler.Requests);
+        var noRequests = new RecordingHandler(_ => throw new InvalidOperationException("Fresh cooldown must suppress network"));
+        using var restarted = new ChatIdentityDirectory(noRequests, temp.Path);
+        await restarted.ResolveAsync(settings, [key]);
+        Assert.Empty(noRequests.Requests);
     }
 
     private static HttpResponseMessage Json(string body) => new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };

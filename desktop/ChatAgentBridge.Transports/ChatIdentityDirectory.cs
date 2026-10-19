@@ -107,8 +107,19 @@ public sealed class ChatIdentityDirectory : IDisposable
                     var origin = group.First().Key.Origin!;
                     if (IsCoolingDown(store, "mattermost", origin)) continue;
                     var baseUri = new Uri(group.Key);
-                    var staleSite = GetFreshOrStale(store, "mattermost", origin, "site", "site");
-                    var siteName = staleSite?.SiteName ?? HostLabel(baseUri);
+                    var siteKey = new CacheKey("mattermost", origin, "site", "site");
+                    var siteName = GetFreshOrStale(store, "mattermost", origin, "site", "site")?.SiteName ?? HostLabel(baseUri);
+                    if (NeedsRefresh(store, siteKey))
+                    {
+                        await FetchAndStoreAsync(store, siteKey, siteName, null, false, async () =>
+                        {
+                            using var config = await GetJsonAsync(new Uri(baseUri, "api/v4/config/client?format=old"),
+                                settings.MattermostToken.Trim(), settings.MattermostBypassProxy, budget, timeout.Token).ConfigureAwait(false);
+                            return SafeLabel(config.RootElement, "SiteName");
+                        }, timeout.Token).ConfigureAwait(false);
+                        siteName = store[siteKey].SiteName ?? siteName;
+                    }
+                    if (budget.Limited) break;
                     await ResolveMattermostAsync(settings, group.Select(item => item.Key).ToArray(), baseUri, origin, siteName, store, budget, timeout.Token).ConfigureAwait(false);
                 }
 
@@ -365,7 +376,7 @@ public sealed class ChatIdentityDirectory : IDisposable
         var site = provider == "mattermost" ? GetFreshOrStale(store, provider, origin, "site", "site")?.SiteName : null;
         var channel = GetFreshOrStale(store, provider, origin, "channel", key.ChannelId);
         var user = key.UserId is null ? null : GetFreshOrStale(store, provider, origin, "user", key.UserId);
-        return new ChatIdentityLabels(channel?.SiteName ?? site, channel?.IsDirectMessage == true ? "Direct message" : channel?.ChannelName,
+        return new ChatIdentityLabels(site ?? channel?.SiteName, channel?.IsDirectMessage == true ? "Direct message" : channel?.ChannelName,
             user?.UserName, channel?.IsDirectMessage == true);
     }
 
