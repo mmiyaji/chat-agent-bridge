@@ -353,17 +353,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             _transport = transport;
             var connection = new CancellationTokenSource();
             _connection = connection;
-            if (transport is IChatConnectionEvents events)
-                events.Connected += () => App.DispatcherQueue.TryEnqueue(() =>
-                {
-                    if (ReferenceEquals(_transport, transport) && !connection.IsCancellationRequested && !_closing)
-                    {
-                        IsConnectionConfirmed = true;
-                        Status = DesktopText.Get("InboxConnectedWaiting");
-                        _connectionNotice = NotifyConnectionAsync(transport, settings,
-                            DesktopText.Get("InboxConnectedChatNotice"));
-                    }
-                });
+            SubscribeConnectionEvents(transport, settings, connection);
             Status = DesktopText.Get("InboxConnectingWaiting");
             _receiveTask = ReceiveAsync(transport, settings, connection);
         }
@@ -843,7 +833,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (!Requests.Contains(item) || !ReferenceEquals(item.Transport, _transport)) continue;
                 RevealRequest(item);
                 _automaticallyApprovedItem = item;
-                try { if (CanApprove()) await ApproveCommand.ExecuteAsync(null); }
+                try
+                {
+                    if (CanApprove()) await ApproveCommand.ExecuteAsync(null);
+                    else _automaticallyAttempted.Remove(item);
+                }
                 finally { _automaticallyApprovedItem = null; }
             }
         }

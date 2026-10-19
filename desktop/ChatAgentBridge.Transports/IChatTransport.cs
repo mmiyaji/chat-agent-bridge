@@ -7,6 +7,24 @@ public interface IChatConnectionEvents
     event Action? Connected;
 }
 
+/// <summary>Reports automatic recovery from a transient chat socket failure.</summary>
+public interface IChatReconnectionEvents
+{
+    event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
+}
+
+public enum ChatReconnectionState
+{
+    Reconnecting,
+    Reconnected
+}
+
+public sealed record ChatReconnectionStatus(
+    string Provider,
+    ChatReconnectionState State,
+    int Attempt,
+    TimeSpan? NextRetryDelay);
+
 public interface IChatConnectionNotifications
 {
     Task NotifyConnectionAsync(BridgeSettings settings, string message, CancellationToken cancellationToken);

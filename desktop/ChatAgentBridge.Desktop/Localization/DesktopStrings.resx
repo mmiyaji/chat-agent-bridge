@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="InboxReconnecting" xml:space="preserve"><value>Connection lost. Retrying automatically (attempt {0}, in {1}s). New requests will wait until the connection returns.</value></data>
+  <data name="InboxReconnected" xml:space="preserve"><value>Reconnected. Waiting for requests from allowed users. Requests sent while disconnected must be reposted.</value></data>
   <data name="ProgressReceived" xml:space="preserve"><value>📥 Request received. Waiting for approval on the PC or for execution to start.</value></data>
   <data name="ProgressRunning" xml:space="preserve"><value>⏳ The AI agent is running. Elapsed {0}. This post updates about every 30 seconds while running.</value></data>
   <data name="ProgressCompleted" xml:space="preserve"><value>✅ Completed. Elapsed {0}.</value></data>

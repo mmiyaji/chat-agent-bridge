@@ -7,9 +7,10 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatConnectionEvents, IChatConnectionNotifications
+public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatConnectionNotifications
 {
     public event Action? Connected;
+    public event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
     private const int MaxMessageBytes = 1024 * 1024;
     private const string Trigger = "!cab";
     private HttpClient? _http;
@@ -22,6 +23,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
     private CancellationTokenSource? _runLifetime;
     private bool _disposed;
     private bool _connected;
+    private int _reconnectAttempt;
     private long _connectionGeneration;
     private readonly object _progressOwner = new();
 
@@ -44,6 +46,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
         ObjectDisposedException.ThrowIf(_disposed, this);
         Interlocked.Increment(ref _connectionGeneration);
         _connected = false;
+        _reconnectAttempt = 0;
         ArgumentNullException.ThrowIfNull(onRequest);
         if (string.IsNullOrWhiteSpace(settings.MattermostServerUrl) || string.IsNullOrWhiteSpace(settings.MattermostToken))
             throw new InvalidOperationException("Mattermost server URL and token are required.");
@@ -57,12 +60,13 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
         _channelId = settings.MattermostChannelId;
         _http?.Dispose();
         _http = TransportHttp.CreateClient(settings.MattermostBypassProxy);
+        _runLifetime?.Cancel();
         _runLifetime?.Dispose();
         _runLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var runToken = _runLifetime.Token;
         var sessions = _injectedSessionStore ?? new SessionStore();
         var continuations = new MattermostContinuationTracker();
-        var meRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get, new Uri(root, "api/v4/users/me"), token);
-        var me = await TransportHttp.SendJsonAsync<MattermostUser>(ActiveHttp, meRequest, cancellationToken).ConfigureAwait(false);
+        var me = await GetIdentityWithRetryAsync(root, token, runToken).ConfigureAwait(false);
         _currentUserId = me.Id;
 
         var socketUri = new UriBuilder(new Uri(root, "api/v4/websocket"))
@@ -70,17 +74,49 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
             Scheme = root.Scheme == Uri.UriSchemeHttps ? "wss" : "ws",
             Port = root.IsDefaultPort ? -1 : root.Port
         }.Uri;
+        while (!runToken.IsCancellationRequested)
+        {
+            try
+            {
+                await RunSocketConnectionAsync(socketUri, root, token, settings, me.Username, sessions, continuations,
+                    onRequest, runToken).ConfigureAwait(false);
+                if (!runToken.IsCancellationRequested)
+                    throw new MattermostReconnectException();
+            }
+            catch (OperationCanceledException) when (runToken.IsCancellationRequested) { return; }
+            catch (ObjectDisposedException) when (runToken.IsCancellationRequested) { return; }
+            catch (MattermostReconnectException)
+            {
+                var attempt = ++_reconnectAttempt;
+                var delay = RetryDelay(attempt);
+                ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("mattermost", ChatReconnectionState.Reconnecting, attempt, delay));
+                await Task.Delay(delay, runToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task RunSocketConnectionAsync(Uri socketUri, Uri root, string token, BridgeSettings settings,
+        string? username, SessionStore sessions, MattermostContinuationTracker continuations,
+        Func<ChatRequest, CancellationToken, Task> onRequest, CancellationToken cancellationToken)
+    {
         using var socket = new ClientWebSocket();
         TransportHttp.ConfigureMattermostWebSocketProxy(socket.Options, settings.MattermostBypassProxy);
-        await socket.ConnectAsync(socketUri, cancellationToken).ConfigureAwait(false);
-        await SendAsync(socket, new { seq = 1, action = "authentication_challenge", data = new { token } }, cancellationToken).ConfigureAwait(false);
+        socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+        socket.Options.KeepAliveTimeout = TimeSpan.FromSeconds(10);
+        try { await socket.ConnectAsync(socketUri, cancellationToken).ConfigureAwait(false); }
+        catch (Exception ex) when (ex is WebSocketException or HttpRequestException or IOException) { throw new MattermostReconnectException(ex); }
+        try { await SendAsync(socket, new { seq = 1, action = "authentication_challenge", data = new { token } }, cancellationToken).ConfigureAwait(false); }
+        catch (Exception ex) when (ex is WebSocketException or IOException) { throw new MattermostReconnectException(ex); }
 
         while (!cancellationToken.IsCancellationRequested && socket.State == WebSocketState.Open)
         {
-            using var document = await ReceiveJsonAsync(socket, cancellationToken).ConfigureAwait(false);
+            JsonDocument? received;
+            try { received = await ReceiveJsonAsync(socket, cancellationToken).ConfigureAwait(false); }
+            catch (Exception ex) when (ex is WebSocketException or IOException) { throw new MattermostReconnectException(ex); }
+            using var document = received;
             if (document is null)
             {
-                if (!cancellationToken.IsCancellationRequested) throw new InvalidOperationException("Mattermost WebSocket disconnected. Reconnect from the app to continue.");
+                if (!cancellationToken.IsCancellationRequested) throw new MattermostReconnectException();
                 return;
             }
             var envelope = document.RootElement;
@@ -89,13 +125,16 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
             if (envelope.TryGetProperty("seq_reply", out var sequence) && sequence.TryGetInt32(out var replySequence) && replySequence == 1 && authStatus.ValueKind == JsonValueKind.String && authStatus.GetString() == "OK")
             {
                 _connected = true;
+                if (_reconnectAttempt > 0)
+                    ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("mattermost", ChatReconnectionState.Reconnected, _reconnectAttempt, null));
+                _reconnectAttempt = 0;
                 Connected?.Invoke();
             }
             if (!envelope.TryGetProperty("event", out var eventName) || eventName.GetString() != "posted") continue;
             if (!envelope.TryGetProperty("data", out var data) || !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
 
             var post = postJson.GetString()!;
-            await ProcessPostAsync(post, settings, _currentUserId ?? "", me.Username, sessions, continuations, _seen,
+            await ProcessPostAsync(post, settings, _currentUserId ?? "", username, sessions, continuations, _seen,
                 async (request, ct) =>
                 {
                     var authorRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
@@ -109,6 +148,55 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
                 }, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    private async Task<MattermostUser> GetIdentityWithRetryAsync(Uri root, string token, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            try
+            {
+                var request = TransportHttp.AuthenticatedRequest(HttpMethod.Get, new Uri(root, "api/v4/users/me"), token);
+                return await TransportHttp.SendJsonAsync<MattermostUser>(ActiveHttp, request, cancellationToken).ConfigureAwait(false);
+            }
+            catch (HttpRequestException) { await DelayBeforeRetryAsync(cancellationToken).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            { await DelayBeforeRetryAsync(cancellationToken).ConfigureAwait(false); }
+            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+            { throw new OperationCanceledException(cancellationToken); }
+            catch (InvalidOperationException ex) when (IsRetryableHttpFailure(ex.Message))
+            { await DelayBeforeRetryAsync(cancellationToken).ConfigureAwait(false); }
+        }
+    }
+
+    private async Task DelayBeforeRetryAsync(CancellationToken cancellationToken)
+    {
+        var attempt = ++_reconnectAttempt;
+        var delay = RetryDelay(attempt);
+        ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("mattermost", ChatReconnectionState.Reconnecting, attempt, delay));
+        await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static bool IsRetryableHttpFailure(string message) =>
+        message.Contains("HTTP 429", StringComparison.Ordinal) ||
+        TryGetHttpStatus(message, out var status) && status >= 500;
+
+    private static bool TryGetHttpStatus(string message, out int status)
+    {
+        status = 0;
+        var marker = message.LastIndexOf("HTTP ", StringComparison.Ordinal);
+        if (marker >= 0)
+        {
+            var value = message.AsSpan(marker + 5);
+            return value.Length >= 3 && int.TryParse(value[..3], out status);
+        }
+        return false;
+    }
+
+    private static TimeSpan RetryDelay(int attempt) =>
+        TimeSpan.FromSeconds(Math.Min(30, Math.Pow(2, Math.Clamp(attempt - 1, 0, 5))));
+
+    private sealed class MattermostReconnectException(Exception? inner = null)
+        : Exception("Mattermost WebSocket connection was interrupted.", inner);
 
     public async Task NotifyConnectionAsync(BridgeSettings settings, string message, CancellationToken cancellationToken)
     {

@@ -6,6 +6,7 @@ param(
     [switch]$MattermostMentions,
     [switch]$MattermostPlainReplies,
     [switch]$CheckChatProgress,
+    [switch]$CheckReconnect,
     [switch]$KeepRunningOnFailure
 )
 $ErrorActionPreference = 'Stop'
@@ -330,6 +331,26 @@ process.stdin.on('end', () => setTimeout(() => {
         Choose 'InboxStateFilter' $(if($Language -eq 'ja'){'すべて'}else{'All'})
         Set-Search 'InboxSearch' 'must not appear'
         Assert-True (-not (Enabled 'ApproveChat')) 'Nonmatching conversation still actionable'
+    }
+    if ($CheckReconnect) {
+        Check 'Automatic reconnect preserves pending requests and deduplicates repeated events' {
+            Set-Search 'InboxSearch' 'alpha'
+            Select-FirstRow 'InboxConversations'
+            Invoke-RestMethod "$script:endpoint/test/disconnect" -Method Post -ContentType 'application/json' -Body '{"offlineMilliseconds":2500}' | Out-Null
+            UI @('wait-for','ChatStatus','--value',$(if($Language -eq 'ja'){'自動で再接続'}else{'Retrying automatically'}),'--contains','-t','6000') | Out-Null
+            UI @('wait-for','ApproveChat','-p','IsEnabled','--value','False','-t','3000') | Out-Null
+            Wait-Fixture { param($s) $s.connections -eq 1 } 20 | Out-Null
+            UI @('wait-for','ChatStatus','--value',$(if($Language -eq 'ja'){'再接続しました'}else{'Reconnected'}),'--contains','-t','6000') | Out-Null
+            UI @('wait-for','ApproveChat','-p','IsEnabled','--value','True','-t','3000') | Out-Null
+            UI @('wait-for','InboxRequestCount','--value','3','--contains','-t','3000') | Out-Null
+            Post 'message-6' 'shared-thread' 'alice' 'alpha newly arrived request' ([bool]$MattermostPlainReplies)
+            UI @('wait-for','InboxRequestCount','--value','3','--contains','-t','3000') | Out-Null
+            Post 'after-reconnect-message' 'shared-thread' 'alice' 'alpha after reconnect' $true
+            UI @('wait-for','InboxRequestCount','--value','4','--contains','-t','5000') | Out-Null
+            $snapshot=Invoke-RestMethod "$script:endpoint/test/results"
+            Assert-True (@($snapshot.replies | Where-Object { $_.message -like 'Chat Agent Bridge:*' }).Count -eq 1) 'Reconnect created duplicate greeting posts'
+            Capture 'inbox-reconnected'
+        }
     }
     Check 'Selected result belongs to selected request' {
         Set-Search 'InboxSearch' 'beta'

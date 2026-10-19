@@ -8,26 +8,31 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTransport, IChatConnectionEvents
+public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTransport, IChatConnectionEvents, IChatReconnectionEvents
 {
     public event Action? Connected;
+    public event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
     private const int MaxMessageBytes = 1024 * 1024;
     private readonly Uri _apiBase;
     private readonly HttpClient _http;
+    private readonly bool _allowInsecureLoopbackSocketForTests;
     private readonly BoundedSeenSet _seen = new(10_000);
     private string? _botToken;
     private string? _botUserId;
     private bool _disposed;
     private bool _connected;
+    private int _reconnectAttempt;
+    private CancellationTokenSource? _runLifetime;
     private long _connectionGeneration;
     private readonly object _progressOwner = new();
 
     public SlackSocketModeTransport() : this(TransportHttp.CreateClient(), new Uri("https://slack.com/api/")) { }
 
-    internal SlackSocketModeTransport(HttpClient http, Uri apiBase, string? token = null)
+    internal SlackSocketModeTransport(HttpClient http, Uri apiBase, string? token = null, bool allowInsecureLoopbackSocketForTests = false)
     {
         _http = http;
         _apiBase = apiBase;
+        _allowInsecureLoopbackSocketForTests = allowInsecureLoopbackSocketForTests;
         _botToken = token;
         if (token is not null)
         {
@@ -41,52 +46,150 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTran
         ObjectDisposedException.ThrowIf(_disposed, this);
         Interlocked.Increment(ref _connectionGeneration);
         _connected = false;
+        _reconnectAttempt = 0;
         ArgumentNullException.ThrowIfNull(onRequest);
         if (string.IsNullOrWhiteSpace(settings.SlackBotToken) || string.IsNullOrWhiteSpace(settings.SlackAppToken))
             throw new InvalidOperationException("Slack bot and app tokens are required for Socket Mode.");
         _botToken = settings.SlackBotToken.Trim();
+        _runLifetime?.Cancel();
+        _runLifetime?.Dispose();
+        _runLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var runToken = _runLifetime.Token;
         var sessions = new SessionStore();
         var appToken = settings.SlackAppToken.Trim();
-        var identity = await SlackApiAsync<AuthTestResponse>("auth.test", settings.SlackBotToken.Trim(), null, cancellationToken).ConfigureAwait(false);
+        var identity = await RetrySlackApiAsync<AuthTestResponse>("auth.test", _botToken, null, runToken,
+            static response => response.Ok, "Slack bot token validation failed.", static response => IsRetryableSlackError(response.Error)).ConfigureAwait(false);
         if (!identity.Ok || string.IsNullOrWhiteSpace(identity.UserId)) throw new InvalidOperationException("Slack bot token validation failed.");
         _botUserId = identity.UserId;
 
-        var open = await SlackApiAsync<ConnectionsOpenResponse>("apps.connections.open", appToken, new { }, cancellationToken).ConfigureAwait(false);
-        if (!open.Ok || string.IsNullOrWhiteSpace(open.Url) || !Uri.TryCreate(open.Url, UriKind.Absolute, out var socketUri) || socketUri.Scheme != "wss")
+        while (!runToken.IsCancellationRequested)
+        {
+            try
+            {
+                await RunSocketConnectionAsync(appToken, sessions, onRequest, settings, runToken).ConfigureAwait(false);
+                if (!runToken.IsCancellationRequested) throw new SlackReconnectException();
+            }
+            catch (OperationCanceledException) when (runToken.IsCancellationRequested) { return; }
+            catch (ObjectDisposedException) when (runToken.IsCancellationRequested) { return; }
+            catch (SlackReconnectException)
+            {
+                await DelayBeforeRetryAsync(runToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task RunSocketConnectionAsync(string appToken, SessionStore sessions,
+        Func<ChatRequest, CancellationToken, Task> onRequest, BridgeSettings settings, CancellationToken cancellationToken)
+    {
+        ConnectionsOpenResponse open;
+        try { open = await SlackApiAsync<ConnectionsOpenResponse>("apps.connections.open", appToken, new { }, cancellationToken).ConfigureAwait(false); }
+        catch (HttpRequestException ex) { throw new SlackReconnectException(ex); }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested) { throw new SlackReconnectException(ex); }
+        catch (InvalidOperationException ex) when (IsRetryableHttpFailure(ex.Message)) { throw new SlackReconnectException(ex); }
+        if (!open.Ok && IsRetryableSlackError(open.Error)) throw new SlackReconnectException();
+        if (!open.Ok || string.IsNullOrWhiteSpace(open.Url) || !Uri.TryCreate(open.Url, UriKind.Absolute, out var socketUri) ||
+            (socketUri.Scheme != "wss" && !(_allowInsecureLoopbackSocketForTests && socketUri.Scheme == "ws" && TransportHttp.IsLoopback(socketUri.Host))))
             throw new InvalidOperationException("Slack Socket Mode connection could not be opened.");
 
         using var socket = new ClientWebSocket();
+        socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+        socket.Options.KeepAliveTimeout = TimeSpan.FromSeconds(10);
         try { await socket.ConnectAsync(socketUri, cancellationToken).ConfigureAwait(false); }
-        catch (OperationCanceledException) { throw; }
-        catch (WebSocketException) { throw new InvalidOperationException("Slack Socket Mode connection failed."); }
+        catch (Exception ex) when (ex is WebSocketException or HttpRequestException or IOException) { throw new SlackReconnectException(ex); }
         _connected = true;
+        if (_reconnectAttempt > 0)
+            ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("slack", ChatReconnectionState.Reconnected, _reconnectAttempt, null));
+        _reconnectAttempt = 0;
         Connected?.Invoke();
         while (!cancellationToken.IsCancellationRequested && socket.State == WebSocketState.Open)
         {
             JsonDocument? received;
             try { received = await ReceiveJsonAsync(socket, cancellationToken).ConfigureAwait(false); }
-            catch (OperationCanceledException) { throw; }
-            catch (WebSocketException) { throw new InvalidOperationException("Slack Socket Mode connection failed."); }
+            catch (Exception ex) when (ex is WebSocketException or IOException) { throw new SlackReconnectException(ex); }
             using var document = received;
             if (document is null)
             {
-                if (!cancellationToken.IsCancellationRequested) throw new InvalidOperationException("Slack Socket Mode disconnected. Reconnect from the app to continue.");
+                if (!cancellationToken.IsCancellationRequested) throw new SlackReconnectException();
                 return;
             }
             var envelope = document.RootElement;
             var type = TryString(envelope, "type", out var envelopeType) ? envelopeType : "";
             if (type == "disconnect")
-                throw new InvalidOperationException("Slack closed the Socket Mode connection. Reconnect from the app to continue.");
+            {
+                var reason = TryString(envelope, "reason", out var disconnectReason) ? disconnectReason : "";
+                if (reason == "link_disabled") throw new InvalidOperationException("Slack Socket Mode was disabled for this app.");
+                // Slack sends `warning` shortly before normal recycling and `refresh_requested` when a fresh
+                // WebSocket URL is required. Fetch a new URL immediately for either normal refresh path.
+                if (reason is "warning" or "refresh_warning" or "refresh_requested" || string.IsNullOrEmpty(reason))
+                    throw new SlackReconnectException();
+                throw new SlackReconnectException();
+            }
             if (!TryString(envelope, "envelope_id", out var envelopeId)) continue;
             if (type == "events_api")
             {
-                await SendAsync(socket, new { envelope_id = envelopeId }, cancellationToken).ConfigureAwait(false);
+                try { await SendAsync(socket, new { envelope_id = envelopeId }, cancellationToken).ConfigureAwait(false); }
+                catch (Exception ex) when (ex is WebSocketException or IOException) { throw new SlackReconnectException(ex); }
                 if (!envelope.TryGetProperty("payload", out var payload) || !payload.TryGetProperty("event", out var evt)) continue;
                 var request = await ParseRequestAsync(evt, _botUserId, settings, sessions, cancellationToken).ConfigureAwait(false);
                 if (request is null || !_seen.TryAdd(request.MessageId)) continue;
                 await onRequest(request, cancellationToken).ConfigureAwait(false);
             }
         }
+    }
+
+    private async Task DelayBeforeRetryAsync(CancellationToken cancellationToken)
+    {
+        var attempt = ++_reconnectAttempt;
+        var delay = RetryDelay(attempt);
+        ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("slack", ChatReconnectionState.Reconnecting, attempt, delay));
+        await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static TimeSpan RetryDelay(int attempt) =>
+        TimeSpan.FromSeconds(Math.Min(30, Math.Pow(2, Math.Clamp(attempt - 1, 0, 5))));
+
+    private sealed class SlackReconnectException(Exception? inner = null)
+        : Exception("Slack Socket Mode connection was interrupted.", inner);
+
+    private async Task<T> RetrySlackApiAsync<T>(string method, string token, object? body, CancellationToken cancellationToken,
+        Func<T, bool> isValid, string invalidResponseMessage, Func<T, bool>? isRetryableResponse = null)
+    {
+        while (true)
+        {
+            try
+            {
+                var response = await SlackApiAsync<T>(method, token, body, cancellationToken).ConfigureAwait(false);
+                if (!isValid(response))
+                {
+                    if (isRetryableResponse?.Invoke(response) == true)
+                    {
+                        await DelayBeforeRetryAsync(cancellationToken).ConfigureAwait(false);
+                        continue;
+                    }
+                    throw new InvalidOperationException(invalidResponseMessage);
+                }
+                return response;
+            }
+            catch (HttpRequestException) { await DelayBeforeRetryAsync(cancellationToken).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            { await DelayBeforeRetryAsync(cancellationToken).ConfigureAwait(false); }
+            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+            { throw new OperationCanceledException(cancellationToken); }
+            catch (InvalidOperationException ex) when (IsRetryableHttpFailure(ex.Message))
+            { await DelayBeforeRetryAsync(cancellationToken).ConfigureAwait(false); }
+        }
+    }
+
+    private static bool IsRetryableSlackError(string? error) => error is
+        "ratelimited" or "rate_limited" or "internal_error" or "temporarily_unavailable";
+
+    private static bool IsRetryableHttpFailure(string message)
+    {
+        var marker = message.LastIndexOf("HTTP ", StringComparison.Ordinal);
+        if (marker < 0) return false;
+        var statusText = message.AsSpan(marker + 5);
+        return int.TryParse(statusText[..Math.Min(3, statusText.Length)], out var status) &&
+            (status == 429 || status >= 500);
     }
 
     public Task ReplyAsync(ChatRequest request, string text, CancellationToken cancellationToken)
@@ -143,7 +246,7 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTran
 
     public ValueTask DisposeAsync()
     {
-        if (!_disposed) { _disposed = true; _connected = false; _http.Dispose(); }
+        if (!_disposed) { _disposed = true; _connected = false; _runLifetime?.Cancel(); _http.Dispose(); }
         return ValueTask.CompletedTask;
     }
 
@@ -244,8 +347,12 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTran
         catch (JsonException) { return null; }
     }
 
-    private sealed record AuthTestResponse([property: JsonPropertyName("ok")] bool Ok, [property: JsonPropertyName("user_id")] string? UserId);
-    private sealed record ConnectionsOpenResponse([property: JsonPropertyName("ok")] bool Ok, [property: JsonPropertyName("url")] string? Url);
+    private sealed record AuthTestResponse([property: JsonPropertyName("ok")] bool Ok,
+        [property: JsonPropertyName("user_id")] string? UserId,
+        [property: JsonPropertyName("error")] string? Error);
+    private sealed record ConnectionsOpenResponse([property: JsonPropertyName("ok")] bool Ok,
+        [property: JsonPropertyName("url")] string? Url,
+        [property: JsonPropertyName("error")] string? Error);
     private sealed record SlackOkResponse([property: JsonPropertyName("ok")] bool Ok);
     private sealed record SlackPostResponse([property: JsonPropertyName("ok")] bool Ok,
         [property: JsonPropertyName("ts")] string? Timestamp,

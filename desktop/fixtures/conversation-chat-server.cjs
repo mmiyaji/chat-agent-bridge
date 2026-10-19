@@ -7,6 +7,7 @@ if (!portFile) throw new Error('Provide an output file for the ephemeral loopbac
 const replies = [];
 const updates = [];
 let failProgressEdits = false;
+let offlineUntil = 0;
 const sockets = new Set();
 const server = http.createServer(async (req, res) => {
   let raw = '';
@@ -26,6 +27,10 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify({ replies, updates, connections: sockets.size }));
   } else if (req.url === '/test/progress-errors' && req.method === 'POST') {
     failProgressEdits = body.enabled === true;
+    res.end('{}');
+  } else if (req.url === '/test/disconnect' && req.method === 'POST') {
+    offlineUntil = Date.now() + Math.min(10000, Math.max(0, Number(body.offlineMilliseconds) || 0));
+    for (const ws of sockets) ws.close(1013, 'temporary test outage');
     res.end('{}');
   } else if (req.headers.authorization !== 'Bearer offline-ui-fixture') {
     res.writeHead(401).end('{}');
@@ -49,6 +54,7 @@ const server = http.createServer(async (req, res) => {
 });
 const wss = new WebSocketServer({ server, path: '/api/v4/websocket' });
 wss.on('connection', ws => {
+  if (Date.now() < offlineUntil) { ws.close(1013, 'temporary test outage'); return; }
   ws.on('message', raw => {
     const message = JSON.parse(raw.toString());
     if (message.action !== 'authentication_challenge' || message.data?.token !== 'offline-ui-fixture') { ws.close(); return; }
