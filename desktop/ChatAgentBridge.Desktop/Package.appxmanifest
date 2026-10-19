@@ -17,7 +17,7 @@
   <mp:PhoneIdentity PhoneProductId="639B728E-E1C4-4079-B9F0-5053B9FF094A" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>Chat Agent Bridge (WinUI Preview)</DisplayName>
+    <DisplayName>Chat Agent Bridge</DisplayName>
     <PublisherDisplayName>Chat Agent Bridge</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -36,7 +36,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="Chat Agent Bridge (WinUI Preview)"
+        DisplayName="Chat Agent Bridge"
         Description="Native desktop bridge for local development agents"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"

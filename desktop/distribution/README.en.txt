@@ -1,5 +1,5 @@
-Chat Agent Bridge WinUI Preview
-==============================
+Chat Agent Bridge
+=================
 
 This ZIP installs a self-contained MSIX app for Windows. It is a preview release, not a Microsoft Store release. The package supports x64 and ARM64; Windows 11 is recommended. The manifest minimum is Windows 10 version 1809 (build 17763). ARM64 support is packaged when that architecture is selected, but availability does not mean every ARM64 device has been tested.
 
@@ -19,4 +19,4 @@ Import only the public CER whose thumbprint matches the official release. Never 
 
     powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1
 
-The installer does not elevate or change certificate trust. Launch the app from the Start menu. To install a later download, verify it and run its installer again; the matching package identity updates the existing preview installation. To remove the app, open Windows Settings > Apps > Installed apps, find Chat Agent Bridge (WinUI Preview), and uninstall it. When you stop using this preview certificate, remove it from Local Computer > Trusted People.
+The installer does not elevate or change certificate trust. Launch the app from the Start menu. To install a later download, verify it and run its installer again; the matching package identity updates the existing preview installation. To remove the app, open Windows Settings > Apps > Installed apps, find Chat Agent Bridge, and uninstall it. When you stop using this preview certificate, remove it from Local Computer > Trusted People.
