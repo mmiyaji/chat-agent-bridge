@@ -26,6 +26,7 @@ if (-not ([string]$manifest.Package.Identity.Name).StartsWith('CAB.Review.',[Str
     throw 'Use the already running isolated Review package.'
 }
 
+$requestedOnlyHelpers=[bool]$OnlyHelpers
 . "$PSScriptRoot/ActivityUiE2E.ps1" -AppProcessId $AppProcessId -DataDir $DataDir -Language $Language -OnlyHelpers
 $settingsPath=Join-Path $dataPath 'settings.json'
 $saved=Get-Content $settingsPath -Raw|ConvertFrom-Json
@@ -176,7 +177,7 @@ function Lookup-Thread{
     Wait-NonEmpty 'SlackThreadLookupStatus' 5
 }
 
-if($OnlyHelpers){return}
+if($requestedOnlyHelpers){return}
 
 try{
     Scope 'JumpSlack'
