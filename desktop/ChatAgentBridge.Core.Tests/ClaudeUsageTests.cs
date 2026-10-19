@@ -119,10 +119,20 @@ public sealed class ClaudeUsageTests
             };
             var store = new SessionStore(directory);
             var runner = new SessionAgentRunner(store, new AgentRunner());
+            const string japanesePrompt = "日本語で応答してください 😀🚀";
 
-            var first = await runner.RunAsync(key, settings, "first offline prompt");
+            var echo = await new AgentRunner().RunAsync(settings with
+            {
+                AgentProvider = AgentProfile.Custom,
+                AgentModel = null,
+                AgentArguments = ""
+            }, japanesePrompt);
+            Assert.True(echo.Success, echo.Error);
+            Assert.Equal(japanesePrompt, echo.Output);
+
+            var first = await runner.RunAsync(key, settings, japanesePrompt);
             Assert.True(first.Success, first.Error);
-            Assert.Equal("first offline prompt", first.Claude!.FinalMessage!.Split("prompt=", StringSplitOptions.None).Last());
+            Assert.Equal(japanesePrompt, first.Claude!.FinalMessage!.Split("prompt=", StringSplitOptions.None).Last());
             Assert.True(first.Claude.HasResult);
             var savedId = (await store.FindAsync(key))!.SessionId;
 

@@ -20,7 +20,8 @@ public sealed class AppServerProcessTests
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(35));
         var runner = new CodexAppServerRunner();
         var settings = new BridgeSettings { WorkspaceRoot = workspace.Path, AgentExecutable = executable! };
-        var first = await runner.RunAsync(settings, "first prompt", new AppServerRunOptions(
+        const string japanesePrompt = "日本語のapp-server prompt 😀🚀";
+        var first = await runner.RunAsync(settings, japanesePrompt, new AppServerRunOptions(
             ApprovalHandler: (approval, _) =>
             {
                 Assert.Equal("item/commandExecution/requestApproval", approval.Method);
@@ -35,7 +36,7 @@ public sealed class AppServerProcessTests
             }), timeout.Token).WaitAsync(TimeSpan.FromSeconds(40));
 
         Assert.True(first.Result.Success, first.Result.Error);
-        Assert.Contains("app-server-e2e: approved; answer=alpha; prompt=first prompt", first.Result.Output);
+        Assert.Contains($"app-server-e2e: approved; answer=alpha; prompt={japanesePrompt}", first.Result.Output);
         Assert.True(Guid.TryParse(first.SessionId, out _));
 
         var resumed = await runner.RunAsync(settings, "second prompt", new AppServerRunOptions(

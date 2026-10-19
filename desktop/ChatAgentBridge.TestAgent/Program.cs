@@ -1,4 +1,10 @@
 using System.Text.Json;
+using System.Text;
+
+// This offline fixture exchanges UTF-8 text over redirected standard streams with the bridge.
+// Pin both encodings explicitly so the machine's console code page cannot corrupt prompts or replies.
+Console.InputEncoding = new UTF8Encoding(false);
+Console.OutputEncoding = new UTF8Encoding(false);
 
 // Offline E2E fixture only. No model calls, command execution, file changes or networking.
 if (args is ["--version"])
