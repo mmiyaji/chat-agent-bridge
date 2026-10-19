@@ -4,7 +4,7 @@ namespace ChatAgentBridge.Core;
 public static class ExecutionPolicy
 {
     public static string NormalizePermissionMode(string? value) => Normalize(value, "inherit", ["inherit", "read-only", "workspace-write", "full-access", "ask"], "agent permission mode");
-    public static string NormalizeChatApprovalMode(string? value) => Normalize(value, "always", ["always", "first", "auto"], "chat approval mode");
+    public static string NormalizeChatApprovalMode(string? value) => Normalize(value, "first", ["always", "first", "auto"], "chat approval mode");
     public static string NormalizeChatResultMode(string? value) => Normalize(value, "manual", ["manual", "auto", "none"], "chat result mode");
 
     public static string NormalizeTrustedRoots(string? value)

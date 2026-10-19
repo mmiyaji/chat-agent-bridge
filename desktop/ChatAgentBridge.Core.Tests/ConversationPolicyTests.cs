@@ -40,6 +40,8 @@ public sealed class ConversationPolicyTests
         Assert.False(ConversationExecutionPolicy.RequiresApproval(Owner, settings, binding));
         Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner, settings, null));
         Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner with { UserId = "U2" }, settings, binding));
+        Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner with { ThreadId = "2.0" }, settings, binding));
+        Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner with { ChannelId = "C2" }, settings, binding));
         Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner, settings with { AgentPermissionMode = "full-access" }, binding));
         Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner, settings with { ChatResultMode = "auto" }, binding));
         Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner, settings with { SlackBotToken = "changed" }, binding));

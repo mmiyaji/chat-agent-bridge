@@ -11,9 +11,41 @@ public sealed class ExecutionPolicyTests
         Assert.Equal("inherit", settings.AgentPermissionMode);
         Assert.False(settings.AllowAgentNetwork);
         Assert.Equal("", settings.TrustedWorkspaceRoots);
-        Assert.Equal("always", settings.ChatApprovalMode);
+        Assert.Equal("first", settings.ChatApprovalMode);
         Assert.Equal("manual", settings.ChatResultMode);
         Assert.Equal("", settings.SlackAllowedChannelIds);
+    }
+
+    [Theory]
+    [InlineData(null, "first")]
+    [InlineData("", "first")]
+    [InlineData("   ", "first")]
+    [InlineData("always", "always")]
+    [InlineData("first", "first")]
+    [InlineData("auto", "auto")]
+    public void ChatApprovalModeUsesFirstAsFallbackAndPreservesExplicitModes(string? stored, string expected)
+    {
+        Assert.Equal(expected, ExecutionPolicy.NormalizeChatApprovalMode(stored));
+    }
+
+    [Theory]
+    [InlineData("{\"SchemaVersion\":1}", "first")]
+    [InlineData("{\"SchemaVersion\":1,\"ChatApprovalMode\":null}", "first")]
+    [InlineData("{\"SchemaVersion\":1,\"ChatApprovalMode\":\" \"}", "first")]
+    [InlineData("{\"SchemaVersion\":1,\"ChatApprovalMode\":\"always\"}", "always")]
+    [InlineData("{\"SchemaVersion\":1,\"ChatApprovalMode\":\"first\"}", "first")]
+    [InlineData("{\"SchemaVersion\":1,\"ChatApprovalMode\":\"auto\"}", "auto")]
+    public async Task SettingsStoreNormalizesFallbackAndPreservesExplicitChatApprovalModes(string json, string expected)
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(path);
+            await File.WriteAllTextAsync(Path.Combine(path, "settings.json"), json);
+            var settings = await new SettingsStore(path).LoadAsync();
+            Assert.Equal(expected, settings.ChatApprovalMode);
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
     }
 
     [Fact]

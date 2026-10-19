@@ -23,7 +23,7 @@ public sealed record BridgeSettings
     public string AgentPermissionMode { get; init; } = "inherit";
     public bool AllowAgentNetwork { get; init; }
     public string TrustedWorkspaceRoots { get; init; } = "";
-    public string ChatApprovalMode { get; init; } = "always";
+    public string ChatApprovalMode { get; init; } = "first";
     public string ChatResultMode { get; init; } = "manual";
     public string SlackAllowedChannelIds { get; init; } = "";
     public string SlackAllowedThreadIds { get; init; } = "";

@@ -194,7 +194,7 @@ public partial class MainPageViewModel : ObservableObject
     }
     [ObservableProperty] public partial bool AllowAgentNetwork { get; set; }
     [ObservableProperty] public partial string TrustedWorkspaceRoots { get; set; } = string.Empty;
-    [ObservableProperty] public partial string ChatApprovalMode { get; set; } = "always";
+    [ObservableProperty] public partial string ChatApprovalMode { get; set; } = "first";
     [ObservableProperty] public partial string ChatResultMode { get; set; } = "manual";
     [ObservableProperty] public partial string SlackAllowedChannelIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackAllowedThreadIds { get; set; } = string.Empty;

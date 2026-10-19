@@ -257,12 +257,12 @@ try {
     Add-Pass 'Slack and Mattermost validation block until required credentials and allowed user are entered'
 
     $currentStep = 'page 5 safety and connection'
-    $currentSubstep = 'enable auto-connect and confirm conservative policy defaults'
+    $currentSubstep = 'enable auto-connect and confirm first-request approval defaults'
     Invoke-UI @('scroll-into-view','WizardAutoConnect') | Out-Null
     Invoke-UI @('invoke','WizardAutoConnect') | Out-Null
     Assert-That ((Get-Value 'WizardAutoConnect') -match '^On$') 'Auto-connect toggle did not turn on.'
     Invoke-UI @('scroll-into-view','WizardChatApprovalMode') | Out-Null
-    Assert-That ((Get-Value 'WizardChatApprovalMode') -match '毎回確認') 'Chat approval did not default to per-request confirmation.'
+    Assert-That ((Get-Value 'WizardChatApprovalMode') -match '最初だけ確認') 'Chat approval did not default to first-request confirmation.'
     Invoke-UI @('scroll-into-view','WizardChatResultMode') | Out-Null
     Assert-That ((Get-Value 'WizardChatResultMode') -match '手動で確認して共有') 'Chat result sharing did not default to manual review.'
     Invoke-UI @('scroll-into-view','WizardAgentPermissionMode') | Out-Null
@@ -289,7 +289,7 @@ try {
         @('AgentProvider','claude'), @('AgentExecutable',$fixturePath), @('WorkspaceRoot',$workspace),
         @('AgentModel','fixture-claude-large'), @('AgentReasoningEffort','high'),
         @('MattermostServerUrl',$ServerUrl), @('MattermostChannelId','test-channel'),
-        @('MattermostAllowedUserIds','test-member'), @('AutoConnectProvider','mattermost')
+        @('MattermostAllowedUserIds','test-member'), @('AutoConnectProvider','mattermost'), @('ChatApprovalMode','first')
     )) { Assert-That ([string]$saved.($pair[0]) -eq [string]$pair[1]) "Saved settings field $($pair[0]) did not match expected value." }
     Assert-That (([string]$saved.MattermostToken).StartsWith('dpapi:') -and [string]$saved.MattermostToken -ne $token) 'Saved Mattermost token was absent or was not protected at rest.'
     $progressFile = Join-Path $dataPath 'onboarding.json'
