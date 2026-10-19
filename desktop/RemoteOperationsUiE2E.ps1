@@ -3,7 +3,8 @@ param(
     [string]$TestAgentDirectory,
     [ValidateSet('ja','en')][string]$Language = 'ja',
     [switch]$ControlsOnly,
-    [switch]$ModelsOnly
+    [switch]$ModelsOnly,
+    [switch]$AgentSwitchOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -61,6 +62,7 @@ function Wait-UI([string]$AutomationId, [string]$Value = '', [int]$TimeoutSecond
 }
 
 function Select-ComboContaining([string]$Id, [string]$Text) {
+    Wait-UI $Id '' 10
     UI @('invoke', $Id) | Out-Null
     $tree = (UI @('inspect', $Id, '--depth', '5')) | ConvertFrom-Json
     function Find-Choice($Nodes) {
@@ -423,6 +425,130 @@ function Check-ModelStage {
         $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message.Contains('!cab model') -and $_.message.Contains('!cab stop') }).Count -gt 0 }
         $history = Get-Content (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json
         Assert-True ($history.Records.Count -eq 2) 'Control commands started extra AI turns'
+        Assert-True (-not (Test-Path (Join-Path $script:stageData 'conversation-summaries.json'))) 'Conversation notes were captured before CLI connection registration'
+    }
+}
+
+function Check-AgentSwitchStage([string]$AgentHost) {
+    $root = 'agent-root-' + $runId
+    $script:agentSummarySentinel = 'source-note-' + $runId
+    Check 'Only successfully checked local CLI settings can be registered' {
+        UI @('invoke', 'NavAgentSettings') | Out-Null
+        UI @('wait-for', 'RegisterAgentConnection', '-p', 'IsEnabled', '--value', 'False', '-t', '5000') | Out-Null
+        foreach ($provider in @('claude', 'codex')) {
+            UI @('invoke', 'AgentProvider') | Out-Null
+            UI @('invoke', $(if($provider -eq 'codex'){'ProviderOptionCodex'}else{'ProviderOptionClaude'})) | Out-Null
+            UI @('set-value', 'AgentExecutable', (Join-Path $AgentHost ($provider+'.exe'))) | Out-Null
+            UI @('invoke', 'SettingsCheckCli') | Out-Null
+            UI @('wait-for', 'RegisterAgentConnection', '-p', 'IsEnabled', '--value', 'True', '-t', '15000') | Out-Null
+            UI @('invoke', 'RegisterAgentConnection') | Out-Null
+            Wait-UI 'RegisteredConnectionSummary' $(if($provider -eq 'codex'){'Codex'}else{'Claude Code'})
+        }
+        $profiles = (Get-Content (Join-Path $script:stageData 'agent-connections.json') -Raw | ConvertFrom-Json).Profiles
+        Assert-True ($profiles.Count -eq 2) 'The checked CLI profiles were not persisted'
+        Assert-True (@($profiles | Where-Object { $_.Executable -notlike ($AgentHost+'*') }).Count -eq 0) 'A real CLI was registered'
+        Capture 'registered-cli-connections'
+        UI @('invoke', 'LoadRegisteredClaudeConnection') | Out-Null
+        UI @('invoke', 'NavChat') | Out-Null
+    }
+    Check 'Successful conversation creates encrypted local notes without extra AI turns' {
+        Post ('agent-source-' + $runId) $root 'alice' $script:agentSummarySentinel
+        Wait-UI 'ChatOutput' 'claude-e2e: new' 20
+        $script:sourceSession = (Get-Content (Join-Path $script:stageData 'sessions.json') -Raw | ConvertFrom-Json).Bindings[0].SessionId
+        $until = [DateTime]::UtcNow.AddSeconds(5)
+        while (-not (Test-Path (Join-Path $script:stageData 'conversation-summaries.json')) -and [DateTime]::UtcNow -lt $until) { Start-Sleep -Milliseconds 100 }
+        $summaryJson = Get-Content (Join-Path $script:stageData 'conversation-summaries.json') -Raw
+        Assert-True (-not $summaryJson.Contains($script:agentSummarySentinel)) 'Conversation text was stored in plaintext'
+        Post ('agent-choice-' + $runId) $root 'alice' 'agent codex'
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.message.Contains('!cab agent codex summary') }).Count -gt 0 }
+    }
+    Check 'Chat provider switch requires local approval and preserves pending state on restart' {
+        Post ('agent-switch-' + $runId) $root 'alice' 'agent codex summary'
+        Wait-UI 'agent codex summary'
+        UI @('click', 'agent codex summary') | Out-Null
+        Select-ComboContaining 'ChatRequests' 'agent codex summary'
+        UI @('invoke', 'ApproveChat') | Out-Null
+        Wait-UI 'ChatRunConfirmation'
+        Capture 'agent-switch-chat-confirmation'
+        UI @('invoke', 'PrimaryButton') | Out-Null
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and ($_.message.Contains('codexへの切り替えを保存') -or $_.message.Contains('Switched to codex')) }).Count -eq 1 }
+        $saved = Get-Content (Join-Path $script:stageData 'sessions.json') -Raw | ConvertFrom-Json
+        Assert-True ($saved.Bindings[0].SessionId -eq $script:sourceSession -and $saved.Bindings[0].NextAgentProvider -eq 'codex') 'The previous session was lost or reused'
+        Assert-True ($saved.Agents[0].RequiresApproval -and [bool]$saved.Agents[0].ProtectedHandoff) 'Handoff/approval state was not saved'
+        Assert-True (-not ((Get-Content (Join-Path $script:stageData 'sessions.json') -Raw).Contains($script:agentSummarySentinel))) 'Pending handoff was stored as plaintext'
+        UI @('invoke', 'DisconnectChat') | Out-Null
+        Assert-True ($script:app.CloseMainWindow()) 'The isolated app did not close'
+        Assert-True ($script:app.WaitForExit(5000)) 'The isolated app did not exit'
+        $start = [Diagnostics.ProcessStartInfo]::new((Join-Path ([IO.Path]::GetFullPath($AppDirectory)) 'ChatAgentBridge.Desktop.exe'))
+        $start.UseShellExecute = $false
+        $start.WorkingDirectory = [IO.Path]::GetTempPath()
+        $start.ArgumentList.Add('--data-dir')
+        $start.ArgumentList.Add($script:stageData)
+        $script:app = [Diagnostics.Process]::Start($start)
+        Wait-UI 'NavChat' '' 30
+        UI @('invoke', 'NavAgentSettings') | Out-Null
+        Wait-UI 'RegisteredConnectionSummary' 'Codex'
+        UI @('invoke', 'NavChat') | Out-Null
+        UI @('invoke', 'ConnectMattermost') | Out-Null
+        $null = Wait-Fixture { param($s) $s.connections -eq 1 }
+    }
+    Check 'Target starts a new session only after approval, then consumes its summary once' {
+        Post ('agent-target-' + $runId) $root 'alice' 'target request after provider switch'
+        Wait-UI 'target request after provider switch'
+        UI @('click', 'target request after provider switch') | Out-Null
+        Select-ComboContaining 'ChatRequests' 'target request after provider switch'
+        UI @('wait-for', 'ApproveChat', '-p', 'IsEnabled', '--value', 'True', '-t', '5000') | Out-Null
+        $history = Get-Content (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json
+        Assert-True ($history.Records.Count -eq 1) 'Automatic mode bypassed the post-switch approval'
+        UI @('invoke', 'ApproveChat') | Out-Null
+        Wait-UI 'ChatRunConfirmation'
+        UI @('invoke', 'PrimaryButton') | Out-Null
+        Wait-UI 'ChatOutput' 'codex-e2e: new' 20
+        Wait-UI 'ChatOutput' $script:agentSummarySentinel 10
+        $saved = Get-Content (Join-Path $script:stageData 'sessions.json') -Raw | ConvertFrom-Json
+        Assert-True ($saved.Bindings[0].SessionId -ne $script:sourceSession -and -not $saved.Bindings[0].NextAgentProvider) 'The target reused the previous agent session'
+        $until=[DateTime]::UtcNow.AddSeconds(5)
+        do { $saved=Get-Content (Join-Path $script:stageData 'sessions.json') -Raw|ConvertFrom-Json; if (-not $saved.Agents[0].RequiresApproval) {break}; Start-Sleep -Milliseconds 100 } while ([DateTime]::UtcNow -lt $until)
+        Assert-True (-not $saved.Agents[0].RequiresApproval -and -not $saved.Agents[0].ProtectedHandoff) 'The handoff was not consumed'
+        Post ('agent-follow-' + $runId) $root 'alice' 'ordinary follow-up after handoff'
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.message.Contains('codex-e2e: resumed; prompt=ordinary follow-up after handoff') }).Count -eq 1 }
+    }
+    Check 'PC provider dialog offers summary preview and can choose a fresh session' {
+        UI @('invoke', 'NavHistory') | Out-Null
+        Wait-UI 'SavedSessionsList'
+        $tree=(UI @('inspect','SavedSessionsList','--depth','4'))|ConvertFrom-Json
+        function Find-AgentRow($Nodes) { foreach($item in $Nodes) { if($item.type -eq 'ListItem'){$item.selector}; if($item.children){Find-AgentRow $item.children} } }
+        $row=@($tree.windows|ForEach-Object{Find-AgentRow $_.elements})|Select-Object -First 1
+        UI @('click',$row)|Out-Null
+        UI @('invoke','SwitchSessionAgent')|Out-Null
+        Wait-UI 'AgentSwitchDialog'
+        UI @('invoke','AgentSwitchIncludeSummary')|Out-Null
+        UI @('focus','AgentSwitchSummaryPreview')|Out-Null
+        Wait-UI 'AgentSwitchSummaryPreview' 'ordinary follow-up'
+        Capture 'agent-switch-summary-preview'
+        UI @('invoke','AgentSwitchIncludeSummary')|Out-Null
+        UI @('invoke','PrimaryButton')|Out-Null
+        Wait-UI 'HistoryStatus' $(if($script:language -eq 'ja'){'切り替えを保存'}else{'Switched to'})
+        $saved=Get-Content (Join-Path $script:stageData 'sessions.json') -Raw|ConvertFrom-Json
+        Assert-True ($saved.Agents[0].Provider -eq 'claude' -and -not $saved.Agents[0].ProtectedHandoff) 'Fresh switching transferred a summary'
+        UI @('invoke','NavChat')|Out-Null
+        Post ('agent-fresh-' + $runId) $root 'alice' 'fresh provider request'
+        Wait-UI 'fresh provider request'
+        Select-ComboContaining 'ChatRequests' 'fresh provider request'
+        UI @('invoke','ApproveChat')|Out-Null
+        Wait-UI 'ChatRunConfirmation'
+        UI @('invoke','PrimaryButton')|Out-Null
+        Wait-UI 'ChatOutput' 'claude-e2e: new; prompt=fresh provider request' 20
+    }
+    Check 'Unregistered providers and other account/thread scopes cannot take over this conversation' {
+        $before=Get-Content (Join-Path $script:stageData 'sessions.json') -Raw
+        Post ('agent-unauthorized-' + $runId) $root 'mallory' 'agent codex fresh'
+        Post ('agent-other-user-' + $runId) $root 'bob' 'agent codex fresh'
+        Post ('agent-other-thread-' + $runId) ('other-'+$root) 'alice' 'agent codex fresh'
+        Post ('agent-unregistered-' + $runId) $root 'alice' 'agent gemini fresh'
+        $null = Wait-Fixture { param($s) @($s.replies|Where-Object{$_.message.Contains('!cab agent codex summary')}).Count -ge 2 }
+        Start-Sleep -Milliseconds 500
+        Assert-True ((Get-Content (Join-Path $script:stageData 'sessions.json') -Raw) -eq $before) 'An unrelated account, thread or provider changed the session'
     }
 }
 
@@ -476,7 +602,15 @@ try {
             throw 'codex.exe is not the marked offline TestAgent fixture.'
         }
     }
-    if ($ModelsOnly) {
+    if ($AgentSwitchOnly) {
+        $claude = Join-Path $agentHost 'claude.exe'
+        Assert-True ((Get-FileHash $claude).Hash -eq (Get-FileHash $fixtureExe).Hash) 'Claude executable must be the offline fixture'
+        $script:stageData = Join-Path $runRoot 'agent-switch'
+        New-Item -ItemType Directory -Path $script:stageData -Force | Out-Null
+        New-OfflineServer
+        New-App $script:stageData 'claude' $claude '' 'auto'
+        Check-AgentSwitchStage $agentHost
+    } elseif ($ModelsOnly) {
         $claude = Join-Path $agentHost 'claude.exe'
         Assert-True ((Get-FileHash $claude).Hash -eq (Get-FileHash $fixtureExe).Hash) 'Claude executable must be the offline fixture'
         $script:stageData = Join-Path $runRoot 'models'

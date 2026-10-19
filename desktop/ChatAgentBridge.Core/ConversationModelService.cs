@@ -46,7 +46,7 @@ public sealed class ConversationModelService
         Func<CancellationToken, Task<bool>> canChange, CancellationToken token = default)
     {
         if (!await canChange(token).ConfigureAwait(false)) throw new UnauthorizedAccessException();
-        var binding = await _sessions.FindAsync(key, token).ConfigureAwait(false)
+        var binding = await _sessions.FindExecutionBindingAsync(key, token).ConfigureAwait(false)
             ?? throw new KeyNotFoundException("Start a conversation before changing its model.");
         var provider = AgentProfile.ResolveProvider(settings);
         var matches = provider == AgentProfile.Claude ? binding.AgentArguments == "claude-stream-json-v1" :

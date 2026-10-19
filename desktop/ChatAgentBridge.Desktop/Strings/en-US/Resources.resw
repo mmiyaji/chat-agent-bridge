@@ -965,4 +965,11 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ResolveSlackThreadButton.Content" xml:space="preserve"><value>Check conversation</value></data>
   <data name="AddSlackThreadButton.Content" xml:space="preserve"><value>Add this conversation</value></data>
   <data name="HistoryCompactFilters.Header" xml:space="preserve"><value>Filters</value></data>
+  <data name="AgentConnectionRegistrationTitle.Text" xml:space="preserve"><value>Register this CLI connection</value></data>
+  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>Register the Codex or Claude Code CLI after a successful check. This saves its local executable and selected agent options for conversation switching; it does not copy login credentials. After registration, brief successful-conversation excerpts are encrypted on this PC for handoff.</value></data>
+  <data name="RegisterAgentConnection.Content" xml:space="preserve"><value>Register this CLI connection</value></data>
+  <data name="RegisteredConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Registered CLI connections</value></data>
+  <data name="LoadRegisteredCodexConnection.Content" xml:space="preserve"><value>Load saved Codex</value></data>
+  <data name="LoadRegisteredClaudeConnection.Content" xml:space="preserve"><value>Load saved Claude Code</value></data>
+  <data name="ConnectionRegistrationStatus.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>CLI connection status</value></data>
 </root>

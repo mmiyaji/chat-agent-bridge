@@ -6,7 +6,7 @@ public static class PolicyText
     public const string Version = ChatAgentBridge.Core.OnboardingConsentStore.CurrentPolicyVersion;
     private const string JapaneseTerms = """
         Chat Agent Bridge 利用規約（開発プレビュー）
-        文書バージョン：2026-10-18.1
+        文書バージョン：2026-10-20.1
         提供者：mmiyaji
         お問い合わせ：mail@ruhenheim.org
 
@@ -31,7 +31,7 @@ public static class PolicyText
 
     private const string JapanesePrivacy = """
         Chat Agent Bridge プライバシーポリシー（開発プレビュー）
-        文書バージョン：2026-10-18.1
+        文書バージョン：2026-10-20.1
         提供者：mmiyaji
         お問い合わせ：mail@ruhenheim.org
 
@@ -39,7 +39,7 @@ public static class PolicyText
         本アプリは、利用者が設定したチャットとローカルCLIを接続し、依頼の実行、会話の継続、アクセス制御、状態確認を行うために情報を取り扱います。依頼文、実行結果、アカウント・チャンネル・スレッドID、作業フォルダー、モデル等の設定、セッション識別子、実行状況・使用量等を扱います。
 
         2. このPCへの保存
-        接続・実行設定、セッションの関連付け、実行履歴・監査情報、同意した文書のバージョンと日時を、このWindowsユーザーのアプリデータフォルダーに保存します。接続トークンはWindows DPAPIで暗号化して保存します。ブリッジの履歴・監査ファイルには通常、依頼本文・結果本文を保存しませんが、作業パスや識別子等は含まれます。本文は画面表示や処理のためメモリーで扱い、別途CLIや外部サービスに保存されることがあります。暗号化はPC管理者や侵害されたPCからの保護を保証するものではありません。
+        接続・実行設定、セッションの関連付け、実行履歴・監査情報、同意した文書のバージョンと日時を、このWindowsユーザーのアプリデータフォルダーに保存します。接続トークンはWindows DPAPIで暗号化して保存します。ブリッジの履歴・監査ファイルには通常、依頼本文・結果本文を保存しませんが、作業パスや識別子等は含まれます。CLI接続の登録後、会話の引き継ぎ用に、直近3回までの成功した依頼・結果の抜粋をWindows DPAPIで暗号化して別ファイルに保存します。保管する会話は最大200件で、各メモは最大8,000文字です。「要約を引き継ぐ」を選んだ場合だけ、切り替え先CLIへの次の依頼にメモを添えます。本文は画面表示や処理のためメモリーでも扱い、別途CLIや外部サービスに保存されることがあります。暗号化はPC管理者や侵害されたPCからの保護を保証するものではありません。
 
         3. 外部との通信と共有範囲
         Slackまたは設定したMattermostサーバーとの間で、依頼・応答・接続状態等を送受信します。実行時には依頼文と作業に必要な情報を選択したCLIへ渡します。CLIは、その設定と提供者の方針に従い、AIサービス等へデータを送信する場合があります。ローカルPCでCLIを起動することは、AI処理やデータ保存がすべてPC内で完結することを意味しません。各外部サービスのプライバシーポリシー・契約も確認してください。
@@ -61,7 +61,7 @@ public static class PolicyText
 
     private const string EnglishTerms = """
         Chat Agent Bridge Terms of Use (Development Preview)
-        Document version: 2026-10-18.1
+        Document version: 2026-10-20.1
         Provider: mmiyaji
         Contact: mail@ruhenheim.org
 
@@ -86,7 +86,7 @@ public static class PolicyText
 
     private const string EnglishPrivacy = """
         Chat Agent Bridge Privacy Policy (Development Preview)
-        Document version: 2026-10-18.1
+        Document version: 2026-10-20.1
         Provider: mmiyaji
         Contact: mail@ruhenheim.org
 
@@ -94,7 +94,7 @@ public static class PolicyText
         The application connects chat services configured by you with a local CLI to run requests, continue conversations, control access, and show status. It handles request text, execution results, account, channel and thread IDs, settings such as working folders and models, session identifiers, execution status, and usage information.
 
         2. Storage on this PC
-        Connection and execution settings, session associations, execution history and audit information, and the version and date of documents you accepted are stored in this Windows user's application data folder. Connection tokens are encrypted with Windows DPAPI. Bridge history and audit files ordinarily do not store request or result text, but can include working paths and identifiers. Text is handled in memory for display and processing, and may also be stored separately by a CLI or external service. Encryption does not guarantee protection from a PC administrator or a compromised PC.
+        Connection and execution settings, session associations, execution history and audit information, and the version and date of documents you accepted are stored in this Windows user's application data folder. Connection tokens are encrypted with Windows DPAPI. Bridge history and audit files ordinarily do not store request or result text, but can include working paths and identifiers. After you register a CLI connection, excerpts of up to three recent successful requests and results are saved in a separate file encrypted with Windows DPAPI. At most 200 conversation notes are retained, each up to 8,000 characters. A note is attached to the next request to the target CLI only when you select summary transfer. Text is also handled in memory for display and processing, and may also be stored separately by a CLI or external service. Encryption does not guarantee protection from a PC administrator or a compromised PC.
 
         3. External communications and sharing
         The application exchanges requests, responses, and connection status with Slack or the Mattermost server you configure. During execution, it passes the request and information needed for the task to the selected CLI. Depending on its configuration and provider policies, the CLI may send data to AI services. Running a CLI on a local PC does not mean that all AI processing or data storage happens on that PC. Review the privacy policies and agreements of each external service.

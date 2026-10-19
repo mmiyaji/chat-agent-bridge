@@ -224,6 +224,19 @@
                                     <TextBlock Text="{x:Bind ViewModel.CliVersion, Mode=OneWay}" TextWrapping="Wrap" />
                                     <TextBlock Text="{x:Bind ViewModel.CliExecutablePath, Mode=OneWay}" TextWrapping="Wrap" />
                                     <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SettingsCliCheckSummary" />
+                                    <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="AgentConnectionRegistrationCard">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="AgentConnectionRegistrationTitle" />
+                                            <TextBlock TextWrapping="Wrap" x:Uid="AgentConnectionRegistrationHelp" />
+                                            <Button Command="{x:Bind ViewModel.RegisterAgentConnectionCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="RegisterAgentConnection" x:Uid="RegisterAgentConnection" />
+                                            <TextBlock Text="{x:Bind ViewModel.RegisteredConnectionSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="RegisteredConnectionSummary" />
+                                            <StackPanel Spacing="8">
+                                                <Button Command="{x:Bind ViewModel.LoadRegisteredCodexConnectionCommand}" IsEnabled="{x:Bind ViewModel.HasRegisteredCodexConnection, Mode=OneWay}" AutomationProperties.AutomationId="LoadRegisteredCodexConnection" x:Uid="LoadRegisteredCodexConnection" />
+                                                <Button Command="{x:Bind ViewModel.LoadRegisteredClaudeConnectionCommand}" IsEnabled="{x:Bind ViewModel.HasRegisteredClaudeConnection, Mode=OneWay}" AutomationProperties.AutomationId="LoadRegisteredClaudeConnection" x:Uid="LoadRegisteredClaudeConnection" />
+                                            </StackPanel>
+                                            <TextBlock Text="{x:Bind ViewModel.ConnectionRegistrationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ConnectionRegistrationStatus" />
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
                                 <StackPanel Spacing="12" Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsBasicProvider), Mode=OneWay}">
 

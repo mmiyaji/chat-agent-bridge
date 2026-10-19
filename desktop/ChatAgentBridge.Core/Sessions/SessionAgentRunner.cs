@@ -29,7 +29,8 @@ public sealed class SessionAgentRunner
         CancellationToken cancellationToken)
     {
         settings = await _store.ApplyWorkspaceAsync(key, settings, cancellationToken).ConfigureAwait(false);
-        var existing = await _store.FindAsync(key, cancellationToken).ConfigureAwait(false);
+        var existing = await _store.FindExecutionBindingAsync(key, cancellationToken).ConfigureAwait(false);
+        prompt = await _store.PrepareHandoffPromptAsync(key, prompt, cancellationToken).ConfigureAwait(false);
         if (existing?.AgentPermissionMode is not null)
             settings = settings with { AgentPermissionMode = existing.AgentPermissionMode };
         var provider = AgentProfile.ResolveProvider(settings);

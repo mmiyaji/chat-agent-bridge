@@ -688,4 +688,10 @@ Conversation ID (first message): {2}</value></data>
   <data name="SlackThreadAlreadyAllowed" xml:space="preserve"><value>Channel and conversation {0} are already in the allowed-scope draft.</value></data>
   <data name="SlackThreadAddedSaveNeeded" xml:space="preserve"><value>Added channel {0} and conversation {1} to the allowlist. Save settings and reconnect Slack to apply it.</value></data>
   <data name="SlackThreadAllowlistInvalid" xml:space="preserve"><value>The channel or thread scope list is invalid or already has 100 entries. Fix the lists before adding this conversation.</value></data>
+  <data name="NoRegisteredConnections" xml:space="preserve"><value>No CLI connections are registered yet.</value></data>
+  <data name="RegisteredConnections" xml:space="preserve"><value>Registered CLI connections: {0}</value></data>
+  <data name="RegisteredConnectionsUnavailable" xml:space="preserve"><value>Saved CLI connections could not be loaded: {0}</value></data>
+  <data name="ConnectionRegistered" xml:space="preserve"><value>{0} CLI connection registered on this PC.</value></data>
+  <data name="ConnectionRegistrationFailed" xml:space="preserve"><value>Could not register this CLI connection: {0}</value></data>
+  <data name="ConnectionLoaded" xml:space="preserve"><value>Saved {0} settings loaded. Save settings to use them as the app defaults.</value></data>
 </root>

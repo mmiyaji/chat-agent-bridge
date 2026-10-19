@@ -75,6 +75,18 @@ if (args.Contains("--print"))
     });
     return;
 }
+if (args is ["exec", ..])
+{
+    var resume = Array.IndexOf(args, "resume");
+    var id = resume >= 0 ? args.FirstOrDefault(argument => Guid.TryParse(argument, out _)) ?? Guid.NewGuid().ToString("D") : Guid.NewGuid().ToString("D");
+    var modelIndex = Array.IndexOf(args, "--model");
+    var model = modelIndex >= 0 ? args[modelIndex + 1] : "fixture-codex";
+    var input = await Console.In.ReadToEndAsync();
+    await WriteAsync(new { type = "thread.started", thread_id = id });
+    await WriteAsync(new { type = "item.completed", item = new { type = "agent_message", text = $"codex-e2e: {(resume >= 0 ? "resumed" : "new")}; prompt={input}" } });
+    await WriteAsync(new { type = "turn.completed", model, usage = new { input_tokens = 50, output_tokens = 20, cached_input_tokens = 10 } });
+    return;
+}
 if (args is not ["app-server", ..])
 {
     Console.Write(await Console.In.ReadToEndAsync());

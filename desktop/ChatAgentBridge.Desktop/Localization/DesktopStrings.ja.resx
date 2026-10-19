@@ -384,7 +384,7 @@
   <data name="ChatInputTextReply" xml:space="preserve"><value>回答: !cab answer {0} {1} 回答内容</value></data>
   <data name="ChatInputOptionReply" xml:space="preserve"><value>選択肢の番号で回答: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>別の回答: !cab answer {0} {1} other 回答内容</value></data>
-  <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:&#10;&gt; !cab &lt;依頼&gt; — エージェントに依頼する&#10;&gt; !cab command / !cab commands / !cab help — この一覧を表示する&#10;&gt; !cab model / !cab model list / !cab model モデルID / !cab model default — この会話のモデル確認・候補取得・変更・既定に戻す&#10;&gt; !cab status — 自分の依頼状況を表示する&#10;&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す&#10;&gt; !cab folder &quot;C:\path&quot; — 作業先変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要&#10;&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）&#10;&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する&#10;&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する&#10;&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する&#10;&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効&#10;新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このスレッドにある自分の依頼だけに適用されます。</value></data>
+  <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:&#10;&gt; !cab &lt;依頼&gt; — エージェントに依頼する&#10;&gt; !cab command / !cab commands / !cab help — この一覧を表示する&#10;&gt; !cab agent — 登録済みCLI接続と要約あり／なしの切り替え方法を表示&#10;&gt; !cab model / !cab model list / !cab model モデルID / !cab model default — この会話のモデル確認・候補取得・変更・既定に戻す&#10;&gt; !cab status — 自分の依頼状況を表示する&#10;&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す&#10;&gt; !cab folder &quot;C:\path&quot; — 作業先変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要&#10;&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）&#10;&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する&#10;&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する&#10;&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する&#10;&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効&#10;新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このスレッドにある自分の依頼だけに適用されます。</value></data>
   <data name="HistoryWorkspaceFilterLabel" xml:space="preserve"><value>作業フォルダー</value></data>
   <data name="HistoryWorkspaceAll" xml:space="preserve"><value>すべての作業フォルダー</value></data>
   <data name="HistorySortLabel" xml:space="preserve"><value>並び順</value></data>
@@ -421,4 +421,25 @@
   <data name="ChatModelFailed" xml:space="preserve"><value>モデルの取得・変更ができませんでした。!cab model list で取得した正確なモデルIDを指定してください。取得できない場合はPCでCLIを確認し、会話が更新された場合は再試行してください。</value></data>
   <data name="AuditModelChanged" xml:space="preserve"><value>会話のモデルを変更</value></data>
   <data name="ChatModelSavedAuditFailed" xml:space="preserve"><value>モデルは保存しましたが、監査ログを記録できませんでした。</value></data>
+  <data name="AgentSwitchTitle" xml:space="preserve"><value>AIエージェントを切り替える</value></data>
+  <data name="AgentSwitchConnection" xml:space="preserve"><value>登録済みのCLI接続</value></data>
+  <data name="AgentSummaryYes" xml:space="preserve"><value>要約を引き継ぐ（直近の依頼・結果の抜粋）</value></data>
+  <data name="AgentSummaryNo" xml:space="preserve"><value>要約を渡さず新しい会話を始める</value></data>
+  <data name="AgentSummaryPreview" xml:space="preserve"><value>引き継ぎ要約のプレビュー</value></data>
+  <data name="AgentSummaryHelp" xml:space="preserve"><value>直近3回までの成功した依頼・結果の抜粋を、このPCに暗号化して保存します。要約生成の追加AI呼び出しはありません。転送先では入力トークンとして消費されます。内容を確認してから引き継いでください。</value></data>
+  <data name="AgentSummaryUnavailable" xml:space="preserve"><value>この会話の要約はまだありません。この版のアプリで依頼が成功すると、以降の切り替え用メモを保存します。今は要約なしで切り替えられます。CLIの過去の履歴は取り込みません。</value></data>
+  <data name="AgentSwitchConfirm" xml:space="preserve"><value>切り替え先: {0}&#10;CLI: {1}&#10;モデル: {2}&#10;ツール権限: {3}&#10;作業フォルダー: {4}&#10;引き継ぎ: {5}&#10;同じチャットスレッドで、新しいAI会話を始めます。以前のセッション情報はこのPCに残します。次の依頼はこのPCでの承認が必要です。</value></data>
+  <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>先に「エージェント設定」で切り替え先のCodexまたはClaude Codeを選び、CLIチェック後に「このCLI接続を登録」を実行してください。</value></data>
+  <data name="AgentSwitchNoConnections" xml:space="preserve"><value>なし（先にPCでCLI接続を登録してください）</value></data>
+  <data name="AgentSwitchCommands" xml:space="preserve"><value>登録済みCLI接続: {0}&#10;要約の有無を指定してください:&#10;!cab agent codex summary / !cab agent codex fresh&#10;!cab agent claude summary / !cab agent claude fresh&#10;summaryは直近の会話メモを引き継ぎ、freshは引き継ぎません。切り替えには必ずPCでの承認が必要です。チャットから実行ファイルのパスは指定できません。</value></data>
+  <data name="AgentSwitchSaved" xml:space="preserve"><value>{0}への切り替えを保存しました。このスレッドで次の依頼を送ってください。PCでの承認が必要です。切り替えで取り消された承認待ちの依頼は、再投稿してください。</value></data>
+  <data name="AgentSwitchCompleted" xml:space="preserve"><value>AIエージェント変更済み</value></data>
+  <data name="AgentSwitchFailed" xml:space="preserve"><value>切り替えできませんでした。PCでCLI接続の登録、作業フォルダーの信頼設定、要約の有無を確認し、実行の終了後に再試行してください。</value></data>
+  <data name="AgentSwitchResubmit" xml:space="preserve"><value>エージェント変更・再投稿が必要</value></data>
+  <data name="AgentSwitchSavedNoticeFailed" xml:space="preserve"><value>切り替え設定は保存しましたが、監査ログまたは通知を完了できませんでした。</value></data>
+  <data name="AgentSwitchPending" xml:space="preserve"><value>次回: {0}（次の依頼で新しい会話を開始）</value></data>
+  <data name="AgentSwitchBusy" xml:space="preserve"><value>この会話は実行またはエージェント切り替え中です。</value></data>
+  <data name="AgentSummarySaveFailed" xml:space="preserve"><value>応答は完了しましたが、引き継ぎ用メモを保存できませんでした。</value></data>
+  <data name="AgentSwitchIntro" xml:space="preserve"><value>登録済みのCLIを使い、同じチャットスレッドで新しいAI会話を始めます。以前のセッション情報は残します。次の依頼はPCでの承認が必要です。</value></data>
+  <data name="AgentSwitchDetails" xml:space="preserve"><value>CLI接続の詳細</value></data>
 </root>

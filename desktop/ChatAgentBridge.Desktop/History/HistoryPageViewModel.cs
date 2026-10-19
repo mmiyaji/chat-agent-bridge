@@ -63,6 +63,7 @@ public sealed record AuditHistoryRow(AuditEvent Record, string? ChatLabel = null
         "detached" => DesktopText.Get("AuditDetached"),
         "workspace_changed" => DesktopText.Get("AuditWorkspaceChanged"),
         "model_changed" => DesktopText.Get("AuditModelChanged"),
+        "agent_changed" => DesktopText.Get("AgentSwitchCompleted"),
         _ => DesktopText.Get("AuditOther")
     };
     public string Source => Record.Source switch
@@ -91,7 +92,7 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
     public string ChannelId => Binding.Key.ChannelId;
     public string ThreadId => Binding.Key.ThreadId;
     public string Workspace => Binding.WorkspaceRoot;
-    public string Agent => Binding.AgentArguments == "app-server"
+    public string Agent => Binding.NextAgentProvider is { } next ? DesktopText.Get("AgentSwitchPending", next) : Binding.AgentArguments == "app-server"
         ? "Codex App Server"
         : $"{Binding.AgentExecutable} {Binding.AgentArguments}".Trim();
     public string SessionId => Binding.SessionId;
@@ -113,7 +114,7 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
     public override string ToString() => $"{ListTitle} · {ListIdentity} · {ListLocation} · {ListContext} · {ActivitySummary} · {Updated}";
     public string AgentAndSession => $"{Agent} / {SessionId}";
     public string ModelOverride => Binding.Model ?? string.Empty;
-    public string AgentModelSummary => DesktopText.Get("HistoryAgentModelSummary", AgentLabel,
+    public string AgentModelSummary => Binding.NextAgentProvider is { } next ? DesktopText.Get("AgentSwitchPending", next) : DesktopText.Get("HistoryAgentModelSummary", AgentLabel,
         !string.IsNullOrWhiteSpace(Binding.Model) ? Binding.Model :
         !string.IsNullOrWhiteSpace(LatestExecutedModel) ? LatestExecutedModel : DesktopText.Get("DefaultModel"));
     public string ActivitySummary => ExecutionCount == 0
@@ -178,7 +179,7 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
 
     private static string PolicyLabel(string? value, string defaultLabel, string keyOne, string labelOne, string keyTwo, string labelTwo) =>
         value is null ? DesktopText.Get("GlobalSetting") : value == keyOne ? labelOne : value == keyTwo ? labelTwo : defaultLabel;
-    private static string PermissionLabel(string? value) => value switch
+    internal static string PermissionLabel(string? value) => value switch
     {
         null => DesktopText.Get("GlobalSetting"), "read-only" => DesktopText.Get("ReadAndPlanOnly"), "workspace-write" => DesktopText.Get("AutoAllowWorkspaceEdits"),
         "full-access" => DesktopText.Get("FullAccess"), "ask" => DesktopText.Get("AskPerAction"), _ => DesktopText.Get("CliDefault")
@@ -210,9 +211,9 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     [ObservableProperty] public partial bool HasFilteredSessions { get; set; }
     [ObservableProperty] public partial bool HasAuditEvents { get; set; }
 
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand)), NotifyCanExecuteChangedFor(nameof(RenameSelectedSessionCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand)), NotifyCanExecuteChangedFor(nameof(RenameSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(SwitchSelectedAgentCommand))]
     public partial SessionHistoryRow? SelectedSession { get; set; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand)), NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand)), NotifyCanExecuteChangedFor(nameof(RenameSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(ClearSessionFiltersCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand)), NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand)), NotifyCanExecuteChangedFor(nameof(RenameSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(ClearSessionFiltersCommand)), NotifyCanExecuteChangedFor(nameof(SwitchSelectedAgentCommand))]
     public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string Status { get; set; } = DesktopText.Get("HistoryLoading");
 
@@ -220,6 +221,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public Func<SessionHistoryRow, BridgeSettings, Task<ModelExecutionSelection?>>? EditSessionModelAsync { get; set; }
     public Func<SessionHistoryRow, BridgeSettings, Task<SessionPolicySelection?>>? EditSessionPolicyAsync { get; set; }
     public Func<SessionHistoryRow, Task<string?>>? RenameSessionAsync { get; set; }
+    public Func<SessionHistoryRow, IReadOnlyList<AgentConnectionProfile>, ConversationSummary?, Task<AgentSwitchSelection?>>? ChooseAgentSwitchAsync { get; set; }
 
     public string ConversationsTabTitle => DesktopText.Get(IsNarrow ? "ActivityChatsTabCompact" : "HistoryConversationsTab", Sessions.Count);
     public string ExecutionsTabTitle => DesktopText.Get(IsNarrow ? "ActivityRunsTabCompact" : "HistoryExecutionsTab", Executions.Count);
@@ -253,6 +255,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public string IdentifiersHeading => DesktopText.Get("HistoryIdentifiersHeading");
     public string ActionsHeading => DesktopText.Get("HistoryActionsHeading");
     public string EditModelLabel => DesktopText.Get("HistoryEditNextModel");
+    public string SwitchAgentLabel => DesktopText.Get("AgentSwitchTitle");
     public string EditPolicyLabel => DesktopText.Get("HistoryEditPolicy");
     public string StartFreshLabel => DesktopText.Get("HistoryStartFresh");
     public string ExecutionSummary => ExecutionDayFilter is { } date
@@ -431,8 +434,44 @@ public sealed partial class HistoryPageViewModel : ObservableObject
 
     private bool CanRefresh() => !IsBusy;
     private bool CanDetachSelectedSession() => SelectedSession is not null && !IsBusy;
-    private bool CanEditSelectedSessionModel() => SelectedSession is not null && !IsBusy;
-    private bool CanEditSelectedSessionPolicy() => SelectedSession is not null && !IsBusy;
+    private bool CanEditSelectedSessionModel() => SelectedSession is { Binding.NextAgentProvider: null } && !IsBusy;
+
+    private bool CanSwitchSelectedAgent() => SelectedSession is { } selected && !IsBusy &&
+        selected.Binding.Key.UserId is not null && selected.Binding.Key.Origin is not null &&
+        selected.Binding.Key.Provider is "slack" or "mattermost" &&
+        ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude;
+
+    [RelayCommand(CanExecute = nameof(CanSwitchSelectedAgent))]
+    private async Task SwitchSelectedAgentAsync()
+    {
+        if (SelectedSession is not { } selected || IsBusy || ChooseAgentSwitchAsync is null) return;
+        IsBusy = true;
+        try
+        {
+            var connections = new AgentConnectionStore();
+            var summaries = new ConversationSummaryStore();
+            var profiles = await connections.ListAsync();
+            ConversationSummary? summary;
+            try { summary = await summaries.FindAsync(selected.Binding.Key); }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or System.Security.Cryptography.CryptographicException or FormatException)
+            {
+                // Handoff notes are optional; a damaged/unreadable note must not block an explicit fresh switch.
+                summary = null;
+            }
+            if (summary?.SessionId != selected.SessionId) summary = null;
+            var selection = await ChooseAgentSwitchAsync(selected, profiles, summary);
+            if (selection is null) return;
+            await new ConversationAgentService(_sessionStore, connections, summaries).SwitchAsync(selected.Binding,
+                await _settingsStore.LoadAsync(), selection, _ => Task.FromResult(true));
+            await _auditStore.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, "agent_changed", null,
+                selected.Binding.Key.Provider, selected.ChannelId, selected.ThreadId));
+            await RefreshContentsAsync(DesktopText.Get("AgentSwitchSaved", selection.Provider));
+            SelectedSession = Sessions.FirstOrDefault(row => row.Binding.Key == selected.Binding.Key);
+        }
+        catch { Status = DesktopText.Get("AgentSwitchFailed"); }
+        finally { IsBusy = false; }
+    }
+    private bool CanEditSelectedSessionPolicy() => SelectedSession is { Binding.NextAgentProvider: null } && !IsBusy;
     private bool CanRenameSelectedSession() => SelectedSession is not null && !IsBusy;
 
     [RelayCommand(CanExecute = nameof(CanEditSelectedSessionPolicy))]

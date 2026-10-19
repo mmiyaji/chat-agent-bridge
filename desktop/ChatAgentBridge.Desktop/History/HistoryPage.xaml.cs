@@ -31,6 +31,7 @@ public sealed partial class HistoryPage : Page
         ViewModel.EditSessionModelAsync = EditSessionModelAsync;
         ViewModel.EditSessionPolicyAsync = EditSessionPolicyAsync;
         ViewModel.RenameSessionAsync = RenameSessionAsync;
+        ViewModel.ChooseAgentSwitchAsync = ChooseAgentSwitchAsync;
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         SizeChanged += Page_SizeChanged;
         UpdateResponsiveLayout();

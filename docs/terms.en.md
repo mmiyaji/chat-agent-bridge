@@ -1,5 +1,5 @@
 Chat Agent Bridge Terms of Use (Development Preview)
-Document version: 2026-10-18.1
+Document version: 2026-10-20.1
 Provider: mmiyaji
 Contact: mail@ruhenheim.org
 

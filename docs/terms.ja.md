@@ -1,5 +1,5 @@
 Chat Agent Bridge 利用規約（開発プレビュー）
-文書バージョン：2026-10-18.1
+文書バージョン：2026-10-20.1
 提供者：mmiyaji
 お問い合わせ：mail@ruhenheim.org
 

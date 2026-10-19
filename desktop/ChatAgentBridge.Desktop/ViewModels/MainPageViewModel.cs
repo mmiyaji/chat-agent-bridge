@@ -59,6 +59,8 @@ public partial class MainPageViewModel : ObservableObject
                 DeferOnboardingCommand.NotifyCanExecuteChanged();
                 CheckCliCommand.NotifyCanExecuteChanged();
             }
+            if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning) or nameof(IsCheckingCli) or nameof(CliCheckSucceeded) or nameof(CliCheckFailed) or nameof(CliVersion) or nameof(AgentProvider) or nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentModel) or nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(WorkspaceRoot) or nameof(TrustedWorkspaceRoots))
+                RefreshConnectionCommands();
             if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading))
             {
                 RefreshMattermostUsernameLookupCommands();
@@ -302,6 +304,7 @@ public partial class MainPageViewModel : ObservableObject
             StatusSeverity = "Success";
             IsStatusOpen = false;
             IsSettingsLoaded = true;
+            await LoadAgentConnectionsAsync();
         }
         catch (Exception ex)
         {

@@ -21,7 +21,7 @@ public sealed partial class ChatInboxViewModel
         {
             var current = await _store.LoadAsync(token);
             if (!CanHandleControl(transport, received, request, current)) return;
-            var binding = await _sessions.FindAsync(scope, token);
+            var binding = await _sessions.FindExecutionBindingAsync(scope, token);
             var workspaceSettings = await _sessions.ApplyWorkspaceAsync(scope, current, token);
             var effective = ConversationExecutionPolicy.GetEffectiveSettings(workspaceSettings, binding);
             if (AgentProfile.ResolveProvider(effective) is not (AgentProfile.Codex or AgentProfile.Claude))

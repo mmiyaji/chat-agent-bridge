@@ -965,4 +965,11 @@
   <data name="ResolveSlackThreadButton.Content" xml:space="preserve"><value>会話を確認</value></data>
   <data name="AddSlackThreadButton.Content" xml:space="preserve"><value>この会話を追加</value></data>
   <data name="HistoryCompactFilters.Header" xml:space="preserve"><value>絞り込み</value></data>
+  <data name="AgentConnectionRegistrationTitle.Text" xml:space="preserve"><value>このCLI接続を登録</value></data>
+  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>CLIチェックに成功した後、CodexまたはClaude Codeを登録します。ローカルの実行ファイルとエージェント設定を保存し、会話ごとの切り替えに使います。ログイン情報はコピーしません。登録後は、成功した会話の短い抜粋を引き継ぎ用にこのPCで暗号化して保存します。</value></data>
+  <data name="RegisterAgentConnection.Content" xml:space="preserve"><value>このCLI接続を登録</value></data>
+  <data name="RegisteredConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>登録済みCLI接続</value></data>
+  <data name="LoadRegisteredCodexConnection.Content" xml:space="preserve"><value>保存したCodexを読み込む</value></data>
+  <data name="LoadRegisteredClaudeConnection.Content" xml:space="preserve"><value>保存したClaude Codeを読み込む</value></data>
+  <data name="ConnectionRegistrationStatus.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>CLI接続の状態</value></data>
 </root>

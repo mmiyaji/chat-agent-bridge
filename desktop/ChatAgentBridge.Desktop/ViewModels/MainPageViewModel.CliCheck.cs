@@ -10,6 +10,8 @@ public partial class MainPageViewModel
     private readonly CliProbeService _cliProbe = new();
     private CancellationTokenSource? _cliCheckCancellation;
     private string? _checkedCliSignature;
+    private string? _checkedConnectionSignature;
+    private DateTimeOffset? _cliCheckedAt;
     private long _cliCheckGeneration;
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(CheckCliCommand)), NotifyCanExecuteChangedFor(nameof(CancelCliCheckCommand))]
     public partial bool IsCheckingCli { get; set; }
@@ -30,6 +32,14 @@ public partial class MainPageViewModel
     private bool HasCurrentCliCheck() => CliCheckSucceeded && _checkedCliSignature == CurrentCliSignature() &&
         (string.IsNullOrWhiteSpace(AgentModel) || ModelCatalog.Models.Any(model => string.Equals(model.Id, AgentModel.Trim(), StringComparison.Ordinal)));
 
+    private string CurrentConnectionSignature() => string.Join("\n", AgentProvider, AgentExecutable, AgentArguments,
+        UseAppServer, AgentModel?.Trim() ?? "", AgentReasoningEffort ?? "", AgentPermissionMode, AllowAgentNetwork,
+        CliVersion, CliExecutablePath);
+
+    private bool CanRegisterAgentConnection() => HasCurrentCliCheck() &&
+        AgentProvider is (AgentProfile.Codex or AgentProfile.Claude) &&
+        _checkedConnectionSignature == CurrentConnectionSignature() && !IsLoading && !IsRunning;
+
     private void WizardSettingChanged(string? property)
     {
         if (property is nameof(AgentProvider) or nameof(AgentExecutable) or nameof(AgentArguments) or nameof(WorkspaceRoot) or nameof(UseAppServer) or nameof(TrustedWorkspaceRoots))
@@ -39,6 +49,8 @@ public partial class MainPageViewModel
                 CancelCliCheck();
                 CliCheckSucceeded = false;
                 _checkedCliSignature = null;
+                _checkedConnectionSignature = null;
+                _cliCheckedAt = null;
                 CliVersion = ViewModelText.Get("NotChecked");
                 CliExecutablePath = "";
                 CliCheckSummary = ViewModelText.Get("CliSettingsChanged");
@@ -54,6 +66,8 @@ public partial class MainPageViewModel
         CliCheckSucceeded = false;
         CliCheckFailed = false;
         _checkedCliSignature = null;
+        _checkedConnectionSignature = null;
+        _cliCheckedAt = null;
         CliVersion = ViewModelText.Get("NotChecked");
         CliExecutablePath = "";
         CliCheckSummary = ViewModelText.Get("EnvironmentReloadedCliHelp");
@@ -70,6 +84,8 @@ public partial class MainPageViewModel
         CliCheckSucceeded = false;
         CliCheckFailed = false;
         _checkedCliSignature = null;
+        _checkedConnectionSignature = null;
+        _cliCheckedAt = null;
         CliVersion = ViewModelText.Get("Checking");
         CliExecutablePath = "";
         CliCheckSummary = ViewModelText.Get("CheckingCliVersion");
@@ -86,8 +102,10 @@ public partial class MainPageViewModel
             if (IsBasicProvider)
             {
                 ModelCatalog.Invalidate(ViewModelText.Get("BasicModelManagedByCli"));
-                CliCheckSucceeded = true;
                 _checkedCliSignature = signature;
+                _checkedConnectionSignature = CurrentConnectionSignature();
+                _cliCheckedAt = DateTimeOffset.UtcNow;
+                CliCheckSucceeded = true;
                 CliCheckSummary = ViewModelText.Get("BasicCliCheckSucceeded");
                 return;
             }
@@ -96,8 +114,10 @@ public partial class MainPageViewModel
             if (generation != _cliCheckGeneration || cancellation.IsCancellationRequested || signature != CurrentCliSignature()) return;
             if (ModelCatalog.Models.Count == 0) { CliCheckFailed = true; CliCheckSummary = ViewModelText.Get("CliModelsUnavailable"); return; }
             ModelCatalog.SelectedModel = ModelCatalog.Models.FirstOrDefault(model => string.Equals(model.Id, AgentModel?.Trim(), StringComparison.Ordinal));
-            CliCheckSucceeded = true;
             _checkedCliSignature = signature;
+            _checkedConnectionSignature = CurrentConnectionSignature();
+            _cliCheckedAt = DateTimeOffset.UtcNow;
+            CliCheckSucceeded = true;
             CliCheckSummary = ViewModelText.Get("CliCheckSucceeded", ModelCatalog.Models.Count);
         }
         catch (OperationCanceledException) { if (generation == _cliCheckGeneration) CliCheckSummary = ViewModelText.Get("CliCheckCancelled"); }
@@ -128,6 +148,8 @@ public partial class MainPageViewModel
         CliCheckSucceeded = false;
         CliCheckFailed = false;
         _checkedCliSignature = null;
+        _checkedConnectionSignature = null;
+        _cliCheckedAt = null;
         CliCheckSummary = ViewModelText.Get("CliCheckCancelled");
     }
 }

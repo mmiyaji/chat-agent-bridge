@@ -17,6 +17,7 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public ChatRequest Request { get; } = request;
     public IChatTransport Transport { get; } = transport;
     public BridgeSettings Settings { get; } = settings;
+    public BridgeSettings? EffectiveSettings { get; set; }
     public string Source => $"{Request.Provider} / {Request.ChannelId} / {Request.UserId}";
     public string Prompt => Request.Text;
     public DateTimeOffset ReceivedAt { get; } = DateTimeOffset.Now;
@@ -37,6 +38,9 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
         "作業先変更・再投稿が必要" => DesktopText.Get("ApprovalWorkspaceNeedsResubmit"),
         "フォルダー変更済み" => DesktopText.Get("ApprovalWorkspaceChanged"),
         "フォルダー変更不可" => DesktopText.Get("ApprovalWorkspaceChangeFailed"),
+        "エージェント変更済み" => DesktopText.Get("AgentSwitchCompleted"),
+        "エージェント変更不可" => DesktopText.Get("AgentSwitchFailed"),
+        "エージェント変更・再投稿が必要" => DesktopText.Get("AgentSwitchResubmit"),
         _ when State.StartsWith("失敗 (", StringComparison.Ordinal) => DesktopText.Get("ApprovalFailed", State[4..^1]),
         _ => State
     };
@@ -379,6 +383,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await AuditAsync("received", request, null, token);
                 if (_approvalBroker.TryHandle(request)) return;
                 if (await TryHandleChatAnswerAsync(transport, settings, request, token)) return;
+                if (await TryHandleAgentCommandAsync(transport, settings, request, token)) return;
                 if (await TryHandleChatControlAsync(transport, settings, request, token)) return;
                 var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (!App.DispatcherQueue.TryEnqueue(() =>
@@ -486,14 +491,23 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await ChangeWorkspaceAsync(item, requestedWorkspace, approvedByNotification, token);
                 return;
             }
+            if (AgentChatCommand.TryParse(item.Prompt, out var switchCommand))
+            {
+                await ChangeAgentAsync(item, switchCommand, approvedByNotification, token);
+                return;
+            }
             var key = CreateSessionKey(item);
-            var binding = await _sessions.FindAsync(key, token);
+            using var conversationOperation = _sessions.TryBeginConversationOperation(key)
+                ?? throw new InvalidOperationException(DesktopText.Get("AgentSwitchBusy"));
+            var binding = await _sessions.FindExecutionBindingAsync(key, token);
             var workspaceSettings = await _sessions.ApplyWorkspaceAsync(key, item.Settings, token);
             var effectiveSettings = ConversationExecutionPolicy.GetEffectiveSettings(workspaceSettings, binding);
+            item.EffectiveSettings = effectiveSettings;
             item.Workspace = effectiveSettings.WorkspaceRoot;
             if (!ExecutionPolicy.IsWorkspaceTrusted(effectiveSettings, effectiveSettings.WorkspaceRoot))
                 throw new InvalidOperationException(DesktopText.Get("WorkspaceOutsideTrustedRootsShort"));
-            if (approvedAutomatically && ConversationExecutionPolicy.RequiresApproval(key, effectiveSettings, binding))
+            if (approvedAutomatically && (ConversationExecutionPolicy.RequiresApproval(key, effectiveSettings, binding) ||
+                (await _sessions.FindAgentSelectionAsync(key, token))?.RequiresApproval == true))
             {
                 if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
                 Status = DesktopText.Get("InboxApprovalRequiredAgain");
@@ -532,7 +546,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct)), _execution.Token)
                 : await _runner.RunAsync(key, effectiveSettings, item.Request.Text, _execution.Token);
             var output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
-            var needsLogin = !result.Success && item.Settings.AgentProvider == AgentProfile.Claude &&
+            var needsLogin = !result.Success && effectiveSettings.AgentProvider == AgentProfile.Claude &&
                 (output.Contains("Not logged in", StringComparison.OrdinalIgnoreCase) ||
                  output.Contains("Please run /login", StringComparison.OrdinalIgnoreCase));
             if (needsLogin)
@@ -545,6 +559,19 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.ResultText = reply.Length > 4001 ? reply[..4001] : reply;
             item.State = result.Success ? "完了" : $"失敗 ({result.ExitCode})";
             var updated = await _sessions.FindAsync(key);
+            if (result.Success && updated is not null && await CheckAccessAsync(item, token))
+            {
+                await _sessions.CompleteAgentHandoffAsync(key, updated.SessionId, token);
+                try
+                {
+                    var answer = ExtractReply(result);
+                    if (!string.IsNullOrWhiteSpace(answer) && (await new AgentConnectionStore().ListAsync(token)).Count > 0)
+                        await new ConversationSummaryStore().RecordAsync(key, AgentProfile.ResolveProvider(effectiveSettings),
+                            updated.SessionId, item.Prompt[..Math.Min(item.Prompt.Length, 90000)],
+                            answer[..Math.Min(answer.Length, 90000)], token);
+                }
+                catch (Exception) { NotificationStatus = DesktopText.Get("AgentSummarySaveFailed"); }
+            }
             if (result.Success && !approvedAutomatically && effectiveSettings.ChatApprovalMode == "first" && updated is not null &&
                 await CheckAccessAsync(item, token))
                 await _sessions.SetFirstApprovalFingerprintAsync(key, item.ExecutionPolicyFingerprint!, token);
@@ -810,16 +837,17 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (_closing || !IsConnectionConfirmed || IsExecuting) break;
                 if (item.State != "承認待ち" || _automaticallyAttempted.Contains(item)) continue;
                 if (!await CheckAccessAsync(item, _connection?.Token ?? CancellationToken.None)) continue;
-                if (WorkspaceChatCommand.TryParse(item.Prompt, out _))
+                if (WorkspaceChatCommand.TryParse(item.Prompt, out _) || AgentChatCommand.TryParse(item.Prompt, out _))
                 {
                     if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
                     continue;
                 }
                 var key = CreateSessionKey(item);
-                var binding = await _sessions.FindAsync(key);
+                var binding = await _sessions.FindExecutionBindingAsync(key);
                 var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, item.Settings), binding);
                 item.Workspace = effective.WorkspaceRoot;
-                if (ConversationExecutionPolicy.RequiresApproval(key, effective, binding))
+                if (ConversationExecutionPolicy.RequiresApproval(key, effective, binding) ||
+                    (await _sessions.FindAgentSelectionAsync(key))?.RequiresApproval == true)
                 {
                     if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
                     continue;

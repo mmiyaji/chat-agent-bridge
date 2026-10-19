@@ -18,7 +18,8 @@ public sealed class AppServerSessionRunner(SessionStore store, IAppServerRunner?
         return store.WithSessionLockAsync(key, async token =>
         {
             settings = await store.ApplyWorkspaceAsync(key, settings, token).ConfigureAwait(false);
-            var existing = await store.FindAsync(key, token).ConfigureAwait(false);
+            var existing = await store.FindExecutionBindingAsync(key, token).ConfigureAwait(false);
+            prompt = await store.PrepareHandoffPromptAsync(key, prompt, token).ConfigureAwait(false);
             if (existing?.AgentPermissionMode is not null)
                 settings = settings with { AgentPermissionMode = existing.AgentPermissionMode };
             var workspace = Path.TrimEndingDirectorySeparator(Path.GetFullPath(settings.WorkspaceRoot));

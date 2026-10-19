@@ -202,10 +202,11 @@
                             </ScrollViewer>
                             <Grid Grid.Row="2" ColumnSpacing="8" RowSpacing="8" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                                 <Button Command="{x:Bind ViewModel.EditSelectedSessionModelCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.EditModelLabel, Mode=OneWay}" AutomationProperties.AutomationId="EditSessionModel" />
                                 <Button Grid.Column="1" Command="{x:Bind ViewModel.EditSelectedSessionPolicyCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.EditPolicyLabel, Mode=OneWay}" AutomationProperties.AutomationId="EditSessionExecutionPolicy" />
-                                <Button Grid.Row="1" Grid.ColumnSpan="2" Command="{x:Bind ViewModel.DetachSelectedSessionCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.StartFreshLabel, Mode=OneWay}" AutomationProperties.AutomationId="DetachSession" />
+                                <Button Grid.Row="1" Grid.ColumnSpan="2" Command="{x:Bind ViewModel.SwitchSelectedAgentCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.SwitchAgentLabel, Mode=OneWay}" AutomationProperties.AutomationId="SwitchSessionAgent" />
+                                <Button Grid.Row="2" Grid.ColumnSpan="2" Command="{x:Bind ViewModel.DetachSelectedSessionCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.StartFreshLabel, Mode=OneWay}" AutomationProperties.AutomationId="DetachSession" />
                             </Grid>
                         </Grid>
                     </Grid>

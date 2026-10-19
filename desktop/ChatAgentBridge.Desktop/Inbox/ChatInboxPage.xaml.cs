@@ -127,22 +127,24 @@ public sealed partial class ChatInboxPage : Page
     private async Task<bool> ConfirmAsync(InboxItem item, CancellationToken cancellationToken)
     {
         var changesWorkspace = ChatAgentBridge.Core.WorkspaceChatCommand.TryParse(item.Prompt, out _);
+        var changesAgent = ChatAgentBridge.Core.AgentChatCommand.TryParse(item.Prompt, out _);
+        var executionSettings = item.EffectiveSettings ?? item.Settings;
         var dialog = new ContentDialog
         {
             RequestedTheme = App.Appearance.RequestedTheme,
             XamlRoot = XamlRoot,
-            Title = DesktopText.Get(changesWorkspace ? "InboxConfirmWorkspaceTitle" : "InboxConfirmRunTitle"),
+            Title = DesktopText.Get(changesAgent ? "AgentSwitchTitle" : changesWorkspace ? "InboxConfirmWorkspaceTitle" : "InboxConfirmRunTitle"),
             Content = new ScrollViewer
             {
                 Content = new TextBlock
                 {
-                    Text = DesktopText.Get("InboxRunConfirmBody", item.Source, item.Request.ThreadId, item.SessionLabel, item.Workspace,
-                        item.Settings.AgentExecutable, item.Settings.AgentMode == "app-server" ? "app-server" : item.Settings.AgentArguments, item.Prompt),
+                    Text = changesAgent ? item.SessionLabel : DesktopText.Get("InboxRunConfirmBody", item.Source, item.Request.ThreadId, item.SessionLabel, item.Workspace,
+                        executionSettings.AgentExecutable, executionSettings.AgentMode == "app-server" ? "app-server" : executionSettings.AgentArguments, item.Prompt),
                     TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap
                 },
                 MaxHeight = 400
             },
-            PrimaryButtonText = DesktopText.Get(changesWorkspace ? "Change" : "Run"),
+            PrimaryButtonText = DesktopText.Get(changesAgent || changesWorkspace ? "Change" : "Run"),
             CloseButtonText = DesktopText.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close
         };

@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace ChatAgentBridge.Core.Sessions;
 
-public sealed class SessionStore
+public sealed partial class SessionStore
 {
     private const int CurrentSchemaVersion = 1;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
@@ -12,12 +12,14 @@ public sealed class SessionStore
     private static readonly ConcurrentDictionary<(string Path, SessionKey Key), SemaphoreSlim> SessionGates = new();
     private readonly string _filePath;
     private readonly SemaphoreSlim _gate;
+    private readonly IConversationTextProtector _textProtector;
 
-    public SessionStore(string? directory = null)
+    public SessionStore(string? directory = null, IConversationTextProtector? textProtector = null)
     {
         DirectoryPath = Path.GetFullPath(directory ?? new SettingsStore().DirectoryPath);
         _filePath = Path.Combine(DirectoryPath, "sessions.json");
         _gate = PathGates.GetOrAdd(_filePath, static _ => new SemaphoreSlim(1, 1));
+        _textProtector = textProtector ?? new DpapiConversationTextProtector();
     }
 
     public string DirectoryPath { get; }
@@ -78,6 +80,7 @@ public sealed class SessionStore
                 var value = new WorkspaceOverride(key, fullWorkspace);
                 if (index < 0) workspaces.Add(value); else workspaces[index] = value;
                 document.Bindings!.RemoveAll(item => item.Key == key);
+                document.Agents?.RemoveAll(item => item.Key == key);
                 await WriteAsync(document, token).ConfigureAwait(false);
             }
             finally { _gate.Release(); }
@@ -90,6 +93,7 @@ public sealed class SessionStore
     {
         ValidateKey(key);
         ArgumentNullException.ThrowIfNull(settings);
+        settings = await ApplyAgentAsync(key, settings, cancellationToken).ConfigureAwait(false);
         var workspace = await FindWorkspaceAsync(key, cancellationToken).ConfigureAwait(false);
         if (workspace is null) return settings;
         if (!Directory.Exists(workspace) || !ExecutionPolicy.IsWorkspaceTrusted(settings, workspace))
@@ -117,6 +121,11 @@ public sealed class SessionStore
                 bindings[existingIndex] = binding with { DisplayName = bindings[existingIndex].DisplayName };
             else
                 bindings.Add(binding);
+            if (binding.NextAgentProvider is null && document.Agents?.FirstOrDefault(item => item.Key == binding.Key) is { } selection)
+            {
+                var selectionIndex = document.Agents.IndexOf(selection);
+                document.Agents[selectionIndex] = selection with { StartNewSession = false };
+            }
             await WriteAsync(document, cancellationToken).ConfigureAwait(false);
         }
         finally { _gate.Release(); }
@@ -157,7 +166,9 @@ public sealed class SessionStore
             {
                 var document = await ReadAsync(token).ConfigureAwait(false);
                 var bindings = document.Bindings!;
-                if (bindings.RemoveAll(item => item.Key == key) > 0)
+                var removed = bindings.RemoveAll(item => item.Key == key);
+                removed += document.Agents?.RemoveAll(item => item.Key == key) ?? 0;
+                if (removed > 0)
                     await WriteAsync(document, token).ConfigureAwait(false);
             }
             finally { _gate.Release(); }
@@ -287,6 +298,7 @@ public sealed class SessionStore
                 if (!keys.Add(binding.Key)) throw new InvalidDataException("Session store contains duplicate session keys.");
             }
             document.Workspaces ??= [];
+            ValidateAgentDocument(document);
             var workspaceKeys = new HashSet<SessionKey>();
             foreach (var workspace in document.Workspaces)
             {
@@ -337,6 +349,8 @@ public sealed class SessionStore
             (binding.FirstApprovalFingerprint.Length != 64 || binding.FirstApprovalFingerprint.Any(c => !Uri.IsHexDigit(c))))
             throw new ArgumentException("Session approval fingerprint must be a 64-character hexadecimal SHA-256 value.");
         _ = NormalizeDisplayName(binding.DisplayName);
+        if (binding.NextAgentProvider is not (null or AgentProfile.Codex or AgentProfile.Claude))
+            throw new ArgumentException("Unsupported pending agent provider.");
     }
 
     private static string? NormalizeDisplayName(string? value)
@@ -387,6 +401,8 @@ public sealed class SessionStore
         public int? SchemaVersion { get; set; }
         public List<SessionBinding>? Bindings { get; set; }
         public List<WorkspaceOverride>? Workspaces { get; set; }
+        public List<ConversationAgentSelection>? Agents { get; set; }
+        public List<SessionBinding>? ArchivedBindings { get; set; }
     }
 
     private sealed record WorkspaceOverride(SessionKey Key, string WorkspaceRoot);
