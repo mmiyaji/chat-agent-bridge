@@ -2,7 +2,7 @@
 <root>
   <data name="ProgressReceived" xml:space="preserve"><value>📥 依頼を受け付けました。PC側の承認または実行開始を待っています。</value></data>
   <data name="ProgressRunning" xml:space="preserve"><value>⏳ AIエージェントが実行中です。経過 {0}。実行中は約30秒ごとにこの投稿を更新します。</value></data>
-  <data name="ProgressCompleted" xml:space="preserve"><value>✅ 完了しました。経過 {0}。結果本文の投稿は、この会話の共有設定に従います。</value></data>
+  <data name="ProgressCompleted" xml:space="preserve"><value>✅ 完了しました。経過 {0}。</value></data>
   <data name="ProgressFailed" xml:space="preserve"><value>❌ 実行または記録に失敗しました。経過 {0}。詳細はPC側で確認してください。</value></data>
   <data name="ProgressCancelled" xml:space="preserve"><value>⏹ 実行を停止しました。経過 {0}。</value></data>
   <data name="ProgressRejected" xml:space="preserve"><value>⛔ 依頼は承認されませんでした。</value></data>
