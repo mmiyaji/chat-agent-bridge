@@ -3,6 +3,7 @@ using System.Globalization;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.Sessions;
+using ChatAgentBridge.Transports;
 using ChatAgentBridge_Desktop.Localization;
 using ChatAgentBridge_Desktop.UsageUi;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -13,7 +14,7 @@ namespace ChatAgentBridge_Desktop.History;
 public sealed record ModelExecutionSelection(string? Model, string? ReasoningEffort);
 public sealed record SessionPolicySelection(string? ChatApprovalMode, string? ChatResultMode, string? AgentPermissionMode);
 
-public sealed record ExecutionHistoryRow(ExecutionRecord Record)
+public sealed record ExecutionHistoryRow(ExecutionRecord Record, string? ChatLabel = null)
 {
     public string Started => Record.StartedAt.ToLocalTime().ToString("g");
     public string Source => SourceLabel(Record.Source);
@@ -32,7 +33,9 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record)
     public string Model => DesktopText.Get("HistoryModel", Record.AgentModel ?? DesktopText.Get("DefaultModel"));
     public string ReasoningEffort => DesktopText.Get("HistoryReasoning", Record.AgentReasoningEffort ?? DesktopText.Get("CliDefault"));
     public string Usage => UsageSummaryFormatter.Format(Record.Usage, Record.Metrics);
-    public string Conversation => DesktopText.Get("HistoryExecutionConversation", Record.ChannelId, Record.ThreadId, Record.UserId);
+    public string Conversation => ChatLabel ?? (Record.Source == "local" ? DesktopText.Get("HistoryThisPc") : DesktopText.Get("HistoryChatNamesUnavailable"));
+    public string Identifiers => DesktopText.Get("HistoryExecutionConversation", Record.ChannelId, Record.ThreadId, Record.UserId);
+    public string IdentifiersHeading => DesktopText.Get("HistoryIdentifiersHeading");
 
     private static string SourceLabel(string source) => source switch
     {
@@ -43,7 +46,7 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record)
     };
 }
 
-public sealed record AuditHistoryRow(AuditEvent Record)
+public sealed record AuditHistoryRow(AuditEvent Record, string? ChatLabel = null)
 {
     public string Timestamp => Record.Timestamp.ToLocalTime().ToString("g");
     public string Kind => Record.Kind switch
@@ -69,11 +72,13 @@ public sealed record AuditHistoryRow(AuditEvent Record)
         _ => DesktopText.Get("UnknownProvider")
     };
     public string Summary => $"{Timestamp} · {Source} · {Kind}";
-    public string Conversation => DesktopText.Get("HistoryAuditConversation", Record.ChannelId, Record.ThreadId);
+    public string Conversation => ChatLabel ?? (Record.Source == "local" ? DesktopText.Get("HistoryThisPc") : DesktopText.Get("HistoryChatNamesUnavailable"));
+    public string Identifiers => DesktopText.Get("HistoryAuditConversation", Record.ChannelId, Record.ThreadId);
+    public string IdentifiersHeading => DesktopText.Get("HistoryIdentifiersHeading");
 }
 
 public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCount = 0,
-    string? LatestExecutionStatus = null, string? LatestExecutedModel = null)
+    string? LatestExecutionStatus = null, string? LatestExecutedModel = null, ChatIdentityLabels? ChatLabels = null)
 {
     public string Provider => Binding.Key.Provider switch
     {
@@ -93,13 +98,18 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
     public string Origin => Binding.Key.Origin ?? DesktopText.Get("HistoryUnknownOrigin");
     public string WorkspaceName => Path.GetFileName(Binding.WorkspaceRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) is { Length: > 0 } name
         ? name : Binding.WorkspaceRoot;
-    public string ConversationLabel => DesktopText.Get("HistorySessionConversation", ChannelId, ThreadId, Environment.NewLine, UserId);
+    public string ConversationLabel => $"{ListTitle}\n{ListIdentity}\n{ListLocation}";
     public string Conversation => ConversationLabel;
     public string ListTitle => string.IsNullOrWhiteSpace(Binding.DisplayName) ? WorkspaceName : Binding.DisplayName;
-    public string ListIdentity => $"{Provider} · {UserId}";
+    public string ListIdentity => $"{SiteLabel} · {UserLabel}";
+    public string SiteLabel => ChatLabels?.SiteName is { Length: > 0 } site && site != Provider ? $"{Provider} / {site}" : Provider;
+    public string UserLabel => Binding.Key.Provider == "local" ? DesktopText.Get("HistoryThisPc") :
+        ChatLabels?.UserName is { Length: > 0 } name ? name : DesktopText.Get("HistoryUserNameUnavailable");
     public string ListContext => DesktopText.Get("HistoryConversationContext", WorkspaceName, AgentModelSummary);
-    public string ListLocation => DesktopText.Get("ConversationLocation", ChannelId, ThreadId);
-    public override string ToString() => $"{ListTitle} · {ListIdentity} · {ListContext} · {ActivitySummary} · {Updated}";
+    public string ListLocation => Binding.Key.Provider == "local" ? DesktopText.Get("HistoryThisPc") :
+        ChatLabels?.IsDirectMessage == true ? DesktopText.Get("HistoryDirectMessage") :
+        ChatLabels?.ChannelName is { Length: > 0 } channel ? $"#{channel.TrimStart('#')}" : DesktopText.Get("HistoryChannelNameUnavailable");
+    public override string ToString() => $"{ListTitle} · {ListIdentity} · {ListLocation} · {ListContext} · {ActivitySummary} · {Updated}";
     public string AgentAndSession => $"{Agent} / {SessionId}";
     public string ModelOverride => Binding.Model ?? string.Empty;
     public string AgentModelSummary => DesktopText.Get("HistoryAgentModelSummary", AgentLabel,
@@ -134,7 +144,7 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
         }
     }
     public string UpdatedTooltip => DesktopText.Get("HistoryUpdatedTooltip", Binding.UpdatedAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture));
-    public string SearchIndex => string.Join("\n", Binding.DisplayName, Provider, ChannelId, ThreadId, UserId, WorkspaceName, Workspace,
+    public string SearchIndex => string.Join("\n", Binding.DisplayName, Provider, SiteLabel, UserLabel, ListLocation, ChannelId, ThreadId, UserId, WorkspaceName, Workspace,
         SessionId, AgentLabel, ModelOverride, LatestExecutedModel, ReasoningEffort, ExecutionPolicy, Origin);
 
     private string AgentLabel
@@ -348,13 +358,14 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             var auditEvents = await _auditStore.ListAsync();
 
             var selectedKey = SelectedSession?.Binding.Key;
+            await LoadCachedChatNamesAsync(sessions);
             SetExecutionRecords(executions);
             Sessions.Clear();
             foreach (var row in BuildSessionRows(sessions, executions)) Sessions.Add(row);
             UpdateWorkspaceFilters(sessions);
             AuditEvents.Clear();
             foreach (var audit in auditEvents.OrderByDescending(static item => item.Timestamp))
-                AuditEvents.Add(new AuditHistoryRow(audit));
+                AuditEvents.Add(new AuditHistoryRow(audit, AuditChatLabel(audit)));
             HasExecutions = Executions.Count > 0;
             HasSessions = Sessions.Count > 0;
             HasAuditEvents = AuditEvents.Count > 0;
@@ -371,6 +382,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         {
             IsBusy = false;
         }
+        StartChatNameRefresh();
     }
 
     [RelayCommand(CanExecute = nameof(CanDetachSelectedSession))]
@@ -504,13 +516,14 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         var sessions = await _sessionStore.ListAsync();
         var auditEvents = await _auditStore.ListAsync();
         var selectedKey = SelectedSession?.Binding.Key;
+        await LoadCachedChatNamesAsync(sessions);
         SetExecutionRecords(executions);
         Sessions.Clear();
         foreach (var row in BuildSessionRows(sessions, executions)) Sessions.Add(row);
         UpdateWorkspaceFilters(sessions);
         AuditEvents.Clear();
         foreach (var audit in auditEvents.OrderByDescending(static item => item.Timestamp))
-            AuditEvents.Add(new AuditHistoryRow(audit));
+            AuditEvents.Add(new AuditHistoryRow(audit, AuditChatLabel(audit)));
         HasExecutions = Executions.Count > 0;
         HasSessions = Sessions.Count > 0;
         HasAuditEvents = AuditEvents.Count > 0;
@@ -518,9 +531,10 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         ApplySessionFilter();
         NotifySummariesChanged();
         Status = DesktopText.Get("HistorySuccessCounts", successMessage, Executions.Count, Sessions.Count, AuditEvents.Count);
+        StartChatNameRefresh();
     }
 
-    private static IReadOnlyList<SessionHistoryRow> BuildSessionRows(
+    private IReadOnlyList<SessionHistoryRow> BuildSessionRows(
         IReadOnlyList<SessionBinding> bindings, IReadOnlyList<ExecutionRecord> records)
     {
         var ambiguous = new Dictionary<SessionExecutionIdentity, HashSet<string>>();
@@ -545,8 +559,9 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         return bindings.Select(binding =>
         {
             if (!TryGetIdentity(binding, out var identity) || ambiguousIdentities.Contains(identity) || !executions.TryGetValue(identity, out var activity))
-                return new SessionHistoryRow(binding);
-            return new SessionHistoryRow(binding, activity.Count, activity.LatestStatus, activity.LatestModel);
+                return new SessionHistoryRow(binding, ChatLabels: _chatNames.GetValueOrDefault(binding.Key));
+            return new SessionHistoryRow(binding, activity.Count, activity.LatestStatus, activity.LatestModel,
+                _chatNames.GetValueOrDefault(binding.Key));
         }).OrderByDescending(static row => row.Binding.UpdatedAt).ToArray();
     }
 

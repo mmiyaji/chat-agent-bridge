@@ -170,10 +170,12 @@ try {
     foreach ($folder in $folders) { [IO.Directory]::CreateDirectory((Join-Path $dataPath $folder)) | Out-Null }
     $aliases=@('Release preparation','Client report review','日本語スプリント記録','Architecture decision notes','Quarterly planning','Long running migration')
     $bindings=@(for($i=0;$i -lt 42;$i++) {
-        $pair=[math]::Floor($i/2); $provider=if($pair%2 -eq 0){'slack'}else{'mattermost'}
-        $user=if($i%2 -eq 0){'alice'}else{'bob'}; $origin=if($provider -eq 'slack'){'slack'}else{'a'*64}
+        $pair=[int][math]::Floor($i/2); $provider=if($pair%2 -eq 0){'slack'}else{'mattermost'}
+        $user=if($provider -eq 'slack'){if($i%2 -eq 0){'U00000001'}else{'U00000002'}}else{if($i%2 -eq 0){('a'*25)+'1'}else{('b'*25)+'2'}}
+        $origin=if($provider -eq 'slack'){'slack'}else{'a'*64}
         $workspace=Join-Path $dataPath $folders[$pair%$folders.Count]
-        $key=@{Provider=$provider;ChannelId="shared-channel-$pair";ThreadId="shared-thread-$pair";UserId=$user;Origin=$origin}
+        $channel=if($provider -eq 'slack'){'C'+$pair.ToString('D8')}else{('c'*18)+$pair.ToString('D8')}
+        $key=@{Provider=$provider;ChannelId=$channel;ThreadId="shared-thread-$pair";UserId=$user;Origin=$origin}
         @{Key=$key;WorkspaceRoot=$workspace;AgentExecutable='codex';AgentArguments='exec --json -';SessionId=([guid]::NewGuid().ToString('N'))
           UpdatedAt=([DateTimeOffset]::UtcNow.AddMinutes(-$i).ToString('o'));Model='fixture-model';ReasoningEffort='low';DisplayName=$aliases[$i%$aliases.Count]}
     })
@@ -196,9 +198,28 @@ try {
     $records += @{Id=([guid]::NewGuid().ToString());StartedAt=([DateTimeOffset]::UtcNow.AddMinutes(-1).ToString('o'));FinishedAt=([DateTimeOffset]::UtcNow.ToString('o'))
       Source='mattermost';ChannelId='orphan-channel';ThreadId='orphan-thread';UserId='alice';WorkspaceRoot=(Join-Path $dataPath $folders[0])
       Status='failed';ExitCode=1;SessionId='orphan-stale-session-id';AgentModel='fixture-model';AgentReasoningEffort='low'}
+    $records[0].StartedAt=[DateTimeOffset]::UtcNow.ToString('o')
+    $records[0].FinishedAt=[DateTimeOffset]::UtcNow.ToString('o')
+    $identityEntries=@{}
+    foreach($binding in $bindings) {
+        $key=$binding.Key
+        $site=if($key.Provider -eq 'slack'){'Example workspace'}else{'Example company'}
+        $userName=if($key.UserId -in @('U00000001',(('a'*25)+'1'))){'@alice (Alice)'}else{'@bob (Bob)'}
+        $channelName=if($key.Provider -eq 'slack'){'release-planning'}else{'開発相談'}
+        foreach($kind in @('user','channel')) {
+            $entityId=if($kind -eq 'user'){$key.UserId}else{$key.ChannelId}
+            $identityEntries["$($key.Provider)/$($key.Origin)/$kind/$entityId"]=@{
+                key=@{provider=$key.Provider;origin=$key.Origin;kind=$kind;id=$entityId}
+                siteName=$site;channelName=$(if($kind -eq 'channel'){$channelName}else{$null})
+                userName=$(if($kind -eq 'user'){$userName}else{$null});isDirectMessage=$false
+                success=$true;checkedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
+            }
+        }
+    }
+    if(-not $Baseline) { Write-Json 'chat-identities.json' @{version=1;entries=@($identityEntries.Values)} }
     Write-Json 'sessions.json' @{SchemaVersion=1;Bindings=$bindings;Workspaces=@()}
     Write-Json 'history.json' @{SchemaVersion=1;Records=$records}
-    Write-Json 'audit.json' @{SchemaVersion=1;Records=@()}
+    Write-Json 'audit.json' @{SchemaVersion=1;Records=@(@{Timestamp=[DateTimeOffset]::UtcNow.ToString('o');Kind='completed';ExecutionId=$records[0].Id;Source=$records[0].Source;ChannelId=$records[0].ChannelId;ThreadId=$records[0].ThreadId})}
     Write-Json 'settings.json' @{SchemaVersion=1;WorkspaceRoot=$dataPath;AgentProvider='custom';AgentMode='exec';AgentExecutable='not-used';AgentArguments='';TrustedWorkspaceRoots=$dataPath;AutoConnectProvider='none'}
     Write-Json 'onboarding.json' @{SchemaVersion=3;Step=4;Status='completed'}
     Write-Json 'language.json' @{Language=$Language}
@@ -227,10 +248,32 @@ try {
             $first=Get-FirstRowText
             Assert-True ($first.Contains('Release preparation')) 'The newest session did not show its saved display name.'
             Assert-True ($first -notmatch $bindings[0].SessionId) 'The session identifier was used as the conversation title.'
+            Assert-True ($first.Contains('Example workspace') -and $first.Contains('@alice (Alice)') -and $first.Contains('#release-planning')) 'Cached site, channel, and user names are missing.'
+            Assert-True (-not $first.Contains($bindings[0].Key.ThreadId) -and -not $first.Contains($bindings[0].Key.UserId) -and -not $first.Contains($bindings[0].Key.ChannelId)) 'Opaque IDs leaked into the conversation row.'
             Select-FirstRow 'SavedSessionsList' | Out-Null
             $expectedActivity=if($Language -eq 'ja'){'最終: 完了 · 1回実行'}else{'Last: Completed · Runs: 1'}
             Assert-True ($first.Contains($expectedActivity)) 'The first conversation is not joined to exactly its own completed execution.'
             Capture 'history-wide'
+        }
+        Check 'Names are searchable and execution/audit history use the same chat identity' {
+            Set-Search 'SavedSessionsSearch' '@alice'
+            Wait-Count 21 42
+            Set-Search 'SavedSessionsSearch' 'Example workspace'
+            Wait-Count 22 42
+            UI @('invoke','ClearSessionFilters') | Out-Null
+            Wait-Count 42 42
+            UI @('invoke','ExecutionHistoryTab') | Out-Null
+            Start-Sleep -Milliseconds 250
+            $visibleText=@((Element 'ExecutionHistoryList').FindAll([System.Windows.Automation.TreeScope]::Descendants,
+                [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Text)) | Where-Object {-not $_.Current.IsOffscreen} | ForEach-Object {$_.Current.Name}) -join "`n"
+            Assert-True ($visibleText.Contains('Example workspace') -and $visibleText.Contains('@alice (Alice)') -and $visibleText.Contains('#release-planning')) 'Execution history is missing its human-readable chat identity.'
+            Assert-True (-not $visibleText.Contains($bindings[0].Key.ThreadId)) 'Execution history exposes thread IDs before expanding details.'
+            Capture 'history-execution-names'
+            UI @('invoke','AuditHistoryTab') | Out-Null
+            Start-Sleep -Milliseconds 200
+            Assert-True (Has-Text 'Release preparation · Slack / Example workspace · @alice (Alice) · #release-planning') 'Audit history is not linked to the correct execution identity.'
+            Capture 'history-audit-names'
+            UI @('invoke','SavedConversationsTab') | Out-Null
         }
         Check 'Workspace, provider, and display-name search combine correctly' {
             Choose 'SavedSessionsWorkspaceFilter' (Join-Path $dataPath $folders[0])

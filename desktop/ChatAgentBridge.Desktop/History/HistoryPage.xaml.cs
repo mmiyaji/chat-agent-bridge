@@ -45,7 +45,14 @@ public sealed partial class HistoryPage : Page
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        ViewModel.SetChatNameUpdatesEnabled(true);
         await ViewModel.RefreshAsync();
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        ViewModel.SetChatNameUpdatesEnabled(false);
+        base.OnNavigatedFrom(e);
     }
 
     private void SavedSessionsList_ItemClick(object sender, ItemClickEventArgs e)

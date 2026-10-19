@@ -68,6 +68,7 @@ public sealed partial class HistoryPageViewModel
     private void SetExecutionRecords(IReadOnlyList<ExecutionRecord> records)
     {
         _activityRecords = records;
+        RebuildChatNameIndexes();
         ApplyExecutionDayFilter();
         RebuildActivity();
     }
@@ -120,7 +121,7 @@ public sealed partial class HistoryPageViewModel
         Executions.Clear();
         foreach (var record in _activityRecords.Where(record => ExecutionDayFilter is null ||
                      DateOnly.FromDateTime(record.StartedAt.ToLocalTime().DateTime) == ExecutionDayFilter))
-            Executions.Add(new(record));
+            Executions.Add(new(record, ExecutionChatLabel(record)));
         HasExecutions = Executions.Count > 0;
         OnPropertyChanged(nameof(ExecutionsTabTitle));
         OnPropertyChanged(nameof(ExecutionSummary));

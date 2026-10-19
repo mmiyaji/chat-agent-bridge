@@ -109,15 +109,17 @@
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
                                                 <Grid ColumnSpacing="8">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                                     <TextBlock Text="{x:Bind ListTitle}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListTitle}" />
                                                     <TextBlock Grid.Column="1" Text="{x:Bind UpdatedCompact}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" ToolTipService.ToolTip="{x:Bind UpdatedTooltip}" />
                                                 </Grid>
-                                                <TextBlock Grid.Row="1" Text="{x:Bind ListIdentity}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Grid.Row="2" Text="{x:Bind ListContext}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Workspace}" />
-                                                <Grid Grid.Row="3" ColumnSpacing="6">
+                                                <TextBlock Grid.Row="1" Text="{x:Bind ListIdentity}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListIdentity}" />
+                                                <TextBlock Grid.Row="2" Text="{x:Bind ListLocation}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListLocation}" />
+                                                <TextBlock Grid.Row="3" Text="{x:Bind ListContext}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Workspace}" />
+                                                <Grid Grid.Row="4" ColumnSpacing="6">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                                     <FontIcon Glyph="{x:Bind StatusGlyph}" FontSize="12" VerticalAlignment="Center" IsHitTestVisible="False" />
                                                     <TextBlock Grid.Column="1" Text="{x:Bind ActivitySummary}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ActivitySummary}" />
@@ -160,6 +162,7 @@
                                         <StackPanel Spacing="4">
                                             <TextBlock Text="{x:Bind ViewModel.ConversationHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ListIdentity, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
+                                            <TextBlock Text="{x:Bind ViewModel.SelectedSession.ListLocation, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ActivitySummary, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.Updated, Mode=OneWay, FallbackValue=''}" Style="{StaticResource CaptionTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.ContinueInOriginalThreadHint, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
@@ -179,6 +182,8 @@
                                         </StackPanel>
                                         <Expander Grid.Row="3" Header="{x:Bind ViewModel.IdentifiersHeading, Mode=OneWay}" IsExpanded="False" AutomationProperties.AutomationId="SessionIdentifiers">
                                             <StackPanel Spacing="4" Margin="0,4,0,0">
+                                                <TextBlock Text="{x:Bind ViewModel.UserIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                                <TextBlock Text="{x:Bind ViewModel.SelectedSession.UserId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                                 <TextBlock Text="{x:Bind ViewModel.ChannelIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
                                                 <TextBlock Text="{x:Bind ViewModel.SelectedSession.ChannelId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                                 <TextBlock Text="{x:Bind ViewModel.ThreadIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
@@ -230,6 +235,7 @@
                                                 <TextBlock Text="{x:Bind ReasoningEffort}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                                 <TextBlock Text="{x:Bind Usage}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                                 <TextBlock Text="{x:Bind Session}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind Identifiers}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                             </StackPanel>
                                         </Expander>
                                     </StackPanel>
@@ -251,6 +257,9 @@
                                 <StackPanel Margin="8,6" Spacing="3">
                                     <TextBlock Text="{x:Bind Summary}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
                                     <TextBlock Text="{x:Bind Conversation}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                    <Expander Header="{x:Bind IdentifiersHeading}" IsExpanded="False" AutomationProperties.AutomationId="AuditIdentifiers">
+                                        <TextBlock Text="{x:Bind Identifiers}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                    </Expander>
                                 </StackPanel>
                             </DataTemplate>
                         </ListView.ItemTemplate>

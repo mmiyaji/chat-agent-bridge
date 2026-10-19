@@ -405,4 +405,9 @@
   <data name="HistoryRenameSaved" xml:space="preserve"><value>Conversation name saved.</value></data>
   <data name="HistoryRenameFailed" xml:space="preserve"><value>Could not save the conversation name: {0}</value></data>
   <data name="CustomCliName" xml:space="preserve"><value>Custom CLI</value></data>
+  <data name="HistoryThisPc" xml:space="preserve"><value>This PC</value></data>
+  <data name="HistoryChatNamesUnavailable" xml:space="preserve"><value>Chat names unavailable · IDs are available in details</value></data>
+  <data name="HistoryUserNameUnavailable" xml:space="preserve"><value>User name unavailable</value></data>
+  <data name="HistoryChannelNameUnavailable" xml:space="preserve"><value>Channel name unavailable</value></data>
+  <data name="HistoryDirectMessage" xml:space="preserve"><value>Direct message</value></data>
 </root>

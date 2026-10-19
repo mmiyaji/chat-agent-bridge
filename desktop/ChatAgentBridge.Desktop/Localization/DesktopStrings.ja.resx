@@ -405,4 +405,9 @@
   <data name="HistoryRenameSaved" xml:space="preserve"><value>会話名を保存しました。</value></data>
   <data name="HistoryRenameFailed" xml:space="preserve"><value>会話名を保存できませんでした: {0}</value></data>
   <data name="CustomCliName" xml:space="preserve"><value>カスタムCLI</value></data>
+  <data name="HistoryThisPc" xml:space="preserve"><value>このPC</value></data>
+  <data name="HistoryChatNamesUnavailable" xml:space="preserve"><value>チャット名未取得 · IDは詳細で確認できます</value></data>
+  <data name="HistoryUserNameUnavailable" xml:space="preserve"><value>ユーザー名未取得</value></data>
+  <data name="HistoryChannelNameUnavailable" xml:space="preserve"><value>チャンネル名未取得</value></data>
+  <data name="HistoryDirectMessage" xml:space="preserve"><value>ダイレクトメッセージ</value></data>
 </root>
