@@ -1,5 +1,15 @@
 # Mattermost Setup
 
+## Native Windows app: bot DM and request format
+
+For a bot such as `cc-agent-bot`, register that bot's access token, set the **channel ID of the DM with the bot**, and look up/add the **personal account that will send requests** to allowed users. The allowlist stores internal user IDs; typing a username directly into the ID list does not resolve it. Save and reconnect after changing these settings.
+
+Start or continue a request with either `@cc-agent-bot your request` (mention at the beginning) or `!cab your request`. The username is read from the authenticated token's account, so other bot names or partial matches do not trigger execution. A root post starts a new conversation; an explicit request in that post's thread continues it for the same sender. An ordinary unmentioned message is ignored, including in DMs. Bot/self/webhook messages and unauthorized users/channels/conversations remain excluded.
+
+日本語UIでは、Botのトークンと **そのBotとのDMのチャンネルID** を設定し、「ユーザー名から許可するユーザーを検索」から **依頼を送る個人アカウント** を検索・追加します。Bot名を許可ユーザーとして追加する必要はありません。保存・再接続後、`@cc-agent-bot 依頼内容` または `!cab 依頼内容` を送ってください。続ける場合も同じ本人が元のスレッド内でメンションまたは `!cab` を付けます。
+
+Leading bot mentions are supported from portable `v0.1.0-preview.4`. In `preview.3` and earlier, use the `!cab` prefix.
+
 ## Native Windows app: direct connection
 
 In **Connection settings → Mattermost**, enable **Connect without a proxy**, save, and disconnect/reconnect Mattermost. The first-run wizard offers the same setting below the server URL. Its default is off, preserving the system proxy setting for existing configurations.

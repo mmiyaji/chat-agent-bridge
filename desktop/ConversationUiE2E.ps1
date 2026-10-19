@@ -3,6 +3,7 @@ param(
     [ValidateSet('ja','en')][string]$Language = 'ja',
     [switch]$Portable,
     [switch]$CheckMattermostProxy,
+    [switch]$MattermostMentions,
     [switch]$KeepRunningOnFailure
 )
 $ErrorActionPreference = 'Stop'
@@ -97,7 +98,7 @@ function Capture([string]$Name) {
     UI @('screenshot','--focus','-w',"$($appProcess.MainWindowHandle)",'-o',(Join-Path $dataPath "$Name.png")) | Out-Null
 }
 function Post([string]$Id,[string]$Thread,[string]$User,[string]$Text) {
-    $body = @{id=$Id;thread=$Thread;user=$User;text=$Text} | ConvertTo-Json -Compress
+    $body = @{id=$Id;thread=$Thread;user=$User;text=$Text;mention=[bool]$MattermostMentions} | ConvertTo-Json -Compress
     $result = Invoke-RestMethod "$script:endpoint/test/request" -Method Post -ContentType 'application/json' -Body ([Text.Encoding]::UTF8.GetBytes($body))
     Assert-True ($result.delivered -eq 1) 'Expected one connected offline transport'
     Start-Sleep -Milliseconds 350

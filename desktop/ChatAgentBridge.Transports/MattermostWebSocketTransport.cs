@@ -68,7 +68,8 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
             if (!envelope.TryGetProperty("event", out var eventName) || eventName.GetString() != "posted") continue;
             if (!envelope.TryGetProperty("data", out var data) || !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
 
-            var request = ParsePost(postJson.GetString()!, settings.MattermostChannelId, _currentUserId ?? "", isBot: false);
+            var request = ParsePost(postJson.GetString()!, settings.MattermostChannelId, _currentUserId ?? "", isBot: false,
+                currentUsername: me.Username);
             if (request is null || !ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", request.UserId, request.ChannelId, request.ThreadId) || !_seen.TryAdd(request.MessageId)) continue;
 
             var authorRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
@@ -121,7 +122,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
 
     private HttpClient ActiveHttp => _http ?? throw new InvalidOperationException("Mattermost is not connected.");
 
-    internal static ChatRequest? ParsePost(string json, string channelFilter, string currentUserId, bool isBot)
+    internal static ChatRequest? ParsePost(string json, string channelFilter, string currentUserId, bool isBot, string? currentUsername = null)
     {
         MattermostPost? post;
         try { post = JsonSerializer.Deserialize<MattermostPost>(json, TransportHttp.JsonOptions); }
@@ -129,11 +130,31 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
         if (post is null || string.IsNullOrWhiteSpace(post.Id) || string.IsNullOrWhiteSpace(post.UserId) ||
             !string.Equals(post.ChannelId, channelFilter, StringComparison.Ordinal) ||
             string.Equals(post.UserId, currentUserId, StringComparison.Ordinal) || isBot ||
-            string.IsNullOrWhiteSpace(post.Message) || !HasTrigger(post.Message) || IsFromWebhook(post)) return null;
-        var text = post.Message[Trigger.Length..].Trim();
-        if (text.Length == 0) return null;
+            string.IsNullOrWhiteSpace(post.Message) || IsFromWebhook(post) ||
+            !TryGetTriggeredText(post.Message, currentUsername, out var text)) return null;
         var threadId = string.IsNullOrWhiteSpace(post.RootId) ? post.Id : post.RootId;
         return new ChatRequest("mattermost", post.ChannelId, threadId, post.UserId, text, post.Id);
+    }
+
+    private static bool TryGetTriggeredText(string message, string? currentUsername, out string text)
+    {
+        text = string.Empty;
+        if (HasTrigger(message))
+        {
+            text = message[Trigger.Length..].Trim();
+            return text.Length > 0;
+        }
+
+        var username = currentUsername?.Trim();
+        if (string.IsNullOrEmpty(username)) return false;
+        var mention = "@" + username;
+        if (!message.StartsWith(mention, StringComparison.OrdinalIgnoreCase) || message.Length <= mention.Length ||
+            !char.IsWhiteSpace(message[mention.Length])) return false;
+
+        text = message[mention.Length..].Trim();
+        if (text.Length == 0) return false;
+        if (HasTrigger(text)) text = text[Trigger.Length..].Trim();
+        return text.Length > 0;
     }
 
     private static bool HasTrigger(string text) => text.StartsWith(Trigger, StringComparison.OrdinalIgnoreCase) &&
@@ -171,6 +192,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
 
     private sealed record MattermostUser(
         [property: JsonPropertyName("id")] string Id,
+        [property: JsonPropertyName("username")] string? Username,
         [property: JsonPropertyName("is_bot")] bool IsBot);
     private sealed record MattermostPost(
         [property: JsonPropertyName("id")] string Id,

@@ -92,7 +92,7 @@
   <data name="chatAgentBridgeDesktopMainPageTextBlock008.Text" xml:space="preserve">
     <value>1. Choose the CLI, model, and working folder in Agent settings.
 2. Save the chat credentials in Connection settings, then connect from Chat inbox.
-3. Send a request from another device. In Mattermost, use !cab followed by your request. In Slack, mention the bot or use !cab in a thread reply.
+3. Send a request from another device. In Mattermost, start with !cab or an @mention of the connected bot, followed by your request. In Slack, mention the bot or use !cab in a thread reply.
 4. Review and approve the request on this PC, then review and share the result to return it to the same thread.
 
 Keep this app and your local PC running to stay connected.</value>
@@ -387,7 +387,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Save your Mattermost or Slack credentials on this PC, then connect from Chat inbox.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock048.Text" xml:space="preserve">
-    <value>The server URL is the Mattermost address you are using. The channel ID is a different identifier than the display name and will only listen to this channel. In order to read and post with the permissions of the connected user, please have that user join the target channel.</value>
+    <value>Enter the ID of the channel to receive requests from. For a direct message with the bot, use that DM's channel ID. Start or continue requests with a leading @mention of the connected bot, or !cab followed by your request. The bot must also join any regular channel you use.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock049.Text" xml:space="preserve">
     <value>Server URL</value>
@@ -402,7 +402,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Mattermost Channel ID</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock051.Text" xml:space="preserve">
-    <value>User access token</value>
+    <value>Access token for the connected bot or user</value>
   </data>
   <data name="MattermostToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Mattermost access token</value>
@@ -549,7 +549,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Disconnect</value>
   </data>
   <data name="inboxChatInboxPageTextBlock003.Text" xml:space="preserve">
-    <value>In Mattermost, send !cab followed by your request. In Slack, mention the bot to start. The same user can continue a saved Slack conversation by replying in its thread. Use !cab folder C:\Projects\my-app to request a folder change. Changes must stay within trusted folders, require approval on this PC, and start a new AI conversation.</value>
+    <value>In Mattermost, start or continue requests with !cab or a leading @mention of the connected bot. In Slack, mention the bot to start; the same user can continue a saved conversation by replying in its thread. Use !cab folder C:\Projects\my-app to request a folder change. Changes must stay within trusted folders, require approval on this PC, and start a new AI conversation.</value>
   </data>
   <data name="ChatRequests.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Received requests</value>
@@ -702,7 +702,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Channel ID</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock017.Text" xml:space="preserve">
-    <value>User access token</value>
+    <value>Bot or user access token</value>
   </data>
   <data name="WizardMattermostToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Mattermost access token</value>

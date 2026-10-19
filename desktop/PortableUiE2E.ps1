@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory)][string]$AppDirectory,
-    [string]$ExpectedVersion = '0.1.0.2'
+    [string]$ExpectedVersion = '0.1.0.3'
 )
 $ErrorActionPreference = 'Stop'
 $artifacts = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))

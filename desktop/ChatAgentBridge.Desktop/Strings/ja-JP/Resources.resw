@@ -92,7 +92,7 @@
   <data name="chatAgentBridgeDesktopMainPageTextBlock008.Text" xml:space="preserve">
     <value>1. エージェント設定でCLI・モデル・作業フォルダーを設定します。
 2. 接続設定を保存し、チャット受信からSlackまたはMattermostへ接続します。
-3. 別の端末から依頼を送ります。Mattermostは対象チャンネルで !cab 依頼内容、SlackはBotへのメンションまたはスレッドへの返信に !cab 依頼内容を含めます。
+3. 別の端末から依頼を送ります。Mattermostは !cab 依頼内容、または先頭で接続したBotを @メンションして依頼します。SlackはBotへのメンションまたはスレッドへの返信に !cab 依頼内容を含めます。
 4. PCで依頼を確認して実行し、結果を確認して共有を承認すると、同じスレッドへ返ります。
 
 ローカルPCではこのアプリを起動し、SlackまたはMattermostとの接続を保ってください。</value>
@@ -387,7 +387,7 @@
     <value>Mattermost と Slack の認証情報をこのデバイスに保存します。保存後に「チャット受信」から接続してください。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock048.Text" xml:space="preserve">
-    <value>サーバーURLは利用中のMattermostのアドレスです。チャンネルIDは表示名とは異なる識別子で、このチャンネルだけを受信します。接続するユーザーの権限で読み取り・投稿するため、そのユーザーを対象チャンネルへ参加させてください。</value>
+    <value>受信するチャンネルのIDを指定します。BotとのDMを使う場合は、そのDMのチャンネルIDです。接続したBotへの @メンションを先頭に付けるか、!cab 依頼内容で依頼を開始・継続します。通常のチャンネルではBotの参加も必要です。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock049.Text" xml:space="preserve">
     <value>サーバー URL</value>
@@ -402,7 +402,7 @@
     <value>Mattermost チャンネル ID</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock051.Text" xml:space="preserve">
-    <value>接続するユーザーのアクセストークン</value>
+    <value>接続するBotまたはユーザーのアクセストークン</value>
   </data>
   <data name="MattermostToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Mattermost アクセストークン</value>
@@ -549,7 +549,7 @@
     <value>切断</value>
   </data>
   <data name="inboxChatInboxPageTextBlock003.Text" xml:space="preserve">
-    <value>Mattermostでは !cab 依頼内容、SlackではBotへのメンションで依頼を始めます。保存済みのSlack会話は、同じ本人が同じスレッドへ普通に返信できます。!cab folder C:\Projects\my-app で会話の作業先を変更できます。信頼フォルダーの範囲内に限り、変更には毎回PCで承認が必要です。変更後は新しいAI会話として開始します。</value>
+    <value>Mattermostでは !cab 依頼内容、または接続したBotへの @メンションを先頭に付けて依頼を開始・継続します。SlackではBotへのメンションで始め、保存済みの会話は同じ本人が同じスレッドへ普通に返信できます。!cab folder C:\Projects\my-app で会話の作業先を変更できます。信頼フォルダーの範囲内に限り、変更には毎回PCで承認が必要です。変更後は新しいAI会話として開始します。</value>
   </data>
   <data name="ChatRequests.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>受信した依頼</value>
@@ -702,7 +702,7 @@
     <value>チャンネルID</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock017.Text" xml:space="preserve">
-    <value>ユーザーアクセストークン</value>
+    <value>Botまたはユーザーのアクセストークン</value>
   </data>
   <data name="WizardMattermostToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Mattermostアクセストークン</value>
