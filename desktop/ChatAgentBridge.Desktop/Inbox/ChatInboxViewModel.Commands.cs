@@ -11,7 +11,7 @@ public sealed partial class ChatInboxViewModel
     {
         var command = ChatControlCommand.Parse(request.Text);
         if (command.Kind is ChatControlCommandKind.Answer or ChatControlCommandKind.ReservedInvalid) return true;
-        if (command.Kind is not (ChatControlCommandKind.Status or ChatControlCommandKind.Stop)) return false;
+        if (command.Kind is not (ChatControlCommandKind.Help or ChatControlCommandKind.Status or ChatControlCommandKind.Stop)) return false;
         var completion = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!App.DispatcherQueue.TryEnqueue(() =>
             completion.TrySetResult(HandleChatControlOnUiAsync(transport, received, request, command.Kind, token))))
@@ -28,6 +28,11 @@ public sealed partial class ChatInboxViewModel
             var current = await _store.LoadAsync(token);
             Volatile.Write(ref _accessSettings, current);
             if (!CanHandleControl(transport, received, request, current)) return;
+            if (kind == ChatControlCommandKind.Help)
+            {
+                await ReplyToControlAsync(transport, received, request, DesktopText.Get("ChatControlHelp"), token);
+                return;
+            }
             var scope = CreateControlScope(request, received);
             var own = Requests.Where(item => ReferenceEquals(item.Transport, transport) &&
                 CreateSessionKey(item) == scope && HasAccess(current, item.Request, item.Settings)).ToArray();

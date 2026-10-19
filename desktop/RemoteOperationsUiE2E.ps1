@@ -183,6 +183,30 @@ function Check-StatusStopStage {
     $root = 'remote-ops-root-' + $runId
     $otherRoot = 'remote-ops-other-' + $runId
     $unboundRoot = 'remote-ops-unbound-' + $runId
+    Check 'Command help aliases reply without starting an agent and deny unauthorized users' {
+        $helpRoot = 'command-help-' + $runId
+        $deniedRoot = 'command-help-denied-' + $runId
+        $replyCount = 0
+        foreach ($alias in @('command', 'commands', 'help')) {
+            Post ('help-' + $alias + '-' + $runId) $helpRoot 'alice' ('!cab ' + $alias) $true
+            $replyCount++
+            $snapshot = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $helpRoot }).Count -ge $replyCount } 10
+            $helpPosts = @($snapshot.replies | Where-Object { $_.root_id -eq $helpRoot })
+            Assert-True ($helpPosts.Count -eq $replyCount) 'Help created an extra receipt or reply.'
+            foreach ($syntax in @('!cab command', '!cab status', '!cab stop', '!cab folder', '!cab approve', '!cab reject', '!cab answer')) {
+                Assert-True ($helpPosts[-1].message.Contains($syntax)) "Command help omitted $syntax."
+            }
+            Assert-True ($helpPosts[-1].message -eq $helpPosts[0].message) 'Help aliases returned different command lists.'
+        }
+        Post ('help-denied-' + $runId) $deniedRoot 'mallory' '!cab command' $true
+        Start-Sleep -Milliseconds 900
+        $snapshot = Read-Fixture
+        Assert-True (@($snapshot.replies | Where-Object { $_.root_id -eq $deniedRoot }).Count -eq 0) 'An unauthorized user received command help.'
+        Assert-True (@($snapshot.updates | Where-Object { $_.root_id -eq $helpRoot }).Count -eq 0) 'Command help created execution progress.'
+        $history = Get-Content -LiteralPath (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json
+        Assert-True (@($history.Records).Count -eq 0) 'Command help started AI execution or execution history.'
+    }
+
     Post ('run-' + $runId) $root 'alice' ('remote-operations-slow-' + $runId)
     $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root }).Count -ge 1 } 20
     Post ('queue-' + $runId) $root 'alice' ('remote-operations-queued-' + $runId)

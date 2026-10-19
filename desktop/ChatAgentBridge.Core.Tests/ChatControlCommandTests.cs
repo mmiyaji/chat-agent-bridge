@@ -10,6 +10,13 @@ public sealed class ChatControlCommandTests
     [InlineData("!cab status", ChatControlCommandKind.Status)]
     [InlineData("stop", ChatControlCommandKind.Stop)]
     [InlineData("!cab stop", ChatControlCommandKind.Stop)]
+    [InlineData("help", ChatControlCommandKind.Help)]
+    [InlineData("HELP", ChatControlCommandKind.Help)]
+    [InlineData("!cab help", ChatControlCommandKind.Help)]
+    [InlineData("command", ChatControlCommandKind.Help)]
+    [InlineData("!cab command", ChatControlCommandKind.Help)]
+    [InlineData("commands", ChatControlCommandKind.Help)]
+    [InlineData("!cab commands", ChatControlCommandKind.Help)]
     public void ParsesExactStatusAndStopCommands(string text, ChatControlCommandKind expected)
     {
         Assert.Equal(expected, ChatControlCommand.Parse(text).Kind);
@@ -42,6 +49,9 @@ public sealed class ChatControlCommandTests
     [InlineData("please status")]
     [InlineData("stop the build")]
     [InlineData("!cab run this")]
+    [InlineData("help me with this")]
+    [InlineData("!cab help me")]
+    [InlineData("commands please")]
     public void NonCommandsRemainOrdinaryMessages(string text)
     {
         Assert.Equal(ChatControlCommandKind.None, ChatControlCommand.Parse(text).Kind);

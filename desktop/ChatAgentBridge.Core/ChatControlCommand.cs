@@ -6,6 +6,7 @@ namespace ChatAgentBridge.Core;
 public enum ChatControlCommandKind
 {
     None,
+    Help,
     Status,
     Stop,
     Answer,
@@ -37,6 +38,10 @@ public sealed record ChatControlCommand(
         if (value.Length == 0) return new(ChatControlCommandKind.None);
         int commandEnd = value.IndexOfAny([' ', '\t', '\r', '\n']);
         var command = commandEnd < 0 ? value : value[..commandEnd];
+        if ((command.Equals("help", StringComparison.OrdinalIgnoreCase) ||
+             command.Equals("command", StringComparison.OrdinalIgnoreCase) ||
+             command.Equals("commands", StringComparison.OrdinalIgnoreCase)) && commandEnd < 0)
+            return new(ChatControlCommandKind.Help);
         if (command.Equals("status", StringComparison.OrdinalIgnoreCase) && commandEnd < 0)
             return new(ChatControlCommandKind.Status);
         if (command.Equals("stop", StringComparison.OrdinalIgnoreCase) && commandEnd < 0)
