@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ProgressReceived" xml:space="preserve"><value>📥 Request received. Waiting for approval on the PC or for execution to start.</value></data>
+  <data name="ProgressRunning" xml:space="preserve"><value>⏳ The AI agent is running. Elapsed {0}. This post updates about every 30 seconds while running.</value></data>
+  <data name="ProgressCompleted" xml:space="preserve"><value>✅ Completed. Elapsed {0}. Result text is posted according to this conversation's sharing setting.</value></data>
+  <data name="ProgressFailed" xml:space="preserve"><value>❌ Execution or recording failed. Elapsed {0}. Check the details on the PC.</value></data>
+  <data name="ProgressCancelled" xml:space="preserve"><value>⏹ Execution stopped. Elapsed {0}.</value></data>
+  <data name="ProgressRejected" xml:space="preserve"><value>⛔ The request was not approved.</value></data>
+  <data name="ProgressDisconnected" xml:space="preserve"><value>🔌 The connection ended. Repost any requests that have not run.</value></data>
+  <data name="ProgressNoticeFailed" xml:space="preserve"><value>Could not send or update chat progress. Check the execution status and results on the PC.</value></data>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>

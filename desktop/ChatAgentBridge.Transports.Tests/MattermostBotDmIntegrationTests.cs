@@ -33,8 +33,13 @@ public sealed class MattermostBotDmIntegrationTests
         string? botId = null;
         string? botTokenId = null;
         string? botToken = null;
+        FixtureConfig? originalConfig = null;
         try
         {
+            originalConfig = await ReadFixtureConfigAsync(http, server, state.BridgeUser.Token, cancellation.Token);
+            if (!originalConfig.ServiceSettings.EnableBotAccountCreation || !originalConfig.ServiceSettings.EnableUserAccessTokens)
+                await SetFixtureFeaturesAsync(http, server, state.BridgeUser.Token, true, true, cancellation.Token);
+
             var bot = await CreateBotAsync(http, server, state.BridgeUser.Token, botUsername,
                 createdBotId => botId = createdBotId, cancellation.Token);
             var token = await CreateBotTokenAsync(http, server, state.BridgeUser.Token, botId!, cancellation.Token);
@@ -81,16 +86,32 @@ public sealed class MattermostBotDmIntegrationTests
         }
         finally
         {
+            Exception? cleanupFailure = null;
             try
             {
-                if (botId is not null && botTokenId is not null)
-                    await RevokeBotTokenAsync(http, server, state.BridgeUser.Token, botTokenId);
+                if (botId is not null && botTokenId is not null && botToken is not null)
+                    await RevokeBotTokenAsync(http, server, state.BridgeUser.Token, botTokenId, botToken);
             }
-            finally
+            catch (Exception ex) { cleanupFailure = ex; }
+
+            try
             {
                 if (botId is not null)
                     await DisableBotAsync(http, server, state.BridgeUser.Token, botId);
             }
+            catch (Exception ex) { cleanupFailure ??= ex; }
+
+            try
+            {
+                if (originalConfig is not null)
+                    await SetFixtureFeaturesAsync(http, server, state.BridgeUser.Token,
+                        originalConfig.ServiceSettings.EnableBotAccountCreation,
+                        originalConfig.ServiceSettings.EnableUserAccessTokens, CancellationToken.None);
+            }
+            catch (Exception ex) { cleanupFailure ??= ex; }
+
+            if (cleanupFailure is not null)
+                throw new InvalidOperationException("Mattermost bot integration cleanup did not complete successfully.");
         }
     }
 
@@ -148,6 +169,34 @@ public sealed class MattermostBotDmIntegrationTests
         return token;
     }
 
+    private static async Task<FixtureConfig> ReadFixtureConfigAsync(HttpClient http, Uri server, string adminToken, CancellationToken ct)
+    {
+        using var request = CreateRequest(HttpMethod.Get, server, "api/v4/config", adminToken);
+        using var response = await http.SendAsync(request, ct);
+        EnsureSuccess(response, "Mattermost fixture configuration read");
+        using var json = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+        if (!json.RootElement.TryGetProperty("ServiceSettings", out var service) ||
+            !service.TryGetProperty("EnableBotAccountCreation", out var botCreation) ||
+            !service.TryGetProperty("EnableUserAccessTokens", out var accessTokens) ||
+            botCreation.ValueKind is not (JsonValueKind.True or JsonValueKind.False) ||
+            accessTokens.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+            throw new InvalidOperationException("Mattermost fixture configuration did not include the required boolean settings.");
+        return new FixtureConfig(new FixtureServiceSettings(botCreation.GetBoolean(), accessTokens.GetBoolean()));
+    }
+
+    private static async Task SetFixtureFeaturesAsync(HttpClient http, Uri server, string adminToken,
+        bool botCreation, bool accessTokens, CancellationToken ct)
+    {
+        using var request = CreateRequest(HttpMethod.Put, server, "api/v4/config/patch", adminToken,
+            JsonContent.Create(new { ServiceSettings = new { EnableBotAccountCreation = botCreation, EnableUserAccessTokens = accessTokens } }));
+        using var response = await http.SendAsync(request, ct);
+        EnsureSuccess(response, "Mattermost fixture configuration update");
+        var verified = await ReadFixtureConfigAsync(http, server, adminToken, ct);
+        if (verified.ServiceSettings.EnableBotAccountCreation != botCreation ||
+            verified.ServiceSettings.EnableUserAccessTokens != accessTokens)
+            throw new InvalidOperationException("Mattermost fixture configuration update did not persist the requested boolean settings.");
+    }
+
     private static async Task<string> CreateDirectChannelAsync(HttpClient http, Uri server, string actorToken,
         string actorId, string otherUserId, CancellationToken ct)
     {
@@ -178,6 +227,13 @@ public sealed class MattermostBotDmIntegrationTests
         using var response = await http.SendAsync(request, ct);
         EnsureSuccess(response, "Mattermost integration thread lookup");
         return await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
+    private static string FindProgressPostId(JsonDocument thread, string expectedMessage)
+    {
+        var match = Assert.Single(thread.RootElement.GetProperty("posts").EnumerateObject(), item =>
+            item.Value.TryGetProperty("message", out var message) && message.GetString() == expectedMessage);
+        return match.Value.GetProperty("id").GetString()!;
     }
 
     private static async Task AssertNoRequestAsync(ChannelReader<ChatRequest> accepted, CancellationToken ct)
@@ -223,6 +279,28 @@ public sealed class MattermostBotDmIntegrationTests
             Assert.Equal(state.MemberUser.Id, mentioned.UserId);
             Assert.Equal(mentionPrompt, mentioned.Text);
 
+            var progressReporter = new ChatProgressReporter(transport, mentioned,
+                (progressState, _) => $"CAB progress: {progressState.ToString().ToLowerInvariant()}",
+                _ => Task.FromResult(true), interval: TimeSpan.FromHours(1));
+            string? progressPostId = null;
+            await using (progressReporter)
+            {
+                await progressReporter.ReceiveAsync(ct);
+                using var receivedProgress = await GetThreadAsync(http, server, settings.MattermostToken,
+                    mentionPostId, ct);
+                progressPostId = FindProgressPostId(receivedProgress, "CAB progress: received");
+
+                await progressReporter.StartAsync(ct);
+                using var runningProgress = await GetThreadAsync(http, server, settings.MattermostToken,
+                    mentionPostId, ct);
+                Assert.Equal(progressPostId, FindProgressPostId(runningProgress, "CAB progress: running"));
+
+                await progressReporter.FinishAsync(ChatProgressState.Completed, ct);
+                using var completedProgress = await GetThreadAsync(http, server, settings.MattermostToken,
+                    mentionPostId, ct);
+                Assert.Equal(progressPostId, FindProgressPostId(completedProgress, "CAB progress: completed"));
+            }
+
             var ownerKey = ChatSessionScope.Create("mattermost", settings.MattermostChannelId!, mentionPostId,
                 state.MemberUser.Id!, state.ServerUrl);
             Assert.Null(await sessions.FindAsync(ownerKey, ct));
@@ -262,9 +340,21 @@ public sealed class MattermostBotDmIntegrationTests
             await transport.ReplyAsync(mentioned, replyText, ct);
             using var mentionThread = await GetThreadAsync(http, server, settings.MattermostToken,
                 mentionPostId, ct);
-            Assert.Contains(mentionThread.RootElement.GetProperty("posts").EnumerateObject(), item =>
+            var posts = mentionThread.RootElement.GetProperty("posts").EnumerateObject().ToArray();
+            var progressPost = Assert.Single(posts, item => item.Value.TryGetProperty("message", out var message) &&
+                message.GetString()?.StartsWith("CAB progress:", StringComparison.Ordinal) == true);
+            Assert.Equal(progressPostId, progressPost.Value.GetProperty("id").GetString());
+            Assert.Contains(posts, item =>
+                item.Value.TryGetProperty("message", out var message) && message.GetString() == "CAB progress: completed" &&
+                item.Value.TryGetProperty("root_id", out var progressRoot) && progressRoot.GetString() == mentionPostId);
+            Assert.DoesNotContain(posts, item => item.Value.TryGetProperty("message", out var message) &&
+                message.GetString() is "CAB progress: received" or "CAB progress: running");
+            Assert.Contains(posts, item =>
                 item.Value.TryGetProperty("message", out var message) && message.GetString() == replyText &&
                 item.Value.TryGetProperty("root_id", out var rootId) && rootId.GetString() == mentionPostId);
+            var replyPost = Assert.Single(posts, item => item.Value.TryGetProperty("message", out var message) &&
+                message.GetString() == replyText);
+            Assert.NotEqual(progressPostId, replyPost.Value.GetProperty("id").GetString());
             return mentionPostId;
         }
         finally
@@ -360,12 +450,17 @@ public sealed class MattermostBotDmIntegrationTests
             throw new InvalidOperationException($"{operation} failed with HTTP {(int)response.StatusCode}.");
     }
 
-    private static async Task RevokeBotTokenAsync(HttpClient http, Uri server, string token, string tokenId)
+    private static async Task RevokeBotTokenAsync(HttpClient http, Uri server, string adminToken, string tokenId, string botToken)
     {
-        using var request = CreateRequest(HttpMethod.Post, server, "api/v4/users/tokens/revoke", token,
+        using var request = CreateRequest(HttpMethod.Post, server, "api/v4/users/tokens/revoke", adminToken,
             JsonContent.Create(new { token_id = tokenId }));
         using var response = await http.SendAsync(request);
         EnsureSuccess(response, "Mattermost bot token revocation");
+
+        using var verify = CreateRequest(HttpMethod.Get, server, "api/v4/users/me", botToken);
+        using var verifyResponse = await http.SendAsync(verify);
+        if (verifyResponse.StatusCode != System.Net.HttpStatusCode.Unauthorized)
+            throw new InvalidOperationException("Mattermost bot token revocation could not be verified.");
     }
 
     private static async Task DisableBotAsync(HttpClient http, Uri server, string token, string botId)
@@ -374,6 +469,17 @@ public sealed class MattermostBotDmIntegrationTests
             $"api/v4/bots/{Uri.EscapeDataString(botId)}/disable", token);
         using var response = await http.SendAsync(request);
         EnsureSuccess(response, "Mattermost bot disable");
+
+        using var verify = CreateRequest(HttpMethod.Get, server,
+            $"api/v4/bots/{Uri.EscapeDataString(botId)}", token);
+        using var verifyResponse = await http.SendAsync(verify);
+        if (verifyResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return;
+        EnsureSuccess(verifyResponse, "Mattermost disabled bot verification");
+        using var json = await JsonDocument.ParseAsync(await verifyResponse.Content.ReadAsStreamAsync());
+        if (!json.RootElement.TryGetProperty("delete_at", out var deleteAt) ||
+            deleteAt.ValueKind != JsonValueKind.Number || deleteAt.GetInt64() <= 0)
+            throw new InvalidOperationException("Mattermost bot disable could not be verified.");
     }
 
     private static async Task AssertCanceledOrCompletedAsync(Task task, CancellationTokenSource cancellation)
@@ -412,6 +518,9 @@ public sealed class MattermostBotDmIntegrationTests
         public string Id { get; set; } = "";
         public string Token { get; set; } = "";
     }
+
+    private sealed record FixtureConfig(FixtureServiceSettings ServiceSettings);
+    private sealed record FixtureServiceSettings(bool EnableBotAccountCreation, bool EnableUserAccessTokens);
 
     private sealed class TemporaryDirectory : IDisposable
     {

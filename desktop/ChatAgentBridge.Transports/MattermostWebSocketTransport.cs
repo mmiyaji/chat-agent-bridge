@@ -7,7 +7,7 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnectionEvents, IChatConnectionNotifications
+public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatConnectionEvents, IChatConnectionNotifications
 {
     public event Action? Connected;
     private const int MaxMessageBytes = 1024 * 1024;
@@ -21,14 +21,29 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
     private string? _channelId;
     private CancellationTokenSource? _runLifetime;
     private bool _disposed;
+    private bool _connected;
+    private long _connectionGeneration;
+    private readonly object _progressOwner = new();
 
     public MattermostWebSocketTransport() { }
 
     internal MattermostWebSocketTransport(SessionStore sessionStore) => _injectedSessionStore = sessionStore;
 
+    internal MattermostWebSocketTransport(HttpClient http, Uri serverUri, string token, string channelId)
+    {
+        _http = http;
+        _serverUri = serverUri;
+        _token = token;
+        _channelId = channelId;
+        _connected = true;
+        _connectionGeneration = 1;
+    }
+
     public async Task RunAsync(BridgeSettings settings, Func<ChatRequest, CancellationToken, Task> onRequest, CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        Interlocked.Increment(ref _connectionGeneration);
+        _connected = false;
         ArgumentNullException.ThrowIfNull(onRequest);
         if (string.IsNullOrWhiteSpace(settings.MattermostServerUrl) || string.IsNullOrWhiteSpace(settings.MattermostToken))
             throw new InvalidOperationException("Mattermost server URL and token are required.");
@@ -72,7 +87,10 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
             if (envelope.TryGetProperty("status", out var authStatus) && authStatus.ValueKind == JsonValueKind.String && authStatus.GetString() != "OK")
                 throw new InvalidOperationException("Mattermost WebSocket authentication failed.");
             if (envelope.TryGetProperty("seq_reply", out var sequence) && sequence.TryGetInt32(out var replySequence) && replySequence == 1 && authStatus.ValueKind == JsonValueKind.String && authStatus.GetString() == "OK")
+            {
+                _connected = true;
                 Connected?.Invoke();
+            }
             if (!envelope.TryGetProperty("event", out var eventName) || eventName.GetString() != "posted") continue;
             if (!envelope.TryGetProperty("data", out var data) || !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
 
@@ -123,9 +141,80 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
         if (!response.IsSuccessStatusCode) throw new InvalidOperationException($"Mattermost reply failed with HTTP {(int)response.StatusCode}.");
     }
 
+    public async Task<ChatProgressMessage> PostProgressAsync(ChatRequest request, string text, CancellationToken cancellationToken)
+    {
+        ValidateProgressRequest(request);
+        var root = _serverUri!;
+        var token = _token!;
+        using var body = TransportHttp.JsonContent(new { channel_id = request.ChannelId, root_id = request.ThreadId, message = text });
+        using var message = new HttpRequestMessage(HttpMethod.Post, new Uri(root, "api/v4/posts")) { Content = body };
+        message.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        using var response = await ActiveHttp.SendAsync(message, cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode) throw new InvalidOperationException($"Mattermost progress post failed with HTTP {(int)response.StatusCode}.");
+        var created = await ReadMattermostPostAsync(response, cancellationToken).ConfigureAwait(false);
+        if (!string.Equals(created.ChannelId, request.ChannelId, StringComparison.Ordinal) ||
+            !string.Equals(string.IsNullOrWhiteSpace(created.RootId) ? created.Id : created.RootId, request.ThreadId, StringComparison.Ordinal) ||
+            string.Equals(created.Id, request.MessageId, StringComparison.Ordinal))
+            throw new InvalidOperationException("Mattermost returned a progress post outside the requested thread.");
+        return new ChatProgressMessage("mattermost", request.ChannelId, request.ThreadId, request.UserId,
+            created.Id!, _progressOwner, Volatile.Read(ref _connectionGeneration));
+    }
+
+    public async Task UpdateProgressAsync(ChatRequest request, ChatProgressMessage message, string text, CancellationToken cancellationToken)
+    {
+        ValidateProgressHandle(request, message, "mattermost");
+        var root = _serverUri!;
+        var token = _token!;
+        using var body = TransportHttp.JsonContent(new { message = text });
+        using var patch = new HttpRequestMessage(HttpMethod.Put,
+            new Uri(root, $"api/v4/posts/{Uri.EscapeDataString(message.MessageId)}/patch")) { Content = body };
+        patch.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        using var response = await ActiveHttp.SendAsync(patch, cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode) throw new InvalidOperationException($"Mattermost progress update failed with HTTP {(int)response.StatusCode}.");
+    }
+
+    private void ValidateProgressRequest(ChatRequest request)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!string.Equals(request.Provider, "mattermost", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Request provider must be Mattermost.", nameof(request));
+        EnsureConnectedForProgress();
+        if (!string.Equals(request.ChannelId, _channelId, StringComparison.Ordinal))
+            throw new InvalidOperationException("Mattermost progress request does not match the active channel.");
+    }
+
+    private void ValidateProgressHandle(ChatRequest request, ChatProgressMessage message, string provider)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ValidateProgressRequest(request);
+        if (!ReferenceEquals(message.Owner, _progressOwner) || message.ConnectionGeneration != Volatile.Read(ref _connectionGeneration) ||
+            !string.Equals(message.Provider, provider, StringComparison.Ordinal) ||
+            !string.Equals(message.ChannelId, request.ChannelId, StringComparison.Ordinal) ||
+            !string.Equals(message.ThreadId, request.ThreadId, StringComparison.Ordinal) ||
+            !string.Equals(message.RequesterId, request.UserId, StringComparison.Ordinal))
+            throw new InvalidOperationException("Progress message does not belong to this request and active connection.");
+    }
+
+    private void EnsureConnectedForProgress()
+    {
+        if (!_connected || _serverUri is null || _token is null || _channelId is null)
+            throw new InvalidOperationException("Mattermost is not connected.");
+    }
+
+    private static async Task<MattermostCreatedPost> ReadMattermostPostAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        MattermostCreatedPost? post;
+        try { post = await JsonSerializer.DeserializeAsync<MattermostCreatedPost>(stream, TransportHttp.JsonOptions, cancellationToken).ConfigureAwait(false); }
+        catch (JsonException) { throw new InvalidOperationException("Mattermost returned an invalid progress response."); }
+        return post is not null && !string.IsNullOrWhiteSpace(post.Id) && !string.IsNullOrWhiteSpace(post.ChannelId)
+            ? post
+            : throw new InvalidOperationException("Mattermost returned an invalid progress post.");
+    }
+
     public ValueTask DisposeAsync()
     {
-        if (!_disposed) { _disposed = true; _runLifetime?.Cancel(); _http?.Dispose(); }
+        if (!_disposed) { _disposed = true; _connected = false; _runLifetime?.Cancel(); _http?.Dispose(); }
         return ValueTask.CompletedTask;
     }
 
@@ -272,6 +361,10 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
         [property: JsonPropertyName("id")] string Id,
         [property: JsonPropertyName("username")] string? Username,
         [property: JsonPropertyName("is_bot")] bool IsBot);
+    private sealed record MattermostCreatedPost(
+        [property: JsonPropertyName("id")] string? Id,
+        [property: JsonPropertyName("channel_id")] string? ChannelId,
+        [property: JsonPropertyName("root_id")] string? RootId);
     internal sealed record MattermostRequestCandidate(ChatRequest Request, bool IsExplicit);
     private sealed record MattermostPost(
         [property: JsonPropertyName("id")] string Id,

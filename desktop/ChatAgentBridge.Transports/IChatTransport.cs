@@ -29,3 +29,35 @@ public interface IChatTransport : IAsyncDisposable
 
     Task ReplyAsync(ChatRequest request, string text, CancellationToken cancellationToken);
 }
+
+/// <summary>Optional support for posting a transport-owned progress message and editing that same message.</summary>
+public interface IChatProgressTransport
+{
+    Task<ChatProgressMessage> PostProgressAsync(ChatRequest request, string text, CancellationToken cancellationToken);
+
+    Task UpdateProgressAsync(ChatRequest request, ChatProgressMessage message, string text, CancellationToken cancellationToken);
+}
+
+/// <summary>An opaque handle for a progress message created by an <see cref="IChatProgressTransport"/>.</summary>
+public sealed class ChatProgressMessage
+{
+    internal ChatProgressMessage(string provider, string channelId, string threadId, string requesterId,
+        string messageId, object owner, long connectionGeneration)
+    {
+        Provider = provider;
+        ChannelId = channelId;
+        ThreadId = threadId;
+        RequesterId = requesterId;
+        MessageId = messageId;
+        Owner = owner;
+        ConnectionGeneration = connectionGeneration;
+    }
+
+    internal string Provider { get; }
+    internal string ChannelId { get; }
+    internal string ThreadId { get; }
+    internal string RequesterId { get; }
+    internal string MessageId { get; }
+    internal object Owner { get; }
+    internal long ConnectionGeneration { get; }
+}

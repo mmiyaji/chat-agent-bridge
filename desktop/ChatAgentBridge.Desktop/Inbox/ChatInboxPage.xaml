@@ -27,6 +27,9 @@
             <StackPanel Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.IsWideLayout), Mode=OneWay}">
                 <TextBlock Text="{x:Bind ViewModel.OverflowNotice, Mode=OneWay}" TextWrapping="Wrap" />
                 <TextBlock Text="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="NotificationStatus" />
+                <TextBlock Text="{x:Bind ViewModel.ProgressNotice, Mode=OneWay}" TextWrapping="Wrap"
+                           Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasProgressNotice), Mode=OneWay}"
+                           AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="ChatProgressNotice" />
             </StackPanel>
             <Expander HorizontalAlignment="Stretch" x:Uid="InboxConnectionDetails" AutomationProperties.AutomationId="InboxConnectionDetails"
                       Visibility="{x:Bind inbox:ChatInboxPage.HiddenWhen(ViewModel.IsWideLayout), Mode=OneWay}">
@@ -35,6 +38,9 @@
                         <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" />
                         <TextBlock Text="{x:Bind ViewModel.OverflowNotice, Mode=OneWay}" TextWrapping="Wrap" />
                         <TextBlock Text="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" />
+                        <TextBlock Text="{x:Bind ViewModel.ProgressNotice, Mode=OneWay}" TextWrapping="Wrap"
+                                   Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasProgressNotice), Mode=OneWay}"
+                                   AutomationProperties.AutomationId="ChatProgressNoticeCompact" />
                     </StackPanel>
                 </ScrollViewer>
             </Expander>

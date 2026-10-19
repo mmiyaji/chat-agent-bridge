@@ -5,6 +5,8 @@ const { WebSocketServer, WebSocket } = require('ws');
 const portFile = process.argv[2];
 if (!portFile) throw new Error('Provide an output file for the ephemeral loopback port.');
 const replies = [];
+const updates = [];
+let failProgressEdits = false;
 const sockets = new Set();
 const server = http.createServer(async (req, res) => {
   let raw = '';
@@ -21,7 +23,10 @@ const server = http.createServer(async (req, res) => {
     for (const ws of sockets) if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ event: 'posted', data: { post: JSON.stringify(post) } }));
     res.end(JSON.stringify({ delivered: sockets.size }));
   } else if (req.url === '/test/results') {
-    res.end(JSON.stringify({ replies, connections: sockets.size }));
+    res.end(JSON.stringify({ replies, updates, connections: sockets.size }));
+  } else if (req.url === '/test/progress-errors' && req.method === 'POST') {
+    failProgressEdits = body.enabled === true;
+    res.end('{}');
   } else if (req.headers.authorization !== 'Bearer offline-ui-fixture') {
     res.writeHead(401).end('{}');
   } else if (req.url === '/api/v4/users/me') {
@@ -29,8 +34,17 @@ const server = http.createServer(async (req, res) => {
   } else if (req.url.startsWith('/api/v4/users/')) {
     res.end(JSON.stringify({ id: req.url.split('/').at(-1), is_bot: false }));
   } else if (req.url === '/api/v4/posts' && req.method === 'POST') {
-    replies.push(body);
-    res.end(JSON.stringify({ id: `reply-${replies.length}` }));
+    const post = { ...body, id: `reply-${replies.length + 1}`, user_id: 'ui-bridge' };
+    replies.push(post);
+    res.end(JSON.stringify(post));
+  } else if (req.url.startsWith('/api/v4/posts/') && req.url.endsWith('/patch') && req.method === 'PUT') {
+    if (failProgressEdits) { res.writeHead(503).end('{}'); return; }
+    const id = req.url.split('/')[4];
+    const post = replies.find(item => item.id === id);
+    if (!post || typeof body.message !== 'string') { res.writeHead(404).end('{}'); return; }
+    post.message = body.message;
+    updates.push({ id, message: body.message, channel_id: post.channel_id, root_id: post.root_id });
+    res.end(JSON.stringify(post));
   } else { res.writeHead(404).end('{}'); }
 });
 const wss = new WebSocketServer({ server, path: '/api/v4/websocket' });

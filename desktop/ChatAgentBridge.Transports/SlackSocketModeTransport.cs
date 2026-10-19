@@ -8,20 +8,39 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEvents
+public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTransport, IChatConnectionEvents
 {
     public event Action? Connected;
     private const int MaxMessageBytes = 1024 * 1024;
-    private static readonly Uri ApiBase = new("https://slack.com/api/");
-    private readonly HttpClient _http = TransportHttp.CreateClient();
+    private readonly Uri _apiBase;
+    private readonly HttpClient _http;
     private readonly BoundedSeenSet _seen = new(10_000);
     private string? _botToken;
     private string? _botUserId;
     private bool _disposed;
+    private bool _connected;
+    private long _connectionGeneration;
+    private readonly object _progressOwner = new();
+
+    public SlackSocketModeTransport() : this(TransportHttp.CreateClient(), new Uri("https://slack.com/api/")) { }
+
+    internal SlackSocketModeTransport(HttpClient http, Uri apiBase, string? token = null)
+    {
+        _http = http;
+        _apiBase = apiBase;
+        _botToken = token;
+        if (token is not null)
+        {
+            _connected = true;
+            _connectionGeneration = 1;
+        }
+    }
 
     public async Task RunAsync(BridgeSettings settings, Func<ChatRequest, CancellationToken, Task> onRequest, CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        Interlocked.Increment(ref _connectionGeneration);
+        _connected = false;
         ArgumentNullException.ThrowIfNull(onRequest);
         if (string.IsNullOrWhiteSpace(settings.SlackBotToken) || string.IsNullOrWhiteSpace(settings.SlackAppToken))
             throw new InvalidOperationException("Slack bot and app tokens are required for Socket Mode.");
@@ -40,6 +59,7 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
         try { await socket.ConnectAsync(socketUri, cancellationToken).ConfigureAwait(false); }
         catch (OperationCanceledException) { throw; }
         catch (WebSocketException) { throw new InvalidOperationException("Slack Socket Mode connection failed."); }
+        _connected = true;
         Connected?.Invoke();
         while (!cancellationToken.IsCancellationRequested && socket.State == WebSocketState.Open)
         {
@@ -78,9 +98,52 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
         return PostReplyAsync(request, text, token, cancellationToken);
     }
 
+    public async Task<ChatProgressMessage> PostProgressAsync(ChatRequest request, string text, CancellationToken cancellationToken)
+    {
+        ValidateProgressRequest(request);
+        var token = _botToken!;
+        var result = await SlackApiAsync<SlackPostResponse>("chat.postMessage", token,
+            new { channel = request.ChannelId, thread_ts = request.ThreadId, text }, cancellationToken).ConfigureAwait(false);
+        if (!result.Ok || string.IsNullOrWhiteSpace(result.Timestamp) ||
+            !string.Equals(result.Channel, request.ChannelId, StringComparison.Ordinal) ||
+            result.Message?.ThreadTimestamp is { } postedThread && !string.Equals(postedThread, request.ThreadId, StringComparison.Ordinal) ||
+            string.Equals(result.Timestamp, request.MessageId, StringComparison.Ordinal))
+            throw new InvalidOperationException("Slack could not post the progress message.");
+        return new ChatProgressMessage("slack", request.ChannelId, request.ThreadId, request.UserId,
+            result.Timestamp, _progressOwner, Volatile.Read(ref _connectionGeneration));
+    }
+
+    public async Task UpdateProgressAsync(ChatRequest request, ChatProgressMessage message, string text, CancellationToken cancellationToken)
+    {
+        ValidateProgressHandle(request, message, "slack");
+        var result = await SlackApiAsync<SlackOkResponse>("chat.update", _botToken!,
+            new { channel = request.ChannelId, ts = message.MessageId, text }, cancellationToken).ConfigureAwait(false);
+        if (!result.Ok) throw new InvalidOperationException("Slack could not update the progress message.");
+    }
+
+    private void ValidateProgressRequest(ChatRequest request)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!string.Equals(request.Provider, "slack", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Request provider must be Slack.", nameof(request));
+        if (!_connected || _botToken is null) throw new InvalidOperationException("Slack is not connected.");
+    }
+
+    private void ValidateProgressHandle(ChatRequest request, ChatProgressMessage message, string provider)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ValidateProgressRequest(request);
+        if (!ReferenceEquals(message.Owner, _progressOwner) || message.ConnectionGeneration != Volatile.Read(ref _connectionGeneration) ||
+            !string.Equals(message.Provider, provider, StringComparison.Ordinal) ||
+            !string.Equals(message.ChannelId, request.ChannelId, StringComparison.Ordinal) ||
+            !string.Equals(message.ThreadId, request.ThreadId, StringComparison.Ordinal) ||
+            !string.Equals(message.RequesterId, request.UserId, StringComparison.Ordinal))
+            throw new InvalidOperationException("Progress message does not belong to this request and active connection.");
+    }
+
     public ValueTask DisposeAsync()
     {
-        if (!_disposed) { _disposed = true; _http.Dispose(); }
+        if (!_disposed) { _disposed = true; _connected = false; _http.Dispose(); }
         return ValueTask.CompletedTask;
     }
 
@@ -126,7 +189,7 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
     {
         using var request = TransportHttp.AuthenticatedRequest(
             body is null ? HttpMethod.Get : HttpMethod.Post,
-            new Uri(ApiBase, method), token);
+            new Uri(_apiBase, method), token);
         if (body is not null) request.Content = TransportHttp.JsonContent(body);
         using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode) throw new InvalidOperationException($"Slack API request failed with HTTP {(int)response.StatusCode}.");
@@ -184,4 +247,9 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatConnectionEv
     private sealed record AuthTestResponse([property: JsonPropertyName("ok")] bool Ok, [property: JsonPropertyName("user_id")] string? UserId);
     private sealed record ConnectionsOpenResponse([property: JsonPropertyName("ok")] bool Ok, [property: JsonPropertyName("url")] string? Url);
     private sealed record SlackOkResponse([property: JsonPropertyName("ok")] bool Ok);
+    private sealed record SlackPostResponse([property: JsonPropertyName("ok")] bool Ok,
+        [property: JsonPropertyName("ts")] string? Timestamp,
+        [property: JsonPropertyName("channel")] string? Channel,
+        [property: JsonPropertyName("message")] SlackPostedMessage? Message);
+    private sealed record SlackPostedMessage([property: JsonPropertyName("thread_ts")] string? ThreadTimestamp);
 }

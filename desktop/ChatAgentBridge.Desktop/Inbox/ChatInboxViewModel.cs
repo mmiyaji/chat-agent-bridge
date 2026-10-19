@@ -53,6 +53,8 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public Guid? ExecutionId { get; set; }
     public string? ExecutionPolicyFingerprint { get; set; }
     public bool AllowsResultSharing { get; set; } = true;
+    public ChatProgressReporter? Progress { get; set; }
+    public Task ReceiptNotification { get; set; } = Task.CompletedTask;
 }
 
 public sealed partial class InboxConversation(string key) : ObservableObject
@@ -105,6 +107,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [ObservableProperty] public partial string NotificationStatus { get; set; } = "";
     [ObservableProperty] public partial string Status { get; set; } = DesktopText.Get("InboxDisconnected");
     [ObservableProperty] public partial string OverflowNotice { get; set; } = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasProgressNotice))]
+    public partial string ProgressNotice { get; set; } = "";
+    public bool HasProgressNotice => !string.IsNullOrWhiteSpace(ProgressNotice);
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
     public partial bool IsConnected { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
@@ -316,6 +321,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         if (IsConnected || _closing) { await transport.DisposeAsync(); return; }
         HasConnectionError = false;
+        ProgressNotice = "";
         IsConnected = true;
         _disconnecting = false;
         IsConnectionConfirmed = false;
@@ -398,10 +404,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                                 return;
                             }
                             Requests.Remove(completed);
+                            if (completed.Progress is { } oldProgress) _ = oldProgress.DisposeAsync();
                             _notifiedRequests.Remove(completed);
                             _automaticallyAttempted.Remove(completed);
                         }
                         var item = new InboxItem(request, transport, settings);
+                        InitializeProgress(item);
                         Requests.Add(item);
                         _ = ProcessPendingPoliciesAsync();
                         Status = DesktopText.Get("InboxRequestReceived", request.Provider);
@@ -432,6 +440,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             // Keep reconnect disabled until old execution and transport cleanup finish.
             if (ApproveCommand.ExecutionTask is { IsCompleted: false } execution) await execution;
             if (SendResultCommand.ExecutionTask is { IsCompleted: false } reply) await reply;
+            await FinishConnectionProgressAsync(transport);
             await _connectionNotice;
             await transport.DisposeAsync();
             if (ReferenceEquals(_transport, transport)) _transport = null;
@@ -525,6 +534,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.State = "実行中";
             item.FullOutput = DesktopText.Get("InboxAgentRunning");
             item.Usage = DesktopText.Get("UsageRunning");
+            await StartProgressAsync(item);
             var result = effectiveSettings.AgentMode == "app-server"
                 ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
                     new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: ServerInputHandler), _execution.Token)
@@ -551,6 +561,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = result.Success ? "completed" : "failed", ExitCode = result.ExitCode, SessionId = updated?.SessionId, Usage = result.Usage, Metrics = result.Metrics };
             await _history.RecordAsync(record);
             await AuditAsync(record.Status, item.Request, record.Id);
+            await FinishProgressAsync(item, result.Success ? ChatProgressState.Completed : ChatProgressState.Failed);
             try
             {
                 if (!await CheckAccessAsync(item, token)) return;
@@ -565,8 +576,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 }
                 else
                 {
-                    await item.Transport.ReplyAsync(item.Request,
-                        DesktopText.Get("InboxExecutionStateChatNotice", item.StateDisplay), token);
+                    if (item.Progress is null)
+                        await item.Transport.ReplyAsync(item.Request,
+                            DesktopText.Get("InboxExecutionStateChatNotice", item.StateDisplay), token);
                     if (effectiveSettings.ChatResultMode == "none")
                         Status = result.Success ? DesktopText.Get("InboxResultPrivateSuccess")
                             : DesktopText.Get("InboxResultPrivateFailed");
@@ -582,14 +594,16 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             item.State = "キャンセル"; Status = DesktopText.Get("InboxExecutionCancelled");
             item.Usage = UsageUi.UsageSummaryFormatter.Format(null, null);
+            await FinishProgressAsync(item, ChatProgressState.Cancelled);
             if (record is not null) await FinishFailureAsync(record, "cancelled", item.Request);
-            await NotifyRequestAsync(item, DesktopText.Get("InboxCancelChatNotice"));
+            if (item.Progress is null) await NotifyRequestAsync(item, DesktopText.Get("InboxCancelChatNotice"));
         }
         catch (Exception)
         {
             if (record?.Status == "running" || record is null) item.State = "実行／記録エラー";
             item.Usage = UsageUi.UsageSummaryFormatter.Format(null, null);
             Status = DesktopText.Get("InboxExecutionRecordFailed");
+            await FinishProgressAsync(item, ChatProgressState.Failed);
             if (record is not null && record.Status == "running") await FinishFailureAsync(record, "failed", item.Request);
         }
         finally
@@ -616,7 +630,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await AuditAsync("rejected", item.Request, null);
             item.State = "拒否";
             Status = DesktopText.Get("InboxRequestRejected");
-            await NotifyRequestAsync(item, DesktopText.Get("InboxRejectChatNotice"));
+            await FinishProgressAsync(item, ChatProgressState.Rejected);
+            if (item.Progress is null) await NotifyRequestAsync(item, DesktopText.Get("InboxRejectChatNotice"));
         }
         catch (Exception) { Status = DesktopText.Get("InboxRejectRecordFailed"); }
         finally { IsExecuting = false; }

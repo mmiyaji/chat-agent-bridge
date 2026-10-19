@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ProgressReceived" xml:space="preserve"><value>📥 依頼を受け付けました。PC側の承認または実行開始を待っています。</value></data>
+  <data name="ProgressRunning" xml:space="preserve"><value>⏳ AIエージェントが実行中です。経過 {0}。実行中は約30秒ごとにこの投稿を更新します。</value></data>
+  <data name="ProgressCompleted" xml:space="preserve"><value>✅ 完了しました。経過 {0}。結果本文の投稿は、この会話の共有設定に従います。</value></data>
+  <data name="ProgressFailed" xml:space="preserve"><value>❌ 実行または記録に失敗しました。経過 {0}。詳細はPC側で確認してください。</value></data>
+  <data name="ProgressCancelled" xml:space="preserve"><value>⏹ 実行を停止しました。経過 {0}。</value></data>
+  <data name="ProgressRejected" xml:space="preserve"><value>⛔ 依頼は承認されませんでした。</value></data>
+  <data name="ProgressDisconnected" xml:space="preserve"><value>🔌 接続が終了しました。未実行の依頼は再投稿してください。</value></data>
+  <data name="ProgressNoticeFailed" xml:space="preserve"><value>チャットの進捗通知に失敗しました。PC側で実行状態と結果を確認してください。</value></data>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>

@@ -5,6 +5,7 @@ param(
     [switch]$CheckMattermostProxy,
     [switch]$MattermostMentions,
     [switch]$MattermostPlainReplies,
+    [switch]$CheckChatProgress,
     [switch]$KeepRunningOnFailure
 )
 $ErrorActionPreference = 'Stop'
@@ -104,6 +105,21 @@ function Post([string]$Id,[string]$Thread,[string]$User,[string]$Text,[bool]$Pla
     Assert-True ($result.delivered -eq 1) 'Expected one connected offline transport'
     Start-Sleep -Milliseconds 350
 }
+function Wait-Fixture([scriptblock]$Condition,[int]$Seconds=8) {
+    $until=[DateTime]::UtcNow.AddSeconds($Seconds)
+    do {
+        $snapshot=Invoke-RestMethod "$script:endpoint/test/results"
+        if (& $Condition $snapshot) { return $snapshot }
+        Start-Sleep -Milliseconds 500
+    } while ([DateTime]::UtcNow -lt $until)
+    throw 'Chat progress fixture did not reach the expected state.'
+}
+function Approve-Selected {
+    UI @('wait-for','ApproveChat','-p','IsEnabled','--value','True','-t','5000') | Out-Null
+    UI @('invoke','ApproveChat') | Out-Null
+    UI @('wait-for','ChatRunConfirmation','-t','3000') | Out-Null
+    UI @('invoke','PrimaryButton') | Out-Null
+}
 try {
     $portFile = Join-Path $dataPath 'port.txt'
     $serverScript = Join-Path $PSScriptRoot 'fixtures/conversation-chat-server.cjs'
@@ -116,7 +132,10 @@ try {
     @'
 let input=''; process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => input+=chunk);
-process.stdin.on('end', () => setTimeout(() => process.stdout.write('offline-result: '+input), input.includes('slow') ? 12000 : 100));
+process.stdin.on('end', () => setTimeout(() => {
+  process.stdout.write('offline-result: '+input);
+  if (input.includes('fail-agent')) process.exitCode=1;
+}, input.includes('heartbeat') ? 60000 : input.includes('slow') ? 12000 : 100));
 '@ | Set-Content -LiteralPath $agentFile -Encoding utf8
     $protected = 'dpapi:' + [Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect(
         [Text.Encoding]::UTF8.GetBytes('offline-ui-fixture'),$null,[Security.Cryptography.DataProtectionScope]::CurrentUser))
@@ -339,6 +358,17 @@ process.stdin.on('end', () => setTimeout(() => process.stdout.write('offline-res
         Assert-True (-not ((Value 'ChatOutput') -like '*beta separate owner*')) 'Other request result leaked into selected output'
         Assert-True (-not (Enabled 'SendChatResult')) 'Another request result can be shared from this selection'
     }
+    if ($CheckChatProgress) {
+        Check 'Manual result sharing edits the receipt through completion and posts a separate result' {
+            $snapshot=Wait-Fixture { param($s) @($s.updates | Where-Object message -match 'Completed|完了しました').Count -gt 0 }
+            $completed=@($snapshot.updates | Where-Object message -match 'Completed|完了しました')[-1]
+            $receipt=@($snapshot.replies | Where-Object id -eq $completed.id)
+            $result=@($snapshot.replies | Where-Object message -like '*offline-result: beta*')
+            Assert-True ($receipt.Count -eq 1 -and $result.Count -eq 1 -and $receipt[0].id -ne $result[0].id) 'Result replaced the receipt or duplicate completion posts were created'
+            Assert-True (@($snapshot.updates | Where-Object { $_.id -eq $completed.id -and $_.message -match 'running|実行中' }).Count -ge 1) 'The receipt was not edited to running'
+            Assert-True (@($snapshot.replies | Where-Object root_id -eq 'hidden-thread').Count -eq 0) 'An unauthorized request received a receipt'
+        }
+    }
     Check 'Stop only affects selected active request' {
         Set-Search 'InboxSearch' 'gamma'
         Select-FirstRow 'InboxConversations'
@@ -373,6 +403,70 @@ process.stdin.on('end', () => setTimeout(() => process.stdout.write('offline-res
         Assert-True (-not (Element 'InboxConversations').Current.IsOffscreen) 'Inbox list inaccessible'
     }
     Resize 1280
+    if ($CheckChatProgress) {
+        Check 'Running heartbeat edits one post and cancellation wins over later ticks' {
+            Post 'heartbeat-root' 'heartbeat-thread' 'alice' 'heartbeat progress task'
+            Set-Search 'InboxSearch' 'heartbeat'
+            Select-FirstRow 'InboxConversations'
+            Approve-Selected
+            $snapshot=Wait-Fixture { param($s) @($s.updates | Where-Object { $_.root_id -eq 'heartbeat-thread' -and $_.message -match 'running|実行中' }).Count -ge 2 } 40
+            Assert-True (@($snapshot.replies | Where-Object root_id -eq 'heartbeat-thread').Count -eq 1) 'Heartbeat created new posts'
+            UI @('invoke','CancelChat') | Out-Null
+            $snapshot=Wait-Fixture { param($s) @($s.updates | Where-Object { $_.root_id -eq 'heartbeat-thread' -and $_.message -match 'Execution stopped|実行を停止' }).Count -eq 1 }
+            $ticks=@($snapshot.updates | Where-Object root_id -eq 'heartbeat-thread')
+            Assert-True ($ticks[-1].message -match 'Execution stopped|実行を停止') 'A running tick overwrote cancellation'
+        }
+        UI @('invoke','DisconnectChat') | Out-Null
+        UI @('wait-for','ConnectMattermost','-p','IsEnabled','--value','True','-t','15000') | Out-Null
+        Navigate 'NavConnections'
+        UI @('scroll-into-view','ChatResultMode') | Out-Null
+        [xml]$resources=Get-Content (Join-Path $PSScriptRoot ('ChatAgentBridge.Desktop/Strings/'+$(if($Language -eq 'ja'){'ja-JP'}else{'en-US'})+'/Resources.resw')) -Raw
+        $autoLabel=($resources.root.data | Where-Object name -eq 'chatAgentBridgeDesktopMainPageComboBoxItem010.Content').value
+        Choose 'ChatResultMode' ([string]$autoLabel)
+        UI @('invoke','SaveConnections') | Out-Null
+        UI @('wait-for','SaveConnections','-p','IsEnabled','--value','True','-t','5000') | Out-Null
+        Navigate 'NavChat'
+        UI @('invoke','ConnectMattermost') | Out-Null
+        Wait-Fixture { param($s) $s.connections -eq 1 } | Out-Null
+        Check 'Automatic sharing completes the receipt before posting a distinct result' {
+            Post 'auto-root' 'auto-thread' 'alice' 'epsilon automatic result'
+            Set-Search 'InboxSearch' 'epsilon'
+            Select-FirstRow 'InboxConversations'
+            Approve-Selected
+            $snapshot=Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq 'auto-thread' -and $_.message -like '*offline-result: epsilon*' }).Count -eq 1 }
+            $posts=@($snapshot.replies | Where-Object root_id -eq 'auto-thread')
+            Assert-True ($posts.Count -eq 2 -and $posts[0].id -ne $posts[1].id -and $posts[0].message -match 'Completed|完了しました') 'Auto reply was not a separate post after completed progress'
+        }
+        Check 'Progress edit errors do not fail AI execution or its automatic result' {
+            Invoke-RestMethod "$script:endpoint/test/progress-errors" -Method Post -ContentType 'application/json' -Body '{"enabled":true}' | Out-Null
+            try {
+                Post 'edit-error-root' 'edit-error-thread' 'alice' 'delta notification failure'
+                Set-Search 'InboxSearch' 'delta'
+                Select-FirstRow 'InboxConversations'
+                Approve-Selected
+                Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq 'edit-error-thread' -and $_.message -like '*offline-result: delta*' }).Count -eq 1 } | Out-Null
+                UI @('wait-for','ChatProgressNotice','--value',$(if($Language -eq 'ja'){'進捗通知に失敗'}else{'chat progress'}),'--contains','-t','5000') | Out-Null
+            } finally {
+                Invoke-RestMethod "$script:endpoint/test/progress-errors" -Method Post -ContentType 'application/json' -Body '{"enabled":false}' | Out-Null
+            }
+        }
+        Check 'Rejected requests edit the receipt without invoking an agent result' {
+            Post 'rejected-root' 'rejected-thread' 'alice' 'zeta reject this request'
+            Set-Search 'InboxSearch' 'zeta'
+            Select-FirstRow 'InboxConversations'
+            UI @('invoke','RejectChat') | Out-Null
+            $snapshot=Wait-Fixture { param($s) @($s.updates | Where-Object { $_.root_id -eq 'rejected-thread' -and $_.message -match 'not approved|承認されません' }).Count -eq 1 }
+            Assert-True (@($snapshot.replies | Where-Object root_id -eq 'rejected-thread').Count -eq 1) 'Rejection created duplicate or result posts'
+        }
+        Check 'Failed execution edits the receipt and does not automatically disclose error output' {
+            Post 'failed-root' 'failed-thread' 'alice' 'eta fail-agent request'
+            Set-Search 'InboxSearch' 'eta fail-agent'
+            Select-FirstRow 'InboxConversations'
+            Approve-Selected
+            $snapshot=Wait-Fixture { param($s) @($s.updates | Where-Object { $_.root_id -eq 'failed-thread' -and $_.message -match 'recording failed|記録に失敗' }).Count -eq 1 }
+            Assert-True (@($snapshot.replies | Where-Object root_id -eq 'failed-thread').Count -eq 1) 'Failed CLI output was automatically shared'
+        }
+    }
     UI @('invoke','DisconnectChat') | Out-Null
 } catch {
     if ($appProcess -and -not $appProcess.HasExited) {

@@ -27,10 +27,13 @@ public sealed partial class ChatInboxViewModel
                 throw new InvalidOperationException(DesktopText.Get("WorkspaceChangedDuringConfirmation"));
             await _sessions.ChangeWorkspaceAsync(key, path, item.Settings, token);
             changed = true;
-            foreach (var pending in Requests.Where(other => !ReferenceEquals(other, item) && other.State == "承認待ち" && CreateSessionKey(other) == key))
+            var invalidated = Requests.Where(other => !ReferenceEquals(other, item) && other.State == "承認待ち" && CreateSessionKey(other) == key).ToArray();
+            foreach (var pending in invalidated)
                 pending.State = "作業先変更・再投稿が必要";
+            await FinishProgressBatchAsync(invalidated, ChatAgentBridge.Transports.ChatProgressState.Cancelled);
             item.ExecutionPolicyFingerprint = null;
             item.State = "フォルダー変更済み";
+            await FinishProgressAsync(item, ChatAgentBridge.Transports.ChatProgressState.Completed);
             item.ResultText = "";
             item.AllowsResultSharing = false;
             item.FullOutput = DesktopText.Get("WorkspaceChangedOutput", path);
@@ -55,6 +58,7 @@ public sealed partial class ChatInboxViewModel
                 return;
             }
             item.State = "フォルダー変更不可";
+            await FinishProgressAsync(item, ChatAgentBridge.Transports.ChatProgressState.Failed);
             item.FullOutput = ex.Message;
             Status = DesktopText.Get("WorkspaceChangeFailed");
             if (await CheckAccessAsync(item, token))
