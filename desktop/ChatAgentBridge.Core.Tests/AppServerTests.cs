@@ -282,15 +282,46 @@ public sealed class AppServerTests
         Assert.False(result.Result.Success);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TurnStartFailure_reportsWhetherPromptWasAccepted(bool accepted)
+    {
+        using var temp = new TempDirectory();
+        var fake = new FakeProcessFactory();
+        fake.Client.OnTurnStart = (client, _) =>
+        {
+            if (accepted)
+                client.RaiseNotification("turn/started", new { threadId = FakeClient.ThreadId, turn = new { id = "turn-1" } });
+            throw new InvalidOperationException("turn/start failed");
+        };
+        var result = await new CodexAppServerRunner(fake).RunAsync(new BridgeSettings { WorkspaceRoot = temp.Path }, "prompt");
+        Assert.False(result.Result.Success);
+        Assert.Equal(FakeClient.ThreadId, result.SessionId);
+        Assert.Equal(accepted, result.PromptAccepted);
+    }
+
+    [Fact]
+    public async Task WrongWorkspaceBeforeTurn_reportsPromptNotAccepted()
+    {
+        using var temp = new TempDirectory();
+        var fake = new FakeProcessFactory { ReturnedWorkspace = Path.Combine(temp.Path, "wrong-workspace") };
+        var result = await new CodexAppServerRunner(fake).RunAsync(new BridgeSettings { WorkspaceRoot = temp.Path }, "prompt");
+        Assert.False(result.Result.Success);
+        Assert.False(result.PromptAccepted);
+        Assert.DoesNotContain(fake.Client.Requests, request => request.Method == "turn/start");
+    }
+
     private sealed class FakeProcessFactory : IAppServerProcessFactory
     {
         public FakeClient Client { get; } = new();
         public string? ThreadIdOverride { get; init; }
+        public string? ReturnedWorkspace { get; init; }
         public int StartCount { get; private set; }
         public Task<IAppServerProcess> StartAsync(string executable, string workspace, CancellationToken cancellationToken = default)
         {
             StartCount++;
-            Client.Workspace = workspace;
+            Client.Workspace = ReturnedWorkspace ?? workspace;
             Client.ThreadIdOverride = ThreadIdOverride;
             return Task.FromResult<IAppServerProcess>(new FakeProcess(Client));
         }

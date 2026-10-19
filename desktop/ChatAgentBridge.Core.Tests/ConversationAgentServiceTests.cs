@@ -224,6 +224,25 @@ public sealed class ConversationAgentServiceTests : IDisposable
         Assert.Equal("retry request", await new SessionStore(_directory, _protector).PrepareHandoffPromptAsync(_key, "retry request"));
     }
 
+    [Fact]
+    public async Task AppServerThreadWithoutAcceptedTurn_keepsSourceAndNotesForAFreshRetry()
+    {
+        var old = Binding(_key) with { AgentExecutable = "claude", AgentArguments = "claude-stream-json-v1" };
+        await Sessions.SaveAsync(old);
+        await Connections.SaveVerifiedAsync(Profile("codex") with { Mode = "app-server", Arguments = "app-server" });
+        await Summaries.RecordAsync(_key, "claude", old.SessionId, "prior request", "still needed handoff");
+        await Service().SwitchAsync(old, Defaults, new("codex", true), Allow);
+        var pending = await Sessions.FindAsync(_key);
+        var server = new RecordingServerRunner { Success = false, PromptAccepted = false };
+        var settings = await Sessions.ApplyWorkspaceAsync(_key, Defaults);
+        var result = await new AppServerSessionRunner(Sessions, server).RunAsync(_key, settings, "rejected request");
+        Assert.False(result.Success);
+        Assert.Equal(pending, await Sessions.FindAsync(_key));
+        Assert.Null(await Sessions.FindExecutionBindingAsync(_key));
+        Assert.True((await Sessions.FindAgentSelectionAsync(_key))!.StartNewSession);
+        Assert.Contains("still needed handoff", await Sessions.PrepareHandoffPromptAsync(_key, "retry request"));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -259,6 +278,22 @@ public sealed class ConversationAgentServiceTests : IDisposable
         await Summaries.RecordAsync(_key, "codex", "old-session", "orphaned request", "orphaned note");
         await Sessions.RemoveAsync(_key);
         Assert.Null(await Summaries.FindAsync(_key));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task UnreadableNotes_doNotBlockDetachOrWorkspaceChange(bool changeWorkspace)
+    {
+        await Sessions.SaveAsync(Binding(_key));
+        var other = _key with { UserId = "other-user" };
+        await Sessions.SaveAsync(Binding(other));
+        await File.WriteAllTextAsync(Path.Combine(_directory, "conversation-summaries.json"), "{corrupted");
+        if (changeWorkspace) await Sessions.ChangeWorkspaceAsync(_key, _workspace, Defaults);
+        else await Sessions.RemoveAsync(_key);
+        Assert.Null(await Sessions.FindAsync(_key));
+        Assert.Null(await Summaries.FindAsync(_key));
+        Assert.NotNull(await Sessions.FindAsync(other));
     }
 
     [Fact]
@@ -483,6 +518,7 @@ public sealed class ConversationAgentServiceTests : IDisposable
     private sealed class RecordingServerRunner : IAppServerRunner
     {
         public bool Success { get; init; } = true;
+        public bool PromptAccepted { get; init; } = true;
         public BridgeSettings? Settings { get; private set; }
         public AppServerRunOptions? Options { get; private set; }
         public string Prompt { get; private set; } = "";
@@ -490,7 +526,7 @@ public sealed class ConversationAgentServiceTests : IDisposable
             AppServerRunOptions? options = null, CancellationToken cancellationToken = default)
         {
             Settings = settings; Prompt = prompt; Options = options;
-            return Task.FromResult(new AppServerRunResult(new AgentRunResult(Success, Success ? 0 : 1, "done", ""), Guid.NewGuid().ToString("D")));
+            return Task.FromResult(new AppServerRunResult(new AgentRunResult(Success, Success ? 0 : 1, "done", ""), Guid.NewGuid().ToString("D"), PromptAccepted));
         }
     }
 }

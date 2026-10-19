@@ -118,6 +118,51 @@ public sealed class ConversationSummaryStoreTests
         finally { DeleteDirectory(directory); }
     }
 
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("{\"SchemaVersion\":999,\"Entries\":[]}")]
+    [InlineData("{\"SchemaVersion\":1,\"Entries\":[{}]}")]
+    public async Task ClearAsync_ReplacesStructurallyUnreadableCacheWithEmptyDocument(string contents)
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var path = Path.Combine(directory, "conversation-summaries.json");
+            await File.WriteAllTextAsync(path, contents);
+            var store = new ConversationSummaryStore(directory, new TestProtector());
+
+            await store.ClearAsync(Key);
+
+            var recovered = await File.ReadAllTextAsync(path);
+            Assert.Contains("\"SchemaVersion\": 1", recovered);
+            Assert.Contains("\"Entries\": []", recovered);
+            Assert.Null(await store.FindAsync(Key));
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task ClearAsync_PreservesOtherScopesWhenCacheIsValid()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var otherKey = Key with { ThreadId = "thread-2", UserId = "user-2" };
+            var store = new ConversationSummaryStore(directory, new TestProtector());
+            await store.RecordAsync(Key, "codex", "session-1", "target prompt", "target answer");
+            await store.RecordAsync(otherKey, "claude", "session-2", "other prompt", "other answer");
+
+            await store.ClearAsync(Key);
+
+            Assert.Null(await store.FindAsync(Key));
+            var other = await store.FindAsync(otherKey);
+            Assert.NotNull(other);
+            Assert.Contains("other prompt", other.Text);
+            Assert.Contains("other answer", other.Text);
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
     [Fact]
     public async Task FindAsync_CorruptStoreFailsClosed()
     {

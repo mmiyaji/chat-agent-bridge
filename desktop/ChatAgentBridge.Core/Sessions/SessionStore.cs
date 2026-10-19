@@ -126,8 +126,8 @@ public sealed partial class SessionStore
             if (binding.NextAgentProvider is null && document.Agents?.FirstOrDefault(item => item.Key == binding.Key) is { } selection)
             {
                 var selectionIndex = document.Agents.IndexOf(selection);
-                // A native target session id confirms delivery of the first prompt. Do not
-                // repeat the handoff when resuming a failed turn. Keep the approval guard
+                // Runners save a target binding only after confirming prompt delivery. Do
+                // not repeat the handoff when resuming a failed turn. Keep the approval guard
                 // until a successful authorized turn completes.
                 document.Agents[selectionIndex] = selection with { StartNewSession = false, ProtectedHandoff = null };
             }

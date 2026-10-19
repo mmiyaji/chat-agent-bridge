@@ -137,7 +137,20 @@ public sealed class ConversationSummaryStore
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var document = await ReadAsync(cancellationToken).ConfigureAwait(false);
+            StoredDocument document;
+            try
+            {
+                document = await ReadAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (InvalidDataException)
+            {
+                // These encrypted notes are derived cache data. If the cache is structurally unreadable,
+                // replace it atomically with an empty document so deletion can proceed without leaving
+                // a quarantined or backup copy of private notes behind.
+                await WriteAsync(new StoredDocument { SchemaVersion = CurrentSchemaVersion, Entries = [] }, cancellationToken)
+                    .ConfigureAwait(false);
+                return;
+            }
             if (document.Entries!.RemoveAll(item => item.Key == key) > 0)
                 await WriteAsync(document, cancellationToken).ConfigureAwait(false);
         }

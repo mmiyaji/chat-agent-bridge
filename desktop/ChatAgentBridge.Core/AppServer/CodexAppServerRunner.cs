@@ -208,7 +208,7 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                         ProcessReused = pooledLease?.Reused ?? false
                     }
                 };
-                return new(result, threadId);
+                return new(result, threadId, PromptAccepted: !string.IsNullOrWhiteSpace(turnId));
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -226,7 +226,8 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                 var stderr = await Task.WhenAny(process.StandardError, Task.Delay(TimeSpan.FromMilliseconds(300))).ConfigureAwait(false) == process.StandardError
                     ? await process.StandardError.ConfigureAwait(false) : "";
                 var message = string.IsNullOrWhiteSpace(stderr) ? ex.Message : $"{ex.Message}{Environment.NewLine}{stderr}";
-                return new(new AgentRunResult(false, -1, output.Value, message), threadId ?? options.SessionId);
+                return new(new AgentRunResult(false, -1, output.Value, message), threadId ?? options.SessionId,
+                    PromptAccepted: !string.IsNullOrWhiteSpace(turnId));
             }
         }
     }

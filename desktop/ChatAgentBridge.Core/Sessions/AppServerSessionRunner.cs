@@ -46,6 +46,10 @@ public sealed class AppServerSessionRunner(SessionStore store, IAppServerRunner?
             if (existing is not null && Guid.Parse(existing.SessionId) != actualId)
                 return Fail(run.Result, "App Server returned a different session id. The saved binding was retained.");
 
+            // thread/start alone does not deliver the prompt. Preserve a pending switch
+            // and its notes if turn/start was rejected or the returned workspace was wrong.
+            if (!run.Result.Success && !run.PromptAccepted) return run.Result;
+
             await store.SaveAsync(new SessionBinding(key, workspace, executable, "app-server", actualId.ToString("D"), DateTimeOffset.UtcNow,
                 existing?.Model, existing?.ReasoningEffort, existing?.ChatApprovalMode, existing?.ChatResultMode,
                 existing?.AgentPermissionMode, existing?.FirstApprovalFingerprint), CancellationToken.None).ConfigureAwait(false);

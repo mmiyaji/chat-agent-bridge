@@ -91,7 +91,7 @@ public sealed class SlackContinuationTests
 
     [Theory]
     [InlineData("!cab agent codex summary")]
-    [InlineData("!cab agent gemini")]
+    [InlineData("!cab agent gemini fresh")]
     public async Task Explicit_agent_commands_keep_the_trigger_for_inbox_parsing(string text)
     {
         using var directory = new TemporaryDirectory();
@@ -103,18 +103,21 @@ public sealed class SlackContinuationTests
         Assert.Equal(text, request.Text);
     }
 
-    [Fact]
-    public async Task Plain_thread_prompt_starting_with_agent_stays_an_ai_prompt()
+    [Theory]
+    [InlineData("agent loop through the logs", "agent loop through the logs")]
+    [InlineData("!cab agent のログを調べて", "agent のログを調べて")]
+    [InlineData("<@UBOT> !cab agent のログを調べて", "agent のログを調べて")]
+    public async Task Plain_thread_prompt_starting_with_agent_stays_an_ai_prompt(string text, string expected)
     {
         using var directory = new TemporaryDirectory();
         var store = new SessionStore(directory.Path);
         await SaveAsync(store, ChatSessionScope.Create("slack", "C1", "10.0", "U1"));
-        using var evt = Event("U1", "C1", "10.2", "10.0", "agent loop through the logs");
+        using var evt = Event("U1", "C1", "10.2", "10.0", text);
 
         var request = await SlackSocketModeTransport.ParseRequestAsync(evt.RootElement, "UBOT", Settings("U1"), store);
 
         Assert.NotNull(request);
-        Assert.Equal("agent loop through the logs", request.Text);
+        Assert.Equal(expected, request.Text);
     }
 
     private static BridgeSettings Settings(string users) => new() { SlackAllowedUserIds = users };

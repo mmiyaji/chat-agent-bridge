@@ -556,6 +556,13 @@ function Check-AgentSwitchStage([string]$AgentHost) {
         Start-Sleep -Milliseconds 500
         Assert-True ((Get-Content (Join-Path $script:stageData 'sessions.json') -Raw) -eq $before) 'An unrelated account, thread or provider changed the session'
     }
+    Check 'Ordinary requests starting with agent survive the cab trigger and reach the CLI' {
+        $before = (Get-Content (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json).Records.Count
+        Post ('agent-prose-' + $runId) $root 'alice' 'agent のログを調べて'
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.message.Contains('claude-e2e: resumed; prompt=agent のログを調べて') }).Count -eq 1 }
+        $after = (Get-Content (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json).Records.Count
+        Assert-True ($after -eq $before + 1) 'The ordinary request was swallowed as a control command'
+    }
 }
 
 function Check-PendingConfirmationStopStage([string]$NodePath, [string]$SlowAgentPath) {

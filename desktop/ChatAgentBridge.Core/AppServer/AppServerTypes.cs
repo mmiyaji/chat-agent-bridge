@@ -34,7 +34,8 @@ public sealed record AppServerRunOptions(
     Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? ApprovalHandler = null,
     Func<AppServerInput, CancellationToken, Task<IReadOnlyDictionary<string, string[]>?>>? InputHandler = null);
 
-public sealed record AppServerRunResult(AgentRunResult Result, string? SessionId);
+/// <param name="PromptAccepted">The server confirmed a turn for the prompt, rather than only creating an empty thread.</param>
+public sealed record AppServerRunResult(AgentRunResult Result, string? SessionId, bool PromptAccepted = false);
 
 public interface IAppServerRunner
 {

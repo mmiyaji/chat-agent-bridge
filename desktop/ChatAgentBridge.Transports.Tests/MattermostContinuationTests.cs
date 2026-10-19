@@ -149,18 +149,21 @@ public sealed class MattermostContinuationTests
         Assert.Equal(expected, request.Text);
     }
 
-    [Fact]
-    public async Task Plain_thread_prompt_starting_with_agent_stays_an_ai_prompt()
+    [Theory]
+    [InlineData("agent loop through the logs", "agent loop through the logs")]
+    [InlineData("!cab agent のログを調べて", "agent のログを調べて")]
+    [InlineData("@cab-bot !cab agent のログを調べて", "agent のログを調べて")]
+    public async Task Plain_thread_prompt_starting_with_agent_stays_an_ai_prompt(string text, string expected)
     {
         using var directory = new TemporaryDirectory();
         var store = new SessionStore(directory.Path);
         await SaveBindingAsync(store, Key(User), directory.Path);
 
-        var request = await ResolveAsync(Post("reply-post-1", "agent loop through the logs", Root), Settings(User), store,
+        var request = await ResolveAsync(Post("reply-post-1", text, Root), Settings(User), store,
             new MattermostContinuationTracker());
 
         Assert.NotNull(request);
-        Assert.Equal("agent loop through the logs", request.Text);
+        Assert.Equal(expected, request.Text);
     }
 
     [Fact]
