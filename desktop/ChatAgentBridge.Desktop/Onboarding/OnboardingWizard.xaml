@@ -12,7 +12,7 @@
             <Button Grid.Column="1"  Command="{x:Bind ViewModel.DeferOnboardingCommand}" VerticalAlignment="Top" AutomationProperties.AutomationId="OnboardingDefer"  x:Uid="OnboardingDefer" />
         </Grid>
 
-        <ScrollViewer x:Name="WizardScrollViewer" AutomationProperties.AutomationId="WizardScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer x:Name="WizardScrollViewer" AutomationProperties.AutomationId="WizardScroll" Grid.Row="1" Padding="0,0,12,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Spacing="16" HorizontalAlignment="Stretch">
                 <InfoBar AutomationProperties.AutomationId="WizardStatus" IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
                          Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
@@ -106,6 +106,15 @@
                         <StackPanel Spacing="8">
                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock017" x:Uid="onboardingOnboardingWizardTextBlock017" />
                             <PasswordBox x:Name="MattermostTokenBox" PasswordChanged="MattermostTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardMattermostToken"  x:Uid="WizardMattermostToken" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" AutomationProperties.AutomationId="WizardMattermostUsernameLookup">
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardMattermostUsernameLookupLabel" />
+                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="MattermostUsernameLookupHelp" />
+                            <TextBox Text="{x:Bind ViewModel.MattermostUsernameLookupInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="WizardMattermostUsernameLookupInput" x:Uid="WizardMattermostUsernameLookupInput" />
+                            <Button Command="{x:Bind ViewModel.LookupMattermostUsernameCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardLookupMattermostUserButton" x:Uid="WizardLookupMattermostUserButton" />
+                            <TextBlock Text="{x:Bind ViewModel.MattermostUsernameLookupResultText, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasMattermostUsernameLookupResult), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardMattermostUsernameLookupResult" />
+                            <TextBlock Text="{x:Bind ViewModel.MattermostUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasMattermostUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardMattermostUsernameLookupStatus" />
+                            <Button Command="{x:Bind ViewModel.AddMattermostUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddMattermostUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardAddMattermostUserButton" x:Uid="WizardAddMattermostUserButton" />
                         </StackPanel>
                         <TextBox  Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardMattermostAllowedUserIds"  x:Uid="WizardMattermostAllowedUserIds" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock018" x:Uid="onboardingOnboardingWizardTextBlock018" />

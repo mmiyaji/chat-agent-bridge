@@ -399,16 +399,31 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Mattermost access token</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock052.Text" xml:space="preserve">
-    <value>Mattermost user IDs to allow (one person per line)</value>
+    <value>Internal Mattermost user IDs to allow (one per line)</value>
   </data>
   <data name="MattermostAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Mattermost user IDs to allow (one person per line)</value>
+    <value>Internal Mattermost user IDs to allow (one per line)</value>
   </data>
   <data name="MattermostAllowedUserIds.PlaceholderText" xml:space="preserve">
     <value>Example: abc123xyz</value>
   </data>
+  <data name="MattermostUsernameLookupLabel.Text" xml:space="preserve"><value>Find an allowed user by username</value></data>
+  <data name="MattermostUsernameLookupHelp.Text" xml:space="preserve"><value>Enter the username of the person who will send requests (for example, @alice), rather than a display name or bot. Lookup uses the server URL and access token currently entered. Check the returned name and ID before adding.</value></data>
+  <data name="MattermostUsernameLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermost username</value></data>
+  <data name="MattermostUsernameLookupInput.PlaceholderText" xml:space="preserve"><value>alice or @alice</value></data>
+  <data name="LookupMattermostUserButton.Content" xml:space="preserve"><value>Look up username</value></data>
+  <data name="LookupMattermostUserButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Look up Mattermost username</value></data>
+  <data name="AddMattermostUserButton.Content" xml:space="preserve"><value>Add this user</value></data>
+  <data name="AddMattermostUserButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add this user to allowed users</value></data>
+  <data name="WizardMattermostUsernameLookupLabel.Text" xml:space="preserve"><value>Find an allowed user by username</value></data>
+  <data name="WizardMattermostUsernameLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermost username</value></data>
+  <data name="WizardMattermostUsernameLookupInput.PlaceholderText" xml:space="preserve"><value>alice or @alice</value></data>
+  <data name="WizardLookupMattermostUserButton.Content" xml:space="preserve"><value>Look up username</value></data>
+  <data name="WizardLookupMattermostUserButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Look up Mattermost username</value></data>
+  <data name="WizardAddMattermostUserButton.Content" xml:space="preserve"><value>Add this user</value></data>
+  <data name="WizardAddMattermostUserButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add this user to allowed users</value></data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock053.Text" xml:space="preserve">
-    <value>Blank fields will reject everyone. Display names and @mentions are not allowed. Copy your user ID from your Mattermost profile. Can be separated by line breaks, spaces, commas, and semicolons.</value>
+    <value>This list contains internal user IDs. Do not enter usernames directly. A blank list rejects everyone. Save settings to apply additions, then reconnect Mattermost if it is connected.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock054.Text" xml:space="preserve">
     <value>Bot tokens are used for posting, and App tokens are used to receive requests in Socket Mode. Permissions and event subscription settings on the Slack app side and the bot's participation in the channel are required.</value>
@@ -657,7 +672,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Slack App Token</value>
   </data>
   <data name="WizardSlackAllowedUserIds.Header" xml:space="preserve">
-    <value>Authorized user ID (required, one per line)</value>
+    <value>Internal Mattermost user IDs to allow (one per line)</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock013.Text" xml:space="preserve">
     <value>Slack requires both the bot token xoxb- and the app token xapp-. If the authorized user ID is empty, no requests will be accepted from anyone.</value>
@@ -687,7 +702,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Authorized user ID (required, one per line)</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock018.Text" xml:space="preserve">
-    <value>The authorized user ID is your Mattermost account ID. It's not a display name. Check the channel ID from the channel information. If this field is left blank, we will not accept requests from anyone.</value>
+    <value>This list contains internal user IDs. Do not enter usernames directly. A blank list rejects everyone. Save settings to apply additions, then reconnect Mattermost if it is connected.</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock019.Text" xml:space="preserve">
     <value>Please enter your token only on this screen. Does not output tokens in execution results.</value>

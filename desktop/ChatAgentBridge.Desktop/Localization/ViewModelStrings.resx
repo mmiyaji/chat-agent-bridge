@@ -524,6 +524,25 @@ AI permissions: {8}</value>
   <data name="RunToCompletion" xml:space="preserve"><value>Run until complete</value></data>
   <data name="Disabled" xml:space="preserve"><value>Disabled</value></data>
   <data name="MattermostConnectionFields" xml:space="preserve"><value>Enter the server URL, channel ID, token, and allowed user IDs.</value></data>
+  <data name="MattermostUsernameLookupInProgress" xml:space="preserve"><value>Looking up that username with the entered server URL and token…</value></data>
+  <data name="MattermostUsernameLookupFound" xml:space="preserve"><value>User found. Review the identity, then add it explicitly.</value></data>
+  <data name="MattermostUsernameLookupIdentity" xml:space="preserve"><value>Username: {0}
+Display name: {1}
+Internal user ID: {2}</value></data>
+  <data name="MattermostUsernameLookupInvalidUrl" xml:space="preserve"><value>Enter a valid HTTPS Mattermost server URL. HTTP is allowed only for localhost.</value></data>
+  <data name="MattermostUsernameLookupInvalidUsername" xml:space="preserve"><value>Enter one exact Mattermost username, with or without a leading @.</value></data>
+  <data name="MattermostUsernameLookupMissingCredentials" xml:space="preserve"><value>Enter the Mattermost server URL and access token before looking up a user.</value></data>
+  <data name="MattermostUsernameLookupInvalidToken" xml:space="preserve"><value>The token format is invalid. Re-enter the Mattermost access token.</value></data>
+  <data name="MattermostUsernameLookupUnauthorized" xml:space="preserve"><value>Mattermost rejected the token. Check or re-enter the access token.</value></data>
+  <data name="MattermostUsernameLookupForbidden" xml:space="preserve"><value>This token cannot look up users. Use a Mattermost token with permission to view users.</value></data>
+  <data name="MattermostUsernameLookupNotFound" xml:space="preserve"><value>No user with that exact username was found on this server.</value></data>
+  <data name="MattermostUsernameLookupNetwork" xml:space="preserve"><value>Could not reach Mattermost or the server returned an error. Check the URL and try again.</value></data>
+  <data name="MattermostUsernameLookupTimeout" xml:space="preserve"><value>The Mattermost lookup timed out. Check the server connection and try again.</value></data>
+  <data name="MattermostUsernameLookupInvalidResponse" xml:space="preserve"><value>Mattermost returned an unexpected user record. Check the server and try again.</value></data>
+  <data name="MattermostUsernameLookupNotActive" xml:space="preserve"><value>This account is a bot or is inactive, so it cannot be added.</value></data>
+  <data name="MattermostUsernameAlreadyAllowed" xml:space="preserve"><value>{0} is already in the allowed-user list.</value></data>
+  <data name="MattermostUsernameAddedSaveNeeded" xml:space="preserve"><value>Added {0} to the draft allowed-user list. Save settings to apply it, then reconnect Mattermost if it is active.</value></data>
+  <data name="MattermostUsernameAllowlistInvalid" xml:space="preserve"><value>Fix the existing allowed-user list before adding another user. Each ID must be a valid Mattermost user ID, with at most 100 users.</value></data>
   <data name="CustomCliName" xml:space="preserve">
     <value>Other CLI (custom)</value>
   </data>

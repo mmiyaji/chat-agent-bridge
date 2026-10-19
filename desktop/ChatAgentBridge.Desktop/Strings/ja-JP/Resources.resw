@@ -399,16 +399,31 @@
     <value>Mattermost アクセストークン</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock052.Text" xml:space="preserve">
-    <value>許可するMattermostユーザーID（1行1人）</value>
+    <value>許可するMattermost内部ユーザーID（1行に1つ）</value>
   </data>
   <data name="MattermostAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>許可するMattermostユーザーID（1行1人）</value>
+    <value>許可するMattermost内部ユーザーID（1行に1つ）</value>
   </data>
   <data name="MattermostAllowedUserIds.PlaceholderText" xml:space="preserve">
     <value>例: abc123xyz</value>
   </data>
+  <data name="MattermostUsernameLookupLabel.Text" xml:space="preserve"><value>ユーザー名から許可するユーザーを検索</value></data>
+  <data name="MattermostUsernameLookupHelp.Text" xml:space="preserve"><value>依頼を送る本人のユーザー名（例: @alice）を入力します。表示名やBot名ではありません。現在入力中のサーバーURLとアクセストークンで検索し、名前とIDを確認して追加してください。</value></data>
+  <data name="MattermostUsernameLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermostユーザー名</value></data>
+  <data name="MattermostUsernameLookupInput.PlaceholderText" xml:space="preserve"><value>alice または @alice</value></data>
+  <data name="LookupMattermostUserButton.Content" xml:space="preserve"><value>ユーザー名を検索</value></data>
+  <data name="LookupMattermostUserButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermostユーザー名を検索</value></data>
+  <data name="AddMattermostUserButton.Content" xml:space="preserve"><value>このユーザーを追加</value></data>
+  <data name="AddMattermostUserButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>このユーザーを許可リストに追加</value></data>
+  <data name="WizardMattermostUsernameLookupLabel.Text" xml:space="preserve"><value>ユーザー名から許可するユーザーを検索</value></data>
+  <data name="WizardMattermostUsernameLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermostユーザー名</value></data>
+  <data name="WizardMattermostUsernameLookupInput.PlaceholderText" xml:space="preserve"><value>alice または @alice</value></data>
+  <data name="WizardLookupMattermostUserButton.Content" xml:space="preserve"><value>ユーザー名を検索</value></data>
+  <data name="WizardLookupMattermostUserButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermostユーザー名を検索</value></data>
+  <data name="WizardAddMattermostUserButton.Content" xml:space="preserve"><value>このユーザーを追加</value></data>
+  <data name="WizardAddMattermostUserButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>このユーザーを許可リストに追加</value></data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock053.Text" xml:space="preserve">
-    <value>空欄は全員を拒否します。表示名や @メンションは使えません。MattermostのプロフィールからユーザーIDをコピーしてください。改行、空白、カンマ、セミコロンで区切れます。</value>
+    <value>一覧には内部ユーザーIDが入ります。ユーザー名を直接入力しないでください。空欄の場合は全員を拒否します。追加内容を適用するには設定を保存し、Mattermost接続中の場合は再接続してください。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock054.Text" xml:space="preserve">
     <value>Botトークンは投稿用、AppトークンはSocket Modeで依頼を受信するために使います。Slackアプリ側の権限・イベント購読の設定と、Botのチャンネル参加が必要です。</value>
@@ -657,7 +672,7 @@
     <value>Slack Appトークン</value>
   </data>
   <data name="WizardSlackAllowedUserIds.Header" xml:space="preserve">
-    <value>許可ユーザーID（必須、1行に1つ）</value>
+    <value>許可するMattermost内部ユーザーID（1行に1つ）</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock013.Text" xml:space="preserve">
     <value>SlackではBotトークン xoxb- とAppトークン xapp- の両方が必要です。許可ユーザーIDが空の場合は、誰からの依頼も受け付けません。</value>
@@ -687,7 +702,7 @@
     <value>許可ユーザーID（必須、1行に1つ）</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock018.Text" xml:space="preserve">
-    <value>許可ユーザーIDはMattermostのアカウントIDです。表示名ではありません。チャンネルIDはチャンネル情報から確認します。空欄の場合は、誰からの依頼も受け付けません。</value>
+    <value>一覧には内部ユーザーIDが入ります。ユーザー名を直接入力しないでください。空欄の場合は全員を拒否します。追加内容を適用するには設定を保存し、Mattermost接続中の場合は再接続してください。</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock019.Text" xml:space="preserve">
     <value>トークンはこの画面にのみ入力してください。実行結果にトークンを出力しません。</value>

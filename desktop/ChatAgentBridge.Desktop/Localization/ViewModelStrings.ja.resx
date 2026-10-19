@@ -524,6 +524,25 @@ AIの操作権限: {8}</value>
   <data name="RunToCompletion" xml:space="preserve"><value>完了まで実行</value></data>
   <data name="Disabled" xml:space="preserve"><value>無効</value></data>
   <data name="MattermostConnectionFields" xml:space="preserve"><value>サーバーURL・チャンネルID・トークン・許可するユーザーIDを入力してください。</value></data>
+  <data name="MattermostUsernameLookupInProgress" xml:space="preserve"><value>入力したサーバーURLとトークンでユーザー名を検索しています…</value></data>
+  <data name="MattermostUsernameLookupFound" xml:space="preserve"><value>ユーザーが見つかりました。内容を確認してから明示的に追加してください。</value></data>
+  <data name="MattermostUsernameLookupIdentity" xml:space="preserve"><value>ユーザー名: {0}
+表示名: {1}
+内部ユーザーID: {2}</value></data>
+  <data name="MattermostUsernameLookupInvalidUrl" xml:space="preserve"><value>有効なMattermostのHTTPSサーバーURLを入力してください。HTTPはlocalhostのみ使用できます。</value></data>
+  <data name="MattermostUsernameLookupInvalidUsername" xml:space="preserve"><value>@の有無を含め、Mattermostのユーザー名を1つ正確に入力してください。</value></data>
+  <data name="MattermostUsernameLookupMissingCredentials" xml:space="preserve"><value>ユーザーを検索する前にMattermostサーバーURLとアクセストークンを入力してください。</value></data>
+  <data name="MattermostUsernameLookupInvalidToken" xml:space="preserve"><value>トークン形式が無効です。Mattermostアクセストークンを入力し直してください。</value></data>
+  <data name="MattermostUsernameLookupUnauthorized" xml:space="preserve"><value>Mattermostがトークンを拒否しました。アクセストークンを確認または入力し直してください。</value></data>
+  <data name="MattermostUsernameLookupForbidden" xml:space="preserve"><value>このトークンではユーザーを検索できません。ユーザーの閲覧権限があるMattermostトークンを使用してください。</value></data>
+  <data name="MattermostUsernameLookupNotFound" xml:space="preserve"><value>このサーバーに一致するユーザー名が見つかりません。</value></data>
+  <data name="MattermostUsernameLookupNetwork" xml:space="preserve"><value>Mattermostに接続できないか、サーバーでエラーが発生しました。URLを確認して再試行してください。</value></data>
+  <data name="MattermostUsernameLookupTimeout" xml:space="preserve"><value>Mattermostの検索がタイムアウトしました。サーバー接続を確認して再試行してください。</value></data>
+  <data name="MattermostUsernameLookupInvalidResponse" xml:space="preserve"><value>Mattermostから予期しないユーザー情報が返されました。サーバーを確認して再試行してください。</value></data>
+  <data name="MattermostUsernameLookupNotActive" xml:space="preserve"><value>このアカウントはBotまたは無効なアカウントのため、追加できません。</value></data>
+  <data name="MattermostUsernameAlreadyAllowed" xml:space="preserve"><value>{0}はすでに許可ユーザー一覧にあります。</value></data>
+  <data name="MattermostUsernameAddedSaveNeeded" xml:space="preserve"><value>{0}を許可ユーザー一覧の編集内容に追加しました。適用するには設定を保存し、Mattermost接続中の場合は再接続してください。</value></data>
+  <data name="MattermostUsernameAllowlistInvalid" xml:space="preserve"><value>ユーザーを追加する前に、既存の許可ユーザー一覧を修正してください。有効なMattermostユーザーIDを最大100件まで指定できます。</value></data>
   <data name="CustomCliName" xml:space="preserve">
     <value>その他のCLI（カスタム）</value>
   </data>
