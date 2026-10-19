@@ -13,6 +13,7 @@ public partial class MainPageViewModel
     private string? _threadLookupToken;
     private string? _threadLookupChannelId;
     private string? _threadLookupInput;
+    private bool _threadLookupBypassProxy;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasMattermostThreadLookupResult))]
@@ -65,13 +66,14 @@ public partial class MainPageViewModel
         _threadLookupToken = token;
         _threadLookupChannelId = channelId;
         _threadLookupInput = input;
+        _threadLookupBypassProxy = MattermostBypassProxy;
         IsResolvingMattermostThread = true;
         MattermostThreadLookupStatus = ViewModelText.Get("MattermostThreadLookupInProgress");
         OnPropertyChanged(nameof(CanAddMattermostThreadLookupResult));
         AddMattermostThreadCommand.NotifyCanExecuteChanged();
         try
         {
-            using var resolver = new MattermostThreadResolver();
+            using var resolver = new MattermostThreadResolver(_threadLookupBypassProxy);
             var thread = await resolver.ResolveAsync(serverUrl, token, channelId, input, cancellation.Token);
             if (cancellation.IsCancellationRequested || _closing || !ThreadLookupInputsMatch(serverUrl, token, channelId, input)) return;
             MattermostThreadLookupResult = thread;
@@ -140,6 +142,7 @@ public partial class MainPageViewModel
     private bool ThreadLookupInputsMatch(string serverUrl, string token, string channelId, string input) =>
         string.Equals(serverUrl, MattermostServerUrl, StringComparison.Ordinal) &&
         string.Equals(token, MattermostToken, StringComparison.Ordinal) &&
+        _threadLookupBypassProxy == MattermostBypassProxy &&
         string.Equals(channelId, MattermostChannelId, StringComparison.Ordinal) &&
         string.Equals(input, MattermostThreadLookupInput, StringComparison.Ordinal);
 

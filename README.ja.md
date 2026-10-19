@@ -1,6 +1,6 @@
 # Chat Agent Bridge
 
-**Windowsポータブルプレビュー版：** [v0.1.0-preview.2](https://github.com/mmiyaji/chat-agent-bridge/releases/tag/v0.1.0-preview.2) からx64またはARM64のZIPを取得し、`ChatAgentBridge.Portable` フォルダー全体を展開して `ChatAgentBridge.Desktop.exe` を起動してください。管理者権限・証明書登録・.NET / Windows App SDKの別途導入は不要です。設定は隣の `Data` に保存し、エージェントCLIとログインは別途設定します。移行や自動起動の注意点はZIP同梱の日本語README、検証範囲は[検証記録](docs/windows-portable-validation.ja.md)を参照してください。
+**Windowsポータブルプレビュー版：** [v0.1.0-preview.3](https://github.com/mmiyaji/chat-agent-bridge/releases/tag/v0.1.0-preview.3) からx64またはARM64のZIPを取得し、`ChatAgentBridge.Portable` フォルダー全体を展開して `ChatAgentBridge.Desktop.exe` を起動してください。管理者権限・証明書登録・.NET / Windows App SDKの別途導入は不要です。設定は隣の `Data` に保存し、エージェントCLIとログインは別途設定します。移行や自動起動の注意点はZIP同梱の日本語README、検証範囲は[検証記録](docs/windows-portable-validation.ja.md)を参照してください。
 
 > このブランチでは WinUI 3 / C# ネイティブ版を開発しています。ビルド・起動手順は [desktop/README.ja.md](desktop/README.ja.md)、機能対応と進捗は [移行計画](docs/winui-migration-plan.ja.md) を参照してください。以下は移行元の TypeScript 版の説明です。
 

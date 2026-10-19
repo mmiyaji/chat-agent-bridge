@@ -1,5 +1,15 @@
 # Mattermost Setup
 
+## Native Windows app: direct connection
+
+In **Connection settings → Mattermost**, enable **Connect without a proxy**, save, and disconnect/reconnect Mattermost. The first-run wizard offers the same setting below the server URL. Its default is off, preserving the system proxy setting for existing configurations.
+
+This applies to Mattermost REST authentication, user lookup, post link checks, replies, connection notices, and WebSocket events. Slack and agent CLI proxy settings are independent. Changing the mode during a user or post lookup cancels that lookup; retry it with the new mode.
+
+日本語UIでは **接続設定 → Mattermost → プロキシを使わず直接接続** をオンにし、**設定を保存 → 切断 → Mattermostに接続** の順に操作します。初回ウィザードにも同じ項目があります。
+
+If direct mode still fails, check name resolution, routing/VPN access, server availability, and TLS certificate trust. Direct mode disables the application's explicit/system proxy use; it cannot change a transparent network gateway or an endpoint agent that intercepts connections. HTTPS certificate validation remains enabled. Error messages and screenshots shared for diagnosis should omit tokens and internal URLs.
+
 ## Supported modes
 
 The Mattermost adapter supports:

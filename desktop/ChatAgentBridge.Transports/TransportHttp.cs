@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Net.WebSockets;
 
 namespace ChatAgentBridge.Transports;
 
@@ -9,13 +10,22 @@ internal static class TransportHttp
 {
     internal static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    internal static HttpClient CreateClient()
+    internal static HttpClient CreateClient(bool bypassProxy = false, IWebProxy? proxy = null)
     {
         return new HttpClient(new SocketsHttpHandler
         {
+            UseProxy = !bypassProxy,
+            Proxy = bypassProxy ? null : proxy,
             ConnectTimeout = TimeSpan.FromSeconds(15),
             PooledConnectionLifetime = TimeSpan.FromMinutes(5)
         }) { Timeout = TimeSpan.FromSeconds(20) };
+    }
+
+    internal static void ConfigureMattermostWebSocketProxy(ClientWebSocketOptions options, bool bypassProxy, IWebProxy? proxy = null)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        // Null explicitly disables proxying in ClientWebSocket; a non-null value selects the configured proxy.
+        options.Proxy = bypassProxy ? null : proxy ?? HttpClient.DefaultProxy;
     }
 
     internal static Uri MattermostBaseUri(string value)

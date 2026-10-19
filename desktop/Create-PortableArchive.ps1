@@ -2,8 +2,8 @@
 param(
     [ValidateSet('x64', 'ARM64')]
     [string] $Architecture = 'x64',
-    [string] $ReleaseVersion = '0.1.0-preview.2',
-    [string] $ApplicationVersion = '0.1.0.1',
+    [string] $ReleaseVersion = '0.1.0-preview.3',
+    [string] $ApplicationVersion = '0.1.0.2',
     [string] $OutputDirectory = (Join-Path $PSScriptRoot 'artifacts/portable-releases'),
     [switch] $ValidateOnly,
     [string] $ArchivePath,

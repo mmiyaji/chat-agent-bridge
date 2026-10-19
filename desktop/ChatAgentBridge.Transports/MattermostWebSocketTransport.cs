@@ -11,7 +11,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
     public event Action? Connected;
     private const int MaxMessageBytes = 1024 * 1024;
     private const string Trigger = "!cab";
-    private readonly HttpClient _http = TransportHttp.CreateClient();
+    private HttpClient? _http;
     private readonly BoundedSeenSet _seen = new(10_000);
     private string? _currentUserId;
     private Uri? _serverUri;
@@ -34,10 +34,12 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
         _serverUri = root;
         _token = token;
         _channelId = settings.MattermostChannelId;
+        _http?.Dispose();
+        _http = TransportHttp.CreateClient(settings.MattermostBypassProxy);
         _runLifetime?.Dispose();
         _runLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var meRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get, new Uri(root, "api/v4/users/me"), token);
-        var me = await TransportHttp.SendJsonAsync<MattermostUser>(_http, meRequest, cancellationToken).ConfigureAwait(false);
+        var me = await TransportHttp.SendJsonAsync<MattermostUser>(ActiveHttp, meRequest, cancellationToken).ConfigureAwait(false);
         _currentUserId = me.Id;
 
         var socketUri = new UriBuilder(new Uri(root, "api/v4/websocket"))
@@ -46,6 +48,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
             Port = root.IsDefaultPort ? -1 : root.Port
         }.Uri;
         using var socket = new ClientWebSocket();
+        TransportHttp.ConfigureMattermostWebSocketProxy(socket.Options, settings.MattermostBypassProxy);
         await socket.ConnectAsync(socketUri, cancellationToken).ConfigureAwait(false);
         await SendAsync(socket, new { seq = 1, action = "authentication_challenge", data = new { token } }, cancellationToken).ConfigureAwait(false);
 
@@ -71,7 +74,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
             var authorRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
                 new Uri(root, $"api/v4/users/{Uri.EscapeDataString(request.UserId)}"), token);
             MattermostUser author;
-            try { author = await TransportHttp.SendJsonAsync<MattermostUser>(_http, authorRequest, cancellationToken).ConfigureAwait(false); }
+            try { author = await TransportHttp.SendJsonAsync<MattermostUser>(ActiveHttp, authorRequest, cancellationToken).ConfigureAwait(false); }
             catch (InvalidOperationException) { continue; }
             if (author.IsBot) continue;
 
@@ -92,7 +95,7 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
         using var body = TransportHttp.JsonContent(new { channel_id = settings.MattermostChannelId, root_id = "", message });
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(root, "api/v4/posts")) { Content = body };
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        using var response = await _http.SendAsync(request, linked.Token).ConfigureAwait(false);
+        using var response = await ActiveHttp.SendAsync(request, linked.Token).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode) throw new InvalidOperationException($"Mattermost status notice failed with HTTP {(int)response.StatusCode}.");
     }
 
@@ -106,15 +109,17 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatConnecti
         using var body = TransportHttp.JsonContent(new { channel_id = request.ChannelId, root_id = request.ThreadId, message = text });
         using var message = new HttpRequestMessage(HttpMethod.Post, new Uri(root, "api/v4/posts")) { Content = body };
         message.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        using var response = await _http.SendAsync(message, cancellationToken).ConfigureAwait(false);
+        using var response = await ActiveHttp.SendAsync(message, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode) throw new InvalidOperationException($"Mattermost reply failed with HTTP {(int)response.StatusCode}.");
     }
 
     public ValueTask DisposeAsync()
     {
-        if (!_disposed) { _disposed = true; _runLifetime?.Cancel(); _http.Dispose(); }
+        if (!_disposed) { _disposed = true; _runLifetime?.Cancel(); _http?.Dispose(); }
         return ValueTask.CompletedTask;
     }
+
+    private HttpClient ActiveHttp => _http ?? throw new InvalidOperationException("Mattermost is not connected.");
 
     internal static ChatRequest? ParsePost(string json, string channelFilter, string currentUserId, bool isBot)
     {

@@ -2,6 +2,7 @@ param(
     [Parameter(Mandatory)][string]$AppDirectory,
     [ValidateSet('ja','en')][string]$Language = 'ja',
     [switch]$Portable,
+    [switch]$CheckMattermostProxy,
     [switch]$KeepRunningOnFailure
 )
 $ErrorActionPreference = 'Stop'
@@ -234,6 +235,34 @@ process.stdin.on('end', () => setTimeout(() => process.stdout.write('offline-res
         Assert-True (@($saved.Bindings|Where-Object SessionId -eq $bindings[2].SessionId).Count -eq 1) 'Another owner in the same thread was affected'
     }
     Navigate 'NavChat'
+    if ($CheckMattermostProxy) {
+        Check 'Mattermost direct connection can be saved and reloaded' {
+            Navigate 'NavConnections'
+            UI @('scroll-into-view','MattermostBypassProxy') | Out-Null
+            Assert-Visible 'MattermostBypassProxy'
+            $toggle = (Element 'MattermostBypassProxy').GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
+            Assert-True ($toggle.Current.ToggleState -eq [Windows.Automation.ToggleState]::Off) 'Existing settings unexpectedly bypass the proxy'
+            $toggle.Toggle()
+            UI @('invoke','SaveConnections') | Out-Null
+            UI @('wait-for','SaveConnections','-p','IsEnabled','--value','True','-t','5000') | Out-Null
+            $saved = Get-Content (Join-Path $dataPath 'settings.json') -Raw | ConvertFrom-Json
+            Assert-True ($saved.MattermostBypassProxy -eq $true) 'Direct connection was not saved'
+            Navigate 'NavOverview'
+            UI @('scroll-into-view','SetupReloadSettings') | Out-Null
+            UI @('invoke','SetupReloadSettings') | Out-Null
+            Navigate 'NavConnections'
+            UI @('scroll-into-view','MattermostBypassProxy') | Out-Null
+            $toggle = (Element 'MattermostBypassProxy').GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
+            Assert-True ($toggle.Current.ToggleState -eq [Windows.Automation.ToggleState]::On) 'Reload lost the direct connection setting'
+            Capture 'mattermost-proxy-wide'
+            Resize 500 720
+            UI @('scroll-into-view','MattermostBypassProxy') | Out-Null
+            Assert-Visible 'MattermostBypassProxy'
+            Capture 'mattermost-proxy-narrow'
+            Resize 1280
+            Navigate 'NavChat'
+        }
+    }
     Check 'Offline transport connects' {
         UI @('invoke','ConnectMattermost') | Out-Null
         $deadline = [DateTime]::UtcNow.AddSeconds(8)

@@ -32,8 +32,8 @@ public sealed class MattermostUsernameResolver : IDisposable
     private readonly HttpClient _http;
     private readonly TimeSpan _lookupTimeout;
 
-    public MattermostUsernameResolver()
-        : this(CreateHandler(), TimeSpan.FromSeconds(15))
+    public MattermostUsernameResolver(bool bypassProxy = false)
+        : this(CreateHandler(bypassProxy), TimeSpan.FromSeconds(15))
     {
     }
 
@@ -43,9 +43,11 @@ public sealed class MattermostUsernameResolver : IDisposable
         _lookupTimeout = lookupTimeout ?? TimeSpan.FromSeconds(15);
     }
 
-    internal static SocketsHttpHandler CreateHandler() => new()
+    internal static SocketsHttpHandler CreateHandler(bool bypassProxy = false, IWebProxy? proxy = null) => new()
     {
         AllowAutoRedirect = false,
+        UseProxy = !bypassProxy,
+        Proxy = bypassProxy ? null : proxy,
         ConnectTimeout = TimeSpan.FromSeconds(10),
         PooledConnectionLifetime = TimeSpan.FromMinutes(2)
     };

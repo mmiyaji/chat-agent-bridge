@@ -33,7 +33,7 @@ public sealed class MattermostThreadResolver : IDisposable
     private readonly HttpClient _http;
     private readonly TimeSpan _lookupTimeout;
 
-    public MattermostThreadResolver() : this(MattermostUsernameResolver.CreateHandler(), TimeSpan.FromSeconds(15)) { }
+    public MattermostThreadResolver(bool bypassProxy = false) : this(MattermostUsernameResolver.CreateHandler(bypassProxy), TimeSpan.FromSeconds(15)) { }
 
     internal MattermostThreadResolver(HttpMessageHandler handler, TimeSpan? lookupTimeout = null)
     {

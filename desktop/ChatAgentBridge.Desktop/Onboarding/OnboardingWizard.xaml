@@ -110,6 +110,8 @@
                     <StackPanel Spacing="12" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardMattermost), Mode=OneWay}">
                         <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock015" x:Uid="onboardingOnboardingWizardTextBlock015" />
                         <TextBox  Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com" AutomationProperties.AutomationId="WizardMattermostServerUrl"  x:Uid="WizardMattermostServerUrl" />
+                        <CheckBox IsChecked="{x:Bind ViewModel.MattermostBypassProxy, Mode=TwoWay}" AutomationProperties.AutomationId="WizardMattermostBypassProxy" x:Uid="MattermostBypassProxy" />
+                        <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="WizardMattermostProxyHelp" x:Uid="MattermostProxyHelp" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock016" x:Uid="onboardingOnboardingWizardTextBlock016" />
                         <TextBox  Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="WizardMattermostChannelId"  x:Uid="WizardMattermostChannelId" />
                         <StackPanel Spacing="8">

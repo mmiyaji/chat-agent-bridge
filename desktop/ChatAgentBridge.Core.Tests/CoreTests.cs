@@ -34,6 +34,7 @@ public sealed class CoreTests
                 WorkspaceRoot = "C:/workspace", AgentArguments = "exec --json -",
                 AgentModel = "gpt-5.4", AgentReasoningEffort = "future_level", AutoConnectProvider = "slack",
                 MattermostServerUrl = "https://chat.example", MattermostChannelId = "abc",
+                MattermostBypassProxy = true,
                 MattermostToken = OperatingSystem.IsWindows() ? "mm-secret" : "",
                 SlackBotToken = OperatingSystem.IsWindows() ? "slack-secret" : "",
                 SlackAppToken = OperatingSystem.IsWindows() ? "app-secret" : "", RequireApproval = false,
@@ -68,6 +69,7 @@ public sealed class CoreTests
             Assert.Equal("", settings.MattermostAllowedUserIds);
             Assert.Equal("", settings.SlackAllowedUserIds);
             Assert.False(settings.ShareApprovalsInChat);
+            Assert.False(settings.MattermostBypassProxy);
         }
         finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
     }

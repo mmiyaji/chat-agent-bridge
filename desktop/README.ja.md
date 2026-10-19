@@ -14,7 +14,11 @@ Windows x64 / ARM64 向けの展開型プレビュー版は、ZIP 内の `ChatAg
 
 アプリに保存した Slack / Mattermost 接続トークンは Windows DPAPI で保護され、同じ Windows ユーザーと PC で利用できます。他の PC へ設定をコピーする場合は元の PC でトークンを空にして保存し、移行先で再入力します。暗号化したまま移して読み込めなくなった場合は、終了後に `Data/settings.json` を退避して初期設定をやり直してください。CLIのログインと作業フォルダーも移行先で確認します。アプリフォルダーを移動する前に自動起動をオフにし、移動後に必要なら有効にしてください。削除するときは自動起動をオフにし、アプリを終了してからフォルダーを削除します。ユーザー単位の Windows 通知登録が残る場合があります。アプリは PC 全体へのインストールを行いません。
 
-配布 ZIP の作成と検査は `desktop/Create-PortableArchive.ps1` で行い、成果物は `desktop/artifacts/portable-releases` に保存します。既定で x64、`0.1.0-preview.2` を作成し、x64 と ARM64 は別々の ZIP になります。`-Architecture ARM64` で ARM64 を選び、`-ValidateOnly -ArchivePath <ZIP>` でアーカイブの構成、実行ファイルのアーキテクチャ、ランタイム、禁止ファイル、SHA-256 一覧を検査できます。`-ExistingLayout <フォルダー>` を指定すると、既存の発行レイアウトを使って新しい ZIP を作成できます。各 ZIP には日本語・英語の案内と `SHA256SUMS.txt` が入り、ZIP 自体にも `.sha256` ファイルを作成します。MSIX プレビュー版は引き続き別途利用できます。
+配布 ZIP の作成と検査は `desktop/Create-PortableArchive.ps1` で行い、成果物は `desktop/artifacts/portable-releases` に保存します。既定で x64、`0.1.0-preview.3` を作成し、x64 と ARM64 は別々の ZIP になります。`-Architecture ARM64` で ARM64 を選び、`-ValidateOnly -ArchivePath <ZIP>` でアーカイブの構成、実行ファイルのアーキテクチャ、ランタイム、禁止ファイル、SHA-256 一覧を検査できます。`-ExistingLayout <フォルダー>` を指定すると、既存の発行レイアウトを使って新しい ZIP を作成できます。各 ZIP には日本語・英語の案内と `SHA256SUMS.txt` が入り、ZIP 自体にも `.sha256` ファイルを作成します。MSIX プレビュー版は引き続き別途利用できます。
+
+## Mattermostの直接接続
+
+社内サーバーへプロキシを経由せず接続する場合は、「接続設定 → Mattermost」の「プロキシを使わず直接接続」をオンにして保存し、Mattermostを切断・再接続します。初回ウィザードでも設定できます。初期値はオフ（システムのプロキシ設定を使用）です。ユーザー名検索・投稿リンク確認・認証・WebSocketの受信・返信と接続通知に同じ設定を適用し、SlackやCLIの通信設定は変更しません。検索中の切り替えはその検索を取り消します。詳細は[接続ガイド](../docs/mattermost-setup.md#native-windows-app-direct-connection)を参照してください。
 
 ## 外観
 

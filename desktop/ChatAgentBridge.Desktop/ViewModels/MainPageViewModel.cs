@@ -68,7 +68,7 @@ public partial class MainPageViewModel : ObservableObject
             if (e.PropertyName is nameof(IsLoading) or nameof(IsSettingsLoaded) or nameof(WorkspaceRoot) or
                 nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
                 nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AutoConnectProvider) or nameof(RequireApproval) or
-                nameof(MattermostServerUrl) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
+                nameof(MattermostServerUrl) or nameof(MattermostBypassProxy) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
                 nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat) or
                 nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or nameof(ChatApprovalMode) or
                 nameof(ChatResultMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
@@ -176,6 +176,7 @@ public partial class MainPageViewModel : ObservableObject
     public bool IsExecMode => !UseAppServer;
     public bool CanShareApprovalsInChat => IsCodexProvider && UseAppServer;
     [ObservableProperty] public partial string MattermostServerUrl { get; set; } = string.Empty;
+    [ObservableProperty] public partial bool MattermostBypassProxy { get; set; }
     [ObservableProperty] public partial string MattermostChannelId { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackBotToken { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackAppToken { get; set; } = string.Empty;
@@ -272,6 +273,7 @@ public partial class MainPageViewModel : ObservableObject
             AutoConnectProvider = _settings.AutoConnectProvider;
             UseAppServer = _settings.AgentMode == "app-server";
             MattermostServerUrl = _settings.MattermostServerUrl;
+            MattermostBypassProxy = _settings.MattermostBypassProxy;
             MattermostChannelId = _settings.MattermostChannelId;
             MattermostToken = _settings.MattermostToken;
             SlackBotToken = _settings.SlackBotToken;
@@ -726,6 +728,7 @@ public partial class MainPageViewModel : ObservableObject
         AutoConnectProvider = AutoConnectProvider,
         AgentMode = UseAppServer ? "app-server" : "exec",
         MattermostServerUrl = MattermostServerUrl.Trim(),
+        MattermostBypassProxy = MattermostBypassProxy,
         MattermostChannelId = MattermostChannelId.Trim(),
         MattermostToken = MattermostToken,
         SlackBotToken = SlackBotToken,

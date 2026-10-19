@@ -13,6 +13,7 @@ public sealed record BridgeSettings
     public string MattermostServerUrl { get; init; } = "";
     public string MattermostChannelId { get; init; } = "";
     public string MattermostToken { get; init; } = "";
+    public bool MattermostBypassProxy { get; init; }
     public string SlackBotToken { get; init; } = "";
     public string SlackAppToken { get; init; } = "";
     public string MattermostAllowedUserIds { get; init; } = "";

@@ -12,6 +12,7 @@ public partial class MainPageViewModel
     private string? _lookupServerUrl;
     private string? _lookupToken;
     private string? _lookupUsername;
+    private bool _lookupBypassProxy;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasMattermostUsernameLookupResult))]
@@ -45,6 +46,7 @@ public partial class MainPageViewModel
         !IsLookingUpMattermostUsername && !_closing &&
         string.Equals(_lookupServerUrl, MattermostServerUrl, StringComparison.Ordinal) &&
         string.Equals(_lookupToken, MattermostToken, StringComparison.Ordinal) &&
+        _lookupBypassProxy == MattermostBypassProxy &&
         string.Equals(_lookupUsername, MattermostUsernameLookupInput, StringComparison.Ordinal);
 
     partial void OnMattermostServerUrlChanged(string value)
@@ -53,6 +55,12 @@ public partial class MainPageViewModel
         InvalidateMattermostThreadLookup();
     }
     partial void OnMattermostUsernameLookupInputChanged(string value) => InvalidateMattermostUsernameLookup();
+
+    partial void OnMattermostBypassProxyChanged(bool value)
+    {
+        InvalidateMattermostUsernameLookup();
+        InvalidateMattermostThreadLookup();
+    }
 
     [RelayCommand(CanExecute = nameof(CanLookupMattermostUsername))]
     private async Task LookupMattermostUsernameAsync()
@@ -68,13 +76,14 @@ public partial class MainPageViewModel
         _lookupServerUrl = serverUrl;
         _lookupToken = token;
         _lookupUsername = username;
+        _lookupBypassProxy = MattermostBypassProxy;
         IsLookingUpMattermostUsername = true;
         MattermostUsernameLookupStatus = ViewModelText.Get("MattermostUsernameLookupInProgress");
         OnPropertyChanged(nameof(CanAddMattermostUsernameLookupResult));
         AddMattermostUsernameLookupResultCommand.NotifyCanExecuteChanged();
         try
         {
-            using var resolver = new MattermostUsernameResolver();
+            using var resolver = new MattermostUsernameResolver(_lookupBypassProxy);
             var user = await resolver.ResolveAsync(serverUrl, token, username, cancellation.Token);
             if (cancellation.IsCancellationRequested || _closing || !LookupInputsMatch(serverUrl, token, username)) return;
             MattermostUsernameLookupResult = user;
@@ -150,6 +159,7 @@ public partial class MainPageViewModel
     private bool LookupInputsMatch(string serverUrl, string token, string username) =>
         string.Equals(serverUrl, MattermostServerUrl, StringComparison.Ordinal) &&
         string.Equals(token, MattermostToken, StringComparison.Ordinal) &&
+        _lookupBypassProxy == MattermostBypassProxy &&
         string.Equals(username, MattermostUsernameLookupInput, StringComparison.Ordinal);
 
     private static string LookupFailureText(MattermostUsernameLookupFailure failure) => ViewModelText.Get(failure switch

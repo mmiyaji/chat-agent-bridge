@@ -1,4 +1,7 @@
-param([Parameter(Mandatory)][string]$AppDirectory)
+param(
+    [Parameter(Mandatory)][string]$AppDirectory,
+    [string]$ExpectedVersion = '0.1.0.2'
+)
 $ErrorActionPreference = 'Stop'
 $artifacts = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
 $source = [IO.Path]::GetFullPath($AppDirectory)
@@ -115,7 +118,7 @@ try {
     $app = $newApp
     UI @('wait-for','NavAbout','-t','10000') | Out-Null
     Go 'NavAbout' 'AboutPackage'
-    UI @('wait-for','AboutPackage','--value','Portable (0.1.0.1)','-t','5000') | Out-Null
+    UI @('wait-for','AboutPackage','--value',"Portable ($ExpectedVersion)",'-t','5000') | Out-Null
     Assert ((Get-Content (Join-Path $data 'language.json') -Raw | ConvertFrom-Json).Language -eq 'ja') 'Restart lost the language setting.'
     Assert ((Get-Content (Join-Path $data 'appearance.json') -Raw | ConvertFrom-Json).Theme -eq 'light') 'Restart lost the appearance setting.'
     Pass 'Language restart preserves portable settings and displays the correct deployment version'
