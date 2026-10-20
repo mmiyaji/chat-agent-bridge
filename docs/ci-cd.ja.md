@@ -8,9 +8,10 @@
 | Portable release の手動実行 | 上記検証と x64 / ARM64 ポータブルZIPの作成 | Actions artifact のみ（7日）。ReleaseやPagesは変更しない |
 | main 上のコミットへ `vX.Y.Z` / `vX.Y.Z-preview.N` タグをpush | 検証 → 両CPU向けZIP → 下書きRelease → アセット照合 → Release公開 → 配信JSON生成 | GitHub Releases、GitHub Pages |
 | main の料金表・配信生成スクリプト変更 | 公開済みRelease一覧と最新料金表からJSONを再生成 | GitHub Pages |
+| GitHub上でReleaseを手動公開・編集・非公開化・削除 | 公開対象を再取得してJSONを再生成 | GitHub Pages |
 | Distribution data の手動実行（main） | 配信データを再生成・再配置 | GitHub Pages |
 
-タグは自動では作成しません。ブランチをpushしただけではアプリを公開しません。タグ対象がmainの履歴に含まれない場合は公開を拒否します。手動ビルドは機能ブランチでも試せます。
+タグは自動では作成しません。ブランチをpushしただけではアプリを公開しません。タグ対象がmainの履歴に含まれない場合や、ビルド中にリモートのタグが別コミットへ移された場合は公開を拒否します。手動ビルドは機能ブランチでも試せます。
 
 ## 初回の準備
 
@@ -37,6 +38,8 @@ git push origin v0.1.0-preview.6
 
 `Portable release` の全ジョブ成功を確認します。ZIPには.NET / Windows App SDK / 更新ヘルパーを含め、アプリ設定・認証情報・テスト用実行ファイルは含めません。ZIP内のマニフェストとSHA-256、CPU、自己完結ランタイムを検証し、アップロード後のGitHubアセットのサイズ・SHA-256も照合します。MSIXやMicrosoft Store公開・コード署名はこのワークフローの対象外です。
 
+公開前には実ZIPとモックGitHub CLIで、正常公開、ハッシュ不一致による停止、公開済みアセットの上書き防止、API失敗時の停止を検証します。この検証ジョブには公開権限や実チャットの認証情報を渡しません。
+
 ## 配信URLと更新動作
 
 - 安定版: https://mmiyaji.github.io/chat-agent-bridge/updates/stable.json
@@ -59,6 +62,6 @@ Pagesの展開前はHTTP 404の場合だけ従来のGitHub Releases API / raw料
 - アセット送信・照合失敗: Releaseは下書きのまま残します。同じワークフローを再実行すると下書きのアセットを置換して再検証できます。
 - 公開済みRelease: アセットは上書きしません。同一内容の再実行のみ照合して進めます。内容を修正する場合は新しいバージョンを使います。
 - Release公開後のPages配信失敗: ZIPは公開済みです。原因修正後 `Distribution data` をmainから手動実行できます。旧JSONは成功した配信まで維持されます。
-- 不具合版を配信から外す場合: 対象Releaseを下書きに戻してから `Distribution data` をmainから再実行します。すでに利用者が適用した版は自動でダウングレードされません。
+- 不具合版を配信から外す場合: 対象Releaseを下書きに戻します。手動変更のReleaseイベントでも配信データを再生成します。反映されない場合は `Distribution data` をmainから再実行できます。すでに利用者が適用した版は自動でダウングレードされません。
 
 CIは実チャットの認証情報を使いません。Slack/Mattermostの実環境・Windows通知・画面の視認性の確認は、公開前の手動検証として別途行います。ARM64はクロスビルドと配布形式の検証で、ARM64実機での起動試験を代替しません。

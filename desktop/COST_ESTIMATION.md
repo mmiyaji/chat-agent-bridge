@@ -42,7 +42,7 @@
 
 自動確認は有効な場合、起動後とその後の定期確認で、前回の確認から24時間以上経っていれば行います。「今すぐ更新」は自動更新がオフでも実行できます。同じ料金表ならETagによる変更確認で再ダウンロードを省きます。失敗時は最後の有効な料金表を保持し、状態を画面に表示します。新しい課金方式や未対応の料金表形式では、アプリ本体の更新が必要になる場合があります。
 
-取得先は、このアプリのGitHubリポジトリの [`main` 上の料金表](https://raw.githubusercontent.com/mmiyaji/chat-agent-bridge/main/desktop/ChatAgentBridge.Core/Pricing/model-prices.json) に固定しています。取得するのは公開料金JSONだけで、履歴・プロンプト・接続トークンは送信しません。取得先に料金表を公開するまでは取得に失敗し、保存済み・同梱料金を使います。この機能の実装だけではGitHubへ公開しません。
+取得先は、このアプリのGitHub Pages上の[公開料金JSON](https://mmiyaji.github.io/chat-agent-bridge/pricing/models.json)に固定しています。GitHub Actionsが `main` 上の料金表を検証して配信するため、料金だけの変更でアプリを再ビルドする必要はありません。Pagesが404の場合のみ従来の [`main` 上の料金表](https://raw.githubusercontent.com/mmiyaji/chat-agent-bridge/main/desktop/ChatAgentBridge.Core/Pricing/model-prices.json)へフォールバックし、ETagは配信元ごとに区別します。取得するのは公開料金JSONだけで、履歴・プロンプト・接続トークンは送信しません。両方の取得に失敗した場合も保存済み・同梱料金を使います。配信手順は[CI/CDの運用手順](../docs/ci-cd.ja.md)を参照してください。
 
 取得データは形式・通貨・トークン単位・モデルの重複・単価の範囲・サイズなどを検証し、不正なデータで有効な料金表を置き換えません。ローカルの手動ファイルが壊れている場合も自動修復で上書きせず、エラーと保存先を表示します。
 

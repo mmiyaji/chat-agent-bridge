@@ -7,6 +7,8 @@ on:
       - desktop/ChatAgentBridge.Core/Pricing/model-prices.json
       - scripts/distribution_feed.py
       - .github/workflows/distribution.yml
+  release:
+    types: [published, edited, unpublished, deleted]
   workflow_dispatch:
   workflow_call:
     inputs:
@@ -37,6 +39,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+      - name: Validate distribution generator
+        run: python -m unittest discover -s test -p 'distribution_feed_test.py' -v
       - name: Generate public feeds from published releases
         env:
           GH_TOKEN: ${{ github.token }}
