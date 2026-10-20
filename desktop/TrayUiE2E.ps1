@@ -133,6 +133,38 @@ function Invoke-MenuItem([string]$Name) {
     } while ([DateTime]::UtcNow -lt $deadline)
     throw "Native tray menu item was not available: $Name"
 }
+function Element([string]$Id) {
+    return [Windows.Automation.AutomationElement]::FromHandle($hwnd).FindFirst([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$Id))
+}
+function Request-Close {
+    Assert ([TrayUiE2ENativeApi]::PostMessageW($hwnd,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)) 'Could not request window close.'
+}
+function Wait-CloseDialog {
+    UI @('wait-for','WindowCloseConfirmation','-t','5000') | Out-Null
+    Wait-Visible $true
+    Assert (-not $app.HasExited) 'Requesting close terminated the app before consent.'
+}
+function Dialog-Button([string]$Id) {
+    $dialog=Element 'WindowCloseConfirmation'
+    return $dialog.FindFirst([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$Id))
+}
+function Invoke-DialogButton([string]$Id) {
+    (Dialog-Button $Id).GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+}
+function Assert-DialogLayout {
+    $window=[Windows.Automation.AutomationElement]::FromHandle($hwnd).Current.BoundingRectangle
+    $previous=$null
+    foreach($id in @('PrimaryButton','SecondaryButton','CloseButton')) {
+        $button=Dialog-Button $id
+        $bounds=$button.Current.BoundingRectangle
+        Assert (-not $button.Current.IsOffscreen -and $bounds.Width -gt 0) "Missing close dialog action: $id"
+        Assert ($bounds.Left -ge $window.Left -and $bounds.Right -le $window.Right -and $bounds.Top -ge $window.Top -and $bounds.Bottom -le $window.Bottom) "Close dialog action is clipped: $id"
+        if($previous){Assert (-not $previous.IntersectsWith($bounds)) 'Close dialog buttons overlap.'}
+        $previous=$bounds
+    }
+}
 function Close-OwnedApp {
     if ($app -and -not $app.HasExited) {
         try { [void][TrayUiE2ENativeApi]::PostMessageW($hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) } catch { }
@@ -158,6 +190,42 @@ try {
     Assert (-not (Test-Path -LiteralPath (Join-Path $data 'background.json'))) 'Default false should not require a saved preference.'
     Capture-Narrow 'ja-dark-720.png'
     Pass 'Japanese dark tray settings render at 720px with the default disabled'
+
+    Request-Close;Wait-CloseDialog
+    foreach($attempt in 1..8){Request-Close}
+    Start-Sleep -Milliseconds 200
+    Assert-DialogLayout
+    UI @('screenshot','-o',(Join-Path $runRoot 'ja-dark-close-confirmation.png')) | Out-Null
+    Invoke-DialogButton 'CloseButton'
+    UI @('wait-for','WindowCloseConfirmation','--gone','-t','3000') | Out-Null
+    Wait-Visible $true
+    Assert-ToggleState $false
+    Pass 'Default-off close prompts once under repeated input; Cancel leaves the app visible and running'
+
+    Request-Close;Wait-CloseDialog
+    Assert ((Dialog-Button 'SecondaryButton').Current.IsEnabled) 'Available native tray cannot be selected from the close dialog.'
+    Invoke-DialogButton 'SecondaryButton'
+    Wait-Visible $false
+    Assert (-not $app.HasExited) 'One-time tray choice terminated the app.'
+    Assert (-not (Test-Path -LiteralPath (Join-Path $data 'background.json'))) 'One-time tray choice changed the saved close preference.'
+    Tray-Callback 0x0400;Wait-Visible $true
+    Assert-ToggleState $false
+    Request-Close;Wait-CloseDialog;Invoke-DialogButton 'CloseButton'
+    UI @('wait-for','WindowCloseConfirmation','--gone','-t','3000') | Out-Null
+    Pass 'One-time tray choice keeps the process alive, restores correctly, and does not enable automatic close-to-tray'
+
+    UI @('scroll-into-view','OverviewTerms') | Out-Null
+    UI @('invoke','OverviewTerms') | Out-Null
+    UI @('wait-for','PolicyDialog','-t','3000') | Out-Null
+    Request-Close;Start-Sleep -Milliseconds 200
+    Assert (-not $app.HasExited) 'Closing while another dialog is open terminated the app.'
+    Assert (-not (Element 'PolicyDialog').Current.IsOffscreen) 'Close request displaced the existing policy dialog.'
+    $otherDialog=Element 'WindowCloseConfirmation'
+    Assert (-not $otherDialog -or $otherDialog.Current.IsOffscreen) 'A second modal close dialog opened over the policy dialog.'
+    UI @('invoke','PolicyClose') | Out-Null
+    UI @('wait-for','PolicyDialog','--gone','-t','3000') | Out-Null
+    UI @('scroll-into-view','ExitCompletelyButton') | Out-Null
+    Pass 'Close while another modal dialog is open safely preserves the existing dialog'
 
     Toggle-Preference
     Assert-ToggleState $true
@@ -196,9 +264,10 @@ try {
     Toggle-Preference
     Assert-ToggleState $false
     Wait-Preference $false
-    [void][TrayUiE2ENativeApi]::PostMessageW($hwnd,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
-    Assert ($app.WaitForExit(10000)) 'Closing with close-to-tray disabled should exit.'
-    Pass 'The saved preference survives restart; disabling it makes × exit'
+    Request-Close;Wait-CloseDialog
+    Invoke-DialogButton 'PrimaryButton'
+    Assert ($app.WaitForExit(10000)) 'Confirming exit did not terminate the isolated app.'
+    Pass 'The saved preference survives restart; disabled close-to-tray exits only after explicit confirmation'
 
     # Exercise explicit complete exit while the preference is enabled, using English/light at the same narrow width.
     $languagePath = Join-Path $data 'language.json'
@@ -206,6 +275,15 @@ try {
     @{Theme='light'} | ConvertTo-Json | Set-Content (Join-Path $data 'appearance.json') -Encoding utf8
     Start-App
     Capture-Narrow 'en-light-720.png'
+    [void][TrayUiE2ENativeApi]::SetWindowPos($hwnd,[IntPtr]::Zero,80,80,500,740,0x0014)
+    Request-Close;Wait-CloseDialog
+    Assert ((Dialog-Button 'PrimaryButton').Current.Name -eq 'Exit') 'Close confirmation is not English.'
+    Assert-DialogLayout
+    UI @('screenshot','-o',(Join-Path $runRoot 'en-light-close-confirmation-500.png')) | Out-Null
+    Invoke-DialogButton 'CloseButton'
+    UI @('wait-for','WindowCloseConfirmation','--gone','-t','3000') | Out-Null
+    Pass 'English Light close confirmation fits a narrow window with three accessible actions'
+    Capture-Narrow 'en-light-720-after-cancel.png'
     Toggle-Preference
     Wait-Preference $true
     UI @('invoke','ExitCompletelyButton') | Out-Null

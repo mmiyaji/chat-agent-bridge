@@ -563,4 +563,10 @@
   <data name="PortableUpdateIntegrityError" xml:space="preserve"><value>取得したファイルを検証できませんでした。もう一度ダウンロードしてください。</value></data>
   <data name="PortableUpdateLocalError" xml:space="preserve"><value>更新の準備に失敗しました。空き容量を確認し、同じアプリを複数起動している場合は閉じてください。</value></data>
   <data name="PortableUpdateInProgress" xml:space="preserve"><value>Chat Agent Bridgeを更新中です。しばらくしてから起動してください。</value></data>
+  <data name="WindowCloseConfirmationTitle" xml:space="preserve"><value>Chat Agent Bridgeを終了しますか？</value></data>
+  <data name="WindowCloseConfirmationMessage" xml:space="preserve"><value>終了するとチャット接続を切断し、実行中および待機中の作業をキャンセルします。システム トレイに格納するとアプリは実行を続けます。</value></data>
+  <data name="WindowCloseConfirmationTrayUnavailable" xml:space="preserve"><value>システム トレイ アイコンを利用できないため、現在トレイに格納できません。終了するとチャット接続を切断し、実行中および待機中の作業をキャンセルします。</value></data>
+  <data name="WindowCloseConfirmationExit" xml:space="preserve"><value>終了する</value></data>
+  <data name="WindowCloseConfirmationTray" xml:space="preserve"><value>トレイに格納</value></data>
+  <data name="WindowCloseConfirmationCancel" xml:space="preserve"><value>キャンセル</value></data>
 </root>

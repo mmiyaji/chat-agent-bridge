@@ -563,4 +563,10 @@
   <data name="PortableUpdateIntegrityError" xml:space="preserve"><value>The downloaded files could not be verified. Download the update again.</value></data>
   <data name="PortableUpdateLocalError" xml:space="preserve"><value>Preparation failed. Check free disk space and close other copies of the app.</value></data>
   <data name="PortableUpdateInProgress" xml:space="preserve"><value>Chat Agent Bridge is being updated. Please try again shortly.</value></data>
+  <data name="WindowCloseConfirmationTitle" xml:space="preserve"><value>Close Chat Agent Bridge?</value></data>
+  <data name="WindowCloseConfirmationMessage" xml:space="preserve"><value>Exiting disconnects the chat and cancels active and pending work. Moving to the system tray keeps the app running.</value></data>
+  <data name="WindowCloseConfirmationTrayUnavailable" xml:space="preserve"><value>The system tray icon is unavailable, so the app cannot be moved to the tray right now. Exiting disconnects the chat and cancels active and pending work.</value></data>
+  <data name="WindowCloseConfirmationExit" xml:space="preserve"><value>Exit</value></data>
+  <data name="WindowCloseConfirmationTray" xml:space="preserve"><value>Keep in tray</value></data>
+  <data name="WindowCloseConfirmationCancel" xml:space="preserve"><value>Cancel</value></data>
 </root>

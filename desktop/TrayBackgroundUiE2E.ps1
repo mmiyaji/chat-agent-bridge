@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][string]$AppDirectory)
+param([Parameter(Mandatory)][string]$AppDirectory,[switch]$OneTimeTray)
 
 $ErrorActionPreference = 'Stop'
 $artifacts = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
@@ -48,6 +48,15 @@ function Wait-Visible([bool]$Visible,[int]$Seconds=6) {
     do { if([TrayBackgroundUiNative]::IsWindowVisible($hwnd) -eq $Visible){return}; Start-Sleep -Milliseconds 50 } while([DateTime]::UtcNow -lt $end)
     throw "Main window visibility did not become $Visible."
 }
+function Hide-App {
+    Assert ([TrayBackgroundUiNative]::PostMessageW($hwnd,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)) 'Could not request window close.'
+    if($OneTimeTray){
+        UI @('wait-for','WindowCloseConfirmation','-t','5000')|Out-Null
+        UI @('invoke','SecondaryButton')|Out-Null
+    }
+    Wait-Visible $false
+    if($OneTimeTray){Assert (-not (Get-Content (Join-Path $data 'background.json') -Raw|ConvertFrom-Json).CloseToTray) 'One-time tray choice enabled the persistent setting.'}
+}
 function Read-Fixture { Invoke-RestMethod "$endpoint/test/results" }
 function Wait-Fixture([scriptblock]$Condition,[int]$Seconds=15) {
     $end=[DateTime]::UtcNow.AddSeconds($Seconds)
@@ -85,6 +94,7 @@ function Approve([string]$Prompt) {
     UI @('invoke','ApproveChat')|Out-Null
     UI @('wait-for','ChatRunConfirmation','-t','10000')|Out-Null
     UI @('invoke','PrimaryButton')|Out-Null
+    UI @('wait-for','ChatRunConfirmation','--gone','-t','3000')|Out-Null
 }
 function Select-MenuItem([string]$Name) {
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
@@ -132,7 +142,7 @@ process.stdin.on('end',()=>{
     @{PolicyVersion=$policy;AcceptedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}|ConvertTo-Json|Set-Content (Join-Path $data 'consent.json') -Encoding utf8
     @{Language='ja'}|ConvertTo-Json|Set-Content (Join-Path $data 'language.json') -Encoding utf8
     @{Theme='dark'}|ConvertTo-Json|Set-Content (Join-Path $data 'appearance.json') -Encoding utf8
-    @{CloseToTray=$true}|ConvertTo-Json|Set-Content (Join-Path $data 'background.json') -Encoding utf8
+    @{CloseToTray=(-not $OneTimeTray)}|ConvertTo-Json|Set-Content (Join-Path $data 'background.json') -Encoding utf8
     $catalog=Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/Pricing/model-prices.json') -Raw
     @{schemaVersion=1;autoUpdateEnabled=$false;lastCheckedUtc=[DateTimeOffset]::UtcNow.ToString('o');lastUpdatedUtc=[DateTimeOffset]::UtcNow.ToString('o');etag=$null;catalogJson=$catalog}|ConvertTo-Json -Depth 8|Set-Content (Join-Path $data 'pricing-auto.json') -Encoding utf8
     $env:CAB_TEST_AGENT_LOG=$agentLog
@@ -140,8 +150,7 @@ process.stdin.on('end',()=>{
     Start-App
     $null=Wait-Fixture {param($s)$s.connections -eq 1} 20
     Pass 'Auto-connect uses only the isolated localhost Mattermost fixture'
-    [void][TrayBackgroundUiNative]::PostMessageW($hwnd,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
-    Wait-Visible $false
+    Hide-App
     $thread='tray-hidden-'+[guid]::NewGuid().ToString('N')
     $first='tray-first-'+[guid]::NewGuid().ToString('N')
     Post ('post-'+$first) $thread $first
@@ -151,8 +160,7 @@ process.stdin.on('end',()=>{
 
     Restore-FromTray
     Approve $first
-    [void][TrayBackgroundUiNative]::PostMessageW($hwnd,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
-    Wait-Visible $false
+    Hide-App
     $firstDone=Wait-Fixture {param($s) @($s.replies|Where-Object {$_.root_id -eq $thread -and $_.message.Contains('tray-hidden-result')}).Count -ge 1} 25
     Assert (Test-Path $agentLog) 'The approved CLI did not start.'
     Pass 'Restored approval runs the CLI and auto-posts its result while hidden again'
@@ -169,8 +177,7 @@ process.stdin.on('end',()=>{
     $childId=[int]$lines[-1].pid
     $child=Get-Process -Id $childId -ErrorAction Stop
     UI @('invoke','NavChat')|Out-Null
-    [void][TrayBackgroundUiNative]::PostMessageW($hwnd,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
-    Wait-Visible $false
+    Hide-App
     Assert (-not $child.HasExited -and -not $app.HasExited) 'Hiding the window stopped the active CLI or app.'
     Pass 'Approved custom Node CLI remains alive while the main window is hidden'
 

@@ -1,6 +1,9 @@
 using ChatAgentBridge.Core;
+using ChatAgentBridge_Desktop.Localization;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Controls;
 
 namespace ChatAgentBridge_Desktop.Tray;
 
@@ -14,6 +17,8 @@ public sealed class TrayService : IDisposable
     private Task? _exitTask;
     private bool _allowClose;
     private bool _disposed;
+    private bool _closeConfirmationOpen;
+    private ContentDialog? _closeConfirmation;
 
     public bool CloseToTray { get; private set; }
     public bool IsAvailable => !_disposed && _exitTask is null && _native.IsAvailable;
@@ -58,6 +63,7 @@ public sealed class TrayService : IDisposable
     private void NativeAvailabilityChanged()
     {
         if (!_native.IsAvailable) ShowWindow();
+        UpdateCloseConfirmationBody();
         AvailabilityChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -66,7 +72,85 @@ public sealed class TrayService : IDisposable
         if (_allowClose || _native.SessionEnding) return;
         args.Cancel = true;
         if (CloseToTray && IsAvailable) HideWindow();
-        else _ = ExitAsync();
+        else _ = ShowCloseConfirmationAsync();
+    }
+
+    private async Task ShowCloseConfirmationAsync()
+    {
+        if (_closeConfirmationOpen || _disposed || _exitTask is not null)
+            return;
+
+        _closeConfirmationOpen = true;
+        try
+        {
+            if (_window.Content is not FrameworkElement { XamlRoot: { } xamlRoot })
+                return;
+            var body = new TextBlock
+            {
+                Text = GetCloseConfirmationBody(),
+                TextWrapping = TextWrapping.Wrap
+            };
+            AutomationProperties.SetAutomationId(body, "WindowCloseConfirmationMessage");
+
+            var dialog = new ContentDialog
+            {
+                XamlRoot = xamlRoot,
+                RequestedTheme = App.Appearance.RequestedTheme,
+                Title = DesktopText.Get("WindowCloseConfirmationTitle"),
+                Content = body,
+                PrimaryButtonText = DesktopText.Get("WindowCloseConfirmationExit"),
+                SecondaryButtonText = DesktopText.Get("WindowCloseConfirmationTray"),
+                CloseButtonText = DesktopText.Get("WindowCloseConfirmationCancel"),
+                IsSecondaryButtonEnabled = IsAvailable,
+                DefaultButton = ContentDialogButton.Close
+            };
+            _closeConfirmation = dialog;
+            AutomationProperties.SetAutomationId(dialog, "WindowCloseConfirmation");
+
+            var result = await dialog.ShowAsync();
+
+            // A tray-menu or other explicit exit may have started while this
+            // prompt was open. The prompt must never start a second shutdown.
+            if (_disposed || _exitTask is not null)
+                return;
+
+            if (result == ContentDialogResult.Primary)
+            {
+                await ExitAsync();
+            }
+            else if (result == ContentDialogResult.Secondary && IsAvailable)
+            {
+                // This is a one-time choice; it deliberately does not modify
+                // or save the persistent CloseToTray preference.
+                HideWindow();
+            }
+        }
+        catch (Exception ex)
+        {
+            // ContentDialog.ShowAsync can reject a second dialog on the same
+            // XamlRoot. The close was already canceled, so leave the existing
+            // dialog and main window untouched.
+            System.Diagnostics.Debug.WriteLine($"Window close confirmation: {ex.GetType().Name}");
+        }
+        finally
+        {
+            _closeConfirmation = null;
+            _closeConfirmationOpen = false;
+        }
+    }
+
+    private string GetCloseConfirmationBody() => IsAvailable
+        ? DesktopText.Get("WindowCloseConfirmationMessage")
+        : DesktopText.Get("WindowCloseConfirmationTrayUnavailable");
+
+    private void UpdateCloseConfirmationBody()
+    {
+        if (_closeConfirmation is { } dialog)
+        {
+            dialog.IsSecondaryButtonEnabled = IsAvailable;
+            if (dialog.Content is TextBlock body)
+                body.Text = GetCloseConfirmationBody();
+        }
     }
 
     public Task ExitAsync() => _exitTask ??= ExitCoreAsync();

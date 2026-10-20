@@ -10,6 +10,8 @@ In **General**, Windows startup, auto-connect, system tray, language, and theme 
 
 Choose **General → Language and appearance** for Light, Dark, or Use system setting. Theme changes are saved and applied immediately without restarting. The default follows the Windows app color setting.
 
+When close-to-tray is off, clicking × asks whether to exit, move to the system tray for this time, or cancel. Moving to the tray from this dialog keeps the app running without changing the saved preference. Exiting disconnects chat and cancels active and pending work.
+
 Under **General → System tray**, enable keeping the app running when its window is closed (off by default), or choose **Move to system tray**. Chat connections, work, and approval notifications remain active while hidden. Click the tray icon to reopen; its menu and the settings page offer **Exit completely**, which disconnects and cancels work regardless of the tray setting. Windows may place the icon in its hidden indicators area. Background mode does not run through sleep or sign-out. The preference is saved separately in `background.json` in the data folder.
 
 The **About** page at the bottom of the sidebar shows product and package information, provider and support links, development notes, Terms of Use, and the Privacy Policy. Store page and manual update checks are available for Microsoft Store distributions. The development preview displays its distribution status instead.
