@@ -1,0 +1,131 @@
+<UserControl
+    x:Class="ChatAgentBridge_Desktop.Pricing.PricingSettings"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Expander x:Name="PricingSettingsExpander" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+              IsExpanded="False" AutomationProperties.AutomationId="PricingSettings">
+        <Expander.Header>
+            <TextBlock x:Uid="PricingSettingsHeader" Style="{StaticResource BodyStrongTextBlockStyle}" />
+        </Expander.Header>
+        <StackPanel Spacing="12" Padding="0,8,0,8">
+            <TextBlock x:Uid="PricingSettingsHelp" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock x:Uid="PricingHistoryRecalcNote" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock x:Uid="PricingOverrideNote" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+
+            <Border Style="{StaticResource ActivityCardStyle}">
+                <StackPanel Spacing="8">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <StackPanel Spacing="4">
+                            <TextBlock x:Uid="PricingAutoUpdateHeader" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <TextBlock x:Uid="PricingAutoUpdateDescription" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsOn="{x:Bind ViewModel.AutoUpdateEnabled, Mode=TwoWay}"
+                                      IsEnabled="{x:Bind ViewModel.IsAutoUpdateEnabled, Mode=OneWay}"
+                                      AutomationProperties.Name="{x:Bind ViewModel.AutoUpdateHeader}"
+                                      AutomationProperties.AutomationId="PricingAutoUpdateToggle" />
+                    </Grid>
+                    <Grid ColumnSpacing="12" RowSpacing="8">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{x:Bind ViewModel.AutoUpdateStatusText, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="PricingAutoUpdateStatus" />
+                            <TextBlock Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
+                                       Visibility="{x:Bind BoolToVisibility(ViewModel.IsManagerHealthy), Mode=OneWay}"
+                                       TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="PricingManagerStatus" />
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <ProgressRing IsActive="{x:Bind ViewModel.IsRefreshing, Mode=OneWay}" Width="16" Height="16" />
+                                <TextBlock x:Uid="PricingChecking" Visibility="{x:Bind BoolToVisibility(ViewModel.IsRefreshing), Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <Button Grid.Column="1" Command="{x:Bind ViewModel.RefreshPricingCommand}" AutomationProperties.AutomationId="PricingUpdateNow" x:Uid="PricingUpdateNow" />
+                    </Grid>
+                    <Grid ColumnSpacing="8" RowSpacing="6">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2"><TextBlock x:Uid="PricingLastChecked" Style="{StaticResource CaptionTextBlockStyle}" /><TextBlock Text="{x:Bind ViewModel.LastCheckedText, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="PricingLastCheckedValue" /></StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="2"><TextBlock x:Uid="PricingLastUpdated" Style="{StaticResource CaptionTextBlockStyle}" /><TextBlock Text="{x:Bind ViewModel.LastUpdatedText, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="PricingLastUpdatedValue" /></StackPanel>
+                    </Grid>
+                    <TextBlock Text="{x:Bind ViewModel.ManagerErrorText, Mode=OneWay}"
+                               Visibility="{x:Bind BoolToVisibility(ViewModel.HasManagerError), Mode=OneWay}"
+                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="PricingManagerError" />
+                    <TextBlock Text="{x:Bind ViewModel.ManagerErrorDetails, Mode=OneWay}"
+                               Visibility="{x:Bind BoolToVisibility(ViewModel.HasManagerErrorDetails), Mode=OneWay}"
+                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="PricingManagerErrorDetails" />
+                    <TextBlock x:Uid="PricingManagerError"
+                               Visibility="{x:Bind BoolToVisibility(ViewModel.HasOperationError), Mode=OneWay}"
+                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="PricingOperationErrorSummary" />
+                    <TextBlock Text="{x:Bind ViewModel.OperationErrorText, Mode=OneWay}"
+                               Visibility="{x:Bind BoolToVisibility(ViewModel.HasOperationError), Mode=OneWay}"
+                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="PricingOperationError" />
+                    <StackPanel Spacing="2">
+                        <TextBlock x:Uid="PricingAutomaticFile" Style="{StaticResource CaptionTextBlockStyle}" />
+                        <TextBlock Text="{x:Bind ViewModel.AutomaticFileText, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="PricingAutomaticFilePath" />
+                        <TextBlock x:Uid="PricingManualFile" Style="{StaticResource CaptionTextBlockStyle}" />
+                        <TextBlock Text="{x:Bind ViewModel.ManualFileText, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="PricingManualFilePath" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource ActivityCardStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock x:Uid="PricingManualModelHeader" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <ComboBox ItemsSource="{x:Bind ViewModel.ModelOptions, Mode=OneWay}" DisplayMemberPath="Display"
+                              SelectedIndex="{x:Bind ViewModel.SelectedModelIndex, Mode=TwoWay}"
+                              IsEnabled="{x:Bind ViewModel.IsEditingEnabled, Mode=OneWay}"
+                              AutomationProperties.AutomationId="PricingKnownModel" x:Uid="PricingKnownModel" />
+                    <TextBox Text="{x:Bind ViewModel.ModelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Visibility="{x:Bind BoolToVisibility(ViewModel.IsCustomModel), Mode=OneWay}"
+                             IsEnabled="{x:Bind ViewModel.IsEditingEnabled, Mode=OneWay}"
+                             AutomationProperties.AutomationId="PricingModelId" x:Uid="PricingModelId" />
+                    <TextBlock Visibility="{x:Bind BoolToVisibility(ViewModel.IsCustomModel), Mode=OneWay}"
+                               x:Uid="PricingModelIdDescription" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Text="{x:Bind ViewModel.SourceText, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="PricingEffectiveSource" />
+                    <StackPanel Spacing="4" Visibility="{x:Bind BoolToVisibility(ViewModel.HasSelectedModel), Mode=OneWay}">
+                        <TextBlock Text="{x:Bind ViewModel.AutomaticBaselineHeading}" Style="{StaticResource CaptionTextBlockStyle}" />
+                        <TextBlock Text="{x:Bind ViewModel.AutomaticBaselineText, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="PricingAutomaticBaseline" />
+                    </StackPanel>
+                    <TextBlock x:Uid="PricingManualRatesHeader" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock x:Uid="PricingRateRangeHelp" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <Grid x:Name="RatesGrid" ColumnSpacing="12" RowSpacing="12">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <StackPanel x:Name="InputRateGroup" Spacing="4">
+                            <TextBlock x:Uid="PricingInput" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <Grid ColumnSpacing="4"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <NumberBox Header="{x:Bind ViewModel.RateMinimumHeader}" Value="{x:Bind ViewModel.InputMin, Mode=TwoWay}" Minimum="0" Maximum="7.9E28" IsEnabled="{x:Bind ViewModel.IsEditingEnabled, Mode=OneWay}" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="PricingInputMin" />
+                                <NumberBox Grid.Column="1" Header="{x:Bind ViewModel.RateMaximumHeader}" Value="{x:Bind ViewModel.InputMax, Mode=TwoWay}" Minimum="0" Maximum="7.9E28" IsEnabled="{x:Bind ViewModel.IsEditingEnabled, Mode=OneWay}" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="PricingInputMax" />
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel x:Name="CachedInputRateGroup" Grid.Column="1" Spacing="4">
+                            <TextBlock x:Uid="PricingCachedInput" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <Grid ColumnSpacing="4"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <NumberBox Header="{x:Bind ViewModel.RateMinimumHeader}" Value="{x:Bind ViewModel.CachedInputMin, Mode=TwoWay}" Minimum="0" Maximum="7.9E28" IsEnabled="{x:Bind ViewModel.IsEditingEnabled, Mode=OneWay}" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="PricingCachedInputMin" />
+                                <NumberBox Grid.Column="1" Header="{x:Bind ViewModel.RateMaximumHeader}" Value="{x:Bind ViewModel.CachedInputMax, Mode=TwoWay}" Minimum="0" Maximum="7.9E28" IsEnabled="{x:Bind ViewModel.IsEditingEnabled, Mode=OneWay}" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="PricingCachedInputMax" />
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel x:Name="CacheWriteRateGroup" Grid.Row="1" Spacing="4">
+                            <TextBlock x:Uid="PricingCacheWrite" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <Grid ColumnSpacing="4"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <NumberBox Header="{x:Bind ViewModel.RateMinimumHeader}" Value="{x:Bind ViewModel.CacheWriteMin, Mode=TwoWay}" Minimum="0" Maximum="7.9E28" IsEnabled="{x:Bind ViewModel.IsEditingEnabled, Mode=OneWay}" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="PricingCacheWriteMin" />
+                                <NumberBox Grid.Column="1" Header="{x:Bind ViewModel.RateMaximumHeader}" Value="{x:Bind ViewModel.CacheWriteMax, Mode=TwoWay}" Minimum="0" Maximum="7.9E28" IsEnabled="{x:Bind ViewModel.IsEditingEnabled, Mode=OneWay}" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="PricingCacheWriteMax" />
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel x:Name="OutputRateGroup" Grid.Row="1" Grid.Column="1" Spacing="4">
+                            <TextBlock x:Uid="PricingOutput" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                            <Grid ColumnSpacing="4"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <NumberBox Header="{x:Bind ViewModel.RateMinimumHeader}" Value="{x:Bind ViewModel.OutputMin, Mode=TwoWay}" Minimum="0" Maximum="7.9E28" IsEnabled="{x:Bind ViewModel.IsEditingEnabled, Mode=OneWay}" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="PricingOutputMin" />
+                                <NumberBox Grid.Column="1" Header="{x:Bind ViewModel.RateMaximumHeader}" Value="{x:Bind ViewModel.OutputMax, Mode=TwoWay}" Minimum="0" Maximum="7.9E28" IsEnabled="{x:Bind ViewModel.IsEditingEnabled, Mode=OneWay}" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="PricingOutputMax" />
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{x:Bind ViewModel.ValidationText, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="PricingValidation" />
+                    <Grid x:Name="ManualButtonsGrid" ColumnSpacing="8" RowSpacing="8">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <Button x:Name="SaveManualButton" Command="{x:Bind ViewModel.SaveManualCommand}" AutomationProperties.AutomationId="PricingSaveManual" x:Uid="PricingSaveManual" />
+                        <Button x:Name="RemoveManualButton" Grid.Column="1" Click="RemoveManual_Click" IsEnabled="{x:Bind ViewModel.CanRemoveManual, Mode=OneWay}" AutomationProperties.AutomationId="PricingRemoveManual" x:Uid="PricingRemoveManual" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Expander>
+</UserControl>

@@ -1,6 +1,7 @@
 using System.Globalization;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
+using ChatAgentBridge.Core.Pricing;
 using ChatAgentBridge_Desktop.Localization;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -19,6 +20,7 @@ public sealed record ActivityUsageDayChoice(DateOnly Date, ActivityUsageTotals T
 public sealed partial class HistoryPageViewModel
 {
     private ActivityUsageSummary _usage = ActivityUsageSummary.Build([], DateOnly.FromDateTime(DateTime.Today), 90, TimeZoneInfo.Local);
+    private PricingSnapshot? _usagePricing;
     public IReadOnlyList<ActivityUsageBar> UsageDaily { get; private set; } = [];
     public IReadOnlyList<ActivityUsageBar> UsageModels { get; private set; } = [];
     public IReadOnlyList<ActivityUsageDayChoice> UsageDays { get; private set; } = [];
@@ -34,7 +36,7 @@ public sealed partial class HistoryPageViewModel
     public string UsageCoverage => Coverage(_usage.Totals);
     public string UsageCostHeadline => DesktopText.Get("UsageCostHeadline", Cost(_usage.Totals.Cost));
     public string UsageCostCoverage => CostCoverage(_usage.Totals.Cost, _usage.Totals.ExecutionCount);
-    public string UsageCostMethodDate => DesktopText.Get("UsageCostMethodDate", AgentCostEstimator.PriceCheckedOn.ToString("d", CultureInfo.CurrentCulture));
+    public string UsageCostMethodDate => DesktopText.Get("UsageCostMethodDate", (_usagePricing?.CheckedOn ?? AgentCostEstimator.PriceCheckedOn).ToString("d", CultureInfo.CurrentCulture));
     public string UsageScopeNote => DesktopText.Get(UsageScopeIndex == 1 ? "UsageRequestNote" : "UsageTurnNote");
     public string UsageDailyScale { get; private set; } = "";
     public string UsageDailyRange => DesktopText.Get("UsageRecentRange", _usage.EndDay.AddDays(-27).ToString("d"), _usage.EndDay.ToString("d"));
@@ -107,8 +109,9 @@ public sealed partial class HistoryPageViewModel
     }
     private void RebuildUsage()
     {
+        _usagePricing = App.Pricing.Current;
         _usage = ActivityUsageSummary.Build(_activityRecords, _activity.EndDay, _activity.Days.Count, TimeZoneInfo.Local,
-            UsageScopeIndex == 1 ? "last-request" : "turn");
+            UsageScopeIndex == 1 ? "last-request" : "turn", _usagePricing);
         var recent = _usage.Days.TakeLast(28).ToArray();
         var dailyMax = UsageMetricIndex == 1 ? 100m : Math.Max(UsageMetricIndex == 2 ? 0.000001m : 1m,
             recent.Max(day => Metric(day.Totals) ?? 0));
@@ -128,4 +131,6 @@ public sealed partial class HistoryPageViewModel
             nameof(UsageCostHeadline), nameof(UsageCostCoverage), nameof(UsageCostMethodDate), nameof(UsageScopeNote),
             nameof(UsageDailyScale), nameof(UsageDailyRange), nameof(UsageSelectedCost) }) OnPropertyChanged(name);
     }
+
+    public void RefreshPricing() => RebuildUsage();
 }

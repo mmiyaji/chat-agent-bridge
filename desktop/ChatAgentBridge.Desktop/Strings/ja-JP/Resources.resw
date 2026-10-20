@@ -947,7 +947,7 @@
   <data name="UsageCostMethod.Header" xml:space="preserve"><value>推定コストの算定方法</value></data>
   <data name="UsageCostMethod.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>推定コストの算定方法</value></data>
   <data name="UsageCostMethodDetails.Text" xml:space="preserve"><value>記録されたトークン数に、報告モデルの公開標準API料金を掛けます。料金が確認できる実行だけを含み、モデルまたは必要なトークン数が不明な実行は未算出です。キャッシュ情報が不足する場合は範囲で表示します。日別・モデル別グラフの高さは範囲の上限で計算し、ラベルには範囲と算定件数を表示します。</value></data>
-  <data name="UsageCostLimitations.Text" xml:space="preserve"><value>請求額ではなく参考値です。サブスクリプション料金、ツール、Fastモード、リージョン、税は含みません。キャッシュの有効期間やコンテキストが不明な場合があり、記録されたメインループの利用量にサブエージェントが含まれないことがあります。料金の取得や編集は実行時に行いません。</value></data>
+  <data name="UsageCostLimitations.Text" xml:space="preserve"><value>請求額ではなく参考値です。サブスクリプション料金、ツール、Fastモード、リージョン、税は含みません。キャッシュの有効期間やコンテキストが不明な場合があり、記録されたメインループの利用量にサブエージェントが含まれないことがあります。推定には現在のローカル単価を使用します。料金表を更新しても手動指定は維持されます。料金表の更新ではAIを実行しません。</value></data>
   <data name="UsageOpenAIPricing.Content" xml:space="preserve"><value>OpenAI API料金</value></data>
   <data name="UsageOpenAIPricing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>OpenAI API料金</value></data>
   <data name="UsageClaudePricing.Content" xml:space="preserve"><value>Claude API料金</value></data>
@@ -1003,4 +1003,54 @@
   <data name="LiveOutputCancel.ToolTipService.ToolTip" xml:space="preserve"><value>停止しても、エージェントがすでに行ったファイル変更は元に戻りません。</value></data>
   <data name="LiveOutputCancellationPending.Text" xml:space="preserve"><value>中断を要求しました。プロセスの停止を待っています。すでに行われたファイル変更は元に戻りません。</value></data>
   <data name="InboxActiveRequestBannerButton.AutomationProperties.HelpText" xml:space="preserve"><value>実行中のこの依頼を開き、確認または停止します。</value></data>
+  <data name="PricingSettingsHeader.Text" xml:space="preserve"><value>API料金</value></data>
+  <data name="PricingAutoUpdateHeader.Text" xml:space="preserve"><value>料金情報の自動更新</value></data>
+  <data name="PricingAutoUpdateDescription.Text" xml:space="preserve"><value>料金情報を自動で確認し、参照元と確認状況を確認します。</value></data>
+  <data name="PricingUpdateNow.Content" xml:space="preserve"><value>今すぐ確認</value></data>
+  <data name="PricingUpdateNow.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>今すぐ確認</value></data>
+  <data name="PricingChecking.Text" xml:space="preserve"><value>料金情報を確認中…</value></data>
+  <data name="PricingLastChecked.Text" xml:space="preserve"><value>最終確認</value></data>
+  <data name="PricingLastUpdated.Text" xml:space="preserve"><value>料金データ更新</value></data>
+  <data name="PricingManagerError.Text" xml:space="preserve"><value>料金データを読み込めません。料金ファイルを確認してください。</value></data>
+  <data name="PricingManagerHealthy.Text" xml:space="preserve"><value>料金データを利用できます。</value></data>
+  <data name="PricingManualFileCorrupt.Text" xml:space="preserve"><value>手動料金ファイルが正しくありません。保存する前に修正または削除してください。</value></data>
+  <data name="PricingManualModelHeader.Text" xml:space="preserve"><value>モデル別の手動料金</value></data>
+  <data name="PricingKnownModel.Header" xml:space="preserve"><value>既知のモデル</value></data>
+  <data name="PricingModelId.Header" xml:space="preserve"><value>モデルID</value></data>
+  <data name="PricingModelIdDescription.Text" xml:space="preserve"><value>エージェントが報告するモデルIDを正確に入力してください。</value></data>
+  <data name="PricingManualRatesHeader.Text" xml:space="preserve"><value>料金（100万トークンあたりのUSD）</value></data>
+  <data name="PricingInput.Text" xml:space="preserve"><value>入力</value></data>
+  <data name="PricingCachedInput.Text" xml:space="preserve"><value>キャッシュ入力</value></data>
+  <data name="PricingCacheWrite.Text" xml:space="preserve"><value>キャッシュ書き込み</value></data>
+  <data name="PricingOutput.Text" xml:space="preserve"><value>出力</value></data>
+  <data name="PricingRateRangeHelp.Text" xml:space="preserve"><value>4種類の単価それぞれに最小値と最大値を入力します。固定単価の場合は同じ値を指定してください。</value></data>
+  <data name="PricingUsdPerMillion.Text" xml:space="preserve"><value>USD / 100万トークン</value></data>
+  <data name="PricingSaveManual.Content" xml:space="preserve"><value>手動料金を保存</value></data>
+  <data name="PricingSaveManual.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>手動料金を保存</value></data>
+  <data name="PricingRemoveManual.Content" xml:space="preserve"><value>手動料金を削除</value></data>
+  <data name="PricingRemoveManual.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>手動料金を削除</value></data>
+  <data name="PricingManualSource.Text" xml:space="preserve"><value>手動設定</value></data>
+  <data name="PricingAutomaticSource.Text" xml:space="preserve"><value>自動料金</value></data>
+  <data name="PricingModelSelectPrompt.Text" xml:space="preserve"><value>手動料金を編集するモデルを選択してください。</value></data>
+  <data name="PricingValidationModel.Text" xml:space="preserve"><value>既知のモデルを選択するか、モデルIDを入力してください。</value></data>
+  <data name="PricingValidationRate.Text" xml:space="preserve"><value>0以上の有効な単価を入力してください。</value></data>
+  <data name="PricingValidationRange.Text" xml:space="preserve"><value>最小単価は最大単価以下にしてください。</value></data>
+  <data name="PricingSettingsHelp.Text" xml:space="preserve"><value>自動取得した単価は公開API料金に基づいて更新されます。手動指定した単価は選択したモデルの自動取得単価に優先します。</value></data>
+  <data name="PricingAutomaticFile.Text" xml:space="preserve"><value>自動料金ファイル</value></data>
+  <data name="PricingManualFile.Text" xml:space="preserve"><value>手動料金ファイル</value></data>
+  <data name="PricingNoManualOverride.Text" xml:space="preserve"><value>手動設定なし</value></data>
+  <data name="PricingHistoryRecalcNote.Text" xml:space="preserve"><value>保存済み履歴は現在有効な単価で再計算されます。自動更新で手動料金ファイルが変更されることはありません。</value></data>
+  <data name="PricingOverrideNote.Text" xml:space="preserve"><value>手動設定は削除するまで、このモデルの4種類すべての単価に適用されます。</value></data>
+  <data name="PricingUpdateErrorSummary.Text" xml:space="preserve"><value>自動料金を更新できませんでした。現在の料金データを引き続き使用します。</value></data>
+  <data name="PricingRateMinimum.Text" xml:space="preserve"><value>最小</value></data>
+  <data name="PricingRateMaximum.Text" xml:space="preserve"><value>最大</value></data>
+  <data name="PricingNever.Text" xml:space="preserve"><value>未確認</value></data>
+  <data name="PricingNoAutomaticPrice.Text" xml:space="preserve"><value>このモデルの自動単価はありません。</value></data>
+  <data name="PricingAutoUpdateEnabled.Text" xml:space="preserve"><value>自動更新は有効です。</value></data>
+  <data name="PricingAutoUpdateDisabled.Text" xml:space="preserve"><value>自動更新は無効です。</value></data>
+  <data name="PricingRateValue.Text" xml:space="preserve"><value>{0}: {1}～{2}</value></data>
+  <data name="PricingRemoveConfirmTitle.Text" xml:space="preserve"><value>手動単価を削除しますか？</value></data>
+  <data name="PricingRemoveConfirmMessage.Text" xml:space="preserve"><value>{0} の手動単価を削除しますか？自動単価がある場合、推定に自動単価を使用します。</value></data>
+  <data name="PricingRemoveConfirmPrimary.Text" xml:space="preserve"><value>手動単価を削除</value></data>
+  <data name="PricingRemoveConfirmCancel.Text" xml:space="preserve"><value>手動単価を維持</value></data>
 </root>

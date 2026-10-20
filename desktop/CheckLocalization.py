@@ -82,6 +82,13 @@ for path in (root / "ChatAgentBridge.Desktop").rglob("*.xaml"):
         uid = element.attrib.get("{http://schemas.microsoft.com/winfx/2006/xaml}Uid")
         if uid and not any(key.startswith(uid + ".") for key in catalogs[3]):
             errors.append(f"Missing x:Uid resources: {path.relative_to(root)}: {uid}")
+        # MRT applies every matching property at runtime. A leftover '.Text' for
+        # a Button can pass the XAML compiler and still crash InitializeComponent.
+        control = element.tag.removeprefix("{http://schemas.microsoft.com/winfx/2006/xaml/presentation}")
+        no_text_property = {"Button", "HyperlinkButton", "AppBarButton", "ToggleButton",
+                            "CheckBox", "RadioButton", "ToggleSwitch", "Expander"}
+        if uid and control in no_text_property and uid + ".Text" in catalogs[3]:
+            errors.append(f"Invalid x:Uid Text property on {control}: {path.relative_to(root)}: {uid}")
 
 if errors:
     raise SystemExit("\n".join(errors))

@@ -14,6 +14,7 @@ public sealed partial class HistoryPage : Page
 {
     private bool _showDetailOnNarrow;
     private ChatAgentBridge.Core.Sessions.SessionKey? _lastDetailKey;
+    private bool _pricingUpdatesEnabled;
     public HistoryPageViewModel ViewModel { get; } = new();
     public event Action? AgentSettingsRequested;
 
@@ -34,6 +35,10 @@ public sealed partial class HistoryPage : Page
         ViewModel.ChooseAgentSwitchAsync = ChooseAgentSwitchAsync;
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         SizeChanged += Page_SizeChanged;
+        // MainPage hosts this Page directly and switches Visibility, so Frame
+        // navigation events alone do not cover its actual lifetime.
+        Loaded += (_, _) => SetPricingUpdatesEnabled(true);
+        Unloaded += (_, _) => SetPricingUpdatesEnabled(false);
         UpdateResponsiveLayout();
     }
 
@@ -54,6 +59,26 @@ public sealed partial class HistoryPage : Page
     {
         ViewModel.SetChatNameUpdatesEnabled(false);
         base.OnNavigatedFrom(e);
+    }
+
+    private void SetPricingUpdatesEnabled(bool enabled)
+    {
+        if (_pricingUpdatesEnabled == enabled) return;
+        _pricingUpdatesEnabled = enabled;
+        if (enabled)
+        {
+            App.Pricing.Changed += Pricing_Changed;
+            ViewModel.RefreshPricing();
+        }
+        else App.Pricing.Changed -= Pricing_Changed;
+    }
+
+    private void Pricing_Changed(object? sender, EventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_pricingUpdatesEnabled) ViewModel.RefreshPricing();
+        });
     }
 
     private void SavedSessionsList_ItemClick(object sender, ItemClickEventArgs e)

@@ -1,3 +1,5 @@
+using ChatAgentBridge.Core.Pricing;
+
 namespace ChatAgentBridge.Core.History;
 
 /// <summary>Immutable, timezone-aware token usage aggregated from execution history.</summary>
@@ -23,7 +25,7 @@ public sealed record ActivityUsageSummary
     public ActivityUsageTotals Totals { get; }
 
     public static ActivityUsageSummary Build(IEnumerable<ExecutionRecord> records, DateOnly endDay,
-        int dayCount, TimeZoneInfo zone, string scope = "turn")
+        int dayCount, TimeZoneInfo zone, string scope = "turn", PricingSnapshot? pricing = null)
     {
         ArgumentNullException.ThrowIfNull(records);
         ArgumentNullException.ThrowIfNull(zone);
@@ -64,10 +66,10 @@ public sealed record ActivityUsageSummary
                 modelBuckets.Add(modelKey ?? "\0", modelBucket);
             }
 
-            day.Bucket.Add(usage);
+            day.Bucket.Add(usage, pricing);
             modelBucket.ExecutionCount++;
-            modelBucket.Add(usage);
-            total.Add(usage);
+            modelBucket.Add(usage, pricing);
+            total.Add(usage, pricing);
         }
 
         var days = Array.AsReadOnly(dayBuckets.Select(d => new ActivityUsageDay(d.Date, d.Bucket.ToTotals())).ToArray());
@@ -116,10 +118,10 @@ public sealed record ActivityUsageSummary
         public int CostEstimatedCount { get; private set; }
         public int CostRangeCount { get; private set; }
 
-        public void Add(AgentUsage usage)
+        public void Add(AgentUsage usage, PricingSnapshot? pricing)
         {
             UsageReportedCount++;
-            AddCost(usage);
+            AddCost(usage, pricing);
 
             var input = GetNormalizedInput(usage);
             var output = NonNegative(usage.OutputTokens);
@@ -151,9 +153,9 @@ public sealed record ActivityUsageSummary
             }
         }
 
-        private void AddCost(AgentUsage usage)
+        private void AddCost(AgentUsage usage, PricingSnapshot? pricing)
         {
-            var estimate = AgentCostEstimator.Estimate(usage);
+            var estimate = AgentCostEstimator.Estimate(usage, pricing);
             if (estimate is null) return;
             CostEstimatedCount++;
             if (estimate.MinUsd != estimate.MaxUsd) CostRangeCount++;
