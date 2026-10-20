@@ -10,6 +10,7 @@
   <data name="WorkspacePathInvalid" xml:space="preserve"><value>Workspace path '{0}' is invalid. Choose a valid workspace folder path.</value></data>
   <data name="WorkspaceFolderNotFound" xml:space="preserve"><value>Workspace folder '{0}' does not exist. Choose an existing folder.</value></data>
   <data name="WorkspaceNotTrusted" xml:space="preserve"><value>Workspace folder '{0}' is not trusted. Check Trusted Folders in Agent Settings. Select a folder within that scope, or add this folder only if you trust it.</value></data>
+  <data name="WorkspaceNotTrustedLink" xml:space="preserve"><value>Workspace folder '{0}' resolves through a directory link. Use the real folder '{1}' as the workspace, then add that folder in Agent Settings &gt; Trusted Folders if you trust it.</value></data>
   <data name="NativeCliRequired" xml:space="preserve"><value>CLI verification requires a native executable. Specify the executable path.</value></data>
   <data name="CliNotFound" xml:space="preserve"><value>CLI executable was not found. Check the executable path or PATH.</value></data>
   <data name="CliExecutableNotFound" xml:space="preserve"><value>Configured CLI executable '{0}' was not found. Check the executable path or PATH.</value></data>

@@ -10,6 +10,7 @@
   <data name="WorkspacePathInvalid" xml:space="preserve"><value>作業フォルダーのパス「{0}」は無効です。有効なフォルダーのパスを選択してください。</value></data>
   <data name="WorkspaceFolderNotFound" xml:space="preserve"><value>作業フォルダー「{0}」が見つかりません。存在するフォルダーを選択してください。</value></data>
   <data name="WorkspaceNotTrusted" xml:space="preserve"><value>作業フォルダー「{0}」は信頼されていません。「エージェント設定」の「信頼するフォルダー」を確認し、信頼範囲内の作業先を選ぶか、信頼できる場合に限り追加してください。</value></data>
+  <data name="WorkspaceNotTrustedLink" xml:space="preserve"><value>作業フォルダー「{0}」はディレクトリリンクを経由しています。実際のフォルダー「{1}」を作業先に選び、信頼できる場合は「エージェント設定」&gt;「信頼するフォルダー」に追加してください。</value></data>
   <data name="NativeCliRequired" xml:space="preserve"><value>CLIの確認にはネイティブ実行ファイルが必要です。実行ファイルのパスを指定してください。</value></data>
   <data name="CliNotFound" xml:space="preserve"><value>CLI実行ファイルが見つかりません。実行ファイルのパスまたは PATH を確認してください。</value></data>
   <data name="CliExecutableNotFound" xml:space="preserve"><value>設定されたCLI実行ファイル「{0}」が見つかりません。実行ファイルのパスまたは PATH を確認してください。</value></data>

@@ -30,6 +30,14 @@
                                  TextWrapping="Wrap" AutomationProperties.AutomationId="WizardWorkspaceRoot"  x:Uid="WizardWorkspaceRoot" />
                         <Button Grid.Column="1"  Click="PickWorkspaceFolder_Click" VerticalAlignment="Bottom" AutomationProperties.AutomationId="WizardPickWorkspaceFolder"  x:Uid="WizardPickWorkspaceFolder" />
                     </Grid>
+                    <InfoBar x:Uid="WorkspaceTrustError" Severity="Warning" IsClosable="False"
+                             IsOpen="{x:Bind ViewModel.HasCliTrustRecovery, Mode=OneWay}"
+                             Message="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
+                             AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardWorkspaceTrustError">
+                        <InfoBar.ActionButton>
+                            <Button x:Uid="CliReviewTrust" Click="ReviewCliTrust_Click" AutomationProperties.AutomationId="WizardWorkspaceReviewTrust" />
+                        </InfoBar.ActionButton>
+                    </InfoBar>
                     <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentProvider" x:Uid="WizardAgentProvider">
                         <ComboBoxItem Content="Codex" Tag="codex" />
                         <ComboBoxItem Content="Claude Code" Tag="claude" />
@@ -62,7 +70,13 @@
                              IsOpen="{x:Bind ViewModel.CliCheckFailed, Mode=OneWay}"
                              Message="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
                              AutomationProperties.Name="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
-                             AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardCliCheckError" />
+                             AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardCliCheckError">
+                        <InfoBar.ActionButton>
+                            <Button x:Uid="CliReviewTrust" Click="ReviewCliTrust_Click"
+                                    Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasCliTrustRecovery), Mode=OneWay}"
+                                    AutomationProperties.AutomationId="WizardCliReviewTrust" />
+                        </InfoBar.ActionButton>
+                    </InfoBar>
                     <StackPanel Spacing="8">
                         <Button Click="ReloadProcessEnvironment_Click" IsEnabled="{x:Bind local:OnboardingWizard.EnvironmentReloadAllowed(ViewModel.IsLoading, ViewModel.IsRunning, ViewModel.IsCheckingCli, ViewModel.ModelCatalog.IsLoading, ViewModel.IsOnboardingBusy, Inbox.IsExecuting, ViewModel.SaveSettingsCommand.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardReloadProcessEnvironment" x:Uid="WizardReloadProcessEnvironment" />
                         <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="WizardReloadProcessEnvironmentHelp" x:Uid="WizardReloadProcessEnvironmentHelp" />

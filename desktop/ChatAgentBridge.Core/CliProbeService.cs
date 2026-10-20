@@ -40,7 +40,7 @@ public sealed class CliProbeService
         if (!Directory.Exists(workspace))
             throw new InvalidOperationException(CoreText.Get("WorkspaceFolderNotFound", workspace));
         if (!ExecutionPolicy.IsWorkspaceTrusted(settings, workspace))
-            throw new InvalidOperationException(CoreText.Get("WorkspaceNotTrusted", workspace));
+            throw DescribeUntrustedWorkspace(workspace);
 
         // Use the same native Codex resolution as actual runs and model discovery.
         // In particular, an npm shim must resolve to codex.exe without starting a shell.
@@ -102,6 +102,18 @@ public sealed class CliProbeService
         return new CliProbeResult(executable, version, recognized);
     }
 
+    /// <summary>Builds a localized, read-only diagnosis for a workspace rejected by the trust policy.</summary>
+    public static CliWorkspaceTrustException DescribeUntrustedWorkspace(string workspace)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(workspace);
+        var fullWorkspace = Path.GetFullPath(workspace);
+        var suggestedWorkspace = ResolveSuggestedWorkspacePath(fullWorkspace);
+        var message = suggestedWorkspace is null
+            ? CoreText.Get("WorkspaceNotTrusted", fullWorkspace)
+            : CoreText.Get("WorkspaceNotTrustedLink", fullWorkspace, suggestedWorkspace);
+        return new CliWorkspaceTrustException(fullWorkspace, suggestedWorkspace, message);
+    }
+
     internal static bool RecognizesProvider(string provider, string output) => provider switch
     {
         AgentProfile.Codex => Regex.IsMatch(output, @"\bcodex(?:[- ]cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
@@ -122,6 +134,59 @@ public sealed class CliProbeService
 
     private static bool IsInvalidWorkspacePathException(Exception exception) => exception is
         ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException or System.Security.SecurityException;
+
+    private static string? ResolveSuggestedWorkspacePath(string workspace)
+    {
+        try
+        {
+            if (!Path.IsPathFullyQualified(workspace) || !Directory.Exists(workspace)) return null;
+            var sawLink = false;
+            var candidate = ResolvePhysicalDirectoryPath(workspace, ref sawLink, 0);
+            if (!sawLink || candidate is null || SamePath(candidate, workspace) || !Path.IsPathFullyQualified(candidate) || !Directory.Exists(candidate))
+                return null;
+            return (new DirectoryInfo(candidate).Attributes & FileAttributes.ReparsePoint) == 0 ? candidate : null;
+        }
+        catch (Exception ex) when (IsInvalidWorkspacePathException(ex) || ex is System.Security.SecurityException)
+        {
+            return null;
+        }
+    }
+
+    private static string? ResolvePhysicalDirectoryPath(string path, ref bool sawLink, int linkDepth)
+    {
+        if (linkDepth > 16) return null;
+        var fullPath = Path.GetFullPath(path);
+        if (!Path.IsPathFullyQualified(fullPath) || !Directory.Exists(fullPath)) return null;
+        var root = Path.GetPathRoot(fullPath);
+        if (string.IsNullOrEmpty(root)) return null;
+
+        var current = root;
+        var relative = fullPath[root.Length..];
+        foreach (var part in relative.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var next = Path.GetFullPath(Path.Combine(current, part));
+            var directory = new DirectoryInfo(next);
+            if (!directory.Exists) return null;
+            if ((directory.Attributes & FileAttributes.ReparsePoint) == 0)
+            {
+                current = next;
+                continue;
+            }
+
+            sawLink = true;
+            if (directory.ResolveLinkTarget(returnFinalTarget: true) is not DirectoryInfo target) return null;
+            var resolvedTarget = ResolvePhysicalDirectoryPath(target.FullName, ref sawLink, linkDepth + 1);
+            if (resolvedTarget is null) return null;
+            current = resolvedTarget;
+        }
+
+        return Path.GetFullPath(current);
+    }
+
+    private static bool SamePath(string left, string right) => string.Equals(
+        Path.TrimEndingDirectorySeparator(Path.GetFullPath(left)),
+        Path.TrimEndingDirectorySeparator(Path.GetFullPath(right)),
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
     internal static bool IsMissingDotNetRuntime(string errorOutput) =>
         errorOutput.Contains("You must install or update .NET to run this application.", StringComparison.OrdinalIgnoreCase);

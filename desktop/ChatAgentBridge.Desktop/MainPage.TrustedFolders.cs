@@ -5,6 +5,9 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
+    private async void ReviewCliTrust_Click(object sender, RoutedEventArgs e) =>
+        await CliTrustDialog.ShowAsync(ViewModel, XamlRoot);
+
     private async void ChooseTrustedFolder_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel.IsPickingTrustedFolder) return;

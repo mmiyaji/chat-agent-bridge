@@ -72,6 +72,9 @@ public sealed partial class OnboardingWizard : UserControl
 
     private void ReloadProcessEnvironment_Click(object sender, RoutedEventArgs e) => _reloadProcessEnvironment();
 
+    private async void ReviewCliTrust_Click(object sender, RoutedEventArgs e) =>
+        await CliTrustDialog.ShowAsync(ViewModel, XamlRoot, recheck: !ViewModel.IsWizardAgentStep);
+
     private async void BrowseAgentExecutable_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button button || button.XamlRoot is null) return;

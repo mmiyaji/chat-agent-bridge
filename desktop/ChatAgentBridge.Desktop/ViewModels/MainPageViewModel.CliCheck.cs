@@ -45,7 +45,7 @@ public partial class MainPageViewModel
     {
         if (property is nameof(AgentProvider) or nameof(AgentExecutable) or nameof(AgentArguments) or nameof(WorkspaceRoot) or nameof(UseAppServer) or nameof(TrustedWorkspaceRoots))
         {
-            if (_checkedCliSignature is not null || IsCheckingCli)
+            if (_checkedCliSignature is not null || IsCheckingCli || CliCheckFailed)
             {
                 CancelCliCheck();
                 CliCheckSucceeded = false;
@@ -64,6 +64,7 @@ public partial class MainPageViewModel
     /// <summary>Invalidates process-dependent CLI results after refreshing PATH and user environment.</summary>
     public void OnProcessEnvironmentReloaded()
     {
+        ClearCliTrustRecovery();
         CliCheckSucceeded = false;
         CliCheckFailed = false;
         _checkedCliSignature = null;
@@ -82,6 +83,7 @@ public partial class MainPageViewModel
         _cliCheckCancellation = cancellation;
         var generation = ++_cliCheckGeneration;
         var signature = CurrentCliSignature();
+        ClearCliTrustRecovery();
         CliCheckSucceeded = false;
         CliCheckFailed = false;
         _checkedCliSignature = null;
@@ -134,6 +136,8 @@ public partial class MainPageViewModel
                 CliVersion = ViewModelText.Get("CliUnconfirmed");
                 CliCheckFailed = true;
                 CliCheckSummary = ex is TimeoutException ? ViewModelText.Get("CliTimeout") : ViewModelText.Get("CliCheckFailedDetails", ex.Message);
+                if (ex is CliWorkspaceTrustException trust && signature == CurrentCliSignature())
+                    SetCliTrustRecovery(trust, signature);
             }
         }
         finally
@@ -146,6 +150,7 @@ public partial class MainPageViewModel
     [RelayCommand(CanExecute = nameof(IsCheckingCli))]
     private void CancelCliCheck()
     {
+        ClearCliTrustRecovery();
         _cliCheckGeneration++;
         _cliCheckCancellation?.Cancel();
         _cliCheckCancellation = null;

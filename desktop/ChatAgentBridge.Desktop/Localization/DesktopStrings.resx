@@ -590,4 +590,15 @@
   <data name="ModelCatalogTimedOut" xml:space="preserve"><value>Model discovery timed out. Check the CLI sign-in and network connection, then try again.</value></data>
   <data name="ModelCatalogLaunchFailed" xml:space="preserve"><value>The CLI could not be started for model discovery. Check its executable path, permissions, and required runtime.</value></data>
   <data name="ModelCatalogAccessDenied" xml:space="preserve"><value>Access was denied during model discovery. Check access to the workspace and CLI executable.</value></data>
+  <data name="CliTrustTitle" xml:space="preserve"><value>Trust this workspace?</value></data>
+  <data name="CliTrustExplanation" xml:space="preserve"><value>Add only a folder you trust. This also trusts its subfolders and allows the agent to work there under your execution permissions.</value></data>
+  <data name="CliTrustLinkExplanation" xml:space="preserve"><value>The current workspace is a link. Adding the link itself will not pass the security check. This action changes the workspace to the actual folder below and adds that folder to Trusted Folders.</value></data>
+  <data name="CliTrustOriginalPath" xml:space="preserve"><value>Current workspace: {0}</value></data>
+  <data name="CliTrustTargetPath" xml:space="preserve"><value>Folder to trust: {0}</value></data>
+  <data name="CliTrustSaveHelp" xml:space="preserve"><value>After reviewing, add this folder and retry the CLI check. Changes remain unsaved until you save agent settings or finish setup.</value></data>
+  <data name="CliTrustAdd" xml:space="preserve"><value>Add and recheck</value></data>
+  <data name="CliTrustUseTarget" xml:space="preserve"><value>Trust actual folder and recheck</value></data>
+  <data name="CliTrustWizardSaveHelp" xml:space="preserve"><value>Changes remain unsaved until you choose Save and continue. You can check the CLI on the next page.</value></data>
+  <data name="CliTrustAddOnly" xml:space="preserve"><value>Add folder</value></data>
+  <data name="CliTrustUseTargetOnly" xml:space="preserve"><value>Trust and use actual folder</value></data>
 </root>

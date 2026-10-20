@@ -590,4 +590,15 @@
   <data name="ModelCatalogTimedOut" xml:space="preserve"><value>モデル候補の取得が時間切れになりました。CLIのログイン状態とネットワーク接続を確認し、再実行してください。</value></data>
   <data name="ModelCatalogLaunchFailed" xml:space="preserve"><value>モデル候補の取得に使うCLIを起動できません。実行ファイルのパス・アクセス権・必要な実行環境を確認してください。</value></data>
   <data name="ModelCatalogAccessDenied" xml:space="preserve"><value>モデル候補の取得中にアクセスが拒否されました。作業フォルダーとCLI実行ファイルのアクセス権を確認してください。</value></data>
+  <data name="CliTrustTitle" xml:space="preserve"><value>この作業フォルダーを信頼しますか？</value></data>
+  <data name="CliTrustExplanation" xml:space="preserve"><value>信頼できるフォルダーだけを追加してください。下位フォルダーも信頼対象となり、実行権限の設定に従ってエージェントが作業できます。</value></data>
+  <data name="CliTrustLinkExplanation" xml:space="preserve"><value>現在の作業先はリンクです。リンク自体を追加しても安全確認を通過しません。以下の実フォルダーに作業先を変更し、そのフォルダーを信頼対象に追加します。</value></data>
+  <data name="CliTrustOriginalPath" xml:space="preserve"><value>現在の作業先：{0}</value></data>
+  <data name="CliTrustTargetPath" xml:space="preserve"><value>信頼対象に追加するフォルダー：{0}</value></data>
+  <data name="CliTrustSaveHelp" xml:space="preserve"><value>内容を確認して追加すると、CLIを再チェックします。変更を保存するには、エージェント設定の保存または初期設定ガイドの完了が必要です。</value></data>
+  <data name="CliTrustAdd" xml:space="preserve"><value>追加して再チェック</value></data>
+  <data name="CliTrustUseTarget" xml:space="preserve"><value>リンク先を信頼して再チェック</value></data>
+  <data name="CliTrustWizardSaveHelp" xml:space="preserve"><value>変更を保存するには［保存して次へ］を選択してください。次のページでCLIをチェックできます。</value></data>
+  <data name="CliTrustAddOnly" xml:space="preserve"><value>フォルダーを追加</value></data>
+  <data name="CliTrustUseTargetOnly" xml:space="preserve"><value>リンク先を信頼して作業先に設定</value></data>
 </root>

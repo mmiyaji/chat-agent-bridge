@@ -698,4 +698,5 @@ Conversation ID (first message): {2}</value></data>
   <data name="GeneralSettingsSaved" xml:space="preserve"><value>Auto-connect preference saved</value></data>
   <data name="GeneralSettingsSavedDetails" xml:space="preserve"><value>The saved auto-connect preference takes effect the next time the app starts.</value></data>
   <data name="CliModelsUnavailableDetails" xml:space="preserve"><value>CLI startup and version check succeeded. Model discovery failed: {0}</value></data>
+  <data name="TrustedFolderRecoveryChanged" xml:space="preserve"><value>The folder changed or cannot be trusted safely. Check the workspace path and run the CLI check again.</value></data>
 </root>

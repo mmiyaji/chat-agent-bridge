@@ -270,7 +270,13 @@
                                              IsOpen="{x:Bind ViewModel.CliCheckFailed, Mode=OneWay}"
                                              Message="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
                                              AutomationProperties.Name="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
-                                             AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SettingsCliCheckError" />
+                                             AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SettingsCliCheckError">
+                                        <InfoBar.ActionButton>
+                                            <Button x:Uid="CliReviewTrust" Click="ReviewCliTrust_Click"
+                                                    Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasCliTrustRecovery), Mode=OneWay}"
+                                                    AutomationProperties.AutomationId="SettingsCliReviewTrust" />
+                                        </InfoBar.ActionButton>
+                                    </InfoBar>
                                     <StackPanel Spacing="8">
                                         <Button Click="ReloadProcessEnvironment_Click" IsEnabled="{x:Bind local:MainPage.EnvironmentReloadAllowed(ViewModel.IsLoading, ViewModel.IsRunning, ViewModel.IsCheckingCli, ViewModel.ModelCatalog.IsLoading, ViewModel.IsOnboardingBusy, InboxPage.ViewModel.IsExecuting, ViewModel.SaveSettingsCommand.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ReloadProcessEnvironment" x:Uid="ReloadProcessEnvironment" />
                                         <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="ReloadProcessEnvironmentHelp" x:Uid="ReloadProcessEnvironmentHelp" />

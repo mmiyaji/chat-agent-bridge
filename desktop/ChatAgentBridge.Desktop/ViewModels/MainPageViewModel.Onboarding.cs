@@ -106,6 +106,14 @@ public partial class MainPageViewModel
         {
             if (AgentProvider is not ("codex" or "claude" or "gemini" or "github-copilot" or "custom") || string.IsNullOrWhiteSpace(AgentExecutable)) { SetStatus(ViewModelText.Get("SelectAgent"), ViewModelText.Get("SelectAgentDetails"), "Warning"); return; }
             if (!Path.IsPathFullyQualified(WorkspaceRoot) || !Directory.Exists(WorkspaceRoot)) { SetStatus(ViewModelText.Get("CheckWorkspace"), ViewModelText.Get("CheckWorkspaceDetails"), "Warning"); return; }
+            if (!ExecutionPolicy.IsWorkspaceTrusted(CreateSettingsSnapshot(), WorkspaceRoot))
+            {
+                var trust = CliProbeService.DescribeUntrustedWorkspace(WorkspaceRoot);
+                CliCheckFailed = true;
+                CliCheckSummary = trust.Message;
+                SetCliTrustRecovery(trust, CurrentCliSignature());
+                return;
+            }
         }
         if (OnboardingStep == 2 && !HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("CheckCliAndModel"), CliCheckSucceeded ? ViewModelText.Get("SelectedModelUnavailable") : ViewModelText.Get("RunCliCheckDetails"), "Warning"); return; }
         if (OnboardingStep == 3 && !HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get(IsWizardSlack ? "SlackConnectionFields" : "MattermostConnectionFields"), "Warning"); return; }

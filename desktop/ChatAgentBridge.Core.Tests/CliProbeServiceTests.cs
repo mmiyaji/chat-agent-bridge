@@ -1,5 +1,6 @@
 using ChatAgentBridge.Core;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace ChatAgentBridge.Core.Tests;
 
@@ -115,15 +116,81 @@ public sealed class CliProbeServiceTests
             Assert.Contains(nonexistentPath, nonexistent.Message, StringComparison.Ordinal);
             Assert.Contains(missingText, nonexistent.Message, StringComparison.OrdinalIgnoreCase);
 
-            var untrusted = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            var untrusted = await Assert.ThrowsAsync<CliWorkspaceTrustException>(() =>
                 service.CheckAsync(fixture.Settings(missingExecutable) with { TrustedWorkspaceRoots = fixture.Root }));
             Assert.Contains(fixture.Workspace, untrusted.Message, StringComparison.Ordinal);
             Assert.Contains(trustedText, untrusted.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(Path.GetFullPath(fixture.Workspace), untrusted.WorkspacePath);
+            Assert.Null(untrusted.SuggestedWorkspacePath);
         }
         finally
         {
             CultureInfo.CurrentUICulture = previousCulture;
         }
+    }
+
+    [Fact]
+    public async Task ProbeProvidesSafeRealFolderSuggestionForWorkspaceThatIsAJunction()
+    {
+        using var fixture = new Fixture();
+        var target = Path.Combine(fixture.Root, "real-workspace");
+        var junction = Path.Combine(fixture.Root, "workspace-junction");
+        Directory.CreateDirectory(target);
+        CreateDirectoryLink(junction, target);
+        try
+        {
+            var settings = fixture.Settings(Path.Combine(fixture.Root, "missing.exe")) with { WorkspaceRoot = junction };
+
+            Assert.False(ExecutionPolicy.IsWorkspaceTrusted(settings, junction));
+            var error = await Assert.ThrowsAsync<CliWorkspaceTrustException>(() => new CliProbeService().CheckAsync(settings));
+
+            Assert.Equal(Path.GetFullPath(junction), error.WorkspacePath);
+            var suggested = Assert.IsType<string>(error.SuggestedWorkspacePath);
+            Assert.Equal(Path.GetFullPath(target), suggested);
+            Assert.True(Path.IsPathFullyQualified(suggested));
+            Assert.True(Directory.Exists(suggested));
+            Assert.False((new DirectoryInfo(suggested).Attributes & FileAttributes.ReparsePoint) != 0);
+            Assert.Contains(suggested, error.Message, StringComparison.Ordinal);
+
+            var trustedSuggestion = settings with
+            {
+                WorkspaceRoot = suggested,
+                TrustedWorkspaceRoots = suggested
+            };
+            Assert.True(ExecutionPolicy.IsWorkspaceTrusted(trustedSuggestion, suggested));
+        }
+        finally { Directory.Delete(junction); }
+    }
+
+    [Fact]
+    public async Task ProbeResolvesAncestorJunctionsInSafeRealFolderSuggestion()
+    {
+        using var fixture = new Fixture();
+        var target = Path.Combine(fixture.Root, "real-parent");
+        var actualWorkspace = Path.Combine(target, "workspace");
+        var junction = Path.Combine(fixture.Root, "parent-junction");
+        var linkedWorkspace = Path.Combine(junction, "workspace");
+        var unrelatedTrustedRoot = Path.Combine(fixture.Root, "other-trusted-root");
+        Directory.CreateDirectory(actualWorkspace);
+        Directory.CreateDirectory(unrelatedTrustedRoot);
+        CreateDirectoryLink(junction, target);
+        try
+        {
+            var settings = fixture.Settings(Path.Combine(fixture.Root, "missing.exe")) with
+            {
+                WorkspaceRoot = linkedWorkspace,
+                TrustedWorkspaceRoots = unrelatedTrustedRoot
+            };
+
+            Assert.False(ExecutionPolicy.IsWorkspaceTrusted(settings, linkedWorkspace));
+            var error = await Assert.ThrowsAsync<CliWorkspaceTrustException>(() => new CliProbeService().CheckAsync(settings));
+
+            var suggested = Assert.IsType<string>(error.SuggestedWorkspacePath);
+            Assert.Equal(Path.GetFullPath(actualWorkspace), suggested);
+            Assert.True(Directory.Exists(suggested));
+            Assert.False((new DirectoryInfo(suggested).Attributes & FileAttributes.ReparsePoint) != 0);
+        }
+        finally { Directory.Delete(junction); }
     }
 
     [Fact]
@@ -319,5 +386,24 @@ public sealed class CliProbeServiceTests
             if (File.Exists(candidate)) return Path.GetFullPath(candidate);
         }
         return null;
+    }
+
+    private static void CreateDirectoryLink(string link, string target)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Directory.CreateSymbolicLink(link, target);
+            return;
+        }
+
+        using var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            ArgumentList = { "/d", "/c", "mklink", "/J", link, target }
+        }) ?? throw new InvalidOperationException("Could not create test directory junction.");
+        process.WaitForExit();
+        Assert.Equal(0, process.ExitCode);
     }
 }

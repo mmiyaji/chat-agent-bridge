@@ -1100,4 +1100,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Start this app when signing in to Windows</value></data>
   <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Chat to connect automatically when the app starts</value></data>
   <data name="TrayActions.Header" xml:space="preserve"><value>Tray actions and exit</value></data>
+  <data name="CliReviewTrust.Content" xml:space="preserve"><value>Review trusted folder</value></data>
+  <data name="WorkspaceTrustError.Title" xml:space="preserve"><value>Review workspace trust</value></data>
 </root>

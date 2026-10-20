@@ -698,4 +698,5 @@ AIの操作権限: {8}</value>
   <data name="GeneralSettingsSaved" xml:space="preserve"><value>自動接続先を保存しました</value></data>
   <data name="GeneralSettingsSavedDetails" xml:space="preserve"><value>次回のアプリ起動時から、この自動接続設定を使用します。</value></data>
   <data name="CliModelsUnavailableDetails" xml:space="preserve"><value>CLIの起動・バージョン確認は成功しました。モデル候補の取得で失敗しました：{0}</value></data>
+  <data name="TrustedFolderRecoveryChanged" xml:space="preserve"><value>フォルダーが変更されたか、安全に信頼対象へ追加できません。作業先を確認してCLIを再チェックしてください。</value></data>
 </root>
