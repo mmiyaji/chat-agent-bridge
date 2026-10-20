@@ -348,6 +348,12 @@
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="MattermostProxyHelp" x:Uid="MattermostProxyHelp" />
                                         </StackPanel>
                                         <StackPanel Spacing="8"><TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock050" x:Uid="chatAgentBridgeDesktopMainPageTextBlock050" /><TextBox Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  AutomationProperties.AutomationId="MattermostChannelId"  x:Uid="MattermostChannelId" /></StackPanel>
+                                        <StackPanel Spacing="8">
+                                            <ToggleSwitch IsOn="{x:Bind ViewModel.PostConnectionNotice, Mode=TwoWay}"
+                                                          AutomationProperties.AutomationId="PostConnectionNotice" x:Uid="PostConnectionNotice" />
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"
+                                                       AutomationProperties.AutomationId="PostConnectionNoticeHelp" x:Uid="PostConnectionNoticeHelp" />
+                                        </StackPanel>
                                         <StackPanel Spacing="8"><TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock051" x:Uid="chatAgentBridgeDesktopMainPageTextBlock051" /><PasswordBox x:Name="MattermostTokenBox" PasswordChanged="MattermostTokenBox_PasswordChanged"  AutomationProperties.AutomationId="MattermostToken"  x:Uid="MattermostToken" /></StackPanel>
                                         <StackPanel Spacing="8" AutomationProperties.AutomationId="MattermostUsernameLookup">
                                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="MattermostUsernameLookupLabel" />

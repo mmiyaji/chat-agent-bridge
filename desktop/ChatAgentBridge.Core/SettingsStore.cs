@@ -57,6 +57,7 @@ public sealed class SettingsStore
                 MattermostChannelId = stored.MattermostChannelId ?? "",
                 MattermostToken = Unprotect(stored.MattermostToken),
                 MattermostBypassProxy = stored.MattermostBypassProxy,
+                PostConnectionNotice = stored.PostConnectionNotice,
                 SlackBotToken = Unprotect(stored.SlackBotToken),
                 SlackAppToken = Unprotect(stored.SlackAppToken),
                 MattermostAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(stored.MattermostAllowedUserIds ?? ""),
@@ -152,6 +153,7 @@ public sealed class SettingsStore
             MattermostChannelId = settings.MattermostChannelId,
             MattermostToken = Protect(settings.MattermostToken),
             MattermostBypassProxy = settings.MattermostBypassProxy,
+            PostConnectionNotice = settings.PostConnectionNotice,
             SlackBotToken = Protect(settings.SlackBotToken),
             SlackAppToken = Protect(settings.SlackAppToken),
             MattermostAllowedUserIds = mattermostAllowedUsers,
@@ -236,6 +238,7 @@ public sealed class SettingsStore
         public string? MattermostChannelId { get; set; }
         public string? MattermostToken { get; set; }
         public bool MattermostBypassProxy { get; set; }
+        public bool PostConnectionNotice { get; set; }
         public string? SlackBotToken { get; set; }
         public string? SlackAppToken { get; set; }
         public string? MattermostAllowedUserIds { get; set; }
