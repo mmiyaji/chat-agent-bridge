@@ -165,7 +165,7 @@ try{
     }
     Lookup 'fixture'
     foreach($theme in @('light','dark')){
-        Go 'NavAppearance';Scroll-To $(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'})
+        Go 'NavOverview';Scroll-To $(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'})
         UI @('invoke',$(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}))|Out-Null
         foreach($width in @(1160,500)){
             Resize $width;Go 'NavConnections'

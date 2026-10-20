@@ -72,7 +72,7 @@ try{
 
     Choice 'UsageScope' 'UsageScopeTurn'
     foreach($theme in @('light','dark')){
-        $script:activityMode=$false;Go 'NavAppearance'
+        $script:activityMode=$false;Go 'NavOverview'
         $themeId=if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}
         Scroll-To $themeId;UI @('invoke',$themeId)|Out-Null
         foreach($width in @(1160,500)){

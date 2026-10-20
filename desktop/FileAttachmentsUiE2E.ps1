@@ -176,7 +176,7 @@ function Confirm-OneAttachment {
     UI @('wait-for','AttachmentConfirmation','--gone','-t','5000') | Out-Null
 }
 function Select-Theme([string]$Theme) {
-    Navigate 'NavAppearance'
+    Navigate 'NavOverview'
     UI @('scroll-into-view',$(if($Theme -eq 'light'){'ThemeLight'}else{'ThemeDark'})) | Out-Null
     UI @('invoke',$(if($Theme -eq 'light'){'ThemeLight'}else{'ThemeDark'})) | Out-Null
     $deadline=[DateTime]::UtcNow.AddSeconds(5)

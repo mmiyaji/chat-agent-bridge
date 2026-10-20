@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -695,4 +695,6 @@ AIの操作権限: {8}</value>
   <data name="ConnectionRegistrationFailed" xml:space="preserve"><value>CLI接続を登録できませんでした: {0}</value></data>
   <data name="ConnectionLoaded" xml:space="preserve"><value>保存した{0}の設定を読み込みました。アプリの既定値として使うには設定を保存してください。</value></data>
   <data name="AttachmentLimitsMustBeWholeNumbers" xml:space="preserve"><value>添付の上限には整数を指定してください。</value></data>
+  <data name="GeneralSettingsSaved" xml:space="preserve"><value>自動接続先を保存しました</value></data>
+  <data name="GeneralSettingsSavedDetails" xml:space="preserve"><value>次回のアプリ起動時から、この自動接続設定を使用します。</value></data>
 </root>

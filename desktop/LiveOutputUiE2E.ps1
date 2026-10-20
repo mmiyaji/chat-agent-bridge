@@ -205,8 +205,8 @@ try{
     Post-Chat 'live-output-chat-a' 'live-output-thread-a' 'LIVE_RUN_CHAT_A isolated conversation A'
     Post-Chat 'live-output-chat-b' 'live-output-thread-b' 'LIVE_RUN_CHAT_B isolated conversation B'
     Go 'NavChat'
-    Go 'NavAppearance'
-    if(Element 'ThemeDark'){UI @('invoke','ThemeDark')|Out-Null;Start-Sleep -Milliseconds 250}
+    Go 'NavOverview'
+    if(Element 'ThemeDark'){UI @('scroll-into-view','ThemeDark')|Out-Null;UI @('invoke','ThemeDark')|Out-Null;Start-Sleep -Milliseconds 250}
     Go 'NavChat'
     Resize 500
     Run-Chat 'LIVE_RUN_CHAT_A isolated conversation A'
@@ -241,9 +241,9 @@ try{
     $checks.Add(@{name='Active-request banner returns to conversation A, selected B cannot cancel it, and cancellation retains A partial output';passed=$true})
 
     foreach($theme in @('light','dark')){
-        Go 'NavAppearance'
+        Go 'NavOverview'
         $themeId=if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}
-        if(Element $themeId){UI @('invoke',$themeId)|Out-Null;Start-Sleep -Milliseconds 250}
+        if(Element $themeId){UI @('scroll-into-view',$themeId)|Out-Null;UI @('invoke',$themeId)|Out-Null;Start-Sleep -Milliseconds 250}
         Go 'NavChat';Resize 500
         Wait-Contains 'LiveOutputText' 'LIVE_RUN_CHAT_B LIVE_FIXTURE assistant output arrived' 10 'ChatLiveOutput'
         UI @('scroll-into-view','LiveOutputPrivacyHelp')|Out-Null

@@ -81,7 +81,7 @@ function Resize([int]$Width,[int]$Height) {
     Start-Sleep -Milliseconds 250
 }
 function Check-RestartGuard {
-    UI @('invoke','NavAppearance') | Out-Null
+    UI @('invoke','NavOverview') | Out-Null
     Scroll-ToElement 'DisplayLanguage'
     UI @('invoke','DisplayLanguage') | Out-Null
     $tree=UI @('inspect','DisplayLanguage','-d','6') | ConvertFrom-Json
@@ -122,7 +122,7 @@ function Assert-Palette([string]$Theme,[string[]]$Colors,[string]$File) {
     $checks.Add(@{name="$Theme status icon colors render";passed=$true;colors=$Colors})
 }
 function Theme([string]$Theme) {
-    UI @('invoke','NavAppearance') | Out-Null
+    UI @('invoke','NavOverview') | Out-Null
     Scroll-ToElement $(if ($Theme -eq 'light') { 'ThemeLight' } else { 'ThemeDark' })
     UI @('invoke',$(if ($Theme -eq 'light') { 'ThemeLight' } else { 'ThemeDark' })) | Out-Null
     Start-Sleep -Milliseconds 500

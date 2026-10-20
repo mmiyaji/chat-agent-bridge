@@ -56,11 +56,11 @@ function Heading([string]$Name) {
     return $visible[0].Current.BoundingRectangle
 }
 $labels = if ($Language -eq 'ja') {
-    @('Chat Agent Bridge','手動で実行','エージェント設定','接続設定','チャット受信','履歴と会話','外観','情報')
+    @('全般','手動で実行','エージェント設定','接続設定','チャット受信','履歴と会話','情報')
 } else {
-    @('Chat Agent Bridge','Run manually','Agent settings','Connection settings','Chat inbox','History and conversations','Appearance','About')
+    @('General','Run manually','Agent settings','Connection settings','Chat inbox','History and conversations','About')
 }
-$pages = @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAppearance','NavAbout')
+$pages = @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAbout')
 $overviewOffsets = @{}
 try {
     Navigate 'NavOverview'

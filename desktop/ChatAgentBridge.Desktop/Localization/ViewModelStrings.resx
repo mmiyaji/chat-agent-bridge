@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -695,4 +695,6 @@ Conversation ID (first message): {2}</value></data>
   <data name="ConnectionRegistrationFailed" xml:space="preserve"><value>Could not register this CLI connection: {0}</value></data>
   <data name="ConnectionLoaded" xml:space="preserve"><value>Saved {0} settings loaded. Save settings to use them as the app defaults.</value></data>
   <data name="AttachmentLimitsMustBeWholeNumbers" xml:space="preserve"><value>Attachment limits must be whole numbers.</value></data>
+  <data name="GeneralSettingsSaved" xml:space="preserve"><value>Auto-connect preference saved</value></data>
+  <data name="GeneralSettingsSavedDetails" xml:space="preserve"><value>The saved auto-connect preference takes effect the next time the app starts.</value></data>
 </root>

@@ -109,7 +109,7 @@ try {
         }
         Capture "$Language-$width-manual-approval.png"
         Navigate 'NavConnections'
-        foreach ($pair in @(@('JumpMattermost','MattermostSettingsHeading'),@('JumpSlack','SlackSettingsHeading'),@('JumpApproval','chatAgentBridgeDesktopMainPageTextBlock031'),@('JumpScope','chatAgentBridgeDesktopMainPageTextBlock034'),@('JumpStartup','StartupHeading'))) {
+        foreach ($pair in @(@('JumpMattermost','MattermostSettingsHeading'),@('JumpSlack','SlackSettingsHeading'),@('JumpApproval','chatAgentBridgeDesktopMainPageTextBlock031'),@('JumpScope','chatAgentBridgeDesktopMainPageTextBlock034'))) {
             Jump $pair[0] $pair[1]
             if (-not (Visible-InWindow (Element 'SaveConnections')) -or -not (Visible-InWindow (Element 'ConnectionsJump'))) { throw 'Pinned settings actions are clipped.' }
             Capture "$Language-$width-$($pair[0]).png"

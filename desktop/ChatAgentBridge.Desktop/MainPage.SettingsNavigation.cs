@@ -11,11 +11,12 @@ public sealed partial class MainPage
 
     private void OpenAutomaticSettings(bool focusConnection)
     {
-        OpenConnections_Click(this, new RoutedEventArgs());
+        MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>()
+            .First(item => item.Tag is "overview");
         // Navigation first queues its scroll reset. Run the section jump after it.
         DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
-            if (!IsConnectionsSelected) return;
+            if (!IsOverviewSelected) return;
             StartupSettingsCard.StartBringIntoView(new BringIntoViewOptions
             {
                 VerticalAlignmentRatio = 0,
@@ -39,7 +40,6 @@ public sealed partial class MainPage
             "approval" => ChatApprovalSettingsCard,
             "attachments" => FileAttachmentSettings,
             "scope" => ChatScopeSettingsCard,
-            "startup" => StartupSettingsCard,
             _ => null
         };
         picker.SelectedIndex = -1;

@@ -50,8 +50,9 @@ function Start-App {
     $script:app = [Diagnostics.Process]::Start($start)
     UI @('wait-for','NavOverview','-t','15000') | Out-Null
     UI @('wait-for','SettingsLocation','--value',$data,'--contains','-t','5000') | Out-Null
-    UI @('invoke','NavConnections') | Out-Null
-    UI @('wait-for','MattermostSettingsHeading','-t','5000') | Out-Null
+    UI @('invoke','NavOverview') | Out-Null
+    UI @('scroll-into-view','ExitCompletelyButton') | Out-Null
+    UI @('wait-for','ExitCompletelyButton','-t','5000') | Out-Null
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
     do {
         $app.Refresh(); $candidate = [IntPtr]$app.MainWindowHandle
@@ -62,7 +63,6 @@ function Start-App {
     [uint32]$owner = 0
     [void][TrayUiE2ENativeApi]::GetWindowThreadProcessId($hwnd, [ref]$owner)
     Assert ($owner -eq $app.Id) 'Refusing to post messages to a window owned by another process.'
-    UI @('scroll-into-view','ExitCompletelyButton') | Out-Null
     UI @('wait-for','CloseToTrayToggle','-t','5000') | Out-Null
 }
 function Capture-Narrow([string]$Name) {

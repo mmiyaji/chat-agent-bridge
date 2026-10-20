@@ -42,6 +42,7 @@ public partial class MainPageViewModel : ObservableObject
     {
         ReasoningEffortCandidates.Add(ReasoningEffortChoice.Default);
         ModelCatalog = new ModelCatalogViewModel(CreateSettingsSnapshot, ApplyCatalogModelSelection);
+        SaveSettingsCommand.PropertyChanged += (_, _) => SaveGeneralSettingsCommand.NotifyCanExecuteChanged();
         ModelCatalog.PropertyChanged += (_, e) =>
         {
             if ((e.PropertyName == nameof(ModelCatalog.Status) || e.PropertyName == nameof(ModelCatalog.IsLoading)) && !ModelCatalog.IsLoading)
@@ -59,6 +60,7 @@ public partial class MainPageViewModel : ObservableObject
                 NextOnboardingCommand.NotifyCanExecuteChanged();
                 DeferOnboardingCommand.NotifyCanExecuteChanged();
                 CheckCliCommand.NotifyCanExecuteChanged();
+                SaveGeneralSettingsCommand.NotifyCanExecuteChanged();
             }
             if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning) or nameof(IsCheckingCli) or nameof(CliCheckSucceeded) or nameof(CliCheckFailed) or nameof(CliVersion) or nameof(AgentProvider) or nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentModel) or nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(WorkspaceRoot) or nameof(TrustedWorkspaceRoots))
                 RefreshConnectionCommands();
@@ -91,6 +93,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ReloadSettingsCommand))]
     [NotifyCanExecuteChangedFor(nameof(SaveSettingsCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RunCommand))]
     public partial bool IsLoading { get; set; } = true;
 
     [ObservableProperty]
@@ -415,7 +418,7 @@ public partial class MainPageViewModel : ObservableObject
     private async Task SaveSettingsAsync()
     {
         _lastSaveSucceeded = false;
-        if (_closing || !IsSettingsLoaded || IsRunning || _settings is null || _unsupportedSavedEffort) return;
+        if (_closing || !IsSettingsLoaded || IsLoading || IsRunning || _settings is null || _unsupportedSavedEffort) return;
         var saved = false;
         try
         {
@@ -480,7 +483,7 @@ public partial class MainPageViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task RunAsync()
     {
-        if (_closing || !IsSettingsLoaded || IsRunning || _settings is null || _unsupportedSavedEffort) return;
+        if (_closing || !IsSettingsLoaded || IsLoading || IsRunning || _settings is null || _unsupportedSavedEffort) return;
         var promptSnapshot = Prompt;
         var settingsSnapshot = CreateSettingsSnapshot();
         if (string.IsNullOrWhiteSpace(promptSnapshot))
@@ -654,7 +657,7 @@ public partial class MainPageViewModel : ObservableObject
         }
     }
 
-    private bool CanRun() => IsSettingsLoaded && !IsRunning && !_unsupportedSavedEffort;
+    private bool CanRun() => IsSettingsLoaded && !IsLoading && !IsRunning && !_unsupportedSavedEffort;
     private bool CanSaveSettings() => IsSettingsLoaded && !IsLoading && !IsRunning && !_unsupportedSavedEffort;
     private bool CanReloadSettings() => !IsLoading && !IsRunning;
 

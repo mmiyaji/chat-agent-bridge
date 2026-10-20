@@ -179,7 +179,7 @@ function Select-VisibleChoice([string]$Label) {
     [void](Invoke-UI (@('ui','invoke',$selectors[0]) + $scope))
 }
 function Set-Theme([string]$ThemeId) {
-    Open-Page 'NavAppearance' 'AppearancePageTitle'
+    Open-Page 'NavOverview' 'GeneralPageTitle'
     $theme = switch ($ThemeId) { 'ThemeSystem' { 'system' } 'ThemeLight' { 'light' } 'ThemeDark' { 'dark' } default { throw "Unknown theme '$ThemeId'." } }
     Scroll-ToElement $ThemeId
     $element = [Windows.Automation.AutomationElement]::FromHandle([IntPtr]$windowHwnd).FindFirst([Windows.Automation.TreeScope]::Descendants,
@@ -336,11 +336,11 @@ Wait-UI 'SettingsLocation' $DataDirectory
 if (-not (Get-OverviewDetailsExpanded)) { throw 'Overview details should be expanded on initial load.' }
 
 $targets = @(
-    @{ nav='NavOverview'; anchor='SetupCompletionSummary'; name='overview' },
+    @{ nav='NavOverview'; anchor='SetupCompletionSummary'; name='general' },
     @{ nav='NavWorkbench'; anchor='Prompt'; name='workbench' },
     @{ nav='NavAgentSettings'; anchor='AgentProvider'; name='agent' },
     @{ nav='NavConnections'; anchor='ChatApprovalMode'; name='connections' },
-    @{ nav='NavAppearance'; anchor='AppearancePageTitle'; name='appearance' },
+    @{ nav='NavOverview'; anchor='GeneralAppearanceSectionHeading'; name='appearance' },
     @{ nav='NavChat'; anchor='ConnectMattermost'; name='chat' },
     @{ nav='NavHistory'; anchor='HistoryStatus'; name='history' },
     @{ nav='NavAbout'; anchor='AboutProduct'; name='about' }
@@ -378,7 +378,7 @@ $categoryNames = @{
         foreach ($target in $targets) { Open-Page $target.nav $target.anchor }
         Go-Overview
         if (-not (Get-OverviewDetailsExpanded)) { throw 'Overview details should be expanded on initial load.' }
-        if ((Invoke-UI @('ui','get-property','NavAppearance','-p','Name','--json') | ConvertFrom-Json).properties.Name -ne '外観') { throw 'Monkey fixture should render Japanese Appearance navigation.' }
+        if ((Invoke-UI @('ui','get-property','NavOverview','-p','Name','--json') | ConvertFrom-Json).properties.Name -ne '全般') { throw 'Monkey fixture should render Japanese General navigation.' }
         foreach ($draft in @(@('NavAgentSettings','WorkspaceRoot'), @('NavConnections','MattermostChannelId'))) {
             Open-Page $draft[0] $draft[1]
             [void](Invoke-UI @('ui','set-value',$draft[1],''))
@@ -536,7 +536,7 @@ $categoryNames = @{
                     7 {
                         $size = $resizes[[int]$coverage.resizes % $resizes.Count]
                         Resize-App $size[0] $size[1]
-                        Open-Page 'NavAppearance' 'AppearancePageTitle'
+                        Open-Page 'NavOverview' 'GeneralPageTitle'
                         Scroll-ToElement 'ThemeDark'
                         [void](Invoke-UI @('ui','screenshot','-o',(Join-Path $runDirectory "appearance-seed-$seed-action-$i-$($size[0]).png")) 12000)
                         $detail = "$($size[0])x$($size[1])"
@@ -608,7 +608,7 @@ $categoryNames = @{
                         $pattern = $details.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
                         $pattern.Collapse()
                         if (Get-OverviewDetailsExpanded) { throw 'Overview details did not collapse.' }
-                        Open-Page 'NavAppearance' 'AppearancePageTitle'
+                        Open-Page 'NavWorkbench' 'Prompt'
                         Go-Overview -RespectCollapse
                         if (Get-OverviewDetailsExpanded) { throw 'Collapsed overview details did not persist across navigation.' }
                         $details = [Windows.Automation.AutomationElement]::FromHandle([IntPtr]$windowHwnd).FindFirst([Windows.Automation.TreeScope]::Descendants,

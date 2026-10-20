@@ -19,4 +19,4 @@ Costs and usage limits for AI and chat services, communications, and other servi
 To the extent permitted by applicable law, the provider is not liable for losses or damages arising from use of this application. These terms do not exclude or limit liability for intentional acts, gross negligence, or other liability that cannot legally be excluded or limited. They do not remove rights you have under applicable law.
 
 6. Ending use and reviewing these terms
-If you do not agree, do not complete setup and close the application. To stop using it, disconnect chat connections and turn off the Windows startup setting. You can review these terms and the Privacy Policy again from the Overview screen. For questions, contact provider mmiyaji at mail@ruhenheim.org.
+If you do not agree, do not complete setup and close the application. To stop using it, disconnect chat connections and turn off the Windows startup setting. You can review these terms and the Privacy Policy again from the General screen. For questions, contact provider mmiyaji at mail@ruhenheim.org.

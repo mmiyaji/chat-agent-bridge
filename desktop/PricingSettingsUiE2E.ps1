@@ -107,7 +107,7 @@ try {
         $manualBeforeUpdateHash=(Get-FileHash $manualPath).Hash
         foreach($theme in @('light','dark')){
             $script:activityMode=$false
-            Go 'NavAppearance'
+            Go 'NavOverview'
             $themeId=if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}
             UI @('scroll-into-view',$themeId)|Out-Null;UI @('invoke',$themeId)|Out-Null
             Resize 500;Activity
@@ -227,7 +227,7 @@ try {
     # Capture representative narrow layouts in both themes; settings stay collapsed until explicitly opened.
     foreach($theme in @('light','dark')){
         $script:activityMode=$false
-        Go 'NavAppearance';$themeId=if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'};Scroll-Pricing $themeId;UI @('invoke',$themeId)|Out-Null
+        Go 'NavOverview';$themeId=if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'};Scroll-Pricing $themeId;UI @('invoke',$themeId)|Out-Null
         Resize 500;Activity;Scroll-Pricing 'PricingSettings'
         $expander=(Element 'PricingSettings').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
         if($expander.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed){$expander.Expand()}

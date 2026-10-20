@@ -6,10 +6,10 @@
     <value>メイン ナビゲーション</value>
   </data>
   <data name="NavOverview.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>概要</value>
+    <value>全般</value>
   </data>
   <data name="NavOverview.Content" xml:space="preserve">
-    <value>概要</value>
+    <value>全般</value>
   </data>
   <data name="NavWorkbench.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>手動で実行</value>
@@ -900,10 +900,11 @@
   <data name="OverviewCliDetailsTitle.Text" xml:space="preserve">
     <value>CLIの確認内容</value>
   </data>
-  <data name="NavAppearance.Content" xml:space="preserve"><value>外観</value></data>
-  <data name="NavAppearance.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>外観</value></data>
-  <data name="AppearancePageTitle.Text" xml:space="preserve"><value>外観</value></data>
-  <data name="AppearancePageDescription.Text" xml:space="preserve"><value>アプリの表示言語と配色テーマを設定します。</value></data>
+  <data name="GeneralPageTitle.Text" xml:space="preserve"><value>全般</value></data>
+  <data name="GeneralPageDescription.Text" xml:space="preserve"><value>現在の状態を確認し、Windows起動時の動作、自動接続、トレイ、言語、外観を設定します。</value></data>
+  <data name="GeneralAppearanceSectionHeading.Text" xml:space="preserve"><value>言語と外観</value></data>
+  <data name="SaveGeneralSettings.Content" xml:space="preserve"><value>自動接続先を保存</value></data>
+  <data name="SaveGeneralSettingsHelp.Text" xml:space="preserve"><value>Windows起動時とトレイの設定はすぐに反映されます。自動接続先は保存すると保持されます。</value></data>
   <data name="AppThemeCardHeading.Text" xml:space="preserve"><value>カラーテーマ</value></data>
   <data name="ConnectionCredentialsHeading.Text" xml:space="preserve"><value>チャット接続情報</value></data>
   <data name="ChatPoliciesHeading.Text" xml:space="preserve"><value>チャットの承認と利用範囲</value></data>
@@ -914,7 +915,6 @@
   <data name="JumpApproval.Content" xml:space="preserve"><value>承認と結果の返信</value></data>
   <data name="JumpAttachments.Content" xml:space="preserve"><value>生成ファイルの添付</value></data>
   <data name="JumpScope.Content" xml:space="preserve"><value>許可する会話</value></data>
-  <data name="JumpStartup.Content" xml:space="preserve"><value>起動と自動接続</value></data>
   <data name="BrowseAgentExecutable.Content" xml:space="preserve"><value>参照…</value></data>
   <data name="BrowseAgentExecutable.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>ネイティブCLI実行ファイルを選択</value></data>
   <data name="WizardBrowseAgentExecutable.Content" xml:space="preserve"><value>参照…</value></data>

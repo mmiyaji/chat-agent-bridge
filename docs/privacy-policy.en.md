@@ -22,7 +22,7 @@ When chat result sharing is enabled, newly created workspace files can be sent u
 This development preview does not include automatic sending of usage information or conversation text to a bridge-operated analytics or advertising service. Information handling by the OS, distribution store, CLI, chat, and AI services is governed by each provider's policies. If you send information to the provider, for example in a support request, limit it to what is needed and remove tokens and secrets.
 
 5. Retention, deletion, and stopping use
-Stored data may remain on the PC until you delete it. You can delete bridge-stored information by closing the application and deleting the data in the settings storage location shown on the Overview screen. Uninstallation behavior depends on the Windows distribution method. Deleting bridge data does not delete conversation history held by chat or AI services or the CLI; manage that history in each service or CLI.
+Stored data may remain on the PC until you delete it. You can delete bridge-stored information by closing the application and deleting the data in the settings storage location shown on the General screen. Uninstallation behavior depends on the Windows distribution method. Deleting bridge data does not delete conversation history held by chat or AI services or the CLI; manage that history in each service or CLI.
 
 6. Contact
 For questions about this application's handling of data, contact provider mmiyaji at mail@ruhenheim.org. Do not post tokens or confidential request or result information in public chats or public support fields.

@@ -220,11 +220,11 @@ try {
     Assert ($messages.Count -gt 0 -and ($messages -join ' ') -notmatch '[ぁ-んァ-ン一-龯]') 'Validation text was not translated into English.'
     UI @('invoke','OnboardingDefer') | Out-Null
     UI @('wait-for','OnboardingTitle','--gone','-t','3000') | Out-Null
-    foreach ($page in @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAppearance')) {
+    foreach ($page in @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAbout')) {
         UI @('invoke',$page) | Out-Null
         Assert ((Name $page) -notmatch '[ぁ-んァ-ン一-龯]') "Navigation label is not English: $page"
         if ($page -eq 'NavWorkbench') { Assert ((Value 'WorkbenchAgentSummary').Contains('Run until complete')) 'The execution mode did not resolve to an English resource.' }
-        if ($page -eq 'NavAppearance') { Assert ((Name 'ThemeLight') -eq 'Light' -and (Name 'ThemeDark') -eq 'Dark') 'Appearance options did not follow the initial wizard language.' }
+        if ($page -eq 'NavOverview') { Assert ((Name 'ThemeLight') -eq 'Light' -and (Name 'ThemeDark') -eq 'Dark') 'General appearance options did not follow the initial wizard language.' }
         Capture "english-$page.png"
         Resize 720 600
         Capture "english-$page-narrow.png"
@@ -232,12 +232,12 @@ try {
     }
     $checks.Add(@{name='English validation and all navigation pages render without starting a CLI or chat connection';passed=$true})
 
-    UI @('invoke','NavAppearance') | Out-Null
+    UI @('invoke','NavOverview') | Out-Null
     $settingsBefore = (Get-FileHash (Join-Path $dataPath 'settings.json') -Algorithm SHA256).Hash
     Select-Language @('日本語 (Japanese)') 'ja' $true
     Assert ((Get-FileHash (Join-Path $dataPath 'settings.json') -Algorithm SHA256).Hash -eq $settingsBefore) 'Language selection changed bridge settings.'
     UI @('wait-for','NavOverview','-t','5000') | Out-Null
-    Assert ((Name 'NavOverview') -eq '概要') 'Japanese navigation was not restored.'
+    Assert ((Name 'NavOverview') -eq '全般') 'Japanese navigation was not restored.'
     UI @('invoke','NavOverview') | Out-Null
     $window=[Windows.Automation.AutomationElement]::FromHandle((Get-Process -Id $script:appPid).MainWindowHandle)
     $details=$window.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,'OverviewDetailsExpander'))

@@ -91,7 +91,7 @@ function Resize([int]$Width,[int]$Height) {
     Start-Sleep -Milliseconds 250
 }
 function Select-Theme([string]$Theme) {
-    UI @('invoke','NavAppearance') | Out-Null
+    UI @('invoke','NavOverview') | Out-Null
     $id = @{system='ThemeSystem';light='ThemeLight';dark='ThemeDark'}[$Theme]
     UI @('scroll-into-view',$id) | Out-Null
     # Verify the persisted theme after UIA selection.
@@ -119,7 +119,7 @@ try {
         Resize 720 600
         Capture "$theme-settings-narrow.png" | Out-Null
         Resize 1160 860
-        foreach ($page in @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAppearance')) {
+        foreach ($page in @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAbout')) {
             UI @('invoke',$page) | Out-Null
             Assert-Theme $theme (Capture "$theme-$page.png")
         }
@@ -132,7 +132,7 @@ try {
         Assert ($(if ($theme -eq 'light') { $dialogBrightness -gt 180 } else { $dialogBrightness -lt 100 })) "Dialog did not use $theme theme."
         UI @('invoke','PolicyClose') | Out-Null
         UI @('wait-for','PolicyBody','--gone','-t','3000') | Out-Null
-        $checks.Add(@{name="$theme switches immediately across six pages and dialogs";passed=$true})
+        $checks.Add(@{name="$theme switches immediately across seven pages and dialogs";passed=$true})
         Restart
         Assert-Theme $theme (Capture "$theme-after-restart.png")
         $checks.Add(@{name="$theme survives restart";passed=$true})
@@ -146,7 +146,7 @@ try {
     Stop-Process -Id $script:appPid
     @{Language='ja'} | ConvertTo-Json | Set-Content (Join-Path $dataPath 'language.json')
     Launch
-    UI @('invoke','NavAppearance') | Out-Null
+    UI @('invoke','NavOverview') | Out-Null
     foreach ($entry in @{ThemeSystem='システムに合わせる';ThemeLight='ライト';ThemeDark='ダーク'}.GetEnumerator()) {
         $label = (UI @('get-property',$entry.Key,'-p','Name') | ConvertFrom-Json).properties.Name
         Assert ($label -eq $entry.Value) 'The appearance option was not localized into Japanese.'

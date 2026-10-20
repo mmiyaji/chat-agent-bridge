@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory)][string]$AppDirectory,
     [ValidateSet('ja','en')][string]$Language='ja',
     [switch]$CaptureOnly
@@ -55,8 +55,8 @@ try{
     $app.Refresh();$window=$app.MainWindowHandle;$scale=[MaximizedLayoutNative]::GetDpiForWindow($window)/96.0
     # Close the initial load banner via ordinary navigation before comparing page origins.
     Navigate 'NavWorkbench';Navigate 'NavOverview'
-    $pages=@('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAppearance','NavAbout')
-    $labels=if($Language -eq 'ja'){@('Chat Agent Bridge','手動で実行','エージェント設定','接続設定','チャット受信','履歴と会話','外観','情報')}else{@('Chat Agent Bridge','Run manually','Agent settings','Connection settings','Chat inbox','History and conversations','Appearance','About')}
+    $pages=@('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAbout')
+    $labels=if($Language -eq 'ja'){@('全般','手動で実行','エージェント設定','接続設定','チャット受信','履歴と会話','情報')}else{@('General','Run manually','Agent settings','Connection settings','Chat inbox','History and conversations','About')}
     $sizes=if($CaptureOnly){@('maximized')}else{@('maximized','1160','720','500','maximized-again')}
     foreach($size in $sizes){
         if($size -like 'maximized*'){[void][MaximizedLayoutNative]::ShowWindow($window,3)}else{[void][MaximizedLayoutNative]::ShowWindow($window,9);[void][MaximizedLayoutNative]::SetWindowPos($window,[IntPtr]::Zero,50,50,[int]([int]$size*$scale),[int](850*$scale),0x0014)}
@@ -77,10 +77,9 @@ try{
                 Assert (-not $heading.IntersectsWith($toggle)) 'Heading overlaps navigation toggle.'
                 # WinUI's passive Grid/StackPanel peers report empty bounds. Measure
                 # visible input controls and account for their containing card padding.
-                if($index -in @(0,1,2,3,6)){
-                    $fieldId=switch($index){0{'OverviewAgentTile'}1{'Prompt'}2{'WorkspaceRoot'}3{'MattermostServerUrl'}6{'DisplayLanguage'}}
-                    # ComboBox automation bounds include its 4-DIP focus inset on each side.
-                    $padding=switch($index){0{16}1{0}2{16}3{20}6{12}}
+                if($index -in @(0,1,2,3)){
+                    $fieldId=switch($index){0{'OverviewAgentTile'}1{'Prompt'}2{'WorkspaceRoot'}3{'MattermostServerUrl'}}
+                    $padding=switch($index){0{16}1{0}2{16}3{20}}
                     $field=(Element $fieldId).Current.BoundingRectangle
                     $bodyLeft=($field.Left-$bounds.Left)/$scale-$padding
                     $bodyWidth=$field.Width/$scale+2*$padding
@@ -94,7 +93,7 @@ try{
             }
             if($CaptureOnly -or $size -in @('maximized','720')){UI @('screenshot','-o',(Join-Path $data ($size+'-'+$pages[$index]+'.png')))|Out-Null}
         }
-        Write-Output "PASS $size : measured all 8 tabs"
+        Write-Output "PASS $size : measured all 7 tabs"
     }
 }
 finally{

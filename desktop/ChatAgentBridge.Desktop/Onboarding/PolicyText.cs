@@ -26,7 +26,7 @@ public static class PolicyText
         適用法令で認められる範囲で、本アプリの利用に伴う損失や損害について提供者は責任を負いません。ただし、本規約は、故意・重大な過失等に関する責任その他の法令上免除・制限できない責任を免除・制限するものではありません。利用者が法令上有する権利を排除しません。
 
         6. 利用の終了・文面の確認
-        同意しない場合は初期設定を完了せず、アプリを終了してください。利用を終了する場合はチャット接続とWindows起動設定を解除してください。本規約とプライバシーポリシーは概要画面から再確認できます。お問い合わせは、提供者 mmiyaji（mail@ruhenheim.org）へご連絡ください。
+        同意しない場合は初期設定を完了せず、アプリを終了してください。利用を終了する場合はチャット接続とWindows起動設定を解除してください。本規約とプライバシーポリシーは全般画面から再確認できます。お問い合わせは、提供者 mmiyaji（mail@ruhenheim.org）へご連絡ください。
         """;
 
     private const string JapanesePrivacy = """
@@ -54,7 +54,7 @@ public static class PolicyText
         この開発プレビューには、ブリッジ独自の解析・広告サービスへの利用情報や会話本文の自動送信を組み込んでいません。OS、配布ストア、CLI、チャット・AIサービスがそれぞれ行う情報の取扱いは、各提供者の方針に従います。利用者が問い合わせ等で情報を送る場合は、必要な範囲に絞り、トークン等を除いてください。
 
         5. 保存期間・削除・利用の終了
-        保存データは、利用者が削除するまでPCに残る場合があります。アプリを終了し、概要画面に表示される設定保存先のデータを削除することでブリッジ側の保存情報を削除できます。アンインストール時の扱いはWindowsの配布形態によります。ブリッジのデータを削除しても、チャット・AIサービスやCLI側の会話履歴は削除されません。それぞれのサービス・CLIで管理してください。
+        保存データは、利用者が削除するまでPCに残る場合があります。アプリを終了し、全般画面に表示される設定保存先のデータを削除することでブリッジ側の保存情報を削除できます。アンインストール時の扱いはWindowsの配布形態によります。ブリッジのデータを削除しても、チャット・AIサービスやCLI側の会話履歴は削除されません。それぞれのサービス・CLIで管理してください。
 
         6. お問い合わせ
         本アプリのデータの取扱いに関するお問い合わせは、提供者 mmiyaji（mail@ruhenheim.org）へご連絡ください。公開チャットや公開の問い合わせ欄に、トークン、依頼・結果の機密情報を掲載しないでください。
@@ -85,7 +85,7 @@ public static class PolicyText
         To the extent permitted by applicable law, the provider is not liable for losses or damages arising from use of this application. These terms do not exclude or limit liability for intentional acts, gross negligence, or other liability that cannot legally be excluded or limited. They do not remove rights you have under applicable law.
 
         6. Ending use and reviewing these terms
-        If you do not agree, do not complete setup and close the application. To stop using it, disconnect chat connections and turn off the Windows startup setting. You can review these terms and the Privacy Policy again from the Overview screen. For questions, contact provider mmiyaji at mail@ruhenheim.org.
+        If you do not agree, do not complete setup and close the application. To stop using it, disconnect chat connections and turn off the Windows startup setting. You can review these terms and the Privacy Policy again from the General screen. For questions, contact provider mmiyaji at mail@ruhenheim.org.
         """;
 
     private const string EnglishPrivacy = """
@@ -113,7 +113,7 @@ public static class PolicyText
         This development preview does not include automatic sending of usage information or conversation text to a bridge-operated analytics or advertising service. Information handling by the OS, distribution store, CLI, chat, and AI services is governed by each provider's policies. If you send information to the provider, for example in a support request, limit it to what is needed and remove tokens and secrets.
 
         5. Retention, deletion, and stopping use
-        Stored data may remain on the PC until you delete it. You can delete bridge-stored information by closing the application and deleting the data in the settings storage location shown on the Overview screen. Uninstallation behavior depends on the Windows distribution method. Deleting bridge data does not delete conversation history held by chat or AI services or the CLI; manage that history in each service or CLI.
+        Stored data may remain on the PC until you delete it. You can delete bridge-stored information by closing the application and deleting the data in the settings storage location shown on the General screen. Uninstallation behavior depends on the Windows distribution method. Deleting bridge data does not delete conversation history held by chat or AI services or the CLI; manage that history in each service or CLI.
 
         6. Contact
         For questions about this application's handling of data, contact provider mmiyaji at mail@ruhenheim.org. Do not post tokens or confidential request or result information in public chats or public support fields.
