@@ -3,12 +3,12 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:ChatAgentBridge_Desktop.Onboarding"
-    xmlns:localization="using:ChatAgentBridge_Desktop.Localization">
+    xmlns:localization="using:ChatAgentBridge_Desktop.Localization"
+    xmlns:diagrams="using:ChatAgentBridge_Desktop.Diagrams">
     <StackPanel x:Name="IntroStackPanel" Spacing="16" HorizontalAlignment="Stretch">
         <localization:LanguageSettings x:Name="IntroLanguageSettings" />
         <TextBlock x:Name="IntroHeading" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock001" />
-        <Image x:Name="ArchitectureImage" Source="{x:Bind localization:LocalizedAssets.OverviewArchitecture, Mode=OneTime}" Stretch="Uniform" MaxHeight="260"
-                AutomationProperties.AutomationId="WizardArchitecture"  x:Uid="WizardArchitecture" />
+        <diagrams:ArchitecturePreview x:Name="ArchitectureImage" AutomationProperties.AutomationId="WizardArchitecture" x:Uid="WizardArchitecture" />
         <TextBlock x:Name="IntroDescription" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock002" />
         <TextBlock x:Name="IntroDataNotice" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock003" />
         <TextBlock x:Name="IntroDisclaimer" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingIntroTextBlock004" />

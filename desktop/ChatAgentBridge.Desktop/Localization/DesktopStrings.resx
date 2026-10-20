@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ArchitectureOpenHint" xml:space="preserve"><value>Click to enlarge</value></data>
+  <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>Open architecture diagram</value></data>
+  <data name="ArchitectureOpenNamedAccessibleName" xml:space="preserve"><value>Open architecture diagram: {0}</value></data>
+  <data name="ArchitectureOpenHelp" xml:space="preserve"><value>Opens a larger view with zoom controls.</value></data>
+  <data name="ArchitectureDialogTitle" xml:space="preserve"><value>Architecture diagram</value></data>
+  <data name="ArchitectureDialogClose" xml:space="preserve"><value>Close</value></data>
+  <data name="ArchitectureZoomOutName" xml:space="preserve"><value>Zoom out</value></data>
+  <data name="ArchitectureZoomInName" xml:space="preserve"><value>Zoom in</value></data>
+  <data name="ArchitectureZoomLevelName" xml:space="preserve"><value>Zoom level: {0}</value></data>
+  <data name="ArchitectureFit" xml:space="preserve"><value>Fit</value></data>
+  <data name="ArchitectureFitName" xml:space="preserve"><value>Fit diagram to window</value></data>
+  <data name="ArchitectureActualSize" xml:space="preserve"><value>100%</value></data>
+  <data name="ArchitectureActualSizeName" xml:space="preserve"><value>Show diagram at 100 percent</value></data>
+  <data name="ArchitectureImageName" xml:space="preserve"><value>Architecture diagram</value></data>
+  <data name="ArchitectureLoadError" xml:space="preserve"><value>The architecture diagram could not be loaded.</value></data>
   <data name="ChatControlNoRequests" xml:space="preserve"><value>No requests from you in this thread.</value></data>
   <data name="ChatControlStatus" xml:space="preserve"><value>Status: {0}. Pending approval: {1}. Connection: {2}.</value></data>
   <data name="ChatControlConnected" xml:space="preserve"><value>connected</value></data>

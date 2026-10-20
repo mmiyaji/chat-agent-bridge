@@ -12,6 +12,7 @@
     xmlns:executionUi="using:ChatAgentBridge_Desktop.ExecutionUi"
     xmlns:about="using:ChatAgentBridge_Desktop.About"
     xmlns:tray="using:ChatAgentBridge_Desktop.Tray"
+    xmlns:diagrams="using:ChatAgentBridge_Desktop.Diagrams"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Grid>
@@ -197,7 +198,7 @@
                                         <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                             <StackPanel Spacing="16">
                                                 <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock006" x:Uid="chatAgentBridgeDesktopMainPageTextBlock006" />
-                                                <Image Source="{x:Bind localization:LocalizedAssets.OverviewArchitecture, Mode=OneTime}" Stretch="Uniform" MaxWidth="1040" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="OverviewArchitecture" x:Uid="OverviewArchitecture" />
+                                                <diagrams:ArchitecturePreview AutomationProperties.AutomationId="OverviewArchitecture" MaxWidth="1040" MaxPreviewHeight="500" HorizontalAlignment="Stretch" x:Uid="OverviewArchitecture" />
                                                 <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock007" x:Uid="chatAgentBridgeDesktopMainPageTextBlock007" />
                                                 <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock008" x:Uid="chatAgentBridgeDesktopMainPageTextBlock008" />
                                             </StackPanel>

@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ArchitectureOpenHint" xml:space="preserve"><value>クリックして拡大</value></data>
+  <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>アーキテクチャ図を開く</value></data>
+  <data name="ArchitectureOpenNamedAccessibleName" xml:space="preserve"><value>アーキテクチャ図を開く: {0}</value></data>
+  <data name="ArchitectureOpenHelp" xml:space="preserve"><value>拡大表示とズーム操作を開きます。</value></data>
+  <data name="ArchitectureDialogTitle" xml:space="preserve"><value>アーキテクチャ図</value></data>
+  <data name="ArchitectureDialogClose" xml:space="preserve"><value>閉じる</value></data>
+  <data name="ArchitectureZoomOutName" xml:space="preserve"><value>縮小</value></data>
+  <data name="ArchitectureZoomInName" xml:space="preserve"><value>拡大</value></data>
+  <data name="ArchitectureZoomLevelName" xml:space="preserve"><value>拡大率: {0}</value></data>
+  <data name="ArchitectureFit" xml:space="preserve"><value>全体表示</value></data>
+  <data name="ArchitectureFitName" xml:space="preserve"><value>ウィンドウに合わせる</value></data>
+  <data name="ArchitectureActualSize" xml:space="preserve"><value>100%</value></data>
+  <data name="ArchitectureActualSizeName" xml:space="preserve"><value>100 パーセントで表示</value></data>
+  <data name="ArchitectureImageName" xml:space="preserve"><value>アーキテクチャ図</value></data>
+  <data name="ArchitectureLoadError" xml:space="preserve"><value>アーキテクチャ図を読み込めませんでした。</value></data>
   <data name="ChatControlNoRequests" xml:space="preserve"><value>このスレッドに、あなたの依頼はありません。</value></data>
   <data name="ChatControlStatus" xml:space="preserve"><value>状態: {0}。承認待ち: {1}件。接続: {2}。</value></data>
   <data name="ChatControlConnected" xml:space="preserve"><value>接続済み</value></data>
