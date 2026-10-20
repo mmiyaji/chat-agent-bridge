@@ -60,7 +60,12 @@ if (-not $isPublished) {
     # Only an unpublished draft can be replaced on a retry.
     Invoke-Gh (@('release', 'upload', $Tag, '--repo', $repository, '--clobber') + $files) | Out-Host
 }
-$release = (Invoke-Gh @('api', "repos/$repository/releases/tags/$Tag")) | ConvertFrom-Json
+# The tag endpoint only returns published releases. Authenticated listing also
+# includes drafts, so verification must use it before the final publish step.
+$updatedPages = (Invoke-Gh @('api', '--paginate', '--slurp', "repos/$repository/releases?per_page=100")) | ConvertFrom-Json -NoEnumerate
+$updated = @($updatedPages | ForEach-Object { $_ } | Where-Object { $_.tag_name -ceq $Tag })
+if ($updated.Count -ne 1) { throw 'The uploaded draft release was not found exactly once.' }
+$release = $updated[0]
 if ($release.tag_name -cne $Tag) { throw 'Unexpected release tag.' }
 foreach ($asset in $release.assets) {
     if (-not $expectedAssets.ContainsKey($asset.name)) { throw "Unexpected existing release asset: $($asset.name). Remove it from the draft before retrying." }

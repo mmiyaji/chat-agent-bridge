@@ -54,11 +54,6 @@ $ghMock = {
         $state.Release.assets = $assets
         return 'uploaded assets'
     }
-    if ($Arguments.Count -ge 2 -and $Arguments[0] -ceq 'api' -and $Arguments[1] -like 'repos/*/releases/tags/*') {
-        $state.Actions.Add('verify')
-        if (-not $state.Release) { throw 'Mock API release does not exist.' }
-        return ConvertTo-Json -InputObject $state.Release -Depth 20 -Compress
-    }
     if ($Arguments.Count -ge 2 -and $Arguments[0] -ceq 'release' -and $Arguments[1] -ceq 'edit') {
         $state.Actions.Add('publish')
         $state.Release.draft = $false
@@ -100,7 +95,7 @@ try {
 
     $mockGhBox.State = New-MockState
     Invoke-Publish
-    Assert-Equal @('list', 'create', 'upload', 'verify', 'publish') $mockGhBox.State.Actions 'Draft creation/upload/verification/publish sequence changed.'
+    Assert-Equal @('list', 'create', 'upload', 'list', 'publish') $mockGhBox.State.Actions 'Draft creation/upload/verification/publish sequence changed.'
     if ($mockGhBox.State.Release.draft) { throw 'Happy-path mock release was not published.' }
     if (@($mockGhBox.State.Release.assets).Count -ne 4) { throw 'Happy-path mock release did not verify all four archive/checksum assets.' }
     Write-Host 'PASS: creates a draft, uploads both architectures, verifies all assets, and publishes.'
@@ -109,7 +104,7 @@ try {
     $mismatchRejected = $false
     try { Invoke-Publish } catch { $mismatchRejected = $true }
     if (-not $mismatchRejected) { throw 'Digest mismatch unexpectedly reached successful publication.' }
-    Assert-Equal @('list', 'create', 'upload', 'verify') $mockGhBox.State.Actions 'Digest mismatch must stop before publish.'
+    Assert-Equal @('list', 'create', 'upload', 'list') $mockGhBox.State.Actions 'Digest mismatch must stop before publish.'
     if (-not $mockGhBox.State.Release.draft) { throw 'Digest mismatch published the release.' }
     Write-Host 'PASS: digest mismatch leaves the release as a draft.'
 
@@ -136,7 +131,7 @@ try {
     }
     $mockGhBox.State = New-MockState -ExistingReleases @($existingPublished)
     Invoke-Publish
-    Assert-Equal @('list', 'verify') $mockGhBox.State.Actions 'A matching published release must only be verified.'
+    Assert-Equal @('list', 'list') $mockGhBox.State.Actions 'A matching published release must only be verified.'
     Write-Host 'PASS: a matching published release is verified without replacing or uploading assets.'
 
     $mockGhBox.State = New-MockState -ListFailure
