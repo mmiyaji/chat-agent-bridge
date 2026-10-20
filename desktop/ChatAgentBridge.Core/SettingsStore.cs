@@ -71,8 +71,13 @@ public sealed class SettingsStore
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(stored.ChatResultMode),
                 SlackAllowedChannelIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedChannelIds ?? ""),
                 SlackAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedThreadIds ?? ""),
-                MattermostAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.MattermostAllowedThreadIds ?? "")
+                MattermostAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.MattermostAllowedThreadIds ?? ""),
+                FileAttachmentApprovalMode = FileAttachmentPolicy.NormalizeMode(stored.FileAttachmentApprovalMode ?? "always"),
+                FileAttachmentMaxSizeMb = stored.FileAttachmentMaxSizeMb,
+                FileAttachmentMaxCount = stored.FileAttachmentMaxCount,
+                FileAttachmentMaxTotalSizeMb = stored.FileAttachmentMaxTotalSizeMb
             };
+            FileAttachmentPolicy.Validate(settings);
             if (provider == AgentProfile.Custom && settings.AgentModel is not null)
                 throw new InvalidDataException("A custom agent cannot use a provider model override.");
             if (provider == AgentProfile.Custom && settings.AgentReasoningEffort is not null)
@@ -104,7 +109,7 @@ public sealed class SettingsStore
         string mattermostAllowedUsers;
         string slackAllowedUsers;
         string slackAllowedChannels, slackAllowedThreads, mattermostAllowedThreads;
-        string permissionMode, approvalMode, resultMode, trustedRoots;
+        string permissionMode, approvalMode, resultMode, trustedRoots, attachmentMode;
         try
         {
             mattermostAllowedUsers = ChatAccessPolicy.NormalizeAllowedUsers(settings.MattermostAllowedUserIds);
@@ -116,8 +121,11 @@ public sealed class SettingsStore
             approvalMode = ExecutionPolicy.NormalizeChatApprovalMode(settings.ChatApprovalMode);
             resultMode = ExecutionPolicy.NormalizeChatResultMode(settings.ChatResultMode);
             trustedRoots = ExecutionPolicy.NormalizeTrustedRoots(settings.TrustedWorkspaceRoots);
+            attachmentMode = FileAttachmentPolicy.NormalizeMode(settings.FileAttachmentApprovalMode);
         }
         catch (FormatException ex) { throw new ArgumentException("Allowed-user or scope IDs are invalid: " + ex.Message, nameof(settings), ex); }
+        var validatedSettings = settings with { FileAttachmentApprovalMode = attachmentMode };
+        FileAttachmentPolicy.Validate(validatedSettings);
         if (provider == AgentProfile.Custom && model is not null)
             throw new ArgumentException("A custom agent cannot use a provider model override.", nameof(settings));
         if (provider == AgentProfile.Custom && effort is not null)
@@ -158,7 +166,11 @@ public sealed class SettingsStore
             ChatResultMode = resultMode,
             SlackAllowedChannelIds = slackAllowedChannels,
             SlackAllowedThreadIds = slackAllowedThreads,
-            MattermostAllowedThreadIds = mattermostAllowedThreads
+            MattermostAllowedThreadIds = mattermostAllowedThreads,
+            FileAttachmentApprovalMode = attachmentMode,
+            FileAttachmentMaxSizeMb = settings.FileAttachmentMaxSizeMb,
+            FileAttachmentMaxCount = settings.FileAttachmentMaxCount,
+            FileAttachmentMaxTotalSizeMb = settings.FileAttachmentMaxTotalSizeMb
         };
         var tempPath = Path.Combine(DirectoryPath, $"settings.{Guid.NewGuid():N}.tmp");
         try
@@ -239,5 +251,9 @@ public sealed class SettingsStore
         public string? SlackAllowedChannelIds { get; set; }
         public string? SlackAllowedThreadIds { get; set; }
         public string? MattermostAllowedThreadIds { get; set; }
+        public string? FileAttachmentApprovalMode { get; set; } = "always";
+        public int FileAttachmentMaxSizeMb { get; set; } = 10;
+        public int FileAttachmentMaxCount { get; set; } = 3;
+        public int FileAttachmentMaxTotalSizeMb { get; set; } = 20;
     }
 }

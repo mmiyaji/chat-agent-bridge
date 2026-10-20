@@ -7,13 +7,14 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatConnectionNotifications
+public sealed partial class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatConnectionNotifications
 {
     public event Action? Connected;
     public event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
     private const int MaxMessageBytes = 1024 * 1024;
     private const string Trigger = "!cab";
     private HttpClient? _http;
+    private HttpClient? _fileUploadHttp;
     private readonly SessionStore? _injectedSessionStore;
     private readonly BoundedSeenSet _seen = new(10_000);
     private string? _currentUserId;
@@ -23,8 +24,10 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
     private CancellationTokenSource? _runLifetime;
     private bool _disposed;
     private bool _connected;
+    private bool _fileUploadConnected;
     private int _reconnectAttempt;
     private long _connectionGeneration;
+    private long _fileUploadConnectionGeneration;
     private readonly object _progressOwner = new();
 
     public MattermostWebSocketTransport() { }
@@ -34,11 +37,14 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
     internal MattermostWebSocketTransport(HttpClient http, Uri serverUri, string token, string channelId)
     {
         _http = http;
+        _fileUploadHttp = http;
         _serverUri = serverUri;
         _token = token;
         _channelId = channelId;
         _connected = true;
+        _fileUploadConnected = true;
         _connectionGeneration = 1;
+        _fileUploadConnectionGeneration = 1;
     }
 
     public async Task RunAsync(BridgeSettings settings, Func<ChatRequest, CancellationToken, Task> onRequest, CancellationToken cancellationToken)
@@ -46,6 +52,8 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
         ObjectDisposedException.ThrowIf(_disposed, this);
         Interlocked.Increment(ref _connectionGeneration);
         _connected = false;
+        _fileUploadConnected = false;
+        Interlocked.Increment(ref _fileUploadConnectionGeneration);
         _reconnectAttempt = 0;
         ArgumentNullException.ThrowIfNull(onRequest);
         if (string.IsNullOrWhiteSpace(settings.MattermostServerUrl) || string.IsNullOrWhiteSpace(settings.MattermostToken))
@@ -58,8 +66,10 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
         _serverUri = root;
         _token = token;
         _channelId = settings.MattermostChannelId;
+        if (_fileUploadHttp is not null && !ReferenceEquals(_fileUploadHttp, _http)) _fileUploadHttp.Dispose();
         _http?.Dispose();
         _http = TransportHttp.CreateClient(settings.MattermostBypassProxy);
+        _fileUploadHttp = TransportHttp.CreateClient(settings.MattermostBypassProxy, timeout: TimeSpan.FromMinutes(2));
         _runLifetime?.Cancel();
         _runLifetime?.Dispose();
         _runLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -83,14 +93,41 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
                 if (!runToken.IsCancellationRequested)
                     throw new MattermostReconnectException();
             }
-            catch (OperationCanceledException) when (runToken.IsCancellationRequested) { return; }
-            catch (ObjectDisposedException) when (runToken.IsCancellationRequested) { return; }
+            catch (OperationCanceledException) when (runToken.IsCancellationRequested)
+            {
+                _connected = false;
+                _fileUploadConnected = false;
+                Interlocked.Increment(ref _fileUploadConnectionGeneration);
+                return;
+            }
+            catch (ObjectDisposedException) when (runToken.IsCancellationRequested)
+            {
+                _connected = false;
+                _fileUploadConnected = false;
+                Interlocked.Increment(ref _fileUploadConnectionGeneration);
+                return;
+            }
             catch (MattermostReconnectException)
             {
+                _fileUploadConnected = false;
+                Interlocked.Increment(ref _fileUploadConnectionGeneration);
                 var attempt = ++_reconnectAttempt;
                 var delay = RetryDelay(attempt);
                 ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("mattermost", ChatReconnectionState.Reconnecting, attempt, delay));
-                await Task.Delay(delay, runToken).ConfigureAwait(false);
+                try { await Task.Delay(delay, runToken).ConfigureAwait(false); }
+                catch (OperationCanceledException) when (runToken.IsCancellationRequested)
+                {
+                    _connected = false;
+                    _fileUploadConnected = false;
+                    return;
+                }
+            }
+            catch
+            {
+                _connected = false;
+                _fileUploadConnected = false;
+                Interlocked.Increment(ref _fileUploadConnectionGeneration);
+                throw;
             }
         }
     }
@@ -125,6 +162,8 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
             if (envelope.TryGetProperty("seq_reply", out var sequence) && sequence.TryGetInt32(out var replySequence) && replySequence == 1 && authStatus.ValueKind == JsonValueKind.String && authStatus.GetString() == "OK")
             {
                 _connected = true;
+                _fileUploadConnected = true;
+                Interlocked.Increment(ref _fileUploadConnectionGeneration);
                 if (_reconnectAttempt > 0)
                     ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("mattermost", ChatReconnectionState.Reconnected, _reconnectAttempt, null));
                 _reconnectAttempt = 0;
@@ -302,11 +341,21 @@ public sealed class MattermostWebSocketTransport : IChatTransport, IChatProgress
 
     public ValueTask DisposeAsync()
     {
-        if (!_disposed) { _disposed = true; _connected = false; _runLifetime?.Cancel(); _http?.Dispose(); }
+        if (!_disposed)
+        {
+            _disposed = true;
+            _connected = false;
+            _fileUploadConnected = false;
+            Interlocked.Increment(ref _fileUploadConnectionGeneration);
+            _runLifetime?.Cancel();
+            _http?.Dispose();
+            if (_fileUploadHttp is not null && !ReferenceEquals(_fileUploadHttp, _http)) _fileUploadHttp.Dispose();
+        }
         return ValueTask.CompletedTask;
     }
 
     private HttpClient ActiveHttp => _http ?? throw new InvalidOperationException("Mattermost is not connected.");
+    private HttpClient ActiveFileUploadHttp => _fileUploadHttp ?? throw new InvalidOperationException("Mattermost is not connected.");
 
     internal static ChatRequest? ParsePost(string json, string channelFilter, string currentUserId, bool isBot,
         string? currentUsername = null, bool allowPlainThreadReplies = false)
