@@ -54,7 +54,7 @@ public sealed partial class ChatInboxViewModel
                 foreach (var item in pending) item.State = "キャンセル";
                 var active = own.Any(item => ReferenceEquals(item, _activeItem) && (item.State is "承認待ち" or "実行中")) &&
                     _execution is { IsCancellationRequested: false };
-                if (active) _execution!.Cancel();
+                if (active) RequestExecutionCancellation();
                 reply = active || pending.Length > 0
                     ? DesktopText.Get("ChatControlStop", active ? 1 : 0, pending.Length)
                     : DesktopText.Get("ChatControlStopNone");

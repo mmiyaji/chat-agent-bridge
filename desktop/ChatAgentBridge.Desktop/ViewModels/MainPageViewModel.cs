@@ -101,6 +101,9 @@ public partial class MainPageViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanFetchModelCandidates))]
     public partial bool IsRunning { get; set; }
 
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(CancelRunCommand))]
+    public partial bool IsCancellationPending { get; set; }
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RunCommand))]
     [NotifyCanExecuteChangedFor(nameof(SaveSettingsCommand))]
@@ -485,6 +488,7 @@ public partial class MainPageViewModel : ObservableObject
         }
 
         IsRunning = true;
+        IsCancellationPending = false;
         if (RequireApproval)
         {
             if (ConfirmExecutionAsync is null)
@@ -523,6 +527,7 @@ public partial class MainPageViewModel : ObservableObject
         };
         var runCancellation = new CancellationTokenSource();
         _runCancellation = runCancellation;
+        CancelRunCommand.NotifyCanExecuteChanged();
         try
         {
             await _executionHistoryStore.RecordAsync(execution);
@@ -651,8 +656,17 @@ public partial class MainPageViewModel : ObservableObject
     private bool CanSaveSettings() => IsSettingsLoaded && !IsLoading && !IsRunning && !_unsupportedSavedEffort;
     private bool CanReloadSettings() => !IsLoading && !IsRunning;
 
-    [RelayCommand(CanExecute = nameof(IsRunning))]
-    private void CancelRun() => _runCancellation?.Cancel();
+    private bool CanCancelRun() => IsRunning && _runCancellation is { IsCancellationRequested: false };
+
+    [RelayCommand(CanExecute = nameof(CanCancelRun))]
+    private void CancelRun()
+    {
+        var cancellation = _runCancellation;
+        if (cancellation is null || cancellation.IsCancellationRequested) return;
+        cancellation.Cancel();
+        IsCancellationPending = true;
+        LiveOutput.IsCancellationPending = true;
+    }
 
     public void CancelForWindowClose()
     {

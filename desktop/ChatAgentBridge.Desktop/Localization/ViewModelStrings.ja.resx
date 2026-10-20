@@ -43,7 +43,7 @@
     <value>キャンセル</value>
   </data>
   <data name="CancelExecutionInstruction" xml:space="preserve">
-    <value>キャンセルするには「キャンセル」を選択してください。</value>
+    <value>途中出力欄の「この依頼を中断」で実行を停止できます。</value>
   </data>
   <data name="CannotStartExecution" xml:space="preserve">
     <value>実行を開始できません</value>

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Windows.Input;
 using Windows.System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -17,6 +18,15 @@ public sealed partial class LiveOutputView : UserControl
 
     public static readonly DependencyProperty ViewModelProperty = DependencyProperty.Register(
         nameof(ViewModel), typeof(LiveOutputViewModel), typeof(LiveOutputView), new PropertyMetadata(null, ViewModelChanged));
+
+    public ICommand? CancelCommand
+    {
+        get => (ICommand?)GetValue(CancelCommandProperty);
+        set => SetValue(CancelCommandProperty, value);
+    }
+
+    public static readonly DependencyProperty CancelCommandProperty = DependencyProperty.Register(
+        nameof(CancelCommand), typeof(ICommand), typeof(LiveOutputView), new PropertyMetadata(null));
 
     private ScrollViewer? _outputScrollViewer;
     private int _selectionStart;
@@ -47,6 +57,8 @@ public sealed partial class LiveOutputView : UserControl
     public static Visibility ShowWhen(bool first, bool second) => first || second ? Visibility.Visible : Visibility.Collapsed;
     public static Visibility ShowWhenSingle(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
     public static Visibility ShowWaiting(bool active, bool hasOutput) => active && !hasOutput ? Visibility.Visible : Visibility.Collapsed;
+    public static Visibility ShowCancellationPending(bool active, bool cancellationPending) =>
+        active && cancellationPending ? Visibility.Visible : Visibility.Collapsed;
     public static Visibility ShowWhenNot(bool value) => value ? Visibility.Collapsed : Visibility.Visible;
 
     private static void ViewModelChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)

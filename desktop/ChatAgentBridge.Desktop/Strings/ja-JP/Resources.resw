@@ -991,4 +991,8 @@
   <data name="LiveOutputTruncationHint.Text" xml:space="preserve"><value>表示には直近の64,000文字のみ保持されます。</value></data>
   <data name="LiveOutputFollow.Content" xml:space="preserve"><value>出力を追従</value></data>
   <data name="LiveOutputClear.Content" xml:space="preserve"><value>表示を消去</value></data>
+  <data name="LiveOutputCancel.Content" xml:space="preserve"><value>この依頼を中断</value></data>
+  <data name="LiveOutputCancel.ToolTipService.ToolTip" xml:space="preserve"><value>停止しても、エージェントがすでに行ったファイル変更は元に戻りません。</value></data>
+  <data name="LiveOutputCancellationPending.Text" xml:space="preserve"><value>中断を要求しました。プロセスの停止を待っています。すでに行われたファイル変更は元に戻りません。</value></data>
+  <data name="InboxActiveRequestBannerButton.AutomationProperties.HelpText" xml:space="preserve"><value>実行中のこの依頼を開き、確認または停止します。</value></data>
 </root>

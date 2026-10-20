@@ -478,4 +478,7 @@
   <data name="LiveOutputTruncationHint" xml:space="preserve"><value>Only the latest 64,000 characters are kept in this display.</value></data>
   <data name="LiveOutputFollow" xml:space="preserve"><value>Follow output</value></data>
   <data name="LiveOutputClear" xml:space="preserve"><value>Clear display</value></data>
+  <data name="LiveOutputCancellationPending" xml:space="preserve"><value>Cancellation requested. Waiting for the process to stop. File changes already made will not be rolled back.</value></data>
+  <data name="LiveOutputCancel" xml:space="preserve"><value>Cancel this request</value></data>
+  <data name="InboxActiveRequestBanner" xml:space="preserve"><value>View running request: {0} — {1}</value></data>
 </root>

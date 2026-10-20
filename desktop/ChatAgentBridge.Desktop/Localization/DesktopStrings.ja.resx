@@ -478,4 +478,7 @@
   <data name="LiveOutputTruncationHint" xml:space="preserve"><value>表示には直近の64,000文字のみ保持されます。</value></data>
   <data name="LiveOutputFollow" xml:space="preserve"><value>出力を追従</value></data>
   <data name="LiveOutputClear" xml:space="preserve"><value>表示を消去</value></data>
+  <data name="LiveOutputCancellationPending" xml:space="preserve"><value>中断を要求しました。プロセスの停止を待っています。すでに行われたファイル変更は元に戻りません。</value></data>
+  <data name="LiveOutputCancel" xml:space="preserve"><value>この依頼を中断</value></data>
+  <data name="InboxActiveRequestBanner" xml:space="preserve"><value>実行中の依頼を表示：{0} — {1}</value></data>
 </root>

@@ -327,6 +327,7 @@
                                     <Button  Command="{x:Bind ViewModel.CancelRunCommand}" AutomationProperties.AutomationId="CancelAgent"  x:Uid="CancelAgent" />
                                 </StackPanel>
                                 <executionUi:LiveOutputView ViewModel="{x:Bind ViewModel.LiveOutput, Mode=OneWay}"
+                                                            CancelCommand="{x:Bind ViewModel.CancelRunCommand, Mode=OneWay}"
                                                             AutomationProperties.AutomationId="ManualLiveOutput" />
                                 <TextBox  Text="{x:Bind ViewModel.Output, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="160" MaxHeight="400" AutomationProperties.AutomationId="AgentOutput"  x:Uid="AgentOutput" />
                                 <TextBlock Text="{x:Bind ViewModel.UsageSummary, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="LocalUsageSummary" />

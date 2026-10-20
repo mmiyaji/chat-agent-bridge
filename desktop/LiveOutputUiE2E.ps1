@@ -29,8 +29,11 @@ $checks=[Collections.Generic.List[object]]::new()
 $appProcess=$null;$server=$null;$endpoint=$null
 $priorFixture=$env:CAB_LIVE_OUTPUT_FIXTURE
 $priorDelay=$env:CAB_LIVE_OUTPUT_FIXTURE_DELAY_MS
+$priorPidFile=$env:CAB_LIVE_OUTPUT_FIXTURE_PID_FILE
 $env:CAB_LIVE_OUTPUT_FIXTURE='1'
 $env:CAB_LIVE_OUTPUT_FIXTURE_DELAY_MS='700'
+$fixturePidFile=Join-Path $runRoot 'fixture-pids.txt'
+$env:CAB_LIVE_OUTPUT_FIXTURE_PID_FILE=$fixturePidFile
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
 function Write-Json([string]$Name,$Value){$Value|ConvertTo-Json -Depth 12|Set-Content -LiteralPath (Join-Path $dataPath $Name) -Encoding utf8}
 function UI([string[]]$Arguments){$out=& winapp ui @Arguments -a $appProcess.Id --json 2>&1;if($LASTEXITCODE -ne 0){throw "UI action failed: $($Arguments -join ' '): $($out -join ' ')"};return $out}
@@ -38,6 +41,21 @@ function Root{[Windows.Automation.AutomationElement]::FromHandle($appProcess.Mai
 function Element([string]$Id){(Root).FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$Id))}
 function Scoped-Element([string]$Scope,[string]$Id){$root=Element $Scope;if(-not $root){return $null};return $root.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$Id))}
 function Value([string]$Id,[string]$Scope=''){$el=if($Scope){Scoped-Element $Scope $Id}else{Element $Id};if(-not $el){throw "Missing UI control $Id"};$pattern=$el.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern);return [string]$pattern.Current.Value}
+function Enabled([string]$Id,[string]$Scope=''){$el=if($Scope){Scoped-Element $Scope $Id}else{Element $Id};if(-not $el){throw "Missing UI control $Id"};return [bool]$el.Current.IsEnabled}
+function AssertDisabledOrGone([string]$Id,[string]$Scope,[string]$Message){$el=Scoped-Element $Scope $Id;if($el){Assert (-not $el.Current.IsEnabled) $Message}}
+function Wait-HistoryStatus([string]$Status,[string]$ThreadId='',[int]$Seconds=15){
+    $historyPath=Join-Path $dataPath 'history.json';$until=[DateTimeOffset]::UtcNow.AddSeconds($Seconds)
+    do{
+        if(Test-Path -LiteralPath $historyPath){
+            try{$history=Get-Content -LiteralPath $historyPath -Raw|ConvertFrom-Json
+                $record=@($history.records|Where-Object { $_.status -eq $Status -and ($ThreadId -eq '' -or $_.threadId -eq $ThreadId) -and ($ThreadId -ne '' -or $_.workspaceRoot -eq $workspace) }|Sort-Object startedAt -Descending|Select-Object -First 1)
+                if($record.Count){return $record[0]}
+            }catch{}
+        }
+        Start-Sleep -Milliseconds 100
+    }while([DateTimeOffset]::UtcNow -lt $until)
+    throw "Timed out waiting for execution history status '$Status' (thread '$ThreadId')."
+}
 function Follow([bool]$Enabled){
     $el=Element 'LiveOutputFollow';if(-not $el){throw 'Missing live-output follow control.'}
     $pattern=$el.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
@@ -144,10 +162,17 @@ try{
     UI @('invoke','RunAgent')|Out-Null
     Wait-Contains 'LiveOutputText' 'LIVE_RUN_ONE LIVE_FIXTURE assistant output arrived' 25 'ManualLiveOutput'
     Wait-Contains 'LiveOutputText' 'LIVE_FIXTURE stderr arrived' 25 'ManualLiveOutput'
-    UI @('invoke','CancelAgent')|Out-Null
+    UI @('scroll-into-view','LiveOutputCancel')|Out-Null
+    Capture ("live-output-$Language-manual-cancel-active-light-500.png")
+    UI @('wait-for','LiveOutputCancel','-p','IsEnabled','--value','True','-t','5000')|Out-Null
+    UI @('invoke','LiveOutputCancel')|Out-Null
+    AssertDisabledOrGone 'LiveOutputCancel' 'ManualLiveOutput' 'Manual cancel remained enabled after cancellation was requested.'
+    Assert (-not (Enabled 'CancelAgent')) 'The existing manual cancel command remained enabled after cancellation was requested.'
     UI @('wait-for','RunAgent','-p','IsEnabled','--value','True','-t','10000')|Out-Null
     Assert ((Value 'LiveOutputText' 'ManualLiveOutput').Contains('LIVE_RUN_ONE LIVE_FIXTURE assistant output arrived')) 'Cancellation discarded partial live output.'
     Assert (-not (Test-Path -LiteralPath $gate)) 'Cancelled run unexpectedly released the fixture completion gate.'
+    $manualCancelled=Wait-HistoryStatus 'cancelled'
+    Assert ($manualCancelled.workspaceRoot -eq $workspace) 'Manual cancellation history did not belong to the isolated workspace.'
     $checks.Add(@{name='Live stream appears before completion and cancellation retains the partial tail';passed=$true})
 
     # A new run has a fresh live buffer. Release it only after both stream types are visible.
@@ -180,23 +205,40 @@ try{
     Post-Chat 'live-output-chat-a' 'live-output-thread-a' 'LIVE_RUN_CHAT_A isolated conversation A'
     Post-Chat 'live-output-chat-b' 'live-output-thread-b' 'LIVE_RUN_CHAT_B isolated conversation B'
     Go 'NavChat'
+    Go 'NavAppearance'
+    if(Element 'ThemeDark'){UI @('invoke','ThemeDark')|Out-Null;Start-Sleep -Milliseconds 250}
+    Go 'NavChat'
+    Resize 500
     Run-Chat 'LIVE_RUN_CHAT_A isolated conversation A'
     Wait-Contains 'LiveOutputText' 'LIVE_RUN_CHAT_A LIVE_FIXTURE assistant output arrived' 25 'ChatLiveOutput'
+    UI @('scroll-into-view','LiveOutputCancel')|Out-Null
+    Capture ("live-output-$Language-chat-cancel-active-dark-500.png")
     Select-ChatRequest 'LIVE_RUN_CHAT_B isolated conversation B'
     $selectedB=Scoped-Element 'ChatLiveOutput' 'LiveOutputText'
     if($selectedB){try{Assert (-not (Value 'LiveOutputText' 'ChatLiveOutput').Contains('LIVE_RUN_CHAT_A')) 'Conversation B displayed conversation A output.'}catch{if($_.Exception.Message -like '*displayed conversation A*'){throw}}}
-    Select-ChatRequest 'LIVE_RUN_CHAT_A isolated conversation A'
+    Assert (Enabled 'ActiveRequestBanner') 'The active request banner did not appear while another conversation was selected.'
+    Assert ((Element 'ActiveRequestBanner').Current.Name.Contains('LIVE_RUN_CHAT_A')) 'The active request banner did not identify conversation A.'
+    UI @('scroll-into-view','ActiveRequestBanner')|Out-Null
+    Capture ("live-output-$Language-chat-active-banner-500.png")
+    Assert (-not (Enabled 'CancelChat')) 'The selected conversation B can cancel the active conversation A request.'
+    UI @('invoke','ActiveRequestBanner')|Out-Null
     Wait-Contains 'LiveOutputText' 'LIVE_RUN_CHAT_A LIVE_FIXTURE assistant output arrived' 10 'ChatLiveOutput'
-    Set-Content -LiteralPath $gate 'release-chat-a'
-    Wait-Contains 'ChatOutput' 'LIVE_FIXTURE_FINAL fixed final response' 25
-    Remove-Item -LiteralPath $gate -Force
+    Assert (Enabled 'LiveOutputCancel' 'ChatLiveOutput') 'Returning to the active request did not enable its scoped cancel button.'
+    UI @('invoke','LiveOutputCancel')|Out-Null
+    AssertDisabledOrGone 'LiveOutputCancel' 'ChatLiveOutput' 'Chat cancel remained enabled after cancellation was requested.'
+    Assert (-not (Enabled 'CancelChat')) 'The chat cancel command remained enabled after cancellation was requested.'
+    $chatCancelled=Wait-HistoryStatus 'cancelled' 'live-output-thread-a'
+    Assert ($chatCancelled.workspaceRoot -eq $workspace) 'Chat cancellation history did not belong to the isolated workspace.'
+    Assert ((Value 'LiveOutputText' 'ChatLiveOutput').Contains('LIVE_RUN_CHAT_A LIVE_FIXTURE assistant output arrived')) 'Cancelling conversation A discarded its partial live output.'
+    Assert (-not (Test-Path -LiteralPath $gate)) 'Cancelled conversation A unexpectedly released the fixture completion gate.'
+    Remove-Item -LiteralPath $gate -Force -ErrorAction SilentlyContinue
     Run-Chat 'LIVE_RUN_CHAT_B isolated conversation B'
     Wait-Contains 'LiveOutputText' 'LIVE_RUN_CHAT_B LIVE_FIXTURE assistant output arrived' 25 'ChatLiveOutput'
     $chatLive=Value 'LiveOutputText' 'ChatLiveOutput'
     Assert (-not $chatLive.Contains('LIVE_RUN_CHAT_A')) 'Conversation B inherited conversation A live output.'
     Set-Content -LiteralPath $gate 'release-chat-b'
     Wait-Contains 'ChatOutput' 'LIVE_FIXTURE_FINAL fixed final response' 25
-    $checks.Add(@{name='Switching between loopback chat conversations isolates their live output';passed=$true})
+    $checks.Add(@{name='Active-request banner returns to conversation A, selected B cannot cancel it, and cancellation retains A partial output';passed=$true})
 
     foreach($theme in @('light','dark')){
         Go 'NavAppearance'
@@ -219,7 +261,17 @@ try{
     $checks|ConvertTo-Json -Depth 8|Set-Content -LiteralPath (Join-Path $runRoot 'results.json')
     if($appProcess -and -not $appProcess.HasExited){Stop-Process -Id $appProcess.Id -Force -ErrorAction SilentlyContinue}
     if($server -and -not $server.HasExited){Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue}
+    if(Test-Path -LiteralPath $fixturePidFile){
+        foreach($line in Get-Content -LiteralPath $fixturePidFile){
+            $fixturePid=0
+            if([int]::TryParse($line,[ref]$fixturePid)){
+                $fixtureProcess=Get-Process -Id $fixturePid -ErrorAction SilentlyContinue
+                if($fixtureProcess -and $fixtureProcess.ProcessName -eq 'ChatAgentBridge.TestAgent'){Stop-Process -Id $fixturePid -Force -ErrorAction SilentlyContinue}
+            }
+        }
+    }
     $env:CAB_LIVE_OUTPUT_FIXTURE=$priorFixture
     $env:CAB_LIVE_OUTPUT_FIXTURE_DELAY_MS=$priorDelay
+    $env:CAB_LIVE_OUTPUT_FIXTURE_PID_FILE=$priorPidFile
 }
 Write-Output "Artifacts: $runRoot"

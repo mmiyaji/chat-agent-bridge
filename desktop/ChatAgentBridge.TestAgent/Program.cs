@@ -79,6 +79,10 @@ if (args.Contains("--print"))
             return;
         }
 
+        var fixturePidFile = Environment.GetEnvironmentVariable("CAB_LIVE_OUTPUT_FIXTURE_PID_FILE");
+        if (!string.IsNullOrWhiteSpace(fixturePidFile))
+            await File.AppendAllTextAsync(fixturePidFile, Environment.ProcessId + Environment.NewLine);
+
         var livePrompt = await Console.In.ReadToEndAsync();
         var liveRunMatch = System.Text.RegularExpressions.Regex.Match(livePrompt, @"\bLIVE_RUN_(ONE|TWO|CHAT_A|CHAT_B)\b", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
         if (!liveRunMatch.Success)

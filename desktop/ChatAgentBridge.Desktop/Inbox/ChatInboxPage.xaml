@@ -25,6 +25,14 @@
         <StackPanel Grid.Row="1" Spacing="3">
             <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" MaxLines="2" TextTrimming="WordEllipsis"
                        ToolTipService.ToolTip="{x:Bind ViewModel.Status, Mode=OneWay}" AutomationProperties.AutomationId="ChatStatus" />
+            <Button Command="{x:Bind ViewModel.ReturnToActiveRequestCommand, Mode=OneWay}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasOtherRequestRunning), Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind ViewModel.ActiveRequestBannerText, Mode=OneWay}"
+                    AutomationProperties.AutomationId="ActiveRequestBanner" x:Uid="InboxActiveRequestBannerButton">
+                <TextBlock Text="{x:Bind ViewModel.ActiveRequestBannerText, Mode=OneWay}"
+                           TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+            </Button>
             <StackPanel Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.IsWideLayout), Mode=OneWay}">
                 <TextBlock Text="{x:Bind ViewModel.OverflowNotice, Mode=OneWay}" TextWrapping="Wrap" />
                 <TextBlock Text="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="NotificationStatus" />
@@ -141,6 +149,7 @@
                         <TextBlock Text="{x:Bind ViewModel.Selected.Workspace, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                         <TextBlock Text="{x:Bind ViewModel.Selected.SessionLabel, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
                         <executionUi:LiveOutputView ViewModel="{x:Bind ViewModel.SelectedLiveOutput, Mode=OneWay}"
+                                                    CancelCommand="{x:Bind ViewModel.CancelCommand, Mode=OneWay}"
                                                     AutomationProperties.AutomationId="ChatLiveOutput" />
                         <TextBlock x:Uid="InboxResultLabel" />
                         <TextBox Text="{x:Bind ViewModel.SelectedOutput, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"

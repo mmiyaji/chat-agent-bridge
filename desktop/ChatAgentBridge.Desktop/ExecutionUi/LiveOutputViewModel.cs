@@ -21,6 +21,7 @@ public sealed partial class LiveOutputViewModel : ObservableObject, IDisposable
     public partial string Text { get; set; } = "";
     public bool HasOutput => Text.Length > 0;
     [ObservableProperty] public partial bool IsActive { get; set; }
+    [ObservableProperty] public partial bool IsCancellationPending { get; set; }
     [ObservableProperty] public partial bool IsTruncated { get; set; }
     [ObservableProperty] public partial bool FollowOutput { get; set; } = true;
 
@@ -35,6 +36,7 @@ public sealed partial class LiveOutputViewModel : ObservableObject, IDisposable
             _accepting = true;
         }
         FollowOutput = true;
+        IsCancellationPending = false;
         Flush();
         IsActive = true;
         _timer ??= CreateTimer();

@@ -43,7 +43,7 @@
     <value>Cancel</value>
   </data>
   <data name="CancelExecutionInstruction" xml:space="preserve">
-    <value>Select Cancel to stop the run.</value>
+    <value>Select “Cancel this request” in the live output panel to stop the run.</value>
   </data>
   <data name="CannotStartExecution" xml:space="preserve">
     <value>Cannot start execution</value>

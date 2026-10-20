@@ -33,10 +33,14 @@
                        Visibility="{x:Bind executionUi:LiveOutputView.ShowWaiting(ViewModel.IsActive, ViewModel.HasOutput), Mode=OneWay}"
                        AutomationProperties.AutomationId="LiveOutputWaitingHelp" x:Uid="LiveOutputWaitingHelp" />
             <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                       Visibility="{x:Bind executionUi:LiveOutputView.ShowCancellationPending(ViewModel.IsActive, ViewModel.IsCancellationPending), Mode=OneWay}"
+                       AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="LiveOutputCancellationPending" x:Uid="LiveOutputCancellationPending" />
+            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                        Visibility="{x:Bind executionUi:LiveOutputView.ShowWhenSingle(ViewModel.IsTruncated), Mode=OneWay}"
                        AutomationProperties.AutomationId="LiveOutputTruncationHint" x:Uid="LiveOutputTruncationHint" />
             <Grid ColumnSpacing="8" RowSpacing="8">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
@@ -55,6 +59,10 @@
                     <Button Command="{x:Bind ViewModel.ClearCommand, Mode=OneWay}"
                             AutomationProperties.AutomationId="LiveOutputClear" x:Uid="LiveOutputClear" />
                 </StackPanel>
+                <Button Grid.Row="2" Command="{x:Bind CancelCommand, Mode=OneWay}"
+                        HorizontalAlignment="Stretch"
+                        Visibility="{x:Bind executionUi:LiveOutputView.ShowWhenSingle(ViewModel.IsActive), Mode=OneWay}"
+                        AutomationProperties.AutomationId="LiveOutputCancel" x:Uid="LiveOutputCancel" />
             </Grid>
         </StackPanel>
     </Expander>

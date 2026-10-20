@@ -991,4 +991,8 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="LiveOutputTruncationHint.Text" xml:space="preserve"><value>Only the latest 64,000 characters are kept in this display.</value></data>
   <data name="LiveOutputFollow.Content" xml:space="preserve"><value>Follow output</value></data>
   <data name="LiveOutputClear.Content" xml:space="preserve"><value>Clear display</value></data>
+  <data name="LiveOutputCancel.Content" xml:space="preserve"><value>Cancel this request</value></data>
+  <data name="LiveOutputCancel.ToolTipService.ToolTip" xml:space="preserve"><value>Stopping may not undo changes the agent already made to files.</value></data>
+  <data name="LiveOutputCancellationPending.Text" xml:space="preserve"><value>Cancellation requested. Waiting for the process to stop. File changes already made will not be rolled back.</value></data>
+  <data name="InboxActiveRequestBannerButton.AutomationProperties.HelpText" xml:space="preserve"><value>Open this exact running request to review or stop it.</value></data>
 </root>
