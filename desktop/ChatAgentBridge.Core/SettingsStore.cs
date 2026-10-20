@@ -25,7 +25,16 @@ public sealed class SettingsStore
 
     public async Task<BridgeSettings> LoadAsync(CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(_filePath)) return new BridgeSettings();
+        if (!File.Exists(_filePath))
+        {
+            // Suggest the user's known Documents folder only for a new installation.
+            // Never replace a saved workspace or create/trust another directory implicitly.
+            var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            return new BridgeSettings
+            {
+                WorkspaceRoot = Path.IsPathFullyQualified(documents) && Directory.Exists(documents) ? documents : ""
+            };
+        }
         try
         {
             await using var stream = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read,

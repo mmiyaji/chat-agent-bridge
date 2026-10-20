@@ -23,6 +23,7 @@ public partial class MainPageViewModel
             var snapshot = baseline with { AutoConnectProvider = provider };
             await _settingsStore.SaveAsync(snapshot);
             _settings = snapshot;
+            _hasSavedSettings = true;
             _savedWorkspaceExists = Directory.Exists(snapshot.WorkspaceRoot);
             UpdateSavedAgentSummary();
             saved = true;

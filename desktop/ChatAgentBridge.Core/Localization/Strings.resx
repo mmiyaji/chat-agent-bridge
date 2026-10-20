@@ -5,12 +5,20 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="TrustedWorkspaceRequired" xml:space="preserve"><value>The workspace must exist and be inside a trusted workspace root.</value></data>
+  <data name="WorkspaceRequired" xml:space="preserve"><value>Choose a workspace folder before checking the CLI.</value></data>
+  <data name="WorkspacePathMustBeAbsolute" xml:space="preserve"><value>Workspace path '{0}' must be an absolute path. Choose a workspace using its full path.</value></data>
+  <data name="WorkspacePathInvalid" xml:space="preserve"><value>Workspace path '{0}' is invalid. Choose a valid workspace folder path.</value></data>
+  <data name="WorkspaceFolderNotFound" xml:space="preserve"><value>Workspace folder '{0}' does not exist. Choose an existing folder.</value></data>
+  <data name="WorkspaceNotTrusted" xml:space="preserve"><value>Workspace folder '{0}' is not trusted. Check Trusted Folders in Agent Settings. Select a folder within that scope, or add this folder only if you trust it.</value></data>
   <data name="NativeCliRequired" xml:space="preserve"><value>CLI verification requires a native executable. Specify the executable path.</value></data>
   <data name="CliNotFound" xml:space="preserve"><value>CLI executable was not found. Check the executable path or PATH.</value></data>
+  <data name="CliExecutableNotFound" xml:space="preserve"><value>Configured CLI executable '{0}' was not found. Check the executable path or PATH.</value></data>
   <data name="CliStartFailed" xml:space="preserve"><value>The CLI process could not be started.</value></data>
   <data name="CliLaunchFailed" xml:space="preserve"><value>The CLI could not be launched. Check the executable and permissions.</value></data>
   <data name="CliVersionTimeout" xml:space="preserve"><value>CLI version verification timed out. Check the CLI and try again.</value></data>
   <data name="CliVersionUnavailable" xml:space="preserve"><value>Could not get valid version information from the CLI. Check that it is installed.</value></data>
+  <data name="CliRuntimeMissing" xml:space="preserve"><value>The configured CLI requires a .NET runtime that is not available. Install the required .NET runtime, then retry the check.</value></data>
+  <data name="CliVersionCommandFailed" xml:space="preserve"><value>Configured CLI --version exited with code {0}. Run the configured CLI with --version in a terminal, then check that its runtime and permissions are set up correctly.</value></data>
   <data name="CliProviderMismatch" xml:space="preserve"><value>The executable version information does not match {0}. Specify the correct CLI executable.</value></data>
   <data name="ApprovalPermissionLine" xml:space="preserve"><value>Approve: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>Reject: !cab reject {0}</value></data>

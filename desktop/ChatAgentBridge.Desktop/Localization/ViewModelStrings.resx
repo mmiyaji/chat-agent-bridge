@@ -112,7 +112,7 @@
     <value>The CLI started successfully. Checking model options…</value>
   </data>
   <data name="CliTimeout" xml:space="preserve">
-    <value>The CLI did not respond in time. Check its location and login, then try again.</value>
+    <value>The CLI version check timed out. Check that its executable runs with --version in a terminal, then retry.</value>
   </data>
   <data name="CliUnconfirmed" xml:space="preserve">
     <value>Could not verify</value>
@@ -697,4 +697,5 @@ Conversation ID (first message): {2}</value></data>
   <data name="AttachmentLimitsMustBeWholeNumbers" xml:space="preserve"><value>Attachment limits must be whole numbers.</value></data>
   <data name="GeneralSettingsSaved" xml:space="preserve"><value>Auto-connect preference saved</value></data>
   <data name="GeneralSettingsSavedDetails" xml:space="preserve"><value>The saved auto-connect preference takes effect the next time the app starts.</value></data>
+  <data name="CliModelsUnavailableDetails" xml:space="preserve"><value>CLI startup and version check succeeded. Model discovery failed: {0}</value></data>
 </root>

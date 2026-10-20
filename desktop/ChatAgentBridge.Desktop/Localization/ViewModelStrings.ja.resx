@@ -112,7 +112,7 @@
     <value>CLIを起動できました。続いてモデル候補を確認しています…</value>
   </data>
   <data name="CliTimeout" xml:space="preserve">
-    <value>CLIの応答が時間内にありませんでした。CLIの場所とログイン状態を確認し、再実行してください。</value>
+    <value>CLIのバージョン確認が時間切れになりました。CLI実行ファイルをターミナルで --version を付けて起動できるか確認し、再実行してください。</value>
   </data>
   <data name="CliUnconfirmed" xml:space="preserve">
     <value>確認できませんでした</value>
@@ -697,4 +697,5 @@ AIの操作権限: {8}</value>
   <data name="AttachmentLimitsMustBeWholeNumbers" xml:space="preserve"><value>添付の上限には整数を指定してください。</value></data>
   <data name="GeneralSettingsSaved" xml:space="preserve"><value>自動接続先を保存しました</value></data>
   <data name="GeneralSettingsSavedDetails" xml:space="preserve"><value>次回のアプリ起動時から、この自動接続設定を使用します。</value></data>
+  <data name="CliModelsUnavailableDetails" xml:space="preserve"><value>CLIの起動・バージョン確認は成功しました。モデル候補の取得で失敗しました：{0}</value></data>
 </root>

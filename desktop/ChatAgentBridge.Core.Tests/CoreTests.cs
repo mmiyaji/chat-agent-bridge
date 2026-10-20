@@ -23,6 +23,33 @@ public sealed class CoreTests
         => Assert.Throws<FormatException>(() => AgentArgumentParser.Parse("exec \"unfinished"));
 
     [Fact]
+    public async Task SettingsStore_FirstRunSuggestsExistingDocumentsWithoutSaving()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var settings = await new SettingsStore(path).LoadAsync();
+        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+        Assert.Equal(Path.IsPathFullyQualified(documents) && Directory.Exists(documents) ? documents : "", settings.WorkspaceRoot);
+        Assert.Empty(settings.TrustedWorkspaceRoots);
+        Assert.False(Directory.Exists(path));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("C:/missing-saved-workspace")]
+    public async Task SettingsStore_PreservesSavedWorkspaceInsteadOfApplyingFirstRunDefault(string workspace)
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new SettingsStore(path);
+            await store.SaveAsync(new BridgeSettings { WorkspaceRoot = workspace });
+            Assert.Equal(workspace, (await store.LoadAsync()).WorkspaceRoot);
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
     public async Task SettingsStore_RoundTripsSettings()
     {
         var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

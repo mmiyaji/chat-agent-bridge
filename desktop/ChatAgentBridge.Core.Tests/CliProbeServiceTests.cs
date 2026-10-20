@@ -1,4 +1,5 @@
 using ChatAgentBridge.Core;
+using System.Globalization;
 
 namespace ChatAgentBridge.Core.Tests;
 
@@ -27,7 +28,102 @@ public sealed class CliProbeServiceTests
         using var fixture = new Fixture();
         var customFixture = fixture.CreateAgent("ChatAgentBridge.TestAgent");
         await Assert.ThrowsAsync<InvalidOperationException>(() => new CliProbeService().CheckAsync(fixture.Settings(customFixture, AgentProfile.Claude)));
-        await Assert.ThrowsAsync<FileNotFoundException>(() => new CliProbeService().CheckAsync(fixture.Settings(Path.Combine(fixture.Root, "missing.exe"))));
+        var missing = Path.Combine(fixture.Root, "missing.exe");
+        var missingError = await Assert.ThrowsAsync<FileNotFoundException>(() => new CliProbeService().CheckAsync(fixture.Settings(missing)));
+        Assert.Contains(missing, missingError.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ProbeExplainsKnownMissingDotNetRuntimeWithoutReturningRawStderr()
+    {
+        using var fixture = new Fixture();
+        var codex = fixture.CreateAgent("cab-probe-runtime-error");
+        var previousCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                new CliProbeService().CheckAsync(fixture.Settings(codex)));
+
+            Assert.Contains(".NET runtime", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("install", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("You must install or update .NET", error.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousCulture;
+        }
+    }
+
+    [Fact]
+    public async Task ProbeReportsVersionExitCodeAndGuidanceWithoutLeakingArbitraryStderr()
+    {
+        using var fixture = new Fixture();
+        var codex = fixture.CreateAgent("cab-probe-version-error");
+        var previousCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                new CliProbeService().CheckAsync(fixture.Settings(codex)));
+
+            Assert.Contains("73", error.Message, StringComparison.Ordinal);
+            Assert.Contains("--version", error.Message, StringComparison.Ordinal);
+            Assert.Contains("permissions", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("fixture secret stderr", error.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousCulture;
+        }
+    }
+
+    [Theory]
+    [InlineData("en", "choose a workspace", "absolute path", "does not exist", "Trusted Folders", "invalid")]
+    [InlineData("ja", "作業フォルダーを選択", "絶対パス", "見つかりません", "信頼するフォルダー", "無効")]
+    public async Task ProbeReportsActionableLocalizedWorkspaceErrorsBeforeExecutableLookup(
+        string cultureName, string requiredText, string absoluteText, string missingText, string trustedText, string invalidText)
+    {
+        using var fixture = new Fixture();
+        var previousCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(cultureName);
+            var service = new CliProbeService();
+            var missingExecutable = Path.Combine(fixture.Root, "must-not-be-looked-up.exe");
+
+            var required = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.CheckAsync(fixture.Settings(missingExecutable) with { WorkspaceRoot = " " }));
+            Assert.Contains(requiredText, required.Message, StringComparison.OrdinalIgnoreCase);
+
+            const string relative = "relative-workspace";
+            var absolute = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.CheckAsync(fixture.Settings(missingExecutable) with { WorkspaceRoot = relative }));
+            Assert.Contains(relative, absolute.Message, StringComparison.Ordinal);
+            Assert.Contains(absoluteText, absolute.Message, StringComparison.OrdinalIgnoreCase);
+
+            var malformedPath = fixture.Workspace + "\0invalid";
+            var malformed = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.CheckAsync(fixture.Settings(missingExecutable) with { WorkspaceRoot = malformedPath }));
+            Assert.Contains(invalidText, malformed.Message, StringComparison.OrdinalIgnoreCase);
+
+            var nonexistentPath = Path.Combine(fixture.Root, "not-a-workspace");
+            var nonexistent = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.CheckAsync(fixture.Settings(missingExecutable) with { WorkspaceRoot = nonexistentPath }));
+            Assert.Contains(nonexistentPath, nonexistent.Message, StringComparison.Ordinal);
+            Assert.Contains(missingText, nonexistent.Message, StringComparison.OrdinalIgnoreCase);
+
+            var untrusted = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.CheckAsync(fixture.Settings(missingExecutable) with { TrustedWorkspaceRoots = fixture.Root }));
+            Assert.Contains(fixture.Workspace, untrusted.Message, StringComparison.Ordinal);
+            Assert.Contains(trustedText, untrusted.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousCulture;
+        }
     }
 
     [Fact]

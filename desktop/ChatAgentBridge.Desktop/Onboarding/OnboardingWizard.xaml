@@ -58,11 +58,17 @@
                         <Button  Command="{x:Bind ViewModel.CancelCliCheckCommand, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" AutomationProperties.AutomationId="CancelCliCheck"  x:Uid="CancelCliCheck" />
                         <ProgressRing IsActive="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" Width="20" Height="20" VerticalAlignment="Center" />
                     </StackPanel>
+                    <InfoBar x:Uid="CliCheckError" Severity="Error" IsClosable="False"
+                             IsOpen="{x:Bind ViewModel.CliCheckFailed, Mode=OneWay}"
+                             Message="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
+                             AutomationProperties.Name="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
+                             AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardCliCheckError" />
                     <StackPanel Spacing="8">
                         <Button Click="ReloadProcessEnvironment_Click" IsEnabled="{x:Bind local:OnboardingWizard.EnvironmentReloadAllowed(ViewModel.IsLoading, ViewModel.IsRunning, ViewModel.IsCheckingCli, ViewModel.ModelCatalog.IsLoading, ViewModel.IsOnboardingBusy, Inbox.IsExecuting, ViewModel.SaveSettingsCommand.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardReloadProcessEnvironment" x:Uid="WizardReloadProcessEnvironment" />
                         <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="WizardReloadProcessEnvironmentHelp" x:Uid="WizardReloadProcessEnvironmentHelp" />
                     </StackPanel>
-                    <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliCheckSummary" />
+                    <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.ShowCliCheckSummary), Mode=OneWay}" AutomationProperties.AutomationId="CliCheckSummary" />
                     <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock006" x:Uid="onboardingOnboardingWizardTextBlock006" />
                     <TextBlock Text="{x:Bind ViewModel.CliVersion, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliVersion" />
                     <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock007" x:Uid="onboardingOnboardingWizardTextBlock007" />

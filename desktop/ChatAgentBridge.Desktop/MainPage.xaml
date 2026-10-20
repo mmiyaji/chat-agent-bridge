@@ -255,13 +255,19 @@
                                         </StackPanel>
                                     </Expander>
                                     <Button  Command="{x:Bind ViewModel.CheckCliCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SettingsCheckCli"  x:Uid="SettingsCheckCli" />
+                                    <InfoBar x:Uid="CliCheckError" Severity="Error" IsClosable="False"
+                                             IsOpen="{x:Bind ViewModel.CliCheckFailed, Mode=OneWay}"
+                                             Message="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
+                                             AutomationProperties.Name="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
+                                             AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SettingsCliCheckError" />
                                     <StackPanel Spacing="8">
                                         <Button Click="ReloadProcessEnvironment_Click" IsEnabled="{x:Bind local:MainPage.EnvironmentReloadAllowed(ViewModel.IsLoading, ViewModel.IsRunning, ViewModel.IsCheckingCli, ViewModel.ModelCatalog.IsLoading, ViewModel.IsOnboardingBusy, InboxPage.ViewModel.IsExecuting, ViewModel.SaveSettingsCommand.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ReloadProcessEnvironment" x:Uid="ReloadProcessEnvironment" />
                                         <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="ReloadProcessEnvironmentHelp" x:Uid="ReloadProcessEnvironmentHelp" />
                                     </StackPanel>
                                     <TextBlock Text="{x:Bind ViewModel.CliVersion, Mode=OneWay}" TextWrapping="Wrap" />
                                     <TextBlock Text="{x:Bind ViewModel.CliExecutablePath, Mode=OneWay}" TextWrapping="Wrap" />
-                                    <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SettingsCliCheckSummary" />
+                                    <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap"
+                                               Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.ShowCliCheckSummary), Mode=OneWay}" AutomationProperties.AutomationId="SettingsCliCheckSummary" />
                                     <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="AgentConnectionRegistrationCard">
                                         <StackPanel Spacing="8">
                                             <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="AgentConnectionRegistrationTitle" />

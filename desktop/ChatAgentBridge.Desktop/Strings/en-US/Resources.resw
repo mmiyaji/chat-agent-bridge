@@ -627,7 +627,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>AI agent and working folder</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock002.Text" xml:space="preserve">
-    <value>Choose an existing folder for the AI agent to work in. Folder changes requested from chat must stay within trusted folders and require approval on this PC.</value>
+    <value>The initial selection is your Documents folder. Change it to the project you want to work on. Choose an existing folder for the AI agent to work in. Folder changes requested from chat must stay within trusted folders and require approval on this PC.</value>
   </data>
   <data name="WizardWorkspaceRoot.Header" xml:space="preserve">
     <value>Working folder (absolute path)</value>
@@ -1096,4 +1096,5 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PortableUpdateAutomaticChecks.Content" xml:space="preserve"><value>Automatically check for updates</value></data>
   <data name="PortableUpdateAutomaticHelp.Text" xml:space="preserve"><value>Checks at startup and periodically while the app is running, including in the tray. Downloads and restarts require your action.</value></data>
   <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>View release notes</value></data>
+  <data name="CliCheckError.Title" xml:space="preserve"><value>CLI check failed</value></data>
 </root>

@@ -16,7 +16,8 @@ public partial class MainPageViewModel
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(CheckCliCommand)), NotifyCanExecuteChangedFor(nameof(CancelCliCheckCommand))]
     public partial bool IsCheckingCli { get; set; }
     [ObservableProperty] public partial bool CliCheckSucceeded { get; set; }
-    [ObservableProperty] public partial bool CliCheckFailed { get; set; }
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowCliCheckSummary))] public partial bool CliCheckFailed { get; set; }
+    public bool ShowCliCheckSummary => !CliCheckFailed;
     [ObservableProperty] public partial string CliVersion { get; set; } = ViewModelText.Get("NotChecked");
     [ObservableProperty] public partial string CliExecutablePath { get; set; } = "";
     [ObservableProperty] public partial string CliCheckSummary { get; set; } = ViewModelText.Get("CliCheckIntro");
@@ -112,7 +113,12 @@ public partial class MainPageViewModel
             CliCheckSummary = ViewModelText.Get("CliStartedFetchingModels");
             await ModelCatalog.FetchModelsCommand.ExecuteAsync(null);
             if (generation != _cliCheckGeneration || cancellation.IsCancellationRequested || signature != CurrentCliSignature()) return;
-            if (ModelCatalog.Models.Count == 0) { CliCheckFailed = true; CliCheckSummary = ViewModelText.Get("CliModelsUnavailable"); return; }
+            if (ModelCatalog.Models.Count == 0)
+            {
+                CliCheckFailed = true;
+                CliCheckSummary = ViewModelText.Get("CliModelsUnavailableDetails", ModelCatalog.Status);
+                return;
+            }
             ModelCatalog.SelectedModel = ModelCatalog.Models.FirstOrDefault(model => string.Equals(model.Id, AgentModel?.Trim(), StringComparison.Ordinal));
             _checkedCliSignature = signature;
             _checkedConnectionSignature = CurrentConnectionSignature();

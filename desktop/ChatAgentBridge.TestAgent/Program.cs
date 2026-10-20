@@ -11,6 +11,19 @@ Console.OutputEncoding = new UTF8Encoding(false);
 if (args is ["--version"])
 {
     var exeName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "");
+    var versionError = exeName switch { "cab-probe-runtime-error" => "runtime", "cab-probe-version-error" => "other", _ => null };
+    if (versionError == "runtime")
+    {
+        await Console.Error.WriteLineAsync("You must install or update .NET to run this application.");
+        Environment.ExitCode = 72;
+        return;
+    }
+    if (versionError == "other")
+    {
+        await Console.Error.WriteLineAsync("fixture secret stderr must not be included in probe errors");
+        Environment.ExitCode = 73;
+        return;
+    }
     var fixtureVersion = Environment.GetEnvironmentVariable("CAB_TEST_AGENT_VERSION");
     var version = fixtureVersion ?? (exeName.Equals("codex", StringComparison.OrdinalIgnoreCase)
         ? "codex-cli 1.2.3 (offline fixture)"
@@ -226,6 +239,11 @@ while (await Console.In.ReadLineAsync() is { } line)
                 break;
             case "initialized": break;
             case "model/list":
+                if (Environment.GetEnvironmentVariable("CAB_TEST_AGENT_EMPTY_MODEL_CATALOG") == "1")
+                {
+                    await WriteAsync(new { id, result = new { data = Array.Empty<object>(), nextCursor = (string?)null } });
+                    break;
+                }
                 await WriteAsync(new
                 {
                     id,

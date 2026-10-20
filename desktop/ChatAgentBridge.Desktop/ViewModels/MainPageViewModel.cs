@@ -28,6 +28,7 @@ public partial class MainPageViewModel : ObservableObject
     private bool _chatConnectionPreparing;
     private bool _chatConnectionFailed;
     private bool _savedWorkspaceExists;
+    private bool _hasSavedSettings;
     private bool _lastSaveSucceeded;
     private bool _adjustingAgentPermissionMode;
     private bool _agentPermissionModeAdjusted;
@@ -270,6 +271,7 @@ public partial class MainPageViewModel : ObservableObject
         try
         {
             _settings = await _settingsStore.LoadAsync();
+            _hasSavedSettings = File.Exists(Path.Combine(_settingsStore.DirectoryPath, "settings.json"));
             _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
             WorkspaceRoot = _settings.WorkspaceRoot;
             AgentExecutable = _settings.AgentExecutable;
@@ -327,6 +329,7 @@ public partial class MainPageViewModel : ObservableObject
         catch (Exception ex)
         {
             _settings = null;
+            _hasSavedSettings = false;
             StatusTitle = ViewModelText.Get("SettingsLoadFailed");
             StatusMessage = ViewModelText.Get("SettingsLoadFailedDetails", ex.Message);
             StatusSeverity = "Error";
@@ -453,6 +456,7 @@ public partial class MainPageViewModel : ObservableObject
             _ = AgentProfile.BuildInvocation(snapshot);
             await _settingsStore.SaveAsync(snapshot);
             _settings = snapshot;
+            _hasSavedSettings = true;
             saved = true;
             _lastSaveSucceeded = true;
             MattermostAllowedUserIds = snapshot.MattermostAllowedUserIds;
@@ -731,14 +735,14 @@ public partial class MainPageViewModel : ObservableObject
             return;
         }
 
-        var agentReady = !string.IsNullOrWhiteSpace(_settings.AgentExecutable) && !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && _savedWorkspaceExists;
+        var agentReady = _hasSavedSettings && !string.IsNullOrWhiteSpace(_settings.AgentExecutable) && !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && _savedWorkspaceExists;
         var mattermostCredentials = !string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) && !string.IsNullOrWhiteSpace(_settings.MattermostChannelId) && !string.IsNullOrWhiteSpace(_settings.MattermostToken);
         var slackCredentials = !string.IsNullOrWhiteSpace(_settings.SlackBotToken) && !string.IsNullOrWhiteSpace(_settings.SlackAppToken);
         var mattermostAllowed = HasAllowedUsers(_settings.MattermostAllowedUserIds);
         var slackAllowed = HasAllowedUsers(_settings.SlackAllowedUserIds);
         var connectionReady = (mattermostCredentials && mattermostAllowed) || (slackCredentials && slackAllowed);
         SetupStepOneStatus = agentReady ? ViewModelText.Get("SetupAgentReady")
-            : string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) ? ViewModelText.Get("SetupAgentWorkspaceMissing")
+            : !_hasSavedSettings || string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) ? ViewModelText.Get("SetupAgentWorkspaceMissing")
             : !_savedWorkspaceExists ? ViewModelText.Get("SetupWorkspaceNotFound")
             : ViewModelText.Get("SetupExecutableMissing");
         SetupStepTwoStatus = connectionReady ? ViewModelText.Get("SetupChatConfigSaved")

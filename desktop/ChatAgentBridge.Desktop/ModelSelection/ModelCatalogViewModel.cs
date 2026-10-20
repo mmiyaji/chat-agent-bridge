@@ -96,6 +96,18 @@ public sealed partial class ModelCatalogViewModel : ObservableObject, IDisposabl
         {
             if (generation == _generation) Status = DesktopText.Get("ModelCatalogCancelled");
         }
+        catch (TimeoutException)
+        {
+            if (generation == _generation) Status = DesktopText.Get("ModelCatalogTimedOut");
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            if (generation == _generation) Status = DesktopText.Get("ModelCatalogLaunchFailed");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            if (generation == _generation) Status = DesktopText.Get("ModelCatalogAccessDenied");
+        }
         catch
         {
             if (generation == _generation) Status = DesktopText.Get("ModelCatalogFailed");

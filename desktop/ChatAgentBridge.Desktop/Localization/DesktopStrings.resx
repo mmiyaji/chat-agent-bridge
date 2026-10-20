@@ -85,10 +85,10 @@
   <data name="ModelCatalogSettingsChanged" xml:space="preserve"><value>Settings changed. Fetch suggestions again.</value></data>
   <data name="ModelCatalogLoading" xml:space="preserve"><value>Fetching model suggestions from the CLI…</value></data>
   <data name="ModelCatalogUnsupported" xml:space="preserve"><value>This CLI does not provide suggestions. Enter a model name directly.</value></data>
-  <data name="ModelCatalogEmpty" xml:space="preserve"><value>No model suggestions were returned. You can enter a model name directly.</value></data>
+  <data name="ModelCatalogEmpty" xml:space="preserve"><value>The CLI returned no model suggestions. Check its version and terminal sign-in status, then fetch again.</value></data>
   <data name="ModelCatalogFound" xml:space="preserve"><value>{0} suggestions are available. Select one to fill in the model name.</value></data>
   <data name="ModelCatalogCancelled" xml:space="preserve"><value>Fetching model suggestions was canceled.</value></data>
-  <data name="ModelCatalogFailed" xml:space="preserve"><value>Could not fetch suggestions. Check the CLI settings or enter a model name directly.</value></data>
+  <data name="ModelCatalogFailed" xml:space="preserve"><value>The CLI did not return a usable model catalog. Check the selected CLI and sign in from its terminal (desktop-app sign-in is separate), then retry.</value></data>
   <data name="PolicyDocument" xml:space="preserve"><value>{0}{1}Version: {2}</value></data>
   <data name="Close" xml:space="preserve"><value>Close</value></data>
   <data name="PrivacyPolicy" xml:space="preserve"><value>Privacy Policy</value></data>
@@ -587,4 +587,7 @@
   <data name="PortableUpdatePreferenceSaveFailed" xml:space="preserve"><value>Could not save the update setting. The previous setting has been restored.</value></data>
   <data name="PortableUpdateBadgeAvailable" xml:space="preserve"><value>Update available</value></data>
   <data name="PortableUpdateNavigationAvailable" xml:space="preserve"><value>Information — version {0} is available</value></data>
+  <data name="ModelCatalogTimedOut" xml:space="preserve"><value>Model discovery timed out. Check the CLI sign-in and network connection, then try again.</value></data>
+  <data name="ModelCatalogLaunchFailed" xml:space="preserve"><value>The CLI could not be started for model discovery. Check its executable path, permissions, and required runtime.</value></data>
+  <data name="ModelCatalogAccessDenied" xml:space="preserve"><value>Access was denied during model discovery. Check access to the workspace and CLI executable.</value></data>
 </root>
