@@ -1093,4 +1093,7 @@
   <data name="PortableDownloadUpdate.Content" xml:space="preserve"><value>更新をダウンロード</value></data>
   <data name="PortableApplyUpdate.Content" xml:space="preserve"><value>更新して再起動</value></data>
   <data name="PortableCancelUpdate.Content" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="PortableUpdateAutomaticChecks.Content" xml:space="preserve"><value>定期的に更新を確認する</value></data>
+  <data name="PortableUpdateAutomaticHelp.Text" xml:space="preserve"><value>起動時とアプリの起動中に定期的に確認します。トレイ常駐中も有効です。ダウンロードと再起動は手動です。</value></data>
+  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>更新内容を見る</value></data>
 </root>

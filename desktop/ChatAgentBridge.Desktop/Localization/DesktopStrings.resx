@@ -584,4 +584,7 @@
   <data name="WindowCloseConfirmationExit" xml:space="preserve"><value>Exit</value></data>
   <data name="WindowCloseConfirmationTray" xml:space="preserve"><value>Keep in tray</value></data>
   <data name="WindowCloseConfirmationCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="PortableUpdatePreferenceSaveFailed" xml:space="preserve"><value>Could not save the update setting. The previous setting has been restored.</value></data>
+  <data name="PortableUpdateBadgeAvailable" xml:space="preserve"><value>Update available</value></data>
+  <data name="PortableUpdateNavigationAvailable" xml:space="preserve"><value>Information — version {0} is available</value></data>
 </root>

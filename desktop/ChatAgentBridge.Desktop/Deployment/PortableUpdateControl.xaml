@@ -9,9 +9,17 @@
             <TextBlock x:Uid="PortableUpdateHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
             <TextBlock x:Uid="PortableUpdateDescription" TextWrapping="Wrap"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <CheckBox x:Name="AutomaticChecksCheckBox" x:Uid="PortableUpdateAutomaticChecks"
+                      AutomationProperties.AutomationId="PortableUpdateAutomaticChecks"
+                      Checked="AutomaticChecks_Changed" Unchecked="AutomaticChecks_Changed" />
+            <TextBlock x:Uid="PortableUpdateAutomaticHelp" TextWrapping="Wrap"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             <CheckBox x:Name="IncludePrereleasesCheckBox" x:Uid="PortableUpdateIncludePrereleases"
                       AutomationProperties.AutomationId="PortableUpdateIncludePrereleases"
                       Checked="IncludePrereleases_Changed" Unchecked="IncludePrereleases_Changed" />
+            <TextBlock x:Name="PreferenceError" Visibility="Collapsed" TextWrapping="Wrap"
+                       Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                       AutomationProperties.AutomationId="PortableUpdatePreferenceError" AutomationProperties.LiveSetting="Polite" />
             <TextBlock x:Name="StatusText" TextWrapping="Wrap" AutomationProperties.AutomationId="PortableUpdateStatus"
                        AutomationProperties.LiveSetting="Polite" />
             <ProgressBar x:Name="DownloadProgressBar" Minimum="0" Maximum="100" Value="0"
@@ -19,6 +27,10 @@
             <StackPanel Spacing="8" Orientation="Horizontal" HorizontalAlignment="Left">
                 <Button x:Name="CheckUpdatesButton" x:Uid="PortableCheckUpdates" AutomationProperties.AutomationId="PortableCheckUpdates"
                         Click="CheckUpdates_Click" />
+                <HyperlinkButton x:Name="ReleaseNotesLink" x:Uid="PortableUpdateReleaseNotes"
+                                 AutomationProperties.AutomationId="PortableUpdateReleaseNotes" />
+            </StackPanel>
+            <StackPanel x:Name="UpdateActions" Spacing="8" Orientation="Horizontal" HorizontalAlignment="Left">
                 <Button x:Name="DownloadUpdateButton" x:Uid="PortableDownloadUpdate" AutomationProperties.AutomationId="PortableDownloadUpdate"
                         Click="DownloadUpdate_Click" />
                 <Button x:Name="ApplyUpdateButton" x:Uid="PortableApplyUpdate" AutomationProperties.AutomationId="PortableApplyUpdate"

@@ -31,6 +31,7 @@ public sealed partial class MainPage : Page
     {
         InitializeComponent();
         InitializeLanguageRestart();
+        InitializePortableUpdateBadge();
         UpdateNavigationContentOffset();
         _wizard = new Onboarding.OnboardingWizard(ViewModel, InboxPage.ViewModel, ReloadProcessEnvironment);
         WizardHost.Content = _wizard;
@@ -82,6 +83,7 @@ public sealed partial class MainPage : Page
         ViewModel.RefreshLocalizedText();
         Bindings.Update();
         MrtText.Refresh(this, culture);
+        RefreshPortableUpdateBadge();
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;

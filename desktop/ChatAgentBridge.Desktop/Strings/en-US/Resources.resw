@@ -1093,4 +1093,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PortableDownloadUpdate.Content" xml:space="preserve"><value>Download update</value></data>
   <data name="PortableApplyUpdate.Content" xml:space="preserve"><value>Update and restart</value></data>
   <data name="PortableCancelUpdate.Content" xml:space="preserve"><value>Cancel</value></data>
+  <data name="PortableUpdateAutomaticChecks.Content" xml:space="preserve"><value>Automatically check for updates</value></data>
+  <data name="PortableUpdateAutomaticHelp.Text" xml:space="preserve"><value>Checks at startup and periodically while the app is running, including in the tray. Downloads and restarts require your action.</value></data>
+  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>View release notes</value></data>
 </root>

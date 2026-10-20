@@ -15,14 +15,24 @@ public sealed class PortableUpdateCoordinator : IDisposable
     private readonly HttpClient _testHttpClient;
 #endif
     private readonly string _dataDirectory;
+    private readonly PortableUpdatePreferencesStore _preferencesStore;
+    private readonly SemaphoreSlim _preferencesGate = new(1, 1);
+    private readonly CancellationTokenSource _lifetimeCancellation = new();
     private readonly string _installDirectory = Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
     private readonly bool _hasLifetimeLease;
+    private readonly DateTimeOffset _sessionStartedAtUtc = DateTimeOffset.UtcNow;
     private readonly string _currentVersion;
     private PortableRelease? _available;
     private StagedPortableRelease? _staged;
     private string? _workDirectory;
     private CancellationTokenSource? _operation;
     private bool _includePrereleases;
+    private bool _automaticChecksEnabled = true;
+    private DateTimeOffset? _lastAttemptUtc;
+    private PortableUpdatePreferences _preferences;
+    private bool _initialized;
+    private int _automaticRunner;
+    private string? _automaticAvailableStatus;
     private bool _committing;
     private bool _disposed;
 
@@ -32,26 +42,16 @@ public sealed class PortableUpdateCoordinator : IDisposable
     public double DownloadProgress { get; private set; }
     public string Status { get; private set; }
     public string? AvailableVersion => _available?.Version;
+    public Uri? AvailableReleasePage => _available?.ReleasePage;
+    public bool AutomaticChecksEnabled => _automaticChecksEnabled;
+    public bool IncludePrereleases => _includePrereleases;
     public bool IsDownloaded => _staged is not null;
     public event EventHandler? Changed;
-
-    public bool IncludePrereleases
-    {
-        get => _includePrereleases;
-        set
-        {
-            if (IsBusy || value == _includePrereleases) return;
-            _includePrereleases = value;
-            _available = null;
-            DiscardDownload();
-            Status = DesktopText.Get("PortableUpdateIdle");
-            Notify();
-        }
-    }
 
     public PortableUpdateCoordinator(string dataDirectory, bool hasLifetimeLease)
     {
         _dataDirectory = dataDirectory;
+        _preferencesStore = new PortableUpdatePreferencesStore(dataDirectory);
         _hasLifetimeLease = hasLifetimeLease;
 #if CAB_PORTABLE_UPDATE_TEST
         _testHttpClient = PortableUpdateTestFeed.CreateClient();
@@ -61,11 +61,145 @@ public sealed class PortableUpdateCoordinator : IDisposable
 #endif
         _currentVersion = ReadCurrentVersion();
         _includePrereleases = _currentVersion.Contains('-');
+        _preferences = PortableUpdatePreferences.CreateDefault(_includePrereleases);
         Status = DesktopText.Get(IsSupported ? "PortableUpdateIdle" : "PortableUpdateUnsupported");
+    }
+
+    public async Task InitializeAsync()
+    {
+        await _preferencesGate.WaitAsync();
+        try
+        {
+            if (_initialized) return;
+            PortableUpdatePreferences? preferences;
+            var loadFailed = false;
+            try { preferences = await _preferencesStore.LoadAsync(); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidDataException or NotSupportedException or ArgumentException or FormatException or InvalidOperationException)
+            {
+                preferences = null;
+                loadFailed = true;
+            }
+            _preferences = preferences ?? PortableUpdatePreferences.CreateDefault(_includePrereleases);
+            _automaticChecksEnabled = _preferences.AutomaticChecksEnabled;
+            _includePrereleases = _preferences.IncludePrereleases;
+            _lastAttemptUtc = _preferences.LastAttemptUtc;
+            if (_lastAttemptUtc is { } lastAttempt && lastAttempt > DateTimeOffset.UtcNow.AddMinutes(5))
+                _lastAttemptUtc = null;
+            _available = PortableReleaseClient.IsValidCachedCandidate(
+                _preferences.AvailableRelease, _currentVersion, Architecture(), _includePrereleases)
+                ? _preferences.AvailableRelease
+                : null;
+            _preferences = _preferences with { LastAttemptUtc = _lastAttemptUtc, AvailableRelease = _available };
+            _initialized = true;
+            if (preferences is null || _preferences != preferences)
+            {
+                try { await _preferencesStore.SaveAsync(_preferences); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
+                {
+                    loadFailed = true;
+                }
+            }
+            if (loadFailed)
+                Status = DesktopText.Get("PortableUpdateFailed", DesktopText.Get("PortableUpdateLocalError"));
+            else if (_available is { } cached)
+                UpdateAutomaticAvailabilityStatus(cached);
+        }
+        finally { _preferencesGate.Release(); }
+        Notify();
+    }
+
+    public async Task SetAutomaticChecksEnabledAsync(bool enabled)
+    {
+        await InitializeAsync();
+        await _preferencesGate.WaitAsync();
+        try
+        {
+            if (_automaticChecksEnabled == enabled) return;
+            var updated = _preferences with { AutomaticChecksEnabled = enabled };
+            await _preferencesStore.SaveAsync(updated);
+            _preferences = updated;
+            _automaticChecksEnabled = enabled;
+        }
+        finally { _preferencesGate.Release(); }
+        Notify();
+    }
+
+    public async Task SetIncludePrereleasesAsync(bool includePrereleases)
+    {
+        await InitializeAsync();
+        await _preferencesGate.WaitAsync();
+        try
+        {
+            if (IsBusy || _includePrereleases == includePrereleases) return;
+            var updated = _preferences with { IncludePrereleases = includePrereleases, LastAttemptUtc = null, AvailableRelease = null };
+            await _preferencesStore.SaveAsync(updated);
+            _preferences = updated;
+            _includePrereleases = includePrereleases;
+            _lastAttemptUtc = null;
+            _available = null;
+            DiscardDownload();
+            Status = DesktopText.Get("PortableUpdateIdle");
+            _automaticAvailableStatus = null;
+        }
+        finally { _preferencesGate.Release(); }
+        Notify();
+    }
+
+    public async Task RunAutomaticChecksAsync(CancellationToken cancellationToken)
+    {
+        if (!IsSupported || _disposed) return;
+        if (Interlocked.Exchange(ref _automaticRunner, 1) != 0) return;
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetimeCancellation.Token);
+        var token = linked.Token;
+        try
+        {
+            await InitializeAsync();
+            await Task.Delay(TimeSpan.FromSeconds(3), token);
+            // A manual check in this process already covers the startup check.
+            var checkAtStartup = _lastAttemptUtc is null || _lastAttemptUtc < _sessionStartedAtUtc;
+            await RunAutomaticCheckIfDueAsync(token, checkAtStartup);
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMinutes(1), token);
+                await RunAutomaticCheckIfDueAsync(token);
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception) { /* Background startup and persistence failures must not escape the app lifetime task. */ }
+        finally { Volatile.Write(ref _automaticRunner, 0); }
+    }
+
+    private async Task RunAutomaticCheckIfDueAsync(CancellationToken cancellationToken, bool checkAtStartup = false)
+    {
+        if (!IsSupported || !_automaticChecksEnabled || IsBusy || IsDownloaded ||
+            (!checkAtStartup && !PortableUpdateCheckPolicy.IsDue(_lastAttemptUtc, DateTimeOffset.UtcNow)) || !TryBegin()) return;
+        Notify();
+
+        try
+        {
+            using var operationLink = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _operation!.Token);
+            var operationToken = operationLink.Token;
+            var attemptedAt = DateTimeOffset.UtcNow;
+            await SaveAttemptTimeAsync(attemptedAt, operationToken);
+            var candidate = await _client.FindUpdateAsync(_currentVersion, Architecture(), IncludePrereleases, operationToken);
+            if (candidate is not null && !PortableReleaseClient.IsValidCachedCandidate(candidate, _currentVersion, Architecture(), IncludePrereleases))
+                candidate = null;
+            await SaveAvailableCandidateAsync(candidate, operationToken);
+            if (_available != candidate)
+            {
+                _available = candidate;
+                UpdateAutomaticAvailabilityStatus(candidate);
+                Notify();
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested || _operation?.IsCancellationRequested == true) { }
+        catch (Exception) { /* Background failures stay quiet and preserve the current visible status and candidate. */ }
+        finally { EndOperation(); }
     }
 
     public async Task CheckAsync()
     {
+        await InitializeAsync();
         if (!TryBegin()) return;
         DiscardDownload();
         _available = null;
@@ -73,7 +207,10 @@ public sealed class PortableUpdateCoordinator : IDisposable
         Notify();
         try
         {
+            await SaveAttemptTimeAsync(DateTimeOffset.UtcNow, _operation!.Token);
+            await SaveAvailableCandidateAsync(null, _operation.Token);
             _available = await _client.FindUpdateAsync(_currentVersion, Architecture(), IncludePrereleases, _operation!.Token);
+            await SaveAvailableCandidateAsync(_available, _operation.Token);
             Status = _available is null ? DesktopText.Get("PortableUpdateCurrent")
                 : DesktopText.Get("PortableUpdateAvailable", _available.Version);
         }
@@ -188,6 +325,51 @@ public sealed class PortableUpdateCoordinator : IDisposable
         return true;
     }
 
+    private async Task SaveAttemptTimeAsync(DateTimeOffset attemptedAtUtc, CancellationToken cancellationToken)
+    {
+        await _preferencesGate.WaitAsync(cancellationToken);
+        try
+        {
+            _lastAttemptUtc = attemptedAtUtc;
+            var updated = _preferences with { LastAttemptUtc = attemptedAtUtc };
+            await _preferencesStore.SaveAsync(updated, cancellationToken);
+            _preferences = updated;
+        }
+        finally { _preferencesGate.Release(); }
+    }
+
+    private static bool IsQuietStatus(string status) =>
+        status == DesktopText.Get("PortableUpdateIdle") || status == DesktopText.Get("PortableUpdateCurrent");
+
+    private void UpdateAutomaticAvailabilityStatus(PortableRelease? candidate)
+    {
+        if (candidate is not null)
+        {
+            if (IsQuietStatus(Status) || Status == _automaticAvailableStatus)
+            {
+                Status = DesktopText.Get("PortableUpdateAvailable", candidate.Version);
+                _automaticAvailableStatus = Status;
+            }
+        }
+        else if (Status == _automaticAvailableStatus)
+        {
+            Status = DesktopText.Get("PortableUpdateCurrent");
+            _automaticAvailableStatus = null;
+        }
+    }
+
+    private async Task SaveAvailableCandidateAsync(PortableRelease? candidate, CancellationToken cancellationToken)
+    {
+        await _preferencesGate.WaitAsync(cancellationToken);
+        try
+        {
+            var updated = _preferences with { AvailableRelease = candidate };
+            await _preferencesStore.SaveAsync(updated, cancellationToken);
+            _preferences = updated;
+        }
+        finally { _preferencesGate.Release(); }
+    }
+
     private void EndOperation()
     {
         IsBusy = false;
@@ -268,6 +450,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
     public void Dispose()
     {
         _disposed = true;
+        _lifetimeCancellation.Cancel();
         if (!_committing) _operation?.Cancel();
         _client.Dispose();
 #if CAB_PORTABLE_UPDATE_TEST

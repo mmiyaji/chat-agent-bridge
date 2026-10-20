@@ -584,4 +584,7 @@
   <data name="WindowCloseConfirmationExit" xml:space="preserve"><value>終了する</value></data>
   <data name="WindowCloseConfirmationTray" xml:space="preserve"><value>トレイに格納</value></data>
   <data name="WindowCloseConfirmationCancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="PortableUpdatePreferenceSaveFailed" xml:space="preserve"><value>更新の設定を保存できませんでした。以前の設定に戻しました。</value></data>
+  <data name="PortableUpdateBadgeAvailable" xml:space="preserve"><value>更新があります</value></data>
+  <data name="PortableUpdateNavigationAvailable" xml:space="preserve"><value>情報 — バージョン {0} に更新できます</value></data>
 </root>

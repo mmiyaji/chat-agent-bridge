@@ -40,6 +40,7 @@ public partial class App : Application
     public static Tray.TrayService Tray { get; private set; } = null!;
     public static PortableUpdateCoordinator PortableUpdates { get; private set; } = null!;
     private readonly CancellationTokenSource _pricingLifetime = new();
+    private readonly CancellationTokenSource _portableUpdateLifetime = new();
     private FileStream? _portableLease;
 
     /// <summary>Applies a persisted language preference to this process and future MRT lookups.</summary>
@@ -126,6 +127,7 @@ public partial class App : Application
         PendingRequestNotifications = new PendingRequestNotificationService(DispatcherQueue);
         PendingRequestNotifications.Initialize();
         PortableUpdates = new(dataDirectory, _portableLease is not null);
+        if (DeploymentRuntime.IsPortable) await PortableUpdates.InitializeAsync();
 
         var backgroundStore = new ChatAgentBridge.Core.BackgroundPreferencesStore(new ChatAgentBridge.Core.SettingsStore());
         var background = new ChatAgentBridge.Core.BackgroundPreferences();
@@ -140,7 +142,9 @@ public partial class App : Application
         Window.Closed += (_, _) =>
         {
             Tray.Dispose();
+            _portableUpdateLifetime.Cancel();
             PortableUpdates.Dispose();
+            _portableUpdateLifetime.Dispose();
             _portableLease?.Dispose();
             PendingRequestNotifications.Shutdown();
             _pricingLifetime.Cancel();
@@ -155,6 +159,14 @@ public partial class App : Application
             catch (WaitHandleCannotBeOpenedException) { }
         }
         _ = RunPricingUpdatesAsync(_pricingLifetime.Token);
+        _ = RunPortableUpdateChecksAsync();
+    }
+
+    private async Task RunPortableUpdateChecksAsync()
+    {
+        try { await PortableUpdates.RunAutomaticChecksAsync(_portableUpdateLifetime.Token); }
+        catch (OperationCanceledException) when (_portableUpdateLifetime.IsCancellationRequested) { }
+        catch (Exception error) { System.Diagnostics.Debug.WriteLine($"Automatic portable update check: {error.GetType().Name}"); }
     }
 
     private async Task RunPricingUpdatesAsync(CancellationToken cancellationToken)

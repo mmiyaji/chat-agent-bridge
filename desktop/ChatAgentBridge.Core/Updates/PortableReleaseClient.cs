@@ -79,7 +79,7 @@ public sealed class PortableReleaseClient : IDisposable
     {
         EnsureNoCredentialHeaders();
         ArgumentNullException.ThrowIfNull(candidate);
-        if (candidate.Size <= 0 || candidate.Size > MaxAssetBytes || !TryDigest("sha256:" + candidate.Sha256, out var expected) || !IsExactAssetUrl(candidate.DownloadUri.AbsoluteUri, candidate.Tag, candidate.AssetName, out _))
+        if (!IsTrustedReleaseMetadata(candidate) || !TryDigest("sha256:" + candidate.Sha256, out var expected))
             throw new InvalidDataException("Release asset metadata is invalid.");
         var destination = Path.GetFullPath(destinationZipPath);
         var parent = Path.GetDirectoryName(destination)!;
@@ -132,6 +132,48 @@ public sealed class PortableReleaseClient : IDisposable
             progress?.Report(1);
         }
         finally { try { if (File.Exists(partial)) File.Delete(partial); } catch { } }
+    }
+
+    /// <summary>Checks persisted feed data using the same fixed-origin and metadata rules as live feed results.</summary>
+    public static bool IsValidCachedCandidate(PortableRelease? candidate, string currentVersion, string architecture, bool includePrereleases)
+    {
+        if (candidate is null || !IsTrustedReleaseMetadata(candidate) ||
+            !ReleaseVersion.TryParse(currentVersion, out var current) ||
+            !ReleaseVersion.TryParse(candidate.Version, out var version) ||
+            !ReleaseVersion.TryParse(candidate.Tag, out var tagVersion) ||
+            version.CompareTo(current) <= 0 || version.CompareTo(tagVersion) != 0 ||
+            (!includePrereleases && version.IsPreview)) return false;
+
+        var suffix = architecture.ToLowerInvariant() switch
+        {
+            "x64" or "amd64" => "win-x64",
+            "arm64" or "aarch64" => "win-arm64",
+            _ => null
+        };
+        if (suffix is null) return false;
+
+        var expectedAsset = $"ChatAgentBridge.Portable-{candidate.Tag.TrimStart('v')}-{suffix}.zip";
+        var expectedPage = new Uri(ReleasesRoot, "tag/" + Uri.EscapeDataString(candidate.Tag));
+        return string.Equals(candidate.AssetName, expectedAsset, StringComparison.Ordinal) &&
+            candidate.ReleasePage is { IsAbsoluteUri: true } releasePage && releasePage == expectedPage;
+    }
+
+    private static bool IsTrustedReleaseMetadata(PortableRelease candidate)
+    {
+        if (string.IsNullOrEmpty(candidate.Tag) || string.IsNullOrEmpty(candidate.AssetName) || string.IsNullOrEmpty(candidate.Sha256) ||
+            candidate.Size <= 0 || candidate.Size > MaxAssetBytes ||
+            !TryDigest("sha256:" + candidate.Sha256, out _) ||
+            !ReleaseVersion.TryParse(candidate.Tag, out _) ||
+            candidate.DownloadUri is not { IsAbsoluteUri: true } downloadUri ||
+            !IsExactAssetUrl(downloadUri.AbsoluteUri, candidate.Tag, candidate.AssetName, out _)) return false;
+
+        var page = candidate.ReleasePage;
+        if (page is not { IsAbsoluteUri: true }) return false;
+        var expectedPage = new Uri(ReleasesRoot, "tag/" + Uri.EscapeDataString(candidate.Tag));
+        return page.Scheme == Uri.UriSchemeHttps &&
+            page.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) && page.IsDefaultPort &&
+            page.UserInfo.Length == 0 && page.Query.Length == 0 && page.Fragment.Length == 0 &&
+            page.AbsolutePath.Equals(expectedPage.AbsolutePath, StringComparison.Ordinal);
     }
 
     private static bool TryFixedReleasePage(JsonElement release, string tag, out Uri page)

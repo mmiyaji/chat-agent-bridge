@@ -39,8 +39,15 @@
                 <NavigationViewItem  Tag="history" AutomationProperties.AutomationId="NavHistory" Icon="Clock"  x:Uid="NavHistory" />
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>
-                <NavigationViewItem Tag="about" AutomationProperties.AutomationId="NavAbout" x:Uid="NavAbout">
+                <NavigationViewItem x:Name="AboutNavigationItem" Tag="about" AutomationProperties.AutomationId="NavAbout" x:Uid="NavAbout">
                     <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;" /></NavigationViewItem.Icon>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge x:Name="AboutUpdateBadge" Visibility="Collapsed" Style="{StaticResource AttentionIconInfoBadgeStyle}"
+                                   Width="24" Height="24" MinWidth="24" MinHeight="24" MaxHeight="24" Padding="4"
+                                   AutomationProperties.AccessibilityView="Control" AutomationProperties.AutomationId="NavAboutUpdateBadge">
+                            <InfoBadge.IconSource><SymbolIconSource Symbol="Download" /></InfoBadge.IconSource>
+                        </InfoBadge>
+                    </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
             <NavigationView.Content>

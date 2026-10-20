@@ -8,7 +8,8 @@ namespace ChatAgentBridge_Desktop.Deployment;
 public sealed partial class PortableUpdateControl : UserControl
 {
     private bool _isSubscribed;
-    private bool _isUpdatingPrereleaseSetting;
+    private bool _isUpdatingPreference;
+    private bool _savingPreference;
     private bool _dialogOpen;
 
     public PortableUpdateControl()
@@ -51,13 +52,22 @@ public sealed partial class PortableUpdateControl : UserControl
 
         var updates = App.PortableUpdates;
         StatusText.Text = updates.Status;
-        _isUpdatingPrereleaseSetting = true;
-        IncludePrereleasesCheckBox.IsChecked = updates.IncludePrereleases;
-        _isUpdatingPrereleaseSetting = false;
-        IncludePrereleasesCheckBox.IsEnabled = updates.IsSupported && !updates.IsBusy;
+        _isUpdatingPreference = true;
+        if (!_savingPreference)
+        {
+            AutomaticChecksCheckBox.IsChecked = updates.AutomaticChecksEnabled;
+            IncludePrereleasesCheckBox.IsChecked = updates.IncludePrereleases;
+        }
+        _isUpdatingPreference = false;
+        AutomaticChecksCheckBox.IsEnabled = updates.IsSupported && !updates.IsBusy && !_savingPreference;
+        IncludePrereleasesCheckBox.IsEnabled = updates.IsSupported && !updates.IsBusy && !_savingPreference;
 
         var hasUpdate = !string.IsNullOrWhiteSpace(updates.AvailableVersion);
-        CheckUpdatesButton.IsEnabled = updates.IsSupported && !updates.IsBusy;
+        CheckUpdatesButton.IsEnabled = updates.IsSupported && !updates.IsBusy && !_savingPreference;
+        ReleaseNotesLink.NavigateUri = updates.AvailableReleasePage ?? new Uri("https://github.com/mmiyaji/chat-agent-bridge/releases");
+        AutomationProperties.SetHelpText(ReleaseNotesLink, ReleaseNotesLink.NavigateUri.AbsoluteUri);
+        ToolTipService.SetToolTip(ReleaseNotesLink, ReleaseNotesLink.NavigateUri.AbsoluteUri);
+        UpdateActions.Visibility = hasUpdate || updates.IsBusy ? Visibility.Visible : Visibility.Collapsed;
         DownloadUpdateButton.Visibility = hasUpdate && !updates.IsDownloaded ? Visibility.Visible : Visibility.Collapsed;
         DownloadUpdateButton.IsEnabled = updates.IsSupported && hasUpdate && !updates.IsDownloaded && !updates.IsBusy;
         ApplyUpdateButton.Visibility = updates.IsDownloaded ? Visibility.Visible : Visibility.Collapsed;
@@ -70,10 +80,34 @@ public sealed partial class PortableUpdateControl : UserControl
         DownloadProgressBar.Value = Math.Clamp(updates.DownloadProgress, 0, 100);
     }
 
-    private void IncludePrereleases_Changed(object sender, RoutedEventArgs e)
+    private async void IncludePrereleases_Changed(object sender, RoutedEventArgs e)
     {
-        if (_isUpdatingPrereleaseSetting || IncludePrereleasesCheckBox.IsChecked is not bool includePrereleases) return;
-        App.PortableUpdates.IncludePrereleases = includePrereleases;
+        if (_isUpdatingPreference || _savingPreference || IncludePrereleasesCheckBox.IsChecked is not bool includePrereleases) return;
+        await SavePreferenceAsync(() => App.PortableUpdates.SetIncludePrereleasesAsync(includePrereleases));
+    }
+
+    private async void AutomaticChecks_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_isUpdatingPreference || _savingPreference || AutomaticChecksCheckBox.IsChecked is not bool enabled) return;
+        await SavePreferenceAsync(() => App.PortableUpdates.SetAutomaticChecksEnabledAsync(enabled));
+    }
+
+    private async Task SavePreferenceAsync(Func<Task> save)
+    {
+        _savingPreference = true;
+        PreferenceError.Visibility = Visibility.Collapsed;
+        RefreshState();
+        try { await save(); }
+        catch (Exception)
+        {
+            PreferenceError.Text = DesktopText.Get("PortableUpdatePreferenceSaveFailed");
+            PreferenceError.Visibility = Visibility.Visible;
+        }
+        finally
+        {
+            _savingPreference = false;
+            RefreshState();
+        }
     }
 
     private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
