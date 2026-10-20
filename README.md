@@ -190,6 +190,7 @@ flowchart TD
 
 ## Documentation
 
+- Windows CI/CD and distribution: [docs/ci-cd.ja.md](docs/ci-cd.ja.md)
 - Install and base configuration: [docs/install.md](docs/install.md)
 - Slack setup: [docs/slack-setup.md](docs/slack-setup.md)
 - Mattermost setup: [docs/mattermost-setup.md](docs/mattermost-setup.md)

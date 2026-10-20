@@ -1,0 +1,122 @@
+name: Portable release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Build only: X.Y.Z or X.Y.Z-preview.N (no Release or Pages publication)'
+        default: '0.0.0-preview.0'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portable-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      application_version: ${{ steps.version.outputs.application_version }}
+      tag: ${{ steps.version.outputs.tag }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve version and require main ancestry for publication
+        id: version
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+          RELEASE_REF: ${{ github.ref_name }}
+        run: |
+          $sourceVersion = if ($env:EVENT_NAME -eq 'push') { $env:RELEASE_REF } else { $env:REQUESTED_VERSION }
+          $resolved = ./desktop/Resolve-ReleaseBuildVersion.ps1 -Version $sourceVersion
+          if ($env:EVENT_NAME -eq 'push') {
+            if ($env:RELEASE_REF -cne $resolved.Tag) { throw 'Release tags must use the canonical lowercase v prefix.' }
+            git merge-base --is-ancestor HEAD origin/main
+            if ($LASTEXITCODE -ne 0) { throw 'Only commits already merged into main may be released.' }
+          }
+          "version=$($resolved.ReleaseVersion)" >> $env:GITHUB_OUTPUT
+          "application_version=$($resolved.ApplicationVersion)" >> $env:GITHUB_OUTPUT
+          "tag=$($resolved.Tag)" >> $env:GITHUB_OUTPUT
+          "prerelease=$($resolved.Prerelease.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+  checks:
+    needs: version
+    uses: ./.github/workflows/ci.yml
+
+  package:
+    needs: [version, checks]
+    runs-on: windows-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x64, ARM64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build and validate clean portable archive
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
+          APPLICATION_VERSION: ${{ needs.version.outputs.application_version }}
+          ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          ./desktop/Create-PortableArchive.ps1 -Architecture $env:ARCHITECTURE -ReleaseVersion $env:RELEASE_VERSION -ApplicationVersion $env:APPLICATION_VERSION -OutputDirectory "$env:RUNNER_TEMP/packages"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: portable-${{ matrix.architecture }}
+          path: |
+            ${{ runner.temp }}/packages/*.zip
+            ${{ runner.temp }}/packages/*.zip.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [version, package]
+    runs-on: windows-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: portable-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/packages
+      - name: Publish only complete verified archives
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.version.outputs.tag }}
+          GH_REPO: ${{ github.repository }}
+        run: ./desktop/Publish-PortableRelease.ps1 -Tag $env:RELEASE_TAG -PackageDirectory "$env:RUNNER_TEMP/packages"
+
+  distribution:
+    needs: [version, publish]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/distribution.yml
+    with:
+      require_tag: ${{ needs.version.outputs.tag }}
