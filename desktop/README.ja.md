@@ -234,6 +234,8 @@ CLIチェックは依頼を実行せず、fixtureによるモデル候補確認�
 
 画面切り替え時のスクロール位置は `./desktop/NavigationScrollSmokeTest.ps1 -AppPid 12345 -DataDirectory 'C:\TestData\Scroll'` で検証します。720×600と1160×800で実際に下へスクロールしてから切り替え、遷移先のスクロール位置が先頭になることと、同じ画面を選び直しても位置が維持されることを確認します。手動実行画面にはスクロール範囲を作るためテスト用の複数行テキストを入力しますが、実行はしません。
 
+`MaximizedLayoutUiE2E.ps1 -AppDirectory <desktop/artifacts配下のポータブル配置> -Language ja` は、隔離した設定で8タブを最大化・1160・720・500 DIP・再最大化の順に比較します。見出しの左端と上端、設定欄の幅、ナビゲーションとの重なりを確認し、スクリーンショットと座標を保存します。`-Language en` で英語ライト表示、`-CaptureOnly` で変更前の最大化画面を記録できます。ページ外周の余白は共通シェルだけに持たせ、設定・情報は左揃えで最大1040 DIP、チャット受信・履歴と会話は利用可能な幅を使います。
+
 ### Docker Mattermostとの実通信テスト
 
 ```powershell

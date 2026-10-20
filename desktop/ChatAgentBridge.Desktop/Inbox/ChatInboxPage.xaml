@@ -6,7 +6,7 @@
     xmlns:executionUi="using:ChatAgentBridge_Desktop.ExecutionUi"
     SizeChanged="Page_SizeChanged"
     AutomationProperties.AutomationId="ChatScroll">
-    <Grid Padding="16" RowSpacing="10">
+    <Grid RowSpacing="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />

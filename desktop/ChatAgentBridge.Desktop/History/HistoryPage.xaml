@@ -8,7 +8,7 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
-    <Grid Padding="20,12,20,18" RowSpacing="8">
+    <Grid RowSpacing="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -21,7 +21,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <StackPanel Spacing="2" VerticalAlignment="Center">
+            <StackPanel Spacing="4" VerticalAlignment="Top">
                 <TextBlock x:Name="HistoryTitle" Style="{StaticResource TitleTextBlockStyle}" x:Uid="historyHistoryPageTextBlock001" />
                 <TextBlock x:Name="HistoryDescription" TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="historyHistoryPageTextBlock002" />
             </StackPanel>

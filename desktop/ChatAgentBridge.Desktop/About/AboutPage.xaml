@@ -3,7 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:deployment="using:ChatAgentBridge_Desktop.Deployment">
-    <Grid Padding="24,18,24,24" RowSpacing="16" AutomationProperties.AutomationId="AboutPage">
+    <Grid RowSpacing="16" AutomationProperties.AutomationId="AboutPage">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -15,7 +15,7 @@
         </StackPanel>
         <ScrollViewer x:Name="AboutScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="AboutScroll">
-            <StackPanel Spacing="12" MaxWidth="900" HorizontalAlignment="Stretch">
+            <StackPanel Spacing="12" MaxWidth="1040" HorizontalAlignment="Left" AutomationProperties.AutomationId="AboutContent">
                 <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                     <StackPanel Spacing="8">

@@ -58,12 +58,22 @@
                              Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.StatusSeverity), Mode=OneWay}"
                              Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
                              Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
+                    <StackPanel Grid.Row="1" MaxWidth="1040" HorizontalAlignment="Left" Spacing="4" Margin="0,0,0,16"
+                                Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
+                        <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock013" x:Uid="chatAgentBridgeDesktopMainPageTextBlock013" />
+                        <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock014" x:Uid="chatAgentBridgeDesktopMainPageTextBlock014" />
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" MaxWidth="1040" HorizontalAlignment="Left" Spacing="4" Margin="0,0,0,16"
+                                Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
+                        <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock046" x:Uid="chatAgentBridgeDesktopMainPageTextBlock046" />
+                        <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock047" x:Uid="chatAgentBridgeDesktopMainPageTextBlock047" />
+                    </StackPanel>
                     <Button Grid.Row="2" Margin="0,0,0,12"  Click="ReloadSettings_Click"
                             IsEnabled="{x:Bind local:MainPage.CanReloadSettings(ViewModel.IsLoading, ViewModel.IsRunning), Mode=OneWay}"
                             Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsSettingsLoaded), Mode=OneWay}"
                             HorizontalAlignment="Left" AutomationProperties.AutomationId="ReloadSettings"  x:Uid="ReloadSettings" />
 
-                    <Button Grid.Row="2"  Margin="0,0,0,12" Command="{x:Bind ViewModel.SaveSettingsCommand}" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsAgentSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}" AutomationProperties.AutomationId="SaveSettings"  x:Uid="SaveSettings" />
+                    <Button Grid.Row="2" Margin="0,0,0,12" HorizontalAlignment="Left" Command="{x:Bind ViewModel.SaveSettingsCommand}" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsAgentSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}" AutomationProperties.AutomationId="SaveSettings" x:Uid="SaveSettings" />
                     <Grid Grid.Row="2" Margin="0,0,0,12" ColumnSpacing="12" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsConnectionsSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                         <Button Command="{x:Bind ViewModel.SaveSettingsCommand}" VerticalAlignment="Bottom" AutomationProperties.AutomationId="SaveConnections" x:Uid="SaveConnections" />
@@ -76,8 +86,8 @@
                             <ComboBoxItem Tag="startup" AutomationProperties.AutomationId="JumpStartup" x:Uid="JumpStartup" />
                         </ComboBox>
                     </Grid>
-                    <ScrollViewer x:Name="MainContentScroll" Grid.Row="3" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind local:MainPage.CanUseForm(IsAppearanceSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="MainContentScroll"  x:Uid="MainContentScroll">
-                        <Grid MaxWidth="1040" HorizontalAlignment="Stretch">
+                    <ScrollViewer x:Name="MainContentScroll" Grid.Row="3" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind local:MainPage.CanUseForm(IsAppearanceSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="MainContentScroll"  x:Uid="MainContentScroll">
+                        <Grid Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="1040" HorizontalAlignment="Left" AutomationProperties.AutomationId="FormContent">
                             <StackPanel Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsOverviewSelected), Mode=OneTime}">
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="Chat Agent Bridge" Style="{StaticResource TitleTextBlockStyle}" />
@@ -190,8 +200,6 @@
                             </StackPanel>
 
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
-                                <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock013" x:Uid="chatAgentBridgeDesktopMainPageTextBlock013" />
-                                <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock014" x:Uid="chatAgentBridgeDesktopMainPageTextBlock014" />
                                 <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" AutomationProperties.AutomationId="WorkspaceCard">
                                     <StackPanel Spacing="8">
                                         <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock015" x:Uid="chatAgentBridgeDesktopMainPageTextBlock015" />
@@ -334,10 +342,6 @@
                                 <TextBlock Text="{x:Bind ViewModel.UsageSummary, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="LocalUsageSummary" />
                             </StackPanel>
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
-                                <StackPanel Spacing="4">
-                                    <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock046" x:Uid="chatAgentBridgeDesktopMainPageTextBlock046" />
-                                    <TextBlock  Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock047" x:Uid="chatAgentBridgeDesktopMainPageTextBlock047" />
-                                </StackPanel>
                                 <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="ConnectionCredentialsHeading" x:Uid="ConnectionCredentialsHeading" />
                                 <Border x:Name="MattermostSettingsCard" Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                     <StackPanel Spacing="16">
