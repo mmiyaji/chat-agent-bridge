@@ -20,6 +20,8 @@ Windows x64 / ARM64 向けの展開型プレビュー版は、ZIP 内の `ChatAg
 
 ポータブル版は「情報」から手動で更新を確認し、提示された版をダウンロードした後、利用者が明示的に再起動を選ぶと適用します。更新は `portable-files.json` に載ったファイルを置き換え、`Data` は保持します。旧版ポータブルには更新プログラムがないため、アプリ内更新を使い始める際は新しい ZIP を一度手動で展開してください。更新前には `Data` の別バックアップを推奨します。
 
+ビルド・検証時の一時ファイルは、`Create-PortableArchive.ps1` と `PortableUpdateSmokeTest.ps1` の `-WorkingDirectory` で空きのあるドライブへ配置できます。既定は `desktop/artifacts` です。更新試験ではZIPの展開・インストール先・復元用バックアップを複製します。`-ExistingLayout` で実行済みの配置を再梱包するときは、空の `.cab-instance.lock` を配布対象から除外します。その他の `.cab-` 状態ファイルやデータフォルダーは配布対象として拒否します。
+
 ## Mattermostの直接接続
 
 社内サーバーへプロキシを経由せず接続する場合は、「接続設定 → Mattermost」の「プロキシを使わず直接接続」をオンにして保存し、Mattermostを切断・再接続します。初回ウィザードでも設定できます。初期値はオフ（システムのプロキシ設定を使用）です。ユーザー名検索・投稿リンク確認・認証・WebSocketの受信・返信と接続通知に同じ設定を適用し、SlackやCLIの通信設定は変更しません。検索中の切り替えはその検索を取り消します。詳細は[接続ガイド](../docs/mattermost-setup.md#native-windows-app-direct-connection)を参照してください。

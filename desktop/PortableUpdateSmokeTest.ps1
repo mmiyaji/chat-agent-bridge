@@ -1,11 +1,16 @@
-param([Parameter(Mandatory)][string]$ArchivePath)
+param(
+    [Parameter(Mandatory)][string]$ArchivePath,
+    [string]$WorkingDirectory = (Join-Path $PSScriptRoot 'artifacts')
+)
 $ErrorActionPreference = 'Stop'
 $artifacts = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
 $archive = (Resolve-Path -LiteralPath $ArchivePath).Path
-if (-not $archive.StartsWith($artifacts + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
-    throw 'Use a locally built archive under desktop/artifacts.'
+$workRoot = [IO.Path]::GetFullPath($WorkingDirectory)
+if (-not $archive.StartsWith($artifacts + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -and
+    -not $archive.StartsWith([IO.Path]::TrimEndingDirectorySeparator($workRoot) + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'Use a locally built archive under desktop/artifacts or the specified working directory.'
 }
-$testRoot = Join-Path $artifacts ('portable-update-smoke-' + [guid]::NewGuid().ToString('N'))
+$testRoot = Join-Path $workRoot ('portable-update-smoke-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $testRoot | Out-Null
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 function Assert([bool]$Condition, [string]$Message) { if (-not $Condition) { throw $Message } }

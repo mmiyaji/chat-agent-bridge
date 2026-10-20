@@ -7,7 +7,8 @@ param(
     [string] $OutputDirectory = (Join-Path $PSScriptRoot 'artifacts/portable-releases'),
     [switch] $ValidateOnly,
     [string] $ArchivePath,
-    [string] $ExistingLayout
+    [string] $ExistingLayout,
+    [string] $WorkingDirectory = (Join-Path $PSScriptRoot 'artifacts')
 )
 
 Set-StrictMode -Version Latest
@@ -29,12 +30,18 @@ function Assert-PortableContents {
     $directories = @(Get-ChildItem -LiteralPath $resolved -Directory -Recurse -Force)
 
     foreach ($directory in $directories) {
+        if ($directory.Name.StartsWith('.cab-', [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Private updater state in portable payload: $($directory.FullName)"
+        }
         if ($forbiddenDirectoryNames -contains $directory.Name.ToLowerInvariant()) {
             throw "Forbidden private or test directory in portable payload: $($directory.FullName)"
         }
     }
 
     foreach ($file in $files) {
+        if ($file.Name.StartsWith('.cab-', [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Private updater state in portable payload: $($file.FullName)"
+        }
         $extension = $file.Extension.ToLowerInvariant()
         $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name).ToLowerInvariant()
         if ($forbiddenDirectoryNames -contains $stem) { throw "Private or test file is forbidden in portable payload: $($file.FullName)" }
@@ -170,11 +177,20 @@ function Assert-NoPrivateOrForbiddenContent {
         throw "Forbidden private or test source directory: $resolved"
     }
     foreach ($directory in Get-ChildItem -LiteralPath $resolved -Directory -Recurse -Force) {
+        if ($directory.Name.StartsWith('.cab-', [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Private updater state in portable source: $($directory.FullName)"
+        }
         if ($forbiddenDirectoryNames -contains $directory.Name.ToLowerInvariant()) {
             throw "Forbidden private or test directory in portable source: $($directory.FullName)"
         }
     }
     foreach ($file in Get-ChildItem -LiteralPath $resolved -File -Recurse -Force) {
+        # Running a portable build creates this empty lifetime lease beside its executable.
+        # It is excluded when copying an existing layout; all other updater state is rejected.
+        if ($file.Name.StartsWith('.cab-', [StringComparison]::OrdinalIgnoreCase) -and
+            -not ($file.Name -ieq '.cab-instance.lock' -and $file.DirectoryName -ieq $resolved -and $file.Length -eq 0)) {
+            throw "Private updater state in portable source: $($file.FullName)"
+        }
         $extension = $file.Extension.ToLowerInvariant()
         $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name).ToLowerInvariant()
         if ($forbiddenDirectoryNames -contains $stem -or $file.Name -match '(?i)testagent|^chatagentbridge\.testagent' -or $extension -in @('.pfx', '.cer', '.msix', '.appx')) {
@@ -261,7 +277,7 @@ if ($ValidateOnly) {
     else {
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         $fullArchive = (Resolve-Path -LiteralPath $ArchivePath).Path
-        $artifactRoot = Join-Path $PSScriptRoot 'artifacts'
+        $artifactRoot = [IO.Path]::GetFullPath($WorkingDirectory)
         New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
         $validationRoot = Get-SafeArtifactPath -Parent $artifactRoot -ChildName ('.portable-validate-' + [guid]::NewGuid().ToString('N'))
         New-Item -ItemType Directory -Path $validationRoot | Out-Null
@@ -296,7 +312,7 @@ foreach ($readme in @('README.portable.ja.txt', 'README.portable.en.txt')) {
     if (-not (Test-Path -LiteralPath (Join-Path $distributionDir $readme) -PathType Leaf)) { throw "Distribution note missing: $readme" }
 }
 
-$artifactRoot = Join-Path $PSScriptRoot 'artifacts'
+$artifactRoot = [IO.Path]::GetFullPath($WorkingDirectory)
 New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
 $stageRoot = Get-SafeArtifactPath -Parent $artifactRoot -ChildName ('.portable-build-' + [guid]::NewGuid().ToString('N'))
 $layout = Join-Path $stageRoot 'ChatAgentBridge.Portable'
@@ -307,7 +323,9 @@ if ($ExistingLayout) {
     if (-not (Test-Path -LiteralPath $ExistingLayout -PathType Container)) { throw "Existing publish layout not found: $ExistingLayout" }
     Assert-NoPrivateOrForbiddenContent -Layout $ExistingLayout
     Get-ChildItem -LiteralPath $ExistingLayout -Force | ForEach-Object {
-        Copy-Item -LiteralPath $_.FullName -Destination $layout -Recurse -Force
+        if (-not ($_ -is [IO.FileInfo] -and $_.Name -ieq '.cab-instance.lock')) {
+            Copy-Item -LiteralPath $_.FullName -Destination $layout -Recurse -Force
+        }
     }
 }
 else {
