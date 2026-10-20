@@ -38,9 +38,7 @@ public sealed partial class ChatInboxPage : Page
             ViewModel.RevealRequest(item);
         }
         OpenRequested?.Invoke();
-        App.Window.Activate();
-        if (App.Window.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
-            presenter.Restore();
+        App.Tray.ShowWindow();
         return Task.CompletedTask;
     }
 

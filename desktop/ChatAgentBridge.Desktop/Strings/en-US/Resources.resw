@@ -357,7 +357,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Do not connect</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock043.Text" xml:space="preserve">
-    <value>Connect to the chat with saved connection information the next time you start the app. Execution of the request follows the approval settings of the conversation. You will not receive requests after you close the window.</value>
+    <value>Connect to the saved chat the next time the app starts. Requests follow the conversation's approval settings. To keep receiving requests with the window closed, enable system tray mode below.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock044.Text" xml:space="preserve">
     <value>Run manually</value>
@@ -1053,4 +1053,18 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PricingRemoveConfirmMessage.Text" xml:space="preserve"><value>Remove the manual rates for {0}? Estimates will use the automatic rates again when available.</value></data>
   <data name="PricingRemoveConfirmPrimary.Text" xml:space="preserve"><value>Remove manual rates</value></data>
   <data name="PricingRemoveConfirmCancel.Text" xml:space="preserve"><value>Keep manual rates</value></data>
+  <data name="TraySettingsHeading.Text" xml:space="preserve"><value>System tray</value></data>
+  <data name="CloseToTrayLabel.Text" xml:space="preserve"><value>Keep running in system tray when the window is closed</value></data>
+  <data name="CloseToTrayToggle.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="CloseToTrayToggle.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="CloseToTrayToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Keep running in system tray when the window is closed</value></data>
+  <data name="TraySettingsDescription.Text" xml:space="preserve"><value>When enabled, closing the window keeps Chat Agent Bridge and its chat connection running in the system tray. Use the tray menu to open the window or exit.</value></data>
+  <data name="MoveToTrayButton.Content" xml:space="preserve"><value>Move to system tray</value></data>
+  <data name="TrayExitDescription.Text" xml:space="preserve"><value>Exit completely closes the app and cancels pending and running work.</value></data>
+  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>Exit completely</value></data>
+  <data name="TraySaveFailed" xml:space="preserve"><value>Could not save the tray setting. The previous setting has been restored.</value></data>
+  <data name="TrayExitFailed" xml:space="preserve"><value>The app could not exit completely. Try again.</value></data>
+  <data name="TrayUnavailable" xml:space="preserve"><value>The system tray is unavailable. This window will remain open.</value></data>
+  <data name="StartWithWindows.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="StartWithWindows.OffContent" xml:space="preserve"><value>Off</value></data>
 </root>

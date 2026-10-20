@@ -8,6 +8,8 @@ The native app supports English and Japanese. By default it uses Japanese when t
 
 Choose **Appearance** for Light, Dark, or Use system setting. Theme changes are saved and applied immediately without restarting. The default follows the Windows app color setting.
 
+Under **Connection settings → System tray**, enable keeping the app running when its window is closed (off by default), or choose **Move to system tray**. Chat connections, work, and approval notifications remain active while hidden. Click the tray icon to reopen; its menu and the settings page offer **Exit completely**, which disconnects and cancels work regardless of the tray setting. Windows may place the icon in its hidden indicators area. Background mode does not run through sleep or sign-out. The preference is saved separately in `background.json` in the data folder.
+
 The **About** page at the bottom of the sidebar shows product and package information, provider and support links, development notes, Terms of Use, and the Privacy Policy. Store page and manual update checks are available for Microsoft Store distributions. The development preview displays its distribution status instead.
 
 Build a standalone Windows x64 executable with `npm run package:exe`. Double-click `release/ChatAgentBridge.exe`, then open the displayed control center URL. Browser launch is opt-in via `--open-browser`. Node.js/npm are not required on the target machine. Agent CLIs still require separate installation. See [executable instructions (Japanese)](docs/executable.ja.md).

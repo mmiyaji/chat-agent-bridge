@@ -37,6 +37,7 @@ public partial class App : Application
     public static string SystemLanguageTag { get; private set; } = "en-US";
     public static Appearance.AppAppearance Appearance { get; private set; } = null!;
     public static PricingCatalogManager Pricing { get; private set; } = null!;
+    public static Tray.TrayService Tray { get; private set; } = null!;
     private readonly CancellationTokenSource _pricingLifetime = new();
 
     /// <summary>Applies a persisted language preference to this process and future MRT lookups.</summary>
@@ -106,9 +107,19 @@ public partial class App : Application
         PendingRequestNotifications = new PendingRequestNotificationService(DispatcherQueue);
         PendingRequestNotifications.Initialize();
 
-        Window = new MainWindow();
+        var backgroundStore = new ChatAgentBridge.Core.BackgroundPreferencesStore(new ChatAgentBridge.Core.SettingsStore());
+        var background = new ChatAgentBridge.Core.BackgroundPreferences();
+        try { background = await backgroundStore.LoadAsync(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // A damaged or inaccessible preference must leave the window reachable.
+        }
+        var mainWindow = new MainWindow();
+        Window = mainWindow;
+        Tray = new(mainWindow, backgroundStore, background);
         Window.Closed += (_, _) =>
         {
+            Tray.Dispose();
             PendingRequestNotifications.Shutdown();
             _pricingLifetime.Cancel();
         };

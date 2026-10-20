@@ -365,8 +365,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         RefreshConversations();
     }
 
-    private bool CanConnect() => !IsConnected && !IsExecuting;
-    private bool CanApprove() => !IsExecuting && IsConnectionConfirmed && Selected is { State: "承認待ち" } item && ReferenceEquals(item.Transport, _transport);
+    private bool CanConnect() => !_closing && !IsConnected && !IsExecuting;
+    private bool CanApprove() => !_closing && !IsExecuting && IsConnectionConfirmed && Selected is { State: "承認待ち" } item && ReferenceEquals(item.Transport, _transport);
 
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private Task ConnectMattermostAsync() => ConnectAsync(new MattermostWebSocketTransport());
@@ -745,7 +745,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (CanApprove()) await RejectCommand.ExecuteAsync(null);
     }
 
-    private bool CanSendResult() => !IsExecuting && IsConnectionConfirmed && Selected is { ResultText.Length: > 0, AllowsResultSharing: true } item && ReferenceEquals(item.Transport, _transport);
+    private bool CanSendResult() => !_closing && !IsExecuting && IsConnectionConfirmed && Selected is { ResultText.Length: > 0, AllowsResultSharing: true } item && ReferenceEquals(item.Transport, _transport);
 
     [RelayCommand(CanExecute = nameof(CanSendResult))]
     private async Task SendResultAsync()
@@ -1008,10 +1008,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
 
     public void Close()
     {
+        if (_closing) return;
         _closing = true;
+        IsConnectionConfirmed = false;
         RequestExecutionCancellation();
         _connection?.Cancel();
         foreach (var item in Requests) item.LiveOutput.Dispose();
         _emptyLiveOutput.Dispose();
     }
+
+    internal Task WaitForConnectionShutdownAsync() => _receiveTask ?? Task.CompletedTask;
 }

@@ -357,7 +357,7 @@
     <value>接続しない</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock043.Text" xml:space="preserve">
-    <value>接続情報を保存したチャットへ、次回のアプリ起動時に接続します。依頼の実行は会話の承認設定に従います。ウィンドウを閉じた後は依頼を受信しません。</value>
+    <value>次回のアプリ起動時に、保存済みのチャットへ接続します。依頼の実行は会話の承認設定に従います。ウィンドウを閉じても受信するには、下のタスクトレイ常駐を有効にしてください。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock044.Text" xml:space="preserve">
     <value>手動で実行</value>
@@ -1053,4 +1053,18 @@
   <data name="PricingRemoveConfirmMessage.Text" xml:space="preserve"><value>{0} の手動単価を削除しますか？自動単価がある場合、推定に自動単価を使用します。</value></data>
   <data name="PricingRemoveConfirmPrimary.Text" xml:space="preserve"><value>手動単価を削除</value></data>
   <data name="PricingRemoveConfirmCancel.Text" xml:space="preserve"><value>手動単価を維持</value></data>
+  <data name="TraySettingsHeading.Text" xml:space="preserve"><value>システム トレイ</value></data>
+  <data name="CloseToTrayLabel.Text" xml:space="preserve"><value>ウィンドウを閉じたときもシステム トレイで実行する</value></data>
+  <data name="CloseToTrayToggle.OnContent" xml:space="preserve"><value>オン</value></data>
+  <data name="CloseToTrayToggle.OffContent" xml:space="preserve"><value>オフ</value></data>
+  <data name="CloseToTrayToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>ウィンドウを閉じたときもシステム トレイで実行する</value></data>
+  <data name="TraySettingsDescription.Text" xml:space="preserve"><value>オンにすると、ウィンドウを閉じてもChat Agent Bridgeとチャット接続はシステム トレイで実行されます。トレイ メニューからウィンドウを開くか、アプリを終了できます。</value></data>
+  <data name="MoveToTrayButton.Content" xml:space="preserve"><value>システム トレイに移動</value></data>
+  <data name="TrayExitDescription.Text" xml:space="preserve"><value>完全終了するとアプリを閉じ、実行中および待機中の処理をキャンセルします。</value></data>
+  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>完全終了</value></data>
+  <data name="TraySaveFailed" xml:space="preserve"><value>トレイ設定を保存できませんでした。以前の設定に戻しました。</value></data>
+  <data name="TrayExitFailed" xml:space="preserve"><value>アプリを完全終了できませんでした。もう一度お試しください。</value></data>
+  <data name="TrayUnavailable" xml:space="preserve"><value>システム トレイを利用できないため、このウィンドウは開いたままになります。</value></data>
+  <data name="StartWithWindows.OnContent" xml:space="preserve"><value>オン</value></data>
+  <data name="StartWithWindows.OffContent" xml:space="preserve"><value>オフ</value></data>
 </root>

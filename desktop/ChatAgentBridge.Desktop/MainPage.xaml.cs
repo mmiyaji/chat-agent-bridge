@@ -86,6 +86,23 @@ public sealed partial class MainPage : Page
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+
+    internal async Task ShutdownAsync()
+    {
+        ViewModel.CancelForWindowClose();
+        InboxPage.ViewModel.Close();
+        var tasks = new[]
+        {
+            ViewModel.RunCommand.ExecutionTask,
+            InboxPage.ViewModel.ApproveCommand.ExecutionTask,
+            InboxPage.ViewModel.SendAttachmentsCommand.ExecutionTask,
+            InboxPage.ViewModel.ConnectMattermostCommand.ExecutionTask,
+            InboxPage.ViewModel.ConnectSlackCommand.ExecutionTask,
+            InboxPage.ViewModel.DisconnectCommand.ExecutionTask,
+            InboxPage.ViewModel.WaitForConnectionShutdownAsync()
+        }.OfType<Task>();
+        await Task.WhenAll(tasks);
+    }
     public static Style OverviewIconStyle(OverviewIconState state) => (Style)Application.Current.Resources[state switch
     {
         OverviewIconState.Ready => "OverviewReadyIconStyle",

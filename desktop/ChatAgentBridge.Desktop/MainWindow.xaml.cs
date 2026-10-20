@@ -42,4 +42,7 @@ public sealed partial class MainWindow : Window
         if (RootFrame.Content is MainPage page) page.ViewModel.CancelForWindowClose();
         ChatAgentBridge.Core.AppServer.CodexAppServerRunner.ShutdownSharedProcesses();
     }
+
+    internal Task ShutdownAsync() => RootFrame.Content is MainPage page
+        ? page.ShutdownAsync() : Task.CompletedTask;
 }

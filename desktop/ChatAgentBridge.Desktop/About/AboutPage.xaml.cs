@@ -157,7 +157,7 @@ public sealed partial class AboutPage : Page
             };
             AutomationProperties.SetAutomationId(dialog, "AboutExitConfirmation");
             if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-                App.Window.Close();
+                await App.Tray.ExitAsync();
         }
         finally { _dialogOpen = false; }
     }

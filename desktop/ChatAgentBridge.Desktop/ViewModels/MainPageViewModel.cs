@@ -670,6 +670,7 @@ public partial class MainPageViewModel : ObservableObject
 
     public void CancelForWindowClose()
     {
+        if (_closing) return;
         _closing = true;
         LiveOutput.Dispose();
         CancelMattermostUsernameLookup();

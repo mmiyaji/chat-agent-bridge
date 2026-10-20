@@ -11,6 +11,7 @@
     xmlns:appearance="using:ChatAgentBridge_Desktop.Appearance"
     xmlns:executionUi="using:ChatAgentBridge_Desktop.ExecutionUi"
     xmlns:about="using:ChatAgentBridge_Desktop.About"
+    xmlns:tray="using:ChatAgentBridge_Desktop.Tray"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Grid>
@@ -460,6 +461,7 @@
                                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock043" x:Uid="chatAgentBridgeDesktopMainPageTextBlock043" />
                                     </StackPanel>
                                 </Border>
+                                <tray:TraySettingsControl />
                             </StackPanel>
                         </Grid>
                     </ScrollViewer>

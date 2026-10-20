@@ -540,4 +540,6 @@
   <data name="PricingRemoveConfirmMessage" xml:space="preserve"><value>{0} の手動単価を削除しますか？自動単価がある場合、推定に自動単価を使用します。</value></data>
   <data name="PricingRemoveConfirmPrimary" xml:space="preserve"><value>手動単価を削除</value></data>
   <data name="PricingRemoveConfirmCancel" xml:space="preserve"><value>手動単価を維持</value></data>
+  <data name="TrayMenuOpen" xml:space="preserve"><value>Chat Agent Bridgeを開く</value></data>
+  <data name="TrayMenuExit" xml:space="preserve"><value>完全終了</value></data>
 </root>

@@ -540,4 +540,6 @@
   <data name="PricingRemoveConfirmMessage" xml:space="preserve"><value>Remove the manual rates for {0}? Estimates will use the automatic rates again when available.</value></data>
   <data name="PricingRemoveConfirmPrimary" xml:space="preserve"><value>Remove manual rates</value></data>
   <data name="PricingRemoveConfirmCancel" xml:space="preserve"><value>Keep manual rates</value></data>
+  <data name="TrayMenuOpen" xml:space="preserve"><value>Open Chat Agent Bridge</value></data>
+  <data name="TrayMenuExit" xml:space="preserve"><value>Exit completely</value></data>
 </root>
