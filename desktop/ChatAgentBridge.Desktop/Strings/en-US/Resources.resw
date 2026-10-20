@@ -894,6 +894,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ConnectionsJump.PlaceholderText" xml:space="preserve"><value>Select a section</value></data>
   <data name="ConnectionsJump.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Go to a chat setting</value></data>
   <data name="JumpApproval.Content" xml:space="preserve"><value>Approval and replies</value></data>
+  <data name="JumpAttachments.Content" xml:space="preserve"><value>File attachments</value></data>
   <data name="JumpScope.Content" xml:space="preserve"><value>Allowed conversations</value></data>
   <data name="JumpStartup.Content" xml:space="preserve"><value>Startup and auto-connect</value></data>
   <data name="BrowseAgentExecutable.Content" xml:space="preserve"><value>Browse…</value></data>
@@ -972,4 +973,15 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="LoadRegisteredCodexConnection.Content" xml:space="preserve"><value>Load saved Codex</value></data>
   <data name="LoadRegisteredClaudeConnection.Content" xml:space="preserve"><value>Load saved Claude Code</value></data>
   <data name="ConnectionRegistrationStatus.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>CLI connection status</value></data>
+  <data name="FileAttachmentSettingsHeading.Text" xml:space="preserve"><value>Generated file attachments</value></data>
+  <data name="FileAttachmentApprovalMode.Header" xml:space="preserve"><value>File attachment approval</value></data>
+  <data name="FileAttachmentModeDisabled.Content" xml:space="preserve"><value>Do not attach files</value></data>
+  <data name="FileAttachmentModeAlways.Content" xml:space="preserve"><value>Ask every time (default)</value></data>
+  <data name="FileAttachmentModeFirst.Content" xml:space="preserve"><value>Ask once per conversation</value></data>
+  <data name="FileAttachmentModeAuto.Content" xml:space="preserve"><value>Attach automatically</value></data>
+  <data name="FileAttachmentSettingsHelp.Text" xml:space="preserve"><value>Automatic result sharing does not approve attachments. Disabling result sharing also disables file attachments. Saving automatic mode opts into sending eligible new files without a prompt. In first mode, one approval covers future eligible new files created by this user in the same conversation session within these limits; a mode or limit change asks again. For CLIs without resumable sessions, approval applies to one send. Channel members may read sent files. The app cannot inspect contents for sensitive information, so review files before sending. Files with settings, credential, or authentication names and executable files are excluded by name.</value></data>
+  <data name="FileAttachmentMaxSizeMb.Header" xml:space="preserve"><value>Maximum size per file (MiB)</value></data>
+  <data name="FileAttachmentMaxCount.Header" xml:space="preserve"><value>Maximum file count</value></data>
+  <data name="FileAttachmentMaxTotalSizeMb.Header" xml:space="preserve"><value>Maximum total size per send (MiB)</value></data>
+  <data name="InboxSendAttachments.Content" xml:space="preserve"><value>Review and send files</value></data>
 </root>

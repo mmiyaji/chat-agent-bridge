@@ -57,6 +57,11 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public Guid? ExecutionId { get; set; }
     public string? ExecutionPolicyFingerprint { get; set; }
     public bool AllowsResultSharing { get; set; } = true;
+    public IReadOnlyList<FileAttachmentCandidate> AttachmentCandidates { get; set; } = [];
+    public BridgeSettings? AttachmentSettingsAtStart { get; set; }
+    public string? AttachmentSessionId { get; set; }
+    public bool AttachmentScanComplete { get; set; }
+    [ObservableProperty] public partial string AttachmentStatus { get; set; } = "";
     public ChatProgressReporter? Progress { get; set; }
     public Task ReceiptNotification { get; set; } = Task.CompletedTask;
 }
@@ -114,20 +119,21 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasProgressNotice))]
     public partial string ProgressNotice { get; set; } = "";
     public bool HasProgressNotice => !string.IsNullOrWhiteSpace(ProgressNotice);
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsConnected { get; set; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsConnectionConfirmed { get; set; }
     [ObservableProperty] public partial bool HasConnectionError { get; set; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsExecuting { get; set; }
     partial void OnIsExecutingChanged(bool value)
     {
+        SendAttachmentsCommand.NotifyCanExecuteChanged();
         if (!value) _ = ProcessPendingPoliciesAsync();
     }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial InboxItem? Selected { get; set; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial InboxConversation? SelectedConversation { get; set; }
     [ObservableProperty] public partial string SearchText { get; set; } = "";
     [ObservableProperty] public partial string StateFilter { get; set; } = "all";
@@ -144,6 +150,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public string EmptyListMessage => DesktopText.Get(Requests.Count == 0 ? "InboxWaitingForRequests" : "InboxNoMatches");
     partial void OnSelectedChanged(InboxItem? value)
     {
+        OnPropertyChanged(nameof(SelectedAttachmentStatus));
+        SendAttachmentsCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(SelectedOutput));
         OnPropertyChanged(nameof(SelectedUsage));
         ApproveCommand.NotifyCanExecuteChanged(); RejectCommand.NotifyCanExecuteChanged();
@@ -303,6 +311,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     {
                         if (args.PropertyName == nameof(InboxItem.FullOutput)) OnPropertyChanged(nameof(SelectedOutput));
                         if (args.PropertyName == nameof(InboxItem.Usage)) OnPropertyChanged(nameof(SelectedUsage));
+                        if (args.PropertyName == nameof(InboxItem.AttachmentStatus))
+                        {
+                            OnPropertyChanged(nameof(SelectedAttachmentStatus));
+                            SendAttachmentsCommand.NotifyCanExecuteChanged();
+                        }
                     }
                 };
                 item.PropertyChanged += handler;
@@ -437,6 +450,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             // Keep reconnect disabled until old execution and transport cleanup finish.
             if (ApproveCommand.ExecutionTask is { IsCompleted: false } execution) await execution;
             if (SendResultCommand.ExecutionTask is { IsCompleted: false } reply) await reply;
+            if (SendAttachmentsCommand.ExecutionTask is { IsCompleted: false } attachments) await attachments;
             await FinishConnectionProgressAsync(transport);
             await _connectionNotice;
             await transport.DisposeAsync();
@@ -541,6 +555,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.FullOutput = DesktopText.Get("InboxAgentRunning");
             item.Usage = DesktopText.Get("UsageRunning");
             await StartProgressAsync(item);
+            var attachmentBefore = await CaptureAttachmentBaselineAsync(item, effectiveSettings, token);
             var result = effectiveSettings.AgentMode == "app-server"
                 ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
                     new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct)), _execution.Token)
@@ -608,6 +623,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 Status = DesktopText.Get("InboxStatusReplyFailed");
                 await AuditAsync("reply_failed", item.Request, record.Id);
             }
+            if (result.Success)
+                await DiscoverCompletedAttachmentsAsync(item, attachmentBefore, updated?.SessionId ?? UntrackedAttachmentSession(item), token);
         }
         catch (OperationCanceledException)
         {
@@ -740,6 +757,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var settings = await _store.LoadAsync();
             var previous = Volatile.Read(ref _accessSettings);
             Volatile.Write(ref _accessSettings, settings);
+            if (_attachmentTransferActive && previous is not null && !SameAttachmentPolicy(previous, settings))
+                _execution?.Cancel();
             foreach (var item in Requests.Where(item => !HasAccess(settings, item.Request, item.Settings)))
             {
                 if (item.State == "承認待ち") item.State = "許可取り消し・実行不可";
@@ -759,6 +778,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         ApproveCommand.NotifyCanExecuteChanged();
         RejectCommand.NotifyCanExecuteChanged();
         SendResultCommand.NotifyCanExecuteChanged();
+        SendAttachmentsCommand.NotifyCanExecuteChanged();
     }
 
     private async Task<bool> CheckAccessAsync(InboxItem item, CancellationToken token)

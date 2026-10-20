@@ -73,7 +73,8 @@ public partial class MainPageViewModel : ObservableObject
                 nameof(MattermostServerUrl) or nameof(MattermostBypassProxy) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
                 nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or
                 nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or nameof(ChatApprovalMode) or
-                nameof(ChatResultMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
+                nameof(ChatResultMode) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
+                nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
                 RefreshSetupStepper();
             if (e.PropertyName is nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or
                 nameof(ChatApprovalMode) or nameof(ChatResultMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds) or nameof(AgentProvider) or nameof(UseAppServer))
@@ -199,6 +200,10 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string TrustedWorkspaceRoots { get; set; } = string.Empty;
     [ObservableProperty] public partial string ChatApprovalMode { get; set; } = "first";
     [ObservableProperty] public partial string ChatResultMode { get; set; } = "manual";
+    [ObservableProperty] public partial string FileAttachmentApprovalMode { get; set; } = "always";
+    [ObservableProperty] public partial double FileAttachmentMaxSizeMb { get; set; } = 10;
+    [ObservableProperty] public partial double FileAttachmentMaxCount { get; set; } = 3;
+    [ObservableProperty] public partial double FileAttachmentMaxTotalSizeMb { get; set; } = 20;
     [ObservableProperty] public partial string SlackAllowedChannelIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackAllowedThreadIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostAllowedThreadIds { get; set; } = string.Empty;
@@ -291,6 +296,10 @@ public partial class MainPageViewModel : ObservableObject
             TrustedWorkspaceRoots = _settings.TrustedWorkspaceRoots;
             ChatApprovalMode = _settings.ChatApprovalMode;
             ChatResultMode = _settings.ChatResultMode;
+            FileAttachmentApprovalMode = _settings.FileAttachmentApprovalMode;
+            FileAttachmentMaxSizeMb = _settings.FileAttachmentMaxSizeMb;
+            FileAttachmentMaxCount = _settings.FileAttachmentMaxCount;
+            FileAttachmentMaxTotalSizeMb = _settings.FileAttachmentMaxTotalSizeMb;
             SlackAllowedChannelIds = _settings.SlackAllowedChannelIds;
             SlackAllowedThreadIds = _settings.SlackAllowedThreadIds;
             MattermostAllowedThreadIds = _settings.MattermostAllowedThreadIds;
@@ -414,8 +423,13 @@ public partial class MainPageViewModel : ObservableObject
                 TrustedWorkspaceRoots = ExecutionPolicy.NormalizeTrustedRoots(TrustedWorkspaceRoots),
                 AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(AgentPermissionMode),
                 ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode),
-                ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(ChatResultMode)
+                ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(ChatResultMode),
+                FileAttachmentApprovalMode = FileAttachmentPolicy.NormalizeMode(FileAttachmentApprovalMode),
+                FileAttachmentMaxSizeMb = ToAttachmentLimit(FileAttachmentMaxSizeMb),
+                FileAttachmentMaxCount = ToAttachmentLimit(FileAttachmentMaxCount),
+                FileAttachmentMaxTotalSizeMb = ToAttachmentLimit(FileAttachmentMaxTotalSizeMb)
             };
+            FileAttachmentPolicy.Validate(snapshot);
             if (!string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot))
             {
                 if (!Path.IsPathFullyQualified(snapshot.WorkspaceRoot) || !Directory.Exists(snapshot.WorkspaceRoot))
@@ -441,6 +455,10 @@ public partial class MainPageViewModel : ObservableObject
             AgentPermissionMode = snapshot.AgentPermissionMode;
             ChatApprovalMode = snapshot.ChatApprovalMode;
             ChatResultMode = snapshot.ChatResultMode;
+            FileAttachmentApprovalMode = snapshot.FileAttachmentApprovalMode;
+            FileAttachmentMaxSizeMb = snapshot.FileAttachmentMaxSizeMb;
+            FileAttachmentMaxCount = snapshot.FileAttachmentMaxCount;
+            FileAttachmentMaxTotalSizeMb = snapshot.FileAttachmentMaxTotalSizeMb;
             _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
             UpdateSavedAgentSummary();
             RefreshSetupStepper();
@@ -748,10 +766,24 @@ public partial class MainPageViewModel : ObservableObject
         TrustedWorkspaceRoots = TrustedWorkspaceRoots,
         ChatApprovalMode = ChatApprovalMode,
         ChatResultMode = ChatResultMode,
+        FileAttachmentApprovalMode = FileAttachmentApprovalMode,
+        FileAttachmentMaxSizeMb = ToAttachmentDraftLimit(FileAttachmentMaxSizeMb, 1, 100),
+        FileAttachmentMaxCount = ToAttachmentDraftLimit(FileAttachmentMaxCount, 1, 10),
+        FileAttachmentMaxTotalSizeMb = ToAttachmentDraftLimit(FileAttachmentMaxTotalSizeMb, 1, 100),
         SlackAllowedChannelIds = SlackAllowedChannelIds,
         SlackAllowedThreadIds = SlackAllowedThreadIds,
         MattermostAllowedThreadIds = MattermostAllowedThreadIds
     };
+
+    private static int ToAttachmentLimit(double value)
+    {
+        if (!double.IsFinite(value) || value != Math.Truncate(value) || value < int.MinValue || value > int.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), ViewModelText.Get("AttachmentLimitsMustBeWholeNumbers"));
+        return checked((int)value);
+    }
+
+    private static int ToAttachmentDraftLimit(double value, int minimum, int maximum) =>
+        !double.IsFinite(value) ? minimum : (int)Math.Clamp(Math.Truncate(value), minimum, maximum);
 
     private static string PermissionLabel(string value) => value switch
     {

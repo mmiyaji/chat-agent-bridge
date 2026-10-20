@@ -694,4 +694,5 @@ AIの操作権限: {8}</value>
   <data name="ConnectionRegistered" xml:space="preserve"><value>このPCに{0} CLI接続を登録しました。</value></data>
   <data name="ConnectionRegistrationFailed" xml:space="preserve"><value>CLI接続を登録できませんでした: {0}</value></data>
   <data name="ConnectionLoaded" xml:space="preserve"><value>保存した{0}の設定を読み込みました。アプリの既定値として使うには設定を保存してください。</value></data>
+  <data name="AttachmentLimitsMustBeWholeNumbers" xml:space="preserve"><value>添付の上限には整数を指定してください。</value></data>
 </root>

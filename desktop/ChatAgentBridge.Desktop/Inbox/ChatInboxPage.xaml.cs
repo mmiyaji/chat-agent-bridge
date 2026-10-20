@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml;
 using ChatAgentBridge_Desktop.Localization;
 
 namespace ChatAgentBridge_Desktop.Inbox;
@@ -13,6 +14,7 @@ public sealed partial class ChatInboxPage : Page
         InitializeComponent();
         ViewModel.ConfirmAsync = ConfirmAsync;
         ViewModel.ConfirmReplyAsync = ConfirmReplyAsync;
+        ViewModel.ConfirmAttachmentsAsync = ConfirmAttachmentsAsync;
         var serverDialogs = new AppServerUi.AppServerDialogs(() => XamlRoot);
         ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
         ViewModel.ServerInputHandler = serverDialogs.InputAsync;
@@ -183,6 +185,108 @@ public sealed partial class ChatInboxPage : Page
         };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(dialog, "ReplyConfirmation");
         return await dialog.ShowAsync() == ContentDialogResult.Primary;
+    }
+
+    private async Task<IReadOnlyList<ChatAgentBridge.Core.FileAttachmentCandidate>?> ConfirmAttachmentsAsync(
+        InboxItem item,
+        IReadOnlyList<ChatAgentBridge.Core.FileAttachmentCandidate> candidates,
+        bool isFirstScopeConsent,
+        CancellationToken cancellationToken)
+    {
+        var settings = item.EffectiveSettings ?? item.Settings;
+        ChatAgentBridge.Core.FileAttachmentPolicy.Validate(settings);
+        var checks = new List<(ChatAgentBridge.Core.FileAttachmentCandidate Candidate, CheckBox Box)>();
+        var filesPanel = new StackPanel { Spacing = 4 };
+        foreach (var candidate in candidates)
+        {
+            var fileSizeLabel = DesktopText.Get("AttachmentFileSize", candidate.Length, candidate.Length / (1024d * 1024d));
+            var box = new CheckBox
+            {
+                Content = new StackPanel
+                {
+                    Spacing = 1,
+                    Children =
+                    {
+                        new TextBlock { Text = candidate.RelativePath, TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap },
+                        new TextBlock { Text = fileSizeLabel, Style = (Microsoft.UI.Xaml.Style)Application.Current.Resources["CaptionTextBlockStyle"] }
+                    }
+                },
+                IsThreeState = false
+            };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(box, $"AttachmentFile{checks.Count + 1}");
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(box, DesktopText.Get("AttachmentFileAccessibleName", candidate.RelativePath, fileSizeLabel));
+            checks.Add((candidate, box));
+            filesPanel.Children.Add(box);
+        }
+
+        var selectionError = new TextBlock
+        {
+            TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap,
+            Style = (Microsoft.UI.Xaml.Style)Application.Current.Resources["BodyStrongTextBlockStyle"]
+        };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(selectionError, "AttachmentSelectionStatus");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetLiveSetting(selectionError, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        var selectedDestination = new TextBlock
+        {
+            Text = DesktopText.Get("AttachmentDestination", item.Source, item.Request.ThreadId, item.Workspace),
+            TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap,
+            IsTextSelectionEnabled = true
+        };
+        var intro = new TextBlock { Text = DesktopText.Get("AttachmentConfirmIntro"), TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap };
+        var scopeWarning = new TextBlock { Text = DesktopText.Get("AttachmentFirstConsentWarning", settings.FileAttachmentMaxCount, settings.FileAttachmentMaxSizeMb, settings.FileAttachmentMaxTotalSizeMb), TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap };
+        var body = new StackPanel { Spacing = 8 };
+        body.Children.Add(intro);
+        body.Children.Add(new TextBlock { Text = DesktopText.Get("AttachmentPrivacyHint"), TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap });
+        body.Children.Add(selectedDestination);
+        if (isFirstScopeConsent) body.Children.Add(scopeWarning);
+        body.Children.Add(new TextBlock { Text = DesktopText.Get("AttachmentSelectionLimits", settings.FileAttachmentMaxCount, settings.FileAttachmentMaxSizeMb, settings.FileAttachmentMaxTotalSizeMb), TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap });
+        body.Children.Add(new ScrollViewer { Content = filesPanel, MaxHeight = 280, VerticalScrollBarVisibility = Microsoft.UI.Xaml.Controls.ScrollBarVisibility.Auto });
+        body.Children.Add(selectionError);
+
+        ContentDialog? dialog = null;
+        void UpdateSelection()
+        {
+            var selected = checks.Where(entry => entry.Box.IsChecked == true).Select(entry => entry.Candidate).ToArray();
+            var totalBytes = selected.Sum(candidate => candidate.Length);
+            var maximumFileBytes = (long)settings.FileAttachmentMaxSizeMb * 1024 * 1024;
+            var maximumTotalBytes = (long)settings.FileAttachmentMaxTotalSizeMb * 1024 * 1024;
+            selectionError.Text = selected.Length == 0 ? DesktopText.Get("AttachmentSelectAtLeastOne")
+                : selected.Length > settings.FileAttachmentMaxCount ? DesktopText.Get("AttachmentSelectionCountExceeded", settings.FileAttachmentMaxCount)
+                : selected.Any(candidate => candidate.Length > maximumFileBytes) ? DesktopText.Get("AttachmentSelectionFileTooLarge", settings.FileAttachmentMaxSizeMb)
+                : totalBytes > maximumTotalBytes ? DesktopText.Get("AttachmentSelectionTotalTooLarge", settings.FileAttachmentMaxTotalSizeMb)
+                : string.Empty;
+            if (dialog is not null) dialog.IsPrimaryButtonEnabled = selected.Length > 0 && selectionError.Text.Length == 0;
+        }
+        foreach (var (_, box) in checks)
+        {
+            box.Checked += (_, _) => UpdateSelection();
+            box.Unchecked += (_, _) => UpdateSelection();
+        }
+
+        dialog = new ContentDialog
+        {
+            RequestedTheme = App.Appearance.RequestedTheme,
+            XamlRoot = XamlRoot,
+            Title = DesktopText.Get("AttachmentConfirmTitle"),
+            Content = new ScrollViewer { Content = body, MaxHeight = 520 },
+            PrimaryButtonText = DesktopText.Get("AttachmentSendSelected"),
+            CloseButtonText = DesktopText.Get("Cancel"),
+            DefaultButton = ContentDialogButton.Close,
+            IsPrimaryButtonEnabled = false
+        };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(dialog, "AttachmentConfirmation");
+        UpdateSelection();
+        cancellationToken.ThrowIfCancellationRequested();
+        using var cancellation = cancellationToken.Register(() => DispatcherQueue.TryEnqueue(() =>
+        {
+            try { dialog.Hide(); }
+            catch (InvalidOperationException) { }
+        }));
+        var result = await dialog.ShowAsync();
+        cancellationToken.ThrowIfCancellationRequested();
+        return result == ContentDialogResult.Primary
+            ? checks.Where(entry => entry.Box.IsChecked == true).Select(entry => entry.Candidate).ToArray()
+            : null;
     }
 
     private void WindowClosed(object sender, Microsoft.UI.Xaml.WindowEventArgs args) => ViewModel.Close();

@@ -694,4 +694,5 @@ Conversation ID (first message): {2}</value></data>
   <data name="ConnectionRegistered" xml:space="preserve"><value>{0} CLI connection registered on this PC.</value></data>
   <data name="ConnectionRegistrationFailed" xml:space="preserve"><value>Could not register this CLI connection: {0}</value></data>
   <data name="ConnectionLoaded" xml:space="preserve"><value>Saved {0} settings loaded. Save settings to use them as the app defaults.</value></data>
+  <data name="AttachmentLimitsMustBeWholeNumbers" xml:space="preserve"><value>Attachment limits must be whole numbers.</value></data>
 </root>

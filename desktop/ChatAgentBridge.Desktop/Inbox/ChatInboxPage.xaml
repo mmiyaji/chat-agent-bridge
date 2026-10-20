@@ -112,11 +112,16 @@
 
                 <Grid Grid.Row="1" ColumnSpacing="8" RowSpacing="8" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedConversation), Mode=OneWay}">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                     <Button Command="{x:Bind ViewModel.ApproveCommand}" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ApproveChat" x:Uid="InboxApprove" />
                     <Button Grid.Column="1" Command="{x:Bind ViewModel.RejectCommand}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="RejectChat" x:Uid="InboxReject" />
                     <Button Grid.Row="1" Command="{x:Bind ViewModel.CancelCommand}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="CancelChat" x:Uid="InboxStop" />
                     <Button Grid.Row="1" Grid.Column="1" Command="{x:Bind ViewModel.SendResultCommand}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SendChatResult" x:Uid="InboxShare" />
+                    <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <Button Command="{x:Bind ViewModel.SendAttachmentsCommand}" AutomationProperties.AutomationId="SendChatAttachments" x:Uid="InboxSendAttachments" />
+                        <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.SelectedAttachmentStatus, Mode=OneWay}" VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SelectedAttachmentStatus" />
+                    </Grid>
                 </Grid>
                 <ScrollViewer x:Name="InboxDetailScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                               Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedConversation), Mode=OneWay}">

@@ -1,4 +1,5 @@
 using ChatAgentBridge.Core.Sessions;
+using ChatAgentBridge.Core.History;
 
 namespace ChatAgentBridge.Core.Tests;
 
@@ -58,6 +59,22 @@ public sealed class FileAttachmentSharingServiceTests : IDisposable
         Assert.Equal(FileAttachmentShareOutcome.Sent,
             await new FileAttachmentSharingService(Data).ShareAsync(context, false, Accept, Allowed, Upload));
         Assert.Equal(1, _uploads); Assert.Equal(1, _confirmations);
+    }
+
+    [Fact]
+    public async Task FileUploadIntentAndOutcomeCanBeAuditedWithoutBlockingTheTransfer()
+    {
+        var context = await ContextAsync();
+        var audit = new AuditStore(Data);
+        async Task Append(string kind) => await audit.AppendAsync(new(DateTimeOffset.UtcNow, kind, null,
+            context.Key.Provider, context.Key.ChannelId, context.Key.ThreadId));
+        Assert.Equal(FileAttachmentShareOutcome.Sent,
+            await new FileAttachmentSharingService(Data).ShareAsync(context, false, Accept, Allowed,
+                async (files, token) => { await Append("attachment_approved"); await Upload(files, token); await Append("attachment_sent"); }));
+        await Append("attachment_failed");
+        Assert.Equal(1, _uploads);
+        Assert.Equal(new[] { "attachment_approved", "attachment_failed", "attachment_sent" },
+            (await audit.ListAsync()).Select(item => item.Kind).OrderBy(kind => kind).ToArray());
     }
 
     [Fact]

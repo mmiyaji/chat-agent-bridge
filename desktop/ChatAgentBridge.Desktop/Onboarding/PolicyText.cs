@@ -6,7 +6,7 @@ public static class PolicyText
     public const string Version = ChatAgentBridge.Core.OnboardingConsentStore.CurrentPolicyVersion;
     private const string JapaneseTerms = """
         Chat Agent Bridge 利用規約（開発プレビュー）
-        文書バージョン：2026-10-20.1
+        文書バージョン：2026-10-20.2
         提供者：mmiyaji
         お問い合わせ：mail@ruhenheim.org
 
@@ -31,7 +31,7 @@ public static class PolicyText
 
     private const string JapanesePrivacy = """
         Chat Agent Bridge プライバシーポリシー（開発プレビュー）
-        文書バージョン：2026-10-20.1
+        文書バージョン：2026-10-20.2
         提供者：mmiyaji
         お問い合わせ：mail@ruhenheim.org
 
@@ -41,10 +41,14 @@ public static class PolicyText
         2. このPCへの保存
         接続・実行設定、セッションの関連付け、実行履歴・監査情報、同意した文書のバージョンと日時を、このWindowsユーザーのアプリデータフォルダーに保存します。接続トークンはWindows DPAPIで暗号化して保存します。ブリッジの履歴・監査ファイルには通常、依頼本文・結果本文を保存しませんが、作業パスや識別子等は含まれます。CLI接続の登録後、会話の引き継ぎ用に、直近3回までの成功した依頼・結果の抜粋をWindows DPAPIで暗号化して別ファイルに保存します。保管する会話は最大200件で、各メモは最大8,000文字です。「要約を引き継ぐ」を選んだ場合だけ、切り替え先CLIへの次の依頼にメモを添えます。本文は画面表示や処理のためメモリーでも扱い、別途CLIや外部サービスに保存されることがあります。暗号化はPC管理者や侵害されたPCからの保護を保証するものではありません。
 
+        任意の「初回のみ承認」モードでは、上限付きのファイル送信同意記録をアプリデータフォルダーに保存します。記録には会話とネイティブセッションの識別子、会話と添付設定のフィンガープリント、承認日時が含まれますが、ファイル名、ファイル内容、ファイルごとのハッシュは含まれません。検出したファイル候補（名前、作業フォルダー内のパス、サイズ、更新日時、ハッシュを含む）はメモリー上で扱います。候補情報やファイル内容の一時コピーを別のディスクファイルには保存しません。承認後、送信対象のバイト列はアップロード中にメモリー上で扱います。
+
         3. 外部との通信と共有範囲
         Slackまたは設定したMattermostサーバーとの間で、依頼・応答・接続状態等を送受信します。実行時には依頼文と作業に必要な情報を選択したCLIへ渡します。CLIは、その設定と提供者の方針に従い、AIサービス等へデータを送信する場合があります。ローカルPCでCLIを起動することは、AI処理やデータ保存がすべてPC内で完結することを意味しません。各外部サービスのプライバシーポリシー・契約も確認してください。
 
         チャットへ共有する結果や操作承認の詳細は、そのチャンネル・スレッドを閲覧できる人に見えます。許可ユーザーの設定は、チャット側での投稿の閲覧範囲を制限するものではありません。接続・切断時には本文を含まない状態通知を送る場合があります。
+
+        チャットへの結果共有が有効な場合、新たに作成された作業フォルダー内のファイルは、ファイル添付専用の承認設定に従って送信できます。初期設定では、転送ごとにファイルを選択して承認した後に限り、選択されたファイルの名前、内容、サイズを、その会話で設定されたSlackまたはMattermostへ送信します。依頼文の実行や結果共有の承認は、ファイルの送信を承認しません。任意の「初回のみ承認」モードでは、最初に承認すると、その後は設定された上限内で同じネイティブセッションから作成された適格ファイルを自動送信できます。任意の「自動」モードでは、この設定を明示的に選択して保存すると、転送ごとの確認なしに適格ファイルを送信します。上限はファイルごとに1～100 MiB、件数は1～10件、合計は1～100 MiBの範囲で設定できます。初期値はファイルごとに10 MiB、3件、合計20 MiBです。アプリは一部のファイル名や種類を除外しますが、内容から秘密情報を検出する検査は行いません。送信前にファイルを確認してください。送信したファイルは受信先チャンネル・スレッドを閲覧できる人に見え、各チャット提供者の取扱い・保存方針が適用されます。
 
         4. 提供者への送信
         この開発プレビューには、ブリッジ独自の解析・広告サービスへの利用情報や会話本文の自動送信を組み込んでいません。OS、配布ストア、CLI、チャット・AIサービスがそれぞれ行う情報の取扱いは、各提供者の方針に従います。利用者が問い合わせ等で情報を送る場合は、必要な範囲に絞り、トークン等を除いてください。
@@ -61,7 +65,7 @@ public static class PolicyText
 
     private const string EnglishTerms = """
         Chat Agent Bridge Terms of Use (Development Preview)
-        Document version: 2026-10-20.1
+        Document version: 2026-10-20.2
         Provider: mmiyaji
         Contact: mail@ruhenheim.org
 
@@ -86,7 +90,7 @@ public static class PolicyText
 
     private const string EnglishPrivacy = """
         Chat Agent Bridge Privacy Policy (Development Preview)
-        Document version: 2026-10-20.1
+        Document version: 2026-10-20.2
         Provider: mmiyaji
         Contact: mail@ruhenheim.org
 
@@ -96,10 +100,14 @@ public static class PolicyText
         2. Storage on this PC
         Connection and execution settings, session associations, execution history and audit information, and the version and date of documents you accepted are stored in this Windows user's application data folder. Connection tokens are encrypted with Windows DPAPI. Bridge history and audit files ordinarily do not store request or result text, but can include working paths and identifiers. After you register a CLI connection, excerpts of up to three recent successful requests and results are saved in a separate file encrypted with Windows DPAPI. At most 200 conversation notes are retained, each up to 8,000 characters. A note is attached to the next request to the target CLI only when you select summary transfer. Text is also handled in memory for display and processing, and may also be stored separately by a CLI or external service. Encryption does not guarantee protection from a PC administrator or a compromised PC.
 
+        For the optional "first" file-approval mode, the application stores a bounded consent record in its data folder. The record contains conversation and native-session identifiers, a fingerprint of the conversation and attachment settings, and the approval time; it does not contain file names, file contents, or per-file hashes. Discovered file candidates (including names, workspace paths, sizes, timestamps, and hashes) are held in memory. The bridge does not save those candidates or create a separate on-disk staging copy of file contents. After approval, the bytes selected for transfer are held in memory while they are uploaded.
+
         3. External communications and sharing
         The application exchanges requests, responses, and connection status with Slack or the Mattermost server you configure. During execution, it passes the request and information needed for the task to the selected CLI. Depending on its configuration and provider policies, the CLI may send data to AI services. Running a CLI on a local PC does not mean that all AI processing or data storage happens on that PC. Review the privacy policies and agreements of each external service.
 
         Results shared to chat and details of operation approvals are visible to people who can view that channel or thread. The authorized-user setting does not limit who can view posts on the chat service. Connection and disconnection notices that do not include message text may also be sent.
+
+        When chat result sharing is enabled, newly created workspace files can be sent under a separate file-attachment approval setting. In the default mode, selected file names, contents, and sizes are sent to the Slack or Mattermost service configured for the conversation only after you select and approve each transfer; text execution or result-sharing approval does not approve files. The optional "first" mode requires an initial approval and can then automatically send later eligible files from the same native session within the configured limits. The optional "auto" mode sends eligible files without a per-transfer prompt after you explicitly enable and save that setting. Limits are configurable from 1–100 MiB per file, 1–10 files, and 1–100 MiB total; the defaults are 10 MiB, 3 files, and 20 MiB total. The application excludes certain file names and types, but does not inspect file contents to detect secrets. Review files before approving them. Sent files are visible to people who can view the recipient channel or thread and are subject to that chat provider's handling and retention policies.
 
         4. Information sent to the provider
         This development preview does not include automatic sending of usage information or conversation text to a bridge-operated analytics or advertising service. Information handling by the OS, distribution store, CLI, chat, and AI services is governed by each provider's policies. If you send information to the provider, for example in a support request, limit it to what is needed and remove tokens and secrets.

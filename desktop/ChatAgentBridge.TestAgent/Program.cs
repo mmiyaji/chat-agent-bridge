@@ -6,7 +6,8 @@ using System.Text;
 Console.InputEncoding = new UTF8Encoding(false);
 Console.OutputEncoding = new UTF8Encoding(false);
 
-// Offline E2E fixture only. No model calls, command execution, file changes or networking.
+// Offline E2E fixture only. No model calls, command execution or networking. The explicitly
+// marked attachment fixture may create one of four synthetic files inside its isolated workspace.
 if (args is ["--version"])
 {
     var exeName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "");
@@ -59,6 +60,53 @@ if (args.Contains("--input-format") && Array.IndexOf(args, "--input-format") + 1
 }
 if (args.Contains("--print"))
 {
+    var attachmentWorkspace = Environment.GetEnvironmentVariable("CAB_FILE_ATTACHMENTS_WORKSPACE");
+    if (!string.IsNullOrWhiteSpace(attachmentWorkspace))
+    {
+        var workspace = Path.GetFullPath(attachmentWorkspace);
+        var dataDirectory = Directory.GetParent(workspace)?.FullName;
+        var marker = dataDirectory is null ? null : Path.Combine(dataDirectory, ".cab-file-attachments-ui");
+        var transcript = Environment.GetEnvironmentVariable("CAB_FILE_ATTACHMENTS_TRANSCRIPT");
+        if (dataDirectory is null || !string.Equals(Path.GetFileName(workspace), "workspace", StringComparison.OrdinalIgnoreCase) ||
+            !Directory.Exists(workspace) || marker is null || !File.Exists(marker) ||
+            !string.Equals(File.ReadAllText(marker).Trim(), "Isolated offline attachment UI test", StringComparison.Ordinal) ||
+            string.IsNullOrWhiteSpace(transcript) ||
+            !string.Equals(Path.GetFullPath(transcript), Path.Combine(dataDirectory, "agent-calls.jsonl"), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+        {
+            Console.Error.WriteLine("Attachment fixture environment did not point to its marked isolated test directory.");
+            Environment.ExitCode = 2;
+            return;
+        }
+
+        var attachmentPrompt = await Console.In.ReadToEndAsync();
+        var attachmentFileMatch = System.Text.RegularExpressions.Regex.Match(attachmentPrompt, @"CREATE ATTACHMENT (first|second|third|fourth)\.txt", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        var attachmentResult = "No fixture file requested.";
+        if (attachmentFileMatch.Success)
+        {
+            var fileName = attachmentFileMatch.Groups[1].Value.ToLowerInvariant() + ".txt";
+            var filePath = Path.Combine(workspace, fileName);
+            if (!string.Equals(Path.GetDirectoryName(Path.GetFullPath(filePath)), workspace, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            {
+                Console.Error.WriteLine("Attachment fixture filename escaped the isolated workspace.");
+                Environment.ExitCode = 2;
+                return;
+            }
+            await File.WriteAllTextAsync(filePath, $"Offline fixture file {fileName}{Environment.NewLine}");
+            attachmentResult = $"Created {fileName}";
+        }
+
+        var attachmentResumeIndex = Array.IndexOf(args, "--resume");
+        var attachmentSession = attachmentResumeIndex >= 0 && attachmentResumeIndex + 1 < args.Length
+            ? args[attachmentResumeIndex + 1]
+            : "6f76a963-bd6e-42dc-9c66-27ca2d8c77f3";
+        await File.AppendAllTextAsync(transcript!, JsonSerializer.Serialize(new { args, prompt = attachmentPrompt, result = attachmentResult }) + Environment.NewLine);
+        await WriteAsync(new { type = "system", subtype = "init", session_id = attachmentSession, model = "fixture-claude" });
+        await WriteAsync(new { type = "assistant", message = new { content = new[] { new { type = "text", text = attachmentResult } } } });
+        await WriteAsync(new { type = "result", subtype = "success", session_id = attachmentSession, result = attachmentResult,
+            usage = new { input_tokens = 10, output_tokens = 5 }, modelUsage = new Dictionary<string, object> { ["fixture-claude"] = new { } } });
+        return;
+    }
+
     var resumeIndex = Array.IndexOf(args, "--resume");
     var session = resumeIndex >= 0 ? args[resumeIndex + 1] : Guid.NewGuid().ToString("D");
     var modelIndex = Array.IndexOf(args, "--model");

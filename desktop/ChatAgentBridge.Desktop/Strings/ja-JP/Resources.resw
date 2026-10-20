@@ -894,6 +894,7 @@
   <data name="ConnectionsJump.PlaceholderText" xml:space="preserve"><value>項目を選択</value></data>
   <data name="ConnectionsJump.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>チャットの設定項目へ移動</value></data>
   <data name="JumpApproval.Content" xml:space="preserve"><value>承認と結果の返信</value></data>
+  <data name="JumpAttachments.Content" xml:space="preserve"><value>生成ファイルの添付</value></data>
   <data name="JumpScope.Content" xml:space="preserve"><value>許可する会話</value></data>
   <data name="JumpStartup.Content" xml:space="preserve"><value>起動と自動接続</value></data>
   <data name="BrowseAgentExecutable.Content" xml:space="preserve"><value>参照…</value></data>
@@ -972,4 +973,15 @@
   <data name="LoadRegisteredCodexConnection.Content" xml:space="preserve"><value>保存したCodexを読み込む</value></data>
   <data name="LoadRegisteredClaudeConnection.Content" xml:space="preserve"><value>保存したClaude Codeを読み込む</value></data>
   <data name="ConnectionRegistrationStatus.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>CLI接続の状態</value></data>
+  <data name="FileAttachmentSettingsHeading.Text" xml:space="preserve"><value>生成ファイルの添付</value></data>
+  <data name="FileAttachmentApprovalMode.Header" xml:space="preserve"><value>ファイル添付の承認</value></data>
+  <data name="FileAttachmentModeDisabled.Content" xml:space="preserve"><value>ファイルを添付しない</value></data>
+  <data name="FileAttachmentModeAlways.Content" xml:space="preserve"><value>毎回確認（既定）</value></data>
+  <data name="FileAttachmentModeFirst.Content" xml:space="preserve"><value>スレッドの初回のみ確認</value></data>
+  <data name="FileAttachmentModeAuto.Content" xml:space="preserve"><value>自動添付</value></data>
+  <data name="FileAttachmentSettingsHelp.Text" xml:space="preserve"><value>結果を共有しない設定では添付も無効です。自動添付モードを保存すると、対象の新規ファイルを確認なしで送信します。初回のみ確認モードでは、同じユーザーによって同じ会話セッションで今後作成される対象ファイルを初回承認後に設定上限内で自動添付します。モードまたは上限の変更時は再度確認します。セッション再開に対応していないCLIでは、承認は1回の送信に適用されます。送信したファイルはチャネルメンバーが閲覧できます。アプリは内容の機密情報を判定できないため、送信前にファイルを確認してください。設定・認証情報などの名前のファイルと実行ファイルは名前に基づいて対象外になります。</value></data>
+  <data name="FileAttachmentMaxSizeMb.Header" xml:space="preserve"><value>1ファイルの最大サイズ（MiB）</value></data>
+  <data name="FileAttachmentMaxCount.Header" xml:space="preserve"><value>最大ファイル数</value></data>
+  <data name="FileAttachmentMaxTotalSizeMb.Header" xml:space="preserve"><value>1回の送信の最大合計サイズ（MiB）</value></data>
+  <data name="InboxSendAttachments.Content" xml:space="preserve"><value>ファイルを確認して送信</value></data>
 </root>

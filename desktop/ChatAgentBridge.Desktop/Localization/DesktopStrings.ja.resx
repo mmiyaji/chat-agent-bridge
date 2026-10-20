@@ -442,4 +442,33 @@
   <data name="AgentSummarySaveFailed" xml:space="preserve"><value>応答は完了しましたが、引き継ぎ用メモを保存できませんでした。</value></data>
   <data name="AgentSwitchIntro" xml:space="preserve"><value>登録済みのCLIを使い、同じチャットスレッドで新しいAI会話を始めます。以前のセッション情報は残します。次の依頼はPCでの承認が必要です。</value></data>
   <data name="AgentSwitchDetails" xml:space="preserve"><value>CLI接続の詳細</value></data>
+  <data name="AttachmentFileSize" xml:space="preserve"><value>{0:N0} バイト（{1:F2} MiB）</value></data>
+  <data name="AuditAttachmentApproved" xml:space="preserve"><value>ファイル添付を承認</value></data>
+  <data name="AuditAttachmentSent" xml:space="preserve"><value>ファイルを添付</value></data>
+  <data name="AuditAttachmentFailed" xml:space="preserve"><value>ファイル添付に失敗</value></data>
+  <data name="AttachmentDestination" xml:space="preserve"><value>送信先: {0}、スレッド {1}、ワークスペース {2}</value></data>
+  <data name="AttachmentConfirmIntro" xml:space="preserve"><value>新しく作成されたファイルから送信するものを選んでください。ファイルはチャネルのメンバーが閲覧できる場合があります。</value></data>
+  <data name="AttachmentPrivacyHint" xml:space="preserve"><value>送信したファイルはチャット参加者が閲覧できます。アプリは内容の機密情報を判定できないため、送信前に各ファイルを確認してください。</value></data>
+  <data name="AttachmentFileAccessibleName" xml:space="preserve"><value>{0}、{1}</value></data>
+  <data name="AttachmentFirstConsentWarning" xml:space="preserve"><value>この選択を承認すると、同じユーザーによってこの会話セッションで今後作成される対象ファイルも、最大{0}個、1ファイル{1} MiB、合計{2} MiBの範囲で自動送信されます。モードまたは上限を変更すると、再度承認が必要です。</value></data>
+  <data name="AttachmentSelectionLimits" xml:space="preserve"><value>1回の送信の上限: {0}個、1ファイル{1} MiB、合計{2} MiB。</value></data>
+  <data name="AttachmentSelectAtLeastOne" xml:space="preserve"><value>送信するには1つ以上のファイルを選択してください。</value></data>
+  <data name="AttachmentSelectionCountExceeded" xml:space="preserve"><value>ファイルは{0}個まで選択できます。</value></data>
+  <data name="AttachmentSelectionFileTooLarge" xml:space="preserve"><value>1ファイルのサイズは{0} MiB以下にしてください。</value></data>
+  <data name="AttachmentSelectionTotalTooLarge" xml:space="preserve"><value>選択したファイルの合計が{0} MiBの上限を超えています。</value></data>
+  <data name="AttachmentConfirmTitle" xml:space="preserve"><value>生成したファイルを送信しますか？</value></data>
+  <data name="AttachmentSendSelected" xml:space="preserve"><value>選択したファイルを送信</value></data>
+  <data name="AttachmentsNone" xml:space="preserve"><value>送信対象の新しいファイルはありません。</value></data>
+  <data name="AttachmentsFound" xml:space="preserve"><value>送信対象の新しいファイルが{0}個あります。内容を確認してください。</value></data>
+  <data name="AttachmentsScanIncomplete" xml:space="preserve"><value>ファイルの検索が完了しませんでした。送信前に対象ファイルを確認してください。</value></data>
+  <data name="AttachmentsSkipped" xml:space="preserve"><value>添付ルールにより{0}個のファイルを除外しました。</value></data>
+  <data name="AttachmentsNotSupported" xml:space="preserve"><value>このチャット接続ではファイルを送信できません。</value></data>
+  <data name="AttachmentsSent" xml:space="preserve"><value>ファイルを{0}個送信しました。</value></data>
+  <data name="AttachmentsFailed" xml:space="preserve"><value>選択したファイルを送信できませんでした。一部のファイルは送信済みの可能性があります。再試行する前にチャットスレッドを確認してください。</value></data>
+  <data name="AttachmentsSlackScopeMissing" xml:space="preserve"><value>Slackアプリに files:write 権限が必要です。権限を追加して再認可後、接続し直してください。</value></data>
+  <data name="AttachmentsCancelled" xml:space="preserve"><value>ファイル送信をキャンセルしました。</value></data>
+  <data name="AttachmentsApprovalRequired" xml:space="preserve"><value>送信するにはファイルを確認して承認してください。</value></data>
+  <data name="AttachmentsPolicyChanged" xml:space="preserve"><value>添付設定が変更されました。ファイルを確認し、再度承認してください。</value></data>
+  <data name="AttachmentsDisabled" xml:space="preserve"><value>ファイル添付は無効です。</value></data>
+  <data name="AttachmentsResultPrivate" xml:space="preserve"><value>結果の自動共有はファイル添付の承認にはなりません。</value></data>
 </root>

@@ -37,6 +37,7 @@ public sealed partial class MainPage
             "mattermost" => MattermostSettingsCard,
             "slack" => SlackSettingsCard,
             "approval" => ChatApprovalSettingsCard,
+            "attachments" => FileAttachmentSettings,
             "scope" => ChatScopeSettingsCard,
             "startup" => StartupSettingsCard,
             _ => null
