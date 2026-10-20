@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Diagnostics;
+using ChatAgentBridge.Core.Localization;
 
 namespace ChatAgentBridge.Core.AppServer;
 
@@ -99,6 +100,27 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
             TaskCompletionSource<JsonElement>? turnFinished = null;
             Exception? notificationError = null;
             var usageEvents = new List<UsageEvent>();
+            var streamedAgentMessageItems = options.Progress is null ? null : new HashSet<string>(StringComparer.Ordinal);
+            var streamedAgentMessageIdsOverflowed = false;
+            const int maxStreamedAgentMessageIds = 2048;
+            var progressTurnActive = 0;
+            void ReportProgress(string stream, string? text, bool semantic = false)
+            {
+                if (options.Progress is null || string.IsNullOrEmpty(text)) return;
+                var appendNewline = (semantic || stream == "activity") && !text.EndsWith('\n');
+                for (var offset = 0; offset < text.Length; offset += AgentRunProgressParser.MaxTextCharacters)
+                {
+                    var update = new AgentRunProgress(stream, text.Substring(offset,
+                        Math.Min(AgentRunProgressParser.MaxTextCharacters, text.Length - offset)));
+                    try { options.Progress.Report(update); }
+                    catch { /* Progress observers must not break the transport pump. */ }
+                }
+                if (appendNewline)
+                {
+                    try { options.Progress.Report(new AgentRunProgress(stream, Environment.NewLine)); }
+                    catch { /* Progress observers must not break the transport pump. */ }
+                }
+            }
             var notificationHandler = (string method, JsonElement parameters) =>
             {
                 try
@@ -126,12 +148,51 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                     if (turnId is not null && eventTurnId is not null && !SameId(turnId, eventTurnId)) return;
                     if (method == "turn/started") turnId = eventTurnId;
                     else if (turnId is null) return;
-                    if (method == "item/agentMessage/delta") output.Append(StringAt(parameters, "delta"));
-                    if (method == "item/commandExecution/outputDelta") output.Append(StringAt(parameters, "delta"));
+                    var canReportCurrentProgress = eventThreadId is not null && threadId is not null && SameId(threadId, eventThreadId)
+                        && eventTurnId is not null && turnId is not null && SameId(turnId, eventTurnId);
+                    if (method == "item/agentMessage/delta")
+                    {
+                        var delta = StringAt(parameters, "delta");
+                        output.Append(delta);
+                        var itemId = StringAt(parameters, "itemId");
+                        if (canReportCurrentProgress && streamedAgentMessageItems is not null && !string.IsNullOrEmpty(itemId))
+                        {
+                            if (streamedAgentMessageItems.Count < maxStreamedAgentMessageIds || streamedAgentMessageItems.Contains(itemId))
+                                streamedAgentMessageItems.Add(itemId);
+                            else streamedAgentMessageIdsOverflowed = true;
+                        }
+                        if (canReportCurrentProgress) ReportProgress("stdout", delta);
+                    }
+                    if (method == "item/commandExecution/outputDelta")
+                    {
+                        var delta = StringAt(parameters, "delta");
+                        output.Append(delta);
+                        if (canReportCurrentProgress) ReportProgress("stdout", delta);
+                    }
+                    if (method == "item/started")
+                    {
+                        var startedItem = Property(parameters, "item");
+                        var startedType = StringAt(startedItem, "type");
+                        if (canReportCurrentProgress && startedType == "commandExecution")
+                            ReportProgress("activity", CoreText.Get("ProgressRunningCommand", StringAt(startedItem, "command") ?? CoreText.Get("ProgressGenericCommand")));
+                        else if (canReportCurrentProgress && startedType is not null && startedType is not "agentMessage" and not "reasoning" and not "plan")
+                            ReportProgress("activity", CoreText.Get("ProgressStartingItem", startedType));
+                    }
                     if (method == "item/completed")
                     {
                         var item = Property(parameters, "item");
-                        if (StringAt(item, "type") == "agentMessage") output.SetFinal(StringAt(item, "text"));
+                        var itemId = StringAt(item, "id") ?? StringAt(parameters, "itemId");
+                        if (StringAt(item, "type") == "agentMessage")
+                        {
+                            var text = StringAt(item, "text");
+                            output.SetFinal(text);
+                            if (canReportCurrentProgress && options.Progress is not null && (itemId is null || streamedAgentMessageItems?.Contains(itemId) != true) && !streamedAgentMessageIdsOverflowed)
+                                ReportProgress("stdout", text, semantic: true);
+                        }
+                        else if (canReportCurrentProgress && StringAt(item, "type") == "commandExecution")
+                            ReportProgress("activity", CoreText.Get("ProgressCommandFinished"));
+                        else if (canReportCurrentProgress && StringAt(item, "type") is { } completedType && completedType is not "reasoning" and not "plan")
+                            ReportProgress("activity", CoreText.Get("ProgressFinishedItem", completedType));
                     }
                     if (method is "turn/completed" or "turn/failed" && turnFinished is { } completion)
                     {
@@ -145,7 +206,19 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
             };
             client.NotificationReceived += notificationHandler;
             client.ServerRequestHandler = (request, token) => HandleServerRequestAsync(request, options, threadId, turnId, token);
-            using var turnAttachment = new ClientTurnAttachment(client, notificationHandler);
+            IAppServerProgressSource? progressSource = null;
+            Action<string>? stderrHandler = null;
+            if (options.Progress is not null && process is IAppServerProgressSource source)
+            {
+                progressSource = source;
+                stderrHandler = text =>
+                {
+                    if (Volatile.Read(ref progressTurnActive) == 1) ReportProgress("stderr", text);
+                };
+                progressSource.StandardErrorReceived += stderrHandler;
+            }
+            using var turnAttachment = new ClientTurnAttachment(client, notificationHandler, progressSource, stderrHandler,
+                () => Interlocked.Exchange(ref progressTurnActive, 0));
 
             try
             {
@@ -182,10 +255,12 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                 };
                 if (model is not null) turnParameters["model"] = model;
                 if (effort is not null) turnParameters["effort"] = effort;
+                Volatile.Write(ref progressTurnActive, 1);
                 turnRequestSent = true;
                 var turnStart = await client.RequestAsync("turn/start", turnParameters, cancellationToken).ConfigureAwait(false);
                 turnId = StringAt(turnStart, "turn", "id") ?? StringAt(turnStart, "turnId");
                 var completed = await WaitForTurnAsync(turnFinished.Task, process, cancellationToken).ConfigureAwait(false);
+                Volatile.Write(ref progressTurnActive, 0);
                 var status = StringAt(completed, "status") ?? StringAt(completed, "state") ?? "completed";
                 var isSuccess = !status.Equals("failed", StringComparison.OrdinalIgnoreCase)
                     && !status.Equals("interrupted", StringComparison.OrdinalIgnoreCase)
@@ -424,11 +499,15 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
         }
     }
 
-    private sealed class ClientTurnAttachment(IAppServerRpcClient client, Action<string, JsonElement> handler) : IDisposable
+    private sealed class ClientTurnAttachment(IAppServerRpcClient client, Action<string, JsonElement> handler,
+        IAppServerProgressSource? progressSource, Action<string>? stderrHandler, Action deactivateProgress) : IDisposable
     {
         public void Dispose()
         {
+            deactivateProgress();
             client.NotificationReceived -= handler;
+            if (progressSource is not null && stderrHandler is not null)
+                progressSource.StandardErrorReceived -= stderrHandler;
             client.ServerRequestHandler = null;
         }
     }

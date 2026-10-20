@@ -984,4 +984,11 @@
   <data name="FileAttachmentMaxCount.Header" xml:space="preserve"><value>最大ファイル数</value></data>
   <data name="FileAttachmentMaxTotalSizeMb.Header" xml:space="preserve"><value>1回の送信の最大合計サイズ（MiB）</value></data>
   <data name="InboxSendAttachments.Content" xml:space="preserve"><value>ファイルを確認して送信</value></data>
+  <data name="LiveOutputTitle.Text" xml:space="preserve"><value>実行中の出力</value></data>
+  <data name="LiveOutputPrivacyHelp.Text" xml:space="preserve"><value>このPCだけに表示されます。実行中の出力は会話に保存されず、自動共有もされません。</value></data>
+  <data name="LiveOutputPausedHelp.Text" xml:space="preserve"><value>追従を一時停止しています。実行は続き、追従を再開すると新しい出力が表示されます。</value></data>
+  <data name="LiveOutputWaitingHelp.Text" xml:space="preserve"><value>出力を待っています…</value></data>
+  <data name="LiveOutputTruncationHint.Text" xml:space="preserve"><value>表示には直近の64,000文字のみ保持されます。</value></data>
+  <data name="LiveOutputFollow.Content" xml:space="preserve"><value>出力を追従</value></data>
+  <data name="LiveOutputClear.Content" xml:space="preserve"><value>表示を消去</value></data>
 </root>

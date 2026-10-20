@@ -9,6 +9,7 @@
     xmlns:history="using:ChatAgentBridge_Desktop.History"
     xmlns:localization="using:ChatAgentBridge_Desktop.Localization"
     xmlns:appearance="using:ChatAgentBridge_Desktop.Appearance"
+    xmlns:executionUi="using:ChatAgentBridge_Desktop.ExecutionUi"
     xmlns:about="using:ChatAgentBridge_Desktop.About"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
@@ -325,6 +326,8 @@
                                     <Button  Command="{x:Bind ViewModel.RunCommand}" AutomationProperties.AutomationId="RunAgent"  x:Uid="RunAgent" />
                                     <Button  Command="{x:Bind ViewModel.CancelRunCommand}" AutomationProperties.AutomationId="CancelAgent"  x:Uid="CancelAgent" />
                                 </StackPanel>
+                                <executionUi:LiveOutputView ViewModel="{x:Bind ViewModel.LiveOutput, Mode=OneWay}"
+                                                            AutomationProperties.AutomationId="ManualLiveOutput" />
                                 <TextBox  Text="{x:Bind ViewModel.Output, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="160" MaxHeight="400" AutomationProperties.AutomationId="AgentOutput"  x:Uid="AgentOutput" />
                                 <TextBlock Text="{x:Bind ViewModel.UsageSummary, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="LocalUsageSummary" />
                             </StackPanel>

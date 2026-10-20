@@ -32,7 +32,8 @@ public sealed record AppServerInput(
 public sealed record AppServerRunOptions(
     string? SessionId = null,
     Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? ApprovalHandler = null,
-    Func<AppServerInput, CancellationToken, Task<IReadOnlyDictionary<string, string[]>?>>? InputHandler = null);
+    Func<AppServerInput, CancellationToken, Task<IReadOnlyDictionary<string, string[]>?>>? InputHandler = null,
+    IProgress<AgentRunProgress>? Progress = null);
 
 /// <param name="PromptAccepted">The server confirmed a turn for the prompt, rather than only creating an empty thread.</param>
 public sealed record AppServerRunResult(AgentRunResult Result, string? SessionId, bool PromptAccepted = false);
@@ -68,6 +69,12 @@ public interface IAppServerProcess : IAsyncDisposable
     Task<int?> ExitCode { get; }
     Task<string> StandardError { get; }
     void KillTree();
+}
+
+/// <summary>Optional live process diagnostics without changing existing process fakes.</summary>
+public interface IAppServerProgressSource
+{
+    event Action<string>? StandardErrorReceived;
 }
 
 public interface IAppServerProcessFactory

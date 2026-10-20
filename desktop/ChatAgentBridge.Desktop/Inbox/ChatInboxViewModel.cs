@@ -54,6 +54,7 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     [ObservableProperty] public partial string ResultText { get; set; } = "";
     [ObservableProperty] public partial string FullOutput { get; set; } = DesktopText.Get("InboxOutputIntro");
     [ObservableProperty] public partial string Usage { get; set; } = DesktopText.Get("UsageAfterExecution");
+    public ExecutionUi.LiveOutputViewModel LiveOutput { get; } = new();
     public Guid? ExecutionId { get; set; }
     public string? ExecutionPolicyFingerprint { get; set; }
     public bool AllowsResultSharing { get; set; } = true;
@@ -108,6 +109,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private readonly HashSet<InboxItem> _automaticallyAttempted = [];
     private readonly Dictionary<InboxItem, PropertyChangedEventHandler> _requestHandlers = [];
     private int _droppedCount;
+    private readonly ExecutionUi.LiveOutputViewModel _emptyLiveOutput = new();
+    public ExecutionUi.LiveOutputViewModel SelectedLiveOutput => Selected?.LiveOutput ?? _emptyLiveOutput;
 
     public ObservableCollection<InboxItem> Requests { get; } = [];
     public ObservableCollection<InboxConversation> Conversations { get; } = [];
@@ -150,6 +153,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public string EmptyListMessage => DesktopText.Get(Requests.Count == 0 ? "InboxWaitingForRequests" : "InboxNoMatches");
     partial void OnSelectedChanged(InboxItem? value)
     {
+        OnPropertyChanged(nameof(SelectedLiveOutput));
         OnPropertyChanged(nameof(SelectedAttachmentStatus));
         SendAttachmentsCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(SelectedOutput));
@@ -290,7 +294,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         if (e.Action == NotifyCollectionChangedAction.Reset)
         {
-            foreach (var pair in _requestHandlers) pair.Key.PropertyChanged -= pair.Value;
+            foreach (var pair in _requestHandlers)
+            {
+                pair.Key.PropertyChanged -= pair.Value;
+                pair.Key.LiveOutput.Dispose();
+            }
             _requestHandlers.Clear();
         }
         else if (e.OldItems is not null)
@@ -298,6 +306,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             foreach (InboxItem item in e.OldItems)
             {
                 if (_requestHandlers.Remove(item, out var handler)) item.PropertyChanged -= handler;
+                item.LiveOutput.Dispose();
             }
         }
         if (e.NewItems is not null)
@@ -556,10 +565,16 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.Usage = DesktopText.Get("UsageRunning");
             await StartProgressAsync(item);
             var attachmentBefore = await CaptureAttachmentBaselineAsync(item, effectiveSettings, token);
-            var result = effectiveSettings.AgentMode == "app-server"
-                ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
-                    new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct)), _execution.Token)
-                : await _runner.RunAsync(key, effectiveSettings, item.Request.Text, _execution.Token);
+            var progress = item.LiveOutput.Begin();
+            AgentRunResult result;
+            try
+            {
+                result = effectiveSettings.AgentMode == "app-server"
+                    ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
+                        new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct), Progress: progress), _execution.Token)
+                    : await _runner.RunAsync(key, effectiveSettings, item.Request.Text, _execution.Token, progress);
+            }
+            finally { item.LiveOutput.Finish(); }
             var output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
             var needsLogin = !result.Success && effectiveSettings.AgentProvider == AgentProfile.Claude &&
                 (output.Contains("Not logged in", StringComparison.OrdinalIgnoreCase) ||
@@ -945,5 +960,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         _closing = true;
         _connection?.Cancel();
         _execution?.Cancel();
+        foreach (var item in Requests) item.LiveOutput.Dispose();
+        _emptyLiveOutput.Dispose();
     }
 }

@@ -471,4 +471,11 @@
   <data name="AttachmentsPolicyChanged" xml:space="preserve"><value>Attachment settings changed. Review the files and approve again.</value></data>
   <data name="AttachmentsDisabled" xml:space="preserve"><value>File attachments are disabled.</value></data>
   <data name="AttachmentsResultPrivate" xml:space="preserve"><value>Automatic result sharing does not approve file attachments.</value></data>
+  <data name="LiveOutputTitle" xml:space="preserve"><value>Live execution output</value></data>
+  <data name="LiveOutputPrivacyHelp" xml:space="preserve"><value>Shown on this PC only. Live output is not saved to the conversation or shared automatically.</value></data>
+  <data name="LiveOutputPausedHelp" xml:space="preserve"><value>Following is paused. The execution continues, and new output appears when you resume following.</value></data>
+  <data name="LiveOutputWaitingHelp" xml:space="preserve"><value>Waiting for output…</value></data>
+  <data name="LiveOutputTruncationHint" xml:space="preserve"><value>Only the latest 64,000 characters are kept in this display.</value></data>
+  <data name="LiveOutputFollow" xml:space="preserve"><value>Follow output</value></data>
+  <data name="LiveOutputClear" xml:space="preserve"><value>Clear display</value></data>
 </root>

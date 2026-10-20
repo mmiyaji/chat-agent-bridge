@@ -984,4 +984,11 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="FileAttachmentMaxCount.Header" xml:space="preserve"><value>Maximum file count</value></data>
   <data name="FileAttachmentMaxTotalSizeMb.Header" xml:space="preserve"><value>Maximum total size per send (MiB)</value></data>
   <data name="InboxSendAttachments.Content" xml:space="preserve"><value>Review and send files</value></data>
+  <data name="LiveOutputTitle.Text" xml:space="preserve"><value>Live execution output</value></data>
+  <data name="LiveOutputPrivacyHelp.Text" xml:space="preserve"><value>Shown on this PC only. Live output is not saved to the conversation or shared automatically.</value></data>
+  <data name="LiveOutputPausedHelp.Text" xml:space="preserve"><value>Following is paused. The execution continues, and new output appears when you resume following.</value></data>
+  <data name="LiveOutputWaitingHelp.Text" xml:space="preserve"><value>Waiting for output…</value></data>
+  <data name="LiveOutputTruncationHint.Text" xml:space="preserve"><value>Only the latest 64,000 characters are kept in this display.</value></data>
+  <data name="LiveOutputFollow.Content" xml:space="preserve"><value>Follow output</value></data>
+  <data name="LiveOutputClear.Content" xml:space="preserve"><value>Clear display</value></data>
 </root>

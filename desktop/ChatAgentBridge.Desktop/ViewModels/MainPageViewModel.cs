@@ -35,6 +35,7 @@ public partial class MainPageViewModel : ObservableObject
     private readonly Startup.StartupOperationGuard _startupOperations = new();
 
     public ModelCatalogViewModel ModelCatalog { get; }
+    public ExecutionUi.LiveOutputViewModel LiveOutput { get; } = new();
     public ObservableCollection<ReasoningEffortChoice> ReasoningEffortCandidates { get; } = [];
 
     public MainPageViewModel()
@@ -558,14 +559,19 @@ public partial class MainPageViewModel : ObservableObject
             try
             {
                 AgentRunResult result;
-                if (settingsSnapshot.AgentMode == "app-server")
+                var progress = LiveOutput.Begin();
+                try
                 {
-                    var run = await _appServerRunner.RunAsync(settingsSnapshot, promptSnapshot,
-                        new AppServerRunOptions(ApprovalHandler: ServerApprovalHandler, InputHandler: ServerInputHandler), runCancellation.Token);
-                    result = run.Result;
-                    sessionId = run.SessionId;
+                    if (settingsSnapshot.AgentMode == "app-server")
+                    {
+                        var run = await _appServerRunner.RunAsync(settingsSnapshot, promptSnapshot,
+                            new AppServerRunOptions(ApprovalHandler: ServerApprovalHandler, InputHandler: ServerInputHandler, Progress: progress), runCancellation.Token);
+                        result = run.Result;
+                        sessionId = run.SessionId;
+                    }
+                    else result = await _agentRunner.RunAsync(settingsSnapshot, promptSnapshot, progress, runCancellation.Token);
                 }
-                else result = await _agentRunner.RunAsync(settingsSnapshot, promptSnapshot, runCancellation.Token);
+                finally { LiveOutput.Finish(); }
                 exitCode = result.ExitCode;
                 sessionId ??= result.Claude?.SessionId ?? result.Codex?.SessionId;
                 usage = result.Usage;
@@ -651,6 +657,7 @@ public partial class MainPageViewModel : ObservableObject
     public void CancelForWindowClose()
     {
         _closing = true;
+        LiveOutput.Dispose();
         CancelMattermostUsernameLookup();
         CancelMattermostThreadLookup();
         CancelSlackLookups();

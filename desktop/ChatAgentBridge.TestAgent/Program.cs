@@ -60,6 +60,64 @@ if (args.Contains("--input-format") && Array.IndexOf(args, "--input-format") + 1
 }
 if (args.Contains("--print"))
 {
+    // Deliberately gated live-output UI fixture. It can run only from an explicitly marked,
+    // isolated workspace, emits sanitized provider-shaped progress and stderr before result,
+    // and waits for the E2E harness to release completion.
+    if (Environment.GetEnvironmentVariable("CAB_LIVE_OUTPUT_FIXTURE") == "1")
+    {
+        var liveWorkspace = Path.GetFullPath(Environment.CurrentDirectory);
+        var liveRoot = Directory.GetParent(liveWorkspace)?.FullName;
+        var liveMarker = liveRoot is null ? null : Path.Combine(liveRoot, ".cab-live-output-fixture");
+        var releaseGate = liveRoot is null ? null : Path.Combine(liveRoot, ".cab-live-output-release");
+        if (liveRoot is null || liveMarker is null || releaseGate is null ||
+            !string.Equals(Path.GetFileName(liveWorkspace), "workspace", StringComparison.OrdinalIgnoreCase) ||
+            !Directory.Exists(liveWorkspace) || !File.Exists(liveMarker) ||
+            !string.Equals(File.ReadAllText(liveMarker).Trim(), "Isolated offline live-output UI test", StringComparison.Ordinal))
+        {
+            Console.Error.WriteLine("Live-output fixture requires its marked isolated workspace.");
+            Environment.ExitCode = 2;
+            return;
+        }
+
+        var livePrompt = await Console.In.ReadToEndAsync();
+        var liveRunMatch = System.Text.RegularExpressions.Regex.Match(livePrompt, @"\bLIVE_RUN_(ONE|TWO|CHAT_A|CHAT_B)\b", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        if (!liveRunMatch.Success)
+        {
+            Console.Error.WriteLine("Live-output fixture requires a whitelisted LIVE_RUN marker in the prompt.");
+            Environment.ExitCode = 2;
+            return;
+        }
+        var liveRunMarker = liveRunMatch.Value;
+        var liveDelay = int.TryParse(Environment.GetEnvironmentVariable("CAB_LIVE_OUTPUT_FIXTURE_DELAY_MS"), out var configuredDelay)
+            ? Math.Clamp(configuredDelay, 0, 30000) : 700;
+        await Task.Delay(liveDelay);
+        await WriteAsync(new { type = "system", subtype = "init", session_id = "a352fd0c-204e-4d06-8c83-8de46651b3ed", model = "fixture-claude" });
+        await WriteAsync(new { type = "assistant", message = new { content = new object[] { new { type = "text", text = $"{liveRunMarker} LIVE_FIXTURE assistant output arrived before the final result." } } } });
+        await WriteAsync(new { type = "assistant", message = new { content = new object[] { new { type = "tool_use", name = "Read", input = new { command = "LIVE_FIXTURE synthetic tool activity" } } } } });
+        await Console.Error.WriteLineAsync("LIVE_FIXTURE stderr arrived before the final result.");
+        await Console.Error.FlushAsync();
+        await Task.Delay(1200);
+        await WriteAsync(new { type = "assistant", message = new { content = new object[] { new { type = "text", text = "LIVE_FIXTURE late output while follow is paused." } } } });
+
+        var waitUntil = DateTimeOffset.UtcNow.AddMinutes(2);
+        while (!File.Exists(releaseGate) && DateTimeOffset.UtcNow < waitUntil)
+            await Task.Delay(50);
+        if (!File.Exists(releaseGate))
+        {
+            Console.Error.WriteLine("Live-output fixture completion gate timed out.");
+            Environment.ExitCode = 3;
+            return;
+        }
+        await WriteAsync(new
+        {
+            type = "result", subtype = "success", session_id = "a352fd0c-204e-4d06-8c83-8de46651b3ed",
+            result = "LIVE_FIXTURE_FINAL fixed final response",
+            usage = new { input_tokens = 10, output_tokens = 5 },
+            modelUsage = new Dictionary<string, object> { ["fixture-claude"] = new { } }
+        });
+        return;
+    }
+
     var attachmentWorkspace = Environment.GetEnvironmentVariable("CAB_FILE_ATTACHMENTS_WORKSPACE");
     if (!string.IsNullOrWhiteSpace(attachmentWorkspace))
     {
@@ -190,6 +248,47 @@ while (await Console.In.ReadLineAsync() is { } line)
                 prompt = parameters.GetProperty("input")[0].GetProperty("text").GetString() ?? "";
                 await WriteAsync(new { id, result = new { turn = new { id = turnId, status = "inProgress", items = Array.Empty<object>() } } });
                 await WriteAsync(new { method = "turn/started", @params = new { threadId, turn = new { id = turnId, status = "inProgress" } } });
+                if (Environment.GetEnvironmentVariable("CAB_LIVE_OUTPUT_FIXTURE") == "1")
+                {
+                    var liveWorkspace = Path.GetFullPath(Environment.CurrentDirectory);
+                    var liveRoot = Directory.GetParent(liveWorkspace)?.FullName;
+                    var liveMarker = liveRoot is null ? null : Path.Combine(liveRoot, ".cab-live-output-fixture");
+                    var releaseGate = liveRoot is null ? null : Path.Combine(liveRoot, ".cab-live-output-release");
+                    if (liveRoot is null || liveMarker is null || releaseGate is null ||
+                        !string.Equals(Path.GetFileName(liveWorkspace), "workspace", StringComparison.OrdinalIgnoreCase) ||
+                        !Directory.Exists(liveWorkspace) || !File.Exists(liveMarker) ||
+                        !string.Equals(File.ReadAllText(liveMarker).Trim(), "Isolated offline live-output UI test", StringComparison.Ordinal))
+                    {
+                        await Console.Error.WriteLineAsync("Live-output app-server fixture requires its marked isolated workspace.");
+                        Environment.ExitCode = 2;
+                        return;
+                    }
+                    var liveRunMatch = System.Text.RegularExpressions.Regex.Match(prompt, @"\bLIVE_RUN_(ONE|TWO|CHAT_A|CHAT_B)\b", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+                    if (!liveRunMatch.Success)
+                    {
+                        await Console.Error.WriteLineAsync("Live-output app-server fixture requires a whitelisted LIVE_RUN marker in the prompt.");
+                        Environment.ExitCode = 2;
+                        return;
+                    }
+                    var liveRunMarker = liveRunMatch.Value;
+                    await WriteAsync(new { method = "item/started", @params = new { threadId, turnId, item = new { id = "fixture-live-tool", type = "commandExecution", command = "LIVE_FIXTURE synthetic app-server tool activity" } } });
+                    await WriteAsync(new { method = "item/completed", @params = new { threadId, turnId, item = new { id = "fixture-live-message", type = "agentMessage", text = $"{liveRunMarker} LIVE_FIXTURE app-server assistant output arrived before the final result." } } });
+                    await Console.Error.WriteLineAsync("LIVE_FIXTURE app-server stderr arrived before the final result.");
+                    await Console.Error.FlushAsync();
+                    await Task.Delay(1200);
+                    await WriteAsync(new { method = "item/completed", @params = new { threadId, turnId, item = new { id = "fixture-live-late-message", type = "agentMessage", text = "LIVE_FIXTURE late app-server output while follow is paused." } } });
+                    var releaseDeadline = DateTimeOffset.UtcNow.AddMinutes(2);
+                    while (!File.Exists(releaseGate) && DateTimeOffset.UtcNow < releaseDeadline)
+                        await Task.Delay(50);
+                    if (!File.Exists(releaseGate))
+                    {
+                        await Console.Error.WriteLineAsync("Live-output app-server fixture completion gate timed out.");
+                        Environment.ExitCode = 3;
+                        return;
+                    }
+                    await CompleteAsync("completed", "LIVE_FIXTURE_FINAL fixed app-server response");
+                    break;
+                }
                 approvalPending = true;
                 await WriteAsync(new
                 {

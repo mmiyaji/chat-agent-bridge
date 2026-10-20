@@ -44,4 +44,18 @@
   <data name="ClaudeCodeCli" xml:space="preserve"><value>Claude Code CLI</value></data>
   <data name="CodexAppServer" xml:space="preserve"><value>Codex App Server</value></data>
   <data name="NotReported" xml:space="preserve"><value>Not reported</value></data>
+  <data name="ProgressRunningCommand" xml:space="preserve"><value>Running command: {0}</value></data>
+  <data name="ProgressGenericCommand" xml:space="preserve"><value>command</value></data>
+  <data name="ProgressCommandResult" xml:space="preserve"><value>Command result: {0}</value></data>
+  <data name="ProgressCommandFinished" xml:space="preserve"><value>Command finished</value></data>
+  <data name="ProgressWorking" xml:space="preserve"><value>Working…</value></data>
+  <data name="ProgressFinished" xml:space="preserve"><value>Finished</value></data>
+  <data name="ProgressTurnFailed" xml:space="preserve"><value>The turn failed</value></data>
+  <data name="ProgressUsingTool" xml:space="preserve"><value>Using {0}</value></data>
+  <data name="ProgressUsingGenericTool" xml:space="preserve"><value>Using a tool</value></data>
+  <data name="ProgressToolResult" xml:space="preserve"><value>Tool result: {0}</value></data>
+  <data name="ProgressClaudeError" xml:space="preserve"><value>Claude reported an error</value></data>
+  <data name="ProgressClaudeSessionReady" xml:space="preserve"><value>Claude session ready</value></data>
+  <data name="ProgressStartingItem" xml:space="preserve"><value>Starting {0}</value></data>
+  <data name="ProgressFinishedItem" xml:space="preserve"><value>Finished {0}</value></data>
 </root>

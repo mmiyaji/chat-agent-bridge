@@ -44,4 +44,18 @@
   <data name="ClaudeCodeCli" xml:space="preserve"><value>Claude Code CLI</value></data>
   <data name="CodexAppServer" xml:space="preserve"><value>Codex App Server</value></data>
   <data name="NotReported" xml:space="preserve"><value>未取得</value></data>
+  <data name="ProgressRunningCommand" xml:space="preserve"><value>コマンドを実行中: {0}</value></data>
+  <data name="ProgressGenericCommand" xml:space="preserve"><value>コマンド</value></data>
+  <data name="ProgressCommandResult" xml:space="preserve"><value>コマンドの結果: {0}</value></data>
+  <data name="ProgressCommandFinished" xml:space="preserve"><value>コマンドが終了しました</value></data>
+  <data name="ProgressWorking" xml:space="preserve"><value>処理中…</value></data>
+  <data name="ProgressFinished" xml:space="preserve"><value>完了しました</value></data>
+  <data name="ProgressTurnFailed" xml:space="preserve"><value>ターンに失敗しました</value></data>
+  <data name="ProgressUsingTool" xml:space="preserve"><value>{0}を使用中</value></data>
+  <data name="ProgressUsingGenericTool" xml:space="preserve"><value>ツールを使用中</value></data>
+  <data name="ProgressToolResult" xml:space="preserve"><value>ツールの結果: {0}</value></data>
+  <data name="ProgressClaudeError" xml:space="preserve"><value>Claude がエラーを報告しました</value></data>
+  <data name="ProgressClaudeSessionReady" xml:space="preserve"><value>Claude セッションを開始しました</value></data>
+  <data name="ProgressStartingItem" xml:space="preserve"><value>{0}を開始</value></data>
+  <data name="ProgressFinishedItem" xml:space="preserve"><value>{0}が終了しました</value></data>
 </root>

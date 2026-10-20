@@ -471,4 +471,11 @@
   <data name="AttachmentsPolicyChanged" xml:space="preserve"><value>添付設定が変更されました。ファイルを確認し、再度承認してください。</value></data>
   <data name="AttachmentsDisabled" xml:space="preserve"><value>ファイル添付は無効です。</value></data>
   <data name="AttachmentsResultPrivate" xml:space="preserve"><value>結果の自動共有はファイル添付の承認にはなりません。</value></data>
+  <data name="LiveOutputTitle" xml:space="preserve"><value>実行中の出力</value></data>
+  <data name="LiveOutputPrivacyHelp" xml:space="preserve"><value>このPCだけに表示されます。実行中の出力は会話に保存されず、自動共有もされません。</value></data>
+  <data name="LiveOutputPausedHelp" xml:space="preserve"><value>追従を一時停止しています。実行は続き、追従を再開すると新しい出力が表示されます。</value></data>
+  <data name="LiveOutputWaitingHelp" xml:space="preserve"><value>出力を待っています…</value></data>
+  <data name="LiveOutputTruncationHint" xml:space="preserve"><value>表示には直近の64,000文字のみ保持されます。</value></data>
+  <data name="LiveOutputFollow" xml:space="preserve"><value>出力を追従</value></data>
+  <data name="LiveOutputClear" xml:space="preserve"><value>表示を消去</value></data>
 </root>

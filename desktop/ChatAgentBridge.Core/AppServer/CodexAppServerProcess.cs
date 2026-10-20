@@ -47,7 +47,7 @@ public sealed class CodexAppServerProcessFactory : IAppServerProcessFactory
     }
 }
 
-internal sealed class CodexAppServerProcess : IAppServerProcess
+internal sealed class CodexAppServerProcess : IAppServerProcess, IAppServerProgressSource
 {
     private readonly Process _process;
     private readonly CodexAppServerClient _client;
@@ -60,10 +60,11 @@ internal sealed class CodexAppServerProcess : IAppServerProcess
         _process = process;
         _client = new CodexAppServerClient(process.StandardInput.BaseStream, process.StandardOutput.BaseStream);
         ExitCode = WaitForExitAsync();
-        _ = ReadBoundedAsync(process.StandardError, 16_000, _stderrBuffer, _stderrSync);
+        _ = ReadBoundedAsync(process.StandardError, 16_000, _stderrBuffer, _stderrSync, ReportStandardError);
     }
 
     public IAppServerRpcClient Client => _client;
+    public event Action<string>? StandardErrorReceived;
     public Task<int?> ExitCode { get; }
     public Task<string> StandardError { get { lock (_stderrSync) return Task.FromResult(_stderrBuffer.ToString()); } }
 
@@ -101,7 +102,8 @@ internal sealed class CodexAppServerProcess : IAppServerProcess
         catch (InvalidOperationException) { return null; }
     }
 
-    private static async Task ReadBoundedAsync(StreamReader reader, int maxCharacters, StringBuilder builder, object sync)
+    private async Task ReadBoundedAsync(StreamReader reader, int maxCharacters, StringBuilder builder, object sync,
+        Action<string> report)
     {
         var buffer = new char[2048];
         try
@@ -115,9 +117,21 @@ internal sealed class CodexAppServerProcess : IAppServerProcess
                     var keep = Math.Min(count, maxCharacters - builder.Length);
                     if (keep > 0) builder.Append(buffer, 0, keep);
                 }
+                if (StandardErrorReceived is not null) report(new string(buffer, 0, count));
             }
         }
         catch (IOException) { }
         catch (ObjectDisposedException) { }
+    }
+
+    private void ReportStandardError(string text)
+    {
+        var handlers = StandardErrorReceived;
+        if (handlers is null) return;
+        foreach (Action<string> handler in handlers.GetInvocationList())
+        {
+            try { handler(text); }
+            catch { /* Diagnostics observers must never stop stderr draining. */ }
+        }
     }
 }

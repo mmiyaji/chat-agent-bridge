@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="ChatAgentBridge_Desktop.ExecutionUi.LiveOutputView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:executionUi="using:ChatAgentBridge_Desktop.ExecutionUi"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Expander x:Name="OutputExpander" IsExpanded="True" HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="LiveOutputExpander"
+              Visibility="{x:Bind executionUi:LiveOutputView.ShowWhen(ViewModel.IsActive, ViewModel.HasOutput), Mode=OneWay}">
+        <Expander.Header>
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ProgressRing Width="16" Height="16" IsActive="{x:Bind ViewModel.IsActive, Mode=OneWay}"
+                              Visibility="{x:Bind executionUi:LiveOutputView.ShowWhenSingle(ViewModel.IsActive), Mode=OneWay}"
+                              AutomationProperties.AutomationId="LiveOutputRunningIndicator" />
+                <TextBlock x:Name="LiveOutputTitleText" Grid.Column="1" Style="{StaticResource BodyStrongTextBlockStyle}"
+                           AutomationProperties.AutomationId="LiveOutputTitle" x:Uid="LiveOutputTitle" />
+            </Grid>
+        </Expander.Header>
+        <StackPanel Spacing="8">
+            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                       AutomationProperties.AutomationId="LiveOutputPrivacyHelp" x:Uid="LiveOutputPrivacyHelp" />
+            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                       Visibility="{x:Bind executionUi:LiveOutputView.ShowWhenNot(ViewModel.FollowOutput), Mode=OneWay}"
+                       AutomationProperties.AutomationId="LiveOutputPausedHelp" x:Uid="LiveOutputPausedHelp" />
+            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                       Visibility="{x:Bind executionUi:LiveOutputView.ShowWaiting(ViewModel.IsActive, ViewModel.HasOutput), Mode=OneWay}"
+                       AutomationProperties.AutomationId="LiveOutputWaitingHelp" x:Uid="LiveOutputWaitingHelp" />
+            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                       Visibility="{x:Bind executionUi:LiveOutputView.ShowWhenSingle(ViewModel.IsTruncated), Mode=OneWay}"
+                       AutomationProperties.AutomationId="LiveOutputTruncationHint" x:Uid="LiveOutputTruncationHint" />
+            <Grid ColumnSpacing="8" RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBox x:Name="OutputTextBox" Text="{x:Bind ViewModel.Text, Mode=OneWay}"
+                         IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                         MinHeight="120" MaxHeight="220" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         AutomationProperties.AutomationId="LiveOutputText"
+                         KeyDown="OutputTextBox_KeyDown"
+                         SelectionChanged="OutputTextBox_SelectionChanged"
+                         TextChanged="OutputTextBox_TextChanged" />
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+                    <ToggleButton IsChecked="{x:Bind ViewModel.FollowOutput, Mode=TwoWay}"
+                                  Checked="FollowOutput_Checked"
+                                  AutomationProperties.AutomationId="LiveOutputFollow" x:Uid="LiveOutputFollow" />
+                    <Button Command="{x:Bind ViewModel.ClearCommand, Mode=OneWay}"
+                            AutomationProperties.AutomationId="LiveOutputClear" x:Uid="LiveOutputClear" />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Expander>
+</UserControl>
