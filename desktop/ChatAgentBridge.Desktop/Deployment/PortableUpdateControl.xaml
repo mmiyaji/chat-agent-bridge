@@ -1,0 +1,31 @@
+<UserControl
+    x:Class="ChatAgentBridge_Desktop.Deployment.PortableUpdateControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+        <StackPanel Spacing="12">
+            <TextBlock x:Uid="PortableUpdateHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
+            <TextBlock x:Uid="PortableUpdateDescription" TextWrapping="Wrap"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <CheckBox x:Name="IncludePrereleasesCheckBox" x:Uid="PortableUpdateIncludePrereleases"
+                      AutomationProperties.AutomationId="PortableUpdateIncludePrereleases"
+                      Checked="IncludePrereleases_Changed" Unchecked="IncludePrereleases_Changed" />
+            <TextBlock x:Name="StatusText" TextWrapping="Wrap" AutomationProperties.AutomationId="PortableUpdateStatus"
+                       AutomationProperties.LiveSetting="Polite" />
+            <ProgressBar x:Name="DownloadProgressBar" Minimum="0" Maximum="100" Value="0"
+                         Visibility="Collapsed" AutomationProperties.AutomationId="PortableUpdateProgress" />
+            <StackPanel Spacing="8" Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button x:Name="CheckUpdatesButton" x:Uid="PortableCheckUpdates" AutomationProperties.AutomationId="PortableCheckUpdates"
+                        Click="CheckUpdates_Click" />
+                <Button x:Name="DownloadUpdateButton" x:Uid="PortableDownloadUpdate" AutomationProperties.AutomationId="PortableDownloadUpdate"
+                        Click="DownloadUpdate_Click" />
+                <Button x:Name="ApplyUpdateButton" x:Uid="PortableApplyUpdate" AutomationProperties.AutomationId="PortableApplyUpdate"
+                        Click="ApplyUpdate_Click" />
+                <Button x:Name="CancelUpdateButton" x:Uid="PortableCancelUpdate" AutomationProperties.AutomationId="PortableCancelUpdate"
+                        Click="CancelUpdate_Click" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -542,4 +542,25 @@
   <data name="PricingRemoveConfirmCancel" xml:space="preserve"><value>手動単価を維持</value></data>
   <data name="TrayMenuOpen" xml:space="preserve"><value>Chat Agent Bridgeを開く</value></data>
   <data name="TrayMenuExit" xml:space="preserve"><value>完全終了</value></data>
+  <data name="PortableUpdateIdle" xml:space="preserve"><value>必要なときにポータブル版の更新を確認できます。</value></data>
+  <data name="PortableUpdateChecking" xml:space="preserve"><value>ポータブル版の更新を確認しています…</value></data>
+  <data name="PortableUpdateCurrent" xml:space="preserve"><value>対応する新しいポータブル版は見つかりませんでした。</value></data>
+  <data name="PortableUpdateAvailable" xml:space="preserve"><value>ポータブル版 {0} が利用できます。</value></data>
+  <data name="PortableUpdateDownloading" xml:space="preserve"><value>ポータブル版 {0} をダウンロードしています…</value></data>
+  <data name="PortableUpdateReady" xml:space="preserve"><value>バージョン {0} のダウンロードが完了しました。適用できます。</value></data>
+  <data name="PortableUpdateFailed" xml:space="preserve"><value>ポータブル版を更新できませんでした: {0}</value></data>
+  <data name="PortableUpdateBusyWork" xml:space="preserve"><value>更新を適用する前に、実行中の作業を完了してください。</value></data>
+  <data name="PortableUpdateStarting" xml:space="preserve"><value>更新を開始してアプリを再起動しています…</value></data>
+  <data name="PortableUpdateUnsupported" xml:space="preserve"><value>このビルドではポータブル版の更新を利用できません。</value></data>
+  <data name="PortableUpdateHelperMissing" xml:space="preserve"><value>ポータブル更新ヘルパーが見つかりません。リリースをもう一度ダウンロードしてください。</value></data>
+  <data name="PortableUpdateApplyTitle" xml:space="preserve"><value>ポータブル版の更新を適用しますか？</value></data>
+  <data name="PortableUpdateApplyMessage" xml:space="preserve"><value>更新を適用するためアプリを終了して再起動します。設定はそのまま引き継がれます。実行中の作業が完了してから適用してください。</value></data>
+  <data name="PortableUpdateApplyPrimary" xml:space="preserve"><value>更新して再起動</value></data>
+  <data name="PortableUpdateCancelled" xml:space="preserve"><value>更新操作をキャンセルしました。</value></data>
+  <data name="PortableUpdateVerifying" xml:space="preserve"><value>更新ファイルを検証・準備しています…</value></data>
+  <data name="PortableUpdateNetworkError" xml:space="preserve"><value>ネットワーク接続を確認して、もう一度お試しください。</value></data>
+  <data name="PortableUpdateAccessError" xml:space="preserve"><value>アプリのフォルダーに書き込めないか、ファイルが使用中です。</value></data>
+  <data name="PortableUpdateIntegrityError" xml:space="preserve"><value>取得したファイルを検証できませんでした。もう一度ダウンロードしてください。</value></data>
+  <data name="PortableUpdateLocalError" xml:space="preserve"><value>更新の準備に失敗しました。空き容量を確認し、同じアプリを複数起動している場合は閉じてください。</value></data>
+  <data name="PortableUpdateInProgress" xml:space="preserve"><value>Chat Agent Bridgeを更新中です。しばらくしてから起動してください。</value></data>
 </root>

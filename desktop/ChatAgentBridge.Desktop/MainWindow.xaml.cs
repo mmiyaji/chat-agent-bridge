@@ -45,4 +45,12 @@ public sealed partial class MainWindow : Window
 
     internal Task ShutdownAsync() => RootFrame.Content is MainPage page
         ? page.ShutdownAsync() : Task.CompletedTask;
+
+    internal bool CanRestartForUpdate => RootFrame.Content is MainPage page && page.CanRestartForPortableUpdate;
+    internal Task<bool> PrepareForPortableUpdateAsync() => RootFrame.Content is MainPage page
+        ? page.PrepareForPortableUpdateAsync() : Task.FromResult(false);
+    internal void CancelPortableUpdatePreparation()
+    {
+        if (RootFrame.Content is MainPage page) page.CancelPortableUpdatePreparation();
+    }
 }

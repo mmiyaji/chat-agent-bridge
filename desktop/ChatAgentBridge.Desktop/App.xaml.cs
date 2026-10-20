@@ -38,7 +38,9 @@ public partial class App : Application
     public static Appearance.AppAppearance Appearance { get; private set; } = null!;
     public static PricingCatalogManager Pricing { get; private set; } = null!;
     public static Tray.TrayService Tray { get; private set; } = null!;
+    public static PortableUpdateCoordinator PortableUpdates { get; private set; } = null!;
     private readonly CancellationTokenSource _pricingLifetime = new();
+    private FileStream? _portableLease;
 
     /// <summary>Applies a persisted language preference to this process and future MRT lookups.</summary>
     public static System.Globalization.CultureInfo ApplyLanguagePreference(string preference)
@@ -70,6 +72,8 @@ public partial class App : Application
     /// <param name="args">Details about the launch request and process.</param>
     protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
+        var updateReadyEvent = Environment.GetEnvironmentVariable("CAB_PORTABLE_UPDATE_READY_EVENT");
+        Environment.SetEnvironmentVariable("CAB_PORTABLE_UPDATE_READY_EVENT", null);
         // AUMID activation does not inherit the invoking terminal's environment.
         // An explicit data directory keeps packaged UI tests isolated.
         IReadOnlyList<string> launchArguments = Environment.GetCommandLineArgs().Skip(1).ToArray();
@@ -87,6 +91,21 @@ public partial class App : Application
             AppContext.BaseDirectory,
             packageLocalDirectory);
         Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", dataDirectory);
+        if (DeploymentRuntime.IsPortable)
+        {
+            try { _portableLease = ChatAgentBridge.Core.Updates.PortableApplicationLease.Open(AppContext.BaseDirectory); }
+            catch (IOException ex) when ((ex.HResult & 0xFFFF) is 32 or 33)
+            {
+                UpdateStartupNative.MessageBoxW(0, ChatAgentBridge_Desktop.Localization.DesktopText.Get("PortableUpdateInProgress"), "Chat Agent Bridge", 0x40);
+                Exit();
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                // Read-only portable locations can still run with an external data directory.
+                // The updater remains unavailable until a writable location is used.
+            }
+        }
 
         try { SystemLanguageTag = Windows.System.UserProfile.GlobalizationPreferences.Languages.FirstOrDefault() ?? System.Globalization.CultureInfo.InstalledUICulture.Name; }
         catch { SystemLanguageTag = System.Globalization.CultureInfo.InstalledUICulture.Name; }
@@ -106,6 +125,7 @@ public partial class App : Application
         await Pricing.InitializeAsync();
         PendingRequestNotifications = new PendingRequestNotificationService(DispatcherQueue);
         PendingRequestNotifications.Initialize();
+        PortableUpdates = new(dataDirectory, _portableLease is not null);
 
         var backgroundStore = new ChatAgentBridge.Core.BackgroundPreferencesStore(new ChatAgentBridge.Core.SettingsStore());
         var background = new ChatAgentBridge.Core.BackgroundPreferences();
@@ -120,10 +140,20 @@ public partial class App : Application
         Window.Closed += (_, _) =>
         {
             Tray.Dispose();
+            PortableUpdates.Dispose();
+            _portableLease?.Dispose();
             PendingRequestNotifications.Shutdown();
             _pricingLifetime.Cancel();
         };
         Window.Activate();
+        if (DeploymentRuntime.IsPortable && updateReadyEvent is not null &&
+            updateReadyEvent.StartsWith(@"Local\ChatAgentBridge.Update.", StringComparison.Ordinal) &&
+            updateReadyEvent.Length == @"Local\ChatAgentBridge.Update.".Length + 32 &&
+            updateReadyEvent[^32..].All(Uri.IsHexDigit))
+        {
+            try { using var ready = EventWaitHandle.OpenExisting(updateReadyEvent); ready.Set(); }
+            catch (WaitHandleCannotBeOpenedException) { }
+        }
         _ = RunPricingUpdatesAsync(_pricingLifetime.Token);
     }
 
@@ -147,4 +177,10 @@ public partial class App : Application
             _pricingLifetime.Dispose();
         }
     }
+}
+
+internal static class UpdateStartupNative
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, ExactSpelling = true)]
+    internal static extern int MessageBoxW(nint owner, string text, string title, uint type);
 }

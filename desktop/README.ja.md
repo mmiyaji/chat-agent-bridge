@@ -16,7 +16,9 @@ Windows x64 / ARM64 向けの展開型プレビュー版は、ZIP 内の `ChatAg
 
 アプリに保存した Slack / Mattermost 接続トークンは Windows DPAPI で保護され、同じ Windows ユーザーと PC で利用できます。他の PC へ設定をコピーする場合は元の PC でトークンを空にして保存し、移行先で再入力します。暗号化したまま移して読み込めなくなった場合は、終了後に `Data/settings.json` を退避して初期設定をやり直してください。CLIのログインと作業フォルダーも移行先で確認します。アプリフォルダーを移動する前に自動起動をオフにし、移動後に必要なら有効にしてください。削除するときは自動起動をオフにし、アプリを終了してからフォルダーを削除します。ユーザー単位の Windows 通知登録が残る場合があります。アプリは PC 全体へのインストールを行いません。
 
-配布 ZIP の作成と検査は `desktop/Create-PortableArchive.ps1` で行い、成果物は `desktop/artifacts/portable-releases` に保存します。既定で x64、`0.1.0-preview.5` を作成し、x64 と ARM64 は別々の ZIP になります。`-Architecture ARM64` で ARM64 を選び、`-ValidateOnly -ArchivePath <ZIP>` でアーカイブの構成、実行ファイルのアーキテクチャ、ランタイム、禁止ファイル、SHA-256 一覧を検査できます。`-ExistingLayout <フォルダー>` を指定すると、既存の発行レイアウトを使って新しい ZIP を作成できます。各 ZIP には日本語・英語の案内と `SHA256SUMS.txt` が入り、ZIP 自体にも `.sha256` ファイルを作成します。MSIX プレビュー版は引き続き別途利用できます。
+配布 ZIP の作成と検査は `desktop/Create-PortableArchive.ps1` で行い、成果物は `desktop/artifacts/portable-releases` に保存します。既定で x64、`0.1.0-preview.5` を作成し、x64 と ARM64 は別々の ZIP になります。`-Architecture ARM64` で ARM64 を選び、`-ValidateOnly -ArchivePath <ZIP>` でアーカイブの構成、実行ファイルのアーキテクチャ、ランタイム、禁止ファイル、SHA-256 一覧を検査できます。旧版 ZIP も後方互換のため検証できます。新しい ZIP には自己完結型の `ChatAgentBridge.Updater.exe`、リリース情報 `portable-release.json`、更新対象一覧 `portable-files.json` を含め、一覧と `SHA256SUMS.txt` を作成してから検査します。`portable-files.json` は ZIP 内の全ペイロードファイルと自分自身、`SHA256SUMS.txt` を列挙します。`-ExistingLayout <フォルダー>` を指定すると、既存の発行レイアウトを使って新しい ZIP を作成できます。各 ZIP には日本語・英語の案内と `SHA256SUMS.txt` が入り、ZIP 自体にも `.sha256` ファイルを作成します。MSIX プレビュー版は引き続き別途利用できます。
+
+ポータブル版は「情報」から手動で更新を確認し、提示された版をダウンロードした後、利用者が明示的に再起動を選ぶと適用します。更新は `portable-files.json` に載ったファイルを置き換え、`Data` は保持します。旧版ポータブルには更新プログラムがないため、アプリ内更新を使い始める際は新しい ZIP を一度手動で展開してください。更新前には `Data` の別バックアップを推奨します。
 
 ## Mattermostの直接接続
 

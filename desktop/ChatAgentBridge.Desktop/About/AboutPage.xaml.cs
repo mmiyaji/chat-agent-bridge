@@ -51,6 +51,7 @@ public sealed partial class AboutPage : Page
         StoreStatus.Text = _isStorePackage ? DesktopText.Get("AboutStoreReady") : DesktopText.Get("AboutStoreDevelopment");
         StorePageButton.IsEnabled = _isStorePackage;
         CheckUpdatesButton.IsEnabled = _isStorePackage;
+        StoreUpdateCard.Visibility = DeploymentRuntime.IsPortable ? Visibility.Collapsed : Visibility.Visible;
     }
 
     public void ResetScroll() => DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
