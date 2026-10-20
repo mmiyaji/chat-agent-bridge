@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using System.Runtime.InteropServices;
 using Windows.Graphics;
 
@@ -15,6 +16,9 @@ namespace ChatAgentBridge_Desktop;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
+    private const int MinimumWidthDip = 500;
+    private const int MinimumHeightDip = 600;
+
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hWnd);
 
@@ -29,15 +33,39 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
         var hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
         var scale = GetDpiForWindow(hwnd) / 96.0;
+        UpdateMinimumWindowSize();
         AppWindow.Resize(new SizeInt32((int)(1160 * scale), (int)(800 * scale)));
+        WindowRoot.Loaded += WindowRoot_Loaded;
         Closed += MainWindow_Closed;
 
         // Navigate the root frame to the main page on startup.
         RootFrame.Navigate(typeof(MainPage));
     }
 
+    private void UpdateMinimumWindowSize()
+    {
+        if (AppWindow.Presenter is not OverlappedPresenter presenter) return;
+        var hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
+        var scale = GetDpiForWindow(hwnd) / 96.0;
+        var width = (int)Math.Ceiling(MinimumWidthDip * scale);
+        var height = (int)Math.Ceiling(MinimumHeightDip * scale);
+        if (presenter.PreferredMinimumWidth != width) presenter.PreferredMinimumWidth = width;
+        if (presenter.PreferredMinimumHeight != height) presenter.PreferredMinimumHeight = height;
+    }
+
+    private void WindowRoot_Loaded(object sender, RoutedEventArgs args)
+    {
+        WindowRoot.Loaded -= WindowRoot_Loaded;
+        WindowRoot.XamlRoot.Changed += WindowRootXamlRoot_Changed;
+        UpdateMinimumWindowSize();
+    }
+
+    private void WindowRootXamlRoot_Changed(XamlRoot sender, XamlRootChangedEventArgs args) => UpdateMinimumWindowSize();
+
     private void MainWindow_Closed(object sender, WindowEventArgs args)
     {
+        WindowRoot.Loaded -= WindowRoot_Loaded;
+        if (WindowRoot.XamlRoot is { } root) root.Changed -= WindowRootXamlRoot_Changed;
         App.Appearance.Dispose();
         if (RootFrame.Content is MainPage page) page.ViewModel.CancelForWindowClose();
         ChatAgentBridge.Core.AppServer.CodexAppServerRunner.ShutdownSharedProcesses();
