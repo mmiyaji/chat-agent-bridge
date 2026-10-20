@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "checkedOn": "2026-10-20",
+  "currency": "USD",
+  "unitTokens": 1000000,
+  "sources": {
+    "openai": "https://developers.openai.com/api/docs/pricing",
+    "gpt54": "https://developers.openai.com/api/docs/models/gpt-5.4",
+    "anthropic": "https://platform.claude.com/docs/en/about-claude/pricing"
+  },
+  "models": [
+    { "model": "gpt-5.3-codex", "input": [1.75, 1.75], "cachedInput": [0.175, 0.175], "cacheWrite": [1.75, 1.75], "output": [14, 14], "source": "openai" },
+    { "model": "gpt-5.4", "input": [2.5, 5], "cachedInput": [0.25, 0.5], "cacheWrite": [2.5, 5], "output": [15, 22.5], "source": "gpt54" },
+    { "model": "gpt-6-astra", "input": [10, 20], "cachedInput": [1, 2], "cacheWrite": [12.5, 25], "output": [50, 75], "source": "openai" },
+    { "model": "gpt-6.1-sol", "input": [2, 4], "cachedInput": [0.1, 0.2], "cacheWrite": [2.5, 5], "output": [10, 15], "source": "openai" },
+    { "model": "gpt-6-luna", "input": [0.1, 0.2], "cachedInput": [0.01, 0.02], "cacheWrite": [0.125, 0.25], "output": [0.5, 0.75], "source": "openai" },
+    { "model": "claude-sonnet-4-5", "input": [3, 3], "cachedInput": [0.3, 0.3], "cacheWrite": [3.75, 6], "output": [15, 15], "source": "anthropic" },
+    { "model": "claude-sonnet-4-6", "input": [3, 3], "cachedInput": [0.3, 0.3], "cacheWrite": [3.75, 6], "output": [15, 15], "source": "anthropic" },
+    { "model": "claude-opus-4-5", "input": [5, 5], "cachedInput": [0.5, 0.5], "cacheWrite": [6.25, 10], "output": [25, 25], "source": "anthropic" },
+    { "model": "claude-opus-4-6", "input": [5, 5], "cachedInput": [0.5, 0.5], "cacheWrite": [6.25, 10], "output": [25, 25], "source": "anthropic" },
+    { "model": "claude-opus-4-7", "input": [5, 5], "cachedInput": [0.5, 0.5], "cacheWrite": [6.25, 10], "output": [25, 25], "source": "anthropic" },
+    { "model": "claude-opus-4-8", "input": [5, 5], "cachedInput": [0.5, 0.5], "cacheWrite": [6.25, 10], "output": [25, 25], "source": "anthropic" },
+    { "model": "claude-opus-5", "input": [5, 5], "cachedInput": [0.5, 0.5], "cacheWrite": [6.25, 10], "output": [25, 25], "source": "anthropic" },
+    { "model": "claude-opus-5-5", "input": [4, 4], "cachedInput": [0.2, 0.2], "cacheWrite": [5, 8], "output": [20, 20], "source": "anthropic" },
+    { "model": "claude-sonnet-5", "input": [2, 2], "cachedInput": [0.2, 0.2], "cacheWrite": [2.5, 4], "output": [10, 10], "source": "anthropic" },
+    { "model": "claude-sonnet-5-5", "input": [2, 2], "cachedInput": [0.1, 0.1], "cacheWrite": [2.5, 4], "output": [10, 10], "source": "anthropic" },
+    { "model": "claude-haiku-4-5", "input": [1, 1], "cachedInput": [0.1, 0.1], "cacheWrite": [1.25, 2], "output": [5, 5], "source": "anthropic" },
+    { "model": "claude-haiku-5-5", "input": [0.1, 0.5], "cachedInput": [0.01, 0.05], "cacheWrite": [0.125, 1], "output": [0.5, 2.5], "source": "anthropic" }
+  ]
+}

@@ -104,16 +104,22 @@ public sealed record ActivityUsageSummary
         private bool _hasCacheWrite;
         private bool _hasPairedTotal;
         private bool _hasCachePair;
+        private decimal _costMin;
+        private decimal _costMax;
+        private bool _costOverflowed;
 
         public int ExecutionCount { get; set; }
         public int TokenReportedCount { get; private set; }
         public int CacheReportedCount { get; private set; }
         public int UsageReportedCount { get; private set; }
         public int ExcludedScopeCount { get; set; }
+        public int CostEstimatedCount { get; private set; }
+        public int CostRangeCount { get; private set; }
 
         public void Add(AgentUsage usage)
         {
             UsageReportedCount++;
+            AddCost(usage);
 
             var input = GetNormalizedInput(usage);
             var output = NonNegative(usage.OutputTokens);
@@ -145,6 +151,21 @@ public sealed record ActivityUsageSummary
             }
         }
 
+        private void AddCost(AgentUsage usage)
+        {
+            var estimate = AgentCostEstimator.Estimate(usage);
+            if (estimate is null) return;
+            CostEstimatedCount++;
+            if (estimate.MinUsd != estimate.MaxUsd) CostRangeCount++;
+            if (_costOverflowed) return;
+            try
+            {
+                _costMin = checked(_costMin + estimate.MinUsd);
+                _costMax = checked(_costMax + estimate.MaxUsd);
+            }
+            catch (OverflowException) { _costOverflowed = true; }
+        }
+
         public ActivityUsageTotals ToTotals() => new(
             _hasInput ? _input : null,
             _hasOutput ? _output : null,
@@ -152,7 +173,11 @@ public sealed record ActivityUsageSummary
             _hasCacheWrite ? _cacheWrite : null,
             _hasPairedTotal ? _pairedTotal : null,
             _hasCachePair && _cacheDenominator > 0 ? (double)(100m * _cacheNumerator / _cacheDenominator) : null,
-            ExecutionCount, TokenReportedCount, CacheReportedCount, UsageReportedCount, ExcludedScopeCount);
+            ExecutionCount, TokenReportedCount, CacheReportedCount, UsageReportedCount, ExcludedScopeCount)
+        {
+            Cost = new ActivityCostTotals(CostEstimatedCount > 0 && !_costOverflowed ? _costMin : null,
+                CostEstimatedCount > 0 && !_costOverflowed ? _costMax : null, CostEstimatedCount, CostRangeCount)
+        };
 
         private static decimal? GetNormalizedInput(AgentUsage usage)
         {
@@ -191,4 +216,9 @@ public sealed record ActivityUsageTotals(
     int TokenReportedCount,
     int CacheReportedCount,
     int UsageReportedCount,
-    int ExcludedScopeCount);
+    int ExcludedScopeCount)
+{
+    public ActivityCostTotals Cost { get; init; } = new(null, null, 0, 0);
+}
+
+public sealed record ActivityCostTotals(decimal? MinUsd, decimal? MaxUsd, int EstimatedCount, int RangeCount);

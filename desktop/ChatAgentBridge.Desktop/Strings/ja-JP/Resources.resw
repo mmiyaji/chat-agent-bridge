@@ -931,19 +931,27 @@
   <data name="ActivityWeekdayContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>曜日ごとの利用傾向グラフ</value></data>
   <data name="ActivityModelContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>モデルごとの実行回数グラフ</value></data>
   <data name="ActivityOutsideLegend.Text" xml:space="preserve"><value>– は選択期間外です。週の位置がわかるように枠を表示します。</value></data>
-  <data name="UsageHeading.Text" xml:space="preserve"><value>トークンとキャッシュ</value></data>
+  <data name="UsageHeading.Text" xml:space="preserve"><value>利用量と推定コスト</value></data>
   <data name="UsageMetric.Header" xml:space="preserve"><value>グラフの指標</value></data>
   <data name="UsageMetric.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>グラフの指標</value></data>
   <data name="UsageScope.Header" xml:space="preserve"><value>集計する報告範囲</value></data>
   <data name="UsageScope.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>集計する報告範囲</value></data>
-  <data name="UsageDailyChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>日別のトークン消費量またはキャッシュヒット率</value></data>
-  <data name="UsageModelChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>モデル別のトークン消費量またはキャッシュヒット率</value></data>
+  <data name="UsageDailyChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>日別のトークン消費量、キャッシュヒット率、推定APIコスト</value></data>
+  <data name="UsageModelChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>モデル別のトークン消費量、キャッシュヒット率、推定APIコスト</value></data>
   <data name="UsageModelsHeading.Text" xml:space="preserve"><value>報告されたモデル別・選択期間の合計</value></data>
-  <data name="UsageDailyHelp.Text" xml:space="preserve"><value>バーにマウスを重ねると日付と報告値を確認できます。0 は報告値0、? は未報告、· は実行なしです。直近28日より前の日付も下の詳細から選べます。</value></data>
+  <data name="UsageDailyHelp.Text" xml:space="preserve"><value>バーにマウスを重ねると日付と値を確認できます。コストの高さは範囲の上限で計算し、ラベルに範囲と算定件数を表示します。0 は報告値または推定値0、? は不明または未算出、· は実行なしです。直近28日より前の日付も下の詳細から選べます。</value></data>
   <data name="UsageDayExpander.Header" xml:space="preserve"><value>日別の詳細・選択期間のすべての日付</value></data>
   <data name="UsageDay.Header" xml:space="preserve"><value>日付</value></data>
   <data name="UsageDay.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>利用量を確認する日付</value></data>
   <data name="UsageAccountingNote.Text" xml:space="preserve"><value>トークン数は入力（キャッシュの読み込み・書き込みを1回ずつ含む）＋出力で、両方の報告がある実行のみを合計します。キャッシュヒット率は、報告されたキャッシュ読み込み÷対応する入力合計です。率の単純平均ではなくトークン数で重み付けし、入力0では率を出しません。未報告は推測せず、CLIが報告した値を使います。請求額やアカウントの残量ではありません。複数モデルの内訳が不明な場合はモデル未報告として扱います。</value></data>
+  <data name="UsageCostMethod.Header" xml:space="preserve"><value>推定コストの算定方法</value></data>
+  <data name="UsageCostMethod.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>推定コストの算定方法</value></data>
+  <data name="UsageCostMethodDetails.Text" xml:space="preserve"><value>記録されたトークン数に、報告モデルの公開標準API料金を掛けます。料金が確認できる実行だけを含み、モデルまたは必要なトークン数が不明な実行は未算出です。キャッシュ情報が不足する場合は範囲で表示します。日別・モデル別グラフの高さは範囲の上限で計算し、ラベルには範囲と算定件数を表示します。</value></data>
+  <data name="UsageCostLimitations.Text" xml:space="preserve"><value>請求額ではなく参考値です。サブスクリプション料金、ツール、Fastモード、リージョン、税は含みません。キャッシュの有効期間やコンテキストが不明な場合があり、記録されたメインループの利用量にサブエージェントが含まれないことがあります。料金の取得や編集は実行時に行いません。</value></data>
+  <data name="UsageOpenAIPricing.Content" xml:space="preserve"><value>OpenAI API料金</value></data>
+  <data name="UsageOpenAIPricing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>OpenAI API料金</value></data>
+  <data name="UsageClaudePricing.Content" xml:space="preserve"><value>Claude API料金</value></data>
+  <data name="UsageClaudePricing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Claude API料金</value></data>
   <data name="OverviewStartupLabel.Text" xml:space="preserve"><value>自動起動</value></data>
   <data name="OverviewStartupHint.Text" xml:space="preserve"><value>Windowsへのサインイン時</value></data>
   <data name="OverviewAutoConnectLabel.Text" xml:space="preserve"><value>自動接続</value></data>

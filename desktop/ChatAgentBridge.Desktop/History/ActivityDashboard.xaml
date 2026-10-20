@@ -118,6 +118,7 @@
                         <ComboBox x:Name="UsageMetricControl" HorizontalAlignment="Stretch" SelectedIndex="{x:Bind ViewModel.UsageMetricIndex, Mode=TwoWay}" AutomationProperties.AutomationId="UsageMetric" x:Uid="UsageMetric">
                             <ComboBoxItem Content="{x:Bind ViewModel.UsageTokenOption}" AutomationProperties.AutomationId="UsageMetricTokens" />
                             <ComboBoxItem Content="{x:Bind ViewModel.UsageCacheOption}" AutomationProperties.AutomationId="UsageMetricCache" />
+                            <ComboBoxItem Content="{x:Bind ViewModel.UsageCostOption}" AutomationProperties.AutomationId="UsageMetricCost" />
                         </ComboBox>
                         <ComboBox x:Name="UsageScopeControl" Grid.Column="1" HorizontalAlignment="Stretch" SelectedIndex="{x:Bind ViewModel.UsageScopeIndex, Mode=TwoWay}" AutomationProperties.AutomationId="UsageScope" x:Uid="UsageScope">
                             <ComboBoxItem Content="{x:Bind ViewModel.UsageTurnOption}" AutomationProperties.AutomationId="UsageScopeTurn" />
@@ -126,6 +127,8 @@
                     </Grid>
                     <TextBlock Text="{x:Bind ViewModel.UsageHeadline, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="UsageHeadline" />
                     <TextBlock Text="{x:Bind ViewModel.UsageCoverage, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="UsageCoverage" />
+                    <TextBlock Text="{x:Bind ViewModel.UsageCostHeadline, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="UsageCostHeadline" />
+                    <TextBlock Text="{x:Bind ViewModel.UsageCostCoverage, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="UsageCostCoverage" />
                     <TextBlock Text="{x:Bind ViewModel.UsageScopeNote, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
                     <Border AutomationProperties.AutomationId="UsageDailyChart" x:Uid="UsageDailyChart">
                         <StackPanel Spacing="8">
@@ -150,20 +153,29 @@
                             <ItemsControl ItemsSource="{x:Bind ViewModel.UsageModels, Mode=OneWay}">
                                 <ItemsControl.ItemTemplate><DataTemplate x:DataType="local:ActivityUsageBar">
                                     <StackPanel Spacing="4" Margin="0,0,0,12" ToolTipService.ToolTip="{x:Bind AccessibleLabel}" AutomationProperties.Name="{x:Bind AccessibleLabel}">
-                                        <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="{x:Bind Label}" TextWrapping="Wrap" /><TextBlock Grid.Column="1" Text="{x:Bind ValueLabel}" />
-                                        </Grid>
+                                    <TextBlock Text="{x:Bind Label}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind ValueLabel}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
                                         <ProgressBar Minimum="0" Maximum="100" Value="{x:Bind Percent}" Height="8" AutomationProperties.Name="{x:Bind AccessibleLabel}" />
                                     </StackPanel>
                                 </DataTemplate></ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </StackPanel>
                     </Border>
+                    <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" x:Uid="UsageCostMethod" AutomationProperties.AutomationId="UsageCostMethod">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{x:Bind ViewModel.UsageCostMethodDate, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="UsageCostMethodDate" />
+                            <TextBlock x:Uid="UsageCostMethodDetails" TextWrapping="Wrap" AutomationProperties.AutomationId="UsageCostMethodDetails" />
+                            <TextBlock x:Uid="UsageCostLimitations" TextWrapping="Wrap" AutomationProperties.AutomationId="UsageCostLimitations" />
+                            <HyperlinkButton NavigateUri="https://developers.openai.com/api/docs/pricing" AutomationProperties.AutomationId="UsageOpenAIPricing" x:Uid="UsageOpenAIPricing" />
+                            <HyperlinkButton NavigateUri="https://platform.claude.com/docs/en/about-claude/pricing" AutomationProperties.AutomationId="UsageClaudePricing" x:Uid="UsageClaudePricing" />
+                        </StackPanel>
+                    </Expander>
                     <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" x:Uid="UsageDayExpander" AutomationProperties.AutomationId="UsageDayExpander">
                         <StackPanel Spacing="8">
                             <ComboBox ItemsSource="{x:Bind ViewModel.UsageDays, Mode=OneWay}" DisplayMemberPath="Label" SelectedItem="{x:Bind ViewModel.SelectedUsageDay, Mode=TwoWay}" x:Uid="UsageDay" AutomationProperties.AutomationId="UsageDay" />
                             <TextBlock Text="{x:Bind ViewModel.UsageSelectedDetails, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="UsageDayDetails" />
                             <TextBlock Text="{x:Bind ViewModel.UsageSelectedCoverage, Mode=OneWay}" TextWrapping="Wrap" />
+                            <TextBlock Text="{x:Bind ViewModel.UsageSelectedCost, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="UsageDayCostDetails" />
                         </StackPanel>
                     </Expander>
                     <TextBlock x:Uid="UsageAccountingNote" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />

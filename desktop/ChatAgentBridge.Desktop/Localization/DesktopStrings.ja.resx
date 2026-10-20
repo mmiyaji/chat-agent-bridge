@@ -362,6 +362,18 @@
   <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}：選択期間外</value></data>
   <data name="UsageTokens" xml:space="preserve"><value>トークン消費量</value></data>
   <data name="UsageCache" xml:space="preserve"><value>キャッシュヒット率</value></data>
+  <data name="UsageCostMetric" xml:space="preserve"><value>推定コスト（API料金換算・USD）</value></data>
+  <data name="UsageCostUnknown" xml:space="preserve"><value>未算出</value></data>
+  <data name="UsageCostHeadline" xml:space="preserve"><value>推定コスト（API料金換算・USD）：{0}</value></data>
+  <data name="UsageCostRange" xml:space="preserve"><value>{0}～{1}</value></data>
+  <data name="UsageCostCoverage" xml:space="preserve"><value>{0}/{1}件を推定、未算出 {2}件、範囲表示 {3}件。未算出の実行がある場合、表示額は算定できた分のみの小計です。</value></data>
+  <data name="UsageCostDetails" xml:space="preserve"><value>推定APIコスト：{0}。{1}</value></data>
+  <data name="UsageCostBarValue" xml:space="preserve"><value>{0}（算定 {1}/{2}件）</value></data>
+  <data name="UsageCostMethodDate" xml:space="preserve"><value>参照料金の確認日：{0}</value></data>
+  <data name="UsageCostMethodDetails" xml:space="preserve"><value>記録されたトークン数に、報告モデルの公開標準API料金を掛けて推定します。既知の料金で算定できた実行だけを含み、モデルや必要なトークン数が不明な実行は未算出です。キャッシュ情報が不足する場合は範囲で表示します。日別・モデル別グラフの高さは範囲の上限で計算し、ラベルには範囲を表示します。</value></data>
+  <data name="UsageCostLimitations" xml:space="preserve"><value>請求額ではなく参考値です。サブスクリプション料金、ツール、Fastモード、リージョン、税は含みません。キャッシュの有効期間やコンテキストが不明な場合があり、記録されたメインループの利用量にサブエージェントが含まれないことがあります。料金の取得や編集は実行時に行いません。</value></data>
+  <data name="UsageOpenAIPricing" xml:space="preserve"><value>OpenAI API料金</value></data>
+  <data name="UsageClaudePricing" xml:space="preserve"><value>Claude API料金</value></data>
   <data name="UsageTurn" xml:space="preserve"><value>実行ごと</value></data>
   <data name="UsageRequest" xml:space="preserve"><value>最後のリクエストのみ</value></data>
   <data name="UsageUnknown" xml:space="preserve"><value>未報告</value></data>

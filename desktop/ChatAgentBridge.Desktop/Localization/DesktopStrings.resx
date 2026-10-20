@@ -362,6 +362,18 @@
   <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}: outside the selected period</value></data>
   <data name="UsageTokens" xml:space="preserve"><value>Token consumption</value></data>
   <data name="UsageCache" xml:space="preserve"><value>Cache hit rate</value></data>
+  <data name="UsageCostMetric" xml:space="preserve"><value>Estimated API cost (USD)</value></data>
+  <data name="UsageCostUnknown" xml:space="preserve"><value>Not estimated</value></data>
+  <data name="UsageCostHeadline" xml:space="preserve"><value>Estimated cost (API pricing · USD): {0}</value></data>
+  <data name="UsageCostRange" xml:space="preserve"><value>{0}–{1}</value></data>
+  <data name="UsageCostCoverage" xml:space="preserve"><value>Estimated for {0}/{1} executions; {2} unpriced; {3} estimates include a range. A partial subtotal is shown when coverage is incomplete.</value></data>
+  <data name="UsageCostDetails" xml:space="preserve"><value>Estimated API cost: {0}. {1}</value></data>
+  <data name="UsageCostBarValue" xml:space="preserve"><value>{0} ({1}/{2} priced)</value></data>
+  <data name="UsageCostMethodDate" xml:space="preserve"><value>Reference rates checked: {0}</value></data>
+  <data name="UsageCostMethodDetails" xml:space="preserve"><value>Cost is estimated by multiplying recorded token counts by published standard API rates for the reported model. Only the priced subset is included; executions without known model or required token counts remain unpriced. When cache details are missing, the estimate uses a range. The daily and model charts size bars by the range upper bound and label each range.</value></data>
+  <data name="UsageCostLimitations" xml:space="preserve"><value>This is a reference estimate, not billing data. It excludes subscription fees, tools, Fast modes, region, and tax. Cache TTL or context may be unknown, and recorded main-loop usage can omit subagents. No prices are fetched or edited at runtime.</value></data>
+  <data name="UsageOpenAIPricing" xml:space="preserve"><value>OpenAI API pricing</value></data>
+  <data name="UsageClaudePricing" xml:space="preserve"><value>Claude API pricing</value></data>
   <data name="UsageTurn" xml:space="preserve"><value>Per execution</value></data>
   <data name="UsageRequest" xml:space="preserve"><value>Last request only</value></data>
   <data name="UsageUnknown" xml:space="preserve"><value>Not reported</value></data>
