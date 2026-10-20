@@ -601,4 +601,9 @@
   <data name="CliTrustWizardSaveHelp" xml:space="preserve"><value>Changes remain unsaved until you choose Save and continue. You can check the CLI on the next page.</value></data>
   <data name="CliTrustAddOnly" xml:space="preserve"><value>Add folder</value></data>
   <data name="CliTrustUseTargetOnly" xml:space="preserve"><value>Trust and use actual folder</value></data>
+  <data name="InboxConnectionErrorLabel" xml:space="preserve"><value>Connection needs attention</value></data>
+  <data name="InboxConnectionReadyLabel" xml:space="preserve"><value>Ready to receive requests</value></data>
+  <data name="InboxConnectionWorkingLabel" xml:space="preserve"><value>Connecting</value></data>
+  <data name="InboxConnectionOfflineLabel" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="InboxQueueSummary" xml:space="preserve"><value>{0} awaiting approval · {1} running</value></data>
 </root>

@@ -1102,4 +1102,7 @@
   <data name="TrayActions.Header" xml:space="preserve"><value>トレイ操作・終了</value></data>
   <data name="CliReviewTrust.Content" xml:space="preserve"><value>信頼するフォルダーを確認</value></data>
   <data name="WorkspaceTrustError.Title" xml:space="preserve"><value>作業フォルダーの信頼設定を確認してください</value></data>
+  <data name="InboxConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>接続状態と詳細</value></data>
+  <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>接続と通知の詳細です。会話の継続は、元のSlack・Mattermostのスレッドに返信してください。</value></data>
+  <data name="InboxRequestContext.Header" xml:space="preserve"><value>作業先・依頼の詳細</value></data>
 </root>

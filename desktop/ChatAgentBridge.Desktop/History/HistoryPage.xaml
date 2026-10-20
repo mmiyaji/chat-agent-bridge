@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:vm="using:ChatAgentBridge_Desktop.History"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:presentation="using:ChatAgentBridge_Desktop.Presentation"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Grid RowSpacing="8">
@@ -89,7 +90,8 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
-                            <Grid ColumnSpacing="8">
+                            <Border Grid.RowSpan="2" Style="{StaticResource ActivityCardStyle}" Padding="0" IsHitTestVisible="False" />
+                            <Grid Margin="12,12,12,0" ColumnSpacing="8">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                 <TextBlock Text="{x:Bind ViewModel.SessionResultSummary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.AutomationId="SavedSessionsCount" />
                                 <Button Grid.Column="1" Command="{x:Bind ViewModel.ClearSessionFiltersCommand}"
@@ -97,7 +99,7 @@
                                         Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSessionFilters), Mode=OneWay}"
                                         AutomationProperties.AutomationId="ClearSessionFilters" />
                             </Grid>
-                            <Grid Grid.Row="1">
+                            <Grid Grid.Row="1" Margin="4,0,4,4">
                                 <ListView x:Name="SessionList" ItemsSource="{x:Bind ViewModel.FilteredSessions, Mode=OneWay}"
                                           SelectedItem="{x:Bind ViewModel.SelectedSession, Mode=OneWay}" SelectionChanged="SavedSessionsList_SelectionChanged"
                                           SelectionMode="Single" IsItemClickEnabled="True" ItemClick="SavedSessionsList_ItemClick" KeyDown="SavedSessionsList_KeyDown"
@@ -129,17 +131,23 @@
                                                            TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Workspace}" />
                                                 <Grid Grid.Row="3" ColumnSpacing="6">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                                    <FontIcon Glyph="{x:Bind StatusGlyph}" FontSize="12" VerticalAlignment="Center" IsHitTestVisible="False"
-                                                              AutomationProperties.AccessibilityView="Raw" />
-                                                    <TextBlock Grid.Column="1" Text="{x:Bind ListActivity}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListTooltip}" />
+                                                    <presentation:StatusIcon Tone="{x:Bind StatusTone}" Width="24" Height="24"
+                                                                             VerticalAlignment="Center" IsHitTestVisible="False"
+                                                                             AutomationProperties.AccessibilityView="Raw" />
+                                                    <TextBlock Grid.Column="1" Text="{x:Bind ListActivity}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListTooltip}" />
                                                 </Grid>
                                             </Grid>
                                         </DataTemplate>
                                     </ListView.ItemTemplate>
                                 </ListView>
-                                <TextBlock Margin="12" VerticalAlignment="Center" TextWrapping="Wrap"
-                                           Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasFilteredSessions), Mode=OneWay}"
-                                           Text="{x:Bind ViewModel.SessionListEmptyText, Mode=OneWay}" AutomationProperties.AutomationId="EmptySavedSessions" />
+                                <StackPanel Margin="12" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                            Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasFilteredSessions), Mode=OneWay}">
+                                    <FontIcon Glyph="&#xE8BD;" FontSize="28" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                              HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False" />
+                                    <TextBlock TextWrapping="Wrap" TextAlignment="Center"
+                                               Text="{x:Bind ViewModel.SessionListEmptyText, Mode=OneWay}"
+                                               AutomationProperties.AutomationId="EmptySavedSessions" />
+                                </StackPanel>
                             </Grid>
                         </Grid>
 
@@ -152,7 +160,8 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <Grid ColumnSpacing="8">
+                            <Border Grid.RowSpan="3" Style="{StaticResource ActivityCardStyle}" Padding="0" IsHitTestVisible="False" />
+                            <Grid Margin="8,8,8,0" ColumnSpacing="8">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                 <Button x:Name="BackToSessionsButton" Click="BackToSessions_Click" AutomationProperties.AutomationId="BackToSessionsButton"
                                         Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsNarrow), Mode=OneWay}"
@@ -161,7 +170,7 @@
                                            Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                            ToolTipService.ToolTip="{x:Bind ViewModel.SelectedSessionTitle, Mode=OneWay}" />
                             </Grid>
-                            <ScrollViewer x:Name="SessionDetailScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ScrollViewer x:Name="SessionDetailScroll" Grid.Row="1" Margin="8,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                 <Grid>
                                     <Grid x:Name="SessionDetailContent" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}" RowSpacing="12">
                                         <Grid.RowDefinitions>
@@ -212,7 +221,7 @@
                                                Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}" />
                                 </Grid>
                             </ScrollViewer>
-                            <CommandBar Grid.Row="2" Background="Transparent" DefaultLabelPosition="Right"
+                            <CommandBar Grid.Row="2" Margin="4,0,4,4" Background="Transparent" DefaultLabelPosition="Right"
                                         IsDynamicOverflowEnabled="True" OverflowButtonVisibility="Auto"
                                         Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}"
                                         AutomationProperties.AutomationId="SessionActionsCommandBar">

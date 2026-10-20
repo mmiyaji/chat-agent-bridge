@@ -47,6 +47,7 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     partial void OnStateChanged(string value)
     {
         OnPropertyChanged(nameof(StateDisplay));
+        OnPropertyChanged(nameof(StateTone));
         OnPropertyChanged(nameof(RequestLabel));
     }
     public string RequestLabel => $"{ReceivedAt:t} · {StateDisplay} · {Prompt.Replace('\r', ' ').Replace('\n', ' ')[..Math.Min(Prompt.Length, 80)]}";
@@ -80,7 +81,11 @@ public sealed partial class InboxConversation(string key) : ObservableObject
     [ObservableProperty] public partial int RequestCount { get; set; }
     public string RequestCountLabel => DesktopText.Get(RequestCount == 1 ? "InboxOneRequest" : "InboxRequestCount", RequestCount);
     public override string ToString() => $"{Title} · {StateSummary} · {RequestCountLabel} · {Location}";
-    partial void OnRequestCountChanged(int value) => OnPropertyChanged(nameof(RequestCountLabel));
+    partial void OnRequestCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(RequestCountLabel));
+        OnPropertyChanged(nameof(HasSeveralRequests));
+    }
 }
 
 public sealed partial class ChatInboxViewModel : ObservableObject
@@ -118,7 +123,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public event Action? ConnectionEnded;
     [ObservableProperty] public partial string NotificationStatus { get; set; } = "";
     [ObservableProperty] public partial string Status { get; set; } = DesktopText.Get("InboxDisconnected");
-    [ObservableProperty] public partial string OverflowNotice { get; set; } = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasOverflowNotice))] public partial string OverflowNotice { get; set; } = "";
+    public bool HasOverflowNotice => !string.IsNullOrWhiteSpace(OverflowNotice);
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasProgressNotice))]
     public partial string ProgressNotice { get; set; } = "";
     public bool HasProgressNotice => !string.IsNullOrWhiteSpace(ProgressNotice);
@@ -288,10 +294,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             conversation.Title = $"{provider} · {latest.Request.UserId}";
             conversation.Location = DesktopText.Get("ConversationLocation", latest.Request.ChannelId, latest.Request.ThreadId);
             conversation.LatestPrompt = latest.Prompt;
-            conversation.StateSummary = items.FirstOrDefault(item => item.State == "実行中")?.StateDisplay ??
-                items.FirstOrDefault(item => item.State == "承認待ち")?.StateDisplay ?? latest.StateDisplay;
+            var stateItem = items.FirstOrDefault(item => item.State == "実行中") ??
+                items.FirstOrDefault(item => item.State == "承認待ち") ?? latest;
+            conversation.StateSummary = stateItem.StateDisplay;
+            conversation.StateTone = stateItem.StateTone;
             conversation.Activity = latest.ReceivedAt.ToString("g", System.Globalization.CultureInfo.CurrentCulture);
             conversation.RequestCount = items.Length;
+            conversation.RefreshPresentation();
         }
         var sorted = Conversations.OrderByDescending(item => item.Requests.LastOrDefault()?.ReceivedAt).ToArray();
         for (var index = 0; index < sorted.Length; index++)
@@ -300,6 +309,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (current != index) Conversations.Move(current, index);
         }
         RefreshVisibleConversations();
+        OnPropertyChanged(nameof(QueueSummary));
         OnPropertyChanged(nameof(ConversationRequests));
         OnPropertyChanged(nameof(SelectedRequestCountLabel));
         if (SelectedConversation is not null && !Conversations.Contains(SelectedConversation))

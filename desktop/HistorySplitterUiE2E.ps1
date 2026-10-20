@@ -58,6 +58,7 @@ function Drag([int]$Distance){
     Move-Mouse $x $y
     Start-Sleep -Milliseconds 100
     [HistorySplitterNative]::mouse_event(2,0,0,0,[UIntPtr]::Zero)
+    Start-Sleep -Milliseconds 150
     try {for($i=1;$i -le 12;$i++){Move-Mouse ([int]($x+($target-$x)*$i/12)) $y;Start-Sleep -Milliseconds 20}}
     finally {[HistorySplitterNative]::mouse_event(4,0,0,0,[UIntPtr]::Zero)}
     Start-Sleep -Milliseconds 250
@@ -89,10 +90,11 @@ try {
     $rows=$list.FindAll([Windows.Automation.TreeScope]::Children,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::ListItem))
     Assert ($rows.Count -eq 2) 'Fixture conversations missing.'
     $rows[0].GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
+    Start-Sleep -Milliseconds 500
     Capture 'initial'
     $before=Width;Drag 90;$after=Width
     Capture 'after-drag'
-    Assert ($after -gt $before+40) 'Mouse drag did not increase the list width.'
+    Assert ($after -gt $before+40) "Mouse drag did not increase the list width (before=$before, after=$after)."
     Capture 'dragged-wide'
     Pass 'Mouse drag changes the list/detail split'
     $rows[1].GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select();Start-Sleep -Milliseconds 200
@@ -100,11 +102,13 @@ try {
     UI @('invoke','NavOverview')|Out-Null;UI @('invoke','NavHistory')|Out-Null;Start-Sleep -Milliseconds 200
     Assert ([Math]::Abs((Width)-$after) -lt 3) 'Navigation reset the list width.'
     Pass 'Selection and navigation preserve the adjusted width'
-    Foreground;(Element 'SavedSessionsSplitter').SetFocus();[Windows.Forms.SendKeys]::SendWait('{LEFT 4}');Start-Sleep -Milliseconds 200
+    Foreground;(Element 'SavedSessionsSplitter').SetFocus();Start-Sleep -Milliseconds 200;[Windows.Forms.SendKeys]::SendWait('{LEFT 4}');Start-Sleep -Milliseconds 200
     Assert ((Width) -lt $after-1) 'Keyboard resizing did not work.'
     Pass 'Focused splitter supports arrow keys'
     Drag -700
-    Assert ((Width) -ge 278 -and (Width) -lt $after) 'Dragging beyond the minimum did not preserve a usable list.'
+    # WinUI's layout-only Grid peer has no UIA bounds. Its 280 DIP column leaves
+    # 272 DIP for the ListView after the card's 4 DIP inset on each side.
+    Assert ((Width) -ge 270 -and (Width) -lt $after) "Dragging beyond the minimum did not preserve a usable inset list (list=$(Width), previous=$after)."
     Drag 900
     $maxWidth=Width
     Capture 'minimum-detail'

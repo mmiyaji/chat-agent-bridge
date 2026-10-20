@@ -135,6 +135,15 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
         "interrupted" => "\uE7BA",
         _ => string.Empty
     };
+    public string StatusTone => LatestExecutionStatus switch
+    {
+        "running" => "running",
+        "completed" => "success",
+        "failed" => "error",
+        "interrupted" => "warning",
+        "cancelled" => "stopped",
+        _ => "neutral"
+    };
     public string Model => string.IsNullOrWhiteSpace(Binding.Model)
         ? DesktopText.Get("HistoryNextModelDefault")
         : DesktopText.Get("HistoryNextModel", Binding.Model);
