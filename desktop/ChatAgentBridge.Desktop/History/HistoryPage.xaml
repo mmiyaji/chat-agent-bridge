@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:vm="using:ChatAgentBridge_Desktop.History"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Grid Padding="20,12,20,18" RowSpacing="8">
@@ -79,8 +80,9 @@
 
                     <Grid x:Name="SessionBrowser" Grid.Row="1" ColumnSpacing="12">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition x:Name="SessionListColumn" Width="380" />
-                            <ColumnDefinition x:Name="SessionDetailColumn" Width="*" />
+                            <ColumnDefinition x:Name="SessionListColumn" Width="380" MinWidth="280" />
+                            <ColumnDefinition x:Name="SessionSplitterColumn" Width="12" />
+                            <ColumnDefinition x:Name="SessionDetailColumn" Width="*" MinWidth="320" />
                         </Grid.ColumnDefinitions>
                         <Grid x:Name="SessionListPane" RowSpacing="5" AutomationProperties.AutomationId="SavedSessionListPane">
                             <Grid.RowDefinitions>
@@ -134,7 +136,12 @@
                             </Grid>
                         </Grid>
 
-                        <Grid x:Name="SessionDetailPane" Grid.Column="1" RowSpacing="8" AutomationProperties.AutomationId="SavedSessionDetails">
+                        <controls:GridSplitter x:Name="SessionSplitter" Grid.Column="1" Width="12"
+                                               ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                                               AutomationProperties.AutomationId="SavedSessionsSplitter"
+                                               x:Uid="SavedSessionsSplitter" />
+
+                        <Grid x:Name="SessionDetailPane" Grid.Column="2" RowSpacing="8" AutomationProperties.AutomationId="SavedSessionDetails">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
