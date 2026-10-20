@@ -833,7 +833,7 @@
   <data name="AboutLinksHeading.Text" xml:space="preserve"><value>リンクと作成者</value></data>
   <data name="AboutProviderLabel.Text" xml:space="preserve"><value>作成者</value></data>
   <data name="AboutWebsite.Content" xml:space="preserve"><value>https://ruhenheim.org</value></data>
-  <data name="AboutSupport.Content" xml:space="preserve"><value>mail@ruhenheim.org</value></data>
+  <data name="AboutSupport.Content" xml:space="preserve"><value>不具合報告・機能の提案（GitHub）</value></data>
   <data name="AboutRepository.Content" xml:space="preserve"><value>ソースコード</value></data>
   <data name="AboutStoreHeading.Text" xml:space="preserve"><value>Microsoft Store</value></data>
   <data name="AboutStorePage.Content" xml:space="preserve"><value>Store ページを開く</value></data>

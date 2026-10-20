@@ -47,7 +47,7 @@
                         <TextBlock Text="mmiyaji" AutomationProperties.AutomationId="AboutProvider" />
                         <StackPanel Spacing="0">
                             <HyperlinkButton x:Uid="AboutWebsite" AutomationProperties.AutomationId="AboutWebsite" Click="OpenLink_Click" Tag="https://ruhenheim.org" />
-                            <HyperlinkButton x:Uid="AboutSupport" AutomationProperties.AutomationId="AboutSupport" Click="OpenLink_Click" Tag="mailto:mail@ruhenheim.org" />
+                            <HyperlinkButton x:Uid="AboutSupport" AutomationProperties.AutomationId="AboutSupport" Click="OpenLink_Click" Tag="https://github.com/mmiyaji/chat-agent-bridge/issues" />
                             <HyperlinkButton x:Uid="AboutRepository" AutomationProperties.AutomationId="AboutRepository" Click="OpenLink_Click" Tag="https://github.com/mmiyaji/chat-agent-bridge" />
                         </StackPanel>
                         <TextBlock x:Name="ActionStatus" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
