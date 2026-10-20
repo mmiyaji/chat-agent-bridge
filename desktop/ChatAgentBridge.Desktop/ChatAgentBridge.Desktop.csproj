@@ -29,6 +29,12 @@
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable\</IntermediateOutputPath>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(CABPortableUpdateTest)' == 'true' and '$(CABPortable)' == 'true'">
+    <DefineConstants>$(DefineConstants);CAB_PORTABLE_UPDATE_TEST</DefineConstants>
+    <OutputPath>bin\$(Platform)\$(Configuration)\portable-update-test\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable-update-test\</IntermediateOutputPath>
+  </PropertyGroup>
+
   <UsingTask TaskName="ExtractPortableAppNotificationResource" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll" Condition="'$(CABPortable)' == 'true'">
     <ParameterGroup>
       <ArchivePath ParameterType="System.String" Required="true" />

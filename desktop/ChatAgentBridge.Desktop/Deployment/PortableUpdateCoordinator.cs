@@ -10,7 +10,10 @@ namespace ChatAgentBridge_Desktop.Deployment;
 /// <summary>Manual, explicitly confirmed portable updates. Network and staging never stop chat work.</summary>
 public sealed class PortableUpdateCoordinator : IDisposable
 {
-    private readonly PortableReleaseClient _client = new();
+    private readonly PortableReleaseClient _client;
+#if CAB_PORTABLE_UPDATE_TEST
+    private readonly HttpClient _testHttpClient;
+#endif
     private readonly string _dataDirectory;
     private readonly string _installDirectory = Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
     private readonly bool _hasLifetimeLease;
@@ -50,6 +53,12 @@ public sealed class PortableUpdateCoordinator : IDisposable
     {
         _dataDirectory = dataDirectory;
         _hasLifetimeLease = hasLifetimeLease;
+#if CAB_PORTABLE_UPDATE_TEST
+        _testHttpClient = PortableUpdateTestFeed.CreateClient();
+        _client = new PortableReleaseClient(_testHttpClient);
+#else
+        _client = new PortableReleaseClient();
+#endif
         _currentVersion = ReadCurrentVersion();
         _includePrereleases = _currentVersion.Contains('-');
         Status = DesktopText.Get(IsSupported ? "PortableUpdateIdle" : "PortableUpdateUnsupported");
@@ -261,5 +270,8 @@ public sealed class PortableUpdateCoordinator : IDisposable
         _disposed = true;
         if (!_committing) _operation?.Cancel();
         _client.Dispose();
+#if CAB_PORTABLE_UPDATE_TEST
+        _testHttpClient.Dispose();
+#endif
     }
 }
