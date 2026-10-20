@@ -75,6 +75,45 @@ function Is-Hidden([string]$Id) {
     $element = Element $Id
     return $null -eq $element -or $element.Current.IsOffscreen -or $element.Current.BoundingRectangle.IsEmpty
 }
+function Scroll-IntoView([string]$Id) {
+    $output = & winapp ui scroll-into-view $Id -a $script:app.Id --json 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "Could not scroll element into view: $Id ($($output -join ' '))" }
+}
+function Ensure-Expanded([string]$GroupId, [string]$TargetId) {
+    $target = Element $TargetId
+    if ($null -ne $target) {
+        try { Scroll-IntoView $TargetId } catch { }
+        if (-not (Is-Hidden $TargetId)) { return }
+    }
+    $group = Element $GroupId
+    Assert ($null -ne $group) "Settings expander was not found: $GroupId"
+    $header = $group.FindFirst([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,
+            [Windows.Automation.ControlType]::Button))
+    Assert ($null -ne $header) "Settings expander header button was not found: $GroupId"
+    $pattern = $null
+    $acted = $false
+    if ($header.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$pattern)) {
+        if ($pattern.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) { $pattern.Expand() }
+        $acted = $true
+    }
+    if (-not $acted -and $header.TryGetCurrentPattern([Windows.Automation.TogglePattern]::Pattern, [ref]$pattern)) {
+        if ($pattern.Current.ToggleState -eq [Windows.Automation.ToggleState]::Off) { $pattern.Toggle() }
+        $acted = $true
+    }
+    if (-not $acted -and $header.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) {
+        if ($null -eq $target) { $pattern.Invoke() }
+        $acted = $true
+    }
+    Assert $acted "Settings expander header has no supported UIA pattern: $GroupId"
+    Scroll-IntoView $TargetId
+    $until = [DateTime]::UtcNow.AddSeconds(5)
+    do {
+        if (-not (Is-Hidden $TargetId)) { return }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $until)
+    throw "Settings control did not become visible: $TargetId"
+}
 function Resize-And-Capture([string]$Name) {
     $scale = [PortableUpdateUiNative]::GetDpiForWindow($script:hwnd) / 96.0
     [void][PortableUpdateUiNative]::SetWindowPos($script:hwnd, [IntPtr]::Zero, 60, 60,
@@ -151,6 +190,7 @@ try {
     Assert (Is-Hidden 'StoreUpdateCard') 'Store update card is visible in the portable build.'
     Pass 'Japanese dark About page shows portable updater and hides Store update card'
 
+    Ensure-Expanded 'PortableUpdatePreferences' 'PortableUpdateIncludePrereleases'
     $preview = Wait-Element 'PortableUpdateIncludePrereleases'
     $previewPattern = $preview.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
     $initialPreviewState = $previewPattern.Current.ToggleState

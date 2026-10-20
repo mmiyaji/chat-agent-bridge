@@ -42,6 +42,42 @@ function Element([string]$Id) {
     $root.FindFirst([Windows.Automation.TreeScope]::Descendants,
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$Id))
 }
+function Is-Hidden([string]$Id) {
+    $element = Element $Id
+    return $null -eq $element -or $element.Current.IsOffscreen -or $element.Current.BoundingRectangle.IsEmpty
+}
+function Ensure-Expanded([string]$GroupId, [string]$TargetId) {
+    $target = Element $TargetId
+    if ($null -ne $target) {
+        try { UI @('scroll-into-view',$TargetId) | Out-Null } catch { }
+        if (-not (Is-Hidden $TargetId)) { return }
+    }
+    $until = [DateTime]::UtcNow.AddSeconds(5)
+    do { $group = Element $GroupId; if ($null -ne $group) { break }; Start-Sleep -Milliseconds 100 } while ([DateTime]::UtcNow -lt $until)
+    Assert ($null -ne $group) "Settings expander was not found: $GroupId"
+    $header = $group.FindFirst([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,
+            [Windows.Automation.ControlType]::Button))
+    Assert ($null -ne $header) "Settings expander header button was not found: $GroupId"
+    $pattern = $null
+    $acted = $false
+    if ($header.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$pattern)) {
+        if ($pattern.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) { $pattern.Expand() }
+        $acted = $true
+    }
+    if (-not $acted -and $header.TryGetCurrentPattern([Windows.Automation.TogglePattern]::Pattern, [ref]$pattern)) {
+        if ($pattern.Current.ToggleState -eq [Windows.Automation.ToggleState]::Off) { $pattern.Toggle() }
+        $acted = $true
+    }
+    if (-not $acted -and $header.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) {
+        if ($null -eq $target) { $pattern.Invoke() }; $acted = $true
+    }
+    Assert $acted "Settings expander header has no supported UIA pattern: $GroupId"
+    UI @('scroll-into-view',$TargetId) | Out-Null
+    $until = [DateTime]::UtcNow.AddSeconds(5)
+    do { if (-not (Is-Hidden $TargetId)) { return }; Start-Sleep -Milliseconds 100 } while ([DateTime]::UtcNow -lt $until)
+    throw "Settings control did not become visible: $TargetId"
+}
 function Pass([string]$Name) { $checks.Add($Name); Write-Output "PASS $Name" }
 function Assert([bool]$Condition,[string]$Message) { if (-not $Condition) { throw $Message } }
 function ChooseLanguage([string]$Name) {
@@ -118,8 +154,11 @@ try {
     Assert ($null -ne $newApp) 'Portable language restart did not launch a new instance.'
     $app = $newApp
     UI @('wait-for','NavAbout','-t','10000') | Out-Null
-    Go 'NavAbout' 'AboutPackage'
-    UI @('wait-for','AboutPackage','--value',"Portable ($ExpectedVersion)",'-t','5000') | Out-Null
+    UI @('invoke','NavAbout') | Out-Null
+    UI @('wait-for','AboutTechnicalDetails','-t','5000') | Out-Null
+    Ensure-Expanded 'AboutTechnicalDetails' 'AboutPackage'
+    UI @('wait-for','AboutPackage','--value','Portable','-t','5000') | Out-Null
+    UI @('wait-for','AboutVersion','--value',$ExpectedVersion,'-t','5000') | Out-Null
     Assert ((Get-Content (Join-Path $data 'language.json') -Raw | ConvertFrom-Json).Language -eq 'ja') 'Restart lost the language setting.'
     Assert ((Get-Content (Join-Path $data 'appearance.json') -Raw | ConvertFrom-Json).Theme -eq 'light') 'Restart lost the appearance setting.'
     Pass 'Language restart preserves portable settings and displays the correct deployment version'

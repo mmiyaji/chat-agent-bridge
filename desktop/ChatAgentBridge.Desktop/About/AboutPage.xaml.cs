@@ -1,4 +1,5 @@
 using ChatAgentBridge_Desktop.Localization;
+using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -47,7 +48,7 @@ public sealed partial class AboutPage : Page
 
         ProductValue.Text = DesktopText.Get("AboutProductName");
         VersionValue.Text = version;
-        PackageValue.Text = $"{packageName} ({version})";
+        PackageValue.Text = packageName;
         StoreStatus.Text = _isStorePackage ? DesktopText.Get("AboutStoreReady") : DesktopText.Get("AboutStoreDevelopment");
         StorePageButton.IsEnabled = _isStorePackage;
         CheckUpdatesButton.IsEnabled = _isStorePackage;
@@ -59,7 +60,8 @@ public sealed partial class AboutPage : Page
 
     private async void OpenLink_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is HyperlinkButton { Tag: string uri })
+        if (sender is SettingsCard { Tag: string uri } &&
+            uri is "https://ruhenheim.org" or "https://github.com/mmiyaji/chat-agent-bridge/issues")
         {
             try
             {
@@ -67,6 +69,7 @@ public sealed partial class AboutPage : Page
                     ? string.Empty : DesktopText.Get("AboutOpenLinkFailed");
             }
             catch (Exception) { ActionStatus.Text = DesktopText.Get("AboutOpenLinkFailed"); }
+            ActionStatus.Visibility = string.IsNullOrEmpty(ActionStatus.Text) ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 
