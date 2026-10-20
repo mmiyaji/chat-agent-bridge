@@ -219,14 +219,14 @@ function Exercise-AboutDialog([string]$Kind) {
             [void](Invoke-UI @('ui', 'invoke', 'AboutTerms'))
             Wait-UI 'PolicyDialog'
             Wait-UI 'PolicyBody'
-            [void](Invoke-UI @('ui', 'invoke', 'PolicyClose'))
+            [void](Invoke-UI @('ui', 'invoke', 'CloseButton'))
             Wait-UI 'PolicyDialog' '' 5000 -Gone
         }
         'privacy' {
             [void](Invoke-UI @('ui', 'invoke', 'AboutPrivacy'))
             Wait-UI 'PolicyDialog'
             Wait-UI 'PolicyBody'
-            [void](Invoke-UI @('ui', 'invoke', 'PolicyClose'))
+            [void](Invoke-UI @('ui', 'invoke', 'CloseButton'))
             Wait-UI 'PolicyDialog' '' 5000 -Gone
         }
         'exit-cancel' {

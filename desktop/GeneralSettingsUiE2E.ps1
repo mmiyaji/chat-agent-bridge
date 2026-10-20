@@ -114,7 +114,7 @@ try{
     UI @('invoke',$choice)|Out-Null
     UI @('wait-for','LanguageRestartDialog','-t','10000')|Out-Null
     Assert (-not (Element 'PrimaryButton').Current.IsEnabled) 'Restart is allowed while another tab has unsaved drafts.'
-    UI @('invoke','SecondaryButton')|Out-Null
+    UI @('invoke','CloseButton')|Out-Null
     Wait-Saved 'language.json' 'Language' 'en'|Out-Null
     Pass 'Language preference saves independently and offers restart while protecting unsaved drafts'
     Stop-Process -Id $app.Id -Force;$app.WaitForExit()

@@ -129,7 +129,8 @@ public sealed partial class AboutPage : Page
                         IsTextSelectionEnabled = true
                     }
                 },
-                CloseButtonText = DesktopText.Get("Close")
+                CloseButtonText = DesktopText.Get("Close"),
+                DefaultButton = ContentDialogButton.Close
             };
             AutomationProperties.SetAutomationId(dialog, "AboutChangelogDialog");
             await dialog.ShowAsync();

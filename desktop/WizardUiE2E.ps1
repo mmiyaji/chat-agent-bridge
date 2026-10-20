@@ -131,12 +131,12 @@ try {
     $currentSubstep = 'read terms policy dialog and close it'
     Invoke-UI @('invoke','WizardTerms') | Out-Null
     Assert-That (Wait-Value 'PolicyBody' '現状有姿' 10) 'The terms dialog did not show the current as-is policy text.'
-    Invoke-UI @('invoke','PolicyClose') | Out-Null
+    Invoke-UI @('invoke','CloseButton') | Out-Null
     Invoke-UI @('wait-for','PolicyBody','--gone','-t','5000') | Out-Null
     $currentSubstep = 'read privacy policy dialog and close it'
     Invoke-UI @('invoke','WizardPrivacy') | Out-Null
     Assert-That ((Wait-Value 'PolicyBody' 'DPAPI' 10) -and (Wait-Value 'PolicyBody' '外部' 5)) 'The privacy dialog did not expose DPAPI and external-service disclosures.'
-    Invoke-UI @('invoke','PolicyClose') | Out-Null
+    Invoke-UI @('invoke','CloseButton') | Out-Null
     Invoke-UI @('wait-for','PolicyBody','--gone','-t','5000') | Out-Null
 
     $currentSubstep = 'require both consent checkboxes before moving forward'

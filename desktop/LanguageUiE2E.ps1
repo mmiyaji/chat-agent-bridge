@@ -126,7 +126,7 @@ function Select-Language([string[]]$Labels,[string]$Stored,[bool]$RestartNow = $
                 $checks.Add(@{name='Restart now relaunches app with isolated settings directory';passed=$true})
                 return
             }
-            UI @('invoke','SecondaryButton') | Out-Null
+            UI @('invoke','CloseButton') | Out-Null
             $checks.Add(@{name='Language change prompts restart and Later keeps app open';passed=$true})
         }
         if (Test-Path (Join-Path $dataPath 'language.json')) {
@@ -165,7 +165,7 @@ try {
     UI @('invoke','WizardTerms') | Out-Null
     UI @('wait-for','PolicyBody','-t','3000') | Out-Null
     Assert ((Value 'PolicyBody') -notmatch '[ぁ-んァ-ン一-龯]') 'Terms were not translated before restarting.'
-    UI @('invoke','PolicyClose') | Out-Null
+    UI @('invoke','CloseButton') | Out-Null
     UI @('wait-for','PolicyBody','--gone','-t','3000') | Out-Null
     Assert (Consent-Checked 'WizardAcceptTerms') 'Language switching cleared a checked consent.'
     Assert (-not (Consent-Checked 'WizardAcceptPrivacy')) 'Language switching accepted an unchecked consent.'
@@ -173,7 +173,7 @@ try {
     UI @('invoke','WizardPrivacy') | Out-Null
     UI @('wait-for','PolicyBody','-t','3000') | Out-Null
     Assert ((Value 'PolicyBody').Contains('Privacy Policy')) 'Privacy policy was not translated immediately.'
-    UI @('invoke','PolicyClose') | Out-Null
+    UI @('invoke','CloseButton') | Out-Null
     UI @('wait-for','PolicyBody','--gone','-t','3000') | Out-Null
     Select-Language @('日本語 (Japanese)') 'ja'
     Wait-Text 'OnboardingTitle' 'はじめに'
@@ -200,7 +200,7 @@ try {
     $body = Value 'PolicyBody'
     Assert ($body -notmatch '[ぁ-んァ-ン一-龯]' -and $body.Contains('mmiyaji') -and $body.Contains('mail@ruhenheim.org')) 'English policy text or contact details are incorrect.'
     Capture 'english-terms.png'
-    UI @('invoke','PolicyClose') | Out-Null
+    UI @('invoke','CloseButton') | Out-Null
     UI @('wait-for','PolicyBody','--gone','-t','3000') | Out-Null
     $checks.Add(@{name='Manual English survives restart and localizes XAML, dynamic text, and terms';passed=$true})
 

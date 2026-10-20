@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using ChatAgentBridge_Desktop.Localization;
 
@@ -50,6 +51,7 @@ public sealed partial class PricingSettings : UserControl
         if (string.IsNullOrWhiteSpace(ViewModel.SelectedManualModelName)) return;
         var dialog = new ContentDialog
         {
+            RequestedTheme = App.Appearance.RequestedTheme,
             Title = DesktopText.Get("PricingRemoveConfirmTitle"),
             Content = DesktopText.Get("PricingRemoveConfirmMessage", ViewModel.SelectedManualModelName),
             PrimaryButtonText = DesktopText.Get("PricingRemoveConfirmPrimary"),
@@ -57,6 +59,7 @@ public sealed partial class PricingSettings : UserControl
             DefaultButton = ContentDialogButton.Close,
             XamlRoot = XamlRoot
         };
+        AutomationProperties.SetAutomationId(dialog, "PricingRemoveConfirmation");
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
             ViewModel.RemoveManualCommand.Execute(null);
     }

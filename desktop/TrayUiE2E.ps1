@@ -222,7 +222,7 @@ try {
     Assert (-not (Element 'PolicyDialog').Current.IsOffscreen) 'Close request displaced the existing policy dialog.'
     $otherDialog=Element 'WindowCloseConfirmation'
     Assert (-not $otherDialog -or $otherDialog.Current.IsOffscreen) 'A second modal close dialog opened over the policy dialog.'
-    UI @('invoke','PolicyClose') | Out-Null
+    UI @('invoke','CloseButton') | Out-Null
     UI @('wait-for','PolicyDialog','--gone','-t','3000') | Out-Null
     UI @('scroll-into-view','ExitCompletelyButton') | Out-Null
     Pass 'Close while another modal dialog is open safely preserves the existing dialog'

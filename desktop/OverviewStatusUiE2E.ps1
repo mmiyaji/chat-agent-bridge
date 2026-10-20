@@ -98,7 +98,7 @@ function Check-RestartGuard {
     Assert ((Name 'LanguageRestartDialog').Contains('Restart')) 'Restart dialog has no English recovery wording.'
     Assert ((UI @('get-property','PrimaryButton','-p','IsEnabled') | ConvertFrom-Json).properties.IsEnabled -eq $false) 'Unsaved settings did not disable Restart now.'
     Capture 'language-restart-dialog.png'
-    UI @('invoke','SecondaryButton') | Out-Null
+    UI @('invoke','CloseButton') | Out-Null
     UI @('wait-for','LanguageRestartDialog','--gone','-t','3000') | Out-Null
     Assert ((Get-Content (Join-Path $dataPath 'language.json') -Raw | ConvertFrom-Json).Language -eq 'ja') 'Later lost the saved language preference.'
     $checks.Add(@{name='Language change prompts restart and Later keeps app open';passed=$true})

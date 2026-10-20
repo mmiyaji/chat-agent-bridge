@@ -130,7 +130,7 @@ try {
         $dialogPath = Capture "$theme-dialog.png"
         $dialogBrightness = Brightness $dialogPath 0.5 0.18
         Assert ($(if ($theme -eq 'light') { $dialogBrightness -gt 180 } else { $dialogBrightness -lt 100 })) "Dialog did not use $theme theme."
-        UI @('invoke','PolicyClose') | Out-Null
+        UI @('invoke','CloseButton') | Out-Null
         UI @('wait-for','PolicyBody','--gone','-t','3000') | Out-Null
         $checks.Add(@{name="$theme switches immediately across seven pages and dialogs";passed=$true})
         Restart

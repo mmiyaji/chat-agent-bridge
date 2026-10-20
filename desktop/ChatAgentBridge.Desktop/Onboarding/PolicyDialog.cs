@@ -33,20 +33,16 @@ public static class PolicyDialog
             };
             AutomationProperties.SetAutomationId(scroll, "PolicyScroll");
 
-            var close = new Button { Content = DesktopText.Get("Close"), HorizontalAlignment = HorizontalAlignment.Stretch };
-            AutomationProperties.SetAutomationId(close, "PolicyClose");
-            var panel = new StackPanel { Spacing = 16 };
-            panel.Children.Add(scroll);
-            panel.Children.Add(close);
             var dialog = new ContentDialog
             {
                 RequestedTheme = App.Appearance.RequestedTheme,
                 XamlRoot = xamlRoot,
                 Title = DesktopText.Get(privacy ? "PrivacyPolicy" : "TermsOfUse"),
-                Content = panel
+                Content = scroll,
+                CloseButtonText = DesktopText.Get("Close"),
+                DefaultButton = ContentDialogButton.Close
             };
             AutomationProperties.SetAutomationId(dialog, "PolicyDialog");
-            close.Click += (_, _) => dialog.Hide();
             await dialog.ShowAsync();
         }
         finally { _isOpen = false; }
