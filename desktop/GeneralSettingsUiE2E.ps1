@@ -1,4 +1,4 @@
-﻿param([Parameter(Mandatory)][string]$AppDirectory)
+param([Parameter(Mandatory)][string]$AppDirectory)
 $ErrorActionPreference='Stop'
 $artifacts=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
 $payload=[IO.Path]::GetFullPath($AppDirectory)
@@ -23,7 +23,10 @@ function Element([string]$Id){(Root).FindFirst([Windows.Automation.TreeScope]::D
 function Visible([string]$Id){$e=Element $Id;return $e -and -not $e.Current.IsOffscreen -and $e.Current.BoundingRectangle.Height -gt 0}
 function Go([string]$Id){if(-not (Visible $Id)){UI @('invoke','TogglePaneButton')|Out-Null};UI @('invoke',$Id)|Out-Null;Start-Sleep -Milliseconds 180}
 function Scroll([string]$Id){
-    $scroll=Element 'MainContentScroll';$pattern=$scroll.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
+    $until=[DateTime]::UtcNow.AddSeconds(5)
+    do{$scroll=Element 'MainContentScroll';if($scroll){break};Start-Sleep -Milliseconds 100}while([DateTime]::UtcNow -lt $until)
+    Assert ($null -ne $scroll) "Settings scroll area is not ready for $Id"
+    $pattern=$scroll.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
     if($pattern.Current.VerticallyScrollable){$pattern.SetScrollPercent(-1,0)}
     for($i=0;$i -lt 35;$i++){
         $e=Element $Id;$viewport=$scroll.Current.BoundingRectangle
@@ -48,12 +51,29 @@ function Start-App{
     Go 'NavWorkbench';Go 'NavOverview'
 }
 function Resize([int]$Width){$scale=[GeneralSettingsNative]::GetDpiForWindow($window)/96.0;[void][GeneralSettingsNative]::SetWindowPos($window,[IntPtr]::Zero,40,40,[int]($Width*$scale),[int](850*$scale),0x0014);Start-Sleep -Milliseconds 250}
+function Check-AppearanceMatrix([string]$prefix){
+    foreach($theme in @('light','dark')){
+        foreach($width in @(1160,720,500)){
+            Resize $width;Go 'NavWorkbench';Go 'NavOverview'
+            Scroll 'DisplayLanguage';Scroll 'ThemeLight'
+            UI @('invoke',$(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}))|Out-Null
+            Wait-Saved 'appearance.json' 'Theme' $theme|Out-Null
+            foreach($id in @('DisplayLanguage','ThemeDark')){
+                Scroll $id;$r=(Element $id).Current.BoundingRectangle;$w=(Root).Current.BoundingRectangle
+                Assert ($r.Left -ge $w.Left -and $r.Right -le $w.Right) "$id is clipped at $width"
+                if($id -eq 'ThemeDark'){Assert ((Element 'ThemeSettingRow').Current.BoundingRectangle.Height -lt 260) "Theme row is inflated or its description is crushed at $width"}
+            }
+            UI @('screenshot','-o',(Join-Path $data "$prefix$theme-$width.png"))|Out-Null
+        }
+    }
+}
 try{
     Json 'settings.json' @{SchemaVersion=1;WorkspaceRoot=$data;AgentExecutable='unused';AgentProvider='custom';AgentMode='exec';AgentArguments='';TrustedWorkspaceRoots=$data;AutoConnectProvider='none'}
     Json 'onboarding.json' @{SchemaVersion=3;Step=4;Status='completed'}
     $policy=[regex]::Match((Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/OnboardingConsentStore.cs') -Raw),'CurrentPolicyVersion\s*=\s*"([^"]+)"').Groups[1].Value
     Assert ([bool]$policy) 'Missing current consent policy.'
     Json 'consent.json' @{PolicyVersion=$policy;AcceptedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}
+    Json 'portable-update.json' @{schemaVersion=1;automaticChecksEnabled=$false;includePrereleases=$true}
     Json 'language.json' @{Language='ja'}
     Json 'appearance.json' @{Theme='dark'}
     Json 'pricing-auto.json' @{schemaVersion=1;autoUpdateEnabled=$false;catalogJson=(Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/Pricing/model-prices.json') -Raw)}
@@ -91,19 +111,7 @@ try{
     Scroll 'CloseToTrayToggle';Assert (Visible 'CloseToTrayToggle') 'Tray setting is unreachable in General.'
     Pass 'Startup and tray settings are reachable in General and removed from Connections'
 
-    foreach($theme in @('light','dark')){
-        foreach($width in @(1160,720,500)){
-            Resize $width;Go 'NavWorkbench';Go 'NavOverview'
-            Scroll 'DisplayLanguage';Scroll 'ThemeLight'
-            UI @('invoke',$(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}))|Out-Null
-            Wait-Saved 'appearance.json' 'Theme' $theme|Out-Null
-            foreach($id in @('DisplayLanguage','ThemeDark')){
-                Scroll $id;$r=(Element $id).Current.BoundingRectangle;$w=(Root).Current.BoundingRectangle
-                Assert ($r.Left -ge $w.Left -and $r.Right -le $w.Right) "$id is clipped at $width"
-            }
-            UI @('screenshot','-o',(Join-Path $data "$theme-$width.png"))|Out-Null
-        }
-    }
+    Check-AppearanceMatrix ''
     Pass 'Language and theme controls fit at 1160, 720 and 500 DIP in Light and Dark'
     Resize 1160;Go 'NavOverview';Scroll 'DisplayLanguage'
     UI @('invoke','DisplayLanguage')|Out-Null
@@ -129,6 +137,8 @@ try{
     Scroll 'ThemeDark'
     Assert ((Element 'ThemeDark').GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected) 'Theme did not survive restart.'
     Pass 'Restart restores English, theme and saved General preferences without committing unrelated drafts'
+    Check-AppearanceMatrix 'en-'
+    Pass 'English appearance rows also fit at 1160, 720 and 500 DIP in Light and Dark'
     Stop-Process -Id $app.Id -Force;$app.WaitForExit()
     '{invalid-test-settings'|Set-Content (Join-Path $data 'settings.json')
     $invalidHash=(Get-FileHash (Join-Path $data 'settings.json')).Hash
@@ -140,8 +150,10 @@ try{
     Wait-Saved 'appearance.json' 'Theme' 'light'|Out-Null
     Assert ((Get-FileHash (Join-Path $data 'settings.json')).Hash -eq $invalidHash) 'Theme recovery overwrote invalid bridge settings.'
     Pass 'General keeps language and theme usable after bridge settings fail to load'
-}
-finally{
+}catch{
+    Write-Output $_.ScriptStackTrace
+    throw
+}finally{
     if($app -and -not $app.HasExited){UI @('screenshot','-o',(Join-Path $data 'last-screen.png'))|Out-Null;Stop-Process -Id $app.Id -Force}
     Json 'results.json' $checks.ToArray()
     Write-Output "General settings artifacts: $data"

@@ -347,10 +347,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="chatAgentBridgeDesktopMainPageTextBlock042.Text" xml:space="preserve">
     <value>Start and connect</value>
   </data>
-  <data name="StartWithWindows.Header" xml:space="preserve">
+  <data name="StartupSettingRow.Header" xml:space="preserve">
     <value>Start this app when you log in to Windows</value>
   </data>
-  <data name="AutoConnectProvider.Header" xml:space="preserve">
+  <data name="AutoConnectSettingRow.Header" xml:space="preserve">
     <value>Connect automatically when the app starts</value>
   </data>
   <data name="AutoConnectOptionNone.Content" xml:space="preserve">
@@ -1097,4 +1097,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PortableUpdateAutomaticHelp.Text" xml:space="preserve"><value>Checks at startup and periodically while the app is running, including in the tray. Downloads and restarts require your action.</value></data>
   <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>View release notes</value></data>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLI check failed</value></data>
+  <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Start this app when signing in to Windows</value></data>
+  <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Chat to connect automatically when the app starts</value></data>
+  <data name="TrayActions.Header" xml:space="preserve"><value>Tray actions and exit</value></data>
 </root>

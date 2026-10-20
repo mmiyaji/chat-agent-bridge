@@ -347,10 +347,10 @@
   <data name="chatAgentBridgeDesktopMainPageTextBlock042.Text" xml:space="preserve">
     <value>起動と接続</value>
   </data>
-  <data name="StartWithWindows.Header" xml:space="preserve">
+  <data name="StartupSettingRow.Header" xml:space="preserve">
     <value>Windowsログイン時にこのアプリを起動</value>
   </data>
-  <data name="AutoConnectProvider.Header" xml:space="preserve">
+  <data name="AutoConnectSettingRow.Header" xml:space="preserve">
     <value>アプリ起動後に自動接続するチャット</value>
   </data>
   <data name="AutoConnectOptionNone.Content" xml:space="preserve">
@@ -1097,4 +1097,7 @@
   <data name="PortableUpdateAutomaticHelp.Text" xml:space="preserve"><value>起動時とアプリの起動中に定期的に確認します。トレイ常駐中も有効です。ダウンロードと再起動は手動です。</value></data>
   <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>更新内容を見る</value></data>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLIを確認できませんでした</value></data>
+  <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Windowsログイン時にこのアプリを起動</value></data>
+  <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>アプリ起動後に自動接続するチャット</value></data>
+  <data name="TrayActions.Header" xml:space="preserve"><value>トレイ操作・終了</value></data>
 </root>

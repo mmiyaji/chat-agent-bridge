@@ -105,9 +105,8 @@
                                           AutomationProperties.Name="{x:Bind ViewModel.ConversationsTabTitle, Mode=OneWay}">
                                     <ListView.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SessionHistoryRow">
-                                            <Grid Margin="8,8" RowSpacing="4" ToolTipService.ToolTip="{x:Bind ConversationLabel}">
+                                            <Grid Margin="8" RowSpacing="4" ToolTipService.ToolTip="{x:Bind ListTooltip}">
                                                 <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
@@ -118,13 +117,21 @@
                                                     <TextBlock Text="{x:Bind ListTitle}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListTitle}" />
                                                     <TextBlock Grid.Column="1" Text="{x:Bind UpdatedCompact}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" ToolTipService.ToolTip="{x:Bind UpdatedTooltip}" />
                                                 </Grid>
-                                                <TextBlock Grid.Row="1" Text="{x:Bind ListIdentity}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListIdentity}" />
-                                                <TextBlock Grid.Row="2" Text="{x:Bind ListLocation}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListLocation}" />
-                                                <TextBlock Grid.Row="3" Text="{x:Bind ListContext}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Workspace}" />
-                                                <Grid Grid.Row="4" ColumnSpacing="6">
+                                                <Grid Grid.Row="1" ColumnSpacing="6">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                                    <FontIcon Glyph="{x:Bind StatusGlyph}" FontSize="12" VerticalAlignment="Center" IsHitTestVisible="False" />
-                                                    <TextBlock Grid.Column="1" Text="{x:Bind ActivitySummary}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ActivitySummary}" />
+                                                    <FontIcon Glyph="&#xE77B;" FontSize="14" VerticalAlignment="Center"
+                                                              Foreground="{ThemeResource TextFillColorSecondaryBrush}" IsHitTestVisible="False"
+                                                              AutomationProperties.AccessibilityView="Raw" />
+                                                    <TextBlock Grid.Column="1" Text="{x:Bind ListConversation}" Style="{StaticResource CaptionTextBlockStyle}"
+                                                               TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListConversation}" />
+                                                </Grid>
+                                                <TextBlock Grid.Row="2" Text="{x:Bind ListContext}" Style="{StaticResource CaptionTextBlockStyle}"
+                                                           TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Workspace}" />
+                                                <Grid Grid.Row="3" ColumnSpacing="6">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                    <FontIcon Glyph="{x:Bind StatusGlyph}" FontSize="12" VerticalAlignment="Center" IsHitTestVisible="False"
+                                                              AutomationProperties.AccessibilityView="Raw" />
+                                                    <TextBlock Grid.Column="1" Text="{x:Bind ListActivity}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListTooltip}" />
                                                 </Grid>
                                             </Grid>
                                         </DataTemplate>
@@ -153,12 +160,6 @@
                                 <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.SelectedSessionTitle, Mode=OneWay}"
                                            Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                            ToolTipService.ToolTip="{x:Bind ViewModel.SelectedSessionTitle, Mode=OneWay}" />
-                                <Button Grid.Column="2" Command="{x:Bind ViewModel.RenameSelectedSessionCommand}"
-                                        Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}"
-                                        AutomationProperties.AutomationId="RenameSession" AutomationProperties.Name="{x:Bind ViewModel.RenameSessionLabel, Mode=OneWay}"
-                                        ToolTipService.ToolTip="{x:Bind ViewModel.RenameSessionLabel, Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE70F;" />
-                                </Button>
                             </Grid>
                             <ScrollViewer x:Name="SessionDetailScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                 <Grid>
@@ -187,7 +188,11 @@
                                             <TextBlock Text="{x:Bind ViewModel.PolicyHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ExecutionPolicy, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         </StackPanel>
-                                        <Expander Grid.Row="3" Header="{x:Bind ViewModel.IdentifiersHeading, Mode=OneWay}" IsExpanded="False" AutomationProperties.AutomationId="SessionIdentifiers">
+                                        <Expander Grid.Row="3" IsExpanded="False" AutomationProperties.AutomationId="SessionIdentifiers">
+                                            <Expander.Header>
+                                                <TextBlock Text="{x:Bind ViewModel.IdentifiersSummary, Mode=OneWay}"
+                                                           TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                                            </Expander.Header>
                                             <StackPanel Spacing="4" Margin="0,4,0,0">
                                                 <TextBlock Text="{x:Bind ViewModel.UserIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
                                                 <TextBlock Text="{x:Bind ViewModel.SelectedSession.UserId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
@@ -207,14 +212,40 @@
                                                Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}" />
                                 </Grid>
                             </ScrollViewer>
-                            <Grid Grid.Row="2" ColumnSpacing="8" RowSpacing="8" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                                <Button Command="{x:Bind ViewModel.EditSelectedSessionModelCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.EditModelLabel, Mode=OneWay}" AutomationProperties.AutomationId="EditSessionModel" />
-                                <Button Grid.Column="1" Command="{x:Bind ViewModel.EditSelectedSessionPolicyCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.EditPolicyLabel, Mode=OneWay}" AutomationProperties.AutomationId="EditSessionExecutionPolicy" />
-                                <Button Grid.Row="1" Grid.ColumnSpan="2" Command="{x:Bind ViewModel.SwitchSelectedAgentCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.SwitchAgentLabel, Mode=OneWay}" AutomationProperties.AutomationId="SwitchSessionAgent" />
-                                <Button Grid.Row="2" Grid.ColumnSpan="2" Command="{x:Bind ViewModel.DetachSelectedSessionCommand}" HorizontalAlignment="Stretch" Content="{x:Bind ViewModel.StartFreshLabel, Mode=OneWay}" AutomationProperties.AutomationId="DetachSession" />
-                            </Grid>
+                            <CommandBar Grid.Row="2" Background="Transparent" DefaultLabelPosition="Right"
+                                        IsDynamicOverflowEnabled="True" OverflowButtonVisibility="Auto"
+                                        Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}"
+                                        AutomationProperties.AutomationId="SessionActionsCommandBar">
+                                <CommandBar.PrimaryCommands>
+                                    <AppBarButton Command="{x:Bind ViewModel.EditSelectedSessionModelCommand}"
+                                                  Label="{x:Bind ViewModel.EditModelLabel, Mode=OneWay}"
+                                                  AutomationProperties.AutomationId="EditSessionModel">
+                                        <AppBarButton.Icon><SymbolIcon Symbol="Edit" /></AppBarButton.Icon>
+                                    </AppBarButton>
+                                    <AppBarButton Command="{x:Bind ViewModel.SwitchSelectedAgentCommand}"
+                                                  Label="{x:Bind ViewModel.SwitchAgentLabel, Mode=OneWay}"
+                                                  AutomationProperties.AutomationId="SwitchSessionAgent">
+                                        <AppBarButton.Icon><SymbolIcon Symbol="Switch" /></AppBarButton.Icon>
+                                    </AppBarButton>
+                                </CommandBar.PrimaryCommands>
+                                <CommandBar.SecondaryCommands>
+                                    <AppBarButton Command="{x:Bind ViewModel.EditSelectedSessionPolicyCommand}"
+                                                  Label="{x:Bind ViewModel.EditPolicyLabel, Mode=OneWay}"
+                                                  AutomationProperties.AutomationId="EditSessionExecutionPolicy">
+                                        <AppBarButton.Icon><SymbolIcon Symbol="Setting" /></AppBarButton.Icon>
+                                    </AppBarButton>
+                                    <AppBarButton Command="{x:Bind ViewModel.RenameSelectedSessionCommand}"
+                                                  Label="{x:Bind ViewModel.RenameSessionLabel, Mode=OneWay}"
+                                                  AutomationProperties.AutomationId="RenameSession">
+                                        <AppBarButton.Icon><SymbolIcon Symbol="Rename" /></AppBarButton.Icon>
+                                    </AppBarButton>
+                                    <AppBarButton Command="{x:Bind ViewModel.DetachSelectedSessionCommand}"
+                                                  Label="{x:Bind ViewModel.StartFreshLabel, Mode=OneWay}"
+                                                  AutomationProperties.AutomationId="DetachSession">
+                                        <AppBarButton.Icon><SymbolIcon Symbol="Remove" /></AppBarButton.Icon>
+                                    </AppBarButton>
+                                </CommandBar.SecondaryCommands>
+                            </CommandBar>
                         </Grid>
                     </Grid>
                 </Grid>

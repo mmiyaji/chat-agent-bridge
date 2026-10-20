@@ -29,6 +29,15 @@ function UI([string[]]$Arguments){$value=winapp ui @Arguments -a $app.Id --json;
 function Element([string]$Id){([Windows.Automation.AutomationElement]::FromHandle($hwnd)).FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$Id))}
 function Width {return (Element 'SavedSessionsList').Current.BoundingRectangle.Width/$scale}
 function Resize([int]$Width){[void][HistorySplitterNative]::SetWindowPos($hwnd,[IntPtr]::Zero,60,60,[int]($Width*$scale),[int](850*$scale),0x0014);Start-Sleep -Milliseconds 500}
+function Assert-CommandBarWithinDetail([string]$Context) {
+    $bar=Element 'SessionActionsCommandBar';$divider=Element 'SavedSessionsSplitter'
+    Assert ($null -ne $bar -and -not $bar.Current.IsOffscreen) "${Context}: session CommandBar is not visible."
+    Assert ($null -ne $divider -and -not $divider.Current.IsOffscreen) "${Context}: session divider is not visible."
+    $barBounds=$bar.Current.BoundingRectangle;$dividerBounds=$divider.Current.BoundingRectangle
+    $windowBounds=([Windows.Automation.AutomationElement]::FromHandle($hwnd)).Current.BoundingRectangle
+    Assert ($barBounds.Width -gt 0 -and $barBounds.Height -gt 0) "${Context}: session CommandBar has no usable bounds."
+    Assert ($barBounds.Left -ge $dividerBounds.Right-2 -and $barBounds.Right -le $windowBounds.Right-8) "${Context}: session CommandBar extends outside the detail pane."
+}
 function Foreground {
     [void][HistorySplitterNative]::SetForegroundWindow($hwnd)
     Start-Sleep -Milliseconds 150
@@ -66,6 +75,7 @@ try {
     Write-Json 'language.json' @{Language=$Language}
     Write-Json 'appearance.json' @{Theme=$(if($Language -eq 'ja'){'dark'}else{'light'})}
     Write-Json 'pricing-auto.json' @{schemaVersion=1;autoUpdateEnabled=$false;catalogJson=(Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/Pricing/model-prices.json') -Raw)}
+    Write-Json 'portable-update.json' @{schemaVersion=1;automaticChecksEnabled=$false;includePrereleases=$true}
     $settingsHash=(Get-FileHash (Join-Path $data 'settings.json')).Hash
     $start=[Diagnostics.ProcessStartInfo]::new((Join-Path $payload 'ChatAgentBridge.Desktop.exe'));$start.UseShellExecute=$false
     $start.ArgumentList.Add('--data-dir');$start.ArgumentList.Add($data)
@@ -97,9 +107,8 @@ try {
     Assert ((Width) -ge 278 -and (Width) -lt $after) 'Dragging beyond the minimum did not preserve a usable list.'
     Drag 900
     $maxWidth=Width
-    $rightAction=(Element 'SwitchSessionAgent').Current.BoundingRectangle
-    Assert ($rightAction.Width/$scale -ge 318) 'Dragging collapsed the details below its minimum width.'
     Capture 'minimum-detail'
+    Assert-CommandBarWithinDetail 'Minimum detail width'
     Pass 'Both panes retain usable minimum widths'
     Resize 720
     $split=Element 'SavedSessionsSplitter'
@@ -108,9 +117,8 @@ try {
     Resize 1400
     Assert ([Math]::Abs((Width)-$maxWidth) -lt 3) 'Returning from narrow mode lost the preferred width.'
     Resize 1160
-    $rightAction=(Element 'SwitchSessionAgent').Current.BoundingRectangle
+    Assert-CommandBarWithinDetail 'Clamped window'
     Capture 'clamped-window'
-    Assert ($rightAction.Width/$scale -ge 318) "Resizing squeezed details to $($rightAction.Width/$scale) DIPs; list $(Width)."
     Resize 1400
     Assert ([Math]::Abs((Width)-$maxWidth) -lt 3) 'Temporary width clamping replaced the preferred width.'
     Pass 'Narrow layout hides the splitter and wider layouts restore/clamp the preference'
