@@ -100,6 +100,103 @@ public sealed class PortableReleaseClientTests
     }
 
     [Fact]
+    public async Task RequestsChannelSpecificPagesFeedsAndAcceptsStableReleasesFromPreviewFeed()
+    {
+        var stable = Release("v0.2.0", "ChatAgentBridge.Portable-0.2.0-win-x64.zip", Digest, prerelease: false);
+        var preview = Release("v0.3.0-preview.1", "ChatAgentBridge.Portable-0.3.0-preview.1-win-x64.zip", Digest, prerelease: true);
+        var handler = new StubHandler(request =>
+        {
+            var isPreview = request.RequestUri == PortableReleaseClient.PreviewFeedUri;
+            return JsonResponse(PagesFeed(isPreview ? "preview" : "stable", isPreview ? [stable, preview] : [stable]));
+        }, routePagesToLegacyApi: false);
+        using var client = new PortableReleaseClient(new HttpClient(handler));
+
+        var stableResult = await client.FindUpdateAsync("0.1.0", "x64", false, default);
+        var previewResult = await client.FindUpdateAsync("0.1.0", "x64", true, default);
+
+        Assert.Equal("0.2.0", stableResult?.Version);
+        Assert.Equal("0.3.0-preview.1", previewResult?.Version);
+        Assert.Equal(PortableReleaseClient.StableFeedUri, handler.Requests[0].RequestUri);
+        Assert.Equal(PortableReleaseClient.PreviewFeedUri, handler.Requests[1].RequestUri);
+    }
+
+    [Theory]
+    [InlineData("wrong-channel", "stable")]
+    [InlineData("missing-releases", "stable")]
+    [InlineData("legacy-array", "stable")]
+    public async Task RejectsInvalidPagesEnvelopeWithoutFallingBack(string invalidEnvelope, string channel)
+    {
+        var responseBody = invalidEnvelope switch
+        {
+            "wrong-channel" => PagesFeed("preview", [Release("v0.2.0", "ChatAgentBridge.Portable-0.2.0-win-x64.zip", Digest, prerelease: false)]),
+            "missing-releases" => "{\"schemaVersion\":1,\"channel\":\"stable\"}",
+            _ => Feed(Release("v0.2.0", "ChatAgentBridge.Portable-0.2.0-win-x64.zip", Digest, prerelease: false))
+        };
+        var handler = new StubHandler(_ => JsonResponse(responseBody), routePagesToLegacyApi: false);
+        using var client = new PortableReleaseClient(new HttpClient(handler));
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => client.FindUpdateAsync("0.1.0", "x64", channel == "preview", default));
+
+        Assert.Single(handler.Requests);
+        Assert.Equal(channel == "preview" ? PortableReleaseClient.PreviewFeedUri : PortableReleaseClient.StableFeedUri, handler.Requests[0].RequestUri);
+    }
+
+    [Fact]
+    public async Task FallsBackToGitHubApiOnlyWhenPagesReturnsNotFound()
+    {
+        var handler = new StubHandler(request => request.RequestUri!.Host == "api.github.com"
+            ? JsonResponse(Feed(Release("v0.2.0", "ChatAgentBridge.Portable-0.2.0-win-x64.zip", Digest, prerelease: false)))
+            : new HttpResponseMessage(HttpStatusCode.NotFound));
+        using var client = new PortableReleaseClient(new HttpClient(handler));
+
+        var result = await client.FindUpdateAsync("0.1.0", "x64", false, default);
+
+        Assert.Equal("0.2.0", result?.Version);
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.Equal(PortableReleaseClient.StableFeedUri, handler.Requests[0].RequestUri);
+        Assert.Equal("https://api.github.com/repos/mmiyaji/chat-agent-bridge/releases?per_page=100", handler.Requests[1].RequestUri!.AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task PagesServerErrorsAreNotHiddenByGitHubFallback()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable), routePagesToLegacyApi: false);
+        using var client = new PortableReleaseClient(new HttpClient(handler));
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => client.FindUpdateAsync("0.1.0", "x64", false, default));
+
+        Assert.Single(handler.Requests);
+        Assert.Equal(PortableReleaseClient.StableFeedUri, handler.Requests[0].RequestUri);
+    }
+
+    [Fact]
+    public async Task MalformedPagesJsonIsSurfacedWithoutLegacyFallback()
+    {
+        var handler = new StubHandler(_ => JsonResponse("{ malformed json"), routePagesToLegacyApi: false);
+        using var client = new PortableReleaseClient(new HttpClient(handler));
+
+        await Assert.ThrowsAnyAsync<JsonException>(() => client.FindUpdateAsync("0.1.0", "x64", false, default));
+
+        Assert.Single(handler.Requests);
+        Assert.Equal(PortableReleaseClient.StableFeedUri, handler.Requests[0].RequestUri);
+    }
+
+    [Fact]
+    public async Task FailedLegacyFallbackIsSurfacedWithoutRetryingAnotherEndpoint()
+    {
+        var handler = new StubHandler(request => request.RequestUri!.Host == "api.github.com"
+            ? new HttpResponseMessage(HttpStatusCode.BadGateway)
+            : new HttpResponseMessage(HttpStatusCode.NotFound));
+        using var client = new PortableReleaseClient(new HttpClient(handler));
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => client.FindUpdateAsync("0.1.0", "x64", false, default));
+
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.Equal(PortableReleaseClient.StableFeedUri, handler.Requests[0].RequestUri);
+        Assert.Equal("api.github.com", handler.Requests[1].RequestUri!.Host);
+    }
+
+    [Fact]
     public async Task DownloadsOnlyAfterTrustedRedirectAndVerifiesHashAndSize()
     {
         var handler = new StubHandler(request => request.RequestUri!.Host == "github.com"
@@ -164,15 +261,23 @@ public sealed class PortableReleaseClientTests
         return asset;
     }
     private static string Feed(params Dictionary<string, object?>[] releases) => JsonSerializer.Serialize(releases);
+    private static string PagesFeed(string channel, params Dictionary<string, object?>[] releases) => JsonSerializer.Serialize(new { schemaVersion = 1, channel, releases });
     private static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
     private static string TempPath() => Path.Combine(Path.GetTempPath(), "cab-update-test-" + Guid.NewGuid().ToString("N") + ".zip");
     private static void DeleteFile(string path) { if (File.Exists(path)) File.Delete(path); }
     private static void AssertNoDownloadFiles(string path) { Assert.False(File.Exists(path)); Assert.Empty(Directory.EnumerateFiles(Path.GetDirectoryName(path)!, "." + Path.GetFileName(path) + ".download-*")); }
 
-    private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> response) : HttpMessageHandler
+    private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> response, bool routePagesToLegacyApi = true) : HttpMessageHandler
     {
         public List<HttpRequestMessage> Requests { get; } = [];
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) { Requests.Add(request); return Task.FromResult(response(request)); }
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Requests.Add(request);
+            if (routePagesToLegacyApi && request.RequestUri is { } uri &&
+                (uri == PortableReleaseClient.StableFeedUri || uri == PortableReleaseClient.PreviewFeedUri))
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+            return Task.FromResult(response(request));
+        }
     }
 
     private sealed class SlowContent(Action cancel) : HttpContent

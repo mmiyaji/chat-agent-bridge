@@ -11,7 +11,8 @@ public sealed record PricingManagerState(bool AutoUpdateEnabled, DateTimeOffset?
 /// <summary>Maintains automatic and user-managed pricing in separate local files.</summary>
 public sealed class PricingCatalogManager : IDisposable
 {
-    public static readonly Uri UpdateEndpoint = new("https://raw.githubusercontent.com/mmiyaji/chat-agent-bridge/main/desktop/ChatAgentBridge.Core/Pricing/model-prices.json");
+    public static readonly Uri UpdateEndpoint = new("https://mmiyaji.github.io/chat-agent-bridge/pricing/models.json");
+    private static readonly Uri LegacyUpdateEndpoint = new("https://raw.githubusercontent.com/mmiyaji/chat-agent-bridge/main/desktop/ChatAgentBridge.Core/Pricing/model-prices.json");
     private static readonly TimeSpan UpdateInterval = TimeSpan.FromHours(24);
     private const int MaxAutoFileBytes = PricingCatalogCodec.MaxBytes * 8;
     private static readonly ParsedPricingCatalog Embedded = PricingCatalogCodec.Parse(PricingCatalogCodec.EmbeddedBytes());
@@ -24,6 +25,7 @@ public sealed class PricingCatalogManager : IDisposable
     private ParsedPricingCatalog _automatic;
     private List<ModelPrice> _manual = [];
     private string? _etag;
+    private Uri? _etagEndpoint;
     private bool _manualHealthy = true;
     private bool _initialized;
     private bool _disposed;
@@ -69,6 +71,7 @@ public sealed class PricingCatalogManager : IDisposable
                     {
                         _automatic = Embedded;
                         _etag = null;
+                        _etagEndpoint = null;
                         errors.Add("Cached automatic prices are older than the bundled catalog; bundled prices are in use.");
                         _state = new PricingManagerState(envelope.AutoUpdateEnabled, null, null,
                             "Cached automatic prices are older than the bundled catalog.", true);
@@ -79,6 +82,7 @@ public sealed class PricingCatalogManager : IDisposable
                         _state = new PricingManagerState(envelope.AutoUpdateEnabled, envelope.LastCheckedUtc,
                             envelope.LastUpdatedUtc, null, true);
                         _etag = envelope.ETag;
+                        _etagEndpoint = ResolveCachedEtagEndpoint(envelope.ETag, envelope.EtagEndpoint);
                     }
                 }
                 catch (Exception ex) when (IsRecoverable(ex))
@@ -141,27 +145,34 @@ public sealed class PricingCatalogManager : IDisposable
 
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(TimeSpan.FromSeconds(10));
-            using var request = new HttpRequestMessage(HttpMethod.Get, UpdateEndpoint);
-            var sentConditionalTag = false;
-            if (!string.IsNullOrWhiteSpace(_etag) && EntityTagHeaderValue.TryParse(_etag, out var tag))
-            {
-                request.Headers.IfNoneMatch.Add(tag);
-                sentConditionalTag = true;
-            }
             try
             {
-                using var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
-                if (response.StatusCode == HttpStatusCode.NotModified)
+                using var pagesRequest = CreateUpdateRequest(UpdateEndpoint, out var pagesConditionalTag);
+                using var pagesResponse = await _client.SendAsync(pagesRequest, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
+                if (pagesResponse.StatusCode == HttpStatusCode.NotFound)
                 {
-                    if (!sentConditionalTag || _state.LastUpdatedUtc is null || _automatic.CheckedOn < Embedded.CheckedOn)
-                        throw new InvalidDataException("Server returned 304 without a valid downloaded pricing cache.");
-                    _state = _state with { LastCheckedUtc = now, LastError = null };
-                    await WriteAutoFileAsync(cancellationToken).ConfigureAwait(false);
-                    shouldNotify = true;
-                    refreshed = true;
+                    using var fallbackRequest = CreateUpdateRequest(LegacyUpdateEndpoint, out var fallbackConditionalTag);
+                    using var fallbackResponse = await _client.SendAsync(fallbackRequest, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
+                    await ApplyPricingResponseAsync(fallbackResponse, LegacyUpdateEndpoint, fallbackConditionalTag).ConfigureAwait(false);
                 }
                 else
                 {
+                    await ApplyPricingResponseAsync(pagesResponse, UpdateEndpoint, pagesConditionalTag).ConfigureAwait(false);
+                }
+
+                async Task ApplyPricingResponseAsync(HttpResponseMessage response, Uri source, bool sentConditionalTag)
+                {
+                    if (response.StatusCode == HttpStatusCode.NotModified)
+                    {
+                        if (!sentConditionalTag || _etagEndpoint != source || _state.LastUpdatedUtc is null || _automatic.CheckedOn < Embedded.CheckedOn)
+                            throw new InvalidDataException("Server returned 304 without a valid downloaded pricing cache.");
+                        _state = _state with { LastCheckedUtc = now, LastError = null };
+                        await WriteAutoFileAsync(cancellationToken).ConfigureAwait(false);
+                        shouldNotify = true;
+                        refreshed = true;
+                        return;
+                    }
+
                     response.EnsureSuccessStatusCode();
                     if (response.Content.Headers.ContentLength is > PricingCatalogCodec.MaxBytes)
                         throw new InvalidDataException("Remote pricing catalog exceeds the size limit.");
@@ -171,15 +182,18 @@ public sealed class PricingCatalogManager : IDisposable
                     if (next.CheckedOn < minimumDate) throw new InvalidDataException("Remote pricing catalog is older than the installed catalog.");
                     var oldCatalog = _automatic;
                     var oldEtag = _etag;
+                    var oldEtagEndpoint = _etagEndpoint;
                     var oldState = _state;
                     _automatic = next;
                     _etag = response.Headers.ETag?.ToString();
+                    _etagEndpoint = _etag is null ? null : source;
                     _state = _state with { LastCheckedUtc = now, LastUpdatedUtc = now, LastError = null };
                     try { await WriteAutoFileAsync(cancellationToken).ConfigureAwait(false); }
                     catch
                     {
                         _automatic = oldCatalog;
                         _etag = oldEtag;
+                        _etagEndpoint = oldEtagEndpoint;
                         _state = oldState;
                         throw;
                     }
@@ -279,7 +293,10 @@ public sealed class PricingCatalogManager : IDisposable
         var checkedAt = Date(root, "lastCheckedUtc");
         var updatedAt = Date(root, "lastUpdatedUtc");
         return new AutoFile(1, Get(root, "autoUpdateEnabled").ValueKind == JsonValueKind.True,
-            checkedAt, updatedAt, GetString(root, "etag"), parsed.Json);
+            checkedAt, updatedAt, GetString(root, "etag") ?? GetString(root, "eTag"), parsed.Json)
+        {
+            EtagEndpoint = GetString(root, "etagEndpoint")
+        };
     }
 
     private async Task<List<ModelPrice>> ReadManualFileAsync(CancellationToken token)
@@ -335,7 +352,10 @@ public sealed class PricingCatalogManager : IDisposable
 
     private async Task WriteAutoFileAsync(CancellationToken token)
     {
-        var content = new AutoFile(1, _state.AutoUpdateEnabled, _state.LastCheckedUtc, _state.LastUpdatedUtc, _etag, _automatic.Json);
+        var content = new AutoFile(1, _state.AutoUpdateEnabled, _state.LastCheckedUtc, _state.LastUpdatedUtc, _etag, _automatic.Json)
+        {
+            EtagEndpoint = _etagEndpoint?.AbsoluteUri
+        };
         await AtomicWriteAsync(AutomaticFilePath, JsonSerializer.SerializeToUtf8Bytes(content, JsonOptions), token).ConfigureAwait(false);
     }
 
@@ -448,6 +468,29 @@ public sealed class PricingCatalogManager : IDisposable
         return new PricingRate(min, max);
     }
 
-    private sealed record AutoFile(int SchemaVersion, bool AutoUpdateEnabled, DateTimeOffset? LastCheckedUtc, DateTimeOffset? LastUpdatedUtc, string? ETag, string CatalogJson);
+    private HttpRequestMessage CreateUpdateRequest(Uri endpoint, out bool sentConditionalTag)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+        sentConditionalTag = false;
+        if (_etagEndpoint == endpoint && !string.IsNullOrWhiteSpace(_etag) && EntityTagHeaderValue.TryParse(_etag, out var tag))
+        {
+            request.Headers.IfNoneMatch.Add(tag);
+            sentConditionalTag = true;
+        }
+        return request;
+    }
+
+    private static Uri? ResolveCachedEtagEndpoint(string? etag, string? endpoint)
+    {
+        if (string.IsNullOrWhiteSpace(etag)) return null;
+        if (string.IsNullOrWhiteSpace(endpoint)) return LegacyUpdateEndpoint; // Pre-Pages caches only used the raw GitHub URL.
+        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var parsed)) return null;
+        return parsed == UpdateEndpoint || parsed == LegacyUpdateEndpoint ? parsed : null;
+    }
+
+    private sealed record AutoFile(int SchemaVersion, bool AutoUpdateEnabled, DateTimeOffset? LastCheckedUtc, DateTimeOffset? LastUpdatedUtc, string? ETag, string CatalogJson)
+    {
+        public string? EtagEndpoint { get; init; }
+    }
     private sealed record ManualFile(int SchemaVersion, IReadOnlyList<ModelPrice> Models);
 }

@@ -8,9 +8,11 @@ namespace ChatAgentBridge.Core.Updates;
 
 public sealed record PortableRelease(string Version, string Tag, string AssetName, Uri DownloadUri, string Sha256, long Size, Uri ReleasePage);
 
-/// <summary>Reads the fixed public GitHub release feed and downloads verified portable ZIPs.</summary>
+/// <summary>Reads the fixed public Pages release feed and downloads verified portable ZIPs.</summary>
 public sealed class PortableReleaseClient : IDisposable
 {
+    public static readonly Uri StableFeedUri = new("https://mmiyaji.github.io/chat-agent-bridge/updates/stable.json");
+    public static readonly Uri PreviewFeedUri = new("https://mmiyaji.github.io/chat-agent-bridge/updates/preview.json");
     private static readonly Uri ApiUri = new("https://api.github.com/repos/mmiyaji/chat-agent-bridge/releases?per_page=100");
     private static readonly Uri ReleasesRoot = new("https://github.com/mmiyaji/chat-agent-bridge/releases/");
     private const int MaxApiBytes = 2 * 1024 * 1024;
@@ -38,17 +40,45 @@ public sealed class PortableReleaseClient : IDisposable
         var suffix = architecture.ToLowerInvariant() switch { "x64" or "amd64" => "win-x64", "arm64" or "aarch64" => "win-arm64", _ => throw new ArgumentException("Architecture must be x64 or arm64.", nameof(architecture)) };
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(20));
-        using var request = new HttpRequestMessage(HttpMethod.Get, ApiUri);
+        var feedUri = includePrereleases ? PreviewFeedUri : StableFeedUri;
+        using var request = new HttpRequestMessage(HttpMethod.Get, feedUri);
         using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            using var fallbackRequest = new HttpRequestMessage(HttpMethod.Get, ApiUri);
+            using var fallbackResponse = await _http.SendAsync(fallbackRequest, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
+            return await ParseReleaseResponseAsync(fallbackResponse, isPagesEnvelope: false, includePrereleases, current, suffix, timeout.Token).ConfigureAwait(false);
+        }
+        return await ParseReleaseResponseAsync(response, isPagesEnvelope: true, includePrereleases, current, suffix, timeout.Token).ConfigureAwait(false);
+    }
+
+    private static async Task<PortableRelease?> ParseReleaseResponseAsync(HttpResponseMessage response, bool isPagesEnvelope,
+        bool includePrereleases, ReleaseVersion current, string suffix, CancellationToken cancellationToken)
+    {
         response.EnsureSuccessStatusCode();
-        if (response.Content.Headers.ContentLength is > MaxApiBytes) throw new InvalidDataException("GitHub release response exceeds 2 MB.");
-        await using var body = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
-        var json = await ReadBoundedAsync(body, MaxApiBytes, timeout.Token).ConfigureAwait(false);
+        if (response.Content.Headers.ContentLength is > MaxApiBytes) throw new InvalidDataException("Release feed response exceeds 2 MB.");
+        await using var body = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        var json = await ReadBoundedAsync(body, MaxApiBytes, cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(json);
-        if (document.RootElement.ValueKind != JsonValueKind.Array) throw new InvalidDataException("GitHub release response is not an array.");
+        var root = document.RootElement;
+        JsonElement releases;
+        if (isPagesEnvelope)
+        {
+            var expectedChannel = includePrereleases ? "preview" : "stable";
+            if (root.ValueKind != JsonValueKind.Object ||
+                !root.TryGetProperty("schemaVersion", out var schema) || schema.ValueKind != JsonValueKind.Number || !schema.TryGetInt32(out var schemaVersion) || schemaVersion != 1 ||
+                !root.TryGetProperty("channel", out var channel) || channel.ValueKind != JsonValueKind.String || !string.Equals(channel.GetString(), expectedChannel, StringComparison.Ordinal) ||
+                !root.TryGetProperty("releases", out releases) || releases.ValueKind != JsonValueKind.Array)
+                throw new InvalidDataException("Pages release feed schema or channel is invalid.");
+        }
+        else
+        {
+            releases = root;
+            if (releases.ValueKind != JsonValueKind.Array) throw new InvalidDataException("GitHub release response is not an array.");
+        }
         PortableRelease? best = null;
         ReleaseVersion bestVersion = default;
-        foreach (var release in document.RootElement.EnumerateArray())
+        foreach (var release in releases.EnumerateArray())
         {
             if (!release.TryGetProperty("draft", out var draft) || draft.ValueKind != JsonValueKind.False) continue;
             if (!release.TryGetProperty("tag_name", out var tagElement) || tagElement.ValueKind != JsonValueKind.String) continue;

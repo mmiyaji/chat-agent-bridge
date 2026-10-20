@@ -9,6 +9,8 @@ namespace ChatAgentBridge_Desktop.Deployment;
 internal static class PortableUpdateTestFeed
 {
     private const string FeedUrl = "https://api.github.com/repos/mmiyaji/chat-agent-bridge/releases?per_page=100";
+    private const string StablePagesFeedUrl = "https://mmiyaji.github.io/chat-agent-bridge/updates/stable.json";
+    private const string PreviewPagesFeedUrl = "https://mmiyaji.github.io/chat-agent-bridge/updates/preview.json";
     private const string AssetPrefix = "https://github.com/mmiyaji/chat-agent-bridge/releases/download/";
     private const int MaxApiBytes = 2 * 1024 * 1024;
     private const long MaxAssetBytes = 1024L * 1024 * 1024;
@@ -103,6 +105,10 @@ internal static class PortableUpdateTestFeed
         private HttpResponseMessage CreateResponse(HttpRequestMessage request)
         {
             if (request.Method != HttpMethod.Get || request.RequestUri is not { } uri || !IsPlainHttpsUri(uri))
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+
+            if (uri.AbsoluteUri.Equals(StablePagesFeedUrl, StringComparison.Ordinal) ||
+                uri.AbsoluteUri.Equals(PreviewPagesFeedUrl, StringComparison.Ordinal))
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
 
             if (uri.AbsoluteUri.Equals(FeedUrl, StringComparison.Ordinal))

@@ -116,6 +116,79 @@ public sealed class PricingCatalogManagerTests
     }
 
     [Fact]
+    public async Task PricingPages404FallsBackToRawFeedAndKeepsEtagsScopedToTheirSourceAcrossReloads()
+    {
+        using var folder = new TempFolder();
+        var firstHandler = new QueueHandler(
+            _ => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(Catalog("2026-10-21", 7), Encoding.UTF8, "application/json"),
+                Headers = { ETag = new EntityTagHeaderValue("\"pages-v1\"") }
+            },
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound),
+            request =>
+            {
+                Assert.Equal("https://raw.githubusercontent.com/mmiyaji/chat-agent-bridge/main/desktop/ChatAgentBridge.Core/Pricing/model-prices.json", request.RequestUri!.AbsoluteUri);
+                Assert.Empty(request.Headers.IfNoneMatch);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(Catalog("2026-10-22", 8), Encoding.UTF8, "application/json"),
+                    Headers = { ETag = new EntityTagHeaderValue("\"raw-v1\"") }
+                };
+            });
+        using (var manager = new PricingCatalogManager(new SettingsStore(folder.Path), new HttpClient(firstHandler), new FakeClock()))
+        {
+            await manager.InitializeAsync();
+            Assert.True(await manager.RefreshAsync(force: true));
+            Assert.True(await manager.RefreshAsync(force: true));
+            Assert.Equal(PricingCatalogManager.UpdateEndpoint, firstHandler.Requests[0].RequestUri);
+            Assert.Equal(PricingCatalogManager.UpdateEndpoint, firstHandler.Requests[1].RequestUri);
+            Assert.Equal(3, firstHandler.Requests.Count);
+            var cachedEnvelope = await File.ReadAllTextAsync(manager.AutomaticFilePath);
+            using var cachedJson = JsonDocument.Parse(cachedEnvelope);
+            Assert.Equal("\"raw-v1\"", (cachedJson.RootElement.TryGetProperty("etag", out var etag) ? etag : cachedJson.RootElement.GetProperty("eTag")).GetString());
+            Assert.Equal("https://raw.githubusercontent.com/mmiyaji/chat-agent-bridge/main/desktop/ChatAgentBridge.Core/Pricing/model-prices.json",
+                cachedJson.RootElement.GetProperty("etagEndpoint").GetString());
+        }
+
+        var reloadHandler = new QueueHandler(
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound),
+            request =>
+            {
+                Assert.Equal("https://raw.githubusercontent.com/mmiyaji/chat-agent-bridge/main/desktop/ChatAgentBridge.Core/Pricing/model-prices.json", request.RequestUri!.AbsoluteUri);
+                Assert.Contains(request.Headers.IfNoneMatch, tag => tag.Tag == "\"raw-v1\"");
+                return new HttpResponseMessage(HttpStatusCode.NotModified);
+            });
+        using var reload = new PricingCatalogManager(new SettingsStore(folder.Path), new HttpClient(reloadHandler), new FakeClock());
+        await reload.InitializeAsync();
+
+        Assert.True(await reload.RefreshAsync(force: true));
+        Assert.Equal(2, reloadHandler.Requests.Count);
+        Assert.Equal(PricingCatalogManager.UpdateEndpoint, reloadHandler.Requests[0].RequestUri);
+        Assert.Equal(new PricingRate(8, 8), Assert.Single(reload.Current.AutomaticPrices, x => x.Model == "sample-model").Input);
+    }
+
+    [Fact]
+    public async Task PricingPagesErrorsDoNotFallbackOrReplaceCachedPrices()
+    {
+        using var folder = new TempFolder();
+        var handler = new QueueHandler(
+            _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(Catalog("2026-10-21", 7)) },
+            _ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable),
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound));
+        using var manager = new PricingCatalogManager(new SettingsStore(folder.Path), new HttpClient(handler), new FakeClock());
+        await manager.InitializeAsync();
+        Assert.True(await manager.RefreshAsync(force: true));
+        var cachedPrice = Assert.Single(manager.Current.AutomaticPrices, x => x.Model == "sample-model").Input;
+
+        Assert.False(await manager.RefreshAsync(force: true));
+
+        Assert.Equal(cachedPrice, Assert.Single(manager.Current.AutomaticPrices, x => x.Model == "sample-model").Input);
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.All(handler.Requests, request => Assert.Equal(PricingCatalogManager.UpdateEndpoint, request.RequestUri));
+    }
+
+    [Fact]
     public async Task FailuresAreThrottledAndMalformedOrOversizedPayloadKeepsCachedPrices()
     {
         using var folder = new TempFolder();
