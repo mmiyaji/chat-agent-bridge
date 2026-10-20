@@ -53,6 +53,7 @@ public sealed partial class AboutPage : Page
         StorePageButton.IsEnabled = _isStorePackage;
         CheckUpdatesButton.IsEnabled = _isStorePackage;
         StoreUpdateCard.Visibility = DeploymentRuntime.IsPortable ? Visibility.Collapsed : Visibility.Visible;
+        PackageReleaseNotesLink.Visibility = DeploymentRuntime.IsPortable ? Visibility.Collapsed : Visibility.Visible;
     }
 
     public void ResetScroll() => DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
@@ -108,37 +109,6 @@ public sealed partial class AboutPage : Page
             _storeCheckInProgress = false;
             CheckUpdatesButton.IsEnabled = _isStorePackage;
         }
-    }
-
-    private async void Changelog_Click(object sender, RoutedEventArgs e)
-    {
-        if (_dialogOpen) return;
-        _dialogOpen = true;
-        try
-        {
-            var dialog = new ContentDialog
-            {
-                XamlRoot = XamlRoot,
-                RequestedTheme = App.Appearance.RequestedTheme,
-                Title = DesktopText.Get("AboutChangelogTitle"),
-                Content = new ScrollViewer
-                {
-                    MaxHeight = Math.Max(160, Math.Min(480, XamlRoot.Size.Height - 240)),
-                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    Content = new TextBlock
-                    {
-                        Text = DesktopText.Get("AboutChangelogContent"),
-                        TextWrapping = TextWrapping.Wrap,
-                        IsTextSelectionEnabled = true
-                    }
-                },
-                CloseButtonText = DesktopText.Get("Close"),
-                DefaultButton = ContentDialogButton.Close
-            };
-            AutomationProperties.SetAutomationId(dialog, "AboutChangelogDialog");
-            await dialog.ShowAsync();
-        }
-        finally { _dialogOpen = false; }
     }
 
     private async void Terms_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: false);

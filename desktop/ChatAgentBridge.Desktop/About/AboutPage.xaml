@@ -67,10 +67,9 @@
 
                 <deployment:PortableUpdateControl />
 
-                <settings:SettingsCard x:Uid="AboutChangelog" IsClickEnabled="True" Click="Changelog_Click"
-                                       AutomationProperties.AutomationId="AboutChangelog">
-                    <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE8A5;" /></settings:SettingsCard.HeaderIcon>
-                </settings:SettingsCard>
+                <HyperlinkButton x:Name="PackageReleaseNotesLink" x:Uid="PortableUpdateReleaseNotes"
+                                 NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/releases"
+                                 HorizontalAlignment="Left" AutomationProperties.AutomationId="AboutReleaseNotes" />
 
                 <TextBlock x:Uid="AboutLinksHeading" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,0" />
                 <settings:SettingsCard x:Uid="AboutWebsite" IsClickEnabled="True" Click="OpenLink_Click"

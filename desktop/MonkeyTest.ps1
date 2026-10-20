@@ -205,16 +205,9 @@ function Set-Theme([string]$ThemeId) {
 }
 function Exercise-AboutDialog([string]$Kind) {
     Open-Page 'NavAbout' 'AboutProduct'
-    $button = @{changelog='AboutChangelog';terms='AboutTerms';privacy='AboutPrivacy';'exit-cancel'='AboutExit'}[$Kind]
+    $button = @{terms='AboutTerms';privacy='AboutPrivacy';'exit-cancel'='AboutExit'}[$Kind]
     if ($button) { [void](Invoke-UI @('ui', 'scroll-into-view', $button)) }
     switch ($Kind) {
-        'changelog' {
-            [void](Invoke-UI @('ui', 'invoke', 'AboutChangelog'))
-            Wait-UI 'AboutChangelogDialog'
-            Wait-UI 'CloseButton' '' 5000
-            [void](Invoke-UI @('ui', 'invoke', 'CloseButton'))
-            Wait-UI 'AboutChangelogDialog' '' 5000 -Gone
-        }
         'terms' {
             [void](Invoke-UI @('ui', 'invoke', 'AboutTerms'))
             Wait-UI 'PolicyDialog'
@@ -393,7 +386,7 @@ $categoryNames = @{
         }
         Go-Overview
         Set-Theme 'ThemeSystem'
-        foreach ($kind in (@('changelog', 'terms', 'privacy', 'exit-cancel') | Sort-Object { $rng.Next() })) {
+        foreach ($kind in (@('terms', 'privacy', 'exit-cancel') | Sort-Object { $rng.Next() })) {
             Exercise-AboutDialog $kind
             $script:currentCoverage.aboutDialogs[$kind] = 1 + [int]$script:currentCoverage.aboutDialogs[$kind]
         }
@@ -577,7 +570,7 @@ $categoryNames = @{
                         $coverage.scrolls = 1 + [int]$coverage.scrolls
                     }
                     10 {
-                        $kind = @('changelog', 'terms', 'privacy', 'exit-cancel')[$rng.Next(4)]
+                        $kind = @('terms', 'privacy', 'exit-cancel')[$rng.Next(3)]
                         Exercise-AboutDialog $kind
                         $script:currentCoverage.aboutDialogs[$kind] = 1 + [int]$script:currentCoverage.aboutDialogs[$kind]
                         $detail = "About dialog=$kind (safe close)"
@@ -634,7 +627,7 @@ $categoryNames = @{
             if (($i % 20) -eq 0) { Write-Output "seed=$seed action=$i/$ActionsPerSeed failures=$($failures.Count)" }
         }
         foreach ($target in $targets) { if (-not $script:currentCoverage.pages[$target.name]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="Page not exercised: $($target.name)" }) } }
-        foreach ($kind in @('changelog', 'terms', 'privacy', 'exit-cancel')) { if (-not $script:currentCoverage.aboutDialogs[$kind]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="About dialog not exercised: $kind" }) } }
+        foreach ($kind in @('terms', 'privacy', 'exit-cancel')) { if (-not $script:currentCoverage.aboutDialogs[$kind]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="About dialog not exercised: $kind" }) } }
         foreach ($themeId in @('ThemeSystem', 'ThemeLight', 'ThemeDark')) { if (-not $script:currentCoverage.themes[$themeId]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="Theme not exercised: $themeId" }) } }
         foreach ($policyKind in @('inference', 'permission', 'approval', 'result')) { if (-not $script:currentCoverage.policies[$policyKind]) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error="Policy control not exercised: $policyKind" }) } }
         if (-not $script:currentCoverage.detailsInteractions) { $failures.Add(@{ seed=$seed; index=$ActionsPerSeed; category='coverage'; error='Overview details collapse/expand persistence was not exercised.' }) }

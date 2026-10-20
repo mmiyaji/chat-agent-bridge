@@ -841,7 +841,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AboutCheckUpdates.Content" xml:space="preserve"><value>Check for updates</value></data>
   <data name="AboutLegalHeading.Text" xml:space="preserve"><value>Terms and privacy</value></data>
   <data name="AboutDataHandling.Text" xml:space="preserve"><value>This app exchanges messages with Slack or Mattermost and your configured agent CLI. The CLI may send prompts and related data to its AI service according to that service’s settings.</value></data>
-  <data name="AboutChangelog.Header" xml:space="preserve"><value>What's new</value></data>
   <data name="AboutTerms.Header" xml:space="preserve"><value>Terms of use</value></data>
   <data name="AboutPrivacy.Header" xml:space="preserve"><value>Privacy policy</value></data>
   <data name="AboutExit.Content" xml:space="preserve"><value>Exit application</value></data>
@@ -1099,7 +1098,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PortableUpdatePrereleasesHelp.Text" xml:space="preserve"><value>Include preview versions when checking for updates.</value></data>
   <data name="PortableUpdatePreferences.Header" xml:space="preserve"><value>Update settings</value></data>
   <data name="PortableUpdatePreferences.Description" xml:space="preserve"><value>Automatic checks and preview releases</value></data>
-  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>View release notes</value></data>
+  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>Release notes (GitHub)</value></data>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLI check failed</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Start this app when signing in to Windows</value></data>
   <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Chat to connect automatically when the app starts</value></data>

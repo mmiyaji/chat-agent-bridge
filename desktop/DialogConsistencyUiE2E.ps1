@@ -99,8 +99,7 @@ try{
             }
             Go 'NavWorkbench';UI @('set-value','Prompt','Dialog fixture: never execute')|Out-Null;Scroll 'RunAgent';UI @('invoke','RunAgent')|Out-Null
             Dismiss 'RunConfirmation' 2 "$width-run"
-            Go 'NavAbout';Scroll 'AboutChangelog';UI @('invoke','AboutChangelog')|Out-Null
-            Dismiss 'AboutChangelogDialog' 1 "$width-changelog"
+            Go 'NavAbout'
             Scroll 'AboutExit';UI @('invoke','AboutExit')|Out-Null
             Dismiss 'AboutExitConfirmation' 2 "$width-about-exit"
             [void][DialogConsistencyNative]::PostMessageW($window,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)

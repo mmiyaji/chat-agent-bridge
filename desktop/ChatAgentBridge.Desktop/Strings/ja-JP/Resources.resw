@@ -841,7 +841,6 @@
   <data name="AboutCheckUpdates.Content" xml:space="preserve"><value>更新を確認</value></data>
   <data name="AboutLegalHeading.Text" xml:space="preserve"><value>利用規約とプライバシー</value></data>
   <data name="AboutDataHandling.Text" xml:space="preserve"><value>このアプリは Slack または Mattermost と、設定済みのエージェント CLI との間でメッセージをやり取りします。CLI は、そのサービスの設定に従ってプロンプトや関連データを AI サービスへ送信する場合があります。</value></data>
-  <data name="AboutChangelog.Header" xml:space="preserve"><value>更新内容</value></data>
   <data name="AboutTerms.Header" xml:space="preserve"><value>利用規約</value></data>
   <data name="AboutPrivacy.Header" xml:space="preserve"><value>プライバシーポリシー</value></data>
   <data name="AboutExit.Content" xml:space="preserve"><value>アプリを終了</value></data>
@@ -1099,7 +1098,7 @@
   <data name="PortableUpdatePrereleasesHelp.Text" xml:space="preserve"><value>更新の確認時にプレビュー版も含めます。</value></data>
   <data name="PortableUpdatePreferences.Header" xml:space="preserve"><value>更新の設定</value></data>
   <data name="PortableUpdatePreferences.Description" xml:space="preserve"><value>自動確認・プレビュー版</value></data>
-  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>更新内容を見る</value></data>
+  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>リリースノート（GitHub）</value></data>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLIを確認できませんでした</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Windowsログイン時にこのアプリを起動</value></data>
   <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>アプリ起動後に自動接続するチャット</value></data>
