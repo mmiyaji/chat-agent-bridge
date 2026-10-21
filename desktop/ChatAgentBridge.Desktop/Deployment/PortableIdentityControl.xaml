@@ -1,0 +1,55 @@
+<UserControl
+    x:Class="ChatAgentBridge_Desktop.Deployment.PortableIdentityControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:settings="using:CommunityToolkit.WinUI.Controls"
+    xmlns:layout="using:ChatAgentBridge_Desktop.Layout">
+    <StackPanel x:Name="PortableIdentityRoot" Spacing="8" AutomationProperties.AutomationId="PortableIdentityControl">
+        <settings:SettingsExpander x:Name="IdentityExpander" x:Uid="PortableIdentityHeading" IsExpanded="False"
+                                   AutomationProperties.AutomationId="PortableIdentityExpander">
+            <settings:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE72E;" />
+            </settings:SettingsExpander.HeaderIcon>
+            <settings:SettingsExpander.Items>
+                <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="PortableIdentityStateCard">
+                    <settings:SettingsCard.Header>
+                        <TextBlock x:Name="StateHeading" x:Uid="PortableIdentityStateHeading"
+                                   AutomationProperties.AutomationId="PortableIdentityStateHeading" />
+                    </settings:SettingsCard.Header>
+                    <settings:SettingsCard.Description>
+                        <StackPanel Spacing="6">
+                            <InfoBar x:Name="StatusInfoBar" IsOpen="True" IsClosable="False"
+                                     AutomationProperties.AutomationId="PortableIdentityStatus"
+                                     AutomationProperties.LiveSetting="Polite" />
+                            <TextBlock x:Name="IdentityDetails" TextWrapping="Wrap"
+                                       AutomationProperties.AutomationId="PortableIdentityDetails" />
+                            <ProgressRing x:Name="OperationProgress" Width="20" Height="20" IsActive="False"
+                                          Visibility="Collapsed" AutomationProperties.AutomationId="PortableIdentityProgress" />
+                        </StackPanel>
+                    </settings:SettingsCard.Description>
+                </settings:SettingsCard>
+                <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="PortableIdentityActionsCard">
+                    <settings:SettingsCard.Header>
+                        <TextBlock x:Name="ActionsHeading" x:Uid="PortableIdentityActionsHeading"
+                                   AutomationProperties.AutomationId="PortableIdentityActionsHeading" />
+                    </settings:SettingsCard.Header>
+                    <settings:SettingsCard.Description>
+                        <TextBlock x:Name="RestartHelp" TextWrapping="Wrap"
+                                   AutomationProperties.AutomationId="PortableIdentityRestartHelp" />
+                    </settings:SettingsCard.Description>
+                    <StackPanel Spacing="8">
+                        <Button x:Name="ConfigureButton" x:Uid="PortableIdentityConfigure"
+                                AutomationProperties.AutomationId="PortableIdentityConfigure"
+                                Click="Configure_Click" />
+                        <Button x:Name="RemoveButton" x:Uid="PortableIdentityRemove"
+                                AutomationProperties.AutomationId="PortableIdentityRemove"
+                                Click="Remove_Click" />
+                        <Button x:Name="RefreshButton" x:Uid="PortableIdentityRefresh"
+                                AutomationProperties.AutomationId="PortableIdentityRefresh"
+                                Click="Refresh_Click" />
+                    </StackPanel>
+                </settings:SettingsCard>
+            </settings:SettingsExpander.Items>
+        </settings:SettingsExpander>
+    </StackPanel>
+</UserControl>

@@ -2,7 +2,15 @@ using ChatAgentBridge.Core.Updates;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using ChatAgentBridge.Core.Deployment;
 
+if (OperatingSystem.IsWindows() && args.Length == 2 && args[0] == "--validate-identity-bundle")
+{
+    try { PortableIdentityBundle.LoadValidated(args[1]); return 0; }
+    catch { return 1; }
+}
+if (OperatingSystem.IsWindows() && args.Length == 4 && args[0] == "--configure-identity" && args[2] == "--nonce")
+    return await PortableIdentitySetupRunner.RunAsync(args[1], args[3]);
 if (!OperatingSystem.IsWindows() || args.Length != 4 || args[0] != "--apply" || args[2] != "--nonce") return 2;
 PortableUpdatePlan? plan = null;
 var parentHasExited = false;

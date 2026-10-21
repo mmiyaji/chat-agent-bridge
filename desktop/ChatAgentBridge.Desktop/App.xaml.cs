@@ -39,6 +39,7 @@ public partial class App : Application
     public static PricingCatalogManager Pricing { get; private set; } = null!;
     public static Tray.TrayService Tray { get; private set; } = null!;
     public static PortableUpdateCoordinator PortableUpdates { get; private set; } = null!;
+    public static PortableIdentityCoordinator PortableIdentity { get; private set; } = null!;
     private readonly CancellationTokenSource _pricingLifetime = new();
     private readonly CancellationTokenSource _portableUpdateLifetime = new();
     private FileStream? _portableLease;
@@ -127,6 +128,7 @@ public partial class App : Application
         PendingRequestNotifications = new PendingRequestNotificationService(DispatcherQueue);
         PendingRequestNotifications.Initialize();
         PortableUpdates = new(dataDirectory, _portableLease is not null);
+        PortableIdentity = new(dataDirectory, _portableLease is not null);
         if (DeploymentRuntime.IsPortable) await PortableUpdates.InitializeAsync();
 
         var backgroundStore = new ChatAgentBridge.Core.BackgroundPreferencesStore(new ChatAgentBridge.Core.SettingsStore());

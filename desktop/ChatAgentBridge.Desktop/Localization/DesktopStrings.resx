@@ -668,4 +668,44 @@ After: {2}</value></data>
   <data name="SettingsReviewEmpty" xml:space="preserve"><value>Not set</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>Model candidates cannot be fetched for this CLI. Enter a model ID or alias supported by your CLI and account, or leave it blank for the CLI default. Model access is checked when you run a request; reasoning and permissions follow the CLI configuration.</value></data>
   <data name="ChatModelManualEntry" xml:space="preserve"><value>This CLI cannot return model candidates. Use !cab model MODEL_ID with an ID or alias supported by your CLI and account, or !cab model default to follow agent settings. Access is checked when you run a request.</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows notifications</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>If Windows notifications do not appear, configure this Windows user only. Standard notifications continue to work without this optional setup.</value></data>
+  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>Status</value></data>
+  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>Windows notifications</value></data>
+  <data name="PortableIdentityPublisher" xml:space="preserve"><value>Publisher: {0}</value></data>
+  <data name="PortableIdentityFingerprint" xml:space="preserve"><value>Certificate SHA-256: {0}</value></data>
+  <data name="PortableIdentityRegisteredLocation" xml:space="preserve"><value>Registered location: {0}</value></data>
+  <data name="PortableIdentityRegistered" xml:space="preserve"><value>This folder is registered with Windows.</value></data>
+  <data name="PortableIdentityNotRegistered" xml:space="preserve"><value>This folder is not registered with Windows.</value></data>
+  <data name="PortableIdentityActive" xml:space="preserve"><value>Notification registration is active.</value></data>
+  <data name="PortableIdentityInactive" xml:space="preserve"><value>Notification registration is not active for this process.</value></data>
+  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>Setup and removal run after the app closes, then restart it. Your data folder and portable updater stay in place.</value></data>
+  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>Optional setup</value></data>
+  <data name="PortableIdentityConfigure" xml:space="preserve"><value>Set up Windows notifications and restart</value></data>
+  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>Update registration and restart</value></data>
+  <data name="PortableIdentityRemove" xml:space="preserve"><value>Remove registration and restart</value></data>
+  <data name="PortableIdentityRefresh" xml:space="preserve"><value>Refresh status</value></data>
+  <data name="PortableIdentityConfigureTitle" xml:space="preserve"><value>Set up Windows notifications?</value></data>
+  <data name="PortableIdentityConfigureRestart" xml:space="preserve"><value>The app will close and restart to register this portable folder with Windows. Your settings and updater stay in place.</value></data>
+  <data name="PortableIdentityTrustConsent" xml:space="preserve"><value>I trust this certificate from {0}. Add it to Trusted People for this Windows user. Other packages signed by this certificate may also be trusted. No administrator rights are requested.</value></data>
+  <data name="PortableIdentityRelocationWarning" xml:space="preserve"><value>This notification registration is linked to another folder: {0}. Updating it will move the link to this folder.</value></data>
+  <data name="PortableIdentityRelocationConsent" xml:space="preserve"><value>I explicitly allow moving the notification registration to this portable folder.</value></data>
+  <data name="PortableIdentityConfigurePrimary" xml:space="preserve"><value>Set up and restart</value></data>
+  <data name="PortableIdentityRemoveTitle" xml:space="preserve"><value>Remove Windows notification registration?</value></data>
+  <data name="PortableIdentityRemoveMessage" xml:space="preserve"><value>The app will close and restart after removing only Chat Agent Bridge's registration for this Windows user.</value></data>
+  <data name="PortableIdentityRemoveRetained" xml:space="preserve"><value>Any certificate trust remains in Windows for this user. Your settings and portable updater are unchanged.</value></data>
+  <data name="PortableIdentityRemovePrimary" xml:space="preserve"><value>Remove registration and restart</value></data>
+  <data name="PortableIdentityUnsupported" xml:space="preserve"><value>Optional Windows notification setup requires Windows 10 version 2004 or later.</value></data>
+  <data name="PortableIdentityMissingBundle" xml:space="preserve"><value>The signed notification package is not included in this build.</value></data>
+  <data name="PortableIdentityInvalidBundle" xml:space="preserve"><value>The notification package could not be verified. Re-extract an official build.</value></data>
+  <data name="PortableIdentityRegisteredRestart" xml:space="preserve"><value>Registered. Restart the app to enable Windows notifications.</value></data>
+  <data name="PortableIdentityOtherLocationStatus" xml:space="preserve"><value>This identity is registered at another folder: {0}</value></data>
+  <data name="PortableIdentityReady" xml:space="preserve"><value>Windows notifications are not configured.</value></data>
+  <data name="PortableIdentityTrustRequiredStatus" xml:space="preserve"><value>Review the publisher certificate to enable notifications for this Windows user.</value></data>
+  <data name="PortableIdentityChecking" xml:space="preserve"><value>Checking notification package status…</value></data>
+  <data name="PortableIdentityBusyWork" xml:space="preserve"><value>Finish active work, approvals, or settings changes before changing notifications.</value></data>
+  <data name="PortableIdentityHelperMissing" xml:space="preserve"><value>The portable updater helper is missing. Re-extract an official build.</value></data>
+  <data name="PortableIdentityStarting" xml:space="preserve"><value>Closing the app to configure notifications. It will restart automatically.</value></data>
+  <data name="PortableIdentityFailed" xml:space="preserve"><value>Could not configure notifications (HRESULT {0}).</value></data>
+  <data name="PortableIdentityLastFailed" xml:space="preserve"><value>The last notification setup did not complete (HRESULT {0}).</value></data>
 </root>

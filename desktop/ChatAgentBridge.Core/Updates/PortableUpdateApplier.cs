@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ChatAgentBridge.Core.Deployment;
 
 namespace ChatAgentBridge.Core.Updates;
 
@@ -18,6 +19,10 @@ public sealed class PortableUpdateApplier(IPortableApplicationStarter starter)
     public static async Task ValidateStagingAsync(PortableUpdatePlan plan, CancellationToken cancellationToken = default)
     {
         plan.Validate();
+        PortableArchiveStager.ValidateIdentityFileNames(plan.Files.Keys);
+        var installedIdentity = PortableUpdatePaths.Resolve(plan.InstallDirectory, "Identity/" + PortableIdentityBundle.MetadataFileName);
+        if (File.Exists(installedIdentity) && !plan.Files.ContainsKey("Identity/" + PortableIdentityBundle.MetadataFileName))
+            throw new InvalidDataException("This update would remove the portable notification identity bundle.");
         foreach (var (relative, hash) in plan.Files)
         {
             var source = PortableUpdatePaths.Resolve(plan.StagingDirectory, relative);
@@ -31,6 +36,7 @@ public sealed class PortableUpdateApplier(IPortableApplicationStarter starter)
         var listed = await ReadManagedFilesAsync(plan.StagingDirectory, cancellationToken);
         if (listed is null || !listed.SetEquals(plan.Files.Keys))
             throw new InvalidDataException("Staged update file list does not match.");
+        if (plan.Files.Keys.Any(PortableArchiveStager.IsIdentityPath)) PortableIdentityBundle.LoadValidated(plan.StagingDirectory);
     }
 
     public async Task<PortableUpdateResult> ApplyAsync(PortableUpdatePlan plan, CancellationToken cancellationToken = default)

@@ -14,6 +14,7 @@
     xmlns:settings="using:CommunityToolkit.WinUI.Controls"
     xmlns:layout="using:ChatAgentBridge_Desktop.Layout"
     xmlns:tray="using:ChatAgentBridge_Desktop.Tray"
+    xmlns:deployment="using:ChatAgentBridge_Desktop.Deployment"
     xmlns:diagrams="using:ChatAgentBridge_Desktop.Diagrams"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
@@ -190,6 +191,7 @@
                                     <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="SaveGeneralSettingsHelp" x:Uid="SaveGeneralSettingsHelp" />
                                 </StackPanel>
                                 <tray:TraySettingsControl />
+                                <deployment:PortableIdentityControl />
                                 <StackPanel x:Name="GeneralAppearanceSection" Spacing="12" AutomationProperties.AutomationId="GeneralAppearanceSection">
                                     <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="GeneralAppearanceSectionHeading" x:Uid="GeneralAppearanceSectionHeading" />
                                     <localization:LanguageSettings x:Name="SettingsLanguage" AutomationProperties.AutomationId="LanguageCard" />

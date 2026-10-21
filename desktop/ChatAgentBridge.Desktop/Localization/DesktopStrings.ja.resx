@@ -668,4 +668,44 @@
   <data name="SettingsReviewEmpty" xml:space="preserve"><value>未設定</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>このCLIではモデル候補を取得できません。CLIと契約が対応するモデルID・別名を直接入力するか、空欄でCLIの既定モデルを使ってください。モデルの利用可否は実行時に確認されます。推論と操作権限はCLIの設定に従います。</value></data>
   <data name="ChatModelManualEntry" xml:space="preserve"><value>このCLIではモデル候補を取得できません。!cab model モデル名 で、CLIと契約が対応するモデルID・別名を指定できます。!cab model default でエージェント設定に戻します。利用可否は実行時に確認されます。</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows 通知</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>Windows 通知が表示されない場合は、この Windows ユーザーに対してのみ設定できます。この任意設定を行わなくても、通常の通知は引き続き利用できます。</value></data>
+  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>状態</value></data>
+  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>Windows 通知</value></data>
+  <data name="PortableIdentityPublisher" xml:space="preserve"><value>発行元: {0}</value></data>
+  <data name="PortableIdentityFingerprint" xml:space="preserve"><value>証明書の SHA-256: {0}</value></data>
+  <data name="PortableIdentityRegisteredLocation" xml:space="preserve"><value>登録先: {0}</value></data>
+  <data name="PortableIdentityRegistered" xml:space="preserve"><value>このフォルダーは Windows に登録されています。</value></data>
+  <data name="PortableIdentityNotRegistered" xml:space="preserve"><value>このフォルダーは Windows に登録されていません。</value></data>
+  <data name="PortableIdentityActive" xml:space="preserve"><value>通知の登録が有効です。</value></data>
+  <data name="PortableIdentityInactive" xml:space="preserve"><value>このプロセスでは通知の登録が有効ではありません。</value></data>
+  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>設定と削除はアプリ終了後に実行し、その後アプリを再起動します。データフォルダーとポータブル更新機能はそのまま使えます。</value></data>
+  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>任意の設定</value></data>
+  <data name="PortableIdentityConfigure" xml:space="preserve"><value>Windows 通知を設定して再起動</value></data>
+  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>登録を更新して再起動</value></data>
+  <data name="PortableIdentityRemove" xml:space="preserve"><value>登録を削除して再起動</value></data>
+  <data name="PortableIdentityRefresh" xml:space="preserve"><value>状態を更新</value></data>
+  <data name="PortableIdentityConfigureTitle" xml:space="preserve"><value>Windows 通知を設定しますか？</value></data>
+  <data name="PortableIdentityConfigureRestart" xml:space="preserve"><value>このポータブル版のフォルダーを Windows に登録するため、アプリを終了して再起動します。設定と更新機能はそのままです。</value></data>
+  <data name="PortableIdentityTrustConsent" xml:space="preserve"><value>{0} のこの証明書を信頼します。この Windows ユーザーの「信頼されたユーザー」ストアに追加します。この証明書で署名された他のパッケージも信頼される場合があります。管理者権限は要求しません。</value></data>
+  <data name="PortableIdentityRelocationWarning" xml:space="preserve"><value>この通知登録は別のフォルダーに紐付いています: {0}。更新すると、このフォルダーに紐付け先を移します。</value></data>
+  <data name="PortableIdentityRelocationConsent" xml:space="preserve"><value>通知登録をこのポータブル版フォルダーに移すことを明示的に許可します。</value></data>
+  <data name="PortableIdentityConfigurePrimary" xml:space="preserve"><value>設定して再起動</value></data>
+  <data name="PortableIdentityRemoveTitle" xml:space="preserve"><value>Windows 通知の登録を削除しますか？</value></data>
+  <data name="PortableIdentityRemoveMessage" xml:space="preserve"><value>この Windows ユーザーに対する Chat Agent Bridge の登録だけを削除してから、アプリを終了して再起動します。</value></data>
+  <data name="PortableIdentityRemoveRetained" xml:space="preserve"><value>このユーザーの Windows にある証明書の信頼設定は残ります。設定とポータブル更新機能は変更されません。</value></data>
+  <data name="PortableIdentityRemovePrimary" xml:space="preserve"><value>登録を削除して再起動</value></data>
+  <data name="PortableIdentityUnsupported" xml:space="preserve"><value>Windows 通知 ID には Windows 10 バージョン 2004 以降が必要です。</value></data>
+  <data name="PortableIdentityMissingBundle" xml:space="preserve"><value>署名済みの通知パッケージがこのビルドに含まれていません。</value></data>
+  <data name="PortableIdentityInvalidBundle" xml:space="preserve"><value>通知パッケージを検証できませんでした。公式ビルドを再展開してください。</value></data>
+  <data name="PortableIdentityRegisteredRestart" xml:space="preserve"><value>登録しました。Windows 通知を有効にするにはアプリを再起動してください。</value></data>
+  <data name="PortableIdentityOtherLocationStatus" xml:space="preserve"><value>この ID は別のフォルダーに登録されています: {0}</value></data>
+  <data name="PortableIdentityReady" xml:space="preserve"><value>Windows 通知は設定されていません。</value></data>
+  <data name="PortableIdentityTrustRequiredStatus" xml:space="preserve"><value>この Windows ユーザーの通知を有効にするには、発行元の証明書を確認してください。</value></data>
+  <data name="PortableIdentityChecking" xml:space="preserve"><value>通知パッケージの状態を確認しています…</value></data>
+  <data name="PortableIdentityBusyWork" xml:space="preserve"><value>通知の変更前に、実行中の作業、承認、設定変更を完了してください。</value></data>
+  <data name="PortableIdentityHelperMissing" xml:space="preserve"><value>ポータブル更新ヘルパーがありません。公式ビルドを再展開してください。</value></data>
+  <data name="PortableIdentityStarting" xml:space="preserve"><value>通知を設定するためアプリを終了しています。自動的に再起動します。</value></data>
+  <data name="PortableIdentityFailed" xml:space="preserve"><value>通知を設定できませんでした (HRESULT {0})。</value></data>
+  <data name="PortableIdentityLastFailed" xml:space="preserve"><value>前回の通知設定が完了しませんでした (HRESULT {0})。</value></data>
 </root>
