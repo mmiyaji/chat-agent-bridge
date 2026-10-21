@@ -15,11 +15,16 @@ public sealed class PendingRequestNotificationService
     private static readonly TimeSpan PendingLifetime = TimeSpan.FromMinutes(5);
     private const string TokenArgument = "request";
     private const string ActionArgument = "action";
+    private const string OwnerArgument = "owner";
     private const string NotificationGroup = "pending-decisions";
 
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly AppNotificationManager _manager;
     private readonly PendingNotificationRegistry _pending = new();
+    private readonly NotificationActivationRelay _relay = new();
+    private readonly NotificationDiagnostics? _diagnostics;
+    private readonly TaskCompletionSource<bool> _startupForwarded = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private bool _relayStarted;
     private Action? _openApp;
     private bool _attentionPending;
     private bool _initialized;
@@ -28,10 +33,19 @@ public sealed class PendingRequestNotificationService
     private bool _shutdown;
     private string _status = DesktopText.Get("NotificationNotInitialized");
 
-    public PendingRequestNotificationService(DispatcherQueue dispatcherQueue)
+    public PendingRequestNotificationService(DispatcherQueue dispatcherQueue, NotificationDiagnostics? diagnostics = null)
     {
         _dispatcherQueue = dispatcherQueue ?? throw new ArgumentNullException(nameof(dispatcherQueue));
         _manager = AppNotificationManager.Default;
+        _diagnostics = diagnostics;
+    }
+
+    // A notification-only COM launch waits here before creating a window or connecting chats.
+    public async Task<bool> WaitForStartupForwardingAsync(TimeSpan timeout)
+    {
+        if (!_registered) return false;
+        try { return await _startupForwarded.Task.WaitAsync(timeout); }
+        catch (TimeoutException) { _diagnostics?.Write("activation.startup_timeout"); return false; }
     }
 
     /// <summary>A short, user-visible explanation of whether notifications are available.</summary>
@@ -41,6 +55,8 @@ public sealed class PendingRequestNotificationService
 
     public event Action? StatusChanged;
     public event Action? ActionCompleted;
+
+    public void TraceDecision(string reason) => _diagnostics?.Write("decision." + reason);
 
     public void SetOpenAppCallback(Action openApp)
     {
@@ -59,7 +75,12 @@ public sealed class PendingRequestNotificationService
             if (AppInstance.GetCurrent().GetActivatedEventArgs() is { Kind: ExtendedActivationKind.AppNotification, Data: AppNotificationActivatedEventArgs args })
                 OnNotificationInvoked(_manager, args);
         }
-        catch (Exception) { SetStatus(DesktopText.Get("NotificationActivationFailed")); }
+        catch (Exception error)
+        {
+            _diagnostics?.Write("activation.startup_failed", error: error);
+            _startupForwarded.TrySetResult(false);
+            SetStatus(DesktopText.Get("NotificationActivationFailed"));
+        }
     }
 
     /// <summary>
@@ -74,9 +95,22 @@ public sealed class PendingRequestNotificationService
         _initialized = true;
         try
         {
+            _relay.Start((token, action) => !_shutdown && _dispatcherQueue.TryEnqueue(() => _ = HandleInvocationAsync(token, action, "relay")));
+            _relayStarted = true;
+            _diagnostics?.Write("relay.ready");
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException or PlatformNotSupportedException)
+        {
+            // Same-process buttons remain usable if local IPC is unavailable.
+            _diagnostics?.Write("relay.unavailable", error: error);
+        }
+        try
+        {
+            _diagnostics?.Write("notification.register_begin");
             _manager.NotificationInvoked += OnNotificationInvoked;
             _manager.Register();
             _registered = true;
+            _diagnostics?.Write("notification.registered");
 
             string setting = _manager.Setting.ToString();
             if (!string.Equals(setting, "Enabled", StringComparison.Ordinal))
@@ -92,6 +126,7 @@ public sealed class PendingRequestNotificationService
         }
         catch (Exception ex)
         {
+            _diagnostics?.Write("notification.register_failed", error: ex);
             _manager.NotificationInvoked -= OnNotificationInvoked;
             _registered = false;
             _available = false;
@@ -134,6 +169,7 @@ public sealed class PendingRequestNotificationService
         {
             AppNotification notification = BuildNotification(kind, candidate, entry.ExpiresAt);
             _manager.Show(notification);
+            _diagnostics?.Write("notification.shown", candidate, outcome: notification.Id == 0 ? "rejected" : "accepted");
             if (notification.Id == 0)
             {
                 _pending.Remove(candidate);
@@ -171,20 +207,22 @@ public sealed class PendingRequestNotificationService
     }
 
     /// <summary>Clears pending work and unregisters notification activation on window close.</summary>
-    public void Shutdown()
+    public void Shutdown(bool preserveRegistration = false)
     {
         if (_shutdown)
             return;
 
         _shutdown = true;
         _available = false;
-        ClearAll();
+        _relay.Dispose();
+        // A forwarding-only process must not remove the running owner's notifications/registration.
+        if (!preserveRegistration) ClearAll();
         if (_registered)
         {
             try
             {
                 _manager.NotificationInvoked -= OnNotificationInvoked;
-                _manager.Unregister();
+                if (!preserveRegistration) _manager.Unregister();
             }
             catch (Exception ex)
             {
@@ -196,9 +234,11 @@ public sealed class PendingRequestNotificationService
             }
         }
         SetStatus(DesktopText.Get("NotificationStopped"));
+        _diagnostics?.Write("notification.stopped", outcome: preserveRegistration ? "relay_only" : "normal");
+        _diagnostics?.Dispose();
     }
 
-    private static AppNotification BuildNotification(PendingNotificationKind kind, string token, DateTimeOffset expiresAt)
+    private AppNotification BuildNotification(PendingNotificationKind kind, string token, DateTimeOffset expiresAt)
     {
         (string title, string body) = kind switch
         {
@@ -207,15 +247,16 @@ public sealed class PendingRequestNotificationService
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
 
-        AppNotification notification = new AppNotificationBuilder()
+        var builder = new AppNotificationBuilder()
             .AddArgument(TokenArgument, token)
             .AddArgument(ActionArgument, "open")
             .AddText(title)
             .AddText(body)
             .AddButton(CreateButton(DesktopText.Get("ApproveAndRun"), token, "approve"))
             .AddButton(CreateButton(DesktopText.Get("Deny"), token, "decline"))
-            .SetDuration(AppNotificationDuration.Long)
-            .BuildNotification();
+            .SetDuration(AppNotificationDuration.Long);
+        if (_relayStarted) builder.AddArgument(OwnerArgument, _relay.OwnerId);
+        AppNotification notification = builder.BuildNotification();
 
         notification.Expiration = expiresAt;
         notification.ExpiresOnReboot = false;
@@ -224,10 +265,14 @@ public sealed class PendingRequestNotificationService
         return notification;
     }
 
-    private static AppNotificationButton CreateButton(string text, string token, string action) =>
-        new AppNotificationButton(text)
+    private AppNotificationButton CreateButton(string text, string token, string action)
+    {
+        var button = new AppNotificationButton(text)
             .AddArgument(TokenArgument, token)
             .AddArgument(ActionArgument, action);
+        if (_relayStarted) button.AddArgument(OwnerArgument, _relay.OwnerId);
+        return button;
+    }
 
     private void OnNotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
     {
@@ -236,19 +281,54 @@ public sealed class PendingRequestNotificationService
             !args.Arguments.TryGetValue(ActionArgument, out string? action) ||
             string.IsNullOrWhiteSpace(token))
         {
+            _diagnostics?.Write("activation.invalid_arguments");
+            _startupForwarded.TrySetResult(false);
+            return;
+        }
+        if (token.Length != 32 || !token.All(Uri.IsHexDigit) || action is not ("approve" or "decline" or "open"))
+        {
+            _diagnostics?.Write("activation.invalid_arguments");
+            _startupForwarded.TrySetResult(false);
             return;
         }
 
-        if (!_dispatcherQueue.TryEnqueue(() => _ = HandleInvocationAsync(token, action)))
+        args.Arguments.TryGetValue(OwnerArgument, out string? owner);
+        _diagnostics?.Write("activation.received", token, action, owner is null ? "legacy" : owner == _relay.OwnerId ? "local" : "other_owner");
+        if (!string.IsNullOrWhiteSpace(owner) && owner != _relay.OwnerId)
+        {
+            _ = ForwardInvocationAsync(owner, token, action);
+            return;
+        }
+        _startupForwarded.TrySetResult(false);
+        if (!_dispatcherQueue.TryEnqueue(() => _ = HandleInvocationAsync(token, action, "native")))
+        {
+            _diagnostics?.Write("activation.dispatch_failed", token, action);
             SetStatus(DesktopText.Get("NotificationDispatchFailed"));
+        }
     }
 
-    private async Task HandleInvocationAsync(string token, string action)
+    private async Task ForwardInvocationAsync(string owner, string token, string action)
+    {
+        bool forwarded = await NotificationActivationRelay.TryForwardAsync(owner, token, action);
+        _diagnostics?.Write("activation.forwarded", token, action, forwarded ? "accepted" : "unavailable");
+        _startupForwarded.TrySetResult(forwarded);
+        if (!forwarded && !_shutdown)
+            _dispatcherQueue.TryEnqueue(() =>
+            {
+                // Never reinterpret a failed relay as permission to approve in this process.
+                SetStatus(DesktopText.Get("NotificationExpiredOpenApp"));
+                RequestAttention();
+            });
+    }
+
+    private async Task HandleInvocationAsync(string token, string action, string source)
     {
         if (_shutdown) return;
         try
         {
+            _diagnostics?.Write("activation.dispatch", token, action, source);
             var (outcome, entry) = await _pending.InvokeAsync(token, action);
+            _diagnostics?.Write("activation.result", token, action, outcome.ToString());
             if (_shutdown) return;
             switch (outcome)
             {
@@ -274,8 +354,9 @@ public sealed class PendingRequestNotificationService
                     break;
             }
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            _diagnostics?.Write("activation.failed", token, action, error: error);
             SetStatus(DesktopText.Get("NotificationActionRetryInApp"));
             RequestAttention();
         }

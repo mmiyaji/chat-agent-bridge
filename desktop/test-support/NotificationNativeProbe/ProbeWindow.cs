@@ -1,5 +1,7 @@
 using System.Reflection;
+using System.Diagnostics;
 using System.Text.Json;
+using System.Xml.Linq;
 using ChatAgentBridge_Desktop.Notifications;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -13,6 +15,7 @@ public sealed class ProbeWindow : Window
 {
     private readonly PendingRequestNotificationService _service;
     private readonly string _eventPath;
+    private readonly string _dataDirectory;
     private readonly bool _enableDecisions;
     private readonly TextBlock _request = new() { Text = "No synthetic request", TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _counts = new();
@@ -31,6 +34,7 @@ public sealed class ProbeWindow : Window
         _service = service;
         _enableDecisions = enableDecisions;
         _eventPath = Path.Combine(dataDirectory, $"events-{Environment.ProcessId}.jsonl");
+        _dataDirectory = dataDirectory;
         Title = "Notification Native Probe";
         var panel = new StackPanel { Spacing = 12, Padding = new Thickness(24) };
         panel.Children.Add(new TextBlock { Text = "Windows notification activation test", FontSize = 24 });
@@ -95,6 +99,168 @@ public sealed class ProbeWindow : Window
         };
         _startupTimer.Start();
         Record("startup_test_scheduled", diagnostics: new { scenario, simpleToast, legacyToast, delaySeconds = 3 });
+    }
+
+    public void ScheduleRelaySmoke(string clientAssembly)
+    {
+        _startupTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _startupTimer.Tick += async (_, _) =>
+        {
+            _startupTimer.Stop();
+            await RunRelaySmokeAsync(clientAssembly);
+        };
+        _startupTimer.Start();
+    }
+
+    private async Task RunRelaySmokeAsync(string clientAssembly)
+    {
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+        var scenarios = new List<string>();
+        bool callbacksOnUi = true;
+        bool payloadOwnerInBody = false, payloadOwnerInButtons = false;
+        int approve = 0, reject = 0, open = 0, openApprove = 0, busyAttempts = 0, expired = 0, completed = 0;
+        string? failure = null;
+        string? failedAssertion = null;
+        void Completed() { callbacksOnUi &= DispatcherQueue.HasThreadAccess; completed++; }
+        _service.ActionCompleted += Completed;
+        try
+        {
+            var serviceType = typeof(PendingRequestNotificationService);
+            var relay = (NotificationActivationRelay)serviceType.GetField("_relay", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(_service)!;
+            var registry = (PendingNotificationRegistry)serviceType.GetField("_pending", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(_service)!;
+            Require((bool)serviceType.GetField("_relayStarted", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(_service)!, "relay_ready");
+            _service.ClearAll();
+            _scenario = "relay_smoke";
+            var approval = Add("approve", () => { approve++; return PendingNotificationActionResult.Completed; });
+            var rejection = Add("decline", () => { reject++; return PendingNotificationActionResult.Completed; });
+            bool busy = true;
+            var busyEntry = Add("approve", () => { busyAttempts++; return busy ? PendingNotificationActionResult.Busy : PendingNotificationActionResult.Completed; });
+            var expiredEntry = Add("approve", () => { expired++; return PendingNotificationActionResult.Completed; }, TimeSpan.Zero);
+            var opened = registry.Add(PendingNotificationKind.AiApproval, TimeSpan.FromMinutes(1),
+                () => { callbacksOnUi &= DispatcherQueue.HasThreadAccess; openApprove++; return Task.FromResult(PendingNotificationActionResult.Completed); },
+                () => throw new InvalidOperationException("Unexpected synthetic decline."),
+                () => { callbacksOnUi &= DispatcherQueue.HasThreadAccess; open++; return Task.CompletedTask; });
+
+            var notification = (AppNotification)serviceType.GetMethod("BuildNotification", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(_service, [approval.Kind, approval.Token, approval.ExpiresAt])!;
+            var xml = XDocument.Parse(notification.Payload);
+            payloadOwnerInBody = HasOwner(xml.Root?.Attribute("launch")?.Value, relay.OwnerId);
+            var buttons = xml.Descendants("action").ToArray();
+            payloadOwnerInButtons = buttons.Length == 2 && buttons.All(button => HasOwner(button.Attribute("arguments")?.Value, relay.OwnerId));
+            Require(payloadOwnerInBody && payloadOwnerInButtons, "owner_arguments_body_and_buttons");
+            scenarios.Add("owner_arguments_body_and_buttons");
+
+            await Send(approval.Token, "approve");
+            Require(approve == 1 && completed == 1, "approve_callback_and_completion");
+            await Send(approval.Token, "approve");
+            Require(approve == 1 && completed == 1, "duplicate_single_use");
+            scenarios.Add("approve_and_duplicate_single_use");
+
+            await Send(rejection.Token, "decline");
+            Require(reject == 1 && completed == 2, "decline_callback_and_completion");
+            scenarios.Add("decline_callback_and_completion");
+
+            await Send(opened.Token, "open");
+            Require(open == 1 && openApprove == 0 && completed == 2, "open_does_not_execute_decision");
+            await Send(opened.Token, "approve");
+            Require(open == 1 && openApprove == 1 && completed == 3, "open_retains_decision");
+            scenarios.Add("open_retains_decision");
+
+            await Send(busyEntry.Token, "approve");
+            Require(busyAttempts == 1 && completed == 3, "busy_does_not_complete");
+            busy = false;
+            await Task.Delay(200, deadline.Token);
+            Require(busyAttempts == 1 && completed == 3, "busy_release_does_not_automatically_execute");
+            await Send(busyEntry.Token, "approve");
+            Require(busyAttempts == 2 && completed == 4, "explicit_busy_retry_completes");
+            await Send(busyEntry.Token, "approve");
+            Require(busyAttempts == 2 && completed == 4, "busy_retry_is_single_use");
+            scenarios.Add("busy_explicit_retry_and_single_use");
+
+            await Send(expiredEntry.Token, "approve");
+            Require(expired == 0 && completed == 4, "expired_callback_zero");
+            Require(callbacksOnUi, "callbacks_execute_on_owner_dispatcher");
+            scenarios.Add("expired_callback_zero");
+            scenarios.Add("callbacks_execute_on_owner_dispatcher");
+
+            PendingNotificationRegistry.Entry Add(string expectedAction, Func<PendingNotificationActionResult> callback, TimeSpan? lifetime = null)
+            {
+                Task<PendingNotificationActionResult> Invoke(string action)
+                {
+                    callbacksOnUi &= DispatcherQueue.HasThreadAccess;
+                    Require(action == expectedAction, "callback_action_matches_request");
+                    return Task.FromResult(callback());
+                }
+                return registry.Add(PendingNotificationKind.AiApproval, lifetime ?? TimeSpan.FromMinutes(1),
+                    () => Invoke("approve"), () => Invoke("decline"), () => Task.CompletedTask);
+            }
+
+            async Task Send(string token, string action)
+            {
+                await RunRelayClientAsync(clientAssembly, relay.OwnerId, token, action, deadline.Token);
+                var barrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                Require(DispatcherQueue.TryEnqueue(() => barrier.SetResult()), "dispatcher_barrier_queued");
+                await barrier.Task.WaitAsync(deadline.Token);
+                Require(DispatcherQueue.HasThreadAccess, "assertion_runs_on_ui_thread");
+            }
+        }
+        catch (Exception error)
+        {
+            // Exception messages/payloads can carry activation credentials; record types only.
+            failure = error.GetType().Name;
+            failedAssertion = (error as RelayProbeAssertionException)?.Scenario;
+        }
+        finally
+        {
+            _service.ActionCompleted -= Completed;
+            var summary = new
+            {
+                utc = DateTimeOffset.UtcNow, processId = Environment.ProcessId,
+                test = "production_service_owner_relay", passed = failure is null,
+                transport = "console_child_named_pipe_to_real_winui_dispatcher",
+                nativeToastClickTested = false, notificationAvailable = _service.IsAvailable,
+                payloadOwnerInBody, payloadOwnerInButtons, callbacksOnUi,
+                counts = new { approve, reject, open, openApprove, busyAttempts, expired, completed },
+                scenarios, failure, failedAssertion
+            };
+            File.WriteAllText(Path.Combine(_dataDirectory, "relay-smoke-summary.json"), JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true }));
+            Close();
+        }
+    }
+
+    private static bool HasOwner(string? arguments, string ownerId) => arguments is not null &&
+        arguments.Split([';', '&'], StringSplitOptions.RemoveEmptyEntries).Select(part => part.Split('=', 2)).Any(pair => pair.Length == 2 &&
+            Uri.UnescapeDataString(pair[0]) == "owner" && Uri.UnescapeDataString(pair[1]) == ownerId);
+
+    private static void Require(bool passed, string scenario)
+    {
+        if (!passed) throw new RelayProbeAssertionException(scenario);
+    }
+
+    private sealed class RelayProbeAssertionException(string scenario) : Exception
+    {
+        public string Scenario { get; } = scenario;
+    }
+
+    private static async Task RunRelayClientAsync(string assembly, string ownerId, string token, string action, CancellationToken cancellationToken)
+    {
+        var start = new ProcessStartInfo("dotnet")
+        {
+            RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true,
+            UseShellExecute = false, CreateNoWindow = true
+        };
+        start.ArgumentList.Add(assembly);
+        start.ArgumentList.Add("client");
+        using var client = Process.Start(start) ?? throw new InvalidOperationException("Relay client did not start.");
+        try
+        {
+            // Activation credentials stay inside redirected IPC; never add them to a command line or log.
+            await client.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new { OwnerId = ownerId, Token = token, Action = action }));
+            string? response = await client.StandardOutput.ReadLineAsync(cancellationToken);
+            await client.WaitForExitAsync(cancellationToken);
+            Require(response == "true" && client.ExitCode == 0, "child_relay_accepted");
+        }
+        finally { if (!client.HasExited) client.Kill(entireProcessTree: true); }
     }
 
     private async Task ShowLegacyToastAsync(string explicitAppId)
@@ -193,8 +359,8 @@ public sealed class ProbeWindow : Window
             () => Decision("approve"), () => Decision("decline"), Open);
         _token = entry.Token;
         var notification = (AppNotification)typeof(PendingRequestNotificationService)
-            .GetMethod("BuildNotification", BindingFlags.Static | BindingFlags.NonPublic)!
-            .Invoke(null, [entry.Kind, entry.Token, DateTimeOffset.UtcNow.AddMinutes(5)])!;
+            .GetMethod("BuildNotification", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(_service, [entry.Kind, entry.Token, DateTimeOffset.UtcNow.AddMinutes(5)])!;
         AppNotificationManager.Default.Show(notification);
         return notification.Id != 0;
     }
@@ -208,7 +374,7 @@ public sealed class ProbeWindow : Window
             // Harness-only service route check. This cannot establish OS delivery or native activation.
             await (Task)typeof(PendingRequestNotificationService)
                 .GetMethod("HandleInvocationAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .Invoke(_service, [_token, action])!;
+                .Invoke(_service, [_token, action, "probe_direct"])!;
         }
         catch (Exception error) { Record("probe_error", error.ToString()); }
     }

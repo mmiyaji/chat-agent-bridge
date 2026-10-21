@@ -208,7 +208,7 @@ public sealed partial class MainPage : Page
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
         await ViewModel.RefreshStartupAsync();
         await ViewModel.InitializeOnboardingAsync();
-        if (ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive && !ViewModel.IsLoading &&
+        if (!App.IsNotificationOnlyLaunch && ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive && !ViewModel.IsLoading &&
             !ViewModel.HasUnsavedSettings && !ViewModel.IsSensitiveConfirmationPending &&
             ViewModel.AutoConnectProvider == startupProvider)
         {

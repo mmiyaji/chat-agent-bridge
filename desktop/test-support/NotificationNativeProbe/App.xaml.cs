@@ -24,6 +24,7 @@ public partial class App : Application
         // Never read the production application's environment variables or settings.
         string[] arguments = Environment.GetCommandLineArgs();
         string? autoScenario = null;
+        string? relaySmoke = null;
         string? explicitAppId = null;
         bool simpleToast = arguments.Contains("--simple-toast", StringComparer.Ordinal);
         bool legacyToast = arguments.Contains("--legacy-toast", StringComparer.Ordinal);
@@ -38,6 +39,15 @@ public partial class App : Application
             else if (arguments[i] == "--language" && arguments[i + 1] is "ja" or "en") language = arguments[++i] == "ja" ? "ja-JP" : "en-US";
             else if (arguments[i] == "--auto-scenario" && arguments[i + 1] is "approve" or "reject" or "busy" or "expired") autoScenario = arguments[++i];
             else if (arguments[i] == "--app-id") explicitAppId = arguments[++i];
+            else if (arguments[i] == "--relay-smoke") relaySmoke = arguments[++i];
+        }
+        if (arguments.Contains("--relay-smoke", StringComparer.Ordinal))
+        {
+            if (relaySmoke is null || !Path.IsPathFullyQualified(relaySmoke) || !File.Exists(relaySmoke) ||
+                !string.Equals(Path.GetExtension(relaySmoke), ".dll", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("--relay-smoke requires an absolute path to NotificationRelayProbe.dll.");
+            if (!arguments.Contains("--data-dir", StringComparer.Ordinal) || simpleToast || legacyToast || explicitAssets || autoScenario is not null || explicitAppId is not null)
+                throw new ArgumentException("--relay-smoke requires its own --data-dir and ordinary service initialization without other probe modes.");
         }
         var culture = System.Globalization.CultureInfo.GetCultureInfo(language);
         System.Globalization.CultureInfo.CurrentCulture = culture;
@@ -98,7 +108,8 @@ public partial class App : Application
         }
         _window.Activate();
         if (!explicitAssets) service.ProcessStartupActivation();
-        _window.ScheduleStartupTest(autoScenario, simpleToast, legacyToast, explicitAppId);
+        if (relaySmoke is not null) _window.ScheduleRelaySmoke(relaySmoke);
+        else _window.ScheduleStartupTest(autoScenario, simpleToast, legacyToast, explicitAppId);
     }
 
     [System.Runtime.InteropServices.DllImport("shell32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]

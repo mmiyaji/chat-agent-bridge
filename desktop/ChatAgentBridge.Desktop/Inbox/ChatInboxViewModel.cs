@@ -759,14 +759,24 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         bool IsAvailable() => !_closing && Requests.Contains(item) && IsConnectionConfirmed &&
             ReferenceEquals(item.Transport, _transport) && _connection is { IsCancellationRequested: false } &&
             item.State == "承認待ち";
-        if (!IsAvailable()) return Notifications.PendingNotificationActionResult.Unavailable;
+        if (!IsAvailable())
+        {
+            TraceUnavailableNotification(item);
+            return Notifications.PendingNotificationActionResult.Unavailable;
+        }
         if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+        {
+            App.PendingRequestNotifications?.TraceDecision("command_busy");
             return Notifications.PendingNotificationActionResult.Busy;
+        }
         RevealRequest(item);
         // Revealing a request can synchronously change selection through UI bindings.
         // Never let a notification authorize whichever request became selected instead.
         if (!IsAvailable() || !ReferenceEquals(Selected, item))
+        {
+            App.PendingRequestNotifications?.TraceDecision("selection_or_state_changed");
             return Notifications.PendingNotificationActionResult.Unavailable;
+        }
         if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
             return Notifications.PendingNotificationActionResult.Busy;
         _notificationApprovedItem = item;
@@ -781,7 +791,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         bool IsAvailable() => !_closing && Requests.Contains(item) && IsConnectionConfirmed &&
             ReferenceEquals(item.Transport, _transport) && _connection is { IsCancellationRequested: false } &&
             item.State == "承認待ち";
-        if (!IsAvailable()) return Notifications.PendingNotificationActionResult.Unavailable;
+        if (!IsAvailable())
+        {
+            TraceUnavailableNotification(item);
+            return Notifications.PendingNotificationActionResult.Unavailable;
+        }
         if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
             return Notifications.PendingNotificationActionResult.Busy;
         RevealRequest(item);
@@ -792,6 +806,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         await RejectCommand.ExecuteAsync(null);
         return item.State != "承認待ち" ? Notifications.PendingNotificationActionResult.Completed
             : Notifications.PendingNotificationActionResult.Unavailable;
+    }
+
+    private void TraceUnavailableNotification(InboxItem item)
+    {
+        var reason = _closing ? "closing" : !Requests.Contains(item) ? "missing_item" :
+            !IsConnectionConfirmed ? "disconnected" : !ReferenceEquals(item.Transport, _transport) ? "transport_changed" :
+            _connection is not { IsCancellationRequested: false } ? "connection_canceled" : "already_resolved";
+        App.PendingRequestNotifications?.TraceDecision(reason);
     }
 
     private bool CanSendResult() => !_closing && !IsExecuting && IsConnectionConfirmed && Selected is { ResultText.Length: > 0, AllowsResultSharing: true } item && ReferenceEquals(item.Transport, _transport);
