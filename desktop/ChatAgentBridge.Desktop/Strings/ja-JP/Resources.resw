@@ -135,7 +135,7 @@
     <value>フォルダーを選択…</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock016.Text" xml:space="preserve">
-    <value>選択後は設定を保存し、接続中なら再接続してください。既存の会話の作業先は自動変更しません。Slackでは !cab folder C:\Projects\my-app で、そのユーザー・スレッドの作業先を変更できます。PCで承認すると新しいAI会話として開始します。</value>
+    <value>変更後は保存して再接続してください。既存の会話の作業先は変わりません。</value>
   </data>
   <data name="AgentProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>使うエージェント</value>
@@ -1109,4 +1109,47 @@
   <data name="InboxConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>接続状態と詳細</value></data>
   <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>接続と通知の詳細です。会話の継続は、元のSlack・Mattermostのスレッドに返信してください。</value></data>
   <data name="InboxRequestContext.Header" xml:space="preserve"><value>作業先・依頼の詳細</value></data>
+  <data name="AgentSettingsGuide.Text" xml:space="preserve"><value>1. 作業フォルダーと CLI を選択 → 2. CLI を確認 → 3. 設定を保存。</value></data>
+  <data name="AgentBasicTitle.Text" xml:space="preserve"><value>基本設定</value></data>
+  <data name="AgentBasicHelp.Text" xml:space="preserve"><value>作業フォルダー、使用する CLI、動作確認</value></data>
+  <data name="AgentCommonTitle.Text" xml:space="preserve"><value>共通の実行設定</value></data>
+  <data name="AgentCommonHelp.Text" xml:space="preserve"><value>すべての CLI に共通の信頼済みフォルダーと、この PC での実行承認</value></data>
+  <data name="AgentModelSectionTitle.Text" xml:space="preserve"><value>選択中の CLI：モデル・推論レベル</value></data>
+  <data name="AgentModelSectionHelp.Text" xml:space="preserve"><value>モデル名、推論レベル、候補の取得</value></data>
+  <data name="AgentPermissionsTitle.Text" xml:space="preserve"><value>選択中の CLI：実行権限</value></data>
+  <data name="AgentPermissionsHelp.Text" xml:space="preserve"><value>Codex または Claude Code の実行権限モード</value></data>
+  <data name="CodexSettingsTitle.Text" xml:space="preserve"><value>Codex 専用：App Server とネットワーク</value></data>
+  <data name="CodexSettingsHelp.Text" xml:space="preserve"><value>接続方式と実行中のネットワークアクセス</value></data>
+  <data name="AgentAdvancedSectionTitle.Text" xml:space="preserve"><value>選択中の CLI：詳細設定</value></data>
+  <data name="AgentAdvancedSectionHelp.Text" xml:space="preserve"><value>実行ファイルの場所、引数、環境変数の再読み込み</value></data>
+  <data name="AgentRegistrationsTitle.Text" xml:space="preserve"><value>保存済みの CLI 登録</value></data>
+  <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Codex・Claude Code の接続設定を登録・呼び出し</value></data>
+  <data name="AgentExecutionExplanationTitle.Text" xml:space="preserve"><value>実行承認のしくみ</value></data>
+  <data name="AgentExecutionExplanationHelp.Text" xml:space="preserve"><value>承認の流れと現在の実行ポリシーを確認</value></data>
+  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>共通の動作を選び、利用するサービスの設定を開いてください。変更後は設定を保存し、チャットを再接続して反映します。</value></data>
+  <data name="ChatCommonTitle.Text" xml:space="preserve"><value>共通のチャット動作</value></data>
+  <data name="ChatCommonHelp.Text" xml:space="preserve"><value>両サービス共通の依頼承認と結果の投稿方法</value></data>
+  <data name="ChatScopeOverview.Text" xml:space="preserve"><value>利用するサービスを開き、認証情報・許可ユーザー・会話の制限を設定してください。</value></data>
+  <data name="MattermostSectionTitle.Text" xml:space="preserve"><value>Mattermost</value></data>
+  <data name="MattermostSectionHelp.Text" xml:space="preserve"><value>サーバー、トークン、許可ユーザー、会話の制限</value></data>
+  <data name="SlackSectionTitle.Text" xml:space="preserve"><value>Slack</value></data>
+  <data name="SlackSectionHelp.Text" xml:space="preserve"><value>トークン、許可ユーザー、チャンネル・スレッドの制限</value></data>
+  <data name="ChatAttachmentsTitle.Text" xml:space="preserve"><value>ファイル添付</value></data>
+  <data name="ChatAttachmentsHelp.Text" xml:space="preserve"><value>生成ファイルの送信承認と、サイズ・個数の上限</value></data>
+  <data name="CodexChatSharingTitle.Text" xml:space="preserve"><value>Codex 専用：操作承認と質問の共有</value></data>
+  <data name="CodexChatSharingHelp.Text" xml:space="preserve"><value>操作承認と質問に対応する Codex App Server で利用できます。エージェント設定で App Server を有効にすると設定できます。</value></data>
+  <data name="SlackConversationScopeHelp.Text" xml:space="preserve"><value>接続設定で許可したユーザーIDは引き続き必要です。スレッドリストが空欄なら追加制限はありません。入力がある場合は、リスト内の既存スレッドでのみ依頼できます。新しい会話は開始できません。リストを変更したら保存して再接続してください。</value></data>
+  <data name="AgentBasicAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>基本設定</value></data>
+  <data name="AgentCommonAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>共通の実行設定</value></data>
+  <data name="AgentModelSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>選択中の CLI：モデル・推論レベル</value></data>
+  <data name="AgentPermissionsAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>選択中の CLI：実行権限</value></data>
+  <data name="CodexSettingsAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Codex 専用：App Server とネットワーク</value></data>
+  <data name="AgentAdvancedSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>選択中の CLI：詳細設定</value></data>
+  <data name="AgentRegistrationsAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>保存済みの CLI 登録</value></data>
+  <data name="AgentExecutionExplanationAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>実行承認のしくみ</value></data>
+  <data name="ChatCommonAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>共通のチャット動作</value></data>
+  <data name="MattermostSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermost</value></data>
+  <data name="SlackSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slack</value></data>
+  <data name="ChatAttachmentsAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>ファイル添付</value></data>
+  <data name="CodexChatSharingAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Codex 専用：操作承認と質問の共有</value></data>
 </root>

@@ -33,13 +33,12 @@ public sealed partial class MainPage
     private void ConnectionsJump_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
         if (sender is not ComboBox { SelectedItem: ComboBoxItem { Tag: string section } } picker) return;
-        FrameworkElement? target = section switch
+        Expander? target = section switch
         {
             "mattermost" => MattermostSettingsCard,
             "slack" => SlackSettingsCard,
             "approval" => ChatApprovalSettingsCard,
             "attachments" => FileAttachmentSettings,
-            "scope" => ChatScopeSettingsCard,
             _ => null
         };
         picker.SelectedIndex = -1;
@@ -47,6 +46,8 @@ public sealed partial class MainPage
         DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
             if (!IsConnectionsSelected || target is null) return;
+            target.IsExpanded = true;
+            target.UpdateLayout();
             target.StartBringIntoView(new BringIntoViewOptions
             {
                 VerticalAlignmentRatio = 0,

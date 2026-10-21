@@ -135,7 +135,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Select folder...</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock016.Text" xml:space="preserve">
-    <value>Save after choosing a folder, then reconnect chat if connected. Existing conversations keep their current folder. In Slack, request a folder change for your own conversation with !cab folder C:\Projects\my-app. Changes require approval on this PC and start a new AI conversation.</value>
+    <value>Save and reconnect after changing the folder. Existing conversations keep their workspace.</value>
   </data>
   <data name="AgentProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Agent to use</value>
@@ -1109,4 +1109,47 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="InboxConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Connection status and details</value></data>
   <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>Connection and notification details. Conversations continue in the original Slack or Mattermost thread.</value></data>
   <data name="InboxRequestContext.Header" xml:space="preserve"><value>Workspace and request details</value></data>
+  <data name="AgentSettingsGuide.Text" xml:space="preserve"><value>1. Choose a workspace and CLI. 2. Check the CLI. 3. Save settings.</value></data>
+  <data name="AgentBasicTitle.Text" xml:space="preserve"><value>Basic setup</value></data>
+  <data name="AgentBasicHelp.Text" xml:space="preserve"><value>Workspace, selected CLI, and connection check</value></data>
+  <data name="AgentCommonTitle.Text" xml:space="preserve"><value>Common execution settings</value></data>
+  <data name="AgentCommonHelp.Text" xml:space="preserve"><value>Trusted folders and approval on this PC for every CLI</value></data>
+  <data name="AgentModelSectionTitle.Text" xml:space="preserve"><value>Selected CLI: model and reasoning</value></data>
+  <data name="AgentModelSectionHelp.Text" xml:space="preserve"><value>Model name, reasoning effort, and model candidates</value></data>
+  <data name="AgentPermissionsTitle.Text" xml:space="preserve"><value>Selected CLI: execution permissions</value></data>
+  <data name="AgentPermissionsHelp.Text" xml:space="preserve"><value>Permission mode for Codex or Claude Code</value></data>
+  <data name="CodexSettingsTitle.Text" xml:space="preserve"><value>Codex only: App Server and network</value></data>
+  <data name="CodexSettingsHelp.Text" xml:space="preserve"><value>Connection method and network access during execution</value></data>
+  <data name="AgentAdvancedSectionTitle.Text" xml:space="preserve"><value>Selected CLI: advanced settings</value></data>
+  <data name="AgentAdvancedSectionHelp.Text" xml:space="preserve"><value>Executable location, arguments, and environment reload</value></data>
+  <data name="AgentRegistrationsTitle.Text" xml:space="preserve"><value>Saved CLI registrations</value></data>
+  <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Register or restore Codex and Claude Code connections</value></data>
+  <data name="AgentExecutionExplanationTitle.Text" xml:space="preserve"><value>How execution approval works</value></data>
+  <data name="AgentExecutionExplanationHelp.Text" xml:space="preserve"><value>Review the approval flow and current execution policy</value></data>
+  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>Choose common behavior, then open the service you use. Save settings and reconnect chat to apply changes.</value></data>
+  <data name="ChatCommonTitle.Text" xml:space="preserve"><value>Common chat behavior</value></data>
+  <data name="ChatCommonHelp.Text" xml:space="preserve"><value>Request approval and result posting for both services</value></data>
+  <data name="ChatScopeOverview.Text" xml:space="preserve"><value>Open the service you use to set credentials, allowed users, and conversation restrictions.</value></data>
+  <data name="MattermostSectionTitle.Text" xml:space="preserve"><value>Mattermost</value></data>
+  <data name="MattermostSectionHelp.Text" xml:space="preserve"><value>Server, tokens, allowed users, and conversation restrictions</value></data>
+  <data name="SlackSectionTitle.Text" xml:space="preserve"><value>Slack</value></data>
+  <data name="SlackSectionHelp.Text" xml:space="preserve"><value>Tokens, allowed users, channels, and thread restrictions</value></data>
+  <data name="ChatAttachmentsTitle.Text" xml:space="preserve"><value>File attachments</value></data>
+  <data name="ChatAttachmentsHelp.Text" xml:space="preserve"><value>Approval and size and count limits for generated files sent to chat</value></data>
+  <data name="CodexChatSharingTitle.Text" xml:space="preserve"><value>Codex only: share operations and questions</value></data>
+  <data name="CodexChatSharingHelp.Text" xml:space="preserve"><value>Requires Codex App Server, which supports operation approval and questions. Enable App Server in Agent settings to use these options.</value></data>
+  <data name="SlackConversationScopeHelp.Text" xml:space="preserve"><value>The allowed user IDs in the connection settings are still required. A blank thread list adds no restriction. A nonempty list allows requests only in the listed existing threads; new top-level conversations are blocked. Save and reconnect after changing the lists.</value></data>
+  <data name="AgentBasicAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Basic setup</value></data>
+  <data name="AgentCommonAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Common execution settings</value></data>
+  <data name="AgentModelSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Selected CLI: model and reasoning</value></data>
+  <data name="AgentPermissionsAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Selected CLI: execution permissions</value></data>
+  <data name="CodexSettingsAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Codex only: App Server and network</value></data>
+  <data name="AgentAdvancedSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Selected CLI: advanced settings</value></data>
+  <data name="AgentRegistrationsAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Saved CLI registrations</value></data>
+  <data name="AgentExecutionExplanationAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>How execution approval works</value></data>
+  <data name="ChatCommonAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Common chat behavior</value></data>
+  <data name="MattermostSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermost</value></data>
+  <data name="SlackSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slack</value></data>
+  <data name="ChatAttachmentsAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>File attachments</value></data>
+  <data name="CodexChatSharingAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Codex only: share operations and questions</value></data>
 </root>
