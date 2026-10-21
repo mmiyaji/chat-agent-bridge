@@ -28,11 +28,12 @@ public sealed partial class MainPage : Page
     public bool IsHistorySelected { get; private set; }
     public bool IsAboutSelected { get; private set; }
     public bool IsFormSelected => !IsChatSelected && !IsHistorySelected && !IsAboutSelected;
-    public static bool CanUseForm(bool isGeneralSelected, bool isSettingsLoaded) => isGeneralSelected || isSettingsLoaded;
+    public static bool CanUseForm(bool isGeneralSelected, bool isSettingsLoaded, bool isLoading) => !isLoading && (isGeneralSelected || isSettingsLoaded);
 
     public MainPage()
     {
         InitializeComponent();
+        InitializeSettingsAutoSave();
         InitializeLanguageRestart();
         InitializePortableUpdateBadge();
         UpdateNavigationContentOffset();
@@ -193,22 +194,26 @@ public sealed partial class MainPage : Page
         if (_hasLoaded) return;
         _hasLoaded = true;
         await ViewModel.LoadAsync();
+        var startupProvider = ViewModel.AutoConnectProvider;
         MattermostTokenBox.Password = ViewModel.MattermostToken;
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
         await ViewModel.RefreshStartupAsync();
         await ViewModel.InitializeOnboardingAsync();
-        if (ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive)
+        if (ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive && !ViewModel.IsLoading &&
+            !ViewModel.HasUnsavedSettings && !ViewModel.IsSensitiveConfirmationPending &&
+            ViewModel.AutoConnectProvider == startupProvider)
         {
-            if (ViewModel.AutoConnectProvider is "mattermost" or "slack")
+            if (startupProvider is "mattermost" or "slack")
                 MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "chat");
-            if (ViewModel.AutoConnectProvider == "mattermost") await InboxPage.ViewModel.ConnectMattermostCommand.ExecuteAsync(null);
-            else if (ViewModel.AutoConnectProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
+            if (startupProvider == "mattermost") await InboxPage.ViewModel.ConnectMattermostCommand.ExecuteAsync(null);
+            else if (startupProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
         }
     }
 
     private async void ReloadSettings_Click(object sender, RoutedEventArgs e)
     {
+        if (!await TryResolveUnsavedSettingsAsync()) return;
         await ViewModel.ReloadSettingsAsync();
         MattermostTokenBox.Password = ViewModel.MattermostToken;
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
@@ -232,7 +237,7 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private void MainNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    private void ApplyNavigationSelection(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         if (args.SelectedItem is not NavigationViewItem item || item.Tag is not string tag) return;
         var pageChanged = !string.Equals(_selectedNavigationTag, tag, StringComparison.Ordinal);

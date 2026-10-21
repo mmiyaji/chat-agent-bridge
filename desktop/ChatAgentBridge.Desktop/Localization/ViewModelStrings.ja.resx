@@ -247,13 +247,13 @@
     <value>フルアクセスのため制限なし</value>
   </data>
   <data name="NextConfigureAgentWorkspace" xml:space="preserve">
-    <value>次の操作：エージェントと既存の作業フォルダーを設定して保存します。</value>
+    <value>次の操作：エージェントと既存の作業フォルダーを設定します。</value>
   </data>
   <data name="NextConnectToChat" xml:space="preserve">
     <value>次の操作：チャット受信で保存済みの接続先へ接続します。</value>
   </data>
   <data name="NextSaveConnection" xml:space="preserve">
-    <value>次の操作：接続設定を保存します。</value>
+    <value>次の操作：接続情報と許可ユーザーを設定します。</value>
   </data>
   <data name="NotAllowed" xml:space="preserve">
     <value>不許可</value>
@@ -388,16 +388,16 @@
     <value>完了：保存済み。CLIやログイン状態はここでは確認していません。</value>
   </data>
   <data name="SetupAgentWorkspaceMissing" xml:space="preserve">
-    <value>次のステップ：エージェントと作業フォルダーを設定して保存します。</value>
+    <value>次のステップ：エージェントと作業フォルダーを設定します。</value>
   </data>
   <data name="SetupAllowedUsersMissing" xml:space="preserve">
     <value>次のステップ：接続先ごとに許可するユーザーIDを1行1人で設定します。空欄では全員を拒否します。</value>
   </data>
   <data name="SetupChatAfterStepOne" xml:space="preserve">
-    <value>未設定：ステップ1の後に接続情報を保存します。</value>
+    <value>未設定：ステップ1の後に接続情報を設定します。</value>
   </data>
   <data name="SetupChatConfigMissing" xml:space="preserve">
-    <value>次のステップ：SlackまたはMattermostの接続情報と許可するユーザーIDを保存します。</value>
+    <value>次のステップ：SlackまたはMattermostの接続情報と許可ユーザーを設定します。</value>
   </data>
   <data name="SetupChatConfigSaved" xml:space="preserve">
     <value>完了：接続情報と許可するユーザーIDを保存済み。</value>
@@ -418,13 +418,13 @@
     <value>接続中：接続先の応答を待っています。</value>
   </data>
   <data name="SetupExecutableMissing" xml:space="preserve">
-    <value>次のステップ：エージェントの実行ファイルを設定して保存します。</value>
+    <value>次のステップ：エージェントの実行ファイルを設定します。</value>
   </data>
   <data name="SetupWaitingForChatRequest" xml:space="preserve">
     <value>完了：チャットからの依頼を待っています。</value>
   </data>
   <data name="SetupWorkspaceNotFound" xml:space="preserve">
-    <value>次のステップ：保存された作業フォルダーが見つかりません。既存のフォルダーを指定して保存します。</value>
+    <value>次のステップ：作業フォルダーが見つかりません。既存のフォルダーを指定します。</value>
   </data>
   <data name="SlackConnectionFields" xml:space="preserve">
     <value>Botトークン・Appトークン・許可するユーザーIDを入力してください。</value>
@@ -544,7 +544,7 @@ AIの操作権限: {8}</value>
   <data name="MattermostUsernameLookupInvalidResponse" xml:space="preserve"><value>Mattermostから予期しないユーザー情報が返されました。サーバーを確認して再試行してください。</value></data>
   <data name="MattermostUsernameLookupNotActive" xml:space="preserve"><value>このアカウントはBotまたは無効なアカウントのため、追加できません。</value></data>
   <data name="MattermostUsernameAlreadyAllowed" xml:space="preserve"><value>{0}はすでに許可ユーザー一覧にあります。</value></data>
-  <data name="MattermostUsernameAddedSaveNeeded" xml:space="preserve"><value>{0}を許可ユーザー一覧の編集内容に追加しました。適用するには設定を保存し、Mattermost接続中の場合は再接続してください。</value></data>
+  <data name="MattermostUsernameAddedSaveNeeded" xml:space="preserve"><value>{0}を許可ユーザー一覧に追加しました。変更内容を確認した後、Mattermostに再接続してください。</value></data>
   <data name="MattermostUsernameAllowlistInvalid" xml:space="preserve"><value>ユーザーを追加する前に、既存の許可ユーザー一覧を修正してください。有効なMattermostユーザーIDを最大100件まで指定できます。</value></data>
   <data name="CustomCliName" xml:space="preserve">
     <value>その他のCLI（カスタム）</value>
@@ -628,7 +628,7 @@ AIの操作権限: {8}</value>
   <data name="EnvironmentReloadFailedTitle" xml:space="preserve"><value>環境を更新できませんでした</value></data>
   <data name="EnvironmentReloadFailedMessage" xml:space="preserve"><value>現在のユーザー環境をWindowsから取得できませんでした。CLI設定は変更されていません。</value></data>
   <data name="ChangingStartupSettings" xml:space="preserve"><value>Windowsの起動設定を変更しています…</value></data>
-  <data name="TrustedFolderAdded" xml:space="preserve"><value>フォルダーを追加しました。適用するには［保存］をクリックしてください。</value></data>
+  <data name="TrustedFolderAdded" xml:space="preserve"><value>フォルダーを追加しました。変更内容を確認してください。</value></data>
   <data name="TrustedFolderAlreadyListed" xml:space="preserve"><value>このフォルダーはすでに一覧にあります。</value></data>
   <data name="TrustedFolderInvalid" xml:space="preserve"><value>絶対パスで指定した、存在するフォルダーを選択してください。</value></data>
   <data name="TrustedFolderRootsInvalid" xml:space="preserve"><value>既存の各項目を有効な絶対パスに修正してから、もう一度お試しください。</value></data>
@@ -649,7 +649,7 @@ AIの操作権限: {8}</value>
   <data name="MattermostThreadLookupInvalidResponse" xml:space="preserve"><value>Mattermostから返された投稿情報を確認できませんでした。</value></data>
   <data name="MattermostThreadLookupNetwork" xml:space="preserve"><value>Mattermostに接続できません。サーバーURLと接続を確認してください。</value></data>
   <data name="MattermostThreadAlreadyAllowed" xml:space="preserve"><value>会話 {0} はすでに許可リストにあります。</value></data>
-  <data name="MattermostThreadAddedSaveNeeded" xml:space="preserve"><value>会話 {0} を追加しました。新しい制限を適用するには設定を保存して再接続してください。</value></data>
+  <data name="MattermostThreadAddedSaveNeeded" xml:space="preserve"><value>会話 {0} を追加しました。変更内容を確認した後、再接続してください。</value></data>
   <data name="MattermostThreadAllowlistInvalid" xml:space="preserve"><value>既存の会話許可リストに無効なIDがあります。追加前に修正してください。</value></data>
   <data name="SlackUsernameLookupInProgress" xml:space="preserve"><value>設定されたSlackボットトークンでユーザーを検索しています…</value></data>
   <data name="SlackUsernameLookupFound" xml:space="preserve"><value>Slackアカウントが見つかりました。ワークスペースとメンバーIDを確認し、「このユーザーを追加」を選んでください。</value></data>
@@ -669,7 +669,7 @@ AIの操作権限: {8}</value>
   <data name="SlackUsernameLookupInvalidResponse" xml:space="preserve"><value>Slackから確認できないアカウント情報が返されました。再試行するかSlackアプリを確認してください。</value></data>
   <data name="SlackUsernameLookupNetwork" xml:space="preserve"><value>Slackに接続できませんでした。ネットワークとボットトークンを確認して再試行してください。</value></data>
   <data name="SlackUsernameAlreadyAllowed" xml:space="preserve"><value>@{0}は許可ユーザーの下書きにすでに登録されています。</value></data>
-  <data name="SlackUsernameAddedSaveNeeded" xml:space="preserve"><value>@{0}を下書きに追加しました。反映するには設定を保存してSlackに再接続してください。</value></data>
+  <data name="SlackUsernameAddedSaveNeeded" xml:space="preserve"><value>@{0}を許可リストに追加しました。変更内容を確認した後、Slackに再接続してください。</value></data>
   <data name="SlackUsernameAllowlistInvalid" xml:space="preserve"><value>許可ユーザー一覧が無効か、すでに100人登録されています。追加する前に一覧を修正してください。</value></data>
   <data name="SlackThreadLookupInProgress" xml:space="preserve"><value>認証中のSlackワークスペースでメッセージリンクを確認しています…</value></data>
   <data name="SlackThreadLookupResolved" xml:space="preserve"><value>会話を確認しました。ワークスペースとチャンネルを確認し、「この会話を追加」を選んでください。</value></data>
@@ -689,14 +689,14 @@ AIの操作権限: {8}</value>
   <data name="SlackThreadLookupInvalidResponse" xml:space="preserve"><value>Slackから確認できないメッセージ情報が返されました。</value></data>
   <data name="SlackThreadLookupNetwork" xml:space="preserve"><value>Slackに接続できませんでした。ネットワークとボットトークンを確認して再試行してください。</value></data>
   <data name="SlackThreadAlreadyAllowed" xml:space="preserve"><value>チャンネルと会話 {0} は許可範囲の下書きにすでに登録されています。</value></data>
-  <data name="SlackThreadAddedSaveNeeded" xml:space="preserve"><value>チャンネル {0} と会話 {1} を許可リストに追加しました。反映するには設定を保存してSlackに再接続してください。</value></data>
+  <data name="SlackThreadAddedSaveNeeded" xml:space="preserve"><value>チャンネル {0} と会話 {1} を追加しました。変更内容を確認した後、Slackに再接続してください。</value></data>
   <data name="SlackThreadAllowlistInvalid" xml:space="preserve"><value>チャンネルまたはスレッドの範囲一覧が無効か、すでに100件登録されています。追加する前に一覧を修正してください。</value></data>
   <data name="NoRegisteredConnections" xml:space="preserve"><value>CLI接続はまだ登録されていません。</value></data>
   <data name="RegisteredConnections" xml:space="preserve"><value>登録済みCLI接続: {0}</value></data>
   <data name="RegisteredConnectionsUnavailable" xml:space="preserve"><value>保存済みCLI接続を読み込めませんでした: {0}</value></data>
   <data name="ConnectionRegistered" xml:space="preserve"><value>このPCに{0} CLI接続を登録しました。</value></data>
   <data name="ConnectionRegistrationFailed" xml:space="preserve"><value>CLI接続を登録できませんでした: {0}</value></data>
-  <data name="ConnectionLoaded" xml:space="preserve"><value>保存した{0}の設定を読み込みました。アプリの既定値として使うには設定を保存してください。</value></data>
+  <data name="ConnectionLoaded" xml:space="preserve"><value>登録済みの{0}の設定を読み込みました。変更内容を確認してください。</value></data>
   <data name="AttachmentLimitsMustBeWholeNumbers" xml:space="preserve"><value>添付の上限には整数を指定してください。</value></data>
   <data name="GeneralSettingsSaved" xml:space="preserve"><value>自動接続先を保存しました</value></data>
   <data name="GeneralSettingsSavedDetails" xml:space="preserve"><value>次回のアプリ起動時から、この自動接続設定を使用します。</value></data>

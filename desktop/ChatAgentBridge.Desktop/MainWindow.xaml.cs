@@ -74,6 +74,9 @@ public sealed partial class MainWindow : Window
     internal Task ShutdownAsync() => RootFrame.Content is MainPage page
         ? page.ShutdownAsync() : Task.CompletedTask;
 
+    internal Task<bool> TryResolveUnsavedSettingsAsync() => RootFrame.Content is MainPage page
+        ? page.TryResolveUnsavedSettingsAsync() : Task.FromResult(true);
+
     internal bool CanRestartForUpdate => RootFrame.Content is MainPage page && page.CanRestartForPortableUpdate;
     internal Task<bool> PrepareForPortableUpdateAsync() => RootFrame.Content is MainPage page
         ? page.PrepareForPortableUpdateAsync() : Task.FromResult(false);

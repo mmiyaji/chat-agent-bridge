@@ -2,7 +2,7 @@
 <root>
   <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>Open connection settings</value></data>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>Connect without a proxy</value></data>
-  <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>Turn on for a direct connection to your internal Mattermost server. When off, the system proxy settings are used. This applies to user lookup, post link checks, and sending and receiving messages. Save and reconnect after changing this setting.</value></data>
+  <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>Turn on for a direct connection to your internal Mattermost server. When off, the system proxy settings are used. This applies to user lookup, post link checks, and sending and receiving messages. Reconnect after changing this setting.</value></data>
   <data name="MainNavigation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Main navigation</value>
   </data>
@@ -37,7 +37,7 @@
     <value>Reload settings</value>
   </data>
   <data name="SaveSettings.Content" xml:space="preserve">
-    <value>Save agent settings</value>
+    <value>Save changes</value>
   </data>
   <data name="MainContentScroll.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Main content</value>
@@ -135,7 +135,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Select folder...</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock016.Text" xml:space="preserve">
-    <value>Save and reconnect after changing the folder. Existing conversations keep their workspace.</value>
+    <value>Reconnect chat after changing the workspace. Existing conversations keep their own workspace.</value>
   </data>
   <data name="AgentProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Agent to use</value>
@@ -189,7 +189,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Trusted working folders</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock026.Text" xml:space="preserve">
-    <value>A trusted folder includes all of its descendant folders, so choosing a parent covers its children. If this list is empty, the current work folder and its descendants are trusted. Enter one path per line; edit the list to remove paths. Click Save to apply. This controls where execution starts; it does not isolate CLI file access from the OS.</value>
+    <value>The agent can run in trusted folders and all their subfolders. A blank list trusts the current workspace and its subfolders. Enter one absolute path per line. This does not isolate CLI file access at the OS level.</value>
   </data>
   <data name="TrustedWorkspaceRoots.Header" xml:space="preserve">
     <value>Trusted folders (absolute paths, one per line)</value>
@@ -279,7 +279,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Allowed chat accounts and conversations</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock035.Text" xml:space="preserve">
-    <value>The allowed user IDs in the connection settings are still required. A blank thread list adds no restriction. A nonempty list allows requests only in the listed existing threads; new top-level conversations are blocked. Save and reconnect after changing the lists.</value>
+    <value>The allowed user IDs in the connection settings are still required. A blank thread list adds no restriction. A nonempty list allows requests only in the listed existing threads; new top-level conversations are blocked. Review changes to the lists, then reconnect.</value>
   </data>
   <data name="SlackAllowedChannelIds.Header" xml:space="preserve">
     <value>Slack channel IDs</value>
@@ -385,7 +385,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Connection settings</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock047.Text" xml:space="preserve">
-    <value>Save your Mattermost or Slack credentials on this PC, then connect from Chat inbox.</value>
+    <value>Configure your service and allowed users, then connect from Chat inbox.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock048.Text" xml:space="preserve">
     <value>Enter the ID of the channel to receive requests from. For a bot DM, use that DM's channel ID. Start with a leading @mention or !cab followed by your request. The same sender can then continue by replying normally in that thread. The bot must also join any regular channel you use.</value>
@@ -433,7 +433,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="WizardAddMattermostUserButton.Content" xml:space="preserve"><value>Add this user</value></data>
   <data name="WizardAddMattermostUserButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add this user to allowed users</value></data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock053.Text" xml:space="preserve">
-    <value>This list contains internal user IDs. Do not enter usernames directly. A blank list rejects everyone. Save settings to apply additions, then reconnect Mattermost if it is connected.</value>
+    <value>This list contains internal user IDs. Do not enter usernames directly. A blank list rejects everyone. Review additions to apply the change, then reconnect Mattermost if connected.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock054.Text" xml:space="preserve">
     <value>Bot tokens are used for posting, and App tokens are used to receive requests in Socket Mode. Permissions and event subscription settings on the Slack app side and the bot's participation in the channel are required.</value>
@@ -481,10 +481,10 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Post notices when connecting or disconnecting</value>
   </data>
   <data name="PostConnectionNoticeHelp.Text" xml:space="preserve">
-    <value>Post connection and disconnection notices to the configured Mattermost channel. When off, neither notice is posted. Off by default. Save after changing this setting.</value>
+    <value>Post connection and disconnection notices to the configured Mattermost channel. When off, neither notice is posted. Off by default.</value>
   </data>
   <data name="SaveConnections.Content" xml:space="preserve">
-    <value>Save connection settings</value>
+    <value>Save changes</value>
   </data>
   <data name="historyHistoryPageTextBlock001.Text" xml:space="preserve">
     <value>History and conversations</value>
@@ -736,7 +736,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Authorized user ID (required, one per line)</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock018.Text" xml:space="preserve">
-    <value>This list contains internal user IDs. Do not enter usernames directly. A blank list rejects everyone. Save settings to apply additions, then reconnect Mattermost if it is connected.</value>
+    <value>This list contains internal user IDs. Do not enter usernames directly. A blank list rejects everyone. Review additions to apply the change, then reconnect Mattermost if connected.</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock019.Text" xml:space="preserve">
     <value>Please enter your token only on this screen. Does not output tokens in execution results.</value>
@@ -905,7 +905,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="GeneralPageDescription.Text" xml:space="preserve"><value>View current status and configure startup, auto-connect, tray, language, and appearance.</value></data>
   <data name="GeneralAppearanceSectionHeading.Text" xml:space="preserve"><value>Language and appearance</value></data>
   <data name="SaveGeneralSettings.Content" xml:space="preserve"><value>Save auto-connect preference</value></data>
-  <data name="SaveGeneralSettingsHelp.Text" xml:space="preserve"><value>Windows startup and tray options apply immediately. Save the auto-connect preference to keep it.</value></data>
+  <data name="SaveGeneralSettingsHelp.Text" xml:space="preserve"><value>The selected auto-connect service is used the next time the app starts.</value></data>
   <data name="AppThemeCardHeading.Text" xml:space="preserve"><value>Color theme</value></data>
   <data name="ConnectionCredentialsHeading.Text" xml:space="preserve"><value>Chat connection credentials</value></data>
   <data name="ChatPoliciesHeading.Text" xml:space="preserve"><value>Chat approval and access</value></data>
@@ -976,7 +976,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="OverviewAutoConnectLabel.Text" xml:space="preserve"><value>Automatic connection</value></data>
   <data name="OverviewAutoConnectHint.Text" xml:space="preserve"><value>When this app opens</value></data>
   <data name="SlackUsernameLookupLabel.Text" xml:space="preserve"><value>Find an allowed Slack user</value></data>
-  <data name="SlackUsernameLookupHelp.Text" xml:space="preserve"><value>Enter an exact Slack username, display name (for example, @alice), or member ID. Lookup shows the account and workspace. Searching grants no access; choose Add this user to update the unsaved allowlist, then save and reconnect.</value></data>
+  <data name="SlackUsernameLookupHelp.Text" xml:space="preserve"><value>Enter an exact Slack username, display name (for example, @alice), or member ID. Lookup shows the account and workspace. Searching grants no access; choose Add this user to update the unsaved allowlist, then review the change and reconnect.</value></data>
   <data name="SlackUsernameLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slack username, display name, or member ID</value></data>
   <data name="SlackUsernameLookupInput.PlaceholderText" xml:space="preserve"><value>@alice or U012ABCDEF</value></data>
   <data name="LookupSlackUserButton.Content" xml:space="preserve"><value>Look up Slack user</value></data>
@@ -987,7 +987,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="WizardLookupSlackUserButton.Content" xml:space="preserve"><value>Look up Slack user</value></data>
   <data name="WizardAddSlackUserButton.Content" xml:space="preserve"><value>Add this user</value></data>
   <data name="SlackThreadLookupLabel.Text" xml:space="preserve"><value>Find a Slack conversation from its message link</value></data>
-  <data name="SlackThreadLookupHelp.Text" xml:space="preserve"><value>Paste a Slack message permalink. The app checks the authenticated workspace and finds the actual channel and conversation root. Choose Add this conversation to add both the channel and root thread when needed, then save and reconnect. Empty channel and thread lists impose no extra conversation restriction.</value></data>
+  <data name="SlackThreadLookupHelp.Text" xml:space="preserve"><value>Paste a Slack message permalink. The app checks the authenticated workspace and finds the actual channel and conversation root. Choose Add this conversation to add both the channel and root thread when needed, then review the change and reconnect. Empty channel and thread lists impose no extra conversation restriction.</value></data>
   <data name="SlackThreadLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slack message permalink</value></data>
   <data name="SlackThreadLookupInput.PlaceholderText" xml:space="preserve"><value>https://workspace.slack.com/archives/…/p…</value></data>
   <data name="ResolveSlackThreadButton.Content" xml:space="preserve"><value>Check conversation</value></data>
@@ -1109,7 +1109,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="InboxConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Connection status and details</value></data>
   <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>Connection and notification details. Conversations continue in the original Slack or Mattermost thread.</value></data>
   <data name="InboxRequestContext.Header" xml:space="preserve"><value>Workspace and request details</value></data>
-  <data name="AgentSettingsGuide.Text" xml:space="preserve"><value>1. Choose a workspace and CLI. 2. Check the CLI. 3. Save settings.</value></data>
+  <data name="AgentSettingsGuide.Text" xml:space="preserve"><value>Choose a CLI and workspace, then use Check CLI to verify it.</value></data>
   <data name="AgentBasicTitle.Text" xml:space="preserve"><value>Basic setup</value></data>
   <data name="AgentBasicHelp.Text" xml:space="preserve"><value>Workspace, selected CLI, and connection check</value></data>
   <data name="AgentCommonTitle.Text" xml:space="preserve"><value>Common execution settings</value></data>
@@ -1126,7 +1126,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Register or restore Codex and Claude Code connections</value></data>
   <data name="AgentExecutionExplanationTitle.Text" xml:space="preserve"><value>How execution approval works</value></data>
   <data name="AgentExecutionExplanationHelp.Text" xml:space="preserve"><value>Review the approval flow and current execution policy</value></data>
-  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>Choose common behavior, then open the service you use. Save settings and reconnect chat to apply changes.</value></data>
+  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>Open the service you use. Approval and attachment settings apply to both services.</value></data>
   <data name="ChatCommonTitle.Text" xml:space="preserve"><value>Common chat behavior</value></data>
   <data name="ChatCommonHelp.Text" xml:space="preserve"><value>Request approval and result posting for both services</value></data>
   <data name="ChatScopeOverview.Text" xml:space="preserve"><value>Open the service you use to set credentials, allowed users, and conversation restrictions.</value></data>
@@ -1138,7 +1138,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ChatAttachmentsHelp.Text" xml:space="preserve"><value>Approval and size and count limits for generated files sent to chat</value></data>
   <data name="CodexChatSharingTitle.Text" xml:space="preserve"><value>Codex only: share operations and questions</value></data>
   <data name="CodexChatSharingHelp.Text" xml:space="preserve"><value>Requires Codex App Server, which supports operation approval and questions. Enable App Server in Agent settings to use these options.</value></data>
-  <data name="SlackConversationScopeHelp.Text" xml:space="preserve"><value>The allowed user IDs in the connection settings are still required. A blank thread list adds no restriction. A nonempty list allows requests only in the listed existing threads; new top-level conversations are blocked. Save and reconnect after changing the lists.</value></data>
+  <data name="SlackConversationScopeHelp.Text" xml:space="preserve"><value>The allowed user IDs in the connection settings are still required. A blank thread list adds no restriction. A nonempty list allows requests only in the listed existing threads; new top-level conversations are blocked. Review changes to the lists, then reconnect.</value></data>
   <data name="AgentBasicAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Basic setup</value></data>
   <data name="AgentCommonAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Common execution settings</value></data>
   <data name="AgentModelSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Selected CLI: model and reasoning</value></data>
@@ -1152,4 +1152,17 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="SlackSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slack</value></data>
   <data name="ChatAttachmentsAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>File attachments</value></data>
   <data name="CodexChatSharingAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Codex only: share operations and questions</value></data>
+  <data name="AgentSettingsJump.Header" xml:space="preserve"><value>Go to an agent setting</value></data>
+  <data name="AgentSettingsJump.PlaceholderText" xml:space="preserve"><value>Select a section</value></data>
+  <data name="AgentSettingsJump.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Go to an agent setting</value></data>
+  <data name="JumpAgentBasic.Content" xml:space="preserve"><value>Basic setup and CLI check</value></data>
+  <data name="JumpAgentCommon.Content" xml:space="preserve"><value>Trusted folders and manual approval</value></data>
+  <data name="JumpAgentModel.Content" xml:space="preserve"><value>Model and reasoning effort</value></data>
+  <data name="JumpAgentPermissions.Content" xml:space="preserve"><value>Agent tool permissions</value></data>
+  <data name="JumpAgentCodex.Content" xml:space="preserve"><value>Codex: App Server and network</value></data>
+  <data name="JumpAgentAdvanced.Content" xml:space="preserve"><value>CLI location and environment</value></data>
+  <data name="JumpAgentRegistrations.Content" xml:space="preserve"><value>Register or restore CLI connections</value></data>
+  <data name="JumpAgentExplanation.Content" xml:space="preserve"><value>How execution approval works</value></data>
+  <data name="JumpCodexSharing.Content" xml:space="preserve"><value>Codex: share approvals and questions</value></data>
+  <data name="SettingsAutoSaveRetry.Content" xml:space="preserve"><value>Review changes / retry</value></data>
 </root>

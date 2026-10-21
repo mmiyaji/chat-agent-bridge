@@ -161,6 +161,13 @@ public sealed class TrayService : IDisposable
     {
         // Publish the task before callbacks or a second close can re-enter.
         await Task.Yield();
+        if (!await _window.TryResolveUnsavedSettingsAsync())
+        {
+            // A cancelled or failed save must not arm the shutdown path. A later
+            // explicit exit can retry; hiding in the tray retains the draft.
+            _exitTask = null;
+            return;
+        }
         try
         {
             if (_window.Content is UIElement content) content.IsHitTestVisible = false;

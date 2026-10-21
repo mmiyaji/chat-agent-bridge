@@ -80,18 +80,40 @@
                             Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsSettingsLoaded), Mode=OneWay}"
                             HorizontalAlignment="Left" AutomationProperties.AutomationId="ReloadSettings"  x:Uid="ReloadSettings" />
 
-                    <Button Grid.Row="2" Margin="0,0,0,12" HorizontalAlignment="Left" Command="{x:Bind ViewModel.SaveSettingsCommand}" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsAgentSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}" AutomationProperties.AutomationId="SaveSettings" x:Uid="SaveSettings" />
-                    <Grid Grid.Row="2" Margin="0,0,0,12" ColumnSpacing="12" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsConnectionsSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                        <Button Command="{x:Bind ViewModel.SaveSettingsCommand}" VerticalAlignment="Bottom" AutomationProperties.AutomationId="SaveConnections" x:Uid="SaveConnections" />
-                        <ComboBox x:Name="ConnectionsJump" Grid.Column="1" MaxWidth="320" HorizontalAlignment="Left" VerticalAlignment="Bottom" SelectionChanged="ConnectionsJump_SelectionChanged" AutomationProperties.AutomationId="ConnectionsJump" x:Uid="ConnectionsJump">
+                    <StackPanel Grid.Row="2" Spacing="8" Margin="0,0,0,12" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsAgentSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}">
+                        <Grid ColumnSpacing="8" Visibility="{x:Bind local:MainPage.SettingsAutoSaveRetryVisibility(ViewModel.HasUnsavedSettings, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE74E;" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" Text="{x:Bind local:MainPage.SettingsAutoSaveStatus(ViewModel.HasUnsavedSettings, ViewModel.IsLoading, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="AgentSettingsSaveState" />
+                        </Grid>
+                        <Button Style="{StaticResource AccentButtonStyle}" Click="RetrySettingsAutoSave_Click" IsEnabled="{x:Bind ViewModel.CanSavePendingSettings, Mode=OneWay}" Visibility="{x:Bind local:MainPage.SettingsAutoSaveRetryVisibility(ViewModel.HasUnsavedSettings, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SaveSettings" x:Uid="SettingsAutoSaveRetry" localization:LocalizedResourceKey.Key="SettingsAutoSaveRetry" />
+                        <ComboBox Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="440" HorizontalAlignment="Left" SelectedIndex="-1" SelectionChanged="AgentJump_SelectionChanged" AutomationProperties.AutomationId="AgentSettingsJump" x:Uid="AgentSettingsJump">
+                            <ComboBoxItem Tag="basic" AutomationProperties.AutomationId="JumpAgentBasic" x:Uid="JumpAgentBasic" />
+                            <ComboBoxItem Tag="common" AutomationProperties.AutomationId="JumpAgentCommon" x:Uid="JumpAgentCommon" />
+                            <ComboBoxItem Tag="model" AutomationProperties.AutomationId="JumpAgentModel" x:Uid="JumpAgentModel" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.SupportsModel), Mode=OneWay}" />
+                            <ComboBoxItem Tag="permissions" AutomationProperties.AutomationId="JumpAgentPermissions" x:Uid="JumpAgentPermissions" Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" />
+                            <ComboBoxItem Tag="codex" AutomationProperties.AutomationId="JumpAgentCodex" x:Uid="JumpAgentCodex" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsCodexProvider), Mode=OneWay}" />
+                            <ComboBoxItem Tag="advanced" AutomationProperties.AutomationId="JumpAgentAdvanced" x:Uid="JumpAgentAdvanced" />
+                            <ComboBoxItem Tag="registrations" AutomationProperties.AutomationId="JumpAgentRegistrations" x:Uid="JumpAgentRegistrations" />
+                            <ComboBoxItem Tag="explanation" AutomationProperties.AutomationId="JumpAgentExplanation" x:Uid="JumpAgentExplanation" />
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Margin="0,0,0,12" Spacing="8" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsConnectionsSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}">
+                        <Grid ColumnSpacing="8" Visibility="{x:Bind local:MainPage.SettingsAutoSaveRetryVisibility(ViewModel.HasUnsavedSettings, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE74E;" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" Text="{x:Bind local:MainPage.SettingsAutoSaveStatus(ViewModel.HasUnsavedSettings, ViewModel.IsLoading, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="ConnectionSettingsSaveState" />
+                        </Grid>
+                        <Button Style="{StaticResource AccentButtonStyle}" Click="RetrySettingsAutoSave_Click" IsEnabled="{x:Bind ViewModel.CanSavePendingSettings, Mode=OneWay}" Visibility="{x:Bind local:MainPage.SettingsAutoSaveRetryVisibility(ViewModel.HasUnsavedSettings, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SaveConnections" x:Uid="SettingsAutoSaveRetry" localization:LocalizedResourceKey.Key="SettingsAutoSaveRetry" />
+                        <ComboBox x:Name="ConnectionsJump" Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="440" HorizontalAlignment="Left" SelectionChanged="ConnectionsJump_SelectionChanged" AutomationProperties.AutomationId="ConnectionsJump" x:Uid="ConnectionsJump">
                             <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="JumpMattermost" />
                             <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="JumpSlack" />
                             <ComboBoxItem Tag="approval" AutomationProperties.AutomationId="JumpApproval" x:Uid="JumpApproval" />
                             <ComboBoxItem Tag="attachments" AutomationProperties.AutomationId="JumpAttachments" x:Uid="JumpAttachments" />
+                            <ComboBoxItem Tag="codex-sharing" AutomationProperties.AutomationId="JumpCodexSharing" x:Uid="JumpCodexSharing" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsCodexProvider), Mode=OneWay}" />
                         </ComboBox>
-                    </Grid>
-                    <ScrollViewer x:Name="MainContentScroll" Grid.Row="3" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind local:MainPage.CanUseForm(IsOverviewSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="MainContentScroll"  x:Uid="MainContentScroll">
+                    </StackPanel>
+                    <ScrollViewer x:Name="MainContentScroll" Grid.Row="3" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind local:MainPage.CanUseForm(IsOverviewSelected, ViewModel.IsSettingsLoaded, ViewModel.IsLoading), Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="MainContentScroll"  x:Uid="MainContentScroll">
                         <Grid Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="1040" HorizontalAlignment="Left" AutomationProperties.AutomationId="FormContent">
                             <StackPanel Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsOverviewSelected), Mode=OneTime}">
                                 <StackPanel Spacing="4">
@@ -163,7 +185,8 @@
                                             <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="AutoConnectOptionSlack" />
                                         </ComboBox>
                                     </settings:SettingsCard>
-                                    <Button Command="{x:Bind ViewModel.SaveGeneralSettingsCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SaveGeneralSettings" x:Uid="SaveGeneralSettings" />
+                                    <TextBlock Visibility="{x:Bind local:MainPage.SettingsAutoSaveRetryVisibility(ViewModel.HasUnsavedSettings, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" TextWrapping="Wrap" Text="{x:Bind local:MainPage.SettingsAutoSaveStatus(ViewModel.HasUnsavedSettings, ViewModel.IsLoading, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="GeneralSettingsSaveState" />
+                                    <Button Click="RetrySettingsAutoSave_Click" Visibility="{x:Bind local:MainPage.SettingsAutoSaveRetryVisibility(ViewModel.HasUnsavedSettings, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" IsEnabled="{x:Bind ViewModel.CanSavePendingSettings, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="GeneralSettingsSaveRetry" x:Uid="SettingsAutoSaveRetry" localization:LocalizedResourceKey.Key="SettingsAutoSaveRetry" />
                                     <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="SaveGeneralSettingsHelp" x:Uid="SaveGeneralSettingsHelp" />
                                 </StackPanel>
                                 <tray:TraySettingsControl />
@@ -206,7 +229,7 @@
                                                 <TextBlock Text="{x:Bind ViewModel.SetupDraftNotice, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSetupDraftNotice), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupDraftNotice" />
                                                 <Button Click="ReloadSettings_Click" IsEnabled="{x:Bind local:MainPage.CanReloadSettings(ViewModel.IsLoading, ViewModel.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SetupReloadSettings" x:Uid="SetupReloadSettings" />
                                                 <StackPanel Spacing="8" HorizontalAlignment="Left">
-                                                    <Button Command="{x:Bind ViewModel.StartOnboardingCommand}" AutomationProperties.AutomationId="StartOnboarding" x:Uid="StartOnboarding" />
+                                                    <Button Click="StartOnboarding_Click" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" AutomationProperties.AutomationId="StartOnboarding" x:Uid="StartOnboarding" />
                                                     <Button Click="ShowTerms_Click" AutomationProperties.AutomationId="OverviewTerms" x:Uid="OverviewTerms" />
                                                     <Button Click="ShowPrivacy_Click" AutomationProperties.AutomationId="OverviewPrivacy" x:Uid="OverviewPrivacy" />
                                                 </StackPanel>
@@ -272,7 +295,7 @@
                                             </InfoBar.ActionButton>
                                         </InfoBar>
                                         <TextBlock Text="{x:Bind ViewModel.CliVersion, Mode=OneWay}" TextWrapping="Wrap" />
-                                        <TextBlock Text="{x:Bind ViewModel.CliExecutablePath, Mode=OneWay}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{x:Bind ViewModel.CliExecutablePath, Mode=OneWay}" Visibility="{x:Bind local:MainPage.NonEmptyTextVisibility(ViewModel.CliExecutablePath), Mode=OneWay}" TextWrapping="Wrap" />
                                         <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap"
                                                    Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.ShowCliCheckSummary), Mode=OneWay}" AutomationProperties.AutomationId="SettingsCliCheckSummary" />
                                     </StackPanel>

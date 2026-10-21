@@ -43,7 +43,11 @@ public partial class MainPageViewModel : ObservableObject
     {
         ReasoningEffortCandidates.Add(ReasoningEffortChoice.Default);
         ModelCatalog = new ModelCatalogViewModel(CreateSettingsSnapshot, ApplyCatalogModelSelection);
-        SaveSettingsCommand.PropertyChanged += (_, _) => SaveGeneralSettingsCommand.NotifyCanExecuteChanged();
+        SaveSettingsCommand.PropertyChanged += (_, _) =>
+        {
+            SaveGeneralSettingsCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(nameof(CanSavePendingSettings));
+        };
         ModelCatalog.PropertyChanged += (_, e) =>
         {
             if ((e.PropertyName == nameof(ModelCatalog.Status) || e.PropertyName == nameof(ModelCatalog.IsLoading)) && !ModelCatalog.IsLoading)
@@ -51,6 +55,12 @@ public partial class MainPageViewModel : ObservableObject
         };
         PropertyChanged += (_, e) =>
         {
+            if (IsSettingsDraftProperty(e.PropertyName)) RefreshSettingsDraftChanges(notifyEdited: true);
+            if (e.PropertyName == nameof(IsLoading) && !IsLoading) RefreshSettingsDraftChanges();
+            if (e.PropertyName is nameof(HasUnsavedSettings) or nameof(IsSensitiveConfirmationPending))
+                RunCommand.NotifyCanExecuteChanged();
+            if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning) or nameof(AgentReasoningEffort) or nameof(SelectedReasoningEffort))
+                OnPropertyChanged(nameof(CanSavePendingSettings));
             WizardSettingChanged(e.PropertyName);
             if (e.PropertyName is nameof(CliCheckSucceeded) or nameof(CliCheckFailed) or nameof(IsCheckingCli) or nameof(CliVersion) or nameof(IsCliCheckRestored))
                 RefreshOverviewStatus();
@@ -262,6 +272,7 @@ public partial class MainPageViewModel : ObservableObject
 
     public async Task LoadAsync()
     {
+        _restoringSettingsDraft = true;
         IsLoading = true;
         IsSettingsLoaded = false;
         StatusTitle = ViewModelText.Get("LoadingSettings");
@@ -330,6 +341,7 @@ public partial class MainPageViewModel : ObservableObject
         catch (Exception ex)
         {
             _settings = null;
+            IsSettingsLoaded = false;
             _hasSavedSettings = false;
             StatusTitle = ViewModelText.Get("SettingsLoadFailed");
             StatusMessage = ViewModelText.Get("SettingsLoadFailedDetails", ex.Message);
@@ -337,6 +349,9 @@ public partial class MainPageViewModel : ObservableObject
         }
         finally
         {
+            _initializingSettings = false;
+            _restoringSettingsDraft = false;
+            RefreshSettingsDraftChanges(notifyEdited: true);
             IsLoading = false;
         }
         if (IsSettingsLoaded) SettingsSaved?.Invoke();
@@ -422,12 +437,19 @@ public partial class MainPageViewModel : ObservableObject
     private async Task SaveSettingsAsync()
     {
         _lastSaveSucceeded = false;
-        if (_closing || !IsSettingsLoaded || IsLoading || IsRunning || _settings is null || _unsupportedSavedEffort) return;
+        if (!CanSaveSettings()) return;
+        _savingSettings = true;
+        IsLoading = true;
         var saved = false;
         try
         {
-            var snapshot = CreateSettingsSnapshot() with
+            var draft = CreateSettingsSnapshot();
+            var attachmentSize = FileAttachmentMaxSizeMb;
+            var attachmentCount = FileAttachmentMaxCount;
+            var attachmentTotal = FileAttachmentMaxTotalSizeMb;
+            var snapshot = draft with
             {
+                AgentReasoningEffort = AgentProfile.NormalizeReasoningEffort(AgentReasoningEffort),
                 MattermostAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(MattermostAllowedUserIds),
                 SlackAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(SlackAllowedUserIds),
                 SlackAllowedChannelIds = ChatAccessPolicy.NormalizeScopes(SlackAllowedChannelIds),
@@ -443,36 +465,38 @@ public partial class MainPageViewModel : ObservableObject
                 FileAttachmentMaxTotalSizeMb = ToAttachmentLimit(FileAttachmentMaxTotalSizeMb)
             };
             FileAttachmentPolicy.Validate(snapshot);
-            if (!string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot))
-            {
-                if (!Path.IsPathFullyQualified(snapshot.WorkspaceRoot) || !Directory.Exists(snapshot.WorkspaceRoot))
-                    throw new InvalidOperationException(ViewModelText.Get("WorkspaceMustBeExistingAbsolutePath"));
-                if (!ExecutionPolicy.IsWorkspaceTrusted(snapshot, snapshot.WorkspaceRoot))
-                    throw new InvalidOperationException(ViewModelText.Get("WorkspaceOutsideTrustedRoots"));
-            }
+            if (string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot) ||
+                !Path.IsPathFullyQualified(snapshot.WorkspaceRoot) || !Directory.Exists(snapshot.WorkspaceRoot))
+                throw new InvalidOperationException(ViewModelText.Get("WorkspaceMustBeExistingAbsolutePath"));
+            if (!ExecutionPolicy.IsWorkspaceTrusted(snapshot, snapshot.WorkspaceRoot))
+                throw new InvalidOperationException(ViewModelText.Get("WorkspaceOutsideTrustedRoots"));
             if (snapshot.AgentProvider == AgentProfile.Codex && AgentProfile.ResolveProvider(snapshot) == AgentProfile.Custom &&
                 (snapshot.AgentPermissionMode != "inherit" ||
                  snapshot.AgentModel is not null || snapshot.AgentReasoningEffort is not null))
                 throw new InvalidOperationException(ViewModelText.Get("CodexExecutableRequiredForAgentSettings"));
             _ = AgentProfile.BuildInvocation(snapshot);
+            if (!await ConfirmSensitiveDraftAsync(_settings!, snapshot, draft,
+                    attachmentSize, attachmentCount, attachmentTotal)) return;
             await _settingsStore.SaveAsync(snapshot);
             _settings = snapshot;
+            AllowSensitiveSettingsConfirmationRetry();
             _hasSavedSettings = true;
             saved = true;
             _lastSaveSucceeded = true;
-            MattermostAllowedUserIds = snapshot.MattermostAllowedUserIds;
-            SlackAllowedUserIds = snapshot.SlackAllowedUserIds;
-            SlackAllowedChannelIds = snapshot.SlackAllowedChannelIds;
-            SlackAllowedThreadIds = snapshot.SlackAllowedThreadIds;
-            MattermostAllowedThreadIds = snapshot.MattermostAllowedThreadIds;
-            TrustedWorkspaceRoots = snapshot.TrustedWorkspaceRoots;
-            AgentPermissionMode = snapshot.AgentPermissionMode;
-            ChatApprovalMode = snapshot.ChatApprovalMode;
-            ChatResultMode = snapshot.ChatResultMode;
-            FileAttachmentApprovalMode = snapshot.FileAttachmentApprovalMode;
-            FileAttachmentMaxSizeMb = snapshot.FileAttachmentMaxSizeMb;
-            FileAttachmentMaxCount = snapshot.FileAttachmentMaxCount;
-            FileAttachmentMaxTotalSizeMb = snapshot.FileAttachmentMaxTotalSizeMb;
+            // Normalize only the draft that was written. A later edit must remain a draft.
+            if (MattermostAllowedUserIds == draft.MattermostAllowedUserIds) MattermostAllowedUserIds = snapshot.MattermostAllowedUserIds;
+            if (SlackAllowedUserIds == draft.SlackAllowedUserIds) SlackAllowedUserIds = snapshot.SlackAllowedUserIds;
+            if (SlackAllowedChannelIds == draft.SlackAllowedChannelIds) SlackAllowedChannelIds = snapshot.SlackAllowedChannelIds;
+            if (SlackAllowedThreadIds == draft.SlackAllowedThreadIds) SlackAllowedThreadIds = snapshot.SlackAllowedThreadIds;
+            if (MattermostAllowedThreadIds == draft.MattermostAllowedThreadIds) MattermostAllowedThreadIds = snapshot.MattermostAllowedThreadIds;
+            if (TrustedWorkspaceRoots == draft.TrustedWorkspaceRoots) TrustedWorkspaceRoots = snapshot.TrustedWorkspaceRoots;
+            if (AgentPermissionMode == draft.AgentPermissionMode) AgentPermissionMode = snapshot.AgentPermissionMode;
+            if (ChatApprovalMode == draft.ChatApprovalMode) ChatApprovalMode = snapshot.ChatApprovalMode;
+            if (ChatResultMode == draft.ChatResultMode) ChatResultMode = snapshot.ChatResultMode;
+            if (FileAttachmentApprovalMode == draft.FileAttachmentApprovalMode) FileAttachmentApprovalMode = snapshot.FileAttachmentApprovalMode;
+            if (FileAttachmentMaxSizeMb.Equals(attachmentSize)) FileAttachmentMaxSizeMb = snapshot.FileAttachmentMaxSizeMb;
+            if (FileAttachmentMaxCount.Equals(attachmentCount)) FileAttachmentMaxCount = snapshot.FileAttachmentMaxCount;
+            if (FileAttachmentMaxTotalSizeMb.Equals(attachmentTotal)) FileAttachmentMaxTotalSizeMb = snapshot.FileAttachmentMaxTotalSizeMb;
             _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
             UpdateSavedAgentSummary();
             RefreshSetupStepper();
@@ -482,15 +506,23 @@ public partial class MainPageViewModel : ObservableObject
         {
             SetStatus(ViewModelText.Get("SettingsSaveFailed"), ex.Message, "Error");
         }
+        finally
+        {
+            _savingSettings = false;
+            RefreshSettingsDraftChanges();
+            IsLoading = false;
+        }
         if (saved) SettingsSaved?.Invoke();
     }
 
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task RunAsync()
     {
-        if (_closing || !IsSettingsLoaded || IsLoading || IsRunning || _settings is null || _unsupportedSavedEffort) return;
+        if (!CanRun() || _settings is null) return;
         var promptSnapshot = Prompt;
-        var settingsSnapshot = CreateSettingsSnapshot();
+        // Execute the persisted projection even if a delayed picker/catalog callback
+        // changes an editor after navigation to the workbench.
+        var settingsSnapshot = _settings;
         if (string.IsNullOrWhiteSpace(promptSnapshot))
         {
             SetStatus(ViewModelText.Get("PromptRequired"), ViewModelText.Get("PromptRequiredDetails"), "Warning");
@@ -499,7 +531,7 @@ public partial class MainPageViewModel : ObservableObject
 
         IsRunning = true;
         IsCancellationPending = false;
-        if (RequireApproval)
+        if (settingsSnapshot.RequireApproval)
         {
             if (ConfirmExecutionAsync is null)
             {
@@ -662,8 +694,10 @@ public partial class MainPageViewModel : ObservableObject
         }
     }
 
-    private bool CanRun() => IsSettingsLoaded && !IsLoading && !IsRunning && !_unsupportedSavedEffort;
-    private bool CanSaveSettings() => IsSettingsLoaded && !IsLoading && !IsRunning && !_unsupportedSavedEffort;
+    private bool CanRun() => !_closing && IsSettingsLoaded && _settings is not null && !IsLoading && !IsRunning &&
+        !_unsupportedSavedEffort && !HasUnsavedSettings && !IsSensitiveConfirmationPending;
+    private bool CanSaveSettings() => !_closing && IsSettingsLoaded && !IsLoading && !IsRunning &&
+        !_savingSettings && _settings is not null && !_unsupportedSavedEffort;
     private bool CanReloadSettings() => !IsLoading && !IsRunning;
 
     private bool CanCancelRun() => IsRunning && _runCancellation is { IsCancellationRequested: false };
@@ -707,6 +741,7 @@ public partial class MainPageViewModel : ObservableObject
         {
             InvalidateMattermostUsernameLookup();
             InvalidateMattermostThreadLookup();
+            RefreshSettingsDraftChanges(notifyEdited: true);
         }
         RefreshSetupStepper();
     }
@@ -761,8 +796,7 @@ public partial class MainPageViewModel : ObservableObject
             : !connectionReady ? ViewModelText.Get("NextSaveConnection")
             : !_chatConnectionConfirmed ? ViewModelText.Get("NextConnectToChat")
             : ViewModelText.Get("SetupCompleteReadyForChat");
-        var draft = CreateSettingsSnapshot();
-        SetupDraftNotice = _settings != draft ? ViewModelText.Get("UnsavedSetupChanges") : "";
+        SetupDraftNotice = HasUnsavedSettings ? ViewModelText.Get("UnsavedSetupChanges") : "";
         RefreshOverviewStatus();
     }
 
@@ -882,6 +916,7 @@ public partial class MainPageViewModel : ObservableObject
                 : ViewModelText.Get("SavedEffort", selected.SelectionLabel);
         }
         SaveSettingsCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanSavePendingSettings));
         RunCommand.NotifyCanExecuteChanged();
     }
 

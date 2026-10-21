@@ -53,24 +53,33 @@ public partial class MainPageViewModel
     private async Task RegisterAgentConnectionAsync()
     {
         if (!CanRegisterAgentConnection()) return;
-        var profile = new AgentConnectionProfile(
-            AgentProvider,
-            CliExecutablePath,
-            AgentProvider == AgentProfile.Codex ? (UseAppServer ? "app-server" : AgentProfile.DefaultCodexArguments) : "",
-            AgentProvider == AgentProfile.Codex && UseAppServer ? "app-server" : "exec",
-            AgentModel,
-            AgentReasoningEffort,
-            AgentPermissionMode,
-            AllowAgentNetwork,
-            CliVersion,
-            _cliCheckedAt ?? throw new InvalidOperationException("A current CLI check is required before registration."));
+        // A checked CLI may still have unconfirmed permission/command edits.
+        // Register only a settings projection that passed the same save gate.
+        if (!await SavePendingSettingsAsync(retrySensitiveConfirmation: true)) return;
+        // Saving can normalize a trusted root and invalidate the CLI signature.
+        if (!CanRegisterAgentConnection())
+        {
+            ConnectionRegistrationStatus = ViewModelText.Get("RecheckCli");
+            return;
+        }
         try
         {
+            var profile = new AgentConnectionProfile(
+                AgentProvider,
+                CliExecutablePath,
+                AgentProvider == AgentProfile.Codex ? (UseAppServer ? "app-server" : AgentProfile.DefaultCodexArguments) : "",
+                AgentProvider == AgentProfile.Codex && UseAppServer ? "app-server" : "exec",
+                AgentModel,
+                AgentReasoningEffort,
+                AgentPermissionMode,
+                AllowAgentNetwork,
+                CliVersion,
+                _cliCheckedAt ?? throw new InvalidOperationException("A current CLI check is required before registration."));
             await _agentConnectionStore.SaveVerifiedAsync(profile);
             await LoadAgentConnectionsAsync();
             ConnectionRegistrationStatus = ViewModelText.Get("ConnectionRegistered", AgentProviderDisplayName);
         }
-        catch (Exception ex) when (ex is ArgumentException or IOException or InvalidDataException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is ArgumentException or IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException)
         {
             ConnectionRegistrationStatus = ViewModelText.Get("ConnectionRegistrationFailed", ex.Message);
         }
