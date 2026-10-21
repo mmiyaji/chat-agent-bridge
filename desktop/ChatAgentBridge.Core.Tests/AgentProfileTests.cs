@@ -118,6 +118,29 @@ public sealed class AgentProfileTests
     }
 
     [Theory]
+    [InlineData("--session-file saved-session.json")]
+    [InlineData("--session-file=saved-session.json")]
+    [InlineData("-w alternate-worktree")]
+    [InlineData("-w")]
+    [InlineData("--prompt-interactive arbitrary")]
+    [InlineData("--prompt-interactive=arbitrary")]
+    public async Task StructuredProfilesRejectAlternateSessionWorkspaceAndInteractiveSelectorsBeforeRegistration(string arguments)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "cab-invalid-profile-" + Guid.NewGuid().ToString("N"));
+        foreach (var provider in new[] { AgentProfile.Gemini, AgentProfile.GitHubCopilot })
+        {
+            Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings
+            {
+                AgentProvider = provider, AgentArguments = arguments
+            }));
+            var profile = new AgentConnectionProfile(provider, "node", arguments, "exec", null, null,
+                "inherit", false, "test-version", DateTimeOffset.UtcNow);
+            await Assert.ThrowsAsync<ArgumentException>(() => new AgentConnectionStore(directory).SaveVerifiedAsync(profile));
+        }
+        Assert.False(Directory.Exists(directory));
+    }
+
+    [Theory]
     [InlineData("-sr00000000-0000-0000-0000-000000000000")]
     [InlineData("-dr00000000-0000-0000-0000-000000000000")]
     [InlineData("-spINLINE-PROMPT")]

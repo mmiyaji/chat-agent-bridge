@@ -149,8 +149,10 @@ public sealed class AgentRunner : IAgentRunner
 
         var (output, codex, claude, cliSession, outputTruncated) = await stdout.ConfigureAwait(false);
         var error = await stderr.ConfigureAwait(false);
-        // Structured providers can write diagnostic payloads to stderr; do not relay prompts or tool data.
-        if (structuredCli && !string.IsNullOrWhiteSpace(error)) error = "The CLI wrote diagnostics to standard error.";
+        // Structured providers can write prompts, paths and tool payloads to stderr.
+        // Return only fixed diagnostic categories, never any raw diagnostic text.
+        var validCliResult = cliSession is { HasResult: true, SessionId: not null, TurnFailed: false };
+        if (structuredCli) error = StructuredCliDiagnostics.Error(invocation.Provider, error, process.ExitCode, validCliResult);
         var usage = codex?.Usage ?? claude?.Usage ?? cliSession?.Usage;
         var success = process.ExitCode == 0;
         var exitCode = process.ExitCode;
@@ -166,13 +168,12 @@ public sealed class AgentRunner : IAgentRunner
             exitCode = -1;
             error = AppendError(error, "Claude Code reported a failed result event.");
         }
-        if (structuredCli && (cliSession?.HasResult != true || cliSession.SessionId is null || cliSession.TurnFailed))
+        if (structuredCli && !validCliResult)
         {
             success = false;
             if (exitCode == 0) exitCode = -1;
-            error = AppendError(error, "The CLI did not report a valid successful result and session UUID. Check that the installed CLI supports the configured structured output format.");
         }
-        if (structuredCli && settings.AuthorizedCliSessionId is { } expectedId &&
+        if (structuredCli && cliSession?.SessionId is not null && settings.AuthorizedCliSessionId is { } expectedId &&
             !string.Equals(cliSession?.SessionId, expectedId, StringComparison.OrdinalIgnoreCase))
         {
             success = false;

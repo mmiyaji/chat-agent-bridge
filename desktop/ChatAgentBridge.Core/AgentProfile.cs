@@ -131,8 +131,8 @@ public static class AgentProfile
             // Require separate short options and values so a reserved selector cannot hide in a bundle.
             if (argument.Length > 2 && argument[0] == '-' && argument[1] != '-')
                 throw new ArgumentException("CLI short options must be separate arguments; do not bundle flags or attach their values.", nameof(settings));
-            if (option is "--" or "--resume" or "-r" or "--continue" or "--session-id" or "--new-session" or "--new-session-id" or "--session" or "--connect" or "--worktree" or
-                "-C" or "--cwd" or "--directory" or "--working-directory" or "--prompt" or "-p" or "--interactive" or "-i" ||
+            if (option is "--" or "--resume" or "-r" or "--continue" or "--session-id" or "--session-file" or "--new-session" or "--new-session-id" or "--session" or "--connect" or "--worktree" or "-w" or
+                "-C" or "--cwd" or "--directory" or "--working-directory" or "--prompt" or "-p" or "--interactive" or "--prompt-interactive" or "-i" ||
                 argument.StartsWith("-C", StringComparison.Ordinal) ||
                 argument.StartsWith("-r", StringComparison.Ordinal) && !argument.StartsWith("--", StringComparison.Ordinal) ||
                 argument.StartsWith("-p", StringComparison.Ordinal) && !argument.StartsWith("--", StringComparison.Ordinal) ||

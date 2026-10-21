@@ -21,6 +21,12 @@
   <data name="CliRuntimeMissing" xml:space="preserve"><value>設定されたCLIの実行に必要な .NET ランタイムがありません。必要な .NET ランタイムをインストールしてから、もう一度確認してください。</value></data>
   <data name="CliVersionCommandFailed" xml:space="preserve"><value>設定されたCLIの --version が終了コード {0} で終了しました。ターミナルで設定済みのCLIに --version を指定して実行し、ランタイムとアクセス権を確認してください。</value></data>
   <data name="CliProviderMismatch" xml:space="preserve"><value>実行ファイルのバージョン情報が {0} と一致しません。正しいCLI実行ファイルを指定してください。</value></data>
+  <data name="CliAccountUnsupported" xml:space="preserve"><value>CLIが、このクライアントまたはアカウントは未対応と報告しました。CLIを更新して再ログインし、このアカウントでCLIを利用できるか確認してください。</value></data>
+  <data name="CliAuthenticationRequired" xml:space="preserve"><value>CLIで認証できませんでした。ターミナルで設定済みのCLIにログインしてから、再試行してください。</value></data>
+  <data name="CliWorkspaceUntrusted" xml:space="preserve"><value>CLIでこの作業フォルダーが信頼されていません。この作業フォルダーで設定済みのCLIを開き、CLI側の信頼設定を確認してから、再試行してください。</value></data>
+  <data name="CliModelUnavailable" xml:space="preserve"><value>選択したモデルは、このCLIまたはアカウントで利用できません。利用可能なモデルを選ぶか既定のモデルに戻してから、再試行してください。</value></data>
+  <data name="CliDiagnosticsHidden" xml:space="preserve"><value>CLIが標準エラーに診断情報を出力しました。</value></data>
+  <data name="CliStructuredResultInvalid" xml:space="preserve"><value>CLIから正常終了の結果と有効なセッションUUIDが返されませんでした。インストール済みのCLIが設定された構造化出力形式に対応しているか確認してください。</value></data>
   <data name="ApprovalPermissionLine" xml:space="preserve"><value>許可: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>拒否: !cab reject {0}</value></data>
   <data name="ApprovalRequestTitle" xml:space="preserve"><value>Codex が操作の許可を求めています。</value></data>
