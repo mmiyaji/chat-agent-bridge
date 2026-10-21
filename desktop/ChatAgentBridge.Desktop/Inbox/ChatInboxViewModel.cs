@@ -754,21 +754,44 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         RejectCommand.NotifyCanExecuteChanged();
     }
 
-    public async Task ApproveNotificationAsync(InboxItem item)
+    public async Task<Notifications.PendingNotificationActionResult> ApproveNotificationAsync(InboxItem item)
     {
-        if (!Requests.Contains(item) || IsExecuting || !IsConnectionConfirmed || item.State != "承認待ち") return;
+        bool IsAvailable() => !_closing && Requests.Contains(item) && IsConnectionConfirmed &&
+            ReferenceEquals(item.Transport, _transport) && _connection is { IsCancellationRequested: false } &&
+            item.State == "承認待ち";
+        if (!IsAvailable()) return Notifications.PendingNotificationActionResult.Unavailable;
+        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+            return Notifications.PendingNotificationActionResult.Busy;
         RevealRequest(item);
-        if (!CanApprove()) return;
+        // Revealing a request can synchronously change selection through UI bindings.
+        // Never let a notification authorize whichever request became selected instead.
+        if (!IsAvailable() || !ReferenceEquals(Selected, item))
+            return Notifications.PendingNotificationActionResult.Unavailable;
+        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+            return Notifications.PendingNotificationActionResult.Busy;
         _notificationApprovedItem = item;
         try { await ApproveCommand.ExecuteAsync(null); }
         finally { _notificationApprovedItem = null; }
+        return item.State != "承認待ち" ? Notifications.PendingNotificationActionResult.Completed
+            : Notifications.PendingNotificationActionResult.Unavailable;
     }
 
-    public async Task RejectNotificationAsync(InboxItem item)
+    public async Task<Notifications.PendingNotificationActionResult> RejectNotificationAsync(InboxItem item)
     {
-        if (!Requests.Contains(item) || IsExecuting || !IsConnectionConfirmed || item.State != "承認待ち") return;
+        bool IsAvailable() => !_closing && Requests.Contains(item) && IsConnectionConfirmed &&
+            ReferenceEquals(item.Transport, _transport) && _connection is { IsCancellationRequested: false } &&
+            item.State == "承認待ち";
+        if (!IsAvailable()) return Notifications.PendingNotificationActionResult.Unavailable;
+        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+            return Notifications.PendingNotificationActionResult.Busy;
         RevealRequest(item);
-        if (CanApprove()) await RejectCommand.ExecuteAsync(null);
+        if (!IsAvailable() || !ReferenceEquals(Selected, item))
+            return Notifications.PendingNotificationActionResult.Unavailable;
+        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+            return Notifications.PendingNotificationActionResult.Busy;
+        await RejectCommand.ExecuteAsync(null);
+        return item.State != "承認待ち" ? Notifications.PendingNotificationActionResult.Completed
+            : Notifications.PendingNotificationActionResult.Unavailable;
     }
 
     private bool CanSendResult() => !_closing && !IsExecuting && IsConnectionConfirmed && Selected is { ResultText.Length: > 0, AllowsResultSharing: true } item && ReferenceEquals(item.Transport, _transport);

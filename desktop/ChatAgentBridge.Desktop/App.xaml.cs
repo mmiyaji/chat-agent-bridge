@@ -150,6 +150,7 @@ public partial class App : Application
             _pricingLifetime.Cancel();
         };
         Window.Activate();
+        PendingRequestNotifications.ProcessStartupActivation();
         if (DeploymentRuntime.IsPortable && updateReadyEvent is not null &&
             updateReadyEvent.StartsWith(@"Local\ChatAgentBridge.Update.", StringComparison.Ordinal) &&
             updateReadyEvent.Length == @"Local\ChatAgentBridge.Update.".Length + 32 &&

@@ -30,8 +30,19 @@ public sealed partial class ChatInboxPage : Page
         ViewModel.ConnectionEnded += () => App.PendingRequestNotifications.ClearAll();
         App.PendingRequestNotifications.StatusChanged += () =>
             ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
+        App.PendingRequestNotifications.ActionCompleted += () => NotificationActionNotice.IsOpen = false;
         ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
-        Loaded += (_, _) => App.Window.Closed += WindowClosed;
+        Loaded += (_, _) =>
+        {
+            App.Window.Closed += WindowClosed;
+            App.PendingRequestNotifications.SetOpenAppCallback(() =>
+            {
+                ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
+                NotificationActionNotice.IsOpen = true;
+                OpenRequested?.Invoke();
+                App.Tray.ShowWindow();
+            });
+        };
     }
 
     private Task OpenInboxAsync(InboxItem item)

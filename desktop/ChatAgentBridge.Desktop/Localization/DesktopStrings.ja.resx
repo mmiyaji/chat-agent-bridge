@@ -111,7 +111,10 @@
   <data name="NotificationAiApprovalBody" xml:space="preserve"><value>承認すると保存済みの PC 設定で実行します。</value></data>
   <data name="ApproveAndRun" xml:space="preserve"><value>承認して実行</value></data>
   <data name="NotificationDispatchFailed" xml:space="preserve"><value>Windows 通知の操作を UI スレッドへ渡せませんでした。</value></data>
-  <data name="NotificationExpiredOpenApp" xml:space="preserve"><value>通知の有効期限が切れています。アプリを開いて最新の状態を確認してください。</value></data>
+  <data name="NotificationExpiredOpenApp" xml:space="preserve"><value>この通知は現在利用できません。アプリで依頼と接続の状態を確認してください。</value></data>
+  <data name="NotificationActionBusy" xml:space="preserve"><value>別の依頼を処理中のため、承認・拒否は行いませんでした。現在の処理が終わってから、もう一度操作してください。</value></data>
+  <data name="NotificationActionRetryInApp" xml:space="preserve"><value>通知の操作を完了できませんでした。アプリで依頼を確認し、もう一度操作してください。</value></data>
+  <data name="NotificationActivationFailed" xml:space="preserve"><value>通知からの起動情報を取得できませんでした。アプリで承認待ちの依頼を確認してください。</value></data>
   <data name="NotificationActionFailed" xml:space="preserve"><value>Windows 通知の操作を完了できませんでした: {0}</value></data>
   <data name="NotificationExpired" xml:space="preserve"><value>Windows 通知の有効期限が切れました。</value></data>
   <data name="NotificationCloseFailed" xml:space="preserve"><value>Windows 通知を閉じられませんでした: {0}</value></data>

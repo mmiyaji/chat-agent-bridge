@@ -1,7 +1,7 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
-using System.Collections.Concurrent;
+using Microsoft.Windows.AppLifecycle;
 using ChatAgentBridge_Desktop.Localization;
 
 namespace ChatAgentBridge_Desktop.Notifications;
@@ -19,7 +19,9 @@ public sealed class PendingRequestNotificationService
 
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly AppNotificationManager _manager;
-    private readonly ConcurrentDictionary<string, PendingEntry> _pending = new(StringComparer.Ordinal);
+    private readonly PendingNotificationRegistry _pending = new();
+    private Action? _openApp;
+    private bool _attentionPending;
     private bool _initialized;
     private bool _registered;
     private bool _available;
@@ -38,6 +40,27 @@ public sealed class PendingRequestNotificationService
     public bool IsAvailable => _available && _registered && !_shutdown;
 
     public event Action? StatusChanged;
+    public event Action? ActionCompleted;
+
+    public void SetOpenAppCallback(Action openApp)
+    {
+        if (_shutdown) return;
+        _openApp = openApp;
+        if (_attentionPending) RequestAttention();
+    }
+
+    // Register must precede GetActivatedEventArgs. Both warm events and startup
+    // activation use the same opaque-token route; cold starts cannot approve old work.
+    public void ProcessStartupActivation()
+    {
+        if (!_registered) return;
+        try
+        {
+            if (AppInstance.GetCurrent().GetActivatedEventArgs() is { Kind: ExtendedActivationKind.AppNotification, Data: AppNotificationActivatedEventArgs args })
+                OnNotificationInvoked(_manager, args);
+        }
+        catch (Exception) { SetStatus(DesktopText.Get("NotificationActivationFailed")); }
+    }
 
     /// <summary>
     /// Hooks activation before registering with Windows. Call once during app startup,
@@ -88,26 +111,36 @@ public sealed class PendingRequestNotificationService
         Func<Task> open,
         out string token)
     {
+        if (approve is null || decline is null || open is null) { token = ""; return false; }
+        return TryNotifyPendingRequest(kind, async () => { await approve(); return PendingNotificationActionResult.Completed; },
+            async () => { await decline(); return PendingNotificationActionResult.Completed; }, open, out token);
+    }
+
+    public bool TryNotifyPendingRequest(
+        PendingNotificationKind kind,
+        Func<Task<PendingNotificationActionResult>> approve,
+        Func<Task<PendingNotificationActionResult>> decline,
+        Func<Task> open,
+        out string token)
+    {
         token = string.Empty;
         if (!IsAvailable || approve is null || decline is null || open is null)
             return false;
 
-        string candidate = Guid.NewGuid().ToString("N");
-        var entry = new PendingEntry(candidate, DateTimeOffset.UtcNow + PendingLifetime, approve, decline, open);
+        var entry = _pending.Add(kind, PendingLifetime, approve, decline, open);
+        var candidate = entry.Token;
 
         try
         {
-            AppNotification notification = BuildNotification(kind, candidate);
-            _pending[candidate] = entry;
+            AppNotification notification = BuildNotification(kind, candidate, entry.ExpiresAt);
             _manager.Show(notification);
             if (notification.Id == 0)
             {
-                _pending.TryRemove(candidate, out _);
+                _pending.Remove(candidate);
                 RemoveToast(candidate);
                 SetStatus(DesktopText.Get("NotificationShowFailed"));
                 return false;
             }
-            entry.NotificationTag = candidate;
             token = candidate;
             _ = ExpireAfterAsync(candidate, PendingLifetime);
             SetStatus(DesktopText.Get("NotificationPendingShown"));
@@ -115,7 +148,7 @@ public sealed class PendingRequestNotificationService
         }
         catch (Exception ex)
         {
-            _pending.TryRemove(candidate, out _);
+            _pending.Remove(candidate);
             SetStatus(DesktopText.Get("NotificationShowFailedWithError", ex.Message));
             return false;
         }
@@ -124,21 +157,17 @@ public sealed class PendingRequestNotificationService
     /// <summary>Removes a pending callback and its toast after the request is resolved.</summary>
     public bool Resolve(string? token)
     {
-        if (string.IsNullOrWhiteSpace(token) || !_pending.TryRemove(token, out PendingEntry? entry))
+        if (string.IsNullOrWhiteSpace(token) || !_pending.Remove(token))
             return false;
 
-        RemoveToast(entry.NotificationTag);
+        RemoveToast(token);
         return true;
     }
 
     /// <summary>Invalidates all in-memory callbacks and removes their displayed toasts.</summary>
     public void ClearAll()
     {
-        foreach (KeyValuePair<string, PendingEntry> pair in _pending.ToArray())
-        {
-            if (_pending.TryRemove(pair.Key, out PendingEntry? entry))
-                RemoveToast(entry.NotificationTag);
-        }
+        foreach (var entry in _pending.Clear()) RemoveToast(entry.Token);
     }
 
     /// <summary>Clears pending work and unregisters notification activation on window close.</summary>
@@ -169,7 +198,7 @@ public sealed class PendingRequestNotificationService
         SetStatus(DesktopText.Get("NotificationStopped"));
     }
 
-    private static AppNotification BuildNotification(PendingNotificationKind kind, string token)
+    private static AppNotification BuildNotification(PendingNotificationKind kind, string token, DateTimeOffset expiresAt)
     {
         (string title, string body) = kind switch
         {
@@ -188,7 +217,7 @@ public sealed class PendingRequestNotificationService
             .SetDuration(AppNotificationDuration.Long)
             .BuildNotification();
 
-        notification.Expiration = DateTimeOffset.UtcNow.Add(PendingLifetime);
+        notification.Expiration = expiresAt;
         notification.ExpiresOnReboot = false;
         notification.Tag = token;
         notification.Group = NotificationGroup;
@@ -202,6 +231,7 @@ public sealed class PendingRequestNotificationService
 
     private void OnNotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
     {
+        if (_shutdown) return;
         if (!args.Arguments.TryGetValue(TokenArgument, out string? token) ||
             !args.Arguments.TryGetValue(ActionArgument, out string? action) ||
             string.IsNullOrWhiteSpace(token))
@@ -215,43 +245,54 @@ public sealed class PendingRequestNotificationService
 
     private async Task HandleInvocationAsync(string token, string action)
     {
-        if (!_pending.TryGetValue(token, out PendingEntry? entry))
-            return;
-
-        if (entry.ExpiresAt <= DateTimeOffset.UtcNow)
-        {
-            Resolve(token);
-            SetStatus(DesktopText.Get("NotificationExpiredOpenApp"));
-            return;
-        }
-
-        Func<Task>? callback = action switch
-        {
-            "approve" => entry.Approve,
-            "decline" => entry.Decline,
-            "open" => entry.Open,
-            _ => null
-        };
-        if (callback is null || !_pending.TryRemove(token, out PendingEntry? consumed))
-            return;
-
-        RemoveToast(consumed.NotificationTag);
+        if (_shutdown) return;
         try
         {
-            await callback();
+            var (outcome, entry) = await _pending.InvokeAsync(token, action);
+            if (_shutdown) return;
+            switch (outcome)
+            {
+                case PendingNotificationRegistry.Outcome.Completed:
+                    RemoveToast(token);
+                    ActionCompleted?.Invoke();
+                    break;
+                case PendingNotificationRegistry.Outcome.Busy:
+                    SetStatus(DesktopText.Get("NotificationActionBusy"));
+                    // Windows dismisses a clicked toast. Re-show the same decision
+                    // with its original lifetime; never queue automatic execution.
+                    if (entry is not null && entry.ExpiresAt > DateTimeOffset.UtcNow)
+                        _manager.Show(BuildNotification(entry.Kind, token, entry.ExpiresAt));
+                    RequestAttention();
+                    break;
+                case PendingNotificationRegistry.Outcome.Missing:
+                case PendingNotificationRegistry.Outcome.Expired:
+                case PendingNotificationRegistry.Outcome.Unavailable:
+                    RemoveToast(token);
+                    SetStatus(DesktopText.Get("NotificationExpiredOpenApp"));
+                    RequestAttention();
+                    break;
+            }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            SetStatus(DesktopText.Get("NotificationActionFailed", ex.Message));
+            SetStatus(DesktopText.Get("NotificationActionRetryInApp"));
+            RequestAttention();
         }
+    }
+
+    private void RequestAttention()
+    {
+        if (_shutdown) return;
+        _attentionPending = _openApp is null;
+        _openApp?.Invoke();
     }
 
     private async Task ExpireAfterAsync(string token, TimeSpan delay)
     {
         await Task.Delay(delay).ConfigureAwait(false);
-        if (_pending.TryRemove(token, out PendingEntry? entry))
+        if (_pending.Expire(token))
         {
-            RemoveToast(entry.NotificationTag);
+            RemoveToast(token);
             SetStatus(DesktopText.Get("NotificationExpired"));
         }
     }
@@ -296,18 +337,4 @@ public sealed class PendingRequestNotificationService
             _dispatcherQueue.TryEnqueue(Raise);
     }
 
-    private sealed class PendingEntry(
-        string token,
-        DateTimeOffset expiresAt,
-        Func<Task> approve,
-        Func<Task> decline,
-        Func<Task> open)
-    {
-        public string Token { get; } = token;
-        public DateTimeOffset ExpiresAt { get; } = expiresAt;
-        public Func<Task> Approve { get; } = approve;
-        public Func<Task> Decline { get; } = decline;
-        public Func<Task> Open { get; } = open;
-        public string? NotificationTag { get; set; }
-    }
 }

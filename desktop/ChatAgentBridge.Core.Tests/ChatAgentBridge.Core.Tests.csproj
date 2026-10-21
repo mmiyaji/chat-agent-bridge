@@ -28,6 +28,9 @@
     <Compile Include="..\ChatAgentBridge.Desktop\UsageUi\UsageSummaryFormatter.cs" Link="UsageUi\UsageSummaryFormatter.cs" />
     <Compile Include="..\ChatAgentBridge.Desktop\ProcessEnvironmentRefresher.cs" Link="Desktop\ProcessEnvironmentRefresher.cs" />
     <Compile Include="..\ChatAgentBridge.Desktop\Deployment\DeploymentRuntime.cs" Link="Desktop\DeploymentRuntime.cs" />
+    <Compile Include="..\ChatAgentBridge.Desktop\Notifications\PendingNotificationRegistry.cs" Link="Notifications\PendingNotificationRegistry.cs" />
+    <Compile Include="..\ChatAgentBridge.Desktop\Notifications\PendingNotificationActionResult.cs" Link="Notifications\PendingNotificationActionResult.cs" />
+    <Compile Include="..\ChatAgentBridge.Desktop\Notifications\PendingNotificationKind.cs" Link="Notifications\PendingNotificationKind.cs" />
   </ItemGroup>
 
 </Project>
