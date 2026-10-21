@@ -9,6 +9,8 @@ internal static class AttachmentHandlePolicy
 {
     private const uint FileAttributeDevice = 0x00000040;
     private const uint FileAttributeDirectory = 0x00000010;
+    private const uint FileAttributeHidden = 0x00000002;
+    private const uint FileAttributeSystem = 0x00000004;
     private const uint FileAttributeReparsePoint = 0x00000400;
 
     public static void EnsureSafe(FileStream stream, string workspace, string expectedPath)
@@ -18,8 +20,9 @@ internal static class AttachmentHandlePolicy
         if (!GetFileInformationByHandle(stream.SafeFileHandle, out var information))
             throw new InvalidDataException("Attachment handle could not be verified.", new Win32Exception(Marshal.GetLastWin32Error()));
         if (information.NumberOfLinks != 1 ||
-            (information.FileAttributes & (FileAttributeDevice | FileAttributeDirectory | FileAttributeReparsePoint)) != 0)
-            throw new InvalidDataException("Attachment file is linked or is not a regular file.");
+            (information.FileAttributes & (FileAttributeDevice | FileAttributeDirectory | FileAttributeHidden |
+                FileAttributeSystem | FileAttributeReparsePoint)) != 0)
+            throw new InvalidDataException("Attachment file is linked, hidden, a system file, or is not a regular file.");
 
         var finalPath = GetFinalPath(stream);
         var normalizedRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspace));

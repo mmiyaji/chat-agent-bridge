@@ -19,6 +19,7 @@ public partial class MainPageViewModel
         _cliTrustRecovery = new(error.WorkspacePath, error.SuggestedWorkspacePath ?? error.WorkspacePath);
         _cliTrustRecoverySignature = signature;
         OnPropertyChanged(nameof(HasCliTrustRecovery));
+        OnPropertyChanged(nameof(HasManualTrustRecovery));
     }
 
     private void ClearCliTrustRecovery()
@@ -26,6 +27,7 @@ public partial class MainPageViewModel
         _cliTrustRecovery = null;
         _cliTrustRecoverySignature = null;
         OnPropertyChanged(nameof(HasCliTrustRecovery));
+        OnPropertyChanged(nameof(HasManualTrustRecovery));
     }
 
     public CliTrustRecovery? GetCliTrustRecovery() =>

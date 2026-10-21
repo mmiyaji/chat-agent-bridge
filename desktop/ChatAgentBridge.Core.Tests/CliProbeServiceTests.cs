@@ -306,7 +306,11 @@ public sealed class CliProbeServiceTests
             let input = '';
             process.stdin.setEncoding('utf8');
             process.stdin.on('data', chunk => input += chunk);
-            process.stdin.on('end', () => process.stdout.write(`stdin:${input}`));
+            process.stdin.on('end', () => {
+                console.log(JSON.stringify({type:'init',session_id:'aab7daa8-578d-4d91-a520-5fe9a2672881'}));
+                console.log(JSON.stringify({type:'message',role:'assistant',content:`stdin:${input}`}));
+                console.log(JSON.stringify({type:'result',status:'success'}));
+            });
             """);
         var settings = fixture.Settings(shim, AgentProfile.Gemini) with { AgentArguments = AgentProfile.DefaultGeminiArguments };
 
@@ -317,6 +321,7 @@ public sealed class CliProbeServiceTests
         Assert.True(probe.ProviderRecognized);
         Assert.True(run.Success, run.Error);
         Assert.Equal("stdin:prompt with spaces", run.Output);
+        Assert.Equal("aab7daa8-578d-4d91-a520-5fe9a2672881", run.CliSession!.SessionId);
     }
 
     private sealed class Fixture : IDisposable

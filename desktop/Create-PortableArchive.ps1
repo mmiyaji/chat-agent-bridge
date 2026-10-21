@@ -8,6 +8,7 @@ param(
     [switch] $ValidateOnly,
     [string] $ArchivePath,
     [string] $ExistingLayout,
+    [string] $IdentityCertificateThumbprint,
     [string] $WorkingDirectory = (Join-Path $PSScriptRoot 'artifacts')
 )
 
@@ -21,6 +22,63 @@ $expectedMachine = if ($Architecture -eq 'x64') { 0x8664 } else { 0xAA64 }
 $requiredNames = @('ChatAgentBridge.Desktop.exe', 'ChatAgentBridge.Desktop.runtimeconfig.json', 'coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'Microsoft.ui.xaml.dll', 'Microsoft.WindowsAppRuntime.Insights.Resource.dll', 'ChatAgentBridge.Desktop.pri', 'README.portable.ja.txt', 'README.portable.en.txt')
 $forbiddenDirectoryNames = @('data', 'private-data', 'privatedata', 'settings', 'history', 'sessions', 'audit', 'credentials', '.credentials', 'token', 'tokens', 'secrets', 'chatagentbridge.testagent', 'appx', 'msix')
 $knownPackageMetadataNames = @('appxmanifest.xml', 'appxblockmap.xml', 'appxsignature.p7x', '[content_types].xml')
+$identityRelativeFiles = @('Identity/portable-identity.json', 'Identity/ChatAgentBridge.Portable.identity.msix', 'Identity/ChatAgentBridge.Portable.cer')
+
+function Assert-PortableExecutableIdentity {
+    param([Parameter(Mandatory)][string] $Layout)
+    $sdkRoot = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
+    $mt = @(Get-ChildItem -LiteralPath $sdkRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '^10\.\d+\.\d+\.\d+$' } | Sort-Object { [version]$_.Name } -Descending |
+        ForEach-Object { Join-Path $_.FullName 'x64/mt.exe' } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1)
+    if ($mt.Count -eq 0) { throw 'Windows SDK mt.exe is required to validate an identity-enabled portable executable.' }
+    $exe = Join-Path $Layout 'ChatAgentBridge.Desktop.exe'
+    $manifestPath = Join-Path ([IO.Path]::GetTempPath()) ('cab-portable-fusion-' + [guid]::NewGuid().ToString('N') + '.xml')
+    try {
+        & $mt[0] ('-inputresource:' + $exe + ';#1') ('-out:' + $manifestPath) 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'The portable executable has no readable embedded application manifest.' }
+        $settings = [System.Xml.XmlReaderSettings]::new()
+        $settings.DtdProcessing = [System.Xml.DtdProcessing]::Prohibit
+        $settings.XmlResolver = $null
+        # Self-contained WinAppSDK adds its activation classes to the embedded manifest.
+        $settings.MaxCharactersInDocument = 4194304
+        $reader = [System.Xml.XmlReader]::Create($manifestPath, $settings)
+        try {
+            $document = [System.Xml.XmlDocument]::new()
+            $document.XmlResolver = $null
+            $document.Load($reader)
+        }
+        finally { $reader.Dispose() }
+        $ns = [System.Xml.XmlNamespaceManager]::new($document.NameTable)
+        $ns.AddNamespace('asm', 'urn:schemas-microsoft-com:asm.v1')
+        $ns.AddNamespace('msix', 'urn:schemas-microsoft-com:msix.v1')
+        $identities = $document.SelectNodes('/asm:assembly/msix:msix', $ns)
+        if ($identities.Count -ne 1 -or $identities[0].GetAttribute('packageName') -cne 'ChatAgentBridge.Portable' -or
+            $identities[0].GetAttribute('publisher') -cne 'CN=mmiyaji' -or $identities[0].GetAttribute('applicationId') -cne 'App') {
+            throw 'Identity-enabled layouts must already be published with -p:CABPortable=true -p:CABPortableIdentity=true; the executable identity metadata is missing or mismatched.'
+        }
+    }
+    finally {
+        if (Test-Path -LiteralPath $manifestPath -PathType Leaf) { Remove-Item -LiteralPath $manifestPath -Force }
+    }
+}
+
+function Assert-PortableIdentityBundle {
+    param([Parameter(Mandatory)][string] $Layout)
+    $resolved = (Resolve-Path -LiteralPath $Layout).Path
+    $identityFiles = @(Get-ChildItem -LiteralPath $resolved -File -Recurse -Force | ForEach-Object {
+        (Get-RelativePath -BasePath $resolved -TargetPath $_.FullName).Replace('\', '/')
+    } | Where-Object { $_ -ieq 'Identity' -or $_.StartsWith('Identity/', [StringComparison]::OrdinalIgnoreCase) })
+    if ($identityFiles.Count -eq 0) { return }
+    if ($identityFiles.Count -ne $identityRelativeFiles.Count) { throw 'The portable identity bundle is incomplete or contains additional files.' }
+    foreach ($relative in $identityFiles) {
+        if ($identityRelativeFiles -cnotcontains $relative) { throw "Unexpected identity bundle file: $relative" }
+    }
+    # Run the known source validator, never an executable from an untrusted ExistingLayout.
+    # This mode reads the bundle only; it cannot register packages or trust certificates.
+    & dotnet run --project $updaterProject -c Release --no-launch-profile --verbosity quiet -- --validate-identity-bundle $resolved
+    if ($LASTEXITCODE -ne 0) { throw 'The portable identity bundle failed public-certificate, manifest, checksum, or signature validation.' }
+    Assert-PortableExecutableIdentity -Layout $resolved
+}
 
 function Assert-PortableContents {
     param([Parameter(Mandatory)][string] $Layout)
@@ -43,9 +101,10 @@ function Assert-PortableContents {
             throw "Private updater state in portable payload: $($file.FullName)"
         }
         $extension = $file.Extension.ToLowerInvariant()
+        $relative = (Get-RelativePath -BasePath $resolved -TargetPath $file.FullName).Replace('\', '/')
         $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name).ToLowerInvariant()
         if ($forbiddenDirectoryNames -contains $stem) { throw "Private or test file is forbidden in portable payload: $($file.FullName)" }
-        if ($extension -in @('.pfx', '.cer', '.msix', '.appx')) {
+        if ($extension -in @('.pfx', '.cer', '.msix', '.appx') -and $identityRelativeFiles -cnotcontains $relative) {
             throw "Forbidden certificate or installer/package file in portable payload: $($file.FullName)"
         }
         if ($file.Name -match '(?i)testagent|^chatagentbridge\.testagent') {
@@ -55,6 +114,8 @@ function Assert-PortableContents {
             throw "Debug symbols must be removed before validation: $($file.FullName)"
         }
     }
+
+    Assert-PortableIdentityBundle -Layout $resolved
 
     $exe = Join-Path $resolved 'ChatAgentBridge.Desktop.exe'
     if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'ChatAgentBridge.Desktop.exe is missing.' }
@@ -192,11 +253,14 @@ function Assert-NoPrivateOrForbiddenContent {
             throw "Private updater state in portable source: $($file.FullName)"
         }
         $extension = $file.Extension.ToLowerInvariant()
+        $relative = (Get-RelativePath -BasePath $resolved -TargetPath $file.FullName).Replace('\', '/')
         $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name).ToLowerInvariant()
-        if ($forbiddenDirectoryNames -contains $stem -or $file.Name -match '(?i)testagent|^chatagentbridge\.testagent' -or $extension -in @('.pfx', '.cer', '.msix', '.appx')) {
+        if ($forbiddenDirectoryNames -contains $stem -or $file.Name -match '(?i)testagent|^chatagentbridge\.testagent' -or
+            ($extension -in @('.pfx', '.cer', '.msix', '.appx') -and $identityRelativeFiles -cnotcontains $relative)) {
             throw "Forbidden private or test file in portable source: $($file.FullName)"
         }
     }
+    Assert-PortableIdentityBundle -Layout $resolved
 }
 
 function Remove-KnownPackagingMetadata {
@@ -269,6 +333,7 @@ function Get-RelativePath {
 }
 
 if ($ValidateOnly) {
+    if ($IdentityCertificateThumbprint) { throw '-IdentityCertificateThumbprint is only supported when creating an archive.' }
     if (-not $ArchivePath -and -not $ExistingLayout) { throw 'Use -ArchivePath or -ExistingLayout with -ValidateOnly.' }
     if ($ArchivePath -and $ExistingLayout) { throw 'Choose either -ArchivePath or -ExistingLayout with -ValidateOnly.' }
     if ($ExistingLayout) {
@@ -291,7 +356,10 @@ if ($ValidateOnly) {
                 $parts = $normalized.Split('/')
                 if ($parts | Where-Object { $forbiddenDirectoryNames -contains $_.ToLowerInvariant() }) { throw "Forbidden private or test path in ZIP: $normalized" }
                 if ($forbiddenDirectoryNames -contains [System.IO.Path]::GetFileNameWithoutExtension($entry.Name).ToLowerInvariant()) { throw "Forbidden private or test file in ZIP: $normalized" }
-                if ($entry.Name -match '(?i)testagent|^chatagentbridge\.testagent' -or $entry.Name -match '(?i)\.(pfx|cer|msix|appx|pdb)$') { throw "Forbidden file in ZIP: $normalized" }
+                $relative = $normalized.Substring('ChatAgentBridge.Portable/'.Length)
+                if ($relative.StartsWith('Identity/', [StringComparison]::OrdinalIgnoreCase) -and -not $normalized.EndsWith('/') -and $identityRelativeFiles -cnotcontains $relative) { throw "Unexpected identity file in ZIP: $normalized" }
+                if ($entry.Name -match '(?i)testagent|^chatagentbridge\.testagent' -or
+                    ($entry.Name -match '(?i)\.(pfx|cer|msix|appx|pdb)$' -and $identityRelativeFiles -cnotcontains $relative)) { throw "Forbidden file in ZIP: $normalized" }
             }
         }
         finally { $zip.Dispose() }
@@ -336,6 +404,7 @@ else {
         ('-p:FileVersion=' + $ApplicationVersion), '-p:DebugType=None', '-p:DebugSymbols=false',
         '-o', $layout
     )
+    if ($IdentityCertificateThumbprint) { $publishArgs += '-p:CABPortableIdentity=true' }
     & dotnet @publishArgs
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE" }
 }
@@ -364,6 +433,9 @@ finally {
 Remove-KnownPackagingMetadata -Layout $layout
 Copy-Item -LiteralPath (Join-Path $distributionDir 'README.portable.ja.txt') -Destination $layout
 Copy-Item -LiteralPath (Join-Path $distributionDir 'README.portable.en.txt') -Destination $layout
+if ($IdentityCertificateThumbprint) {
+    & (Join-Path $PSScriptRoot 'New-PortableIdentityPackage.ps1') -Layout $layout -CertificateThumbprint $IdentityCertificateThumbprint
+}
 New-PortableMetadata -Layout $layout -Version $ReleaseVersion -CpuArchitecture $Architecture
 New-PayloadChecksums -Layout $layout
 $null = Assert-PortableContents -Layout $layout

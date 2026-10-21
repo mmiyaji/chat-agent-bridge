@@ -29,10 +29,22 @@
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable\</IntermediateOutputPath>
   </PropertyGroup>
 
+  <!-- Identity is additive. Ordinary portable builds retain their original notification registration. -->
+  <PropertyGroup Condition="'$(CABPortable)' == 'true' and '$(CABPortableIdentity)' == 'true'">
+    <ApplicationManifest>../portable-identity/app.portable.manifest</ApplicationManifest>
+    <OutputPath>bin\$(Platform)\$(Configuration)\portable-identity\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable-identity\</IntermediateOutputPath>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(CABPortableUpdateTest)' == 'true' and '$(CABPortable)' == 'true'">
     <DefineConstants>$(DefineConstants);CAB_PORTABLE_UPDATE_TEST</DefineConstants>
     <OutputPath>bin\$(Platform)\$(Configuration)\portable-update-test\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable-update-test\</IntermediateOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CABPortableUpdateTest)' == 'true' and '$(CABPortable)' == 'true' and '$(CABPortableIdentity)' == 'true'">
+    <OutputPath>bin\$(Platform)\$(Configuration)\portable-identity-update-test\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable-identity-update-test\</IntermediateOutputPath>
   </PropertyGroup>
 
   <UsingTask TaskName="ExtractPortableAppNotificationResource" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll" Condition="'$(CABPortable)' == 'true'">

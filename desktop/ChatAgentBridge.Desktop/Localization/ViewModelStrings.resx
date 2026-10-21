@@ -1,5 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
+  <data name="OverviewCliPreviouslyVerified" xml:space="preserve"><value>Previously checked</value></data>
+  <data name="CliVerificationRestored" xml:space="preserve"><value>Reusing the CLI check from {0}. The CLI files and settings are unchanged. Login status and model availability are checked during use; use Check CLI to refresh the model list.</value></data>
+  <data name="CliVerificationSaveFailed" xml:space="preserve"><value>The check succeeded, but its result could not be saved. Check again after restarting.</value></data>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -244,13 +247,13 @@
     <value>Unrestricted with full access</value>
   </data>
   <data name="NextConfigureAgentWorkspace" xml:space="preserve">
-    <value>Next: configure the agent and an existing workspace folder, then save.</value>
+    <value>Next: configure the agent and an existing workspace folder.</value>
   </data>
   <data name="NextConnectToChat" xml:space="preserve">
     <value>Next: connect to the saved destination from Chat Inbox.</value>
   </data>
   <data name="NextSaveConnection" xml:space="preserve">
-    <value>Next: save the connection settings.</value>
+    <value>Next: configure connection details and allowed users.</value>
   </data>
   <data name="NotAllowed" xml:space="preserve">
     <value>Not allowed</value>
@@ -283,7 +286,7 @@
     <value>Prompt</value>
   </data>
   <data name="PromptRequired" xml:space="preserve">
-    <value>Enter a prompt</value>
+    <value>Enter a request</value>
   </data>
   <data name="PromptRequiredDetails" xml:space="preserve">
     <value>Enter what you want the agent to do before starting.</value>
@@ -385,16 +388,16 @@
     <value>Complete: saved. The CLI and login status were not checked here.</value>
   </data>
   <data name="SetupAgentWorkspaceMissing" xml:space="preserve">
-    <value>Next: configure the agent and workspace, then save.</value>
+    <value>Next: configure the agent and workspace.</value>
   </data>
   <data name="SetupAllowedUsersMissing" xml:space="preserve">
     <value>Next: enter one allowed user ID per line for each connection. An empty list denies everyone.</value>
   </data>
   <data name="SetupChatAfterStepOne" xml:space="preserve">
-    <value>Not set: save connection details after step 1.</value>
+    <value>Not set: configure connection details after step 1.</value>
   </data>
   <data name="SetupChatConfigMissing" xml:space="preserve">
-    <value>Next: save Slack or Mattermost connection details and allowed user IDs.</value>
+    <value>Next: configure Slack or Mattermost connection details and allowed users.</value>
   </data>
   <data name="SetupChatConfigSaved" xml:space="preserve">
     <value>Complete: connection details and allowed user IDs are saved.</value>
@@ -415,13 +418,13 @@
     <value>Connecting: waiting for the destination to respond.</value>
   </data>
   <data name="SetupExecutableMissing" xml:space="preserve">
-    <value>Next: set the agent executable and save.</value>
+    <value>Next: configure the agent executable.</value>
   </data>
   <data name="SetupWaitingForChatRequest" xml:space="preserve">
     <value>Complete: waiting for requests from chat.</value>
   </data>
   <data name="SetupWorkspaceNotFound" xml:space="preserve">
-    <value>Next: the saved workspace folder was not found. Choose an existing folder and save.</value>
+    <value>Next: the workspace folder was not found. Choose an existing folder.</value>
   </data>
   <data name="SlackConnectionFields" xml:space="preserve">
     <value>Enter the bot token, app token, and allowed user IDs.</value>
@@ -481,7 +484,7 @@
     <value>Check the saved guidance data. Your settings were not overwritten.</value>
   </data>
   <data name="WizardSafetyDescription" xml:space="preserve">
-    <value>Review approval and result sharing, connect to the selected chat, and finish setup.</value>
+    <value>Save your settings to finish. You can test the chat connection later from Chat inbox.</value>
   </data>
   <data name="WizardSaveFailed" xml:space="preserve">
     <value>Could not save setup</value>
@@ -502,7 +505,7 @@
     <value>Introduction and terms</value>
   </data>
   <data name="WizardStepSafety" xml:space="preserve">
-    <value>Approval and connection check</value>
+    <value>Approval settings and connection test</value>
   </data>
   <data name="WizardSummary" xml:space="preserve">
     <value>AI: {0} / Model: {1}
@@ -541,13 +544,13 @@ Internal user ID: {2}</value></data>
   <data name="MattermostUsernameLookupInvalidResponse" xml:space="preserve"><value>Mattermost returned an unexpected user record. Check the server and try again.</value></data>
   <data name="MattermostUsernameLookupNotActive" xml:space="preserve"><value>This account is a bot or is inactive, so it cannot be added.</value></data>
   <data name="MattermostUsernameAlreadyAllowed" xml:space="preserve"><value>{0} is already in the allowed-user list.</value></data>
-  <data name="MattermostUsernameAddedSaveNeeded" xml:space="preserve"><value>Added {0} to the draft allowed-user list. Save settings to apply it, then reconnect Mattermost if it is active.</value></data>
+  <data name="MattermostUsernameAddedSaveNeeded" xml:space="preserve"><value>Added {0} to the allowed-user list. Review the change, then reconnect Mattermost.</value></data>
   <data name="MattermostUsernameAllowlistInvalid" xml:space="preserve"><value>Fix the existing allowed-user list before adding another user. Each ID must be a valid Mattermost user ID, with at most 100 users.</value></data>
   <data name="CustomCliName" xml:space="preserve">
     <value>Other CLI (custom)</value>
   </data>
   <data name="BasicProviderHelp" xml:space="preserve">
-    <value>Basic integration: requests are sent through standard input and replies are read from standard output. Each request starts a separate run; automatic session continuation and model/reasoning catalogs are not supported. Configure models, reasoning and execution permissions in the CLI or its arguments. Sign in through the CLI first.</value>
+    <value>Custom CLI integration sends requests through standard input and reads standard output. Each request starts a separate run. Automatic session continuation and app model/reasoning overrides are unavailable. Configure the CLI or its arguments and sign in through the CLI first.</value>
   </data>
   <data name="BasicPermissionManagedByCli" xml:space="preserve">
     <value>Execution permissions follow the CLI configuration. The bridge does not apply a sandbox or bypass permissions for this provider. Chat request approval is configured separately.</value>
@@ -625,7 +628,7 @@ Internal user ID: {2}</value></data>
   <data name="EnvironmentReloadFailedTitle" xml:space="preserve"><value>Could not refresh environment</value></data>
   <data name="EnvironmentReloadFailedMessage" xml:space="preserve"><value>Windows could not provide the current user environment. No CLI settings were changed.</value></data>
   <data name="ChangingStartupSettings" xml:space="preserve"><value>Changing the Windows startup setting…</value></data>
-  <data name="TrustedFolderAdded" xml:space="preserve"><value>Folder added. Click Save to apply this change.</value></data>
+  <data name="TrustedFolderAdded" xml:space="preserve"><value>Folder added. Review the settings change.</value></data>
   <data name="TrustedFolderAlreadyListed" xml:space="preserve"><value>This folder is already in the trusted list.</value></data>
   <data name="TrustedFolderInvalid" xml:space="preserve"><value>Choose an existing folder with a full path.</value></data>
   <data name="TrustedFolderRootsInvalid" xml:space="preserve"><value>Fix the existing entries so each is a valid full path, then try again.</value></data>
@@ -646,7 +649,7 @@ Internal user ID: {2}</value></data>
   <data name="MattermostThreadLookupInvalidResponse" xml:space="preserve"><value>Mattermost returned post data that could not be verified.</value></data>
   <data name="MattermostThreadLookupNetwork" xml:space="preserve"><value>Could not reach Mattermost. Check the server URL and connection.</value></data>
   <data name="MattermostThreadAlreadyAllowed" xml:space="preserve"><value>Conversation {0} is already in the allowlist.</value></data>
-  <data name="MattermostThreadAddedSaveNeeded" xml:space="preserve"><value>Added conversation {0}. Save settings and reconnect to apply the updated restriction.</value></data>
+  <data name="MattermostThreadAddedSaveNeeded" xml:space="preserve"><value>Added conversation {0}. Review the change, then reconnect.</value></data>
   <data name="MattermostThreadAllowlistInvalid" xml:space="preserve"><value>The existing conversation allowlist has an invalid ID. Correct it before adding another conversation.</value></data>
   <data name="SlackUsernameLookupInProgress" xml:space="preserve"><value>Looking up that exact name with the configured Slack bot token…</value></data>
   <data name="SlackUsernameLookupFound" xml:space="preserve"><value>Slack account found. Review the workspace and member ID, then choose Add this user.</value></data>
@@ -666,7 +669,7 @@ Workspace: {3} ({4})</value></data>
   <data name="SlackUsernameLookupInvalidResponse" xml:space="preserve"><value>Slack returned account data that could not be verified. Try again or check the Slack app.</value></data>
   <data name="SlackUsernameLookupNetwork" xml:space="preserve"><value>Could not reach Slack. Check the network and bot token, then try again.</value></data>
   <data name="SlackUsernameAlreadyAllowed" xml:space="preserve"><value>@{0} is already in the allowed-user draft.</value></data>
-  <data name="SlackUsernameAddedSaveNeeded" xml:space="preserve"><value>@{0} was added to the draft. Save settings and reconnect Slack to apply it.</value></data>
+  <data name="SlackUsernameAddedSaveNeeded" xml:space="preserve"><value>Added @{0} to the allowlist. Review the change, then reconnect Slack.</value></data>
   <data name="SlackUsernameAllowlistInvalid" xml:space="preserve"><value>The allowed-user list is invalid or already has 100 users. Fix the list before adding another user.</value></data>
   <data name="SlackThreadLookupInProgress" xml:space="preserve"><value>Checking the message link in the authenticated Slack workspace…</value></data>
   <data name="SlackThreadLookupResolved" xml:space="preserve"><value>Conversation checked. Review the workspace and channel, then choose Add this conversation.</value></data>
@@ -686,17 +689,21 @@ Conversation ID (first message): {2}</value></data>
   <data name="SlackThreadLookupInvalidResponse" xml:space="preserve"><value>Slack returned message data that could not be verified.</value></data>
   <data name="SlackThreadLookupNetwork" xml:space="preserve"><value>Could not reach Slack. Check the network and bot token, then try again.</value></data>
   <data name="SlackThreadAlreadyAllowed" xml:space="preserve"><value>Channel and conversation {0} are already in the allowed-scope draft.</value></data>
-  <data name="SlackThreadAddedSaveNeeded" xml:space="preserve"><value>Added channel {0} and conversation {1} to the allowlist. Save settings and reconnect Slack to apply it.</value></data>
+  <data name="SlackThreadAddedSaveNeeded" xml:space="preserve"><value>Added channel {0} and conversation {1}. Review the change, then reconnect Slack.</value></data>
   <data name="SlackThreadAllowlistInvalid" xml:space="preserve"><value>The channel or thread scope list is invalid or already has 100 entries. Fix the lists before adding this conversation.</value></data>
   <data name="NoRegisteredConnections" xml:space="preserve"><value>No CLI connections are registered yet.</value></data>
   <data name="RegisteredConnections" xml:space="preserve"><value>Registered CLI connections: {0}</value></data>
   <data name="RegisteredConnectionsUnavailable" xml:space="preserve"><value>Saved CLI connections could not be loaded: {0}</value></data>
   <data name="ConnectionRegistered" xml:space="preserve"><value>{0} CLI connection registered on this PC.</value></data>
   <data name="ConnectionRegistrationFailed" xml:space="preserve"><value>Could not register this CLI connection: {0}</value></data>
-  <data name="ConnectionLoaded" xml:space="preserve"><value>Saved {0} settings loaded. Save settings to use them as the app defaults.</value></data>
+  <data name="ConnectionLoaded" xml:space="preserve"><value>Loaded the registered {0} settings. Review the settings change.</value></data>
   <data name="AttachmentLimitsMustBeWholeNumbers" xml:space="preserve"><value>Attachment limits must be whole numbers.</value></data>
   <data name="GeneralSettingsSaved" xml:space="preserve"><value>Auto-connect preference saved</value></data>
   <data name="GeneralSettingsSavedDetails" xml:space="preserve"><value>The saved auto-connect preference takes effect the next time the app starts.</value></data>
   <data name="CliModelsUnavailableDetails" xml:space="preserve"><value>CLI startup and version check succeeded. Model discovery failed: {0}</value></data>
   <data name="TrustedFolderRecoveryChanged" xml:space="preserve"><value>The folder changed or cannot be trusted safely. Check the workspace path and run the CLI check again.</value></data>
+  <data name="WizardConnectionDeferredTitle" xml:space="preserve"><value>Settings saved and setup complete</value></data>
+  <data name="WizardConnectionDeferredDetails" xml:space="preserve"><value>The connection test is not complete. Connect from Chat inbox when ready. If already connected, reconnect to use the changed settings.</value></data>
+  <data name="SessionCliProviderHelp" xml:space="preserve"><value>Gemini CLI and GitHub Copilot CLI continue conversations in the same chat thread and accept a model name entered here. Model catalog lookup and app overrides for reasoning or execution permissions are unavailable. Sign in through the CLI first.</value></data>
+  <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>Model candidates cannot be fetched for this CLI. Enter a model ID or alias supported by your CLI and account, or leave it blank for the CLI default. Model access is checked when you run a request; reasoning and permissions follow the CLI configuration.</value></data>
 </root>

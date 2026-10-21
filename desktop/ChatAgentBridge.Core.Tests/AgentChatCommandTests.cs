@@ -9,6 +9,10 @@ public sealed class AgentChatCommandTests
     [InlineData("!cab agent claude", "claude", null)]
     [InlineData("!cab AGENT CODEX SUMMARY", "codex", true)]
     [InlineData("!cab agent claude fresh", "claude", false)]
+    [InlineData("!cab agent gemini", "gemini", null)]
+    [InlineData("!cab agent gemini summary", "gemini", true)]
+    [InlineData("!cab agent github-copilot fresh", "github-copilot", false)]
+    [InlineData("!cab agent COPILOT SUMMARY", "github-copilot", true)]
     public void ParsesSupportedAgentSwitchCommands(string text, string? provider, bool? includeSummary)
     {
         Assert.True(AgentChatCommand.TryParse(text, out var command));
@@ -20,7 +24,7 @@ public sealed class AgentChatCommandTests
     [Theory]
     [InlineData("!cab agent codex.exe", false)]
     [InlineData("!cab agent C:\\Tools\\codex", false)]
-    [InlineData("!cab agent gemini fresh", false)]
+    [InlineData("!cab agent unknown fresh", false)]
     [InlineData("!cab agent claude summary extra", false)]
     [InlineData("!cab agent claude resume", false)]
     public void ReservesUnsupportedAgentSwitchesAsInvalid(string text, bool expectedValid)
@@ -36,7 +40,6 @@ public sealed class AgentChatCommandTests
     [InlineData("agent claude")]
     [InlineData("!cab agent のログを調べて")]
     [InlineData("!cab agent loop を実装して")]
-    [InlineData("!cab agent gemini")]
     [InlineData("switch to claude")]
     [InlineData("run this task")]
     [InlineData("!cab status")]

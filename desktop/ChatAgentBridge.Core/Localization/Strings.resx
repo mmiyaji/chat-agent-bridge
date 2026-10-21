@@ -21,6 +21,12 @@
   <data name="CliRuntimeMissing" xml:space="preserve"><value>The configured CLI requires a .NET runtime that is not available. Install the required .NET runtime, then retry the check.</value></data>
   <data name="CliVersionCommandFailed" xml:space="preserve"><value>Configured CLI --version exited with code {0}. Run the configured CLI with --version in a terminal, then check that its runtime and permissions are set up correctly.</value></data>
   <data name="CliProviderMismatch" xml:space="preserve"><value>The executable version information does not match {0}. Specify the correct CLI executable.</value></data>
+  <data name="CliAccountUnsupported" xml:space="preserve"><value>The CLI reported that this client or account is unsupported. Update the CLI, sign in again, and check that the account can use this CLI.</value></data>
+  <data name="CliAuthenticationRequired" xml:space="preserve"><value>The CLI could not authenticate. Sign in to the configured CLI in a terminal, then retry.</value></data>
+  <data name="CliWorkspaceUntrusted" xml:space="preserve"><value>The CLI does not trust this workspace. Open the configured CLI in this workspace and review its trust settings, then retry.</value></data>
+  <data name="CliModelUnavailable" xml:space="preserve"><value>The selected model is unavailable to this CLI or account. Choose an available model or return to the default model, then retry.</value></data>
+  <data name="CliDiagnosticsHidden" xml:space="preserve"><value>The CLI wrote diagnostics to standard error.</value></data>
+  <data name="CliStructuredResultInvalid" xml:space="preserve"><value>The CLI did not report a valid successful result and session UUID. Check that the installed CLI supports the configured structured output format.</value></data>
   <data name="ApprovalPermissionLine" xml:space="preserve"><value>Approve: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>Reject: !cab reject {0}</value></data>
   <data name="ApprovalRequestTitle" xml:space="preserve"><value>Codex is requesting permission to perform an action.</value></data>

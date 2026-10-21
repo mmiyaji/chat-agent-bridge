@@ -13,7 +13,10 @@ public sealed partial class MainPage : Page
     private bool _hasLoaded;
     private string? _selectedNavigationTag;
     private int _scrollResetGeneration;
+    private int _languageRefreshGeneration;
+    private System.Globalization.CultureInfo? _inProcessLanguage;
     private bool _handlingStartupToggle;
+    private bool _refreshingAutoConnectSelection;
     private readonly Onboarding.OnboardingWizard _wizard;
 
     public MainPageViewModel ViewModel { get; } = new();
@@ -25,11 +28,15 @@ public sealed partial class MainPage : Page
     public bool IsHistorySelected { get; private set; }
     public bool IsAboutSelected { get; private set; }
     public bool IsFormSelected => !IsChatSelected && !IsHistorySelected && !IsAboutSelected;
-    public static bool CanUseForm(bool isGeneralSelected, bool isSettingsLoaded) => isGeneralSelected || isSettingsLoaded;
+    public static bool CanUseForm(bool isGeneralSelected, bool isSettingsLoaded, bool isLoading) => !isLoading && (isGeneralSelected || isSettingsLoaded);
 
     public MainPage()
     {
         InitializeComponent();
+        PasswordRevealControl.Attach(MattermostTokenRevealButton, MattermostTokenBox);
+        PasswordRevealControl.Attach(SlackBotTokenRevealButton, SlackBotTokenBox);
+        PasswordRevealControl.Attach(SlackAppTokenRevealButton, SlackAppTokenBox);
+        InitializeSettingsAutoSave();
         InitializeLanguageRestart();
         InitializePortableUpdateBadge();
         UpdateNavigationContentOffset();
@@ -37,6 +44,14 @@ public sealed partial class MainPage : Page
         WizardHost.Content = _wizard;
         ViewModel.PropertyChanged += (_, args) =>
         {
+            // PasswordBox cannot use a two-way x:Bind. Reflect rejected edits back
+            // into its editor as well as the view model, without persisting them.
+            if (args.PropertyName == nameof(ViewModel.MattermostToken))
+                MattermostTokenBox.Password = ViewModel.MattermostToken;
+            if (args.PropertyName == nameof(ViewModel.SlackBotToken))
+                SlackBotTokenBox.Password = ViewModel.SlackBotToken;
+            if (args.PropertyName == nameof(ViewModel.SlackAppToken))
+                SlackAppTokenBox.Password = ViewModel.SlackAppToken;
             if (ViewModel.IsOnboardingActive && ViewModel.IsStatusOpen && args.PropertyName is nameof(ViewModel.IsStatusOpen) or nameof(ViewModel.StatusTitle) or nameof(ViewModel.StatusMessage))
                 _wizard.ResetScroll();
             if (args.PropertyName == nameof(ViewModel.IsSettingsLoaded) && ViewModel.IsSettingsLoaded)
@@ -52,6 +67,7 @@ public sealed partial class MainPage : Page
                 SlackBotTokenBox.Password = ViewModel.SlackBotToken;
                 SlackAppTokenBox.Password = ViewModel.SlackAppToken;
                 _wizard.SyncSecrets();
+                if (!ViewModel.IsOnboardingActive) ScheduleDeferredLanguageRefresh();
             }
         };
         InboxPage.ViewModel.PropertyChanged += (_, args) =>
@@ -74,16 +90,62 @@ public sealed partial class MainPage : Page
         ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
         ViewModel.ServerInputHandler = serverDialogs.InputAsync;
         HistoryPage.AgentSettingsRequested += () => OpenAgentSettings_Click(this, new RoutedEventArgs());
+        InboxPage.ConnectionSettingsRequested += () => OpenConnections_Click(this, new RoutedEventArgs());
         ViewModel.OnboardingNavigateRequested += _ => _wizard.ResetScroll();
         MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
     }
 
     private void RefreshLanguage(System.Globalization.CultureInfo culture)
     {
+        _inProcessLanguage = culture;
         ViewModel.RefreshLocalizedText();
+        InboxPage.ViewModel.RefreshLocalizedText();
+        HistoryPage.ViewModel.RefreshLocalizedText();
         Bindings.Update();
         MrtText.Refresh(this, culture);
+        RefreshAutoConnectSelectionBox();
         RefreshPortableUpdateBadge();
+        if (!ViewModel.IsOnboardingActive) ScheduleDeferredLanguageRefresh();
+    }
+
+    private void ScheduleDeferredLanguageRefresh()
+    {
+        if (_inProcessLanguage is not { } culture || ViewModel.IsOnboardingActive) return;
+        var generation = ++_languageRefreshGeneration;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (generation != _languageRefreshGeneration || ViewModel.IsOnboardingActive) return;
+            UpdateLayout();
+            MainNavigation.UpdateLayout();
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (generation != _languageRefreshGeneration || ViewModel.IsOnboardingActive) return;
+                UpdateLayout();
+                MrtText.Refresh(this, culture);
+                RefreshAutoConnectSelectionBox();
+            });
+        });
+    }
+
+    private void RefreshAutoConnectSelectionBox()
+    {
+        if (AutoConnectProviderPicker.SelectedValue is not string selectedValue) return;
+        _refreshingAutoConnectSelection = true;
+        try
+        {
+            AutoConnectProviderPicker.SelectedIndex = -1;
+            AutoConnectProviderPicker.SelectedValue = selectedValue;
+        }
+        finally
+        {
+            _refreshingAutoConnectSelection = false;
+        }
+    }
+
+    private void AutoConnectProviderPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_refreshingAutoConnectSelection || sender is not ComboBox { SelectedValue: string value }) return;
+        ViewModel.AutoConnectProvider = value;
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
@@ -143,22 +205,26 @@ public sealed partial class MainPage : Page
         if (_hasLoaded) return;
         _hasLoaded = true;
         await ViewModel.LoadAsync();
+        var startupProvider = ViewModel.AutoConnectProvider;
         MattermostTokenBox.Password = ViewModel.MattermostToken;
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
         await ViewModel.RefreshStartupAsync();
         await ViewModel.InitializeOnboardingAsync();
-        if (ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive)
+        if (!App.IsNotificationOnlyLaunch && ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive && !ViewModel.IsLoading &&
+            !ViewModel.HasUnsavedSettings && !ViewModel.IsSensitiveConfirmationPending &&
+            ViewModel.AutoConnectProvider == startupProvider)
         {
-            if (ViewModel.AutoConnectProvider is "mattermost" or "slack")
+            if (startupProvider is "mattermost" or "slack")
                 MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "chat");
-            if (ViewModel.AutoConnectProvider == "mattermost") await InboxPage.ViewModel.ConnectMattermostCommand.ExecuteAsync(null);
-            else if (ViewModel.AutoConnectProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
+            if (startupProvider == "mattermost") await InboxPage.ViewModel.ConnectMattermostCommand.ExecuteAsync(null);
+            else if (startupProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
         }
     }
 
     private async void ReloadSettings_Click(object sender, RoutedEventArgs e)
     {
+        if (!await TryResolveUnsavedSettingsAsync()) return;
         await ViewModel.ReloadSettingsAsync();
         MattermostTokenBox.Password = ViewModel.MattermostToken;
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
@@ -182,10 +248,11 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private void MainNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    private void ApplyNavigationSelection(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         if (args.SelectedItem is not NavigationViewItem item || item.Tag is not string tag) return;
         var pageChanged = !string.Equals(_selectedNavigationTag, tag, StringComparison.Ordinal);
+        if (pageChanged) PasswordRevealControl.Hide(this);
         _selectedNavigationTag = tag;
         IsOverviewSelected = tag == "overview";
         IsWorkbenchSelected = tag == "workbench";
@@ -214,6 +281,7 @@ public sealed partial class MainPage : Page
         if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshAsync();
         if (pageChanged && IsOverviewSelected && _hasLoaded) _ = ViewModel.RefreshStartupAsync();
         if (pageChanged && IsAboutSelected) AboutPage.ResetScroll();
+        if (pageChanged) ScheduleDeferredLanguageRefresh();
     }
 
     private void OpenWorkbench_Click(object sender, RoutedEventArgs e)

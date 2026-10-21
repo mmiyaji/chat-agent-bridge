@@ -16,7 +16,11 @@ public sealed partial class HistoryPage
         var picker = new ComboBox
         {
             Header = DesktopText.Get("AgentSwitchConnection"), HorizontalAlignment = HorizontalAlignment.Stretch,
-            ItemsSource = choices.Select(profile => profile.Provider == "codex" ? "Codex" : "Claude Code").ToArray(),
+            ItemsSource = choices.Select(profile => profile.Provider switch
+            {
+                AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code", AgentProfile.Gemini => "Gemini CLI",
+                AgentProfile.GitHubCopilot => "GitHub Copilot CLI", _ => profile.Provider
+            }).ToArray(),
             SelectedIndex = choices.Length > 0 ? Math.Max(0, Array.FindIndex(choices, profile => profile.Provider == current)) : -1
         };
         AutomationProperties.SetAutomationId(picker, "AgentSwitchConnection");

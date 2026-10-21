@@ -118,7 +118,8 @@ public sealed class ExecutionPolicyTests
             await store.SaveAsync(settings);
             Assert.Equal(settings, await store.LoadAsync());
 
-            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(settings with { AgentModel = "model-x" }));
+            await store.SaveAsync(settings with { AgentModel = "model-x" });
+            Assert.Equal("model-x", (await store.LoadAsync()).AgentModel);
             await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(settings with { AgentReasoningEffort = "high" }));
             await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(settings with { AgentPermissionMode = "workspace-write" }));
             var copilot = settings with { AgentProvider = AgentProfile.GitHubCopilot, AgentExecutable = "copilot", AgentArguments = AgentProfile.DefaultGitHubCopilotArguments };

@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
+using ChatAgentBridge.Core.Deployment;
 
 namespace ChatAgentBridge.Core.Updates;
 
@@ -19,6 +20,12 @@ public static class PortableArchiveStager
     private static readonly HashSet<string> RequiredFiles = new(StringComparer.OrdinalIgnoreCase)
     {
         "ChatAgentBridge.Desktop.exe", "ChatAgentBridge.Desktop.dll", "ChatAgentBridge.Desktop.runtimeconfig.json", "ChatAgentBridge.Updater.exe", "portable-release.json", "portable-files.json", "SHA256SUMS.txt"
+    };
+    private static readonly HashSet<string> IdentityFiles = new(StringComparer.Ordinal)
+    {
+        "Identity/" + PortableIdentityBundle.MetadataFileName,
+        "Identity/" + PortableIdentityBundle.PackageFileName,
+        "Identity/" + PortableIdentityBundle.CertificateFileName
     };
 
     public static async Task<StagedPortableRelease> ExtractAsync(string zipPath, string destinationDir, PortableRelease release, CancellationToken cancellationToken)
@@ -108,6 +115,7 @@ public static class PortableArchiveStager
                 hashes.Add(relative.Replace('\\', '/'), actual);
             }
             ValidateExecutableArchitecture(Path.Combine(payloadRoot, "ChatAgentBridge.Desktop.exe"), release.AssetName.Contains("win-arm64", StringComparison.OrdinalIgnoreCase) ? "arm64" : "x64");
+            if (files.Keys.Any(IsIdentityPath)) PortableIdentityBundle.LoadValidated(payloadRoot);
             Directory.Move(payloadRoot, destination);
             return new StagedPortableRelease(destination, hashes);
         }
@@ -138,11 +146,22 @@ public static class PortableArchiveStager
 
     private static void ValidatePayloadFileNames(IEnumerable<string> paths)
     {
-        foreach (var path in paths)
+        var files = paths.ToArray();
+        ValidateIdentityFileNames(files);
+        foreach (var path in files)
         {
             var leaf = path.Split('/').Last(); var ext = Path.GetExtension(leaf);
-            if (ext.Equals(".pfx", StringComparison.OrdinalIgnoreCase) || ext.Equals(".cer", StringComparison.OrdinalIgnoreCase) || ext.Equals(".msix", StringComparison.OrdinalIgnoreCase) || ext.Equals(".appx", StringComparison.OrdinalIgnoreCase) || ext.Equals(".pdb", StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Portable payload contains a private key, installer, or debug symbol.");
+            if (!IdentityFiles.Contains(path) && (ext.Equals(".pfx", StringComparison.OrdinalIgnoreCase) || ext.Equals(".cer", StringComparison.OrdinalIgnoreCase) || ext.Equals(".msix", StringComparison.OrdinalIgnoreCase) || ext.Equals(".appx", StringComparison.OrdinalIgnoreCase) || ext.Equals(".pdb", StringComparison.OrdinalIgnoreCase))) throw new InvalidDataException("Portable payload contains a private key, installer, or debug symbol.");
         }
+    }
+
+    internal static bool IsIdentityPath(string path) => path.Equals("Identity", StringComparison.OrdinalIgnoreCase) || path.StartsWith("Identity/", StringComparison.OrdinalIgnoreCase);
+
+    internal static void ValidateIdentityFileNames(IEnumerable<string> paths)
+    {
+        var identity = paths.Where(IsIdentityPath).ToArray();
+        if (identity.Length != 0 && (identity.Length != IdentityFiles.Count || !identity.ToHashSet(StringComparer.Ordinal).SetEquals(IdentityFiles)))
+            throw new InvalidDataException("The portable identity payload must contain exactly its public metadata, signed package, and certificate.");
     }
 
     private static void ValidatePortableMetadata(byte[] data, PortableRelease release)

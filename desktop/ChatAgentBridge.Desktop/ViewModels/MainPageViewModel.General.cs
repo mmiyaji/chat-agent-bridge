@@ -6,7 +6,7 @@ namespace ChatAgentBridge_Desktop.ViewModels;
 public partial class MainPageViewModel
 {
     private bool CanSaveGeneralSettings() => !_closing && IsSettingsLoaded && !IsLoading &&
-        !IsRunning && !SaveSettingsCommand.IsRunning;
+        !IsRunning && !_savingSettings && !SaveSettingsCommand.IsRunning;
 
     [RelayCommand(CanExecute = nameof(CanSaveGeneralSettings))]
     private async Task SaveGeneralSettingsAsync()
@@ -35,6 +35,7 @@ public partial class MainPageViewModel
         }
         finally
         {
+            RefreshSettingsDraftChanges();
             IsLoading = false;
         }
         if (saved) SettingsSaved?.Invoke();

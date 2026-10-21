@@ -77,7 +77,7 @@ public partial class MainPageViewModel
         var cliVerified = HasCurrentCliCheck();
         var cliChecking = IsCheckingCli;
         var cliFailed = loadFailed || CliCheckFailed;
-        var cliStatusKey = cliChecking ? "OverviewChecking" : cliVerified ? "OverviewCliVerified" : cliFailed ? "OverviewCliFailed" : "OverviewCliNotChecked";
+        var cliStatusKey = cliChecking ? "OverviewChecking" : cliVerified ? (IsCliCheckRestored ? "OverviewCliPreviouslyVerified" : "OverviewCliVerified") : cliFailed ? "OverviewCliFailed" : "OverviewCliNotChecked";
         OverviewCliStatus = ViewModelText.Get(cliStatusKey);
         OverviewCliGlyph = cliChecking ? OverviewPendingGlyph : cliFailed ? OverviewErrorGlyph : cliVerified ? OverviewCheckGlyph : OverviewWarningGlyph;
         OverviewCliIconState = cliChecking || checking ? OverviewIconState.Neutral : cliFailed ? OverviewIconState.Error : cliVerified ? OverviewIconState.Ready : OverviewIconState.Attention;

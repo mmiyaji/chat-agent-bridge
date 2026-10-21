@@ -32,9 +32,9 @@ public sealed class AgentProfileTests
     }
 
     [Theory]
-    [InlineData(AgentProfile.Gemini, "gemini", "--output-format", "text")]
-    [InlineData(AgentProfile.GitHubCopilot, "copilot", "--silent", "--no-ask-user")]
-    public void BasicProviderProfilesUseOneShotTextArguments(string provider, string executable, string first, string second)
+    [InlineData(AgentProfile.Gemini, "gemini", "--output-format", "stream-json")]
+    [InlineData(AgentProfile.GitHubCopilot, "copilot", "--output-format", "json")]
+    public void BasicProviderProfilesUseStructuredArguments(string provider, string executable, string first, string second)
     {
         var invocation = AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = provider });
 
@@ -57,7 +57,7 @@ public sealed class AgentProfileTests
             AgentArguments = $"--output-format json --label \"{promptLikeValue}\""
         });
 
-        Assert.Equal(new[] { "--label", promptLikeValue, "--output-format", "text" }, invocation.Arguments);
+        Assert.Equal(new[] { "--label", promptLikeValue, "--output-format", "stream-json" }, invocation.Arguments);
 
         var copilot = AgentProfile.BuildInvocation(new BridgeSettings
         {
@@ -65,18 +65,117 @@ public sealed class AgentProfileTests
             AgentArguments = "--output-format json --silent"
         });
         Assert.Equal(1, copilot.Arguments.Count(argument => argument == "--output-format"));
-        Assert.Equal("text", copilot.Arguments.Last());
+        Assert.Equal("json", copilot.Arguments.Last());
+        Assert.DoesNotContain("--silent", copilot.Arguments);
         Assert.Contains("--no-ask-user", copilot.Arguments);
     }
 
     [Theory]
     [InlineData(AgentProfile.Gemini)]
     [InlineData(AgentProfile.GitHubCopilot)]
-    public void BasicProvidersRejectManagedModelEffortAndPermissionOverrides(string provider)
+    public void BasicProvidersForwardModelButRejectEffortAndPermissionOverrides(string provider)
     {
-        Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = provider, AgentModel = "model-x" }));
+        var invocation = AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = provider, AgentModel = "model-x" });
+        Assert.Equal("model-x", invocation.Model);
+        Assert.Equal(new[] { "--model", "model-x" }, invocation.Arguments.TakeLast(2));
         Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = provider, AgentReasoningEffort = "high" }));
         Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = provider, AgentPermissionMode = "workspace-write" }));
+    }
+
+    [Theory]
+    [InlineData(AgentProfile.Gemini)]
+    [InlineData(AgentProfile.GitHubCopilot)]
+    public void StructuredProfilesPreserveNodeEntrypointAndReplaceLegacyOutputAndModel(string provider)
+    {
+        var invocation = AgentProfile.BuildInvocation(new BridgeSettings
+        {
+            AgentProvider = provider, AgentExecutable = "node.exe", AgentModel = "new-model",
+            AgentArguments = "--no-warnings \"C:\\Program Files\\cli\\index.js\" --output-format=text --silent -s --model=old"
+        });
+        Assert.Equal("--no-warnings", invocation.Arguments[0]);
+        Assert.Equal("C:\\Program Files\\cli\\index.js", invocation.Arguments[1]);
+        Assert.DoesNotContain("--model=old", invocation.Arguments);
+        Assert.Equal(new[] { "--model", "new-model" }, invocation.Arguments.TakeLast(2));
+        if (provider == AgentProfile.GitHubCopilot)
+        {
+            Assert.DoesNotContain("-s", invocation.Arguments);
+            Assert.DoesNotContain("--silent", invocation.Arguments);
+            Assert.Contains("--no-ask-user", invocation.Arguments);
+        }
+    }
+
+    [Theory]
+    [InlineData("--resume 00000000-0000-0000-0000-000000000000")]
+    [InlineData("--resume=latest")]
+    [InlineData("-rlatest")]
+    [InlineData("--continue")]
+    [InlineData("--session-id=00000000-0000-0000-0000-000000000000")]
+    [InlineData("-p arbitrary")]
+    public void StructuredProfilesRejectConfiguredSessionAndPromptSelection(string arguments)
+    {
+        foreach (var provider in new[] { AgentProfile.Gemini, AgentProfile.GitHubCopilot })
+            Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = provider, AgentArguments = arguments }));
+    }
+
+    [Theory]
+    [InlineData("--session-file saved-session.json")]
+    [InlineData("--session-file=saved-session.json")]
+    [InlineData("-w alternate-worktree")]
+    [InlineData("-w")]
+    [InlineData("--prompt-interactive arbitrary")]
+    [InlineData("--prompt-interactive=arbitrary")]
+    public async Task StructuredProfilesRejectAlternateSessionWorkspaceAndInteractiveSelectorsBeforeRegistration(string arguments)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "cab-invalid-profile-" + Guid.NewGuid().ToString("N"));
+        foreach (var provider in new[] { AgentProfile.Gemini, AgentProfile.GitHubCopilot })
+        {
+            Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings
+            {
+                AgentProvider = provider, AgentArguments = arguments
+            }));
+            var profile = new AgentConnectionProfile(provider, "node", arguments, "exec", null, null,
+                "inherit", false, "test-version", DateTimeOffset.UtcNow);
+            await Assert.ThrowsAsync<ArgumentException>(() => new AgentConnectionStore(directory).SaveVerifiedAsync(profile));
+        }
+        Assert.False(Directory.Exists(directory));
+    }
+
+    [Theory]
+    [InlineData("-sr00000000-0000-0000-0000-000000000000")]
+    [InlineData("-dr00000000-0000-0000-0000-000000000000")]
+    [InlineData("-spINLINE-PROMPT")]
+    [InlineData("-sd")]
+    [InlineData("-mattached-model")]
+    [InlineData("-o=text")]
+    public void StructuredProfilesRejectBundledAndAttachedShortOptions(string arguments)
+    {
+        foreach (var provider in new[] { AgentProfile.Gemini, AgentProfile.GitHubCopilot })
+            Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = provider, AgentArguments = arguments }));
+    }
+
+    [Fact]
+    public void GeminiReplacesSeparateShortOutputAliasAndModelWithoutLosingOtherArguments()
+    {
+        var invocation = AgentProfile.BuildInvocation(new BridgeSettings
+        {
+            AgentProvider = AgentProfile.Gemini, AgentArguments = "-o text --output-format=json -m old -d",
+            AgentModel = "new-model"
+        });
+        Assert.Equal(new[] { "-d", "--output-format", "stream-json", "--model", "new-model" }, invocation.Arguments);
+        Assert.DoesNotContain("-o", invocation.Arguments);
+        Assert.DoesNotContain("text", invocation.Arguments);
+    }
+
+    [Theory]
+    [InlineData(AgentProfile.Gemini)]
+    [InlineData(AgentProfile.GitHubCopilot)]
+    public void StructuredProfilesResumeOnlyAuthorizedUuid(string provider)
+    {
+        var id = Guid.NewGuid().ToString("D");
+        var settings = new BridgeSettings { AgentProvider = provider, AuthorizedCliSessionId = id };
+        Assert.Equal(new[] { "--resume", id }, AgentProfile.BuildInvocation(settings).Arguments.TakeLast(2));
+        Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(settings with { AuthorizedCliSessionId = "latest" }));
+        Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(settings with { AgentModel = "--allow-all" }));
     }
 
     [Fact]

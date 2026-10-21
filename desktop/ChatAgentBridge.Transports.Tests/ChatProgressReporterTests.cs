@@ -120,6 +120,20 @@ public sealed class ChatProgressReporterTests
         Assert.Equal(countAfterDispose, transport.Updates.Count);
         await reporter.FinishAsync(ChatProgressState.Disconnected);
         Assert.Equal(countAfterDispose, transport.Updates.Count);
+        Assert.Single(transport.CompletedProgress);
+    }
+
+    [Fact]
+    public async Task TerminalLifecycleIsClearedBeforeFinalEditEvenWhenThatEditFails()
+    {
+        var transport = new FakeProgressTransport { FailTerminalUpdate = true };
+        await using var reporter = CreateReporter(transport, interval: TimeSpan.FromHours(1));
+
+        await reporter.ReceiveAsync();
+        await reporter.FinishAsync(ChatProgressState.Completed);
+
+        Assert.Same(transport.PostedMessage, Assert.Single(transport.CompletedProgress));
+        Assert.Equal(new[] { "complete", "terminal-update" }, transport.LifecycleOrder);
     }
 
     private static ChatProgressReporter CreateReporter(
@@ -134,15 +148,18 @@ public sealed class ChatProgressReporterTests
             interval,
             TimeSpan.FromSeconds(1));
 
-    private sealed class FakeProgressTransport : IChatTransport, IChatProgressTransport
+    private sealed class FakeProgressTransport : IChatTransport, IChatProgressTransport, IChatProgressLifecycleTransport
     {
         private readonly object _sync = new();
         private int _heartbeatCalls;
 
         public List<string> Posts { get; } = [];
         public List<(ChatProgressMessage Message, string Text)> Updates { get; } = [];
+        public List<ChatProgressMessage> CompletedProgress { get; } = [];
+        public List<string> LifecycleOrder { get; } = [];
         public ChatProgressMessage? PostedMessage { get; private set; }
         public bool FailPost { get; init; }
+        public bool FailTerminalUpdate { get; init; }
         public bool BlockHeartbeat { get; init; }
         public TaskCompletionSource HeartbeatEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource HeartbeatCancelled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -162,6 +179,11 @@ public sealed class ChatProgressReporterTests
 
         public async Task UpdateProgressAsync(ChatRequest request, ChatProgressMessage message, string text, CancellationToken cancellationToken)
         {
+            if (text == "Completed")
+            {
+                lock (_sync) LifecycleOrder.Add("terminal-update");
+                if (FailTerminalUpdate) throw new InvalidOperationException("terminal update failed");
+            }
             var isHeartbeat = text == "Running" && Interlocked.Increment(ref _heartbeatCalls) > 1;
             if (BlockHeartbeat && isHeartbeat)
             {
@@ -174,6 +196,15 @@ public sealed class ChatProgressReporterTests
                 }
             }
             lock (_sync) Updates.Add((message, text));
+        }
+
+        public void CompleteProgress(ChatProgressMessage message)
+        {
+            lock (_sync)
+            {
+                CompletedProgress.Add(message);
+                LifecycleOrder.Add("complete");
+            }
         }
 
         public async Task WaitForUpdatesAsync(int count)

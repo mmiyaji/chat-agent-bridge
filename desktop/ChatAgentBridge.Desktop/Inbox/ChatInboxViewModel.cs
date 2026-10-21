@@ -107,6 +107,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private Task _connectionNotice = Task.CompletedTask;
     private bool _disconnecting;
     private bool _closing;
+    private bool _hasRuntimeStatus;
     private InboxItem? _notificationApprovedItem;
     private InboxItem? _automaticallyApprovedItem;
     private bool _processingPolicies;
@@ -402,6 +403,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await transport.DisposeAsync();
                 IsConnected = false;
                 Status = DesktopText.Get("InboxAllowedUsersRequired");
+                HasConnectionError = true;
                 return;
             }
             Volatile.Write(ref _accessSettings, settings);
@@ -410,7 +412,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await _sessions.ListAsync();
             if (_closing) { await transport.DisposeAsync(); IsConnected = false; return; }
             if (string.IsNullOrWhiteSpace(settings.WorkspaceRoot) || !Directory.Exists(settings.WorkspaceRoot))
-                throw new InvalidOperationException(DesktopText.Get("WorkspaceConfigureAndSave"));
+            {
+                await transport.DisposeAsync();
+                IsConnected = false;
+                Status = DesktopText.Get("WorkspaceConfigureAndSave");
+                HasConnectionError = true;
+                return;
+            }
             // Reconnection invalidates pending work from the previous connection.
             Requests.Clear();
             Conversations.Clear();
@@ -444,6 +452,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 var accessSettings = Volatile.Read(ref _accessSettings);
                 if (_disconnecting || accessSettings is null || !HasAccess(accessSettings, request, settings)) return;
                 await AuditAsync("received", request, null, token);
+                if (request.CancellationTargetMessageId is not null)
+                {
+                    await TryHandleChatControlAsync(transport, settings, request, token);
+                    return;
+                }
                 if (_approvalBroker.TryHandle(request)) return;
                 if (await TryHandleChatAnswerAsync(transport, settings, request, token)) return;
                 if (await TryHandleAgentCommandAsync(transport, settings, request, token)) return;
@@ -608,22 +621,25 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.Usage = DesktopText.Get("UsageRunning");
             await StartProgressAsync(item);
             var attachmentBefore = await CaptureAttachmentBaselineAsync(item, effectiveSettings, token);
+            var agentPrompt = FileAttachmentAgentPrompt.Build(item.Request.Text,
+                item.AttachmentSettingsAtStart ?? effectiveSettings, attachmentBefore is not null);
             var progress = item.LiveOutput.Begin();
             NotifyActiveRequestProperties();
             AgentRunResult result;
             try
             {
                 result = effectiveSettings.AgentMode == "app-server"
-                    ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
+                    ? await _serverRunner.RunAsync(key, effectiveSettings, agentPrompt,
                         new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct), Progress: progress), _execution.Token)
-                    : await _runner.RunAsync(key, effectiveSettings, item.Request.Text, _execution.Token, progress);
+                    : await _runner.RunAsync(key, effectiveSettings, agentPrompt, _execution.Token, progress);
             }
             finally
             {
                 item.LiveOutput.Finish();
                 NotifyActiveRequestProperties();
             }
-            var output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
+            var output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ??
+                    (result.CliSession is { } cliSession ? cliSession.FinalMessage ?? "" : result.Output)) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
             var needsLogin = !result.Success && effectiveSettings.AgentProvider == AgentProfile.Claude &&
                 (output.Contains("Not logged in", StringComparison.OrdinalIgnoreCase) ||
                  output.Contains("Please run /login", StringComparison.OrdinalIgnoreCase));
@@ -738,21 +754,66 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         RejectCommand.NotifyCanExecuteChanged();
     }
 
-    public async Task ApproveNotificationAsync(InboxItem item)
+    public async Task<Notifications.PendingNotificationActionResult> ApproveNotificationAsync(InboxItem item)
     {
-        if (!Requests.Contains(item) || IsExecuting || !IsConnectionConfirmed || item.State != "承認待ち") return;
+        bool IsAvailable() => !_closing && Requests.Contains(item) && IsConnectionConfirmed &&
+            ReferenceEquals(item.Transport, _transport) && _connection is { IsCancellationRequested: false } &&
+            item.State == "承認待ち";
+        if (!IsAvailable())
+        {
+            TraceUnavailableNotification(item);
+            return Notifications.PendingNotificationActionResult.Unavailable;
+        }
+        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+        {
+            App.PendingRequestNotifications?.TraceDecision("command_busy");
+            return Notifications.PendingNotificationActionResult.Busy;
+        }
         RevealRequest(item);
-        if (!CanApprove()) return;
+        // Revealing a request can synchronously change selection through UI bindings.
+        // Never let a notification authorize whichever request became selected instead.
+        if (!IsAvailable() || !ReferenceEquals(Selected, item))
+        {
+            App.PendingRequestNotifications?.TraceDecision("selection_or_state_changed");
+            return Notifications.PendingNotificationActionResult.Unavailable;
+        }
+        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+            return Notifications.PendingNotificationActionResult.Busy;
         _notificationApprovedItem = item;
         try { await ApproveCommand.ExecuteAsync(null); }
         finally { _notificationApprovedItem = null; }
+        return item.State != "承認待ち" ? Notifications.PendingNotificationActionResult.Completed
+            : Notifications.PendingNotificationActionResult.Unavailable;
     }
 
-    public async Task RejectNotificationAsync(InboxItem item)
+    public async Task<Notifications.PendingNotificationActionResult> RejectNotificationAsync(InboxItem item)
     {
-        if (!Requests.Contains(item) || IsExecuting || !IsConnectionConfirmed || item.State != "承認待ち") return;
+        bool IsAvailable() => !_closing && Requests.Contains(item) && IsConnectionConfirmed &&
+            ReferenceEquals(item.Transport, _transport) && _connection is { IsCancellationRequested: false } &&
+            item.State == "承認待ち";
+        if (!IsAvailable())
+        {
+            TraceUnavailableNotification(item);
+            return Notifications.PendingNotificationActionResult.Unavailable;
+        }
+        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+            return Notifications.PendingNotificationActionResult.Busy;
         RevealRequest(item);
-        if (CanApprove()) await RejectCommand.ExecuteAsync(null);
+        if (!IsAvailable() || !ReferenceEquals(Selected, item))
+            return Notifications.PendingNotificationActionResult.Unavailable;
+        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+            return Notifications.PendingNotificationActionResult.Busy;
+        await RejectCommand.ExecuteAsync(null);
+        return item.State != "承認待ち" ? Notifications.PendingNotificationActionResult.Completed
+            : Notifications.PendingNotificationActionResult.Unavailable;
+    }
+
+    private void TraceUnavailableNotification(InboxItem item)
+    {
+        var reason = _closing ? "closing" : !Requests.Contains(item) ? "missing_item" :
+            !IsConnectionConfirmed ? "disconnected" : !ReferenceEquals(item.Transport, _transport) ? "transport_changed" :
+            _connection is not { IsCancellationRequested: false } ? "connection_canceled" : "already_resolved";
+        App.PendingRequestNotifications?.TraceDecision(reason);
     }
 
     private bool CanSendResult() => !_closing && !IsExecuting && IsConnectionConfirmed && Selected is { ResultText.Length: > 0, AllowsResultSharing: true } item && ReferenceEquals(item.Transport, _transport);
@@ -883,6 +944,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            // A save can finish before RefreshAccessAsync updates its in-memory
+            // snapshot. Re-read the notice preference so turning it off takes
+            // effect immediately, while retaining the active connection target.
+            if (!(await _store.LoadAsync(timeout.Token)).PostConnectionNotice) return;
             await notifications.NotifyConnectionAsync(settings, message, timeout.Token);
         }
         catch (Exception) { if (!_closing) Status += " " + DesktopText.Get("InboxConnectionNoticeFailed"); }
@@ -901,6 +966,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private static string ExtractReply(AgentRunResult result)
     {
         if (result.Claude is { } claude) return claude.FinalMessage ?? "";
+        if (result.CliSession is { } cliSession) return cliSession.FinalMessage ?? "";
         var parsed = result.Codex ?? CodexOutputParser.Parse(result.Output);
         return parsed.FinalMessage ?? (parsed.HasEvents ? "" : result.Output);
     }

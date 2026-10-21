@@ -14,13 +14,16 @@ public partial class MainPageViewModel
         OnPropertyChanged(nameof(BasicProviderHelp));
         OnPropertyChanged(nameof(AgentProviderDisplayName));
         OnPropertyChanged(nameof(AgentPermissionStatus));
+        RefreshOverviewStatus();
+        if (_startupState is { } startupState)
+            _ = RefreshStartupStatusForLanguageAsync(startupState);
         RefreshSetupStepper();
         UpdateSavedAgentSummary();
         if (IsWizardIntro && !CliCheckSucceeded && !IsCheckingCli)
         {
             CliVersion = ChatAgentBridge_Desktop.Localization.ViewModelText.Get("NotChecked");
             CliCheckSummary = ChatAgentBridge_Desktop.Localization.ViewModelText.Get("CliCheckIntro");
-            ModelCatalog.Invalidate(IsBasicProvider ? ChatAgentBridge_Desktop.Localization.ViewModelText.Get("BasicModelManagedByCli") : null);
+            InvalidateModelCatalog();
         }
 
         if (IsWizardIntro)
@@ -29,6 +32,24 @@ public partial class MainPageViewModel
                 ? ChatAgentBridge_Desktop.Localization.ViewModelText.Get("ConsentSaved", OnboardingConsentStore.CurrentPolicyVersion)
                 : ChatAgentBridge_Desktop.Localization.ViewModelText.Get("ConsentInstructionsWizard");
             if (IsOnboardingActive && StatusSeverity == "Warning") IsStatusOpen = false;
+        }
+    }
+
+    private async Task RefreshStartupStatusForLanguageAsync(Startup.StartupState stateBeforeRefresh)
+    {
+        try
+        {
+            // Startup status text comes from an OS query and is cached in the
+            // view model. Re-read it so the new culture is used, while leaving
+            // an in-progress user change untouched.
+            var result = await _startup.GetStateAsync();
+            if (_startupState != stateBeforeRefresh) return;
+            ApplyStartupResult(result);
+        }
+        catch
+        {
+            // Language refresh must not change the current startup state if the
+            // read-only OS query is temporarily unavailable.
         }
     }
 }

@@ -45,6 +45,15 @@ public sealed partial class ModelCatalogViewModel : ObservableObject, IDisposabl
 
     public void UpdateSettingsFactory(Func<BridgeSettings> settingsFactory) => _settingsFactory = settingsFactory;
 
+    /// <summary>Restores diagnostic candidates without launching the CLI.</summary>
+    public void RestoreVerifiedModels(IReadOnlyList<ModelOption> models, string? selectedModel)
+    {
+        Invalidate();
+        foreach (var model in models) Models.Add(model);
+        SelectedModel = Models.FirstOrDefault(model => string.Equals(model.Id, selectedModel?.Trim(), StringComparison.Ordinal));
+        Status = DesktopText.Get("ModelCatalogRestored", Models.Count);
+    }
+
     public void CancelLookup()
     {
         if (!IsLoading) return;

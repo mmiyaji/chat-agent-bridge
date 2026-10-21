@@ -36,7 +36,15 @@ public sealed record ChatRequest(
     string ThreadId,
     string UserId,
     string Text,
-    string MessageId);
+    string MessageId)
+{
+    /// <summary>
+    /// Transport-generated stop signal target. When set, the request represents a cancellation
+    /// signal for this original request's MessageId and must not be treated as a new AI request.
+    /// Ordinary posted messages leave this unset.
+    /// </summary>
+    public string? CancellationTargetMessageId { get; init; }
+}
 
 public interface IChatTransport : IAsyncDisposable
 {
@@ -63,6 +71,13 @@ public interface IChatProgressTransport
     Task<ChatProgressMessage> PostProgressAsync(ChatRequest request, string text, CancellationToken cancellationToken);
 
     Task UpdateProgressAsync(ChatRequest request, ChatProgressMessage message, string text, CancellationToken cancellationToken);
+}
+
+/// <summary>Optional lifecycle notification for transports that associate actions with live progress posts.</summary>
+public interface IChatProgressLifecycleTransport
+{
+    /// <summary>Marks a progress post as no longer eligible for transport-specific actions such as stop reactions.</summary>
+    void CompleteProgress(ChatProgressMessage message);
 }
 
 /// <summary>An opaque handle for a progress message created by an <see cref="IChatProgressTransport"/>.</summary>

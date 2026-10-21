@@ -169,16 +169,16 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
         get
         {
             if (string.Equals(Binding.AgentArguments, "app-server", StringComparison.Ordinal)) return "Codex App Server";
+            var provider = ConversationAgentService.ProviderOf(Binding);
+            if (provider is not null)
+                return provider switch
+                {
+                    AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code",
+                    AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI", _ => provider
+                };
             var leaf = Path.GetFileName(Binding.AgentExecutable.Trim().Trim('"'));
             var name = Path.GetFileNameWithoutExtension(leaf);
-            return name.ToLowerInvariant() switch
-            {
-                "codex" => "Codex",
-                "claude" => "Claude Code",
-                "gemini" => "Gemini CLI",
-                "copilot" or "github-copilot" => "GitHub Copilot CLI",
-                _ => string.IsNullOrWhiteSpace(name) ? DesktopText.Get("CustomCliName") : name
-            };
+            return string.IsNullOrWhiteSpace(name) ? DesktopText.Get("CustomCliName") : name;
         }
     }
 
@@ -213,9 +213,9 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public ObservableCollection<SessionHistoryRow> Sessions { get; } = [];
     public ObservableCollection<SessionHistoryRow> FilteredSessions { get; } = [];
     public ObservableCollection<string> WorkspaceFilters { get; } = [DesktopText.Get("HistoryWorkspaceAll")];
-    public IReadOnlyList<string> SessionSortOptions { get; } =
+    public ObservableCollection<string> SessionSortOptions { get; } =
         [DesktopText.Get("HistorySortRecent"), DesktopText.Get("HistorySortName"), DesktopText.Get("HistorySortUsage")];
-    public IReadOnlyList<string> ProviderFilters { get; } = [DesktopText.Get("HistoryProviderAll"), "Slack", "Mattermost", DesktopText.Get("Local")];
+    public ObservableCollection<string> ProviderFilters { get; } = [DesktopText.Get("HistoryProviderAll"), "Slack", "Mattermost", DesktopText.Get("Local")];
     [ObservableProperty] public partial string SearchQuery { get; set; } = string.Empty;
     [ObservableProperty] public partial string ProviderFilter { get; set; } = DesktopText.Get("HistoryProviderAll");
     [ObservableProperty] public partial string WorkspaceFilter { get; set; } = DesktopText.Get("HistoryWorkspaceAll");
@@ -244,6 +244,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public string SearchLabel => DesktopText.Get("HistorySearchLabel");
     public string SearchPlaceholder => DesktopText.Get("HistorySearchPlaceholder");
     public string ProviderLabel => DesktopText.Get("HistoryProviderLabel");
+    public string FiltersLabel => DesktopText.Get("HistoryFilters");
     public string WorkspaceFilterLabel => DesktopText.Get("HistoryWorkspaceFilterLabel");
     public string SortLabel => DesktopText.Get("HistorySortLabel");
     public string ClearSessionFiltersLabel => DesktopText.Get("HistoryClearSessionFilters");
@@ -279,15 +280,72 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     private static string CompactSummaryPart(string value) => value.Length > 28 ? $"{value[..25]}…" : value;
     public string ExecutionSummary => ExecutionDayFilter is { } date
         ? DesktopText.Get("ActivityFilteredExecutions", date.ToString("D"), Executions.Count)
-        : DesktopText.Get("HistoryExecutionSummary", Executions.Count);
+        : DesktopText.Get("HistoryExecutionSummary", _activityRecords.Count);
     public string NoExecutionsText => DesktopText.Get("HistoryNoExecutions");
     public string NoAuditText => DesktopText.Get("HistoryNoAudit");
 
+    public void RefreshLocalizedText()
+    {
+        // The localized labels are also the ComboBox values. Save their semantic
+        // positions before updating the collections, since TwoWay SelectedItem
+        // bindings can temporarily clear their source while items are replaced.
+        var providerIndex = Math.Max(0, ProviderFilters.IndexOf(ProviderFilter));
+        var sortIndex = Math.Max(0, SessionSortOptions.IndexOf(SessionSort));
+        var previousWorkspace = WorkspaceFilter;
+        var allWorkspaceSelected = WorkspaceFilters.Count > 0 &&
+            string.Equals(previousWorkspace, WorkspaceFilters[0], StringComparison.Ordinal);
+
+        _refreshingLocalizedFilters = true;
+        try
+        {
+            ReplaceOptions(ProviderFilters,
+                [DesktopText.Get("HistoryProviderAll"), "Slack", "Mattermost", DesktopText.Get("Local")]);
+            ReplaceOptions(SessionSortOptions,
+                [DesktopText.Get("HistorySortRecent"), DesktopText.Get("HistorySortName"), DesktopText.Get("HistorySortUsage")]);
+            var allWorkspace = DesktopText.Get("HistoryWorkspaceAll");
+            if (WorkspaceFilters.Count == 0) WorkspaceFilters.Add(allWorkspace);
+            else WorkspaceFilters[0] = allWorkspace;
+
+            ProviderFilter = ProviderFilters[Math.Min(providerIndex, ProviderFilters.Count - 1)];
+            SessionSort = SessionSortOptions[Math.Min(sortIndex, SessionSortOptions.Count - 1)];
+            WorkspaceFilter = allWorkspaceSelected ? allWorkspace : previousWorkspace;
+        }
+        finally { _refreshingLocalizedFilters = false; }
+        ApplySessionFilter();
+
+        foreach (var name in new[]
+        {
+            nameof(ProviderFilters), nameof(SessionSortOptions), nameof(WorkspaceFilters),
+            nameof(SearchLabel), nameof(SearchPlaceholder), nameof(ProviderLabel), nameof(FiltersLabel),
+            nameof(WorkspaceFilterLabel), nameof(SortLabel), nameof(ClearSessionFiltersLabel),
+            nameof(RenameSessionLabel), nameof(HasSessionFilters), nameof(SelectedSessionTitle),
+            nameof(NoSessionSelectedText), nameof(ChannelIdLabel), nameof(ThreadIdLabel), nameof(UserIdLabel),
+            nameof(OriginLabel), nameof(WorkspacePathLabel), nameof(AgentLabel), nameof(SessionIdLabel),
+            nameof(BackToConversationsLabel), nameof(ContinueInOriginalThreadHint), nameof(ConversationHeading),
+            nameof(RuntimeHeading), nameof(PolicyHeading), nameof(IdentifiersHeading), nameof(IdentifiersSummary),
+            nameof(ActionsHeading), nameof(EditModelLabel), nameof(SwitchAgentLabel), nameof(EditPolicyLabel),
+            nameof(StartFreshLabel), nameof(NoExecutionsText), nameof(NoAuditText)
+        })
+            OnPropertyChanged(name);
+
+        NotifySummariesChanged();
+    }
+
+    private static void ReplaceOptions(ObservableCollection<string> target, IReadOnlyList<string> values)
+    {
+        for (var index = 0; index < Math.Min(target.Count, values.Count); index++)
+            if (!string.Equals(target[index], values[index], StringComparison.Ordinal))
+                target[index] = values[index];
+        while (target.Count > values.Count) target.RemoveAt(target.Count - 1);
+        while (target.Count < values.Count) target.Add(values[target.Count]);
+    }
+
+    private bool _refreshingLocalizedFilters;
     partial void OnSearchQueryChanged(string value) => ApplySessionFilter();
     partial void OnIsNarrowChanged(bool value) => NotifySummariesChanged();
-    partial void OnProviderFilterChanged(string value) => ApplySessionFilter();
-    partial void OnWorkspaceFilterChanged(string value) => ApplySessionFilter();
-    partial void OnSessionSortChanged(string value) => ApplySessionFilter();
+    partial void OnProviderFilterChanged(string value) { if (!_refreshingLocalizedFilters) ApplySessionFilter(); }
+    partial void OnWorkspaceFilterChanged(string value) { if (!_refreshingLocalizedFilters) ApplySessionFilter(); }
+    partial void OnSessionSortChanged(string value) { if (!_refreshingLocalizedFilters) ApplySessionFilter(); }
     partial void OnSelectedSessionChanged(SessionHistoryRow? value)
     {
         OnPropertyChanged(nameof(HasSelectedSession));
@@ -396,7 +454,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
             ApplySessionFilter();
             NotifySummariesChanged();
-            Status = DesktopText.Get("HistoryCounts", Executions.Count, Sessions.Count, AuditEvents.Count);
+            Status = DesktopText.Get("HistoryCounts", _activityRecords.Count, Sessions.Count, AuditEvents.Count);
         }
         catch (Exception ex)
         {
@@ -454,12 +512,13 @@ public sealed partial class HistoryPageViewModel : ObservableObject
 
     private bool CanRefresh() => !IsBusy;
     private bool CanDetachSelectedSession() => SelectedSession is not null && !IsBusy;
-    private bool CanEditSelectedSessionModel() => SelectedSession is { Binding.NextAgentProvider: null } && !IsBusy;
+    private bool CanEditSelectedSessionModel() => SelectedSession is { Binding.NextAgentProvider: null } selected && !IsBusy &&
+        ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot;
 
     private bool CanSwitchSelectedAgent() => SelectedSession is { } selected && !IsBusy &&
         selected.Binding.Key.UserId is not null && selected.Binding.Key.Origin is not null &&
         selected.Binding.Key.Provider is "slack" or "mattermost" &&
-        ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude;
+        ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot;
 
     [RelayCommand(CanExecute = nameof(CanSwitchSelectedAgent))]
     private async Task SwitchSelectedAgentAsync()
@@ -503,6 +562,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         try
         {
             var settings = await _settingsStore.LoadAsync();
+            settings = await _sessionStore.ApplyWorkspaceAsync(selected.Binding.Key, settings);
             var selection = await EditSessionPolicyAsync(selected, settings);
             if (selection is null) return;
             await _sessionStore.UpdateExecutionPolicyAsync(selected.Binding.Key, selection.ChatApprovalMode,
@@ -526,6 +586,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         try
         {
             var settings = await _settingsStore.LoadAsync();
+            settings = await _sessionStore.ApplyWorkspaceAsync(selected.Binding.Key, settings);
             var selection = await EditSessionModelAsync(selected, settings);
             if (selection is null) return;
             await _sessionStore.UpdateModelAndEffortAsync(selected.Binding,
@@ -590,7 +651,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
         ApplySessionFilter();
         NotifySummariesChanged();
-        Status = DesktopText.Get("HistorySuccessCounts", successMessage, Executions.Count, Sessions.Count, AuditEvents.Count);
+        Status = DesktopText.Get("HistorySuccessCounts", successMessage, _activityRecords.Count, Sessions.Count, AuditEvents.Count);
         StartChatNameRefresh();
     }
 

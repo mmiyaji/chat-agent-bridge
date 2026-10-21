@@ -35,7 +35,7 @@ try{
     Assert (Test-Path $portFile) 'Mattermost fixture did not start.';$script:endpoint='http://127.0.0.1:'+(Get-Content $portFile -Raw).Trim()
     $token='dpapi:'+[Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes('offline-ui-fixture'),$null,[Security.Cryptography.DataProtectionScope]::CurrentUser))
     Write-Json 'settings.json' @{SchemaVersion=1;WorkspaceRoot=$data;AgentProvider='custom';AgentMode='exec';AgentExecutable='unused';AgentArguments='';TrustedWorkspaceRoots=$data;MattermostServerUrl=$endpoint;MattermostChannelId='ui-channel';MattermostToken=$token;MattermostAllowedUserIds='alice';ChatApprovalMode='always';ChatResultMode='manual';AutoConnectProvider='none'}
-    Write-Json 'onboarding.json' @{SchemaVersion=3;Step=4;Status='completed'}
+    Write-Json 'onboarding.json' @{schemaVersion=3;step=4;status='completed'}
     $policy=[regex]::Match((Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/OnboardingConsentStore.cs') -Raw),'CurrentPolicyVersion\s*=\s*"([^"]+)"').Groups[1].Value
     Assert ([bool]$policy) 'Current consent policy not found.'
     Write-Json 'consent.json' @{PolicyVersion=$policy;AcceptedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}
@@ -52,25 +52,34 @@ try{
     Connect-Mattermost;Start-Sleep -Milliseconds 400;$state=Invoke-RestMethod "$endpoint/test/results" -TimeoutSec 3
     Assert ($state.replies.Count -eq 0) 'Default-off connection posted a notice.'
     Pass 'Connection is confirmed with no connect notice by default'
-    Disconnect-Mattermost 1;$state=Wait-Fixture {param($s)$s.replies.Count -eq 1}
-    Assert ($state.replies[0].message -eq $disconnectNotice) 'Existing disconnect notice was not preserved.'
-    Pass 'Disconnect notice remains enabled'
+    Disconnect-Mattermost 0;Start-Sleep -Milliseconds 400;$state=Invoke-RestMethod "$endpoint/test/results" -TimeoutSec 3
+    Assert ($state.replies.Count -eq 0) 'Default-off disconnect posted a notice.'
+    Pass 'Default-off setting suppresses both connection and disconnection notices'
 
     Navigate 'NavConnections';UI @('scroll-into-view','PostConnectionNotice')|Out-Null;$toggle=(El 'PostConnectionNotice').GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
     $toggle.Toggle();Assert ($toggle.Current.ToggleState -eq [Windows.Automation.ToggleState]::On) 'Toggle did not turn on.';Save-Notice $true
-    Connect-Mattermost;$state=Wait-Fixture {param($s)$s.connections -eq 1 -and $s.replies.Count -ge 2}
+    Connect-Mattermost;$state=Wait-Fixture {param($s)$s.connections -eq 1 -and $s.replies.Count -ge 1}
     Assert (@($state.replies|Where-Object {$_.message -eq $connectNotice}).Count -eq 1) 'Enabled connection did not post exactly one notice.'
     Pass 'Saved-on setting posts one notice on reconnect'
 
-    Disconnect-Mattermost 3
+    Disconnect-Mattermost 2
+    $state=Invoke-RestMethod "$endpoint/test/results" -TimeoutSec 3
+    Assert (@($state.replies|Where-Object {$_.message -eq $disconnectNotice}).Count -eq 1) 'Enabled disconnect did not post exactly one notice.'
     Navigate 'NavConnections';UI @('scroll-into-view','PostConnectionNotice')|Out-Null;$toggle=(El 'PostConnectionNotice').GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
     $toggle.Toggle();Assert ($toggle.Current.ToggleState -eq [Windows.Automation.ToggleState]::Off) 'Toggle did not turn off.';Save-Notice $false
     Connect-Mattermost;Start-Sleep -Milliseconds 400;$state=Invoke-RestMethod "$endpoint/test/results" -TimeoutSec 3
-    Assert ($state.replies.Count -eq 3) 'Saved-off reconnect posted a connect notice.'
+    Assert ($state.replies.Count -eq 2) 'Saved-off reconnect posted a connect notice.'
     Pass 'Saved-off setting prevents the next connect notice'
-    Disconnect-Mattermost 4;Stop-App;Start-App;Navigate 'NavConnections';UI @('scroll-into-view','PostConnectionNotice')|Out-Null
+    Disconnect-Mattermost 2
+    Start-Sleep -Milliseconds 400;$state=Invoke-RestMethod "$endpoint/test/results" -TimeoutSec 3
+    Assert ($state.replies.Count -eq 2) 'Saved-off disconnect posted a notice.'
+    Stop-App;Start-App;Navigate 'NavConnections';UI @('scroll-into-view','PostConnectionNotice')|Out-Null
     $toggle=(El 'PostConnectionNotice').GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
     Assert ($toggle.Current.ToggleState -eq [Windows.Automation.ToggleState]::Off) 'Restart did not restore saved-off setting.'
     Pass 'Restart restores saved-off setting'
+    Connect-Mattermost;Disconnect-Mattermost 2
+    Start-Sleep -Milliseconds 400;$state=Invoke-RestMethod "$endpoint/test/results" -TimeoutSec 3
+    Assert ($state.replies.Count -eq 2) 'Restarted saved-off setting posted a lifecycle notice.'
+    Pass 'Restarted saved-off setting suppresses both notices'
 } catch { $checks.Add("FAIL: $($_.Exception.Message)");Write-Output "FAIL $($_.Exception.Message)";throw }
 finally{if($app){Stop-App};if($server -and -not $server.HasExited){Stop-Process -Id $server.Id -Force};@{Checks=@($checks);DataDirectory=$data;Executable=$exe}|ConvertTo-Json -Depth 4|Set-Content (Join-Path $data 'results.json') -Encoding utf8;Write-Output "Connection notice UI results: $data"}

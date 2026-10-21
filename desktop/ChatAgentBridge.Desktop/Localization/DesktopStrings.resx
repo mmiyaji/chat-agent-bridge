@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ShowToken" xml:space="preserve"><value>Show token</value></data>
+  <data name="HideToken" xml:space="preserve"><value>Hide token</value></data>
+  <data name="ShowNamedToken" xml:space="preserve"><value>Show token: {0}</value></data>
+  <data name="HideNamedToken" xml:space="preserve"><value>Hide token: {0}</value></data>
+  <data name="ModelCatalogRestored" xml:space="preserve"><value>Restored {0} saved model options. Fetch models to refresh.</value></data>
+  <data name="HistoryFilters" xml:space="preserve"><value>Filters</value></data>
   <data name="ArchitectureOpenHint" xml:space="preserve"><value>Click to enlarge</value></data>
   <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>Open architecture diagram</value></data>
   <data name="ArchitectureOpenNamedAccessibleName" xml:space="preserve"><value>Open architecture diagram: {0}</value></data>
@@ -26,6 +32,7 @@
   <data name="InboxReconnected" xml:space="preserve"><value>Reconnected. Waiting for requests from allowed users. Requests sent while disconnected must be reposted.</value></data>
   <data name="ProgressReceived" xml:space="preserve"><value>📥 Request received. Waiting for approval on the PC or for execution to start.</value></data>
   <data name="ProgressRunning" xml:space="preserve"><value>⏳ The AI agent is running. Elapsed {0}. This post updates about every 30 seconds while running.</value></data>
+  <data name="ProgressReactionCancelHint" xml:space="preserve"><value>To cancel, add a 🛑 reaction to this post (requester only).</value></data>
   <data name="ProgressCompleted" xml:space="preserve"><value>✅ Completed. Elapsed {0}.</value></data>
   <data name="ProgressFailed" xml:space="preserve"><value>❌ Execution or recording failed. Elapsed {0}. Check the details on the PC.</value></data>
   <data name="ProgressCancelled" xml:space="preserve"><value>⏹ Execution stopped. Elapsed {0}.</value></data>
@@ -108,7 +115,10 @@
   <data name="NotificationAiApprovalBody" xml:space="preserve"><value>Approval runs the action using the saved PC settings.</value></data>
   <data name="ApproveAndRun" xml:space="preserve"><value>Approve and run</value></data>
   <data name="NotificationDispatchFailed" xml:space="preserve"><value>Could not dispatch the Windows notification action to the UI thread.</value></data>
-  <data name="NotificationExpiredOpenApp" xml:space="preserve"><value>The notification expired. Open the app to check the latest status.</value></data>
+  <data name="NotificationExpiredOpenApp" xml:space="preserve"><value>This notification is no longer valid. Check the current request and connection in the app.</value></data>
+  <data name="NotificationActionBusy" xml:space="preserve"><value>Another request is being processed. This request was not approved or declined. Try again after the current operation finishes.</value></data>
+  <data name="NotificationActionRetryInApp" xml:space="preserve"><value>The notification action could not be completed. Check the request in the app and try again.</value></data>
+  <data name="NotificationActivationFailed" xml:space="preserve"><value>Could not read notification activation. Check pending requests in the app.</value></data>
   <data name="NotificationActionFailed" xml:space="preserve"><value>Could not complete the Windows notification action: {0}</value></data>
   <data name="NotificationExpired" xml:space="preserve"><value>The Windows notification expired.</value></data>
   <data name="NotificationCloseFailed" xml:space="preserve"><value>Could not close the Windows notification: {0}</value></data>
@@ -185,12 +195,12 @@
   <data name="WorkspaceChangeFailed" xml:space="preserve"><value>Could not change the workspace. Check the destination and trusted folders in the execution result area.</value></data>
   <data name="WorkspaceChangeFailedChatReply" xml:space="preserve"><value>Chat Agent Bridge: Could not change the workspace. On the PC, check the absolute path, that the folder exists, and that it is trusted. The AI was not run.</value></data>
   <data name="InboxSessionPreflight" xml:space="preserve"><value>Checking the session before execution</value></data>
-  <data name="InboxDisconnected" xml:space="preserve"><value>Disconnected. Save connection settings before connecting.</value></data>
+  <data name="InboxDisconnected" xml:space="preserve"><value>Disconnected. Check connection settings before connecting.</value></data>
   <data name="InboxOutputIntro" xml:space="preserve"><value>Execution results appear here. Requests and result sharing follow the conversation's approval and sharing settings.</value></data>
   <data name="UsageAfterExecution" xml:space="preserve"><value>Usage appears after execution.</value></data>
   <data name="InboxPreparingConnection" xml:space="preserve"><value>Preparing connection…</value></data>
-  <data name="InboxAllowedUsersRequired" xml:space="preserve"><value>Add and save allowed user IDs in the connection settings. Requests are not accepted when the list is empty.</value></data>
-  <data name="WorkspaceConfigureAndSave" xml:space="preserve"><value>Set a workspace and save the settings.</value></data>
+  <data name="InboxAllowedUsersRequired" xml:space="preserve"><value>Add allowed user IDs in connection settings. Requests are not accepted when the list is empty.</value></data>
+  <data name="WorkspaceConfigureAndSave" xml:space="preserve"><value>Configure a workspace.</value></data>
   <data name="InboxConnectedWaiting" xml:space="preserve"><value>Connected. Waiting for requests from allowed users. Resubmit requests sent while disconnected.</value></data>
   <data name="InboxConnectedChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Connected. Requests from allowed users are checked on the PC before execution. Requests posted while disconnected are not received; resubmit any you still need.</value></data>
   <data name="InboxConnectingWaiting" xml:space="preserve"><value>Connecting and waiting for requests. Failures will appear here.</value></data>
@@ -202,7 +212,7 @@
   <data name="InboxReconnectFailed" xml:space="preserve"><value>Connection failed. Check credentials, destination, and network, then reconnect and resubmit any unexecuted requests.</value></data>
   <data name="WorkspaceOutsideTrustedRootsShort" xml:space="preserve"><value>The workspace is outside the trusted folders.</value></data>
   <data name="InboxApprovalRequiredAgain" xml:space="preserve"><value>Conversation execution settings changed, so approval is required again.</value></data>
-  <data name="InboxNewConversation" xml:space="preserve"><value>New conversation (Codex and Claude Code save the continuation session)</value></data>
+  <data name="InboxNewConversation" xml:space="preserve"><value>New conversation (Codex, Claude Code, Gemini CLI and GitHub Copilot CLI save the continuation session)</value></data>
   <data name="InboxContinueSession" xml:space="preserve"><value>Continuing session: {0}</value></data>
   <data name="InboxSessionModel" xml:space="preserve"><value>&#10;Execution model: {0} / reasoning effort: {1}</value></data>
   <data name="InboxConversationOwner" xml:space="preserve"><value>&#10;Conversation owner: {0}</value></data>
@@ -240,7 +250,7 @@
   <data name="AutoReply" xml:space="preserve"><value>Automatic reply</value></data>
   <data name="ManualShareShort" xml:space="preserve"><value>Share manually</value></data>
   <data name="AutoAllowEdits" xml:space="preserve"><value>Automatically allow edits</value></data>
-  <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Disconnecting. Unexecuted requests and requests posted while disconnected will not run. Resubmit any needed requests after the reconnect notice.</value></data>
+  <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Disconnecting. Unexecuted requests and requests posted while disconnected will not run. Resubmit any needed requests after reconnecting.</value></data>
   <data name="InboxClaudeLoginInstructions" xml:space="preserve"><value>Claude Code is not logged in. In this Windows user account, open Claude Code in a terminal and complete /login, then submit the request again. You do not need to log in to Slack again.</value></data>
   <data name="InboxUpdatedSessionLabel" xml:space="preserve"><value>Continuing session: {0}&#10;Execution model: {1} / reasoning effort: {2}</value></data>
   <data name="InboxExecutionStateChatNotice" xml:space="preserve"><value>Chat Agent Bridge: {0}. Check the result in the local WinUI app.</value></data>
@@ -435,7 +445,7 @@
   <data name="ChatModelCurrent" xml:space="preserve"><value>Current model: {0}&#10;Reasoning effort: {1}&#10;!cab model list — available models&#10;!cab model MODEL_ID — change this conversation&#10;!cab model default — follow agent settings</value></data>
   <data name="ChatModelList" xml:space="preserve"><value>Models available from the CLI (cached for 5 minutes). Use !cab model MODEL_ID to select one:</value></data>
   <data name="ChatModelMoreInPc" xml:space="preserve"><value>See all candidates in History &amp; conversations on this PC.</value></data>
-  <data name="ChatModelUnsupported" xml:space="preserve"><value>Model selection is available for Codex and Claude Code.</value></data>
+  <data name="ChatModelUnsupported" xml:space="preserve"><value>Model selection is available for Codex, Claude Code, Gemini CLI and GitHub Copilot CLI.</value></data>
   <data name="ChatModelBusy" xml:space="preserve"><value>Wait until execution finishes and resolve this conversation's pending requests before changing models.</value></data>
   <data name="ChatModelUnavailable" xml:space="preserve"><value>No models were returned. Check the CLI and its sign-in status on this PC.</value></data>
   <data name="ChatModelNoSession" xml:space="preserve"><value>Reply in a thread with an existing AI conversation to change its model. For the first request, choose the initial model in Agent settings on this PC.</value></data>
@@ -451,9 +461,9 @@
   <data name="AgentSummaryHelp" xml:space="preserve"><value>Brief local notes contain up to three recent successful requests and results. They are encrypted on this PC. No extra AI call is made to generate them; transferring adds input tokens to the target agent. Review the excerpts before transferring.</value></data>
   <data name="AgentSummaryUnavailable" xml:space="preserve"><value>No matching notes are available. A successful request in this app version prepares notes for later switches. You can switch now without a summary. Native CLI history is not imported.</value></data>
   <data name="AgentSwitchConfirm" xml:space="preserve"><value>Target: {0}&#10;CLI: {1}&#10;Model: {2}&#10;Tool permissions: {3}&#10;Workspace: {4}&#10;Handoff: {5}&#10;The target starts a new AI session in the same chat thread. Previous sessions are retained locally. The next request requires approval on this PC.</value></data>
-  <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>Register a different CLI in Agent settings first: choose Codex or Claude Code, run Check CLI, then Register this CLI connection.</value></data>
+  <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>Register a different CLI in Agent settings first: choose Codex, Claude Code, Gemini CLI or GitHub Copilot CLI, run Check CLI, then Register this CLI connection.</value></data>
   <data name="AgentSwitchNoConnections" xml:space="preserve"><value>none; register connections on this PC first</value></data>
-  <data name="AgentSwitchCommands" xml:space="preserve"><value>Registered CLI connections: {0}&#10;Choose explicitly:&#10;!cab agent codex summary / !cab agent codex fresh&#10;!cab agent claude summary / !cab agent claude fresh&#10;summary transfers recent local excerpts; fresh starts without them. Switching always requires approval on this PC. No executable paths can be supplied from chat.</value></data>
+  <data name="AgentSwitchCommands" xml:space="preserve"><value>Registered CLI connections: {0}&#10;Choose explicitly:&#10;!cab agent codex summary / !cab agent codex fresh&#10;!cab agent claude summary / !cab agent claude fresh&#10;!cab agent gemini summary / !cab agent gemini fresh&#10;!cab agent github-copilot summary / !cab agent github-copilot fresh&#10;summary transfers recent local excerpts; fresh starts without them. Switching always requires approval on this PC. No executable paths can be supplied from chat.</value></data>
   <data name="AgentSwitchSaved" xml:space="preserve"><value>Switched to {0}. Send the next request in this thread; approval is required on this PC. Please repost any pending requests cancelled by the switch.</value></data>
   <data name="AgentSwitchCompleted" xml:space="preserve"><value>AI agent changed</value></data>
   <data name="AgentSwitchFailed" xml:space="preserve"><value>Could not switch the agent. Check the registered CLI, trusted workspace, and summary availability on this PC, then retry.</value></data>
@@ -590,7 +600,7 @@
   <data name="CliTrustLinkExplanation" xml:space="preserve"><value>The current workspace is a link. Adding the link itself will not pass the security check. This action changes the workspace to the actual folder below and adds that folder to Trusted Folders.</value></data>
   <data name="CliTrustOriginalPath" xml:space="preserve"><value>Current workspace: {0}</value></data>
   <data name="CliTrustTargetPath" xml:space="preserve"><value>Folder to trust: {0}</value></data>
-  <data name="CliTrustSaveHelp" xml:space="preserve"><value>After reviewing, add this folder and retry the CLI check. Changes remain unsaved until you save agent settings or finish setup.</value></data>
+  <data name="CliTrustSaveHelp" xml:space="preserve"><value>Review and add this folder to retry the CLI check. During setup, settings take effect when you finish the guide.</value></data>
   <data name="CliTrustAdd" xml:space="preserve"><value>Add and recheck</value></data>
   <data name="CliTrustUseTarget" xml:space="preserve"><value>Trust actual folder and recheck</value></data>
   <data name="CliTrustWizardSaveHelp" xml:space="preserve"><value>Changes remain unsaved until you choose Save and continue. You can check the CLI on the next page.</value></data>
@@ -601,4 +611,105 @@
   <data name="InboxConnectionWorkingLabel" xml:space="preserve"><value>Connecting</value></data>
   <data name="InboxConnectionOfflineLabel" xml:space="preserve"><value>Disconnected</value></data>
   <data name="InboxQueueSummary" xml:space="preserve"><value>{0} awaiting approval · {1} running</value></data>
+  <data name="SettingsDraftAgent" xml:space="preserve"><value>Agent settings</value></data>
+  <data name="SettingsDraftChat" xml:space="preserve"><value>Connection settings</value></data>
+  <data name="SettingsDraftGeneral" xml:space="preserve"><value>Auto-connect</value></data>
+  <data name="SettingsDraftClean" xml:space="preserve"><value>Saved (no changes)</value></data>
+  <data name="SettingsDraftChanged" xml:space="preserve"><value>Unsaved: {0}</value></data>
+  <data name="SettingsDraftSaveHelp" xml:space="preserve"><value>Saves pending changes to agent settings, connection settings, and auto-connect together. Reconnect chat to apply them.</value></data>
+  <data name="SettingsDraftDialogTitle" xml:space="preserve"><value>You have unsaved changes</value></data>
+  <data name="SettingsDraftDialogMessage" xml:space="preserve"><value>{0}
+
+Save all pending settings changes together. Reconnect chat to apply saved changes. Discard restores the saved settings.</value></data>
+  <data name="SettingsDraftSave" xml:space="preserve"><value>Save changes</value></data>
+  <data name="SettingsDraftDiscard" xml:space="preserve"><value>Discard changes</value></data>
+  <data name="SettingsDraftCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="SettingsDraftResolutionFailedTitle" xml:space="preserve"><value>Changes are still unsaved</value></data>
+  <data name="SettingsDraftResolutionFailedMessage" xml:space="preserve"><value>Check the settings and running operations, then save again. The settings page remains open.</value></data>
+  <data name="SettingsAutoSaveFailed" xml:space="preserve"><value>Could not save (changes are unsaved)</value></data>
+  <data name="SettingsAutoSaveConfirmation" xml:space="preserve"><value>Awaiting review (changes are unsaved)</value></data>
+  <data name="SettingsSensitiveTitle" xml:space="preserve"><value>Review settings changes</value></data>
+  <data name="SettingsSensitiveIntro" xml:space="preserve"><value>The following settings are changing. They may affect what the agent can do, who can use it, or what is shared in chat.</value></data>
+  <data name="SettingsSensitiveCli" xml:space="preserve"><value>CLI and launch command</value></data>
+  <data name="SettingsSensitivePermissions" xml:space="preserve"><value>Agent permissions and manual approval</value></data>
+  <data name="SettingsSensitiveFolders" xml:space="preserve"><value>Trusted workspaces</value></data>
+  <data name="SettingsSensitiveAccess" xml:space="preserve"><value>Allowed users, conversation scope, and request approval</value></data>
+  <data name="SettingsSensitiveSharing" xml:space="preserve"><value>Sharing results, approvals, and questions</value></data>
+  <data name="SettingsSensitiveAttachments" xml:space="preserve"><value>Attachment approval, size limits, and file count</value></data>
+  <data name="SettingsSensitiveConnection" xml:space="preserve"><value>Connection destination and credentials</value></data>
+  <data name="SettingsSensitiveApplyHelp" xml:space="preserve"><value>Review and save to commit the changes together. Reconnect chat to apply them. Cancel leaves these changes unsaved.</value></data>
+  <data name="SettingsSensitiveAccept" xml:space="preserve"><value>Review and save</value></data>
+  <data name="SettingsReviewProvider" xml:space="preserve"><value>Agent</value></data>
+  <data name="SettingsReviewCommand" xml:space="preserve"><value>CLI executable</value></data>
+  <data name="SettingsReviewArguments" xml:space="preserve"><value>CLI arguments</value></data>
+  <data name="SettingsReviewMode" xml:space="preserve"><value>Connection mode</value></data>
+  <data name="SettingsReviewPermissions" xml:space="preserve"><value>Execution permissions</value></data>
+  <data name="SettingsReviewManualApproval" xml:space="preserve"><value>Manual execution approval</value></data>
+  <data name="SettingsReviewNetwork" xml:space="preserve"><value>Network access</value></data>
+  <data name="SettingsReviewFolders" xml:space="preserve"><value>Trusted workspaces</value></data>
+  <data name="SettingsReviewRequestApproval" xml:space="preserve"><value>Chat request approval</value></data>
+  <data name="SettingsReviewMattermostUsers" xml:space="preserve"><value>Mattermost allowed users</value></data>
+  <data name="SettingsReviewSlackUsers" xml:space="preserve"><value>Slack allowed users</value></data>
+  <data name="SettingsReviewSlackChannels" xml:space="preserve"><value>Slack allowed channels</value></data>
+  <data name="SettingsReviewSlackThreads" xml:space="preserve"><value>Slack allowed threads</value></data>
+  <data name="SettingsReviewMattermostThreads" xml:space="preserve"><value>Mattermost allowed threads</value></data>
+  <data name="SettingsReviewResults" xml:space="preserve"><value>Result replies</value></data>
+  <data name="SettingsReviewApprovals" xml:space="preserve"><value>Approval sharing in chat</value></data>
+  <data name="SettingsReviewQuestions" xml:space="preserve"><value>Question sharing in chat</value></data>
+  <data name="SettingsReviewAttachmentApproval" xml:space="preserve"><value>Attachment approval</value></data>
+  <data name="SettingsReviewAttachmentSize" xml:space="preserve"><value>Per-file limit (MB)</value></data>
+  <data name="SettingsReviewAttachmentCount" xml:space="preserve"><value>File count limit</value></data>
+  <data name="SettingsReviewAttachmentTotal" xml:space="preserve"><value>Total attachment limit (MB)</value></data>
+  <data name="SettingsReviewServer" xml:space="preserve"><value>Mattermost server</value></data>
+  <data name="SettingsReviewMattermostChannel" xml:space="preserve"><value>Mattermost channel</value></data>
+  <data name="SettingsReviewCredentials" xml:space="preserve"><value>Authentication tokens</value></data>
+  <data name="SettingsReviewHidden" xml:space="preserve"><value>{0}: changed (values hidden)</value></data>
+  <data name="SettingsReviewChange" xml:space="preserve"><value>{0}
+Before: {1}
+After: {2}</value></data>
+  <data name="SettingsReviewOn" xml:space="preserve"><value>On</value></data>
+  <data name="SettingsReviewOff" xml:space="preserve"><value>Off</value></data>
+  <data name="SettingsReviewEmpty" xml:space="preserve"><value>Not set</value></data>
+  <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>Model candidates cannot be fetched for this CLI. Enter a model ID or alias supported by your CLI and account, or leave it blank for the CLI default. Model access is checked when you run a request; reasoning and permissions follow the CLI configuration.</value></data>
+  <data name="ChatModelManualEntry" xml:space="preserve"><value>This CLI cannot return model candidates. Use !cab model MODEL_ID with an ID or alias supported by your CLI and account, or !cab model default to follow agent settings. Access is checked when you run a request.</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows notifications</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>If Windows notifications do not appear, configure this Windows user only. Standard notifications continue to work without this optional setup.</value></data>
+  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>Status</value></data>
+  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>Windows notifications</value></data>
+  <data name="PortableIdentityPublisher" xml:space="preserve"><value>Publisher: {0}</value></data>
+  <data name="PortableIdentityFingerprint" xml:space="preserve"><value>Certificate SHA-256: {0}</value></data>
+  <data name="PortableIdentityRegisteredLocation" xml:space="preserve"><value>Registered location: {0}</value></data>
+  <data name="PortableIdentityRegistered" xml:space="preserve"><value>This folder is registered with Windows.</value></data>
+  <data name="PortableIdentityNotRegistered" xml:space="preserve"><value>This folder is not registered with Windows.</value></data>
+  <data name="PortableIdentityActive" xml:space="preserve"><value>Notification registration is active.</value></data>
+  <data name="PortableIdentityInactive" xml:space="preserve"><value>Notification registration is not active for this process.</value></data>
+  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>Setup and removal run after the app closes, then restart it. Your data folder and portable updater stay in place.</value></data>
+  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>Optional setup</value></data>
+  <data name="PortableIdentityConfigure" xml:space="preserve"><value>Set up Windows notifications and restart</value></data>
+  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>Update registration and restart</value></data>
+  <data name="PortableIdentityRemove" xml:space="preserve"><value>Remove registration and restart</value></data>
+  <data name="PortableIdentityRefresh" xml:space="preserve"><value>Refresh status</value></data>
+  <data name="PortableIdentityConfigureTitle" xml:space="preserve"><value>Set up Windows notifications?</value></data>
+  <data name="PortableIdentityConfigureRestart" xml:space="preserve"><value>The app will close and restart to register this portable folder with Windows. Your settings and updater stay in place.</value></data>
+  <data name="PortableIdentityTrustConsent" xml:space="preserve"><value>I trust this certificate from {0}. Add it to Trusted People for this Windows user. Other packages signed by this certificate may also be trusted. No administrator rights are requested.</value></data>
+  <data name="PortableIdentityRelocationWarning" xml:space="preserve"><value>This notification registration is linked to another folder: {0}. Updating it will move the link to this folder.</value></data>
+  <data name="PortableIdentityRelocationConsent" xml:space="preserve"><value>I explicitly allow moving the notification registration to this portable folder.</value></data>
+  <data name="PortableIdentityConfigurePrimary" xml:space="preserve"><value>Set up and restart</value></data>
+  <data name="PortableIdentityRemoveTitle" xml:space="preserve"><value>Remove Windows notification registration?</value></data>
+  <data name="PortableIdentityRemoveMessage" xml:space="preserve"><value>The app will close and restart after removing only Chat Agent Bridge's registration for this Windows user.</value></data>
+  <data name="PortableIdentityRemoveRetained" xml:space="preserve"><value>Any certificate trust remains in Windows for this user. Your settings and portable updater are unchanged.</value></data>
+  <data name="PortableIdentityRemovePrimary" xml:space="preserve"><value>Remove registration and restart</value></data>
+  <data name="PortableIdentityUnsupported" xml:space="preserve"><value>Optional Windows notification setup requires Windows 10 version 2004 or later.</value></data>
+  <data name="PortableIdentityMissingBundle" xml:space="preserve"><value>The signed notification package is not included in this build.</value></data>
+  <data name="PortableIdentityInvalidBundle" xml:space="preserve"><value>The notification package could not be verified. Re-extract an official build.</value></data>
+  <data name="PortableIdentityRegisteredRestart" xml:space="preserve"><value>Registered. Restart the app to enable Windows notifications.</value></data>
+  <data name="PortableIdentityOtherLocationStatus" xml:space="preserve"><value>This identity is registered at another folder: {0}</value></data>
+  <data name="PortableIdentityReady" xml:space="preserve"><value>Windows notifications are not configured.</value></data>
+  <data name="PortableIdentityTrustRequiredStatus" xml:space="preserve"><value>Review the publisher certificate to enable notifications for this Windows user.</value></data>
+  <data name="PortableIdentityChecking" xml:space="preserve"><value>Checking notification package status…</value></data>
+  <data name="PortableIdentityBusyWork" xml:space="preserve"><value>Finish active work, approvals, or settings changes before changing notifications.</value></data>
+  <data name="PortableIdentityHelperMissing" xml:space="preserve"><value>The portable updater helper is missing. Re-extract an official build.</value></data>
+  <data name="PortableIdentityStarting" xml:space="preserve"><value>Closing the app to configure notifications. It will restart automatically.</value></data>
+  <data name="PortableIdentityFailed" xml:space="preserve"><value>Could not configure notifications (HRESULT {0}).</value></data>
+  <data name="PortableIdentityLastFailed" xml:space="preserve"><value>The last notification setup did not complete (HRESULT {0}).</value></data>
 </root>

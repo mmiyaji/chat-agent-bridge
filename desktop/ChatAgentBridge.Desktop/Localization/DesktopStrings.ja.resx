@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ShowToken" xml:space="preserve"><value>トークンを表示</value></data>
+  <data name="HideToken" xml:space="preserve"><value>トークンを隠す</value></data>
+  <data name="ShowNamedToken" xml:space="preserve"><value>トークンを表示: {0}</value></data>
+  <data name="HideNamedToken" xml:space="preserve"><value>トークンを隠す: {0}</value></data>
+  <data name="ModelCatalogRestored" xml:space="preserve"><value>保存済みのモデル候補{0}件を復元しました。一覧を更新するには再取得してください。</value></data>
+  <data name="HistoryFilters" xml:space="preserve"><value>絞り込み</value></data>
   <data name="ArchitectureOpenHint" xml:space="preserve"><value>クリックして拡大</value></data>
   <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>アーキテクチャ図を開く</value></data>
   <data name="ArchitectureOpenNamedAccessibleName" xml:space="preserve"><value>アーキテクチャ図を開く: {0}</value></data>
@@ -26,6 +32,7 @@
   <data name="InboxReconnected" xml:space="preserve"><value>再接続しました。許可ユーザーの依頼を待っています。切断中に送った依頼は再投稿してください。</value></data>
   <data name="ProgressReceived" xml:space="preserve"><value>📥 依頼を受け付けました。PC側の承認または実行開始を待っています。</value></data>
   <data name="ProgressRunning" xml:space="preserve"><value>⏳ AIエージェントが実行中です。経過 {0}。実行中は約30秒ごとにこの投稿を更新します。</value></data>
+  <data name="ProgressReactionCancelHint" xml:space="preserve"><value>中断するには、この投稿に🛑リアクションを付けてください（依頼者本人のみ）。</value></data>
   <data name="ProgressCompleted" xml:space="preserve"><value>✅ 完了しました。経過 {0}。</value></data>
   <data name="ProgressFailed" xml:space="preserve"><value>❌ 実行または記録に失敗しました。経過 {0}。詳細はPC側で確認してください。</value></data>
   <data name="ProgressCancelled" xml:space="preserve"><value>⏹ 実行を停止しました。経過 {0}。</value></data>
@@ -108,7 +115,10 @@
   <data name="NotificationAiApprovalBody" xml:space="preserve"><value>承認すると保存済みの PC 設定で実行します。</value></data>
   <data name="ApproveAndRun" xml:space="preserve"><value>承認して実行</value></data>
   <data name="NotificationDispatchFailed" xml:space="preserve"><value>Windows 通知の操作を UI スレッドへ渡せませんでした。</value></data>
-  <data name="NotificationExpiredOpenApp" xml:space="preserve"><value>通知の有効期限が切れています。アプリを開いて最新の状態を確認してください。</value></data>
+  <data name="NotificationExpiredOpenApp" xml:space="preserve"><value>この通知は現在利用できません。アプリで依頼と接続の状態を確認してください。</value></data>
+  <data name="NotificationActionBusy" xml:space="preserve"><value>別の依頼を処理中のため、承認・拒否は行いませんでした。現在の処理が終わってから、もう一度操作してください。</value></data>
+  <data name="NotificationActionRetryInApp" xml:space="preserve"><value>通知の操作を完了できませんでした。アプリで依頼を確認し、もう一度操作してください。</value></data>
+  <data name="NotificationActivationFailed" xml:space="preserve"><value>通知からの起動情報を取得できませんでした。アプリで承認待ちの依頼を確認してください。</value></data>
   <data name="NotificationActionFailed" xml:space="preserve"><value>Windows 通知の操作を完了できませんでした: {0}</value></data>
   <data name="NotificationExpired" xml:space="preserve"><value>Windows 通知の有効期限が切れました。</value></data>
   <data name="NotificationCloseFailed" xml:space="preserve"><value>Windows 通知を閉じられませんでした: {0}</value></data>
@@ -185,12 +195,12 @@
   <data name="WorkspaceChangeFailed" xml:space="preserve"><value>作業フォルダーを変更できませんでした。実行結果欄で指定先と信頼フォルダーを確認してください。</value></data>
   <data name="WorkspaceChangeFailedChatReply" xml:space="preserve"><value>Chat Agent Bridge: 作業フォルダーを変更できませんでした。絶対パス・フォルダーの存在・信頼範囲をPCで確認してください。AIは実行していません。</value></data>
   <data name="InboxSessionPreflight" xml:space="preserve"><value>実行前にセッションを確認します</value></data>
-  <data name="InboxDisconnected" xml:space="preserve"><value>切断中。接続設定を保存してから接続してください。</value></data>
+  <data name="InboxDisconnected" xml:space="preserve"><value>切断中。接続設定を確認してから接続してください。</value></data>
   <data name="InboxOutputIntro" xml:space="preserve"><value>実行結果はここに表示されます。依頼の実行と結果共有は、会話の承認・共有設定に従います。</value></data>
   <data name="UsageAfterExecution" xml:space="preserve"><value>利用量は実行後に表示します。</value></data>
   <data name="InboxPreparingConnection" xml:space="preserve"><value>接続準備中…</value></data>
-  <data name="InboxAllowedUsersRequired" xml:space="preserve"><value>接続設定で許可するユーザーIDを登録し、保存してください。空欄では依頼を受け付けません。</value></data>
-  <data name="WorkspaceConfigureAndSave" xml:space="preserve"><value>作業フォルダーを設定し、保存してください。</value></data>
+  <data name="InboxAllowedUsersRequired" xml:space="preserve"><value>接続設定で許可するユーザーIDを登録してください。空欄では依頼を受け付けません。</value></data>
+  <data name="WorkspaceConfigureAndSave" xml:space="preserve"><value>作業フォルダーを設定してください。</value></data>
   <data name="InboxConnectedWaiting" xml:space="preserve"><value>接続しました。許可ユーザーの依頼を待っています。切断中の依頼は再投稿してください。</value></data>
   <data name="InboxConnectedChatNotice" xml:space="preserve"><value>Chat Agent Bridge: 接続しました。許可されたユーザーの依頼をPCで確認してから実行します。切断中に投稿した依頼は取り込まれないため、必要な依頼は再投稿してください。</value></data>
   <data name="InboxConnectingWaiting" xml:space="preserve"><value>接続処理中／受信待ち。失敗時はここに表示します。</value></data>
@@ -202,7 +212,7 @@
   <data name="InboxReconnectFailed" xml:space="preserve"><value>接続に失敗しました。認証情報・接続先・ネットワークを確認し、再接続後に未実行の依頼を再投稿してください。</value></data>
   <data name="WorkspaceOutsideTrustedRootsShort" xml:space="preserve"><value>作業フォルダーが信頼フォルダーの範囲外です。</value></data>
   <data name="InboxApprovalRequiredAgain" xml:space="preserve"><value>会話の実行設定が変わったため、改めて承認が必要です。</value></data>
-  <data name="InboxNewConversation" xml:space="preserve"><value>新規会話（Codex・Claude Codeでは継続先を保存します）</value></data>
+  <data name="InboxNewConversation" xml:space="preserve"><value>新規会話（Codex・Claude Code・Gemini CLI・GitHub Copilot CLIは継続先を保存します）</value></data>
   <data name="InboxContinueSession" xml:space="preserve"><value>継続セッション: {0}</value></data>
   <data name="InboxSessionModel" xml:space="preserve"><value>&#10;実行モデル: {0} / 推論レベル: {1}</value></data>
   <data name="InboxConversationOwner" xml:space="preserve"><value>&#10;会話の所有者: {0}</value></data>
@@ -240,7 +250,7 @@
   <data name="AutoReply" xml:space="preserve"><value>自動返信</value></data>
   <data name="ManualShareShort" xml:space="preserve"><value>手動共有</value></data>
   <data name="AutoAllowEdits" xml:space="preserve"><value>編集を自動許可</value></data>
-  <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: 切断します。未実行の依頼・切断中に投稿する依頼は実行されません。再接続の通知後に必要な依頼を再投稿してください。</value></data>
+  <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: 切断します。未実行の依頼・切断中に投稿する依頼は実行されません。再接続後に必要な依頼を再投稿してください。</value></data>
   <data name="InboxClaudeLoginInstructions" xml:space="preserve"><value>Claude Codeが未ログインです。このWindowsユーザーでターミナルからClaude Codeを起動し、/login を完了してから再度依頼してください。Slackへの再ログインは不要です。</value></data>
   <data name="InboxUpdatedSessionLabel" xml:space="preserve"><value>継続セッション: {0}&#10;実行モデル: {1} / 推論レベル: {2}</value></data>
   <data name="InboxExecutionStateChatNotice" xml:space="preserve"><value>Chat Agent Bridge: {0}。結果はローカルのWinUI画面で確認してください。</value></data>
@@ -435,7 +445,7 @@
   <data name="ChatModelCurrent" xml:space="preserve"><value>現在のモデル: {0}&#10;推論の強さ: {1}&#10;!cab model list — 候補を取得&#10;!cab model モデルID — この会話のモデルを変更&#10;!cab model default — エージェント設定に戻す</value></data>
   <data name="ChatModelList" xml:space="preserve"><value>CLIから取得したモデル候補（5分間キャッシュ）。!cab model モデルID で選択してください:</value></data>
   <data name="ChatModelMoreInPc" xml:space="preserve"><value>すべての候補はPCの「履歴と会話」で確認できます。</value></data>
-  <data name="ChatModelUnsupported" xml:space="preserve"><value>モデル切り替えはCodexとClaude Codeで利用できます。</value></data>
+  <data name="ChatModelUnsupported" xml:space="preserve"><value>モデル切り替えはCodex・Claude Code・Gemini CLI・GitHub Copilot CLIで利用できます。</value></data>
   <data name="ChatModelBusy" xml:space="preserve"><value>実行の完了と、この会話の承認待ち依頼の処理後に、もう一度モデルを変更してください。</value></data>
   <data name="ChatModelUnavailable" xml:space="preserve"><value>モデル候補がありません。PCでCLIとログイン状態を確認してください。</value></data>
   <data name="ChatModelNoSession" xml:space="preserve"><value>AIとの会話があるスレッドに返信してモデルを変更してください。初回のモデルはPCの「エージェント設定」で指定できます。</value></data>
@@ -451,9 +461,9 @@
   <data name="AgentSummaryHelp" xml:space="preserve"><value>直近3回までの成功した依頼・結果の抜粋を、このPCに暗号化して保存します。要約生成の追加AI呼び出しはありません。転送先では入力トークンとして消費されます。内容を確認してから引き継いでください。</value></data>
   <data name="AgentSummaryUnavailable" xml:space="preserve"><value>この会話の要約はまだありません。この版のアプリで依頼が成功すると、以降の切り替え用メモを保存します。今は要約なしで切り替えられます。CLIの過去の履歴は取り込みません。</value></data>
   <data name="AgentSwitchConfirm" xml:space="preserve"><value>切り替え先: {0}&#10;CLI: {1}&#10;モデル: {2}&#10;ツール権限: {3}&#10;作業フォルダー: {4}&#10;引き継ぎ: {5}&#10;同じチャットスレッドで、新しいAI会話を始めます。以前のセッション情報はこのPCに残します。次の依頼はこのPCでの承認が必要です。</value></data>
-  <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>先に「エージェント設定」で切り替え先のCodexまたはClaude Codeを選び、CLIチェック後に「このCLI接続を登録」を実行してください。</value></data>
+  <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>先に「エージェント設定」で切り替え先のCodex・Claude Code・Gemini CLI・GitHub Copilot CLIを選び、CLIチェック後に「このCLI接続を登録」を実行してください。</value></data>
   <data name="AgentSwitchNoConnections" xml:space="preserve"><value>なし（先にPCでCLI接続を登録してください）</value></data>
-  <data name="AgentSwitchCommands" xml:space="preserve"><value>登録済みCLI接続: {0}&#10;要約の有無を指定してください:&#10;!cab agent codex summary / !cab agent codex fresh&#10;!cab agent claude summary / !cab agent claude fresh&#10;summaryは直近の会話メモを引き継ぎ、freshは引き継ぎません。切り替えには必ずPCでの承認が必要です。チャットから実行ファイルのパスは指定できません。</value></data>
+  <data name="AgentSwitchCommands" xml:space="preserve"><value>登録済みCLI接続: {0}&#10;要約の有無を指定してください:&#10;!cab agent codex summary / !cab agent codex fresh&#10;!cab agent claude summary / !cab agent claude fresh&#10;!cab agent gemini summary / !cab agent gemini fresh&#10;!cab agent github-copilot summary / !cab agent github-copilot fresh&#10;summaryは直近の会話メモを引き継ぎ、freshは引き継ぎません。切り替えには必ずPCでの承認が必要です。チャットから実行ファイルのパスは指定できません。</value></data>
   <data name="AgentSwitchSaved" xml:space="preserve"><value>{0}への切り替えを保存しました。このスレッドで次の依頼を送ってください。PCでの承認が必要です。切り替えで取り消された承認待ちの依頼は、再投稿してください。</value></data>
   <data name="AgentSwitchCompleted" xml:space="preserve"><value>AIエージェント変更済み</value></data>
   <data name="AgentSwitchFailed" xml:space="preserve"><value>切り替えできませんでした。PCでCLI接続の登録、作業フォルダーの信頼設定、要約の有無を確認し、実行の終了後に再試行してください。</value></data>
@@ -590,7 +600,7 @@
   <data name="CliTrustLinkExplanation" xml:space="preserve"><value>現在の作業先はリンクです。リンク自体を追加しても安全確認を通過しません。以下の実フォルダーに作業先を変更し、そのフォルダーを信頼対象に追加します。</value></data>
   <data name="CliTrustOriginalPath" xml:space="preserve"><value>現在の作業先：{0}</value></data>
   <data name="CliTrustTargetPath" xml:space="preserve"><value>信頼対象に追加するフォルダー：{0}</value></data>
-  <data name="CliTrustSaveHelp" xml:space="preserve"><value>内容を確認して追加すると、CLIを再チェックします。変更を保存するには、エージェント設定の保存または初期設定ガイドの完了が必要です。</value></data>
+  <data name="CliTrustSaveHelp" xml:space="preserve"><value>内容を確認して追加すると、CLIを再チェックします。初期設定ガイドでは、完了時に設定が反映されます。</value></data>
   <data name="CliTrustAdd" xml:space="preserve"><value>追加して再チェック</value></data>
   <data name="CliTrustUseTarget" xml:space="preserve"><value>リンク先を信頼して再チェック</value></data>
   <data name="CliTrustWizardSaveHelp" xml:space="preserve"><value>変更を保存するには［保存して次へ］を選択してください。次のページでCLIをチェックできます。</value></data>
@@ -601,4 +611,105 @@
   <data name="InboxConnectionWorkingLabel" xml:space="preserve"><value>接続処理中</value></data>
   <data name="InboxConnectionOfflineLabel" xml:space="preserve"><value>未接続</value></data>
   <data name="InboxQueueSummary" xml:space="preserve"><value>承認待ち {0}件 · 実行中 {1}件</value></data>
+  <data name="SettingsDraftAgent" xml:space="preserve"><value>エージェント設定</value></data>
+  <data name="SettingsDraftChat" xml:space="preserve"><value>接続設定</value></data>
+  <data name="SettingsDraftGeneral" xml:space="preserve"><value>自動接続</value></data>
+  <data name="SettingsDraftClean" xml:space="preserve"><value>保存済み（変更なし）</value></data>
+  <data name="SettingsDraftChanged" xml:space="preserve"><value>未保存：{0}</value></data>
+  <data name="SettingsDraftSaveHelp" xml:space="preserve"><value>エージェント設定・接続設定・自動接続の変更をまとめて保存します。チャットへの反映には再接続が必要です。</value></data>
+  <data name="SettingsDraftDialogTitle" xml:space="preserve"><value>未保存の変更があります</value></data>
+  <data name="SettingsDraftDialogMessage" xml:space="preserve"><value>{0}
+
+変更をまとめて保存します。保存後、チャット接続への反映には再接続が必要です。破棄すると保存済みの設定に戻ります。</value></data>
+  <data name="SettingsDraftSave" xml:space="preserve"><value>保存する</value></data>
+  <data name="SettingsDraftDiscard" xml:space="preserve"><value>破棄する</value></data>
+  <data name="SettingsDraftCancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="SettingsDraftResolutionFailedTitle" xml:space="preserve"><value>変更は保存されていません</value></data>
+  <data name="SettingsDraftResolutionFailedMessage" xml:space="preserve"><value>入力内容と実行状況を確認し、もう一度保存してください。設定画面を開いたままにしています。</value></data>
+  <data name="SettingsAutoSaveFailed" xml:space="preserve"><value>保存できませんでした（変更は未保存）</value></data>
+  <data name="SettingsAutoSaveConfirmation" xml:space="preserve"><value>確認待ち（変更は未保存）</value></data>
+  <data name="SettingsSensitiveTitle" xml:space="preserve"><value>設定の変更内容を確認</value></data>
+  <data name="SettingsSensitiveIntro" xml:space="preserve"><value>次の設定が変更されます。実行できる操作や、チャットからの利用・公開範囲に影響する場合があります。</value></data>
+  <data name="SettingsSensitiveCli" xml:space="preserve"><value>使用するCLI・実行コマンド</value></data>
+  <data name="SettingsSensitivePermissions" xml:space="preserve"><value>AIツールの操作許可・手動実行の確認</value></data>
+  <data name="SettingsSensitiveFolders" xml:space="preserve"><value>信頼する作業フォルダー</value></data>
+  <data name="SettingsSensitiveAccess" xml:space="preserve"><value>許可ユーザー・会話範囲・依頼承認</value></data>
+  <data name="SettingsSensitiveSharing" xml:space="preserve"><value>結果・操作承認・質問の共有</value></data>
+  <data name="SettingsSensitiveAttachments" xml:space="preserve"><value>添付の承認方法・サイズ・個数の上限</value></data>
+  <data name="SettingsSensitiveConnection" xml:space="preserve"><value>接続先・認証情報</value></data>
+  <data name="SettingsSensitiveApplyHelp" xml:space="preserve"><value>確認して保存すると、変更をまとめて適用します。チャット接続への反映には再接続が必要です。キャンセルした変更は未保存のまま残ります。</value></data>
+  <data name="SettingsSensitiveAccept" xml:space="preserve"><value>確認して保存</value></data>
+  <data name="SettingsReviewProvider" xml:space="preserve"><value>エージェント</value></data>
+  <data name="SettingsReviewCommand" xml:space="preserve"><value>実行ファイル</value></data>
+  <data name="SettingsReviewArguments" xml:space="preserve"><value>起動引数</value></data>
+  <data name="SettingsReviewMode" xml:space="preserve"><value>接続方式</value></data>
+  <data name="SettingsReviewPermissions" xml:space="preserve"><value>実行権限</value></data>
+  <data name="SettingsReviewManualApproval" xml:space="preserve"><value>手動実行時の確認</value></data>
+  <data name="SettingsReviewNetwork" xml:space="preserve"><value>ネットワークアクセス</value></data>
+  <data name="SettingsReviewFolders" xml:space="preserve"><value>信頼する作業フォルダー</value></data>
+  <data name="SettingsReviewRequestApproval" xml:space="preserve"><value>チャット依頼の承認</value></data>
+  <data name="SettingsReviewMattermostUsers" xml:space="preserve"><value>Mattermostの許可ユーザー</value></data>
+  <data name="SettingsReviewSlackUsers" xml:space="preserve"><value>Slackの許可ユーザー</value></data>
+  <data name="SettingsReviewSlackChannels" xml:space="preserve"><value>Slackの許可チャンネル</value></data>
+  <data name="SettingsReviewSlackThreads" xml:space="preserve"><value>Slackの許可スレッド</value></data>
+  <data name="SettingsReviewMattermostThreads" xml:space="preserve"><value>Mattermostの許可スレッド</value></data>
+  <data name="SettingsReviewResults" xml:space="preserve"><value>結果の返信</value></data>
+  <data name="SettingsReviewApprovals" xml:space="preserve"><value>承認内容のチャット共有</value></data>
+  <data name="SettingsReviewQuestions" xml:space="preserve"><value>途中質問のチャット共有</value></data>
+  <data name="SettingsReviewAttachmentApproval" xml:space="preserve"><value>ファイル添付の承認</value></data>
+  <data name="SettingsReviewAttachmentSize" xml:space="preserve"><value>1ファイルの上限（MB）</value></data>
+  <data name="SettingsReviewAttachmentCount" xml:space="preserve"><value>添付数の上限</value></data>
+  <data name="SettingsReviewAttachmentTotal" xml:space="preserve"><value>添付合計の上限（MB）</value></data>
+  <data name="SettingsReviewServer" xml:space="preserve"><value>Mattermostの接続先</value></data>
+  <data name="SettingsReviewMattermostChannel" xml:space="preserve"><value>Mattermostのチャンネル</value></data>
+  <data name="SettingsReviewCredentials" xml:space="preserve"><value>認証トークン</value></data>
+  <data name="SettingsReviewHidden" xml:space="preserve"><value>{0}：変更あり（値は非表示）</value></data>
+  <data name="SettingsReviewChange" xml:space="preserve"><value>{0}
+変更前：{1}
+変更後：{2}</value></data>
+  <data name="SettingsReviewOn" xml:space="preserve"><value>オン</value></data>
+  <data name="SettingsReviewOff" xml:space="preserve"><value>オフ</value></data>
+  <data name="SettingsReviewEmpty" xml:space="preserve"><value>未設定</value></data>
+  <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>このCLIではモデル候補を取得できません。CLIと契約が対応するモデルID・別名を直接入力するか、空欄でCLIの既定モデルを使ってください。モデルの利用可否は実行時に確認されます。推論と操作権限はCLIの設定に従います。</value></data>
+  <data name="ChatModelManualEntry" xml:space="preserve"><value>このCLIではモデル候補を取得できません。!cab model モデル名 で、CLIと契約が対応するモデルID・別名を指定できます。!cab model default でエージェント設定に戻します。利用可否は実行時に確認されます。</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows 通知</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>Windows 通知が表示されない場合は、この Windows ユーザーに対してのみ設定できます。この任意設定を行わなくても、通常の通知は引き続き利用できます。</value></data>
+  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>状態</value></data>
+  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>Windows 通知</value></data>
+  <data name="PortableIdentityPublisher" xml:space="preserve"><value>発行元: {0}</value></data>
+  <data name="PortableIdentityFingerprint" xml:space="preserve"><value>証明書の SHA-256: {0}</value></data>
+  <data name="PortableIdentityRegisteredLocation" xml:space="preserve"><value>登録先: {0}</value></data>
+  <data name="PortableIdentityRegistered" xml:space="preserve"><value>このフォルダーは Windows に登録されています。</value></data>
+  <data name="PortableIdentityNotRegistered" xml:space="preserve"><value>このフォルダーは Windows に登録されていません。</value></data>
+  <data name="PortableIdentityActive" xml:space="preserve"><value>通知の登録が有効です。</value></data>
+  <data name="PortableIdentityInactive" xml:space="preserve"><value>このプロセスでは通知の登録が有効ではありません。</value></data>
+  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>設定と削除はアプリ終了後に実行し、その後アプリを再起動します。データフォルダーとポータブル更新機能はそのまま使えます。</value></data>
+  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>任意の設定</value></data>
+  <data name="PortableIdentityConfigure" xml:space="preserve"><value>Windows 通知を設定して再起動</value></data>
+  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>登録を更新して再起動</value></data>
+  <data name="PortableIdentityRemove" xml:space="preserve"><value>登録を削除して再起動</value></data>
+  <data name="PortableIdentityRefresh" xml:space="preserve"><value>状態を更新</value></data>
+  <data name="PortableIdentityConfigureTitle" xml:space="preserve"><value>Windows 通知を設定しますか？</value></data>
+  <data name="PortableIdentityConfigureRestart" xml:space="preserve"><value>このポータブル版のフォルダーを Windows に登録するため、アプリを終了して再起動します。設定と更新機能はそのままです。</value></data>
+  <data name="PortableIdentityTrustConsent" xml:space="preserve"><value>{0} のこの証明書を信頼します。この Windows ユーザーの「信頼されたユーザー」ストアに追加します。この証明書で署名された他のパッケージも信頼される場合があります。管理者権限は要求しません。</value></data>
+  <data name="PortableIdentityRelocationWarning" xml:space="preserve"><value>この通知登録は別のフォルダーに紐付いています: {0}。更新すると、このフォルダーに紐付け先を移します。</value></data>
+  <data name="PortableIdentityRelocationConsent" xml:space="preserve"><value>通知登録をこのポータブル版フォルダーに移すことを明示的に許可します。</value></data>
+  <data name="PortableIdentityConfigurePrimary" xml:space="preserve"><value>設定して再起動</value></data>
+  <data name="PortableIdentityRemoveTitle" xml:space="preserve"><value>Windows 通知の登録を削除しますか？</value></data>
+  <data name="PortableIdentityRemoveMessage" xml:space="preserve"><value>この Windows ユーザーに対する Chat Agent Bridge の登録だけを削除してから、アプリを終了して再起動します。</value></data>
+  <data name="PortableIdentityRemoveRetained" xml:space="preserve"><value>このユーザーの Windows にある証明書の信頼設定は残ります。設定とポータブル更新機能は変更されません。</value></data>
+  <data name="PortableIdentityRemovePrimary" xml:space="preserve"><value>登録を削除して再起動</value></data>
+  <data name="PortableIdentityUnsupported" xml:space="preserve"><value>Windows 通知 ID には Windows 10 バージョン 2004 以降が必要です。</value></data>
+  <data name="PortableIdentityMissingBundle" xml:space="preserve"><value>署名済みの通知パッケージがこのビルドに含まれていません。</value></data>
+  <data name="PortableIdentityInvalidBundle" xml:space="preserve"><value>通知パッケージを検証できませんでした。公式ビルドを再展開してください。</value></data>
+  <data name="PortableIdentityRegisteredRestart" xml:space="preserve"><value>登録しました。Windows 通知を有効にするにはアプリを再起動してください。</value></data>
+  <data name="PortableIdentityOtherLocationStatus" xml:space="preserve"><value>この ID は別のフォルダーに登録されています: {0}</value></data>
+  <data name="PortableIdentityReady" xml:space="preserve"><value>Windows 通知は設定されていません。</value></data>
+  <data name="PortableIdentityTrustRequiredStatus" xml:space="preserve"><value>この Windows ユーザーの通知を有効にするには、発行元の証明書を確認してください。</value></data>
+  <data name="PortableIdentityChecking" xml:space="preserve"><value>通知パッケージの状態を確認しています…</value></data>
+  <data name="PortableIdentityBusyWork" xml:space="preserve"><value>通知の変更前に、実行中の作業、承認、設定変更を完了してください。</value></data>
+  <data name="PortableIdentityHelperMissing" xml:space="preserve"><value>ポータブル更新ヘルパーがありません。公式ビルドを再展開してください。</value></data>
+  <data name="PortableIdentityStarting" xml:space="preserve"><value>通知を設定するためアプリを終了しています。自動的に再起動します。</value></data>
+  <data name="PortableIdentityFailed" xml:space="preserve"><value>通知を設定できませんでした (HRESULT {0})。</value></data>
+  <data name="PortableIdentityLastFailed" xml:space="preserve"><value>前回の通知設定が完了しませんでした (HRESULT {0})。</value></data>
 </root>

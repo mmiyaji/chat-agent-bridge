@@ -381,8 +381,10 @@ try {
             Assert-Visible 'SavedSessionsWorkspaceFilter'
             Assert-Visible 'SavedSessionsSort'
             Capture 'history-narrow-filters'
-            UI @('invoke','SavedSessionsAdvancedFilters') | Out-Null
+            [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
             Resize 1280 800
+            Assert-Visible 'SavedSessionsAdvancedFilters'
+            UI @('invoke','SavedSessionsAdvancedFilters') | Out-Null
             Assert-Visible 'SavedSessionsProviderFilter'
             Assert-Visible 'SavedSessionsWorkspaceFilter'
             Assert-Visible 'SavedSessionsSort'

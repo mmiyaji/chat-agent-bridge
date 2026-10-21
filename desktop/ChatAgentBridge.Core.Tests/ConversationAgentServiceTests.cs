@@ -36,6 +36,46 @@ public sealed class ConversationAgentServiceTests : IDisposable
         Directory.CreateDirectory(_directory);
     }
 
+    [Theory]
+    [InlineData(AgentProfile.Gemini)]
+    [InlineData(AgentProfile.GitHubCopilot)]
+    public async Task Switch_to_and_from_structured_cli_starts_fresh_uuid_and_keeps_scoped_handoff(string provider)
+    {
+        var old = Binding(_key);
+        await Sessions.SaveAsync(old);
+        await Connections.SaveVerifiedAsync(new(provider, "node", "entry.mjs --debug", "exec", "target-model",
+            null, "inherit", false, "1.0", DateTimeOffset.UtcNow));
+        await Summaries.RecordAsync(_key, "codex", old.SessionId, "first request", "first answer");
+        await Service().SwitchAsync(old, Defaults, new(provider, true), Allow);
+        Assert.Equal(provider, (await Sessions.FindAsync(_key))!.NextAgentProvider);
+        Assert.True((await Sessions.FindAgentSelectionAsync(_key))!.RequiresApproval);
+        var id = Guid.NewGuid();
+        var fake = new RecordingAgentRunner((settings, prompt) =>
+        {
+            Assert.Equal(provider, settings.AgentProvider);
+            Assert.Equal("target-model", settings.AgentModel);
+            Assert.Null(settings.AgentReasoningEffort);
+            Assert.Equal("entry.mjs --debug", settings.AgentArguments);
+            Assert.DoesNotContain("--resume", AgentProfile.BuildInvocation(settings).Arguments);
+            Assert.Contains("first answer", prompt);
+            var output = provider == AgentProfile.Gemini
+                ? $$"""{"type":"init","session_id":"{{id:D}}"}""" + "\n" + """{"type":"result","status":"success"}"""
+                : $$"""{"type":"result","sessionId":"{{id:D}}","exitCode":0}""";
+            return new(true, 0, output, "");
+        });
+        Assert.True((await new SessionAgentRunner(Sessions, fake).RunAsync(_key, Defaults, "next")).Success);
+        var current = (await Sessions.FindAsync(_key))!;
+        Assert.Equal(provider, ConversationAgentService.ProviderOf(current));
+        Assert.NotEqual(old.SessionId, current.SessionId);
+        Assert.Null(current.ReasoningEffort);
+        Assert.Null(current.FirstApprovalFingerprint);
+        await Summaries.RecordAsync(_key, provider, current.SessionId, "second request", "second answer");
+        await Connections.SaveVerifiedAsync(Profile("claude"));
+        await Service().SwitchAsync(current, Defaults, new("claude", true), Allow);
+        Assert.Equal("claude", (await Sessions.FindAgentSelectionAsync(_key))!.Provider);
+        Assert.Contains("second answer", await Sessions.PrepareHandoffPromptAsync(_key, "third"));
+    }
+
     [Fact]
     public async Task Switch_usesOnlyRegisteredProfile_andArchivesOldBindingWithoutResumingIt()
     {

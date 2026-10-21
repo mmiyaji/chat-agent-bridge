@@ -3,6 +3,7 @@
     x:Class="ChatAgentBridge_Desktop.History.HistoryPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:localization="using:ChatAgentBridge_Desktop.Localization"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:vm="using:ChatAgentBridge_Desktop.History"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
@@ -23,8 +24,8 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Spacing="4" VerticalAlignment="Top">
-                <TextBlock x:Name="HistoryTitle" Style="{StaticResource TitleTextBlockStyle}" x:Uid="historyHistoryPageTextBlock001" />
-                <TextBlock x:Name="HistoryDescription" TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="historyHistoryPageTextBlock002" />
+                <TextBlock x:Name="HistoryTitle" Style="{StaticResource TitleTextBlockStyle}" x:Uid="historyHistoryPageTextBlock001" localization:LocalizedResourceKey.Key="historyHistoryPageTextBlock001" />
+                <TextBlock x:Name="HistoryDescription" TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="historyHistoryPageTextBlock002" localization:LocalizedResourceKey.Key="historyHistoryPageTextBlock002" />
             </StackPanel>
             <StackPanel x:Name="HistoryHeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button x:Name="HistoryAgentSettingsButton" Click="AgentSettingsRequested_Click" AutomationProperties.AutomationId="AgentSettingsFromHistory" x:Uid="AgentSettingsFromHistory" />
@@ -48,35 +49,37 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <Grid x:Name="SessionFilters" ColumnSpacing="8" RowSpacing="8">
-                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <Grid x:Name="SessionFilters" ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition x:Name="ProviderFilterColumn" Width="180" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBox x:Name="SessionSearchBox" VerticalAlignment="Top" Header="{x:Bind ViewModel.SearchLabel, Mode=OneWay}"
                                  PlaceholderText="{x:Bind ViewModel.SearchPlaceholder, Mode=OneWay}"
                                  Text="{x:Bind ViewModel.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="SavedSessionsSearch" />
-                        <ComboBox x:Name="ProviderFilter" Grid.Column="1" Header="{x:Bind ViewModel.ProviderLabel, Mode=OneWay}"
-                                  ItemsSource="{x:Bind ViewModel.ProviderFilters, Mode=OneWay}"
-                                  SelectedItem="{x:Bind ViewModel.ProviderFilter, Mode=TwoWay}" HorizontalAlignment="Stretch"
-                                  AutomationProperties.AutomationId="SavedSessionsProviderFilter" />
-                        <Grid x:Name="AdvancedFiltersGrid" Grid.Row="1" Grid.ColumnSpan="2" ColumnSpacing="8" RowSpacing="8">
-                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition x:Name="AdvancedSortColumn" Width="180" /></Grid.ColumnDefinitions>
-                        <ComboBox x:Name="WorkspaceFilter" Header="{x:Bind ViewModel.WorkspaceFilterLabel, Mode=OneWay}"
-                                  ItemsSource="{x:Bind ViewModel.WorkspaceFilters, Mode=OneWay}"
-                                  SelectedItem="{x:Bind ViewModel.WorkspaceFilter, Mode=TwoWay}"
-                                  HorizontalAlignment="Stretch" ToolTipService.ToolTip="{x:Bind ViewModel.WorkspaceFilter, Mode=OneWay}"
-                                  AutomationProperties.AutomationId="SavedSessionsWorkspaceFilter" />
-                        <ComboBox x:Name="SessionSort" Grid.Column="1" Header="{x:Bind ViewModel.SortLabel, Mode=OneWay}"
-                                  ItemsSource="{x:Bind ViewModel.SessionSortOptions, Mode=OneWay}"
-                                  SelectedItem="{x:Bind ViewModel.SessionSort, Mode=TwoWay}"
-                                  HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SavedSessionsSort" />
-                        </Grid>
-                        <Expander x:Name="CompactFiltersExpander" Grid.Column="1" IsExpanded="False"
-                                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalAlignment="Bottom"
-                                  Visibility="Collapsed" x:Uid="HistoryCompactFilters" AutomationProperties.AutomationId="SavedSessionsAdvancedFilters" />
+                        <Button x:Name="SessionFiltersButton" Grid.Column="1"
+                                Content="{x:Bind ViewModel.FiltersLabel, Mode=OneWay}"
+                                VerticalAlignment="Bottom" AutomationProperties.AutomationId="SavedSessionsAdvancedFilters">
+                            <Button.Flyout>
+                                <Flyout x:Name="SessionFiltersFlyout">
+                                    <StackPanel Spacing="8" MinWidth="280">
+                                        <ComboBox x:Name="ProviderFilter" Header="{x:Bind ViewModel.ProviderLabel, Mode=OneWay}"
+                                                  ItemsSource="{x:Bind ViewModel.ProviderFilters, Mode=OneWay}"
+                                                  SelectedItem="{x:Bind ViewModel.ProviderFilter, Mode=TwoWay}" HorizontalAlignment="Stretch"
+                                                  AutomationProperties.AutomationId="SavedSessionsProviderFilter" />
+                                        <ComboBox x:Name="WorkspaceFilter" Header="{x:Bind ViewModel.WorkspaceFilterLabel, Mode=OneWay}"
+                                                  ItemsSource="{x:Bind ViewModel.WorkspaceFilters, Mode=OneWay}"
+                                                  SelectedItem="{x:Bind ViewModel.WorkspaceFilter, Mode=TwoWay}"
+                                                  HorizontalAlignment="Stretch" ToolTipService.ToolTip="{x:Bind ViewModel.WorkspaceFilter, Mode=OneWay}"
+                                                  AutomationProperties.AutomationId="SavedSessionsWorkspaceFilter" />
+                                        <ComboBox x:Name="SessionSort" Header="{x:Bind ViewModel.SortLabel, Mode=OneWay}"
+                                                  ItemsSource="{x:Bind ViewModel.SessionSortOptions, Mode=OneWay}"
+                                                  SelectedItem="{x:Bind ViewModel.SessionSort, Mode=TwoWay}"
+                                                  HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SavedSessionsSort" />
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
                     </Grid>
 
                     <Grid x:Name="SessionBrowser" Grid.Row="1" ColumnSpacing="12">

@@ -16,7 +16,7 @@ public sealed partial class MainPage
     private bool CanRestartForLanguage() => ViewModel.IsSettingsLoaded &&
         !ViewModel.IsLoading && !ViewModel.IsRunning && !ViewModel.IsCheckingCli &&
         !ViewModel.IsOnboardingBusy && !ViewModel.ModelCatalog.IsLoading &&
-        !ViewModel.SaveSettingsCommand.IsRunning && !ViewModel.HasSetupDraftNotice &&
+        !ViewModel.SaveSettingsCommand.IsRunning && !ViewModel.HasSetupDraftNotice && !ViewModel.HasUnsavedSettings &&
         !InboxPage.ViewModel.IsExecuting && !InboxPage.ViewModel.SendResultCommand.IsRunning &&
         !InboxPage.ViewModel.Requests.Any(item => item.State is "承認待ち" or "自動実行を準備" or "実行中");
 

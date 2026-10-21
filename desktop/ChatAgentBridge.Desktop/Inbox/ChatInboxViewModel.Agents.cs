@@ -41,6 +41,8 @@ public sealed partial class ChatInboxViewModel
         bool approvedByNotification, CancellationToken token)
     {
         var changed = false;
+        (string Workspace, string SessionLabel)? originalDisplay = null;
+        (string Workspace, string SessionLabel)? previewDisplay = null;
         try
         {
             if (!command.IsValid || command.Provider is null || command.IncludeSummary is null)
@@ -52,10 +54,13 @@ public sealed partial class ChatInboxViewModel
             var summary = command.IncludeSummary == true ? await new ConversationSummaryStore().FindAsync(key, token) : null;
             if (command.IncludeSummary == true && (summary is null || summary.SessionId != binding.SessionId))
                 throw new InvalidOperationException();
-            item.Workspace = binding.WorkspaceRoot;
-            item.SessionLabel = DesktopText.Get("AgentSwitchConfirm", command.Provider, profile.Executable, profile.Model ?? DesktopText.Get("CliDefault"),
+            var previewLabel = DesktopText.Get("AgentSwitchConfirm", command.Provider, profile.Executable, profile.Model ?? DesktopText.Get("CliDefault"),
                 PermissionLabel(profile.PermissionMode), binding.WorkspaceRoot, command.IncludeSummary == true ? DesktopText.Get("AgentSummaryYes") : DesktopText.Get("AgentSummaryNo"));
-            if (summary is not null) item.SessionLabel += "\n\n" + summary.Text;
+            if (summary is not null) previewLabel += "\n\n" + summary.Text;
+            originalDisplay = (item.Workspace, item.SessionLabel);
+            previewDisplay = (binding.WorkspaceRoot, previewLabel);
+            item.Workspace = previewDisplay.Value.Workspace;
+            item.SessionLabel = previewDisplay.Value.SessionLabel;
             if (!approvedByNotification && (ConfirmAsync is null || !await ConfirmAsync(item, token))) return;
             if (item.State != "承認待ち" || !await CheckAccessAsync(item, token)) return;
             await new ConversationAgentService(_sessions, new AgentConnectionStore(), new ConversationSummaryStore())
@@ -85,6 +90,16 @@ public sealed partial class ChatInboxViewModel
             await FinishProgressAsync(item, ChatProgressState.Failed);
             if (await CheckAccessAsync(item, token)) await item.Transport.ReplyAsync(item.Request, item.FullOutput, token);
             Status = item.FullOutput;
+        }
+        finally
+        {
+            // The target-agent details are a preview until the switch is saved.
+            // Preserve any newer display updates made while confirmation was pending.
+            if (!changed && originalDisplay is { } original && previewDisplay is { } preview)
+            {
+                if (item.Workspace == preview.Workspace) item.Workspace = original.Workspace;
+                if (item.SessionLabel == preview.SessionLabel) item.SessionLabel = original.SessionLabel;
+            }
         }
     }
 }

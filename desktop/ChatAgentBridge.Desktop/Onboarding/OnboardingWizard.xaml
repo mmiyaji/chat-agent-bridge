@@ -90,10 +90,10 @@
                     <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" />
                     <StackPanel Spacing="8" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.SupportsModel), Mode=OneWay}">
                         <TextBlock Text="{x:Bind ViewModel.ModelCatalog.Status, Mode=OneWay}" TextWrapping="Wrap" />
-                        <ComboBox   ItemsSource="{x:Bind ViewModel.ModelCatalog.Models, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.ModelCatalog.SelectedModel, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardModelCandidates"  x:Uid="WizardModelCandidates" />
+                        <ComboBox   ItemsSource="{x:Bind ViewModel.ModelCatalog.Models, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.ModelCatalog.SelectedModel, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsReasoning, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardModelCandidates"  x:Uid="WizardModelCandidates" />
                         <TextBox  MaxLength="256" Text="{x:Bind ViewModel.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" AutomationProperties.AutomationId="WizardOptionalModel"  x:Uid="WizardOptionalModel" />
-                        <ComboBox  ItemsSource="{x:Bind ViewModel.ReasoningEffortCandidates, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.SelectedReasoningEffort, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardReasoningEffort"  x:Uid="WizardReasoningEffort" />
-                        <TextBlock Text="{x:Bind ViewModel.ModelEffortStatus, Mode=OneWay}" TextWrapping="Wrap" />
+                        <ComboBox  ItemsSource="{x:Bind ViewModel.ReasoningEffortCandidates, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.SelectedReasoningEffort, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsReasoning, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardReasoningEffort"  x:Uid="WizardReasoningEffort" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.SupportsReasoning), Mode=OneWay}" />
+                        <TextBlock Text="{x:Bind ViewModel.ModelEffortStatus, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.SupportsReasoning), Mode=OneWay}" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock008" x:Uid="onboardingOnboardingWizardTextBlock008" />
                     </StackPanel>
                 </StackPanel>
@@ -108,11 +108,11 @@
                         <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock010" x:Uid="onboardingOnboardingWizardTextBlock010" />
                         <StackPanel Spacing="8">
                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock011" x:Uid="onboardingOnboardingWizardTextBlock011" />
-                            <PasswordBox x:Name="SlackBotTokenBox" PasswordChanged="SlackBotTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardSlackBotToken"  x:Uid="WizardSlackBotToken" />
+                            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="SlackBotTokenBox" Grid.ColumnSpan="2" Padding="12,0,44,0" PasswordChanged="SlackBotTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardSlackBotToken"  x:Uid="WizardSlackBotToken" /><ToggleButton x:Name="SlackBotTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="WizardSlackBotTokenReveal" /></Grid>
                         </StackPanel>
                         <StackPanel Spacing="8">
                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock012" x:Uid="onboardingOnboardingWizardTextBlock012" />
-                            <PasswordBox x:Name="SlackAppTokenBox" PasswordChanged="SlackAppTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardSlackAppToken"  x:Uid="WizardSlackAppToken" />
+                            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="SlackAppTokenBox" Grid.ColumnSpan="2" Padding="12,0,44,0" PasswordChanged="SlackAppTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardSlackAppToken"  x:Uid="WizardSlackAppToken" /><ToggleButton x:Name="SlackAppTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="WizardSlackAppTokenReveal" /></Grid>
                         </StackPanel>
                         <StackPanel Spacing="8" AutomationProperties.AutomationId="WizardSlackUsernameLookup">
                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardSlackUsernameLookupLabel" />
@@ -136,7 +136,7 @@
                         <TextBox  Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="WizardMattermostChannelId"  x:Uid="WizardMattermostChannelId" />
                         <StackPanel Spacing="8">
                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock017" x:Uid="onboardingOnboardingWizardTextBlock017" />
-                            <PasswordBox x:Name="MattermostTokenBox" PasswordChanged="MattermostTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardMattermostToken"  x:Uid="WizardMattermostToken" />
+                            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="MattermostTokenBox" Grid.ColumnSpan="2" Padding="12,0,44,0" PasswordChanged="MattermostTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardMattermostToken"  x:Uid="WizardMattermostToken" /><ToggleButton x:Name="MattermostTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="WizardMattermostTokenReveal" /></Grid>
                         </StackPanel>
                         <StackPanel Spacing="8" AutomationProperties.AutomationId="WizardMattermostUsernameLookup">
                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardMattermostUsernameLookupLabel" />

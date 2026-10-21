@@ -13,6 +13,9 @@ Install the CLI you plan to use, such as Codex, Claude Code, Gemini CLI, or GitH
 Startup and removal
 Before moving the app folder, turn off Windows sign-in startup in the app's General settings. Turn it back on after moving if you want it. To remove the app, first turn off startup, close the app, and then delete its folder. A per-user Windows notification registration may remain. The app does not install software machine-wide.
 
+Optional notification identity
+Standard notifications use the existing registration without extra setup. Builds that include a signed Identity folder offer a per-user package registration under General > Windows notifications on Windows 10 version 2004 or later. Windows must trust the package signer; certificate trust is never changed automatically. If you enable this option, remove its registration from the same screen before moving or deleting the app folder. Settings and history are retained. Updates must also include a compatible Identity folder; an update that would remove it is rejected safely.
+
 Updating
 Use Check for updates in About when you want to look for a portable update. The check is manual. Review the offered version, download it, and choose the explicit restart action to apply it. The updater replaces only files listed in portable-files.json; your Data folder and other unlisted files are kept. Keep a separate backup of Data before updating. The updater runs from a self-contained Windows executable and does not require PowerShell or administrator access. Older portable releases do not include the updater, so download and extract a current ZIP once before using in-app updates.
 

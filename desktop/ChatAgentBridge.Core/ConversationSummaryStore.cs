@@ -248,8 +248,8 @@ public sealed class ConversationSummaryStore
 
     private static void ValidateProvider(string? provider)
     {
-        if (provider is not ("codex" or "claude"))
-            throw new ArgumentException("Conversation summary provider must be 'codex' or 'claude'.", nameof(provider));
+        if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot))
+            throw new ArgumentException("Unsupported conversation summary provider.", nameof(provider));
     }
 
     private static void ValidateSessionId(string? sessionId)

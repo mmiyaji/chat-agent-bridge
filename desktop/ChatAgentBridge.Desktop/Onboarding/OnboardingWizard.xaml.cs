@@ -20,7 +20,16 @@ public sealed partial class OnboardingWizard : UserControl
         Inbox = inbox ?? throw new ArgumentNullException(nameof(inbox));
         _reloadProcessEnvironment = reloadProcessEnvironment ?? throw new ArgumentNullException(nameof(reloadProcessEnvironment));
         InitializeComponent();
+        PasswordRevealControl.Attach(SlackBotTokenRevealButton, SlackBotTokenBox);
+        PasswordRevealControl.Attach(SlackAppTokenRevealButton, SlackAppTokenBox);
+        PasswordRevealControl.Attach(MattermostTokenRevealButton, MattermostTokenBox);
         IntroHost.Content = new OnboardingIntro(ViewModel);
+        ViewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName is nameof(ViewModel.OnboardingChatProvider) or nameof(ViewModel.OnboardingStep) or nameof(ViewModel.IsOnboardingActive))
+                PasswordRevealControl.Hide(this);
+        };
+        ViewModel.OnboardingConsentFocusRequested += FocusMissingConsent;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
 
@@ -52,12 +61,31 @@ public sealed partial class OnboardingWizard : UserControl
 
     public void ResetScroll()
     {
+        PasswordRevealControl.Hide(this);
         WizardScrollViewer.ChangeView(null, 0, null, true);
         DispatcherQueue.TryEnqueue(() => WizardScrollViewer.ChangeView(null, 0, null, true));
     }
 
+    private void FocusMissingConsent()
+    {
+        if (IntroHost.Content is not OnboardingIntro intro) return;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            intro.FocusMissingConsent();
+            // Focus can queue its own minimal BringIntoView request. Scroll
+            // after it so both choices and the consent hint are fully visible.
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                if (!ViewModel.IsWizardIntro || !ViewModel.IsOnboardingActive) return;
+                WizardScrollViewer.UpdateLayout();
+                WizardScrollViewer.ChangeView(null, WizardScrollViewer.ScrollableHeight, null, true);
+            });
+        });
+    }
+
     public void SyncSecrets()
     {
+        PasswordRevealControl.Hide(this);
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
         MattermostTokenBox.Password = ViewModel.MattermostToken;

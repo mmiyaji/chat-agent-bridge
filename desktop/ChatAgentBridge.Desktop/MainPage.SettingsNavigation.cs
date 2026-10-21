@@ -33,13 +33,13 @@ public sealed partial class MainPage
     private void ConnectionsJump_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
         if (sender is not ComboBox { SelectedItem: ComboBoxItem { Tag: string section } } picker) return;
-        FrameworkElement? target = section switch
+        Expander? target = section switch
         {
             "mattermost" => MattermostSettingsCard,
             "slack" => SlackSettingsCard,
             "approval" => ChatApprovalSettingsCard,
             "attachments" => FileAttachmentSettings,
-            "scope" => ChatScopeSettingsCard,
+            "codex-sharing" when ViewModel.IsCodexProvider => CodexChatSharingSettings,
             _ => null
         };
         picker.SelectedIndex = -1;
@@ -47,11 +47,38 @@ public sealed partial class MainPage
         DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
             if (!IsConnectionsSelected || target is null) return;
+            target.IsExpanded = true;
+            target.UpdateLayout();
             target.StartBringIntoView(new BringIntoViewOptions
             {
                 VerticalAlignmentRatio = 0,
                 AnimationDesired = false
             });
+        });
+    }
+
+    private void AgentJump_SelectionChanged(object sender, SelectionChangedEventArgs args)
+    {
+        if (sender is not ComboBox { SelectedItem: ComboBoxItem { Tag: string section } } picker) return;
+        Expander? target = section switch
+        {
+            "basic" => AgentBasicSettings,
+            "common" => AgentCommonSettings,
+            "model" when ViewModel.SupportsModel => AgentModelSettings,
+            "permissions" when !ViewModel.IsBasicProvider => AgentPermissionsSettings,
+            "codex" when ViewModel.IsCodexProvider => CodexSettings,
+            "advanced" => AgentAdvancedSettings,
+            "registrations" => AgentRegistrationsSettings,
+            "explanation" => AgentExecutionExplanation,
+            _ => null
+        };
+        picker.SelectedIndex = -1;
+        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        {
+            if (!IsAgentSelected || target is null) return;
+            target.IsExpanded = true;
+            target.UpdateLayout();
+            target.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0, AnimationDesired = false });
         });
     }
 }

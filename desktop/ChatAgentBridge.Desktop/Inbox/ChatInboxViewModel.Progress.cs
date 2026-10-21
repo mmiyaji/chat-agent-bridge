@@ -8,7 +8,8 @@ public sealed partial class ChatInboxViewModel
     private void InitializeProgress(InboxItem item)
     {
         if (item.Transport is not IChatProgressTransport) return;
-        item.Progress = new ChatProgressReporter(item.Transport, item.Request, FormatProgress,
+        item.Progress = new ChatProgressReporter(item.Transport, item.Request,
+            (state, elapsed) => FormatProgress(state, elapsed, item.Transport is MattermostWebSocketTransport),
             token => CanPublishProgressAsync(item, token),
             _ => App.DispatcherQueue.TryEnqueue(() => ProgressNotice = DesktopText.Get("ProgressNoticeFailed")));
         item.ReceiptNotification = item.Progress.ReceiveAsync();
@@ -21,7 +22,7 @@ public sealed partial class ChatInboxViewModel
         return HasAccess(current, item.Request, item.Settings);
     }
 
-    private static string FormatProgress(ChatProgressState state, TimeSpan elapsed)
+    private static string FormatProgress(ChatProgressState state, TimeSpan elapsed, bool reactionCancellation)
     {
         var key = state switch
         {
@@ -36,7 +37,10 @@ public sealed partial class ChatInboxViewModel
         };
         var seconds = Math.Max(0, (long)elapsed.TotalSeconds);
         var duration = $"{seconds / 60:00}:{seconds % 60:00}";
-        return DesktopText.Get(key, duration);
+        var text = DesktopText.Get(key, duration);
+        return reactionCancellation && state is ChatProgressState.Received or ChatProgressState.Running
+            ? text + Environment.NewLine + DesktopText.Get("ProgressReactionCancelHint")
+            : text;
     }
 
     private static async Task StartProgressAsync(InboxItem item)

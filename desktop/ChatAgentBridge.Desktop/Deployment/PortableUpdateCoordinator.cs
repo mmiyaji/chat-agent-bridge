@@ -319,7 +319,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
 
     private bool TryBegin()
     {
-        if (!IsSupported || IsBusy) return false;
+        if (!IsSupported || IsBusy || App.PortableIdentity is { IsBusy: true }) return false;
         IsBusy = true;
         _operation = new();
         return true;

@@ -88,6 +88,28 @@ public sealed class FileAttachmentCollectorTests
         await Assert.ThrowsAsync<InvalidDataException>(() => fixture.Collector.PrepareAsync([forged], fixture.Settings, fixture.Data, default));
     }
 
+    [Theory]
+    [InlineData(FileAttributes.Hidden)]
+    [InlineData(FileAttributes.System)]
+    public async Task OpenedHandleRejectsExcludedAttributes(FileAttributes attribute)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var path = fixture.Path("report.txt");
+        await File.WriteAllTextAsync(path, "synthetic output");
+        var original = File.GetAttributes(path);
+        try
+        {
+            File.SetAttributes(path, original | attribute);
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            Assert.Throws<InvalidDataException>(() => AttachmentHandlePolicy.EnsureSafe(stream, fixture.Workspace, path));
+        }
+        finally
+        {
+            File.SetAttributes(path, original);
+        }
+    }
+
     [Fact]
     public async Task RejectsAlternateStreamAndUnsafePathNames()
     {

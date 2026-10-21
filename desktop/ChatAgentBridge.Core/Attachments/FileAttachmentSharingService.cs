@@ -23,7 +23,7 @@ public sealed class FileAttachmentSharingService(string dataDirectory)
         FileAttachmentPolicy.Validate(context.Settings);
         var mode = FileAttachmentPolicy.NormalizeMode(context.Settings.FileAttachmentApprovalMode);
         if (mode == "disabled") return FileAttachmentShareOutcome.Disabled;
-        if (context.Settings.ChatResultMode == "none") return FileAttachmentShareOutcome.Private;
+        if (ExecutionPolicy.NormalizeChatResultMode(context.Settings.ChatResultMode) == "none") return FileAttachmentShareOutcome.Private;
         if (context.Candidates.Count == 0) return FileAttachmentShareOutcome.None;
         if (!await validateScope(cancellationToken).ConfigureAwait(false)) return FileAttachmentShareOutcome.ScopeChanged;
         var fingerprint = FileAttachmentPolicy.GetConsentFingerprint(context.Key, context.SessionId, context.Settings);

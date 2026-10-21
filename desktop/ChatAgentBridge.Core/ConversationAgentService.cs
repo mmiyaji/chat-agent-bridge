@@ -24,8 +24,8 @@ public sealed class ConversationAgentService(SessionStore sessions, AgentConnect
         var currentProvider = expected.NextAgentProvider ?? ProviderOf(expected);
         if (currentProvider == profile.Provider && expected.NextAgentProvider is null)
             throw new InvalidOperationException("This conversation already uses that agent.");
-        if (ProviderOf(expected) is not (AgentProfile.Codex or AgentProfile.Claude))
-            throw new InvalidOperationException("Switching is supported for Codex and Claude Code conversations.");
+        if (ProviderOf(expected) is null)
+            throw new InvalidOperationException("Switching requires a supported CLI conversation.");
         string? summary = null;
         if (selection.IncludeSummary)
         {
@@ -40,10 +40,24 @@ public sealed class ConversationAgentService(SessionStore sessions, AgentConnect
         await sessions.SwitchAgentAsync(expected, profile.Provider, summary, token).ConfigureAwait(false);
     }
 
-    public static string? ProviderOf(SessionBinding binding) => binding.AgentArguments switch
+    public static string? ProviderOf(SessionBinding binding)
     {
-        "app-server" or "exec --json -" => AgentProfile.Codex,
-        "claude-stream-json-v1" => AgentProfile.Claude,
-        _ => null
+        if (binding.AgentArguments is "app-server" or "exec --json -") return AgentProfile.Codex;
+        if (binding.AgentArguments == "claude-stream-json-v1") return AgentProfile.Claude;
+        foreach (var provider in new[] { AgentProfile.Gemini, AgentProfile.GitHubCopilot })
+        {
+            var prefix = CliSessionMarker(provider) + ":";
+            if (binding.AgentArguments.StartsWith(prefix, StringComparison.Ordinal) &&
+                binding.AgentArguments.Length == prefix.Length + 64 &&
+                binding.AgentArguments[prefix.Length..].All(Uri.IsHexDigit)) return provider;
+        }
+        return null;
+    }
+
+    internal static string CliSessionMarker(string provider) => provider switch
+    {
+        AgentProfile.Gemini => "gemini-stream-json-v1",
+        AgentProfile.GitHubCopilot => "copilot-jsonl-v1",
+        _ => throw new ArgumentException("Unsupported structured CLI provider.", nameof(provider))
     };
 }

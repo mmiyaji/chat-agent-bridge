@@ -4,9 +4,11 @@
 
 > The native WinUI 3 / C# application is maintained on `main`. See the [desktop guide (Japanese)](desktop/README.ja.md) and [migration plan](docs/winui-migration-plan.ja.md). The documentation below describes the original TypeScript implementation retained during migration.
 
+The native app supports Codex, Claude Code, Gemini CLI, and GitHub Copilot CLI conversations. Gemini and Copilot use their structured output and an explicit session UUID per chat user and thread; model identifiers can be entered in the app or with `!cab model <name>`. Their model catalogs and reasoning controls remain CLI-managed. Install and authenticate each CLI separately; older versions without the required JSON output cannot be resumed safely. See the [native CLI guide](desktop/README.ja.md#利用できるcli).
+
 The native app supports English and Japanese. By default it uses Japanese when the Windows preferred language is Japanese, and English for every other language. Choose **Language / 表示言語** in the first setup page or **General → Language and appearance** to override this. The first setup page changes immediately; after setup, the app offers to restart to apply the change. CLI responses and user content retain their original language. See the [Terms of Use](docs/terms.en.md) and [Privacy Policy](docs/privacy-policy.en.md) for the development preview.
 
-In **General**, Windows startup, auto-connect, system tray, language, and theme preferences are grouped below current status. Windows startup and tray changes save immediately; use **Save auto-connect preference** for the next app launch. This button leaves drafts in Agent and Connection settings unsaved. Setup details and the architecture image remain available in the expanded details section.
+In **General**, Windows startup, auto-connect, system tray, language, and theme preferences are grouped below current status. Preferences are saved as they change; permission, access, and sharing changes require review before applying. Auto-connect applies on the next app launch. Setup details and the architecture image remain available in the expanded details section.
 
 Choose **General → Language and appearance** for Light, Dark, or Use system setting. Theme changes are saved and applied immediately without restarting. The default follows the Windows app color setting.
 

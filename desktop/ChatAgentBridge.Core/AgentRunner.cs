@@ -9,6 +9,7 @@ public sealed record AgentRunResult(bool Success, int ExitCode, string Output, s
     CodexOutput? Codex = null, bool HasOutputTruncated = false)
 {
     public ClaudeOutput? Claude { get; init; }
+    public CliSessionOutput? CliSession { get; init; }
     public AgentUsage? Usage { get; init; }
     public AgentExecutionMetrics? Metrics { get; init; }
 }
@@ -117,9 +118,11 @@ public sealed class AgentRunner : IAgentRunner
             catch (System.ComponentModel.Win32Exception) { }
         });
 
+        var structuredCli = AgentProfile.IsBasicCliProvider(invocation.Provider);
         var stdout = ReadBoundedAsync(process.StandardOutput, MaxCapturedCharacters,
-            invocation.Provider == AgentProfile.Codex, invocation.Provider == AgentProfile.Claude, progress);
-        var stderr = ReadBoundedTextAsync(process.StandardError, MaxCapturedCharacters, progress);
+            invocation.Provider == AgentProfile.Codex, invocation.Provider == AgentProfile.Claude, progress,
+            structuredCli ? invocation.Provider : null);
+        var stderr = ReadBoundedTextAsync(process.StandardError, MaxCapturedCharacters, structuredCli ? null : progress);
         try
         {
             try
@@ -144,9 +147,13 @@ public sealed class AgentRunner : IAgentRunner
             throw;
         }
 
-        var (output, codex, claude, outputTruncated) = await stdout.ConfigureAwait(false);
+        var (output, codex, claude, cliSession, outputTruncated) = await stdout.ConfigureAwait(false);
         var error = await stderr.ConfigureAwait(false);
-        var usage = codex?.Usage ?? claude?.Usage;
+        // Structured providers can write prompts, paths and tool payloads to stderr.
+        // Return only fixed diagnostic categories, never any raw diagnostic text.
+        var validCliResult = cliSession is { HasResult: true, SessionId: not null, TurnFailed: false };
+        if (structuredCli) error = StructuredCliDiagnostics.Error(invocation.Provider, error, process.ExitCode, validCliResult);
+        var usage = codex?.Usage ?? claude?.Usage ?? cliSession?.Usage;
         var success = process.ExitCode == 0;
         var exitCode = process.ExitCode;
         if (success && invocation.Provider == AgentProfile.Claude && claude?.HasResult != true)
@@ -161,9 +168,23 @@ public sealed class AgentRunner : IAgentRunner
             exitCode = -1;
             error = AppendError(error, "Claude Code reported a failed result event.");
         }
+        if (structuredCli && !validCliResult)
+        {
+            success = false;
+            if (exitCode == 0) exitCode = -1;
+        }
+        if (structuredCli && cliSession?.SessionId is not null && settings.AuthorizedCliSessionId is { } expectedId &&
+            !string.Equals(cliSession?.SessionId, expectedId, StringComparison.OrdinalIgnoreCase))
+        {
+            success = false;
+            if (exitCode == 0) exitCode = -1;
+            error = AppendError(error, "The CLI returned a different session UUID than the authorized conversation.");
+            cliSession = cliSession is null ? null : cliSession with { SessionId = null, TurnFailed = true };
+        }
         return new AgentRunResult(success, exitCode, output, error, codex, outputTruncated)
         {
             Claude = claude,
+            CliSession = cliSession,
             Usage = usage,
             Metrics = new AgentExecutionMetrics { ProcessStartMilliseconds = processStartMilliseconds }
         };
@@ -172,25 +193,30 @@ public sealed class AgentRunner : IAgentRunner
     private static string AppendError(string error, string message)
         => string.IsNullOrWhiteSpace(error) ? message : error + Environment.NewLine + message;
 
-    private static async Task<(string Output, CodexOutput? Codex, ClaudeOutput? Claude, bool Truncated)> ReadBoundedAsync(
-        StreamReader reader, int limit, bool parseCodex, bool parseClaude, IProgress<AgentRunProgress>? progress)
+    private static async Task<(string Output, CodexOutput? Codex, ClaudeOutput? Claude, CliSessionOutput? CliSession, bool Truncated)> ReadBoundedAsync(
+        StreamReader reader, int limit, bool parseCodex, bool parseClaude, IProgress<AgentRunProgress>? progress,
+        string? structuredProvider = null)
     {
         var builder = new StringBuilder(Math.Min(limit, 16_384));
         var buffer = new char[8192];
-        var parseEvents = parseCodex || parseClaude;
+        var parseEvents = parseCodex || parseClaude || structuredProvider is not null;
         var line = parseEvents ? new StringBuilder(1024) : null;
         var codexParser = parseCodex ? new CodexOutputParser.Accumulator() : null;
         var claudeParser = parseClaude ? new ClaudeOutputParser.Accumulator() : null;
-        var progressParser = progress is not null && parseEvents ? new AgentRunProgressParser(parseCodex ? AgentProfile.Codex : AgentProfile.Claude) : null;
+        var cliParser = structuredProvider is null ? null : new CliSessionOutputParser.Accumulator(structuredProvider);
+        var progressParser = progress is not null && (parseCodex || parseClaude) ? new AgentRunProgressParser(parseCodex ? AgentProfile.Codex : AgentProfile.Claude) : null;
         var droppingLongLine = false;
         var truncated = false;
         while (true)
         {
             var read = await reader.ReadAsync(buffer.AsMemory()).ConfigureAwait(false);
             if (read == 0) break;
-            var keep = Math.Min(read, limit - builder.Length);
-            if (keep > 0) builder.Append(buffer, 0, keep);
-            if (keep < read) truncated = true;
+            if (cliParser is null)
+            {
+                var keep = Math.Min(read, limit - builder.Length);
+                if (keep > 0) builder.Append(buffer, 0, keep);
+                if (keep < read) truncated = true;
+            }
 
             if (!parseEvents)
             {
@@ -209,6 +235,8 @@ public sealed class AgentRunner : IAgentRunner
                         var text = line!.ToString();
                         codexParser?.AddLine(text);
                         claudeParser?.AddLine(text);
+                        if (cliParser is not null)
+                            foreach (var update in cliParser.AddLine(text)) SafeReport(progress, update);
                         if (progressParser is not null)
                             foreach (var update in progressParser.ParseLine(text)) SafeReport(progress, update);
                     }
@@ -217,8 +245,8 @@ public sealed class AgentRunner : IAgentRunner
                 }
                 else if (!droppingLongLine)
                 {
-                    if (line!.Length < CodexOutputParser.MaxLineCharacters) line.Append(ch);
-                    else { line.Clear(); droppingLongLine = true; }
+                    if (line!.Length < (cliParser is null ? CodexOutputParser.MaxLineCharacters : CliSessionOutputParser.MaxLineCharacters)) line.Append(ch);
+                    else { line.Clear(); droppingLongLine = true; cliParser?.Invalidate(); truncated = true; }
                 }
             }
         }
@@ -226,10 +254,14 @@ public sealed class AgentRunner : IAgentRunner
         {
             codexParser?.AddLine(line.ToString());
             claudeParser?.AddLine(line.ToString());
+            if (cliParser is not null)
+                foreach (var update in cliParser.AddLine(line.ToString())) SafeReport(progress, update);
             if (progressParser is not null)
                 foreach (var update in progressParser.ParseLine(line.ToString())) SafeReport(progress, update);
         }
-        return (builder.ToString(), codexParser?.Snapshot(), claudeParser?.Snapshot(), truncated);
+        var cliSession = cliParser?.Snapshot();
+        return (cliSession?.FinalMessage ?? builder.ToString(), codexParser?.Snapshot(), claudeParser?.Snapshot(), cliSession,
+            truncated || cliParser?.Truncated == true);
     }
 
     private static async Task<string> ReadBoundedTextAsync(StreamReader reader, int limit, IProgress<AgentRunProgress>? progress)

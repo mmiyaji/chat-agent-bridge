@@ -39,6 +39,8 @@ public partial class App : Application
     public static PricingCatalogManager Pricing { get; private set; } = null!;
     public static Tray.TrayService Tray { get; private set; } = null!;
     public static PortableUpdateCoordinator PortableUpdates { get; private set; } = null!;
+    public static PortableIdentityCoordinator PortableIdentity { get; private set; } = null!;
+    public static bool IsNotificationOnlyLaunch { get; private set; }
     private readonly CancellationTokenSource _pricingLifetime = new();
     private readonly CancellationTokenSource _portableUpdateLifetime = new();
     private FileStream? _portableLease;
@@ -92,6 +94,22 @@ public partial class App : Application
             AppContext.BaseDirectory,
             packageLocalDirectory);
         Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", dataDirectory);
+        DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        IsNotificationOnlyLaunch = NotificationLaunchArguments.IsNotificationLaunch(launchArguments);
+        if (IsNotificationOnlyLaunch)
+        {
+            // A COM activation can arrive in a fresh process. Forward to the exact live
+            // owner before loading settings, creating another window, or connecting chats.
+            PendingRequestNotifications = new PendingRequestNotificationService(DispatcherQueue, new NotificationDiagnostics(dataDirectory));
+            PendingRequestNotifications.Initialize();
+            PendingRequestNotifications.ProcessStartupActivation();
+            if (await PendingRequestNotifications.WaitForStartupForwardingAsync(TimeSpan.FromSeconds(5)))
+            {
+                PendingRequestNotifications.Shutdown(preserveRegistration: true);
+                Exit();
+                return;
+            }
+        }
         if (DeploymentRuntime.IsPortable)
         {
             try { _portableLease = ChatAgentBridge.Core.Updates.PortableApplicationLease.Open(AppContext.BaseDirectory); }
@@ -119,14 +137,14 @@ public partial class App : Application
         }
         ApplyLanguagePreference(languagePreference.Language);
 
-        DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         Appearance = new(new ChatAgentBridge.Core.Appearance.AppearancePreferencesStore(new ChatAgentBridge.Core.SettingsStore()));
         await Appearance.InitializeAsync();
         Pricing = new(new ChatAgentBridge.Core.SettingsStore());
         await Pricing.InitializeAsync();
-        PendingRequestNotifications = new PendingRequestNotificationService(DispatcherQueue);
+        PendingRequestNotifications ??= new PendingRequestNotificationService(DispatcherQueue, new NotificationDiagnostics(dataDirectory));
         PendingRequestNotifications.Initialize();
         PortableUpdates = new(dataDirectory, _portableLease is not null);
+        PortableIdentity = new(dataDirectory, _portableLease is not null);
         if (DeploymentRuntime.IsPortable) await PortableUpdates.InitializeAsync();
 
         var backgroundStore = new ChatAgentBridge.Core.BackgroundPreferencesStore(new ChatAgentBridge.Core.SettingsStore());
@@ -150,6 +168,7 @@ public partial class App : Application
             _pricingLifetime.Cancel();
         };
         Window.Activate();
+        if (!IsNotificationOnlyLaunch) PendingRequestNotifications.ProcessStartupActivation();
         if (DeploymentRuntime.IsPortable && updateReadyEvent is not null &&
             updateReadyEvent.StartsWith(@"Local\ChatAgentBridge.Update.", StringComparison.Ordinal) &&
             updateReadyEvent.Length == @"Local\ChatAgentBridge.Update.".Length + 32 &&

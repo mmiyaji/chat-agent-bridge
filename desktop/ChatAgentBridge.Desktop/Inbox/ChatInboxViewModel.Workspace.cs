@@ -8,6 +8,8 @@ public sealed partial class ChatInboxViewModel
     private async Task ChangeWorkspaceAsync(InboxItem item, string path, bool approvedByNotification, CancellationToken token)
     {
         var changed = false;
+        (string Workspace, string SessionLabel)? originalDisplay = null;
+        (string Workspace, string SessionLabel)? previewDisplay = null;
         try
         {
             if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path) || !Directory.Exists(path))
@@ -18,8 +20,10 @@ public sealed partial class ChatInboxViewModel
             var key = CreateSessionKey(item);
             var previousWorkspace = await _sessions.FindWorkspaceAsync(key, token);
             var currentWorkspace = previousWorkspace ?? item.Settings.WorkspaceRoot;
-            item.Workspace = path;
-            item.SessionLabel = DesktopText.Get("WorkspaceChangePrompt", currentWorkspace, path, item.Request.UserId);
+            originalDisplay = (item.Workspace, item.SessionLabel);
+            previewDisplay = (path, DesktopText.Get("WorkspaceChangePrompt", currentWorkspace, path, item.Request.UserId));
+            item.Workspace = previewDisplay.Value.Workspace;
+            item.SessionLabel = previewDisplay.Value.SessionLabel;
             // A folder change always requires a local decision, even for auto-approved conversations.
             if (!approvedByNotification && (ConfirmAsync is null || !await ConfirmAsync(item, token))) return;
             if (item.State != "承認待ち" || !await CheckAccessAsync(item, token)) return;
@@ -63,6 +67,16 @@ public sealed partial class ChatInboxViewModel
             Status = DesktopText.Get("WorkspaceChangeFailed");
             if (await CheckAccessAsync(item, token))
                 await item.Transport.ReplyAsync(item.Request, DesktopText.Get("WorkspaceChangeFailedChatReply"), token);
+        }
+        finally
+        {
+            // A rejected or failed change must not leave its proposed folder visible.
+            // Preserve any newer display updates made while confirmation was pending.
+            if (!changed && originalDisplay is { } original && previewDisplay is { } preview)
+            {
+                if (item.Workspace == preview.Workspace) item.Workspace = original.Workspace;
+                if (item.SessionLabel == preview.SessionLabel) item.SessionLabel = original.SessionLabel;
+            }
         }
     }
 }

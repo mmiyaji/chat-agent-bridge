@@ -54,6 +54,7 @@ public partial class MainPageViewModel
     public string OnboardingProgress => $"[{Math.Clamp(OnboardingStep, 0, 4) + 1}/5]";
     public string WizardSummary => ViewModelText.Get("WizardSummary", AgentProviderDisplayName, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, string.IsNullOrWhiteSpace(AgentReasoningEffort) ? ViewModelText.Get("DefaultCliValue") : AgentReasoningEffort, WorkspaceRoot, IsWizardSlack ? "Slack" : "Mattermost", ViewModelText.Get(WizardAutoConnect ? "Enabled" : "Disabled"), ChatApprovalLabel(ChatApprovalMode), ResultLabel(ChatResultMode), PermissionLabel(AgentPermissionMode));
     public event Action<int>? OnboardingNavigateRequested;
+    public event Action? OnboardingConsentFocusRequested;
 
     public async Task InitializeOnboardingAsync()
     {
@@ -94,7 +95,12 @@ public partial class MainPageViewModel
         IsStatusOpen = false;
         if (OnboardingStep == 0)
         {
-            if (!HasAcceptedTerms || !HasAcceptedPrivacy) { SetStatus(ViewModelText.Get("ConsentRequired"), ViewModelText.Get("ConsentRequiredDetails"), "Warning"); return; }
+            if (!HasAcceptedTerms || !HasAcceptedPrivacy)
+            {
+                SetStatus(ViewModelText.Get("ConsentRequired"), ViewModelText.Get("ConsentRequiredDetails"), "Warning");
+                OnboardingConsentFocusRequested?.Invoke();
+                return;
+            }
             await _onboardingConsentStore.SaveAsync(new OnboardingConsent(OnboardingConsentStore.CurrentPolicyVersion, DateTimeOffset.UtcNow));
             _hasCurrentConsent = true;
             ConsentStatus = ViewModelText.Get("ConsentSaved", OnboardingConsentStore.CurrentPolicyVersion);
@@ -121,16 +127,16 @@ public partial class MainPageViewModel
         {
             if (!HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("RecheckCli"), ViewModelText.Get("RecheckCliDetails"), "Warning"); return; }
             if (!HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get("MissingChatConfig"), "Warning"); return; }
-            if (!_chatConnectionConfirmed) { SetStatus(ViewModelText.Get("ChatConnectionRequired"), ViewModelText.Get("ChatConnectionRequiredDetails"), "Warning"); return; }
-            if (_wizardConnectedProvider != OnboardingChatProvider || _wizardConnectedSettings != CreateSettingsSnapshot()) { SetStatus(ViewModelText.Get("ReconnectWithChangedSettings"), ViewModelText.Get("ReconnectWithChangedSettingsDetails"), "Warning"); return; }
-            if (_settings != CreateSettingsSnapshot()) { await SaveSettingsAsync(); if (_lastSaveSucceeded) SetStatus(ViewModelText.Get("SettingsSaved"), ViewModelText.Get("SettingsSavedReconnectDetails"), "Warning"); return; }
         }
         await SaveSettingsAsync();
         if (!_lastSaveSucceeded) return;
         if (OnboardingStep < 4) { await AdvanceOnboardingAsync(OnboardingStep + 1); return; }
         await SaveOnboardingProgressAsync("completed", 4);
         IsOnboardingActive = false;
-        IsStatusOpen = false;
+        if (!_chatConnectionConfirmed || _wizardConnectedProvider != OnboardingChatProvider || _wizardConnectedSettings != CreateSettingsSnapshot())
+            SetStatus(ViewModelText.Get("WizardConnectionDeferredTitle"), ViewModelText.Get("WizardConnectionDeferredDetails"), "Informational");
+        else
+            IsStatusOpen = false;
     });
     public async Task<bool> SaveWizardConnectionSettingsAsync()
     {
