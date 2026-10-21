@@ -13,6 +13,7 @@ public sealed class ProbeWindow : Window
 {
     private readonly PendingRequestNotificationService _service;
     private readonly string _eventPath;
+    private readonly bool _enableDecisions;
     private readonly TextBlock _request = new() { Text = "No synthetic request", TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _counts = new();
     private readonly InfoBar _status = new() { IsOpen = true, IsClosable = false, Title = "Production notification service" };
@@ -22,11 +23,13 @@ public sealed class ProbeWindow : Window
     private string _token = "";
     private bool _busy;
     private DispatcherTimer? _startupTimer;
+    private Windows.UI.Notifications.ToastNotification? _legacyToast;
     private int _approve, _decline, _completed, _attention, _generation;
 
-    public ProbeWindow(PendingRequestNotificationService service, string dataDirectory)
+    public ProbeWindow(PendingRequestNotificationService service, string dataDirectory, bool enableDecisions = true)
     {
         _service = service;
+        _enableDecisions = enableDecisions;
         _eventPath = Path.Combine(dataDirectory, $"events-{Environment.ProcessId}.jsonl");
         Title = "Notification Native Probe";
         var panel = new StackPanel { Spacing = 12, Padding = new Thickness(24) };
@@ -65,14 +68,15 @@ public sealed class ProbeWindow : Window
         AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(740 * scale), (int)(850 * scale)));
     }
 
-    public void ScheduleStartupTest(string? scenario, bool simpleToast)
+    public void ScheduleStartupTest(string? scenario, bool simpleToast, bool legacyToast, string? explicitAppId)
     {
-        if (scenario is null && !simpleToast) return;
+        if (scenario is null && !simpleToast && !legacyToast) return;
         _startupTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
         _startupTimer.Tick += async (_, _) =>
         {
             _startupTimer.Stop();
             RecordShellNotificationState();
+            if (legacyToast) await ShowLegacyToastAsync(explicitAppId!);
             if (scenario is not null) Create(scenario);
             if (simpleToast)
             {
@@ -90,12 +94,47 @@ public sealed class ProbeWindow : Window
             }
         };
         _startupTimer.Start();
-        Record("startup_test_scheduled", diagnostics: new { scenario, simpleToast, delaySeconds = 3 });
+        Record("startup_test_scheduled", diagnostics: new { scenario, simpleToast, legacyToast, delaySeconds = 3 });
     }
 
-    private static Button Button(string text, string id, Action action)
+    private async Task ShowLegacyToastAsync(string explicitAppId)
     {
-        var button = new Button { Content = text };
+        try
+        {
+            var notifier = Windows.UI.Notifications.ToastNotificationManager.CreateToastNotifier(explicitAppId);
+            Record("legacy_notifier_setting", notifier.Setting.ToString());
+            var xml = new Windows.Data.Xml.Dom.XmlDocument();
+            xml.LoadXml("<toast><visual><binding template=\"ToastGeneric\"><text>Notification Native Probe</text><text>Minimal legacy notification diagnostic.</text></binding></visual></toast>");
+            _legacyToast = new Windows.UI.Notifications.ToastNotification(xml);
+            _legacyToast.Failed += (_, error) => RecordLegacyCallback("legacy_failed", new { hresult = error.ErrorCode.HResult, message = error.ErrorCode.Message });
+            _legacyToast.Dismissed += (_, dismissed) => RecordLegacyCallback("legacy_dismissed", new { reason = dismissed.Reason.ToString() });
+            _legacyToast.Activated += (_, _) => RecordLegacyCallback("legacy_activated", null);
+            notifier.Show(_legacyToast);
+            Record("legacy_toast_shown");
+            await Task.Delay(500);
+            var history = Windows.UI.Notifications.ToastNotificationManager.History.GetHistory(explicitAppId);
+            Record("legacy_notification_history", diagnostics: new { count = history.Count });
+        }
+        catch (Exception error) { Record("legacy_toast_error", error.ToString()); }
+    }
+
+    private void RecordLegacyCallback(string name, object? diagnostics)
+    {
+        // Legacy WinRT callbacks may arrive on a worker thread; never touch UI there.
+        DispatcherQueue.TryEnqueue(() => Record(name, diagnostics: diagnostics));
+    }
+
+    public void ShowExplicitAssetsStatus()
+    {
+        _status.Title = "Explicit-assets standalone diagnostic";
+        _status.Message = AppNotificationManager.Default.Setting.ToString();
+        _request.Text = "Minimal notification only. Production decision service is not initialized in this diagnostic mode.";
+        Record("explicit_assets_mode", _status.Message);
+    }
+
+    private Button Button(string text, string id, Action action)
+    {
+        var button = new Button { Content = text, IsEnabled = _enableDecisions };
         AutomationProperties.SetAutomationId(button, id);
         button.Click += (_, _) => action();
         return button;

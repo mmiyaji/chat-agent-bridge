@@ -30,6 +30,7 @@
       <LogicalName>ChatAgentBridge_Desktop.Localization.%(Filename).resources</LogicalName>
     </EmbeddedResource>
     <Manifest Include="$(ApplicationManifest)" />
+    <Content Include="../../ChatAgentBridge.Desktop/Assets/AppIcon.ico" Link="Assets/AppIcon.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <!-- Match the production portable notification runtime dependency. -->
   <UsingTask TaskName="ExtractProbeNotificationResource" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
