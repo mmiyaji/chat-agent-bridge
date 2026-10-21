@@ -224,10 +224,10 @@ function Exercise-AboutDialog([string]$Kind) {
         }
         'exit-cancel' {
             [void](Invoke-UI @('ui', 'invoke', 'AboutExit'))
-            Wait-UI 'AboutExitConfirmation'
+            Wait-UI 'WindowCloseConfirmation'
             Wait-UI 'CloseButton' '' 5000
             [void](Invoke-UI @('ui', 'invoke', 'CloseButton'))
-            Wait-UI 'AboutExitConfirmation' '' 5000 -Gone
+            Wait-UI 'WindowCloseConfirmation' '' 5000 -Gone
             if (-not (Get-Process -Id $AppPid -ErrorAction SilentlyContinue)) { throw 'Canceling the exit dialog closed the app.' }
         }
         default { throw "Unknown About dialog kind '$Kind'." }

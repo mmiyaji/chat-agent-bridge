@@ -1,7 +1,6 @@
 using ChatAgentBridge_Desktop.Localization;
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel;
 using Windows.Services.Store;
@@ -15,7 +14,6 @@ public sealed partial class AboutPage : Page
     private readonly bool _isStorePackage;
     private string? _storeUri;
     private bool _storeCheckInProgress;
-    private bool _dialogOpen;
 
     public AboutPage()
     {
@@ -114,26 +112,5 @@ public sealed partial class AboutPage : Page
     private async void Terms_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: false);
     private async void Privacy_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: true);
 
-    private async void Exit_Click(object sender, RoutedEventArgs e)
-    {
-        if (_dialogOpen) return;
-        _dialogOpen = true;
-        try
-        {
-            var dialog = new ContentDialog
-            {
-                XamlRoot = XamlRoot,
-                RequestedTheme = App.Appearance.RequestedTheme,
-                Title = DesktopText.Get("AboutExitTitle"),
-                Content = DesktopText.Get("AboutExitMessage"),
-                PrimaryButtonText = DesktopText.Get("AboutExitConfirm"),
-                CloseButtonText = DesktopText.Get("Cancel"),
-                DefaultButton = ContentDialogButton.Close
-            };
-            AutomationProperties.SetAutomationId(dialog, "AboutExitConfirmation");
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-                await App.Tray.ExitAsync();
-        }
-        finally { _dialogOpen = false; }
-    }
+    private async void Exit_Click(object sender, RoutedEventArgs e) => await App.Tray.ShowCloseConfirmationAsync();
 }

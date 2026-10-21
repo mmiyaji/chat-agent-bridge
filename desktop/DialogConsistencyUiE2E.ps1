@@ -101,7 +101,7 @@ try{
             Dismiss 'RunConfirmation' 2 "$width-run"
             Go 'NavAbout'
             Scroll 'AboutExit';UI @('invoke','AboutExit')|Out-Null
-            Dismiss 'AboutExitConfirmation' 2 "$width-about-exit"
+            Dismiss 'WindowCloseConfirmation' 3 "$width-about-exit"
             [void][DialogConsistencyNative]::PostMessageW($window,0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
             Dismiss 'WindowCloseConfirmation' 3 "$width-window-close"
             Go 'NavOverview'

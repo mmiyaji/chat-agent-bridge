@@ -305,9 +305,6 @@
   <data name="AboutStoreCheckFailed" xml:space="preserve"><value>Could not check for updates. Try again later or open the Microsoft Store page.</value></data>
   <data name="AboutStoreOpenFailed" xml:space="preserve"><value>Could not open the Microsoft Store page.</value></data>
   <data name="AboutOpenLinkFailed" xml:space="preserve"><value>Could not open the link. Check that a browser or mail app is available.</value></data>
-  <data name="AboutExitTitle" xml:space="preserve"><value>Exit Chat Agent Bridge?</value></data>
-  <data name="AboutExitMessage" xml:space="preserve"><value>Exiting cancels active work and disconnects chats.</value></data>
-  <data name="AboutExitConfirm" xml:space="preserve"><value>Exit</value></data>
   <data name="HistoryProviderAll" xml:space="preserve"><value>All services</value></data>
   <data name="HistoryUnknownOrigin" xml:space="preserve"><value>Unknown connection</value></data>
   <data name="HistoryConversationsTab" xml:space="preserve"><value>Conversations ({0})</value></data>

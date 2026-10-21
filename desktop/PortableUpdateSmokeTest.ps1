@@ -29,7 +29,7 @@ function Stop-TestApp($Process) {
     & winapp ui invoke NavAbout -a $Process.Id --json | Out-Null
     & winapp ui invoke AboutExit -a $Process.Id --json | Out-Null
     if ($LASTEXITCODE) { throw 'Test app could not exit normally.' }
-    & winapp ui wait-for AboutExitConfirmation -a $Process.Id -t 5000 --json | Out-Null
+    & winapp ui wait-for WindowCloseConfirmation -a $Process.Id -t 5000 --json | Out-Null
     & winapp ui invoke PrimaryButton -a $Process.Id --json | Out-Null
     if ($LASTEXITCODE) { throw 'Exit confirmation failed.' }
     Wait-Until { $Process.HasExited } 15 'Test app did not exit.'
