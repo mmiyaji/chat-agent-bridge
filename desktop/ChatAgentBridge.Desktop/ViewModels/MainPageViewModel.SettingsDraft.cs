@@ -8,10 +8,6 @@ public partial class MainPageViewModel
 {
     private bool _restoringSettingsDraft;
     private bool _savingSettings;
-    private RejectedSensitiveDraft? _rejectedSensitiveDraft;
-
-    private sealed record RejectedSensitiveDraft(BridgeSettings Settings, double AttachmentSize,
-        double AttachmentCount, double AttachmentTotal);
 
     public Func<BridgeSettings, BridgeSettings, Task<bool>>? ConfirmSensitiveSettingsAsync { get; set; }
     public event Action? SettingsDraftEdited;
@@ -50,7 +46,6 @@ public partial class MainPageViewModel
 
     public void AllowSensitiveSettingsConfirmationRetry()
     {
-        _rejectedSensitiveDraft = null;
         IsSensitiveConfirmationPending = false;
     }
 
@@ -72,34 +67,105 @@ public partial class MainPageViewModel
         HasAgentSettingsChanges = changes.Agent;
         HasChatSettingsChanges = changes.Chat;
         HasGeneralSettingsChanges = changes.General;
-        if (_rejectedSensitiveDraft is not null && (!MatchesRejectedSensitiveDraft(draft,
-                FileAttachmentMaxSizeMb, FileAttachmentMaxCount, FileAttachmentMaxTotalSizeMb) ||
-                SettingsSensitiveChanges.Equivalent(_settings, draft) &&
-                FileAttachmentMaxSizeMb == _settings.FileAttachmentMaxSizeMb &&
-                FileAttachmentMaxCount == _settings.FileAttachmentMaxCount &&
-                FileAttachmentMaxTotalSizeMb == _settings.FileAttachmentMaxTotalSizeMb))
-            AllowSensitiveSettingsConfirmationRetry();
         if (!IsLoading) SetupDraftNotice = HasUnsavedSettings ? ViewModelText.Get("UnsavedSetupChanges") : "";
         if (notifyEdited) SettingsDraftEdited?.Invoke();
     }
 
-    private bool MatchesRejectedSensitiveDraft(BridgeSettings draft, double size, double count, double total) =>
-        _rejectedSensitiveDraft is { } rejected && SettingsSensitiveChanges.Equivalent(rejected.Settings, draft) &&
-        rejected.AttachmentSize.Equals(size) && rejected.AttachmentCount.Equals(count) && rejected.AttachmentTotal.Equals(total);
-
-    private async Task<bool> ConfirmSensitiveDraftAsync(BridgeSettings baseline, BridgeSettings snapshot,
-        BridgeSettings draft, double size, double count, double total)
+    private async Task<bool> ConfirmSensitiveDraftAsync(BridgeSettings baseline, BridgeSettings snapshot)
     {
         if (IsOnboardingActive || !SettingsSensitiveChanges.Compare(baseline, snapshot).HasChanges) return true;
-        if (MatchesRejectedSensitiveDraft(draft, size, count, total)) return false;
-
-        // Retain the rejected projection even if the callback is unavailable or throws.
-        // Ordinary edits must never turn an unconfirmed permission/token change into a save.
-        _rejectedSensitiveDraft = new(draft, size, count, total);
+        var rollback = CaptureSettingsDraftRollback(baseline);
+        var accepted = false;
         IsSensitiveConfirmationPending = true;
-        if (ConfirmSensitiveSettingsAsync is not { } confirm || !await confirm(baseline, snapshot)) return false;
-        AllowSensitiveSettingsConfirmationRetry();
-        return true;
+        try
+        {
+            accepted = ConfirmSensitiveSettingsAsync is { } confirm && await confirm(baseline, snapshot);
+            return accepted;
+        }
+        finally
+        {
+            // Cancel, an unavailable dialog, and dialog failures all reject the submitted
+            // transaction. A later ordinary edit must never resurrect rejected settings.
+            try
+            {
+                if (!accepted) rollback();
+            }
+            finally
+            {
+                AllowSensitiveSettingsConfirmationRetry();
+            }
+        }
+    }
+
+    private Action CaptureSettingsDraftRollback(BridgeSettings baseline)
+    {
+        var submittedDraft = CreateSettingsSnapshot();
+        var submittedConnectionStatus = ConnectionRegistrationStatus;
+        List<Action> restore = [];
+        void Track<T>(Func<T> read, Action<T> write, T saved)
+        {
+            // Capture raw editor values, including whitespace and NumberBox doubles.
+            // Snapshot normalization would mistake some edits made during the dialog
+            // for the submitted value and overwrite them on cancellation.
+            var submitted = read();
+            restore.Add(() =>
+            {
+                if (EqualityComparer<T>.Default.Equals(read(), submitted)) write(saved);
+            });
+        }
+
+        Track(() => WorkspaceRoot, value => WorkspaceRoot = value, baseline.WorkspaceRoot);
+        Track(() => AgentProvider, value => AgentProvider = value, baseline.AgentProvider);
+        Track(() => AgentExecutable, value => AgentExecutable = value, baseline.AgentExecutable);
+        Track(() => AgentArguments, value => AgentArguments = value, baseline.AgentArguments);
+        Track(() => AgentModel, value => AgentModel = value, baseline.AgentModel ?? "");
+        Track(() => AgentReasoningEffort, value => AgentReasoningEffort = value, baseline.AgentReasoningEffort);
+        Track(() => UseAppServer, value => UseAppServer = value, baseline.AgentMode == "app-server");
+        Track(() => RequireApproval, value => RequireApproval = value, baseline.RequireApproval);
+        Track(() => AgentPermissionMode, value => AgentPermissionMode = value, baseline.AgentPermissionMode);
+        Track(() => AllowAgentNetwork, value => AllowAgentNetwork = value, baseline.AllowAgentNetwork);
+        Track(() => TrustedWorkspaceRoots, value => TrustedWorkspaceRoots = value, baseline.TrustedWorkspaceRoots);
+        Track(() => AutoConnectProvider, value => AutoConnectProvider = value, baseline.AutoConnectProvider);
+        Track(() => MattermostServerUrl, value => MattermostServerUrl = value, baseline.MattermostServerUrl);
+        Track(() => MattermostChannelId, value => MattermostChannelId = value, baseline.MattermostChannelId);
+        Track(() => MattermostToken, SetMattermostToken, baseline.MattermostToken);
+        Track(() => MattermostBypassProxy, value => MattermostBypassProxy = value, baseline.MattermostBypassProxy);
+        Track(() => PostConnectionNotice, value => PostConnectionNotice = value, baseline.PostConnectionNotice);
+        Track(() => SlackBotToken, value => SlackBotToken = value, baseline.SlackBotToken);
+        Track(() => SlackAppToken, value => SlackAppToken = value, baseline.SlackAppToken);
+        Track(() => MattermostAllowedUserIds, value => MattermostAllowedUserIds = value, baseline.MattermostAllowedUserIds);
+        Track(() => SlackAllowedUserIds, value => SlackAllowedUserIds = value, baseline.SlackAllowedUserIds);
+        Track(() => ShareApprovalsInChat, value => ShareApprovalsInChat = value, baseline.ShareApprovalsInChat);
+        Track(() => ShareAgentQuestionsInChat, value => ShareAgentQuestionsInChat = value, baseline.ShareAgentQuestionsInChat);
+        Track(() => ChatApprovalMode, value => ChatApprovalMode = value, baseline.ChatApprovalMode);
+        Track(() => ChatResultMode, value => ChatResultMode = value, baseline.ChatResultMode);
+        Track(() => SlackAllowedChannelIds, value => SlackAllowedChannelIds = value, baseline.SlackAllowedChannelIds);
+        Track(() => SlackAllowedThreadIds, value => SlackAllowedThreadIds = value, baseline.SlackAllowedThreadIds);
+        Track(() => MattermostAllowedThreadIds, value => MattermostAllowedThreadIds = value, baseline.MattermostAllowedThreadIds);
+        Track(() => FileAttachmentApprovalMode, value => FileAttachmentApprovalMode = value, baseline.FileAttachmentApprovalMode);
+        Track(() => FileAttachmentMaxSizeMb, value => FileAttachmentMaxSizeMb = value, (double)baseline.FileAttachmentMaxSizeMb);
+        Track(() => FileAttachmentMaxCount, value => FileAttachmentMaxCount = value, (double)baseline.FileAttachmentMaxCount);
+        Track(() => FileAttachmentMaxTotalSizeMb, value => FileAttachmentMaxTotalSizeMb = value, (double)baseline.FileAttachmentMaxTotalSizeMb);
+
+        return () =>
+        {
+            _restoringSettingsDraft = true;
+            try
+            {
+                foreach (var restoreField in restore) restoreField();
+            }
+            finally
+            {
+                _restoringSettingsDraft = false;
+                _effortModel = NormalizeModel(AgentModel);
+                PopulateGlobalEfforts();
+                UpdateSavedAgentSummary();
+                if (SettingsDraftChanges.Compare(submittedDraft, CreateSettingsSnapshot()).Agent &&
+                    ConnectionRegistrationStatus == submittedConnectionStatus)
+                    ConnectionRegistrationStatus = "";
+                RefreshSettingsDraftChanges();
+            }
+        };
     }
 
     private static bool IsSettingsDraftProperty(string? propertyName) => propertyName is

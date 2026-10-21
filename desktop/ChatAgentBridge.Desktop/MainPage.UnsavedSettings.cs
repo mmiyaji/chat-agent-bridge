@@ -112,7 +112,7 @@ public sealed partial class MainPage
             {
                 if (await ViewModel.SavePendingSettingsAsync()) return true;
                 // Cancelling the security confirmation keeps the current screen.
-                if (ViewModel.IsSensitiveConfirmationPending) return false;
+                if (ViewModel.IsSensitiveConfirmationPending || !ViewModel.HasUnsavedSettings) return false;
             }
             var body = new TextBlock
             {

@@ -99,7 +99,11 @@ public sealed partial class MainPage
         {
             if (await ViewModel.SavePendingSettingsAsync()) ViewModel.IsStatusOpen = false;
         }
-        finally { _autoSaveAttemptRunning = false; }
+        finally
+        {
+            _autoSaveAttemptRunning = false;
+            ScheduleLaterSettingsEdits();
+        }
     }
 
     private async void RetrySettingsAutoSave_Click(object sender, RoutedEventArgs args)
@@ -112,7 +116,20 @@ public sealed partial class MainPage
         {
             if (await ViewModel.SavePendingSettingsAsync(retrySensitiveConfirmation: true)) ViewModel.IsStatusOpen = false;
         }
-        finally { _autoSaveAttemptRunning = false; }
+        finally
+        {
+            _autoSaveAttemptRunning = false;
+            ScheduleLaterSettingsEdits();
+        }
+    }
+
+    private void ScheduleLaterSettingsEdits()
+    {
+        // Async pickers/catalogs may update another field while the save dialog
+        // is open. Keep those later edits eligible for saving after rollback,
+        // without repeatedly retrying the same invalid or failed save.
+        if (ViewModel.HasUnsavedSettings && !(ViewModel.IsStatusOpen && ViewModel.StatusSeverity == "Error"))
+            ScheduleSettingsAutoSave();
     }
 
     private async Task<bool> ConfirmSensitiveSettingsAsync(BridgeSettings saved, BridgeSettings draft)

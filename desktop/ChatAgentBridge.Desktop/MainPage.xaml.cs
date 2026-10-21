@@ -41,6 +41,14 @@ public sealed partial class MainPage : Page
         WizardHost.Content = _wizard;
         ViewModel.PropertyChanged += (_, args) =>
         {
+            // PasswordBox cannot use a two-way x:Bind. Reflect rejected edits back
+            // into its editor as well as the view model, without persisting them.
+            if (args.PropertyName == nameof(ViewModel.MattermostToken))
+                MattermostTokenBox.Password = ViewModel.MattermostToken;
+            if (args.PropertyName == nameof(ViewModel.SlackBotToken))
+                SlackBotTokenBox.Password = ViewModel.SlackBotToken;
+            if (args.PropertyName == nameof(ViewModel.SlackAppToken))
+                SlackAppTokenBox.Password = ViewModel.SlackAppToken;
             if (ViewModel.IsOnboardingActive && ViewModel.IsStatusOpen && args.PropertyName is nameof(ViewModel.IsStatusOpen) or nameof(ViewModel.StatusTitle) or nameof(ViewModel.StatusMessage))
                 _wizard.ResetScroll();
             if (args.PropertyName == nameof(ViewModel.IsSettingsLoaded) && ViewModel.IsSettingsLoaded)

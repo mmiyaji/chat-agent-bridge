@@ -152,6 +152,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string AgentModel { get; set; } = "";
     partial void OnAgentModelChanged(string value)
     {
+        if (_restoringSettingsDraft) return;
         if (!_initializingSettings && !_applyingCatalogSelection && IsSettingsLoaded &&
             !string.Equals(_effortModel, NormalizeModel(value), StringComparison.Ordinal))
         {
@@ -192,7 +193,7 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnUseAppServerChanged(bool value)
     {
         InvalidateModelCatalog();
-        if (!value && !_initializingSettings && !IsLoading && AgentPermissionMode == "ask")
+        if (!value && !_restoringSettingsDraft && !_initializingSettings && !IsLoading && AgentPermissionMode == "ask")
             SetAgentPermissionModeAfterCapabilityLoss();
     }
     public bool IsExecMode => !UseAppServer;
@@ -364,7 +365,7 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnAgentProviderChanged(string value)
     {
         InvalidateModelCatalog();
-        if (IsLoading) return;
+        if (IsLoading || _restoringSettingsDraft) return;
         UseAppServer = false;
         if (IsBasicProvider) SetAgentPermissionMode("inherit", adjusted: false);
         AgentModel = "";
@@ -476,8 +477,7 @@ public partial class MainPageViewModel : ObservableObject
                  snapshot.AgentModel is not null || snapshot.AgentReasoningEffort is not null))
                 throw new InvalidOperationException(ViewModelText.Get("CodexExecutableRequiredForAgentSettings"));
             _ = AgentProfile.BuildInvocation(snapshot);
-            if (!await ConfirmSensitiveDraftAsync(_settings!, snapshot, draft,
-                    attachmentSize, attachmentCount, attachmentTotal)) return;
+            if (!await ConfirmSensitiveDraftAsync(_settings!, snapshot)) return;
             await _settingsStore.SaveAsync(snapshot);
             _settings = snapshot;
             AllowSensitiveSettingsConfirmationRetry();
@@ -741,6 +741,7 @@ public partial class MainPageViewModel : ObservableObject
         MattermostToken = value;
         if (changed)
         {
+            OnPropertyChanged(nameof(MattermostToken));
             InvalidateMattermostUsernameLookup();
             InvalidateMattermostThreadLookup();
             RefreshSettingsDraftChanges(notifyEdited: true);
@@ -885,6 +886,7 @@ public partial class MainPageViewModel : ObservableObject
 
     private void PopulateGlobalEfforts(ModelOption? knownModel = null)
     {
+        if (_restoringSettingsDraft) return;
         var modelId = NormalizeModel(AgentModel);
         var model = knownModel is not null && string.Equals(knownModel.Id, modelId, StringComparison.Ordinal)
             ? knownModel
