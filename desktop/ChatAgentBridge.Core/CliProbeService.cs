@@ -26,15 +26,28 @@ public sealed class CliProbeService
         var provider = AgentProfile.ResolveProvider(settings);
         var configured = AgentProfile.ResolveEffectiveExecutable(settings);
         var cwd = settings.WorkspaceRoot;
-        if (string.IsNullOrWhiteSpace(cwd) || !Path.IsPathFullyQualified(cwd) || !Directory.Exists(cwd) || !ExecutionPolicy.IsWorkspaceTrusted(settings, cwd))
-            throw new InvalidOperationException(CoreText.Get("TrustedWorkspaceRequired"));
+        if (string.IsNullOrWhiteSpace(cwd))
+            throw new InvalidOperationException(CoreText.Get("WorkspaceRequired"));
+        if (!IsFullyQualifiedWorkspacePath(cwd))
+            throw new InvalidOperationException(CoreText.Get("WorkspacePathMustBeAbsolute", cwd));
+
+        string workspace;
+        try { workspace = Path.GetFullPath(cwd); }
+        catch (Exception ex) when (IsInvalidWorkspacePathException(ex))
+        {
+            throw new InvalidOperationException(CoreText.Get("WorkspacePathInvalid", cwd));
+        }
+        if (!Directory.Exists(workspace))
+            throw new InvalidOperationException(CoreText.Get("WorkspaceFolderNotFound", workspace));
+        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, workspace))
+            throw DescribeUntrustedWorkspace(workspace);
 
         // Use the same native Codex resolution as actual runs and model discovery.
         // In particular, an npm shim must resolve to codex.exe without starting a shell.
         var probeExecutable = configured;
         if (!Path.IsPathFullyQualified(probeExecutable) &&
             (probeExecutable.Contains(Path.DirectorySeparatorChar) || probeExecutable.Contains(Path.AltDirectorySeparatorChar)))
-            probeExecutable = Path.GetFullPath(probeExecutable, Path.GetFullPath(cwd));
+            probeExecutable = Path.GetFullPath(probeExecutable, workspace);
         var nodePackage = NodeCliPackageResolver.Resolve(probeExecutable, provider);
         if (nodePackage is null)
         {
@@ -53,17 +66,24 @@ public sealed class CliProbeService
             extension.Equals(".bat", StringComparison.OrdinalIgnoreCase) ||
             extension.Equals(".ps1", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException(CoreText.Get("NativeCliRequired"));
-        var executable = nodePackage?.Executable ?? ResolveExecutable(probeExecutable, Path.GetFullPath(cwd));
-        if (executable is null) throw new FileNotFoundException(CoreText.Get("CliNotFound"), configured);
+        var executable = nodePackage?.Executable ?? ResolveExecutable(probeExecutable, workspace);
+        if (executable is null) throw new FileNotFoundException(CoreText.Get("CliExecutableNotFound", configured), configured);
 
         var nodePrefix = nodePackage is not null
             ? new[] { nodePackage.EntryPoint }
             : AgentProfile.IsNodeExecutable(executable)
                 ? AgentProfile.GetNodeProbePrefix(settings, provider) : Array.Empty<string>();
-        var (versionOutput, versionExitCode) = await RunCommandAsync(executable, Path.GetFullPath(cwd),
+        var (versionOutput, versionError, versionExitCode) = await RunCommandAsync(executable, workspace,
             nodePrefix.Append("--version"), cancellationToken).ConfigureAwait(false);
         var version = Sanitize(versionOutput);
-        if (versionExitCode != 0 || version.Length == 0)
+        if (versionExitCode != 0)
+        {
+            var error = IsMissingDotNetRuntime(versionError)
+                ? CoreText.Get("CliRuntimeMissing")
+                : CoreText.Get("CliVersionCommandFailed", versionExitCode);
+            throw new InvalidOperationException(error);
+        }
+        if (version.Length == 0)
             throw new InvalidOperationException(CoreText.Get("CliVersionUnavailable"));
 
         var recognized = nodePackage is not null
@@ -73,13 +93,25 @@ public sealed class CliProbeService
         {
             // Gemini and some Copilot versions print only a semver for --version. Help is
             // non-interactive and gives us a provider identity without starting a model turn.
-            var (helpOutput, helpExitCode) = await RunCommandAsync(executable, Path.GetFullPath(cwd),
+            var (helpOutput, _, helpExitCode) = await RunCommandAsync(executable, workspace,
                 nodePrefix.Append("--help"), cancellationToken).ConfigureAwait(false);
             recognized = helpExitCode == 0 && RecognizesProvider(provider, Sanitize(helpOutput));
         }
         if ((provider is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot) && !recognized)
             throw new InvalidOperationException(CoreText.Get("CliProviderMismatch", provider));
         return new CliProbeResult(executable, version, recognized);
+    }
+
+    /// <summary>Builds a localized, read-only diagnosis for a workspace rejected by the trust policy.</summary>
+    public static CliWorkspaceTrustException DescribeUntrustedWorkspace(string workspace)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(workspace);
+        var fullWorkspace = Path.GetFullPath(workspace);
+        var suggestedWorkspace = ResolveSuggestedWorkspacePath(fullWorkspace);
+        var message = suggestedWorkspace is null
+            ? CoreText.Get("WorkspaceNotTrusted", fullWorkspace)
+            : CoreText.Get("WorkspaceNotTrustedLink", fullWorkspace, suggestedWorkspace);
+        return new CliWorkspaceTrustException(fullWorkspace, suggestedWorkspace, message);
     }
 
     internal static bool RecognizesProvider(string provider, string output) => provider switch
@@ -91,6 +123,74 @@ public sealed class CliProbeService
         _ => false
     };
 
+    private static bool IsFullyQualifiedWorkspacePath(string path)
+    {
+        try { return Path.IsPathFullyQualified(path); }
+        catch (Exception ex) when (IsInvalidWorkspacePathException(ex))
+        {
+            throw new InvalidOperationException(CoreText.Get("WorkspacePathInvalid", path));
+        }
+    }
+
+    private static bool IsInvalidWorkspacePathException(Exception exception) => exception is
+        ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException or System.Security.SecurityException;
+
+    private static string? ResolveSuggestedWorkspacePath(string workspace)
+    {
+        try
+        {
+            if (!Path.IsPathFullyQualified(workspace) || !Directory.Exists(workspace)) return null;
+            var sawLink = false;
+            var candidate = ResolvePhysicalDirectoryPath(workspace, ref sawLink, 0);
+            if (!sawLink || candidate is null || SamePath(candidate, workspace) || !Path.IsPathFullyQualified(candidate) || !Directory.Exists(candidate))
+                return null;
+            return (new DirectoryInfo(candidate).Attributes & FileAttributes.ReparsePoint) == 0 ? candidate : null;
+        }
+        catch (Exception ex) when (IsInvalidWorkspacePathException(ex) || ex is System.Security.SecurityException)
+        {
+            return null;
+        }
+    }
+
+    private static string? ResolvePhysicalDirectoryPath(string path, ref bool sawLink, int linkDepth)
+    {
+        if (linkDepth > 16) return null;
+        var fullPath = Path.GetFullPath(path);
+        if (!Path.IsPathFullyQualified(fullPath) || !Directory.Exists(fullPath)) return null;
+        var root = Path.GetPathRoot(fullPath);
+        if (string.IsNullOrEmpty(root)) return null;
+
+        var current = root;
+        var relative = fullPath[root.Length..];
+        foreach (var part in relative.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var next = Path.GetFullPath(Path.Combine(current, part));
+            var directory = new DirectoryInfo(next);
+            if (!directory.Exists) return null;
+            if ((directory.Attributes & FileAttributes.ReparsePoint) == 0)
+            {
+                current = next;
+                continue;
+            }
+
+            sawLink = true;
+            if (directory.ResolveLinkTarget(returnFinalTarget: true) is not DirectoryInfo target) return null;
+            var resolvedTarget = ResolvePhysicalDirectoryPath(target.FullName, ref sawLink, linkDepth + 1);
+            if (resolvedTarget is null) return null;
+            current = resolvedTarget;
+        }
+
+        return Path.GetFullPath(current);
+    }
+
+    private static bool SamePath(string left, string right) => string.Equals(
+        Path.TrimEndingDirectorySeparator(Path.GetFullPath(left)),
+        Path.TrimEndingDirectorySeparator(Path.GetFullPath(right)),
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+    internal static bool IsMissingDotNetRuntime(string errorOutput) =>
+        errorOutput.Contains("You must install or update .NET to run this application.", StringComparison.OrdinalIgnoreCase);
+
     private static bool ProviderMatchesPackage(string provider, string packageName) => provider switch
     {
         AgentProfile.Gemini => packageName == "@google/gemini-cli",
@@ -98,7 +198,7 @@ public sealed class CliProbeService
         _ => false
     };
 
-    private async Task<(string Output, int ExitCode)> RunCommandAsync(string executable, string cwd,
+    private async Task<(string Output, string Error, int ExitCode)> RunCommandAsync(string executable, string cwd,
         IEnumerable<string> arguments, CancellationToken cancellationToken)
     {
         using var process = new Process
@@ -141,7 +241,7 @@ public sealed class CliProbeService
             cancellationToken.ThrowIfCancellationRequested();
             throw new TimeoutException(CoreText.Get("CliVersionTimeout"));
         }
-        return (await stdout.ConfigureAwait(false), process.ExitCode);
+        return (await stdout.ConfigureAwait(false), await stderr.ConfigureAwait(false), process.ExitCode);
     }
 
     private static string? ResolveExecutable(string name, string workspace)

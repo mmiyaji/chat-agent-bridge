@@ -48,6 +48,15 @@ public interface IChatTransport : IAsyncDisposable
     Task ReplyAsync(ChatRequest request, string text, CancellationToken cancellationToken);
 }
 
+/// <summary>Optional support for uploading prepared files to the active request thread.</summary>
+public interface IChatFileTransport
+{
+    Task<IReadOnlyList<string>> UploadFilesAsync(
+        ChatRequest request,
+        IReadOnlyList<PreparedFileAttachment> files,
+        CancellationToken cancellationToken);
+}
+
 /// <summary>Optional support for posting a transport-owned progress message and editing that same message.</summary>
 public interface IChatProgressTransport
 {

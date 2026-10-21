@@ -43,8 +43,9 @@ public sealed partial class OnboardingIntro : UserControl
         PrivacyButtonText.Text = MrtText.Get("onboardingOnboardingIntroTextBlock006.Text", culture);
         TermsConsentCheckBox.Content = MrtText.Get("WizardAcceptTerms.Content", culture);
         PrivacyConsentText.Text = MrtText.Get("onboardingOnboardingIntroTextBlock007.Text", culture);
-        ArchitectureImage.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(LocalizedAssets.OverviewArchitecture));
-        AutomationProperties.SetName(ArchitectureImage, MrtText.Get("WizardArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name", culture));
+        var architectureName = MrtText.Get("WizardArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name", culture);
+        ArchitectureImage.SetAccessibleName(architectureName, culture);
+        AutomationProperties.SetName(ArchitectureImage, architectureName);
     }
 
     private async void ShowTerms_Click(object sender, RoutedEventArgs e)

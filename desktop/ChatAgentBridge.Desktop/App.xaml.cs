@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Navigation;
 using ChatAgentBridge_Desktop.Notifications;
 using ChatAgentBridge.Core.Localization;
 using ChatAgentBridge_Desktop.Deployment;
+using ChatAgentBridge.Core.Pricing;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -35,6 +36,12 @@ public partial class App : Application
     public static PendingRequestNotificationService PendingRequestNotifications { get; private set; } = null!;
     public static string SystemLanguageTag { get; private set; } = "en-US";
     public static Appearance.AppAppearance Appearance { get; private set; } = null!;
+    public static PricingCatalogManager Pricing { get; private set; } = null!;
+    public static Tray.TrayService Tray { get; private set; } = null!;
+    public static PortableUpdateCoordinator PortableUpdates { get; private set; } = null!;
+    private readonly CancellationTokenSource _pricingLifetime = new();
+    private readonly CancellationTokenSource _portableUpdateLifetime = new();
+    private FileStream? _portableLease;
 
     /// <summary>Applies a persisted language preference to this process and future MRT lookups.</summary>
     public static System.Globalization.CultureInfo ApplyLanguagePreference(string preference)
@@ -66,6 +73,8 @@ public partial class App : Application
     /// <param name="args">Details about the launch request and process.</param>
     protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
+        var updateReadyEvent = Environment.GetEnvironmentVariable("CAB_PORTABLE_UPDATE_READY_EVENT");
+        Environment.SetEnvironmentVariable("CAB_PORTABLE_UPDATE_READY_EVENT", null);
         // AUMID activation does not inherit the invoking terminal's environment.
         // An explicit data directory keeps packaged UI tests isolated.
         IReadOnlyList<string> launchArguments = Environment.GetCommandLineArgs().Skip(1).ToArray();
@@ -83,6 +92,21 @@ public partial class App : Application
             AppContext.BaseDirectory,
             packageLocalDirectory);
         Environment.SetEnvironmentVariable("CAB_WINUI_DATA_DIR", dataDirectory);
+        if (DeploymentRuntime.IsPortable)
+        {
+            try { _portableLease = ChatAgentBridge.Core.Updates.PortableApplicationLease.Open(AppContext.BaseDirectory); }
+            catch (IOException ex) when ((ex.HResult & 0xFFFF) is 32 or 33)
+            {
+                UpdateStartupNative.MessageBoxW(0, ChatAgentBridge_Desktop.Localization.DesktopText.Get("PortableUpdateInProgress"), "Chat Agent Bridge", 0x40);
+                Exit();
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                // Read-only portable locations can still run with an external data directory.
+                // The updater remains unavailable until a writable location is used.
+            }
+        }
 
         try { SystemLanguageTag = Windows.System.UserProfile.GlobalizationPreferences.Languages.FirstOrDefault() ?? System.Globalization.CultureInfo.InstalledUICulture.Name; }
         catch { SystemLanguageTag = System.Globalization.CultureInfo.InstalledUICulture.Name; }
@@ -98,11 +122,77 @@ public partial class App : Application
         DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         Appearance = new(new ChatAgentBridge.Core.Appearance.AppearancePreferencesStore(new ChatAgentBridge.Core.SettingsStore()));
         await Appearance.InitializeAsync();
+        Pricing = new(new ChatAgentBridge.Core.SettingsStore());
+        await Pricing.InitializeAsync();
         PendingRequestNotifications = new PendingRequestNotificationService(DispatcherQueue);
         PendingRequestNotifications.Initialize();
+        PortableUpdates = new(dataDirectory, _portableLease is not null);
+        if (DeploymentRuntime.IsPortable) await PortableUpdates.InitializeAsync();
 
-        Window = new MainWindow();
-        Window.Closed += (_, _) => PendingRequestNotifications.Shutdown();
+        var backgroundStore = new ChatAgentBridge.Core.BackgroundPreferencesStore(new ChatAgentBridge.Core.SettingsStore());
+        var background = new ChatAgentBridge.Core.BackgroundPreferences();
+        try { background = await backgroundStore.LoadAsync(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // A damaged or inaccessible preference must leave the window reachable.
+        }
+        var mainWindow = new MainWindow();
+        Window = mainWindow;
+        Tray = new(mainWindow, backgroundStore, background);
+        Window.Closed += (_, _) =>
+        {
+            Tray.Dispose();
+            _portableUpdateLifetime.Cancel();
+            PortableUpdates.Dispose();
+            _portableUpdateLifetime.Dispose();
+            _portableLease?.Dispose();
+            PendingRequestNotifications.Shutdown();
+            _pricingLifetime.Cancel();
+        };
         Window.Activate();
+        if (DeploymentRuntime.IsPortable && updateReadyEvent is not null &&
+            updateReadyEvent.StartsWith(@"Local\ChatAgentBridge.Update.", StringComparison.Ordinal) &&
+            updateReadyEvent.Length == @"Local\ChatAgentBridge.Update.".Length + 32 &&
+            updateReadyEvent[^32..].All(Uri.IsHexDigit))
+        {
+            try { using var ready = EventWaitHandle.OpenExisting(updateReadyEvent); ready.Set(); }
+            catch (WaitHandleCannotBeOpenedException) { }
+        }
+        _ = RunPricingUpdatesAsync(_pricingLifetime.Token);
+        _ = RunPortableUpdateChecksAsync();
     }
+
+    private async Task RunPortableUpdateChecksAsync()
+    {
+        try { await PortableUpdates.RunAutomaticChecksAsync(_portableUpdateLifetime.Token); }
+        catch (OperationCanceledException) when (_portableUpdateLifetime.IsCancellationRequested) { }
+        catch (Exception error) { System.Diagnostics.Debug.WriteLine($"Automatic portable update check: {error.GetType().Name}"); }
+    }
+
+    private async Task RunPricingUpdatesAsync(CancellationToken cancellationToken)
+    {
+        // The manager throttles checks to once per day and retains valid local data
+        // on network errors. The window is already usable before any HTTP request.
+        using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
+        try
+        {
+            do
+            {
+                await Pricing.RefreshAsync(force: false, cancellationToken).ConfigureAwait(false);
+            }
+            while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        finally
+        {
+            Pricing.Dispose();
+            _pricingLifetime.Dispose();
+        }
+    }
+}
+
+internal static class UpdateStartupNative
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, ExactSpelling = true)]
+    internal static extern int MessageBoxW(nint owner, string text, string title, uint type);
 }

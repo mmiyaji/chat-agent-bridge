@@ -28,6 +28,7 @@ public partial class MainPageViewModel : ObservableObject
     private bool _chatConnectionPreparing;
     private bool _chatConnectionFailed;
     private bool _savedWorkspaceExists;
+    private bool _hasSavedSettings;
     private bool _lastSaveSucceeded;
     private bool _adjustingAgentPermissionMode;
     private bool _agentPermissionModeAdjusted;
@@ -35,12 +36,14 @@ public partial class MainPageViewModel : ObservableObject
     private readonly Startup.StartupOperationGuard _startupOperations = new();
 
     public ModelCatalogViewModel ModelCatalog { get; }
+    public ExecutionUi.LiveOutputViewModel LiveOutput { get; } = new();
     public ObservableCollection<ReasoningEffortChoice> ReasoningEffortCandidates { get; } = [];
 
     public MainPageViewModel()
     {
         ReasoningEffortCandidates.Add(ReasoningEffortChoice.Default);
         ModelCatalog = new ModelCatalogViewModel(CreateSettingsSnapshot, ApplyCatalogModelSelection);
+        SaveSettingsCommand.PropertyChanged += (_, _) => SaveGeneralSettingsCommand.NotifyCanExecuteChanged();
         ModelCatalog.PropertyChanged += (_, e) =>
         {
             if ((e.PropertyName == nameof(ModelCatalog.Status) || e.PropertyName == nameof(ModelCatalog.IsLoading)) && !ModelCatalog.IsLoading)
@@ -58,6 +61,7 @@ public partial class MainPageViewModel : ObservableObject
                 NextOnboardingCommand.NotifyCanExecuteChanged();
                 DeferOnboardingCommand.NotifyCanExecuteChanged();
                 CheckCliCommand.NotifyCanExecuteChanged();
+                SaveGeneralSettingsCommand.NotifyCanExecuteChanged();
             }
             if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning) or nameof(IsCheckingCli) or nameof(CliCheckSucceeded) or nameof(CliCheckFailed) or nameof(CliVersion) or nameof(AgentProvider) or nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentModel) or nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(WorkspaceRoot) or nameof(TrustedWorkspaceRoots))
                 RefreshConnectionCommands();
@@ -71,9 +75,10 @@ public partial class MainPageViewModel : ObservableObject
                 nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
                 nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AutoConnectProvider) or nameof(RequireApproval) or
                 nameof(MattermostServerUrl) or nameof(MattermostBypassProxy) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
-                nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or
+                nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(PostConnectionNotice) or
                 nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or nameof(ChatApprovalMode) or
-                nameof(ChatResultMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
+                nameof(ChatResultMode) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
+                nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
                 RefreshSetupStepper();
             if (e.PropertyName is nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or
                 nameof(ChatApprovalMode) or nameof(ChatResultMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds) or nameof(AgentProvider) or nameof(UseAppServer))
@@ -89,6 +94,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ReloadSettingsCommand))]
     [NotifyCanExecuteChangedFor(nameof(SaveSettingsCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RunCommand))]
     public partial bool IsLoading { get; set; } = true;
 
     [ObservableProperty]
@@ -98,6 +104,9 @@ public partial class MainPageViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(ReloadSettingsCommand))]
     [NotifyPropertyChangedFor(nameof(CanFetchModelCandidates))]
     public partial bool IsRunning { get; set; }
+
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(CancelRunCommand))]
+    public partial bool IsCancellationPending { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RunCommand))]
@@ -186,6 +195,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string SlackAllowedUserIds { get; set; } = string.Empty;
     [ObservableProperty] public partial bool ShareApprovalsInChat { get; set; }
     [ObservableProperty] public partial bool ShareAgentQuestionsInChat { get; set; }
+    [ObservableProperty] public partial bool PostConnectionNotice { get; set; }
     [ObservableProperty] public partial bool RequireApproval { get; set; } = true;
     [ObservableProperty] public partial string AgentPermissionMode { get; set; } = "inherit";
     partial void OnAgentPermissionModeChanged(string value)
@@ -199,6 +209,10 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string TrustedWorkspaceRoots { get; set; } = string.Empty;
     [ObservableProperty] public partial string ChatApprovalMode { get; set; } = "first";
     [ObservableProperty] public partial string ChatResultMode { get; set; } = "manual";
+    [ObservableProperty] public partial string FileAttachmentApprovalMode { get; set; } = "always";
+    [ObservableProperty] public partial double FileAttachmentMaxSizeMb { get; set; } = 10;
+    [ObservableProperty] public partial double FileAttachmentMaxCount { get; set; } = 3;
+    [ObservableProperty] public partial double FileAttachmentMaxTotalSizeMb { get; set; } = 20;
     [ObservableProperty] public partial string SlackAllowedChannelIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackAllowedThreadIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostAllowedThreadIds { get; set; } = string.Empty;
@@ -257,6 +271,7 @@ public partial class MainPageViewModel : ObservableObject
         try
         {
             _settings = await _settingsStore.LoadAsync();
+            _hasSavedSettings = File.Exists(Path.Combine(_settingsStore.DirectoryPath, "settings.json"));
             _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
             WorkspaceRoot = _settings.WorkspaceRoot;
             AgentExecutable = _settings.AgentExecutable;
@@ -278,6 +293,7 @@ public partial class MainPageViewModel : ObservableObject
             MattermostServerUrl = _settings.MattermostServerUrl;
             MattermostBypassProxy = _settings.MattermostBypassProxy;
             MattermostChannelId = _settings.MattermostChannelId;
+            PostConnectionNotice = _settings.PostConnectionNotice;
             MattermostToken = _settings.MattermostToken;
             SlackBotToken = _settings.SlackBotToken;
             SlackAppToken = _settings.SlackAppToken;
@@ -291,6 +307,10 @@ public partial class MainPageViewModel : ObservableObject
             TrustedWorkspaceRoots = _settings.TrustedWorkspaceRoots;
             ChatApprovalMode = _settings.ChatApprovalMode;
             ChatResultMode = _settings.ChatResultMode;
+            FileAttachmentApprovalMode = _settings.FileAttachmentApprovalMode;
+            FileAttachmentMaxSizeMb = _settings.FileAttachmentMaxSizeMb;
+            FileAttachmentMaxCount = _settings.FileAttachmentMaxCount;
+            FileAttachmentMaxTotalSizeMb = _settings.FileAttachmentMaxTotalSizeMb;
             SlackAllowedChannelIds = _settings.SlackAllowedChannelIds;
             SlackAllowedThreadIds = _settings.SlackAllowedThreadIds;
             MattermostAllowedThreadIds = _settings.MattermostAllowedThreadIds;
@@ -309,6 +329,7 @@ public partial class MainPageViewModel : ObservableObject
         catch (Exception ex)
         {
             _settings = null;
+            _hasSavedSettings = false;
             StatusTitle = ViewModelText.Get("SettingsLoadFailed");
             StatusMessage = ViewModelText.Get("SettingsLoadFailedDetails", ex.Message);
             StatusSeverity = "Error";
@@ -400,7 +421,7 @@ public partial class MainPageViewModel : ObservableObject
     private async Task SaveSettingsAsync()
     {
         _lastSaveSucceeded = false;
-        if (_closing || !IsSettingsLoaded || IsRunning || _settings is null || _unsupportedSavedEffort) return;
+        if (_closing || !IsSettingsLoaded || IsLoading || IsRunning || _settings is null || _unsupportedSavedEffort) return;
         var saved = false;
         try
         {
@@ -414,8 +435,13 @@ public partial class MainPageViewModel : ObservableObject
                 TrustedWorkspaceRoots = ExecutionPolicy.NormalizeTrustedRoots(TrustedWorkspaceRoots),
                 AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(AgentPermissionMode),
                 ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode),
-                ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(ChatResultMode)
+                ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(ChatResultMode),
+                FileAttachmentApprovalMode = FileAttachmentPolicy.NormalizeMode(FileAttachmentApprovalMode),
+                FileAttachmentMaxSizeMb = ToAttachmentLimit(FileAttachmentMaxSizeMb),
+                FileAttachmentMaxCount = ToAttachmentLimit(FileAttachmentMaxCount),
+                FileAttachmentMaxTotalSizeMb = ToAttachmentLimit(FileAttachmentMaxTotalSizeMb)
             };
+            FileAttachmentPolicy.Validate(snapshot);
             if (!string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot))
             {
                 if (!Path.IsPathFullyQualified(snapshot.WorkspaceRoot) || !Directory.Exists(snapshot.WorkspaceRoot))
@@ -430,6 +456,7 @@ public partial class MainPageViewModel : ObservableObject
             _ = AgentProfile.BuildInvocation(snapshot);
             await _settingsStore.SaveAsync(snapshot);
             _settings = snapshot;
+            _hasSavedSettings = true;
             saved = true;
             _lastSaveSucceeded = true;
             MattermostAllowedUserIds = snapshot.MattermostAllowedUserIds;
@@ -441,6 +468,10 @@ public partial class MainPageViewModel : ObservableObject
             AgentPermissionMode = snapshot.AgentPermissionMode;
             ChatApprovalMode = snapshot.ChatApprovalMode;
             ChatResultMode = snapshot.ChatResultMode;
+            FileAttachmentApprovalMode = snapshot.FileAttachmentApprovalMode;
+            FileAttachmentMaxSizeMb = snapshot.FileAttachmentMaxSizeMb;
+            FileAttachmentMaxCount = snapshot.FileAttachmentMaxCount;
+            FileAttachmentMaxTotalSizeMb = snapshot.FileAttachmentMaxTotalSizeMb;
             _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
             UpdateSavedAgentSummary();
             RefreshSetupStepper();
@@ -456,7 +487,7 @@ public partial class MainPageViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task RunAsync()
     {
-        if (_closing || !IsSettingsLoaded || IsRunning || _settings is null || _unsupportedSavedEffort) return;
+        if (_closing || !IsSettingsLoaded || IsLoading || IsRunning || _settings is null || _unsupportedSavedEffort) return;
         var promptSnapshot = Prompt;
         var settingsSnapshot = CreateSettingsSnapshot();
         if (string.IsNullOrWhiteSpace(promptSnapshot))
@@ -466,6 +497,7 @@ public partial class MainPageViewModel : ObservableObject
         }
 
         IsRunning = true;
+        IsCancellationPending = false;
         if (RequireApproval)
         {
             if (ConfirmExecutionAsync is null)
@@ -504,6 +536,7 @@ public partial class MainPageViewModel : ObservableObject
         };
         var runCancellation = new CancellationTokenSource();
         _runCancellation = runCancellation;
+        CancelRunCommand.NotifyCanExecuteChanged();
         try
         {
             await _executionHistoryStore.RecordAsync(execution);
@@ -540,14 +573,19 @@ public partial class MainPageViewModel : ObservableObject
             try
             {
                 AgentRunResult result;
-                if (settingsSnapshot.AgentMode == "app-server")
+                var progress = LiveOutput.Begin();
+                try
                 {
-                    var run = await _appServerRunner.RunAsync(settingsSnapshot, promptSnapshot,
-                        new AppServerRunOptions(ApprovalHandler: ServerApprovalHandler, InputHandler: ServerInputHandler), runCancellation.Token);
-                    result = run.Result;
-                    sessionId = run.SessionId;
+                    if (settingsSnapshot.AgentMode == "app-server")
+                    {
+                        var run = await _appServerRunner.RunAsync(settingsSnapshot, promptSnapshot,
+                            new AppServerRunOptions(ApprovalHandler: ServerApprovalHandler, InputHandler: ServerInputHandler, Progress: progress), runCancellation.Token);
+                        result = run.Result;
+                        sessionId = run.SessionId;
+                    }
+                    else result = await _agentRunner.RunAsync(settingsSnapshot, promptSnapshot, progress, runCancellation.Token);
                 }
-                else result = await _agentRunner.RunAsync(settingsSnapshot, promptSnapshot, runCancellation.Token);
+                finally { LiveOutput.Finish(); }
                 exitCode = result.ExitCode;
                 sessionId ??= result.Claude?.SessionId ?? result.Codex?.SessionId;
                 usage = result.Usage;
@@ -623,16 +661,27 @@ public partial class MainPageViewModel : ObservableObject
         }
     }
 
-    private bool CanRun() => IsSettingsLoaded && !IsRunning && !_unsupportedSavedEffort;
+    private bool CanRun() => IsSettingsLoaded && !IsLoading && !IsRunning && !_unsupportedSavedEffort;
     private bool CanSaveSettings() => IsSettingsLoaded && !IsLoading && !IsRunning && !_unsupportedSavedEffort;
     private bool CanReloadSettings() => !IsLoading && !IsRunning;
 
-    [RelayCommand(CanExecute = nameof(IsRunning))]
-    private void CancelRun() => _runCancellation?.Cancel();
+    private bool CanCancelRun() => IsRunning && _runCancellation is { IsCancellationRequested: false };
+
+    [RelayCommand(CanExecute = nameof(CanCancelRun))]
+    private void CancelRun()
+    {
+        var cancellation = _runCancellation;
+        if (cancellation is null || cancellation.IsCancellationRequested) return;
+        cancellation.Cancel();
+        IsCancellationPending = true;
+        LiveOutput.IsCancellationPending = true;
+    }
 
     public void CancelForWindowClose()
     {
+        if (_closing) return;
         _closing = true;
+        LiveOutput.Dispose();
         CancelMattermostUsernameLookup();
         CancelMattermostThreadLookup();
         CancelSlackLookups();
@@ -686,14 +735,14 @@ public partial class MainPageViewModel : ObservableObject
             return;
         }
 
-        var agentReady = !string.IsNullOrWhiteSpace(_settings.AgentExecutable) && !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && _savedWorkspaceExists;
+        var agentReady = _hasSavedSettings && !string.IsNullOrWhiteSpace(_settings.AgentExecutable) && !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && _savedWorkspaceExists;
         var mattermostCredentials = !string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) && !string.IsNullOrWhiteSpace(_settings.MattermostChannelId) && !string.IsNullOrWhiteSpace(_settings.MattermostToken);
         var slackCredentials = !string.IsNullOrWhiteSpace(_settings.SlackBotToken) && !string.IsNullOrWhiteSpace(_settings.SlackAppToken);
         var mattermostAllowed = HasAllowedUsers(_settings.MattermostAllowedUserIds);
         var slackAllowed = HasAllowedUsers(_settings.SlackAllowedUserIds);
         var connectionReady = (mattermostCredentials && mattermostAllowed) || (slackCredentials && slackAllowed);
         SetupStepOneStatus = agentReady ? ViewModelText.Get("SetupAgentReady")
-            : string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) ? ViewModelText.Get("SetupAgentWorkspaceMissing")
+            : !_hasSavedSettings || string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) ? ViewModelText.Get("SetupAgentWorkspaceMissing")
             : !_savedWorkspaceExists ? ViewModelText.Get("SetupWorkspaceNotFound")
             : ViewModelText.Get("SetupExecutableMissing");
         SetupStepTwoStatus = connectionReady ? ViewModelText.Get("SetupChatConfigSaved")
@@ -735,6 +784,7 @@ public partial class MainPageViewModel : ObservableObject
         MattermostServerUrl = MattermostServerUrl.Trim(),
         MattermostBypassProxy = MattermostBypassProxy,
         MattermostChannelId = MattermostChannelId.Trim(),
+        PostConnectionNotice = PostConnectionNotice,
         MattermostToken = MattermostToken,
         SlackBotToken = SlackBotToken,
         SlackAppToken = SlackAppToken,
@@ -748,10 +798,24 @@ public partial class MainPageViewModel : ObservableObject
         TrustedWorkspaceRoots = TrustedWorkspaceRoots,
         ChatApprovalMode = ChatApprovalMode,
         ChatResultMode = ChatResultMode,
+        FileAttachmentApprovalMode = FileAttachmentApprovalMode,
+        FileAttachmentMaxSizeMb = ToAttachmentDraftLimit(FileAttachmentMaxSizeMb, 1, 100),
+        FileAttachmentMaxCount = ToAttachmentDraftLimit(FileAttachmentMaxCount, 1, 10),
+        FileAttachmentMaxTotalSizeMb = ToAttachmentDraftLimit(FileAttachmentMaxTotalSizeMb, 1, 100),
         SlackAllowedChannelIds = SlackAllowedChannelIds,
         SlackAllowedThreadIds = SlackAllowedThreadIds,
         MattermostAllowedThreadIds = MattermostAllowedThreadIds
     };
+
+    private static int ToAttachmentLimit(double value)
+    {
+        if (!double.IsFinite(value) || value != Math.Truncate(value) || value < int.MinValue || value > int.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), ViewModelText.Get("AttachmentLimitsMustBeWholeNumbers"));
+        return checked((int)value);
+    }
+
+    private static int ToAttachmentDraftLimit(double value, int minimum, int maximum) =>
+        !double.IsFinite(value) ? minimum : (int)Math.Clamp(Math.Truncate(value), minimum, maximum);
 
     private static string PermissionLabel(string value) => value switch
     {

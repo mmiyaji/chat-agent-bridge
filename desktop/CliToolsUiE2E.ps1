@@ -79,7 +79,7 @@ function Go([string]$Id) {
     Start-Sleep -Milliseconds 180
 }
 function Theme([string]$Name) {
-    Go 'NavAppearance'
+    Go 'NavOverview'
     Scroll-ToElement $(if ($Name -eq 'light') { 'ThemeLight' } else { 'ThemeDark' })
     # Verify the persisted theme after UIA selection.
     & winapp ui invoke $(if ($Name -eq 'light') { 'ThemeLight' } else { 'ThemeDark' }) -a $script:appPid --json 2>$null | Out-Null

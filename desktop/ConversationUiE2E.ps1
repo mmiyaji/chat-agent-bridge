@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory)][string]$AppDirectory,
     [ValidateSet('ja','en')][string]$Language = 'ja',
+    [ValidateSet('auto','light','dark')][string]$Theme = 'auto',
     [switch]$Portable,
     [switch]$CheckMattermostProxy,
     [switch]$MattermostMentions,
@@ -63,6 +64,13 @@ function Has-Text([string]$Text) {
     $null -ne (Root).FindFirst([System.Windows.Automation.TreeScope]::Descendants,$condition)
 }
 function Enabled([string]$Id) { $element=Element $Id; $null -ne $element -and $element.Current.IsEnabled }
+function Show-HistoryAction([string]$Id) {
+    $element=Element $Id
+    if (-not $element -or $element.Current.IsOffscreen) {
+        UI @('invoke','MoreButton') | Out-Null
+        UI @('wait-for',$Id,'-t','4000') | Out-Null
+    }
+}
 function Set-Search([string]$Id,[string]$Text) {
     (Element $Id).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($Text)
     Start-Sleep -Milliseconds 150
@@ -148,7 +156,7 @@ process.stdin.on('end', () => setTimeout(() => {
     }
     Write-Json 'onboarding.json' @{SchemaVersion=3;Step=4;Status='completed'}
     Write-Json 'language.json' @{Language=$Language}
-    Write-Json 'appearance.json' @{Theme=$(if($Language -eq 'ja'){'dark'}else{'light'})}
+    Write-Json 'appearance.json' @{Theme=$(if($Theme -ne 'auto'){$Theme}elseif($Language -eq 'ja'){'dark'}else{'light'})}
     $bindings = @(for ($i=0;$i -lt 42;$i++) {
         $provider = if ($i%2 -eq 0) {'slack'} else {'mattermost'}
         $origin = if ($provider -eq 'slack') {'slack'} else {'a'*64}
@@ -228,7 +236,10 @@ process.stdin.on('end', () => setTimeout(() => {
         Capture 'history-narrow-detail'
         Assert-Visible 'BackToSessionsButton'
         Assert-Visible 'EditSessionModel'
-        Assert-Visible 'DetachSession'
+        Show-HistoryAction 'DetachSession'
+        # Native CommandBar flyouts may extend beyond the owner window.
+        Assert-True ((Enabled 'DetachSession') -and -not (Element 'DetachSession').Current.IsOffscreen) 'Detach action is not reachable through the overflow menu'
+        UI @('invoke','MoreButton') | Out-Null
         UI @('invoke','BackToSessionsButton') | Out-Null
         Assert-True (-not (Element 'SavedSessionsList').Current.IsOffscreen) 'Narrow list is not accessible after Back'
         Capture 'history-narrow-list'
@@ -239,7 +250,7 @@ process.stdin.on('end', () => setTimeout(() => {
         Resize 1280
     }
     Check 'Start fresh requires confirmation and cancel preserves the binding' {
-        UI @('scroll-into-view','DetachSession') | Out-Null
+        Show-HistoryAction 'DetachSession'
         UI @('invoke','DetachSession') | Out-Null
         UI @('wait-for','DetachSessionConfirmation','-t','3000') | Out-Null
         UI @('invoke','CloseButton') | Out-Null
@@ -247,6 +258,7 @@ process.stdin.on('end', () => setTimeout(() => {
         Assert-True ($saved.Bindings.Count -eq 42) 'Cancelling detached a session'
     }
     Check 'Start fresh removes only the selected owner binding' {
+        Show-HistoryAction 'DetachSession'
         UI @('invoke','DetachSession') | Out-Null
         UI @('wait-for','DetachSessionConfirmation','-t','3000') | Out-Null
         UI @('invoke','PrimaryButton') | Out-Null
@@ -297,8 +309,11 @@ process.stdin.on('end', () => setTimeout(() => {
     }
     if ($Portable) {
         Check 'Portable Windows notification registration succeeds' {
+            (Element 'InboxConnectionDetails').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+            UI @('wait-for','NotificationStatus','-t','4000') | Out-Null
             $notificationStatus = (Element 'NotificationStatus').Current.Name
             Assert-True ($notificationStatus -match '通知を利用できます|notifications are available') "Notifications are not available: $notificationStatus"
+            (Element 'InboxConnectionDetails').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Collapse()
         }
     }
     Check 'Requests group by conversation and remain separated by requester' {
@@ -320,7 +335,14 @@ process.stdin.on('end', () => setTimeout(() => {
         Assert-True (Enabled 'ApproveChat') 'Selected pending request cannot be approved'
         Assert-Visible 'ApproveChat'
         Assert-Visible 'SendChatResult'
+        UI @('wait-for','InboxConnectionLabel','--value',$(if($Language -eq 'ja'){'依頼を受信できます'}else{'Ready to receive requests'}),'-t','3000') | Out-Null
+        UI @('wait-for','InboxSelectedState','--value',$(if($Language -eq 'ja'){'承認待ち'}else{'Awaiting approval'}),'-t','3000') | Out-Null
         Capture 'inbox-wide'
+        $context=(Element 'InboxRequestContext').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+        Assert-True ($context.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) 'Request identifiers are expanded by default'
+        $context.Expand()
+        UI @('wait-for','InboxSelectedIdentity','--value','alice','--contains','-t','3000') | Out-Null
+        $context.Collapse()
         Post 'message-6' 'shared-thread' 'alice' 'alpha newly arrived request' ([bool]$MattermostPlainReplies)
         UI @('wait-for','InboxSelectedPrompt','--value','alpha initial request','--contains','-t','3000') | Out-Null
         UI @('wait-for','InboxRequestCount','--value','3','--contains','-t','3000') | Out-Null
@@ -360,6 +382,7 @@ process.stdin.on('end', () => setTimeout(() => {
         UI @('wait-for','ChatRunConfirmation','-t','3000') | Out-Null
         UI @('invoke','PrimaryButton') | Out-Null
         UI @('wait-for','ChatOutput','--value','offline-result: beta separate owner','--contains','-t','8000') | Out-Null
+        UI @('wait-for','InboxSelectedState','--value',$(if($Language -eq 'ja'){'完了'}else{'Completed'}),'-t','3000') | Out-Null
         UI @('wait-for','SendChatResult','-p','IsEnabled','--value','True','-t','5000') | Out-Null
         UI @('invoke','SendChatResult') | Out-Null
         UI @('wait-for','ReplyConfirmation','-t','3000') | Out-Null

@@ -6,6 +6,62 @@ namespace ChatAgentBridge.Core.Tests;
 
 public sealed class AppServerTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CancellingActiveTurnInterruptsItAndNeverReusesItsProcess(bool reuseProcesses)
+    {
+        using var temp = new TempDirectory();
+        var factory = new FakeProcessFactory();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var progress = new List<AgentRunProgress>();
+        factory.Client.OnTurnStart = (client, _) =>
+        {
+            client.RaiseNotification("turn/started", new { threadId = FakeClient.ThreadId, turnId = "turn-1" });
+            client.RaiseNotification("item/agentMessage/delta", new
+            {
+                threadId = FakeClient.ThreadId, turnId = "turn-1", itemId = "partial", delta = "partial before cancellation"
+            });
+            started.TrySetResult();
+            return Task.CompletedTask;
+        };
+        using var runner = new CodexAppServerRunner(factory, enableProcessReuse: reuseProcesses);
+        using var cancellation = new CancellationTokenSource();
+        var settings = new BridgeSettings { WorkspaceRoot = temp.Path };
+        var run = runner.RunAsync(settings, "cancel this request",
+            new AppServerRunOptions(Progress: new CancellationProgress(progress)), cancellation.Token);
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var cancelledProcess = factory.LastProcess!;
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.True(cancelledProcess.WasKilled);
+        var interrupt = Assert.Single(factory.Client.Requests, request => request.Method == "turn/interrupt");
+        Assert.Equal(FakeClient.ThreadId, interrupt.Parameters.GetProperty("threadId").GetString());
+        Assert.Equal("turn-1", interrupt.Parameters.GetProperty("turnId").GetString());
+        Assert.Contains(progress, update => update.Text == "partial before cancellation");
+
+        factory.Client.OnTurnStart = (client, _) =>
+        {
+            client.RaiseNotification("turn/started", new { threadId = FakeClient.ThreadId, turnId = "turn-1" });
+            client.RaiseNotification("turn/completed", new
+            {
+                threadId = FakeClient.ThreadId, turn = new { id = "turn-1", status = "completed" }
+            });
+            return Task.CompletedTask;
+        };
+        var next = await runner.RunAsync(settings, "next independent request").WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(next.Result.Success);
+        Assert.Equal(2, factory.StartCount);
+        Assert.NotSame(cancelledProcess, factory.LastProcess);
+        Assert.False(next.Result.Metrics!.ProcessReused);
+    }
+
+    private sealed class CancellationProgress(List<AgentRunProgress> updates) : IProgress<AgentRunProgress>
+    {
+        public void Report(AgentRunProgress value) => updates.Add(value);
+    }
+
     [Fact]
     public async Task ClearingIdleProcessesPreservesActiveLeaseAndAllowsFreshLaunchAndReuse()
     {
@@ -318,12 +374,14 @@ public sealed class AppServerTests
         public string? ThreadIdOverride { get; init; }
         public string? ReturnedWorkspace { get; init; }
         public int StartCount { get; private set; }
+        public FakeProcess? LastProcess { get; private set; }
         public Task<IAppServerProcess> StartAsync(string executable, string workspace, CancellationToken cancellationToken = default)
         {
             StartCount++;
             Client.Workspace = ReturnedWorkspace ?? workspace;
             Client.ThreadIdOverride = ThreadIdOverride;
-            return Task.FromResult<IAppServerProcess>(new FakeProcess(Client));
+            LastProcess = new FakeProcess(Client);
+            return Task.FromResult<IAppServerProcess>(LastProcess);
         }
     }
 

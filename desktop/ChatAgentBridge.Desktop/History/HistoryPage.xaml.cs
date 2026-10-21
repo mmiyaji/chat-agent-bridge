@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Xaml.Input;
 using ChatAgentBridge.Core;
 using ChatAgentBridge_Desktop.ModelSelection;
 using ChatAgentBridge_Desktop.Localization;
@@ -12,14 +13,29 @@ namespace ChatAgentBridge_Desktop.History;
 
 public sealed partial class HistoryPage : Page
 {
+    private const double DefaultSessionListWidth = 380;
+    private const double MinimumSessionListWidth = 280;
+    private const double MinimumSessionDetailWidth = 320;
+    private const double SessionSplitterWidth = 12;
     private bool _showDetailOnNarrow;
+    private bool _isResizingSessionList;
+    private double _preferredSessionListWidth = DefaultSessionListWidth;
     private ChatAgentBridge.Core.Sessions.SessionKey? _lastDetailKey;
+    private bool _pricingUpdatesEnabled;
     public HistoryPageViewModel ViewModel { get; } = new();
     public event Action? AgentSettingsRequested;
 
     public HistoryPage()
     {
         InitializeComponent();
+        SessionListPane.SizeChanged += SessionListPane_SizeChanged;
+        SessionBrowser.SizeChanged += SessionBrowser_SizeChanged;
+        SessionSplitter.AddHandler(UIElement.ManipulationStartedEvent,
+            new ManipulationStartedEventHandler(SessionSplitter_ManipulationStarted), true);
+        SessionSplitter.AddHandler(UIElement.ManipulationCompletedEvent,
+            new ManipulationCompletedEventHandler(SessionSplitter_ManipulationCompleted), true);
+        SessionSplitter.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(SessionSplitter_KeyDown), true);
+        SessionSplitter.AddHandler(UIElement.KeyUpEvent, new KeyEventHandler(SessionSplitter_KeyUp), true);
         var activity = new ActivityDashboard(ViewModel);
         activity.OpenDayRequested += () =>
         {
@@ -34,6 +50,10 @@ public sealed partial class HistoryPage : Page
         ViewModel.ChooseAgentSwitchAsync = ChooseAgentSwitchAsync;
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         SizeChanged += Page_SizeChanged;
+        // MainPage hosts this Page directly and switches Visibility, so Frame
+        // navigation events alone do not cover its actual lifetime.
+        Loaded += (_, _) => SetPricingUpdatesEnabled(true);
+        Unloaded += (_, _) => SetPricingUpdatesEnabled(false);
         UpdateResponsiveLayout();
     }
 
@@ -54,6 +74,26 @@ public sealed partial class HistoryPage : Page
     {
         ViewModel.SetChatNameUpdatesEnabled(false);
         base.OnNavigatedFrom(e);
+    }
+
+    private void SetPricingUpdatesEnabled(bool enabled)
+    {
+        if (_pricingUpdatesEnabled == enabled) return;
+        _pricingUpdatesEnabled = enabled;
+        if (enabled)
+        {
+            App.Pricing.Changed += Pricing_Changed;
+            ViewModel.RefreshPricing();
+        }
+        else App.Pricing.Changed -= Pricing_Changed;
+    }
+
+    private void Pricing_Changed(object? sender, EventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_pricingUpdatesEnabled) ViewModel.RefreshPricing();
+        });
     }
 
     private void SavedSessionsList_ItemClick(object sender, ItemClickEventArgs e)
@@ -105,6 +145,60 @@ public sealed partial class HistoryPage : Page
         UpdateResponsiveLayout();
     }
 
+    private void SessionBrowser_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (!ViewModel.IsNarrow) ApplySessionColumnWidths();
+    }
+
+    private void SessionListPane_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (_isResizingSessionList && !ViewModel.IsNarrow && e.NewSize.Width >= MinimumSessionListWidth)
+            _preferredSessionListWidth = e.NewSize.Width;
+    }
+
+    private void SessionSplitter_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e) =>
+        _isResizingSessionList = true;
+
+    private void SessionSplitter_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) =>
+        FinishSessionListResize();
+
+    private void SessionSplitter_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key is Windows.System.VirtualKey.Left or Windows.System.VirtualKey.Right)
+            _isResizingSessionList = true;
+    }
+
+    private void SessionSplitter_KeyUp(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key is Windows.System.VirtualKey.Left or Windows.System.VirtualKey.Right)
+            FinishSessionListResize();
+    }
+
+    private void FinishSessionListResize()
+    {
+        if (!_isResizingSessionList) return;
+        if (!ViewModel.IsNarrow && SessionListPane.ActualWidth >= MinimumSessionListWidth)
+            _preferredSessionListWidth = SessionListPane.ActualWidth;
+        _isResizingSessionList = false;
+        ApplySessionColumnWidths();
+    }
+
+    private void ApplySessionColumnWidths()
+    {
+        if (SessionBrowser is null || ViewModel.IsNarrow || SessionBrowser.ActualWidth <= 0) return;
+        var spacing = SessionBrowser.ColumnSpacing * 2;
+        var contentWidth = SessionBrowser.ActualWidth - spacing - SessionSplitterWidth;
+        var maxListWidth = Math.Max(MinimumSessionListWidth,
+            contentWidth - MinimumSessionDetailWidth);
+        var width = Math.Clamp(_preferredSessionListWidth, MinimumSessionListWidth, maxListWidth);
+        // Star columns keep the grid within its parent's viewport while a window
+        // resize is being arranged. A fixed list column can inflate the grid's
+        // desired width before SizeChanged has a chance to clamp it.
+        SessionListColumn.Width = new GridLength(width, GridUnitType.Star);
+        SessionSplitterColumn.Width = new GridLength(SessionSplitterWidth, GridUnitType.Pixel);
+        SessionDetailColumn.Width = new GridLength(Math.Max(MinimumSessionDetailWidth, contentWidth - width), GridUnitType.Star);
+    }
+
     private void BackToSessions_Click(object sender, RoutedEventArgs e)
     {
         _showDetailOnNarrow = false;
@@ -117,13 +211,18 @@ public sealed partial class HistoryPage : Page
         if (SessionListPane is null || SessionDetailPane is null) return;
         var narrow = ViewModel.IsNarrow;
         var showDetail = ViewModel.SelectedSession is not null && _showDetailOnNarrow;
+        SessionListColumn.MinWidth = narrow ? 0 : MinimumSessionListWidth;
+        SessionDetailColumn.MinWidth = narrow ? 0 : MinimumSessionDetailWidth;
         SessionListPane.Visibility = narrow && showDetail ? Visibility.Collapsed : Visibility.Visible;
         SessionDetailPane.Visibility = narrow && !showDetail ? Visibility.Collapsed : Visibility.Visible;
-        SessionListColumn.Width = new GridLength(narrow ? 1 : 380, narrow ? GridUnitType.Star : GridUnitType.Pixel);
-        SessionDetailColumn.Width = new GridLength(narrow ? 0 : 1, narrow ? GridUnitType.Pixel : GridUnitType.Star);
-        Grid.SetColumn(SessionDetailPane, narrow ? 0 : 1);
-        Grid.SetColumnSpan(SessionDetailPane, narrow ? 2 : 1);
-        Grid.SetColumnSpan(SessionListPane, narrow ? 2 : 1);
+        SessionSplitter.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
+        if (narrow) SessionListColumn.Width = new GridLength(1, GridUnitType.Star);
+        SessionSplitterColumn.Width = new GridLength(narrow ? 0 : SessionSplitterWidth, GridUnitType.Pixel);
+        if (narrow) SessionDetailColumn.Width = new GridLength(0, GridUnitType.Pixel);
+        Grid.SetColumn(SessionDetailPane, narrow ? 0 : 2);
+        Grid.SetColumnSpan(SessionDetailPane, narrow ? 3 : 1);
+        Grid.SetColumnSpan(SessionListPane, narrow ? 3 : 1);
+        if (!narrow) ApplySessionColumnWidths();
         var stackFilters = ActualWidth < 600;
         HistoryTitle.Style = (Style)Application.Current.Resources[stackFilters ? "SubtitleTextBlockStyle" : "TitleTextBlockStyle"];
         HistoryDescription.Visibility = stackFilters ? Visibility.Collapsed : Visibility.Visible;

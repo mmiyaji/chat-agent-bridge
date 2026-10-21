@@ -5,7 +5,8 @@ public sealed class AuditStore
     private static readonly HashSet<string> AllowedKinds = new(StringComparer.Ordinal)
     {
         "received", "approved", "rejected", "started", "completed", "failed", "cancelled", "reply_sent",
-        "reply_failed", "detached", "workspace_changed", "model_changed", "agent_changed"
+        "reply_failed", "detached", "workspace_changed", "model_changed", "agent_changed",
+        "attachment_approved", "attachment_sent", "attachment_failed"
     };
     private readonly string _filePath;
 

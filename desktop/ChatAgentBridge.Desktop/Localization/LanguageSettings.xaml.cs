@@ -138,8 +138,8 @@ public sealed partial class LanguageSettings : UserControl
                 ? Text("RestartDialogMessage")
                 : $"{Text("RestartDialogMessage")}\n\n{Text("RestartDialogBusy")}",
             PrimaryButtonText = Text("RestartDialogRestartNow"),
-            SecondaryButtonText = Text("RestartDialogLater"),
-            DefaultButton = ContentDialogButton.Secondary,
+            CloseButtonText = Text("RestartDialogLater"),
+            DefaultButton = ContentDialogButton.Close,
             IsPrimaryButtonEnabled = canRestart
         };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(dialog, "LanguageRestartDialog");

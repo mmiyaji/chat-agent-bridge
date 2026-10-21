@@ -71,7 +71,7 @@ try{
     Pass 'Invalid manual input is preserved, feedback clears on edit, and explicit Save applies the list'
     }
     foreach($theme in @('light','dark')){
-        Go 'NavAppearance';$id=if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'};Scroll-To $id;UI @('invoke',$id)|Out-Null
+        Go 'NavOverview';$id=if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'};Scroll-To $id;UI @('invoke',$id)|Out-Null
         foreach($width in @(1160,500)){
             Resize $width;Go 'NavAgentSettings';Ensure-Control 'AddCurrentWorkspaceTrustedFolder'
             foreach($buttonId in @('ChooseTrustedFolder','AddCurrentWorkspaceTrustedFolder')){

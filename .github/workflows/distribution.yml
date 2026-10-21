@@ -1,0 +1,69 @@
+name: Distribution data
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - desktop/ChatAgentBridge.Core/Pricing/model-prices.json
+      - scripts/distribution_feed.py
+      - .github/workflows/distribution.yml
+  release:
+    types: [published, edited, unpublished, deleted]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      require_tag:
+        description: Release that must be present before deploying
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+# Serialize fetching AND deployment to avoid deploying an older snapshot last.
+concurrency:
+  group: distribution-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      # Always use the latest main pricing catalog, even when called by an older tag.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Validate distribution generator
+        run: python -m unittest discover -s test -p 'distribution_feed_test.py' -v
+      - name: Generate public feeds from published releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REQUIRED_TAG: ${{ inputs.require_tag }}
+        run: |
+          gh api --paginate --slurp "repos/$GH_REPO/releases?per_page=100" > "$RUNNER_TEMP/release-pages.json"
+          python -c 'import json,sys; pages=json.load(open(sys.argv[1])); json.dump([r for page in pages for r in page],open(sys.argv[2],"w"))' "$RUNNER_TEMP/release-pages.json" "$RUNNER_TEMP/releases.json"
+          args=()
+          if [ -n "$REQUIRED_TAG" ]; then args+=(--require-tag "$REQUIRED_TAG"); fi
+          python scripts/distribution_feed.py --releases "$RUNNER_TEMP/releases.json" --pricing desktop/ChatAgentBridge.Core/Pricing/model-prices.json --output "$RUNNER_TEMP/site" "${args[@]}"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        id: deployment

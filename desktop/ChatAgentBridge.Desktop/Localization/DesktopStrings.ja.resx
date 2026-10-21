@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ArchitectureOpenHint" xml:space="preserve"><value>クリックして拡大</value></data>
+  <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>アーキテクチャ図を開く</value></data>
+  <data name="ArchitectureOpenNamedAccessibleName" xml:space="preserve"><value>アーキテクチャ図を開く: {0}</value></data>
+  <data name="ArchitectureOpenHelp" xml:space="preserve"><value>拡大表示とズーム操作を開きます。</value></data>
+  <data name="ArchitectureDialogTitle" xml:space="preserve"><value>アーキテクチャ図</value></data>
+  <data name="ArchitectureDialogClose" xml:space="preserve"><value>閉じる</value></data>
+  <data name="ArchitectureZoomOutName" xml:space="preserve"><value>縮小</value></data>
+  <data name="ArchitectureZoomInName" xml:space="preserve"><value>拡大</value></data>
+  <data name="ArchitectureZoomLevelName" xml:space="preserve"><value>拡大率: {0}</value></data>
+  <data name="ArchitectureFit" xml:space="preserve"><value>全体表示</value></data>
+  <data name="ArchitectureFitName" xml:space="preserve"><value>ウィンドウに合わせる</value></data>
+  <data name="ArchitectureActualSize" xml:space="preserve"><value>100%</value></data>
+  <data name="ArchitectureActualSizeName" xml:space="preserve"><value>100 パーセントで表示</value></data>
+  <data name="ArchitectureImageName" xml:space="preserve"><value>アーキテクチャ図</value></data>
+  <data name="ArchitectureLoadError" xml:space="preserve"><value>アーキテクチャ図を読み込めませんでした。</value></data>
   <data name="ChatControlNoRequests" xml:space="preserve"><value>このスレッドに、あなたの依頼はありません。</value></data>
   <data name="ChatControlStatus" xml:space="preserve"><value>状態: {0}。承認待ち: {1}件。接続: {2}。</value></data>
   <data name="ChatControlConnected" xml:space="preserve"><value>接続済み</value></data>
@@ -70,10 +85,10 @@
   <data name="ModelCatalogSettingsChanged" xml:space="preserve"><value>設定が変わりました。候補をもう一度取得してください。</value></data>
   <data name="ModelCatalogLoading" xml:space="preserve"><value>CLIからモデル候補を取得しています…</value></data>
   <data name="ModelCatalogUnsupported" xml:space="preserve"><value>このCLIでは候補を取得できません。モデル名を直接入力してください。</value></data>
-  <data name="ModelCatalogEmpty" xml:space="preserve"><value>モデル候補はありませんでした。モデル名を直接入力できます。</value></data>
+  <data name="ModelCatalogEmpty" xml:space="preserve"><value>CLIがモデル候補を返しませんでした。CLIのバージョンとターミナルでのログイン状態を確認し、再取得してください。</value></data>
   <data name="ModelCatalogFound" xml:space="preserve"><value>{0} 件の候補があります。選択するとモデル名に反映されます。</value></data>
   <data name="ModelCatalogCancelled" xml:space="preserve"><value>モデル候補の取得をキャンセルしました。</value></data>
-  <data name="ModelCatalogFailed" xml:space="preserve"><value>候補を取得できませんでした。CLIの設定を確認するか、モデル名を直接入力してください。</value></data>
+  <data name="ModelCatalogFailed" xml:space="preserve"><value>CLIから有効なモデル一覧が返りませんでした。選択したCLIの設定と、ターミナルでのログイン状態を確認して再実行してください（デスクトップアプリのログインとは別です）。</value></data>
   <data name="PolicyDocument" xml:space="preserve"><value>{0}{1}版: {2}</value></data>
   <data name="Close" xml:space="preserve"><value>閉じる</value></data>
   <data name="PrivacyPolicy" xml:space="preserve"><value>プライバシーポリシー</value></data>
@@ -362,6 +377,18 @@
   <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}：選択期間外</value></data>
   <data name="UsageTokens" xml:space="preserve"><value>トークン消費量</value></data>
   <data name="UsageCache" xml:space="preserve"><value>キャッシュヒット率</value></data>
+  <data name="UsageCostMetric" xml:space="preserve"><value>推定コスト（API料金換算・USD）</value></data>
+  <data name="UsageCostUnknown" xml:space="preserve"><value>未算出</value></data>
+  <data name="UsageCostHeadline" xml:space="preserve"><value>推定コスト（API料金換算・USD）：{0}</value></data>
+  <data name="UsageCostRange" xml:space="preserve"><value>{0}～{1}</value></data>
+  <data name="UsageCostCoverage" xml:space="preserve"><value>{0}/{1}件を推定、未算出 {2}件、範囲表示 {3}件。未算出の実行がある場合、表示額は算定できた分のみの小計です。</value></data>
+  <data name="UsageCostDetails" xml:space="preserve"><value>推定APIコスト：{0}。{1}</value></data>
+  <data name="UsageCostBarValue" xml:space="preserve"><value>{0}（算定 {1}/{2}件）</value></data>
+  <data name="UsageCostMethodDate" xml:space="preserve"><value>参照料金の確認日：{0}</value></data>
+  <data name="UsageCostMethodDetails" xml:space="preserve"><value>記録されたトークン数に、報告モデルの公開標準API料金を掛けて推定します。既知の料金で算定できた実行だけを含み、モデルや必要なトークン数が不明な実行は未算出です。キャッシュ情報が不足する場合は範囲で表示します。日別・モデル別グラフの高さは範囲の上限で計算し、ラベルには範囲を表示します。</value></data>
+  <data name="UsageCostLimitations" xml:space="preserve"><value>請求額ではなく参考値です。サブスクリプション料金、ツール、Fastモード、リージョン、税は含みません。キャッシュの有効期間やコンテキストが不明な場合があり、記録されたメインループの利用量にサブエージェントが含まれないことがあります。推定には現在のローカル単価を使用します。料金表を更新しても手動指定は維持されます。料金表の更新ではAIを実行しません。</value></data>
+  <data name="UsageOpenAIPricing" xml:space="preserve"><value>OpenAI API料金</value></data>
+  <data name="UsageClaudePricing" xml:space="preserve"><value>Claude API料金</value></data>
   <data name="UsageTurn" xml:space="preserve"><value>実行ごと</value></data>
   <data name="UsageRequest" xml:space="preserve"><value>最後のリクエストのみ</value></data>
   <data name="UsageUnknown" xml:space="preserve"><value>未報告</value></data>
@@ -442,4 +469,141 @@
   <data name="AgentSummarySaveFailed" xml:space="preserve"><value>応答は完了しましたが、引き継ぎ用メモを保存できませんでした。</value></data>
   <data name="AgentSwitchIntro" xml:space="preserve"><value>登録済みのCLIを使い、同じチャットスレッドで新しいAI会話を始めます。以前のセッション情報は残します。次の依頼はPCでの承認が必要です。</value></data>
   <data name="AgentSwitchDetails" xml:space="preserve"><value>CLI接続の詳細</value></data>
+  <data name="AttachmentFileSize" xml:space="preserve"><value>{0:N0} バイト（{1:F2} MiB）</value></data>
+  <data name="AuditAttachmentApproved" xml:space="preserve"><value>ファイル添付を承認</value></data>
+  <data name="AuditAttachmentSent" xml:space="preserve"><value>ファイルを添付</value></data>
+  <data name="AuditAttachmentFailed" xml:space="preserve"><value>ファイル添付に失敗</value></data>
+  <data name="AttachmentDestination" xml:space="preserve"><value>送信先: {0}、スレッド {1}、ワークスペース {2}</value></data>
+  <data name="AttachmentConfirmIntro" xml:space="preserve"><value>新しく作成されたファイルから送信するものを選んでください。ファイルはチャネルのメンバーが閲覧できる場合があります。</value></data>
+  <data name="AttachmentPrivacyHint" xml:space="preserve"><value>送信したファイルはチャット参加者が閲覧できます。アプリは内容の機密情報を判定できないため、送信前に各ファイルを確認してください。</value></data>
+  <data name="AttachmentFileAccessibleName" xml:space="preserve"><value>{0}、{1}</value></data>
+  <data name="AttachmentFirstConsentWarning" xml:space="preserve"><value>この選択を承認すると、同じユーザーによってこの会話セッションで今後作成される対象ファイルも、最大{0}個、1ファイル{1} MiB、合計{2} MiBの範囲で自動送信されます。モードまたは上限を変更すると、再度承認が必要です。</value></data>
+  <data name="AttachmentSelectionLimits" xml:space="preserve"><value>1回の送信の上限: {0}個、1ファイル{1} MiB、合計{2} MiB。</value></data>
+  <data name="AttachmentSelectAtLeastOne" xml:space="preserve"><value>送信するには1つ以上のファイルを選択してください。</value></data>
+  <data name="AttachmentSelectionCountExceeded" xml:space="preserve"><value>ファイルは{0}個まで選択できます。</value></data>
+  <data name="AttachmentSelectionFileTooLarge" xml:space="preserve"><value>1ファイルのサイズは{0} MiB以下にしてください。</value></data>
+  <data name="AttachmentSelectionTotalTooLarge" xml:space="preserve"><value>選択したファイルの合計が{0} MiBの上限を超えています。</value></data>
+  <data name="AttachmentConfirmTitle" xml:space="preserve"><value>生成したファイルを送信しますか？</value></data>
+  <data name="AttachmentSendSelected" xml:space="preserve"><value>選択したファイルを送信</value></data>
+  <data name="AttachmentsNone" xml:space="preserve"><value>送信対象の新しいファイルはありません。</value></data>
+  <data name="AttachmentsFound" xml:space="preserve"><value>送信対象の新しいファイルが{0}個あります。内容を確認してください。</value></data>
+  <data name="AttachmentsScanIncomplete" xml:space="preserve"><value>ファイルの検索が完了しませんでした。送信前に対象ファイルを確認してください。</value></data>
+  <data name="AttachmentsSkipped" xml:space="preserve"><value>添付ルールにより{0}個のファイルを除外しました。</value></data>
+  <data name="AttachmentsNotSupported" xml:space="preserve"><value>このチャット接続ではファイルを送信できません。</value></data>
+  <data name="AttachmentsSent" xml:space="preserve"><value>ファイルを{0}個送信しました。</value></data>
+  <data name="AttachmentsFailed" xml:space="preserve"><value>選択したファイルを送信できませんでした。一部のファイルは送信済みの可能性があります。再試行する前にチャットスレッドを確認してください。</value></data>
+  <data name="AttachmentsSlackScopeMissing" xml:space="preserve"><value>Slackアプリに files:write 権限が必要です。権限を追加して再認可後、接続し直してください。</value></data>
+  <data name="AttachmentsCancelled" xml:space="preserve"><value>ファイル送信をキャンセルしました。</value></data>
+  <data name="AttachmentsApprovalRequired" xml:space="preserve"><value>送信するにはファイルを確認して承認してください。</value></data>
+  <data name="AttachmentsPolicyChanged" xml:space="preserve"><value>添付設定が変更されました。ファイルを確認し、再度承認してください。</value></data>
+  <data name="AttachmentsDisabled" xml:space="preserve"><value>ファイル添付は無効です。</value></data>
+  <data name="AttachmentsResultPrivate" xml:space="preserve"><value>結果の自動共有はファイル添付の承認にはなりません。</value></data>
+  <data name="LiveOutputTitle" xml:space="preserve"><value>実行中の出力</value></data>
+  <data name="LiveOutputPrivacyHelp" xml:space="preserve"><value>このPCだけに表示されます。実行中の出力は会話に保存されず、自動共有もされません。</value></data>
+  <data name="LiveOutputPausedHelp" xml:space="preserve"><value>追従を一時停止しています。実行は続き、追従を再開すると新しい出力が表示されます。</value></data>
+  <data name="LiveOutputWaitingHelp" xml:space="preserve"><value>出力を待っています…</value></data>
+  <data name="LiveOutputTruncationHint" xml:space="preserve"><value>表示には直近の64,000文字のみ保持されます。</value></data>
+  <data name="LiveOutputFollow" xml:space="preserve"><value>出力を追従</value></data>
+  <data name="LiveOutputClear" xml:space="preserve"><value>表示を消去</value></data>
+  <data name="LiveOutputCancellationPending" xml:space="preserve"><value>中断を要求しました。プロセスの停止を待っています。すでに行われたファイル変更は元に戻りません。</value></data>
+  <data name="LiveOutputCancel" xml:space="preserve"><value>この依頼を中断</value></data>
+  <data name="InboxActiveRequestBanner" xml:space="preserve"><value>実行中の依頼を表示：{0} — {1}</value></data>
+  <data name="PricingSettingsHeader" xml:space="preserve"><value>API料金</value></data>
+  <data name="PricingAutoUpdateHeader" xml:space="preserve"><value>料金情報の自動更新</value></data>
+  <data name="PricingAutoUpdateDescription" xml:space="preserve"><value>料金情報を自動で確認し、参照元と確認状況を確認します。</value></data>
+  <data name="PricingUpdateNow" xml:space="preserve"><value>今すぐ確認</value></data>
+  <data name="PricingChecking" xml:space="preserve"><value>料金情報を確認中…</value></data>
+  <data name="PricingLastChecked" xml:space="preserve"><value>最終確認</value></data>
+  <data name="PricingLastUpdated" xml:space="preserve"><value>料金データ更新</value></data>
+  <data name="PricingManagerError" xml:space="preserve"><value>料金データを読み込めません。料金ファイルを確認してください。</value></data>
+  <data name="PricingManagerHealthy" xml:space="preserve"><value>料金データを利用できます。</value></data>
+  <data name="PricingManualFileCorrupt" xml:space="preserve"><value>手動料金ファイルが正しくありません。保存する前に修正または削除してください。</value></data>
+  <data name="PricingManualModelHeader" xml:space="preserve"><value>モデル別の手動料金</value></data>
+  <data name="PricingKnownModel" xml:space="preserve"><value>既知のモデル</value></data>
+  <data name="PricingModelId" xml:space="preserve"><value>モデルID</value></data>
+  <data name="PricingModelIdDescription" xml:space="preserve"><value>エージェントが報告するモデルIDを正確に入力してください。</value></data>
+  <data name="PricingManualRatesHeader" xml:space="preserve"><value>料金（100万トークンあたりのUSD）</value></data>
+  <data name="PricingInput" xml:space="preserve"><value>入力</value></data>
+  <data name="PricingCachedInput" xml:space="preserve"><value>キャッシュ入力</value></data>
+  <data name="PricingCacheWrite" xml:space="preserve"><value>キャッシュ書き込み</value></data>
+  <data name="PricingOutput" xml:space="preserve"><value>出力</value></data>
+  <data name="PricingRateRangeHelp" xml:space="preserve"><value>4種類の単価それぞれに最小値と最大値を入力します。固定単価の場合は同じ値を指定してください。</value></data>
+  <data name="PricingUsdPerMillion" xml:space="preserve"><value>USD / 100万トークン</value></data>
+  <data name="PricingSaveManual" xml:space="preserve"><value>手動料金を保存</value></data>
+  <data name="PricingRemoveManual" xml:space="preserve"><value>手動料金を削除</value></data>
+  <data name="PricingManualSource" xml:space="preserve"><value>手動設定</value></data>
+  <data name="PricingAutomaticSource" xml:space="preserve"><value>自動料金</value></data>
+  <data name="PricingModelSelectPrompt" xml:space="preserve"><value>手動料金を編集するモデルを選択してください。</value></data>
+  <data name="PricingValidationModel" xml:space="preserve"><value>既知のモデルを選択するか、モデルIDを入力してください。</value></data>
+  <data name="PricingValidationRate" xml:space="preserve"><value>0以上の有効な単価を入力してください。</value></data>
+  <data name="PricingValidationRange" xml:space="preserve"><value>最小単価は最大単価以下にしてください。</value></data>
+  <data name="PricingSettingsHelp" xml:space="preserve"><value>自動取得した単価は公開API料金に基づいて更新されます。手動指定した単価は選択したモデルの自動取得単価に優先します。</value></data>
+  <data name="PricingAutomaticFile" xml:space="preserve"><value>自動料金ファイル</value></data>
+  <data name="PricingManualFile" xml:space="preserve"><value>手動料金ファイル</value></data>
+  <data name="PricingNoManualOverride" xml:space="preserve"><value>手動設定なし</value></data>
+  <data name="PricingHistoryRecalcNote" xml:space="preserve"><value>保存済み履歴は現在有効な単価で再計算されます。自動更新で手動料金ファイルが変更されることはありません。</value></data>
+  <data name="PricingOverrideNote" xml:space="preserve"><value>手動設定は削除するまで、このモデルの4種類すべての単価に適用されます。</value></data>
+  <data name="PricingUpdateErrorSummary" xml:space="preserve"><value>自動料金を更新できませんでした。現在の料金データを引き続き使用します。</value></data>
+  <data name="PricingRateMinimum" xml:space="preserve"><value>最小</value></data>
+  <data name="PricingRateMaximum" xml:space="preserve"><value>最大</value></data>
+  <data name="PricingNever" xml:space="preserve"><value>未確認</value></data>
+  <data name="PricingNoAutomaticPrice" xml:space="preserve"><value>このモデルの自動単価はありません。</value></data>
+  <data name="PricingAutoUpdateEnabled" xml:space="preserve"><value>自動更新は有効です。</value></data>
+  <data name="PricingAutoUpdateDisabled" xml:space="preserve"><value>自動更新は無効です。</value></data>
+  <data name="PricingRateValue" xml:space="preserve"><value>{0}: {1}～{2}</value></data>
+  <data name="PricingRemoveConfirmTitle" xml:space="preserve"><value>手動単価を削除しますか？</value></data>
+  <data name="PricingRemoveConfirmMessage" xml:space="preserve"><value>{0} の手動単価を削除しますか？自動単価がある場合、推定に自動単価を使用します。</value></data>
+  <data name="PricingRemoveConfirmPrimary" xml:space="preserve"><value>手動単価を削除</value></data>
+  <data name="PricingRemoveConfirmCancel" xml:space="preserve"><value>手動単価を維持</value></data>
+  <data name="TrayMenuOpen" xml:space="preserve"><value>Chat Agent Bridgeを開く</value></data>
+  <data name="TrayMenuExit" xml:space="preserve"><value>完全終了</value></data>
+  <data name="PortableUpdateIdle" xml:space="preserve"><value>必要なときにポータブル版の更新を確認できます。</value></data>
+  <data name="PortableUpdateChecking" xml:space="preserve"><value>ポータブル版の更新を確認しています…</value></data>
+  <data name="PortableUpdateCurrent" xml:space="preserve"><value>対応する新しいポータブル版は見つかりませんでした。</value></data>
+  <data name="PortableUpdateAvailable" xml:space="preserve"><value>ポータブル版 {0} が利用できます。</value></data>
+  <data name="PortableUpdateDownloading" xml:space="preserve"><value>ポータブル版 {0} をダウンロードしています…</value></data>
+  <data name="PortableUpdateReady" xml:space="preserve"><value>バージョン {0} のダウンロードが完了しました。適用できます。</value></data>
+  <data name="PortableUpdateFailed" xml:space="preserve"><value>ポータブル版を更新できませんでした: {0}</value></data>
+  <data name="PortableUpdateBusyWork" xml:space="preserve"><value>更新を適用する前に、実行中の作業を完了してください。</value></data>
+  <data name="PortableUpdateStarting" xml:space="preserve"><value>更新を開始してアプリを再起動しています…</value></data>
+  <data name="PortableUpdateUnsupported" xml:space="preserve"><value>このビルドではポータブル版の更新を利用できません。</value></data>
+  <data name="PortableUpdateHelperMissing" xml:space="preserve"><value>ポータブル更新ヘルパーが見つかりません。リリースをもう一度ダウンロードしてください。</value></data>
+  <data name="PortableUpdateApplyTitle" xml:space="preserve"><value>ポータブル版の更新を適用しますか？</value></data>
+  <data name="PortableUpdateApplyMessage" xml:space="preserve"><value>更新を適用するためアプリを終了して再起動します。設定はそのまま引き継がれます。実行中の作業が完了してから適用してください。</value></data>
+  <data name="PortableUpdateApplyPrimary" xml:space="preserve"><value>更新して再起動</value></data>
+  <data name="PortableUpdateCancelled" xml:space="preserve"><value>更新操作をキャンセルしました。</value></data>
+  <data name="PortableUpdateVerifying" xml:space="preserve"><value>更新ファイルを検証・準備しています…</value></data>
+  <data name="PortableUpdateNetworkError" xml:space="preserve"><value>ネットワーク接続を確認して、もう一度お試しください。</value></data>
+  <data name="PortableUpdateAccessError" xml:space="preserve"><value>アプリのフォルダーに書き込めないか、ファイルが使用中です。</value></data>
+  <data name="PortableUpdateIntegrityError" xml:space="preserve"><value>取得したファイルを検証できませんでした。もう一度ダウンロードしてください。</value></data>
+  <data name="PortableUpdateLocalError" xml:space="preserve"><value>更新の準備に失敗しました。空き容量を確認し、同じアプリを複数起動している場合は閉じてください。</value></data>
+  <data name="PortableUpdateInProgress" xml:space="preserve"><value>Chat Agent Bridgeを更新中です。しばらくしてから起動してください。</value></data>
+  <data name="WindowCloseConfirmationTitle" xml:space="preserve"><value>Chat Agent Bridgeを終了しますか？</value></data>
+  <data name="WindowCloseConfirmationMessage" xml:space="preserve"><value>終了するとチャット接続を切断し、実行中および待機中の作業をキャンセルします。システム トレイに格納するとアプリは実行を続けます。</value></data>
+  <data name="WindowCloseConfirmationTrayUnavailable" xml:space="preserve"><value>システム トレイ アイコンを利用できないため、現在トレイに格納できません。終了するとチャット接続を切断し、実行中および待機中の作業をキャンセルします。</value></data>
+  <data name="WindowCloseConfirmationExit" xml:space="preserve"><value>終了する</value></data>
+  <data name="WindowCloseConfirmationTray" xml:space="preserve"><value>トレイに格納</value></data>
+  <data name="WindowCloseConfirmationCancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="PortableUpdatePreferenceSaveFailed" xml:space="preserve"><value>更新の設定を保存できませんでした。以前の設定に戻しました。</value></data>
+  <data name="PortableUpdateBadgeAvailable" xml:space="preserve"><value>更新があります</value></data>
+  <data name="PortableUpdateNavigationAvailable" xml:space="preserve"><value>情報 — バージョン {0} に更新できます</value></data>
+  <data name="ModelCatalogTimedOut" xml:space="preserve"><value>モデル候補の取得が時間切れになりました。CLIのログイン状態とネットワーク接続を確認し、再実行してください。</value></data>
+  <data name="ModelCatalogLaunchFailed" xml:space="preserve"><value>モデル候補の取得に使うCLIを起動できません。実行ファイルのパス・アクセス権・必要な実行環境を確認してください。</value></data>
+  <data name="ModelCatalogAccessDenied" xml:space="preserve"><value>モデル候補の取得中にアクセスが拒否されました。作業フォルダーとCLI実行ファイルのアクセス権を確認してください。</value></data>
+  <data name="CliTrustTitle" xml:space="preserve"><value>この作業フォルダーを信頼しますか？</value></data>
+  <data name="CliTrustExplanation" xml:space="preserve"><value>信頼できるフォルダーだけを追加してください。下位フォルダーも信頼対象となり、実行権限の設定に従ってエージェントが作業できます。</value></data>
+  <data name="CliTrustLinkExplanation" xml:space="preserve"><value>現在の作業先はリンクです。リンク自体を追加しても安全確認を通過しません。以下の実フォルダーに作業先を変更し、そのフォルダーを信頼対象に追加します。</value></data>
+  <data name="CliTrustOriginalPath" xml:space="preserve"><value>現在の作業先：{0}</value></data>
+  <data name="CliTrustTargetPath" xml:space="preserve"><value>信頼対象に追加するフォルダー：{0}</value></data>
+  <data name="CliTrustSaveHelp" xml:space="preserve"><value>内容を確認して追加すると、CLIを再チェックします。変更を保存するには、エージェント設定の保存または初期設定ガイドの完了が必要です。</value></data>
+  <data name="CliTrustAdd" xml:space="preserve"><value>追加して再チェック</value></data>
+  <data name="CliTrustUseTarget" xml:space="preserve"><value>リンク先を信頼して再チェック</value></data>
+  <data name="CliTrustWizardSaveHelp" xml:space="preserve"><value>変更を保存するには［保存して次へ］を選択してください。次のページでCLIをチェックできます。</value></data>
+  <data name="CliTrustAddOnly" xml:space="preserve"><value>フォルダーを追加</value></data>
+  <data name="CliTrustUseTargetOnly" xml:space="preserve"><value>リンク先を信頼して作業先に設定</value></data>
+  <data name="InboxConnectionErrorLabel" xml:space="preserve"><value>接続を確認してください</value></data>
+  <data name="InboxConnectionReadyLabel" xml:space="preserve"><value>依頼を受信できます</value></data>
+  <data name="InboxConnectionWorkingLabel" xml:space="preserve"><value>接続処理中</value></data>
+  <data name="InboxConnectionOfflineLabel" xml:space="preserve"><value>未接続</value></data>
+  <data name="InboxQueueSummary" xml:space="preserve"><value>承認待ち {0}件 · 実行中 {1}件</value></data>
 </root>

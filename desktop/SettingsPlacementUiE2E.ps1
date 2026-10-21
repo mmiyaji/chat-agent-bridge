@@ -91,7 +91,7 @@ function Go([string]$Id) {
     Start-Sleep -Milliseconds 180
 }
 function Theme([string]$Name) {
-    Go 'NavAppearance'
+    Go 'NavOverview'
     Scroll-ToElement $(if ($Name -eq 'light') { 'ThemeLight' } else { 'ThemeDark' })
     # Verify the persisted theme after UIA selection.
     & winapp ui invoke $(if ($Name -eq 'light') { 'ThemeLight' } else { 'ThemeDark' }) -a $script:appPid --json 2>$null | Out-Null
@@ -110,7 +110,7 @@ try {
     $details=(Element 'OverviewDetailsExpander').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
     Assert ($details.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Expanded) 'Setup details should start expanded.'
     $details.Collapse()
-    Go 'NavAppearance'; Go 'NavOverview'
+    Go 'NavWorkbench'; Go 'NavOverview'
     Assert ($details.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) 'Navigation reopened deliberately collapsed details.'
     $details.Expand()
     $checks.Add(@{name='Setup details start open and respect collapse choice across navigation';passed=$true})
@@ -127,20 +127,25 @@ try {
     New-Item -ItemType Directory -Path $draftWorkspace | Out-Null
     Scroll-ToElement 'WorkspaceRoot'
     UI @('set-value','WorkspaceRoot',$draftWorkspace) | Out-Null
-    Go 'NavAppearance'
-    Assert (Visible (Element 'DisplayLanguage')) 'Language selector is not on Appearance.'
+    Go 'NavOverview'
+    Scroll-ToElement 'DisplayLanguage'
+    Assert (Visible (Element 'DisplayLanguage')) 'Language selector is not on General.'
     Scroll-ToElement 'AppTheme'
-    Assert (Visible (Element 'AppTheme')) 'Theme selector is not on Appearance.'
-    Assert (-not (Visible (Element 'SaveSettings')) -and -not (Visible (Element 'SaveConnections'))) 'Appearance incorrectly requires a bridge settings save.'
-    $checks.Add(@{name='Language and theme share Appearance; Agent settings keep only execution controls';passed=$true})
+    Assert (Visible (Element 'AppTheme')) 'Theme selector is not on General.'
+    Scroll-ToElement 'AutoConnectProvider'
+    Assert (Visible (Element 'StartWithWindows')) 'Windows startup is not on General.'
+    Scroll-ToElement 'TraySettingsCard'
+    Assert (Visible (Element 'TraySettingsCard')) 'Tray settings are not on General.'
+    Assert (-not (Visible (Element 'SaveSettings')) -and -not (Visible (Element 'SaveConnections'))) 'General incorrectly requires an agent or connection settings save.'
+    $checks.Add(@{name='Language, theme, startup, and tray share General; Agent settings keep only execution controls';passed=$true})
     foreach ($theme in @('light','dark')) {
         Resize 1160 860
         Theme $theme
-        Go 'NavAppearance'
+        Go 'NavOverview'
         Capture "en-appearance-$theme.png"
         foreach ($width in @(720,500)) {
             Resize $width 600
-            Go 'NavAgentSettings'; Go 'NavAppearance'
+            Go 'NavAgentSettings'; Go 'NavOverview'
             Scroll-ToElement 'DisplayLanguage'
             Capture "en-appearance-$theme-$width.png"
             Scroll-ToElement 'ThemeDark'
@@ -159,10 +164,8 @@ try {
     Capture 'en-connection-approval.png'
     Scroll-ToElement 'SlackAllowedThreadIds'
     UI @('set-value','SlackAllowedThreadIds','1234567890.000001') | Out-Null
-    Scroll-ToElement 'AutoConnectProvider'
-    Assert (Visible (Element 'StartWithWindows')) 'Windows startup is separated from auto connection.'
     Assert (Visible (Element 'SaveConnections')) 'Connection save scrolls out of view.'
-    Capture 'en-connection-startup.png'
+    Capture 'en-connection-settings.png'
     UI @('invoke','SaveConnections') | Out-Null
     $until=[DateTimeOffset]::UtcNow.AddSeconds(5)
     do {
@@ -172,17 +175,17 @@ try {
     } while ([DateTimeOffset]::UtcNow -lt $until)
     Assert ($saved.SlackAllowedThreadIds -eq '1234567890.000001' -and $saved.WorkspaceRoot -eq $draftWorkspace) 'Moved controls did not persist together.'
     Assert ($saved.AutoConnectProvider -eq 'none' -and $saved.ChatApprovalMode -ne 'auto') 'Navigation changed connection or approval behavior.'
-    $checks.Add(@{name='Chat policies, scope and startup are reachable in Connections; fixed save persists drafts';passed=$true})
+    $checks.Add(@{name='Chat policies and scope are reachable in Connections; fixed save persists drafts';passed=$true})
     Stop-Process -Id $script:appPid
     @{Language='ja'} | ConvertTo-Json | Set-Content (Join-Path $dataPath 'language.json')
     Launch
     Resize 1160 860
-    Go 'NavAppearance'
-    Assert ((Name 'NavAppearance') -eq '外観') 'Appearance navigation is not Japanese.'
-    Assert ((Value 'AppearancePageTitle') -eq '外観') 'Appearance title is not Japanese.'
+    Go 'NavOverview'
+    Assert ((Name 'NavOverview') -eq '全般') 'General navigation is not Japanese.'
+    Assert ((Value 'GeneralPageTitle') -eq '全般') 'General title is not Japanese.'
     Capture 'ja-appearance.png'
     Resize 500 600
-    Go 'NavAgentSettings'; Go 'NavAppearance'
+    Go 'NavAgentSettings'; Go 'NavOverview'
     Scroll-ToElement 'ThemeDark'
     Capture 'ja-appearance-500.png'
     $checks.Add(@{name='Japanese Appearance labels and narrow layout';passed=$true})
@@ -190,7 +193,7 @@ try {
     '{invalid-test-settings' | Set-Content $settingsFile
     $invalidHash=(Get-FileHash $settingsFile).Hash
     Launch
-    Go 'NavAppearance'
+    Go 'NavOverview'
     Assert ((Element 'DisplayLanguage').Current.IsEnabled) 'Bridge settings failure disables language recovery.'
     Theme 'light'
     Assert ((Get-FileHash $settingsFile).Hash -eq $invalidHash) 'Appearance overwrote invalid bridge settings.'

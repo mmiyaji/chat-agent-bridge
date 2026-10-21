@@ -16,14 +16,22 @@ public sealed record AgentRunResult(bool Success, int ExitCode, string Output, s
 public interface IAgentRunner
 {
     Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt, CancellationToken cancellationToken = default);
+
+    Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
+        IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken = default)
+        => RunAsync(settings, prompt, cancellationToken);
 }
 
 public sealed class AgentRunner : IAgentRunner
 {
     private const int MaxCapturedCharacters = 1_000_000;
 
-    public async Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
+    public Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
         CancellationToken cancellationToken = default)
+        => RunAsync(settings, prompt, progress: null, cancellationToken);
+
+    public async Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
+        IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken = default)
     {
         var totalTimer = Stopwatch.StartNew();
         ArgumentNullException.ThrowIfNull(settings);
@@ -43,7 +51,7 @@ public sealed class AgentRunner : IAgentRunner
         var queueTimer = Stopwatch.StartNew();
         using var workspaceLease = await AgentWorkspaceGate.AcquireAsync(workspace, cancellationToken).ConfigureAwait(false);
         var queueMilliseconds = queueTimer.Elapsed.TotalMilliseconds;
-        var result = await RunLockedAsync(settings, workspace, prompt, cancellationToken).ConfigureAwait(false);
+        var result = await RunLockedAsync(settings, workspace, prompt, progress, cancellationToken).ConfigureAwait(false);
         return result with
         {
             Metrics = (result.Metrics ?? new AgentExecutionMetrics()) with
@@ -55,7 +63,7 @@ public sealed class AgentRunner : IAgentRunner
     }
 
     private static async Task<AgentRunResult> RunLockedAsync(BridgeSettings settings, string workspace, string prompt,
-        CancellationToken cancellationToken)
+        IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -63,6 +71,9 @@ public sealed class AgentRunner : IAgentRunner
         try { invocation = AgentProfile.BuildInvocation(settings); }
         catch (Exception ex) when (ex is ArgumentException or FormatException)
         { return new AgentRunResult(false, -1, "", ex.Message); }
+        // Partial output is opt-in because older Claude CLI versions may not support this flag.
+        if (invocation.Provider == AgentProfile.Claude && progress is not null)
+            invocation = invocation with { Arguments = invocation.Arguments.Append("--include-partial-messages").ToArray() };
         NodeCliPackageResolver.Resolution? nodePackage;
         try { nodePackage = NodeCliPackageResolver.Resolve(invocation.Executable, invocation.Provider); }
         catch (InvalidOperationException ex) { return new AgentRunResult(false, -1, "", ex.Message); }
@@ -107,8 +118,8 @@ public sealed class AgentRunner : IAgentRunner
         });
 
         var stdout = ReadBoundedAsync(process.StandardOutput, MaxCapturedCharacters,
-            invocation.Provider == AgentProfile.Codex, invocation.Provider == AgentProfile.Claude);
-        var stderr = ReadBoundedTextAsync(process.StandardError, MaxCapturedCharacters);
+            invocation.Provider == AgentProfile.Codex, invocation.Provider == AgentProfile.Claude, progress);
+        var stderr = ReadBoundedTextAsync(process.StandardError, MaxCapturedCharacters, progress);
         try
         {
             try
@@ -162,7 +173,7 @@ public sealed class AgentRunner : IAgentRunner
         => string.IsNullOrWhiteSpace(error) ? message : error + Environment.NewLine + message;
 
     private static async Task<(string Output, CodexOutput? Codex, ClaudeOutput? Claude, bool Truncated)> ReadBoundedAsync(
-        StreamReader reader, int limit, bool parseCodex, bool parseClaude)
+        StreamReader reader, int limit, bool parseCodex, bool parseClaude, IProgress<AgentRunProgress>? progress)
     {
         var builder = new StringBuilder(Math.Min(limit, 16_384));
         var buffer = new char[8192];
@@ -170,6 +181,7 @@ public sealed class AgentRunner : IAgentRunner
         var line = parseEvents ? new StringBuilder(1024) : null;
         var codexParser = parseCodex ? new CodexOutputParser.Accumulator() : null;
         var claudeParser = parseClaude ? new ClaudeOutputParser.Accumulator() : null;
+        var progressParser = progress is not null && parseEvents ? new AgentRunProgressParser(parseCodex ? AgentProfile.Codex : AgentProfile.Claude) : null;
         var droppingLongLine = false;
         var truncated = false;
         while (true)
@@ -180,7 +192,13 @@ public sealed class AgentRunner : IAgentRunner
             if (keep > 0) builder.Append(buffer, 0, keep);
             if (keep < read) truncated = true;
 
-            if (!parseEvents) continue;
+            if (!parseEvents)
+            {
+                if (progress is not null)
+                    for (var offset = 0; offset < read; offset += AgentRunProgressParser.MaxTextCharacters)
+                        SafeReport(progress, new("stdout", new string(buffer, offset, Math.Min(AgentRunProgressParser.MaxTextCharacters, read - offset))));
+                continue;
+            }
             for (var i = 0; i < read; i++)
             {
                 var ch = buffer[i];
@@ -191,6 +209,8 @@ public sealed class AgentRunner : IAgentRunner
                         var text = line!.ToString();
                         codexParser?.AddLine(text);
                         claudeParser?.AddLine(text);
+                        if (progressParser is not null)
+                            foreach (var update in progressParser.ParseLine(text)) SafeReport(progress, update);
                     }
                     line!.Clear();
                     droppingLongLine = false;
@@ -206,11 +226,13 @@ public sealed class AgentRunner : IAgentRunner
         {
             codexParser?.AddLine(line.ToString());
             claudeParser?.AddLine(line.ToString());
+            if (progressParser is not null)
+                foreach (var update in progressParser.ParseLine(line.ToString())) SafeReport(progress, update);
         }
         return (builder.ToString(), codexParser?.Snapshot(), claudeParser?.Snapshot(), truncated);
     }
 
-    private static async Task<string> ReadBoundedTextAsync(StreamReader reader, int limit)
+    private static async Task<string> ReadBoundedTextAsync(StreamReader reader, int limit, IProgress<AgentRunProgress>? progress)
     {
         var builder = new StringBuilder(Math.Min(limit, 16_384));
         var buffer = new char[8192];
@@ -220,8 +242,17 @@ public sealed class AgentRunner : IAgentRunner
             if (read == 0) break;
             var keep = Math.Min(read, limit - builder.Length);
             if (keep > 0) builder.Append(buffer, 0, keep);
+            if (progress is not null)
+                for (var offset = 0; offset < read; offset += AgentRunProgressParser.MaxTextCharacters)
+                    SafeReport(progress, new("stderr", new string(buffer, offset, Math.Min(AgentRunProgressParser.MaxTextCharacters, read - offset))));
         }
         return builder.ToString();
+    }
+
+    private static void SafeReport(IProgress<AgentRunProgress>? progress, AgentRunProgress update)
+    {
+        try { progress?.Report(update); }
+        catch { /* Progress observers are UI-facing and must not break process draining. */ }
     }
 }
 

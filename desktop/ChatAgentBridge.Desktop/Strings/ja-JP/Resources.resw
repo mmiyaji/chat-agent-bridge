@@ -6,10 +6,10 @@
     <value>メイン ナビゲーション</value>
   </data>
   <data name="NavOverview.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>概要</value>
+    <value>全般</value>
   </data>
   <data name="NavOverview.Content" xml:space="preserve">
-    <value>概要</value>
+    <value>全般</value>
   </data>
   <data name="NavWorkbench.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>手動で実行</value>
@@ -347,17 +347,17 @@
   <data name="chatAgentBridgeDesktopMainPageTextBlock042.Text" xml:space="preserve">
     <value>起動と接続</value>
   </data>
-  <data name="StartWithWindows.Header" xml:space="preserve">
+  <data name="StartupSettingRow.Header" xml:space="preserve">
     <value>Windowsログイン時にこのアプリを起動</value>
   </data>
-  <data name="AutoConnectProvider.Header" xml:space="preserve">
+  <data name="AutoConnectSettingRow.Header" xml:space="preserve">
     <value>アプリ起動後に自動接続するチャット</value>
   </data>
   <data name="AutoConnectOptionNone.Content" xml:space="preserve">
     <value>接続しない</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock043.Text" xml:space="preserve">
-    <value>接続情報を保存したチャットへ、次回のアプリ起動時に接続します。依頼の実行は会話の承認設定に従います。ウィンドウを閉じた後は依頼を受信しません。</value>
+    <value>次回のアプリ起動時に、保存済みのチャットへ接続します。依頼の実行は会話の承認設定に従います。ウィンドウを閉じても受信するには、下のタスクトレイ常駐を有効にしてください。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock044.Text" xml:space="preserve">
     <value>手動で実行</value>
@@ -473,6 +473,15 @@
   <data name="ShareAgentQuestionsInChatHelp.Text" xml:space="preserve">
     <value>有効にすると、Codex App Serverからの機密ではない質問と回答の選択肢をこのスレッドに投稿します。スレッドの参加者全員が見られます。App Serverが秘密として指定した質問はこのPCで回答し、投稿しません。この設定はCodex App Serverでのみ有効です。初期状態はオフです。反映するには保存してから再接続してください。</value>
   </data>
+  <data name="PostConnectionNotice.Header" xml:space="preserve">
+    <value>接続時に案内を投稿する</value>
+  </data>
+  <data name="PostConnectionNotice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>接続時に案内を投稿する</value>
+  </data>
+  <data name="PostConnectionNoticeHelp.Text" xml:space="preserve">
+    <value>Mattermostへの接続時に、設定したチャンネルへ接続案内を投稿します。既定はオフです。変更は保存後、次の接続から反映されます。</value>
+  </data>
   <data name="SaveConnections.Content" xml:space="preserve">
     <value>接続設定を保存</value>
   </data>
@@ -523,6 +532,15 @@
   </data>
   <data name="SavedSessionsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>保存済みセッション</value>
+  </data>
+  <data name="SavedSessionsSplitter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>保存済み会話一覧の幅を変更</value>
+  </data>
+  <data name="SavedSessionsSplitter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>矢印キーを使って、保存済み会話一覧と詳細ペインの幅を変更します。</value>
+  </data>
+  <data name="SavedSessionsSplitter.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>ドラッグして保存済み会話一覧の幅を変更</value>
   </data>
   <data name="EmptySavedSessions.Text" xml:space="preserve">
     <value>保存済みセッションはありません。実行履歴があっても、セッションが保存されない実行があります。</value>
@@ -609,7 +627,7 @@
     <value>エージェントと作業場所</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock002.Text" xml:space="preserve">
-    <value>AIが作業する既存フォルダーを選びます。チャットから別の作業先へ変更する場合も、信頼範囲内に限りPCの承認が必要です。</value>
+    <value>初期値はユーザーの「ドキュメント」です。作業するプロジェクトに合わせて変更してください。 AIが作業する既存フォルダーを選びます。チャットから別の作業先へ変更する場合も、信頼範囲内に限りPCの承認が必要です。</value>
   </data>
   <data name="WizardWorkspaceRoot.Header" xml:space="preserve">
     <value>作業フォルダー（絶対パス）</value>
@@ -815,7 +833,7 @@
   <data name="AboutLinksHeading.Text" xml:space="preserve"><value>リンクと作成者</value></data>
   <data name="AboutProviderLabel.Text" xml:space="preserve"><value>作成者</value></data>
   <data name="AboutWebsite.Content" xml:space="preserve"><value>https://ruhenheim.org</value></data>
-  <data name="AboutSupport.Content" xml:space="preserve"><value>mail@ruhenheim.org</value></data>
+  <data name="AboutSupport.Content" xml:space="preserve"><value>不具合報告・機能の提案（GitHub）</value></data>
   <data name="AboutRepository.Content" xml:space="preserve"><value>ソースコード</value></data>
   <data name="AboutStoreHeading.Text" xml:space="preserve"><value>Microsoft Store</value></data>
   <data name="AboutStorePage.Content" xml:space="preserve"><value>Store ページを開く</value></data>
@@ -882,10 +900,11 @@
   <data name="OverviewCliDetailsTitle.Text" xml:space="preserve">
     <value>CLIの確認内容</value>
   </data>
-  <data name="NavAppearance.Content" xml:space="preserve"><value>外観</value></data>
-  <data name="NavAppearance.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>外観</value></data>
-  <data name="AppearancePageTitle.Text" xml:space="preserve"><value>外観</value></data>
-  <data name="AppearancePageDescription.Text" xml:space="preserve"><value>アプリの表示言語と配色テーマを設定します。</value></data>
+  <data name="GeneralPageTitle.Text" xml:space="preserve"><value>全般</value></data>
+  <data name="GeneralPageDescription.Text" xml:space="preserve"><value>現在の状態を確認し、Windows起動時の動作、自動接続、トレイ、言語、外観を設定します。</value></data>
+  <data name="GeneralAppearanceSectionHeading.Text" xml:space="preserve"><value>言語と外観</value></data>
+  <data name="SaveGeneralSettings.Content" xml:space="preserve"><value>自動接続先を保存</value></data>
+  <data name="SaveGeneralSettingsHelp.Text" xml:space="preserve"><value>Windows起動時とトレイの設定はすぐに反映されます。自動接続先は保存すると保持されます。</value></data>
   <data name="AppThemeCardHeading.Text" xml:space="preserve"><value>カラーテーマ</value></data>
   <data name="ConnectionCredentialsHeading.Text" xml:space="preserve"><value>チャット接続情報</value></data>
   <data name="ChatPoliciesHeading.Text" xml:space="preserve"><value>チャットの承認と利用範囲</value></data>
@@ -894,8 +913,8 @@
   <data name="ConnectionsJump.PlaceholderText" xml:space="preserve"><value>項目を選択</value></data>
   <data name="ConnectionsJump.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>チャットの設定項目へ移動</value></data>
   <data name="JumpApproval.Content" xml:space="preserve"><value>承認と結果の返信</value></data>
+  <data name="JumpAttachments.Content" xml:space="preserve"><value>生成ファイルの添付</value></data>
   <data name="JumpScope.Content" xml:space="preserve"><value>許可する会話</value></data>
-  <data name="JumpStartup.Content" xml:space="preserve"><value>起動と自動接続</value></data>
   <data name="BrowseAgentExecutable.Content" xml:space="preserve"><value>参照…</value></data>
   <data name="BrowseAgentExecutable.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>ネイティブCLI実行ファイルを選択</value></data>
   <data name="WizardBrowseAgentExecutable.Content" xml:space="preserve"><value>参照…</value></data>
@@ -930,19 +949,27 @@
   <data name="ActivityWeekdayContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>曜日ごとの利用傾向グラフ</value></data>
   <data name="ActivityModelContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>モデルごとの実行回数グラフ</value></data>
   <data name="ActivityOutsideLegend.Text" xml:space="preserve"><value>– は選択期間外です。週の位置がわかるように枠を表示します。</value></data>
-  <data name="UsageHeading.Text" xml:space="preserve"><value>トークンとキャッシュ</value></data>
+  <data name="UsageHeading.Text" xml:space="preserve"><value>利用量と推定コスト</value></data>
   <data name="UsageMetric.Header" xml:space="preserve"><value>グラフの指標</value></data>
   <data name="UsageMetric.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>グラフの指標</value></data>
   <data name="UsageScope.Header" xml:space="preserve"><value>集計する報告範囲</value></data>
   <data name="UsageScope.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>集計する報告範囲</value></data>
-  <data name="UsageDailyChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>日別のトークン消費量またはキャッシュヒット率</value></data>
-  <data name="UsageModelChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>モデル別のトークン消費量またはキャッシュヒット率</value></data>
+  <data name="UsageDailyChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>日別のトークン消費量、キャッシュヒット率、推定APIコスト</value></data>
+  <data name="UsageModelChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>モデル別のトークン消費量、キャッシュヒット率、推定APIコスト</value></data>
   <data name="UsageModelsHeading.Text" xml:space="preserve"><value>報告されたモデル別・選択期間の合計</value></data>
-  <data name="UsageDailyHelp.Text" xml:space="preserve"><value>バーにマウスを重ねると日付と報告値を確認できます。0 は報告値0、? は未報告、· は実行なしです。直近28日より前の日付も下の詳細から選べます。</value></data>
+  <data name="UsageDailyHelp.Text" xml:space="preserve"><value>バーにマウスを重ねると日付と値を確認できます。コストの高さは範囲の上限で計算し、ラベルに範囲と算定件数を表示します。0 は報告値または推定値0、? は不明または未算出、· は実行なしです。直近28日より前の日付も下の詳細から選べます。</value></data>
   <data name="UsageDayExpander.Header" xml:space="preserve"><value>日別の詳細・選択期間のすべての日付</value></data>
   <data name="UsageDay.Header" xml:space="preserve"><value>日付</value></data>
   <data name="UsageDay.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>利用量を確認する日付</value></data>
   <data name="UsageAccountingNote.Text" xml:space="preserve"><value>トークン数は入力（キャッシュの読み込み・書き込みを1回ずつ含む）＋出力で、両方の報告がある実行のみを合計します。キャッシュヒット率は、報告されたキャッシュ読み込み÷対応する入力合計です。率の単純平均ではなくトークン数で重み付けし、入力0では率を出しません。未報告は推測せず、CLIが報告した値を使います。請求額やアカウントの残量ではありません。複数モデルの内訳が不明な場合はモデル未報告として扱います。</value></data>
+  <data name="UsageCostMethod.Header" xml:space="preserve"><value>推定コストの算定方法</value></data>
+  <data name="UsageCostMethod.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>推定コストの算定方法</value></data>
+  <data name="UsageCostMethodDetails.Text" xml:space="preserve"><value>記録されたトークン数に、報告モデルの公開標準API料金を掛けます。料金が確認できる実行だけを含み、モデルまたは必要なトークン数が不明な実行は未算出です。キャッシュ情報が不足する場合は範囲で表示します。日別・モデル別グラフの高さは範囲の上限で計算し、ラベルには範囲と算定件数を表示します。</value></data>
+  <data name="UsageCostLimitations.Text" xml:space="preserve"><value>請求額ではなく参考値です。サブスクリプション料金、ツール、Fastモード、リージョン、税は含みません。キャッシュの有効期間やコンテキストが不明な場合があり、記録されたメインループの利用量にサブエージェントが含まれないことがあります。推定には現在のローカル単価を使用します。料金表を更新しても手動指定は維持されます。料金表の更新ではAIを実行しません。</value></data>
+  <data name="UsageOpenAIPricing.Content" xml:space="preserve"><value>OpenAI API料金</value></data>
+  <data name="UsageOpenAIPricing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>OpenAI API料金</value></data>
+  <data name="UsageClaudePricing.Content" xml:space="preserve"><value>Claude API料金</value></data>
+  <data name="UsageClaudePricing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Claude API料金</value></data>
   <data name="OverviewStartupLabel.Text" xml:space="preserve"><value>自動起動</value></data>
   <data name="OverviewStartupHint.Text" xml:space="preserve"><value>Windowsへのサインイン時</value></data>
   <data name="OverviewAutoConnectLabel.Text" xml:space="preserve"><value>自動接続</value></data>
@@ -972,4 +999,110 @@
   <data name="LoadRegisteredCodexConnection.Content" xml:space="preserve"><value>保存したCodexを読み込む</value></data>
   <data name="LoadRegisteredClaudeConnection.Content" xml:space="preserve"><value>保存したClaude Codeを読み込む</value></data>
   <data name="ConnectionRegistrationStatus.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>CLI接続の状態</value></data>
+  <data name="FileAttachmentSettingsHeading.Text" xml:space="preserve"><value>生成ファイルの添付</value></data>
+  <data name="FileAttachmentApprovalMode.Header" xml:space="preserve"><value>ファイル添付の承認</value></data>
+  <data name="FileAttachmentModeDisabled.Content" xml:space="preserve"><value>ファイルを添付しない</value></data>
+  <data name="FileAttachmentModeAlways.Content" xml:space="preserve"><value>毎回確認（既定）</value></data>
+  <data name="FileAttachmentModeFirst.Content" xml:space="preserve"><value>スレッドの初回のみ確認</value></data>
+  <data name="FileAttachmentModeAuto.Content" xml:space="preserve"><value>自動添付</value></data>
+  <data name="FileAttachmentSettingsHelp.Text" xml:space="preserve"><value>結果を共有しない設定では添付も無効です。自動添付モードを保存すると、対象の新規ファイルを確認なしで送信します。初回のみ確認モードでは、同じユーザーによって同じ会話セッションで今後作成される対象ファイルを初回承認後に設定上限内で自動添付します。モードまたは上限の変更時は再度確認します。セッション再開に対応していないCLIでは、承認は1回の送信に適用されます。送信したファイルはチャネルメンバーが閲覧できます。アプリは内容の機密情報を判定できないため、送信前にファイルを確認してください。設定・認証情報などの名前のファイルと実行ファイルは名前に基づいて対象外になります。</value></data>
+  <data name="FileAttachmentMaxSizeMb.Header" xml:space="preserve"><value>1ファイルの最大サイズ（MiB）</value></data>
+  <data name="FileAttachmentMaxCount.Header" xml:space="preserve"><value>最大ファイル数</value></data>
+  <data name="FileAttachmentMaxTotalSizeMb.Header" xml:space="preserve"><value>1回の送信の最大合計サイズ（MiB）</value></data>
+  <data name="InboxSendAttachments.Content" xml:space="preserve"><value>ファイルを確認して送信</value></data>
+  <data name="LiveOutputTitle.Text" xml:space="preserve"><value>実行中の出力</value></data>
+  <data name="LiveOutputPrivacyHelp.Text" xml:space="preserve"><value>このPCだけに表示されます。実行中の出力は会話に保存されず、自動共有もされません。</value></data>
+  <data name="LiveOutputPausedHelp.Text" xml:space="preserve"><value>追従を一時停止しています。実行は続き、追従を再開すると新しい出力が表示されます。</value></data>
+  <data name="LiveOutputWaitingHelp.Text" xml:space="preserve"><value>出力を待っています…</value></data>
+  <data name="LiveOutputTruncationHint.Text" xml:space="preserve"><value>表示には直近の64,000文字のみ保持されます。</value></data>
+  <data name="LiveOutputFollow.Content" xml:space="preserve"><value>出力を追従</value></data>
+  <data name="LiveOutputClear.Content" xml:space="preserve"><value>表示を消去</value></data>
+  <data name="LiveOutputCancel.Content" xml:space="preserve"><value>この依頼を中断</value></data>
+  <data name="LiveOutputCancel.ToolTipService.ToolTip" xml:space="preserve"><value>停止しても、エージェントがすでに行ったファイル変更は元に戻りません。</value></data>
+  <data name="LiveOutputCancellationPending.Text" xml:space="preserve"><value>中断を要求しました。プロセスの停止を待っています。すでに行われたファイル変更は元に戻りません。</value></data>
+  <data name="InboxActiveRequestBannerButton.AutomationProperties.HelpText" xml:space="preserve"><value>実行中のこの依頼を開き、確認または停止します。</value></data>
+  <data name="PricingSettingsHeader.Text" xml:space="preserve"><value>API料金</value></data>
+  <data name="PricingAutoUpdateHeader.Text" xml:space="preserve"><value>料金情報の自動更新</value></data>
+  <data name="PricingAutoUpdateDescription.Text" xml:space="preserve"><value>料金情報を自動で確認し、参照元と確認状況を確認します。</value></data>
+  <data name="PricingUpdateNow.Content" xml:space="preserve"><value>今すぐ確認</value></data>
+  <data name="PricingUpdateNow.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>今すぐ確認</value></data>
+  <data name="PricingChecking.Text" xml:space="preserve"><value>料金情報を確認中…</value></data>
+  <data name="PricingLastChecked.Text" xml:space="preserve"><value>最終確認</value></data>
+  <data name="PricingLastUpdated.Text" xml:space="preserve"><value>料金データ更新</value></data>
+  <data name="PricingManagerError.Text" xml:space="preserve"><value>料金データを読み込めません。料金ファイルを確認してください。</value></data>
+  <data name="PricingManagerHealthy.Text" xml:space="preserve"><value>料金データを利用できます。</value></data>
+  <data name="PricingManualFileCorrupt.Text" xml:space="preserve"><value>手動料金ファイルが正しくありません。保存する前に修正または削除してください。</value></data>
+  <data name="PricingManualModelHeader.Text" xml:space="preserve"><value>モデル別の手動料金</value></data>
+  <data name="PricingKnownModel.Header" xml:space="preserve"><value>既知のモデル</value></data>
+  <data name="PricingModelId.Header" xml:space="preserve"><value>モデルID</value></data>
+  <data name="PricingModelIdDescription.Text" xml:space="preserve"><value>エージェントが報告するモデルIDを正確に入力してください。</value></data>
+  <data name="PricingManualRatesHeader.Text" xml:space="preserve"><value>料金（100万トークンあたりのUSD）</value></data>
+  <data name="PricingInput.Text" xml:space="preserve"><value>入力</value></data>
+  <data name="PricingCachedInput.Text" xml:space="preserve"><value>キャッシュ入力</value></data>
+  <data name="PricingCacheWrite.Text" xml:space="preserve"><value>キャッシュ書き込み</value></data>
+  <data name="PricingOutput.Text" xml:space="preserve"><value>出力</value></data>
+  <data name="PricingRateRangeHelp.Text" xml:space="preserve"><value>4種類の単価それぞれに最小値と最大値を入力します。固定単価の場合は同じ値を指定してください。</value></data>
+  <data name="PricingUsdPerMillion.Text" xml:space="preserve"><value>USD / 100万トークン</value></data>
+  <data name="PricingSaveManual.Content" xml:space="preserve"><value>手動料金を保存</value></data>
+  <data name="PricingSaveManual.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>手動料金を保存</value></data>
+  <data name="PricingRemoveManual.Content" xml:space="preserve"><value>手動料金を削除</value></data>
+  <data name="PricingRemoveManual.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>手動料金を削除</value></data>
+  <data name="PricingManualSource.Text" xml:space="preserve"><value>手動設定</value></data>
+  <data name="PricingAutomaticSource.Text" xml:space="preserve"><value>自動料金</value></data>
+  <data name="PricingModelSelectPrompt.Text" xml:space="preserve"><value>手動料金を編集するモデルを選択してください。</value></data>
+  <data name="PricingValidationModel.Text" xml:space="preserve"><value>既知のモデルを選択するか、モデルIDを入力してください。</value></data>
+  <data name="PricingValidationRate.Text" xml:space="preserve"><value>0以上の有効な単価を入力してください。</value></data>
+  <data name="PricingValidationRange.Text" xml:space="preserve"><value>最小単価は最大単価以下にしてください。</value></data>
+  <data name="PricingSettingsHelp.Text" xml:space="preserve"><value>自動取得した単価は公開API料金に基づいて更新されます。手動指定した単価は選択したモデルの自動取得単価に優先します。</value></data>
+  <data name="PricingAutomaticFile.Text" xml:space="preserve"><value>自動料金ファイル</value></data>
+  <data name="PricingManualFile.Text" xml:space="preserve"><value>手動料金ファイル</value></data>
+  <data name="PricingNoManualOverride.Text" xml:space="preserve"><value>手動設定なし</value></data>
+  <data name="PricingHistoryRecalcNote.Text" xml:space="preserve"><value>保存済み履歴は現在有効な単価で再計算されます。自動更新で手動料金ファイルが変更されることはありません。</value></data>
+  <data name="PricingOverrideNote.Text" xml:space="preserve"><value>手動設定は削除するまで、このモデルの4種類すべての単価に適用されます。</value></data>
+  <data name="PricingUpdateErrorSummary.Text" xml:space="preserve"><value>自動料金を更新できませんでした。現在の料金データを引き続き使用します。</value></data>
+  <data name="PricingRateMinimum.Text" xml:space="preserve"><value>最小</value></data>
+  <data name="PricingRateMaximum.Text" xml:space="preserve"><value>最大</value></data>
+  <data name="PricingNever.Text" xml:space="preserve"><value>未確認</value></data>
+  <data name="PricingNoAutomaticPrice.Text" xml:space="preserve"><value>このモデルの自動単価はありません。</value></data>
+  <data name="PricingAutoUpdateEnabled.Text" xml:space="preserve"><value>自動更新は有効です。</value></data>
+  <data name="PricingAutoUpdateDisabled.Text" xml:space="preserve"><value>自動更新は無効です。</value></data>
+  <data name="PricingRateValue.Text" xml:space="preserve"><value>{0}: {1}～{2}</value></data>
+  <data name="PricingRemoveConfirmTitle.Text" xml:space="preserve"><value>手動単価を削除しますか？</value></data>
+  <data name="PricingRemoveConfirmMessage.Text" xml:space="preserve"><value>{0} の手動単価を削除しますか？自動単価がある場合、推定に自動単価を使用します。</value></data>
+  <data name="PricingRemoveConfirmPrimary.Text" xml:space="preserve"><value>手動単価を削除</value></data>
+  <data name="PricingRemoveConfirmCancel.Text" xml:space="preserve"><value>手動単価を維持</value></data>
+  <data name="TraySettingsHeading.Text" xml:space="preserve"><value>システム トレイ</value></data>
+  <data name="CloseToTrayLabel.Text" xml:space="preserve"><value>ウィンドウを閉じたときもシステム トレイで実行する</value></data>
+  <data name="CloseToTrayToggle.OnContent" xml:space="preserve"><value>オン</value></data>
+  <data name="CloseToTrayToggle.OffContent" xml:space="preserve"><value>オフ</value></data>
+  <data name="CloseToTrayToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>ウィンドウを閉じたときもシステム トレイで実行する</value></data>
+  <data name="TraySettingsDescription.Text" xml:space="preserve"><value>オンにすると、ウィンドウを閉じてもChat Agent Bridgeとチャット接続はシステム トレイで実行されます。トレイ メニューからウィンドウを開くか、アプリを終了できます。</value></data>
+  <data name="MoveToTrayButton.Content" xml:space="preserve"><value>システム トレイに移動</value></data>
+  <data name="TrayExitDescription.Text" xml:space="preserve"><value>完全終了するとアプリを閉じ、実行中および待機中の処理をキャンセルします。</value></data>
+  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>完全終了</value></data>
+  <data name="TraySaveFailed" xml:space="preserve"><value>トレイ設定を保存できませんでした。以前の設定に戻しました。</value></data>
+  <data name="TrayExitFailed" xml:space="preserve"><value>アプリを完全終了できませんでした。もう一度お試しください。</value></data>
+  <data name="TrayUnavailable" xml:space="preserve"><value>システム トレイを利用できないため、このウィンドウは開いたままになります。</value></data>
+  <data name="StartWithWindows.OnContent" xml:space="preserve"><value>オン</value></data>
+  <data name="StartWithWindows.OffContent" xml:space="preserve"><value>オフ</value></data>
+  <data name="PortableUpdateHeading.Text" xml:space="preserve"><value>ポータブル版の更新</value></data>
+  <data name="PortableUpdateDescription.Text" xml:space="preserve"><value>GitHubでポータブル版のリリースを確認します。設定はそのまま引き継がれ、更新の適用を選んだ場合にのみアプリが再起動します。</value></data>
+  <data name="PortableUpdateIncludePrereleases.Content" xml:space="preserve"><value>プレビュー版を含める</value></data>
+  <data name="PortableUpdateIncludePrereleases.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>プレビュー版を含める</value></data>
+  <data name="PortableCheckUpdates.Content" xml:space="preserve"><value>更新を確認</value></data>
+  <data name="PortableDownloadUpdate.Content" xml:space="preserve"><value>更新をダウンロード</value></data>
+  <data name="PortableApplyUpdate.Content" xml:space="preserve"><value>更新して再起動</value></data>
+  <data name="PortableCancelUpdate.Content" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="PortableUpdateAutomaticChecks.Content" xml:space="preserve"><value>定期的に更新を確認する</value></data>
+  <data name="PortableUpdateAutomaticHelp.Text" xml:space="preserve"><value>起動時とアプリの起動中に定期的に確認します。トレイ常駐中も有効です。ダウンロードと再起動は手動です。</value></data>
+  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>更新内容を見る</value></data>
+  <data name="CliCheckError.Title" xml:space="preserve"><value>CLIを確認できませんでした</value></data>
+  <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Windowsログイン時にこのアプリを起動</value></data>
+  <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>アプリ起動後に自動接続するチャット</value></data>
+  <data name="TrayActions.Header" xml:space="preserve"><value>トレイ操作・終了</value></data>
+  <data name="CliReviewTrust.Content" xml:space="preserve"><value>信頼するフォルダーを確認</value></data>
+  <data name="WorkspaceTrustError.Title" xml:space="preserve"><value>作業フォルダーの信頼設定を確認してください</value></data>
+  <data name="InboxConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>接続状態と詳細</value></data>
+  <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>接続と通知の詳細です。会話の継続は、元のSlack・Mattermostのスレッドに返信してください。</value></data>
+  <data name="InboxRequestContext.Header" xml:space="preserve"><value>作業先・依頼の詳細</value></data>
 </root>

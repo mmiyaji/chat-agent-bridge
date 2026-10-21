@@ -47,6 +47,7 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     partial void OnStateChanged(string value)
     {
         OnPropertyChanged(nameof(StateDisplay));
+        OnPropertyChanged(nameof(StateTone));
         OnPropertyChanged(nameof(RequestLabel));
     }
     public string RequestLabel => $"{ReceivedAt:t} · {StateDisplay} · {Prompt.Replace('\r', ' ').Replace('\n', ' ')[..Math.Min(Prompt.Length, 80)]}";
@@ -54,9 +55,15 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     [ObservableProperty] public partial string ResultText { get; set; } = "";
     [ObservableProperty] public partial string FullOutput { get; set; } = DesktopText.Get("InboxOutputIntro");
     [ObservableProperty] public partial string Usage { get; set; } = DesktopText.Get("UsageAfterExecution");
+    public ExecutionUi.LiveOutputViewModel LiveOutput { get; } = new();
     public Guid? ExecutionId { get; set; }
     public string? ExecutionPolicyFingerprint { get; set; }
     public bool AllowsResultSharing { get; set; } = true;
+    public IReadOnlyList<FileAttachmentCandidate> AttachmentCandidates { get; set; } = [];
+    public BridgeSettings? AttachmentSettingsAtStart { get; set; }
+    public string? AttachmentSessionId { get; set; }
+    public bool AttachmentScanComplete { get; set; }
+    [ObservableProperty] public partial string AttachmentStatus { get; set; } = "";
     public ChatProgressReporter? Progress { get; set; }
     public Task ReceiptNotification { get; set; } = Task.CompletedTask;
 }
@@ -74,7 +81,11 @@ public sealed partial class InboxConversation(string key) : ObservableObject
     [ObservableProperty] public partial int RequestCount { get; set; }
     public string RequestCountLabel => DesktopText.Get(RequestCount == 1 ? "InboxOneRequest" : "InboxRequestCount", RequestCount);
     public override string ToString() => $"{Title} · {StateSummary} · {RequestCountLabel} · {Location}";
-    partial void OnRequestCountChanged(int value) => OnPropertyChanged(nameof(RequestCountLabel));
+    partial void OnRequestCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(RequestCountLabel));
+        OnPropertyChanged(nameof(HasSeveralRequests));
+    }
 }
 
 public sealed partial class ChatInboxViewModel : ObservableObject
@@ -103,6 +114,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private readonly HashSet<InboxItem> _automaticallyAttempted = [];
     private readonly Dictionary<InboxItem, PropertyChangedEventHandler> _requestHandlers = [];
     private int _droppedCount;
+    private readonly ExecutionUi.LiveOutputViewModel _emptyLiveOutput = new();
+    public ExecutionUi.LiveOutputViewModel SelectedLiveOutput => Selected?.LiveOutput ?? _emptyLiveOutput;
 
     public ObservableCollection<InboxItem> Requests { get; } = [];
     public ObservableCollection<InboxConversation> Conversations { get; } = [];
@@ -110,24 +123,27 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public event Action? ConnectionEnded;
     [ObservableProperty] public partial string NotificationStatus { get; set; } = "";
     [ObservableProperty] public partial string Status { get; set; } = DesktopText.Get("InboxDisconnected");
-    [ObservableProperty] public partial string OverflowNotice { get; set; } = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasOverflowNotice))] public partial string OverflowNotice { get; set; } = "";
+    public bool HasOverflowNotice => !string.IsNullOrWhiteSpace(OverflowNotice);
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasProgressNotice))]
     public partial string ProgressNotice { get; set; } = "";
     public bool HasProgressNotice => !string.IsNullOrWhiteSpace(ProgressNotice);
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsConnected { get; set; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsConnectionConfirmed { get; set; }
     [ObservableProperty] public partial bool HasConnectionError { get; set; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsExecuting { get; set; }
     partial void OnIsExecutingChanged(bool value)
     {
+        SendAttachmentsCommand.NotifyCanExecuteChanged();
+        NotifyActiveRequestProperties();
         if (!value) _ = ProcessPendingPoliciesAsync();
     }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial InboxItem? Selected { get; set; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial InboxConversation? SelectedConversation { get; set; }
     [ObservableProperty] public partial string SearchText { get; set; } = "";
     [ObservableProperty] public partial string StateFilter { get; set; } = "all";
@@ -141,11 +157,36 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public string SelectedRequestCountLabel => DesktopText.Get(SelectedConversation?.Requests.Count == 1 ? "InboxOneRequest" : "InboxRequestCount", SelectedConversation?.Requests.Count ?? 0);
     public bool HasSelectedConversation => SelectedConversation is not null;
     public bool HasVisibleConversations => VisibleConversations.Count > 0;
+    public bool HasOtherRequestRunning => IsExecuting && _activeItem is { LiveOutput.IsActive: true } active && !ReferenceEquals(Selected, active);
+    public string ActiveRequestBannerText
+    {
+        get
+        {
+            if (_activeItem is not { } active) return "";
+            var provider = active.Request.Provider switch { "mattermost" => "Mattermost", "slack" => "Slack", _ => active.Request.Provider };
+            var conversation = Conversations.FirstOrDefault(item => item.Requests.Contains(active));
+            var identity = conversation?.Title ?? $"{provider} · {active.Request.UserId}";
+            var prompt = active.Prompt.Replace('\r', ' ').Replace('\n', ' ').Trim();
+            if (prompt.Length > 90) prompt = prompt[..90] + "…";
+            return DesktopText.Get("InboxActiveRequestBanner", identity, prompt);
+        }
+    }
+
+    private void NotifyActiveRequestProperties()
+    {
+        OnPropertyChanged(nameof(HasOtherRequestRunning));
+        OnPropertyChanged(nameof(ActiveRequestBannerText));
+        ReturnToActiveRequestCommand.NotifyCanExecuteChanged();
+    }
     public string EmptyListMessage => DesktopText.Get(Requests.Count == 0 ? "InboxWaitingForRequests" : "InboxNoMatches");
     partial void OnSelectedChanged(InboxItem? value)
     {
+        OnPropertyChanged(nameof(SelectedLiveOutput));
+        OnPropertyChanged(nameof(SelectedAttachmentStatus));
+        SendAttachmentsCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(SelectedOutput));
         OnPropertyChanged(nameof(SelectedUsage));
+        NotifyActiveRequestProperties();
         ApproveCommand.NotifyCanExecuteChanged(); RejectCommand.NotifyCanExecuteChanged();
         CancelCommand.NotifyCanExecuteChanged(); SendResultCommand.NotifyCanExecuteChanged();
     }
@@ -161,6 +202,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     partial void OnSearchTextChanged(string value) => RefreshVisibleConversations();
     partial void OnStateFilterChanged(string value) => RefreshVisibleConversations();
     private bool CanCancel() => IsExecuting && Selected is not null && ReferenceEquals(Selected, _activeItem) && _execution is { IsCancellationRequested: false };
+    private bool CanReturnToActiveRequest() => HasOtherRequestRunning;
+
+    [RelayCommand(CanExecute = nameof(CanReturnToActiveRequest))]
+    private void ReturnToActiveRequest()
+    {
+        if (CanReturnToActiveRequest() && _activeItem is { } active)
+            RevealRequest(active);
+    }
     public void OpenConversation(InboxConversation? conversation)
     {
         if (conversation is null) return;
@@ -245,10 +294,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             conversation.Title = $"{provider} · {latest.Request.UserId}";
             conversation.Location = DesktopText.Get("ConversationLocation", latest.Request.ChannelId, latest.Request.ThreadId);
             conversation.LatestPrompt = latest.Prompt;
-            conversation.StateSummary = items.FirstOrDefault(item => item.State == "実行中")?.StateDisplay ??
-                items.FirstOrDefault(item => item.State == "承認待ち")?.StateDisplay ?? latest.StateDisplay;
+            var stateItem = items.FirstOrDefault(item => item.State == "実行中") ??
+                items.FirstOrDefault(item => item.State == "承認待ち") ?? latest;
+            conversation.StateSummary = stateItem.StateDisplay;
+            conversation.StateTone = stateItem.StateTone;
             conversation.Activity = latest.ReceivedAt.ToString("g", System.Globalization.CultureInfo.CurrentCulture);
             conversation.RequestCount = items.Length;
+            conversation.RefreshPresentation();
         }
         var sorted = Conversations.OrderByDescending(item => item.Requests.LastOrDefault()?.ReceivedAt).ToArray();
         for (var index = 0; index < sorted.Length; index++)
@@ -257,6 +309,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (current != index) Conversations.Move(current, index);
         }
         RefreshVisibleConversations();
+        OnPropertyChanged(nameof(QueueSummary));
         OnPropertyChanged(nameof(ConversationRequests));
         OnPropertyChanged(nameof(SelectedRequestCountLabel));
         if (SelectedConversation is not null && !Conversations.Contains(SelectedConversation))
@@ -282,7 +335,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         if (e.Action == NotifyCollectionChangedAction.Reset)
         {
-            foreach (var pair in _requestHandlers) pair.Key.PropertyChanged -= pair.Value;
+            foreach (var pair in _requestHandlers)
+            {
+                pair.Key.PropertyChanged -= pair.Value;
+                pair.Key.LiveOutput.Dispose();
+            }
             _requestHandlers.Clear();
         }
         else if (e.OldItems is not null)
@@ -290,6 +347,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             foreach (InboxItem item in e.OldItems)
             {
                 if (_requestHandlers.Remove(item, out var handler)) item.PropertyChanged -= handler;
+                item.LiveOutput.Dispose();
             }
         }
         if (e.NewItems is not null)
@@ -303,6 +361,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     {
                         if (args.PropertyName == nameof(InboxItem.FullOutput)) OnPropertyChanged(nameof(SelectedOutput));
                         if (args.PropertyName == nameof(InboxItem.Usage)) OnPropertyChanged(nameof(SelectedUsage));
+                        if (args.PropertyName == nameof(InboxItem.AttachmentStatus))
+                        {
+                            OnPropertyChanged(nameof(SelectedAttachmentStatus));
+                            SendAttachmentsCommand.NotifyCanExecuteChanged();
+                        }
                     }
                 };
                 item.PropertyChanged += handler;
@@ -312,8 +375,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         RefreshConversations();
     }
 
-    private bool CanConnect() => !IsConnected && !IsExecuting;
-    private bool CanApprove() => !IsExecuting && IsConnectionConfirmed && Selected is { State: "承認待ち" } item && ReferenceEquals(item.Transport, _transport);
+    private bool CanConnect() => !_closing && !IsConnected && !IsExecuting;
+    private bool CanApprove() => !_closing && !IsExecuting && IsConnectionConfirmed && Selected is { State: "承認待ち" } item && ReferenceEquals(item.Transport, _transport);
 
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private Task ConnectMattermostAsync() => ConnectAsync(new MattermostWebSocketTransport());
@@ -429,6 +492,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             IsConnectionConfirmed = false;
             ConnectionEnded?.Invoke();
+            RequestExecutionCancellation();
             connection.Cancel();
             foreach (var item in Requests.Where(item => item.State == "承認待ち")) item.State = "接続終了・再受信が必要";
             ApproveCommand.NotifyCanExecuteChanged();
@@ -437,6 +501,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             // Keep reconnect disabled until old execution and transport cleanup finish.
             if (ApproveCommand.ExecutionTask is { IsCompleted: false } execution) await execution;
             if (SendResultCommand.ExecutionTask is { IsCompleted: false } reply) await reply;
+            if (SendAttachmentsCommand.ExecutionTask is { IsCompleted: false } attachments) await attachments;
             await FinishConnectionProgressAsync(transport);
             await _connectionNotice;
             await transport.DisposeAsync();
@@ -457,7 +522,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         HasConnectionError = false;
         var wasConfirmed = IsConnectionConfirmed;
         IsConnectionConfirmed = false;
-        _execution?.Cancel();
+        RequestExecutionCancellation();
         if (wasConfirmed && _transport is { } transport && Volatile.Read(ref _accessSettings) is { } settings)
         {
             await _connectionNotice;
@@ -475,6 +540,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (item is null || !CanApprove()) return;
         IsExecuting = true;
         _activeItem = item;
+        NotifyActiveRequestProperties();
         var approvedByNotification = ReferenceEquals(_notificationApprovedItem, item);
         var approvedAutomatically = ReferenceEquals(_automaticallyApprovedItem, item);
         ExecutionRecord? record = null;
@@ -541,10 +607,22 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.FullOutput = DesktopText.Get("InboxAgentRunning");
             item.Usage = DesktopText.Get("UsageRunning");
             await StartProgressAsync(item);
-            var result = effectiveSettings.AgentMode == "app-server"
-                ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
-                    new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct)), _execution.Token)
-                : await _runner.RunAsync(key, effectiveSettings, item.Request.Text, _execution.Token);
+            var attachmentBefore = await CaptureAttachmentBaselineAsync(item, effectiveSettings, token);
+            var progress = item.LiveOutput.Begin();
+            NotifyActiveRequestProperties();
+            AgentRunResult result;
+            try
+            {
+                result = effectiveSettings.AgentMode == "app-server"
+                    ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
+                        new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct), Progress: progress), _execution.Token)
+                    : await _runner.RunAsync(key, effectiveSettings, item.Request.Text, _execution.Token, progress);
+            }
+            finally
+            {
+                item.LiveOutput.Finish();
+                NotifyActiveRequestProperties();
+            }
             var output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
             var needsLogin = !result.Success && effectiveSettings.AgentProvider == AgentProfile.Claude &&
                 (output.Contains("Not logged in", StringComparison.OrdinalIgnoreCase) ||
@@ -608,6 +686,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 Status = DesktopText.Get("InboxStatusReplyFailed");
                 await AuditAsync("reply_failed", item.Request, record.Id);
             }
+            if (result.Success)
+                await DiscoverCompletedAttachmentsAsync(item, attachmentBefore, updated?.SessionId ?? UntrackedAttachmentSession(item), token);
         }
         catch (OperationCanceledException)
         {
@@ -675,7 +755,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (CanApprove()) await RejectCommand.ExecuteAsync(null);
     }
 
-    private bool CanSendResult() => !IsExecuting && IsConnectionConfirmed && Selected is { ResultText.Length: > 0, AllowsResultSharing: true } item && ReferenceEquals(item.Transport, _transport);
+    private bool CanSendResult() => !_closing && !IsExecuting && IsConnectionConfirmed && Selected is { ResultText.Length: > 0, AllowsResultSharing: true } item && ReferenceEquals(item.Transport, _transport);
 
     [RelayCommand(CanExecute = nameof(CanSendResult))]
     private async Task SendResultAsync()
@@ -740,25 +820,28 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var settings = await _store.LoadAsync();
             var previous = Volatile.Read(ref _accessSettings);
             Volatile.Write(ref _accessSettings, settings);
+            if (_attachmentTransferActive && previous is not null && !SameAttachmentPolicy(previous, settings))
+                RequestExecutionCancellation();
             foreach (var item in Requests.Where(item => !HasAccess(settings, item.Request, item.Settings)))
             {
                 if (item.State == "承認待ち") item.State = "許可取り消し・実行不可";
                 item.ResultText = "";
             }
-            if (_activeItem is { } active && !HasAccess(settings, active.Request, active.Settings)) _execution?.Cancel();
+            if (_activeItem is { } active && !HasAccess(settings, active.Request, active.Settings)) RequestExecutionCancellation();
             if (IsConnected && previous is not null && !SameExecutionDefaults(previous, settings))
                 Status = DesktopText.Get("InboxExecutionSettingsChanged");
         }
         catch (Exception)
         {
             Volatile.Write(ref _accessSettings, null);
-            _execution?.Cancel();
+            RequestExecutionCancellation();
             foreach (var item in Requests) { if (item.State == "承認待ち") item.State = "許可設定を確認できず実行不可"; item.ResultText = ""; }
             Status = DesktopText.Get("InboxPermissionsUnavailable");
         }
         ApproveCommand.NotifyCanExecuteChanged();
         RejectCommand.NotifyCanExecuteChanged();
         SendResultCommand.NotifyCanExecuteChanged();
+        SendAttachmentsCommand.NotifyCanExecuteChanged();
     }
 
     private async Task<bool> CheckAccessAsync(InboxItem item, CancellationToken token)
@@ -918,12 +1001,31 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     };
 
     [RelayCommand(CanExecute = nameof(CanCancel))]
-    private void Cancel() => _execution?.Cancel();
+    private void Cancel()
+    {
+        if (CanCancel()) RequestExecutionCancellation();
+    }
+
+    private void RequestExecutionCancellation()
+    {
+        var cancellation = _execution;
+        if (cancellation is null || cancellation.IsCancellationRequested) return;
+        cancellation.Cancel();
+        if (_activeItem is { } active)
+            active.LiveOutput.IsCancellationPending = true;
+        CancelCommand.NotifyCanExecuteChanged();
+    }
 
     public void Close()
     {
+        if (_closing) return;
         _closing = true;
+        IsConnectionConfirmed = false;
+        RequestExecutionCancellation();
         _connection?.Cancel();
-        _execution?.Cancel();
+        foreach (var item in Requests) item.LiveOutput.Dispose();
+        _emptyLiveOutput.Dispose();
     }
+
+    internal Task WaitForConnectionShutdownAsync() => _receiveTask ?? Task.CompletedTask;
 }

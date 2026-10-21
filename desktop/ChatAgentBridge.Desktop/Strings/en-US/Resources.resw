@@ -6,10 +6,10 @@
     <value>Main navigation</value>
   </data>
   <data name="NavOverview.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Overview</value>
+    <value>General</value>
   </data>
   <data name="NavOverview.Content" xml:space="preserve">
-    <value>Overview</value>
+    <value>General</value>
   </data>
   <data name="NavWorkbench.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Run manually</value>
@@ -347,17 +347,17 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="chatAgentBridgeDesktopMainPageTextBlock042.Text" xml:space="preserve">
     <value>Start and connect</value>
   </data>
-  <data name="StartWithWindows.Header" xml:space="preserve">
+  <data name="StartupSettingRow.Header" xml:space="preserve">
     <value>Start this app when you log in to Windows</value>
   </data>
-  <data name="AutoConnectProvider.Header" xml:space="preserve">
+  <data name="AutoConnectSettingRow.Header" xml:space="preserve">
     <value>Connect automatically when the app starts</value>
   </data>
   <data name="AutoConnectOptionNone.Content" xml:space="preserve">
     <value>Do not connect</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock043.Text" xml:space="preserve">
-    <value>Connect to the chat with saved connection information the next time you start the app. Execution of the request follows the approval settings of the conversation. You will not receive requests after you close the window.</value>
+    <value>Connect to the saved chat the next time the app starts. Requests follow the conversation's approval settings. To keep receiving requests with the window closed, enable system tray mode below.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock044.Text" xml:space="preserve">
     <value>Run manually</value>
@@ -473,6 +473,15 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ShareAgentQuestionsInChatHelp.Text" xml:space="preserve">
     <value>When enabled, nonsecret questions and answer choices from Codex App Server are posted in this thread, where every participant can see them. Questions the app server marks as secret are answered on this PC and are never posted. This applies only to Codex App Server. Off by default. Save and reconnect for this setting to take effect.</value>
   </data>
+  <data name="PostConnectionNotice.Header" xml:space="preserve">
+    <value>Post a notice when connecting</value>
+  </data>
+  <data name="PostConnectionNotice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Post a notice when connecting</value>
+  </data>
+  <data name="PostConnectionNoticeHelp.Text" xml:space="preserve">
+    <value>When connecting to Mattermost, post a connection notice to the configured channel. Off by default. Changes apply after saving, starting with the next connection.</value>
+  </data>
   <data name="SaveConnections.Content" xml:space="preserve">
     <value>Save connection settings</value>
   </data>
@@ -523,6 +532,15 @@ Keep this app and your local PC running to stay connected.</value>
   </data>
   <data name="SavedSessionsList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Saved sessions</value>
+  </data>
+  <data name="SavedSessionsSplitter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Resize saved conversations list</value>
+  </data>
+  <data name="SavedSessionsSplitter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Use the arrow keys to resize the saved conversations list and details pane.</value>
+  </data>
+  <data name="SavedSessionsSplitter.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Drag to resize the saved conversations list</value>
   </data>
   <data name="EmptySavedSessions.Text" xml:space="preserve">
     <value>No saved sessions. Some executions do not return a session ID, even when execution history is available.</value>
@@ -609,7 +627,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>AI agent and working folder</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock002.Text" xml:space="preserve">
-    <value>Choose an existing folder for the AI agent to work in. Folder changes requested from chat must stay within trusted folders and require approval on this PC.</value>
+    <value>The initial selection is your Documents folder. Change it to the project you want to work on. Choose an existing folder for the AI agent to work in. Folder changes requested from chat must stay within trusted folders and require approval on this PC.</value>
   </data>
   <data name="WizardWorkspaceRoot.Header" xml:space="preserve">
     <value>Working folder (absolute path)</value>
@@ -815,7 +833,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AboutLinksHeading.Text" xml:space="preserve"><value>Links and author</value></data>
   <data name="AboutProviderLabel.Text" xml:space="preserve"><value>Author</value></data>
   <data name="AboutWebsite.Content" xml:space="preserve"><value>https://ruhenheim.org</value></data>
-  <data name="AboutSupport.Content" xml:space="preserve"><value>mail@ruhenheim.org</value></data>
+  <data name="AboutSupport.Content" xml:space="preserve"><value>Report bugs or request features (GitHub)</value></data>
   <data name="AboutRepository.Content" xml:space="preserve"><value>Source code</value></data>
   <data name="AboutStoreHeading.Text" xml:space="preserve"><value>Microsoft Store</value></data>
   <data name="AboutStorePage.Content" xml:space="preserve"><value>Open Store page</value></data>
@@ -882,10 +900,11 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="OverviewCliDetailsTitle.Text" xml:space="preserve">
     <value>CLI verification details</value>
   </data>
-  <data name="NavAppearance.Content" xml:space="preserve"><value>Appearance</value></data>
-  <data name="NavAppearance.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Appearance</value></data>
-  <data name="AppearancePageTitle.Text" xml:space="preserve"><value>Appearance</value></data>
-  <data name="AppearancePageDescription.Text" xml:space="preserve"><value>Choose the display language and color theme used by this app.</value></data>
+  <data name="GeneralPageTitle.Text" xml:space="preserve"><value>General</value></data>
+  <data name="GeneralPageDescription.Text" xml:space="preserve"><value>View current status and configure startup, auto-connect, tray, language, and appearance.</value></data>
+  <data name="GeneralAppearanceSectionHeading.Text" xml:space="preserve"><value>Language and appearance</value></data>
+  <data name="SaveGeneralSettings.Content" xml:space="preserve"><value>Save auto-connect preference</value></data>
+  <data name="SaveGeneralSettingsHelp.Text" xml:space="preserve"><value>Windows startup and tray options apply immediately. Save the auto-connect preference to keep it.</value></data>
   <data name="AppThemeCardHeading.Text" xml:space="preserve"><value>Color theme</value></data>
   <data name="ConnectionCredentialsHeading.Text" xml:space="preserve"><value>Chat connection credentials</value></data>
   <data name="ChatPoliciesHeading.Text" xml:space="preserve"><value>Chat approval and access</value></data>
@@ -894,8 +913,8 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ConnectionsJump.PlaceholderText" xml:space="preserve"><value>Select a section</value></data>
   <data name="ConnectionsJump.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Go to a chat setting</value></data>
   <data name="JumpApproval.Content" xml:space="preserve"><value>Approval and replies</value></data>
+  <data name="JumpAttachments.Content" xml:space="preserve"><value>File attachments</value></data>
   <data name="JumpScope.Content" xml:space="preserve"><value>Allowed conversations</value></data>
-  <data name="JumpStartup.Content" xml:space="preserve"><value>Startup and auto-connect</value></data>
   <data name="BrowseAgentExecutable.Content" xml:space="preserve"><value>Browse…</value></data>
   <data name="BrowseAgentExecutable.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Browse for native CLI executable</value></data>
   <data name="WizardBrowseAgentExecutable.Content" xml:space="preserve"><value>Browse…</value></data>
@@ -930,19 +949,27 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ActivityWeekdayContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Runs by weekday</value></data>
   <data name="ActivityModelContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Runs by model</value></data>
   <data name="ActivityOutsideLegend.Text" xml:space="preserve"><value>– = outside selected period; outlined cells preserve the week layout.</value></data>
-  <data name="UsageHeading.Text" xml:space="preserve"><value>Tokens and cache</value></data>
+  <data name="UsageHeading.Text" xml:space="preserve"><value>Usage and estimated cost</value></data>
   <data name="UsageMetric.Header" xml:space="preserve"><value>Chart metric</value></data>
   <data name="UsageMetric.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Chart metric</value></data>
   <data name="UsageScope.Header" xml:space="preserve"><value>Report scope</value></data>
   <data name="UsageScope.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Report scope</value></data>
-  <data name="UsageDailyChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Daily tokens or cache hit rate</value></data>
-  <data name="UsageModelChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Tokens or cache hit rate by model</value></data>
+  <data name="UsageDailyChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Daily tokens, cache hit rate, or estimated API cost</value></data>
+  <data name="UsageModelChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Tokens, cache hit rate, or estimated API cost by model</value></data>
   <data name="UsageModelsHeading.Text" xml:space="preserve"><value>By reported model · selected period</value></data>
-  <data name="UsageDailyHelp.Text" xml:space="preserve"><value>Hover a bar for its date and reported values. 0 = reported zero; ? = not reported; · = no executions. Earlier dates in this period are available below.</value></data>
+  <data name="UsageDailyHelp.Text" xml:space="preserve"><value>Hover a bar for its date and values. Cost bars use the range upper bound for height and show the range and priced coverage in their labels. 0 = reported or estimated zero; ? = unknown or unpriced; · = no executions. Earlier dates in this period are available below.</value></data>
   <data name="UsageDayExpander.Header" xml:space="preserve"><value>Daily details · all dates in this period</value></data>
   <data name="UsageDay.Header" xml:space="preserve"><value>Date</value></data>
   <data name="UsageDay.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Usage detail date</value></data>
   <data name="UsageAccountingNote.Text" xml:space="preserve"><value>Tokens = input (including cache reads/writes once) + output, for executions reporting both. Cache hit rate = reported cache reads ÷ corresponding total input; weighted by tokens, not averaged percentages. No input means no rate. Missing reports stay unknown; these are CLI-reported counts, not billing or account limits. Multi-model attribution unavailable from the CLI stays unknown.</value></data>
+  <data name="UsageCostMethod.Header" xml:space="preserve"><value>How estimated API cost is calculated</value></data>
+  <data name="UsageCostMethod.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>How estimated API cost is calculated</value></data>
+  <data name="UsageCostMethodDetails.Text" xml:space="preserve"><value>Cost uses recorded token counts multiplied by published standard API rates for the reported model. Only the priced subset is included; executions without a known model or required token counts remain unpriced. Missing cache details produce a range. Daily and model chart bars use the range upper bound for height and display the range in their labels.</value></data>
+  <data name="UsageCostLimitations.Text" xml:space="preserve"><value>This is a reference estimate, not billing data. It excludes subscription fees, tools, Fast modes, region, and tax. Cache TTL or context may be unknown, and recorded main-loop usage may omit subagents. Estimates use current local rates; optional catalog updates do not change manual rates, and no AI requests are made.</value></data>
+  <data name="UsageOpenAIPricing.Content" xml:space="preserve"><value>OpenAI API pricing</value></data>
+  <data name="UsageOpenAIPricing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>OpenAI API pricing</value></data>
+  <data name="UsageClaudePricing.Content" xml:space="preserve"><value>Claude API pricing</value></data>
+  <data name="UsageClaudePricing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Claude API pricing</value></data>
   <data name="OverviewStartupLabel.Text" xml:space="preserve"><value>Automatic startup</value></data>
   <data name="OverviewStartupHint.Text" xml:space="preserve"><value>At Windows sign-in</value></data>
   <data name="OverviewAutoConnectLabel.Text" xml:space="preserve"><value>Automatic connection</value></data>
@@ -972,4 +999,110 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="LoadRegisteredCodexConnection.Content" xml:space="preserve"><value>Load saved Codex</value></data>
   <data name="LoadRegisteredClaudeConnection.Content" xml:space="preserve"><value>Load saved Claude Code</value></data>
   <data name="ConnectionRegistrationStatus.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>CLI connection status</value></data>
+  <data name="FileAttachmentSettingsHeading.Text" xml:space="preserve"><value>Generated file attachments</value></data>
+  <data name="FileAttachmentApprovalMode.Header" xml:space="preserve"><value>File attachment approval</value></data>
+  <data name="FileAttachmentModeDisabled.Content" xml:space="preserve"><value>Do not attach files</value></data>
+  <data name="FileAttachmentModeAlways.Content" xml:space="preserve"><value>Ask every time (default)</value></data>
+  <data name="FileAttachmentModeFirst.Content" xml:space="preserve"><value>Ask once per conversation</value></data>
+  <data name="FileAttachmentModeAuto.Content" xml:space="preserve"><value>Attach automatically</value></data>
+  <data name="FileAttachmentSettingsHelp.Text" xml:space="preserve"><value>Automatic result sharing does not approve attachments. Disabling result sharing also disables file attachments. Saving automatic mode opts into sending eligible new files without a prompt. In first mode, one approval covers future eligible new files created by this user in the same conversation session within these limits; a mode or limit change asks again. For CLIs without resumable sessions, approval applies to one send. Channel members may read sent files. The app cannot inspect contents for sensitive information, so review files before sending. Files with settings, credential, or authentication names and executable files are excluded by name.</value></data>
+  <data name="FileAttachmentMaxSizeMb.Header" xml:space="preserve"><value>Maximum size per file (MiB)</value></data>
+  <data name="FileAttachmentMaxCount.Header" xml:space="preserve"><value>Maximum file count</value></data>
+  <data name="FileAttachmentMaxTotalSizeMb.Header" xml:space="preserve"><value>Maximum total size per send (MiB)</value></data>
+  <data name="InboxSendAttachments.Content" xml:space="preserve"><value>Review and send files</value></data>
+  <data name="LiveOutputTitle.Text" xml:space="preserve"><value>Live execution output</value></data>
+  <data name="LiveOutputPrivacyHelp.Text" xml:space="preserve"><value>Shown on this PC only. Live output is not saved to the conversation or shared automatically.</value></data>
+  <data name="LiveOutputPausedHelp.Text" xml:space="preserve"><value>Following is paused. The execution continues, and new output appears when you resume following.</value></data>
+  <data name="LiveOutputWaitingHelp.Text" xml:space="preserve"><value>Waiting for output…</value></data>
+  <data name="LiveOutputTruncationHint.Text" xml:space="preserve"><value>Only the latest 64,000 characters are kept in this display.</value></data>
+  <data name="LiveOutputFollow.Content" xml:space="preserve"><value>Follow output</value></data>
+  <data name="LiveOutputClear.Content" xml:space="preserve"><value>Clear display</value></data>
+  <data name="LiveOutputCancel.Content" xml:space="preserve"><value>Cancel this request</value></data>
+  <data name="LiveOutputCancel.ToolTipService.ToolTip" xml:space="preserve"><value>Stopping may not undo changes the agent already made to files.</value></data>
+  <data name="LiveOutputCancellationPending.Text" xml:space="preserve"><value>Cancellation requested. Waiting for the process to stop. File changes already made will not be rolled back.</value></data>
+  <data name="InboxActiveRequestBannerButton.AutomationProperties.HelpText" xml:space="preserve"><value>Open this exact running request to review or stop it.</value></data>
+  <data name="PricingSettingsHeader.Text" xml:space="preserve"><value>API pricing</value></data>
+  <data name="PricingAutoUpdateHeader.Text" xml:space="preserve"><value>Automatic pricing updates</value></data>
+  <data name="PricingAutoUpdateDescription.Text" xml:space="preserve"><value>Check for pricing updates automatically and review the source and check status.</value></data>
+  <data name="PricingUpdateNow.Content" xml:space="preserve"><value>Check now</value></data>
+  <data name="PricingUpdateNow.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Check now</value></data>
+  <data name="PricingChecking.Text" xml:space="preserve"><value>Checking pricing…</value></data>
+  <data name="PricingLastChecked.Text" xml:space="preserve"><value>Last checked</value></data>
+  <data name="PricingLastUpdated.Text" xml:space="preserve"><value>Pricing data updated</value></data>
+  <data name="PricingManagerError.Text" xml:space="preserve"><value>Pricing data could not be loaded. Check the pricing files.</value></data>
+  <data name="PricingManagerHealthy.Text" xml:space="preserve"><value>Pricing data is ready.</value></data>
+  <data name="PricingManualFileCorrupt.Text" xml:space="preserve"><value>The manual pricing file is invalid. Correct or remove it before saving.</value></data>
+  <data name="PricingManualModelHeader.Text" xml:space="preserve"><value>Manual model pricing</value></data>
+  <data name="PricingKnownModel.Header" xml:space="preserve"><value>Known model</value></data>
+  <data name="PricingModelId.Header" xml:space="preserve"><value>Model ID</value></data>
+  <data name="PricingModelIdDescription.Text" xml:space="preserve"><value>Enter the exact model ID reported by the agent.</value></data>
+  <data name="PricingManualRatesHeader.Text" xml:space="preserve"><value>Rates (USD per million tokens)</value></data>
+  <data name="PricingInput.Text" xml:space="preserve"><value>Input</value></data>
+  <data name="PricingCachedInput.Text" xml:space="preserve"><value>Cached input</value></data>
+  <data name="PricingCacheWrite.Text" xml:space="preserve"><value>Cache write</value></data>
+  <data name="PricingOutput.Text" xml:space="preserve"><value>Output</value></data>
+  <data name="PricingRateRangeHelp.Text" xml:space="preserve"><value>Enter a minimum and maximum for each rate. Use the same value for an exact rate.</value></data>
+  <data name="PricingUsdPerMillion.Text" xml:space="preserve"><value>USD / 1M tokens</value></data>
+  <data name="PricingSaveManual.Content" xml:space="preserve"><value>Save manual pricing</value></data>
+  <data name="PricingSaveManual.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Save manual pricing</value></data>
+  <data name="PricingRemoveManual.Content" xml:space="preserve"><value>Remove manual pricing</value></data>
+  <data name="PricingRemoveManual.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Remove manual pricing</value></data>
+  <data name="PricingManualSource.Text" xml:space="preserve"><value>Manual override</value></data>
+  <data name="PricingAutomaticSource.Text" xml:space="preserve"><value>Automatic pricing</value></data>
+  <data name="PricingModelSelectPrompt.Text" xml:space="preserve"><value>Select a model to edit its manual rates.</value></data>
+  <data name="PricingValidationModel.Text" xml:space="preserve"><value>Select a known model or enter a model ID.</value></data>
+  <data name="PricingValidationRate.Text" xml:space="preserve"><value>Enter a valid non-negative rate.</value></data>
+  <data name="PricingValidationRange.Text" xml:space="preserve"><value>The minimum rate must not exceed the maximum rate.</value></data>
+  <data name="PricingSettingsHelp.Text" xml:space="preserve"><value>Automatic rates are maintained from published API pricing. Manual rates override automatic rates for the selected model.</value></data>
+  <data name="PricingAutomaticFile.Text" xml:space="preserve"><value>Automatic pricing file</value></data>
+  <data name="PricingManualFile.Text" xml:space="preserve"><value>Manual pricing file</value></data>
+  <data name="PricingNoManualOverride.Text" xml:space="preserve"><value>No manual override</value></data>
+  <data name="PricingHistoryRecalcNote.Text" xml:space="preserve"><value>Saved history is recalculated using current effective rates. Automatic updates never change the manual pricing file.</value></data>
+  <data name="PricingOverrideNote.Text" xml:space="preserve"><value>A manual override replaces all four rates for this model until removed.</value></data>
+  <data name="PricingUpdateErrorSummary.Text" xml:space="preserve"><value>Could not refresh automatic pricing. Existing pricing data is still in use.</value></data>
+  <data name="PricingRateMinimum.Text" xml:space="preserve"><value>Minimum</value></data>
+  <data name="PricingRateMaximum.Text" xml:space="preserve"><value>Maximum</value></data>
+  <data name="PricingNever.Text" xml:space="preserve"><value>Never</value></data>
+  <data name="PricingNoAutomaticPrice.Text" xml:space="preserve"><value>No automatic rate is available for this model.</value></data>
+  <data name="PricingAutoUpdateEnabled.Text" xml:space="preserve"><value>Automatic updates are enabled.</value></data>
+  <data name="PricingAutoUpdateDisabled.Text" xml:space="preserve"><value>Automatic updates are disabled.</value></data>
+  <data name="PricingRateValue.Text" xml:space="preserve"><value>{0}: {1}–{2}</value></data>
+  <data name="PricingRemoveConfirmTitle.Text" xml:space="preserve"><value>Remove manual pricing?</value></data>
+  <data name="PricingRemoveConfirmMessage.Text" xml:space="preserve"><value>Remove the manual rates for {0}? Estimates will use the automatic rates again when available.</value></data>
+  <data name="PricingRemoveConfirmPrimary.Text" xml:space="preserve"><value>Remove manual rates</value></data>
+  <data name="PricingRemoveConfirmCancel.Text" xml:space="preserve"><value>Keep manual rates</value></data>
+  <data name="TraySettingsHeading.Text" xml:space="preserve"><value>System tray</value></data>
+  <data name="CloseToTrayLabel.Text" xml:space="preserve"><value>Keep running in system tray when the window is closed</value></data>
+  <data name="CloseToTrayToggle.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="CloseToTrayToggle.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="CloseToTrayToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Keep running in system tray when the window is closed</value></data>
+  <data name="TraySettingsDescription.Text" xml:space="preserve"><value>When enabled, closing the window keeps Chat Agent Bridge and its chat connection running in the system tray. Use the tray menu to open the window or exit.</value></data>
+  <data name="MoveToTrayButton.Content" xml:space="preserve"><value>Move to system tray</value></data>
+  <data name="TrayExitDescription.Text" xml:space="preserve"><value>Exit completely closes the app and cancels pending and running work.</value></data>
+  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>Exit completely</value></data>
+  <data name="TraySaveFailed" xml:space="preserve"><value>Could not save the tray setting. The previous setting has been restored.</value></data>
+  <data name="TrayExitFailed" xml:space="preserve"><value>The app could not exit completely. Try again.</value></data>
+  <data name="TrayUnavailable" xml:space="preserve"><value>The system tray is unavailable. This window will remain open.</value></data>
+  <data name="StartWithWindows.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="StartWithWindows.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="PortableUpdateHeading.Text" xml:space="preserve"><value>Portable version updates</value></data>
+  <data name="PortableUpdateDescription.Text" xml:space="preserve"><value>Check GitHub for a portable release. Your settings stay in place, and the app restarts only after you choose to apply an update.</value></data>
+  <data name="PortableUpdateIncludePrereleases.Content" xml:space="preserve"><value>Include preview releases</value></data>
+  <data name="PortableUpdateIncludePrereleases.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Include preview releases</value></data>
+  <data name="PortableCheckUpdates.Content" xml:space="preserve"><value>Check for updates</value></data>
+  <data name="PortableDownloadUpdate.Content" xml:space="preserve"><value>Download update</value></data>
+  <data name="PortableApplyUpdate.Content" xml:space="preserve"><value>Update and restart</value></data>
+  <data name="PortableCancelUpdate.Content" xml:space="preserve"><value>Cancel</value></data>
+  <data name="PortableUpdateAutomaticChecks.Content" xml:space="preserve"><value>Automatically check for updates</value></data>
+  <data name="PortableUpdateAutomaticHelp.Text" xml:space="preserve"><value>Checks at startup and periodically while the app is running, including in the tray. Downloads and restarts require your action.</value></data>
+  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>View release notes</value></data>
+  <data name="CliCheckError.Title" xml:space="preserve"><value>CLI check failed</value></data>
+  <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Start this app when signing in to Windows</value></data>
+  <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Chat to connect automatically when the app starts</value></data>
+  <data name="TrayActions.Header" xml:space="preserve"><value>Tray actions and exit</value></data>
+  <data name="CliReviewTrust.Content" xml:space="preserve"><value>Review trusted folder</value></data>
+  <data name="WorkspaceTrustError.Title" xml:space="preserve"><value>Review workspace trust</value></data>
+  <data name="InboxConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Connection status and details</value></data>
+  <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>Connection and notification details. Conversations continue in the original Slack or Mattermost thread.</value></data>
+  <data name="InboxRequestContext.Header" xml:space="preserve"><value>Workspace and request details</value></data>
 </root>

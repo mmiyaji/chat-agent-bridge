@@ -88,6 +88,28 @@ function Assert-Visible([string]$Id) {
     $element=Element $Id
     Assert-True ($null -ne $element -and -not $element.Current.IsOffscreen -and $element.Current.BoundingRectangle.Height -gt 0) "Control is not visible: $Id"
 }
+function Ensure-SessionAction([string]$Id) {
+    $element=Element $Id
+    if ($null -eq $element -or $element.Current.IsOffscreen -or $element.Current.BoundingRectangle.Height -le 0) {
+        $bar=Element 'SessionActionsCommandBar'
+        Assert-True ($null -ne $bar -and -not $bar.Current.IsOffscreen) 'Session actions command bar is not visible.'
+        $moreCondition=[System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::AutomationIdProperty,'MoreButton')
+        $more=$bar.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$moreCondition)
+        Assert-True ($null -ne $more) 'CommandBar overflow button was not found.'
+        UI @('invoke','MoreButton') | Out-Null
+        UI @('wait-for',$Id,'-t','4000') | Out-Null
+        $element=Element $Id
+    }
+    Assert-True ($null -ne $element -and -not $element.Current.IsOffscreen -and $element.Current.BoundingRectangle.Height -gt 0) "Session action is not reachable: $Id"
+    return $element
+}
+function Close-SessionOverflow {
+    $detach=Element 'DetachSession'
+    if ($null -ne $detach -and -not $detach.Current.IsOffscreen) {
+        UI @('invoke','MoreButton') | Out-Null
+    }
+}
 function Wait-Text([string]$Text,[int]$Seconds=8) {
     $until=[DateTime]::UtcNow.AddSeconds($Seconds)
     do {
@@ -125,10 +147,10 @@ function Start-App {
     UI @('wait-for','SavedSessionsList','-t','10000') | Out-Null
 }
 function Rename-Selected([string]$Name) {
-    if ($null -eq (Element 'RenameSession')) {
+    if ($null -eq (Element 'RenameSession') -or (Element 'RenameSession').Current.IsOffscreen) {
         Click-FirstRow
-        UI @('wait-for','RenameSession','-t','5000') | Out-Null
     }
+    Ensure-SessionAction 'RenameSession' | Out-Null
     UI @('invoke','RenameSession') | Out-Null
     UI @('wait-for','SessionDisplayName','-t','5000') | Out-Null
     Capture 'history-rename-dialog'
@@ -221,6 +243,8 @@ try {
     Write-Json 'history.json' @{SchemaVersion=1;Records=$records}
     Write-Json 'audit.json' @{SchemaVersion=1;Records=@(@{Timestamp=[DateTimeOffset]::UtcNow.ToString('o');Kind='completed';ExecutionId=$records[0].Id;Source=$records[0].Source;ChannelId=$records[0].ChannelId;ThreadId=$records[0].ThreadId})}
     Write-Json 'settings.json' @{SchemaVersion=1;WorkspaceRoot=$dataPath;AgentProvider='custom';AgentMode='exec';AgentExecutable='not-used';AgentArguments='';TrustedWorkspaceRoots=$dataPath;AutoConnectProvider='none'}
+    Write-Json 'portable-update.json' @{schemaVersion=1;automaticChecksEnabled=$false;includePrereleases=$true}
+    Write-Json 'pricing-auto.json' @{schemaVersion=1;autoUpdateEnabled=$false;catalogJson=(Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/Pricing/model-prices.json') -Raw)}
     Write-Json 'onboarding.json' @{SchemaVersion=3;Step=4;Status='completed'}
     Write-Json 'language.json' @{Language=$Language}
     Write-Json 'appearance.json' @{Theme=$(if($Language -eq 'ja'){'dark'}else{'light'})}
@@ -320,6 +344,7 @@ try {
             Capture 'history-after-restart'
 
             Click-FirstRow
+            Ensure-SessionAction 'RenameSession' | Out-Null
             UI @('invoke','RenameSession') | Out-Null
             UI @('wait-for','SessionDisplayName','-t','5000') | Out-Null
             (Element 'SessionDisplayName').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('Cancelled rename')
@@ -332,15 +357,16 @@ try {
             Assert-RenameStored 0 ''
             Assert-RenameStored 1 $initialBobName
         }
-        Check 'Narrow detail keeps Back and rename actions visible' {
+        Check 'Narrow detail keeps actions reachable through CommandBar overflow' {
             Click-FirstRow
             Resize 500 600
             UI @('wait-for','BackToSessionsButton','-t','5000') | Out-Null
             Assert-Visible 'BackToSessionsButton'
-            Assert-Visible 'RenameSession'
-            Assert-Visible 'EditSessionModel'
-            Assert-Visible 'EditSessionExecutionPolicy'
-            Assert-Visible 'DetachSession'
+            foreach ($action in @('EditSessionModel','SwitchSessionAgent','EditSessionExecutionPolicy','RenameSession','DetachSession')) {
+                $element=Ensure-SessionAction $action
+                Assert-True ($element.Current.IsEnabled) "Session action is disabled at narrow size: $action"
+            }
+            Close-SessionOverflow
             Capture 'history-narrow-detail'
             UI @('invoke','BackToSessionsButton') | Out-Null
             $list=Element 'SavedSessionsList'

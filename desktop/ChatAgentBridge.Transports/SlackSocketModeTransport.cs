@@ -8,36 +8,43 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTransport, IChatConnectionEvents, IChatReconnectionEvents
+public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProgressTransport, IChatFileTransport, IChatConnectionEvents, IChatReconnectionEvents
 {
     public event Action? Connected;
     public event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
     private const int MaxMessageBytes = 1024 * 1024;
     private readonly Uri _apiBase;
     private readonly HttpClient _http;
+    private readonly HttpClient _fileUploadHttp;
     private readonly bool _allowInsecureLoopbackSocketForTests;
     private readonly BoundedSeenSet _seen = new(10_000);
     private string? _botToken;
     private string? _botUserId;
     private bool _disposed;
     private bool _connected;
+    private bool _fileUploadConnected;
     private int _reconnectAttempt;
     private CancellationTokenSource? _runLifetime;
     private long _connectionGeneration;
+    private long _fileUploadConnectionGeneration;
     private readonly object _progressOwner = new();
 
-    public SlackSocketModeTransport() : this(TransportHttp.CreateClient(), new Uri("https://slack.com/api/")) { }
+    public SlackSocketModeTransport() : this(TransportHttp.CreateClient(), new Uri("https://slack.com/api/"),
+        fileUploadHttp: TransportHttp.CreateClient(timeout: TimeSpan.FromMinutes(2))) { }
 
-    internal SlackSocketModeTransport(HttpClient http, Uri apiBase, string? token = null, bool allowInsecureLoopbackSocketForTests = false)
+    internal SlackSocketModeTransport(HttpClient http, Uri apiBase, string? token = null, bool allowInsecureLoopbackSocketForTests = false, HttpClient? fileUploadHttp = null)
     {
         _http = http;
+        _fileUploadHttp = fileUploadHttp ?? http;
         _apiBase = apiBase;
         _allowInsecureLoopbackSocketForTests = allowInsecureLoopbackSocketForTests;
         _botToken = token;
         if (token is not null)
         {
             _connected = true;
+            _fileUploadConnected = true;
             _connectionGeneration = 1;
+            _fileUploadConnectionGeneration = 1;
         }
     }
 
@@ -46,6 +53,8 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTran
         ObjectDisposedException.ThrowIf(_disposed, this);
         Interlocked.Increment(ref _connectionGeneration);
         _connected = false;
+        _fileUploadConnected = false;
+        Interlocked.Increment(ref _fileUploadConnectionGeneration);
         _reconnectAttempt = 0;
         ArgumentNullException.ThrowIfNull(onRequest);
         if (string.IsNullOrWhiteSpace(settings.SlackBotToken) || string.IsNullOrWhiteSpace(settings.SlackAppToken))
@@ -69,11 +78,38 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTran
                 await RunSocketConnectionAsync(appToken, sessions, onRequest, settings, runToken).ConfigureAwait(false);
                 if (!runToken.IsCancellationRequested) throw new SlackReconnectException();
             }
-            catch (OperationCanceledException) when (runToken.IsCancellationRequested) { return; }
-            catch (ObjectDisposedException) when (runToken.IsCancellationRequested) { return; }
+            catch (OperationCanceledException) when (runToken.IsCancellationRequested)
+            {
+                _connected = false;
+                _fileUploadConnected = false;
+                Interlocked.Increment(ref _fileUploadConnectionGeneration);
+                return;
+            }
+            catch (ObjectDisposedException) when (runToken.IsCancellationRequested)
+            {
+                _connected = false;
+                _fileUploadConnected = false;
+                Interlocked.Increment(ref _fileUploadConnectionGeneration);
+                return;
+            }
             catch (SlackReconnectException)
             {
-                await DelayBeforeRetryAsync(runToken).ConfigureAwait(false);
+                _fileUploadConnected = false;
+                Interlocked.Increment(ref _fileUploadConnectionGeneration);
+                try { await DelayBeforeRetryAsync(runToken).ConfigureAwait(false); }
+                catch (OperationCanceledException) when (runToken.IsCancellationRequested)
+                {
+                    _connected = false;
+                    _fileUploadConnected = false;
+                    return;
+                }
+            }
+            catch
+            {
+                _connected = false;
+                _fileUploadConnected = false;
+                Interlocked.Increment(ref _fileUploadConnectionGeneration);
+                throw;
             }
         }
     }
@@ -97,6 +133,8 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTran
         try { await socket.ConnectAsync(socketUri, cancellationToken).ConfigureAwait(false); }
         catch (Exception ex) when (ex is WebSocketException or HttpRequestException or IOException) { throw new SlackReconnectException(ex); }
         _connected = true;
+        _fileUploadConnected = true;
+        Interlocked.Increment(ref _fileUploadConnectionGeneration);
         if (_reconnectAttempt > 0)
             ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("slack", ChatReconnectionState.Reconnected, _reconnectAttempt, null));
         _reconnectAttempt = 0;
@@ -246,7 +284,16 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTran
 
     public ValueTask DisposeAsync()
     {
-        if (!_disposed) { _disposed = true; _connected = false; _runLifetime?.Cancel(); _http.Dispose(); }
+        if (!_disposed)
+        {
+            _disposed = true;
+            _connected = false;
+            _fileUploadConnected = false;
+            Interlocked.Increment(ref _fileUploadConnectionGeneration);
+            _runLifetime?.Cancel();
+            _http.Dispose();
+            if (!ReferenceEquals(_fileUploadHttp, _http)) _fileUploadHttp.Dispose();
+        }
         return ValueTask.CompletedTask;
     }
 
@@ -296,12 +343,35 @@ public sealed class SlackSocketModeTransport : IChatTransport, IChatProgressTran
             new Uri(_apiBase, method), token);
         if (body is not null) request.Content = TransportHttp.JsonContent(body);
         using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode) throw new InvalidOperationException($"Slack API request failed with HTTP {(int)response.StatusCode}.");
+        if (!response.IsSuccessStatusCode)
+        {
+            if (method.StartsWith("files.", StringComparison.Ordinal))
+            {
+                var apiError = await TryReadSlackApiErrorAsync(response, ct).ConfigureAwait(false);
+                if (string.Equals(apiError, "missing_scope", StringComparison.Ordinal) || string.Equals(apiError, "not_allowed_token_type", StringComparison.Ordinal))
+                    throw SlackFileApiError(apiError, "Slack file operation failed.");
+            }
+            throw new InvalidOperationException($"Slack API request failed with HTTP {(int)response.StatusCode}.");
+        }
         await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         T? result;
         try { result = await JsonSerializer.DeserializeAsync<T>(stream, TransportHttp.JsonOptions, ct).ConfigureAwait(false); }
         catch (JsonException) { throw new InvalidOperationException("Slack returned an invalid API response."); }
         return result ?? throw new InvalidOperationException("Slack returned an empty API response.");
+    }
+
+    private static async Task<string?> TryReadSlackApiErrorAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
+            return TryString(document.RootElement, "error", out var error) ? error : null;
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     private async Task PostReplyAsync(ChatRequest request, string text, string token, CancellationToken ct)

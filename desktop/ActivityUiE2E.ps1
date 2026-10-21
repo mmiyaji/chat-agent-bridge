@@ -110,7 +110,7 @@ try {
     Assert (-not (Visible (Element 'ClearExecutionDayFilter'))) 'Day filter did not reset'
     Pass 'Selected day opens execution history and clear restores all dates'
     foreach($theme in @('light','dark')){
-        $script:activityMode=$false;Go 'NavAppearance';Scroll-To $(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'})
+        $script:activityMode=$false;Go 'NavOverview';Scroll-To $(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'})
         UI @('invoke',$(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}))|Out-Null
         foreach($width in @(1160,500)){
             Resize $width;Activity;Scroll-To 'ActivityTotal';Capture "overview-$theme-$width.png"

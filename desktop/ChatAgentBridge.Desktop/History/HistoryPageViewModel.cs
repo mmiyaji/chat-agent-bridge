@@ -60,6 +60,9 @@ public sealed record AuditHistoryRow(AuditEvent Record, string? ChatLabel = null
         "cancelled" => DesktopText.Get("AuditCancelled"),
         "reply_failed" => DesktopText.Get("AuditReplyFailed"),
         "reply_sent" => DesktopText.Get("AuditReplySent"),
+        "attachment_approved" => DesktopText.Get("AuditAttachmentApproved"),
+        "attachment_sent" => DesktopText.Get("AuditAttachmentSent"),
+        "attachment_failed" => DesktopText.Get("AuditAttachmentFailed"),
         "detached" => DesktopText.Get("AuditDetached"),
         "workspace_changed" => DesktopText.Get("AuditWorkspaceChanged"),
         "model_changed" => DesktopText.Get("AuditModelChanged"),
@@ -102,6 +105,9 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
         ? name : Binding.WorkspaceRoot;
     public string ConversationLabel => $"{ListTitle}\n{ListIdentity}\n{ListLocation}";
     public string Conversation => ConversationLabel;
+    public string ListConversation => $"{UserLabel} · {ListLocation}";
+    public string ListActivity => $"{SiteLabel} · {ActivitySummary}";
+    public string ListTooltip => $"{ListTitle}\n{ListIdentity}\n{ListLocation}\n{ListContext}\n{ActivitySummary}\n{UpdatedTooltip}";
     public string ListTitle => string.IsNullOrWhiteSpace(Binding.DisplayName) ? WorkspaceName : Binding.DisplayName;
     public string ListIdentity => $"{SiteLabel} · {UserLabel}";
     public string SiteLabel => ChatLabels?.SiteName is { Length: > 0 } site && site != Provider ? $"{Provider} / {site}" : Provider;
@@ -128,6 +134,15 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
         "running" => "\uE895",
         "interrupted" => "\uE7BA",
         _ => string.Empty
+    };
+    public string StatusTone => LatestExecutionStatus switch
+    {
+        "running" => "running",
+        "completed" => "success",
+        "failed" => "error",
+        "interrupted" => "warning",
+        "cancelled" => "stopped",
+        _ => "neutral"
     };
     public string Model => string.IsNullOrWhiteSpace(Binding.Model)
         ? DesktopText.Get("HistoryNextModelDefault")
@@ -253,11 +268,15 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public string RuntimeHeading => DesktopText.Get("HistoryRuntimeHeading");
     public string PolicyHeading => DesktopText.Get("HistoryPolicyHeading");
     public string IdentifiersHeading => DesktopText.Get("HistoryIdentifiersHeading");
+    public string IdentifiersSummary => SelectedSession is { } selected
+        ? $"{IdentifiersHeading} · {CompactSummaryPart(selected.UserLabel)} · {CompactSummaryPart(selected.ListLocation)}"
+        : IdentifiersHeading;
     public string ActionsHeading => DesktopText.Get("HistoryActionsHeading");
     public string EditModelLabel => DesktopText.Get("HistoryEditNextModel");
     public string SwitchAgentLabel => DesktopText.Get("AgentSwitchTitle");
     public string EditPolicyLabel => DesktopText.Get("HistoryEditPolicy");
     public string StartFreshLabel => DesktopText.Get("HistoryStartFresh");
+    private static string CompactSummaryPart(string value) => value.Length > 28 ? $"{value[..25]}…" : value;
     public string ExecutionSummary => ExecutionDayFilter is { } date
         ? DesktopText.Get("ActivityFilteredExecutions", date.ToString("D"), Executions.Count)
         : DesktopText.Get("HistoryExecutionSummary", Executions.Count);
@@ -273,6 +292,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(HasSelectedSession));
         OnPropertyChanged(nameof(SelectedSessionTitle));
+        OnPropertyChanged(nameof(IdentifiersSummary));
         RenameSelectedSessionCommand.NotifyCanExecuteChanged();
     }
     public bool HasSelectedSession => SelectedSession is not null;

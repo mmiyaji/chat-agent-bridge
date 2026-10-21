@@ -4,9 +4,15 @@
 
 > The native WinUI 3 / C# application is maintained on `main`. See the [desktop guide (Japanese)](desktop/README.ja.md) and [migration plan](docs/winui-migration-plan.ja.md). The documentation below describes the original TypeScript implementation retained during migration.
 
-The native app supports English and Japanese. By default it uses Japanese when the Windows preferred language is Japanese, and English for every other language. Choose **Language / 表示言語** in the first setup page or **Appearance** to override this. The first setup page changes immediately; after setup, the app offers to restart to apply the change. CLI responses and user content retain their original language. See the [Terms of Use](docs/terms.en.md) and [Privacy Policy](docs/privacy-policy.en.md) for the development preview.
+The native app supports English and Japanese. By default it uses Japanese when the Windows preferred language is Japanese, and English for every other language. Choose **Language / 表示言語** in the first setup page or **General → Language and appearance** to override this. The first setup page changes immediately; after setup, the app offers to restart to apply the change. CLI responses and user content retain their original language. See the [Terms of Use](docs/terms.en.md) and [Privacy Policy](docs/privacy-policy.en.md) for the development preview.
 
-Choose **Appearance** for Light, Dark, or Use system setting. Theme changes are saved and applied immediately without restarting. The default follows the Windows app color setting.
+In **General**, Windows startup, auto-connect, system tray, language, and theme preferences are grouped below current status. Windows startup and tray changes save immediately; use **Save auto-connect preference** for the next app launch. This button leaves drafts in Agent and Connection settings unsaved. Setup details and the architecture image remain available in the expanded details section.
+
+Choose **General → Language and appearance** for Light, Dark, or Use system setting. Theme changes are saved and applied immediately without restarting. The default follows the Windows app color setting.
+
+When close-to-tray is off, clicking × asks whether to exit, move to the system tray for this time, or cancel. Moving to the tray from this dialog keeps the app running without changing the saved preference. Exiting disconnects chat and cancels active and pending work.
+
+Under **General → System tray**, enable keeping the app running when its window is closed (off by default), or choose **Move to system tray**. Chat connections, work, and approval notifications remain active while hidden. Click the tray icon to reopen; its menu and the settings page offer **Exit completely**, which disconnects and cancels work regardless of the tray setting. Windows may place the icon in its hidden indicators area. Background mode does not run through sleep or sign-out. The preference is saved separately in `background.json` in the data folder.
 
 The **About** page at the bottom of the sidebar shows product and package information, provider and support links, development notes, Terms of Use, and the Privacy Policy. Store page and manual update checks are available for Microsoft Store distributions. The development preview displays its distribution status instead.
 
@@ -184,6 +190,7 @@ flowchart TD
 
 ## Documentation
 
+- Windows CI/CD and distribution: [docs/ci-cd.ja.md](docs/ci-cd.ja.md)
 - Install and base configuration: [docs/install.md](docs/install.md)
 - Slack setup: [docs/slack-setup.md](docs/slack-setup.md)
 - Mattermost setup: [docs/mattermost-setup.md](docs/mattermost-setup.md)

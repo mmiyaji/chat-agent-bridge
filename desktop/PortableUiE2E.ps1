@@ -65,6 +65,7 @@ function ChooseLanguage([string]$Name) {
 function Go([string]$Id,[string]$Target) {
     UI @('invoke',$Id) | Out-Null
     UI @('wait-for',$Target,'-t','5000') | Out-Null
+    UI @('scroll-into-view',$Target) | Out-Null
 }
 function WaitStartupIdle {
     UI @('wait-for','StartWithWindows','-p','IsEnabled','--value','True','-t','6000') | Out-Null
@@ -84,7 +85,7 @@ try {
     Assert ((Get-Content (Join-Path $data 'language.json') -Raw | ConvertFrom-Json).Language -eq 'en') 'Language was not saved beside the EXE.'
     Pass 'First-run language changes immediately and saves into portable Data'
     UI @('invoke','OnboardingDefer') | Out-Null
-    Go 'NavAppearance' 'ThemeLight'
+    Go 'NavOverview' 'ThemeLight'
     UI @('invoke','ThemeLight') | Out-Null
     $until = [DateTime]::UtcNow.AddSeconds(5)
     while (-not (Test-Path (Join-Path $data 'appearance.json')) -and [DateTime]::UtcNow -lt $until) { Start-Sleep -Milliseconds 50 }
@@ -104,7 +105,7 @@ try {
     WaitStartupIdle
     Assert ($null -eq (ReadRunCommand)) 'Disabling startup left its Run entry.'
     Pass 'Per-user startup can be enabled and disabled; repeated input is blocked'
-    Go 'NavAppearance' 'DisplayLanguage'
+    Go 'NavOverview' 'DisplayLanguage'
     ChooseLanguage '日本語 (Japanese)'
     UI @('wait-for','LanguageRestartDialog','-t','5000') | Out-Null
     $oldId = $app.Id

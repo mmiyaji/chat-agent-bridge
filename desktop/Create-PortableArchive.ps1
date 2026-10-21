@@ -7,13 +7,15 @@ param(
     [string] $OutputDirectory = (Join-Path $PSScriptRoot 'artifacts/portable-releases'),
     [switch] $ValidateOnly,
     [string] $ArchivePath,
-    [string] $ExistingLayout
+    [string] $ExistingLayout,
+    [string] $WorkingDirectory = (Join-Path $PSScriptRoot 'artifacts')
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $project = Join-Path $PSScriptRoot 'ChatAgentBridge.Desktop/ChatAgentBridge.Desktop.csproj'
+$updaterProject = Join-Path $PSScriptRoot 'ChatAgentBridge.Updater/ChatAgentBridge.Updater.csproj'
 $distributionDir = Join-Path $PSScriptRoot 'distribution'
 $expectedMachine = if ($Architecture -eq 'x64') { 0x8664 } else { 0xAA64 }
 $requiredNames = @('ChatAgentBridge.Desktop.exe', 'ChatAgentBridge.Desktop.runtimeconfig.json', 'coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'Microsoft.ui.xaml.dll', 'Microsoft.WindowsAppRuntime.Insights.Resource.dll', 'ChatAgentBridge.Desktop.pri', 'README.portable.ja.txt', 'README.portable.en.txt')
@@ -28,12 +30,18 @@ function Assert-PortableContents {
     $directories = @(Get-ChildItem -LiteralPath $resolved -Directory -Recurse -Force)
 
     foreach ($directory in $directories) {
+        if ($directory.Name.StartsWith('.cab-', [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Private updater state in portable payload: $($directory.FullName)"
+        }
         if ($forbiddenDirectoryNames -contains $directory.Name.ToLowerInvariant()) {
             throw "Forbidden private or test directory in portable payload: $($directory.FullName)"
         }
     }
 
     foreach ($file in $files) {
+        if ($file.Name.StartsWith('.cab-', [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Private updater state in portable payload: $($file.FullName)"
+        }
         $extension = $file.Extension.ToLowerInvariant()
         $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name).ToLowerInvariant()
         if ($forbiddenDirectoryNames -contains $stem) { throw "Private or test file is forbidden in portable payload: $($file.FullName)" }
@@ -96,6 +104,48 @@ function Assert-PortableContents {
         }
     }
 
+    # Metadata is optional for validation so previously published portable archives
+    # remain verifiable. New archives include the complete updater contract.
+    $releaseMetadataPath = Join-Path $resolved 'portable-release.json'
+    $managedFilesPath = Join-Path $resolved 'portable-files.json'
+    $hasReleaseMetadata = Test-Path -LiteralPath $releaseMetadataPath -PathType Leaf
+    $hasManagedFiles = Test-Path -LiteralPath $managedFilesPath -PathType Leaf
+    if ($hasReleaseMetadata -xor $hasManagedFiles) { throw 'Portable updater metadata is incomplete.' }
+    if ($hasReleaseMetadata) {
+        $releaseMetadata = Get-Content -LiteralPath $releaseMetadataPath -Raw | ConvertFrom-Json
+        if ($releaseMetadata.schemaVersion -ne 1 -or [string]::IsNullOrWhiteSpace([string]$releaseMetadata.releaseVersion)) {
+            throw 'portable-release.json has an unsupported schema or missing releaseVersion.'
+        }
+        $metadataArchitecture = [string]$releaseMetadata.architecture
+        $expectedMetadataArchitecture = if ($Architecture -eq 'x64') { 'x64' } else { 'arm64' }
+        if ($metadataArchitecture -ne $expectedMetadataArchitecture) {
+            throw "portable-release.json architecture is $metadataArchitecture; expected $expectedMetadataArchitecture."
+        }
+        if (-not (Test-Path -LiteralPath (Join-Path $resolved 'ChatAgentBridge.Updater.exe') -PathType Leaf)) {
+            throw 'ChatAgentBridge.Updater.exe is missing from a metadata-enabled portable package.'
+        }
+
+        $managedMetadata = Get-Content -LiteralPath $managedFilesPath -Raw | ConvertFrom-Json
+        if ($managedMetadata.schemaVersion -ne 1 -or $null -eq $managedMetadata.files) {
+            throw 'portable-files.json has an unsupported schema or missing files array.'
+        }
+        $managed = @{}
+        foreach ($entry in @($managedMetadata.files)) {
+            $relativeSlash = [string]$entry
+            if ([string]::IsNullOrWhiteSpace($relativeSlash) -or $relativeSlash.Contains('\') -or $relativeSlash.StartsWith('/') -or $relativeSlash -match '(^|/)\.\.(?:/|$)') {
+                throw "Unsafe managed-file path: $relativeSlash"
+            }
+            if ($managed.ContainsKey($relativeSlash)) { throw "Duplicate managed-file path: $relativeSlash" }
+            $managed[$relativeSlash] = $true
+        }
+        $actualManaged = @($files | ForEach-Object { (Get-RelativePath -BasePath $resolved -TargetPath $_.FullName).Replace('\', '/') })
+        if ($managed.Count -ne $actualManaged.Count) { throw 'portable-files.json does not cover every payload file exactly once.' }
+        foreach ($relativeSlash in $actualManaged) {
+            if (-not $managed.ContainsKey($relativeSlash)) { throw "portable-files.json does not list $relativeSlash" }
+        }
+        if (-not $managed.ContainsKey('SHA256SUMS.txt')) { throw 'portable-files.json must list SHA256SUMS.txt.' }
+    }
+
     $sumFile = Join-Path $resolved 'SHA256SUMS.txt'
     if (-not (Test-Path -LiteralPath $sumFile -PathType Leaf)) { throw 'SHA256SUMS.txt is missing.' }
     $listed = @{}
@@ -127,11 +177,20 @@ function Assert-NoPrivateOrForbiddenContent {
         throw "Forbidden private or test source directory: $resolved"
     }
     foreach ($directory in Get-ChildItem -LiteralPath $resolved -Directory -Recurse -Force) {
+        if ($directory.Name.StartsWith('.cab-', [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Private updater state in portable source: $($directory.FullName)"
+        }
         if ($forbiddenDirectoryNames -contains $directory.Name.ToLowerInvariant()) {
             throw "Forbidden private or test directory in portable source: $($directory.FullName)"
         }
     }
     foreach ($file in Get-ChildItem -LiteralPath $resolved -File -Recurse -Force) {
+        # Running a portable build creates this empty lifetime lease beside its executable.
+        # It is excluded when copying an existing layout; all other updater state is rejected.
+        if ($file.Name.StartsWith('.cab-', [StringComparison]::OrdinalIgnoreCase) -and
+            -not ($file.Name -ieq '.cab-instance.lock' -and $file.DirectoryName -ieq $resolved -and $file.Length -eq 0)) {
+            throw "Private updater state in portable source: $($file.FullName)"
+        }
         $extension = $file.Extension.ToLowerInvariant()
         $stem = [System.IO.Path]::GetFileNameWithoutExtension($file.Name).ToLowerInvariant()
         if ($forbiddenDirectoryNames -contains $stem -or $file.Name -match '(?i)testagent|^chatagentbridge\.testagent' -or $extension -in @('.pfx', '.cer', '.msix', '.appx')) {
@@ -168,6 +227,26 @@ function New-PayloadChecksums {
     [System.IO.File]::WriteAllLines($sumPath, $rows, [System.Text.UTF8Encoding]::new($false))
 }
 
+function New-PortableMetadata {
+    param([Parameter(Mandatory)][string] $Layout, [Parameter(Mandatory)][string] $Version, [Parameter(Mandatory)][string] $CpuArchitecture)
+
+    $metadataArchitecture = if ($CpuArchitecture -eq 'x64') { 'x64' } else { 'arm64' }
+    $releaseMetadata = [ordered]@{ schemaVersion = 1; releaseVersion = $Version; architecture = $metadataArchitecture }
+    $releasePath = Join-Path $Layout 'portable-release.json'
+    [System.IO.File]::WriteAllText($releasePath, ($releaseMetadata | ConvertTo-Json -Depth 4) + "`n", [System.Text.UTF8Encoding]::new($false))
+
+    # The managed manifest describes the final payload. SHA256SUMS.txt is named
+    # here before it is generated; its own rows cover all other payload files.
+    $managedPaths = @(Get-ChildItem -LiteralPath $Layout -File -Recurse -Force | ForEach-Object {
+        (Get-RelativePath -BasePath $Layout -TargetPath $_.FullName).Replace('\', '/')
+    })
+    $managedPaths += @('portable-files.json', 'SHA256SUMS.txt')
+    $managedPaths = @($managedPaths | Sort-Object -Unique)
+    $managedMetadata = [ordered]@{ schemaVersion = 1; files = $managedPaths }
+    $managedPath = Join-Path $Layout 'portable-files.json'
+    [System.IO.File]::WriteAllText($managedPath, ($managedMetadata | ConvertTo-Json -Depth 4) + "`n", [System.Text.UTF8Encoding]::new($false))
+}
+
 function Get-SafeArtifactPath {
     param([Parameter(Mandatory)][string] $Parent, [Parameter(Mandatory)][string] $ChildName)
     $parentFull = [System.IO.Path]::GetFullPath($Parent)
@@ -198,7 +277,7 @@ if ($ValidateOnly) {
     else {
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         $fullArchive = (Resolve-Path -LiteralPath $ArchivePath).Path
-        $artifactRoot = Join-Path $PSScriptRoot 'artifacts'
+        $artifactRoot = [IO.Path]::GetFullPath($WorkingDirectory)
         New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
         $validationRoot = Get-SafeArtifactPath -Parent $artifactRoot -ChildName ('.portable-validate-' + [guid]::NewGuid().ToString('N'))
         New-Item -ItemType Directory -Path $validationRoot | Out-Null
@@ -228,11 +307,12 @@ if ($ValidateOnly) {
 
 if ($ArchivePath) { throw '-ArchivePath is only supported with -ValidateOnly.' }
 if (-not $ExistingLayout -and -not (Test-Path -LiteralPath $project -PathType Leaf)) { throw "Desktop project not found: $project" }
+if (-not (Test-Path -LiteralPath $updaterProject -PathType Leaf)) { throw "Updater project not found: $updaterProject" }
 foreach ($readme in @('README.portable.ja.txt', 'README.portable.en.txt')) {
     if (-not (Test-Path -LiteralPath (Join-Path $distributionDir $readme) -PathType Leaf)) { throw "Distribution note missing: $readme" }
 }
 
-$artifactRoot = Join-Path $PSScriptRoot 'artifacts'
+$artifactRoot = [IO.Path]::GetFullPath($WorkingDirectory)
 New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
 $stageRoot = Get-SafeArtifactPath -Parent $artifactRoot -ChildName ('.portable-build-' + [guid]::NewGuid().ToString('N'))
 $layout = Join-Path $stageRoot 'ChatAgentBridge.Portable'
@@ -243,7 +323,9 @@ if ($ExistingLayout) {
     if (-not (Test-Path -LiteralPath $ExistingLayout -PathType Container)) { throw "Existing publish layout not found: $ExistingLayout" }
     Assert-NoPrivateOrForbiddenContent -Layout $ExistingLayout
     Get-ChildItem -LiteralPath $ExistingLayout -Force | ForEach-Object {
-        Copy-Item -LiteralPath $_.FullName -Destination $layout -Recurse -Force
+        if (-not ($_ -is [IO.FileInfo] -and $_.Name -ieq '.cab-instance.lock')) {
+            Copy-Item -LiteralPath $_.FullName -Destination $layout -Recurse -Force
+        }
     }
 }
 else {
@@ -258,9 +340,31 @@ else {
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE" }
 }
 
+# Publish the updater independently, then merge only its single-file executable.
+# Its publish directory lives outside the archive staging tree and is removed.
+$updaterPublish = Get-SafeArtifactPath -Parent $artifactRoot -ChildName ('.portable-updater-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $updaterPublish | Out-Null
+try {
+    $updaterPublishArgs = @(
+        'publish', $updaterProject, '-c', 'Release', '-r', $runtime, '--self-contained', 'true',
+        '-p:PublishSingleFile=true', '-p:IncludeNativeLibrariesForSelfExtract=true', '-p:EnableCompressionInSingleFile=true',
+        '-p:DebugType=None', '-p:DebugSymbols=false', '-o', $updaterPublish
+    )
+    & dotnet @updaterPublishArgs
+    if ($LASTEXITCODE -ne 0) { throw "Updater dotnet publish failed with exit code $LASTEXITCODE" }
+    $updaterExe = Join-Path $updaterPublish 'ChatAgentBridge.Updater.exe'
+    if (-not (Test-Path -LiteralPath $updaterExe -PathType Leaf)) { throw 'Updater publish did not produce ChatAgentBridge.Updater.exe.' }
+    Copy-Item -LiteralPath $updaterExe -Destination (Join-Path $layout 'ChatAgentBridge.Updater.exe')
+}
+finally {
+    $safeUpdaterPublish = Get-SafeArtifactPath -Parent $artifactRoot -ChildName (Split-Path -Leaf $updaterPublish)
+    if (Test-Path -LiteralPath $safeUpdaterPublish -PathType Container) { Remove-Item -LiteralPath $safeUpdaterPublish -Recurse -Force }
+}
+
 Remove-KnownPackagingMetadata -Layout $layout
 Copy-Item -LiteralPath (Join-Path $distributionDir 'README.portable.ja.txt') -Destination $layout
 Copy-Item -LiteralPath (Join-Path $distributionDir 'README.portable.en.txt') -Destination $layout
+New-PortableMetadata -Layout $layout -Version $ReleaseVersion -CpuArchitecture $Architecture
 New-PayloadChecksums -Layout $layout
 $null = Assert-PortableContents -Layout $layout
 

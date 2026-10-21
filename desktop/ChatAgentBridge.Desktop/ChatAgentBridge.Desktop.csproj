@@ -29,6 +29,12 @@
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable\</IntermediateOutputPath>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(CABPortableUpdateTest)' == 'true' and '$(CABPortable)' == 'true'">
+    <DefineConstants>$(DefineConstants);CAB_PORTABLE_UPDATE_TEST</DefineConstants>
+    <OutputPath>bin\$(Platform)\$(Configuration)\portable-update-test\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable-update-test\</IntermediateOutputPath>
+  </PropertyGroup>
+
   <UsingTask TaskName="ExtractPortableAppNotificationResource" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll" Condition="'$(CABPortable)' == 'true'">
     <ParameterGroup>
       <ArchivePath ParameterType="System.String" Required="true" />
@@ -85,6 +91,8 @@
   <ItemGroup>
     <Content Include="Assets\OverviewArchitecture.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Assets\OverviewArchitecture.en.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\OverviewArchitecture.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\OverviewArchitecture.en.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\Square150x150Logo.scale-200.png" />
@@ -121,6 +129,8 @@
     <PropertyGroup> above to opt out.
   -->
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.Sizers" Version="8.2.251219" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />

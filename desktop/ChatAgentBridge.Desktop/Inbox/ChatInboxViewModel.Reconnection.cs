@@ -33,7 +33,7 @@ public sealed partial class ChatInboxViewModel
                 IsConnectionConfirmed = true;
                 HasConnectionError = false;
                 Status = DesktopText.Get(hasConnected ? "InboxReconnected" : "InboxConnectedWaiting");
-                if (!hasConnected)
+                if (!hasConnected && settings.PostConnectionNotice)
                     _connectionNotice = NotifyConnectionAsync(transport, settings,
                         DesktopText.Get("InboxConnectedChatNotice"));
                 hasConnected = true;

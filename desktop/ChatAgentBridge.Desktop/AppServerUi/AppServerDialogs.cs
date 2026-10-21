@@ -25,7 +25,7 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
                 App.PendingRequestNotifications.TryNotifyPendingRequest(Notifications.PendingNotificationKind.AiApproval,
                     () => { quickDecision.TrySetResult(AppServerDecision.Accept); return Task.CompletedTask; },
                     () => { quickDecision.TrySetResult(AppServerDecision.Decline); return Task.CompletedTask; },
-                    () => { App.Window.Activate(); return Task.CompletedTask; }, out token);
+                    () => { App.Tray.ShowWindow(); return Task.CompletedTask; }, out token);
             });
             var local = ShowAsync(xamlRoot => BuildApprovalDialog(xamlRoot, approval),
                 AppServerDecision.Decline, localCancellation.Token);

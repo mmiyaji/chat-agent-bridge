@@ -25,7 +25,16 @@ public sealed class SettingsStore
 
     public async Task<BridgeSettings> LoadAsync(CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(_filePath)) return new BridgeSettings();
+        if (!File.Exists(_filePath))
+        {
+            // Suggest the user's known Documents folder only for a new installation.
+            // Never replace a saved workspace or create/trust another directory implicitly.
+            var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            return new BridgeSettings
+            {
+                WorkspaceRoot = Path.IsPathFullyQualified(documents) && Directory.Exists(documents) ? documents : ""
+            };
+        }
         try
         {
             await using var stream = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
@@ -57,6 +66,7 @@ public sealed class SettingsStore
                 MattermostChannelId = stored.MattermostChannelId ?? "",
                 MattermostToken = Unprotect(stored.MattermostToken),
                 MattermostBypassProxy = stored.MattermostBypassProxy,
+                PostConnectionNotice = stored.PostConnectionNotice,
                 SlackBotToken = Unprotect(stored.SlackBotToken),
                 SlackAppToken = Unprotect(stored.SlackAppToken),
                 MattermostAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(stored.MattermostAllowedUserIds ?? ""),
@@ -71,8 +81,13 @@ public sealed class SettingsStore
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(stored.ChatResultMode),
                 SlackAllowedChannelIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedChannelIds ?? ""),
                 SlackAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedThreadIds ?? ""),
-                MattermostAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.MattermostAllowedThreadIds ?? "")
+                MattermostAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.MattermostAllowedThreadIds ?? ""),
+                FileAttachmentApprovalMode = FileAttachmentPolicy.NormalizeMode(stored.FileAttachmentApprovalMode ?? "always"),
+                FileAttachmentMaxSizeMb = stored.FileAttachmentMaxSizeMb,
+                FileAttachmentMaxCount = stored.FileAttachmentMaxCount,
+                FileAttachmentMaxTotalSizeMb = stored.FileAttachmentMaxTotalSizeMb
             };
+            FileAttachmentPolicy.Validate(settings);
             if (provider == AgentProfile.Custom && settings.AgentModel is not null)
                 throw new InvalidDataException("A custom agent cannot use a provider model override.");
             if (provider == AgentProfile.Custom && settings.AgentReasoningEffort is not null)
@@ -104,7 +119,7 @@ public sealed class SettingsStore
         string mattermostAllowedUsers;
         string slackAllowedUsers;
         string slackAllowedChannels, slackAllowedThreads, mattermostAllowedThreads;
-        string permissionMode, approvalMode, resultMode, trustedRoots;
+        string permissionMode, approvalMode, resultMode, trustedRoots, attachmentMode;
         try
         {
             mattermostAllowedUsers = ChatAccessPolicy.NormalizeAllowedUsers(settings.MattermostAllowedUserIds);
@@ -116,8 +131,11 @@ public sealed class SettingsStore
             approvalMode = ExecutionPolicy.NormalizeChatApprovalMode(settings.ChatApprovalMode);
             resultMode = ExecutionPolicy.NormalizeChatResultMode(settings.ChatResultMode);
             trustedRoots = ExecutionPolicy.NormalizeTrustedRoots(settings.TrustedWorkspaceRoots);
+            attachmentMode = FileAttachmentPolicy.NormalizeMode(settings.FileAttachmentApprovalMode);
         }
         catch (FormatException ex) { throw new ArgumentException("Allowed-user or scope IDs are invalid: " + ex.Message, nameof(settings), ex); }
+        var validatedSettings = settings with { FileAttachmentApprovalMode = attachmentMode };
+        FileAttachmentPolicy.Validate(validatedSettings);
         if (provider == AgentProfile.Custom && model is not null)
             throw new ArgumentException("A custom agent cannot use a provider model override.", nameof(settings));
         if (provider == AgentProfile.Custom && effort is not null)
@@ -144,6 +162,7 @@ public sealed class SettingsStore
             MattermostChannelId = settings.MattermostChannelId,
             MattermostToken = Protect(settings.MattermostToken),
             MattermostBypassProxy = settings.MattermostBypassProxy,
+            PostConnectionNotice = settings.PostConnectionNotice,
             SlackBotToken = Protect(settings.SlackBotToken),
             SlackAppToken = Protect(settings.SlackAppToken),
             MattermostAllowedUserIds = mattermostAllowedUsers,
@@ -158,7 +177,11 @@ public sealed class SettingsStore
             ChatResultMode = resultMode,
             SlackAllowedChannelIds = slackAllowedChannels,
             SlackAllowedThreadIds = slackAllowedThreads,
-            MattermostAllowedThreadIds = mattermostAllowedThreads
+            MattermostAllowedThreadIds = mattermostAllowedThreads,
+            FileAttachmentApprovalMode = attachmentMode,
+            FileAttachmentMaxSizeMb = settings.FileAttachmentMaxSizeMb,
+            FileAttachmentMaxCount = settings.FileAttachmentMaxCount,
+            FileAttachmentMaxTotalSizeMb = settings.FileAttachmentMaxTotalSizeMb
         };
         var tempPath = Path.Combine(DirectoryPath, $"settings.{Guid.NewGuid():N}.tmp");
         try
@@ -224,6 +247,7 @@ public sealed class SettingsStore
         public string? MattermostChannelId { get; set; }
         public string? MattermostToken { get; set; }
         public bool MattermostBypassProxy { get; set; }
+        public bool PostConnectionNotice { get; set; }
         public string? SlackBotToken { get; set; }
         public string? SlackAppToken { get; set; }
         public string? MattermostAllowedUserIds { get; set; }
@@ -239,5 +263,9 @@ public sealed class SettingsStore
         public string? SlackAllowedChannelIds { get; set; }
         public string? SlackAllowedThreadIds { get; set; }
         public string? MattermostAllowedThreadIds { get; set; }
+        public string? FileAttachmentApprovalMode { get; set; } = "always";
+        public int FileAttachmentMaxSizeMb { get; set; } = 10;
+        public int FileAttachmentMaxCount { get; set; } = 3;
+        public int FileAttachmentMaxTotalSizeMb { get; set; } = 20;
     }
 }

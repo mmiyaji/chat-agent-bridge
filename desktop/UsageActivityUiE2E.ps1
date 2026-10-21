@@ -40,7 +40,7 @@ try{
     Capture 'last-request.png';Pass 'Last request values remain isolated from full execution and cumulative scopes'
     Choice 'UsageScope' 'UsageScopeTurn';Choice 'UsageMetric' 'UsageMetricTokens'
     foreach($theme in @('light','dark')){
-        $script:activityMode=$false;Go 'NavAppearance'
+        $script:activityMode=$false;Go 'NavOverview'
         $themeId=if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}
         Scroll-To $themeId;UI @('invoke',$themeId)|Out-Null
         foreach($width in @(1160,500)){

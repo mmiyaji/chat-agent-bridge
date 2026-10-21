@@ -3,9 +3,11 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:inbox="using:ChatAgentBridge_Desktop.Inbox"
+    xmlns:presentation="using:ChatAgentBridge_Desktop.Presentation"
+    xmlns:executionUi="using:ChatAgentBridge_Desktop.ExecutionUi"
     SizeChanged="Page_SizeChanged"
     AutomationProperties.AutomationId="ChatScroll">
-    <Grid Padding="16" RowSpacing="10">
+    <Grid RowSpacing="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -21,43 +23,57 @@
                 <Button Command="{x:Bind ViewModel.DisconnectCommand}" AutomationProperties.AutomationId="DisconnectChat" x:Uid="DisconnectChat" />
             </StackPanel>
         </StackPanel>
-        <StackPanel Grid.Row="1" Spacing="3">
-            <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" MaxLines="2" TextTrimming="WordEllipsis"
-                       ToolTipService.ToolTip="{x:Bind ViewModel.Status, Mode=OneWay}" AutomationProperties.AutomationId="ChatStatus" />
-            <StackPanel Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.IsWideLayout), Mode=OneWay}">
-                <TextBlock Text="{x:Bind ViewModel.OverflowNotice, Mode=OneWay}" TextWrapping="Wrap" />
-                <TextBlock Text="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="NotificationStatus" />
-                <TextBlock Text="{x:Bind ViewModel.ProgressNotice, Mode=OneWay}" TextWrapping="Wrap"
-                           Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasProgressNotice), Mode=OneWay}"
-                           AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="ChatProgressNotice" />
-            </StackPanel>
-            <Expander HorizontalAlignment="Stretch" x:Uid="InboxConnectionDetails" AutomationProperties.AutomationId="InboxConnectionDetails"
-                      Visibility="{x:Bind inbox:ChatInboxPage.HiddenWhen(ViewModel.IsWideLayout), Mode=OneWay}">
-                <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" />
-                        <TextBlock Text="{x:Bind ViewModel.OverflowNotice, Mode=OneWay}" TextWrapping="Wrap" />
-                        <TextBlock Text="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" />
-                        <TextBlock Text="{x:Bind ViewModel.ProgressNotice, Mode=OneWay}" TextWrapping="Wrap"
-                                   Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasProgressNotice), Mode=OneWay}"
-                                   AutomationProperties.AutomationId="ChatProgressNoticeCompact" />
+        <StackPanel Grid.Row="1" Spacing="8">
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="InboxConnectionDetails" x:Uid="InboxConnectionSummary">
+                <Expander.Header>
+                    <Grid ColumnSpacing="12" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <presentation:StatusIcon Tone="{x:Bind ViewModel.ConnectionTone, Mode=OneWay}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="{x:Bind ViewModel.ConnectionLabel, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="InboxConnectionLabel" />
+                            <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" MaxLines="2" TextTrimming="WordEllipsis"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}"
+                                       ToolTipService.ToolTip="{x:Bind ViewModel.Status, Mode=OneWay}" AutomationProperties.AutomationId="ChatStatus" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{x:Bind ViewModel.QueueSummary, Mode=OneWay}" VerticalAlignment="Center"
+                                   Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="InboxQueueSummary"
+                                   Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.IsWideLayout), Mode=OneWay}" />
+                    </Grid>
+                </Expander.Header>
+                <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Spacing="8">
+                        <TextBlock TextWrapping="Wrap" x:Uid="InboxConnectionHelp" />
+                        <TextBlock Text="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="NotificationStatus" />
                     </StackPanel>
                 </ScrollViewer>
             </Expander>
+            <TextBlock Text="{x:Bind ViewModel.OverflowNotice, Mode=OneWay}" TextWrapping="Wrap"
+                       Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasOverflowNotice), Mode=OneWay}" />
+            <TextBlock Text="{x:Bind ViewModel.ProgressNotice, Mode=OneWay}" TextWrapping="Wrap"
+                       Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasProgressNotice), Mode=OneWay}"
+                       AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="ChatProgressNotice" />
+            <Button Command="{x:Bind ViewModel.ReturnToActiveRequestCommand, Mode=OneWay}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasOtherRequestRunning), Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind ViewModel.ActiveRequestBannerText, Mode=OneWay}"
+                    AutomationProperties.AutomationId="ActiveRequestBanner" x:Uid="InboxActiveRequestBannerButton">
+                <TextBlock Text="{x:Bind ViewModel.ActiveRequestBannerText, Mode=OneWay}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+            </Button>
         </StackPanel>
         <Grid x:Name="BodyGrid" Grid.Row="2" ColumnSpacing="12">
             <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /></Grid.ColumnDefinitions>
             <Grid x:Name="ConversationPane" RowSpacing="8"
                   Visibility="{x:Bind inbox:ChatInboxPage.ConversationPaneVisibility(ViewModel.IsWideLayout, ViewModel.IsDetailOpen), Mode=OneWay}">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-                <StackPanel>
+                <Border Grid.RowSpan="3" Style="{StaticResource ActivityCardStyle}" Padding="0" IsHitTestVisible="False" />
+                <StackPanel Margin="12,12,12,0" Spacing="4">
                     <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="InboxConversationsHeading" />
-                    <TextBlock TextWrapping="Wrap" x:Uid="InboxConversationHelp"
-                               Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.IsWideLayout), Mode=OneWay}" />
-                    <TextBlock Text="{x:Bind ViewModel.ConversationCountLabel, Mode=OneWay}" AutomationProperties.AutomationId="InboxConversationCount" />
+                    <TextBlock Text="{x:Bind ViewModel.ConversationCountLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="InboxConversationCount" />
                 </StackPanel>
-                <Grid Grid.Row="1" ColumnSpacing="8">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <Grid Grid.Row="1" Margin="12,0" ColumnSpacing="8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="140" /></Grid.ColumnDefinitions>
                     <TextBox x:Name="InboxSearchBox" Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                     AutomationProperties.AutomationId="InboxSearch" x:Uid="InboxSearch" />
                     <ComboBox Grid.Column="1" SelectedValue="{x:Bind ViewModel.StateFilter, Mode=TwoWay}"
@@ -68,73 +84,100 @@
                         <ComboBoxItem Tag="completed" x:Uid="InboxFilterCompleted" />
                     </ComboBox>
                 </Grid>
-                <Grid Grid.Row="2">
+                <Grid Grid.Row="2" Margin="4,0,4,4">
                 <ListView x:Name="ConversationList" ItemsSource="{x:Bind ViewModel.VisibleConversations, Mode=OneWay}"
                           SelectionMode="Single" SelectedItem="{x:Bind ViewModel.SelectedConversation, Mode=OneWay}"
                           IsItemClickEnabled="True" ItemClick="Conversation_ItemClick" SelectionChanged="Conversation_SelectionChanged" KeyDown="Conversation_KeyDown" AutomationProperties.AutomationId="InboxConversations">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="inbox:InboxConversation">
-                            <Grid Padding="8" ColumnSpacing="8">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <StackPanel Spacing="3">
-                                    <TextBlock Text="{x:Bind Title, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Text="{x:Bind Location, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Text="{x:Bind LatestPrompt, Mode=OneWay}" TextWrapping="Wrap" MaxLines="2" />
-                                    <TextBlock Text="{x:Bind Activity, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                                    <TextBlock Text="{x:Bind StateSummary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" MaxWidth="130" />
-                                    <TextBlock Text="{x:Bind RequestCountLabel, Mode=OneWay}" HorizontalAlignment="Right" />
-                                </StackPanel>
+                            <Grid Padding="8,12" RowSpacing="8" ToolTipService.ToolTip="{x:Bind ListTooltip, Mode=OneWay}">
+                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind ListTitle, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind ActivityCompact, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                                </Grid>
+                                <TextBlock Grid.Row="1" Text="{x:Bind Title, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"
+                                           TextTrimming="CharacterEllipsis" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Grid.Row="2" Text="{x:Bind LatestPrompt, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1"
+                                           Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(HasSeveralRequests), Mode=OneWay}" />
+                                <Grid Grid.Row="3" ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <presentation:StatusIcon Tone="{x:Bind StateTone, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind StateSummary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind RequestCountLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <TextBlock Text="{x:Bind ViewModel.EmptyListMessage, Mode=OneWay}" TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
-                           Visibility="{x:Bind inbox:ChatInboxPage.HiddenWhen(ViewModel.HasVisibleConversations), Mode=OneWay}"
-                           AutomationProperties.AutomationId="InboxEmptyList" />
+                <StackPanel Margin="24" Spacing="12" VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Visibility="{x:Bind inbox:ChatInboxPage.HiddenWhen(ViewModel.HasVisibleConversations), Mode=OneWay}">
+                    <FontIcon Glyph="&#xE8F2;" FontSize="28" Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AccessibilityView="Raw" />
+                    <TextBlock Text="{x:Bind ViewModel.EmptyListMessage, Mode=OneWay}" TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="InboxEmptyList" />
+                </StackPanel>
                 </Grid>
             </Grid>
             <Grid x:Name="DetailPane" Grid.Column="1" RowSpacing="8"
                   Visibility="{x:Bind inbox:ChatInboxPage.DetailPaneVisibility(ViewModel.IsWideLayout, ViewModel.IsDetailOpen), Mode=OneWay}">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <Border Grid.RowSpan="3" Style="{StaticResource ActivityCardStyle}" Padding="0" IsHitTestVisible="False" />
                 <TextBlock Text="{x:Bind ViewModel.SelectedOutput, Mode=OneWay}" TextWrapping="Wrap" Margin="24" Grid.RowSpan="3"
                            Visibility="{x:Bind inbox:ChatInboxPage.HiddenWhen(ViewModel.HasSelectedConversation), Mode=OneWay}" />
-                <Grid ColumnSpacing="8" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedConversation), Mode=OneWay}">
+                <Grid Margin="12,12,12,0" ColumnSpacing="8" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedConversation), Mode=OneWay}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                             <Button x:Name="InboxBackButton" Click="BackToConversations_Click" Visibility="{x:Bind inbox:ChatInboxPage.BackButtonVisibility(ViewModel.IsWideLayout), Mode=OneWay}"
                                     AutomationProperties.AutomationId="InboxBackToConversations" x:Uid="InboxBackToConversations" />
                             <StackPanel Grid.Column="1">
-                                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="{x:Bind ViewModel.SelectedConversation.Title, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
-                                <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="InboxSameThreadHelp" />
+                                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="{x:Bind ViewModel.SelectedConversation.ListTitle, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind ViewModel.SelectedConversation.Title, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
                             </StackPanel>
                         </Grid>
 
-                <Grid Grid.Row="1" ColumnSpacing="8" RowSpacing="8" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedConversation), Mode=OneWay}">
+                <Grid Grid.Row="1" Margin="12,0" ColumnSpacing="8" RowSpacing="8" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedConversation), Mode=OneWay}">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                     <Button Command="{x:Bind ViewModel.ApproveCommand}" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ApproveChat" x:Uid="InboxApprove" />
                     <Button Grid.Column="1" Command="{x:Bind ViewModel.RejectCommand}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="RejectChat" x:Uid="InboxReject" />
                     <Button Grid.Row="1" Command="{x:Bind ViewModel.CancelCommand}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="CancelChat" x:Uid="InboxStop" />
                     <Button Grid.Row="1" Grid.Column="1" Command="{x:Bind ViewModel.SendResultCommand}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SendChatResult" x:Uid="InboxShare" />
+                    <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <Button Command="{x:Bind ViewModel.SendAttachmentsCommand}" AutomationProperties.AutomationId="SendChatAttachments" x:Uid="InboxSendAttachments" />
+                        <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.SelectedAttachmentStatus, Mode=OneWay}" VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SelectedAttachmentStatus" />
+                    </Grid>
                 </Grid>
-                <ScrollViewer x:Name="InboxDetailScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                <ScrollViewer x:Name="InboxDetailScroll" Grid.Row="2" Margin="12,0,12,12" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                               Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedConversation), Mode=OneWay}">
-                    <StackPanel Spacing="10" AutomationProperties.AutomationId="InboxConversationDetail">
+                    <StackPanel Spacing="12" AutomationProperties.AutomationId="InboxConversationDetail">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <presentation:StatusIcon Tone="{x:Bind ViewModel.Selected.StateTone, Mode=OneWay, FallbackValue='neutral'}" />
+                            <TextBlock Text="{x:Bind ViewModel.Selected.StateDisplay, Mode=OneWay, FallbackValue=''}" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" AutomationProperties.AutomationId="InboxSelectedState" />
+                        </StackPanel>
                         <TextBlock x:Name="InboxRequestCountText" Text="{x:Bind ViewModel.SelectedRequestCountLabel, Mode=OneWay}" AutomationProperties.AutomationId="InboxRequestCount" />
                         <ComboBox ItemsSource="{x:Bind ViewModel.ConversationRequests, Mode=OneWay}"
                                   SelectedItem="{x:Bind ViewModel.Selected, Mode=TwoWay}" DisplayMemberPath="RequestLabel"
                                   HorizontalAlignment="Stretch" AutomationProperties.LabeledBy="{x:Bind InboxRequestCountText}"
                                   AutomationProperties.AutomationId="ChatRequests" x:Uid="InboxRequestPicker" />
-                        <TextBlock x:Uid="InboxPromptLabel" />
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="InboxPromptLabel" />
                         <TextBox Text="{x:Bind ViewModel.Selected.Prompt, Mode=OneWay, FallbackValue=''}" IsReadOnly="True" TextWrapping="Wrap"
                                  AcceptsReturn="True" MinHeight="80" MaxHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="InboxSelectedPrompt" />
-                        <TextBlock x:Uid="InboxContextLabel" />
+                        <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" x:Uid="InboxRequestContext" AutomationProperties.AutomationId="InboxRequestContext">
+                            <StackPanel Spacing="8">
+                                <TextBlock TextWrapping="Wrap" x:Uid="InboxSameThreadHelp" />
                         <TextBlock Text="{x:Bind ViewModel.Selected.Source, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" AutomationProperties.AutomationId="InboxSelectedIdentity" />
                         <TextBlock Text="{x:Bind ViewModel.Selected.Request.ThreadId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                         <TextBlock Text="{x:Bind ViewModel.Selected.Workspace, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                         <TextBlock Text="{x:Bind ViewModel.Selected.SessionLabel, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
-                        <TextBlock x:Uid="InboxResultLabel" />
+                            </StackPanel>
+                        </Expander>
+                        <executionUi:LiveOutputView ViewModel="{x:Bind ViewModel.SelectedLiveOutput, Mode=OneWay}"
+                                                    CancelCommand="{x:Bind ViewModel.CancelCommand, Mode=OneWay}"
+                                                    AutomationProperties.AutomationId="ChatLiveOutput" />
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="InboxResultLabel" />
                         <TextBox Text="{x:Bind ViewModel.SelectedOutput, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
                                  AcceptsReturn="True" MinHeight="120" MaxHeight="240" ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  AutomationProperties.AutomationId="ChatOutput" x:Uid="ChatOutput" />

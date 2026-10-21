@@ -44,7 +44,7 @@ public partial class MainPageViewModel
     {
         var checking = IsLoading;
         var loadFailed = !IsLoading && !IsSettingsLoaded;
-        var agentReady = _settings is not null &&
+        var agentReady = _hasSavedSettings && _settings is not null &&
             !string.IsNullOrWhiteSpace(_settings.AgentExecutable) &&
             !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && _savedWorkspaceExists;
         var mattermostReady = _settings is not null &&

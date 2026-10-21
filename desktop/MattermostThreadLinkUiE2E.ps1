@@ -176,7 +176,7 @@ try{
         UI @('wait-for','ConnectMattermost','-p','IsEnabled','--value','True','-t','10000')|Out-Null
     }
     foreach($theme in @('light','dark')){
-        Go 'NavAppearance';Scroll-To $(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'})
+        Go 'NavOverview';Scroll-To $(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'})
         UI @('invoke',$(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}))|Out-Null
         foreach($width in @(1160,500)){
             Resize $width;Scope;Ensure 'AddMattermostThreadButton'

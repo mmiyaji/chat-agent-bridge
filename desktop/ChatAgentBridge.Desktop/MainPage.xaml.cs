@@ -21,17 +21,17 @@ public sealed partial class MainPage : Page
     public bool IsWorkbenchSelected { get; private set; }
     public bool IsAgentSelected { get; private set; }
     public bool IsConnectionsSelected { get; private set; }
-    public bool IsAppearanceSelected { get; private set; }
     public bool IsChatSelected { get; private set; }
     public bool IsHistorySelected { get; private set; }
     public bool IsAboutSelected { get; private set; }
     public bool IsFormSelected => !IsChatSelected && !IsHistorySelected && !IsAboutSelected;
-    public static bool CanUseForm(bool isAppearanceSelected, bool isSettingsLoaded) => isAppearanceSelected || isSettingsLoaded;
+    public static bool CanUseForm(bool isGeneralSelected, bool isSettingsLoaded) => isGeneralSelected || isSettingsLoaded;
 
     public MainPage()
     {
         InitializeComponent();
         InitializeLanguageRestart();
+        InitializePortableUpdateBadge();
         UpdateNavigationContentOffset();
         _wizard = new Onboarding.OnboardingWizard(ViewModel, InboxPage.ViewModel, ReloadProcessEnvironment);
         WizardHost.Content = _wizard;
@@ -83,9 +83,27 @@ public sealed partial class MainPage : Page
         ViewModel.RefreshLocalizedText();
         Bindings.Update();
         MrtText.Refresh(this, culture);
+        RefreshPortableUpdateBadge();
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+
+    internal async Task ShutdownAsync()
+    {
+        ViewModel.CancelForWindowClose();
+        InboxPage.ViewModel.Close();
+        var tasks = new[]
+        {
+            ViewModel.RunCommand.ExecutionTask,
+            InboxPage.ViewModel.ApproveCommand.ExecutionTask,
+            InboxPage.ViewModel.SendAttachmentsCommand.ExecutionTask,
+            InboxPage.ViewModel.ConnectMattermostCommand.ExecutionTask,
+            InboxPage.ViewModel.ConnectSlackCommand.ExecutionTask,
+            InboxPage.ViewModel.DisconnectCommand.ExecutionTask,
+            InboxPage.ViewModel.WaitForConnectionShutdownAsync()
+        }.OfType<Task>();
+        await Task.WhenAll(tasks);
+    }
     public static Style OverviewIconStyle(OverviewIconState state) => (Style)Application.Current.Resources[state switch
     {
         OverviewIconState.Ready => "OverviewReadyIconStyle",
@@ -173,7 +191,6 @@ public sealed partial class MainPage : Page
         IsWorkbenchSelected = tag == "workbench";
         IsAgentSelected = tag == "agent";
         IsConnectionsSelected = tag == "connections";
-        IsAppearanceSelected = tag == "appearance";
         IsChatSelected = tag == "chat";
         IsHistorySelected = tag == "history";
         IsAboutSelected = tag == "about";

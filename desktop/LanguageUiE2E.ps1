@@ -126,7 +126,7 @@ function Select-Language([string[]]$Labels,[string]$Stored,[bool]$RestartNow = $
                 $checks.Add(@{name='Restart now relaunches app with isolated settings directory';passed=$true})
                 return
             }
-            UI @('invoke','SecondaryButton') | Out-Null
+            UI @('invoke','CloseButton') | Out-Null
             $checks.Add(@{name='Language change prompts restart and Later keeps app open';passed=$true})
         }
         if (Test-Path (Join-Path $dataPath 'language.json')) {
@@ -165,7 +165,7 @@ try {
     UI @('invoke','WizardTerms') | Out-Null
     UI @('wait-for','PolicyBody','-t','3000') | Out-Null
     Assert ((Value 'PolicyBody') -notmatch '[ぁ-んァ-ン一-龯]') 'Terms were not translated before restarting.'
-    UI @('invoke','PolicyClose') | Out-Null
+    UI @('invoke','CloseButton') | Out-Null
     UI @('wait-for','PolicyBody','--gone','-t','3000') | Out-Null
     Assert (Consent-Checked 'WizardAcceptTerms') 'Language switching cleared a checked consent.'
     Assert (-not (Consent-Checked 'WizardAcceptPrivacy')) 'Language switching accepted an unchecked consent.'
@@ -173,7 +173,7 @@ try {
     UI @('invoke','WizardPrivacy') | Out-Null
     UI @('wait-for','PolicyBody','-t','3000') | Out-Null
     Assert ((Value 'PolicyBody').Contains('Privacy Policy')) 'Privacy policy was not translated immediately.'
-    UI @('invoke','PolicyClose') | Out-Null
+    UI @('invoke','CloseButton') | Out-Null
     UI @('wait-for','PolicyBody','--gone','-t','3000') | Out-Null
     Select-Language @('日本語 (Japanese)') 'ja'
     Wait-Text 'OnboardingTitle' 'はじめに'
@@ -200,7 +200,7 @@ try {
     $body = Value 'PolicyBody'
     Assert ($body -notmatch '[ぁ-んァ-ン一-龯]' -and $body.Contains('mmiyaji') -and $body.Contains('mail@ruhenheim.org')) 'English policy text or contact details are incorrect.'
     Capture 'english-terms.png'
-    UI @('invoke','PolicyClose') | Out-Null
+    UI @('invoke','CloseButton') | Out-Null
     UI @('wait-for','PolicyBody','--gone','-t','3000') | Out-Null
     $checks.Add(@{name='Manual English survives restart and localizes XAML, dynamic text, and terms';passed=$true})
 
@@ -220,11 +220,11 @@ try {
     Assert ($messages.Count -gt 0 -and ($messages -join ' ') -notmatch '[ぁ-んァ-ン一-龯]') 'Validation text was not translated into English.'
     UI @('invoke','OnboardingDefer') | Out-Null
     UI @('wait-for','OnboardingTitle','--gone','-t','3000') | Out-Null
-    foreach ($page in @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAppearance')) {
+    foreach ($page in @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAbout')) {
         UI @('invoke',$page) | Out-Null
         Assert ((Name $page) -notmatch '[ぁ-んァ-ン一-龯]') "Navigation label is not English: $page"
         if ($page -eq 'NavWorkbench') { Assert ((Value 'WorkbenchAgentSummary').Contains('Run until complete')) 'The execution mode did not resolve to an English resource.' }
-        if ($page -eq 'NavAppearance') { Assert ((Name 'ThemeLight') -eq 'Light' -and (Name 'ThemeDark') -eq 'Dark') 'Appearance options did not follow the initial wizard language.' }
+        if ($page -eq 'NavOverview') { Assert ((Name 'ThemeLight') -eq 'Light' -and (Name 'ThemeDark') -eq 'Dark') 'General appearance options did not follow the initial wizard language.' }
         Capture "english-$page.png"
         Resize 720 600
         Capture "english-$page-narrow.png"
@@ -232,12 +232,12 @@ try {
     }
     $checks.Add(@{name='English validation and all navigation pages render without starting a CLI or chat connection';passed=$true})
 
-    UI @('invoke','NavAppearance') | Out-Null
+    UI @('invoke','NavOverview') | Out-Null
     $settingsBefore = (Get-FileHash (Join-Path $dataPath 'settings.json') -Algorithm SHA256).Hash
     Select-Language @('日本語 (Japanese)') 'ja' $true
     Assert ((Get-FileHash (Join-Path $dataPath 'settings.json') -Algorithm SHA256).Hash -eq $settingsBefore) 'Language selection changed bridge settings.'
     UI @('wait-for','NavOverview','-t','5000') | Out-Null
-    Assert ((Name 'NavOverview') -eq '概要') 'Japanese navigation was not restored.'
+    Assert ((Name 'NavOverview') -eq '全般') 'Japanese navigation was not restored.'
     UI @('invoke','NavOverview') | Out-Null
     $window=[Windows.Automation.AutomationElement]::FromHandle((Get-Process -Id $script:appPid).MainWindowHandle)
     $details=$window.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,'OverviewDetailsExpander'))

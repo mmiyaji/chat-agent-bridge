@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ArchitectureOpenHint" xml:space="preserve"><value>Click to enlarge</value></data>
+  <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>Open architecture diagram</value></data>
+  <data name="ArchitectureOpenNamedAccessibleName" xml:space="preserve"><value>Open architecture diagram: {0}</value></data>
+  <data name="ArchitectureOpenHelp" xml:space="preserve"><value>Opens a larger view with zoom controls.</value></data>
+  <data name="ArchitectureDialogTitle" xml:space="preserve"><value>Architecture diagram</value></data>
+  <data name="ArchitectureDialogClose" xml:space="preserve"><value>Close</value></data>
+  <data name="ArchitectureZoomOutName" xml:space="preserve"><value>Zoom out</value></data>
+  <data name="ArchitectureZoomInName" xml:space="preserve"><value>Zoom in</value></data>
+  <data name="ArchitectureZoomLevelName" xml:space="preserve"><value>Zoom level: {0}</value></data>
+  <data name="ArchitectureFit" xml:space="preserve"><value>Fit</value></data>
+  <data name="ArchitectureFitName" xml:space="preserve"><value>Fit diagram to window</value></data>
+  <data name="ArchitectureActualSize" xml:space="preserve"><value>100%</value></data>
+  <data name="ArchitectureActualSizeName" xml:space="preserve"><value>Show diagram at 100 percent</value></data>
+  <data name="ArchitectureImageName" xml:space="preserve"><value>Architecture diagram</value></data>
+  <data name="ArchitectureLoadError" xml:space="preserve"><value>The architecture diagram could not be loaded.</value></data>
   <data name="ChatControlNoRequests" xml:space="preserve"><value>No requests from you in this thread.</value></data>
   <data name="ChatControlStatus" xml:space="preserve"><value>Status: {0}. Pending approval: {1}. Connection: {2}.</value></data>
   <data name="ChatControlConnected" xml:space="preserve"><value>connected</value></data>
@@ -70,10 +85,10 @@
   <data name="ModelCatalogSettingsChanged" xml:space="preserve"><value>Settings changed. Fetch suggestions again.</value></data>
   <data name="ModelCatalogLoading" xml:space="preserve"><value>Fetching model suggestions from the CLI…</value></data>
   <data name="ModelCatalogUnsupported" xml:space="preserve"><value>This CLI does not provide suggestions. Enter a model name directly.</value></data>
-  <data name="ModelCatalogEmpty" xml:space="preserve"><value>No model suggestions were returned. You can enter a model name directly.</value></data>
+  <data name="ModelCatalogEmpty" xml:space="preserve"><value>The CLI returned no model suggestions. Check its version and terminal sign-in status, then fetch again.</value></data>
   <data name="ModelCatalogFound" xml:space="preserve"><value>{0} suggestions are available. Select one to fill in the model name.</value></data>
   <data name="ModelCatalogCancelled" xml:space="preserve"><value>Fetching model suggestions was canceled.</value></data>
-  <data name="ModelCatalogFailed" xml:space="preserve"><value>Could not fetch suggestions. Check the CLI settings or enter a model name directly.</value></data>
+  <data name="ModelCatalogFailed" xml:space="preserve"><value>The CLI did not return a usable model catalog. Check the selected CLI and sign in from its terminal (desktop-app sign-in is separate), then retry.</value></data>
   <data name="PolicyDocument" xml:space="preserve"><value>{0}{1}Version: {2}</value></data>
   <data name="Close" xml:space="preserve"><value>Close</value></data>
   <data name="PrivacyPolicy" xml:space="preserve"><value>Privacy Policy</value></data>
@@ -362,6 +377,18 @@
   <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}: outside the selected period</value></data>
   <data name="UsageTokens" xml:space="preserve"><value>Token consumption</value></data>
   <data name="UsageCache" xml:space="preserve"><value>Cache hit rate</value></data>
+  <data name="UsageCostMetric" xml:space="preserve"><value>Estimated API cost (USD)</value></data>
+  <data name="UsageCostUnknown" xml:space="preserve"><value>Not estimated</value></data>
+  <data name="UsageCostHeadline" xml:space="preserve"><value>Estimated cost (API pricing · USD): {0}</value></data>
+  <data name="UsageCostRange" xml:space="preserve"><value>{0}–{1}</value></data>
+  <data name="UsageCostCoverage" xml:space="preserve"><value>Estimated for {0}/{1} executions; {2} unpriced; {3} estimates include a range. A partial subtotal is shown when coverage is incomplete.</value></data>
+  <data name="UsageCostDetails" xml:space="preserve"><value>Estimated API cost: {0}. {1}</value></data>
+  <data name="UsageCostBarValue" xml:space="preserve"><value>{0} ({1}/{2} priced)</value></data>
+  <data name="UsageCostMethodDate" xml:space="preserve"><value>Reference rates checked: {0}</value></data>
+  <data name="UsageCostMethodDetails" xml:space="preserve"><value>Cost is estimated by multiplying recorded token counts by published standard API rates for the reported model. Only the priced subset is included; executions without known model or required token counts remain unpriced. When cache details are missing, the estimate uses a range. The daily and model charts size bars by the range upper bound and label each range.</value></data>
+  <data name="UsageCostLimitations" xml:space="preserve"><value>This is a reference estimate, not billing data. It excludes subscription fees, tools, Fast modes, region, and tax. Cache TTL or context may be unknown, and recorded main-loop usage can omit subagents. Estimates use current local rates; optional catalog updates do not change manual rates, and no AI requests are made.</value></data>
+  <data name="UsageOpenAIPricing" xml:space="preserve"><value>OpenAI API pricing</value></data>
+  <data name="UsageClaudePricing" xml:space="preserve"><value>Claude API pricing</value></data>
   <data name="UsageTurn" xml:space="preserve"><value>Per execution</value></data>
   <data name="UsageRequest" xml:space="preserve"><value>Last request only</value></data>
   <data name="UsageUnknown" xml:space="preserve"><value>Not reported</value></data>
@@ -442,4 +469,141 @@
   <data name="AgentSummarySaveFailed" xml:space="preserve"><value>The response succeeded, but local handoff notes could not be saved.</value></data>
   <data name="AgentSwitchIntro" xml:space="preserve"><value>Start a new AI session in the same chat thread using a registered CLI connection. Previous sessions are retained. The next request requires approval on this PC.</value></data>
   <data name="AgentSwitchDetails" xml:space="preserve"><value>CLI connection details</value></data>
+  <data name="AttachmentFileSize" xml:space="preserve"><value>{0:N0} bytes ({1:F2} MiB)</value></data>
+  <data name="AuditAttachmentApproved" xml:space="preserve"><value>File attachment approved</value></data>
+  <data name="AuditAttachmentSent" xml:space="preserve"><value>File attachment sent</value></data>
+  <data name="AuditAttachmentFailed" xml:space="preserve"><value>File attachment failed</value></data>
+  <data name="AttachmentDestination" xml:space="preserve"><value>Destination: {0}, thread {1}, workspace {2}</value></data>
+  <data name="AttachmentConfirmIntro" xml:space="preserve"><value>Select the newly created files you want to send. Files may be readable by members of this chat channel.</value></data>
+  <data name="AttachmentPrivacyHint" xml:space="preserve"><value>Chat participants can view sent files. The app cannot inspect file contents for sensitive information, so review each file before sending.</value></data>
+  <data name="AttachmentFileAccessibleName" xml:space="preserve"><value>{0}, {1}</value></data>
+  <data name="AttachmentFirstConsentWarning" xml:space="preserve"><value>Approving this selection also allows future eligible new files created by this user in this same conversation session to be sent automatically within these limits: at most {0} files, {1} MiB each, and {2} MiB total. A mode or limit change requires new consent.</value></data>
+  <data name="AttachmentSelectionLimits" xml:space="preserve"><value>Per-send limits: up to {0} files, {1} MiB per file, and {2} MiB total.</value></data>
+  <data name="AttachmentSelectAtLeastOne" xml:space="preserve"><value>Select at least one file to enable sending.</value></data>
+  <data name="AttachmentSelectionCountExceeded" xml:space="preserve"><value>Select no more than {0} files.</value></data>
+  <data name="AttachmentSelectionFileTooLarge" xml:space="preserve"><value>Each file must be at most {0} MiB.</value></data>
+  <data name="AttachmentSelectionTotalTooLarge" xml:space="preserve"><value>The selected files exceed the {0} MiB total limit.</value></data>
+  <data name="AttachmentConfirmTitle" xml:space="preserve"><value>Send generated files?</value></data>
+  <data name="AttachmentSendSelected" xml:space="preserve"><value>Send selected files</value></data>
+  <data name="AttachmentsNone" xml:space="preserve"><value>No eligible new files were found.</value></data>
+  <data name="AttachmentsFound" xml:space="preserve"><value>{0} eligible new file(s) are ready to review.</value></data>
+  <data name="AttachmentsScanIncomplete" xml:space="preserve"><value>File scan was incomplete. Review the eligible files before sending.</value></data>
+  <data name="AttachmentsSkipped" xml:space="preserve"><value>{0} file(s) were skipped by the attachment rules.</value></data>
+  <data name="AttachmentsNotSupported" xml:space="preserve"><value>This chat connection cannot send files.</value></data>
+  <data name="AttachmentsSent" xml:space="preserve"><value>Sent {0} file(s).</value></data>
+  <data name="AttachmentsFailed" xml:space="preserve"><value>Could not send the selected files. Some files may already have been sent; check the chat thread before retrying.</value></data>
+  <data name="AttachmentsSlackScopeMissing" xml:space="preserve"><value>Slack needs the files:write permission. Add that permission, reauthorize the app, and reconnect.</value></data>
+  <data name="AttachmentsCancelled" xml:space="preserve"><value>File sending was cancelled.</value></data>
+  <data name="AttachmentsApprovalRequired" xml:space="preserve"><value>Review and approve the files before they can be sent.</value></data>
+  <data name="AttachmentsPolicyChanged" xml:space="preserve"><value>Attachment settings changed. Review the files and approve again.</value></data>
+  <data name="AttachmentsDisabled" xml:space="preserve"><value>File attachments are disabled.</value></data>
+  <data name="AttachmentsResultPrivate" xml:space="preserve"><value>Automatic result sharing does not approve file attachments.</value></data>
+  <data name="LiveOutputTitle" xml:space="preserve"><value>Live execution output</value></data>
+  <data name="LiveOutputPrivacyHelp" xml:space="preserve"><value>Shown on this PC only. Live output is not saved to the conversation or shared automatically.</value></data>
+  <data name="LiveOutputPausedHelp" xml:space="preserve"><value>Following is paused. The execution continues, and new output appears when you resume following.</value></data>
+  <data name="LiveOutputWaitingHelp" xml:space="preserve"><value>Waiting for output…</value></data>
+  <data name="LiveOutputTruncationHint" xml:space="preserve"><value>Only the latest 64,000 characters are kept in this display.</value></data>
+  <data name="LiveOutputFollow" xml:space="preserve"><value>Follow output</value></data>
+  <data name="LiveOutputClear" xml:space="preserve"><value>Clear display</value></data>
+  <data name="LiveOutputCancellationPending" xml:space="preserve"><value>Cancellation requested. Waiting for the process to stop. File changes already made will not be rolled back.</value></data>
+  <data name="LiveOutputCancel" xml:space="preserve"><value>Cancel this request</value></data>
+  <data name="InboxActiveRequestBanner" xml:space="preserve"><value>View running request: {0} — {1}</value></data>
+  <data name="PricingSettingsHeader" xml:space="preserve"><value>API pricing</value></data>
+  <data name="PricingAutoUpdateHeader" xml:space="preserve"><value>Automatic pricing updates</value></data>
+  <data name="PricingAutoUpdateDescription" xml:space="preserve"><value>Check for pricing updates automatically and review the source and check status.</value></data>
+  <data name="PricingUpdateNow" xml:space="preserve"><value>Check now</value></data>
+  <data name="PricingChecking" xml:space="preserve"><value>Checking pricing…</value></data>
+  <data name="PricingLastChecked" xml:space="preserve"><value>Last checked</value></data>
+  <data name="PricingLastUpdated" xml:space="preserve"><value>Pricing data updated</value></data>
+  <data name="PricingManagerError" xml:space="preserve"><value>Pricing data could not be loaded. Check the pricing files.</value></data>
+  <data name="PricingManagerHealthy" xml:space="preserve"><value>Pricing data is ready.</value></data>
+  <data name="PricingManualFileCorrupt" xml:space="preserve"><value>The manual pricing file is invalid. Correct or remove it before saving.</value></data>
+  <data name="PricingManualModelHeader" xml:space="preserve"><value>Manual model pricing</value></data>
+  <data name="PricingKnownModel" xml:space="preserve"><value>Known model</value></data>
+  <data name="PricingModelId" xml:space="preserve"><value>Model ID</value></data>
+  <data name="PricingModelIdDescription" xml:space="preserve"><value>Enter the exact model ID reported by the agent.</value></data>
+  <data name="PricingManualRatesHeader" xml:space="preserve"><value>Rates (USD per million tokens)</value></data>
+  <data name="PricingInput" xml:space="preserve"><value>Input</value></data>
+  <data name="PricingCachedInput" xml:space="preserve"><value>Cached input</value></data>
+  <data name="PricingCacheWrite" xml:space="preserve"><value>Cache write</value></data>
+  <data name="PricingOutput" xml:space="preserve"><value>Output</value></data>
+  <data name="PricingRateRangeHelp" xml:space="preserve"><value>Enter a minimum and maximum for each rate. Use the same value for an exact rate.</value></data>
+  <data name="PricingUsdPerMillion" xml:space="preserve"><value>USD / 1M tokens</value></data>
+  <data name="PricingSaveManual" xml:space="preserve"><value>Save manual pricing</value></data>
+  <data name="PricingRemoveManual" xml:space="preserve"><value>Remove manual pricing</value></data>
+  <data name="PricingManualSource" xml:space="preserve"><value>Manual override</value></data>
+  <data name="PricingAutomaticSource" xml:space="preserve"><value>Automatic pricing</value></data>
+  <data name="PricingModelSelectPrompt" xml:space="preserve"><value>Select a model to edit its manual rates.</value></data>
+  <data name="PricingValidationModel" xml:space="preserve"><value>Select a known model or enter a model ID.</value></data>
+  <data name="PricingValidationRate" xml:space="preserve"><value>Enter a valid non-negative rate.</value></data>
+  <data name="PricingValidationRange" xml:space="preserve"><value>The minimum rate must not exceed the maximum rate.</value></data>
+  <data name="PricingSettingsHelp" xml:space="preserve"><value>Automatic rates are maintained from published API pricing. Manual rates override automatic rates for the selected model.</value></data>
+  <data name="PricingAutomaticFile" xml:space="preserve"><value>Automatic pricing file</value></data>
+  <data name="PricingManualFile" xml:space="preserve"><value>Manual pricing file</value></data>
+  <data name="PricingNoManualOverride" xml:space="preserve"><value>No manual override</value></data>
+  <data name="PricingHistoryRecalcNote" xml:space="preserve"><value>Saved history is recalculated using current effective rates. Automatic updates never change the manual pricing file.</value></data>
+  <data name="PricingOverrideNote" xml:space="preserve"><value>A manual override replaces all four rates for this model until removed.</value></data>
+  <data name="PricingUpdateErrorSummary" xml:space="preserve"><value>Could not refresh automatic pricing. Existing pricing data is still in use.</value></data>
+  <data name="PricingRateMinimum" xml:space="preserve"><value>Minimum</value></data>
+  <data name="PricingRateMaximum" xml:space="preserve"><value>Maximum</value></data>
+  <data name="PricingNever" xml:space="preserve"><value>Never</value></data>
+  <data name="PricingNoAutomaticPrice" xml:space="preserve"><value>No automatic rate is available for this model.</value></data>
+  <data name="PricingAutoUpdateEnabled" xml:space="preserve"><value>Automatic updates are enabled.</value></data>
+  <data name="PricingAutoUpdateDisabled" xml:space="preserve"><value>Automatic updates are disabled.</value></data>
+  <data name="PricingRateValue" xml:space="preserve"><value>{0}: {1}–{2}</value></data>
+  <data name="PricingRemoveConfirmTitle" xml:space="preserve"><value>Remove manual pricing?</value></data>
+  <data name="PricingRemoveConfirmMessage" xml:space="preserve"><value>Remove the manual rates for {0}? Estimates will use the automatic rates again when available.</value></data>
+  <data name="PricingRemoveConfirmPrimary" xml:space="preserve"><value>Remove manual rates</value></data>
+  <data name="PricingRemoveConfirmCancel" xml:space="preserve"><value>Keep manual rates</value></data>
+  <data name="TrayMenuOpen" xml:space="preserve"><value>Open Chat Agent Bridge</value></data>
+  <data name="TrayMenuExit" xml:space="preserve"><value>Exit completely</value></data>
+  <data name="PortableUpdateIdle" xml:space="preserve"><value>Check for a portable update when you are ready.</value></data>
+  <data name="PortableUpdateChecking" xml:space="preserve"><value>Checking for portable updates…</value></data>
+  <data name="PortableUpdateCurrent" xml:space="preserve"><value>No newer compatible portable release is available.</value></data>
+  <data name="PortableUpdateAvailable" xml:space="preserve"><value>Portable version {0} is available.</value></data>
+  <data name="PortableUpdateDownloading" xml:space="preserve"><value>Downloading portable version {0}…</value></data>
+  <data name="PortableUpdateReady" xml:space="preserve"><value>Version {0} is downloaded and ready to apply.</value></data>
+  <data name="PortableUpdateFailed" xml:space="preserve"><value>Could not update the portable app: {0}</value></data>
+  <data name="PortableUpdateBusyWork" xml:space="preserve"><value>Finish the active work before applying this update.</value></data>
+  <data name="PortableUpdateStarting" xml:space="preserve"><value>Starting the update and restarting the app…</value></data>
+  <data name="PortableUpdateUnsupported" xml:space="preserve"><value>Portable updates are not available for this build.</value></data>
+  <data name="PortableUpdateHelperMissing" xml:space="preserve"><value>The portable update helper is missing. Download the release again.</value></data>
+  <data name="PortableUpdateApplyTitle" xml:space="preserve"><value>Apply portable update?</value></data>
+  <data name="PortableUpdateApplyMessage" xml:space="preserve"><value>The app will close and restart to apply the update. Your settings will stay in place. Apply the update only after active work has finished.</value></data>
+  <data name="PortableUpdateApplyPrimary" xml:space="preserve"><value>Update and restart</value></data>
+  <data name="PortableUpdateCancelled" xml:space="preserve"><value>Update operation cancelled.</value></data>
+  <data name="PortableUpdateVerifying" xml:space="preserve"><value>Verifying and preparing the update…</value></data>
+  <data name="PortableUpdateNetworkError" xml:space="preserve"><value>Check the network connection and try again.</value></data>
+  <data name="PortableUpdateAccessError" xml:space="preserve"><value>The app folder is not writable or a file is in use.</value></data>
+  <data name="PortableUpdateIntegrityError" xml:space="preserve"><value>The downloaded files could not be verified. Download the update again.</value></data>
+  <data name="PortableUpdateLocalError" xml:space="preserve"><value>Preparation failed. Check free disk space and close other copies of the app.</value></data>
+  <data name="PortableUpdateInProgress" xml:space="preserve"><value>Chat Agent Bridge is being updated. Please try again shortly.</value></data>
+  <data name="WindowCloseConfirmationTitle" xml:space="preserve"><value>Close Chat Agent Bridge?</value></data>
+  <data name="WindowCloseConfirmationMessage" xml:space="preserve"><value>Exiting disconnects the chat and cancels active and pending work. Moving to the system tray keeps the app running.</value></data>
+  <data name="WindowCloseConfirmationTrayUnavailable" xml:space="preserve"><value>The system tray icon is unavailable, so the app cannot be moved to the tray right now. Exiting disconnects the chat and cancels active and pending work.</value></data>
+  <data name="WindowCloseConfirmationExit" xml:space="preserve"><value>Exit</value></data>
+  <data name="WindowCloseConfirmationTray" xml:space="preserve"><value>Keep in tray</value></data>
+  <data name="WindowCloseConfirmationCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="PortableUpdatePreferenceSaveFailed" xml:space="preserve"><value>Could not save the update setting. The previous setting has been restored.</value></data>
+  <data name="PortableUpdateBadgeAvailable" xml:space="preserve"><value>Update available</value></data>
+  <data name="PortableUpdateNavigationAvailable" xml:space="preserve"><value>Information — version {0} is available</value></data>
+  <data name="ModelCatalogTimedOut" xml:space="preserve"><value>Model discovery timed out. Check the CLI sign-in and network connection, then try again.</value></data>
+  <data name="ModelCatalogLaunchFailed" xml:space="preserve"><value>The CLI could not be started for model discovery. Check its executable path, permissions, and required runtime.</value></data>
+  <data name="ModelCatalogAccessDenied" xml:space="preserve"><value>Access was denied during model discovery. Check access to the workspace and CLI executable.</value></data>
+  <data name="CliTrustTitle" xml:space="preserve"><value>Trust this workspace?</value></data>
+  <data name="CliTrustExplanation" xml:space="preserve"><value>Add only a folder you trust. This also trusts its subfolders and allows the agent to work there under your execution permissions.</value></data>
+  <data name="CliTrustLinkExplanation" xml:space="preserve"><value>The current workspace is a link. Adding the link itself will not pass the security check. This action changes the workspace to the actual folder below and adds that folder to Trusted Folders.</value></data>
+  <data name="CliTrustOriginalPath" xml:space="preserve"><value>Current workspace: {0}</value></data>
+  <data name="CliTrustTargetPath" xml:space="preserve"><value>Folder to trust: {0}</value></data>
+  <data name="CliTrustSaveHelp" xml:space="preserve"><value>After reviewing, add this folder and retry the CLI check. Changes remain unsaved until you save agent settings or finish setup.</value></data>
+  <data name="CliTrustAdd" xml:space="preserve"><value>Add and recheck</value></data>
+  <data name="CliTrustUseTarget" xml:space="preserve"><value>Trust actual folder and recheck</value></data>
+  <data name="CliTrustWizardSaveHelp" xml:space="preserve"><value>Changes remain unsaved until you choose Save and continue. You can check the CLI on the next page.</value></data>
+  <data name="CliTrustAddOnly" xml:space="preserve"><value>Add folder</value></data>
+  <data name="CliTrustUseTargetOnly" xml:space="preserve"><value>Trust and use actual folder</value></data>
+  <data name="InboxConnectionErrorLabel" xml:space="preserve"><value>Connection needs attention</value></data>
+  <data name="InboxConnectionReadyLabel" xml:space="preserve"><value>Ready to receive requests</value></data>
+  <data name="InboxConnectionWorkingLabel" xml:space="preserve"><value>Connecting</value></data>
+  <data name="InboxConnectionOfflineLabel" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="InboxQueueSummary" xml:space="preserve"><value>{0} awaiting approval · {1} running</value></data>
 </root>

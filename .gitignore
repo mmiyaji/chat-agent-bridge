@@ -34,3 +34,4 @@ Thumbs.db
 *.csr
 *.env
 *.local
+__pycache__/

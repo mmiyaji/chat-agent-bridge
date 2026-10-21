@@ -5,12 +5,21 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="TrustedWorkspaceRequired" xml:space="preserve"><value>作業フォルダーは存在し、信頼済みの作業フォルダー内にある必要があります。</value></data>
+  <data name="WorkspaceRequired" xml:space="preserve"><value>CLIを確認する前に作業フォルダーを選択してください。</value></data>
+  <data name="WorkspacePathMustBeAbsolute" xml:space="preserve"><value>作業フォルダーのパス「{0}」は絶対パスである必要があります。完全なパスで作業フォルダーを選択してください。</value></data>
+  <data name="WorkspacePathInvalid" xml:space="preserve"><value>作業フォルダーのパス「{0}」は無効です。有効なフォルダーのパスを選択してください。</value></data>
+  <data name="WorkspaceFolderNotFound" xml:space="preserve"><value>作業フォルダー「{0}」が見つかりません。存在するフォルダーを選択してください。</value></data>
+  <data name="WorkspaceNotTrusted" xml:space="preserve"><value>作業フォルダー「{0}」は信頼されていません。「エージェント設定」の「信頼するフォルダー」を確認し、信頼範囲内の作業先を選ぶか、信頼できる場合に限り追加してください。</value></data>
+  <data name="WorkspaceNotTrustedLink" xml:space="preserve"><value>作業フォルダー「{0}」はディレクトリリンクを経由しています。実際のフォルダー「{1}」を作業先に選び、信頼できる場合は「エージェント設定」&gt;「信頼するフォルダー」に追加してください。</value></data>
   <data name="NativeCliRequired" xml:space="preserve"><value>CLIの確認にはネイティブ実行ファイルが必要です。実行ファイルのパスを指定してください。</value></data>
   <data name="CliNotFound" xml:space="preserve"><value>CLI実行ファイルが見つかりません。実行ファイルのパスまたは PATH を確認してください。</value></data>
+  <data name="CliExecutableNotFound" xml:space="preserve"><value>設定されたCLI実行ファイル「{0}」が見つかりません。実行ファイルのパスまたは PATH を確認してください。</value></data>
   <data name="CliStartFailed" xml:space="preserve"><value>CLIプロセスを開始できませんでした。</value></data>
   <data name="CliLaunchFailed" xml:space="preserve"><value>CLIを起動できません。実行ファイルとアクセス権を確認してください。</value></data>
   <data name="CliVersionTimeout" xml:space="preserve"><value>CLIのバージョン確認がタイムアウトしました。CLIの状態を確認して再試行してください。</value></data>
   <data name="CliVersionUnavailable" xml:space="preserve"><value>CLIから有効なバージョン情報を取得できませんでした。CLIのインストール状態を確認してください。</value></data>
+  <data name="CliRuntimeMissing" xml:space="preserve"><value>設定されたCLIの実行に必要な .NET ランタイムがありません。必要な .NET ランタイムをインストールしてから、もう一度確認してください。</value></data>
+  <data name="CliVersionCommandFailed" xml:space="preserve"><value>設定されたCLIの --version が終了コード {0} で終了しました。ターミナルで設定済みのCLIに --version を指定して実行し、ランタイムとアクセス権を確認してください。</value></data>
   <data name="CliProviderMismatch" xml:space="preserve"><value>実行ファイルのバージョン情報が {0} と一致しません。正しいCLI実行ファイルを指定してください。</value></data>
   <data name="ApprovalPermissionLine" xml:space="preserve"><value>許可: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>拒否: !cab reject {0}</value></data>
@@ -44,4 +53,18 @@
   <data name="ClaudeCodeCli" xml:space="preserve"><value>Claude Code CLI</value></data>
   <data name="CodexAppServer" xml:space="preserve"><value>Codex App Server</value></data>
   <data name="NotReported" xml:space="preserve"><value>未取得</value></data>
+  <data name="ProgressRunningCommand" xml:space="preserve"><value>コマンドを実行中: {0}</value></data>
+  <data name="ProgressGenericCommand" xml:space="preserve"><value>コマンド</value></data>
+  <data name="ProgressCommandResult" xml:space="preserve"><value>コマンドの結果: {0}</value></data>
+  <data name="ProgressCommandFinished" xml:space="preserve"><value>コマンドが終了しました</value></data>
+  <data name="ProgressWorking" xml:space="preserve"><value>処理中…</value></data>
+  <data name="ProgressFinished" xml:space="preserve"><value>完了しました</value></data>
+  <data name="ProgressTurnFailed" xml:space="preserve"><value>ターンに失敗しました</value></data>
+  <data name="ProgressUsingTool" xml:space="preserve"><value>{0}を使用中</value></data>
+  <data name="ProgressUsingGenericTool" xml:space="preserve"><value>ツールを使用中</value></data>
+  <data name="ProgressToolResult" xml:space="preserve"><value>ツールの結果: {0}</value></data>
+  <data name="ProgressClaudeError" xml:space="preserve"><value>Claude がエラーを報告しました</value></data>
+  <data name="ProgressClaudeSessionReady" xml:space="preserve"><value>Claude セッションを開始しました</value></data>
+  <data name="ProgressStartingItem" xml:space="preserve"><value>{0}を開始</value></data>
+  <data name="ProgressFinishedItem" xml:space="preserve"><value>{0}が終了しました</value></data>
 </root>

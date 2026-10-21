@@ -22,6 +22,7 @@ $output=Join-Path $fixturePath 'automatic-review';New-Item -ItemType Directory $
 $off=if($Language -eq 'ja'){'オフ'}else{'Off'}
 function Overview{Go 'NavOverview';Scroll-To 'OverviewAutoConnectTile'}
 function AutoChoice([string]$Id){UI @('invoke','AutoConnectProvider')|Out-Null;UI @('invoke',$Id)|Out-Null}
+function Save-GeneralSettings{Scroll-To 'SaveGeneralSettings';UI @('invoke','SaveGeneralSettings')|Out-Null}
 try{
     Resize 1160;Overview
     Wait-Text 'OverviewAutoConnectStatus' $off
@@ -36,18 +37,18 @@ try{
     Wait-Text 'OverviewAutoConnectStatus' $off
     Assert (Visible (Element 'OverviewDraftNotice')) 'Unsaved settings notice missing'
     Pass 'Draft auto-connect choice does not masquerade as saved configuration'
-    UI @('invoke','OverviewAutoConnectTile')|Out-Null;UI @('invoke','SaveConnections')|Out-Null
+    UI @('invoke','OverviewAutoConnectTile')|Out-Null;Save-GeneralSettings
     Overview;Wait-Text 'OverviewAutoConnectStatus' 'Slack'
     Assert ((Get-Content (Join-Path $dataPath 'settings.json') -Raw|ConvertFrom-Json).AutoConnectProvider -eq 'slack') 'Slack auto-connect was not saved'
     Pass 'Saved automatic connection shows the selected provider'
-    UI @('invoke','OverviewAutoConnectTile')|Out-Null;AutoChoice 'AutoConnectOptionMattermost';UI @('invoke','SaveConnections')|Out-Null
+    UI @('invoke','OverviewAutoConnectTile')|Out-Null;AutoChoice 'AutoConnectOptionMattermost';Save-GeneralSettings
     Overview;Wait-Text 'OverviewAutoConnectStatus' 'Mattermost'
     Wait-Text 'OverviewAutoConnectStatus' $(if($Language -eq 'ja'){'設定が必要'}else{'Set up Mattermost'})
     Pass 'Incomplete automatic connection shows setup needed'
-    UI @('invoke','OverviewAutoConnectTile')|Out-Null;AutoChoice 'AutoConnectOptionNone';UI @('invoke','SaveConnections')|Out-Null
+    UI @('invoke','OverviewAutoConnectTile')|Out-Null;AutoChoice 'AutoConnectOptionNone';Save-GeneralSettings
     Assert ((Element 'StartWithWindows').GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Current.ToggleState -eq $startupToggle) 'Windows startup was changed by navigation'
     foreach($theme in @('light','dark')){
-        Go 'NavAppearance';$themeId=if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}
+        Go 'NavOverview';$themeId=if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}
         Scroll-To $themeId;UI @('invoke',$themeId)|Out-Null
         foreach($width in @(1160,500)){
             Resize $width;Overview;Wait-Text 'OverviewAutoConnectStatus' $off

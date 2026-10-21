@@ -81,7 +81,7 @@ function Resize([int]$Width,[int]$Height) {
     Start-Sleep -Milliseconds 250
 }
 function Check-RestartGuard {
-    UI @('invoke','NavAppearance') | Out-Null
+    UI @('invoke','NavOverview') | Out-Null
     Scroll-ToElement 'DisplayLanguage'
     UI @('invoke','DisplayLanguage') | Out-Null
     $tree=UI @('inspect','DisplayLanguage','-d','6') | ConvertFrom-Json
@@ -98,7 +98,7 @@ function Check-RestartGuard {
     Assert ((Name 'LanguageRestartDialog').Contains('Restart')) 'Restart dialog has no English recovery wording.'
     Assert ((UI @('get-property','PrimaryButton','-p','IsEnabled') | ConvertFrom-Json).properties.IsEnabled -eq $false) 'Unsaved settings did not disable Restart now.'
     Capture 'language-restart-dialog.png'
-    UI @('invoke','SecondaryButton') | Out-Null
+    UI @('invoke','CloseButton') | Out-Null
     UI @('wait-for','LanguageRestartDialog','--gone','-t','3000') | Out-Null
     Assert ((Get-Content (Join-Path $dataPath 'language.json') -Raw | ConvertFrom-Json).Language -eq 'ja') 'Later lost the saved language preference.'
     $checks.Add(@{name='Language change prompts restart and Later keeps app open';passed=$true})
@@ -122,7 +122,7 @@ function Assert-Palette([string]$Theme,[string[]]$Colors,[string]$File) {
     $checks.Add(@{name="$Theme status icon colors render";passed=$true;colors=$Colors})
 }
 function Theme([string]$Theme) {
-    UI @('invoke','NavAppearance') | Out-Null
+    UI @('invoke','NavOverview') | Out-Null
     Scroll-ToElement $(if ($Theme -eq 'light') { 'ThemeLight' } else { 'ThemeDark' })
     UI @('invoke',$(if ($Theme -eq 'light') { 'ThemeLight' } else { 'ThemeDark' })) | Out-Null
     Start-Sleep -Milliseconds 500

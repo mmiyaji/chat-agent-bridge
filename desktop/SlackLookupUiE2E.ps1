@@ -254,9 +254,10 @@ try{
     }
 
     foreach($theme in @('light','dark')){
-        Go 'NavAppearance'
+        Go 'NavOverview'
         $themeId=if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}
         UI @('wait-for',$themeId,'-t','5000')|Out-Null
+        UI @('scroll-into-view',$themeId)|Out-Null
         UI @('invoke',$themeId)|Out-Null
         foreach($width in @(1160,500)){
             Resize $width;Scope 'JumpSlack'

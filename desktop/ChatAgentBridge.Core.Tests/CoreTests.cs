@@ -23,6 +23,33 @@ public sealed class CoreTests
         => Assert.Throws<FormatException>(() => AgentArgumentParser.Parse("exec \"unfinished"));
 
     [Fact]
+    public async Task SettingsStore_FirstRunSuggestsExistingDocumentsWithoutSaving()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var settings = await new SettingsStore(path).LoadAsync();
+        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+        Assert.Equal(Path.IsPathFullyQualified(documents) && Directory.Exists(documents) ? documents : "", settings.WorkspaceRoot);
+        Assert.Empty(settings.TrustedWorkspaceRoots);
+        Assert.False(Directory.Exists(path));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("C:/missing-saved-workspace")]
+    public async Task SettingsStore_PreservesSavedWorkspaceInsteadOfApplyingFirstRunDefault(string workspace)
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new SettingsStore(path);
+            await store.SaveAsync(new BridgeSettings { WorkspaceRoot = workspace });
+            Assert.Equal(workspace, (await store.LoadAsync()).WorkspaceRoot);
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
     public async Task SettingsStore_RoundTripsSettings()
     {
         var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -34,7 +61,7 @@ public sealed class CoreTests
                 WorkspaceRoot = "C:/workspace", AgentArguments = "exec --json -",
                 AgentModel = "gpt-5.4", AgentReasoningEffort = "future_level", AutoConnectProvider = "slack",
                 MattermostServerUrl = "https://chat.example", MattermostChannelId = "abc",
-                MattermostBypassProxy = true,
+                MattermostBypassProxy = true, PostConnectionNotice = true,
                 MattermostToken = OperatingSystem.IsWindows() ? "mm-secret" : "",
                 SlackBotToken = OperatingSystem.IsWindows() ? "slack-secret" : "",
                 SlackAppToken = OperatingSystem.IsWindows() ? "app-secret" : "", RequireApproval = false,
@@ -71,6 +98,7 @@ public sealed class CoreTests
             Assert.False(settings.ShareApprovalsInChat);
             Assert.False(settings.ShareAgentQuestionsInChat);
             Assert.False(settings.MattermostBypassProxy);
+            Assert.False(settings.PostConnectionNotice);
         }
         finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
     }

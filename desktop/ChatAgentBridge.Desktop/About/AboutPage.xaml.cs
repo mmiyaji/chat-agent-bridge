@@ -51,6 +51,7 @@ public sealed partial class AboutPage : Page
         StoreStatus.Text = _isStorePackage ? DesktopText.Get("AboutStoreReady") : DesktopText.Get("AboutStoreDevelopment");
         StorePageButton.IsEnabled = _isStorePackage;
         CheckUpdatesButton.IsEnabled = _isStorePackage;
+        StoreUpdateCard.Visibility = DeploymentRuntime.IsPortable ? Visibility.Collapsed : Visibility.Visible;
     }
 
     public void ResetScroll() => DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
@@ -128,7 +129,8 @@ public sealed partial class AboutPage : Page
                         IsTextSelectionEnabled = true
                     }
                 },
-                CloseButtonText = DesktopText.Get("Close")
+                CloseButtonText = DesktopText.Get("Close"),
+                DefaultButton = ContentDialogButton.Close
             };
             AutomationProperties.SetAutomationId(dialog, "AboutChangelogDialog");
             await dialog.ShowAsync();
@@ -157,7 +159,7 @@ public sealed partial class AboutPage : Page
             };
             AutomationProperties.SetAutomationId(dialog, "AboutExitConfirmation");
             if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-                App.Window.Close();
+                await App.Tray.ExitAsync();
         }
         finally { _dialogOpen = false; }
     }

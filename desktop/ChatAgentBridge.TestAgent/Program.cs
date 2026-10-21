@@ -6,10 +6,24 @@ using System.Text;
 Console.InputEncoding = new UTF8Encoding(false);
 Console.OutputEncoding = new UTF8Encoding(false);
 
-// Offline E2E fixture only. No model calls, command execution, file changes or networking.
+// Offline E2E fixture only. No model calls, command execution or networking. The explicitly
+// marked attachment fixture may create one of four synthetic files inside its isolated workspace.
 if (args is ["--version"])
 {
     var exeName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "");
+    var versionError = exeName switch { "cab-probe-runtime-error" => "runtime", "cab-probe-version-error" => "other", _ => null };
+    if (versionError == "runtime")
+    {
+        await Console.Error.WriteLineAsync("You must install or update .NET to run this application.");
+        Environment.ExitCode = 72;
+        return;
+    }
+    if (versionError == "other")
+    {
+        await Console.Error.WriteLineAsync("fixture secret stderr must not be included in probe errors");
+        Environment.ExitCode = 73;
+        return;
+    }
     var fixtureVersion = Environment.GetEnvironmentVariable("CAB_TEST_AGENT_VERSION");
     var version = fixtureVersion ?? (exeName.Equals("codex", StringComparison.OrdinalIgnoreCase)
         ? "codex-cli 1.2.3 (offline fixture)"
@@ -59,6 +73,115 @@ if (args.Contains("--input-format") && Array.IndexOf(args, "--input-format") + 1
 }
 if (args.Contains("--print"))
 {
+    // Deliberately gated live-output UI fixture. It can run only from an explicitly marked,
+    // isolated workspace, emits sanitized provider-shaped progress and stderr before result,
+    // and waits for the E2E harness to release completion.
+    if (Environment.GetEnvironmentVariable("CAB_LIVE_OUTPUT_FIXTURE") == "1")
+    {
+        var liveWorkspace = Path.GetFullPath(Environment.CurrentDirectory);
+        var liveRoot = Directory.GetParent(liveWorkspace)?.FullName;
+        var liveMarker = liveRoot is null ? null : Path.Combine(liveRoot, ".cab-live-output-fixture");
+        var releaseGate = liveRoot is null ? null : Path.Combine(liveRoot, ".cab-live-output-release");
+        if (liveRoot is null || liveMarker is null || releaseGate is null ||
+            !string.Equals(Path.GetFileName(liveWorkspace), "workspace", StringComparison.OrdinalIgnoreCase) ||
+            !Directory.Exists(liveWorkspace) || !File.Exists(liveMarker) ||
+            !string.Equals(File.ReadAllText(liveMarker).Trim(), "Isolated offline live-output UI test", StringComparison.Ordinal))
+        {
+            Console.Error.WriteLine("Live-output fixture requires its marked isolated workspace.");
+            Environment.ExitCode = 2;
+            return;
+        }
+
+        var fixturePidFile = Environment.GetEnvironmentVariable("CAB_LIVE_OUTPUT_FIXTURE_PID_FILE");
+        if (!string.IsNullOrWhiteSpace(fixturePidFile))
+            await File.AppendAllTextAsync(fixturePidFile, Environment.ProcessId + Environment.NewLine);
+
+        var livePrompt = await Console.In.ReadToEndAsync();
+        var liveRunMatch = System.Text.RegularExpressions.Regex.Match(livePrompt, @"\bLIVE_RUN_(ONE|TWO|CHAT_A|CHAT_B)\b", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        if (!liveRunMatch.Success)
+        {
+            Console.Error.WriteLine("Live-output fixture requires a whitelisted LIVE_RUN marker in the prompt.");
+            Environment.ExitCode = 2;
+            return;
+        }
+        var liveRunMarker = liveRunMatch.Value;
+        var liveDelay = int.TryParse(Environment.GetEnvironmentVariable("CAB_LIVE_OUTPUT_FIXTURE_DELAY_MS"), out var configuredDelay)
+            ? Math.Clamp(configuredDelay, 0, 30000) : 700;
+        await Task.Delay(liveDelay);
+        await WriteAsync(new { type = "system", subtype = "init", session_id = "a352fd0c-204e-4d06-8c83-8de46651b3ed", model = "fixture-claude" });
+        await WriteAsync(new { type = "assistant", message = new { content = new object[] { new { type = "text", text = $"{liveRunMarker} LIVE_FIXTURE assistant output arrived before the final result." } } } });
+        await WriteAsync(new { type = "assistant", message = new { content = new object[] { new { type = "tool_use", name = "Read", input = new { command = "LIVE_FIXTURE synthetic tool activity" } } } } });
+        await Console.Error.WriteLineAsync("LIVE_FIXTURE stderr arrived before the final result.");
+        await Console.Error.FlushAsync();
+        await Task.Delay(1200);
+        await WriteAsync(new { type = "assistant", message = new { content = new object[] { new { type = "text", text = "LIVE_FIXTURE late output while follow is paused." } } } });
+
+        var waitUntil = DateTimeOffset.UtcNow.AddMinutes(2);
+        while (!File.Exists(releaseGate) && DateTimeOffset.UtcNow < waitUntil)
+            await Task.Delay(50);
+        if (!File.Exists(releaseGate))
+        {
+            Console.Error.WriteLine("Live-output fixture completion gate timed out.");
+            Environment.ExitCode = 3;
+            return;
+        }
+        await WriteAsync(new
+        {
+            type = "result", subtype = "success", session_id = "a352fd0c-204e-4d06-8c83-8de46651b3ed",
+            result = "LIVE_FIXTURE_FINAL fixed final response",
+            usage = new { input_tokens = 10, output_tokens = 5 },
+            modelUsage = new Dictionary<string, object> { ["fixture-claude"] = new { } }
+        });
+        return;
+    }
+
+    var attachmentWorkspace = Environment.GetEnvironmentVariable("CAB_FILE_ATTACHMENTS_WORKSPACE");
+    if (!string.IsNullOrWhiteSpace(attachmentWorkspace))
+    {
+        var workspace = Path.GetFullPath(attachmentWorkspace);
+        var dataDirectory = Directory.GetParent(workspace)?.FullName;
+        var marker = dataDirectory is null ? null : Path.Combine(dataDirectory, ".cab-file-attachments-ui");
+        var transcript = Environment.GetEnvironmentVariable("CAB_FILE_ATTACHMENTS_TRANSCRIPT");
+        if (dataDirectory is null || !string.Equals(Path.GetFileName(workspace), "workspace", StringComparison.OrdinalIgnoreCase) ||
+            !Directory.Exists(workspace) || marker is null || !File.Exists(marker) ||
+            !string.Equals(File.ReadAllText(marker).Trim(), "Isolated offline attachment UI test", StringComparison.Ordinal) ||
+            string.IsNullOrWhiteSpace(transcript) ||
+            !string.Equals(Path.GetFullPath(transcript), Path.Combine(dataDirectory, "agent-calls.jsonl"), OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+        {
+            Console.Error.WriteLine("Attachment fixture environment did not point to its marked isolated test directory.");
+            Environment.ExitCode = 2;
+            return;
+        }
+
+        var attachmentPrompt = await Console.In.ReadToEndAsync();
+        var attachmentFileMatch = System.Text.RegularExpressions.Regex.Match(attachmentPrompt, @"CREATE ATTACHMENT (first|second|third|fourth)\.txt", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        var attachmentResult = "No fixture file requested.";
+        if (attachmentFileMatch.Success)
+        {
+            var fileName = attachmentFileMatch.Groups[1].Value.ToLowerInvariant() + ".txt";
+            var filePath = Path.Combine(workspace, fileName);
+            if (!string.Equals(Path.GetDirectoryName(Path.GetFullPath(filePath)), workspace, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            {
+                Console.Error.WriteLine("Attachment fixture filename escaped the isolated workspace.");
+                Environment.ExitCode = 2;
+                return;
+            }
+            await File.WriteAllTextAsync(filePath, $"Offline fixture file {fileName}{Environment.NewLine}");
+            attachmentResult = $"Created {fileName}";
+        }
+
+        var attachmentResumeIndex = Array.IndexOf(args, "--resume");
+        var attachmentSession = attachmentResumeIndex >= 0 && attachmentResumeIndex + 1 < args.Length
+            ? args[attachmentResumeIndex + 1]
+            : "6f76a963-bd6e-42dc-9c66-27ca2d8c77f3";
+        await File.AppendAllTextAsync(transcript!, JsonSerializer.Serialize(new { args, prompt = attachmentPrompt, result = attachmentResult }) + Environment.NewLine);
+        await WriteAsync(new { type = "system", subtype = "init", session_id = attachmentSession, model = "fixture-claude" });
+        await WriteAsync(new { type = "assistant", message = new { content = new[] { new { type = "text", text = attachmentResult } } } });
+        await WriteAsync(new { type = "result", subtype = "success", session_id = attachmentSession, result = attachmentResult,
+            usage = new { input_tokens = 10, output_tokens = 5 }, modelUsage = new Dictionary<string, object> { ["fixture-claude"] = new { } } });
+        return;
+    }
+
     var resumeIndex = Array.IndexOf(args, "--resume");
     var session = resumeIndex >= 0 ? args[resumeIndex + 1] : Guid.NewGuid().ToString("D");
     var modelIndex = Array.IndexOf(args, "--model");
@@ -116,6 +239,11 @@ while (await Console.In.ReadLineAsync() is { } line)
                 break;
             case "initialized": break;
             case "model/list":
+                if (Environment.GetEnvironmentVariable("CAB_TEST_AGENT_EMPTY_MODEL_CATALOG") == "1")
+                {
+                    await WriteAsync(new { id, result = new { data = Array.Empty<object>(), nextCursor = (string?)null } });
+                    break;
+                }
                 await WriteAsync(new
                 {
                     id,
@@ -142,6 +270,47 @@ while (await Console.In.ReadLineAsync() is { } line)
                 prompt = parameters.GetProperty("input")[0].GetProperty("text").GetString() ?? "";
                 await WriteAsync(new { id, result = new { turn = new { id = turnId, status = "inProgress", items = Array.Empty<object>() } } });
                 await WriteAsync(new { method = "turn/started", @params = new { threadId, turn = new { id = turnId, status = "inProgress" } } });
+                if (Environment.GetEnvironmentVariable("CAB_LIVE_OUTPUT_FIXTURE") == "1")
+                {
+                    var liveWorkspace = Path.GetFullPath(Environment.CurrentDirectory);
+                    var liveRoot = Directory.GetParent(liveWorkspace)?.FullName;
+                    var liveMarker = liveRoot is null ? null : Path.Combine(liveRoot, ".cab-live-output-fixture");
+                    var releaseGate = liveRoot is null ? null : Path.Combine(liveRoot, ".cab-live-output-release");
+                    if (liveRoot is null || liveMarker is null || releaseGate is null ||
+                        !string.Equals(Path.GetFileName(liveWorkspace), "workspace", StringComparison.OrdinalIgnoreCase) ||
+                        !Directory.Exists(liveWorkspace) || !File.Exists(liveMarker) ||
+                        !string.Equals(File.ReadAllText(liveMarker).Trim(), "Isolated offline live-output UI test", StringComparison.Ordinal))
+                    {
+                        await Console.Error.WriteLineAsync("Live-output app-server fixture requires its marked isolated workspace.");
+                        Environment.ExitCode = 2;
+                        return;
+                    }
+                    var liveRunMatch = System.Text.RegularExpressions.Regex.Match(prompt, @"\bLIVE_RUN_(ONE|TWO|CHAT_A|CHAT_B)\b", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+                    if (!liveRunMatch.Success)
+                    {
+                        await Console.Error.WriteLineAsync("Live-output app-server fixture requires a whitelisted LIVE_RUN marker in the prompt.");
+                        Environment.ExitCode = 2;
+                        return;
+                    }
+                    var liveRunMarker = liveRunMatch.Value;
+                    await WriteAsync(new { method = "item/started", @params = new { threadId, turnId, item = new { id = "fixture-live-tool", type = "commandExecution", command = "LIVE_FIXTURE synthetic app-server tool activity" } } });
+                    await WriteAsync(new { method = "item/completed", @params = new { threadId, turnId, item = new { id = "fixture-live-message", type = "agentMessage", text = $"{liveRunMarker} LIVE_FIXTURE app-server assistant output arrived before the final result." } } });
+                    await Console.Error.WriteLineAsync("LIVE_FIXTURE app-server stderr arrived before the final result.");
+                    await Console.Error.FlushAsync();
+                    await Task.Delay(1200);
+                    await WriteAsync(new { method = "item/completed", @params = new { threadId, turnId, item = new { id = "fixture-live-late-message", type = "agentMessage", text = "LIVE_FIXTURE late app-server output while follow is paused." } } });
+                    var releaseDeadline = DateTimeOffset.UtcNow.AddMinutes(2);
+                    while (!File.Exists(releaseGate) && DateTimeOffset.UtcNow < releaseDeadline)
+                        await Task.Delay(50);
+                    if (!File.Exists(releaseGate))
+                    {
+                        await Console.Error.WriteLineAsync("Live-output app-server fixture completion gate timed out.");
+                        Environment.ExitCode = 3;
+                        return;
+                    }
+                    await CompleteAsync("completed", "LIVE_FIXTURE_FINAL fixed app-server response");
+                    break;
+                }
                 approvalPending = true;
                 await WriteAsync(new
                 {

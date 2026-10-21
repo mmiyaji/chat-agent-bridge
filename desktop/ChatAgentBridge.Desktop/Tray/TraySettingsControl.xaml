@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="ChatAgentBridge_Desktop.Tray.TraySettingsControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:settings="using:CommunityToolkit.WinUI.Controls"
+    xmlns:layout="using:ChatAgentBridge_Desktop.Layout"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <StackPanel Spacing="8" AutomationProperties.AutomationId="TraySettingsCard">
+        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="TraySettingsHeading" AutomationProperties.AutomationId="TraySettingsHeading" />
+        <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="TrayBehaviorSettingRow">
+            <settings:SettingsCard.Header><TextBlock x:Uid="CloseToTrayLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+            <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="DockBottom" /></settings:SettingsCard.HeaderIcon>
+            <settings:SettingsCard.Description><TextBlock x:Uid="TraySettingsDescription" TextWrapping="Wrap" AutomationProperties.AutomationId="TraySettingsDescription" /></settings:SettingsCard.Description>
+            <ToggleSwitch x:Name="CloseToTrayToggle" x:Uid="CloseToTrayToggle" Toggled="CloseToTrayToggle_Toggled" AutomationProperties.AutomationId="CloseToTrayToggle" />
+        </settings:SettingsCard>
+        <Expander x:Uid="TrayActions" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="TrayActionsExpander">
+            <StackPanel Spacing="8">
+                <Button x:Name="MoveToTrayButton" x:Uid="MoveToTrayButton" Click="MoveToTrayButton_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="MoveToTrayButton" />
+                <TextBlock x:Uid="TrayExitDescription" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="TrayExitDescription" />
+                <Button x:Name="ExitCompletelyButton" x:Uid="ExitCompletelyButton" Click="ExitCompletelyButton_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="ExitCompletelyButton" />
+            </StackPanel>
+        </Expander>
+        <TextBlock x:Name="StatusText" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="TraySettingsStatus" />
+    </StackPanel>
+</UserControl>

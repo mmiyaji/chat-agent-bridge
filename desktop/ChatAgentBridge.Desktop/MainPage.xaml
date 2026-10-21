@@ -9,7 +9,12 @@
     xmlns:history="using:ChatAgentBridge_Desktop.History"
     xmlns:localization="using:ChatAgentBridge_Desktop.Localization"
     xmlns:appearance="using:ChatAgentBridge_Desktop.Appearance"
+    xmlns:executionUi="using:ChatAgentBridge_Desktop.ExecutionUi"
     xmlns:about="using:ChatAgentBridge_Desktop.About"
+    xmlns:settings="using:CommunityToolkit.WinUI.Controls"
+    xmlns:layout="using:ChatAgentBridge_Desktop.Layout"
+    xmlns:tray="using:ChatAgentBridge_Desktop.Tray"
+    xmlns:diagrams="using:ChatAgentBridge_Desktop.Diagrams"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Grid>
@@ -36,11 +41,15 @@
                 <NavigationViewItem  Tag="history" AutomationProperties.AutomationId="NavHistory" Icon="Clock"  x:Uid="NavHistory" />
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>
-                <NavigationViewItem Tag="appearance" AutomationProperties.AutomationId="NavAppearance" x:Uid="NavAppearance">
-                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE790;" /></NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItem Tag="about" AutomationProperties.AutomationId="NavAbout" x:Uid="NavAbout">
+                <NavigationViewItem x:Name="AboutNavigationItem" Tag="about" AutomationProperties.AutomationId="NavAbout" x:Uid="NavAbout">
                     <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;" /></NavigationViewItem.Icon>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge x:Name="AboutUpdateBadge" Visibility="Collapsed" Style="{StaticResource AttentionIconInfoBadgeStyle}"
+                                   Width="24" Height="24" MinWidth="24" MinHeight="24" MaxHeight="24" Padding="4"
+                                   AutomationProperties.AccessibilityView="Control" AutomationProperties.AutomationId="NavAboutUpdateBadge">
+                            <InfoBadge.IconSource><SymbolIconSource Symbol="Download" /></InfoBadge.IconSource>
+                        </InfoBadge>
+                    </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
             <NavigationView.Content>
@@ -56,12 +65,22 @@
                              Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.StatusSeverity), Mode=OneWay}"
                              Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
                              Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
+                    <StackPanel Grid.Row="1" MaxWidth="1040" HorizontalAlignment="Left" Spacing="4" Margin="0,0,0,16"
+                                Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
+                        <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock013" x:Uid="chatAgentBridgeDesktopMainPageTextBlock013" />
+                        <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock014" x:Uid="chatAgentBridgeDesktopMainPageTextBlock014" />
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" MaxWidth="1040" HorizontalAlignment="Left" Spacing="4" Margin="0,0,0,16"
+                                Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
+                        <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock046" x:Uid="chatAgentBridgeDesktopMainPageTextBlock046" />
+                        <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock047" x:Uid="chatAgentBridgeDesktopMainPageTextBlock047" />
+                    </StackPanel>
                     <Button Grid.Row="2" Margin="0,0,0,12"  Click="ReloadSettings_Click"
                             IsEnabled="{x:Bind local:MainPage.CanReloadSettings(ViewModel.IsLoading, ViewModel.IsRunning), Mode=OneWay}"
                             Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsSettingsLoaded), Mode=OneWay}"
                             HorizontalAlignment="Left" AutomationProperties.AutomationId="ReloadSettings"  x:Uid="ReloadSettings" />
 
-                    <Button Grid.Row="2"  Margin="0,0,0,12" Command="{x:Bind ViewModel.SaveSettingsCommand}" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsAgentSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}" AutomationProperties.AutomationId="SaveSettings"  x:Uid="SaveSettings" />
+                    <Button Grid.Row="2" Margin="0,0,0,12" HorizontalAlignment="Left" Command="{x:Bind ViewModel.SaveSettingsCommand}" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsAgentSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}" AutomationProperties.AutomationId="SaveSettings" x:Uid="SaveSettings" />
                     <Grid Grid.Row="2" Margin="0,0,0,12" ColumnSpacing="12" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsConnectionsSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                         <Button Command="{x:Bind ViewModel.SaveSettingsCommand}" VerticalAlignment="Bottom" AutomationProperties.AutomationId="SaveConnections" x:Uid="SaveConnections" />
@@ -69,16 +88,16 @@
                             <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="JumpMattermost" />
                             <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="JumpSlack" />
                             <ComboBoxItem Tag="approval" AutomationProperties.AutomationId="JumpApproval" x:Uid="JumpApproval" />
+                            <ComboBoxItem Tag="attachments" AutomationProperties.AutomationId="JumpAttachments" x:Uid="JumpAttachments" />
                             <ComboBoxItem Tag="scope" AutomationProperties.AutomationId="JumpScope" x:Uid="JumpScope" />
-                            <ComboBoxItem Tag="startup" AutomationProperties.AutomationId="JumpStartup" x:Uid="JumpStartup" />
                         </ComboBox>
                     </Grid>
-                    <ScrollViewer x:Name="MainContentScroll" Grid.Row="3" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind local:MainPage.CanUseForm(IsAppearanceSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="MainContentScroll"  x:Uid="MainContentScroll">
-                        <Grid MaxWidth="1040" HorizontalAlignment="Stretch">
+                    <ScrollViewer x:Name="MainContentScroll" Grid.Row="3" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind local:MainPage.CanUseForm(IsOverviewSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="MainContentScroll"  x:Uid="MainContentScroll">
+                        <Grid Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="1040" HorizontalAlignment="Left" AutomationProperties.AutomationId="FormContent">
                             <StackPanel Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsOverviewSelected), Mode=OneTime}">
                                 <StackPanel Spacing="4">
-                                    <TextBlock Text="Chat Agent Bridge" Style="{StaticResource TitleTextBlockStyle}" />
-                                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock001" x:Uid="chatAgentBridgeDesktopMainPageTextBlock001" />
+                                    <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="GeneralPageTitle" x:Uid="GeneralPageTitle" />
+                                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="GeneralPageDescription" x:Uid="GeneralPageDescription" />
                                 </StackPanel>
                                 <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                     <StackPanel Spacing="12">
@@ -125,9 +144,41 @@
                                         <TextBlock Text="{x:Bind ViewModel.SetupDraftNotice, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSetupDraftNotice), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="OverviewDraftNotice" />
                                     </StackPanel>
                                 </Border>
+                                <StackPanel Spacing="8" x:Name="StartupSettingsCard" AutomationProperties.AutomationId="StartupCard">
+                                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="StartupHeading" x:Uid="StartupHeading" />
+                                    <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" x:Uid="StartupSettingRow" AutomationProperties.AutomationId="StartupSettingRow">
+                                        <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7E8;" /></settings:SettingsCard.HeaderIcon>
+                                        <settings:SettingsCard.Description>
+                                            <TextBlock Text="{x:Bind ViewModel.StartupStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="StartupStatus" />
+                                        </settings:SettingsCard.Description>
+                                        <ToggleSwitch x:Name="StartupToggle" IsOn="{x:Bind ViewModel.StartWithWindows, Mode=OneWay}" Toggled="StartupToggle_Toggled" IsEnabled="{x:Bind ViewModel.CanChangeStartup, Mode=OneWay}" AutomationProperties.AutomationId="StartWithWindows" x:Uid="StartWithWindows" />
+                                    </settings:SettingsCard>
+                                    <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" x:Uid="AutoConnectSettingRow" AutomationProperties.AutomationId="AutoConnectSettingRow">
+                                        <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="Message" /></settings:SettingsCard.HeaderIcon>
+                                        <settings:SettingsCard.Description>
+                                            <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock043" x:Uid="chatAgentBridgeDesktopMainPageTextBlock043" />
+                                        </settings:SettingsCard.Description>
+                                        <ComboBox x:Name="AutoConnectProviderPicker" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AutoConnectProvider, Mode=TwoWay}" MinWidth="180" HorizontalAlignment="Left" AutomationProperties.AutomationId="AutoConnectProvider" x:Uid="AutoConnectProvider">
+                                            <ComboBoxItem Tag="none" AutomationProperties.AutomationId="AutoConnectOptionNone" x:Uid="AutoConnectOptionNone" />
+                                            <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="AutoConnectOptionMattermost" />
+                                            <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="AutoConnectOptionSlack" />
+                                        </ComboBox>
+                                    </settings:SettingsCard>
+                                    <Button Command="{x:Bind ViewModel.SaveGeneralSettingsCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SaveGeneralSettings" x:Uid="SaveGeneralSettings" />
+                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="SaveGeneralSettingsHelp" x:Uid="SaveGeneralSettingsHelp" />
+                                </StackPanel>
+                                <tray:TraySettingsControl />
+                                <StackPanel x:Name="GeneralAppearanceSection" Spacing="12" AutomationProperties.AutomationId="GeneralAppearanceSection">
+                                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="GeneralAppearanceSectionHeading" x:Uid="GeneralAppearanceSectionHeading" />
+                                    <localization:LanguageSettings x:Name="SettingsLanguage" AutomationProperties.AutomationId="LanguageCard" />
+                                    <appearance:AppearanceSettings />
+                                </StackPanel>
                                 <Expander IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="OverviewDetailsExpander">
                                     <Expander.Header>
-                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="OverviewDetailsHeader" x:Uid="OverviewDetailsHeader" />
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="OverviewDetailsHeader" x:Uid="OverviewDetailsHeader" />
+                                            <TextBlock Text="{x:Bind ViewModel.SetupCompletionSummary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" AutomationProperties.AutomationId="OverviewDetailsSummary" />
+                                        </StackPanel>
                                     </Expander.Header>
                                     <StackPanel Spacing="12">
                                         <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
@@ -165,7 +216,7 @@
                                         <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                             <StackPanel Spacing="16">
                                                 <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock006" x:Uid="chatAgentBridgeDesktopMainPageTextBlock006" />
-                                                <Image Source="{x:Bind localization:LocalizedAssets.OverviewArchitecture, Mode=OneTime}" Stretch="Uniform" MaxWidth="1040" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="OverviewArchitecture" x:Uid="OverviewArchitecture" />
+                                                <diagrams:ArchitecturePreview AutomationProperties.AutomationId="OverviewArchitecture" MaxWidth="1040" MaxPreviewHeight="500" HorizontalAlignment="Stretch" x:Uid="OverviewArchitecture" />
                                                 <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock007" x:Uid="chatAgentBridgeDesktopMainPageTextBlock007" />
                                                 <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock008" x:Uid="chatAgentBridgeDesktopMainPageTextBlock008" />
                                             </StackPanel>
@@ -187,8 +238,6 @@
                             </StackPanel>
 
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
-                                <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock013" x:Uid="chatAgentBridgeDesktopMainPageTextBlock013" />
-                                <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock014" x:Uid="chatAgentBridgeDesktopMainPageTextBlock014" />
                                 <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" AutomationProperties.AutomationId="WorkspaceCard">
                                     <StackPanel Spacing="8">
                                         <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock015" x:Uid="chatAgentBridgeDesktopMainPageTextBlock015" />
@@ -217,13 +266,25 @@
                                         </StackPanel>
                                     </Expander>
                                     <Button  Command="{x:Bind ViewModel.CheckCliCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SettingsCheckCli"  x:Uid="SettingsCheckCli" />
+                                    <InfoBar x:Uid="CliCheckError" Severity="Error" IsClosable="False"
+                                             IsOpen="{x:Bind ViewModel.CliCheckFailed, Mode=OneWay}"
+                                             Message="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
+                                             AutomationProperties.Name="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
+                                             AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SettingsCliCheckError">
+                                        <InfoBar.ActionButton>
+                                            <Button x:Uid="CliReviewTrust" Click="ReviewCliTrust_Click"
+                                                    Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasCliTrustRecovery), Mode=OneWay}"
+                                                    AutomationProperties.AutomationId="SettingsCliReviewTrust" />
+                                        </InfoBar.ActionButton>
+                                    </InfoBar>
                                     <StackPanel Spacing="8">
                                         <Button Click="ReloadProcessEnvironment_Click" IsEnabled="{x:Bind local:MainPage.EnvironmentReloadAllowed(ViewModel.IsLoading, ViewModel.IsRunning, ViewModel.IsCheckingCli, ViewModel.ModelCatalog.IsLoading, ViewModel.IsOnboardingBusy, InboxPage.ViewModel.IsExecuting, ViewModel.SaveSettingsCommand.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ReloadProcessEnvironment" x:Uid="ReloadProcessEnvironment" />
                                         <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="ReloadProcessEnvironmentHelp" x:Uid="ReloadProcessEnvironmentHelp" />
                                     </StackPanel>
                                     <TextBlock Text="{x:Bind ViewModel.CliVersion, Mode=OneWay}" TextWrapping="Wrap" />
                                     <TextBlock Text="{x:Bind ViewModel.CliExecutablePath, Mode=OneWay}" TextWrapping="Wrap" />
-                                    <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SettingsCliCheckSummary" />
+                                    <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap"
+                                               Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.ShowCliCheckSummary), Mode=OneWay}" AutomationProperties.AutomationId="SettingsCliCheckSummary" />
                                     <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="AgentConnectionRegistrationCard">
                                         <StackPanel Spacing="8">
                                             <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="AgentConnectionRegistrationTitle" />
@@ -306,14 +367,6 @@
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
-                            <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsAppearanceSelected), Mode=OneTime}" AutomationProperties.AutomationId="AppearancePage">
-                                <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="AppearancePageTitle" x:Uid="AppearancePageTitle" />
-                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="AppearancePageDescription" x:Uid="AppearancePageDescription" />
-                                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="LanguageCard">
-                                    <localization:LanguageSettings x:Name="SettingsLanguage" />
-                                </Border>
-                                <appearance:AppearanceSettings />
-                            </StackPanel>
                             <StackPanel Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsWorkbenchSelected), Mode=OneTime}">
                                 <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock044" x:Uid="chatAgentBridgeDesktopMainPageTextBlock044" />
                                 <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock045" x:Uid="chatAgentBridgeDesktopMainPageTextBlock045" />
@@ -324,14 +377,13 @@
                                     <Button  Command="{x:Bind ViewModel.RunCommand}" AutomationProperties.AutomationId="RunAgent"  x:Uid="RunAgent" />
                                     <Button  Command="{x:Bind ViewModel.CancelRunCommand}" AutomationProperties.AutomationId="CancelAgent"  x:Uid="CancelAgent" />
                                 </StackPanel>
+                                <executionUi:LiveOutputView ViewModel="{x:Bind ViewModel.LiveOutput, Mode=OneWay}"
+                                                            CancelCommand="{x:Bind ViewModel.CancelRunCommand, Mode=OneWay}"
+                                                            AutomationProperties.AutomationId="ManualLiveOutput" />
                                 <TextBox  Text="{x:Bind ViewModel.Output, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="160" MaxHeight="400" AutomationProperties.AutomationId="AgentOutput"  x:Uid="AgentOutput" />
                                 <TextBlock Text="{x:Bind ViewModel.UsageSummary, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="LocalUsageSummary" />
                             </StackPanel>
                             <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
-                                <StackPanel Spacing="4">
-                                    <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock046" x:Uid="chatAgentBridgeDesktopMainPageTextBlock046" />
-                                    <TextBlock  Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock047" x:Uid="chatAgentBridgeDesktopMainPageTextBlock047" />
-                                </StackPanel>
                                 <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="ConnectionCredentialsHeading" x:Uid="ConnectionCredentialsHeading" />
                                 <Border x:Name="MattermostSettingsCard" Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                     <StackPanel Spacing="16">
@@ -342,6 +394,12 @@
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="MattermostProxyHelp" x:Uid="MattermostProxyHelp" />
                                         </StackPanel>
                                         <StackPanel Spacing="8"><TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock050" x:Uid="chatAgentBridgeDesktopMainPageTextBlock050" /><TextBox Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  AutomationProperties.AutomationId="MattermostChannelId"  x:Uid="MattermostChannelId" /></StackPanel>
+                                        <StackPanel Spacing="8">
+                                            <ToggleSwitch IsOn="{x:Bind ViewModel.PostConnectionNotice, Mode=TwoWay}"
+                                                          AutomationProperties.AutomationId="PostConnectionNotice" x:Uid="PostConnectionNotice" />
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"
+                                                       AutomationProperties.AutomationId="PostConnectionNoticeHelp" x:Uid="PostConnectionNoticeHelp" />
+                                        </StackPanel>
                                         <StackPanel Spacing="8"><TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock051" x:Uid="chatAgentBridgeDesktopMainPageTextBlock051" /><PasswordBox x:Name="MattermostTokenBox" PasswordChanged="MattermostTokenBox_PasswordChanged"  AutomationProperties.AutomationId="MattermostToken"  x:Uid="MattermostToken" /></StackPanel>
                                         <StackPanel Spacing="8" AutomationProperties.AutomationId="MattermostUsernameLookup">
                                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="MattermostUsernameLookupLabel" />
@@ -393,6 +451,25 @@
                                             <ComboBoxItem  Tag="manual"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem009" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem009" /><ComboBoxItem  Tag="auto"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem010" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem010" /><ComboBoxItem  Tag="none"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem011" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem011" />
                                         </ComboBox>
                                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock033" x:Uid="chatAgentBridgeDesktopMainPageTextBlock033" />
+                                        <Border x:Name="FileAttachmentSettings" Padding="12" Margin="0,8,0,0" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" AutomationProperties.AutomationId="FileAttachmentSettings">
+                                            <StackPanel Spacing="8">
+                                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="FileAttachmentSettingsHeading" />
+                                                <ComboBox SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.FileAttachmentApprovalMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="FileAttachmentApprovalMode" x:Uid="FileAttachmentApprovalMode">
+                                                    <ComboBoxItem Tag="disabled" AutomationProperties.AutomationId="FileAttachmentModeDisabled" x:Uid="FileAttachmentModeDisabled" />
+                                                    <ComboBoxItem Tag="always" AutomationProperties.AutomationId="FileAttachmentModeAlways" x:Uid="FileAttachmentModeAlways" />
+                                                    <ComboBoxItem Tag="first" AutomationProperties.AutomationId="FileAttachmentModeFirst" x:Uid="FileAttachmentModeFirst" />
+                                                    <ComboBoxItem Tag="auto" AutomationProperties.AutomationId="FileAttachmentModeAuto" x:Uid="FileAttachmentModeAuto" />
+                                                </ComboBox>
+                                                <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="FileAttachmentSettingsHelp" />
+                                                <Grid ColumnSpacing="8" RowSpacing="8">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                                    <NumberBox Value="{x:Bind ViewModel.FileAttachmentMaxSizeMb, Mode=TwoWay}" Minimum="1" Maximum="100" SpinButtonPlacementMode="Inline" SmallChange="1" LargeChange="5" AutomationProperties.AutomationId="FileAttachmentMaxSizeMb" x:Uid="FileAttachmentMaxSizeMb" />
+                                                    <NumberBox Grid.Column="1" Value="{x:Bind ViewModel.FileAttachmentMaxCount, Mode=TwoWay}" Minimum="1" Maximum="10" SpinButtonPlacementMode="Inline" SmallChange="1" LargeChange="2" AutomationProperties.AutomationId="FileAttachmentMaxCount" x:Uid="FileAttachmentMaxCount" />
+                                                    <NumberBox Grid.Row="1" Grid.ColumnSpan="2" Value="{x:Bind ViewModel.FileAttachmentMaxTotalSizeMb, Mode=TwoWay}" Minimum="1" Maximum="100" SpinButtonPlacementMode="Inline" SmallChange="1" LargeChange="5" AutomationProperties.AutomationId="FileAttachmentMaxTotalSizeMb" x:Uid="FileAttachmentMaxTotalSizeMb" />
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
                                     </StackPanel>
                                 </Border>
                                 <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" x:Name="ChatScopeSettingsCard" AutomationProperties.AutomationId="ChatScopeCard">
@@ -421,19 +498,6 @@
                                             <Button Command="{x:Bind ViewModel.AddMattermostThreadCommand}" IsEnabled="{x:Bind ViewModel.CanAddMattermostThreadLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="AddMattermostThreadButton" x:Uid="AddMattermostThreadButton" />
                                         </StackPanel>
                                         <TextBox  Text="{x:Bind ViewModel.MattermostAllowedThreadIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="MattermostAllowedThreadIds"  x:Uid="MattermostAllowedThreadIds" />
-                                    </StackPanel>
-                                </Border>
-                                <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" x:Name="StartupSettingsCard" AutomationProperties.AutomationId="StartupCard">
-                                    <StackPanel Spacing="12">
-                                        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="StartupHeading" x:Uid="StartupHeading" />
-                                        <ToggleSwitch x:Name="StartupToggle" IsOn="{x:Bind ViewModel.StartWithWindows, Mode=OneWay}" Toggled="StartupToggle_Toggled" IsEnabled="{x:Bind ViewModel.CanChangeStartup, Mode=OneWay}" AutomationProperties.AutomationId="StartWithWindows"  x:Uid="StartWithWindows" />
-                                        <TextBlock Text="{x:Bind ViewModel.StartupStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="StartupStatus" />
-                                        <ComboBox x:Name="AutoConnectProviderPicker" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AutoConnectProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="AutoConnectProvider" x:Uid="AutoConnectProvider">
-                                            <ComboBoxItem  Tag="none" AutomationProperties.AutomationId="AutoConnectOptionNone"  x:Uid="AutoConnectOptionNone" />
-                                            <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="AutoConnectOptionMattermost" />
-                                            <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="AutoConnectOptionSlack" />
-                                        </ComboBox>
-                                        <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock043" x:Uid="chatAgentBridgeDesktopMainPageTextBlock043" />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
