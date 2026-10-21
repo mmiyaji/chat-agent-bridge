@@ -23,6 +23,8 @@ public partial class App : Application
     {
         // Never read the production application's environment variables or settings.
         string[] arguments = Environment.GetCommandLineArgs();
+        string? autoScenario = null;
+        bool simpleToast = arguments.Contains("--simple-toast", StringComparer.Ordinal);
         string dataDirectory = Path.Combine(Path.GetTempPath(), "NotificationNativeProbe", Guid.NewGuid().ToString("N"));
         string language;
         try { language = Windows.System.UserProfile.GlobalizationPreferences.Languages.FirstOrDefault() ?? System.Globalization.CultureInfo.InstalledUICulture.Name; }
@@ -31,6 +33,7 @@ public partial class App : Application
         {
             if (arguments[i] == "--data-dir" && Path.IsPathFullyQualified(arguments[i + 1])) dataDirectory = arguments[++i];
             else if (arguments[i] == "--language" && arguments[i + 1] is "ja" or "en") language = arguments[++i] == "ja" ? "ja-JP" : "en-US";
+            else if (arguments[i] == "--auto-scenario" && arguments[i + 1] is "approve" or "reject" or "busy" or "expired") autoScenario = arguments[++i];
         }
         var culture = System.Globalization.CultureInfo.GetCultureInfo(language);
         System.Globalization.CultureInfo.CurrentCulture = culture;
@@ -56,5 +59,6 @@ public partial class App : Application
         _window = new ProbeWindow(service, dataDirectory);
         _window.Activate();
         service.ProcessStartupActivation();
+        _window.ScheduleStartupTest(autoScenario, simpleToast);
     }
 }

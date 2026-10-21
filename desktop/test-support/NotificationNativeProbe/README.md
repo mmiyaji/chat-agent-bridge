@@ -12,6 +12,8 @@ Run the portable executable with an isolated, absolute `--data-dir` argument. Ex
 
 Use `--language ja` or `--language en` to select the notification/service language before registration. The default follows Windows user language, matching production.
 
+For a diagnostic run without computer-use tools, pass `--auto-scenario approve` (or `reject`, `busy`, `expired`). A UI dispatcher timer creates that synthetic request after three seconds, without simulating any notification button click. `--simple-toast` sends a fixed, minimal two-line notification at the same delay, with no buttons, tag, group or explicit expiration. It can run alone to compare against production payload delivery. Each creation records notification history after 500 ms via `GetAllAsync`: count, numeric IDs, tag lengths and groups, never raw tokens or payloads. Startup diagnostic runs also record the read-only `SHQueryUserNotificationState` HRESULT and numeric state. These checks do not alter Windows notification settings.
+
 Use the actual Windows toast buttons, with the probe open:
 
 1. **Create approve scenario**, then click the toast's Approve button. Expect Approve 1, Deny 0, Completed 1.

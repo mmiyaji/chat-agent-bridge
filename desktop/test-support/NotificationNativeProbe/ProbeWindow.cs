@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Windows.AppNotifications;
+using Microsoft.Windows.AppNotifications.Builder;
 
 namespace NotificationNativeProbe;
 
@@ -20,6 +21,7 @@ public sealed class ProbeWindow : Window
     private string _scenario = "none";
     private string _token = "";
     private bool _busy;
+    private DispatcherTimer? _startupTimer;
     private int _approve, _decline, _completed, _attention, _generation;
 
     public ProbeWindow(PendingRequestNotificationService service, string dataDirectory)
@@ -54,13 +56,41 @@ public sealed class ProbeWindow : Window
         service.StatusChanged += () => { RefreshStatus(); Record("service_status", service.Status); };
         service.ActionCompleted += () => { _completed++; _notice.IsOpen = false; _request.Text = $"{_scenario}: completed"; RefreshCounts(); Record("action_completed"); };
         service.SetOpenAppCallback(() => { _attention++; _notice.Message = service.Status; _notice.IsOpen = true; Activate(); RefreshCounts(); Record("attention_requested"); });
-        Closed += (_, _) => { service.Shutdown(); Record("shutdown"); };
+        Closed += (_, _) => { _startupTimer?.Stop(); service.Shutdown(); Record("shutdown"); };
         RefreshStatus();
         RefreshCounts();
         Record("initialized", service.Status);
         nint hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
         double scale = GetDpiForWindow(hwnd) / 96.0;
         AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(740 * scale), (int)(850 * scale)));
+    }
+
+    public void ScheduleStartupTest(string? scenario, bool simpleToast)
+    {
+        if (scenario is null && !simpleToast) return;
+        _startupTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        _startupTimer.Tick += async (_, _) =>
+        {
+            _startupTimer.Stop();
+            RecordShellNotificationState();
+            if (scenario is not null) Create(scenario);
+            if (simpleToast)
+            {
+                try
+                {
+                    var notification = new AppNotificationBuilder()
+                        .AddText("Notification Native Probe")
+                        .AddText("Minimal synthetic notification diagnostic.")
+                        .BuildNotification();
+                    AppNotificationManager.Default.Show(notification);
+                    Record("simple_toast_shown", diagnostics: new { id = notification.Id });
+                    await LogNotificationHistoryAsync("simple_toast");
+                }
+                catch (Exception error) { Record("simple_toast_error", error.ToString()); }
+            }
+        };
+        _startupTimer.Start();
+        Record("startup_test_scheduled", diagnostics: new { scenario, simpleToast, delaySeconds = 3 });
     }
 
     private static Button Button(string text, string id, Action action)
@@ -89,6 +119,7 @@ public sealed class ProbeWindow : Window
                 () => Decision("approve"), () => Decision("decline"), Open, out _token);
             _request.Text = shown ? $"{scenario}: pending. Use the Windows toast buttons." : $"{scenario}: notification unavailable.";
             Record("scenario_created", shown ? "shown" : "failed");
+            _ = LogNotificationHistoryAsync(scenario);
             if (scenario == "expired" && shown) _ = MarkExpiredAsync(generation);
         }
         catch (Exception error) { _request.Text = $"Probe error: {error.GetType().Name}: {error.Message}"; Record("probe_error", _request.Text); }
@@ -151,15 +182,48 @@ public sealed class ProbeWindow : Window
         Record("expiry_ready");
     }
 
+    private async Task LogNotificationHistoryAsync(string source)
+    {
+        await Task.Delay(500);
+        try
+        {
+            var notifications = await AppNotificationManager.Default.GetAllAsync();
+            Record("notification_history", source, new
+            {
+                count = notifications.Count,
+                notifications = notifications.Select(notification => new
+                {
+                    id = notification.Id,
+                    tagLength = notification.Tag?.Length ?? 0,
+                    group = notification.Group
+                }).ToArray()
+            });
+        }
+        catch (Exception error) { Record("notification_history_error", $"{source}: {error}"); }
+    }
+
+    private void RecordShellNotificationState()
+    {
+        try
+        {
+            int result = SHQueryUserNotificationState(out int state);
+            Record("shell_notification_state", diagnostics: new { hresult = result, state });
+        }
+        catch (Exception error) { Record("shell_notification_state_error", error.GetType().Name); }
+    }
+
     private void RefreshStatus() { _status.Message = _service.Status; _status.Severity = _service.IsAvailable ? InfoBarSeverity.Informational : InfoBarSeverity.Warning; }
     private void RefreshCounts() => _counts.Text = $"Approve: {_approve} | Deny: {_decline} | Completed: {_completed} | Attention: {_attention}";
-    private void Record(string name, string? detail = null)
+    private void Record(string name, string? detail = null, object? diagnostics = null)
     {
-        var record = new { utc = DateTimeOffset.UtcNow, scenario = _scenario, @event = name, detail, approve = _approve, decline = _decline, completed = _completed, attention = _attention };
+        var record = new { utc = DateTimeOffset.UtcNow, scenario = _scenario, @event = name, detail, diagnostics, approve = _approve, decline = _decline, completed = _completed, attention = _attention };
         File.AppendAllText(_eventPath, JsonSerializer.Serialize(record) + Environment.NewLine);
         _events.Text = $"{name}: {detail ?? _scenario}\r\n" + _events.Text;
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(nint hwnd);
+
+    [System.Runtime.InteropServices.DllImport("shell32.dll")]
+    private static extern int SHQueryUserNotificationState(out int notificationState);
 }
