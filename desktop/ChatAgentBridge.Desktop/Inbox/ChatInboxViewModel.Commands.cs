@@ -10,6 +10,7 @@ public sealed partial class ChatInboxViewModel
         ChatRequest request, CancellationToken token)
     {
         var command = ChatControlCommand.Parse(request.Text);
+        if (request.CancellationTargetMessageId is not null && command.Kind != ChatControlCommandKind.Stop) return true;
         if (command.Kind is ChatControlCommandKind.Answer or ChatControlCommandKind.ReservedInvalid) return true;
         if (command.Kind is not (ChatControlCommandKind.Help or ChatControlCommandKind.Status or ChatControlCommandKind.Stop or ChatControlCommandKind.Model)) return false;
         var completion = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -37,7 +38,9 @@ public sealed partial class ChatInboxViewModel
             }
             var scope = CreateControlScope(request, received);
             var own = Requests.Where(item => ReferenceEquals(item.Transport, transport) &&
-                CreateSessionKey(item) == scope && HasAccess(current, item.Request, item.Settings)).ToArray();
+                CreateSessionKey(item) == scope && HasAccess(current, item.Request, item.Settings) &&
+                (request.CancellationTargetMessageId is null ||
+                    string.Equals(item.Request.MessageId, request.CancellationTargetMessageId, StringComparison.Ordinal))).ToArray();
             string reply;
             if (kind == ChatControlCommandKind.Status)
             {

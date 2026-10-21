@@ -444,6 +444,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 var accessSettings = Volatile.Read(ref _accessSettings);
                 if (_disconnecting || accessSettings is null || !HasAccess(accessSettings, request, settings)) return;
                 await AuditAsync("received", request, null, token);
+                if (request.CancellationTargetMessageId is not null)
+                {
+                    await TryHandleChatControlAsync(transport, settings, request, token);
+                    return;
+                }
                 if (_approvalBroker.TryHandle(request)) return;
                 if (await TryHandleChatAnswerAsync(transport, settings, request, token)) return;
                 if (await TryHandleAgentCommandAsync(transport, settings, request, token)) return;

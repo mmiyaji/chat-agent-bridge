@@ -12,6 +12,124 @@ namespace ChatAgentBridge.Transports.Tests;
 public sealed class TransportReconnectTests
 {
     [Fact]
+    public async Task Mattermost_stop_reaction_targets_only_requester_and_only_while_progress_post_is_live()
+    {
+        var originalReady = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var progressReady = new TaskCompletionSource<ChatProgressMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopped = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var callbackCount = 0;
+        var ordinaryRequestCount = 0;
+        var postCount = 0;
+        LoopbackServer? server = null;
+        await using var serverLifetime = server = new LoopbackServer(HandleMattermostHttpAsync, HandleMattermostSocketAsync);
+        await using var transport = new MattermostWebSocketTransport();
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var settings = new BridgeSettings
+        {
+            MattermostServerUrl = server.BaseUri.ToString(),
+            MattermostChannelId = "channel-1",
+            MattermostToken = "local-test-token",
+            MattermostAllowedUserIds = "member-1,member-2",
+            MattermostBypassProxy = true
+        };
+
+        var run = transport.RunAsync(settings, async (request, ct) =>
+        {
+            Interlocked.Increment(ref callbackCount);
+            if (request.CancellationTargetMessageId is not null)
+            {
+                stopped.TrySetResult(request);
+                return;
+            }
+
+            if (Interlocked.Increment(ref ordinaryRequestCount) == 1)
+            {
+                var completedProgress = await transport.PostProgressAsync(request, "Finished", ct);
+                transport.CompleteProgress(completedProgress);
+                return;
+            }
+
+            originalReady.TrySetResult(request);
+            progressReady.TrySetResult(await transport.PostProgressAsync(request, "Working", ct));
+        }, cancellation.Token);
+
+        var original = await originalReady.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+        var stop = await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+
+        Assert.Equal(3, Volatile.Read(ref callbackCount));
+        Assert.Equal("!cab stop", stop.Text);
+        Assert.StartsWith("reaction:", stop.MessageId, StringComparison.Ordinal);
+        Assert.Equal(original.ChannelId, stop.ChannelId);
+        Assert.Equal(original.ThreadId, stop.ThreadId);
+        Assert.Equal(original.UserId, stop.UserId);
+        Assert.Equal(original.MessageId, stop.CancellationTargetMessageId);
+
+        // The test socket sends a duplicate after the accepted reaction. It must not dispatch twice.
+        await Task.Delay(100, cancellation.Token);
+        Assert.Equal(3, Volatile.Read(ref callbackCount));
+        cancellation.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(5));
+
+        async Task HandleMattermostHttpAsync(HttpListenerContext context)
+        {
+            var path = context.Request.Url?.AbsolutePath;
+            if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/me")
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{\"id\":\"bot-1\",\"username\":\"cab-bot\",\"is_bot\":true}");
+            else if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/member-1")
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{\"id\":\"member-1\",\"username\":\"member\",\"is_bot\":false}");
+            else if (context.Request.HttpMethod == "POST" && path == "/api/v4/posts")
+            {
+                var index = Interlocked.Increment(ref postCount);
+                var id = index == 1 ? "progress-1" : "progress-2";
+                var rootId = index == 1 ? "incoming-1" : "incoming-2";
+                await server!.WriteJsonAsync(context, HttpStatusCode.Created,
+                    JsonSerializer.Serialize(new { id, channel_id = "channel-1", root_id = rootId }));
+            }
+            else await server!.WriteJsonAsync(context, HttpStatusCode.NotFound, "{}");
+        }
+
+        async Task HandleMattermostSocketAsync(int connection, WebSocket socket, CancellationToken ct)
+        {
+            await ReadSocketMessageAsync(socket, ct);
+            await SendSocketJsonAsync(socket, "{\"seq_reply\":1,\"status\":\"OK\"}", ct);
+            var post = JsonSerializer.Serialize(new
+            {
+                id = "incoming-1", channel_id = "channel-1", user_id = "member-1", message = "!cab do work", root_id = ""
+            });
+            await SendSocketJsonAsync(socket, JsonSerializer.Serialize(new { @event = "posted", data = new { post } }), ct);
+            var secondPost = JsonSerializer.Serialize(new
+            {
+                id = "incoming-2", channel_id = "channel-1", user_id = "member-1", message = "!cab do second", root_id = ""
+            });
+            await SendSocketJsonAsync(socket, JsonSerializer.Serialize(new { @event = "posted", data = new { post = secondPost } }), ct);
+            await progressReady.Task.WaitAsync(ct);
+
+            await SendReactionAsync("reaction_added", "{bad json");
+            await SendReactionAsync("reaction_added", Reaction("thumbsup", "member-1", "progress-2", "channel-1"));
+            await SendReactionAsync("reaction_removed", Reaction("octagonal_sign", "member-1", "progress-2", "channel-1"));
+            await SendReactionAsync("reaction_added", Reaction("octagonal_sign", "member-2", "progress-2", "channel-1"));
+            await SendReactionAsync("reaction_added", Reaction("octagonal_sign", "member-1", "progress-1", "channel-1"));
+            await SendReactionAsync("reaction_added", Reaction("octagonal_sign", "member-1", "result-1", "channel-1"));
+            await SendReactionAsync("reaction_added", Reaction("octagonal_sign", "member-1", "progress-2", "channel-1"), "channel-other");
+            await SendReactionAsync("reaction_added", Reaction("octagonal_sign", "member-1", "progress-2", "channel-1"), 42);
+            await SendReactionAsync("reaction_added", Reaction("octagonal_sign", "member-1", "progress-2", "channel-1"));
+            await SendReactionAsync("reaction_added", Reaction("octagonal_sign", "member-1", "progress-2", "channel-1"));
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+
+            Task SendReactionAsync(string eventName, string reactionJson, object? broadcastChannel = null) =>
+                SendSocketJsonAsync(socket, JsonSerializer.Serialize(new
+                {
+                    @event = eventName,
+                    data = new { reaction = reactionJson },
+                    broadcast = new { channel_id = broadcastChannel ?? "channel-1" }
+                }), ct);
+
+            static string Reaction(string emoji, string actor, string postId, string channelId) =>
+                JsonSerializer.Serialize(new { emoji_name = emoji, user_id = actor, post_id = postId, channel_id = channelId, id = "reaction-1" });
+        }
+    }
+
+    [Fact]
     public async Task Mattermost_reconnects_after_socket_close_deduplicates_posts_and_keeps_progress_handles_valid()
     {
         var accepted = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);

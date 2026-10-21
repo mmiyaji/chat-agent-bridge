@@ -23,6 +23,19 @@ const server = http.createServer(async (req, res) => {
     const post = { id: body.id, root_id: body.thread, channel_id: 'ui-channel', user_id: body.user, message: body.plain ? body.text : `${body.mention ? '@cc-agent-bot' : '!cab'} ${body.text}` };
     for (const ws of sockets) if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ event: 'posted', data: { post: JSON.stringify(post) } }));
     res.end(JSON.stringify({ delivered: sockets.size }));
+  } else if (req.url === '/test/reaction' && req.method === 'POST') {
+    const reaction = {
+      user_id: body.user_id || body.user || '',
+      post_id: body.post_id || '',
+      emoji_name: body.emoji_name || 'octagonal_sign'
+    };
+    const event = {
+      event: 'reaction_added',
+      data: { reaction: JSON.stringify(reaction) },
+      broadcast: { channel_id: body.channel_id || 'ui-channel' }
+    };
+    for (const ws of sockets) if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
+    res.end(JSON.stringify({ delivered: sockets.size }));
   } else if (req.url === '/test/results') {
     res.end(JSON.stringify({ replies, updates, connections: sockets.size }));
   } else if (req.url === '/test/progress-errors' && req.method === 'POST') {

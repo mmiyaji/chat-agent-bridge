@@ -25,6 +25,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     private static readonly TimeSpan LifecycleWaitLimit = TimeSpan.FromSeconds(5);
 
     private readonly IChatProgressTransport? _transport;
+    private readonly IChatProgressLifecycleTransport? _lifecycleTransport;
     private readonly ChatRequest _request;
     private readonly Func<ChatProgressState, TimeSpan, string> _format;
     private readonly Func<CancellationToken, Task<bool>> _canPublish;
@@ -54,6 +55,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(transport);
         _transport = transport as IChatProgressTransport;
+        _lifecycleTransport = transport as IChatProgressLifecycleTransport;
         _request = request ?? throw new ArgumentNullException(nameof(request));
         _format = format ?? throw new ArgumentNullException(nameof(format));
         _canPublish = canPublish ?? throw new ArgumentNullException(nameof(canPublish));
@@ -140,6 +142,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             // entered its provider call will observe this flag and cannot publish a stale Running edit.
             _terminal = true;
             _heartbeatStop.Cancel();
+            CompleteProgress();
             await DrainHeartbeatAsync().ConfigureAwait(false);
             _elapsed.Stop();
 
@@ -165,6 +168,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
                 return;
             _disposed = true;
             _heartbeatStop.Cancel();
+            CompleteProgress();
             await DrainHeartbeatAsync().ConfigureAwait(false);
             _elapsed.Stop();
         }
@@ -308,6 +312,14 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     {
         try { _onFailure?.Invoke(exception); }
         catch { }
+    }
+
+    private void CompleteProgress()
+    {
+        if (_message is null || _lifecycleTransport is null)
+            return;
+        try { _lifecycleTransport.CompleteProgress(_message); }
+        catch (Exception ex) { ReportFailure(ex); }
     }
 
     private async Task<bool> EnterLifecycleAsync(CancellationToken cancellationToken)

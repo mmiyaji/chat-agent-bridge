@@ -7,7 +7,7 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed partial class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatConnectionNotifications
+public sealed partial class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatProgressLifecycleTransport, IChatFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatConnectionNotifications
 {
     public event Action? Connected;
     public event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
@@ -50,6 +50,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
     public async Task RunAsync(BridgeSettings settings, Func<ChatRequest, CancellationToken, Task> onRequest, CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ClearLiveProgressPosts();
         Interlocked.Increment(ref _connectionGeneration);
         _connected = false;
         _fileUploadConnected = false;
@@ -169,7 +170,13 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
                 _reconnectAttempt = 0;
                 Connected?.Invoke();
             }
-            if (!envelope.TryGetProperty("event", out var eventName) || eventName.GetString() != "posted") continue;
+            if (!envelope.TryGetProperty("event", out var eventName) || eventName.ValueKind != JsonValueKind.String) continue;
+            if (eventName.GetString() == "reaction_added")
+            {
+                await ProcessStopReactionAsync(envelope, settings, onRequest, cancellationToken).ConfigureAwait(false);
+                continue;
+            }
+            if (eventName.GetString() != "posted") continue;
             if (!envelope.TryGetProperty("data", out var data) || !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
 
             var post = postJson.GetString()!;
@@ -271,6 +278,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
     public async Task<ChatProgressMessage> PostProgressAsync(ChatRequest request, string text, CancellationToken cancellationToken)
     {
         ValidateProgressRequest(request);
+        var generation = Volatile.Read(ref _connectionGeneration);
         var root = _serverUri!;
         var token = _token!;
         using var body = TransportHttp.JsonContent(new { channel_id = request.ChannelId, root_id = request.ThreadId, message = text });
@@ -283,8 +291,11 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
             !string.Equals(string.IsNullOrWhiteSpace(created.RootId) ? created.Id : created.RootId, request.ThreadId, StringComparison.Ordinal) ||
             string.Equals(created.Id, request.MessageId, StringComparison.Ordinal))
             throw new InvalidOperationException("Mattermost returned a progress post outside the requested thread.");
-        return new ChatProgressMessage("mattermost", request.ChannelId, request.ThreadId, request.UserId,
-            created.Id!, _progressOwner, Volatile.Read(ref _connectionGeneration));
+        cancellationToken.ThrowIfCancellationRequested();
+        var handle = new ChatProgressMessage("mattermost", request.ChannelId, request.ThreadId, request.UserId,
+            created.Id!, _progressOwner, generation);
+        RegisterLiveProgressPost(request, handle, cancellationToken);
+        return handle;
     }
 
     public async Task UpdateProgressAsync(ChatRequest request, ChatProgressMessage message, string text, CancellationToken cancellationToken)
@@ -344,6 +355,8 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         if (!_disposed)
         {
             _disposed = true;
+            ClearLiveProgressPosts();
+            Interlocked.Increment(ref _connectionGeneration);
             _connected = false;
             _fileUploadConnected = false;
             Interlocked.Increment(ref _fileUploadConnectionGeneration);

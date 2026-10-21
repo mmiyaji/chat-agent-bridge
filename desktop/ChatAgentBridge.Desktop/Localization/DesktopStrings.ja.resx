@@ -26,6 +26,7 @@
   <data name="InboxReconnected" xml:space="preserve"><value>再接続しました。許可ユーザーの依頼を待っています。切断中に送った依頼は再投稿してください。</value></data>
   <data name="ProgressReceived" xml:space="preserve"><value>📥 依頼を受け付けました。PC側の承認または実行開始を待っています。</value></data>
   <data name="ProgressRunning" xml:space="preserve"><value>⏳ AIエージェントが実行中です。経過 {0}。実行中は約30秒ごとにこの投稿を更新します。</value></data>
+  <data name="ProgressReactionCancelHint" xml:space="preserve"><value>中断するには、この投稿に🛑リアクションを付けてください（依頼者本人のみ）。</value></data>
   <data name="ProgressCompleted" xml:space="preserve"><value>✅ 完了しました。経過 {0}。</value></data>
   <data name="ProgressFailed" xml:space="preserve"><value>❌ 実行または記録に失敗しました。経過 {0}。詳細はPC側で確認してください。</value></data>
   <data name="ProgressCancelled" xml:space="preserve"><value>⏹ 実行を停止しました。経過 {0}。</value></data>
