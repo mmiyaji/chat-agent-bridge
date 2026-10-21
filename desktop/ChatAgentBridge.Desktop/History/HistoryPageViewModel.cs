@@ -225,6 +225,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     [ObservableProperty] public partial bool HasSessions { get; set; }
     [ObservableProperty] public partial bool HasFilteredSessions { get; set; }
     [ObservableProperty] public partial bool HasAuditEvents { get; set; }
+    [ObservableProperty] public partial bool IsHistoryLoadSuccessful { get; set; }
 
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand)), NotifyCanExecuteChangedFor(nameof(RenameSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(SwitchSelectedAgentCommand))]
     public partial SessionHistoryRow? SelectedSession { get; set; }
@@ -283,6 +284,27 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         : DesktopText.Get("HistoryExecutionSummary", _activityRecords.Count);
     public string NoExecutionsText => DesktopText.Get("HistoryNoExecutions");
     public string NoAuditText => DesktopText.Get("HistoryNoAudit");
+    public string ExecutionEmptyHeading => DesktopText.Get(HasExecutionDayFilter
+        ? "HistoryNoExecutionsForDayHeading"
+        : "HistoryExecutionEmptyHeading");
+    public string ExecutionEmptyDescription => DesktopText.Get(HasExecutionDayFilter
+        ? "HistoryNoExecutionsForDayDescription"
+        : "HistoryExecutionEmptyDescription");
+    public string AuditEmptyDescription => DesktopText.Get("HistoryAuditEmptyDescription");
+    public string ClearExecutionDayFilterLabel => DesktopText.Get("HistoryClearExecutionDayFilter");
+
+    partial void OnHasExecutionsChanged(bool value) => NotifyEmptyHistoryStatesChanged();
+    partial void OnHasAuditEventsChanged(bool value) => OnPropertyChanged(nameof(ShowEmptyAuditHistory));
+    partial void OnIsBusyChanged(bool value) => NotifyEmptyHistoryStatesChanged();
+    partial void OnIsHistoryLoadSuccessfulChanged(bool value) => NotifyEmptyHistoryStatesChanged();
+
+    private void NotifyEmptyHistoryStatesChanged()
+    {
+        OnPropertyChanged(nameof(ShowEmptyExecutionHistory));
+        OnPropertyChanged(nameof(ShowEmptyAuditHistory));
+        OnPropertyChanged(nameof(ShowEmptyExecutionDayClearAction));
+        OnPropertyChanged(nameof(ShowExecutionFilterClearButton));
+    }
 
     public void RefreshLocalizedText()
     {
@@ -324,7 +346,9 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             nameof(BackToConversationsLabel), nameof(ContinueInOriginalThreadHint), nameof(ConversationHeading),
             nameof(RuntimeHeading), nameof(PolicyHeading), nameof(IdentifiersHeading), nameof(IdentifiersSummary),
             nameof(ActionsHeading), nameof(EditModelLabel), nameof(SwitchAgentLabel), nameof(EditPolicyLabel),
-            nameof(StartFreshLabel), nameof(NoExecutionsText), nameof(NoAuditText)
+            nameof(StartFreshLabel), nameof(NoExecutionsText), nameof(NoAuditText),
+            nameof(ExecutionEmptyHeading), nameof(ExecutionEmptyDescription), nameof(AuditEmptyDescription),
+            nameof(ClearExecutionDayFilterLabel)
         })
             OnPropertyChanged(name);
 
@@ -431,6 +455,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public async Task RefreshAsync()
     {
         if (IsBusy) return;
+        IsHistoryLoadSuccessful = false;
         IsBusy = true;
         Status = DesktopText.Get("HistoryRefreshing");
         try
@@ -454,6 +479,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
             ApplySessionFilter();
             NotifySummariesChanged();
+            IsHistoryLoadSuccessful = true;
             Status = DesktopText.Get("HistoryCounts", _activityRecords.Count, Sessions.Count, AuditEvents.Count);
         }
         catch (Exception ex)
@@ -633,6 +659,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
 
     private async Task RefreshContentsAsync(string successMessage)
     {
+        IsHistoryLoadSuccessful = false;
         var executions = await _executionStore.ListAsync();
         var sessions = await _sessionStore.ListAsync();
         var auditEvents = await _auditStore.ListAsync();
@@ -651,6 +678,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
         ApplySessionFilter();
         NotifySummariesChanged();
+        IsHistoryLoadSuccessful = true;
         Status = DesktopText.Get("HistorySuccessCounts", successMessage, _activityRecords.Count, Sessions.Count, AuditEvents.Count);
         StartChatNameRefresh();
     }

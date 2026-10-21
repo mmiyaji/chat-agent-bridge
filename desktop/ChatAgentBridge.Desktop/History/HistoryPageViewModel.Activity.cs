@@ -56,6 +56,10 @@ public sealed partial class HistoryPageViewModel
     public string ActivityDailyEnd => ActivityDaily.LastOrDefault()?.Date.ToString("m") ?? "";
     public string ActivityDailyScale => DesktopText.Get("ActivityDailyScale", ActivityDaily.Count > 0 ? ActivityDaily.Max(day => day.Count) : 0);
     public bool HasExecutionDayFilter => ExecutionDayFilter is not null;
+    public bool ShowEmptyExecutionHistory => IsHistoryLoadSuccessful && !IsBusy && !HasExecutions;
+    public bool ShowEmptyAuditHistory => IsHistoryLoadSuccessful && !IsBusy && !HasAuditEvents;
+    public bool ShowEmptyExecutionDayClearAction => ShowEmptyExecutionHistory && HasExecutionDayFilter;
+    public bool ShowExecutionFilterClearButton => IsHistoryLoadSuccessful && !IsBusy && HasExecutionDayFilter && HasExecutions;
 
     partial void OnActivityRangeIndexChanged(int value) => RebuildActivity();
     partial void OnSelectedActivityDayChanged(ActivityCalendarCell? value)
@@ -126,5 +130,10 @@ public sealed partial class HistoryPageViewModel
         OnPropertyChanged(nameof(ExecutionsTabTitle));
         OnPropertyChanged(nameof(ExecutionSummary));
         OnPropertyChanged(nameof(HasExecutionDayFilter));
+        OnPropertyChanged(nameof(ExecutionEmptyHeading));
+        OnPropertyChanged(nameof(ExecutionEmptyDescription));
+        OnPropertyChanged(nameof(ShowEmptyExecutionHistory));
+        OnPropertyChanged(nameof(ShowEmptyExecutionDayClearAction));
+        OnPropertyChanged(nameof(ShowExecutionFilterClearButton));
     }
 }

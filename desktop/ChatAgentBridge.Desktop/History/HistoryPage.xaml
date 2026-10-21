@@ -271,7 +271,7 @@
                 <Grid RowSpacing="6">
                     <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                     <TextBlock Text="{x:Bind ViewModel.ExecutionSummary, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
-                    <Button Grid.Row="1" Command="{x:Bind ViewModel.ClearExecutionDayFilterCommand}" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasExecutionDayFilter), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ClearExecutionDayFilter" x:Uid="ClearExecutionDayFilter" />
+                    <Button Grid.Row="1" Command="{x:Bind ViewModel.ClearExecutionDayFilterCommand}" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowExecutionFilterClearButton), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ClearExecutionDayFilter" x:Uid="ClearExecutionDayFilter" />
                     <Grid Grid.Row="2">
                         <ListView ItemsSource="{x:Bind ViewModel.Executions, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryList"
                                   AutomationProperties.Name="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}">
@@ -293,8 +293,28 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
-                        <TextBlock Text="{x:Bind ViewModel.NoExecutionsText, Mode=OneWay}" TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
-                                   Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasExecutions), Mode=OneWay}" AutomationProperties.AutomationId="EmptyExecutionHistory" />
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
+                                      Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyExecutionHistory), Mode=OneWay}">
+                        <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="12" MaxWidth="460"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="ExecutionHistoryEmptyCard">
+                            <StackPanel Spacing="12" HorizontalAlignment="Center">
+                                <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
+                                         AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
+                                    <SymbolIcon Symbol="Clock" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Viewbox>
+                                <TextBlock Text="{x:Bind ViewModel.ExecutionEmptyHeading, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}"
+                                           TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="EmptyExecutionHistory" />
+                                <TextBlock Text="{x:Bind ViewModel.ExecutionEmptyDescription, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}"
+                                           TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="ExecutionHistoryEmptyBody" />
+                                <Button Command="{x:Bind ViewModel.ClearExecutionDayFilterCommand}"
+                                        Content="{x:Bind ViewModel.ClearExecutionDayFilterLabel, Mode=OneWay}"
+                                        Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyExecutionDayClearAction), Mode=OneWay}"
+                                        AutomationProperties.AutomationId="ClearExecutionDayFilterEmpty" />
+                            </StackPanel>
+                        </Border>
+                        </ScrollViewer>
                     </Grid>
                 </Grid>
             </PivotItem>
@@ -315,8 +335,24 @@
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
-                    <TextBlock Text="{x:Bind ViewModel.NoAuditText, Mode=OneWay}" TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
-                               Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasAuditEvents), Mode=OneWay}" AutomationProperties.AutomationId="EmptyAuditHistory" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                                  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
+                                  Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyAuditHistory), Mode=OneWay}">
+                    <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="12" MaxWidth="460"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                            AutomationProperties.AutomationId="AuditHistoryEmptyCard">
+                        <StackPanel Spacing="12" HorizontalAlignment="Center">
+                            <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
+                                     AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
+                                <SymbolIcon Symbol="Document" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Viewbox>
+                            <TextBlock Text="{x:Bind ViewModel.NoAuditText, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}"
+                                       TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="EmptyAuditHistory" />
+                            <TextBlock Text="{x:Bind ViewModel.AuditEmptyDescription, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}"
+                                       TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="AuditHistoryEmptyBody" />
+                        </StackPanel>
+                    </Border>
+                    </ScrollViewer>
                 </Grid>
             </PivotItem>
         </Pivot>

@@ -349,6 +349,12 @@
   <data name="HistoryExecutionSummary" xml:space="preserve"><value>Recent executions ({0})</value></data>
   <data name="HistoryNoExecutions" xml:space="preserve"><value>No execution history yet.</value></data>
   <data name="HistoryNoAudit" xml:space="preserve"><value>No audit events yet.</value></data>
+  <data name="HistoryExecutionEmptyHeading" xml:space="preserve"><value>No runs yet</value></data>
+  <data name="HistoryExecutionEmptyDescription" xml:space="preserve"><value>Execution history appears here when you run an agent manually or send a request through a connected chat.</value></data>
+  <data name="HistoryNoExecutionsForDayHeading" xml:space="preserve"><value>No runs for this day</value></data>
+  <data name="HistoryNoExecutionsForDayDescription" xml:space="preserve"><value>No execution records match this day. Clear the day filter to see all runs.</value></data>
+  <data name="HistoryAuditEmptyDescription" xml:space="preserve"><value>Actions such as session changes and agent switches will be recorded here.</value></data>
+  <data name="HistoryClearExecutionDayFilter" xml:space="preserve"><value>Show all dates</value></data>
   <data name="HistoryStartFreshWarning" xml:space="preserve"><value>This removes the saved session association so the next message in this same chat thread starts a new conversation. It does not delete remote chat history or execution history.</value></data>
   <data name="InboxSelectConversation" xml:space="preserve"><value>Select a conversation to view its request and result.</value></data>
   <data name="InboxConversationCount" xml:space="preserve"><value>{0} conversations</value></data>

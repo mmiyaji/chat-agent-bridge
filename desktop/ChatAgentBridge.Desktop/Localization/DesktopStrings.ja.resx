@@ -349,6 +349,12 @@
   <data name="HistoryExecutionSummary" xml:space="preserve"><value>最近の実行 ({0})</value></data>
   <data name="HistoryNoExecutions" xml:space="preserve"><value>実行履歴はまだありません。</value></data>
   <data name="HistoryNoAudit" xml:space="preserve"><value>操作記録はまだありません。</value></data>
+  <data name="HistoryExecutionEmptyHeading" xml:space="preserve"><value>実行履歴はまだありません</value></data>
+  <data name="HistoryExecutionEmptyDescription" xml:space="preserve"><value>手動で実行するか、接続済みチャットから依頼すると、ここに実行履歴が表示されます。</value></data>
+  <data name="HistoryNoExecutionsForDayHeading" xml:space="preserve"><value>この日の実行履歴はありません</value></data>
+  <data name="HistoryNoExecutionsForDayDescription" xml:space="preserve"><value>選択した日に一致する実行記録はありません。日付の絞り込みを解除すると、すべての実行を表示できます。</value></data>
+  <data name="HistoryAuditEmptyDescription" xml:space="preserve"><value>セッションの変更やエージェントの切り替えなどの操作がここに記録されます。</value></data>
+  <data name="HistoryClearExecutionDayFilter" xml:space="preserve"><value>すべての日付を表示</value></data>
   <data name="HistoryStartFreshWarning" xml:space="preserve"><value>保存済みセッションとの関連付けを解除します。同じチャットスレッドに次のメッセージを送ると、新しい会話が始まります。リモートのチャット履歴や実行履歴は削除されません。</value></data>
   <data name="InboxSelectConversation" xml:space="preserve"><value>会話を選択すると、リクエストと結果が表示されます。</value></data>
   <data name="InboxConversationCount" xml:space="preserve"><value>会話 {0} 件</value></data>
