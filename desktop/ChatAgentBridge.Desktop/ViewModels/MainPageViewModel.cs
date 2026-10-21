@@ -134,20 +134,21 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnAgentExecutableChanged(string value) => InvalidateModelCatalog();
     [ObservableProperty] public partial string AgentArguments { get; set; } = "exec --json -";
     partial void OnAgentArgumentsChanged(string value) => InvalidateModelCatalog();
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(IsBasicProvider)), NotifyPropertyChangedFor(nameof(IsArgumentsEditable)), NotifyPropertyChangedFor(nameof(BasicProviderHelp)), NotifyPropertyChangedFor(nameof(AgentProviderDisplayName)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat)), NotifyPropertyChangedFor(nameof(CanConfigureAgentPermission)), NotifyPropertyChangedFor(nameof(AgentPermissionStatus))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(IsBasicProvider)), NotifyPropertyChangedFor(nameof(IsArgumentsEditable)), NotifyPropertyChangedFor(nameof(BasicProviderHelp)), NotifyPropertyChangedFor(nameof(AgentProviderDisplayName)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(SupportsReasoning)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat)), NotifyPropertyChangedFor(nameof(CanConfigureAgentPermission)), NotifyPropertyChangedFor(nameof(AgentPermissionStatus))]
     public partial string AgentProvider { get; set; } = "codex";
     public bool IsCodexProvider => AgentProvider == "codex";
     public bool IsCustomProvider => AgentProvider == "custom";
     public bool IsBasicProvider => AgentProvider is "gemini" or "github-copilot" or "custom";
     public bool IsArgumentsEditable => IsBasicProvider;
-    public bool SupportsModel => AgentProvider is "codex" or "claude";
+    public bool SupportsModel => AgentProvider is "codex" or "claude" or "gemini" or "github-copilot";
+    public bool SupportsReasoning => AgentProvider is "codex" or "claude";
     public string AgentProviderDisplayName => AgentProvider switch
     {
         "codex" => "Codex", "claude" => "Claude Code", "gemini" => "Gemini CLI",
         "github-copilot" => "GitHub Copilot CLI", _ => ViewModelText.Get("CustomCliName")
     };
-    public string BasicProviderHelp => ViewModelText.Get("BasicProviderHelp");
-    public bool CanFetchModelCandidates => SupportsModel && IsSettingsLoaded && !IsRunning && !_closing;
+    public string BasicProviderHelp => ViewModelText.Get(IsCustomProvider ? "BasicProviderHelp" : "SessionCliProviderHelp");
+    public bool CanFetchModelCandidates => SupportsReasoning && IsSettingsLoaded && !IsRunning && !_closing;
     [ObservableProperty] public partial string AgentModel { get; set; } = "";
     partial void OnAgentModelChanged(string value)
     {
@@ -620,12 +621,13 @@ public partial class MainPageViewModel : ObservableObject
                 }
                 finally { LiveOutput.Finish(); }
                 exitCode = result.ExitCode;
-                sessionId ??= result.Claude?.SessionId ?? result.Codex?.SessionId;
+                sessionId ??= result.Claude?.SessionId ?? result.Codex?.SessionId ?? result.CliSession?.SessionId;
                 usage = result.Usage;
                 metrics = result.Metrics;
                 UsageSummary = UsageUi.UsageSummaryFormatter.Format(usage, metrics);
                 finalStatus = result.Success ? "completed" : "failed";
-                var displayOutput = result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output;
+                var displayOutput = result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ??
+                    (result.CliSession is { } cliSession ? cliSession.FinalMessage ?? "" : result.Output);
                 Output = result.Success || string.IsNullOrWhiteSpace(result.Error)
                     ? displayOutput
                     : $"{displayOutput}{(string.IsNullOrEmpty(displayOutput) ? string.Empty : Environment.NewLine)}{result.Error}";
@@ -730,7 +732,7 @@ public partial class MainPageViewModel : ObservableObject
     private void InvalidateModelCatalog()
     {
         if (ModelCatalog is not null)
-            ModelCatalog.Invalidate(IsBasicProvider ? ViewModelText.Get("BasicModelManagedByCli") : null);
+            ModelCatalog.Invalidate(IsBasicProvider ? ViewModelText.Get(IsCustomProvider ? "BasicModelManagedByCli" : "ManualModelCandidatesUnavailable") : null);
     }
 
     public void SetMattermostToken(string value)

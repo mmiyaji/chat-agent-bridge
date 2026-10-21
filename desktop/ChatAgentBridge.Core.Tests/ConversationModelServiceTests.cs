@@ -57,9 +57,60 @@ public sealed class ConversationModelServiceTests : IDisposable
         Assert.Equal(1, calls);
         await service.GetModelsAsync(_settings with { AgentExecutable = Path.Combine(_directory, "codex.exe") });
         Assert.Equal(2, calls);
+        await service.GetModelsAsync(_settings with { AgentArguments = "exec --json - --profile other" });
+        Assert.Equal(3, calls);
         clock.Now = clock.Now.AddMinutes(6);
         await service.GetModelsAsync(_settings);
-        Assert.Equal(3, calls);
+        Assert.Equal(4, calls);
+    }
+
+    [Theory]
+    [InlineData("mattermost", "gemini", "gemini-stream-json-v1:")]
+    [InlineData("slack", "gemini", "gemini-stream-json-v1:")]
+    [InlineData("mattermost", "github-copilot", "copilot-jsonl-v1:")]
+    [InlineData("slack", "github-copilot", "copilot-jsonl-v1:")]
+    public async Task ManualModelPersistsWithoutDiscoveryAndPreservesOtherOwners(string chat, string provider, string marker)
+    {
+        var key = ChatSessionScope.Create(chat, _key.ChannelId, _key.ThreadId, _key.UserId!, "https://example.test");
+        var otherKey = key with { UserId = "other-owner" };
+        var binding = Binding(key, marker + new string('a', 64)) with
+        {
+            AgentExecutable = provider, AgentPermissionMode = "inherit", ReasoningEffort = null
+        };
+        await Store.SaveAsync(binding);
+        await Store.SaveAsync(binding with { Key = otherKey });
+        var settings = _settings with
+        {
+            AgentProvider = provider, AgentExecutable = provider, AgentReasoningEffort = null
+        };
+        var service = new ConversationModelService(Store, (_, _) => throw new Exception("Manual selection must not invoke discovery."));
+        Assert.Empty(await service.GetModelsAsync(settings));
+        await service.ChangeAsync(key, settings, "provider-model/v2", Allow);
+        var saved = (await new SessionStore(_directory).FindAsync(key))!;
+        Assert.Equal("provider-model/v2", saved.Model);
+        Assert.Equal(binding.SessionId, saved.SessionId);
+        Assert.Null(saved.FirstApprovalFingerprint);
+        Assert.Equal(binding.Model, (await Store.FindAsync(otherKey))!.Model);
+        await service.ChangeAsync(key, settings, null, Allow);
+        Assert.Null((await Store.FindAsync(key))!.Model);
+    }
+
+    [Theory]
+    [InlineData("gemini", "gemini-stream-json-v1:")]
+    [InlineData("github-copilot", "copilot-jsonl-v1:")]
+    public async Task ManualSelectionStillChecksRevocationAndTrust(string provider, string marker)
+    {
+        var binding = Binding(_key, marker + new string('a', 64)) with { AgentPermissionMode = "inherit", ReasoningEffort = null };
+        await Store.SaveAsync(binding);
+        var settings = _settings with { AgentProvider = provider, AgentExecutable = provider, AgentReasoningEffort = null };
+        var checks = 0;
+        var service = new ConversationModelService(Store, (_, _) => throw new Exception("No model call allowed."));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.ChangeAsync(_key, settings, "model-v2",
+            _ => Task.FromResult(++checks == 1)));
+        Assert.Equal(binding, await Store.FindAsync(_key));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ChangeAsync(_key,
+            settings with { TrustedWorkspaceRoots = Path.Combine(_directory, "untrusted-child") }, "model-v2", Allow));
+        Assert.Equal(binding, await Store.FindAsync(_key));
     }
 
     [Fact]

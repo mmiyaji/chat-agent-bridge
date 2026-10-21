@@ -34,6 +34,57 @@ if (args is ["--version"])
     return;
 }
 
+// Synthetic structured CLI fixtures. Selected only by the bridge's provider output format;
+// these never read credentials, execute tools, or contact a provider.
+var structuredFormatIndex = Array.IndexOf(args, "--output-format");
+if (!args.Contains("--print") && structuredFormatIndex >= 0 && structuredFormatIndex + 1 < args.Length &&
+    args[structuredFormatIndex + 1] is "stream-json" or "json")
+{
+    var isGemini = args[structuredFormatIndex + 1] == "stream-json";
+    var fixtureIndex = Array.IndexOf(args, "--cab-cli-fixture");
+    var fixtureMode = fixtureIndex >= 0 && fixtureIndex + 1 < args.Length ? args[fixtureIndex + 1] : "success";
+    var resumeIndex = Array.IndexOf(args, "--resume");
+    var fixtureSessionId = resumeIndex >= 0 && resumeIndex + 1 < args.Length ? args[resumeIndex + 1] : Guid.NewGuid().ToString("D");
+    var fixturePrompt = await Console.In.ReadToEndAsync();
+    var fixtureModelIndex = Array.IndexOf(args, "--model");
+    var fixtureModel = fixtureModelIndex >= 0 && fixtureModelIndex + 1 < args.Length ? args[fixtureModelIndex + 1] : "fixture-default";
+    var fixtureReply = $"{(isGemini ? "gemini" : "copilot")}-e2e: {(resumeIndex >= 0 ? "resumed" : "new")}; model={fixtureModel}; prompt={fixturePrompt}";
+    if (fixtureMode == "malformed") await Console.Out.WriteLineAsync("{malformed fixture");
+    if (fixtureMode == "oversized") await Console.Out.WriteLineAsync(new string('x', 64 * 1024 + 1));
+    if (isGemini)
+    {
+        if (fixtureMode != "missing-id") await WriteAsync(new { type = "init", session_id = fixtureSessionId, model = fixtureModel });
+        if (fixtureMode == "conflicting-id") await WriteAsync(new { type = "init", session_id = Guid.NewGuid().ToString("D"), model = fixtureModel });
+        await WriteAsync(new { type = "message", role = "user", content = "hidden-user-payload" });
+        await WriteAsync(new { type = "tool_use", tool_name = "synthetic", tool_id = "fixture", parameters = new { command = "hidden-tool-arguments" } });
+        await WriteAsync(new { type = "tool_result", tool_id = "fixture", status = "success", output = "hidden-tool-output" });
+        if (fixtureMode == "large-stream")
+            for (var i = 0; i < 40; i++) await WriteAsync(new { type = "message", role = "user", content = new string('x', 32000) });
+        await WriteAsync(new { type = "message", role = "assistant", content = fixtureReply[..12], delta = true });
+        await WriteAsync(new { type = "message", role = "assistant", content = fixtureReply[12..], delta = true });
+        if (fixtureMode == "failure") await WriteAsync(new { type = "error", severity = "error", message = "hidden-error-payload" });
+        if (fixtureMode != "missing-result") await WriteAsync(new { type = "result", status = fixtureMode == "failure" ? "error" : "success",
+            stats = new { input_tokens = 100, output_tokens = 5, cached = 75, input = 25, total_tokens = 105 } });
+    }
+    else
+    {
+        if (fixtureMode != "missing-id") await WriteAsync(new { type = "session.start", data = new { sessionId = fixtureSessionId, selectedModel = fixtureModel } });
+        await WriteAsync(new { type = "user.message", data = new { content = "hidden-user-payload" } });
+        await WriteAsync(new { type = "assistant.reasoning", data = new { content = "hidden-thought-payload" } });
+        await WriteAsync(new { type = "tool.execution_start", data = new { arguments = new { command = "hidden-tool-arguments" } } });
+        await WriteAsync(new { type = "tool.execution_complete", data = new { result = new { content = "hidden-tool-output" } } });
+        if (fixtureMode == "large-stream")
+            for (var i = 0; i < 40; i++) await WriteAsync(new { type = "user.message", data = new { content = new string('x', 32000) } });
+        await WriteAsync(new { type = "assistant.message_delta", data = new { messageId = "fixture-message", deltaContent = fixtureReply[..12] } });
+        await WriteAsync(new { type = "assistant.message_delta", data = new { messageId = "fixture-message", deltaContent = fixtureReply[12..] } });
+        await WriteAsync(new { type = "assistant.message", data = new { messageId = "fixture-message", content = fixtureReply } });
+        if (fixtureMode == "failure") await WriteAsync(new { type = "session.error", data = new { errorType = "fatal", message = "hidden-error-payload" } });
+        if (fixtureMode != "missing-result") await WriteAsync(new { type = "result", sessionId = fixtureMode == "missing-id" ? null : fixtureMode == "conflicting-id" ? Guid.NewGuid().ToString("D") : fixtureSessionId,
+            exitCode = fixtureMode == "failure" ? 1 : 0, usage = new { premiumRequests = 1, totalApiDurationMs = 10 } });
+    }
+    return;
+}
+
 if (args.Contains("--input-format") && Array.IndexOf(args, "--input-format") + 1 < args.Length
     && args[Array.IndexOf(args, "--input-format") + 1] == "stream-json")
 {

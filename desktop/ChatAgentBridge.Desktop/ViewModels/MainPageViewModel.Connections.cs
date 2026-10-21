@@ -10,20 +10,28 @@ public partial class MainPageViewModel
     private readonly AgentConnectionStore _agentConnectionStore = new();
     private AgentConnectionProfile? _registeredCodexConnection;
     private AgentConnectionProfile? _registeredClaudeConnection;
+    private AgentConnectionProfile? _registeredGeminiConnection;
+    private AgentConnectionProfile? _registeredCopilotConnection;
 
     [ObservableProperty] public partial string RegisteredConnectionSummary { get; set; } = ViewModelText.Get("NoRegisteredConnections");
     [ObservableProperty] public partial string ConnectionRegistrationStatus { get; set; } = "";
 
     public bool HasRegisteredCodexConnection => _registeredCodexConnection is not null;
     public bool HasRegisteredClaudeConnection => _registeredClaudeConnection is not null;
+    public bool HasRegisteredGeminiConnection => _registeredGeminiConnection is not null;
+    public bool HasRegisteredCopilotConnection => _registeredCopilotConnection is not null;
 
     private void RefreshConnectionCommands()
     {
         RegisterAgentConnectionCommand.NotifyCanExecuteChanged();
         LoadRegisteredCodexConnectionCommand.NotifyCanExecuteChanged();
         LoadRegisteredClaudeConnectionCommand.NotifyCanExecuteChanged();
+        LoadRegisteredGeminiConnectionCommand.NotifyCanExecuteChanged();
+        LoadRegisteredCopilotConnectionCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(HasRegisteredCodexConnection));
         OnPropertyChanged(nameof(HasRegisteredClaudeConnection));
+        OnPropertyChanged(nameof(HasRegisteredGeminiConnection));
+        OnPropertyChanged(nameof(HasRegisteredCopilotConnection));
     }
 
     private async Task LoadAgentConnectionsAsync()
@@ -33,7 +41,13 @@ public partial class MainPageViewModel
             var profiles = await _agentConnectionStore.ListAsync();
             _registeredCodexConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Codex);
             _registeredClaudeConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Claude);
-            var names = profiles.Select(profile => profile.Provider == AgentProfile.Codex ? "Codex" : "Claude Code").ToArray();
+            _registeredGeminiConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Gemini);
+            _registeredCopilotConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.GitHubCopilot);
+            var names = profiles.Select(profile => profile.Provider switch
+            {
+                AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code",
+                AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI", _ => profile.Provider
+            }).ToArray();
             RegisteredConnectionSummary = names.Length == 0
                 ? ViewModelText.Get("NoRegisteredConnections")
                 : ViewModelText.Get("RegisteredConnections", string.Join(", ", names));
@@ -44,6 +58,8 @@ public partial class MainPageViewModel
         {
             _registeredCodexConnection = null;
             _registeredClaudeConnection = null;
+            _registeredGeminiConnection = null;
+            _registeredCopilotConnection = null;
             RegisteredConnectionSummary = ViewModelText.Get("RegisteredConnectionsUnavailable", ex.Message);
             RefreshConnectionCommands();
         }
@@ -67,7 +83,8 @@ public partial class MainPageViewModel
             var profile = new AgentConnectionProfile(
                 AgentProvider,
                 CliExecutablePath,
-                AgentProvider == AgentProfile.Codex ? (UseAppServer ? "app-server" : AgentProfile.DefaultCodexArguments) : "",
+                AgentProvider == AgentProfile.Codex ? (UseAppServer ? "app-server" : AgentProfile.DefaultCodexArguments)
+                    : AgentProvider == AgentProfile.Claude ? "" : AgentArguments,
                 AgentProvider == AgentProfile.Codex && UseAppServer ? "app-server" : "exec",
                 AgentModel,
                 AgentReasoningEffort,
@@ -90,6 +107,12 @@ public partial class MainPageViewModel
 
     [RelayCommand(CanExecute = nameof(HasRegisteredClaudeConnection))]
     private void LoadRegisteredClaudeConnection() => ApplyRegisteredConnection(_registeredClaudeConnection);
+
+    [RelayCommand(CanExecute = nameof(HasRegisteredGeminiConnection))]
+    private void LoadRegisteredGeminiConnection() => ApplyRegisteredConnection(_registeredGeminiConnection);
+
+    [RelayCommand(CanExecute = nameof(HasRegisteredCopilotConnection))]
+    private void LoadRegisteredCopilotConnection() => ApplyRegisteredConnection(_registeredCopilotConnection);
 
     private void ApplyRegisteredConnection(AgentConnectionProfile? profile)
     {

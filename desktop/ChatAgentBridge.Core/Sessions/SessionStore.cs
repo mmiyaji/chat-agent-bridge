@@ -217,6 +217,8 @@ public sealed partial class SessionStore
                 var index = bindings.FindIndex(item => item.Key == key);
                 if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
                 var current = bindings[index];
+                if (ConversationAgentService.ProviderOf(current) is AgentProfile.Gemini or AgentProfile.GitHubCopilot && effort is not null)
+                    throw new ArgumentException("Reasoning effort overrides are unavailable for this CLI.", nameof(effort));
                 if (expected is not null && current != expected)
                     throw new InvalidOperationException("The conversation changed while selecting a model. Try again.");
                 bindings[index] = current with
@@ -354,6 +356,8 @@ public sealed partial class SessionStore
         if (!Guid.TryParse(binding.SessionId, out _)) throw new ArgumentException("Session id must be a GUID.");
         _ = AgentProfile.NormalizeModel(binding.Model);
         _ = AgentProfile.NormalizeReasoningEffort(binding.ReasoningEffort);
+        if (ConversationAgentService.ProviderOf(binding) is AgentProfile.Gemini or AgentProfile.GitHubCopilot && binding.ReasoningEffort is not null)
+            throw new ArgumentException("Reasoning effort overrides are unavailable for this CLI.");
         _ = binding.ChatApprovalMode is null ? null : ExecutionPolicy.NormalizeChatApprovalMode(binding.ChatApprovalMode);
         _ = binding.ChatResultMode is null ? null : ExecutionPolicy.NormalizeChatResultMode(binding.ChatResultMode);
         _ = binding.AgentPermissionMode is null ? null : ExecutionPolicy.NormalizePermissionMode(binding.AgentPermissionMode);
@@ -361,7 +365,7 @@ public sealed partial class SessionStore
             (binding.FirstApprovalFingerprint.Length != 64 || binding.FirstApprovalFingerprint.Any(c => !Uri.IsHexDigit(c))))
             throw new ArgumentException("Session approval fingerprint must be a 64-character hexadecimal SHA-256 value.");
         _ = NormalizeDisplayName(binding.DisplayName);
-        if (binding.NextAgentProvider is not (null or AgentProfile.Codex or AgentProfile.Claude))
+        if (binding.NextAgentProvider is not (null or AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot))
             throw new ArgumentException("Unsupported pending agent provider.");
     }
 

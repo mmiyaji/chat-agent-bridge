@@ -1,4 +1,6 @@
 using ChatAgentBridge.Core;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace ChatAgentBridge.Core.Sessions;
 
@@ -34,6 +36,8 @@ public sealed class SessionAgentRunner
         if (existing?.AgentPermissionMode is not null)
             settings = settings with { AgentPermissionMode = existing.AgentPermissionMode };
         var provider = AgentProfile.ResolveProvider(settings);
+        if (provider is AgentProfile.Gemini or AgentProfile.GitHubCopilot)
+            return await RunStructuredCliAsync(key, settings, prompt, existing, provider, progress, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<string> arguments;
         try { arguments = provider == AgentProfile.Claude ? Array.Empty<string>() : AgentArgumentParser.Parse(settings.AgentArguments); }
         catch (FormatException ex)
@@ -131,6 +135,64 @@ public sealed class SessionAgentRunner
             return FailClosed(result, turnFailed
                 ? tracksCodex ? "Codex reported turn.failed and returned no valid thread id." : "Claude Code reported a failed turn without a valid session id."
                 : tracksCodex ? "Codex completed without a valid thread.started session id; this turn cannot be resumed safely." : "Claude Code completed without a valid session id; this turn cannot be resumed safely.");
+        return result;
+    }
+
+    private async Task<AgentRunResult> RunStructuredCliAsync(SessionKey key, BridgeSettings settings, string prompt,
+        SessionBinding? existing, string provider, IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken)
+    {
+        if (settings.AgentMode != "exec")
+            throw new InvalidOperationException("Gemini CLI and GitHub Copilot sessions require exec mode.");
+        if (AgentProfile.NormalizeReasoningEffort(settings.AgentReasoningEffort) is not null)
+            throw new ArgumentException("Reasoning effort overrides are unavailable for this CLI.", nameof(settings));
+        // Canonical launch arguments include custom Node entrypoints and configured flags. Model
+        // overrides are deliberately separate: changing the selected model may continue this session.
+        IReadOnlyList<string> arguments;
+        try
+        {
+            arguments = AgentProfile.GetStructuredCliArguments(settings with
+            {
+                AgentModel = null, AgentReasoningEffort = null, AuthorizedCliSessionId = null
+            }, provider);
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException)
+        {
+            return new AgentRunResult(false, -1, "", $"Agent arguments are invalid: {ex.Message}");
+        }
+        var marker = ConversationAgentService.CliSessionMarker(provider) + ":" +
+            Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(arguments))).ToLowerInvariant();
+        var workspace = NormalizeWorkspace(settings.WorkspaceRoot);
+        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, workspace))
+            throw new InvalidOperationException("The selected workspace is outside the configured trusted workspace roots.");
+        var executable = NormalizeExecutableIdentity(AgentProfile.ResolveEffectiveExecutable(settings), workspace);
+        if (existing is not null && (!SamePath(existing.WorkspaceRoot, workspace) ||
+            !SameExecutable(existing.AgentExecutable, executable) || existing.AgentArguments != marker))
+            throw new InvalidOperationException("The saved agent session is bound to different provider settings, workspace, or executable. Detach the session before changing its settings.");
+
+        var effective = settings with
+        {
+            WorkspaceRoot = workspace,
+            AgentModel = existing?.Model ?? settings.AgentModel,
+            AgentReasoningEffort = null,
+            AuthorizedCliSessionId = existing is null ? null : Guid.Parse(existing.SessionId).ToString("D")
+        };
+        _ = AgentProfile.BuildInvocation(effective);
+        var result = await _runner.RunAsync(effective, prompt, progress, cancellationToken).ConfigureAwait(false);
+        var output = result.CliSession ?? CliSessionOutputParser.Parse(result.Output, provider);
+        result = result with { CliSession = output, Output = output.FinalMessage ?? "", Usage = result.Usage ?? output.Usage };
+        if (output.Provider != provider || !Guid.TryParse(output.SessionId, out var sessionId))
+            return result.Success ? FailClosed(result, "The CLI did not confirm a valid session id; the saved binding was retained.") : result;
+        if (existing is not null && sessionId != Guid.Parse(existing.SessionId))
+            return FailClosed(result, "The CLI returned a different session id while resuming; the saved binding was retained.");
+        if (result.Success && (!output.HasResult || output.TurnFailed))
+            return FailClosed(result, "The CLI did not report a successful terminal result; the saved binding was retained.");
+        if (!result.Success) return result;
+
+        if (existing is not null)
+            await _store.SaveAsync(existing with { UpdatedAt = DateTimeOffset.UtcNow }, CancellationToken.None).ConfigureAwait(false);
+        else
+            await _store.SaveAsync(new SessionBinding(key, workspace, executable, marker,
+                sessionId.ToString("D"), DateTimeOffset.UtcNow), CancellationToken.None).ConfigureAwait(false);
         return result;
     }
 

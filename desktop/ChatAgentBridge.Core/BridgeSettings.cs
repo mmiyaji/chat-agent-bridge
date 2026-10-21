@@ -9,6 +9,9 @@ public sealed record BridgeSettings
     public string AgentProvider { get; init; } = AgentProfile.Codex;
     public string? AgentModel { get; init; }
     public string? AgentReasoningEffort { get; init; }
+    // Set only after the conversation runner has verified an owner-scoped saved binding.
+    // Internal properties are deliberately excluded from persisted settings JSON.
+    internal string? AuthorizedCliSessionId { get; init; }
     public string AutoConnectProvider { get; init; } = "none";
     public string MattermostServerUrl { get; init; } = "";
     public string MattermostChannelId { get; init; } = "";

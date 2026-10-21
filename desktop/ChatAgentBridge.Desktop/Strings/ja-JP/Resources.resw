@@ -85,10 +85,10 @@
     <value>チャットを窓口に、ローカルPCへ依頼</value>
   </data>
   <data name="OverviewArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>別の端末のSlackまたはMattermostから依頼し、起動中のPCのChat Agent Bridgeが受け取ります。PCで確認後、Codex CLIまたはClaude Code CLIを実行し、確認して共有した結果を同じスレッドで受け取ります。</value>
+    <value>別の端末のSlackまたはMattermostから依頼し、起動中のPCのChat Agent Bridgeが受け取ります。PCで確認後、選択したAI CLIを実行し、確認して共有した結果を同じスレッドで受け取ります。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock007.Text" xml:space="preserve">
-    <value>図の説明：スマートフォンやブラウザーからSlackまたはMattermostへ送った依頼を、チャット経由で起動中のローカルPCのChat Agent Bridgeが受け取り、Codex CLIまたはClaude Code CLIを設定済みプロジェクトで実行します。結果は同じチャットへ返ります。AI処理の場所はCLIやモデルの提供形態によります。</value>
+    <value>図の説明：スマートフォンやブラウザーからSlackまたはMattermostへ送った依頼を、チャット経由で起動中のローカルPCのChat Agent Bridgeが受け取り、選択したAI CLIを設定済みプロジェクトで実行します。結果は同じチャットへ返ります。AI処理の場所はCLIやモデルの提供形態によります。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock008.Text" xml:space="preserve">
     <value>1. エージェント設定でCLI・モデル・作業フォルダーを設定します。
@@ -162,7 +162,7 @@
     <value>その他のCLIの起動引数</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock018.Text" xml:space="preserve">
-    <value>Codex・Claude Codeの標準引数とモデル指定はアプリが組み立てます。その他のCLIは標準入力から依頼文を受け取れる形式を指定してください。</value>
+    <value>対応するCLIのモデル指定と会話継続引数はアプリが組み立てます。Gemini CLI・GitHub Copilot CLIでは追加オプションを指定できます。カスタムCLIには標準入力から依頼文を受け取れる形式を指定してください。</value>
   </data>
   <data name="SettingsCheckCli.Content" xml:space="preserve">
     <value>CLIをチェック</value>
@@ -328,7 +328,7 @@
     <value>CLIが提示したモデル候補</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock038.Text" xml:space="preserve">
-    <value>候補はCLIの報告値です。契約上の利用可否は実行時に確認されます。</value>
+    <value>Codex・Claude Codeの候補はCLIの報告値です。Gemini CLI・GitHub Copilot CLIではモデル名を直接入力してください。契約上の利用可否は実行時に確認されます。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock039.Text" xml:space="preserve">
     <value>エージェントがファイルを読み書きするプロジェクトのフォルダーです。Slackでは !cab folder に続けて絶対パスを指定すると、信頼フォルダー内の変更を依頼できます。PCでの承認が必要です。</value>
@@ -337,7 +337,7 @@
     <value>実行中の操作許可・質問を画面で受け取る（Codex専用）</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock040.Text" xml:space="preserve">
-    <value>オンではCodex App Serverを利用します。オフではCLIへ依頼を渡して完了を待ちます。Claude Codeも会話を継続しますが、実行中の追加質問には対応しません。</value>
+    <value>オンではCodex App Serverを利用します。オフではCLIへ依頼を渡して完了を待ちます。Claude Code・Gemini CLI・GitHub Copilot CLIも会話を継続しますが、実行中の追加質問には対応しません。</value>
   </data>
   <data name="RequireApproval.Header" xml:space="preserve">
     <value>手動実行の前に内容を確認する</value>
@@ -601,7 +601,7 @@
     <value>SlackまたはMattermostからPC上のアプリへ依頼し、PC上のAI CLIが応答する仕組みを示す図</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock002.Text" xml:space="preserve">
-    <value>SlackまたはMattermostを窓口にして、このPCのCodex CLIやClaude Code CLIへ依頼を渡します。作業ファイルとCLIはこのPCにあり、AIの処理や情報の送信先はCLIと利用するAIサービスの設定に従います。</value>
+    <value>SlackまたはMattermostを窓口にして、このPCの選択したAI CLIへ依頼を渡します。作業ファイルとCLIはこのPCにあり、AIの処理や情報の送信先はCLIと利用するAIサービスの設定に従います。</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock003.Text" xml:space="preserve">
     <value>チャットから利用する間は、このデスクトップアプリとPCを起動したままにしてください。依頼や応答は、選んだ外部AIサービスへ送信されます。送信される情報と各サービスの取り扱いを確認してください。</value>
@@ -994,7 +994,7 @@
   <data name="AddSlackThreadButton.Content" xml:space="preserve"><value>この会話を追加</value></data>
   <data name="HistoryCompactFilters.Header" xml:space="preserve"><value>絞り込み</value></data>
   <data name="AgentConnectionRegistrationTitle.Text" xml:space="preserve"><value>このCLI接続を登録</value></data>
-  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>CLIチェックに成功した後、CodexまたはClaude Codeを登録します。ローカルの実行ファイルとエージェント設定を保存し、会話ごとの切り替えに使います。ログイン情報はコピーしません。登録後は、成功した会話の短い抜粋を引き継ぎ用にこのPCで暗号化して保存します。</value></data>
+  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>CLIチェックに成功した後、Codex・Claude Code・Gemini CLI・GitHub Copilot CLIを登録できます。ローカルの実行ファイルとエージェント設定を保存し、会話ごとの切り替えに使います。ログイン情報はコピーしません。登録後は、成功した会話の短い抜粋を引き継ぎ用にこのPCで暗号化して保存します。</value></data>
   <data name="RegisterAgentConnection.Content" xml:space="preserve"><value>このCLI接続を登録</value></data>
   <data name="RegisteredConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>登録済みCLI接続</value></data>
   <data name="LoadRegisteredCodexConnection.Content" xml:space="preserve"><value>保存したCodexを読み込む</value></data>
@@ -1123,7 +1123,7 @@
   <data name="AgentAdvancedSectionTitle.Text" xml:space="preserve"><value>選択中の CLI：詳細設定</value></data>
   <data name="AgentAdvancedSectionHelp.Text" xml:space="preserve"><value>実行ファイルの場所、引数、環境変数の再読み込み</value></data>
   <data name="AgentRegistrationsTitle.Text" xml:space="preserve"><value>保存済みの CLI 登録</value></data>
-  <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Codex・Claude Code の接続設定を登録・呼び出し</value></data>
+  <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Codex・Claude Code・Gemini CLI・GitHub Copilot CLIの接続設定を登録・呼び出し</value></data>
   <data name="AgentExecutionExplanationTitle.Text" xml:space="preserve"><value>実行承認のしくみ</value></data>
   <data name="AgentExecutionExplanationHelp.Text" xml:space="preserve"><value>承認の流れと現在の実行ポリシーを確認</value></data>
   <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>使うサービスの設定を開いてください。承認や添付の設定は、サービスに共通です。</value></data>
@@ -1165,4 +1165,6 @@
   <data name="JumpAgentExplanation.Content" xml:space="preserve"><value>実行承認のしくみ</value></data>
   <data name="JumpCodexSharing.Content" xml:space="preserve"><value>Codex：操作承認・質問の共有</value></data>
   <data name="SettingsAutoSaveRetry.Content" xml:space="preserve"><value>変更を確認・再試行</value></data>
+  <data name="LoadRegisteredGeminiConnection.Content" xml:space="preserve"><value>登録済みGemini CLIを呼び出す</value></data>
+  <data name="LoadRegisteredCopilotConnection.Content" xml:space="preserve"><value>登録済みGitHub Copilot CLIを呼び出す</value></data>
 </root>

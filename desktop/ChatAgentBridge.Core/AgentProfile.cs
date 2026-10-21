@@ -9,8 +9,8 @@ public static class AgentProfile
     public const string GitHubCopilot = "github-copilot";
     public const string Custom = "custom";
     public const string DefaultCodexArguments = "exec --json -";
-    public const string DefaultGeminiArguments = "--output-format text";
-    public const string DefaultGitHubCopilotArguments = "--silent --no-ask-user";
+    public const string DefaultGeminiArguments = "--output-format stream-json";
+    public const string DefaultGitHubCopilotArguments = "--output-format json --no-ask-user";
 
     public static string ResolveProvider(BridgeSettings settings)
     {
@@ -38,8 +38,8 @@ public static class AgentProfile
             throw new ArgumentException("Execution permission modes are supported only for Codex and Claude Code profiles.", nameof(settings));
         if (permissionMode == "ask" && provider == Codex && settings.AgentMode != "app-server")
             throw new ArgumentException("The ask permission mode requires Codex App Server mode, which can display approval requests. Select App Server mode or choose another permission mode.", nameof(settings));
-        if (provider is Custom or Gemini or GitHubCopilot && model is not null)
-            throw new ArgumentException("A model override is unavailable for this agent profile; choose Codex or Claude Code.", nameof(settings));
+        if (provider == Custom && model is not null)
+            throw new ArgumentException("A model override is unavailable for a custom agent profile.", nameof(settings));
         if (provider is Custom or Gemini or GitHubCopilot && effort is not null)
             throw new ArgumentException("A reasoning effort override is unavailable for this agent profile; choose Codex or Claude Code.", nameof(settings));
 
@@ -60,11 +60,14 @@ public static class AgentProfile
 
         if (IsBasicCliProvider(provider))
         {
-            var basicArguments = GetConfiguredCliArguments(settings.AgentArguments, provider);
-            basicArguments = provider == Gemini
-                ? SetOption(basicArguments, "--output-format", "--output-format", "text")
-                : SetOption(EnsureFlag(EnsureFlag(basicArguments, "--silent"), "--no-ask-user"), "--output-format", "--output-format", "text");
-            return new AgentInvocation(EffectiveExecutable(settings, provider), basicArguments, null, provider);
+            var basicArguments = GetStructuredCliArguments(settings, provider);
+            if (settings.AuthorizedCliSessionId is { } sessionId)
+            {
+                if (!Guid.TryParseExact(sessionId, "D", out var id))
+                    throw new ArgumentException("The authorized CLI session id must be a UUID.", nameof(settings));
+                basicArguments = basicArguments.Concat(new[] { "--resume", id.ToString("D") }).ToArray();
+            }
+            return new AgentInvocation(EffectiveExecutable(settings, provider), basicArguments, model, provider);
         }
 
         var parsed = AgentArgumentParser.Parse(settings.AgentArguments);
@@ -97,8 +100,8 @@ public static class AgentProfile
     {
         if (string.IsNullOrWhiteSpace(model)) return null;
         var normalized = model.Trim();
-        if (normalized.Length > 256 || normalized.Any(char.IsControl))
-            throw new ArgumentException("Model names must be at most 256 characters and contain no control characters.", nameof(model));
+        if (normalized.Length > 256 || normalized.StartsWith('-') || normalized.Any(char.IsControl))
+            throw new ArgumentException("Model names must be at most 256 characters, must not start with a dash, and must contain no control characters.", nameof(model));
         return normalized;
     }
 
@@ -116,6 +119,34 @@ public static class AgentProfile
         => EffectiveExecutable(settings, ResolveProvider(settings));
 
     public static bool IsBasicCliProvider(string provider) => provider is Gemini or GitHubCopilot;
+
+    /// <summary>Canonical provider arguments before the session runner adds its authorized resume id.</summary>
+    internal static IReadOnlyList<string> GetStructuredCliArguments(BridgeSettings settings, string provider)
+    {
+        var arguments = GetConfiguredCliArguments(settings.AgentArguments, provider);
+        foreach (var argument in arguments)
+        {
+            var option = argument.Split('=', 2)[0];
+            // CLI parsers can expand short-option bundles, e.g. -spTEXT into -s -p TEXT.
+            // Require separate short options and values so a reserved selector cannot hide in a bundle.
+            if (argument.Length > 2 && argument[0] == '-' && argument[1] != '-')
+                throw new ArgumentException("CLI short options must be separate arguments; do not bundle flags or attach their values.", nameof(settings));
+            if (option is "--" or "--resume" or "-r" or "--continue" or "--session-id" or "--new-session" or "--new-session-id" or "--session" or "--connect" or "--worktree" or
+                "-C" or "--cwd" or "--directory" or "--working-directory" or "--prompt" or "-p" or "--interactive" or "-i" ||
+                argument.StartsWith("-C", StringComparison.Ordinal) ||
+                argument.StartsWith("-r", StringComparison.Ordinal) && !argument.StartsWith("--", StringComparison.Ordinal) ||
+                argument.StartsWith("-p", StringComparison.Ordinal) && !argument.StartsWith("--", StringComparison.Ordinal) ||
+                argument.StartsWith("-i", StringComparison.Ordinal) && !argument.StartsWith("--", StringComparison.Ordinal))
+                throw new ArgumentException("CLI session and prompt selection must be managed by the bridge; remove configured resume, continue, session, and prompt options.", nameof(settings));
+        }
+        if (provider == GitHubCopilot)
+            arguments = EnsureFlag(arguments.Where(value => value is not ("--silent" or "-s") &&
+                !value.StartsWith("--silent=", StringComparison.Ordinal)).ToArray(), "--no-ask-user");
+        arguments = SetOption(arguments, "--output-format", provider == Gemini ? "-o" : "--output-format", provider == Gemini ? "stream-json" : "json");
+        if (NormalizeModel(settings.AgentModel) is { } model)
+            arguments = SetOption(arguments, "--model", "-m", model);
+        return arguments;
+    }
 
     internal static string? FindWindowsNpmShim(string executable, string provider)
     {

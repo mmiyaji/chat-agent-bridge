@@ -33,10 +33,34 @@ public sealed class AgentConnectionStoreTests
         try
         {
             var store = new AgentConnectionStore(directory);
-            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveVerifiedAsync(Profile("gemini", "gemini", "", "exec", DateTimeOffset.UtcNow)));
+            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveVerifiedAsync(Profile("custom", "custom", "", "exec", DateTimeOffset.UtcNow)));
             await Assert.ThrowsAsync<ArgumentException>(() => store.SaveVerifiedAsync(Profile("codex", "codex", "--dangerous", "exec", DateTimeOffset.UtcNow)));
             await Assert.ThrowsAsync<ArgumentException>(() => store.SaveVerifiedAsync(Profile("claude", "claude", "--api-key secret", "exec", DateTimeOffset.UtcNow)));
             Assert.False(File.Exists(Path.Combine(directory, "agent-connections.json")));
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData(AgentProfile.Gemini)]
+    [InlineData(AgentProfile.GitHubCopilot)]
+    public async Task Registration_supports_structured_cli_models_and_custom_node_entrypoints(string provider)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "cab-connections-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new AgentConnectionStore(directory);
+            var profile = Profile(provider, "node", "\"C:\\CLI Tools\\entry.mjs\" --debug", "exec", DateTimeOffset.UtcNow)
+                with { Model = "provider-model" };
+            await store.SaveVerifiedAsync(profile);
+            Assert.Equal(profile, await store.FindAsync(provider));
+            Assert.Equal("provider-model", (await store.FindAsync(provider))!.ApplyTo(new BridgeSettings()).AgentModel);
+            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveVerifiedAsync(profile with { ReasoningEffort = "high" }));
+            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveVerifiedAsync(profile with { PermissionMode = "read-only" }));
+            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveVerifiedAsync(profile with { Arguments = "--resume latest" }));
+            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveVerifiedAsync(profile with { Arguments = "--continue" }));
+            await Assert.ThrowsAsync<ArgumentException>(() => store.SaveVerifiedAsync(profile with { Mode = "app-server" }));
+            Assert.Equal(profile, await store.FindAsync(provider));
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
     }

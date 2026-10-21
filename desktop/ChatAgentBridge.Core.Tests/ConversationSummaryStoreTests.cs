@@ -8,6 +8,26 @@ public sealed class ConversationSummaryStoreTests
 {
     private static readonly SessionKey Key = new("slack", "channel-1", "thread-1", "user-1", "slack");
 
+    [Theory]
+    [InlineData(AgentProfile.Gemini)]
+    [InlineData(AgentProfile.GitHubCopilot)]
+    public async Task StructuredCli_notes_remain_scoped_and_survive_reopen(string provider)
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var id = Guid.NewGuid().ToString("D");
+            var store = new ConversationSummaryStore(directory, new TestProtector());
+            await store.RecordAsync(Key, provider, id, "continue the task", "finished the task");
+            var summary = await new ConversationSummaryStore(directory, new TestProtector()).FindAsync(Key);
+            Assert.Equal(provider, summary!.SourceProvider);
+            Assert.Equal(id, summary.SessionId);
+            Assert.Null(await store.FindAsync(Key with { UserId = "another-user" }));
+            Assert.Null(await store.FindAsync(Key with { ThreadId = "another-thread" }));
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
     [Fact]
     public async Task RecordAndFind_PersistEncryptedBriefNotesAcrossInstances()
     {
@@ -185,7 +205,7 @@ public sealed class ConversationSummaryStoreTests
         {
             var store = new ConversationSummaryStore(directory, new TestProtector());
 
-            await Assert.ThrowsAsync<ArgumentException>(() => store.RecordAsync(Key, "gemini", "session-1", "p", "a"));
+            await Assert.ThrowsAsync<ArgumentException>(() => store.RecordAsync(Key, "custom", "session-1", "p", "a"));
             await Assert.ThrowsAsync<ArgumentException>(() => store.RecordAsync(Key, "codex", "session-1", new string('x', 100_001), "a"));
             Assert.False(File.Exists(Path.Combine(directory, "conversation-summaries.json")));
         }

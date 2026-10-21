@@ -638,7 +638,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 item.LiveOutput.Finish();
                 NotifyActiveRequestProperties();
             }
-            var output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ?? result.Output) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
+            var output = (result.Claude?.FinalMessage ?? result.Codex?.FinalMessage ??
+                    (result.CliSession is { } cliSession ? cliSession.FinalMessage ?? "" : result.Output)) + (string.IsNullOrEmpty(result.Error) ? "" : "\n" + result.Error);
             var needsLogin = !result.Success && effectiveSettings.AgentProvider == AgentProfile.Claude &&
                 (output.Contains("Not logged in", StringComparison.OrdinalIgnoreCase) ||
                  output.Contains("Please run /login", StringComparison.OrdinalIgnoreCase));
@@ -920,6 +921,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private static string ExtractReply(AgentRunResult result)
     {
         if (result.Claude is { } claude) return claude.FinalMessage ?? "";
+        if (result.CliSession is { } cliSession) return cliSession.FinalMessage ?? "";
         var parsed = result.Codex ?? CodexOutputParser.Parse(result.Output);
         return parsed.FinalMessage ?? (parsed.HasEvents ? "" : result.Output);
     }

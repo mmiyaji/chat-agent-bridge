@@ -205,7 +205,7 @@
   <data name="InboxReconnectFailed" xml:space="preserve"><value>接続に失敗しました。認証情報・接続先・ネットワークを確認し、再接続後に未実行の依頼を再投稿してください。</value></data>
   <data name="WorkspaceOutsideTrustedRootsShort" xml:space="preserve"><value>作業フォルダーが信頼フォルダーの範囲外です。</value></data>
   <data name="InboxApprovalRequiredAgain" xml:space="preserve"><value>会話の実行設定が変わったため、改めて承認が必要です。</value></data>
-  <data name="InboxNewConversation" xml:space="preserve"><value>新規会話（Codex・Claude Codeでは継続先を保存します）</value></data>
+  <data name="InboxNewConversation" xml:space="preserve"><value>新規会話（Codex・Claude Code・Gemini CLI・GitHub Copilot CLIは継続先を保存します）</value></data>
   <data name="InboxContinueSession" xml:space="preserve"><value>継続セッション: {0}</value></data>
   <data name="InboxSessionModel" xml:space="preserve"><value>&#10;実行モデル: {0} / 推論レベル: {1}</value></data>
   <data name="InboxConversationOwner" xml:space="preserve"><value>&#10;会話の所有者: {0}</value></data>
@@ -438,7 +438,7 @@
   <data name="ChatModelCurrent" xml:space="preserve"><value>現在のモデル: {0}&#10;推論の強さ: {1}&#10;!cab model list — 候補を取得&#10;!cab model モデルID — この会話のモデルを変更&#10;!cab model default — エージェント設定に戻す</value></data>
   <data name="ChatModelList" xml:space="preserve"><value>CLIから取得したモデル候補（5分間キャッシュ）。!cab model モデルID で選択してください:</value></data>
   <data name="ChatModelMoreInPc" xml:space="preserve"><value>すべての候補はPCの「履歴と会話」で確認できます。</value></data>
-  <data name="ChatModelUnsupported" xml:space="preserve"><value>モデル切り替えはCodexとClaude Codeで利用できます。</value></data>
+  <data name="ChatModelUnsupported" xml:space="preserve"><value>モデル切り替えはCodex・Claude Code・Gemini CLI・GitHub Copilot CLIで利用できます。</value></data>
   <data name="ChatModelBusy" xml:space="preserve"><value>実行の完了と、この会話の承認待ち依頼の処理後に、もう一度モデルを変更してください。</value></data>
   <data name="ChatModelUnavailable" xml:space="preserve"><value>モデル候補がありません。PCでCLIとログイン状態を確認してください。</value></data>
   <data name="ChatModelNoSession" xml:space="preserve"><value>AIとの会話があるスレッドに返信してモデルを変更してください。初回のモデルはPCの「エージェント設定」で指定できます。</value></data>
@@ -454,9 +454,9 @@
   <data name="AgentSummaryHelp" xml:space="preserve"><value>直近3回までの成功した依頼・結果の抜粋を、このPCに暗号化して保存します。要約生成の追加AI呼び出しはありません。転送先では入力トークンとして消費されます。内容を確認してから引き継いでください。</value></data>
   <data name="AgentSummaryUnavailable" xml:space="preserve"><value>この会話の要約はまだありません。この版のアプリで依頼が成功すると、以降の切り替え用メモを保存します。今は要約なしで切り替えられます。CLIの過去の履歴は取り込みません。</value></data>
   <data name="AgentSwitchConfirm" xml:space="preserve"><value>切り替え先: {0}&#10;CLI: {1}&#10;モデル: {2}&#10;ツール権限: {3}&#10;作業フォルダー: {4}&#10;引き継ぎ: {5}&#10;同じチャットスレッドで、新しいAI会話を始めます。以前のセッション情報はこのPCに残します。次の依頼はこのPCでの承認が必要です。</value></data>
-  <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>先に「エージェント設定」で切り替え先のCodexまたはClaude Codeを選び、CLIチェック後に「このCLI接続を登録」を実行してください。</value></data>
+  <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>先に「エージェント設定」で切り替え先のCodex・Claude Code・Gemini CLI・GitHub Copilot CLIを選び、CLIチェック後に「このCLI接続を登録」を実行してください。</value></data>
   <data name="AgentSwitchNoConnections" xml:space="preserve"><value>なし（先にPCでCLI接続を登録してください）</value></data>
-  <data name="AgentSwitchCommands" xml:space="preserve"><value>登録済みCLI接続: {0}&#10;要約の有無を指定してください:&#10;!cab agent codex summary / !cab agent codex fresh&#10;!cab agent claude summary / !cab agent claude fresh&#10;summaryは直近の会話メモを引き継ぎ、freshは引き継ぎません。切り替えには必ずPCでの承認が必要です。チャットから実行ファイルのパスは指定できません。</value></data>
+  <data name="AgentSwitchCommands" xml:space="preserve"><value>登録済みCLI接続: {0}&#10;要約の有無を指定してください:&#10;!cab agent codex summary / !cab agent codex fresh&#10;!cab agent claude summary / !cab agent claude fresh&#10;!cab agent gemini summary / !cab agent gemini fresh&#10;!cab agent github-copilot summary / !cab agent github-copilot fresh&#10;summaryは直近の会話メモを引き継ぎ、freshは引き継ぎません。切り替えには必ずPCでの承認が必要です。チャットから実行ファイルのパスは指定できません。</value></data>
   <data name="AgentSwitchSaved" xml:space="preserve"><value>{0}への切り替えを保存しました。このスレッドで次の依頼を送ってください。PCでの承認が必要です。切り替えで取り消された承認待ちの依頼は、再投稿してください。</value></data>
   <data name="AgentSwitchCompleted" xml:space="preserve"><value>AIエージェント変更済み</value></data>
   <data name="AgentSwitchFailed" xml:space="preserve"><value>切り替えできませんでした。PCでCLI接続の登録、作業フォルダーの信頼設定、要約の有無を確認し、実行の終了後に再試行してください。</value></data>
@@ -663,4 +663,6 @@
   <data name="SettingsReviewOn" xml:space="preserve"><value>オン</value></data>
   <data name="SettingsReviewOff" xml:space="preserve"><value>オフ</value></data>
   <data name="SettingsReviewEmpty" xml:space="preserve"><value>未設定</value></data>
+  <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>このCLIではモデル候補を取得できません。CLIと契約が対応するモデルID・別名を直接入力するか、空欄でCLIの既定モデルを使ってください。モデルの利用可否は実行時に確認されます。推論と操作権限はCLIの設定に従います。</value></data>
+  <data name="ChatModelManualEntry" xml:space="preserve"><value>このCLIではモデル候補を取得できません。!cab model モデル名 で、CLIと契約が対応するモデルID・別名を指定できます。!cab model default でエージェント設定に戻します。利用可否は実行時に確認されます。</value></data>
 </root>

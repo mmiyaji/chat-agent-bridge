@@ -85,10 +85,10 @@
     <value>Use chat to send requests to your PC</value>
   </data>
   <data name="OverviewArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Requests can be made from Slack or Mattermost on another device, and Chat Agent Bridge on the running PC will receive them. After checking on your PC, run Codex CLI or Claude Code CLI and receive the checked and shared results in the same thread.</value>
+    <value>Requests can be made from Slack or Mattermost on another device, and Chat Agent Bridge on the running PC will receive them. After checking on your PC, run the selected AI CLI and receive the checked and shared results in the same thread.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock007.Text" xml:space="preserve">
-    <value>A request sent from a phone or browser through Slack or Mattermost reaches Chat Agent Bridge on your running PC. The bridge runs Codex CLI or Claude Code CLI in the selected project. Shared results return to the same thread. Where AI processing takes place depends on the CLI and AI service settings.</value>
+    <value>A request sent from a phone or browser through Slack or Mattermost reaches Chat Agent Bridge on your running PC. The bridge runs the selected AI CLI in the selected project. Shared results return to the same thread. Where AI processing takes place depends on the CLI and AI service settings.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock008.Text" xml:space="preserve">
     <value>1. Choose the CLI, model, and working folder in Agent settings.
@@ -162,7 +162,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Other CLI startup arguments</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock018.Text" xml:space="preserve">
-    <value>The standard arguments and model specifications for Codex/Claude Code are assembled by the app. For other CLIs, please specify a format that allows request text to be received from standard input.</value>
+    <value>The app manages model and conversation continuation arguments for supported CLIs. Configure additional Gemini CLI or GitHub Copilot CLI options here. Custom CLIs must accept request text through standard input.</value>
   </data>
   <data name="SettingsCheckCli.Content" xml:space="preserve">
     <value>Check CLI</value>
@@ -328,7 +328,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Models reported by the CLI</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock038.Text" xml:space="preserve">
-    <value>Options are reported by the CLI. Access for your account is checked when you run a request.</value>
+    <value>Codex and Claude Code candidates are reported by the CLI. Enter a model name directly for Gemini CLI and GitHub Copilot CLI. Account access is checked when you run a request.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock039.Text" xml:space="preserve">
     <value>The project folder where the agent reads and writes files. In Slack, use !cab folder followed by an absolute path to request a change within your trusted folders. Approval on this PC is required.</value>
@@ -337,7 +337,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Review tool permissions and questions on this PC (Codex only)</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock040.Text" xml:space="preserve">
-    <value>When enabled, Codex uses App Server. Otherwise, the bridge passes the request to the CLI and waits for completion. Claude Code supports continued conversations but cannot receive answers to follow-up questions during a run.</value>
+    <value>When enabled, Codex uses App Server. Otherwise, the bridge passes the request to the CLI and waits for completion. Claude Code, Gemini CLI and GitHub Copilot CLI support continued conversations but cannot receive answers to follow-up questions during a run.</value>
   </data>
   <data name="RequireApproval.Header" xml:space="preserve">
     <value>Check contents before manual execution</value>
@@ -601,7 +601,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Diagram showing how Slack or Mattermost makes a request to an app on a PC and the AI CLI on the PC responds.</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock002.Text" xml:space="preserve">
-    <value>Use Slack or Mattermost to send requests to Codex CLI or Claude Code CLI on this PC. Project files and the CLI stay on this PC. AI processing and data transmission follow the settings of the CLI and AI service.</value>
+    <value>Use Slack or Mattermost to send requests to the selected AI CLI on this PC. Project files and the CLI stay on this PC. AI processing and data transmission follow the settings of the CLI and AI service.</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock003.Text" xml:space="preserve">
     <value>Keep this app and your PC running while using chat. Requests and responses are sent to the selected external AI service. Review what information is sent and each service's policies.</value>
@@ -994,7 +994,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AddSlackThreadButton.Content" xml:space="preserve"><value>Add this conversation</value></data>
   <data name="HistoryCompactFilters.Header" xml:space="preserve"><value>Filters</value></data>
   <data name="AgentConnectionRegistrationTitle.Text" xml:space="preserve"><value>Register this CLI connection</value></data>
-  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>Register the Codex or Claude Code CLI after a successful check. This saves its local executable and selected agent options for conversation switching; it does not copy login credentials. After registration, brief successful-conversation excerpts are encrypted on this PC for handoff.</value></data>
+  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>Register Codex, Claude Code, Gemini CLI or GitHub Copilot CLI after a successful check. This saves its local executable and selected agent options for conversation switching; it does not copy login credentials. After registration, brief successful-conversation excerpts are encrypted on this PC for handoff.</value></data>
   <data name="RegisterAgentConnection.Content" xml:space="preserve"><value>Register this CLI connection</value></data>
   <data name="RegisteredConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Registered CLI connections</value></data>
   <data name="LoadRegisteredCodexConnection.Content" xml:space="preserve"><value>Load saved Codex</value></data>
@@ -1123,7 +1123,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentAdvancedSectionTitle.Text" xml:space="preserve"><value>Selected CLI: advanced settings</value></data>
   <data name="AgentAdvancedSectionHelp.Text" xml:space="preserve"><value>Executable location, arguments, and environment reload</value></data>
   <data name="AgentRegistrationsTitle.Text" xml:space="preserve"><value>Saved CLI registrations</value></data>
-  <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Register or restore Codex and Claude Code connections</value></data>
+  <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Register or restore Codex, Claude Code, Gemini CLI and GitHub Copilot CLI connections</value></data>
   <data name="AgentExecutionExplanationTitle.Text" xml:space="preserve"><value>How execution approval works</value></data>
   <data name="AgentExecutionExplanationHelp.Text" xml:space="preserve"><value>Review the approval flow and current execution policy</value></data>
   <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>Open the service you use. Approval and attachment settings apply to both services.</value></data>
@@ -1165,4 +1165,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="JumpAgentExplanation.Content" xml:space="preserve"><value>How execution approval works</value></data>
   <data name="JumpCodexSharing.Content" xml:space="preserve"><value>Codex: share approvals and questions</value></data>
   <data name="SettingsAutoSaveRetry.Content" xml:space="preserve"><value>Review changes / retry</value></data>
+  <data name="LoadRegisteredGeminiConnection.Content" xml:space="preserve"><value>Load registered Gemini CLI</value></data>
+  <data name="LoadRegisteredCopilotConnection.Content" xml:space="preserve"><value>Load registered GitHub Copilot CLI</value></data>
 </root>

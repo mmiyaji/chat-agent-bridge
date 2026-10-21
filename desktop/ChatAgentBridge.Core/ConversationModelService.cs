@@ -8,7 +8,7 @@ public sealed class ConversationModelService
     private readonly SessionStore _sessions;
     private readonly Func<BridgeSettings, CancellationToken, Task<IReadOnlyList<ModelOption>>> _discover;
     private readonly SemaphoreSlim _catalogGate = new(1, 1);
-    private readonly Dictionary<(string Provider, string Executable, string Workspace), CatalogEntry> _catalogs = [];
+    private readonly Dictionary<(string Provider, string Executable, string Arguments, string Workspace), CatalogEntry> _catalogs = [];
     private readonly TimeProvider _clock;
 
     public ConversationModelService(SessionStore sessions,
@@ -24,11 +24,14 @@ public sealed class ConversationModelService
         CancellationToken token = default)
     {
         var provider = AgentProfile.ResolveProvider(settings);
-        if (provider is not (AgentProfile.Codex or AgentProfile.Claude))
-            throw new InvalidOperationException("This CLI does not support model discovery.");
         if (!ExecutionPolicy.IsWorkspaceTrusted(settings, settings.WorkspaceRoot))
             throw new InvalidOperationException("The conversation workspace is not trusted.");
-        var key = (provider, settings.AgentExecutable, Path.GetFullPath(settings.WorkspaceRoot));
+        // This integration accepts manual model identifiers for these CLIs.
+        // Do not spend an AI turn discovering a model catalog.
+        if (AgentProfile.IsBasicCliProvider(provider)) return Array.Empty<ModelOption>();
+        if (provider is not (AgentProfile.Codex or AgentProfile.Claude))
+            throw new InvalidOperationException("This CLI does not support model discovery.");
+        var key = (provider, settings.AgentExecutable, settings.AgentArguments, Path.GetFullPath(settings.WorkspaceRoot));
         await _catalogGate.WaitAsync(token).ConfigureAwait(false);
         try
         {
@@ -49,11 +52,12 @@ public sealed class ConversationModelService
         var binding = await _sessions.FindExecutionBindingAsync(key, token).ConfigureAwait(false)
             ?? throw new KeyNotFoundException("Start a conversation before changing its model.");
         var provider = AgentProfile.ResolveProvider(settings);
-        var matches = provider == AgentProfile.Claude ? binding.AgentArguments == "claude-stream-json-v1" :
-            provider == AgentProfile.Codex && binding.AgentArguments is "app-server" or "exec --json -";
-        if (!matches) throw new InvalidOperationException("The configured CLI does not match this conversation.");
+        if (ConversationAgentService.ProviderOf(binding) != provider)
+            throw new InvalidOperationException("The configured CLI does not match this conversation.");
+        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, binding.WorkspaceRoot))
+            throw new InvalidOperationException("The conversation workspace is not trusted.");
         model = AgentProfile.NormalizeModel(model);
-        if (model is not null)
+        if (model is not null && !AgentProfile.IsBasicCliProvider(provider))
         {
             var models = await GetModelsAsync(settings, token).ConfigureAwait(false);
             if (!models.Any(candidate => candidate.Id == model))

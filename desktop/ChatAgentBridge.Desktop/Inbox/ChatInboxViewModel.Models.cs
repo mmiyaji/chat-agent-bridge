@@ -24,7 +24,7 @@ public sealed partial class ChatInboxViewModel
             var binding = await _sessions.FindExecutionBindingAsync(scope, token);
             var workspaceSettings = await _sessions.ApplyWorkspaceAsync(scope, current, token);
             var effective = ConversationExecutionPolicy.GetEffectiveSettings(workspaceSettings, binding);
-            if (AgentProfile.ResolveProvider(effective) is not (AgentProfile.Codex or AgentProfile.Claude))
+            if (AgentProfile.ResolveProvider(effective) is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot))
             {
                 await ReplyToControlAsync(transport, received, request, DesktopText.Get("ChatModelUnsupported"), token);
                 return;
@@ -50,7 +50,8 @@ public sealed partial class ChatInboxViewModel
                     if (text.Length + line.Length > 3200) { text.AppendLine().Append(DesktopText.Get("ChatModelMoreInPc")); break; }
                     text.Append(line);
                 }
-                reply = models.Count == 0 ? DesktopText.Get("ChatModelUnavailable") : text.ToString();
+                reply = models.Count == 0 ? DesktopText.Get(AgentProfile.IsBasicCliProvider(AgentProfile.ResolveProvider(effective))
+                    ? "ChatModelManualEntry" : "ChatModelUnavailable") : text.ToString();
             }
             else
             {

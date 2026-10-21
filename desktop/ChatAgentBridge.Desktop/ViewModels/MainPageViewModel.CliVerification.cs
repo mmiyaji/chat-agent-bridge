@@ -28,7 +28,8 @@ public partial class MainPageViewModel
             return;
         }
 
-        ModelCatalog.RestoreVerifiedModels(cached.Models, AgentModel);
+        if (SupportsReasoning) ModelCatalog.RestoreVerifiedModels(cached.Models, AgentModel);
+        else InvalidateModelCatalog();
         PopulateGlobalEfforts();
         CliVersion = cached.Probe.Version;
         CliExecutablePath = cached.Probe.Executable;

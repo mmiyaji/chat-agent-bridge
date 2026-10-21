@@ -309,6 +309,7 @@ public sealed partial class HistoryPage : Page
         {
             Text = session.ModelOverride ?? string.Empty,
             MaxLength = 256,
+            Header = DesktopText.Get("NextExecutionModel"),
             PlaceholderText = DesktopText.Get("EnterModelName")
         };
         AutomationProperties.SetAutomationId(model, "SessionModelOverride");
@@ -316,10 +317,11 @@ public sealed partial class HistoryPage : Page
         var binding = session.Binding;
         var isAppServer = string.Equals(binding.AgentArguments, "app-server", StringComparison.OrdinalIgnoreCase);
         var isClaude = string.Equals(binding.AgentArguments, "claude-stream-json-v1", StringComparison.Ordinal);
-        var isCodex = isAppServer || string.Equals(binding.AgentArguments, "exec --json -", StringComparison.Ordinal);
-        var provider = isClaude ? AgentProfile.Claude : isCodex ? AgentProfile.Codex : "custom";
+        var provider = ConversationAgentService.ProviderOf(binding) ?? AgentProfile.Custom;
+        var supportsCatalog = provider is AgentProfile.Codex or AgentProfile.Claude;
+        var isSessionCli = AgentProfile.IsBasicCliProvider(provider);
         var currentModel = string.IsNullOrWhiteSpace(binding.Model) ? globalSettings.AgentModel : binding.Model;
-        var currentEffort = binding.ReasoningEffort ??
+        var currentEffort = !supportsCatalog ? null : binding.ReasoningEffort ??
             (binding.Model is null || string.Equals(binding.Model, globalSettings.AgentModel, StringComparison.Ordinal)
                 ? globalSettings.AgentReasoningEffort : null);
         var efforts = new System.Collections.ObjectModel.ObservableCollection<ChatAgentBridge_Desktop.ViewModels.ReasoningEffortChoice>
@@ -328,7 +330,7 @@ public sealed partial class HistoryPage : Page
         };
         ChatAgentBridge_Desktop.ViewModels.ReasoningEffortChoice? selectedEffort = currentEffort is null
             ? ChatAgentBridge_Desktop.ViewModels.ReasoningEffortChoice.InheritDefault : null;
-        var effortStatus = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        var effortStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = supportsCatalog ? Visibility.Visible : Visibility.Collapsed };
         var unsupportedEffort = false;
         var selectedModelId = currentModel;
         var isApplyingSelection = false;
@@ -341,7 +343,8 @@ public sealed partial class HistoryPage : Page
             ItemsSource = efforts,
             DisplayMemberPath = "SelectionLabel",
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            IsEnabled = provider != "custom"
+            IsEnabled = supportsCatalog,
+            Visibility = supportsCatalog ? Visibility.Visible : Visibility.Collapsed
         };
         var catalog = new ModelCatalogViewModel(() => new BridgeSettings
         {
@@ -366,8 +369,8 @@ public sealed partial class HistoryPage : Page
             isApplyingSelection = false;
             PopulateEfforts(option);
         });
-        if (provider == "custom") catalog.Invalidate(DesktopText.Get("HistoryCustomCliUnsupported"));
-        var fetch = new Button { Content = DesktopText.Get("FetchCliModels"), HorizontalAlignment = HorizontalAlignment.Left, IsEnabled = provider != "custom" };
+        if (!supportsCatalog) catalog.Invalidate(DesktopText.Get(isSessionCli ? "ManualModelCandidatesUnavailable" : "HistoryCustomCliUnsupported"));
+        var fetch = new Button { Content = DesktopText.Get("FetchCliModels"), HorizontalAlignment = HorizontalAlignment.Left, IsEnabled = supportsCatalog };
         AutomationProperties.SetAutomationId(fetch, "SessionFetchModels");
         fetch.Click += (_, _) => catalog.FetchModelsCommand.Execute(null);
         var cancel = new Button { Content = DesktopText.Get("CancelFetch"), HorizontalAlignment = HorizontalAlignment.Left };
@@ -379,7 +382,7 @@ public sealed partial class HistoryPage : Page
             ItemsSource = catalog.Models,
             DisplayMemberPath = "SelectionLabel",
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            IsEnabled = provider != "custom"
+            IsEnabled = supportsCatalog
         };
         AutomationProperties.SetAutomationId(candidates, "SessionModelCandidates");
         AutomationProperties.SetName(candidates, DesktopText.Get("SessionModelSuggestions"));
@@ -397,7 +400,7 @@ public sealed partial class HistoryPage : Page
                 PopulateCurrentEfforts();
             if (args.PropertyName == nameof(catalog.IsLoading))
             {
-                fetch.IsEnabled = !catalog.IsLoading && provider != "custom";
+                fetch.IsEnabled = !catalog.IsLoading && supportsCatalog;
                 cancel.IsEnabled = catalog.IsLoading;
                 progress.IsActive = catalog.IsLoading;
             }
@@ -505,8 +508,8 @@ public sealed partial class HistoryPage : Page
                         catalogStatus,
                         effortCandidates,
                         effortStatus,
-                        new TextBlock { Text = DesktopText.Get("ReasoningEffortOptionsInfo"), TextWrapping = TextWrapping.Wrap },
-                        new TextBlock { Text = DesktopText.Get("CliReportedOptionsInfo"), TextWrapping = TextWrapping.Wrap }
+                        new TextBlock { Text = DesktopText.Get("ReasoningEffortOptionsInfo"), TextWrapping = TextWrapping.Wrap, Visibility = supportsCatalog ? Visibility.Visible : Visibility.Collapsed },
+                        new TextBlock { Text = DesktopText.Get("CliReportedOptionsInfo"), TextWrapping = TextWrapping.Wrap, Visibility = supportsCatalog ? Visibility.Visible : Visibility.Collapsed }
                     }
                 }
             },
@@ -522,7 +525,7 @@ public sealed partial class HistoryPage : Page
             if (await dialog.ShowAsync() != ContentDialogResult.Primary) return null;
             return new ModelExecutionSelection(
                 string.IsNullOrWhiteSpace(model.Text) ? null : model.Text.Trim(),
-                dirtyEffortSelection ? selectedEffort?.Id : binding.ReasoningEffort);
+                supportsCatalog ? (dirtyEffortSelection ? selectedEffort?.Id : binding.ReasoningEffort) : null);
         }
         finally
         {
@@ -551,9 +554,13 @@ public sealed partial class HistoryPage : Page
         var permission = CreateChoice("SessionAgentPermissionMode", DesktopText.Get("AiToolPermission"), binding.AgentPermissionMode,
             (null, DesktopText.Get("UseGlobalSettings")), ("inherit", DesktopText.Get("CliDefault")), ("read-only", DesktopText.Get("ReadAndPlanOnly")),
             ("workspace-write", DesktopText.Get("AutoAllowWorkspaceEdits")), ("full-access", DesktopText.Get("FullAccess")), ("ask", DesktopText.Get("AskPerAction")));
+        var cliManagedPermissions = AgentProfile.IsBasicCliProvider(ConversationAgentService.ProviderOf(binding) ?? AgentProfile.Custom);
         foreach (var item in permission.Items.OfType<ComboBoxItem>())
-            if (string.Equals(item.Tag as string, "ask", StringComparison.Ordinal))
+        {
+            if (cliManagedPermissions) item.IsEnabled = item.Tag as string is "<global>" or "inherit";
+            else if (string.Equals(item.Tag as string, "ask", StringComparison.Ordinal))
                 item.IsEnabled = string.Equals(binding.AgentArguments, "app-server", StringComparison.OrdinalIgnoreCase);
+        }
         var dialog = new ContentDialog
         {
             RequestedTheme = App.Appearance.RequestedTheme,

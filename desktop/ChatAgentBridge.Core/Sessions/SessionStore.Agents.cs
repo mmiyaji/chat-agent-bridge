@@ -61,7 +61,7 @@ public sealed partial class SessionStore
         CancellationToken token = default)
     {
         ValidateBinding(expected);
-        if (provider is not (AgentProfile.Codex or AgentProfile.Claude)) throw new ArgumentException("Unsupported CLI.");
+        if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot)) throw new ArgumentException("Unsupported CLI.");
         if (summary is not null && (summary.Length == 0 || summary.Length > 8000)) throw new ArgumentException("Invalid handoff length.");
         var protectedSummary = summary is null ? null : _textProtector.Protect(summary);
         return WithSessionLockAsync(expected.Key, async cancellation =>
@@ -138,7 +138,7 @@ public sealed partial class SessionStore
         foreach (var selection in document.Agents ?? [])
         {
             ValidateKey(selection.Key);
-            if (!keys.Add(selection.Key) || selection.Provider is not (AgentProfile.Codex or AgentProfile.Claude) ||
+            if (!keys.Add(selection.Key) || selection.Provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot) ||
                 selection.UpdatedAt == default || selection.ProtectedHandoff?.Length > 60000)
                 throw new InvalidDataException("Invalid conversation agent selection.");
             if (selection.ChatApprovalMode is not null) _ = ExecutionPolicy.NormalizeChatApprovalMode(selection.ChatApprovalMode);

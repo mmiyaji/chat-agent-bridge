@@ -550,7 +550,7 @@ Internal user ID: {2}</value></data>
     <value>Other CLI (custom)</value>
   </data>
   <data name="BasicProviderHelp" xml:space="preserve">
-    <value>Basic integration: requests are sent through standard input and replies are read from standard output. Each request starts a separate run; automatic session continuation and model/reasoning catalogs are not supported. Configure models, reasoning and execution permissions in the CLI or its arguments. Sign in through the CLI first.</value>
+    <value>Custom CLI integration sends requests through standard input and reads standard output. Each request starts a separate run. Automatic session continuation and app model/reasoning overrides are unavailable. Configure the CLI or its arguments and sign in through the CLI first.</value>
   </data>
   <data name="BasicPermissionManagedByCli" xml:space="preserve">
     <value>Execution permissions follow the CLI configuration. The bridge does not apply a sandbox or bypass permissions for this provider. Chat request approval is configured separately.</value>
@@ -704,4 +704,6 @@ Conversation ID (first message): {2}</value></data>
   <data name="TrustedFolderRecoveryChanged" xml:space="preserve"><value>The folder changed or cannot be trusted safely. Check the workspace path and run the CLI check again.</value></data>
   <data name="WizardConnectionDeferredTitle" xml:space="preserve"><value>Settings saved and setup complete</value></data>
   <data name="WizardConnectionDeferredDetails" xml:space="preserve"><value>The connection test is not complete. Connect from Chat inbox when ready. If already connected, reconnect to use the changed settings.</value></data>
+  <data name="SessionCliProviderHelp" xml:space="preserve"><value>Gemini CLI and GitHub Copilot CLI continue conversations in the same chat thread and accept a model name entered here. Model catalog lookup and app overrides for reasoning or execution permissions are unavailable. Sign in through the CLI first.</value></data>
+  <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>Model candidates cannot be fetched for this CLI. Enter a model ID or alias supported by your CLI and account, or leave it blank for the CLI default. Model access is checked when you run a request; reasoning and permissions follow the CLI configuration.</value></data>
 </root>

@@ -23,7 +23,7 @@ public partial class MainPageViewModel
         {
             CliVersion = ChatAgentBridge_Desktop.Localization.ViewModelText.Get("NotChecked");
             CliCheckSummary = ChatAgentBridge_Desktop.Localization.ViewModelText.Get("CliCheckIntro");
-            ModelCatalog.Invalidate(IsBasicProvider ? ChatAgentBridge_Desktop.Localization.ViewModelText.Get("BasicModelManagedByCli") : null);
+            InvalidateModelCatalog();
         }
 
         if (IsWizardIntro)

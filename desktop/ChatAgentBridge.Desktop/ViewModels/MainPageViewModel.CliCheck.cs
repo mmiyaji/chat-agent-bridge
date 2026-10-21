@@ -31,7 +31,7 @@ public partial class MainPageViewModel
     }
     private string CurrentCliSignature() => $"{AgentProvider}\n{AgentExecutable}\n{AgentArguments}\n{WorkspaceRoot}\n{UseAppServer}\n{TrustedWorkspaceRoots}";
     private bool HasCurrentCliCheck() => CliCheckSucceeded && _checkedCliSignature == CurrentCliSignature() &&
-        (string.IsNullOrWhiteSpace(AgentModel) || ModelCatalog.Models.Any(model => string.Equals(model.Id, AgentModel.Trim(), StringComparison.Ordinal)));
+        (!SupportsReasoning || string.IsNullOrWhiteSpace(AgentModel) || ModelCatalog.Models.Any(model => string.Equals(model.Id, AgentModel.Trim(), StringComparison.Ordinal)));
 
     private string CurrentConnectionSignature() => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
         System.Text.Encoding.UTF8.GetBytes(string.Join("\n", AgentProvider, AgentExecutable, AgentArguments,
@@ -39,7 +39,7 @@ public partial class MainPageViewModel
         CliVersion, CliExecutablePath))));
 
     private bool CanRegisterAgentConnection() => HasCurrentCliCheck() &&
-        AgentProvider is (AgentProfile.Codex or AgentProfile.Claude) &&
+        SupportsModel &&
         _checkedConnectionSignature == CurrentConnectionSignature() && !IsLoading && !IsRunning;
 
     private void WizardSettingChanged(string? property)
@@ -113,7 +113,7 @@ public partial class MainPageViewModel
             if (!IsCustomProvider && !result.ProviderRecognized) { CliCheckFailed = true; CliCheckSummary = ViewModelText.Get("UnrecognizedCliProvider"); return; }
             if (IsBasicProvider)
             {
-                ModelCatalog.Invalidate(ViewModelText.Get("BasicModelManagedByCli"));
+                InvalidateModelCatalog();
                 _checkedCliSignature = signature;
                 _checkedConnectionSignature = CurrentConnectionSignature();
                 _cliCheckedAt = DateTimeOffset.UtcNow;

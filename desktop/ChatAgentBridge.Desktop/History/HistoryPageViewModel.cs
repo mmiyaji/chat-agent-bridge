@@ -169,16 +169,16 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
         get
         {
             if (string.Equals(Binding.AgentArguments, "app-server", StringComparison.Ordinal)) return "Codex App Server";
+            var provider = ConversationAgentService.ProviderOf(Binding);
+            if (provider is not null)
+                return provider switch
+                {
+                    AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code",
+                    AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI", _ => provider
+                };
             var leaf = Path.GetFileName(Binding.AgentExecutable.Trim().Trim('"'));
             var name = Path.GetFileNameWithoutExtension(leaf);
-            return name.ToLowerInvariant() switch
-            {
-                "codex" => "Codex",
-                "claude" => "Claude Code",
-                "gemini" => "Gemini CLI",
-                "copilot" or "github-copilot" => "GitHub Copilot CLI",
-                _ => string.IsNullOrWhiteSpace(name) ? DesktopText.Get("CustomCliName") : name
-            };
+            return string.IsNullOrWhiteSpace(name) ? DesktopText.Get("CustomCliName") : name;
         }
     }
 
@@ -512,12 +512,13 @@ public sealed partial class HistoryPageViewModel : ObservableObject
 
     private bool CanRefresh() => !IsBusy;
     private bool CanDetachSelectedSession() => SelectedSession is not null && !IsBusy;
-    private bool CanEditSelectedSessionModel() => SelectedSession is { Binding.NextAgentProvider: null } && !IsBusy;
+    private bool CanEditSelectedSessionModel() => SelectedSession is { Binding.NextAgentProvider: null } selected && !IsBusy &&
+        ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot;
 
     private bool CanSwitchSelectedAgent() => SelectedSession is { } selected && !IsBusy &&
         selected.Binding.Key.UserId is not null && selected.Binding.Key.Origin is not null &&
         selected.Binding.Key.Provider is "slack" or "mattermost" &&
-        ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude;
+        ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot;
 
     [RelayCommand(CanExecute = nameof(CanSwitchSelectedAgent))]
     private async Task SwitchSelectedAgentAsync()
@@ -561,6 +562,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         try
         {
             var settings = await _settingsStore.LoadAsync();
+            settings = await _sessionStore.ApplyWorkspaceAsync(selected.Binding.Key, settings);
             var selection = await EditSessionPolicyAsync(selected, settings);
             if (selection is null) return;
             await _sessionStore.UpdateExecutionPolicyAsync(selected.Binding.Key, selection.ChatApprovalMode,
@@ -584,6 +586,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         try
         {
             var settings = await _settingsStore.LoadAsync();
+            settings = await _sessionStore.ApplyWorkspaceAsync(selected.Binding.Key, settings);
             var selection = await EditSessionModelAsync(selected, settings);
             if (selection is null) return;
             await _sessionStore.UpdateModelAndEffortAsync(selected.Binding,
