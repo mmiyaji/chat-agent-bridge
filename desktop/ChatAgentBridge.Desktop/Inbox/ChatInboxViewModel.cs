@@ -608,15 +608,17 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.Usage = DesktopText.Get("UsageRunning");
             await StartProgressAsync(item);
             var attachmentBefore = await CaptureAttachmentBaselineAsync(item, effectiveSettings, token);
+            var agentPrompt = FileAttachmentAgentPrompt.Build(item.Request.Text,
+                item.AttachmentSettingsAtStart ?? effectiveSettings, attachmentBefore is not null);
             var progress = item.LiveOutput.Begin();
             NotifyActiveRequestProperties();
             AgentRunResult result;
             try
             {
                 result = effectiveSettings.AgentMode == "app-server"
-                    ? await _serverRunner.RunAsync(key, effectiveSettings, item.Request.Text,
+                    ? await _serverRunner.RunAsync(key, effectiveSettings, agentPrompt,
                         new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct), Progress: progress), _execution.Token)
-                    : await _runner.RunAsync(key, effectiveSettings, item.Request.Text, _execution.Token, progress);
+                    : await _runner.RunAsync(key, effectiveSettings, agentPrompt, _execution.Token, progress);
             }
             finally
             {
