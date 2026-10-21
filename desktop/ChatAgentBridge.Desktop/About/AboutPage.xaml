@@ -2,7 +2,8 @@
     x:Class="ChatAgentBridge_Desktop.About.AboutPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:deployment="using:ChatAgentBridge_Desktop.Deployment">
+    xmlns:deployment="using:ChatAgentBridge_Desktop.Deployment"
+    xmlns:settings="using:CommunityToolkit.WinUI.Controls">
     <Grid RowSpacing="16" AutomationProperties.AutomationId="AboutPage">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -15,69 +16,90 @@
         </StackPanel>
         <ScrollViewer x:Name="AboutScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="AboutScroll">
-            <StackPanel Spacing="12" MaxWidth="1040" HorizontalAlignment="Left" AutomationProperties.AutomationId="AboutContent">
-                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                    <StackPanel Spacing="8">
-                        <TextBlock x:Uid="AboutProductHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <Grid ColumnSpacing="16" RowSpacing="8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" x:Uid="AboutProductLabel" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <TextBlock x:Name="ProductValue" Grid.Row="0" Grid.Column="1" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutProduct" />
-                            <TextBlock Grid.Row="1" x:Uid="AboutVersionLabel" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <TextBlock x:Name="VersionValue" Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutVersion" />
-                            <TextBlock Grid.Row="2" x:Uid="AboutPackageLabel" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <TextBlock x:Name="PackageValue" Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutPackage" />
-                        </Grid>
-                    </StackPanel>
-                </Border>
-                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                    <StackPanel Spacing="8">
-                        <TextBlock x:Uid="AboutLinksHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <TextBlock x:Uid="AboutProviderLabel" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                        <TextBlock Text="mmiyaji" AutomationProperties.AutomationId="AboutProvider" />
-                        <StackPanel Spacing="0">
-                            <HyperlinkButton x:Uid="AboutWebsite" AutomationProperties.AutomationId="AboutWebsite" Click="OpenLink_Click" Tag="https://ruhenheim.org" />
-                            <HyperlinkButton x:Uid="AboutSupport" AutomationProperties.AutomationId="AboutSupport" Click="OpenLink_Click" Tag="https://github.com/mmiyaji/chat-agent-bridge/issues" />
-                            <HyperlinkButton x:Uid="AboutRepository" AutomationProperties.AutomationId="AboutRepository" Click="OpenLink_Click" Tag="https://github.com/mmiyaji/chat-agent-bridge" />
+            <StackPanel Spacing="8" AutomationProperties.AutomationId="AboutContent">
+                <settings:SettingsCard AutomationProperties.AutomationId="AboutProductCard">
+                    <settings:SettingsCard.Header>
+                        <TextBlock x:Name="ProductValue" Style="{StaticResource SubtitleTextBlockStyle}"
+                                   TextWrapping="Wrap" AutomationProperties.AutomationId="AboutProduct" />
+                    </settings:SettingsCard.Header>
+                    <settings:SettingsCard.HeaderIcon>
+                        <BitmapIcon UriSource="ms-appx:///Assets/Square150x150Logo.scale-200.png" ShowAsMonochrome="False" />
+                    </settings:SettingsCard.HeaderIcon>
+                    <settings:SettingsCard.Description>
+                        <StackPanel Spacing="4">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock x:Uid="AboutVersionCaption" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock x:Name="VersionValue" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           AutomationProperties.AutomationId="AboutVersion" />
+                            </StackPanel>
+                            <TextBlock x:Uid="AboutProviderValue" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       AutomationProperties.AutomationId="AboutProvider" />
                         </StackPanel>
-                        <TextBlock x:Name="ActionStatus" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
-                    </StackPanel>
-                </Border>
-                <Border x:Name="StoreUpdateCard" AutomationProperties.AutomationId="StoreUpdateCard" Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                    <StackPanel Spacing="12">
-                        <TextBlock x:Uid="AboutStoreHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <TextBlock x:Name="StoreStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutStoreStatus" />
-                        <StackPanel Spacing="8" HorizontalAlignment="Left">
-                            <Button x:Name="StorePageButton" x:Uid="AboutStorePage" AutomationProperties.AutomationId="AboutStorePage" Click="OpenStore_Click" />
-                            <Button x:Name="CheckUpdatesButton" x:Uid="AboutCheckUpdates" AutomationProperties.AutomationId="AboutCheckUpdates" Click="CheckUpdates_Click" />
+                    </settings:SettingsCard.Description>
+                </settings:SettingsCard>
+
+                <settings:SettingsExpander x:Uid="AboutTechnicalDetails" AutomationProperties.AutomationId="AboutTechnicalDetails">
+                    <settings:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE943;" />
+                    </settings:SettingsExpander.HeaderIcon>
+                    <settings:SettingsExpander.Items>
+                        <settings:SettingsCard x:Uid="AboutPackageLabel" AutomationProperties.AutomationId="AboutPackageRow">
+                            <TextBlock x:Name="PackageValue" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutPackage" />
+                        </settings:SettingsCard>
+                    </settings:SettingsExpander.Items>
+                </settings:SettingsExpander>
+
+                <settings:SettingsCard x:Name="StoreUpdateCard" x:Uid="AboutStoreHeading"
+                                       AutomationProperties.AutomationId="StoreUpdateCard">
+                        <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE719;" /></settings:SettingsCard.HeaderIcon>
+                        <settings:SettingsCard.Description>
+                            <TextBlock x:Name="StoreStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutStoreStatus" />
+                        </settings:SettingsCard.Description>
+                        <StackPanel Spacing="8">
+                            <Button x:Name="StorePageButton" x:Uid="AboutStorePage" HorizontalAlignment="Stretch"
+                                    AutomationProperties.AutomationId="AboutStorePage" Click="OpenStore_Click" />
+                            <Button x:Name="CheckUpdatesButton" x:Uid="AboutCheckUpdates" HorizontalAlignment="Stretch"
+                                    AutomationProperties.AutomationId="AboutCheckUpdates" Click="CheckUpdates_Click" />
                         </StackPanel>
-                    </StackPanel>
-                </Border>
+                </settings:SettingsCard>
+
                 <deployment:PortableUpdateControl />
-                <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                    <StackPanel Spacing="12">
-                        <TextBlock x:Uid="AboutLegalHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <TextBlock x:Uid="AboutDataHandling" TextWrapping="Wrap" />
-                        <StackPanel Spacing="8" HorizontalAlignment="Left">
-                            <Button x:Uid="AboutChangelog" AutomationProperties.AutomationId="AboutChangelog" Click="Changelog_Click" />
-                            <Button x:Uid="AboutTerms" AutomationProperties.AutomationId="AboutTerms" Click="Terms_Click" />
-                            <Button x:Uid="AboutPrivacy" AutomationProperties.AutomationId="AboutPrivacy" Click="Privacy_Click" />
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-                <Button x:Uid="AboutExit" HorizontalAlignment="Left" AutomationProperties.AutomationId="AboutExit" Click="Exit_Click" />
+
+                <HyperlinkButton x:Name="PackageReleaseNotesLink" x:Uid="PortableUpdateReleaseNotes"
+                                 NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/releases"
+                                 HorizontalAlignment="Left" AutomationProperties.AutomationId="AboutReleaseNotes" />
+
+                <TextBlock x:Uid="AboutLinksHeading" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,0" />
+                <settings:SettingsCard x:Uid="AboutWebsite" IsClickEnabled="True" Click="OpenLink_Click"
+                                       Tag="https://ruhenheim.org" AutomationProperties.AutomationId="AboutWebsite">
+                    <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE774;" /></settings:SettingsCard.HeaderIcon>
+                    <settings:SettingsCard.ActionIcon><FontIcon Glyph="&#xE8A7;" /></settings:SettingsCard.ActionIcon>
+                </settings:SettingsCard>
+                <settings:SettingsCard x:Uid="AboutSupport" IsClickEnabled="True" Click="OpenLink_Click"
+                                       Tag="https://github.com/mmiyaji/chat-agent-bridge/issues" AutomationProperties.AutomationId="AboutSupport">
+                    <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="Message" /></settings:SettingsCard.HeaderIcon>
+                    <settings:SettingsCard.ActionIcon><FontIcon Glyph="&#xE8A7;" /></settings:SettingsCard.ActionIcon>
+                </settings:SettingsCard>
+                <TextBlock x:Name="ActionStatus" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           AutomationProperties.LiveSetting="Polite" />
+
+                <TextBlock x:Uid="AboutLegalHeading" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,0" />
+                <TextBlock x:Uid="AboutDataHandling" TextWrapping="Wrap" Margin="0,0,0,4"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <settings:SettingsCard x:Uid="AboutTerms" IsClickEnabled="True" Click="Terms_Click"
+                                       AutomationProperties.AutomationId="AboutTerms">
+                    <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="Document" /></settings:SettingsCard.HeaderIcon>
+                </settings:SettingsCard>
+                <settings:SettingsCard x:Uid="AboutPrivacy" IsClickEnabled="True" Click="Privacy_Click"
+                                       AutomationProperties.AutomationId="AboutPrivacy">
+                    <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE72E;" /></settings:SettingsCard.HeaderIcon>
+                </settings:SettingsCard>
+
+                <Button x:Uid="AboutExit" HorizontalAlignment="Left" Margin="0,8,0,0"
+                        AutomationProperties.AutomationId="AboutExit" Click="Exit_Click" />
             </StackPanel>
         </ScrollViewer>
     </Grid>

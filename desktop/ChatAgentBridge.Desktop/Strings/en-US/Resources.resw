@@ -826,23 +826,23 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="NavAbout.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>About</value></data>
   <data name="AboutHeading.Text" xml:space="preserve"><value>About</value></data>
   <data name="AboutDescription.Text" xml:space="preserve"><value>Product information, updates, and legal details.</value></data>
-  <data name="AboutProductHeading.Text" xml:space="preserve"><value>Application</value></data>
-  <data name="AboutProductLabel.Text" xml:space="preserve"><value>Product</value></data>
-  <data name="AboutVersionLabel.Text" xml:space="preserve"><value>Version</value></data>
-  <data name="AboutPackageLabel.Text" xml:space="preserve"><value>Package</value></data>
-  <data name="AboutLinksHeading.Text" xml:space="preserve"><value>Links and author</value></data>
-  <data name="AboutProviderLabel.Text" xml:space="preserve"><value>Author</value></data>
-  <data name="AboutWebsite.Content" xml:space="preserve"><value>https://ruhenheim.org</value></data>
-  <data name="AboutSupport.Content" xml:space="preserve"><value>Report bugs or request features (GitHub)</value></data>
-  <data name="AboutRepository.Content" xml:space="preserve"><value>Source code</value></data>
-  <data name="AboutStoreHeading.Text" xml:space="preserve"><value>Microsoft Store</value></data>
+  <data name="AboutLinksHeading.Text" xml:space="preserve"><value>Help and feedback</value></data>
+  <data name="AboutTechnicalDetails.Header" xml:space="preserve"><value>App details</value></data>
+  <data name="AboutTechnicalDetails.Description" xml:space="preserve"><value>Distribution and package identity</value></data>
+  <data name="AboutPackageLabel.Header" xml:space="preserve"><value>Package</value></data>
+  <data name="AboutVersionCaption.Text" xml:space="preserve"><value>Version</value></data>
+  <data name="AboutProviderValue.Text" xml:space="preserve"><value>By mmiyaji</value></data>
+  <data name="AboutWebsite.Header" xml:space="preserve"><value>Official website</value></data>
+  <data name="AboutWebsite.Description" xml:space="preserve"><value>ruhenheim.org</value></data>
+  <data name="AboutSupport.Header" xml:space="preserve"><value>Report a bug or suggest a feature</value></data>
+  <data name="AboutSupport.Description" xml:space="preserve"><value>GitHub Issues</value></data>
+  <data name="AboutStoreHeading.Header" xml:space="preserve"><value>Microsoft Store</value></data>
   <data name="AboutStorePage.Content" xml:space="preserve"><value>Open Store page</value></data>
   <data name="AboutCheckUpdates.Content" xml:space="preserve"><value>Check for updates</value></data>
   <data name="AboutLegalHeading.Text" xml:space="preserve"><value>Terms and privacy</value></data>
   <data name="AboutDataHandling.Text" xml:space="preserve"><value>This app exchanges messages with Slack or Mattermost and your configured agent CLI. The CLI may send prompts and related data to its AI service according to that service’s settings.</value></data>
-  <data name="AboutChangelog.Content" xml:space="preserve"><value>What's new</value></data>
-  <data name="AboutTerms.Content" xml:space="preserve"><value>Terms of use</value></data>
-  <data name="AboutPrivacy.Content" xml:space="preserve"><value>Privacy policy</value></data>
+  <data name="AboutTerms.Header" xml:space="preserve"><value>Terms of use</value></data>
+  <data name="AboutPrivacy.Header" xml:space="preserve"><value>Privacy policy</value></data>
   <data name="AboutExit.Content" xml:space="preserve"><value>Exit application</value></data>
   <data name="InboxConversationsHeading.Text" xml:space="preserve"><value>Conversations</value></data>
   <data name="InboxConversationHelp.Text" xml:space="preserve"><value>Search by sender, channel, thread, or message. New activity appears first.</value></data>
@@ -1085,8 +1085,8 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="TrayUnavailable" xml:space="preserve"><value>The system tray is unavailable. This window will remain open.</value></data>
   <data name="StartWithWindows.OnContent" xml:space="preserve"><value>On</value></data>
   <data name="StartWithWindows.OffContent" xml:space="preserve"><value>Off</value></data>
-  <data name="PortableUpdateHeading.Text" xml:space="preserve"><value>Portable version updates</value></data>
-  <data name="PortableUpdateDescription.Text" xml:space="preserve"><value>Check GitHub for a portable release. Your settings stay in place, and the app restarts only after you choose to apply an update.</value></data>
+  <data name="PortableUpdateHeading.Header" xml:space="preserve"><value>Portable version updates</value></data>
+  <data name="PortableUpdateDescription.Text" xml:space="preserve"><value>Update the portable app while keeping your settings.</value></data>
   <data name="PortableUpdateIncludePrereleases.Content" xml:space="preserve"><value>Include preview releases</value></data>
   <data name="PortableUpdateIncludePrereleases.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Include preview releases</value></data>
   <data name="PortableCheckUpdates.Content" xml:space="preserve"><value>Check for updates</value></data>
@@ -1095,7 +1095,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PortableCancelUpdate.Content" xml:space="preserve"><value>Cancel</value></data>
   <data name="PortableUpdateAutomaticChecks.Content" xml:space="preserve"><value>Automatically check for updates</value></data>
   <data name="PortableUpdateAutomaticHelp.Text" xml:space="preserve"><value>Checks at startup and periodically while the app is running, including in the tray. Downloads and restarts require your action.</value></data>
-  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>View release notes</value></data>
+  <data name="PortableUpdatePrereleasesHelp.Text" xml:space="preserve"><value>Include preview versions when checking for updates.</value></data>
+  <data name="PortableUpdatePreferences.Header" xml:space="preserve"><value>Update settings</value></data>
+  <data name="PortableUpdatePreferences.Description" xml:space="preserve"><value>Automatic checks and preview releases</value></data>
+  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>Release notes (GitHub)</value></data>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLI check failed</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Start this app when signing in to Windows</value></data>
   <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Chat to connect automatically when the app starts</value></data>

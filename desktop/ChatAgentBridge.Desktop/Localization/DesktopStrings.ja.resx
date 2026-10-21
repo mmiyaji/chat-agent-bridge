@@ -305,11 +305,6 @@
   <data name="AboutStoreCheckFailed" xml:space="preserve"><value>更新を確認できませんでした。後でもう一度試すか、Microsoft Store のページを開いてください。</value></data>
   <data name="AboutStoreOpenFailed" xml:space="preserve"><value>Microsoft Store のページを開けませんでした。</value></data>
   <data name="AboutOpenLinkFailed" xml:space="preserve"><value>リンクを開けませんでした。ブラウザーまたはメールアプリが利用できるか確認してください。</value></data>
-  <data name="AboutChangelogTitle" xml:space="preserve"><value>開発プレビューの更新内容</value></data>
-  <data name="AboutChangelogContent" xml:space="preserve"><value>・製品情報・サポート先・規約をまとめた「情報」を追加しました。&#10;・ライト／ダーク／システムに合わせる外観設定を追加しました。&#10;・日本語と英語に対応し、言語の自動選択を追加しました。&#10;・初期設定ウィザードと利用条件の同意画面を追加しました。&#10;&#10;ネイティブ版では、Slack／Mattermostからの依頼、ユーザー・スレッドのアクセス制御、会話の継続、CLI・モデル・推論の強さの設定、利用量・履歴の確認にも対応しています。</value></data>
-  <data name="AboutExitTitle" xml:space="preserve"><value>Chat Agent Bridge を終了しますか？</value></data>
-  <data name="AboutExitMessage" xml:space="preserve"><value>終了すると、実行中の作業をキャンセルし、チャット接続を切断します。</value></data>
-  <data name="AboutExitConfirm" xml:space="preserve"><value>終了</value></data>
   <data name="HistoryProviderAll" xml:space="preserve"><value>すべてのサービス</value></data>
   <data name="HistoryUnknownOrigin" xml:space="preserve"><value>接続先不明</value></data>
   <data name="HistoryConversationsTab" xml:space="preserve"><value>会話 ({0})</value></data>

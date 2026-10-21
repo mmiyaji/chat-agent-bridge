@@ -826,23 +826,23 @@
   <data name="NavAbout.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>情報</value></data>
   <data name="AboutHeading.Text" xml:space="preserve"><value>情報</value></data>
   <data name="AboutDescription.Text" xml:space="preserve"><value>製品情報、更新、法的情報を確認できます。</value></data>
-  <data name="AboutProductHeading.Text" xml:space="preserve"><value>アプリケーション</value></data>
-  <data name="AboutProductLabel.Text" xml:space="preserve"><value>製品</value></data>
-  <data name="AboutVersionLabel.Text" xml:space="preserve"><value>バージョン</value></data>
-  <data name="AboutPackageLabel.Text" xml:space="preserve"><value>パッケージ</value></data>
-  <data name="AboutLinksHeading.Text" xml:space="preserve"><value>リンクと作成者</value></data>
-  <data name="AboutProviderLabel.Text" xml:space="preserve"><value>作成者</value></data>
-  <data name="AboutWebsite.Content" xml:space="preserve"><value>https://ruhenheim.org</value></data>
-  <data name="AboutSupport.Content" xml:space="preserve"><value>不具合報告・機能の提案（GitHub）</value></data>
-  <data name="AboutRepository.Content" xml:space="preserve"><value>ソースコード</value></data>
-  <data name="AboutStoreHeading.Text" xml:space="preserve"><value>Microsoft Store</value></data>
+  <data name="AboutPackageLabel.Header" xml:space="preserve"><value>パッケージ</value></data>
+  <data name="AboutLinksHeading.Text" xml:space="preserve"><value>ヘルプとフィードバック</value></data>
+  <data name="AboutTechnicalDetails.Header" xml:space="preserve"><value>アプリの詳細</value></data>
+  <data name="AboutTechnicalDetails.Description" xml:space="preserve"><value>配布形式・パッケージ識別名</value></data>
+  <data name="AboutVersionCaption.Text" xml:space="preserve"><value>バージョン</value></data>
+  <data name="AboutProviderValue.Text" xml:space="preserve"><value>作成者: mmiyaji</value></data>
+  <data name="AboutWebsite.Header" xml:space="preserve"><value>公式ウェブサイト</value></data>
+  <data name="AboutWebsite.Description" xml:space="preserve"><value>ruhenheim.org</value></data>
+  <data name="AboutSupport.Header" xml:space="preserve"><value>不具合報告・機能の提案</value></data>
+  <data name="AboutSupport.Description" xml:space="preserve"><value>GitHub Issues</value></data>
+  <data name="AboutStoreHeading.Header" xml:space="preserve"><value>Microsoft Store</value></data>
   <data name="AboutStorePage.Content" xml:space="preserve"><value>Store ページを開く</value></data>
   <data name="AboutCheckUpdates.Content" xml:space="preserve"><value>更新を確認</value></data>
   <data name="AboutLegalHeading.Text" xml:space="preserve"><value>利用規約とプライバシー</value></data>
   <data name="AboutDataHandling.Text" xml:space="preserve"><value>このアプリは Slack または Mattermost と、設定済みのエージェント CLI との間でメッセージをやり取りします。CLI は、そのサービスの設定に従ってプロンプトや関連データを AI サービスへ送信する場合があります。</value></data>
-  <data name="AboutChangelog.Content" xml:space="preserve"><value>更新内容</value></data>
-  <data name="AboutTerms.Content" xml:space="preserve"><value>利用規約</value></data>
-  <data name="AboutPrivacy.Content" xml:space="preserve"><value>プライバシーポリシー</value></data>
+  <data name="AboutTerms.Header" xml:space="preserve"><value>利用規約</value></data>
+  <data name="AboutPrivacy.Header" xml:space="preserve"><value>プライバシーポリシー</value></data>
   <data name="AboutExit.Content" xml:space="preserve"><value>アプリを終了</value></data>
   <data name="InboxConversationsHeading.Text" xml:space="preserve"><value>会話</value></data>
   <data name="InboxConversationHelp.Text" xml:space="preserve"><value>送信者、チャンネル、スレッド、メッセージを検索できます。新しい会話が先に表示されます。</value></data>
@@ -1085,8 +1085,8 @@
   <data name="TrayUnavailable" xml:space="preserve"><value>システム トレイを利用できないため、このウィンドウは開いたままになります。</value></data>
   <data name="StartWithWindows.OnContent" xml:space="preserve"><value>オン</value></data>
   <data name="StartWithWindows.OffContent" xml:space="preserve"><value>オフ</value></data>
-  <data name="PortableUpdateHeading.Text" xml:space="preserve"><value>ポータブル版の更新</value></data>
-  <data name="PortableUpdateDescription.Text" xml:space="preserve"><value>GitHubでポータブル版のリリースを確認します。設定はそのまま引き継がれ、更新の適用を選んだ場合にのみアプリが再起動します。</value></data>
+  <data name="PortableUpdateHeading.Header" xml:space="preserve"><value>ポータブル版の更新</value></data>
+  <data name="PortableUpdateDescription.Text" xml:space="preserve"><value>設定を引き継いでポータブル版を更新できます。</value></data>
   <data name="PortableUpdateIncludePrereleases.Content" xml:space="preserve"><value>プレビュー版を含める</value></data>
   <data name="PortableUpdateIncludePrereleases.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>プレビュー版を含める</value></data>
   <data name="PortableCheckUpdates.Content" xml:space="preserve"><value>更新を確認</value></data>
@@ -1095,7 +1095,10 @@
   <data name="PortableCancelUpdate.Content" xml:space="preserve"><value>キャンセル</value></data>
   <data name="PortableUpdateAutomaticChecks.Content" xml:space="preserve"><value>定期的に更新を確認する</value></data>
   <data name="PortableUpdateAutomaticHelp.Text" xml:space="preserve"><value>起動時とアプリの起動中に定期的に確認します。トレイ常駐中も有効です。ダウンロードと再起動は手動です。</value></data>
-  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>更新内容を見る</value></data>
+  <data name="PortableUpdatePrereleasesHelp.Text" xml:space="preserve"><value>更新の確認時にプレビュー版も含めます。</value></data>
+  <data name="PortableUpdatePreferences.Header" xml:space="preserve"><value>更新の設定</value></data>
+  <data name="PortableUpdatePreferences.Description" xml:space="preserve"><value>自動確認・プレビュー版</value></data>
+  <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>リリースノート（GitHub）</value></data>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLIを確認できませんでした</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Windowsログイン時にこのアプリを起動</value></data>
   <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>アプリ起動後に自動接続するチャット</value></data>

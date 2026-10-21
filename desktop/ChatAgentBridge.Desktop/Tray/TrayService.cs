@@ -75,7 +75,9 @@ public sealed class TrayService : IDisposable
         else _ = ShowCloseConfirmationAsync();
     }
 
-    private async Task ShowCloseConfirmationAsync()
+    // Explicit close actions offer the same choices even when closing the
+    // title bar is configured to hide the window immediately.
+    public async Task ShowCloseConfirmationAsync()
     {
         if (_closeConfirmationOpen || _disposed || _exitTask is not null)
             return;

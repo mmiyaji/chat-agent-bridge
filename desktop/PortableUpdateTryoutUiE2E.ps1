@@ -9,10 +9,29 @@ function UI([string[]]$commands){$out=winapp ui @commands -a $app.Id --json;if($
 function Element([string]$id){$app.Refresh();[Windows.Automation.AutomationElement]::FromHandle($app.MainWindowHandle).FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$id))}
 function Name([string]$id){$e=Element $id;if($e){$e.Current.Name}else{''}}
 function Ready([string]$id){$e=Element $id;$e -and -not $e.Current.IsOffscreen -and $e.Current.IsEnabled}
+function Visible([string]$id){$e=Element $id;$e -and -not $e.Current.IsOffscreen -and $e.Current.BoundingRectangle.Height -gt 0}
 function Enabled([string]$id){$e=Element $id;$e -and $e.Current.IsEnabled}
 function Wait([scriptblock]$condition,[string]$failure,[int]$seconds=30){$end=[DateTime]::UtcNow.AddSeconds($seconds);do{if(& $condition){return};Start-Sleep -Milliseconds 100}while([DateTime]::UtcNow -lt $end);throw $failure}
 function Capture([string]$label){UI @('screenshot','-o',(Join-Path $demo.Root ($label+'.png')))|Out-Null}
 function Pass([string]$label){$checks.Add($label);Write-Output "PASS $label"}
+function Ensure-Expanded([string]$groupId,[string]$targetId){
+ $target=Element $targetId
+ if($target){try{UI @('scroll-into-view',$targetId)|Out-Null}catch{};if(Visible $targetId){return}}
+ $group=Element $groupId;Assert ($null -ne $group) "Missing settings expander: $groupId"
+ $button=$group.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Button))
+ Assert ($null -ne $button) "Missing settings expander header button: $groupId"
+ $pattern=$null;$acted=$false
+ if($button.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern,[ref]$pattern)){
+  if($pattern.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed){$pattern.Expand()};$acted=$true
+ }
+ if(-not $acted -and $button.TryGetCurrentPattern([Windows.Automation.TogglePattern]::Pattern,[ref]$pattern)){
+  if($pattern.Current.ToggleState -eq [Windows.Automation.ToggleState]::Off){$pattern.Toggle()};$acted=$true
+ }
+ if(-not $acted -and $button.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern,[ref]$pattern)){if(-not $target){$pattern.Invoke()};$acted=$true}
+ Assert $acted "Settings expander header has no supported UIA pattern: $groupId"
+ UI @('scroll-into-view',$targetId)|Out-Null
+ Wait {Visible $targetId} "Settings control did not become visible: $targetId" 5
+}
 function Reach([string]$id){Wait {Enabled $id} "Update action did not become enabled: $id" 60;UI @('scroll-into-view',$id)|Out-Null;Wait {Ready $id} "Update action is not reachable: $id" 5}
 try{
  UI @('wait-for','NavAbout','-t','15000')|Out-Null
@@ -20,11 +39,13 @@ try{
  UI @('scroll-into-view','PortableCheckUpdates')|Out-Null
  $before=(Name 'AboutVersion')
  $preserved=@{};foreach($name in @('language.json','appearance.json','update-retention-marker.txt')){$preserved[$name]=(Get-FileHash (Join-Path $demo.Data $name)).Hash}
+ Ensure-Expanded 'PortableUpdatePreferences' 'PortableUpdateIncludePrereleases'
  UI @('invoke','PortableUpdateIncludePrereleases')|Out-Null
  Wait {Ready 'PortableCheckUpdates'} 'Preview preference did not finish saving'
  UI @('invoke','PortableCheckUpdates')|Out-Null
  Wait {(Ready 'PortableCheckUpdates') -and (Name 'PortableUpdateStatus') -match '見つかりませんでした'} 'Disabled preview releases still offered a preview'
  Pass 'Preview filter hides the local preview update'
+ Ensure-Expanded 'PortableUpdatePreferences' 'PortableUpdateIncludePrereleases'
  UI @('invoke','PortableUpdateIncludePrereleases')|Out-Null
  Wait {Ready 'PortableCheckUpdates'} 'Preview preference did not finish saving'
  UI @('invoke','PortableCheckUpdates')|Out-Null

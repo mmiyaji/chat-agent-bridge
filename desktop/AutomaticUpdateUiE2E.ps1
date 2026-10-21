@@ -22,6 +22,24 @@ function Name([string]$id){$e=Element $id;if($e){$e.Current.Name}else{''}}
 function Visible([string]$id){$e=Element $id;$e -and -not $e.Current.IsOffscreen -and $e.Current.BoundingRectangle.Height -gt 0}
 function Enabled([string]$id){$e=Element $id;$e -and $e.Current.IsEnabled}
 function Wait([scriptblock]$condition,[string]$message,[int]$seconds=30){$end=[DateTime]::UtcNow.AddSeconds($seconds);do{if(& $condition){return};Start-Sleep -Milliseconds 100}while([DateTime]::UtcNow -lt $end);throw $message}
+function Ensure-Expanded([string]$groupId,[string]$targetId){
+  $target=Element $targetId
+  if($target){try{UI @('scroll-into-view',$targetId)|Out-Null}catch{};if(Visible $targetId){return}}
+  $group=Element $groupId;Assert ($null -ne $group) "Missing settings expander: $groupId"
+  $button=$group.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Button))
+  Assert ($null -ne $button) "Missing settings expander header button: $groupId"
+  $pattern=$null;$acted=$false
+  if($button.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern,[ref]$pattern)){
+    if($pattern.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed){$pattern.Expand()};$acted=$true
+  }
+  if(-not $acted -and $button.TryGetCurrentPattern([Windows.Automation.TogglePattern]::Pattern,[ref]$pattern)){
+    if($pattern.Current.ToggleState -eq [Windows.Automation.ToggleState]::Off){$pattern.Toggle()};$acted=$true
+  }
+  if(-not $acted -and $button.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern,[ref]$pattern)){if(-not $target){$pattern.Invoke()};$acted=$true}
+  Assert $acted "Settings expander header has no supported UIA pattern: $groupId"
+  UI @('scroll-into-view',$targetId)|Out-Null
+  Wait {Visible $targetId} "Settings control did not become visible: $targetId" 5
+}
 function Capture([string]$name){UI @('screenshot','-o',(Join-Path $demo.Root ($name+'.png')))|Out-Null}
 function Preferences{Get-Content (Join-Path $demo.Data 'portable-update.json') -Raw|ConvertFrom-Json}
 function Save-Preferences($value){$value|ConvertTo-Json -Depth 10|Set-Content (Join-Path $demo.Data 'portable-update.json') -Encoding utf8}
@@ -65,6 +83,7 @@ try{
    if($width -eq 500){if(-not (Visible 'NavAbout')){UI @('invoke','TogglePaneButton')|Out-Null};Wait {(Visible 'NavAbout') -and (Visible 'NavAboutUpdateBadge')} 'Narrow sidebar hides the update icon' 5;Capture "$locale-$theme-500-sidebar";UI @('invoke','NavAbout')|Out-Null}
   }
   Resize 1160
+  Ensure-Expanded 'PortableUpdatePreferences' 'PortableUpdateAutomaticChecks'
   UI @('scroll-into-view','PortableUpdateAutomaticChecks')|Out-Null
   UI @('invoke','PortableUpdateAutomaticChecks')|Out-Null
   Wait { -not (Preferences).automaticChecksEnabled -and (Enabled 'PortableUpdateAutomaticChecks')} 'Automatic check setting was not saved'
@@ -75,6 +94,7 @@ try{
   Launch
   Wait {(Name 'NavAbout').Contains($demo.UpdateVersion)} 'Restart lost the cached update badge' 5
   Go-About
+  Ensure-Expanded 'PortableUpdatePreferences' 'PortableUpdateAutomaticChecks'
   Assert ((Element 'PortableUpdateAutomaticChecks').GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Current.ToggleState -eq [Windows.Automation.ToggleState]::Off) 'Restart lost disabled automatic checks'
   if($locale -eq 'ja' -and $theme -eq 'light'){
    $attempt=(Preferences).lastAttemptUtc;Start-Sleep -Seconds 17
@@ -84,6 +104,7 @@ try{
   Wait {(Enabled 'PortableCheckUpdates') -and -not (Name 'NavAbout').Contains($demo.UpdateVersion)} 'Manual check while automatic checks are disabled did not clear the obsolete badge'
   Assert ((Element 'PortableUpdateReleaseNotes').Current.HelpText -eq 'https://github.com/mmiyaji/chat-agent-bridge/releases') 'No-update link does not point to the release listing'
   Capture "$locale-$theme-off-manual"
+  Ensure-Expanded 'PortableUpdatePreferences' 'PortableUpdateAutomaticChecks'
   UI @('scroll-into-view','PortableUpdateAutomaticChecks')|Out-Null
   UI @('invoke','PortableUpdateAutomaticChecks')|Out-Null
   Wait {(Preferences).automaticChecksEnabled -and (Enabled 'PortableUpdateAutomaticChecks')} 'Automatic checks could not be enabled again'
@@ -91,6 +112,7 @@ try{
    $path=Join-Path $demo.Data 'portable-update.json';$attributes=[IO.File]::GetAttributes($path)
    try{
     [IO.File]::SetAttributes($path,$attributes -bor [IO.FileAttributes]::ReadOnly)
+    Ensure-Expanded 'PortableUpdatePreferences' 'PortableUpdateAutomaticChecks'
     UI @('invoke','PortableUpdateAutomaticChecks')|Out-Null
     Wait {(Visible 'PortableUpdatePreferenceError') -and (Enabled 'PortableUpdateAutomaticChecks')} 'Save failure was not reported'
     Assert ((Preferences).automaticChecksEnabled) 'Failed save changed the persisted preference'
