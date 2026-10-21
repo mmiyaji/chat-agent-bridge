@@ -32,6 +32,17 @@ public sealed class FileAttachmentSharingServiceTests : IDisposable
     { _confirmations++; return Task.FromResult<IReadOnlyList<FileAttachmentCandidate>?>(files); }
     private static Task<bool> Allowed(CancellationToken token) { token.ThrowIfCancellationRequested(); return Task.FromResult(true); }
 
+    private async Task<FileAttachmentCandidate> CreateCandidateAsync(string name, long length)
+    {
+        var path = Path.Combine(Workspace, name);
+        await using (var output = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+            output.SetLength(length);
+        await using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var hash = Convert.ToHexString(await System.Security.Cryptography.SHA256.HashDataAsync(input)).ToLowerInvariant();
+        var info = new FileInfo(path);
+        return new(path, name, info.Length, info.LastWriteTimeUtc, hash);
+    }
+
     [Fact]
     public async Task TextAutoReplyAndExecutionApprovalNeverAuthorizeDefaultFileUpload()
     {
@@ -119,6 +130,42 @@ public sealed class FileAttachmentSharingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task RevocationOnFinalScopeCheckAfterPreparationPreventsUpload()
+    {
+        var context = await ContextAsync();
+        var checks = 0;
+        var result = await new FileAttachmentSharingService(Data).ShareAsync(context, false, Accept,
+            _ => Task.FromResult(++checks < 3), Upload);
+        Assert.Equal(FileAttachmentShareOutcome.ScopeChanged, result);
+        Assert.Equal(3, checks);
+        Assert.Equal(0, _uploads);
+    }
+
+    [Fact]
+    public async Task CancellationDuringConfirmationPreventsUpload()
+    {
+        var context = await ContextAsync();
+        using var cancellation = new CancellationTokenSource();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new FileAttachmentSharingService(Data).ShareAsync(context, false,
+            (files, _, _) => { cancellation.Cancel(); return Task.FromResult<IReadOnlyList<FileAttachmentCandidate>?>(files); },
+            Allowed, Upload, cancellation.Token));
+        Assert.Equal(0, _uploads);
+    }
+
+    [Theory]
+    [InlineData("NONE")]
+    [InlineData(" none ")]
+    public async Task NoncanonicalPrivateModeBlocksConfirmationAndUpload(string mode)
+    {
+        var context = await ContextAsync("auto");
+        context = context with { Settings = context.Settings with { ChatResultMode = mode } };
+        var result = await new FileAttachmentSharingService(Data).ShareAsync(context, false, Accept, Allowed, Upload);
+        Assert.Equal(FileAttachmentShareOutcome.Private, result);
+        Assert.Equal(0, _confirmations);
+        Assert.Equal(0, _uploads);
+    }
+
+    [Fact]
     public async Task FileMutationDuringConsentIsNotUploaded()
     {
         var context = await ContextAsync();
@@ -148,6 +195,50 @@ public sealed class FileAttachmentSharingServiceTests : IDisposable
         Assert.Equal(FileAttachmentShareOutcome.Sent,
             await new FileAttachmentSharingService(Data).ShareAsync(context, true, null, Allowed, Upload));
         Assert.Equal(1, _uploads); Assert.Equal(0, _confirmations);
+    }
+
+    [Theory]
+    [InlineData("count")]
+    [InlineData("each")]
+    [InlineData("total")]
+    public async Task ManualConfirmationCannotExceedConfiguredLimits(string limit)
+    {
+        var context = await ContextAsync();
+        var files = new List<FileAttachmentCandidate>();
+        var settings = context.Settings;
+        if (limit == "count")
+        {
+            settings = settings with { FileAttachmentMaxCount = 1 };
+            files.Add(context.Candidates[0]);
+            files.Add(await CreateCandidateAsync("second.txt", 16));
+        }
+        else if (limit == "each")
+        {
+            settings = settings with { FileAttachmentMaxSizeMb = 1 };
+            files.Add(await CreateCandidateAsync("over-limit.txt", 1024L * 1024 + 1));
+        }
+        else
+        {
+            settings = settings with { FileAttachmentMaxTotalSizeMb = 1 };
+            files.Add(await CreateCandidateAsync("first-part.txt", 600 * 1024));
+            files.Add(await CreateCandidateAsync("second-part.txt", 600 * 1024));
+        }
+        context = context with { Settings = settings, Candidates = files };
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => new FileAttachmentSharingService(Data).ShareAsync(context, false,
+            (selected, _, _) => { _confirmations++; return Task.FromResult<IReadOnlyList<FileAttachmentCandidate>?>(selected); }, Allowed, Upload));
+        Assert.Equal(1, _confirmations);
+        Assert.Equal(0, _uploads);
+    }
+
+    [Fact]
+    public async Task ManualConfirmationCannotForgeAnUnknownCandidate()
+    {
+        var context = await ContextAsync();
+        await Assert.ThrowsAsync<InvalidDataException>(() => new FileAttachmentSharingService(Data).ShareAsync(context, false,
+            (selected, _, _) => Task.FromResult<IReadOnlyList<FileAttachmentCandidate>?>([selected[0] with { RelativePath = "forged.txt" }]),
+            Allowed, Upload));
+        Assert.Equal(0, _uploads);
     }
 
     [Fact]
