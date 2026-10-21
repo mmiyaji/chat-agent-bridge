@@ -254,6 +254,7 @@ public sealed class PendingRequestNotificationService
             {
                 case PendingNotificationRegistry.Outcome.Completed:
                     RemoveToast(token);
+                    SetStatus(DesktopText.Get("NotificationAvailable"));
                     ActionCompleted?.Invoke();
                     break;
                 case PendingNotificationRegistry.Outcome.Busy:

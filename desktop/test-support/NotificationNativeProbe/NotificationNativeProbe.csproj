@@ -1,0 +1,67 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>NotificationNativeProbe</RootNamespace>
+    <AssemblyName>NotificationNativeProbe</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WinUISDKReferences>false</WinUISDKReferences>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- This harness is intentionally a separate portable distribution. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+    <EnableWinAppRunSupport>false</EnableWinAppRunSupport>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <Compile Include="../../ChatAgentBridge.Desktop/Notifications/*.cs" Link="Production/Notifications/%(Filename)%(Extension)" />
+    <Compile Include="../../ChatAgentBridge.Desktop/Localization/DesktopText.cs" Link="Production/DesktopText.cs" />
+    <EmbeddedResource Include="../../ChatAgentBridge.Desktop/Localization/DesktopStrings*.resx" Link="Production/%(Filename)%(Extension)">
+      <LogicalName>ChatAgentBridge_Desktop.Localization.%(Filename).resources</LogicalName>
+    </EmbeddedResource>
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+  <!-- Match the production portable notification runtime dependency. -->
+  <UsingTask TaskName="ExtractProbeNotificationResource" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <ArchivePath ParameterType="System.String" Required="true" />
+      <DestinationFile ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" /><Using Namespace="System.IO.Compression" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        using (var archive = new ZipArchive(File.OpenRead(ArchivePath), ZipArchiveMode.Read))
+        {
+            var entry = archive.GetEntry("Microsoft.WindowsAppRuntime.Insights.Resource.dll");
+            if (entry == null) { Log.LogError("Notification runtime resource missing."); }
+            else {
+                Directory.CreateDirectory(Path.GetDirectoryName(DestinationFile));
+                using (var source = entry.Open()) using (var destination = File.Create(DestinationFile)) source.CopyTo(destination);
+            }
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <PropertyGroup>
+    <_ProbeArchitecture Condition="'$(RuntimeIdentifier)' == 'win-x64'">x64</_ProbeArchitecture>
+    <_ProbeArchitecture Condition="'$(RuntimeIdentifier)' == 'win-arm64'">arm64</_ProbeArchitecture>
+    <_ProbeResource>$(MSBuildProjectDirectory)/obj/$(Platform)/$(Configuration)/$(RuntimeIdentifier)/probe-deps/Microsoft.WindowsAppRuntime.Insights.Resource.dll</_ProbeResource>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="$(_ProbeResource)" Link="Microsoft.WindowsAppRuntime.Insights.Resource.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="ExtractProbeNotificationResource" BeforeTargets="GetCopyToOutputDirectoryItems">
+    <Error Condition="'$(_ProbeArchitecture)' == ''" Text="Use win-x64 or win-arm64." />
+    <ExtractProbeNotificationResource ArchivePath="$(PkgMicrosoft_WindowsAppSDK_Runtime)/tools/MSIX/win10-$(_ProbeArchitecture)/Microsoft.WindowsAppRuntime.2.msix" DestinationFile="$(_ProbeResource)" />
+  </Target>
+</Project>
