@@ -310,7 +310,7 @@
                                         </StackPanel>
                                     </Expander.Header>
                                     <StackPanel Spacing="12">
-                                        <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="TrustedWorkspaceCard">
+                                        <Border x:Name="TrustedWorkspaceCard" Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="TrustedWorkspaceCard">
                                             <StackPanel Spacing="8">
                                                 <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock025" x:Uid="chatAgentBridgeDesktopMainPageTextBlock025" />
                                                 <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock026" x:Uid="chatAgentBridgeDesktopMainPageTextBlock026" />
@@ -468,6 +468,18 @@
                                 <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock045" x:Uid="chatAgentBridgeDesktopMainPageTextBlock045" />
                                 <TextBlock Text="{x:Bind ViewModel.SavedAgentSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WorkbenchAgentSummary" />
                                 <HyperlinkButton  Click="OpenAgentSettings_Click" AutomationProperties.AutomationId="OpenAgentSettings"  x:Uid="OpenAgentSettings" />
+                                <InfoBar x:Uid="ManualWorkspaceError" Severity="Warning" IsClosable="False"
+                                         IsOpen="{x:Bind ViewModel.HasManualWorkspaceError, Mode=OneWay}"
+                                         Message="{x:Bind ViewModel.ManualWorkspaceError, Mode=OneWay}"
+                                         AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="ManualWorkspaceError">
+                                    <StackPanel Spacing="8">
+                                        <Button x:Uid="CliReviewTrust" Click="ReviewCliTrust_Click"
+                                                Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasManualTrustRecovery), Mode=OneWay}"
+                                                AutomationProperties.AutomationId="ManualReviewTrust" />
+                                        <HyperlinkButton x:Uid="ManualWorkspaceSettings" Click="OpenManualWorkspaceSettings_Click"
+                                                         AutomationProperties.AutomationId="ManualWorkspaceSettings" />
+                                    </StackPanel>
+                                </InfoBar>
                                 <TextBox  Text="{x:Bind ViewModel.Prompt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="100" MaxHeight="180" AutomationProperties.AutomationId="Prompt"  x:Uid="Prompt" />
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <Button  Command="{x:Bind ViewModel.RunCommand}" AutomationProperties.AutomationId="RunAgent"  x:Uid="RunAgent" />

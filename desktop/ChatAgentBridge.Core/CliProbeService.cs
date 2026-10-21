@@ -64,14 +64,7 @@ public sealed class CliProbeService
         ArgumentNullException.ThrowIfNull(settings);
         var provider = AgentProfile.ResolveProvider(settings);
         var configured = AgentProfile.ResolveEffectiveExecutable(settings);
-        var cwd = settings.WorkspaceRoot;
-        if (string.IsNullOrWhiteSpace(cwd)) throw new InvalidOperationException(CoreText.Get("WorkspaceRequired"));
-        if (!IsFullyQualifiedWorkspacePath(cwd)) throw new InvalidOperationException(CoreText.Get("WorkspacePathMustBeAbsolute", cwd));
-        string workspace;
-        try { workspace = Path.GetFullPath(cwd); }
-        catch (Exception ex) when (IsInvalidWorkspacePathException(ex)) { throw new InvalidOperationException(CoreText.Get("WorkspacePathInvalid", cwd)); }
-        if (!Directory.Exists(workspace)) throw new InvalidOperationException(CoreText.Get("WorkspaceFolderNotFound", workspace));
-        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, workspace)) throw DescribeUntrustedWorkspace(workspace);
+        var workspace = ValidateWorkspace(settings);
         var probeExecutable = configured;
         if (!Path.IsPathFullyQualified(probeExecutable) &&
             (probeExecutable.Contains(Path.DirectorySeparatorChar) || probeExecutable.Contains(Path.AltDirectorySeparatorChar)))
@@ -94,6 +87,21 @@ public sealed class CliProbeService
             ? AgentProfile.GetNodeProbePrefix(settings, provider) : Array.Empty<string>();
         return new CliProbeLaunch(provider, workspace, executable, prefix,
             nodePackage?.EntryPoint ?? (AgentProfile.IsNodeExecutable(executable) ? prefix.FirstOrDefault() : null), nodePackage?.PackageName);
+    }
+
+    /// <summary>Validates and canonicalizes the configured workspace without executing a CLI or changing trust settings.</summary>
+    public static string ValidateWorkspace(BridgeSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        var cwd = settings.WorkspaceRoot;
+        if (string.IsNullOrWhiteSpace(cwd)) throw new InvalidOperationException(CoreText.Get("WorkspaceRequired"));
+        if (!IsFullyQualifiedWorkspacePath(cwd)) throw new InvalidOperationException(CoreText.Get("WorkspacePathMustBeAbsolute", cwd));
+        string workspace;
+        try { workspace = Path.GetFullPath(cwd); }
+        catch (Exception ex) when (IsInvalidWorkspacePathException(ex)) { throw new InvalidOperationException(CoreText.Get("WorkspacePathInvalid", cwd)); }
+        if (!Directory.Exists(workspace)) throw new InvalidOperationException(CoreText.Get("WorkspaceFolderNotFound", workspace));
+        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, workspace)) throw DescribeUntrustedWorkspace(workspace);
+        return workspace;
     }
 
     /// <summary>Builds a localized, read-only diagnosis for a workspace rejected by the trust policy.</summary>

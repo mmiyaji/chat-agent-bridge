@@ -5,6 +5,23 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
+    private void OpenManualWorkspaceSettings_Click(object sender, RoutedEventArgs e)
+    {
+        OpenAgentSettings_Click(sender, e);
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (!IsAgentSelected) return;
+            // The explicit section jump supersedes the navigation's queued scroll reset.
+            ++_scrollResetGeneration;
+            AgentCommonSettings.IsExpanded = true;
+            MainNavigation.UpdateLayout();
+            MainContentScroll.UpdateLayout();
+            var target = TrustedWorkspaceCard.TransformToVisual((UIElement)MainContentScroll.Content)
+                .TransformPoint(new Windows.Foundation.Point(0, 0));
+            MainContentScroll.ChangeView(null, target.Y, null, true);
+        });
+    }
+
     private async void ReviewCliTrust_Click(object sender, RoutedEventArgs e) =>
         await CliTrustDialog.ShowAsync(ViewModel, XamlRoot);
 

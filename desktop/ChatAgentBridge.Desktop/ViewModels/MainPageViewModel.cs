@@ -59,6 +59,8 @@ public partial class MainPageViewModel : ObservableObject
             if (e.PropertyName == nameof(IsLoading) && !IsLoading) RefreshSettingsDraftChanges();
             if (e.PropertyName is nameof(HasUnsavedSettings) or nameof(IsSensitiveConfirmationPending))
                 RunCommand.NotifyCanExecuteChanged();
+            if (e.PropertyName is nameof(HasUnsavedSettings) or nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning) or nameof(IsCheckingCli))
+                OnPropertyChanged(nameof(HasManualTrustRecovery));
             if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning) or nameof(AgentReasoningEffort) or nameof(SelectedReasoningEffort))
                 OnPropertyChanged(nameof(CanSavePendingSettings));
             WizardSettingChanged(e.PropertyName);
@@ -530,6 +532,8 @@ public partial class MainPageViewModel : ObservableObject
             return;
         }
 
+        if (!ValidateManualWorkspace(settingsSnapshot)) return;
+
         IsRunning = true;
         IsCancellationPending = false;
         if (settingsSnapshot.RequireApproval)
@@ -558,6 +562,8 @@ public partial class MainPageViewModel : ObservableObject
         }
 
         if (_closing) { IsRunning = false; return; }
+        // The directory may have been moved or replaced while confirmation was open.
+        if (!ValidateManualWorkspace(settingsSnapshot)) { IsRunning = false; return; }
         var execution = new ExecutionRecord
         {
             Id = Guid.NewGuid(),
@@ -865,9 +871,13 @@ public partial class MainPageViewModel : ObservableObject
     private static string ResultLabel(string value) => value switch
     { "auto" => ViewModelText.Get("ResultAutomatic"), "none" => ViewModelText.Get("ResultDoNotShare"), _ => ViewModelText.Get("ResultManual") };
 
-    private void UpdateSavedAgentSummary() => SavedAgentSummary = string.IsNullOrWhiteSpace(AgentExecutable)
-        ? ViewModelText.Get("AgentNotConfigured")
-        : ViewModelText.Get("SavedAgentSummary", AgentExecutable, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, AgentReasoningEffort ?? ViewModelText.Get("DefaultCliValue"), ViewModelText.Get(UseAppServer ? "InteractiveExecution" : "RunToCompletion"));
+    private void UpdateSavedAgentSummary()
+    {
+        SavedAgentSummary = string.IsNullOrWhiteSpace(AgentExecutable)
+            ? ViewModelText.Get("AgentNotConfigured")
+            : ViewModelText.Get("SavedAgentSummary", AgentExecutable, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, AgentReasoningEffort ?? ViewModelText.Get("DefaultCliValue"), ViewModelText.Get(UseAppServer ? "InteractiveExecution" : "RunToCompletion"));
+        if (_settings is not null) ValidateManualWorkspace(_settings);
+    }
 
     private void ApplyCatalogModelSelection(ModelOption option)
     {

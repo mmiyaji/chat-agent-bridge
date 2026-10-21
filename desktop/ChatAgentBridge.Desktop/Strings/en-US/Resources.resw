@@ -1167,4 +1167,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="SettingsAutoSaveRetry.Content" xml:space="preserve"><value>Review changes / retry</value></data>
   <data name="LoadRegisteredGeminiConnection.Content" xml:space="preserve"><value>Load registered Gemini CLI</value></data>
   <data name="LoadRegisteredCopilotConnection.Content" xml:space="preserve"><value>Load registered GitHub Copilot CLI</value></data>
+  <data name="ManualWorkspaceError.Title" xml:space="preserve"><value>Check the work folder before running</value></data>
+  <data name="ManualWorkspaceSettings.Content" xml:space="preserve"><value>Open trusted folder settings</value></data>
 </root>
