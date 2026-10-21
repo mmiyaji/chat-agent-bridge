@@ -898,6 +898,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            // A save can finish before RefreshAccessAsync updates its in-memory
+            // snapshot. Re-read the notice preference so turning it off takes
+            // effect immediately, while retaining the active connection target.
+            if (!(await _store.LoadAsync(timeout.Token)).PostConnectionNotice) return;
             await notifications.NotifyConnectionAsync(settings, message, timeout.Token);
         }
         catch (Exception) { if (!_closing) Status += " " + DesktopText.Get("InboxConnectionNoticeFailed"); }

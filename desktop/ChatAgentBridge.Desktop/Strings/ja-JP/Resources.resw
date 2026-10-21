@@ -475,13 +475,13 @@
     <value>有効にすると、Codex App Serverからの機密ではない質問と回答の選択肢をこのスレッドに投稿します。スレッドの参加者全員が見られます。App Serverが秘密として指定した質問はこのPCで回答し、投稿しません。この設定はCodex App Serverでのみ有効です。初期状態はオフです。反映するには保存してから再接続してください。</value>
   </data>
   <data name="PostConnectionNotice.Header" xml:space="preserve">
-    <value>接続時に案内を投稿する</value>
+    <value>接続・切断時に案内を投稿する</value>
   </data>
   <data name="PostConnectionNotice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>接続時に案内を投稿する</value>
+    <value>接続・切断時に案内を投稿する</value>
   </data>
   <data name="PostConnectionNoticeHelp.Text" xml:space="preserve">
-    <value>Mattermostへの接続時に、設定したチャンネルへ接続案内を投稿します。既定はオフです。変更は保存後、次の接続から反映されます。</value>
+    <value>Mattermostへの接続・切断時に、設定したチャンネルへ案内を投稿します。オフの場合は、どちらも投稿しません。既定はオフです。変更後は保存してください。</value>
   </data>
   <data name="SaveConnections.Content" xml:space="preserve">
     <value>接続設定を保存</value>

@@ -243,7 +243,7 @@
   <data name="AutoReply" xml:space="preserve"><value>自動返信</value></data>
   <data name="ManualShareShort" xml:space="preserve"><value>手動共有</value></data>
   <data name="AutoAllowEdits" xml:space="preserve"><value>編集を自動許可</value></data>
-  <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: 切断します。未実行の依頼・切断中に投稿する依頼は実行されません。再接続の通知後に必要な依頼を再投稿してください。</value></data>
+  <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: 切断します。未実行の依頼・切断中に投稿する依頼は実行されません。再接続後に必要な依頼を再投稿してください。</value></data>
   <data name="InboxClaudeLoginInstructions" xml:space="preserve"><value>Claude Codeが未ログインです。このWindowsユーザーでターミナルからClaude Codeを起動し、/login を完了してから再度依頼してください。Slackへの再ログインは不要です。</value></data>
   <data name="InboxUpdatedSessionLabel" xml:space="preserve"><value>継続セッション: {0}&#10;実行モデル: {1} / 推論レベル: {2}</value></data>
   <data name="InboxExecutionStateChatNotice" xml:space="preserve"><value>Chat Agent Bridge: {0}。結果はローカルのWinUI画面で確認してください。</value></data>

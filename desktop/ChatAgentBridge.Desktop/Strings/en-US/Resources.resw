@@ -475,13 +475,13 @@ Keep this app and your local PC running to stay connected.</value>
     <value>When enabled, nonsecret questions and answer choices from Codex App Server are posted in this thread, where every participant can see them. Questions the app server marks as secret are answered on this PC and are never posted. This applies only to Codex App Server. Off by default. Save and reconnect for this setting to take effect.</value>
   </data>
   <data name="PostConnectionNotice.Header" xml:space="preserve">
-    <value>Post a notice when connecting</value>
+    <value>Post notices when connecting or disconnecting</value>
   </data>
   <data name="PostConnectionNotice.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Post a notice when connecting</value>
+    <value>Post notices when connecting or disconnecting</value>
   </data>
   <data name="PostConnectionNoticeHelp.Text" xml:space="preserve">
-    <value>When connecting to Mattermost, post a connection notice to the configured channel. Off by default. Changes apply after saving, starting with the next connection.</value>
+    <value>Post connection and disconnection notices to the configured Mattermost channel. When off, neither notice is posted. Off by default. Save after changing this setting.</value>
   </data>
   <data name="SaveConnections.Content" xml:space="preserve">
     <value>Save connection settings</value>

@@ -243,7 +243,7 @@
   <data name="AutoReply" xml:space="preserve"><value>Automatic reply</value></data>
   <data name="ManualShareShort" xml:space="preserve"><value>Share manually</value></data>
   <data name="AutoAllowEdits" xml:space="preserve"><value>Automatically allow edits</value></data>
-  <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Disconnecting. Unexecuted requests and requests posted while disconnected will not run. Resubmit any needed requests after the reconnect notice.</value></data>
+  <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Disconnecting. Unexecuted requests and requests posted while disconnected will not run. Resubmit any needed requests after reconnecting.</value></data>
   <data name="InboxClaudeLoginInstructions" xml:space="preserve"><value>Claude Code is not logged in. In this Windows user account, open Claude Code in a terminal and complete /login, then submit the request again. You do not need to log in to Slack again.</value></data>
   <data name="InboxUpdatedSessionLabel" xml:space="preserve"><value>Continuing session: {0}&#10;Execution model: {1} / reasoning effort: {2}</value></data>
   <data name="InboxExecutionStateChatNotice" xml:space="preserve"><value>Chat Agent Bridge: {0}. Check the result in the local WinUI app.</value></data>
