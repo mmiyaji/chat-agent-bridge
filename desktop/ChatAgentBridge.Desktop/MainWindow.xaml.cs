@@ -36,6 +36,7 @@ public sealed partial class MainWindow : Window
         UpdateMinimumWindowSize();
         AppWindow.Resize(new SizeInt32((int)(1160 * scale), (int)(800 * scale)));
         WindowRoot.Loaded += WindowRoot_Loaded;
+        Activated += MainWindow_Activated;
         Closed += MainWindow_Closed;
 
         // Navigate the root frame to the main page on startup.
@@ -61,6 +62,12 @@ public sealed partial class MainWindow : Window
     }
 
     private void WindowRootXamlRoot_Changed(XamlRoot sender, XamlRootChangedEventArgs args) => UpdateMinimumWindowSize();
+
+    private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
+    {
+        if (args.WindowActivationState == WindowActivationState.Deactivated)
+            PasswordRevealControl.Hide(WindowRoot);
+    }
 
     private void MainWindow_Closed(object sender, WindowEventArgs args)
     {

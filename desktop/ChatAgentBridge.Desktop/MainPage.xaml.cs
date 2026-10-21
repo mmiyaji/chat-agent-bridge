@@ -33,6 +33,9 @@ public sealed partial class MainPage : Page
     public MainPage()
     {
         InitializeComponent();
+        PasswordRevealControl.Attach(MattermostTokenRevealButton, MattermostTokenBox);
+        PasswordRevealControl.Attach(SlackBotTokenRevealButton, SlackBotTokenBox);
+        PasswordRevealControl.Attach(SlackAppTokenRevealButton, SlackAppTokenBox);
         InitializeSettingsAutoSave();
         InitializeLanguageRestart();
         InitializePortableUpdateBadge();
@@ -249,6 +252,7 @@ public sealed partial class MainPage : Page
     {
         if (args.SelectedItem is not NavigationViewItem item || item.Tag is not string tag) return;
         var pageChanged = !string.Equals(_selectedNavigationTag, tag, StringComparison.Ordinal);
+        if (pageChanged) PasswordRevealControl.Hide(this);
         _selectedNavigationTag = tag;
         IsOverviewSelected = tag == "overview";
         IsWorkbenchSelected = tag == "workbench";
