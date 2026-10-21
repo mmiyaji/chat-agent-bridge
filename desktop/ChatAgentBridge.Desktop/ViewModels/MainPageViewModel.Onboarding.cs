@@ -54,6 +54,7 @@ public partial class MainPageViewModel
     public string OnboardingProgress => $"[{Math.Clamp(OnboardingStep, 0, 4) + 1}/5]";
     public string WizardSummary => ViewModelText.Get("WizardSummary", AgentProviderDisplayName, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, string.IsNullOrWhiteSpace(AgentReasoningEffort) ? ViewModelText.Get("DefaultCliValue") : AgentReasoningEffort, WorkspaceRoot, IsWizardSlack ? "Slack" : "Mattermost", ViewModelText.Get(WizardAutoConnect ? "Enabled" : "Disabled"), ChatApprovalLabel(ChatApprovalMode), ResultLabel(ChatResultMode), PermissionLabel(AgentPermissionMode));
     public event Action<int>? OnboardingNavigateRequested;
+    public event Action? OnboardingConsentFocusRequested;
 
     public async Task InitializeOnboardingAsync()
     {
@@ -94,7 +95,12 @@ public partial class MainPageViewModel
         IsStatusOpen = false;
         if (OnboardingStep == 0)
         {
-            if (!HasAcceptedTerms || !HasAcceptedPrivacy) { SetStatus(ViewModelText.Get("ConsentRequired"), ViewModelText.Get("ConsentRequiredDetails"), "Warning"); return; }
+            if (!HasAcceptedTerms || !HasAcceptedPrivacy)
+            {
+                SetStatus(ViewModelText.Get("ConsentRequired"), ViewModelText.Get("ConsentRequiredDetails"), "Warning");
+                OnboardingConsentFocusRequested?.Invoke();
+                return;
+            }
             await _onboardingConsentStore.SaveAsync(new OnboardingConsent(OnboardingConsentStore.CurrentPolicyVersion, DateTimeOffset.UtcNow));
             _hasCurrentConsent = true;
             ConsentStatus = ViewModelText.Get("ConsentSaved", OnboardingConsentStore.CurrentPolicyVersion);

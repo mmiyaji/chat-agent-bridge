@@ -53,7 +53,11 @@ public sealed partial class HistoryPage : Page
         // MainPage hosts this Page directly and switches Visibility, so Frame
         // navigation events alone do not cover its actual lifetime.
         Loaded += (_, _) => SetPricingUpdatesEnabled(true);
-        Unloaded += (_, _) => SetPricingUpdatesEnabled(false);
+        Unloaded += (_, _) =>
+        {
+            SetPricingUpdatesEnabled(false);
+            SessionFiltersFlyout.Hide();
+        };
         UpdateResponsiveLayout();
     }
 
@@ -211,6 +215,8 @@ public sealed partial class HistoryPage : Page
         if (SessionListPane is null || SessionDetailPane is null) return;
         var narrow = ViewModel.IsNarrow;
         var showDetail = ViewModel.SelectedSession is not null && _showDetailOnNarrow;
+        if (!ReferenceEquals(HistoryPivot.SelectedItem, ConversationsTab) || (narrow && showDetail))
+            SessionFiltersFlyout.Hide();
         SessionListColumn.MinWidth = narrow ? 0 : MinimumSessionListWidth;
         SessionDetailColumn.MinWidth = narrow ? 0 : MinimumSessionDetailWidth;
         SessionListPane.Visibility = narrow && showDetail ? Visibility.Collapsed : Visibility.Visible;
@@ -223,43 +229,12 @@ public sealed partial class HistoryPage : Page
         Grid.SetColumnSpan(SessionDetailPane, narrow ? 3 : 1);
         Grid.SetColumnSpan(SessionListPane, narrow ? 3 : 1);
         if (!narrow) ApplySessionColumnWidths();
-        var stackFilters = ActualWidth < 600;
-        HistoryTitle.Style = (Style)Application.Current.Resources[stackFilters ? "SubtitleTextBlockStyle" : "TitleTextBlockStyle"];
-        HistoryDescription.Visibility = stackFilters ? Visibility.Collapsed : Visibility.Visible;
-        HistoryAgentSettingsButton.Visibility = stackFilters ? Visibility.Collapsed : Visibility.Visible;
-        HistoryStatusText.MaxLines = stackFilters ? 1 : 0;
+        var compactHeader = ActualWidth < 600;
+        HistoryTitle.Style = (Style)Application.Current.Resources[compactHeader ? "SubtitleTextBlockStyle" : "TitleTextBlockStyle"];
+        HistoryDescription.Visibility = compactHeader ? Visibility.Collapsed : Visibility.Visible;
+        HistoryAgentSettingsButton.Visibility = compactHeader ? Visibility.Collapsed : Visibility.Visible;
+        HistoryStatusText.MaxLines = compactHeader ? 1 : 0;
         SessionFilters.Visibility = narrow && showDetail ? Visibility.Collapsed : Visibility.Visible;
-        ProviderFilterColumn.Width = new GridLength(180);
-        Grid.SetColumnSpan(SessionSearchBox, 1);
-        Grid.SetColumn(ProviderFilter, stackFilters ? 0 : 1);
-        Grid.SetRow(ProviderFilter, 0);
-        Grid.SetColumnSpan(ProviderFilter, stackFilters ? 2 : 1);
-        ProviderFilter.VerticalAlignment = VerticalAlignment.Top;
-        Grid.SetRow(WorkspaceFilter, stackFilters ? 1 : 0);
-        Grid.SetColumnSpan(WorkspaceFilter, stackFilters ? 2 : 1);
-        AdvancedSortColumn.Width = new GridLength(stackFilters ? 0 : 180);
-        AdvancedFiltersGrid.RowSpacing = stackFilters ? 8 : 0;
-        Grid.SetRow(SessionSort, stackFilters ? 2 : 0);
-        Grid.SetColumn(SessionSort, stackFilters ? 0 : 1);
-        Grid.SetColumnSpan(SessionSort, stackFilters ? 2 : 1);
-        // Keep one set of controls/bindings while moving secondary filters into the compact disclosure.
-        if (stackFilters && !ReferenceEquals(CompactFiltersExpander.Content, AdvancedFiltersGrid))
-        {
-            SessionFilters.Children.Remove(AdvancedFiltersGrid);
-            SessionFilters.Children.Remove(ProviderFilter);
-            AdvancedFiltersGrid.Children.Add(ProviderFilter);
-            CompactFiltersExpander.Content = AdvancedFiltersGrid;
-            CompactFiltersExpander.IsExpanded = false;
-        }
-        else if (!stackFilters && ReferenceEquals(CompactFiltersExpander.Content, AdvancedFiltersGrid))
-        {
-            CompactFiltersExpander.Content = null;
-            AdvancedFiltersGrid.Children.Remove(ProviderFilter);
-            SessionFilters.Children.Add(ProviderFilter);
-            SessionFilters.Children.Add(AdvancedFiltersGrid);
-        }
-        if (narrow && showDetail) CompactFiltersExpander.IsExpanded = false;
-        CompactFiltersExpander.Visibility = stackFilters ? Visibility.Visible : Visibility.Collapsed;
         if (BackToSessionsButton is not null)
             BackToSessionsButton.Visibility = narrow && showDetail ? Visibility.Visible : Visibility.Collapsed;
     }

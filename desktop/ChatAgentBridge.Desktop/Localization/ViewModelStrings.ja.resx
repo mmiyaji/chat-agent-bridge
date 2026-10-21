@@ -283,7 +283,7 @@
     <value>プロンプト</value>
   </data>
   <data name="PromptRequired" xml:space="preserve">
-    <value>プロンプトを入力してください</value>
+    <value>依頼内容を入力してください</value>
   </data>
   <data name="PromptRequiredDetails" xml:space="preserve">
     <value>実行する内容を入力してから開始してください。</value>

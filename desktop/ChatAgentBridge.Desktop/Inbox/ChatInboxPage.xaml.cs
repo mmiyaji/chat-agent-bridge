@@ -8,6 +8,9 @@ public sealed partial class ChatInboxPage : Page
 {
     public ChatInboxViewModel ViewModel { get; } = new();
     public event Action? OpenRequested;
+    public event Action? ConnectionSettingsRequested;
+
+    private void OpenConnectionSettings_Click(object sender, RoutedEventArgs e) => ConnectionSettingsRequested?.Invoke();
 
     public ChatInboxPage()
     {

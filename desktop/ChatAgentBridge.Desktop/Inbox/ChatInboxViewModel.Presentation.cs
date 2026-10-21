@@ -4,6 +4,12 @@ namespace ChatAgentBridge_Desktop.Inbox;
 
 public sealed partial class InboxItem
 {
+    public void RefreshLocalizedText()
+    {
+        OnPropertyChanged(nameof(StateDisplay));
+        OnPropertyChanged(nameof(RequestLabel));
+    }
+
     public string StateTone => State switch
     {
         "承認待ち" => "pending",
@@ -27,6 +33,12 @@ public sealed partial class InboxConversation
     public string ActivityCompact => Requests.LastOrDefault()?.ReceivedAt.ToString("t") ?? "";
     public string ListTooltip => $"{ListTitle}\n{Title}\n{Location}\n{StateSummary}\n{Activity}";
     public bool HasSeveralRequests => RequestCount > 1;
+    public void RefreshLocalizedText()
+    {
+        OnPropertyChanged(nameof(RequestCountLabel));
+        OnPropertyChanged(nameof(ListTooltip));
+    }
+
     public void RefreshPresentation()
     {
         OnPropertyChanged(nameof(ListTitle));
@@ -42,6 +54,31 @@ public sealed partial class ChatInboxViewModel
         IsConnectionConfirmed ? "InboxConnectionReadyLabel" : IsConnected ? "InboxConnectionWorkingLabel" : "InboxConnectionOfflineLabel");
     public string QueueSummary => DesktopText.Get("InboxQueueSummary",
         Requests.Count(item => item.State == "承認待ち"), Requests.Count(item => item.State == "実行中"));
+
+    public void RefreshLocalizedText()
+    {
+        // Only replace the default status while the inbox is still idle. A live
+        // connection, request, or runtime message keeps its current meaning.
+        if (!_hasRuntimeStatus && !_closing && !IsConnected && !IsExecuting &&
+            !HasConnectionError && Requests.Count == 0)
+            Status = DesktopText.Get("InboxDisconnected");
+
+        OnPropertyChanged(nameof(ConnectionLabel));
+        OnPropertyChanged(nameof(QueueSummary));
+        OnPropertyChanged(nameof(ConversationCountLabel));
+        OnPropertyChanged(nameof(SelectedRequestCountLabel));
+        OnPropertyChanged(nameof(EmptyListMessage));
+        OnPropertyChanged(nameof(SelectedOutput));
+        OnPropertyChanged(nameof(SelectedUsage));
+        foreach (var request in Requests) request.RefreshLocalizedText();
+        foreach (var conversation in Conversations) conversation.RefreshLocalizedText();
+    }
+
+    partial void OnStatusChanged(string value)
+    {
+        if (!value.Equals(DesktopText.Get("InboxDisconnected"), StringComparison.Ordinal))
+            _hasRuntimeStatus = true;
+    }
     private void NotifyConnectionPresentation()
     {
         OnPropertyChanged(nameof(ConnectionTone));

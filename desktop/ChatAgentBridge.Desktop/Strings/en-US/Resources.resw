@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
+  <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>Open connection settings</value></data>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>Connect without a proxy</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>Turn on for a direct connection to your internal Mattermost server. When off, the system proxy settings are used. This applies to user lookup, post link checks, and sending and receiving messages. Save and reconnect after changing this setting.</value></data>
   <data name="MainNavigation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">

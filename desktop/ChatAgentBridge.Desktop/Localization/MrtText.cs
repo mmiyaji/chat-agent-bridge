@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using System.Reflection;
 using Microsoft.Windows.ApplicationModel.Resources;
 
 namespace ChatAgentBridge_Desktop.Localization;
@@ -16,8 +17,18 @@ internal static class MrtText
     public static string Get(string key, CultureInfo? culture = null)
     {
         culture ??= CultureInfo.CurrentUICulture;
+        return Get(key, CreateContext(culture));
+    }
+
+    private static ResourceContext CreateContext(CultureInfo culture)
+    {
         var context = ResourceManager.CreateResourceContext();
         context.QualifierValues["Language"] = culture.Name;
+        return context;
+    }
+
+    private static string Get(string key, ResourceContext context)
+    {
         // PRI stores x:Uid property separators as path segments. Dots inside an
         // attached property's [using:Namespace] qualifier remain literal.
         var bracketStart = key.IndexOf('[');
@@ -30,6 +41,7 @@ internal static class MrtText
 
     public static void Refresh(DependencyObject root, CultureInfo culture)
     {
+        var context = CreateContext(culture);
         var pending = new Stack<DependencyObject>();
         var visited = new HashSet<DependencyObject>();
         pending.Push(root);
@@ -38,11 +50,16 @@ internal static class MrtText
             var current = pending.Pop();
             if (!visited.Add(current)) continue;
             if (current is FrameworkElement element)
-                ApplyElement(element, culture);
+                ApplyElement(element, culture, context);
             if (current is ComboBox combo)
-                foreach (var item in combo.Items.OfType<ComboBoxItem>()) ApplyElement(item, culture);
+                foreach (var item in combo.Items.OfType<ComboBoxItem>()) ApplyElement(item, culture, context);
             if (current is RadioButtons radios)
                 foreach (var item in radios.Items.OfType<DependencyObject>()) pending.Push(item);
+            // Traverse logical item/content collections as well as realized visual
+            // children. Hidden child pages and controls inside collapsed containers
+            // may not have a complete visual tree when the language is changed.
+            if (current is ItemsControl itemsControl)
+                foreach (var item in itemsControl.Items.OfType<DependencyObject>()) pending.Push(item);
             // The shell is collapsed while onboarding is visible. Include logical
             // content so labels that have not been templated yet also change.
             if (current is NavigationView navigation)
@@ -54,51 +71,65 @@ internal static class MrtText
             if (current is Border border && border.Child is { } borderChild) pending.Push(borderChild);
             if (current is UserControl userControl && userControl.Content is { } userContent) pending.Push(userContent);
             if (current is ContentControl contentControl && contentControl.Content is DependencyObject content) pending.Push(content);
+            if (current.GetType().GetProperty("Header", BindingFlags.Instance | BindingFlags.Public)?.GetValue(current) is DependencyObject header)
+                pending.Push(header);
+            if (current.GetType().GetProperty("ActionButton", BindingFlags.Instance | BindingFlags.Public)?.GetValue(current) is DependencyObject actionButton)
+                pending.Push(actionButton);
+            // Flyout content is not part of the visual tree while its popup is
+            // closed, but it still owns x:Uid labels that need to refresh.
+            if (current.GetType().GetProperty("Flyout", BindingFlags.Instance | BindingFlags.Public)?.GetValue(current) is { } flyout &&
+                flyout.GetType().GetProperty("Content", BindingFlags.Instance | BindingFlags.Public)?.GetValue(flyout) is DependencyObject flyoutContent)
+                pending.Push(flyoutContent);
             var count = VisualTreeHelper.GetChildrenCount(current);
             for (var i = 0; i < count; i++) pending.Push(VisualTreeHelper.GetChild(current, i));
         }
     }
 
-    private static void ApplyElement(FrameworkElement element, CultureInfo culture)
+    private static void ApplyElement(FrameworkElement element, CultureInfo culture, ResourceContext context)
     {
-        var id = AutomationProperties.GetAutomationId(element);
+        var id = LocalizedResourceKey.GetKey(element);
+        if (string.IsNullOrWhiteSpace(id))
+            id = AutomationProperties.GetAutomationId(element);
         if (string.IsNullOrWhiteSpace(id)) return;
-        switch (element)
+
+        // x:Uid has no runtime getter. The attached key records it where the
+        // automation ID differs or is absent; existing matching IDs remain a
+        // convenient fallback. Apply only string-valued resource properties and
+        // leave active bindings and nested rich content alone.
+        foreach (var property in LocalizedStringProperties)
         {
-            case NavigationViewItem navigation: Apply(id, "Content", culture, value => navigation.Content = value); break;
-            case TextBlock textBlock: Apply(id, "Text", culture, value => textBlock.Text = value); break;
-            case Button button: Apply(id, "Content", culture, value => button.Content = value); break;
-            case CheckBox checkBox: Apply(id, "Content", culture, value => checkBox.Content = value); break;
-            case RadioButton radio: Apply(id, "Content", culture, value => radio.Content = value); break;
-            case ComboBox comboBox:
-                Apply(id, "Header", culture, value => comboBox.Header = value);
-                Apply(id, "PlaceholderText", culture, value => comboBox.PlaceholderText = value);
-                break;
-            case ComboBoxItem item: Apply(id, "Content", culture, value => item.Content = value); break;
-            case PasswordBox passwordBox:
-                Apply(id, "Header", culture, value => passwordBox.Header = value);
-                Apply(id, "PlaceholderText", culture, value => passwordBox.PlaceholderText = value);
-                break;
-            case TextBox textBox:
-                Apply(id, "Header", culture, value => textBox.Header = value);
-                Apply(id, "PlaceholderText", culture, value => textBox.PlaceholderText = value);
-                break;
-            case ToggleSwitch toggle:
-                Apply(id, "Header", culture, value => toggle.Header = value);
-                Apply(id, "OnContent", culture, value => toggle.OnContent = value);
-                Apply(id, "OffContent", culture, value => toggle.OffContent = value);
-                break;
+            var info = element.GetType().GetProperty(property, BindingFlags.Instance | BindingFlags.Public);
+            if (info?.CanWrite != true || info.PropertyType != typeof(string) && info.PropertyType != typeof(object) || IsBound(element, property)) continue;
+            var currentValue = info.GetValue(element);
+            if (currentValue is not null and not string) continue;
+            Apply(id, property, context, value => info.SetValue(element, value));
         }
         var automationKey = $"{id}.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name";
-        var automationName = Get(automationKey, culture);
+        var automationName = Get(automationKey, context);
         if (!automationName.Equals(automationKey, StringComparison.Ordinal))
             AutomationProperties.SetName(element, automationName);
     }
 
-    private static void Apply(string id, string property, CultureInfo culture, Action<string> set)
+    private static readonly string[] LocalizedStringProperties =
+        ["Text", "Content", "Header", "PlaceholderText", "Title", "Message", "Description", "Subtitle", "OnContent", "OffContent"];
+
+    private static bool IsBound(FrameworkElement element, string property)
+    {
+        var propertyName = $"{property}Property";
+        for (var type = element.GetType(); type is not null; type = type.BaseType)
+        {
+            var dependencyProperty = type.GetField(propertyName, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)?.GetValue(null) as DependencyProperty
+                ?? type.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)?.GetValue(null) as DependencyProperty;
+            if (dependencyProperty is not null)
+                return element.GetBindingExpression(dependencyProperty) is not null;
+        }
+        return false;
+    }
+
+    private static void Apply(string id, string property, ResourceContext context, Action<string> set)
     {
         var key = $"{id}.{property}";
-        var value = Get(key, culture);
+        var value = Get(key, context);
         if (!value.Equals(key, StringComparison.Ordinal)) set(value);
     }
 }

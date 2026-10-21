@@ -122,8 +122,8 @@
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                                     <FontIcon Style="{x:Bind local:MainPage.OverviewIconStyle(ViewModel.OverviewStartupIconState), Mode=OneWay}" Glyph="{x:Bind ViewModel.OverviewStartupGlyph, Mode=OneWay}" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" />
                                                     <StackPanel Grid.Column="1" Spacing="2">
-                                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewStartupLabel" />
-                                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewStartupHint" />
+                                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewStartupLabel" localization:LocalizedResourceKey.Key="OverviewStartupLabel" />
+                                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewStartupHint" localization:LocalizedResourceKey.Key="OverviewStartupHint" />
                                                         <TextBlock Text="{x:Bind ViewModel.OverviewStartupStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="OverviewStartupStatus" />
                                                     </StackPanel>
                                                 </Grid>
@@ -133,8 +133,8 @@
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                                     <FontIcon Style="{x:Bind local:MainPage.OverviewIconStyle(ViewModel.OverviewAutoConnectIconState), Mode=OneWay}" Glyph="{x:Bind ViewModel.OverviewAutoConnectGlyph, Mode=OneWay}" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" />
                                                     <StackPanel Grid.Column="1" Spacing="2">
-                                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewAutoConnectLabel" />
-                                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewAutoConnectHint" />
+                                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewAutoConnectLabel" localization:LocalizedResourceKey.Key="OverviewAutoConnectLabel" />
+                                                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewAutoConnectHint" localization:LocalizedResourceKey.Key="OverviewAutoConnectHint" />
                                                         <TextBlock Text="{x:Bind ViewModel.OverviewAutoConnectStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="OverviewAutoConnectStatus" />
                                                     </StackPanel>
                                                 </Grid>
@@ -158,7 +158,7 @@
                                         <settings:SettingsCard.Description>
                                             <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock043" x:Uid="chatAgentBridgeDesktopMainPageTextBlock043" />
                                         </settings:SettingsCard.Description>
-                                        <ComboBox x:Name="AutoConnectProviderPicker" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AutoConnectProvider, Mode=TwoWay}" MinWidth="180" HorizontalAlignment="Left" AutomationProperties.AutomationId="AutoConnectProvider" x:Uid="AutoConnectProvider">
+                                        <ComboBox x:Name="AutoConnectProviderPicker" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AutoConnectProvider, Mode=OneWay}" SelectionChanged="AutoConnectProviderPicker_SelectionChanged" MinWidth="180" HorizontalAlignment="Left" AutomationProperties.AutomationId="AutoConnectProvider" x:Uid="AutoConnectProvider">
                                             <ComboBoxItem Tag="none" AutomationProperties.AutomationId="AutoConnectOptionNone" x:Uid="AutoConnectOptionNone" />
                                             <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="AutoConnectOptionMattermost" />
                                             <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="AutoConnectOptionSlack" />
@@ -270,11 +270,11 @@
                                              IsOpen="{x:Bind ViewModel.CliCheckFailed, Mode=OneWay}"
                                              Message="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
                                              AutomationProperties.Name="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
-                                             AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SettingsCliCheckError">
+                                             AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SettingsCliCheckError" localization:LocalizedResourceKey.Key="CliCheckError">
                                         <InfoBar.ActionButton>
                                             <Button x:Uid="CliReviewTrust" Click="ReviewCliTrust_Click"
                                                     Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasCliTrustRecovery), Mode=OneWay}"
-                                                    AutomationProperties.AutomationId="SettingsCliReviewTrust" />
+                                                    AutomationProperties.AutomationId="SettingsCliReviewTrust" localization:LocalizedResourceKey.Key="CliReviewTrust" />
                                         </InfoBar.ActionButton>
                                     </InfoBar>
                                     <StackPanel Spacing="8">
@@ -287,8 +287,8 @@
                                                Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.ShowCliCheckSummary), Mode=OneWay}" AutomationProperties.AutomationId="SettingsCliCheckSummary" />
                                     <Border Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="AgentConnectionRegistrationCard">
                                         <StackPanel Spacing="8">
-                                            <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="AgentConnectionRegistrationTitle" />
-                                            <TextBlock TextWrapping="Wrap" x:Uid="AgentConnectionRegistrationHelp" />
+                                            <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="AgentConnectionRegistrationTitle" localization:LocalizedResourceKey.Key="AgentConnectionRegistrationTitle" />
+                                            <TextBlock TextWrapping="Wrap" x:Uid="AgentConnectionRegistrationHelp" localization:LocalizedResourceKey.Key="AgentConnectionRegistrationHelp" />
                                             <Button Command="{x:Bind ViewModel.RegisterAgentConnectionCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="RegisterAgentConnection" x:Uid="RegisterAgentConnection" />
                                             <TextBlock Text="{x:Bind ViewModel.RegisteredConnectionSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="RegisteredConnectionSummary" />
                                             <StackPanel Spacing="8">
@@ -402,8 +402,8 @@
                                         </StackPanel>
                                         <StackPanel Spacing="8"><TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock051" x:Uid="chatAgentBridgeDesktopMainPageTextBlock051" /><PasswordBox x:Name="MattermostTokenBox" PasswordChanged="MattermostTokenBox_PasswordChanged"  AutomationProperties.AutomationId="MattermostToken"  x:Uid="MattermostToken" /></StackPanel>
                                         <StackPanel Spacing="8" AutomationProperties.AutomationId="MattermostUsernameLookup">
-                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="MattermostUsernameLookupLabel" />
-                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="MattermostUsernameLookupHelp" />
+                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="MattermostUsernameLookupLabel" localization:LocalizedResourceKey.Key="MattermostUsernameLookupLabel" />
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="MattermostUsernameLookupHelp" localization:LocalizedResourceKey.Key="MattermostUsernameLookupHelp" />
                                             <TextBox Text="{x:Bind ViewModel.MattermostUsernameLookupInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="MattermostUsernameLookupInput" x:Uid="MattermostUsernameLookupInput" />
                                             <Button Command="{x:Bind ViewModel.LookupMattermostUsernameCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="LookupMattermostUserButton" x:Uid="LookupMattermostUserButton" />
                                             <TextBlock Text="{x:Bind ViewModel.MattermostUsernameLookupResultText, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasMattermostUsernameLookupResult), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="MattermostUsernameLookupResult" />
@@ -419,8 +419,8 @@
                                         <StackPanel Spacing="8"><TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock055" x:Uid="chatAgentBridgeDesktopMainPageTextBlock055" /><PasswordBox x:Name="SlackBotTokenBox" PasswordChanged="SlackBotTokenBox_PasswordChanged"  AutomationProperties.AutomationId="SlackBotToken"  x:Uid="SlackBotToken" /></StackPanel>
                                         <StackPanel Spacing="8"><TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock056" x:Uid="chatAgentBridgeDesktopMainPageTextBlock056" /><PasswordBox x:Name="SlackAppTokenBox" PasswordChanged="SlackAppTokenBox_PasswordChanged"  AutomationProperties.AutomationId="SlackAppToken"  x:Uid="SlackAppToken" /></StackPanel>
                                         <StackPanel Spacing="8" AutomationProperties.AutomationId="SlackUsernameLookup">
-                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="SlackUsernameLookupLabel" />
-                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="SlackUsernameLookupHelp" />
+                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="SlackUsernameLookupLabel" localization:LocalizedResourceKey.Key="SlackUsernameLookupLabel" />
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="SlackUsernameLookupHelp" localization:LocalizedResourceKey.Key="SlackUsernameLookupHelp" />
                                             <TextBox Text="{x:Bind ViewModel.SlackUsernameLookupInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxLength="256" AutomationProperties.AutomationId="SlackUsernameLookupInput" x:Uid="SlackUsernameLookupInput" />
                                             <Button Command="{x:Bind ViewModel.LookupSlackUsernameCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="LookupSlackUserButton" x:Uid="LookupSlackUserButton" />
                                             <TextBlock Text="{x:Bind ViewModel.SlackUsernameLookupResultText, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSlackUsernameLookupResult), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SlackUsernameLookupResult" />
@@ -453,14 +453,14 @@
                                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock033" x:Uid="chatAgentBridgeDesktopMainPageTextBlock033" />
                                         <Border x:Name="FileAttachmentSettings" Padding="12" Margin="0,8,0,0" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" AutomationProperties.AutomationId="FileAttachmentSettings">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="FileAttachmentSettingsHeading" />
+                                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="FileAttachmentSettingsHeading" localization:LocalizedResourceKey.Key="FileAttachmentSettingsHeading" />
                                                 <ComboBox SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.FileAttachmentApprovalMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="FileAttachmentApprovalMode" x:Uid="FileAttachmentApprovalMode">
                                                     <ComboBoxItem Tag="disabled" AutomationProperties.AutomationId="FileAttachmentModeDisabled" x:Uid="FileAttachmentModeDisabled" />
                                                     <ComboBoxItem Tag="always" AutomationProperties.AutomationId="FileAttachmentModeAlways" x:Uid="FileAttachmentModeAlways" />
                                                     <ComboBoxItem Tag="first" AutomationProperties.AutomationId="FileAttachmentModeFirst" x:Uid="FileAttachmentModeFirst" />
                                                     <ComboBoxItem Tag="auto" AutomationProperties.AutomationId="FileAttachmentModeAuto" x:Uid="FileAttachmentModeAuto" />
                                                 </ComboBox>
-                                                <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="FileAttachmentSettingsHelp" />
+                                                <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="FileAttachmentSettingsHelp" localization:LocalizedResourceKey.Key="FileAttachmentSettingsHelp" />
                                                 <Grid ColumnSpacing="8" RowSpacing="8">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                                     <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
@@ -478,8 +478,8 @@
                                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock035" x:Uid="chatAgentBridgeDesktopMainPageTextBlock035" />
                                         <TextBox  Text="{x:Bind ViewModel.SlackAllowedChannelIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="SlackAllowedChannelIds"  x:Uid="SlackAllowedChannelIds" />
                                         <StackPanel Spacing="8" AutomationProperties.AutomationId="SlackThreadLookup">
-                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="SlackThreadLookupLabel" />
-                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="SlackThreadLookupHelp" />
+                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="SlackThreadLookupLabel" localization:LocalizedResourceKey.Key="SlackThreadLookupLabel" />
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="SlackThreadLookupHelp" localization:LocalizedResourceKey.Key="SlackThreadLookupHelp" />
                                             <TextBox Text="{x:Bind ViewModel.SlackThreadLookupInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxLength="2048" AutomationProperties.AutomationId="SlackThreadLookupInput" x:Uid="SlackThreadLookupInput" />
                                             <Button Command="{x:Bind ViewModel.ResolveSlackThreadCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ResolveSlackThreadButton" x:Uid="ResolveSlackThreadButton" />
                                             <TextBlock Text="{x:Bind ViewModel.SlackThreadLookupResultText, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSlackThreadLookupResult), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SlackThreadLookupResult" />
@@ -487,10 +487,10 @@
                                             <Button Command="{x:Bind ViewModel.AddSlackThreadLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddSlackThreadLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="AddSlackThreadButton" x:Uid="AddSlackThreadButton" />
                                         </StackPanel>
                                         <TextBox  Text="{x:Bind ViewModel.SlackAllowedThreadIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="SlackAllowedThreadIds"  x:Uid="SlackAllowedThreadIds" />
-                                        <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="SlackThreadIdsHelp" x:Uid="SlackAllowedThreadIdsHelp" />
+                                        <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="SlackThreadIdsHelp" x:Uid="SlackAllowedThreadIdsHelp" localization:LocalizedResourceKey.Key="SlackAllowedThreadIdsHelp" />
                                         <StackPanel Spacing="8" AutomationProperties.AutomationId="MattermostThreadLookup">
-                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="MattermostThreadLookupLabel" />
-                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="MattermostThreadLookupHelp" />
+                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="MattermostThreadLookupLabel" localization:LocalizedResourceKey.Key="MattermostThreadLookupLabel" />
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="MattermostThreadLookupHelp" localization:LocalizedResourceKey.Key="MattermostThreadLookupHelp" />
                                             <TextBox Text="{x:Bind ViewModel.MattermostThreadLookupInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="MattermostThreadLookupInput" x:Uid="MattermostThreadLookupInput" />
                                             <Button Command="{x:Bind ViewModel.ResolveMattermostThreadCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ResolveMattermostThreadButton" x:Uid="ResolveMattermostThreadButton" />
                                             <TextBlock Text="{x:Bind ViewModel.MattermostThreadLookupResultText, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasMattermostThreadLookupResult), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="MattermostThreadLookupResult" />

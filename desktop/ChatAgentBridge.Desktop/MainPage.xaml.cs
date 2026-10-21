@@ -13,7 +13,10 @@ public sealed partial class MainPage : Page
     private bool _hasLoaded;
     private string? _selectedNavigationTag;
     private int _scrollResetGeneration;
+    private int _languageRefreshGeneration;
+    private System.Globalization.CultureInfo? _inProcessLanguage;
     private bool _handlingStartupToggle;
+    private bool _refreshingAutoConnectSelection;
     private readonly Onboarding.OnboardingWizard _wizard;
 
     public MainPageViewModel ViewModel { get; } = new();
@@ -52,6 +55,7 @@ public sealed partial class MainPage : Page
                 SlackBotTokenBox.Password = ViewModel.SlackBotToken;
                 SlackAppTokenBox.Password = ViewModel.SlackAppToken;
                 _wizard.SyncSecrets();
+                if (!ViewModel.IsOnboardingActive) ScheduleDeferredLanguageRefresh();
             }
         };
         InboxPage.ViewModel.PropertyChanged += (_, args) =>
@@ -74,16 +78,62 @@ public sealed partial class MainPage : Page
         ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
         ViewModel.ServerInputHandler = serverDialogs.InputAsync;
         HistoryPage.AgentSettingsRequested += () => OpenAgentSettings_Click(this, new RoutedEventArgs());
+        InboxPage.ConnectionSettingsRequested += () => OpenConnections_Click(this, new RoutedEventArgs());
         ViewModel.OnboardingNavigateRequested += _ => _wizard.ResetScroll();
         MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
     }
 
     private void RefreshLanguage(System.Globalization.CultureInfo culture)
     {
+        _inProcessLanguage = culture;
         ViewModel.RefreshLocalizedText();
+        InboxPage.ViewModel.RefreshLocalizedText();
+        HistoryPage.ViewModel.RefreshLocalizedText();
         Bindings.Update();
         MrtText.Refresh(this, culture);
+        RefreshAutoConnectSelectionBox();
         RefreshPortableUpdateBadge();
+        if (!ViewModel.IsOnboardingActive) ScheduleDeferredLanguageRefresh();
+    }
+
+    private void ScheduleDeferredLanguageRefresh()
+    {
+        if (_inProcessLanguage is not { } culture || ViewModel.IsOnboardingActive) return;
+        var generation = ++_languageRefreshGeneration;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (generation != _languageRefreshGeneration || ViewModel.IsOnboardingActive) return;
+            UpdateLayout();
+            MainNavigation.UpdateLayout();
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (generation != _languageRefreshGeneration || ViewModel.IsOnboardingActive) return;
+                UpdateLayout();
+                MrtText.Refresh(this, culture);
+                RefreshAutoConnectSelectionBox();
+            });
+        });
+    }
+
+    private void RefreshAutoConnectSelectionBox()
+    {
+        if (AutoConnectProviderPicker.SelectedValue is not string selectedValue) return;
+        _refreshingAutoConnectSelection = true;
+        try
+        {
+            AutoConnectProviderPicker.SelectedIndex = -1;
+            AutoConnectProviderPicker.SelectedValue = selectedValue;
+        }
+        finally
+        {
+            _refreshingAutoConnectSelection = false;
+        }
+    }
+
+    private void AutoConnectProviderPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_refreshingAutoConnectSelection || sender is not ComboBox { SelectedValue: string value }) return;
+        ViewModel.AutoConnectProvider = value;
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
@@ -214,6 +264,7 @@ public sealed partial class MainPage : Page
         if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshAsync();
         if (pageChanged && IsOverviewSelected && _hasLoaded) _ = ViewModel.RefreshStartupAsync();
         if (pageChanged && IsAboutSelected) AboutPage.ResetScroll();
+        if (pageChanged) ScheduleDeferredLanguageRefresh();
     }
 
     private void OpenWorkbench_Click(object sender, RoutedEventArgs e)

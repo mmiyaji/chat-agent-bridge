@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="HistoryFilters" xml:space="preserve"><value>絞り込み</value></data>
   <data name="ArchitectureOpenHint" xml:space="preserve"><value>クリックして拡大</value></data>
   <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>アーキテクチャ図を開く</value></data>
   <data name="ArchitectureOpenNamedAccessibleName" xml:space="preserve"><value>アーキテクチャ図を開く: {0}</value></data>

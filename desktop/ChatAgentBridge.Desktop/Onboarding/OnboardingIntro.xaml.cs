@@ -48,6 +48,19 @@ public sealed partial class OnboardingIntro : UserControl
         AutomationProperties.SetName(ArchitectureImage, architectureName);
     }
 
+    public void FocusMissingConsent()
+    {
+        var target = !ViewModel.HasAcceptedTerms ? TermsConsentCheckBox : PrivacyConsentCheckBox;
+        target.Focus(FocusState.Programmatic);
+        // Align above the fold rather than only revealing the checkbox's last
+        // pixel; both consent choices and the explanation should be readable.
+        target.StartBringIntoView(new BringIntoViewOptions
+        {
+            VerticalAlignmentRatio = 0,
+            AnimationDesired = false
+        });
+    }
+
     private async void ShowTerms_Click(object sender, RoutedEventArgs e)
     {
         if (XamlRoot is not null)

@@ -283,7 +283,7 @@
     <value>Prompt</value>
   </data>
   <data name="PromptRequired" xml:space="preserve">
-    <value>Enter a prompt</value>
+    <value>Enter a request</value>
   </data>
   <data name="PromptRequiredDetails" xml:space="preserve">
     <value>Enter what you want the agent to do before starting.</value>

@@ -107,6 +107,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private Task _connectionNotice = Task.CompletedTask;
     private bool _disconnecting;
     private bool _closing;
+    private bool _hasRuntimeStatus;
     private InboxItem? _notificationApprovedItem;
     private InboxItem? _automaticallyApprovedItem;
     private bool _processingPolicies;
@@ -402,6 +403,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await transport.DisposeAsync();
                 IsConnected = false;
                 Status = DesktopText.Get("InboxAllowedUsersRequired");
+                HasConnectionError = true;
                 return;
             }
             Volatile.Write(ref _accessSettings, settings);
@@ -410,7 +412,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await _sessions.ListAsync();
             if (_closing) { await transport.DisposeAsync(); IsConnected = false; return; }
             if (string.IsNullOrWhiteSpace(settings.WorkspaceRoot) || !Directory.Exists(settings.WorkspaceRoot))
-                throw new InvalidOperationException(DesktopText.Get("WorkspaceConfigureAndSave"));
+            {
+                await transport.DisposeAsync();
+                IsConnected = false;
+                Status = DesktopText.Get("WorkspaceConfigureAndSave");
+                HasConnectionError = true;
+                return;
+            }
             // Reconnection invalidates pending work from the previous connection.
             Requests.Clear();
             Conversations.Clear();
