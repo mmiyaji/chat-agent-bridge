@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ModelCatalogRestored" xml:space="preserve"><value>保存済みのモデル候補{0}件を復元しました。一覧を更新するには再取得してください。</value></data>
   <data name="HistoryFilters" xml:space="preserve"><value>絞り込み</value></data>
   <data name="ArchitectureOpenHint" xml:space="preserve"><value>クリックして拡大</value></data>
   <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>アーキテクチャ図を開く</value></data>

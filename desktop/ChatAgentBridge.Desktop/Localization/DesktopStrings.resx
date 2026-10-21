@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+  <data name="ModelCatalogRestored" xml:space="preserve"><value>Restored {0} saved model options. Fetch models to refresh.</value></data>
   <data name="HistoryFilters" xml:space="preserve"><value>Filters</value></data>
   <data name="ArchitectureOpenHint" xml:space="preserve"><value>Click to enlarge</value></data>
   <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>Open architecture diagram</value></data>

@@ -6,6 +6,7 @@ using ChatAgentBridge.Core.Localization;
 namespace ChatAgentBridge.Core;
 
 public sealed record CliProbeResult(string Executable, string Version, bool ProviderRecognized);
+internal sealed record CliProbeLaunch(string Provider, string Workspace, string Executable, IReadOnlyList<string> PrefixArguments, string? NodeEntryPoint, string? NodePackageName);
 
 /// <summary>Safely checks the configured CLI executable without invoking a model or a user prompt.</summary>
 public sealed class CliProbeService
@@ -23,56 +24,11 @@ public sealed class CliProbeService
     public async Task<CliProbeResult> CheckAsync(BridgeSettings settings, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        var provider = AgentProfile.ResolveProvider(settings);
-        var configured = AgentProfile.ResolveEffectiveExecutable(settings);
-        var cwd = settings.WorkspaceRoot;
-        if (string.IsNullOrWhiteSpace(cwd))
-            throw new InvalidOperationException(CoreText.Get("WorkspaceRequired"));
-        if (!IsFullyQualifiedWorkspacePath(cwd))
-            throw new InvalidOperationException(CoreText.Get("WorkspacePathMustBeAbsolute", cwd));
-
-        string workspace;
-        try { workspace = Path.GetFullPath(cwd); }
-        catch (Exception ex) when (IsInvalidWorkspacePathException(ex))
-        {
-            throw new InvalidOperationException(CoreText.Get("WorkspacePathInvalid", cwd));
-        }
-        if (!Directory.Exists(workspace))
-            throw new InvalidOperationException(CoreText.Get("WorkspaceFolderNotFound", workspace));
-        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, workspace))
-            throw DescribeUntrustedWorkspace(workspace);
-
-        // Use the same native Codex resolution as actual runs and model discovery.
-        // In particular, an npm shim must resolve to codex.exe without starting a shell.
-        var probeExecutable = configured;
-        if (!Path.IsPathFullyQualified(probeExecutable) &&
-            (probeExecutable.Contains(Path.DirectorySeparatorChar) || probeExecutable.Contains(Path.AltDirectorySeparatorChar)))
-            probeExecutable = Path.GetFullPath(probeExecutable, workspace);
-        var nodePackage = NodeCliPackageResolver.Resolve(probeExecutable, provider);
-        if (nodePackage is null)
-        {
-            var npmShim = AgentProfile.FindWindowsNpmShim(probeExecutable, provider);
-            if (npmShim is not null)
-                throw new InvalidOperationException(AgentProfile.WindowsNpmShimGuidance(npmShim, provider));
-        }
-        else
-        {
-            probeExecutable = nodePackage.Executable;
-        }
-        if (provider == AgentProfile.Codex)
-            probeExecutable = CodexExecutableResolver.Resolve(probeExecutable);
-        var extension = Path.GetExtension(probeExecutable);
-        if (extension.Equals(".cmd", StringComparison.OrdinalIgnoreCase) ||
-            extension.Equals(".bat", StringComparison.OrdinalIgnoreCase) ||
-            extension.Equals(".ps1", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException(CoreText.Get("NativeCliRequired"));
-        var executable = nodePackage?.Executable ?? ResolveExecutable(probeExecutable, workspace);
-        if (executable is null) throw new FileNotFoundException(CoreText.Get("CliExecutableNotFound", configured), configured);
-
-        var nodePrefix = nodePackage is not null
-            ? new[] { nodePackage.EntryPoint }
-            : AgentProfile.IsNodeExecutable(executable)
-                ? AgentProfile.GetNodeProbePrefix(settings, provider) : Array.Empty<string>();
+        var launch = ResolveLaunch(settings);
+        var provider = launch.Provider;
+        var workspace = launch.Workspace;
+        var executable = launch.Executable;
+        var nodePrefix = launch.PrefixArguments;
         var (versionOutput, versionError, versionExitCode) = await RunCommandAsync(executable, workspace,
             nodePrefix.Append("--version"), cancellationToken).ConfigureAwait(false);
         var version = Sanitize(versionOutput);
@@ -86,8 +42,8 @@ public sealed class CliProbeService
         if (version.Length == 0)
             throw new InvalidOperationException(CoreText.Get("CliVersionUnavailable"));
 
-        var recognized = nodePackage is not null
-            ? ProviderMatchesPackage(provider, nodePackage.PackageName)
+        var recognized = launch.NodePackageName is not null
+            ? ProviderMatchesPackage(provider, launch.NodePackageName)
             : RecognizesProvider(provider, version);
         if (!recognized && AgentProfile.IsBasicCliProvider(provider))
         {
@@ -100,6 +56,44 @@ public sealed class CliProbeService
         if ((provider is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot) && !recognized)
             throw new InvalidOperationException(CoreText.Get("CliProviderMismatch", provider));
         return new CliProbeResult(executable, version, recognized);
+    }
+
+    /// <summary>Resolves the same executable and entrypoint as CheckAsync without starting a process.</summary>
+    internal static CliProbeLaunch ResolveLaunch(BridgeSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        var provider = AgentProfile.ResolveProvider(settings);
+        var configured = AgentProfile.ResolveEffectiveExecutable(settings);
+        var cwd = settings.WorkspaceRoot;
+        if (string.IsNullOrWhiteSpace(cwd)) throw new InvalidOperationException(CoreText.Get("WorkspaceRequired"));
+        if (!IsFullyQualifiedWorkspacePath(cwd)) throw new InvalidOperationException(CoreText.Get("WorkspacePathMustBeAbsolute", cwd));
+        string workspace;
+        try { workspace = Path.GetFullPath(cwd); }
+        catch (Exception ex) when (IsInvalidWorkspacePathException(ex)) { throw new InvalidOperationException(CoreText.Get("WorkspacePathInvalid", cwd)); }
+        if (!Directory.Exists(workspace)) throw new InvalidOperationException(CoreText.Get("WorkspaceFolderNotFound", workspace));
+        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, workspace)) throw DescribeUntrustedWorkspace(workspace);
+        var probeExecutable = configured;
+        if (!Path.IsPathFullyQualified(probeExecutable) &&
+            (probeExecutable.Contains(Path.DirectorySeparatorChar) || probeExecutable.Contains(Path.AltDirectorySeparatorChar)))
+            probeExecutable = Path.GetFullPath(probeExecutable, workspace);
+        var nodePackage = NodeCliPackageResolver.Resolve(probeExecutable, provider);
+        if (nodePackage is null)
+        {
+            var npmShim = AgentProfile.FindWindowsNpmShim(probeExecutable, provider);
+            if (npmShim is not null) throw new InvalidOperationException(AgentProfile.WindowsNpmShimGuidance(npmShim, provider));
+        }
+        else probeExecutable = nodePackage.Executable;
+        if (provider == AgentProfile.Codex) probeExecutable = CodexExecutableResolver.Resolve(probeExecutable);
+        var extension = Path.GetExtension(probeExecutable);
+        if (extension.Equals(".cmd", StringComparison.OrdinalIgnoreCase) || extension.Equals(".bat", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".ps1", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(CoreText.Get("NativeCliRequired"));
+        var executable = nodePackage?.Executable ?? ResolveExecutable(probeExecutable, workspace);
+        if (executable is null) throw new FileNotFoundException(CoreText.Get("CliExecutableNotFound", configured), configured);
+        var prefix = nodePackage is not null ? new[] { nodePackage.EntryPoint } : AgentProfile.IsNodeExecutable(executable)
+            ? AgentProfile.GetNodeProbePrefix(settings, provider) : Array.Empty<string>();
+        return new CliProbeLaunch(provider, workspace, executable, prefix,
+            nodePackage?.EntryPoint ?? (AgentProfile.IsNodeExecutable(executable) ? prefix.FirstOrDefault() : null), nodePackage?.PackageName);
     }
 
     /// <summary>Builds a localized, read-only diagnosis for a workspace rejected by the trust policy.</summary>

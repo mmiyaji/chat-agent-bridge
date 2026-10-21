@@ -33,9 +33,10 @@ public partial class MainPageViewModel
     private bool HasCurrentCliCheck() => CliCheckSucceeded && _checkedCliSignature == CurrentCliSignature() &&
         (string.IsNullOrWhiteSpace(AgentModel) || ModelCatalog.Models.Any(model => string.Equals(model.Id, AgentModel.Trim(), StringComparison.Ordinal)));
 
-    private string CurrentConnectionSignature() => string.Join("\n", AgentProvider, AgentExecutable, AgentArguments,
+    private string CurrentConnectionSignature() => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+        System.Text.Encoding.UTF8.GetBytes(string.Join("\n", AgentProvider, AgentExecutable, AgentArguments,
         UseAppServer, AgentModel?.Trim() ?? "", AgentReasoningEffort ?? "", AgentPermissionMode, AllowAgentNetwork,
-        CliVersion, CliExecutablePath);
+        CliVersion, CliExecutablePath))));
 
     private bool CanRegisterAgentConnection() => HasCurrentCliCheck() &&
         AgentProvider is (AgentProfile.Codex or AgentProfile.Claude) &&
@@ -49,6 +50,7 @@ public partial class MainPageViewModel
             {
                 CancelCliCheck();
                 CliCheckSucceeded = false;
+                IsCliCheckRestored = false;
                 _checkedCliSignature = null;
                 _checkedConnectionSignature = null;
                 _cliCheckedAt = null;
@@ -66,6 +68,8 @@ public partial class MainPageViewModel
     {
         ClearCliTrustRecovery();
         CliCheckSucceeded = false;
+        IsCliCheckRestored = false;
+        _ = ClearSavedCliVerificationAsync();
         CliCheckFailed = false;
         _checkedCliSignature = null;
         _checkedConnectionSignature = null;
@@ -85,6 +89,7 @@ public partial class MainPageViewModel
         var signature = CurrentCliSignature();
         ClearCliTrustRecovery();
         CliCheckSucceeded = false;
+        IsCliCheckRestored = false;
         CliCheckFailed = false;
         _checkedCliSignature = null;
         _checkedConnectionSignature = null;
@@ -97,6 +102,10 @@ public partial class MainPageViewModel
         try
         {
             var settings = CreateSettingsSnapshot();
+            // A failed or cancelled explicit recheck must not resurrect an old
+            // success on the next launch.
+            await ClearSavedCliVerificationAsync();
+            cancellation.Token.ThrowIfCancellationRequested();
             var result = await _cliProbe.CheckAsync(settings, cancellation.Token);
             if (generation != _cliCheckGeneration || signature != CurrentCliSignature()) return;
             CliVersion = result.Version;
@@ -110,6 +119,7 @@ public partial class MainPageViewModel
                 _cliCheckedAt = DateTimeOffset.UtcNow;
                 CliCheckSucceeded = true;
                 CliCheckSummary = ViewModelText.Get("BasicCliCheckSucceeded");
+                await SaveCliVerificationAsync(settings, result, generation, cancellation.Token);
                 return;
             }
             CliCheckSummary = ViewModelText.Get("CliStartedFetchingModels");
@@ -127,6 +137,7 @@ public partial class MainPageViewModel
             _cliCheckedAt = DateTimeOffset.UtcNow;
             CliCheckSucceeded = true;
             CliCheckSummary = ViewModelText.Get("CliCheckSucceeded", ModelCatalog.Models.Count);
+            await SaveCliVerificationAsync(settings, result, generation, cancellation.Token);
         }
         catch (OperationCanceledException) { if (generation == _cliCheckGeneration) CliCheckSummary = ViewModelText.Get("CliCheckCancelled"); }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or ArgumentException or TimeoutException or System.ComponentModel.Win32Exception)
@@ -157,6 +168,7 @@ public partial class MainPageViewModel
         ModelCatalog.CancelLookup();
         IsCheckingCli = false;
         CliCheckSucceeded = false;
+        IsCliCheckRestored = false;
         CliCheckFailed = false;
         _checkedCliSignature = null;
         _checkedConnectionSignature = null;

@@ -52,7 +52,7 @@ public partial class MainPageViewModel : ObservableObject
         PropertyChanged += (_, e) =>
         {
             WizardSettingChanged(e.PropertyName);
-            if (e.PropertyName is nameof(CliCheckSucceeded) or nameof(CliCheckFailed) or nameof(IsCheckingCli) or nameof(CliVersion))
+            if (e.PropertyName is nameof(CliCheckSucceeded) or nameof(CliCheckFailed) or nameof(IsCheckingCli) or nameof(CliVersion) or nameof(IsCliCheckRestored))
                 RefreshOverviewStatus();
             if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning))
             {
@@ -325,6 +325,7 @@ public partial class MainPageViewModel : ObservableObject
             IsStatusOpen = false;
             IsSettingsLoaded = true;
             await LoadAgentConnectionsAsync();
+            await RestoreCliVerificationAsync();
         }
         catch (Exception ex)
         {

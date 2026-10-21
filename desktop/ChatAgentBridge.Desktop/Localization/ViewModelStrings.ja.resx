@@ -1,5 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
+  <data name="OverviewCliPreviouslyVerified" xml:space="preserve"><value>前回確認済み</value></data>
+  <data name="CliVerificationRestored" xml:space="preserve"><value>{0}のCLI確認結果を引き継ぎました。CLIファイルと設定に変更はありません。ログイン状態やモデルの利用可否は利用時に確認します。モデル一覧を更新するには「CLIをチェック」を押してください。</value></data>
+  <data name="CliVerificationSaveFailed" xml:space="preserve"><value>確認には成功しましたが、結果を保存できませんでした。再起動後は再確認してください。</value></data>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>

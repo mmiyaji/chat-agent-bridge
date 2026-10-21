@@ -1,5 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
+  <data name="OverviewCliPreviouslyVerified" xml:space="preserve"><value>Previously checked</value></data>
+  <data name="CliVerificationRestored" xml:space="preserve"><value>Reusing the CLI check from {0}. The CLI files and settings are unchanged. Login status and model availability are checked during use; use Check CLI to refresh the model list.</value></data>
+  <data name="CliVerificationSaveFailed" xml:space="preserve"><value>The check succeeded, but its result could not be saved. Check again after restarting.</value></data>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
