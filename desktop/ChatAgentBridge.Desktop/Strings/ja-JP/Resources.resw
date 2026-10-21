@@ -1064,6 +1064,13 @@
   <data name="PricingRateMinimum.Text" xml:space="preserve"><value>最小</value></data>
   <data name="PricingRateMaximum.Text" xml:space="preserve"><value>最大</value></data>
   <data name="PricingNever.Text" xml:space="preserve"><value>未確認</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows 通知</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>Windows 通知が表示されない場合は、この Windows ユーザーに対してのみ設定できます。この任意設定を行わなくても、通常の通知は引き続き利用できます。</value></data>
+  <data name="PortableIdentityStateHeading.Text" xml:space="preserve"><value>状態</value></data>
+  <data name="PortableIdentityActionsHeading.Text" xml:space="preserve"><value>任意の設定</value></data>
+  <data name="PortableIdentityConfigure.Content" xml:space="preserve"><value>Windows 通知を設定して再起動</value></data>
+  <data name="PortableIdentityRemove.Content" xml:space="preserve"><value>登録を削除して再起動</value></data>
+  <data name="PortableIdentityRefresh.Content" xml:space="preserve"><value>状態を更新</value></data>
   <data name="PricingNoAutomaticPrice.Text" xml:space="preserve"><value>このモデルの自動単価はありません。</value></data>
   <data name="PricingAutoUpdateEnabled.Text" xml:space="preserve"><value>自動更新は有効です。</value></data>
   <data name="PricingAutoUpdateDisabled.Text" xml:space="preserve"><value>自動更新は無効です。</value></data>

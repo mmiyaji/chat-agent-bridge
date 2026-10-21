@@ -1064,6 +1064,13 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PricingRateMinimum.Text" xml:space="preserve"><value>Minimum</value></data>
   <data name="PricingRateMaximum.Text" xml:space="preserve"><value>Maximum</value></data>
   <data name="PricingNever.Text" xml:space="preserve"><value>Never</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows notifications</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>If Windows notifications do not appear, configure this Windows user only. Standard notifications continue to work without this optional setup.</value></data>
+  <data name="PortableIdentityStateHeading.Text" xml:space="preserve"><value>Status</value></data>
+  <data name="PortableIdentityActionsHeading.Text" xml:space="preserve"><value>Optional setup</value></data>
+  <data name="PortableIdentityConfigure.Content" xml:space="preserve"><value>Set up Windows notifications and restart</value></data>
+  <data name="PortableIdentityRemove.Content" xml:space="preserve"><value>Remove registration and restart</value></data>
+  <data name="PortableIdentityRefresh.Content" xml:space="preserve"><value>Refresh status</value></data>
   <data name="PricingNoAutomaticPrice.Text" xml:space="preserve"><value>No automatic rate is available for this model.</value></data>
   <data name="PricingAutoUpdateEnabled.Text" xml:space="preserve"><value>Automatic updates are enabled.</value></data>
   <data name="PricingAutoUpdateDisabled.Text" xml:space="preserve"><value>Automatic updates are disabled.</value></data>

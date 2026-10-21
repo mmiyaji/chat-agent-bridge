@@ -21,7 +21,7 @@ def arguments(value):
 
 
 def resource_keys(source, helper):
-    """Include conditional key expressions as well as literal first arguments."""
+    """Yield keys from literal Get arguments and conditional/switch result arms."""
     for call in re.finditer(rf"{helper}\.Get\(", source):
         depth, quoted, escaped = 0, False, False
         start = call.end()
@@ -36,15 +36,39 @@ def resource_keys(source, helper):
                     quoted = False
             elif char == '"':
                 quoted = True
-            elif char == "(":
+            elif char in "({[":
                 depth += 1
             elif char == ")":
                 if depth == 0:
                     break
                 depth -= 1
+            elif char in "}]":
+                depth -= 1
             elif char == "," and depth == 0:
                 break
-        yield from re.findall(r'"([^"\\]+)"', source[start:end])
+        argument = source[start:end]
+        for literal in re.finditer(r'"([^"\\]+)"', argument):
+            prefix = argument[:literal.start()].rstrip()
+            suffix = argument[literal.end():].lstrip()
+            if not prefix and not suffix:
+                yield literal.group(1)
+            elif re.search(r"(?:\?|:|=>|\?\?)\s*$", prefix):
+                yield literal.group(1)
+
+
+def check_resource_key_scanner():
+    """Guard the scanner against extracting labels or dynamic key prefixes."""
+    cases = (
+        ('DesktopText.Get("Greeting")', "DesktopText", {"Greeting"}),
+        ('DesktopText.Get(ready ? "Ready" : "Waiting")', "DesktopText", {"Ready", "Waiting"}),
+        ('ViewModelText.Get(mode switch { "first" => "ApprovalFirst", "auto" => "ApprovalAuto", _ => "ApprovalAlways" })',
+         "ViewModelText", {"ApprovalFirst", "ApprovalAuto", "ApprovalAlways"}),
+        ('DesktopText.Get("SettingsReview" + key)', "DesktopText", set()),
+    )
+    for source, helper, expected in cases:
+        actual = set(resource_keys(source, helper))
+        if actual != expected:
+            raise SystemExit(f"Resource key scanner regression: {source}: expected {expected}, got {actual}")
 
 pairs = [
     ("ChatAgentBridge.Core/Localization/Strings.resx", "ChatAgentBridge.Core/Localization/Strings.ja.resx"),
@@ -54,6 +78,7 @@ pairs = [
     ("ChatAgentBridge.Desktop/Localization/ViewModelStrings.resx", "ChatAgentBridge.Desktop/Localization/ViewModelStrings.ja.resx"),
 ]
 catalogs = []
+check_resource_key_scanner()
 for english, japanese in pairs:
     en, ja = read(root / english), read(root / japanese)
     catalogs.append(en)
