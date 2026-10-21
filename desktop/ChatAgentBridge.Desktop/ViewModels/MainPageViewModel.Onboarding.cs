@@ -127,16 +127,16 @@ public partial class MainPageViewModel
         {
             if (!HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("RecheckCli"), ViewModelText.Get("RecheckCliDetails"), "Warning"); return; }
             if (!HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get("MissingChatConfig"), "Warning"); return; }
-            if (!_chatConnectionConfirmed) { SetStatus(ViewModelText.Get("ChatConnectionRequired"), ViewModelText.Get("ChatConnectionRequiredDetails"), "Warning"); return; }
-            if (_wizardConnectedProvider != OnboardingChatProvider || _wizardConnectedSettings != CreateSettingsSnapshot()) { SetStatus(ViewModelText.Get("ReconnectWithChangedSettings"), ViewModelText.Get("ReconnectWithChangedSettingsDetails"), "Warning"); return; }
-            if (_settings != CreateSettingsSnapshot()) { await SaveSettingsAsync(); if (_lastSaveSucceeded) SetStatus(ViewModelText.Get("SettingsSaved"), ViewModelText.Get("SettingsSavedReconnectDetails"), "Warning"); return; }
         }
         await SaveSettingsAsync();
         if (!_lastSaveSucceeded) return;
         if (OnboardingStep < 4) { await AdvanceOnboardingAsync(OnboardingStep + 1); return; }
         await SaveOnboardingProgressAsync("completed", 4);
         IsOnboardingActive = false;
-        IsStatusOpen = false;
+        if (!_chatConnectionConfirmed || _wizardConnectedProvider != OnboardingChatProvider || _wizardConnectedSettings != CreateSettingsSnapshot())
+            SetStatus(ViewModelText.Get("WizardConnectionDeferredTitle"), ViewModelText.Get("WizardConnectionDeferredDetails"), "Informational");
+        else
+            IsStatusOpen = false;
     });
     public async Task<bool> SaveWizardConnectionSettingsAsync()
     {

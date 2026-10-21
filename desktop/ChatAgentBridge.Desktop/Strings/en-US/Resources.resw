@@ -742,7 +742,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Please enter your token only on this screen. Does not output tokens in execution results.</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock020.Text" xml:space="preserve">
-    <value>Safety settings and connection confirmation</value>
+    <value>Approval and execution settings</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock021.Text" xml:space="preserve">
     <value>Select how to approve requests received from chat and share the results after execution.</value>
@@ -802,19 +802,19 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Connect to this chat when starting the app</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock025.Text" xml:space="preserve">
-    <value>The setting to launch the app itself when logging in to Windows can be changed in Connection settings after completing the initial settings.</value>
+    <value>To start the app when you sign in to Windows, open General after setup.</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock026.Text" xml:space="preserve">
     <value>Settings summary</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock027.Text" xml:space="preserve">
-    <value>Chat connection</value>
+    <value>Test chat connection (optional)</value>
   </data>
   <data name="WizardConnectMattermost.Content" xml:space="preserve">
-    <value>Connect to Mattermost</value>
+    <value>Connect and test Mattermost</value>
   </data>
   <data name="WizardConnectSlack.Content" xml:space="preserve">
-    <value>Connect to Slack</value>
+    <value>Connect and test Slack</value>
   </data>
   <data name="OnboardingPrevious.Content" xml:space="preserve">
     <value>Back</value>

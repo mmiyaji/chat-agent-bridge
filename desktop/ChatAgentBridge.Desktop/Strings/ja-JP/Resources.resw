@@ -742,7 +742,7 @@
     <value>トークンはこの画面にのみ入力してください。実行結果にトークンを出力しません。</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock020.Text" xml:space="preserve">
-    <value>安全設定と接続確認</value>
+    <value>承認・実行の設定</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock021.Text" xml:space="preserve">
     <value>チャットから届く依頼の承認方法と、実行後の結果共有を選びます。</value>
@@ -802,19 +802,19 @@
     <value>アプリ起動時に、このチャットへ接続する</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock025.Text" xml:space="preserve">
-    <value>Windowsへのログイン時にアプリ自体を起動する設定は、初期設定の完了後に「接続設定」で変更できます。</value>
+    <value>Windowsへのログイン時にアプリ自体を起動する設定は、初期設定の完了後に「全般」で変更できます。</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock026.Text" xml:space="preserve">
     <value>設定内容</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock027.Text" xml:space="preserve">
-    <value>チャット接続</value>
+    <value>チャット接続テスト（任意）</value>
   </data>
   <data name="WizardConnectMattermost.Content" xml:space="preserve">
-    <value>Mattermostに接続</value>
+    <value>Mattermostに接続して確認</value>
   </data>
   <data name="WizardConnectSlack.Content" xml:space="preserve">
-    <value>Slackに接続</value>
+    <value>Slackに接続して確認</value>
   </data>
   <data name="OnboardingPrevious.Content" xml:space="preserve">
     <value>戻る</value>
