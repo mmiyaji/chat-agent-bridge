@@ -5,11 +5,14 @@ public sealed class ExecutionHistoryStore
     private static readonly HashSet<string> AllowedStatuses = new(StringComparer.Ordinal)
         { "running", "completed", "failed", "cancelled", "interrupted" };
     private readonly string _filePath;
+    private readonly ActivityStatisticsStore _statisticsStore;
 
     public ExecutionHistoryStore(string? directory = null)
     {
         var dataDirectory = directory ?? new SettingsStore().DirectoryPath;
-        _filePath = Path.Combine(Path.GetFullPath(dataDirectory), "history.json");
+        var fullDirectory = Path.GetFullPath(dataDirectory);
+        _filePath = Path.Combine(fullDirectory, "history.json");
+        _statisticsStore = new ActivityStatisticsStore(fullDirectory);
     }
 
     public async Task RecordAsync(ExecutionRecord record, CancellationToken cancellationToken = default)
@@ -22,6 +25,9 @@ public sealed class ExecutionHistoryStore
         {
             var file = await ReadFileAsync(cancellationToken).ConfigureAwait(false);
             var records = file.Records!.ToList();
+            await _statisticsStore.MigrateAsync(records, cancellationToken).ConfigureAwait(false);
+            // Commit aggregates first; a retry after a history write failure is idempotent.
+            await _statisticsStore.RecordAsync(record, cancellationToken).ConfigureAwait(false);
             records.RemoveAll(existing => existing.Id == record.Id);
             records.Add(record);
             records = records.OrderBy(item => item.StartedAt).TakeLast(HistoryFileStore.MaxRecords).ToList();
@@ -45,6 +51,10 @@ public sealed class ExecutionHistoryStore
         try
         {
             var file = await ReadFileAsync(cancellationToken).ConfigureAwait(false);
+            await _statisticsStore.MigrateAsync(file.Records!, cancellationToken).ConfigureAwait(false);
+            var liveIds = file.Records!.Where(record => record.Status == "running" && HistoryFileStore.IsLive(record.Id))
+                .Select(record => record.Id).ToHashSet();
+            await _statisticsStore.ReconcileStaleActivesAsync(liveIds, cancellationToken).ConfigureAwait(false);
             return file.Records!.OrderByDescending(item => item.StartedAt)
                 .Select(item => item.Status == "running" && !HistoryFileStore.IsLive(item.Id)
                     ? item with { Status = "interrupted" }

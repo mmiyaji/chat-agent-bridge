@@ -750,4 +750,7 @@ After: {2}</value></data>
   <data name="ThirdPartyLicensesComponent" xml:space="preserve"><value>Component</value></data>
   <data name="ThirdPartyLicensesLoading" xml:space="preserve"><value>Loading…</value></data>
   <data name="ThirdPartyLicensesReadFailed" xml:space="preserve"><value>Could not read the bundled license notices. Extract the app again from the distribution archive.</value></data>
+  <data name="ActivityOtherModels" xml:space="preserve"><value>Other models</value></data>
+  <data name="ActivityStatisticsUnavailable" xml:space="preserve"><value>Usage statistics could not be read. Totals and charts are hidden to avoid showing incomplete values. Try refreshing or inspect the local data folder.</value></data>
+  <data name="ActivityStatisticsMigrationCoverage" xml:space="preserve"><value>Includes the history retained when statistics were first enabled. Earlier records already removed from history cannot be recovered.</value></data>
 </root>

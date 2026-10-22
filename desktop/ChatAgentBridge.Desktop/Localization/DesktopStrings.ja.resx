@@ -750,4 +750,7 @@
   <data name="ThirdPartyLicensesComponent" xml:space="preserve"><value>コンポーネント</value></data>
   <data name="ThirdPartyLicensesLoading" xml:space="preserve"><value>読み込み中…</value></data>
   <data name="ThirdPartyLicensesReadFailed" xml:space="preserve"><value>同梱のライセンス表記を読み込めませんでした。配布アーカイブからアプリを再度展開してください。</value></data>
+  <data name="ActivityOtherModels" xml:space="preserve"><value>その他のモデル</value></data>
+  <data name="ActivityStatisticsUnavailable" xml:space="preserve"><value>利用実績の集計を読み込めませんでした。不完全な値を表示しないよう、合計とグラフを非表示にしています。再読み込みするか、保存先の状態を確認してください。</value></data>
+  <data name="ActivityStatisticsMigrationCoverage" xml:space="preserve"><value>集計開始時に残っていた履歴を含みます。それ以前に履歴から削除された記録は復旧できません。</value></data>
 </root>

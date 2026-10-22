@@ -28,6 +28,10 @@ public sealed record ActivityDailyBar(DateOnly Date, int Count, int Maximum)
 public sealed partial class HistoryPageViewModel
 {
     private IReadOnlyList<ExecutionRecord> _activityRecords = [];
+    private readonly ActivityStatisticsStore _activityStatisticsStore = new();
+    private ActivityStatisticsSnapshot? _activityStatistics;
+    private bool _activityStatisticsFailed;
+    private int _activityStatisticsRequest;
     private ActivitySummary _activity = ActivitySummary.Build([], DateOnly.FromDateTime(DateTime.Today), 90, TimeZoneInfo.Local);
     public IReadOnlyList<ActivityCalendarCell> ActivityCalendar { get; private set; } = [];
     public ObservableCollection<ActivityBarRow> ActivityWeekdays { get; } = [];
@@ -50,7 +54,13 @@ public sealed partial class HistoryPageViewModel
     public string ActivityOutcomes => DesktopText.Get("ActivityOutcomes", _activity.Completed, _activity.Failed,
         _activity.Cancelled, _activity.TotalExecutions - _activity.Completed - _activity.Failed - _activity.Cancelled);
     public bool HasActivity => _activity.TotalExecutions > 0;
-    public bool ShowActivityEmptyState => IsHistoryLoadSuccessful && !IsBusy && !HasActivity;
+    public bool ShowActivityEmptyState => IsHistoryLoadSuccessful && !IsBusy && !_activityStatisticsFailed && !HasActivity;
+    public bool ActivityStatisticsAvailable => !_activityStatisticsFailed;
+    public string ActivityStatisticsNotice => _activityStatisticsFailed
+        ? DesktopText.Get("ActivityStatisticsUnavailable")
+        : _activityStatistics?.MigratedFromAvailableRetainedHistory == true && _activityRecords.Count > 0
+            ? DesktopText.Get("ActivityStatisticsMigrationCoverage") : "";
+    public bool HasActivityStatisticsNotice => ActivityStatisticsNotice.Length > 0;
     public string ActivityEmptyHeading => DesktopText.Get(_activityRecords.Count > 0
         ? "ActivityNoRunsInPeriodHeading"
         : "ActivityNoRunsHeading");
@@ -73,7 +83,7 @@ public sealed partial class HistoryPageViewModel
     public bool ShowEmptyExecutionDayClearAction => ShowEmptyExecutionHistory && HasExecutionDayFilter;
     public bool ShowExecutionFilterClearButton => IsHistoryLoadSuccessful && !IsBusy && HasExecutionDayFilter && HasExecutions;
 
-    partial void OnActivityRangeIndexChanged(int value) => RebuildActivity();
+    partial void OnActivityRangeIndexChanged(int value) => _ = RefreshActivityStatisticsAsync();
     partial void OnSelectedActivityDayChanged(ActivityCalendarCell? value)
     {
         OnPropertyChanged(nameof(SelectedActivityDayText));
@@ -86,13 +96,38 @@ public sealed partial class HistoryPageViewModel
         _activityRecords = records;
         RebuildChatNameIndexes();
         ApplyExecutionDayFilter();
-        RebuildActivity();
+        _ = RefreshActivityStatisticsAsync();
+    }
+
+    private async Task RefreshActivityStatisticsAsync()
+    {
+        var request = Interlocked.Increment(ref _activityStatisticsRequest);
+        var count = ActivityRangeIndex switch { 0 => 30, 2 => 365, _ => 90 };
+        var scope = UsageScopeIndex == 1 ? "last-request" : "turn";
+        try
+        {
+            var snapshot = await _activityStatisticsStore.ReadAsync(DateOnly.FromDateTime(DateTime.Today), count,
+                TimeZoneInfo.Local, scope, App.Pricing.Current);
+            if (request != _activityStatisticsRequest) return;
+            _activityStatistics = snapshot;
+            _activityStatisticsFailed = false;
+            RebuildActivity();
+        }
+        catch
+        {
+            if (request != _activityStatisticsRequest) return;
+            _activityStatistics = null;
+            _activityStatisticsFailed = true;
+            RebuildActivity();
+        }
     }
 
     private void RebuildActivity()
     {
         var count = ActivityRangeIndex switch { 0 => 30, 2 => 365, _ => 90 };
-        _activity = ActivitySummary.Build(_activityRecords, DateOnly.FromDateTime(DateTime.Today), count, TimeZoneInfo.Local);
+        _activity = _activityStatisticsFailed
+            ? ActivitySummary.Build([], DateOnly.FromDateTime(DateTime.Today), count, TimeZoneInfo.Local)
+            : _activityStatistics?.Activity ?? ActivitySummary.Build(_activityRecords, DateOnly.FromDateTime(DateTime.Today), count, TimeZoneInfo.Local);
         var selectedDate = SelectedActivityDay?.Date;
         var calendar = new List<ActivityCalendarCell>();
         var firstMonday = _activity.StartDay.AddDays(-(((int)_activity.StartDay.DayOfWeek + 6) % 7));
@@ -112,7 +147,8 @@ public sealed partial class HistoryPageViewModel
         ActivityModels.Clear();
         var maxModel = _activity.Models.Count > 0 ? _activity.Models.Max(model => model.Count) : 1;
         foreach (var model in _activity.Models)
-            ActivityModels.Add(new(string.IsNullOrWhiteSpace(model.Model) ? DesktopText.Get("ActivityUnknownModel") : model.Model,
+            ActivityModels.Add(new(model.Model == ActivityStatisticsStore.OtherModelsKey ? DesktopText.Get("ActivityOtherModels") :
+                string.IsNullOrWhiteSpace(model.Model) ? DesktopText.Get("ActivityUnknownModel") : model.Model,
                 model.Count, Math.Max(1, maxModel)));
         ActivityDaily.Clear();
         var recent = _activity.Days.TakeLast(28).ToArray();
@@ -121,6 +157,7 @@ public sealed partial class HistoryPageViewModel
         RebuildUsage();
         foreach (var name in new[] { nameof(ActivityRange), nameof(ActivityTotal), nameof(ActivityActiveDays), nameof(ActivityStreak),
                      nameof(ActivityPeak), nameof(ActivityOutcomes), nameof(HasActivity), nameof(ShowActivityEmptyState),
+                     nameof(ActivityStatisticsAvailable), nameof(ActivityStatisticsNotice), nameof(HasActivityStatisticsNotice),
                      nameof(ActivityEmptyHeading), nameof(ActivityEmptyDescription), nameof(ShowActivityModelEmptyState),
                      nameof(ActivityModelEmptyHeading), nameof(ActivityModelEmptyDescription),
                      nameof(ActivityDailyStart), nameof(ActivityDailyEnd), nameof(ActivityDailyScale) })

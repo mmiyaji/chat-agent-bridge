@@ -47,7 +47,7 @@ public sealed partial class HistoryPageViewModel
     public string UsageSelectedCost => SelectedUsageDay is { } day
         ? CostDetails(day.Totals.Cost, day.Totals.ExecutionCount) : "";
     partial void OnUsageMetricIndexChanged(int value) => RebuildUsage();
-    partial void OnUsageScopeIndexChanged(int value) => RebuildUsage();
+    partial void OnUsageScopeIndexChanged(int value) => _ = RefreshActivityStatisticsAsync();
     partial void OnSelectedUsageDayChanged(ActivityUsageDayChoice? value)
     {
         OnPropertyChanged(nameof(UsageSelectedDetails));
@@ -110,8 +110,11 @@ public sealed partial class HistoryPageViewModel
     private void RebuildUsage()
     {
         _usagePricing = App.Pricing.Current;
-        _usage = ActivityUsageSummary.Build(_activityRecords, _activity.EndDay, _activity.Days.Count, TimeZoneInfo.Local,
-            UsageScopeIndex == 1 ? "last-request" : "turn", _usagePricing);
+        _usage = _activityStatisticsFailed
+            ? ActivityUsageSummary.Build([], _activity.EndDay, _activity.Days.Count, TimeZoneInfo.Local,
+                UsageScopeIndex == 1 ? "last-request" : "turn", _usagePricing)
+            : _activityStatistics?.Usage ?? ActivityUsageSummary.Build(_activityRecords, _activity.EndDay, _activity.Days.Count, TimeZoneInfo.Local,
+                UsageScopeIndex == 1 ? "last-request" : "turn", _usagePricing);
         var recent = _usage.Days.TakeLast(28).ToArray();
         var dailyMax = UsageMetricIndex == 1 ? 100m : Math.Max(UsageMetricIndex == 2 ? 0.000001m : 1m,
             recent.Max(day => Metric(day.Totals) ?? 0));
@@ -120,7 +123,8 @@ public sealed partial class HistoryPageViewModel
         var models = _usage.Models.OrderByDescending(model => Metric(model.Totals) ?? -1).ToArray();
         var modelMax = UsageMetricIndex == 1 ? 100m : Math.Max(UsageMetricIndex == 2 ? 0.000001m : 1m,
             models.Select(model => Metric(model.Totals) ?? 0).DefaultIfEmpty().Max());
-        UsageModels = models.Select(model => UsageBar(string.IsNullOrWhiteSpace(model.Model)
+        UsageModels = models.Select(model => UsageBar(model.Model == ActivityStatisticsStore.OtherModelsKey
+            ? DesktopText.Get("ActivityOtherModels") : string.IsNullOrWhiteSpace(model.Model)
             ? DesktopText.Get("ActivityUnknownModel") : model.Model, model.Totals, modelMax)).ToArray();
         var selected = SelectedUsageDay?.Date;
         UsageDays = _usage.Days.Reverse().Select(day => new ActivityUsageDayChoice(day.Date, day.Totals)).ToArray();
@@ -132,5 +136,5 @@ public sealed partial class HistoryPageViewModel
             nameof(UsageDailyScale), nameof(UsageDailyRange), nameof(UsageSelectedCost) }) OnPropertyChanged(name);
     }
 
-    public void RefreshPricing() => RebuildUsage();
+    public void RefreshPricing() => _ = RefreshActivityStatisticsAsync();
 }

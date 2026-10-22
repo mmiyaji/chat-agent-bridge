@@ -14,6 +14,7 @@ public static class AgentCostEstimator
     }, LazyThreadSafetyMode.ExecutionAndPublication);
 
     public static DateOnly PriceCheckedOn => EmbeddedPricing.Value.CheckedOn;
+    internal static PricingSnapshot EmbeddedPricingSnapshot => EmbeddedPricing.Value;
 
     public static AgentCostEstimate? Estimate(AgentUsage? usage) => Estimate(usage, null);
 

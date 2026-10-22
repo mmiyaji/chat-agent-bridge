@@ -32,6 +32,11 @@
                 </ComboBox>
             </Grid>
 
+            <TextBlock Text="{x:Bind ViewModel.ActivityStatisticsNotice, Mode=OneWay}" TextWrapping="Wrap"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.HasActivityStatisticsNotice), Mode=OneWay}"
+                       AutomationProperties.AutomationId="ActivityStatisticsNotice" />
+
             <Border Style="{StaticResource ActivityCardStyle}" Padding="16" MaxWidth="460"
                     HorizontalAlignment="Center"
                     Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ShowActivityEmptyState), Mode=OneWay}"
@@ -50,7 +55,8 @@
                 </StackPanel>
             </Border>
 
-            <Grid x:Name="SummaryGrid" ColumnSpacing="8" RowSpacing="8">
+            <Grid x:Name="SummaryGrid" ColumnSpacing="8" RowSpacing="8"
+                  Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ActivityStatisticsAvailable), Mode=OneWay}">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                 <Border Style="{StaticResource ActivityCardStyle}">
@@ -67,7 +73,8 @@
                 </Border>
             </Grid>
 
-            <Border Style="{StaticResource ActivityCardStyle}">
+            <Border Style="{StaticResource ActivityCardStyle}"
+                    Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ActivityStatisticsAvailable), Mode=OneWay}">
                 <StackPanel Spacing="12">
                     <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="ActivityCalendarHeading" localization:LocalizedResourceKey.Key="ActivityCalendarHeading" />
                     <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ActivityCalendarHelp" localization:LocalizedResourceKey.Key="ActivityCalendarHelp" />
@@ -106,7 +113,8 @@
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="ActivityDailyHistogram" x:Uid="ActivityHistogramContainer" localization:LocalizedResourceKey.Key="ActivityHistogramContainer">
+            <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="ActivityDailyHistogram" x:Uid="ActivityHistogramContainer" localization:LocalizedResourceKey.Key="ActivityHistogramContainer"
+                    Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ActivityStatisticsAvailable), Mode=OneWay}">
                 <StackPanel Spacing="12">
                     <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                         <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="ActivityDailyHeading" localization:LocalizedResourceKey.Key="ActivityDailyHeading" />
@@ -127,7 +135,8 @@
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource ActivityCardStyle}">
+            <Border Style="{StaticResource ActivityCardStyle}"
+                    Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ActivityStatisticsAvailable), Mode=OneWay}">
                 <StackPanel Spacing="12">
                     <TextBlock x:Uid="UsageHeading" Style="{StaticResource SubtitleTextBlockStyle}" localization:LocalizedResourceKey.Key="UsageHeading" />
                     <Grid x:Name="UsageFilters" ColumnSpacing="12" RowSpacing="8">
@@ -201,7 +210,8 @@
                 </StackPanel>
             </Border>
 
-            <Grid x:Name="BreakdownGrid" ColumnSpacing="16" RowSpacing="16">
+            <Grid x:Name="BreakdownGrid" ColumnSpacing="16" RowSpacing="16"
+                  Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ActivityStatisticsAvailable), Mode=OneWay}">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                 <Border x:Name="WeekdayCard" Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="ActivityWeekdayChart" x:Uid="ActivityWeekdayContainer" localization:LocalizedResourceKey.Key="ActivityWeekdayContainer">
@@ -230,7 +240,8 @@
                     </StackPanel>
                 </Border>
             </Grid>
-            <TextBlock Text="{x:Bind ViewModel.ActivityOutcomes, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="ActivityOutcomes" />
+            <TextBlock Text="{x:Bind ViewModel.ActivityOutcomes, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="ActivityOutcomes"
+                       Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ActivityStatisticsAvailable), Mode=OneWay}" />
             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ActivityScopeNote" localization:LocalizedResourceKey.Key="ActivityScopeNote" />
         </StackPanel>
     </ScrollViewer>
