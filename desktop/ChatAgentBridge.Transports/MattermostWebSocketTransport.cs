@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -17,6 +18,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
     private HttpClient? _fileUploadHttp;
     private readonly SessionStore? _injectedSessionStore;
     private readonly BoundedSeenSet _seen = new(10_000);
+    private readonly MattermostBotCache _botCache = new();
     private string? _currentUserId;
     private Uri? _serverUri;
     private string? _token;
@@ -158,10 +160,13 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         try { await SendAsync(socket, new { seq = 1, action = "authentication_challenge", data = new { token } }, cancellationToken).ConfigureAwait(false); }
         catch (Exception ex) when (ex is WebSocketException or IOException) { throw new MattermostReconnectException(ex); }
 
+        // Per-connection receive buffers; each JsonDocument is disposed before the next receive reuses them.
+        var receiveBuffer = new byte[16 * 1024];
+        var receiveContent = new ArrayBufferWriter<byte>(receiveBuffer.Length);
         while (!cancellationToken.IsCancellationRequested && socket.State == WebSocketState.Open)
         {
             JsonDocument? received;
-            try { received = await ReceiveJsonAsync(socket, cancellationToken).ConfigureAwait(false); }
+            try { received = await ReceiveJsonAsync(socket, receiveBuffer, receiveContent, cancellationToken).ConfigureAwait(false); }
             catch (Exception ex) when (ex is WebSocketException or IOException) { throw new MattermostReconnectException(ex); }
             using var document = received;
             if (document is null)
@@ -195,12 +200,17 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
             await ProcessPostAsync(post, settings, _currentUserId ?? "", username, sessions, continuations, _seen,
                 async (request, ct) =>
                 {
-                    var authorRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
-                        new Uri(root, $"api/v4/users/{Uri.EscapeDataString(request.UserId)}"), token);
-                    MattermostUser author;
-                    try { author = await TransportHttp.SendJsonAsync<MattermostUser>(ActiveHttp, authorRequest, ct).ConfigureAwait(false); }
-                    catch (InvalidOperationException) { return false; }
-                    if (author.IsBot) return false;
+                    if (!_botCache.TryGet(request.UserId, out var isBot))
+                    {
+                        var authorRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
+                            new Uri(root, $"api/v4/users/{Uri.EscapeDataString(request.UserId)}"), token);
+                        MattermostUser author;
+                        try { author = await TransportHttp.SendJsonAsync<MattermostUser>(ActiveHttp, authorRequest, ct).ConfigureAwait(false); }
+                        catch (InvalidOperationException) { return false; }
+                        isBot = author.IsBot;
+                        _botCache.Set(request.UserId, isBot);
+                    }
+                    if (isBot) return false;
                     await onRequest(request, ct).ConfigureAwait(false);
                     return true;
                 }, cancellationToken).ConfigureAwait(false);
@@ -406,7 +416,10 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
     private HttpClient ActiveFileUploadHttp => _fileUploadHttp ?? throw new InvalidOperationException("Mattermost is not connected.");
 
     internal static ChatRequest? ParsePost(string json, string channelFilter, string currentUserId, bool isBot,
-        string? currentUsername = null, bool allowPlainThreadReplies = false)
+        string? currentUsername = null, bool allowPlainThreadReplies = false) =>
+        BuildRequest(ReadPost(json, channelFilter, currentUserId, isBot), currentUsername, allowPlainThreadReplies);
+
+    private static MattermostPost? ReadPost(string json, string channelFilter, string currentUserId, bool isBot)
     {
         MattermostPost? post;
         try { post = JsonSerializer.Deserialize<MattermostPost>(json, TransportHttp.JsonOptions); }
@@ -415,6 +428,12 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
             !string.Equals(post.ChannelId, channelFilter, StringComparison.Ordinal) ||
             string.Equals(post.UserId, currentUserId, StringComparison.Ordinal) || isBot ||
             string.IsNullOrWhiteSpace(post.Message) || IsFromWebhook(post)) return null;
+        return post;
+    }
+
+    private static ChatRequest? BuildRequest(MattermostPost? post, string? currentUsername, bool allowPlainThreadReplies)
+    {
+        if (post is null) return null;
         var threadId = string.IsNullOrWhiteSpace(post.RootId) ? post.Id : post.RootId;
         var isThreadReply = !string.IsNullOrWhiteSpace(post.RootId) &&
             !string.Equals(post.RootId, post.Id, StringComparison.Ordinal);
@@ -452,7 +471,8 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         MattermostContinuationTracker continuations,
         CancellationToken cancellationToken = default)
     {
-        var explicitRequest = ParsePost(json, settings.MattermostChannelId, currentUserId, isBot: false, currentUsername);
+        var post = ReadPost(json, settings.MattermostChannelId, currentUserId, isBot: false);
+        var explicitRequest = BuildRequest(post, currentUsername, allowPlainThreadReplies: false);
         if (explicitRequest is not null)
         {
             return ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", explicitRequest.UserId,
@@ -461,8 +481,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
                 : null;
         }
 
-        var continuation = ParsePost(json, settings.MattermostChannelId, currentUserId, isBot: false,
-            currentUsername, allowPlainThreadReplies: true);
+        var continuation = BuildRequest(post, currentUsername, allowPlainThreadReplies: true);
         if (continuation is null || !ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", continuation.UserId,
                 continuation.ChannelId, continuation.ThreadId)) return null;
 
@@ -530,20 +549,19 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         await socket.SendAsync(bytes, WebSocketMessageType.Text, true, ct).ConfigureAwait(false);
     }
 
-    private static async Task<JsonDocument?> ReceiveJsonAsync(ClientWebSocket socket, CancellationToken ct)
+    private static async Task<JsonDocument?> ReceiveJsonAsync(ClientWebSocket socket, byte[] buffer, ArrayBufferWriter<byte> content, CancellationToken ct)
     {
-        var buffer = new byte[16 * 1024];
-        using var content = new MemoryStream();
+        content.ResetWrittenCount();
         WebSocketReceiveResult result;
         do
         {
             result = await socket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
             if (result.MessageType == WebSocketMessageType.Close) return null;
             if (result.MessageType != WebSocketMessageType.Text) throw new InvalidOperationException("Mattermost sent a non-text WebSocket message.");
-            if (content.Length + result.Count > MaxMessageBytes) throw new InvalidOperationException("Mattermost WebSocket message exceeded the 1 MiB limit.");
-            content.Write(buffer, 0, result.Count);
+            if (content.WrittenCount + result.Count > MaxMessageBytes) throw new InvalidOperationException("Mattermost WebSocket message exceeded the 1 MiB limit.");
+            content.Write(buffer.AsSpan(0, result.Count));
         } while (!result.EndOfMessage);
-        try { return JsonDocument.Parse(content.ToArray()); }
+        try { return JsonDocument.Parse(content.WrittenMemory); }
         catch (JsonException) { return null; }
     }
 
