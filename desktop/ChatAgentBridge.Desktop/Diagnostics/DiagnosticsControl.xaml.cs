@@ -209,7 +209,10 @@ public sealed partial class DiagnosticsControl : UserControl
         {
             var report = CreateReport();
             var json = report.ToJson();
-            var preview = new TextBox { Text = json, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 180, MaxHeight = 360 };
+            // Configure multiline behavior before assigning JSON: TextBox can
+            // otherwise truncate the value at its first newline.
+            var preview = new TextBox { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 180, MaxHeight = 360 };
+            preview.Text = json;
             AutomationProperties.SetAutomationId(preview, "DiagnosticsExportPreviewText");
             var dialog = new ContentDialog
             {
