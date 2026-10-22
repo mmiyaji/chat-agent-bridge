@@ -429,14 +429,16 @@ internal static class ClaudeStreamingRunner
                     if (String(root, "subtype") != "success" || Property(root, "is_error").ValueKind == JsonValueKind.True)
                         _resultFailed = true;
                     var resultParser = new ClaudeOutputParser.Accumulator();
-                    resultParser.AddLine(text);
+                    resultParser.AddParsed(root);
                     // The SDK defines result.usage as per-turn. modelUsage can include cumulative
                     // session spend, so only its model identifier is retained by the parser.
                     _usage.Add(resultParser.Snapshot().Usage);
                     if (_firstResult.TrySetResult(true)) DeactivateTurn();
                 }
-                foreach (var update in _progressParser.ParseLine(text))
-                    try { _progress?.Report(update); } catch { }
+                // Reuse this line's parse; the progress parser keeps its own size limit for the text it accepts.
+                if (text.Length <= AgentRunProgressParser.MaxLineCharacters)
+                    foreach (var update in _progressParser.ParseRoot(root))
+                        try { _progress?.Report(update); } catch { }
             }
             catch (JsonException) { _badProtocol = true; }
         }
