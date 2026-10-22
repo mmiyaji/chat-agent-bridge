@@ -8,6 +8,8 @@ public sealed class HistoryTests
     [Theory]
     [InlineData("workspace_changed")]
     [InlineData("model_changed")]
+    [InlineData("follow_up_applied")]
+    [InlineData("follow_up_uncertain")]
     public async Task ConfigurationChangeAuditCanBeRecordedAndReloaded(string kind)
     {
         using var directory = new TemporaryDirectory();

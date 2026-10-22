@@ -6,7 +6,7 @@ public sealed class AuditStore
     {
         "received", "approved", "rejected", "started", "completed", "failed", "cancelled", "reply_sent",
         "reply_failed", "detached", "workspace_changed", "model_changed", "agent_changed",
-        "attachment_approved", "attachment_sent", "attachment_failed"
+        "attachment_approved", "attachment_sent", "attachment_failed", "follow_up_applied", "follow_up_uncertain"
     };
     private readonly string _filePath;
 
