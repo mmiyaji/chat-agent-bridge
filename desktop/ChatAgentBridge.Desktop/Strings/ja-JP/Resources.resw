@@ -842,7 +842,7 @@
   <data name="AboutPackageLabel.Header" xml:space="preserve"><value>パッケージ</value></data>
   <data name="AboutLinksHeading.Text" xml:space="preserve"><value>ヘルプとフィードバック</value></data>
   <data name="AboutTechnicalDetails.Header" xml:space="preserve"><value>アプリの詳細</value></data>
-  <data name="AboutTechnicalDetails.Description" xml:space="preserve"><value>配布形式・パッケージ識別名</value></data>
+  <data name="AboutTechnicalDetails.Description" xml:space="preserve"><value>ビルド日時・配布形式・パッケージ識別名</value></data>
   <data name="AboutVersionCaption.Text" xml:space="preserve"><value>バージョン</value></data>
   <data name="AboutProviderValue.Text" xml:space="preserve"><value>作成者: mmiyaji</value></data>
   <data name="AboutWebsite.Header" xml:space="preserve"><value>公式ウェブサイト</value></data>

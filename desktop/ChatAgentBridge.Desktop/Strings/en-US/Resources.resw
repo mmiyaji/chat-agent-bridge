@@ -841,7 +841,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AboutDescription.Text" xml:space="preserve"><value>Product information, updates, and legal details.</value></data>
   <data name="AboutLinksHeading.Text" xml:space="preserve"><value>Help and feedback</value></data>
   <data name="AboutTechnicalDetails.Header" xml:space="preserve"><value>App details</value></data>
-  <data name="AboutTechnicalDetails.Description" xml:space="preserve"><value>Distribution and package identity</value></data>
+  <data name="AboutTechnicalDetails.Description" xml:space="preserve"><value>Build time, distribution and package identity</value></data>
   <data name="AboutPackageLabel.Header" xml:space="preserve"><value>Package</value></data>
   <data name="AboutVersionCaption.Text" xml:space="preserve"><value>Version</value></data>
   <data name="AboutProviderValue.Text" xml:space="preserve"><value>By mmiyaji</value></data>

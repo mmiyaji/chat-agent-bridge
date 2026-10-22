@@ -35,9 +35,6 @@
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            AutomationProperties.AutomationId="AboutVersion" />
                             </StackPanel>
-                            <TextBlock x:Name="BuildTimestampValue" TextWrapping="Wrap"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       AutomationProperties.AutomationId="AboutBuildTimestamp" />
                             <TextBlock x:Uid="AboutProviderValue" TextWrapping="Wrap"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        AutomationProperties.AutomationId="AboutProvider" localization:LocalizedResourceKey.Key="AboutProviderValue" />
@@ -50,6 +47,11 @@
                         <FontIcon Glyph="&#xE943;" />
                     </settings:SettingsExpander.HeaderIcon>
                     <settings:SettingsExpander.Items>
+                        <settings:SettingsCard AutomationProperties.AutomationId="AboutBuildTimestampRow">
+                            <settings:SettingsCard.Header>
+                                <TextBlock x:Name="BuildTimestampValue" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutBuildTimestamp" />
+                            </settings:SettingsCard.Header>
+                        </settings:SettingsCard>
                         <settings:SettingsCard x:Uid="AboutPackageLabel" AutomationProperties.AutomationId="AboutPackageRow" localization:LocalizedResourceKey.Key="AboutPackageLabel">
                             <TextBlock x:Name="PackageValue" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutPackage" />
                         </settings:SettingsCard>

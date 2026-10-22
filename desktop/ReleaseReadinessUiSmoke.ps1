@@ -467,7 +467,9 @@ function Run-CompletedScenario([string]$Language, [string]$Theme, [string]$Expec
     Add-Pass "Appearance preference applied ($scenario)"
 
     Invoke-Element (Wait-Element $script:activeWindow 'NavAbout') 'About navigation'
-    $buildTimestamp = Wait-Element $script:activeWindow 'AboutBuildTimestamp'
+    $technicalDetails = Wait-ElementWhileScrolling $script:activeWindow 'AboutScroll' 'AboutTechnicalDetails' 10 -RequireVisible
+    Expand-Element $technicalDetails 'About app details expander'
+    $buildTimestamp = Wait-ElementWhileScrolling $script:activeWindow 'AboutScroll' 'AboutBuildTimestamp' 10
     $buildText = $buildTimestamp.Current.Name
     $buildCaption = if ($Language -eq 'ja') { 'ビルド日時:' } else { 'Built on:' }
     if (-not $buildText.StartsWith($buildCaption, [StringComparison]::Ordinal) -or $buildText -notmatch 'UTC[+-]\d{2}:\d{2}') {
