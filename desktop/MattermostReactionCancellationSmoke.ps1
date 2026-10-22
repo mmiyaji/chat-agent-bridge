@@ -145,6 +145,11 @@ try {
     Assert ($firstProgress.Count -eq 1) 'Could not identify the first request progress post.'
     $firstProgressId = [string]$firstProgress[0].id
     Assert (-not [string]::IsNullOrWhiteSpace($firstProgressId)) 'The first progress post has no id.'
+    Check 'Bot seeds a clickable stop reaction and its own WebSocket echo is ignored' {
+        $seeded = @((Read-Results).reactions | Where-Object { $_.post_id -eq $firstProgressId -and $_.user_id -eq 'ui-bridge' -and $_.emoji_name -eq 'octagonal_sign' })
+        Assert ($seeded.Count -eq 1) 'The running progress post has no Bot stop reaction.'
+        Assert (@(Running-Record $thread).Count -eq 1) 'The Bot reaction echo cancelled its own request.'
+    }
 
     Send-Request $secondId $thread $secondPrompt
     Wait-For { @((Read-Results).replies | Where-Object { $_.root_id -eq $thread }).Count -ge 2 } 'queued request receipt progress'
@@ -190,7 +195,15 @@ try {
         Wait-For { @(Read-History | Where-Object { $_.ThreadId -eq $thread -and $_.Status -eq 'completed' }).Count -eq 2 } 'final same-thread request completion'
     }
 
+    Wait-For { @((Read-Results).replies | Where-Object { $_.root_id -eq $thread -and $_.message -like '*LIVE_FIXTURE_FINAL fixed final response*' }).Count -eq 2 } 'all final replies'
     $final = Read-Results
+    Check 'Terminal requests remove only the Bot stop reaction and preserve member reactions' {
+        Assert (@($final.reactions | Where-Object { $_.user_id -eq 'ui-bridge' -and $_.emoji_name -eq 'octagonal_sign' }).Count -eq 0) 'A terminal request retained its Bot stop marker.'
+        Assert (@($final.reactions | Where-Object { $_.post_id -eq $firstProgressId -and $_.user_id -eq 'alice' -and $_.emoji_name -eq 'octagonal_sign' }).Count -eq 1) 'Cleanup removed the requester reaction.'
+        Assert (@($final.reactions | Where-Object { $_.post_id -eq $firstProgressId -and $_.user_id -eq 'bob' }).Count -gt 0) 'Cleanup removed another member reaction.'
+        Assert (@($final.reactionAdds).Count -eq 4) 'Expected one seeded stop marker for each of the four requests.'
+        Assert (@($final.reactionRemoves).Count -eq 4) 'Expected each request to remove its Bot marker once.'
+    }
     Save-Json (Join-Path $runRoot 'chat-results.json') $final
     $threadReplies = @($final.replies | Where-Object { $_.root_id -eq $thread })
     Assert (@($threadReplies | Where-Object { $_.message -like '*LIVE_FIXTURE_FINAL fixed final response*' }).Count -eq 2) 'Expected final replies only for the queued and later completed requests.'

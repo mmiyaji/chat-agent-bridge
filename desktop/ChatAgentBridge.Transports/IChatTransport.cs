@@ -78,6 +78,13 @@ public interface IChatProgressLifecycleTransport
 {
     /// <summary>Marks a progress post as no longer eligible for transport-specific actions such as stop reactions.</summary>
     void CompleteProgress(ChatProgressMessage message);
+
+    /// <summary>Invalidates actions immediately, then optionally removes transport-owned controls.</summary>
+    Task CompleteProgressAsync(ChatProgressMessage message, CancellationToken cancellationToken = default)
+    {
+        CompleteProgress(message);
+        return Task.CompletedTask;
+    }
 }
 
 /// <summary>An opaque handle for a progress message created by an <see cref="IChatProgressTransport"/>.</summary>

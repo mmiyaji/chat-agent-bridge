@@ -43,6 +43,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     private bool _started;
     private bool _terminal;
     private bool _disposed;
+    private bool _progressCompleted;
 
     public ChatProgressReporter(
         IChatTransport transport,
@@ -142,7 +143,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             // entered its provider call will observe this flag and cannot publish a stale Running edit.
             _terminal = true;
             _heartbeatStop.Cancel();
-            CompleteProgress();
+            await CompleteProgressAsync().ConfigureAwait(false);
             await DrainHeartbeatAsync().ConfigureAwait(false);
             _elapsed.Stop();
 
@@ -168,7 +169,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
                 return;
             _disposed = true;
             _heartbeatStop.Cancel();
-            CompleteProgress();
+            await CompleteProgressAsync().ConfigureAwait(false);
             await DrainHeartbeatAsync().ConfigureAwait(false);
             _elapsed.Stop();
         }
@@ -314,12 +315,25 @@ public sealed class ChatProgressReporter : IAsyncDisposable
         catch { }
     }
 
-    private void CompleteProgress()
+    private async Task CompleteProgressAsync()
     {
-        if (_message is null || _lifecycleTransport is null)
+        if (_message is null || _lifecycleTransport is null || _progressCompleted)
             return;
-        try { _lifecycleTransport.CompleteProgress(_message); }
+        _progressCompleted = true;
+        using var timeout = new CancellationTokenSource(_timeout);
+        Task? cleanup = null;
+        try
+        {
+            cleanup = _lifecycleTransport.CompleteProgressAsync(_message, timeout.Token);
+            await cleanup.WaitAsync(timeout.Token).ConfigureAwait(false);
+        }
         catch (Exception ex) { ReportFailure(ex); }
+        finally
+        {
+            if (cleanup is not null)
+                _ = cleanup.ContinueWith(completed => { _ = completed.Exception; }, CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        }
     }
 
     private async Task<bool> EnterLifecycleAsync(CancellationToken cancellationToken)
