@@ -183,6 +183,7 @@
                         <StackPanel Spacing="8">
                             <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock026" x:Uid="onboardingOnboardingWizardTextBlock026" />
                             <TextBlock Text="{x:Bind ViewModel.WizardSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardSummary" />
+                            <TextBlock Text="{x:Bind ViewModel.WizardSkippedNotice, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasWizardSkippedNotice), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardSkippedNotice" />
                         </StackPanel>
                     </Border>
                     <StackPanel Spacing="8">
@@ -199,6 +200,7 @@
         <Grid Grid.Row="2" ColumnSpacing="8" VerticalAlignment="Bottom"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <Button Grid.Column="0"  Command="{x:Bind ViewModel.PreviousOnboardingCommand}" AutomationProperties.AutomationId="OnboardingPrevious"  x:Uid="OnboardingPrevious" />
             <ProgressRing Grid.Column="2" IsActive="{x:Bind ViewModel.IsOnboardingBusy, Mode=OneWay}" Width="24" Height="24" />
+            <Button Grid.Column="1" HorizontalAlignment="Right" Content="{x:Bind ViewModel.OnboardingSkipLabel, Mode=OneWay}" Command="{x:Bind ViewModel.SkipOnboardingStepCommand}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.CanSkipOnboardingStep), Mode=OneWay}" AutomationProperties.AutomationId="OnboardingSkip" />
             <Button Grid.Column="3" Content="{x:Bind ViewModel.OnboardingNextLabel, Mode=OneWay}" Command="{x:Bind ViewModel.NextOnboardingCommand}" Style="{StaticResource AccentButtonStyle}" AutomationProperties.AutomationId="OnboardingNext" />
         </Grid>
     </Grid>

@@ -11,6 +11,7 @@ public partial class MainPageViewModel
         OnPropertyChanged(nameof(OnboardingDescription));
         OnPropertyChanged(nameof(OnboardingNextLabel));
         OnPropertyChanged(nameof(WizardSummary));
+        RefreshWizardSkipState();
         OnPropertyChanged(nameof(BasicProviderHelp));
         OnPropertyChanged(nameof(AgentProviderDisplayName));
         OnPropertyChanged(nameof(AgentPermissionStatus));

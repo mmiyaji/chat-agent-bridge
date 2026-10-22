@@ -129,20 +129,48 @@ public partial class MainPageViewModel
         }
         if (OnboardingStep == 2 && !HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("CheckCliAndModel"), CliCheckSucceeded ? ViewModelText.Get("SelectedModelUnavailable") : ViewModelText.Get("RunCliCheckDetails"), "Warning"); RequestFieldFocus(OnboardingFieldChecks.CliStep(false)); return; }
         if (OnboardingStep == 3 && !HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get(IsWizardSlack ? "SlackConnectionFields" : "MattermostConnectionFields"), "Warning"); RequestFieldFocus(MissingChatFields()); return; }
-        if (OnboardingStep == 4)
-        {
-            if (!HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("RecheckCli"), ViewModelText.Get("RecheckCliDetails"), "Warning"); return; }
-            if (!HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get("MissingChatConfig"), "Warning"); return; }
-        }
         await SaveSettingsAsync();
         if (!_lastSaveSucceeded) return;
         if (OnboardingStep < 4) { await AdvanceOnboardingAsync(OnboardingStep + 1); return; }
         await SaveOnboardingProgressAsync("completed", 4);
         IsOnboardingActive = false;
-        if (!_chatConnectionConfirmed || _wizardConnectedProvider != OnboardingChatProvider || _wizardConnectedSettings != CreateSettingsSnapshot())
+        var skipped = SkippedWizardItems();
+        if (skipped.Length > 0)
+            SetStatus(ViewModelText.Get("WizardSkippedTitle"), ViewModelText.Get("WizardSkippedDetails", skipped), "Informational");
+        else if (!_chatConnectionConfirmed || _wizardConnectedProvider != OnboardingChatProvider || _wizardConnectedSettings != CreateSettingsSnapshot())
             SetStatus(ViewModelText.Get("WizardConnectionDeferredTitle"), ViewModelText.Get("WizardConnectionDeferredDetails"), "Informational");
         else
             IsStatusOpen = false;
+    });
+    /// <summary>The steps that can be left for later; the wizard may finish without them.</summary>
+    public bool CanSkipOnboardingStep => OnboardingStep is 2 or 3;
+    public string OnboardingSkipLabel => ViewModelText.Get("WizardSkipStep");
+    public bool HasWizardSkippedNotice => SkippedWizardItems().Length > 0;
+    public string WizardSkippedNotice => SkippedWizardItems() is { Length: > 0 } items ? ViewModelText.Get("WizardSkippedNotice", items) : "";
+    private string SkippedWizardItems()
+    {
+        var items = new List<string>();
+        if (!HasCurrentCliCheck()) items.Add(ViewModelText.Get("WizardSkippedCli"));
+        if (!HasChosenChatConfiguration()) items.Add(ViewModelText.Get("WizardSkippedChat"));
+        return string.Join(ViewModelText.Get("WizardSkippedSeparator"), items);
+    }
+    partial void OnOnboardingStepChanged(int value) => RefreshWizardSkipState();
+    private void RefreshWizardSkipState()
+    {
+        OnPropertyChanged(nameof(CanSkipOnboardingStep));
+        OnPropertyChanged(nameof(HasWizardSkippedNotice));
+        OnPropertyChanged(nameof(WizardSkippedNotice));
+        OnPropertyChanged(nameof(OnboardingSkipLabel));
+    }
+    [RelayCommand]
+    private Task SkipOnboardingStepAsync() => RunOnboardingActionAsync(async () =>
+    {
+        if (!CanSkipOnboardingStep) return;
+        IsStatusOpen = false;
+        // The entered values are kept; only the missing-input check is waived for this step.
+        await SaveSettingsAsync();
+        if (!_lastSaveSucceeded) return;
+        await AdvanceOnboardingAsync(OnboardingStep + 1);
     });
     public async Task<bool> SaveWizardConnectionSettingsAsync()
     {
