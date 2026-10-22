@@ -881,6 +881,7 @@ public partial class MainPageViewModel : ObservableObject
         if (requirements.RequiresApprovalChange) ChatApprovalMode = ChatFollowUpPolicy.SteerApprovalMode;
         ChatFollowUpMode = ChatFollowUpPolicy.Steer;
     }
+    public bool IsApplyingSettings => _initializingSettings || _restoringSettingsDraft || IsLoading || !IsSettingsLoaded;
     public void RevertFollowUpToQueue() => ChatFollowUpMode = ChatFollowUpPolicy.Queue;
     private static string ChatApprovalLabel(string value) => value switch
     { "first" => ViewModelText.Get("ApprovalFirstOnly"), "auto" => ViewModelText.Get("ApprovalAutomatic"), _ => ViewModelText.Get("ApprovalEveryTime") };

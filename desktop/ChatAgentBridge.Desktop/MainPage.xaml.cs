@@ -153,9 +153,8 @@ public sealed partial class MainPage : Page
     private async void ChatFollowUpMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         // Programmatic changes (loading, discarding a draft, reverting) must not ask again.
-        if (sender is not ComboBox { SelectedValue: ChatFollowUpPolicy.Steer } combo || _followUpDialogOpen ||
-            !(combo.IsDropDownOpen || combo.FocusState != FocusState.Unfocused) ||
-            e.RemovedItems.Count == 0 || XamlRoot is null) return;
+        if (sender is not ComboBox { SelectedValue: ChatFollowUpPolicy.Steer } || _followUpDialogOpen ||
+            ViewModel.IsApplyingSettings || e.RemovedItems.Count == 0 || XamlRoot is null) return;
         _followUpDialogOpen = true;
         // The selection is already in the draft; hold auto-save so it cannot open its own dialog behind this one.
         _settingsPromptOpen = true;
