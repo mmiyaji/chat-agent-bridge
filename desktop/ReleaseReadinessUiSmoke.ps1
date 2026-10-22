@@ -471,9 +471,10 @@ function Run-CompletedScenario([string]$Language, [string]$Theme, [string]$Expec
     Expand-Element $technicalDetails 'About app details expander'
     $buildTimestamp = Wait-ElementWhileScrolling $script:activeWindow 'AboutScroll' 'AboutBuildTimestamp' 10
     $buildText = $buildTimestamp.Current.Name
-    $buildCaption = if ($Language -eq 'ja') { 'ビルド日時:' } else { 'Built on:' }
-    if (-not $buildText.StartsWith($buildCaption, [StringComparison]::Ordinal) -or $buildText -notmatch 'UTC[+-]\d{2}:\d{2}') {
-        throw "Build timestamp is missing, unknown, or not localized for ${scenario}: '$buildText'."
+    $buildLabel = if ($Language -eq 'ja') { 'ビルド日時' } else { 'Build time' }
+    $buildRow = Wait-ElementWhileScrolling $script:activeWindow 'AboutScroll' 'AboutBuildTimestampRow' 10
+    if ($buildRow.Current.Name -ne $buildLabel -or $buildText -notmatch '^.+ \(UTC[+-]\d{2}:\d{2}\)$') {
+        throw "Build timestamp row is missing, unknown, or not localized for ${scenario}: label '$($buildRow.Current.Name)' value '$buildText'."
     }
     Add-Pass "About shows localized build timestamp with time-zone offset ($scenario)"
     Capture-Screenshot "${scenario}-about-build-timestamp.png"

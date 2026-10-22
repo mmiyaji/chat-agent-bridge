@@ -47,10 +47,8 @@
                         <FontIcon Glyph="&#xE943;" />
                     </settings:SettingsExpander.HeaderIcon>
                     <settings:SettingsExpander.Items>
-                        <settings:SettingsCard AutomationProperties.AutomationId="AboutBuildTimestampRow">
-                            <settings:SettingsCard.Header>
-                                <TextBlock x:Name="BuildTimestampValue" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutBuildTimestamp" />
-                            </settings:SettingsCard.Header>
+                        <settings:SettingsCard x:Uid="AboutBuildTimestampLabel" AutomationProperties.AutomationId="AboutBuildTimestampRow" localization:LocalizedResourceKey.Key="AboutBuildTimestampLabel">
+                            <TextBlock x:Name="BuildTimestampValue" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutBuildTimestamp" />
                         </settings:SettingsCard>
                         <settings:SettingsCard x:Uid="AboutPackageLabel" AutomationProperties.AutomationId="AboutPackageRow" localization:LocalizedResourceKey.Key="AboutPackageLabel">
                             <TextBlock x:Name="PackageValue" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutPackage" />
