@@ -65,6 +65,7 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
         _runLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var runToken = _runLifetime.Token;
         var sessions = new SessionStore();
+        var continuations = new SlackContinuationTracker();
         var appToken = settings.SlackAppToken.Trim();
         var identity = await RetrySlackApiAsync<AuthTestResponse>("auth.test", _botToken, null, runToken,
             static response => response.Ok, "Slack bot token validation failed.", static response => IsRetryableSlackError(response.Error)).ConfigureAwait(false);
@@ -75,7 +76,7 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
         {
             try
             {
-                await RunSocketConnectionAsync(appToken, sessions, onRequest, settings, runToken).ConfigureAwait(false);
+                await RunSocketConnectionAsync(appToken, sessions, continuations, onRequest, settings, runToken).ConfigureAwait(false);
                 if (!runToken.IsCancellationRequested) throw new SlackReconnectException();
             }
             catch (OperationCanceledException) when (runToken.IsCancellationRequested)
@@ -114,7 +115,7 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
         }
     }
 
-    private async Task RunSocketConnectionAsync(string appToken, SessionStore sessions,
+    private async Task RunSocketConnectionAsync(string appToken, SessionStore sessions, SlackContinuationTracker continuations,
         Func<ChatRequest, CancellationToken, Task> onRequest, BridgeSettings settings, CancellationToken cancellationToken)
     {
         ConnectionsOpenResponse open;
@@ -168,8 +169,10 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
                 try { await SendAsync(socket, new { envelope_id = envelopeId }, cancellationToken).ConfigureAwait(false); }
                 catch (Exception ex) when (ex is WebSocketException or IOException) { throw new SlackReconnectException(ex); }
                 if (!envelope.TryGetProperty("payload", out var payload) || !payload.TryGetProperty("event", out var evt)) continue;
-                var request = await ParseRequestAsync(evt, _botUserId, settings, sessions, cancellationToken).ConfigureAwait(false);
+                var request = await ParseRequestAsync(evt, _botUserId, settings, sessions, cancellationToken, continuations).ConfigureAwait(false);
                 if (request is null || !_seen.TryAdd(request.MessageId)) continue;
+                // Remember before delivery so live follow-ups in a brand-new thread are accepted while the first run is active.
+                continuations.Remember(ChatSessionScope.Create("slack", request.ChannelId, request.ThreadId, request.UserId));
                 await onRequest(request, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -322,7 +325,8 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
     }
 
     internal static async Task<ChatRequest?> ParseRequestAsync(JsonElement evt, string? botUserId,
-        BridgeSettings settings, SessionStore sessions, CancellationToken cancellationToken = default)
+        BridgeSettings settings, SessionStore sessions, CancellationToken cancellationToken = default,
+        SlackContinuationTracker? continuations = null)
     {
         var request = ParseRequest(evt, botUserId);
         if (request is not null)
@@ -332,6 +336,7 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
         if (continuation is null || !ChatAccessPolicy.IsAllowedRequest(settings, "slack", continuation.UserId, continuation.ChannelId, continuation.ThreadId)) return null;
 
         var key = ChatSessionScope.Create("slack", continuation.ChannelId, continuation.ThreadId, continuation.UserId);
+        if (continuations?.Contains(key) == true) return continuation;
         return await sessions.FindAsync(key, cancellationToken).ConfigureAwait(false) is not null ||
             await sessions.FindWorkspaceAsync(key, cancellationToken).ConfigureAwait(false) is not null ? continuation : null;
     }

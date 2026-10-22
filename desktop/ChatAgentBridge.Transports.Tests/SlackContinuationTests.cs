@@ -120,6 +120,59 @@ public sealed class SlackContinuationTests
         Assert.Equal(expected, request.Text);
     }
 
+    [Fact]
+    public async Task Tracked_thread_accepts_plain_reply_from_same_user_before_any_binding_is_saved()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new SessionStore(directory.Path);
+        var tracker = new SlackContinuationTracker();
+        using var trigger = JsonDocument.Parse("""{"type":"app_mention","channel":"C1","user":"U1","text":"<@UBOT> start","ts":"10.0"}""");
+        var started = await SlackSocketModeTransport.ParseRequestAsync(trigger.RootElement, "UBOT", Settings("U1,U2"), store, default, tracker);
+        Assert.NotNull(started);
+        tracker.Remember(ChatSessionScope.Create("slack", started.ChannelId, started.ThreadId, started.UserId));
+
+        using var own = Event("U1", "C1", "10.2", "10.0", "also do X");
+        var reply = await SlackSocketModeTransport.ParseRequestAsync(own.RootElement, "UBOT", Settings("U1,U2"), store, default, tracker);
+        Assert.NotNull(reply);
+        Assert.Equal("also do X", reply.Text);
+
+        using var other = Event("U2", "C1", "10.3", "10.0", "hijack");
+        Assert.Null(await SlackSocketModeTransport.ParseRequestAsync(other.RootElement, "UBOT", Settings("U1,U2"), store, default, tracker));
+        Assert.Null(await SlackSocketModeTransport.ParseRequestAsync(own.RootElement, "UBOT",
+            Settings("U1") with { SlackAllowedThreadIds = "99.0" }, store, default, tracker));
+    }
+
+    [Fact]
+    public async Task Untracked_thread_rejects_plain_reply_even_with_a_tracker()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new SessionStore(directory.Path);
+        var tracker = new SlackContinuationTracker();
+        tracker.Remember(ChatSessionScope.Create("slack", "C1", "10.0", "U1"));
+
+        using var elsewhere = Event("U1", "C1", "11.2", "11.0", "also do X");
+        Assert.Null(await SlackSocketModeTransport.ParseRequestAsync(elsewhere.RootElement, "UBOT", Settings("U1"), store, default, tracker));
+        using var botMessage = JsonDocument.Parse("""{"type":"message","channel":"C1","user":"U1","bot_id":"B1","text":"x","ts":"10.6","thread_ts":"10.0"}""");
+        Assert.Null(await SlackSocketModeTransport.ParseRequestAsync(botMessage.RootElement, "UBOT", Settings("U1"), store, default, tracker));
+    }
+
+    [Fact]
+    public void Tracker_is_bounded_and_evicts_the_oldest_key()
+    {
+        var tracker = new SlackContinuationTracker(2);
+        var first = ChatSessionScope.Create("slack", "C1", "1.0", "U1");
+        var second = ChatSessionScope.Create("slack", "C1", "2.0", "U1");
+        var third = ChatSessionScope.Create("slack", "C1", "3.0", "U1");
+        tracker.Remember(first);
+        tracker.Remember(second);
+        tracker.Remember(third);
+
+        Assert.False(tracker.Contains(first));
+        Assert.True(tracker.Contains(second));
+        Assert.True(tracker.Contains(third));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SlackContinuationTracker(0));
+    }
+
     private static BridgeSettings Settings(string users) => new() { SlackAllowedUserIds = users };
 
     private static JsonDocument Event(string user, string channel, string ts, string thread, string text) =>
