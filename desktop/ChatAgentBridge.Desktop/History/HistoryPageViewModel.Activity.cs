@@ -50,6 +50,18 @@ public sealed partial class HistoryPageViewModel
     public string ActivityOutcomes => DesktopText.Get("ActivityOutcomes", _activity.Completed, _activity.Failed,
         _activity.Cancelled, _activity.TotalExecutions - _activity.Completed - _activity.Failed - _activity.Cancelled);
     public bool HasActivity => _activity.TotalExecutions > 0;
+    public bool ShowActivityEmptyState => IsHistoryLoadSuccessful && !IsBusy && !HasActivity;
+    public string ActivityEmptyHeading => DesktopText.Get(_activityRecords.Count > 0
+        ? "ActivityNoRunsInPeriodHeading"
+        : "ActivityNoRunsHeading");
+    public string ActivityEmptyDescription => DesktopText.Get(_activityRecords.Count > 0
+        ? "ActivityNoRunsInPeriodDescription"
+        : "ActivityNoRunsDescription");
+    public bool ShowActivityModelEmptyState => ShowActivityEmptyState;
+    public string ActivityModelEmptyHeading => DesktopText.Get("ActivityNoModelsHeading");
+    public string ActivityModelEmptyDescription => DesktopText.Get(_activityRecords.Count > 0
+        ? "ActivityNoModelsInPeriodDescription"
+        : "ActivityNoModelsDescription");
     public string SelectedActivityDayText => SelectedActivityDay?.Label ?? DesktopText.Get("ActivitySelectDay");
     public bool CanOpenActivityDay => SelectedActivityDay is { InRange: true, Count: > 0 };
     public string ActivityDailyStart => ActivityDaily.FirstOrDefault()?.Date.ToString("m") ?? "";
@@ -108,7 +120,10 @@ public sealed partial class HistoryPageViewModel
         foreach (var day in recent) ActivityDaily.Add(new(day.Date, day.Count, maxDay));
         RebuildUsage();
         foreach (var name in new[] { nameof(ActivityRange), nameof(ActivityTotal), nameof(ActivityActiveDays), nameof(ActivityStreak),
-                     nameof(ActivityPeak), nameof(ActivityOutcomes), nameof(HasActivity), nameof(ActivityDailyStart), nameof(ActivityDailyEnd), nameof(ActivityDailyScale) })
+                     nameof(ActivityPeak), nameof(ActivityOutcomes), nameof(HasActivity), nameof(ShowActivityEmptyState),
+                     nameof(ActivityEmptyHeading), nameof(ActivityEmptyDescription), nameof(ShowActivityModelEmptyState),
+                     nameof(ActivityModelEmptyHeading), nameof(ActivityModelEmptyDescription),
+                     nameof(ActivityDailyStart), nameof(ActivityDailyEnd), nameof(ActivityDailyScale) })
             OnPropertyChanged(name);
     }
 

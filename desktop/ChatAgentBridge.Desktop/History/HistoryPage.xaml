@@ -99,7 +99,7 @@
                                 <TextBlock Text="{x:Bind ViewModel.SessionResultSummary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.AutomationId="SavedSessionsCount" />
                                 <Button Grid.Column="1" Command="{x:Bind ViewModel.ClearSessionFiltersCommand}"
                                         Content="{x:Bind ViewModel.ClearSessionFiltersLabel, Mode=OneWay}"
-                                        Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSessionFilters), Mode=OneWay}"
+                                        Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowSessionFilterHeaderClearButton), Mode=OneWay}"
                                         AutomationProperties.AutomationId="ClearSessionFilters" />
                             </Grid>
                             <Grid Grid.Row="1" Margin="4,0,4,4">
@@ -143,14 +143,30 @@
                                         </DataTemplate>
                                     </ListView.ItemTemplate>
                                 </ListView>
-                                <StackPanel Margin="12" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                            Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasFilteredSessions), Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE8BD;" FontSize="28" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                              HorizontalAlignment="Center" AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False" />
-                                    <TextBlock TextWrapping="Wrap" TextAlignment="Center"
-                                               Text="{x:Bind ViewModel.SessionListEmptyText, Mode=OneWay}"
-                                               AutomationProperties.AutomationId="EmptySavedSessions" />
-                                </StackPanel>
+                                <ScrollViewer x:Name="SavedSessionsEmptyScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                              HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
+                                              Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptySessionList), Mode=OneWay}">
+                                    <Border Style="{StaticResource ActivityCardStyle}" Padding="16" Margin="12" MaxWidth="460"
+                                            HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                            AutomationProperties.AutomationId="SavedSessionsEmptyCard">
+                                    <StackPanel Spacing="12" HorizontalAlignment="Center">
+                                        <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
+                                                 AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
+                                            <SymbolIcon Symbol="People" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </Viewbox>
+                                        <TextBlock Text="{x:Bind ViewModel.SessionListEmptyHeading, Mode=OneWay}"
+                                                   Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                                   AutomationProperties.AutomationId="EmptySavedSessions" />
+                                        <TextBlock Text="{x:Bind ViewModel.SessionListEmptyDescription, Mode=OneWay}"
+                                                   Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                                   AutomationProperties.AutomationId="SavedSessionsEmptyBody" />
+                                        <Button Command="{x:Bind ViewModel.ClearSessionFiltersCommand}"
+                                                Content="{x:Bind ViewModel.ClearSessionFiltersLabel, Mode=OneWay}"
+                                                Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowSessionFilterEmptyAction), Mode=OneWay}"
+                                                AutomationProperties.AutomationId="ClearSessionFiltersEmpty" />
+                                    </StackPanel>
+                                    </Border>
+                                </ScrollViewer>
                             </Grid>
                         </Grid>
 
@@ -164,7 +180,8 @@
                                 <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Border Grid.RowSpan="3" Style="{StaticResource ActivityCardStyle}" Padding="0" IsHitTestVisible="False" />
-                            <Grid Margin="8,8,8,0" ColumnSpacing="8">
+                            <Grid Margin="8,8,8,0" ColumnSpacing="8"
+                                  Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                 <Button x:Name="BackToSessionsButton" Click="BackToSessions_Click" AutomationProperties.AutomationId="BackToSessionsButton"
                                         Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsNarrow), Mode=OneWay}"
@@ -173,8 +190,9 @@
                                            Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                            ToolTipService.ToolTip="{x:Bind ViewModel.SelectedSessionTitle, Mode=OneWay}" />
                             </Grid>
-                            <ScrollViewer x:Name="SessionDetailScroll" Grid.Row="1" Margin="8,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                <Grid>
+                            <Grid Grid.Row="1" Margin="8,0">
+                                <ScrollViewer x:Name="SessionDetailScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <Grid>
                                     <Grid x:Name="SessionDetailContent" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}" RowSpacing="12">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
@@ -219,11 +237,29 @@
                                             </StackPanel>
                                         </Expander>
                                     </Grid>
-                                    <TextBlock x:Name="NoSessionSelectedText" Text="{x:Bind ViewModel.NoSessionSelectedText, Mode=OneWay}"
-                                               TextWrapping="Wrap" Margin="12" VerticalAlignment="Center"
-                                               Visibility="{x:Bind vm:HistoryPage.EmptyToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}" />
-                                </Grid>
-                            </ScrollViewer>
+                                    </Grid>
+                                </ScrollViewer>
+                                <ScrollViewer x:Name="SavedSessionDetailEmptyScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                              HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
+                                              Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptySessionDetail), Mode=OneWay}">
+                                    <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="12" MaxWidth="460"
+                                            HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                            AutomationProperties.AutomationId="SavedSessionDetailEmptyCard">
+                                    <StackPanel Spacing="12" HorizontalAlignment="Center">
+                                        <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
+                                                 AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
+                                            <SymbolIcon Symbol="People" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </Viewbox>
+                                        <TextBlock Text="{x:Bind ViewModel.SessionDetailEmptyHeading, Mode=OneWay}"
+                                                   Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                                   AutomationProperties.AutomationId="SavedSessionDetailEmpty" />
+                                        <TextBlock Text="{x:Bind ViewModel.SessionDetailEmptyDescription, Mode=OneWay}"
+                                                   Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                                   AutomationProperties.AutomationId="SavedSessionDetailEmptyBody" />
+                                    </StackPanel>
+                                    </Border>
+                                </ScrollViewer>
+                            </Grid>
                             <CommandBar Grid.Row="2" Margin="4,0,4,4" Background="Transparent" DefaultLabelPosition="Right"
                                         IsDynamicOverflowEnabled="True" OverflowButtonVisibility="Auto"
                                         Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}"

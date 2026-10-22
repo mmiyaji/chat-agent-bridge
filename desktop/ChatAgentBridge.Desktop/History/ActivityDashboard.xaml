@@ -32,7 +32,23 @@
                 </ComboBox>
             </Grid>
 
-            <TextBlock Visibility="{x:Bind local:HistoryPage.EmptyToVisibility(ViewModel.HasActivity), Mode=OneWay}" TextWrapping="Wrap" x:Uid="ActivityEmpty" AutomationProperties.AutomationId="ActivityEmpty" />
+            <Border Style="{StaticResource ActivityCardStyle}" Padding="16" MaxWidth="460"
+                    HorizontalAlignment="Center"
+                    Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ShowActivityEmptyState), Mode=OneWay}"
+                    AutomationProperties.AutomationId="ActivityEmptyCard">
+                <StackPanel Spacing="12" HorizontalAlignment="Center">
+                    <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
+                             AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
+                        <SymbolIcon Symbol="Clock" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </Viewbox>
+                    <TextBlock Text="{x:Bind ViewModel.ActivityEmptyHeading, Mode=OneWay}"
+                               Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                               AutomationProperties.AutomationId="ActivityEmpty" />
+                    <TextBlock Text="{x:Bind ViewModel.ActivityEmptyDescription, Mode=OneWay}"
+                               Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                               AutomationProperties.AutomationId="ActivityEmptyBody" />
+                </StackPanel>
+            </Border>
 
             <Grid x:Name="SummaryGrid" ColumnSpacing="8" RowSpacing="8">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
@@ -197,7 +213,20 @@
                     <StackPanel Spacing="12"><TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="ActivityModelsHeading" localization:LocalizedResourceKey.Key="ActivityModelsHeading" />
                         <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ActivityModelsHelp" localization:LocalizedResourceKey.Key="ActivityModelsHelp" />
                         <ItemsControl ItemsSource="{x:Bind ViewModel.ActivityModels}" ItemTemplate="{StaticResource ActivityBarTemplate}" />
-                        <TextBlock Visibility="{x:Bind local:HistoryPage.EmptyToVisibility(ViewModel.HasActivity), Mode=OneWay}" TextWrapping="Wrap" x:Uid="ActivityEmptyModels" localization:LocalizedResourceKey.Key="ActivityEmptyModels" />
+                        <StackPanel Spacing="8" Margin="0,4" HorizontalAlignment="Center"
+                                    Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ShowActivityModelEmptyState), Mode=OneWay}"
+                                    AutomationProperties.AutomationId="ActivityModelsEmptyCard">
+                            <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
+                                     AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
+                                <SymbolIcon Symbol="Document" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Viewbox>
+                            <TextBlock Text="{x:Bind ViewModel.ActivityModelEmptyHeading, Mode=OneWay}"
+                                       Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                       AutomationProperties.AutomationId="ActivityEmptyModels" />
+                            <TextBlock Text="{x:Bind ViewModel.ActivityModelEmptyDescription, Mode=OneWay}"
+                                       Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                       AutomationProperties.AutomationId="ActivityModelsEmptyBody" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>

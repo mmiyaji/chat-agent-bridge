@@ -158,6 +158,21 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public string SelectedRequestCountLabel => DesktopText.Get(SelectedConversation?.Requests.Count == 1 ? "InboxOneRequest" : "InboxRequestCount", SelectedConversation?.Requests.Count ?? 0);
     public bool HasSelectedConversation => SelectedConversation is not null;
     public bool HasVisibleConversations => VisibleConversations.Count > 0;
+    public bool HasConversationFilters => !string.IsNullOrWhiteSpace(SearchText) || StateFilter != "all";
+    public bool ShowEmptyConversationList => !HasVisibleConversations && !HasConnectionError;
+    public string EmptyConversationHeading => DesktopText.Get(HasConversationFilters
+        ? "InboxEmptyFilteredHeading"
+        : !IsConnected ? "InboxEmptyOfflineHeading"
+        : !IsConnectionConfirmed ? "InboxEmptyConnectingHeading"
+        : "InboxEmptyWaitingHeading");
+    public string EmptyConversationDescription => DesktopText.Get(HasConversationFilters
+        ? "InboxEmptyFilteredDescription"
+        : !IsConnected ? "InboxEmptyOfflineDescription"
+        : !IsConnectionConfirmed ? "InboxEmptyConnectingDescription"
+        : "InboxEmptyWaitingDescription");
+    public string EmptyDetailHeading => DesktopText.Get("InboxEmptyDetailHeading");
+    public string EmptyDetailDescription => DesktopText.Get("InboxEmptyDetailDescription");
+    public string ClearConversationFiltersLabel => DesktopText.Get("InboxClearFiltersLabel");
     public bool HasOtherRequestRunning => IsExecuting && _activeItem is { LiveOutput.IsActive: true } active && !ReferenceEquals(Selected, active);
     public string ActiveRequestBannerText
     {
@@ -211,6 +226,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (CanReturnToActiveRequest() && _activeItem is { } active)
             RevealRequest(active);
     }
+
+    [RelayCommand]
+    private void ClearConversationFilters()
+    {
+        SearchText = string.Empty;
+        StateFilter = "all";
+    }
+
     public void OpenConversation(InboxConversation? conversation)
     {
         if (conversation is null) return;
@@ -266,6 +289,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         OnPropertyChanged(nameof(ConversationCountLabel));
         OnPropertyChanged(nameof(HasVisibleConversations));
         OnPropertyChanged(nameof(EmptyListMessage));
+        OnPropertyChanged(nameof(HasConversationFilters));
+        OnPropertyChanged(nameof(ShowEmptyConversationList));
+        OnPropertyChanged(nameof(EmptyConversationHeading));
+        OnPropertyChanged(nameof(EmptyConversationDescription));
     }
     private static string ConversationKey(InboxItem item) => System.Text.Json.JsonSerializer.Serialize(CreateSessionKey(item));
     private void RefreshConversations()

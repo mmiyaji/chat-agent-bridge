@@ -126,19 +126,57 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <StackPanel Margin="24" Spacing="12" VerticalAlignment="Center" HorizontalAlignment="Center"
-                            Visibility="{x:Bind inbox:ChatInboxPage.HiddenWhen(ViewModel.HasVisibleConversations), Mode=OneWay}">
-                    <FontIcon Glyph="&#xE8F2;" FontSize="28" Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AccessibilityView="Raw" />
-                    <TextBlock Text="{x:Bind ViewModel.EmptyListMessage, Mode=OneWay}" TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="InboxEmptyList" />
-                </StackPanel>
+                <ScrollViewer x:Name="InboxEmptyListScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                              HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
+                              Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.ShowEmptyConversationList), Mode=OneWay}">
+                    <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="12" MaxWidth="460"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                            AutomationProperties.AutomationId="InboxEmptyListCard">
+                            <StackPanel Spacing="12" HorizontalAlignment="Center">
+                                <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
+                                         AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
+                                    <SymbolIcon Symbol="Message" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Viewbox>
+                                <TextBlock Text="{x:Bind ViewModel.EmptyConversationHeading, Mode=OneWay}"
+                                           Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                           AutomationProperties.AutomationId="InboxEmptyList" />
+                                <TextBlock Text="{x:Bind ViewModel.EmptyConversationDescription, Mode=OneWay}"
+                                           Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                           AutomationProperties.AutomationId="InboxEmptyListBody" />
+                                <Button Command="{x:Bind ViewModel.ClearConversationFiltersCommand}"
+                                        Content="{x:Bind ViewModel.ClearConversationFiltersLabel, Mode=OneWay}"
+                                        Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasConversationFilters), Mode=OneWay}"
+                                        AutomationProperties.AutomationId="ClearInboxFilters" />
+                            </StackPanel>
+                    </Border>
+                </ScrollViewer>
                 </Grid>
             </Grid>
             <Grid x:Name="DetailPane" Grid.Column="1" RowSpacing="8"
                   Visibility="{x:Bind inbox:ChatInboxPage.DetailPaneVisibility(ViewModel.IsWideLayout, ViewModel.IsDetailOpen), Mode=OneWay}">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                 <Border Grid.RowSpan="3" Style="{StaticResource ActivityCardStyle}" Padding="0" IsHitTestVisible="False" />
-                <TextBlock Text="{x:Bind ViewModel.SelectedOutput, Mode=OneWay}" TextWrapping="Wrap" Margin="24" Grid.RowSpan="3"
-                           Visibility="{x:Bind inbox:ChatInboxPage.HiddenWhen(ViewModel.HasSelectedConversation), Mode=OneWay}" />
+                <ScrollViewer Grid.Row="2" x:Name="InboxDetailEmptyScroll" MaxWidth="460" HorizontalAlignment="Center"
+                              VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                              HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
+                              Visibility="{x:Bind inbox:ChatInboxPage.HiddenWhen(ViewModel.HasSelectedConversation), Mode=OneWay}">
+                    <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="12" MaxWidth="460"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                            AutomationProperties.AutomationId="InboxDetailEmptyCard">
+                            <StackPanel Spacing="12" HorizontalAlignment="Center">
+                                <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
+                                         AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
+                                    <SymbolIcon Symbol="Message" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Viewbox>
+                                <TextBlock Text="{x:Bind ViewModel.EmptyDetailHeading, Mode=OneWay}"
+                                           Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                           AutomationProperties.AutomationId="InboxDetailEmpty" />
+                                <TextBlock Text="{x:Bind ViewModel.EmptyDetailDescription, Mode=OneWay}"
+                                           Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                           AutomationProperties.AutomationId="InboxDetailEmptyBody" />
+                            </StackPanel>
+                    </Border>
+                </ScrollViewer>
                 <Grid Margin="12,12,12,0" ColumnSpacing="8" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedConversation), Mode=OneWay}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                             <Button x:Name="InboxBackButton" Click="BackToConversations_Click" Visibility="{x:Bind inbox:ChatInboxPage.BackButtonVisibility(ViewModel.IsWideLayout), Mode=OneWay}"
