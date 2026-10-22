@@ -5,7 +5,7 @@ using Microsoft.UI.Dispatching;
 
 namespace ChatAgentBridge_Desktop.ExecutionUi;
 
-/// <summary>Collects on producer threads; updates bindings at most five times per second.</summary>
+/// <summary>Collects on producer threads; updates bindings at most five times per second, less often for large text.</summary>
 public sealed partial class LiveOutputViewModel : ObservableObject, IDisposable
 {
     private readonly object _gate = new();
@@ -16,6 +16,16 @@ public sealed partial class LiveOutputViewModel : ObservableObject, IDisposable
     private bool _accepting;
     private bool _disposed;
     private string? _lastStream;
+    private static readonly TimeSpan BaseInterval = TimeSpan.FromMilliseconds(200);
+    private const int MediumTextLength = 16 * 1024;
+    private const int LargeTextLength = 48 * 1024;
+
+    /// <summary>
+    /// Set by the hosting view. While it returns false (not loaded, collapsed or hidden) timer
+    /// ticks skip the text update; the next tick after the view is shown catches up.
+    /// A null value means no view restricts updates.
+    /// </summary>
+    public Func<bool>? IsViewVisible { get; set; }
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasOutput))]
     public partial string Text { get; set; } = "";
@@ -37,7 +47,7 @@ public sealed partial class LiveOutputViewModel : ObservableObject, IDisposable
         }
         FollowOutput = true;
         IsCancellationPending = false;
-        Flush();
+        Flush(ignoreVisibility: true);
         IsActive = true;
         _timer ??= CreateTimer();
         _timer.Start();
@@ -47,7 +57,7 @@ public sealed partial class LiveOutputViewModel : ObservableObject, IDisposable
     private DispatcherQueueTimer CreateTimer()
     {
         var timer = App.DispatcherQueue.CreateTimer();
-        timer.Interval = TimeSpan.FromMilliseconds(200);
+        timer.Interval = BaseInterval;
         timer.Tick += (_, _) => Flush();
         return timer;
     }
@@ -75,20 +85,26 @@ public sealed partial class LiveOutputViewModel : ObservableObject, IDisposable
         lock (_gate) _accepting = false;
         _timer?.Stop();
         // A paused empty view must remain reachable after the running indicator disappears.
-        Flush(force: !HasOutput);
+        Flush(force: !HasOutput, ignoreVisibility: true);
         IsActive = false;
     }
 
-    private void Flush(bool force = false)
+    private void Flush(bool force = false, bool ignoreVisibility = false)
     {
         // Freeze the displayed snapshot while the user reads or selects older text.
         // Producers continue collecting into the bounded tail without dispatcher work.
         if (!force && !FollowOutput) return;
+        // Replacing up to 64K characters in a TextBox is costly; do not do it for a hidden view.
+        if (!ignoreVisibility && IsViewVisible is { } isVisible && !isVisible()) return;
         var snapshot = _buffer.SnapshotIfChanged(_displayedVersion);
         if (snapshot is null) return;
         _displayedVersion = snapshot.Version;
         Text = snapshot.Text;
         IsTruncated = snapshot.IsTruncated;
+        // Each replacement relayouts the whole TextBox, so slow the cadence as the text grows.
+        if (_timer is not null)
+            _timer.Interval = snapshot.Text.Length > LargeTextLength ? TimeSpan.FromMilliseconds(1000)
+                : snapshot.Text.Length > MediumTextLength ? TimeSpan.FromMilliseconds(500) : BaseInterval;
     }
 
     [RelayCommand]
