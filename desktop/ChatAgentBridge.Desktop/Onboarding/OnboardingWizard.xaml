@@ -12,7 +12,7 @@
             <Button Grid.Column="1"  Command="{x:Bind ViewModel.DeferOnboardingCommand}" VerticalAlignment="Top" AutomationProperties.AutomationId="OnboardingDefer"  x:Uid="OnboardingDefer" />
         </Grid>
 
-        <ScrollViewer x:Name="WizardScrollViewer" AutomationProperties.AutomationId="WizardScroll" Grid.Row="1" Padding="0,0,12,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer x:Name="WizardScrollViewer" AutomationProperties.AutomationId="WizardScroll" Grid.Row="1" Padding="8,0,12,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Spacing="16" HorizontalAlignment="Stretch">
                 <InfoBar AutomationProperties.AutomationId="WizardStatus" IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
                          Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
@@ -25,7 +25,7 @@
                     <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock001" x:Uid="onboardingOnboardingWizardTextBlock001" />
                     <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock002" x:Uid="onboardingOnboardingWizardTextBlock002" />
                     <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                        <TextBox
+                        <TextBox x:Name="WorkspaceRootBox"
                                  Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  TextWrapping="Wrap" AutomationProperties.AutomationId="WizardWorkspaceRoot"  x:Uid="WizardWorkspaceRoot" />
                         <Button Grid.Column="1"  Click="PickWorkspaceFolder_Click" VerticalAlignment="Bottom" AutomationProperties.AutomationId="WizardPickWorkspaceFolder"  x:Uid="WizardPickWorkspaceFolder" />
@@ -38,7 +38,7 @@
                             <Button x:Uid="CliReviewTrust" Click="ReviewCliTrust_Click" AutomationProperties.AutomationId="WizardWorkspaceReviewTrust" />
                         </InfoBar.ActionButton>
                     </InfoBar>
-                    <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentProvider" x:Uid="WizardAgentProvider">
+                    <ComboBox x:Name="AgentProviderCombo"  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentProvider" x:Uid="WizardAgentProvider">
                         <ComboBoxItem Content="Codex" Tag="codex" />
                         <ComboBoxItem Content="Claude Code" Tag="claude" />
                         <ComboBoxItem Content="Gemini CLI" Tag="gemini" />
@@ -46,7 +46,7 @@
                         <ComboBoxItem Tag="custom" AutomationProperties.AutomationId="WizardCustomCli" x:Uid="WizardCustomCli" />
                     </ComboBox>
                     <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" AutomationProperties.AutomationId="WizardBasicProviderHelp" />
-                    <TextBox Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox x:Name="AgentExecutableBox" Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              AutomationProperties.AutomationId="WizardAgentExecutable" x:Uid="WizardAgentExecutable" />
                     <Button Click="BrowseAgentExecutable_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardBrowseAgentExecutable" x:Uid="WizardBrowseAgentExecutable" />
                     <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="WizardBrowseAgentExecutableHelp" x:Uid="WizardBrowseAgentExecutableHelp" />
@@ -62,7 +62,7 @@
                     <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock004" x:Uid="onboardingOnboardingWizardTextBlock004" />
                     <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock005" x:Uid="onboardingOnboardingWizardTextBlock005" />
                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
-                        <Button  Command="{x:Bind ViewModel.CheckCliCommand, Mode=OneWay}" IsEnabled="{x:Bind local:OnboardingWizard.Not(ViewModel.IsCheckingCli), Mode=OneWay}" AutomationProperties.AutomationId="CheckCli"  x:Uid="CheckCli" />
+                        <Button x:Name="CheckCliButton"  Command="{x:Bind ViewModel.CheckCliCommand, Mode=OneWay}" IsEnabled="{x:Bind local:OnboardingWizard.Not(ViewModel.IsCheckingCli), Mode=OneWay}" AutomationProperties.AutomationId="CheckCli"  x:Uid="CheckCli" />
                         <Button  Command="{x:Bind ViewModel.CancelCliCheckCommand, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" AutomationProperties.AutomationId="CancelCliCheck"  x:Uid="CancelCliCheck" />
                         <ProgressRing IsActive="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" Width="20" Height="20" VerticalAlignment="Center" />
                     </StackPanel>
@@ -123,17 +123,17 @@
                             <TextBlock Text="{x:Bind ViewModel.SlackUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasSlackUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardSlackUsernameLookupStatus" />
                             <Button Command="{x:Bind ViewModel.AddSlackUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddSlackUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardAddSlackUserButton" x:Uid="WizardAddSlackUserButton" />
                         </StackPanel>
-                        <TextBox  Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardSlackAllowedUserIds"  x:Uid="WizardSlackAllowedUserIds" />
+                        <TextBox x:Name="SlackAllowedUsersBox"  Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardSlackAllowedUserIds"  x:Uid="WizardSlackAllowedUserIds" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock013" x:Uid="onboardingOnboardingWizardTextBlock013" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock014" x:Uid="onboardingOnboardingWizardTextBlock014" />
                     </StackPanel>
                     <StackPanel Spacing="12" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardMattermost), Mode=OneWay}">
                         <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock015" x:Uid="onboardingOnboardingWizardTextBlock015" />
-                        <TextBox  Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com" AutomationProperties.AutomationId="WizardMattermostServerUrl"  x:Uid="WizardMattermostServerUrl" />
+                        <TextBox x:Name="MattermostServerUrlBox"  Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com" AutomationProperties.AutomationId="WizardMattermostServerUrl"  x:Uid="WizardMattermostServerUrl" />
                         <CheckBox IsChecked="{x:Bind ViewModel.MattermostBypassProxy, Mode=TwoWay}" AutomationProperties.AutomationId="WizardMattermostBypassProxy" x:Uid="MattermostBypassProxy" />
                         <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="WizardMattermostProxyHelp" x:Uid="MattermostProxyHelp" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock016" x:Uid="onboardingOnboardingWizardTextBlock016" />
-                        <TextBox  Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="WizardMattermostChannelId"  x:Uid="WizardMattermostChannelId" />
+                        <TextBox x:Name="MattermostChannelBox"  Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="WizardMattermostChannelId"  x:Uid="WizardMattermostChannelId" />
                         <StackPanel Spacing="8">
                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock017" x:Uid="onboardingOnboardingWizardTextBlock017" />
                             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="MattermostTokenBox" Grid.ColumnSpan="2" Padding="12,0,44,0" PasswordChanged="MattermostTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardMattermostToken"  x:Uid="WizardMattermostToken" /><ToggleButton x:Name="MattermostTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="WizardMattermostTokenReveal" /></Grid>
@@ -147,7 +147,7 @@
                             <TextBlock Text="{x:Bind ViewModel.MattermostUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasMattermostUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardMattermostUsernameLookupStatus" />
                             <Button Command="{x:Bind ViewModel.AddMattermostUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddMattermostUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardAddMattermostUserButton" x:Uid="WizardAddMattermostUserButton" />
                         </StackPanel>
-                        <TextBox  Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardMattermostAllowedUserIds"  x:Uid="WizardMattermostAllowedUserIds" />
+                        <TextBox x:Name="MattermostAllowedUsersBox"  Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardMattermostAllowedUserIds"  x:Uid="WizardMattermostAllowedUserIds" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock018" x:Uid="onboardingOnboardingWizardTextBlock018" />
                     </StackPanel>
                     <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock019" x:Uid="onboardingOnboardingWizardTextBlock019" />
