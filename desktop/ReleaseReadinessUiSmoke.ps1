@@ -3,6 +3,8 @@ param(
     [string]$EvidenceDirectory,
     [switch]$OnlyRestoredStage,
     [switch]$OnlyJaLight,
+    [int]$WindowWidth = 0,
+    [int]$WindowHeight = 0,
     [int]$TimeoutSeconds = 30
 )
 
@@ -10,6 +12,7 @@ $ErrorActionPreference = 'Stop'
 $artifactRootFull = [IO.Path]::GetFullPath($ArtifactRoot)
 $executable = Join-Path $artifactRootFull 'ChatAgentBridge.Desktop.exe'
 if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) { throw "Published desktop executable was not found under ArtifactRoot: $executable" }
+if (($WindowWidth -gt 0) -xor ($WindowHeight -gt 0)) { throw 'Set both WindowWidth and WindowHeight, or leave both at zero.' }
 
 $evidenceBase = if ([string]::IsNullOrWhiteSpace($EvidenceDirectory)) {
     Join-Path (Split-Path -Parent $artifactRootFull) 'release-readiness-ui-evidence'
@@ -31,11 +34,15 @@ public static class ReleaseReadinessMouse {
     [DllImport("user32.dll")] private static extern bool ShowWindow(System.IntPtr window, int command);
     [DllImport("user32.dll")] private static extern bool BringWindowToTop(System.IntPtr window);
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(System.IntPtr window);
+    [DllImport("user32.dll")] private static extern bool SetWindowPos(System.IntPtr window, System.IntPtr insertAfter, int x, int y, int width, int height, uint flags);
     [DllImport("user32.dll")] private static extern void mouse_event(uint flags, uint dx, uint dy, uint data, System.UIntPtr extraInfo);
     public static bool ActivateWindow(System.IntPtr window) {
         ShowWindow(window, 9);
         BringWindowToTop(window);
         return SetForegroundWindow(window);
+    }
+    public static bool ResizeWindow(System.IntPtr window, int width, int height) {
+        return SetWindowPos(window, System.IntPtr.Zero, 0, 0, width, height, 0x0002 | 0x0004);
     }
     public static void Click(int x, int y) {
         SetCursorPos(x, y);
@@ -146,9 +153,14 @@ function Start-TestApp([string]$DataDirectory) {
     $script:startedProcesses.Add($process)
     $window = Wait-MainWindow $process
     $handle = [IntPtr]$window.Current.NativeWindowHandle
-    if ($handle -ne [IntPtr]::Zero) { [ReleaseReadinessMouse]::ActivateWindow($handle) | Out-Null }
+    if ($handle -ne [IntPtr]::Zero) {
+        if ($WindowWidth -gt 0 -and $WindowHeight -gt 0) { [ReleaseReadinessMouse]::ResizeWindow($handle, $WindowWidth, $WindowHeight) | Out-Null }
+        [ReleaseReadinessMouse]::ActivateWindow($handle) | Out-Null
+    }
     try { $window.SetFocus() } catch [InvalidOperationException] { }
     Start-Sleep -Milliseconds 300
+    $script:activeProcess = $process
+    $script:activeWindow = $window
     $script:activeDataDirectory = $DataDirectory
     return $window
 }
@@ -181,6 +193,11 @@ function Expand-Element([Windows.Automation.AutomationElement]$Element, [string]
     try {
         $pattern = [Windows.Automation.ExpandCollapsePattern]$Element.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
         if ($pattern.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Expanded) { return }
+        if ($pattern.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) {
+            $pattern.Expand()
+            Start-Sleep -Milliseconds 250
+            return
+        }
     }
     catch [InvalidOperationException] { }
     $walker = [Windows.Automation.TreeWalker]::ControlViewWalker
@@ -220,6 +237,31 @@ function Scroll-ToElement([Windows.Automation.AutomationElement]$Element) {
     catch [InvalidOperationException] { }
 }
 
+function Wait-ElementWhileScrolling([Windows.Automation.AutomationElement]$Window, [string]$ScrollAutomationId, [string]$TargetAutomationId, [int]$Seconds = 10, [switch]$RequireVisible, [switch]$StartAtBottom) {
+    $scroll = Wait-Element $Window $ScrollAutomationId
+    $pattern = $null
+    try { $pattern = [Windows.Automation.ScrollPattern]$scroll.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern) }
+    catch [InvalidOperationException] { }
+    $position = if ($StartAtBottom) { 100.0 } else { 0.0 }
+    $step = if ($StartAtBottom) { -2.5 } else { 2.5 }
+    $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
+    do {
+        if ($pattern -and $pattern.Current.VerticallyScrollable) {
+            $pattern.SetScrollPercent([Windows.Automation.ScrollPattern]::NoScroll, $position)
+            Start-Sleep -Milliseconds 120
+        }
+        $target = Find-Element $Window $TargetAutomationId
+        if (-not $target) { $target = Find-RawElement $Window $TargetAutomationId }
+        if ($target) {
+            if (-not $RequireVisible) { return $target }
+            $bounds = $target.Current.BoundingRectangle
+            if (-not $target.Current.IsOffscreen -and -not $bounds.IsEmpty -and $bounds.Width -gt 0 -and $bounds.Height -gt 0) { return $target }
+        }
+        $position = [Math]::Clamp($position + $step, 0.0, 100.0)
+        Start-Sleep -Milliseconds 30
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw "Timed out waiting for AutomationId '$TargetAutomationId' while scrolling '$ScrollAutomationId'."
+}
 function Scroll-MainContentDown([int]$Increments = 1) {
     $scroll = Find-Element $script:activeWindow 'MainContentScroll'
     if (-not $scroll) { return }
@@ -236,7 +278,10 @@ function Scroll-MainContentDown([int]$Increments = 1) {
 
 function Close-WithConfirmation([Windows.Automation.AutomationElement]$Window, [Diagnostics.Process]$Process) {
     Invoke-Element (Wait-Element $Window 'NavAbout') 'About navigation'
-    Invoke-Element (Wait-Element $Window 'AboutExit') 'explicit exit'
+    Wait-Element $Window 'AboutScroll' | Out-Null
+    $exitButton = Wait-ElementWhileScrolling $Window 'AboutScroll' 'AboutExit' 10 -RequireVisible -StartAtBottom
+    if ($exitButton.Current.IsOffscreen) { Scroll-ToElement $exitButton }
+    Invoke-Element $exitButton 'explicit exit'
     $confirmation = Wait-Element $Window 'WindowCloseConfirmation' 10
     Invoke-Element (Wait-Element $confirmation 'PrimaryButton' 5) 'exit confirmation'
     if (-not $Process.WaitForExit(15000)) { throw 'Application did not close after explicit exit confirmation.' }
@@ -379,12 +424,10 @@ function Run-CompletedScenario([string]$Language, [string]$Theme, [string]$Expec
     if ($title.Current.Name -ne $ExpectedTitle) { throw "Expected '$ExpectedTitle' for $scenario, got '$($title.Current.Name)'." }
     Add-Pass "General page localization ($scenario): $ExpectedTitle"
 
-    $dataGroup = Wait-Element $script:activeWindow 'DataManagementGroup'
+    $dataGroup = Wait-ElementWhileScrolling $script:activeWindow 'MainContentScroll' 'DataManagementGroup' 10 -RequireVisible
     Expand-Element $dataGroup 'data management group'
-    Scroll-MainContentDown 2
+    $location = Wait-ElementWhileScrolling $script:activeWindow 'MainContentScroll' 'DataManagementLocation' 12
     Capture-Screenshot "${scenario}-data-management.png"
-    $location = Find-RawElement $script:activeWindow 'DataManagementLocation'
-    if (-not $location) { $location = Wait-Element $script:activeWindow 'DataManagementLocation' 5 }
     if ($location.Current.Name -notlike "*$data*") { throw "Data-management location did not point to the isolated data directory for $scenario." }
     Add-Pass "Data management group and isolated data path ($scenario)"
 
@@ -395,12 +438,12 @@ function Run-CompletedScenario([string]$Language, [string]$Theme, [string]$Expec
     Add-Pass "Appearance preference applied ($scenario)"
 
     Invoke-Element (Wait-Element $script:activeWindow 'NavAbout') 'About navigation'
-    $diagnostics = Wait-Element $script:activeWindow 'AboutDiagnostics'
+    $diagnostics = Wait-ElementWhileScrolling $script:activeWindow 'AboutScroll' 'AboutDiagnostics' 10 -RequireVisible
     Expand-Element $diagnostics 'About diagnostics expander'
-    Wait-Element $script:activeWindow 'DiagnosticsVersion' | Out-Null
+    Wait-ElementWhileScrolling $script:activeWindow 'AboutScroll' 'DiagnosticsVersion' 10 | Out-Null
     Add-Pass "About diagnostics renders ($scenario)"
 
-    Invoke-Element (Wait-Element $script:activeWindow 'AboutThirdPartyLicenses') 'third-party licenses'
+    Invoke-Element (Wait-ElementWhileScrolling $script:activeWindow 'AboutScroll' 'AboutThirdPartyLicenses' 10 -RequireVisible) 'third-party licenses'
     $licenseDialog = Wait-Element $script:activeWindow 'ThirdPartyLicensesDialog' 10
     $licenseBody = Wait-Element $licenseDialog 'ThirdPartyLicenseBody' 5
     $licenseText = $licenseBody.Current.Name
@@ -424,6 +467,55 @@ function Run-CompletedScenario([string]$Language, [string]$Theme, [string]$Expec
     Add-Pass "Bundled third-party licenses open and close ($scenario)"
 
     Close-WithConfirmation $script:activeWindow $process
+}
+
+function Write-FailureEvidence {
+    $evidence = [Collections.Generic.List[object]]::new()
+    foreach ($process in $script:startedProcesses) {
+        $entry = [ordered]@{ processId = $process.Id; exited = $process.HasExited; exitCode = $null; controls = @() }
+        if ($process.HasExited) {
+            try { $entry.exitCode = $process.ExitCode } catch [InvalidOperationException] { }
+        }
+        else {
+            try {
+                $window = Get-MainWindow $process
+                if ($window) {
+                    $entry.windowBounds = $window.Current.BoundingRectangle.ToString()
+                    $elements = $window.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)
+                    $controls = [Collections.Generic.List[object]]::new()
+                    for ($i = 0; $i -lt $elements.Count -and $controls.Count -lt 1000; $i++) {
+                        $element = $elements.Item($i)
+                        if ($element.Current.ProcessId -ne $process.Id) { continue }
+                        $automationId = $element.Current.AutomationId
+                        if ([string]::IsNullOrWhiteSpace($automationId)) { continue }
+                        $controls.Add(@{
+                            automationId = $automationId
+                            controlType = $element.Current.ControlType.ProgrammaticName
+                            isOffscreen = $element.Current.IsOffscreen
+                            isEnabled = $element.Current.IsEnabled
+                        })
+                    }
+                    $entry.controls = $controls.ToArray()
+                }
+            }
+            catch { $entry.captureError = $_.Exception.Message }
+        }
+        $evidence.Add($entry)
+    }
+
+    try {
+        if ($script:activeProcess -and $script:activeWindow -and
+            $script:activeProcess.Id -in @($script:startedProcesses | ForEach-Object Id) -and
+            $script:activeWindow.Current.ProcessId -eq $script:activeProcess.Id) {
+            Capture-Screenshot 'failure-window.png'
+        }
+    }
+    catch { Write-Warning "Could not capture harness-owned failure screenshot: $($_.Exception.Message)" }
+    try {
+        Write-Json (Join-Path $testRoot 'failure-uia.json') $evidence.ToArray()
+        Write-Warning "Harness-owned UIA failure evidence: $(Join-Path $testRoot 'failure-uia.json')"
+    }
+    catch { Write-Warning "Could not write harness-owned UIA evidence: $($_.Exception.Message)" }
 }
 
 try {
@@ -474,7 +566,9 @@ try {
     Add-Pass 'Release-readiness UI smoke completed' $testRoot
 }
 catch {
-    $script:fatal = $_.Exception.Message + "`n" + $_.ScriptStackTrace
+    $failure = $_
+    Write-FailureEvidence
+    $script:fatal = $failure.Exception.Message + "`n" + $failure.ScriptStackTrace
     $script:results.Add(@{ name = 'Release-readiness UI smoke'; status = 'FAIL'; detail = $script:fatal })
     Write-Error $_
 }
