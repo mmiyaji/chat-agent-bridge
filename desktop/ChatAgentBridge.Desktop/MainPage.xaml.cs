@@ -311,7 +311,7 @@ public sealed partial class MainPage : Page
                 });
             }
         }
-        if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshAsync();
+        if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshIfStaleAsync();
         if (pageChanged && IsOverviewSelected && _hasLoaded) _ = ViewModel.RefreshStartupAsync();
         if (pageChanged && IsAboutSelected) AboutPage.ResetScroll();
         if (pageChanged) ScheduleDeferredLanguageRefresh();

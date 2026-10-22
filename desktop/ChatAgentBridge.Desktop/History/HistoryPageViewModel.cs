@@ -163,7 +163,26 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
         }
     }
     public string UpdatedTooltip => DesktopText.Get("HistoryUpdatedTooltip", Binding.UpdatedAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture));
-    public string SearchIndex => string.Join("\n", Binding.DisplayName, Provider, SiteLabel, UserLabel, ListLocation, ChannelId, ThreadId, UserId, WorkspaceName, Workspace,
+    // Rows are immutable records (copied with `with`), so derived values are cached
+    // per instance outside the record to keep generated equality unchanged. The culture
+    // is part of the key because the labels are localized.
+    private sealed record DerivedValues(string Culture, string SearchIndex, string WorkspaceFullPath);
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<SessionHistoryRow, DerivedValues> DerivedCache = new();
+
+    private DerivedValues Derived
+    {
+        get
+        {
+            var culture = CultureInfo.CurrentUICulture.Name;
+            if (DerivedCache.TryGetValue(this, out var cached) && cached.Culture == culture) return cached;
+            var computed = new DerivedValues(culture, BuildSearchIndex(), Path.GetFullPath(Workspace));
+            DerivedCache.AddOrUpdate(this, computed);
+            return computed;
+        }
+    }
+    public string SearchIndex => Derived.SearchIndex;
+    internal string WorkspaceFullPath => Derived.WorkspaceFullPath;
+    private string BuildSearchIndex() => string.Join("\n", Binding.DisplayName, Provider, SiteLabel, UserLabel, ListLocation, ChannelId, ThreadId, UserId, WorkspaceName, Workspace,
         SessionId, AgentLabel, ModelOverride, LatestExecutedModel, ReasoningEffort, ExecutionPolicy, Origin);
 
     private string AgentLabel
@@ -388,7 +407,26 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     }
 
     private bool _refreshingLocalizedFilters;
-    partial void OnSearchQueryChanged(string value) => ApplySessionFilter();
+    private CancellationTokenSource? _searchDebounce;
+    partial void OnSearchQueryChanged(string value)
+    {
+        _searchDebounce?.Cancel();
+        _searchDebounce?.Dispose();
+        _searchDebounce = null;
+        // Keep the filter chip and clear command responsive; only the list rebuild waits.
+        OnPropertyChanged(nameof(HasSessionFilters));
+        ClearSessionFiltersCommand.NotifyCanExecuteChanged();
+        if (string.IsNullOrWhiteSpace(value)) { ApplySessionFilter(); return; }
+        var debounce = _searchDebounce = new CancellationTokenSource();
+        _ = ApplySessionFilterAfterDelayAsync(debounce.Token);
+    }
+
+    private async Task ApplySessionFilterAfterDelayAsync(CancellationToken cancellationToken)
+    {
+        try { await Task.Delay(TimeSpan.FromMilliseconds(200), cancellationToken); }
+        catch (OperationCanceledException) { return; }
+        ApplySessionFilter();
+    }
     partial void OnIsNarrowChanged(bool value) => NotifySummariesChanged();
     partial void OnProviderFilterChanged(string value) { if (!_refreshingLocalizedFilters) ApplySessionFilter(); }
     partial void OnWorkspaceFilterChanged(string value) { if (!_refreshingLocalizedFilters) ApplySessionFilter(); }
@@ -424,26 +462,28 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         var query = SearchQuery.Trim();
         var provider = ProviderFilter;
         var allWorkspaces = DesktopText.Get("HistoryWorkspaceAll");
+        var allProviders = DesktopText.Get("HistoryProviderAll");
+        var sortByName = DesktopText.Get("HistorySortName");
+        var sortByUsage = DesktopText.Get("HistorySortUsage");
         var workspace = WorkspaceFilter;
         var filtered = Sessions.Where(row =>
-            (provider == DesktopText.Get("HistoryProviderAll") || row.Provider.Equals(provider, StringComparison.OrdinalIgnoreCase)) &&
-            (workspace == allWorkspaces || PathsEqual(Path.GetFullPath(row.Workspace), workspace)) &&
+            (provider == allProviders || row.Provider.Equals(provider, StringComparison.OrdinalIgnoreCase)) &&
+            (workspace == allWorkspaces || PathsEqual(row.WorkspaceFullPath, workspace)) &&
             (query.Length == 0 || row.SearchIndex.Contains(query, StringComparison.OrdinalIgnoreCase)))
             .ToArray();
         var matches = SessionSort switch
         {
-            var sort when sort == DesktopText.Get("HistorySortName") => filtered
+            var sort when sort == sortByName => filtered
                 .OrderBy(static row => row.ListTitle, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(static row => row.WorkspaceName, StringComparer.OrdinalIgnoreCase)
                 .ThenByDescending(static row => row.Binding.UpdatedAt).ToArray(),
-            var sort when sort == DesktopText.Get("HistorySortUsage") => filtered
+            var sort when sort == sortByUsage => filtered
                 .OrderByDescending(static row => row.ExecutionCount)
                 .ThenByDescending(static row => row.Binding.UpdatedAt).ToArray(),
             _ => filtered.OrderByDescending(static row => row.Binding.UpdatedAt).ToArray()
         };
 
-        FilteredSessions.Clear();
-        foreach (var row in matches) FilteredSessions.Add(row);
+        ReplaceItems(FilteredSessions, matches);
         HasFilteredSessions = matches.Length > 0;
         SelectedSession = selectedKey is null ? null : matches.FirstOrDefault(row => row.Binding.Key == selectedKey);
         OnPropertyChanged(nameof(HasSessionFilters));
@@ -457,6 +497,17 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         ClearSessionFiltersCommand.NotifyCanExecuteChanged();
     }
 
+    /// <summary>Updates a collection in place, touching only items that differ so unchanged content raises no UI churn.</summary>
+    private static void ReplaceItems<T>(ObservableCollection<T> target, IReadOnlyList<T> items)
+    {
+        var common = Math.Min(target.Count, items.Count);
+        for (var index = 0; index < common; index++)
+            if (!EqualityComparer<T>.Default.Equals(target[index], items[index]))
+                target[index] = items[index];
+        while (target.Count > items.Count) target.RemoveAt(target.Count - 1);
+        for (var index = common; index < items.Count; index++) target.Add(items[index]);
+    }
+
     private static bool PathsEqual(string left, string right) =>
         string.Equals(left, right, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
@@ -467,9 +518,10 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         var paths = bindings.Select(item => Path.GetFullPath(item.WorkspaceRoot))
             .Distinct(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)
             .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase).ToArray();
-        WorkspaceFilters.Clear();
-        WorkspaceFilters.Add(all);
-        foreach (var path in paths) WorkspaceFilters.Add(path);
+        var options = new string[paths.Length + 1];
+        options[0] = all;
+        paths.CopyTo(options, 1);
+        ReplaceItems(WorkspaceFilters, options);
         WorkspaceFilter = paths.Any(path => PathsEqual(path, previous)) ? paths.First(path => PathsEqual(path, previous)) : all;
         // Rebuilding ItemsSource can clear ComboBox selection even when the chosen value is unchanged.
         OnPropertyChanged(nameof(WorkspaceFilter));
@@ -485,6 +537,42 @@ public sealed partial class HistoryPageViewModel : ObservableObject
 
     private bool CanClearSessionFilters() => HasSessionFilters && !IsBusy;
 
+    private static readonly long RefreshStalenessMs = (long)TimeSpan.FromMinutes(2).TotalMilliseconds;
+    private string? _loadedStamp;
+    private long _loadedAtTick;
+
+    /// <summary>Cheap fingerprint of the history, audit and session files plus today's date.</summary>
+    private Task<string> ComputeDataStampAsync()
+    {
+        var directory = _settingsStore.DirectoryPath;
+        return Task.Run(() =>
+        {
+            var parts = new List<string> { DateTime.Today.ToString("yyyyMMdd", CultureInfo.InvariantCulture) };
+            foreach (var name in new[] { "history.json", "audit.json", "sessions.json" })
+            {
+                var info = new FileInfo(Path.Combine(directory, name));
+                parts.Add(info.Exists ? $"{info.LastWriteTimeUtc.Ticks}:{info.Length}" : "-");
+            }
+            return string.Join("|", parts);
+        });
+    }
+
+    /// <summary>
+    /// Navigation entry point: reloads on first show, when the backing files changed, while a run
+    /// was live (liveness is not visible in the files), or after a short staleness window.
+    /// The refresh button and data maintenance still call <see cref="RefreshAsync"/> to force a reload.
+    /// </summary>
+    public async Task RefreshIfStaleAsync()
+    {
+        if (IsBusy) return;
+        if (_loadedStamp is not null && IsHistoryLoadSuccessful &&
+            Environment.TickCount64 - _loadedAtTick < RefreshStalenessMs &&
+            !_activityRecords.Any(static record => record.Status == "running") &&
+            string.Equals(await ComputeDataStampAsync(), _loadedStamp, StringComparison.Ordinal))
+            return;
+        await RefreshAsync();
+    }
+
     [RelayCommand(CanExecute = nameof(CanRefresh))]
     public async Task RefreshAsync()
     {
@@ -494,19 +582,23 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         Status = DesktopText.Get("HistoryRefreshing");
         try
         {
-            var executions = await _executionStore.ListAsync();
-            var sessions = await _sessionStore.ListAsync();
-            var auditEvents = await _auditStore.ListAsync();
+            // Fingerprint before reading so a write during the load triggers another reload.
+            var stamp = await ComputeDataStampAsync();
+            var executionsTask = _executionStore.ListAsync();
+            var sessionsTask = _sessionStore.ListAsync();
+            var auditTask = _auditStore.ListAsync();
+            await Task.WhenAll(executionsTask, sessionsTask, auditTask);
+            var executions = await executionsTask;
+            var sessions = await sessionsTask;
+            var auditEvents = await auditTask;
 
             var selectedKey = SelectedSession?.Binding.Key;
             await LoadCachedChatNamesAsync(sessions);
             SetExecutionRecords(executions);
-            Sessions.Clear();
-            foreach (var row in BuildSessionRows(sessions, executions)) Sessions.Add(row);
+            ReplaceItems(Sessions, BuildSessionRows(sessions, executions));
             UpdateWorkspaceFilters(sessions);
-            AuditEvents.Clear();
-            foreach (var audit in auditEvents.OrderByDescending(static item => item.Timestamp))
-                AuditEvents.Add(new AuditHistoryRow(audit, AuditChatLabel(audit)));
+            ReplaceItems(AuditEvents, auditEvents.OrderByDescending(static item => item.Timestamp)
+                .Select(audit => new AuditHistoryRow(audit, AuditChatLabel(audit))).ToArray());
             HasExecutions = Executions.Count > 0;
             HasSessions = Sessions.Count > 0;
             HasAuditEvents = AuditEvents.Count > 0;
@@ -514,6 +606,8 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             ApplySessionFilter();
             NotifySummariesChanged();
             IsHistoryLoadSuccessful = true;
+            _loadedStamp = stamp;
+            _loadedAtTick = Environment.TickCount64;
             Status = DesktopText.Get("HistoryCounts", _activityRecords.Count, Sessions.Count, AuditEvents.Count);
         }
         catch (Exception ex)

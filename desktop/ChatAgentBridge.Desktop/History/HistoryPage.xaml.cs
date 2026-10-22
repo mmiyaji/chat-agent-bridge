@@ -71,7 +71,7 @@ public sealed partial class HistoryPage : Page
     {
         base.OnNavigatedTo(e);
         ViewModel.SetChatNameUpdatesEnabled(true);
-        await ViewModel.RefreshAsync();
+        await ViewModel.RefreshIfStaleAsync();
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
