@@ -107,6 +107,12 @@ function Invoke-Element([Windows.Automation.AutomationElement]$Element, [string]
     $deadline = [DateTime]::UtcNow.AddSeconds(8)
     while (-not $Element.Current.IsEnabled -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 150 }
     if (-not $Element.Current.IsEnabled) { throw "UI element is disabled: $Description" }
+    # NavigationView items support selection; their footer can lie outside a small hosted desktop.
+    $selection = $null
+    if ($Element.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern, [ref]$selection)) {
+        ([Windows.Automation.SelectionItemPattern]$selection).Select()
+        return
+    }
     try {
         $pattern = $Element.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)
         ([Windows.Automation.InvokePattern]$pattern).Invoke()
