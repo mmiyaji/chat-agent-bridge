@@ -36,6 +36,7 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: python desktop/CheckLocalization.py
+      - run: python desktop/CheckSettingsExpander.py
       - run: python -m unittest discover -s test -p '*_test.py' -v
       - name: Validate release version rules
         shell: pwsh
@@ -51,11 +52,49 @@ jobs:
         run: |
           ./desktop/Test-ThirdPartyNotices.ps1 -SelfTest
           ./desktop/Test-ThirdPartyNotices.ps1 -PublishDirectory "${{ runner.temp }}/portable-ci"
+      - name: Upload portable UI smoke payload
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: portable-ui-payload
+          path: ${{ runner.temp }}/portable-ci
+          if-no-files-found: error
+          retention-days: 1
       - name: Test results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results
           path: TestResults/**/*.trx
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ui-smoke:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    needs: checks
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: portable-ui-payload
+          path: ${{ runner.temp }}/portable-ui-payload
+      - name: Build portable update resume fixture
+        run: dotnet build desktop/test-support/PortableUpdateResumeSmoke/PortableUpdateResumeSmoke.csproj -c Release
+      - name: Run release-readiness UI smoke
+        shell: pwsh
+        run: ./desktop/ReleaseReadinessUiSmoke.ps1 -ArtifactRoot "${{ runner.temp }}/portable-ui-payload" -EvidenceDirectory "${{ runner.temp }}/release-readiness-ui-evidence"
+      - name: Upload release-readiness UI evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-readiness-ui-smoke
+          path: ${{ runner.temp }}/release-readiness-ui-evidence/release-readiness-ui-*
           if-no-files-found: ignore
           retention-days: 7
