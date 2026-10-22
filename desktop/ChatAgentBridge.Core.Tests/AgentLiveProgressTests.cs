@@ -211,7 +211,24 @@ public sealed class AgentLiveProgressTests
     {
         public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         public TemporaryDirectory() => Directory.CreateDirectory(Path);
-        public void Dispose() { if (Directory.Exists(Path)) Directory.Delete(Path, recursive: true); }
+        public void Dispose()
+        {
+            // Windows can briefly retain the copied CLI image after process exit.
+            // Retry only cleanup of this fixture's generated directory, then surface a persistent failure.
+            for (var attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    if (Directory.Exists(Path)) Directory.Delete(Path, recursive: true);
+                    return;
+                }
+                catch (Exception exception) when (attempt < 19 &&
+                    exception is IOException or UnauthorizedAccessException)
+                {
+                    Thread.Sleep(100);
+                }
+            }
+        }
     }
 
     private sealed class FakeAppServerFactory(Func<FakeAppServerClient, Task> onTurnStart) : IAppServerProcessFactory
