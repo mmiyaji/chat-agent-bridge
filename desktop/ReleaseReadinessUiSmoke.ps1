@@ -5,6 +5,7 @@ param(
     [switch]$OnlyJaLight,
     [int]$WindowWidth = 0,
     [int]$WindowHeight = 0,
+    [switch]$NoMouseFallback,
     [int]$TimeoutSeconds = 30
 )
 
@@ -118,6 +119,12 @@ function Invoke-Element([Windows.Automation.AutomationElement]$Element, [string]
         ([Windows.Automation.InvokePattern]$pattern).Invoke()
     }
     catch {
+        if ($Element.Current.ControlType -eq [Windows.Automation.ControlType]::Button -and $Element.Current.IsKeyboardFocusable) {
+            $Element.SetFocus()
+            [Windows.Forms.SendKeys]::SendWait("{ENTER}")
+            return
+        }
+        if ($NoMouseFallback) { throw "No native invocation pattern is available: $Description" }
         $bounds = $Element.Current.BoundingRectangle
         if ($bounds.IsEmpty -or $bounds.Width -lt 1 -or $bounds.Height -lt 1) { throw "UI element has no usable bounds: $Description" }
         $point = [Windows.Point]::new($bounds.Left + ($bounds.Width / 2), $bounds.Top + ($bounds.Height / 2))
@@ -206,18 +213,34 @@ function Expand-Element([Windows.Automation.AutomationElement]$Element, [string]
         }
     }
     catch [InvalidOperationException] { }
-    $walker = [Windows.Automation.TreeWalker]::ControlViewWalker
-    $child = $walker.GetFirstChild($Element)
-    while ($child) {
+    $children = $Element.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)
+    foreach ($child in $children) {
+        $expand = $null
+        if ($child.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$expand)) {
+            if ($expand.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Expanded) { return }
+            if ($expand.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) {
+                $expand.Expand()
+                Start-Sleep -Milliseconds 250
+                return
+            }
+        }
+    }
+    foreach ($child in $children) {
         if ($child.Current.ControlType -eq [Windows.Automation.ControlType]::Button) {
+            $toggle = $null
+            if ($child.TryGetCurrentPattern([Windows.Automation.TogglePattern]::Pattern, [ref]$toggle)) {
+                if ($toggle.Current.ToggleState -eq [Windows.Automation.ToggleState]::Off) { $toggle.Toggle() }
+                Start-Sleep -Milliseconds 250
+                return
+            }
             try {
                 $invoke = [Windows.Automation.InvokePattern]$child.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)
                 if ($child.Current.IsEnabled) { $invoke.Invoke(); Start-Sleep -Milliseconds 250; return }
             }
             catch [InvalidOperationException] { }
         }
-        $child = $walker.GetNextSibling($child)
     }
+    if ($NoMouseFallback) { throw "No native expansion pattern is available: $Description" }
     try {
         $bounds = $Element.Current.BoundingRectangle
         if ($bounds.IsEmpty -or $bounds.Width -lt 1 -or $bounds.Height -lt 1) { throw 'Element has no usable bounds.' }

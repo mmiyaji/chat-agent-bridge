@@ -89,7 +89,7 @@ jobs:
         run: dotnet build desktop/test-support/PortableUpdateResumeSmoke/PortableUpdateResumeSmoke.csproj -c Release
       - name: Run release-readiness UI smoke
         shell: pwsh
-        run: ./desktop/ReleaseReadinessUiSmoke.ps1 -ArtifactRoot "${{ runner.temp }}/portable-ui-payload" -EvidenceDirectory "${{ runner.temp }}/release-readiness-ui-evidence"
+        run: ./desktop/ReleaseReadinessUiSmoke.ps1 -ArtifactRoot "${{ runner.temp }}/portable-ui-payload" -EvidenceDirectory "${{ runner.temp }}/release-readiness-ui-evidence" -NoMouseFallback
       - name: Upload release-readiness UI evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
