@@ -15,6 +15,8 @@ public sealed partial class MainPage : Page
     private int _scrollResetGeneration;
     private int _languageRefreshGeneration;
     private System.Globalization.CultureInfo? _inProcessLanguage;
+    // Pages whose layout has already been re-localized for _inProcessLanguage.
+    private readonly HashSet<string> _languageRefreshedTags = new(StringComparer.Ordinal);
     private bool _handlingStartupToggle;
     private bool _refreshingAutoConnectSelection;
     private readonly Onboarding.OnboardingWizard _wizard;
@@ -98,6 +100,7 @@ public sealed partial class MainPage : Page
     private void RefreshLanguage(System.Globalization.CultureInfo culture)
     {
         _inProcessLanguage = culture;
+        _languageRefreshedTags.Clear();
         ViewModel.RefreshLocalizedText();
         InboxPage.ViewModel.RefreshLocalizedText();
         HistoryPage.ViewModel.RefreshLocalizedText();
@@ -111,6 +114,9 @@ public sealed partial class MainPage : Page
     private void ScheduleDeferredLanguageRefresh()
     {
         if (_inProcessLanguage is not { } culture || ViewModel.IsOnboardingActive) return;
+        // Each page needs the deferred pass once per language change, not on every visit.
+        var tag = _selectedNavigationTag;
+        if (tag is not null && _languageRefreshedTags.Contains(tag)) return;
         var generation = ++_languageRefreshGeneration;
         DispatcherQueue.TryEnqueue(() =>
         {
@@ -123,6 +129,7 @@ public sealed partial class MainPage : Page
                 UpdateLayout();
                 MrtText.Refresh(this, culture);
                 RefreshAutoConnectSelectionBox();
+                if (tag is not null) _languageRefreshedTags.Add(tag);
             });
         });
     }
@@ -226,13 +233,17 @@ public sealed partial class MainPage : Page
     {
         if (_hasLoaded) return;
         _hasLoaded = true;
+        // The Windows startup-task query does not depend on saved settings, so it
+        // overlaps with the settings load. Onboarding needs the loaded settings.
+        var startupRefresh = ViewModel.RefreshStartupAsync();
         await ViewModel.LoadAsync();
         var startupProvider = ViewModel.AutoConnectProvider;
         MattermostTokenBox.Password = ViewModel.MattermostToken;
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
-        await ViewModel.RefreshStartupAsync();
         await ViewModel.InitializeOnboardingAsync();
+        await startupRefresh;
+        ViewModel.RefreshOverviewStatus();
         if (!App.IsNotificationOnlyLaunch && ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive && !ViewModel.IsLoading &&
             !ViewModel.HasUnsavedSettings && !ViewModel.IsSensitiveConfirmationPending &&
             ViewModel.AutoConnectProvider == startupProvider)
@@ -285,7 +296,7 @@ public sealed partial class MainPage : Page
         IsAboutSelected = tag == "about";
         if (!IsAgentSelected) ViewModel.CancelModelCatalogLookup();
         ViewModel.IsStatusOpen = false;
-        Bindings.Update();
+        if (pageChanged) Bindings.Update();
         if (pageChanged && _hasLoaded)
         {
             var generation = ++_scrollResetGeneration;

@@ -128,19 +128,20 @@ public partial class App : Application
 
         try { SystemLanguageTag = Windows.System.UserProfile.GlobalizationPreferences.Languages.FirstOrDefault() ?? System.Globalization.CultureInfo.InstalledUICulture.Name; }
         catch { SystemLanguageTag = System.Globalization.CultureInfo.InstalledUICulture.Name; }
-        var languagePreference = new LanguagePreferences();
-        try { languagePreference = await new LanguagePreferencesStore(new ChatAgentBridge.Core.SettingsStore()).LoadAsync(); }
-        catch (Exception ex) when (ex is System.IO.IOException or System.Text.Json.JsonException or UnauthorizedAccessException or ArgumentException)
-        {
-            // An unreadable preference never prevents access to the language selector.
-            // Preserve the file; a later explicit preference change can repair it.
-        }
-        ApplyLanguagePreference(languagePreference.Language);
-
+        // The three preference reads are independent; run them together so the
+        // slowest file read, not their sum, delays the first window.
+        var backgroundStore = new ChatAgentBridge.Core.BackgroundPreferencesStore(new ChatAgentBridge.Core.SettingsStore());
         Appearance = new(new ChatAgentBridge.Core.Appearance.AppearancePreferencesStore(new ChatAgentBridge.Core.SettingsStore()));
-        await Appearance.InitializeAsync();
+        var languageTask = LoadLanguagePreferenceAsync();
+        var appearanceTask = Appearance.InitializeAsync();
+        var backgroundTask = LoadBackgroundPreferencesAsync(backgroundStore);
+        await Task.WhenAll(languageTask, appearanceTask, backgroundTask);
+        ApplyLanguagePreference((await languageTask).Language);
+        var background = await backgroundTask;
+
+        // Pricing initializes after the window is visible (see RunPricingUpdatesAsync);
+        // consumers read the bundled snapshot until its Changed event fires.
         Pricing = new(new ChatAgentBridge.Core.SettingsStore());
-        await Pricing.InitializeAsync();
         PendingRequestNotifications ??= new PendingRequestNotificationService(DispatcherQueue, new NotificationDiagnostics(dataDirectory));
         PendingRequestNotifications.Initialize();
         PortableUpdates = new(dataDirectory, _portableLease is not null);
@@ -148,13 +149,6 @@ public partial class App : Application
         // The lifetime update task initializes preferences and revalidates downloaded updates
         // after the window is visible; large archives must not delay first-window creation.
 
-        var backgroundStore = new ChatAgentBridge.Core.BackgroundPreferencesStore(new ChatAgentBridge.Core.SettingsStore());
-        var background = new ChatAgentBridge.Core.BackgroundPreferences();
-        try { background = await backgroundStore.LoadAsync(); }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // A damaged or inaccessible preference must leave the window reachable.
-        }
         var mainWindow = new MainWindow();
         Window = mainWindow;
         Tray = new(mainWindow, backgroundStore, background);
@@ -182,6 +176,27 @@ public partial class App : Application
         _ = RunPortableUpdateChecksAsync();
     }
 
+    private static async Task<LanguagePreferences> LoadLanguagePreferenceAsync()
+    {
+        try { return await new LanguagePreferencesStore(new ChatAgentBridge.Core.SettingsStore()).LoadAsync(); }
+        catch (Exception ex) when (ex is System.IO.IOException or System.Text.Json.JsonException or UnauthorizedAccessException or ArgumentException)
+        {
+            // An unreadable preference never prevents access to the language selector.
+            // Preserve the file; a later explicit preference change can repair it.
+            return new LanguagePreferences();
+        }
+    }
+
+    private static async Task<ChatAgentBridge.Core.BackgroundPreferences> LoadBackgroundPreferencesAsync(ChatAgentBridge.Core.BackgroundPreferencesStore store)
+    {
+        try { return await store.LoadAsync(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // A damaged or inaccessible preference must leave the window reachable.
+            return new ChatAgentBridge.Core.BackgroundPreferences();
+        }
+    }
+
     private async Task RunPortableUpdateChecksAsync()
     {
         try { await PortableUpdates.RunAutomaticChecksAsync(_portableUpdateLifetime.Token); }
@@ -196,6 +211,8 @@ public partial class App : Application
         using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
         try
         {
+            // Loads cached/manual prices off the startup path; Changed notifies open views.
+            await Pricing.InitializeAsync(cancellationToken).ConfigureAwait(false);
             do
             {
                 await Pricing.RefreshAsync(force: false, cancellationToken).ConfigureAwait(false);

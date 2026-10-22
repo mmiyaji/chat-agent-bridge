@@ -287,8 +287,10 @@ public partial class MainPageViewModel : ObservableObject
         try
         {
             _settings = await _settingsStore.LoadAsync();
-            _hasSavedSettings = File.Exists(Path.Combine(_settingsStore.DirectoryPath, "settings.json"));
-            _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
+            // Probing a missing or network workspace path can block; keep it off the UI thread.
+            var settingsFilePath = Path.Combine(_settingsStore.DirectoryPath, "settings.json");
+            var loadedWorkspaceRoot = _settings.WorkspaceRoot;
+            (_hasSavedSettings, _savedWorkspaceExists) = await Task.Run(() => (File.Exists(settingsFilePath), Directory.Exists(loadedWorkspaceRoot)));
             WorkspaceRoot = _settings.WorkspaceRoot;
             AgentExecutable = _settings.AgentExecutable;
             AgentArguments = _settings.AgentArguments;
