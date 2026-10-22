@@ -46,9 +46,17 @@
                     <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;" /></NavigationViewItem.Icon>
                     <NavigationViewItem.InfoBadge>
                         <InfoBadge x:Name="AboutUpdateBadge" Visibility="Collapsed" Style="{StaticResource AttentionIconInfoBadgeStyle}"
-                                   Width="24" Height="24" MinWidth="24" MinHeight="24" MaxHeight="24" Padding="4"
+                                   Background="{ThemeResource ControlFillColorTransparentBrush}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                   Width="24" Height="24" MinWidth="24" MinHeight="24" MaxHeight="24" Padding="2"
                                    AutomationProperties.AccessibilityView="Control" AutomationProperties.AutomationId="NavAboutUpdateBadge">
-                            <InfoBadge.IconSource><SymbolIconSource Symbol="Download" /></InfoBadge.IconSource>
+                            <InfoBadge.Resources>
+                                <Thickness x:Key="IconInfoBadgeFontIconMargin">0</Thickness>
+                            </InfoBadge.Resources>
+                            <!-- Fluent System Icons: Arrow Circle Up (filled). Source and MIT license: Assets/Icons/FluentSystemIcons. -->
+                            <InfoBadge.IconSource>
+                                <FontIconSource FontFamily="ms-appx:///Assets/Icons/FluentSystemIcons/UpdateAvailable.ttf#FluentSystemIcons-Filled"
+                                                Glyph="&#xE0A2;" FontSize="20" IsTextScaleFactorEnabled="False" />
+                            </InfoBadge.IconSource>
                         </InfoBadge>
                     </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
