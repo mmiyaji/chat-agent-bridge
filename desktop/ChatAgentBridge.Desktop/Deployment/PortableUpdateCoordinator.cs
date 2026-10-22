@@ -15,6 +15,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
     private readonly HttpClient _testHttpClient;
 #endif
     private readonly string _dataDirectory;
+    private readonly string _workRoot;
     private readonly PortableUpdatePreferencesStore _preferencesStore;
     private readonly SemaphoreSlim _preferencesGate = new(1, 1);
     private readonly CancellationTokenSource _lifetimeCancellation = new();
@@ -34,6 +35,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
     private int _automaticRunner;
     private string? _automaticAvailableStatus;
     private bool _committing;
+    private bool _restoredStage;
     private bool _disposed;
 
     public bool IsSupported => DeploymentRuntime.IsPortable && _hasLifetimeLease && !_disposed;
@@ -46,11 +48,20 @@ public sealed class PortableUpdateCoordinator : IDisposable
     public bool AutomaticChecksEnabled => _automaticChecksEnabled;
     public bool IncludePrereleases => _includePrereleases;
     public bool IsDownloaded => _staged is not null;
+    public bool WasRestoredStage => _restoredStage;
     public event EventHandler? Changed;
+
+    public bool TryClaimRestoredStagePrompt()
+    {
+        if (!_restoredStage) return false;
+        _restoredStage = false;
+        return true;
+    }
 
     public PortableUpdateCoordinator(string dataDirectory, bool hasLifetimeLease)
     {
         _dataDirectory = dataDirectory;
+        _workRoot = PortableUpdateStageStore.GetWorkRoot(_installDirectory, dataDirectory);
         _preferencesStore = new PortableUpdatePreferencesStore(dataDirectory);
         _hasLifetimeLease = hasLifetimeLease;
 #if CAB_PORTABLE_UPDATE_TEST
@@ -90,6 +101,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
                 ? _preferences.AvailableRelease
                 : null;
             _preferences = _preferences with { LastAttemptUtc = _lastAttemptUtc, AvailableRelease = _available };
+            await RestoreStageAsync();
             _initialized = true;
             if (preferences is null || _preferences != preferences)
             {
@@ -101,6 +113,8 @@ public sealed class PortableUpdateCoordinator : IDisposable
             }
             if (loadFailed)
                 Status = DesktopText.Get("PortableUpdateFailed", DesktopText.Get("PortableUpdateLocalError"));
+            else if (_staged is not null)
+                Status = DesktopText.Get("PortableUpdateReady", _available?.Version ?? string.Empty);
             else if (_available is { } cached)
                 UpdateAutomaticAvailabilityStatus(cached);
         }
@@ -223,8 +237,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
     {
         if (_available is not { } release || !TryBegin()) return;
         DiscardDownload();
-        _workDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "ChatAgentBridge", "Updates", Guid.NewGuid().ToString("N"));
+        _workDirectory = Path.Combine(_workRoot, Guid.NewGuid().ToString("N"));
         IsDownloading = true;
         DownloadProgress = 0;
         Status = DesktopText.Get("PortableUpdateDownloading", release.Version);
@@ -232,6 +245,8 @@ public sealed class PortableUpdateCoordinator : IDisposable
         try
         {
             PortableUpdatePaths.EnsureNoReparsePoints(_workDirectory);
+            Directory.CreateDirectory(_workRoot);
+            PortableUpdatePaths.EnsureNoReparsePoints(_workRoot);
             Directory.CreateDirectory(_workDirectory);
             var zip = Path.Combine(_workDirectory, "update.zip");
             var progress = new Progress<double>(value =>
@@ -246,6 +261,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
             Status = DesktopText.Get("PortableUpdateVerifying");
             Notify();
             _staged = await PortableArchiveStager.ExtractAsync(zip, Path.Combine(_workDirectory, "stage"), release, _operation.Token);
+            await PortableUpdateStageStore.SaveAsync(_workDirectory, _installDirectory, _dataDirectory, Architecture(), release, _staged, _operation.Token);
             Status = DesktopText.Get("PortableUpdateReady", release.Version);
         }
         catch (OperationCanceledException) { DiscardDownload(); ShowCancellationOrTimeout(); }
@@ -259,6 +275,10 @@ public sealed class PortableUpdateCoordinator : IDisposable
         Process? helper = null;
         try
         {
+            var restored = await PortableUpdateStageStore.LoadAsync(_workDirectory, _installDirectory, _dataDirectory,
+                _currentVersion, Architecture(), IncludePrereleases, release, _operation!.Token)
+                ?? throw new InvalidDataException("The staged update is no longer available.");
+            _staged = staged = restored.Staged;
             if (App.Window is not MainWindow window || !window.CanRestartForUpdate)
             {
                 Status = DesktopText.Get("PortableUpdateBusyWork");
@@ -436,7 +456,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
                 var retired = _workDirectory;
                 _ = Task.Run(() =>
                 {
-                    try { PortableUpdatePaths.EnsureNoReparsePoints(retired); Directory.Delete(retired, recursive: true); }
+                    try { PortableUpdateStageStore.DeleteOwnedWorkDirectory(_installDirectory, _dataDirectory, retired); }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException) { }
                 });
             }
@@ -445,6 +465,42 @@ public sealed class PortableUpdateCoordinator : IDisposable
             catch (InvalidDataException) { }
         }
         _workDirectory = null;
+    }
+
+    private async Task RestoreStageAsync()
+    {
+        if (!Directory.Exists(_workRoot)) return;
+        try { PortableUpdatePaths.EnsureNoReparsePoints(_workRoot); }
+        catch (InvalidDataException) { return; }
+
+        foreach (var directory in Directory.EnumerateDirectories(_workRoot))
+        {
+            var name = Path.GetFileName(directory);
+            if (!Guid.TryParseExact(name, "N", out _)) continue;
+            try
+            {
+                PortableUpdatePaths.EnsureNoReparsePoints(directory);
+                if (PortableUpdateStageStore.IsCompleted(directory))
+                {
+                    PortableUpdateStageStore.DeleteOwnedWorkDirectory(_installDirectory, _dataDirectory, directory);
+                    continue;
+                }
+                if (_available is null) continue;
+                var restored = await PortableUpdateStageStore.LoadAsync(directory, _installDirectory, _dataDirectory,
+                    _currentVersion, Architecture(), IncludePrereleases, _available, _lifetimeCancellation.Token);
+                if (restored is null) continue;
+                _staged = restored.Staged;
+                _workDirectory = restored.WorkDirectory;
+                _available = restored.Release;
+                _restoredStage = true;
+                break;
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or JsonException or ArgumentException or NotSupportedException or OperationCanceledException or FormatException or InvalidOperationException)
+            {
+                try { PortableUpdateStageStore.DeleteOwnedWorkDirectory(_installDirectory, _dataDirectory, directory); }
+                catch (Exception cleanupError) when (cleanupError is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException or NotSupportedException) { }
+            }
+        }
     }
 
     public void Dispose()

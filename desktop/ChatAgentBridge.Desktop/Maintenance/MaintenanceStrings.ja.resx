@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+<resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+<resheader name="version"><value>2.0</value></resheader>
+<resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+<resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Heading" xml:space="preserve"><value>データと復旧</value></data>
+  <data name="Description" xml:space="preserve"><value>設定のバックアップ、保存状況の確認、選択したデータの削除を行います。</value></data>
+  <data name="Location" xml:space="preserve"><value>アプリのデータフォルダー</value></data>
+  <data name="ExportHeading" xml:space="preserve"><value>エージェント・接続先のバックアップ</value></data>
+  <data name="ExportDescription" xml:space="preserve"><value>CLIの場所・モデル・作業フォルダー・サーバー・チャンネルを保存します。トークン、CLI引数、許可ユーザー・スレッド、自動承認、外観、Windows起動設定は含みません。ファイルは安全に保管してください。</value></data>
+  <data name="ImportHeading" xml:space="preserve"><value>設定を復元</value></data>
+  <data name="ImportDescription" xml:space="preserve"><value>CLIとフォルダーの場所を確認し、復元後にトークンと許可ユーザーを設定してください。</value></data>
+  <data name="ClearHeading" xml:space="preserve"><value>ローカルデータを削除</value></data>
+  <data name="ClearDescription" xml:space="preserve"><value>実行・操作履歴はそれぞれ直近500件まで保存します。利用実績は別に保存します。削除する対象を選べます。</value></data>
+  <data name="Open" xml:space="preserve"><value>フォルダーを開く</value></data>
+  <data name="Export" xml:space="preserve"><value>バックアップ</value></data>
+  <data name="Import" xml:space="preserve"><value>復元</value></data>
+  <data name="Clear" xml:space="preserve"><value>削除</value></data>
+  <data name="Refresh" xml:space="preserve"><value>再確認</value></data>
+  <data name="Cancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="Failed" xml:space="preserve"><value>処理を完了できませんでした。ファイル形式、アクセス権、空き容量を確認してください。バックアップには認証情報を含めません。</value></data>
+  <data name="Busy" xml:space="preserve"><value>実行・承認待ち・設定変更が完了してから操作してください。</value></data>
+  <data name="Exported" xml:space="preserve"><value>バックアップを保存しました。接続トークンや権限設定は含みません。</value></data>
+  <data name="Restored" xml:space="preserve"><value>設定を復元しました。チャットは切断しています。CLI・作業フォルダーを確認し、トークンと許可ユーザーを設定してから再接続してください。元の設定ファイルは settings-original-before-restore.json に保管しました。このPC用の復旧ファイルです。共有しないでください。</value></data>
+  <data name="Cleared" xml:space="preserve"><value>選択したデータを削除しました。チャットは切断したままです。</value></data>
+  <data name="TrustWorkspace" xml:space="preserve"><value>上記の作業フォルダーを信頼し、復元する</value></data>
+  <data name="RestoreNotice" xml:space="preserve"><value>エージェント・接続先設定を置き換えます。トークン、許可ユーザー・スレッド、自動接続・自動承認、添付承認は引き継ぎません。CLI引数はプロバイダーの既定値に戻るため、独自の引数は再設定が必要です。下のチェックがない場合、作業フォルダーは未設定になります。CLIの場所が信頼できることも確認してください。</value></data>
+  <data name="ClearNotice" xml:space="preserve"><value>選択したアプリ内データを完全に削除します。先にチャットを切断します。作業フォルダーのファイル、チャットサーバーの投稿、各CLIが管理する履歴は削除しません。利用実績は、ここで選ばない限り残します。</value></data>
+  <data name="ExecutionHistory" xml:space="preserve"><value>実行履歴・操作履歴</value></data>
+  <data name="Conversations" xml:space="preserve"><value>会話の対応付け・引継ぎメモ・添付承認</value></data>
+  <data name="UsageStatistics" xml:space="preserve"><value>利用実績の集計</value></data>
+  <data name="Diagnostics" xml:space="preserve"><value>通知の診断ログ</value></data>
+</root>

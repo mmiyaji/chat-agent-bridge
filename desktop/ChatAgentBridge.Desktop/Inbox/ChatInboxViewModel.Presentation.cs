@@ -68,6 +68,11 @@ public sealed partial class ChatInboxViewModel
         OnPropertyChanged(nameof(ConversationCountLabel));
         OnPropertyChanged(nameof(SelectedRequestCountLabel));
         OnPropertyChanged(nameof(EmptyListMessage));
+        OnPropertyChanged(nameof(EmptyConversationHeading));
+        OnPropertyChanged(nameof(EmptyConversationDescription));
+        OnPropertyChanged(nameof(EmptyDetailHeading));
+        OnPropertyChanged(nameof(EmptyDetailDescription));
+        OnPropertyChanged(nameof(ClearConversationFiltersLabel));
         OnPropertyChanged(nameof(SelectedOutput));
         OnPropertyChanged(nameof(SelectedUsage));
         foreach (var request in Requests) request.RefreshLocalizedText();
@@ -83,6 +88,9 @@ public sealed partial class ChatInboxViewModel
     {
         OnPropertyChanged(nameof(ConnectionTone));
         OnPropertyChanged(nameof(ConnectionLabel));
+        OnPropertyChanged(nameof(ShowEmptyConversationList));
+        OnPropertyChanged(nameof(EmptyConversationHeading));
+        OnPropertyChanged(nameof(EmptyConversationDescription));
     }
     partial void OnIsConnectedChanged(bool value) => NotifyConnectionPresentation();
     partial void OnIsConnectionConfirmedChanged(bool value) => NotifyConnectionPresentation();

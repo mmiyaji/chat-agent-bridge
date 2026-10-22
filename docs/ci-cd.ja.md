@@ -5,6 +5,7 @@
 | きっかけ | 処理 | 公開先 |
 | --- | --- | --- |
 | PR、main / codex/* への push | TypeScript、ローカライズ、配信JSON、.NETテスト、WinUI x64 ビルド | テスト結果のみ（Actions artifact、7日） |
+| CI の手動実行、またはリリースタグの検証 | 発行済みポータブルアプリの UI スモークテスト | UI 証跡 artifact（7日） |
 | Portable release の手動実行 | 上記検証と x64 / ARM64 ポータブルZIPの作成 | Actions artifact のみ（7日）。ReleaseやPagesは変更しない |
 | main 上のコミットへ `vX.Y.Z` / `vX.Y.Z-preview.N` タグをpush | 検証 → 両CPU向けZIP → 下書きRelease → アセット照合 → Release公開 → 配信JSON生成 | GitHub Releases、GitHub Pages |
 | main の料金表・配信生成スクリプト変更 | 公開済みRelease一覧と最新料金表からJSONを再生成 | GitHub Pages |
@@ -36,7 +37,7 @@ git push origin v0.1.0-preview.6
 
 安定版は `v0.1.0` のようにpreview部分を省きます。数字の先頭ゼロ、rc/beta等の形式は受け付けません。Windowsファイルバージョンの各要素は0～65534です。上のバージョンは例なので、既存タグと重複しないことを確認してください。
 
-`Portable release` の全ジョブ成功を確認します。ZIPには.NET / Windows App SDK / 更新ヘルパーを含め、アプリ設定・認証情報・テスト用実行ファイルは含めません。ZIP内のマニフェストとSHA-256、CPU、自己完結ランタイムを検証し、アップロード後のGitHubアセットのサイズ・SHA-256も照合します。MSIXやMicrosoft Store公開・コード署名はこのワークフローの対象外です。
+タグを作る前に、CI を `workflow_dispatch` で実行し、UI スモークテスト成功と UI 証跡 artifact を確認します。タグ検証にも同じ UI スモークテストが含まれますが、Windows hosted runner の対話型デスクトップ可用性はこの環境で事前確認できていません。失敗した場合は記録された証跡を確認し、対話型 Windows 環境でスクリプトを実行してからリリースを続けてください。`Portable release` の全ジョブ成功も確認します。ZIPには.NET / Windows App SDK / 更新ヘルパーを含め、アプリ設定・認証情報・テスト用実行ファイルは含めません。ZIP内のマニフェストとSHA-256、CPU、自己完結ランタイムを検証し、アップロード後のGitHubアセットのサイズ・SHA-256も照合します。MSIXやMicrosoft Store公開・コード署名はこのワークフローの対象外です。
 
 公開前には実ZIPとモックGitHub CLIで、正常公開、ハッシュ不一致による停止、公開済みアセットの上書き防止、API失敗時の停止を検証します。この検証ジョブには公開権限や実チャットの認証情報を渡しません。
 

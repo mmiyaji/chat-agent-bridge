@@ -326,6 +326,12 @@
   <data name="HistorySessionResults" xml:space="preserve"><value>会話 {1} 件中 {0} 件を表示</value></data>
   <data name="HistoryNoSessions" xml:space="preserve"><value>保存済みの会話はまだありません。</value></data>
   <data name="HistoryNoSessionMatches" xml:space="preserve"><value>条件に一致する会話はありません。</value></data>
+  <data name="HistoryEmptySessionListHeading" xml:space="preserve"><value>保存済みの会話はまだありません</value></data>
+  <data name="HistoryEmptySessionListDescription" xml:space="preserve"><value>接続済みチャットの依頼を処理すると、保存済みの会話がここに表示されます。</value></data>
+  <data name="HistoryEmptySessionMatchesHeading" xml:space="preserve"><value>条件に一致する会話はありません</value></data>
+  <data name="HistoryEmptySessionMatchesDescription" xml:space="preserve"><value>検索、プロバイダー、ワークスペースの絞り込みを変更してください。</value></data>
+  <data name="HistoryEmptySessionDetailHeading" xml:space="preserve"><value>会話を選択</value></data>
+  <data name="HistoryEmptySessionDetailDescription" xml:space="preserve"><value>保存済みの会話を選ぶと、アクティビティ、ワークスペース、エージェント、モデル、ポリシーを確認できます。</value></data>
   <data name="HistorySelectConversation" xml:space="preserve"><value>会話を選択</value></data>
   <data name="HistorySelectedSessionTitle" xml:space="preserve"><value>{0} · {1}</value></data>
   <data name="HistorySelectConversationHint" xml:space="preserve"><value>保存済みの会話を選択すると、識別子、ワークスペース、エージェント、モデル、実行ポリシーを確認できます。</value></data>
@@ -349,6 +355,12 @@
   <data name="HistoryExecutionSummary" xml:space="preserve"><value>最近の実行 ({0})</value></data>
   <data name="HistoryNoExecutions" xml:space="preserve"><value>実行履歴はまだありません。</value></data>
   <data name="HistoryNoAudit" xml:space="preserve"><value>操作記録はまだありません。</value></data>
+  <data name="HistoryExecutionEmptyHeading" xml:space="preserve"><value>実行履歴はまだありません</value></data>
+  <data name="HistoryExecutionEmptyDescription" xml:space="preserve"><value>手動で実行するか、接続済みチャットから依頼すると、ここに実行履歴が表示されます。</value></data>
+  <data name="HistoryNoExecutionsForDayHeading" xml:space="preserve"><value>この日の実行履歴はありません</value></data>
+  <data name="HistoryNoExecutionsForDayDescription" xml:space="preserve"><value>選択した日に一致する実行記録はありません。日付の絞り込みを解除すると、すべての実行を表示できます。</value></data>
+  <data name="HistoryAuditEmptyDescription" xml:space="preserve"><value>セッションの変更やエージェントの切り替えなどの操作がここに記録されます。</value></data>
+  <data name="HistoryClearExecutionDayFilter" xml:space="preserve"><value>すべての日付を表示</value></data>
   <data name="HistoryStartFreshWarning" xml:space="preserve"><value>保存済みセッションとの関連付けを解除します。同じチャットスレッドに次のメッセージを送ると、新しい会話が始まります。リモートのチャット履歴や実行履歴は削除されません。</value></data>
   <data name="InboxSelectConversation" xml:space="preserve"><value>会話を選択すると、リクエストと結果が表示されます。</value></data>
   <data name="InboxConversationCount" xml:space="preserve"><value>会話 {0} 件</value></data>
@@ -358,6 +370,17 @@
   <data name="ConversationLocation" xml:space="preserve"><value>チャンネル: {0} · スレッド: {1}</value></data>
   <data name="InboxWaitingForRequests" xml:space="preserve"><value>接続すると、許可された利用者からの依頼がここに表示されます。</value></data>
   <data name="InboxNoMatches" xml:space="preserve"><value>条件に一致する会話はありません。検索や状態の絞り込みを変更してください。</value></data>
+  <data name="InboxEmptyOfflineHeading" xml:space="preserve"><value>チャットに接続されていません</value></data>
+  <data name="InboxEmptyOfflineDescription" xml:space="preserve"><value>上のSlackまたはMattermostに接続すると、許可されたユーザーからの依頼を受信できます。</value></data>
+  <data name="InboxEmptyConnectingHeading" xml:space="preserve"><value>チャットに接続しています</value></data>
+  <data name="InboxEmptyConnectingDescription" xml:space="preserve"><value>接続が完了すると、依頼がここに表示されます。</value></data>
+  <data name="InboxEmptyWaitingHeading" xml:space="preserve"><value>依頼を待っています</value></data>
+  <data name="InboxEmptyWaitingDescription" xml:space="preserve"><value>許可されたユーザーから新しい依頼が届くと、ここに表示されます。</value></data>
+  <data name="InboxEmptyFilteredHeading" xml:space="preserve"><value>条件に一致する会話はありません</value></data>
+  <data name="InboxEmptyFilteredDescription" xml:space="preserve"><value>検索または状態の絞り込みを変更・解除してください。</value></data>
+  <data name="InboxEmptyDetailHeading" xml:space="preserve"><value>会話を選択</value></data>
+  <data name="InboxEmptyDetailDescription" xml:space="preserve"><value>一覧から会話を選ぶと、依頼や応答を確認できます。</value></data>
+  <data name="InboxClearFiltersLabel" xml:space="preserve"><value>絞り込みを解除</value></data>
   <data name="InboxOneConversation" xml:space="preserve"><value>会話 1 件</value></data>
   <data name="InboxOneRequest" xml:space="preserve"><value>依頼 1 件</value></data>
   <data name="ChooseExecutable" xml:space="preserve"><value>実行ファイルを選択</value></data>
@@ -371,6 +394,13 @@
   <data name="ActivityFilteredExecutions" xml:space="preserve"><value>{0}：保存済みの実行 {1:N0}件</value></data>
   <data name="ActivityNoPeak" xml:space="preserve"><value>まだ記録がありません</value></data>
   <data name="ActivityOutcomes" xml:space="preserve"><value>この期間：完了 {0:N0}回・失敗 {1:N0}回・中止 {2:N0}回・実行中／中断 {3:N0}回</value></data>
+  <data name="ActivityNoRunsHeading" xml:space="preserve"><value>アクティビティはまだありません</value></data>
+  <data name="ActivityNoRunsDescription" xml:space="preserve"><value>最初の実行後にアクティビティが表示されます。手動で実行するか、接続済みチャットから依頼してください。</value></data>
+  <data name="ActivityNoRunsInPeriodHeading" xml:space="preserve"><value>この期間に実行はありません</value></data>
+  <data name="ActivityNoRunsInPeriodDescription" xml:space="preserve"><value>この期間の実行記録はありません。期間を広げると、以前のアクティビティを確認できます。</value></data>
+  <data name="ActivityNoModelsHeading" xml:space="preserve"><value>モデル別アクティビティはありません</value></data>
+  <data name="ActivityNoModelsDescription" xml:space="preserve"><value>実行すると、モデル別の利用状況が表示されます。</value></data>
+  <data name="ActivityNoModelsInPeriodDescription" xml:space="preserve"><value>この期間にはモデル実行がありません。</value></data>
   <data name="ActivityPeakValue" xml:space="preserve"><value>{0}・{1:N0}回</value></data>
   <data name="ActivityRunCount" xml:space="preserve"><value>{0:N0}回</value></data>
   <data name="ActivitySelectDay" xml:space="preserve"><value>日付を選ぶと、その日の利用状況を確認できます。</value></data>
@@ -576,6 +606,10 @@
   <data name="PortableUpdateApplyTitle" xml:space="preserve"><value>ポータブル版の更新を適用しますか？</value></data>
   <data name="PortableUpdateApplyMessage" xml:space="preserve"><value>更新を適用するためアプリを終了して再起動します。設定はそのまま引き継がれます。実行中の作業が完了してから適用してください。</value></data>
   <data name="PortableUpdateApplyPrimary" xml:space="preserve"><value>更新して再起動</value></data>
+  <data name="PortableUpdateRestartTitle" xml:space="preserve"><value>更新の準備ができました</value></data>
+  <data name="PortableUpdateRestartMessage" xml:space="preserve"><value>バージョン {0} をダウンロードしました。今すぐ更新してアプリを再起動しますか？設定と履歴は引き継がれます。「後で」を選ぶと、情報タブから更新できます。</value></data>
+  <data name="PortableUpdateRestartBusyMessage" xml:space="preserve"><value>バージョン {0} をダウンロードしました。実行中の作業、承認待ちの依頼、設定変更を完了してから、情報タブの「更新して再起動」を選んでください。</value></data>
+  <data name="PortableUpdateLater" xml:space="preserve"><value>後で</value></data>
   <data name="PortableUpdateCancelled" xml:space="preserve"><value>更新操作をキャンセルしました。</value></data>
   <data name="PortableUpdateVerifying" xml:space="preserve"><value>更新ファイルを検証・準備しています…</value></data>
   <data name="PortableUpdateNetworkError" xml:space="preserve"><value>ネットワーク接続を確認して、もう一度お試しください。</value></data>
@@ -712,4 +746,11 @@
   <data name="PortableIdentityStarting" xml:space="preserve"><value>通知を設定するためアプリを終了しています。自動的に再起動します。</value></data>
   <data name="PortableIdentityFailed" xml:space="preserve"><value>通知を設定できませんでした (HRESULT {0})。</value></data>
   <data name="PortableIdentityLastFailed" xml:space="preserve"><value>前回の通知設定が完了しませんでした (HRESULT {0})。</value></data>
+  <data name="ThirdPartyLicensesTitle" xml:space="preserve"><value>第三者ライセンス</value></data>
+  <data name="ThirdPartyLicensesComponent" xml:space="preserve"><value>コンポーネント</value></data>
+  <data name="ThirdPartyLicensesLoading" xml:space="preserve"><value>読み込み中…</value></data>
+  <data name="ThirdPartyLicensesReadFailed" xml:space="preserve"><value>同梱のライセンス表記を読み込めませんでした。配布アーカイブからアプリを再度展開してください。</value></data>
+  <data name="ActivityOtherModels" xml:space="preserve"><value>その他のモデル</value></data>
+  <data name="ActivityStatisticsUnavailable" xml:space="preserve"><value>利用実績の集計を読み込めませんでした。不完全な値を表示しないよう、合計とグラフを非表示にしています。再読み込みするか、保存先の状態を確認してください。</value></data>
+  <data name="ActivityStatisticsMigrationCoverage" xml:space="preserve"><value>集計開始時に残っていた履歴を含みます。それ以前に履歴から削除された記録は復旧できません。</value></data>
 </root>

@@ -326,6 +326,12 @@
   <data name="HistorySessionResults" xml:space="preserve"><value>Showing {0} of {1} conversations</value></data>
   <data name="HistoryNoSessions" xml:space="preserve"><value>No saved conversations yet.</value></data>
   <data name="HistoryNoSessionMatches" xml:space="preserve"><value>No conversations match these filters.</value></data>
+  <data name="HistoryEmptySessionListHeading" xml:space="preserve"><value>No saved conversations yet</value></data>
+  <data name="HistoryEmptySessionListDescription" xml:space="preserve"><value>Saved conversations will appear after you handle a request in a connected chat.</value></data>
+  <data name="HistoryEmptySessionMatchesHeading" xml:space="preserve"><value>No matching conversations</value></data>
+  <data name="HistoryEmptySessionMatchesDescription" xml:space="preserve"><value>Try changing your search, provider, or workspace filter.</value></data>
+  <data name="HistoryEmptySessionDetailHeading" xml:space="preserve"><value>Select a conversation</value></data>
+  <data name="HistoryEmptySessionDetailDescription" xml:space="preserve"><value>Choose a saved conversation to view its activity, workspace, agent, model, and policy.</value></data>
   <data name="HistorySelectConversation" xml:space="preserve"><value>Select a conversation</value></data>
   <data name="HistorySelectedSessionTitle" xml:space="preserve"><value>{0} · {1}</value></data>
   <data name="HistorySelectConversationHint" xml:space="preserve"><value>Choose a saved conversation to see its identifiers, workspace, agent, model, and execution policy.</value></data>
@@ -349,6 +355,12 @@
   <data name="HistoryExecutionSummary" xml:space="preserve"><value>Recent executions ({0})</value></data>
   <data name="HistoryNoExecutions" xml:space="preserve"><value>No execution history yet.</value></data>
   <data name="HistoryNoAudit" xml:space="preserve"><value>No audit events yet.</value></data>
+  <data name="HistoryExecutionEmptyHeading" xml:space="preserve"><value>No runs yet</value></data>
+  <data name="HistoryExecutionEmptyDescription" xml:space="preserve"><value>Execution history appears here when you run an agent manually or send a request through a connected chat.</value></data>
+  <data name="HistoryNoExecutionsForDayHeading" xml:space="preserve"><value>No runs for this day</value></data>
+  <data name="HistoryNoExecutionsForDayDescription" xml:space="preserve"><value>No execution records match this day. Clear the day filter to see all runs.</value></data>
+  <data name="HistoryAuditEmptyDescription" xml:space="preserve"><value>Actions such as session changes and agent switches will be recorded here.</value></data>
+  <data name="HistoryClearExecutionDayFilter" xml:space="preserve"><value>Show all dates</value></data>
   <data name="HistoryStartFreshWarning" xml:space="preserve"><value>This removes the saved session association so the next message in this same chat thread starts a new conversation. It does not delete remote chat history or execution history.</value></data>
   <data name="InboxSelectConversation" xml:space="preserve"><value>Select a conversation to view its request and result.</value></data>
   <data name="InboxConversationCount" xml:space="preserve"><value>{0} conversations</value></data>
@@ -358,6 +370,17 @@
   <data name="ConversationLocation" xml:space="preserve"><value>Channel: {0} · Thread: {1}</value></data>
   <data name="InboxWaitingForRequests" xml:space="preserve"><value>Connect above to receive requests from allowed users.</value></data>
   <data name="InboxNoMatches" xml:space="preserve"><value>No conversations match. Change your search or state filter.</value></data>
+  <data name="InboxEmptyOfflineHeading" xml:space="preserve"><value>Inbox is disconnected</value></data>
+  <data name="InboxEmptyOfflineDescription" xml:space="preserve"><value>Connect Slack or Mattermost above to receive requests from allowed users.</value></data>
+  <data name="InboxEmptyConnectingHeading" xml:space="preserve"><value>Connecting to chat</value></data>
+  <data name="InboxEmptyConnectingDescription" xml:space="preserve"><value>The inbox will show requests after the connection is ready.</value></data>
+  <data name="InboxEmptyWaitingHeading" xml:space="preserve"><value>Waiting for requests</value></data>
+  <data name="InboxEmptyWaitingDescription" xml:space="preserve"><value>New requests from allowed users will appear here when they arrive.</value></data>
+  <data name="InboxEmptyFilteredHeading" xml:space="preserve"><value>No matching conversations</value></data>
+  <data name="InboxEmptyFilteredDescription" xml:space="preserve"><value>Change or clear the search or state filter to see conversations.</value></data>
+  <data name="InboxEmptyDetailHeading" xml:space="preserve"><value>Select a conversation</value></data>
+  <data name="InboxEmptyDetailDescription" xml:space="preserve"><value>Choose a conversation from the list to review its requests and responses.</value></data>
+  <data name="InboxClearFiltersLabel" xml:space="preserve"><value>Clear filters</value></data>
   <data name="InboxOneConversation" xml:space="preserve"><value>1 conversation</value></data>
   <data name="InboxOneRequest" xml:space="preserve"><value>1 request</value></data>
   <data name="ChooseExecutable" xml:space="preserve"><value>Choose executable</value></data>
@@ -371,6 +394,13 @@
   <data name="ActivityFilteredExecutions" xml:space="preserve"><value>{0}: {1:N0} saved executions</value></data>
   <data name="ActivityNoPeak" xml:space="preserve"><value>No activity yet</value></data>
   <data name="ActivityOutcomes" xml:space="preserve"><value>In this period: {0:N0} completed · {1:N0} failed · {2:N0} cancelled · {3:N0} running / interrupted</value></data>
+  <data name="ActivityNoRunsHeading" xml:space="preserve"><value>No activity yet</value></data>
+  <data name="ActivityNoRunsDescription" xml:space="preserve"><value>Your first run will fill this activity view. Start an agent manually or from a connected chat.</value></data>
+  <data name="ActivityNoRunsInPeriodHeading" xml:space="preserve"><value>No runs in this period</value></data>
+  <data name="ActivityNoRunsInPeriodDescription" xml:space="preserve"><value>This date range has no execution records. Choose a longer period to see earlier activity.</value></data>
+  <data name="ActivityNoModelsHeading" xml:space="preserve"><value>No model activity</value></data>
+  <data name="ActivityNoModelsDescription" xml:space="preserve"><value>Model activity will appear after a run.</value></data>
+  <data name="ActivityNoModelsInPeriodDescription" xml:space="preserve"><value>There are no model runs in this date range.</value></data>
   <data name="ActivityPeakValue" xml:space="preserve"><value>{0} · {1:N0} runs</value></data>
   <data name="ActivityRunCount" xml:space="preserve"><value>{0:N0} runs</value></data>
   <data name="ActivitySelectDay" xml:space="preserve"><value>Select a date to explore your activity.</value></data>
@@ -576,6 +606,10 @@
   <data name="PortableUpdateApplyTitle" xml:space="preserve"><value>Apply portable update?</value></data>
   <data name="PortableUpdateApplyMessage" xml:space="preserve"><value>The app will close and restart to apply the update. Your settings will stay in place. Apply the update only after active work has finished.</value></data>
   <data name="PortableUpdateApplyPrimary" xml:space="preserve"><value>Update and restart</value></data>
+  <data name="PortableUpdateRestartTitle" xml:space="preserve"><value>Update ready to install</value></data>
+  <data name="PortableUpdateRestartMessage" xml:space="preserve"><value>Version {0} has been downloaded. Update and restart the app now? Your settings and history will be kept. Choose Later to install it from the About tab when you are ready.</value></data>
+  <data name="PortableUpdateRestartBusyMessage" xml:space="preserve"><value>Version {0} has been downloaded. Finish any running work, pending approvals, or settings changes, then choose Update and restart in the About tab.</value></data>
+  <data name="PortableUpdateLater" xml:space="preserve"><value>Later</value></data>
   <data name="PortableUpdateCancelled" xml:space="preserve"><value>Update operation cancelled.</value></data>
   <data name="PortableUpdateVerifying" xml:space="preserve"><value>Verifying and preparing the update…</value></data>
   <data name="PortableUpdateNetworkError" xml:space="preserve"><value>Check the network connection and try again.</value></data>
@@ -712,4 +746,11 @@ After: {2}</value></data>
   <data name="PortableIdentityStarting" xml:space="preserve"><value>Closing the app to configure notifications. It will restart automatically.</value></data>
   <data name="PortableIdentityFailed" xml:space="preserve"><value>Could not configure notifications (HRESULT {0}).</value></data>
   <data name="PortableIdentityLastFailed" xml:space="preserve"><value>The last notification setup did not complete (HRESULT {0}).</value></data>
+  <data name="ThirdPartyLicensesTitle" xml:space="preserve"><value>Third-party licenses</value></data>
+  <data name="ThirdPartyLicensesComponent" xml:space="preserve"><value>Component</value></data>
+  <data name="ThirdPartyLicensesLoading" xml:space="preserve"><value>Loading…</value></data>
+  <data name="ThirdPartyLicensesReadFailed" xml:space="preserve"><value>Could not read the bundled license notices. Extract the app again from the distribution archive.</value></data>
+  <data name="ActivityOtherModels" xml:space="preserve"><value>Other models</value></data>
+  <data name="ActivityStatisticsUnavailable" xml:space="preserve"><value>Usage statistics could not be read. Totals and charts are hidden to avoid showing incomplete values. Try refreshing or inspect the local data folder.</value></data>
+  <data name="ActivityStatisticsMigrationCoverage" xml:space="preserve"><value>Includes the history retained when statistics were first enabled. Earlier records already removed from history cannot be recovered.</value></data>
 </root>

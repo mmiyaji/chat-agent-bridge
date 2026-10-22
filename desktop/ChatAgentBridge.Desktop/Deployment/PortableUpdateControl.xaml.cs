@@ -2,6 +2,7 @@ using ChatAgentBridge_Desktop.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace ChatAgentBridge_Desktop.Deployment;
 
@@ -11,6 +12,7 @@ public sealed partial class PortableUpdateControl : UserControl
     private bool _isUpdatingPreference;
     private bool _savingPreference;
     private bool _dialogOpen;
+    private bool _downloadRequested;
 
     public PortableUpdateControl()
     {
@@ -49,6 +51,9 @@ public sealed partial class PortableUpdateControl : UserControl
     private void RefreshState()
     {
         if (!DeploymentRuntime.IsPortable) return;
+        if (_isSubscribed && XamlRoot is { IsHostVisible: true } root &&
+            App.PortableUpdates.WasRestoredStage && App.PortableUpdates.TryClaimRestoredStagePrompt())
+            _ = PromptRestoredStageAsync(root);
 
         var updates = App.PortableUpdates;
         StatusText.Text = updates.Status;
@@ -63,15 +68,15 @@ public sealed partial class PortableUpdateControl : UserControl
         IncludePrereleasesCheckBox.IsEnabled = updates.IsSupported && !updates.IsBusy && !_savingPreference;
 
         var hasUpdate = !string.IsNullOrWhiteSpace(updates.AvailableVersion);
-        CheckUpdatesButton.IsEnabled = updates.IsSupported && !updates.IsBusy && !_savingPreference;
+        CheckUpdatesButton.IsEnabled = updates.IsSupported && !updates.IsBusy && !_savingPreference && !_dialogOpen && !_downloadRequested;
         ReleaseNotesLink.NavigateUri = updates.AvailableReleasePage ?? new Uri("https://github.com/mmiyaji/chat-agent-bridge/releases");
         AutomationProperties.SetHelpText(ReleaseNotesLink, ReleaseNotesLink.NavigateUri.AbsoluteUri);
         ToolTipService.SetToolTip(ReleaseNotesLink, ReleaseNotesLink.NavigateUri.AbsoluteUri);
         UpdateActions.Visibility = hasUpdate || updates.IsBusy ? Visibility.Visible : Visibility.Collapsed;
         DownloadUpdateButton.Visibility = hasUpdate && !updates.IsDownloaded ? Visibility.Visible : Visibility.Collapsed;
-        DownloadUpdateButton.IsEnabled = updates.IsSupported && hasUpdate && !updates.IsDownloaded && !updates.IsBusy;
+        DownloadUpdateButton.IsEnabled = updates.IsSupported && hasUpdate && !updates.IsDownloaded && !updates.IsBusy && !_dialogOpen && !_downloadRequested;
         ApplyUpdateButton.Visibility = updates.IsDownloaded ? Visibility.Visible : Visibility.Collapsed;
-        ApplyUpdateButton.IsEnabled = updates.IsSupported && updates.IsDownloaded && !updates.IsBusy;
+        ApplyUpdateButton.IsEnabled = updates.IsSupported && updates.IsDownloaded && !updates.IsBusy && !_dialogOpen && !_downloadRequested;
         CancelUpdateButton.Visibility = updates.IsBusy ? Visibility.Visible : Visibility.Collapsed;
         CancelUpdateButton.IsEnabled = updates.IsBusy;
 
@@ -118,32 +123,77 @@ public sealed partial class PortableUpdateControl : UserControl
 
     private async void DownloadUpdate_Click(object sender, RoutedEventArgs e)
     {
-        try { await App.PortableUpdates.DownloadAsync(); }
+        if (_downloadRequested || _dialogOpen) return;
+        _downloadRequested = true;
+        // Keep the window's root: the user can visit another tab during download.
+        var root = XamlRoot;
+        try
+        {
+            await App.PortableUpdates.DownloadAsync();
+            if (root is not null && App.PortableUpdates.IsDownloaded && !App.PortableUpdates.IsBusy)
+                await ConfirmApplyUpdateAsync(root, downloadCompleted: true);
+        }
         catch (Exception) { RefreshState(); }
+        finally
+        {
+            _downloadRequested = false;
+            RefreshState();
+        }
     }
 
     private async void ApplyUpdate_Click(object sender, RoutedEventArgs e)
     {
-        if (_dialogOpen) return;
-        _dialogOpen = true;
         try
         {
+            if (XamlRoot is { } root)
+                await ConfirmApplyUpdateAsync(root, downloadCompleted: false);
+        }
+        catch (Exception) { RefreshState(); }
+    }
+
+    private async Task ConfirmApplyUpdateAsync(XamlRoot root, bool downloadCompleted)
+    {
+        if (_dialogOpen) return;
+        _dialogOpen = true;
+        RefreshState();
+        try
+        {
+            var updates = App.PortableUpdates;
+            // An approval or settings dialog already on screen takes precedence.
+            while (downloadCompleted && root.IsHostVisible && updates.IsDownloaded && !updates.IsBusy &&
+                   VisualTreeHelper.GetOpenPopupsForXamlRoot(root).Any(popup => popup.IsOpen))
+                await Task.Delay(250);
+            if (!root.IsHostVisible || !updates.IsDownloaded || updates.IsBusy) return;
+
+            var canRestart = App.Window is MainWindow { CanRestartForUpdate: true };
             var dialog = new ContentDialog
             {
-                XamlRoot = XamlRoot,
+                XamlRoot = root,
                 RequestedTheme = App.Appearance.RequestedTheme,
-                Title = DesktopText.Get("PortableUpdateApplyTitle"),
-                Content = DesktopText.Get("PortableUpdateApplyMessage"),
+                Title = DesktopText.Get(downloadCompleted ? "PortableUpdateRestartTitle" : "PortableUpdateApplyTitle"),
+                Content = DesktopText.Get(canRestart ? "PortableUpdateRestartMessage" : "PortableUpdateRestartBusyMessage", updates.AvailableVersion),
                 PrimaryButtonText = DesktopText.Get("PortableUpdateApplyPrimary"),
-                CloseButtonText = DesktopText.Get("Cancel"),
+                CloseButtonText = DesktopText.Get("PortableUpdateLater"),
+                IsPrimaryButtonEnabled = canRestart,
                 DefaultButton = ContentDialogButton.Close
             };
             AutomationProperties.SetAutomationId(dialog, "PortableUpdateApplyConfirmation");
             if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-                await App.PortableUpdates.ApplyAsync();
+                await updates.ApplyAsync();
         }
-        catch (Exception) { RefreshState(); }
-        finally { _dialogOpen = false; }
+        finally
+        {
+            _dialogOpen = false;
+            RefreshState();
+        }
+    }
+
+    private async Task PromptRestoredStageAsync(XamlRoot root)
+    {
+        // Let the window finish loading before opening a dialog; the confirmation path waits for existing popups.
+        await Task.Yield();
+        if (!root.IsHostVisible) return;
+        await ConfirmApplyUpdateAsync(root, downloadCompleted: true);
     }
 
     private void CancelUpdate_Click(object sender, RoutedEventArgs e) => App.PortableUpdates.Cancel();

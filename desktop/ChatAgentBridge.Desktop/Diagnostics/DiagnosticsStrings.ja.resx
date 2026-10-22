@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="ReleaseAndSystemHeader" xml:space="preserve"><value>リリースとシステム</value></data>
+  <data name="ApplicationVersionLabel" xml:space="preserve"><value>アプリのバージョン</value></data>
+  <data name="BuildMetadataLabel" xml:space="preserve"><value>ビルド情報</value></data>
+  <data name="WindowsRuntimeLabel" xml:space="preserve"><value>Windows とランタイム</value></data>
+  <data name="ConfigurationStatusHeader" xml:space="preserve"><value>設定の状態</value></data>
+  <data name="SavedCliProviderLabel" xml:space="preserve"><value>保存済み CLI プロバイダー</value></data>
+  <data name="CliVerificationLabel" xml:space="preserve"><value>CLI の検証</value></data>
+  <data name="ChatConnectionLabel" xml:space="preserve"><value>チャット接続</value></data>
+  <data name="UpdaterLabel" xml:space="preserve"><value>アップデーター</value></data>
+  <data name="NotificationsLabel" xml:space="preserve"><value>Windows 通知</value></data>
+  <data name="RefreshButton" xml:space="preserve"><value>更新</value></data>
+  <data name="TestNotificationButton" xml:space="preserve"><value>テスト通知を送信</value></data>
+  <data name="ExportButton" xml:space="preserve"><value>サポートレポートをエクスポート</value></data>
+  <data name="DiagnosticsReady" xml:space="preserve"><value>診断情報を読み込みました。</value></data>
+  <data name="DiagnosticsUnavailable" xml:space="preserve"><value>一部の保存済み設定を読み込めませんでした。</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>利用不可</value></data>
+  <data name="CliNotVerified" xml:space="preserve"><value>未検証</value></data>
+  <data name="CliVerified" xml:space="preserve"><value>検証済み · バージョン {0}</value></data>
+  <data name="ChatSavedConfigured" xml:space="preserve"><value>保存済み設定: {0}。ライブ接続は確認していません。</value></data>
+  <data name="ChatSavedNotConfigured" xml:space="preserve"><value>チャットプロバイダーは保存されていません。ライブ接続は確認していません。</value></data>
+  <data name="UpdaterAvailable" xml:space="preserve"><value>ポータブル版アップデーターを利用できます。</value></data>
+  <data name="UpdaterUnavailable" xml:space="preserve"><value>ポータブル版アップデーターを利用できません。</value></data>
+  <data name="UpdaterManagedByPackage" xml:space="preserve"><value>更新はパッケージによって管理されています。</value></data>
+  <data name="NotificationsRegistered" xml:space="preserve"><value>登録済みで有効です。</value></data>
+  <data name="NotificationsRegisteredUnavailable" xml:space="preserve"><value>登録済みですが、現在は利用できません。</value></data>
+  <data name="NotificationsNotRegistered" xml:space="preserve"><value>登録されていません。</value></data>
+  <data name="TestNotificationTitle" xml:space="preserve"><value>テスト通知</value></data>
+  <data name="TestNotificationBody" xml:space="preserve"><value>安全な通知テストです。アプリを開いて続行してください。</value></data>
+  <data name="TestNotificationEnqueued" xml:space="preserve"><value>Windows はテスト通知を受け付けました。配信は確認されていません。</value></data>
+  <data name="TestNotificationUnavailable" xml:space="preserve"><value>テスト通知を登録できませんでした。</value></data>
+  <data name="ExportPreviewTitle" xml:space="preserve"><value>サポートレポートのプレビュー</value></data>
+  <data name="ExportSave" xml:space="preserve"><value>レポートを保存…</value></data>
+  <data name="Cancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="JsonFileType" xml:space="preserve"><value>JSON サポートレポート</value></data>
+  <data name="ExportSaved" xml:space="preserve"><value>サポートレポートをローカルに保存しました。</value></data>
+  <data name="ExportFailed" xml:space="preserve"><value>サポートレポートを保存できませんでした。</value></data>
+  <data name="UpdaterDownloading" xml:space="preserve"><value>更新をダウンロードしています。</value></data>
+  <data name="UpdaterWorking" xml:space="preserve"><value>更新処理を実行中です。</value></data>
+  <data name="UpdaterReadyToApply" xml:space="preserve"><value>更新を適用できます。</value></data>
+  <data name="UpdaterVersionAvailable" xml:space="preserve"><value>バージョン {0} の更新を利用できます。</value></data>
+</root>

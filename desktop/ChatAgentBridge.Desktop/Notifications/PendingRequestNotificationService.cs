@@ -17,6 +17,7 @@ public sealed class PendingRequestNotificationService
     private const string ActionArgument = "action";
     private const string OwnerArgument = "owner";
     private const string NotificationGroup = "pending-decisions";
+    private const string TestArgument = "cab_test";
 
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly AppNotificationManager _manager;
@@ -52,6 +53,27 @@ public sealed class PendingRequestNotificationService
     public string Status => _status;
 
     public bool IsAvailable => _available && _registered && !_shutdown;
+
+    public bool IsRegistered => _registered && !_shutdown;
+
+    /// <summary>Enqueues a fixed, open-only TEST toast. It creates no pending action callback.</summary>
+    public bool TryShowTestNotification(string title, string body)
+    {
+        if (!IsAvailable || string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(body)) return false;
+        try
+        {
+            var notification = new AppNotificationBuilder().AddArgument(TestArgument, "open").AddText(title).AddText(body).BuildNotification();
+            notification.Tag = "cab-diagnostics-test";
+            notification.Group = "diagnostics";
+            _manager.Show(notification);
+            return notification.Id != 0; // Windows accepted the enqueue; this does not confirm delivery.
+        }
+        catch (Exception ex)
+        {
+            _diagnostics?.Write("notification.test_failed", error: ex);
+            return false;
+        }
+    }
 
     public event Action? StatusChanged;
     public event Action? ActionCompleted;
@@ -277,6 +299,13 @@ public sealed class PendingRequestNotificationService
     private void OnNotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
     {
         if (_shutdown) return;
+        if (args.Arguments.TryGetValue(TestArgument, out string? testAction) && testAction == "open")
+        {
+            _diagnostics?.Write("notification.test_opened");
+            _dispatcherQueue.TryEnqueue(RequestAttention);
+            _startupForwarded.TrySetResult(false);
+            return;
+        }
         if (!args.Arguments.TryGetValue(TokenArgument, out string? token) ||
             !args.Arguments.TryGetValue(ActionArgument, out string? action) ||
             string.IsNullOrWhiteSpace(token))

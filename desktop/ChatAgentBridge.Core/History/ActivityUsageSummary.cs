@@ -81,6 +81,10 @@ public sealed record ActivityUsageSummary
         return new ActivityUsageSummary(startDay, endDay, scope, days, models, total.ToTotals());
     }
 
+    internal static ActivityUsageSummary FromAggregates(DateOnly startDay, DateOnly endDay, string scope,
+        IReadOnlyList<ActivityUsageDay> days, IReadOnlyList<ActivityUsageModel> models, ActivityUsageTotals totals) =>
+        new(startDay, endDay, scope, days, models, totals);
+
     // Older versions mislabeled Claude result.usage, which is per turn, as thread-total.
     private static string NormalizeScope(AgentUsage usage) =>
         usage.Source == "claude.stream-json" && usage.Scope == "thread-total" ? "turn" : usage.Scope;

@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:localization="using:ChatAgentBridge_Desktop.Localization"
     xmlns:deployment="using:ChatAgentBridge_Desktop.Deployment"
+    xmlns:diagnostics="using:ChatAgentBridge_Desktop.Diagnostics"
     xmlns:settings="using:CommunityToolkit.WinUI.Controls">
     <Grid RowSpacing="16" AutomationProperties.AutomationId="AboutPage">
         <Grid.RowDefinitions>
@@ -85,6 +86,7 @@
                 </settings:SettingsCard>
                 <TextBlock x:Name="ActionStatus" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           AutomationProperties.AutomationId="AboutActionStatus"
                            AutomationProperties.LiveSetting="Polite" />
 
                 <TextBlock x:Uid="AboutLegalHeading" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,0" localization:LocalizedResourceKey.Key="AboutLegalHeading" />
@@ -98,7 +100,21 @@
                                        AutomationProperties.AutomationId="AboutPrivacy">
                     <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE72E;" /></settings:SettingsCard.HeaderIcon>
                 </settings:SettingsCard>
+                <settings:SettingsCard x:Uid="AboutThirdPartyLicenses" IsClickEnabled="True" Click="ThirdPartyLicenses_Click"
+                                       localization:LocalizedResourceKey.Key="AboutThirdPartyLicenses"
+                                       AutomationProperties.AutomationId="AboutThirdPartyLicenses">
+                    <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="Library" /></settings:SettingsCard.HeaderIcon>
+                </settings:SettingsCard>
 
+                <settings:SettingsExpander x:Uid="AboutDiagnostics" localization:LocalizedResourceKey.Key="AboutDiagnostics"
+                                           AutomationProperties.AutomationId="AboutDiagnostics">
+                    <settings:SettingsExpander.HeaderIcon><SymbolIcon Symbol="Help" /></settings:SettingsExpander.HeaderIcon>
+                    <settings:SettingsExpander.Items>
+                        <settings:SettingsCard ContentAlignment="Vertical" HorizontalContentAlignment="Stretch">
+                            <diagnostics:DiagnosticsControl />
+                        </settings:SettingsCard>
+                    </settings:SettingsExpander.Items>
+                </settings:SettingsExpander>
                 <Button x:Uid="AboutExit" HorizontalAlignment="Left" Margin="0,8,0,0"
                         AutomationProperties.AutomationId="AboutExit" Click="Exit_Click" />
             </StackPanel>

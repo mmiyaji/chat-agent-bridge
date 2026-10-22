@@ -1,0 +1,37 @@
+[
+  {
+    "name": ".NET Community Toolkit",
+    "components": "CommunityToolkit.Common 8.2.1; CommunityToolkit.Mvvm 8.4.2; CommunityToolkit.WinUI.Controls.SettingsControls 8.2.251219; CommunityToolkit.WinUI.Controls.Sizers 8.2.251219; CommunityToolkit.WinUI.Extensions 8.2.251219; CommunityToolkit.WinUI.Helpers 8.2.251219; CommunityToolkit.WinUI.Triggers 8.2.251219",
+    "file": "LICENSE-CommunityToolkit.txt"
+  },
+  {
+    "name": "Microsoft Edge WebView2 SDK",
+    "components": "Microsoft.Web.WebView2 1.0.3719.77; includes package NOTICE.txt",
+    "file": "LICENSE-WebView2.txt"
+  },
+  {
+    "name": "Microsoft Windows App SDK",
+    "components": "Microsoft.WindowsAppSDK 2.5.1 and runtime component package family; includes full package NOTICE.txt",
+    "file": "LICENSE-WindowsAppSDK.txt"
+  },
+  {
+    "name": "Microsoft Windows ML Runtime",
+    "components": "Microsoft.Windows.AI.MachineLearning 2.1.74; includes full ThirdPartyNotices.txt",
+    "file": "LICENSE-WindowsML.txt"
+  },
+  {
+    "name": ".NET runtime and managed libraries",
+    "components": ".NET 10.0.13 self-contained runtime; System.Numerics.Tensors 9.0.0; System.Security.Cryptography.ProtectedData 10.0.13; includes runtime and package third-party notices",
+    "file": "LICENSE-DotNetRuntime.txt"
+  },
+  {
+    "name": "Fluent System Icons",
+    "components": "Arrow Circle Up 20 filled SVG and UpdateAvailable.ttf one-glyph font subset; Microsoft Corporation copyright 2020; upstream revision 4c94ad5f4081168c0d45bdc368f230ecb757cd09",
+    "file": "LICENSE-FluentSystemIcons.txt"
+  },
+  {
+    "name": "Windows SDK and C#/WinRT",
+    "file": "LICENSE-WindowsSDK.txt",
+    "components": "Microsoft.Windows.SDK.NET.Ref 10.0.26100.57 (WinRT.Runtime.dll); Windows SDK EULA and C#/WinRT MIT License"
+  }
+]

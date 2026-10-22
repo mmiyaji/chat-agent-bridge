@@ -225,6 +225,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     [ObservableProperty] public partial bool HasSessions { get; set; }
     [ObservableProperty] public partial bool HasFilteredSessions { get; set; }
     [ObservableProperty] public partial bool HasAuditEvents { get; set; }
+    [ObservableProperty] public partial bool IsHistoryLoadSuccessful { get; set; }
 
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand)), NotifyCanExecuteChangedFor(nameof(RenameSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(SwitchSelectedAgentCommand))]
     public partial SessionHistoryRow? SelectedSession { get; set; }
@@ -254,8 +255,20 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         !string.Equals(WorkspaceFilter, DesktopText.Get("HistoryWorkspaceAll"), StringComparison.Ordinal);
     public string SessionResultSummary => DesktopText.Get("HistorySessionResults", FilteredSessions.Count, Sessions.Count);
     public string SessionListEmptyText => Sessions.Count == 0 ? DesktopText.Get("HistoryNoSessions") : DesktopText.Get("HistoryNoSessionMatches");
+    public string SessionListEmptyHeading => DesktopText.Get(Sessions.Count == 0
+        ? "HistoryEmptySessionListHeading"
+        : "HistoryEmptySessionMatchesHeading");
+    public string SessionListEmptyDescription => DesktopText.Get(Sessions.Count == 0
+        ? "HistoryEmptySessionListDescription"
+        : "HistoryEmptySessionMatchesDescription");
+    public bool ShowEmptySessionList => IsHistoryLoadSuccessful && !IsBusy && !HasFilteredSessions;
+    public bool ShowSessionFilterEmptyAction => ShowEmptySessionList && HasSessionFilters;
+    public bool ShowSessionFilterHeaderClearButton => HasSessionFilters && HasFilteredSessions;
     public string SelectedSessionTitle => SelectedSession?.ListTitle ?? DesktopText.Get("HistorySelectConversation");
     public string NoSessionSelectedText => DesktopText.Get("HistorySelectConversationHint");
+    public string SessionDetailEmptyHeading => DesktopText.Get("HistoryEmptySessionDetailHeading");
+    public string SessionDetailEmptyDescription => DesktopText.Get("HistoryEmptySessionDetailDescription");
+    public bool ShowEmptySessionDetail => IsHistoryLoadSuccessful && !IsBusy && !HasSelectedSession;
     public string ChannelIdLabel => DesktopText.Get("HistoryChannelIdLabel");
     public string ThreadIdLabel => DesktopText.Get("HistoryThreadIdLabel");
     public string UserIdLabel => DesktopText.Get("HistoryUserIdLabel");
@@ -283,6 +296,34 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         : DesktopText.Get("HistoryExecutionSummary", _activityRecords.Count);
     public string NoExecutionsText => DesktopText.Get("HistoryNoExecutions");
     public string NoAuditText => DesktopText.Get("HistoryNoAudit");
+    public string ExecutionEmptyHeading => DesktopText.Get(HasExecutionDayFilter
+        ? "HistoryNoExecutionsForDayHeading"
+        : "HistoryExecutionEmptyHeading");
+    public string ExecutionEmptyDescription => DesktopText.Get(HasExecutionDayFilter
+        ? "HistoryNoExecutionsForDayDescription"
+        : "HistoryExecutionEmptyDescription");
+    public string AuditEmptyDescription => DesktopText.Get("HistoryAuditEmptyDescription");
+    public string ClearExecutionDayFilterLabel => DesktopText.Get("HistoryClearExecutionDayFilter");
+
+    partial void OnHasExecutionsChanged(bool value) => NotifyEmptyHistoryStatesChanged();
+    partial void OnHasAuditEventsChanged(bool value) => OnPropertyChanged(nameof(ShowEmptyAuditHistory));
+    partial void OnIsBusyChanged(bool value) => NotifyEmptyHistoryStatesChanged();
+    partial void OnIsHistoryLoadSuccessfulChanged(bool value) => NotifyEmptyHistoryStatesChanged();
+
+    private void NotifyEmptyHistoryStatesChanged()
+    {
+        OnPropertyChanged(nameof(ShowEmptySessionList));
+        OnPropertyChanged(nameof(ShowSessionFilterEmptyAction));
+        OnPropertyChanged(nameof(ShowSessionFilterHeaderClearButton));
+        OnPropertyChanged(nameof(ShowEmptySessionDetail));
+        OnPropertyChanged(nameof(ShowActivityEmptyState));
+        OnPropertyChanged(nameof(ShowActivityModelEmptyState));
+        OnPropertyChanged(nameof(ActivityStatisticsAvailable));
+        OnPropertyChanged(nameof(ShowEmptyExecutionHistory));
+        OnPropertyChanged(nameof(ShowEmptyAuditHistory));
+        OnPropertyChanged(nameof(ShowEmptyExecutionDayClearAction));
+        OnPropertyChanged(nameof(ShowExecutionFilterClearButton));
+    }
 
     public void RefreshLocalizedText()
     {
@@ -319,12 +360,16 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             nameof(SearchLabel), nameof(SearchPlaceholder), nameof(ProviderLabel), nameof(FiltersLabel),
             nameof(WorkspaceFilterLabel), nameof(SortLabel), nameof(ClearSessionFiltersLabel),
             nameof(RenameSessionLabel), nameof(HasSessionFilters), nameof(SelectedSessionTitle),
-            nameof(NoSessionSelectedText), nameof(ChannelIdLabel), nameof(ThreadIdLabel), nameof(UserIdLabel),
+            nameof(NoSessionSelectedText), nameof(SessionListEmptyHeading), nameof(SessionListEmptyDescription),
+            nameof(SessionDetailEmptyHeading), nameof(SessionDetailEmptyDescription),
+            nameof(ChannelIdLabel), nameof(ThreadIdLabel), nameof(UserIdLabel),
             nameof(OriginLabel), nameof(WorkspacePathLabel), nameof(AgentLabel), nameof(SessionIdLabel),
             nameof(BackToConversationsLabel), nameof(ContinueInOriginalThreadHint), nameof(ConversationHeading),
             nameof(RuntimeHeading), nameof(PolicyHeading), nameof(IdentifiersHeading), nameof(IdentifiersSummary),
             nameof(ActionsHeading), nameof(EditModelLabel), nameof(SwitchAgentLabel), nameof(EditPolicyLabel),
-            nameof(StartFreshLabel), nameof(NoExecutionsText), nameof(NoAuditText)
+            nameof(StartFreshLabel), nameof(NoExecutionsText), nameof(NoAuditText),
+            nameof(ExecutionEmptyHeading), nameof(ExecutionEmptyDescription), nameof(AuditEmptyDescription),
+            nameof(ClearExecutionDayFilterLabel)
         })
             OnPropertyChanged(name);
 
@@ -351,6 +396,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         OnPropertyChanged(nameof(HasSelectedSession));
         OnPropertyChanged(nameof(SelectedSessionTitle));
         OnPropertyChanged(nameof(IdentifiersSummary));
+        OnPropertyChanged(nameof(ShowEmptySessionDetail));
         RenameSelectedSessionCommand.NotifyCanExecuteChanged();
     }
     public bool HasSelectedSession => SelectedSession is not null;
@@ -362,6 +408,11 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         OnPropertyChanged(nameof(AuditTabTitle));
         OnPropertyChanged(nameof(SessionResultSummary));
         OnPropertyChanged(nameof(SessionListEmptyText));
+        OnPropertyChanged(nameof(SessionListEmptyHeading));
+        OnPropertyChanged(nameof(SessionListEmptyDescription));
+        OnPropertyChanged(nameof(ShowEmptySessionList));
+        OnPropertyChanged(nameof(ShowSessionFilterEmptyAction));
+        OnPropertyChanged(nameof(ShowSessionFilterHeaderClearButton));
         OnPropertyChanged(nameof(ExecutionSummary));
     }
 
@@ -396,6 +447,11 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         OnPropertyChanged(nameof(HasSessionFilters));
         OnPropertyChanged(nameof(SessionResultSummary));
         OnPropertyChanged(nameof(SessionListEmptyText));
+        OnPropertyChanged(nameof(SessionListEmptyHeading));
+        OnPropertyChanged(nameof(SessionListEmptyDescription));
+        OnPropertyChanged(nameof(ShowEmptySessionList));
+        OnPropertyChanged(nameof(ShowSessionFilterEmptyAction));
+        OnPropertyChanged(nameof(ShowSessionFilterHeaderClearButton));
         ClearSessionFiltersCommand.NotifyCanExecuteChanged();
     }
 
@@ -431,6 +487,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public async Task RefreshAsync()
     {
         if (IsBusy) return;
+        IsHistoryLoadSuccessful = false;
         IsBusy = true;
         Status = DesktopText.Get("HistoryRefreshing");
         try
@@ -454,6 +511,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
             ApplySessionFilter();
             NotifySummariesChanged();
+            IsHistoryLoadSuccessful = true;
             Status = DesktopText.Get("HistoryCounts", _activityRecords.Count, Sessions.Count, AuditEvents.Count);
         }
         catch (Exception ex)
@@ -633,6 +691,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
 
     private async Task RefreshContentsAsync(string successMessage)
     {
+        IsHistoryLoadSuccessful = false;
         var executions = await _executionStore.ListAsync();
         var sessions = await _sessionStore.ListAsync();
         var auditEvents = await _auditStore.ListAsync();
@@ -651,6 +710,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
         ApplySessionFilter();
         NotifySummariesChanged();
+        IsHistoryLoadSuccessful = true;
         Status = DesktopText.Get("HistorySuccessCounts", successMessage, _activityRecords.Count, Sessions.Count, AuditEvents.Count);
         StartChatNameRefresh();
     }

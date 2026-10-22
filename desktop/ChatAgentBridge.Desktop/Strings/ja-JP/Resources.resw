@@ -1176,4 +1176,7 @@
   <data name="LoadRegisteredCopilotConnection.Content" xml:space="preserve"><value>登録済みGitHub Copilot CLIを呼び出す</value></data>
   <data name="ManualWorkspaceError.Title" xml:space="preserve"><value>実行前に作業フォルダーを確認してください</value></data>
   <data name="ManualWorkspaceSettings.Content" xml:space="preserve"><value>信頼するフォルダーの設定を開く</value></data>
+  <data name="AboutThirdPartyLicenses.Header" xml:space="preserve"><value>第三者ライセンス</value></data>
+  <data name="AboutThirdPartyLicenses.Description" xml:space="preserve"><value>同梱ライブラリ・アイコンのライセンスと著作権表記を確認します。</value></data>
+  <data name="AboutDiagnostics.Header" xml:space="preserve"><value>診断・サポート</value></data>
 </root>

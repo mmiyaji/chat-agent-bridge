@@ -1176,4 +1176,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="LoadRegisteredCopilotConnection.Content" xml:space="preserve"><value>Load registered GitHub Copilot CLI</value></data>
   <data name="ManualWorkspaceError.Title" xml:space="preserve"><value>Check the work folder before running</value></data>
   <data name="ManualWorkspaceSettings.Content" xml:space="preserve"><value>Open trusted folder settings</value></data>
+  <data name="AboutThirdPartyLicenses.Header" xml:space="preserve"><value>Third-party licenses</value></data>
+  <data name="AboutThirdPartyLicenses.Description" xml:space="preserve"><value>Licenses and acknowledgments for included libraries and icons.</value></data>
+  <data name="AboutDiagnostics.Header" xml:space="preserve"><value>Diagnostics and support</value></data>
 </root>
