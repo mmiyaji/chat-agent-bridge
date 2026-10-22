@@ -17,6 +17,17 @@
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <!-- Capture build time in the assembly so every distribution uses the same embedded source. -->
+  <PropertyGroup>
+    <CABBuildTimestampUtc Condition="'$(CABBuildTimestampUtc)' == ''">$([System.DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))</CABBuildTimestampUtc>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>BuildTimestampUtc</_Parameter1>
+      <_Parameter2>$(CABBuildTimestampUtc)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <!-- An explicit portable distribution; the normal MSIX build keeps its package identity. -->
   <PropertyGroup Condition="'$(CABPortable)' == 'true'">
     <WindowsPackageType>None</WindowsPackageType>

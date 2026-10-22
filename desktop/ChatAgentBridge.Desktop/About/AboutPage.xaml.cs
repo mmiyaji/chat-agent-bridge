@@ -2,6 +2,8 @@ using ChatAgentBridge_Desktop.Localization;
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System.Globalization;
+using System.Reflection;
 using Windows.ApplicationModel;
 using Windows.Services.Store;
 using Windows.System;
@@ -47,12 +49,25 @@ public sealed partial class AboutPage : Page
 
         ProductValue.Text = DesktopText.Get("AboutProductName");
         VersionValue.Text = version;
+        BuildTimestampValue.Text = GetBuildTimestampText();
         PackageValue.Text = packageName;
         StoreStatus.Text = _isStorePackage ? DesktopText.Get("AboutStoreReady") : DesktopText.Get("AboutStoreDevelopment");
         StorePageButton.IsEnabled = _isStorePackage;
         CheckUpdatesButton.IsEnabled = _isStorePackage;
         StoreUpdateCard.Visibility = DeploymentRuntime.IsPortable ? Visibility.Collapsed : Visibility.Visible;
         PackageReleaseNotesLink.Visibility = DeploymentRuntime.IsPortable ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private static string GetBuildTimestampText()
+    {
+        var timestampValue = typeof(AboutPage).Assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(attribute => attribute.Key == "BuildTimestampUtc")?.Value;
+        if (!DateTimeOffset.TryParse(timestampValue, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var timestampUtc))
+            return DesktopText.Get("AboutBuildTimestampUnknown");
+
+        return DesktopText.Get("AboutBuildTimestamp", timestampUtc.ToLocalTime());
     }
 
     public void ResetScroll() => DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,

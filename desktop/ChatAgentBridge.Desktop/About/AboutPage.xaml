@@ -35,6 +35,9 @@
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            AutomationProperties.AutomationId="AboutVersion" />
                             </StackPanel>
+                            <TextBlock x:Name="BuildTimestampValue" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       AutomationProperties.AutomationId="AboutBuildTimestamp" />
                             <TextBlock x:Uid="AboutProviderValue" TextWrapping="Wrap"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        AutomationProperties.AutomationId="AboutProvider" localization:LocalizedResourceKey.Key="AboutProviderValue" />

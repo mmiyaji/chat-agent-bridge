@@ -306,6 +306,8 @@
   <data name="AppearanceReadFailed" xml:space="preserve"><value>保存済みのテーマを読み込めなかったため、Windowsの設定に合わせています。選び直すと再保存できます。</value></data>
   <data name="AppearanceSaveFailed" xml:space="preserve"><value>テーマを保存できませんでした。以前の設定を維持しています。設定フォルダーへのアクセスを確認して再試行してください。</value></data>
   <data name="AboutProductName" xml:space="preserve"><value>Chat Agent Bridge</value></data>
+  <data name="AboutBuildTimestamp" xml:space="preserve"><value>ビルド日時: {0:g} (UTC{0:zzz})</value></data>
+  <data name="AboutBuildTimestampUnknown" xml:space="preserve"><value>ビルド日時: 不明</value></data>
   <data name="AboutUnpackaged" xml:space="preserve"><value>パッケージなし</value></data>
   <data name="AboutStoreReady" xml:space="preserve"><value>このインストールは Store 配布版です。更新確認は手動で行い、確認のみでインストールは行いません。更新の確認とインストールには Store をご利用ください。</value></data>
   <data name="AboutStoreDevelopment" xml:space="preserve"><value>開発プレビューです。Microsoft Store で配布された後に、Store ページと更新確認を利用できます。</value></data>

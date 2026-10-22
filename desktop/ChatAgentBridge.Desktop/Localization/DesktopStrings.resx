@@ -306,6 +306,8 @@
   <data name="AppearanceReadFailed" xml:space="preserve"><value>Could not read the saved theme. The Windows setting is used. Select a theme to save it again.</value></data>
   <data name="AppearanceSaveFailed" xml:space="preserve"><value>Could not save the theme. The previous setting is still in use. Check access to the settings folder and try again.</value></data>
   <data name="AboutProductName" xml:space="preserve"><value>Chat Agent Bridge</value></data>
+  <data name="AboutBuildTimestamp" xml:space="preserve"><value>Built on: {0:g} (UTC{0:zzz})</value></data>
+  <data name="AboutBuildTimestampUnknown" xml:space="preserve"><value>Built on: Unknown</value></data>
   <data name="AboutUnpackaged" xml:space="preserve"><value>Unpackaged</value></data>
   <data name="AboutStoreReady" xml:space="preserve"><value>Store distribution is available for this installation. Update checks are manual and read-only; use the Store to install an update.</value></data>
   <data name="AboutStoreDevelopment" xml:space="preserve"><value>Development preview. Store page and update checks become available after Microsoft Store distribution.</value></data>

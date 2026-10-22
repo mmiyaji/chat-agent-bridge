@@ -467,6 +467,14 @@ function Run-CompletedScenario([string]$Language, [string]$Theme, [string]$Expec
     Add-Pass "Appearance preference applied ($scenario)"
 
     Invoke-Element (Wait-Element $script:activeWindow 'NavAbout') 'About navigation'
+    $buildTimestamp = Wait-Element $script:activeWindow 'AboutBuildTimestamp'
+    $buildText = $buildTimestamp.Current.Name
+    $buildCaption = if ($Language -eq 'ja') { 'ビルド日時:' } else { 'Built on:' }
+    if (-not $buildText.StartsWith($buildCaption, [StringComparison]::Ordinal) -or $buildText -notmatch 'UTC[+-]\d{2}:\d{2}') {
+        throw "Build timestamp is missing, unknown, or not localized for ${scenario}: '$buildText'."
+    }
+    Add-Pass "About shows localized build timestamp with time-zone offset ($scenario)"
+    Capture-Screenshot "${scenario}-about-build-timestamp.png"
     $diagnostics = Wait-ElementWhileScrolling $script:activeWindow 'AboutScroll' 'AboutDiagnostics' 10 -RequireVisible
     Expand-Element $diagnostics 'About diagnostics expander'
     Wait-ElementWhileScrolling $script:activeWindow 'AboutScroll' 'DiagnosticsVersion' 10 | Out-Null
