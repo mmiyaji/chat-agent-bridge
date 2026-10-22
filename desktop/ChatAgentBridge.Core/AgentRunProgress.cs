@@ -18,11 +18,16 @@ internal sealed class AgentRunProgressParser(string provider)
         try
         {
             using var document = JsonDocument.Parse(line, new JsonDocumentOptions { MaxDepth = 32 });
-            var root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object) return [];
-            return provider == AgentProfile.Codex ? ParseCodex(root) : ParseClaude(root);
+            return ParseRoot(document.RootElement);
         }
         catch (JsonException) { return []; }
+    }
+
+    /// <summary>Parses an already-parsed event so callers can share one JsonDocument per line.</summary>
+    public IReadOnlyList<AgentRunProgress> ParseRoot(JsonElement root)
+    {
+        if (root.ValueKind != JsonValueKind.Object) return [];
+        return provider == AgentProfile.Codex ? ParseCodex(root) : ParseClaude(root);
     }
 
     private static IReadOnlyList<AgentRunProgress> ParseCodex(JsonElement root)
