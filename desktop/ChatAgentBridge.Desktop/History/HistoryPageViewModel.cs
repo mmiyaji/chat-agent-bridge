@@ -318,6 +318,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowEmptySessionDetail));
         OnPropertyChanged(nameof(ShowActivityEmptyState));
         OnPropertyChanged(nameof(ShowActivityModelEmptyState));
+        OnPropertyChanged(nameof(ActivityStatisticsAvailable));
         OnPropertyChanged(nameof(ShowEmptyExecutionHistory));
         OnPropertyChanged(nameof(ShowEmptyAuditHistory));
         OnPropertyChanged(nameof(ShowEmptyExecutionDayClearAction));

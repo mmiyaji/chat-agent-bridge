@@ -54,8 +54,8 @@ public sealed partial class HistoryPageViewModel
     public string ActivityOutcomes => DesktopText.Get("ActivityOutcomes", _activity.Completed, _activity.Failed,
         _activity.Cancelled, _activity.TotalExecutions - _activity.Completed - _activity.Failed - _activity.Cancelled);
     public bool HasActivity => _activity.TotalExecutions > 0;
-    public bool ShowActivityEmptyState => IsHistoryLoadSuccessful && !IsBusy && !_activityStatisticsFailed && !HasActivity;
-    public bool ActivityStatisticsAvailable => !_activityStatisticsFailed;
+    public bool ShowActivityEmptyState => ActivityStatisticsAvailable && !HasActivity;
+    public bool ActivityStatisticsAvailable => IsHistoryLoadSuccessful && !IsBusy && !_activityStatisticsFailed && _activityStatistics is not null;
     public string ActivityStatisticsNotice => _activityStatisticsFailed
         ? DesktopText.Get("ActivityStatisticsUnavailable")
         : _activityStatistics?.MigratedFromAvailableRetainedHistory == true && _activityRecords.Count > 0
