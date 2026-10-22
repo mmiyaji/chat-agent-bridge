@@ -76,6 +76,8 @@ pairs = [
     ("ChatAgentBridge.Desktop/Localization/LanguageUi.resx", "ChatAgentBridge.Desktop/Localization/LanguageUi.ja.resx"),
     ("ChatAgentBridge.Desktop/Strings/en-US/Resources.resw", "ChatAgentBridge.Desktop/Strings/ja-JP/Resources.resw"),
     ("ChatAgentBridge.Desktop/Localization/ViewModelStrings.resx", "ChatAgentBridge.Desktop/Localization/ViewModelStrings.ja.resx"),
+    ("ChatAgentBridge.Desktop/Diagnostics/DiagnosticsStrings.resx", "ChatAgentBridge.Desktop/Diagnostics/DiagnosticsStrings.ja.resx"),
+    ("ChatAgentBridge.Desktop/Maintenance/MaintenanceStrings.resx", "ChatAgentBridge.Desktop/Maintenance/MaintenanceStrings.ja.resx"),
 ]
 catalogs = []
 check_resource_key_scanner()

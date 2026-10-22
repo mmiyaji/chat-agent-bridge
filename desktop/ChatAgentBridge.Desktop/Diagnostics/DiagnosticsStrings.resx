@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="ReleaseAndSystemHeader" xml:space="preserve"><value>Release and system</value></data>
+  <data name="ApplicationVersionLabel" xml:space="preserve"><value>Application version</value></data>
+  <data name="BuildMetadataLabel" xml:space="preserve"><value>Build metadata</value></data>
+  <data name="WindowsRuntimeLabel" xml:space="preserve"><value>Windows and runtime</value></data>
+  <data name="ConfigurationStatusHeader" xml:space="preserve"><value>Configuration status</value></data>
+  <data name="SavedCliProviderLabel" xml:space="preserve"><value>Saved CLI provider</value></data>
+  <data name="CliVerificationLabel" xml:space="preserve"><value>CLI verification</value></data>
+  <data name="ChatConnectionLabel" xml:space="preserve"><value>Chat connection</value></data>
+  <data name="UpdaterLabel" xml:space="preserve"><value>Updater</value></data>
+  <data name="NotificationsLabel" xml:space="preserve"><value>Windows notifications</value></data>
+  <data name="RefreshButton" xml:space="preserve"><value>Refresh</value></data>
+  <data name="TestNotificationButton" xml:space="preserve"><value>Send TEST notification</value></data>
+  <data name="ExportButton" xml:space="preserve"><value>Export support report</value></data>
+  <data name="DiagnosticsReady" xml:space="preserve"><value>Diagnostics are ready.</value></data>
+  <data name="DiagnosticsUnavailable" xml:space="preserve"><value>Some saved settings could not be read.</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="CliNotVerified" xml:space="preserve"><value>Not verified</value></data>
+  <data name="CliVerified" xml:space="preserve"><value>Verified · version {0}</value></data>
+  <data name="ChatSavedConfigured" xml:space="preserve"><value>Saved configuration: {0}. Live connection is not checked.</value></data>
+  <data name="ChatSavedNotConfigured" xml:space="preserve"><value>No chat provider is saved. Live connection is not checked.</value></data>
+  <data name="UpdaterAvailable" xml:space="preserve"><value>Portable updater is available.</value></data>
+  <data name="UpdaterUnavailable" xml:space="preserve"><value>Portable updater is unavailable.</value></data>
+  <data name="UpdaterManagedByPackage" xml:space="preserve"><value>Updates are managed by the package.</value></data>
+  <data name="NotificationsRegistered" xml:space="preserve"><value>Registered and enabled.</value></data>
+  <data name="NotificationsRegisteredUnavailable" xml:space="preserve"><value>Registered, but currently unavailable.</value></data>
+  <data name="NotificationsNotRegistered" xml:space="preserve"><value>Not registered.</value></data>
+  <data name="TestNotificationTitle" xml:space="preserve"><value>TEST notification</value></data>
+  <data name="TestNotificationBody" xml:space="preserve"><value>Harmless notification test. Open the app to continue.</value></data>
+  <data name="TestNotificationEnqueued" xml:space="preserve"><value>Windows accepted the TEST notification request; delivery is not confirmed.</value></data>
+  <data name="TestNotificationUnavailable" xml:space="preserve"><value>Could not enqueue the TEST notification.</value></data>
+  <data name="ExportPreviewTitle" xml:space="preserve"><value>Preview support report</value></data>
+  <data name="ExportSave" xml:space="preserve"><value>Save report…</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="JsonFileType" xml:space="preserve"><value>JSON support report</value></data>
+  <data name="ExportSaved" xml:space="preserve"><value>Support report saved locally.</value></data>
+  <data name="ExportFailed" xml:space="preserve"><value>Could not save the support report.</value></data>
+  <data name="UpdaterDownloading" xml:space="preserve"><value>Downloading an update.</value></data>
+  <data name="UpdaterWorking" xml:space="preserve"><value>An update operation is in progress.</value></data>
+  <data name="UpdaterReadyToApply" xml:space="preserve"><value>An update is ready to apply.</value></data>
+  <data name="UpdaterVersionAvailable" xml:space="preserve"><value>Update {0} is available.</value></data>
+</root>

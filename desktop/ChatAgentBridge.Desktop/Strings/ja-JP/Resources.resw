@@ -1178,4 +1178,5 @@
   <data name="ManualWorkspaceSettings.Content" xml:space="preserve"><value>信頼するフォルダーの設定を開く</value></data>
   <data name="AboutThirdPartyLicenses.Header" xml:space="preserve"><value>第三者ライセンス</value></data>
   <data name="AboutThirdPartyLicenses.Description" xml:space="preserve"><value>同梱ライブラリ・アイコンのライセンスと著作権表記を確認します。</value></data>
+  <data name="AboutDiagnostics.Header" xml:space="preserve"><value>診断・サポート</value></data>
 </root>
