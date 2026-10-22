@@ -3,7 +3,8 @@ namespace ChatAgentBridge_Desktop;
 public sealed partial class MainPage
 {
     private bool CanManageData => !_languageRestarting && !_portableUpdatePreparing && DataWorkIdle;
-    private bool DataWorkIdle => !App.PortableUpdates.IsBusy && !ViewModel.IsLoading && !ViewModel.IsRunning && !ViewModel.IsCheckingCli &&
+    private bool DataWorkIdle => !App.PortableUpdates.IsBusy && !HistoryPage.ViewModel.IsBusy &&
+        !ViewModel.IsLoading && !ViewModel.IsRunning && !ViewModel.IsCheckingCli &&
         !ViewModel.IsOnboardingBusy && !ViewModel.ModelCatalog.IsLoading &&
         !ViewModel.SaveSettingsCommand.IsRunning && !ViewModel.HasUnsavedSettings &&
         !InboxPage.ViewModel.IsExecuting && !InboxPage.ViewModel.SendResultCommand.IsRunning &&

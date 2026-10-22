@@ -109,7 +109,11 @@
                 <settings:SettingsExpander x:Uid="AboutDiagnostics" localization:LocalizedResourceKey.Key="AboutDiagnostics"
                                            AutomationProperties.AutomationId="AboutDiagnostics">
                     <settings:SettingsExpander.HeaderIcon><SymbolIcon Symbol="Help" /></settings:SettingsExpander.HeaderIcon>
-                    <settings:SettingsExpander.Items><diagnostics:DiagnosticsControl /></settings:SettingsExpander.Items>
+                    <settings:SettingsExpander.Items>
+                        <settings:SettingsCard ContentAlignment="Vertical" HorizontalContentAlignment="Stretch">
+                            <diagnostics:DiagnosticsControl />
+                        </settings:SettingsCard>
+                    </settings:SettingsExpander.Items>
                 </settings:SettingsExpander>
                 <Button x:Uid="AboutExit" HorizontalAlignment="Left" Margin="0,8,0,0"
                         AutomationProperties.AutomationId="AboutExit" Click="Exit_Click" />
