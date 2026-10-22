@@ -322,7 +322,7 @@ internal static class ClaudeStreamingRunner
             var replay = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             lock (_replayGate)
             {
-                if (_replays.Count >= 101 || !_replays.TryAdd(id, replay))
+                if (_replays.Count >= ClaudeActiveAgentTurn.MaxInputs + 1 || !_replays.TryAdd(id, replay))
                     throw new InvalidOperationException("Too many pending Claude input acknowledgements.");
                 // Registration can race EOF. If EOF's snapshot already ran, settle this replay here.
                 if (_readEnded != 0) replay.TrySetResult(false);
@@ -415,7 +415,7 @@ internal static class ClaudeStreamingRunner
                 if (type == "error") _resultFailed = true;
                 if (type == "result")
                 {
-                    if (_resultCount >= 101) { _badProtocol = true; DeactivateTurn(); return; }
+                    if (_resultCount >= ClaudeActiveAgentTurn.MaxInputs + 1) { _badProtocol = true; DeactivateTurn(); return; }
                     _resultCount++;
                     if (String(root, "session_id") is not { } resultSession ||
                         !string.Equals(resultSession, _expectedSessionId, StringComparison.OrdinalIgnoreCase))

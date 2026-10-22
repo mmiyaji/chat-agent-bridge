@@ -22,4 +22,22 @@ public static class ChatFollowUpPolicy
          activeEffective.AgentProvider == AgentProfile.Claude && activeEffective.AgentMode == "exec") &&
         (activeEffective.ChatApprovalMode is "auto" or "first") &&
         incoming == active;
+
+    /// <summary>Settings that must change before the steer mode can take effect for the chosen provider.</summary>
+    public sealed record SteerRequirements(bool ProviderSupported, bool RequiresAppServer, bool RequiresApprovalChange)
+    {
+        public bool HasChanges => RequiresAppServer || RequiresApprovalChange;
+    }
+
+    /// <summary>The approval mode that steer falls back to; it is the least permissive mode that still allows steering.</summary>
+    public const string SteerApprovalMode = "first";
+
+    public static SteerRequirements GetSteerRequirements(string? provider, bool useAppServer, string? approvalMode)
+    {
+        var supported = provider is AgentProfile.Codex or AgentProfile.Claude;
+        return new SteerRequirements(
+            supported,
+            supported && provider == AgentProfile.Codex && !useAppServer,
+            supported && approvalMode is not ("auto" or "first"));
+    }
 }

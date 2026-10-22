@@ -150,6 +150,21 @@ public sealed class ClaudeStreamingTests
     }
 
     [Fact]
+    public async Task InputsBeyondTheLimitAreRejectedWithoutWriting()
+    {
+        var channel = new FakeInputChannel();
+        var acknowledgements = new AckController();
+        var turn = CreateTurn(channel, acknowledgements);
+
+        for (var i = 0; i < ClaudeActiveAgentTurn.MaxInputs; i++)
+            Assert.NotNull(await turn.SubmitInputAsync("message " + i));
+        var rejected = await turn.SubmitInputAsync("one too many");
+
+        Assert.Null(rejected);
+        Assert.Equal(ClaudeActiveAgentTurn.MaxInputs, channel.Lines.Count);
+    }
+
+    [Fact]
     public async Task DeactivatedTurnRejectsInputWithoutWriting()
     {
         var channel = new FakeInputChannel();

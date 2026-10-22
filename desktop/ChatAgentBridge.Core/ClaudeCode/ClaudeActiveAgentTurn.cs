@@ -17,7 +17,8 @@ internal sealed class ClaudeActiveAgentTurn(
     Func<string, CancellationToken, Task<bool>> waitForReplay,
     Func<bool> processExited) : IQueuedActiveAgentTurn
 {
-    private const int MaxInputs = 100;
+    /// <summary>Caps live follow-ups per turn so a long chat cannot silently multiply model usage.</summary>
+    internal const int MaxInputs = 10;
     private static readonly TimeSpan WriteLimit = TimeSpan.FromSeconds(5);
     private readonly SemaphoreSlim _send = new(1, 1);
     private int _active = 1;

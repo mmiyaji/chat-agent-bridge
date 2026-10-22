@@ -105,4 +105,27 @@ public sealed class ChatFollowUpPolicyTests
             if (Directory.Exists(Path)) Directory.Delete(Path, recursive: true);
         }
     }
+
+    [Theory]
+    [InlineData("codex", false, "always", true, true, true)]
+    [InlineData("codex", true, "first", true, false, false)]
+    [InlineData("codex", true, "auto", true, false, false)]
+    [InlineData("codex", false, "first", true, true, false)]
+    [InlineData("claude", false, "always", true, false, true)]
+    [InlineData("claude", false, "first", true, false, false)]
+    [InlineData("gemini", false, "first", false, false, false)]
+    [InlineData("custom", false, "always", false, false, false)]
+    public void SteerRequirementsListOnlyWhatMustChange(string provider, bool appServer, string approval,
+        bool supported, bool needsAppServer, bool needsApproval)
+    {
+        var plan = ChatFollowUpPolicy.GetSteerRequirements(provider, appServer, approval);
+        Assert.Equal(supported, plan.ProviderSupported);
+        Assert.Equal(needsAppServer, plan.RequiresAppServer);
+        Assert.Equal(needsApproval, plan.RequiresApprovalChange);
+        Assert.Equal(needsAppServer || needsApproval, plan.HasChanges);
+    }
+
+    [Fact]
+    public void SteerApprovalFallbackIsAccepted() =>
+        Assert.False(ChatFollowUpPolicy.GetSteerRequirements("claude", false, ChatFollowUpPolicy.SteerApprovalMode).RequiresApprovalChange);
 }
