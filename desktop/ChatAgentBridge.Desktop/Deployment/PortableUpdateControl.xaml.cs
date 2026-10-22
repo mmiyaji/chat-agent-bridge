@@ -51,6 +51,9 @@ public sealed partial class PortableUpdateControl : UserControl
     private void RefreshState()
     {
         if (!DeploymentRuntime.IsPortable) return;
+        if (_isSubscribed && XamlRoot is { IsHostVisible: true } root &&
+            App.PortableUpdates.WasRestoredStage && App.PortableUpdates.TryClaimRestoredStagePrompt())
+            _ = PromptRestoredStageAsync(root);
 
         var updates = App.PortableUpdates;
         StatusText.Text = updates.Status;
@@ -183,6 +186,14 @@ public sealed partial class PortableUpdateControl : UserControl
             _dialogOpen = false;
             RefreshState();
         }
+    }
+
+    private async Task PromptRestoredStageAsync(XamlRoot root)
+    {
+        // Let the window finish loading before opening a dialog; the confirmation path waits for existing popups.
+        await Task.Yield();
+        if (!root.IsHostVisible) return;
+        await ConfirmApplyUpdateAsync(root, downloadCompleted: true);
     }
 
     private void CancelUpdate_Click(object sender, RoutedEventArgs e) => App.PortableUpdates.Cancel();

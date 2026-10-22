@@ -145,7 +145,8 @@ public partial class App : Application
         PendingRequestNotifications.Initialize();
         PortableUpdates = new(dataDirectory, _portableLease is not null);
         PortableIdentity = new(dataDirectory, _portableLease is not null);
-        if (DeploymentRuntime.IsPortable) await PortableUpdates.InitializeAsync();
+        // The lifetime update task initializes preferences and revalidates downloaded updates
+        // after the window is visible; large archives must not delay first-window creation.
 
         var backgroundStore = new ChatAgentBridge.Core.BackgroundPreferencesStore(new ChatAgentBridge.Core.SettingsStore());
         var background = new ChatAgentBridge.Core.BackgroundPreferences();
