@@ -56,7 +56,10 @@ public partial class MainPageViewModel
     public event Action<int>? OnboardingNavigateRequested;
     /// <summary>Raised when the user tries to continue with required inputs missing, so the page can highlight and focus them.</summary>
     public event Action<IReadOnlyList<WizardField>>? OnboardingFieldsFocusRequested;
-    private void RequestFieldFocus(IReadOnlyList<WizardField> fields) { if (fields.Count > 0) OnboardingFieldsFocusRequested?.Invoke(fields); }
+    private IReadOnlyList<WizardField>? _pendingFieldFocus;
+    // Focus is moved only after the action ends: while it runs the clicked button is disabled, and a focused
+    // control that becomes disabled hands focus on afterwards, which would override the field.
+    private void RequestFieldFocus(IReadOnlyList<WizardField> fields) { if (fields.Count > 0) _pendingFieldFocus = fields; }
 
     public async Task InitializeOnboardingAsync()
     {
@@ -210,6 +213,14 @@ public partial class MainPageViewModel
         IsOnboardingBusy = true;
         try { await action(); }
         catch { SetStatus(ViewModelText.Get("WizardSaveFailed"), ViewModelText.Get("WizardSaveFailedDetails"), "Error"); }
-        finally { IsOnboardingBusy = false; }
+        finally
+        {
+            IsOnboardingBusy = false;
+            if (_pendingFieldFocus is { } fields)
+            {
+                _pendingFieldFocus = null;
+                OnboardingFieldsFocusRequested?.Invoke(fields);
+            }
+        }
     }
 }
