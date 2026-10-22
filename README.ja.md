@@ -8,7 +8,7 @@ Windows用の単体実行ファイルに対応しています。`npm run package
 
 ## 新しい接続管理画面
 
-起動後の管理画面でエージェントとSlack/Mattermostを設定し、接続・切断できます。CodexはApp Serverに対応し、承認・追加入力を同じチャットスレッドから返せます。実行中に同じユーザー・スレッドから届いた追加指示は、既定では順番に処理し、設定を変更するとCodex App Serverの実行中依頼へ追加できます。詳しくは [接続管理とハーネス](docs/harness-modernization.md) を参照してください。
+起動後の管理画面でエージェントとSlack/Mattermostを設定し、接続・切断できます。CodexはApp Serverに対応し、承認・追加入力を同じチャットスレッドから返せます。実行中に同じユーザー・スレッドから届いた追加指示は、既定では順番に処理し、設定を変更するとCodex App ServerやClaude Codeの実行中依頼へ追加できます。詳しくは [接続管理とハーネス](docs/harness-modernization.md) を参照してください。
 
 
 - Languages: [English](README.md) / [Japanese](README.ja.md)

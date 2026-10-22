@@ -285,7 +285,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Add to the running request</value>
   </data>
   <data name="ChatFollowUpModeHelp.Text" xml:space="preserve">
-    <value>Steering is available through the Codex App Server connection. It applies to additional instructions from the same user and thread. Unsupported connection types and per-request approval always queue messages.</value>
+    <value>Available with Codex App Server and Claude Code. Additional instructions from the same user and thread are delivered when the agent can accept them. Unsupported connections and per-request approval queue messages.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock034.Text" xml:space="preserve">
     <value>Allowed chat accounts and conversations</value>
@@ -349,7 +349,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Review tool permissions and questions on this PC (Codex only)</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock040.Text" xml:space="preserve">
-    <value>When enabled, Codex uses App Server. Otherwise, the bridge passes the request to the CLI and waits for completion. Claude Code, Gemini CLI and GitHub Copilot CLI support continued conversations but cannot receive answers to follow-up questions during a run.</value>
+    <value>When enabled, Codex uses App Server. Otherwise, the bridge passes the request to the CLI and waits for completion. These CLIs also support continued conversations. Replies to tool permission requests and agent questions during a run require Codex App Server.</value>
   </data>
   <data name="RequireApproval.Header" xml:space="preserve">
     <value>Check contents before manual execution</value>

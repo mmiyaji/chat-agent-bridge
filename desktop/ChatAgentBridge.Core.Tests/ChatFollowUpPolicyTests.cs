@@ -6,6 +6,17 @@ namespace ChatAgentBridge.Core.Tests;
 
 public sealed class ChatFollowUpPolicyTests
 {
+    [Theory]
+    [InlineData("folder C:\\work", true)]
+    [InlineData("/folder", true)]
+    [InlineData("!cab agent claude fresh", true)]
+    [InlineData("!cab agent codex summary", true)]
+    [InlineData("!cab agent C:\\custom.exe fresh", true)]
+    [InlineData("!cab agent のログを調べて", false)]
+    [InlineData("次はテストを実行して", false)]
+    public void ConfigurationCommandsNeverBecomeLiveAgentInput(string prompt, bool expected) =>
+        Assert.Equal(expected, ChatFollowUpPolicy.IsConfigurationCommand(prompt));
+
     private static readonly SessionKey SlackOwner = new("slack", "C1", "1.0", "U1", "bot");
 
     [Theory]
@@ -49,11 +60,16 @@ public sealed class ChatFollowUpPolicyTests
 
         Assert.True(ChatFollowUpPolicy.CanSteer(current, active, SlackOwner, SlackOwner));
         Assert.True(ChatFollowUpPolicy.CanSteer(current, active with { ChatApprovalMode = "auto" }, SlackOwner, SlackOwner));
+        var claude = active with { AgentProvider = AgentProfile.Claude, AgentMode = "exec" };
+        Assert.True(ChatFollowUpPolicy.CanSteer(claude, claude, SlackOwner, SlackOwner));
+        Assert.False(ChatFollowUpPolicy.CanSteer(claude, claude with { ChatApprovalMode = "always" }, SlackOwner, SlackOwner));
+        Assert.False(ChatFollowUpPolicy.CanSteer(claude, claude, SlackOwner with { UserId = "U2" }, SlackOwner));
         Assert.False(ChatFollowUpPolicy.CanSteer(current with { ChatFollowUpMode = "queue" }, active, SlackOwner, SlackOwner));
         Assert.False(ChatFollowUpPolicy.CanSteer(current with { ChatFollowUpMode = "unknown" }, active, SlackOwner, SlackOwner));
         Assert.False(ChatFollowUpPolicy.CanSteer(current, active with { ChatFollowUpMode = "queue" }, SlackOwner, SlackOwner));
         Assert.False(ChatFollowUpPolicy.CanSteer(current, active with { AgentProvider = AgentProfile.Claude }, SlackOwner, SlackOwner));
         Assert.False(ChatFollowUpPolicy.CanSteer(current, active with { AgentMode = "exec" }, SlackOwner, SlackOwner));
+        Assert.False(ChatFollowUpPolicy.CanSteer(current, active with { AgentProvider = AgentProfile.Gemini, AgentMode = "exec" }, SlackOwner, SlackOwner));
         Assert.False(ChatFollowUpPolicy.CanSteer(current, active with { ChatApprovalMode = "always" }, SlackOwner, SlackOwner));
     }
 

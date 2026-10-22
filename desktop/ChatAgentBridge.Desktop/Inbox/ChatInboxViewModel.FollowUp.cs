@@ -76,6 +76,7 @@ public sealed partial class ChatInboxViewModel
 
     private async Task<bool> TryAddFollowUpAsync(InboxItem incoming, CancellationToken token)
     {
+        if (ChatFollowUpPolicy.IsConfigurationCommand(incoming.Prompt)) return false;
         await _followUpGate.WaitAsync(token);
         try
         {

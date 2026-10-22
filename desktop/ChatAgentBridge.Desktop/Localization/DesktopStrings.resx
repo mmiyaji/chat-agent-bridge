@@ -31,7 +31,7 @@
   <data name="ChatFollowUpModeLabel" xml:space="preserve"><value>Messages received during execution</value></data>
   <data name="ChatFollowUpModeQueue" xml:space="preserve"><value>Run in order (default)</value></data>
   <data name="ChatFollowUpModeSteer" xml:space="preserve"><value>Add to the running request</value></data>
-  <data name="ChatFollowUpModeHelp" xml:space="preserve"><value>Steering is available through the Codex App Server connection. It applies to additional instructions from the same user and thread. Unsupported connection types and per-request approval always queue messages.</value></data>
+  <data name="ChatFollowUpModeHelp" xml:space="preserve"><value>Available with Codex App Server and Claude Code. Additional instructions from the same user and thread are delivered when the agent can accept them. Unsupported connections and per-request approval queue messages.</value></data>
   <data name="SettingsReviewFollowUpMode" xml:space="preserve"><value>Messages received during execution</value></data>
   <data name="FollowUpApplied" xml:space="preserve"><value>Added to running request</value></data>
   <data name="FollowUpAppliedHelp" xml:space="preserve"><value>The reply is combined with the original request; it does not start a separate execution.</value></data>

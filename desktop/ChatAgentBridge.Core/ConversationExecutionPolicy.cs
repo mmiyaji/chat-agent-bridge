@@ -51,9 +51,12 @@ public static class ConversationExecutionPolicy
         var fingerprint = settings.ShareAgentQuestionsInChat
             ? Digest(baseFingerprint + "\0share-agent-questions")
             : baseFingerprint;
-        return ChatFollowUpPolicy.Normalize(settings.ChatFollowUpMode) == ChatFollowUpPolicy.Steer
-            ? Digest(fingerprint + "\0chat-follow-up-steer")
-            : fingerprint;
+        if (ChatFollowUpPolicy.Normalize(settings.ChatFollowUpMode) != ChatFollowUpPolicy.Steer) return fingerprint;
+        var steerFingerprint = Digest(fingerprint + "\0chat-follow-up-steer");
+        // Earlier versions advertised live additions only for Codex. Expanding Claude execution
+        // must not silently reuse first-request consent from that earlier behavior.
+        return settings.AgentProvider == AgentProfile.Claude && settings.AgentMode == "exec"
+            ? Digest(steerFingerprint + "\0claude-stream-input-v1") : steerFingerprint;
     }
 
     private static string Digest(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();

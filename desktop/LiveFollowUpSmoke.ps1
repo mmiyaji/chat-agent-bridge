@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory)][string]$AppDirectory,
-    [Parameter(Mandatory)][string]$TestAgentPath
+    [Parameter(Mandatory)][string]$TestAgentPath,
+    [ValidateSet('codex', 'claude')][string]$Provider = 'codex'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -64,9 +65,11 @@ function Start-IsolatedApp([string]$FollowUpMode) {
     $agentRoot = Join-Path $script:runRoot 'agent'
     $script:gate = Join-Path $script:data '.cab-live-steering-release'
     $script:observations = Join-Path $script:data 'protocol-observations.jsonl'
-    $marker = Join-Path $script:data '.cab-live-steering-fixture'
+    $markerName = if ($Provider -eq 'claude') { '.cab-claude-follow-up-fixture' } else { '.cab-live-steering-fixture' }
+    $marker = Join-Path $script:data $markerName
     New-Item -ItemType Directory -Path $workspace, $agentRoot -Force | Out-Null
-    Set-Content -LiteralPath $marker -Value 'Isolated offline AppServer follow-up fixture' -Encoding utf8
+    $markerValue = if ($Provider -eq 'claude') { 'Isolated offline Claude follow-up fixture' } else { 'Isolated offline AppServer follow-up fixture' }
+    Set-Content -LiteralPath $marker -Value $markerValue -Encoding utf8
     Set-Content -LiteralPath (Join-Path $workspace '.cab-live-steering-workspace') -Value 'offline smoke workspace' -Encoding utf8
     Set-Content -LiteralPath $script:observations -Value '' -Encoding utf8
 
@@ -74,7 +77,7 @@ function Start-IsolatedApp([string]$FollowUpMode) {
     Get-ChildItem -LiteralPath $sourceDirectory -File | Where-Object { $_.FullName -ne [IO.Path]::GetFullPath($TestAgentPath) } | ForEach-Object {
         Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $agentRoot $_.Name) -Force
     }
-    $agent = Join-Path $agentRoot 'codex.exe'
+    $agent = Join-Path $agentRoot ($Provider + '.exe')
     Copy-Item -LiteralPath $TestAgentPath -Destination $agent -Force
 
     Add-Type -AssemblyName System.Security
@@ -90,7 +93,7 @@ function Start-IsolatedApp([string]$FollowUpMode) {
     $script:endpoint = "http://127.0.0.1:$port"
 
     Save-Json (Join-Path $script:data 'settings.json') @{
-        SchemaVersion = 1; WorkspaceRoot = $workspace; AgentProvider = 'codex'; AgentMode = 'app-server'
+        SchemaVersion = 1; WorkspaceRoot = $workspace; AgentProvider = $Provider; AgentMode = $(if ($Provider -eq 'claude') { 'exec' } else { 'app-server' })
         AgentExecutable = $agent; AgentArguments = ''; AgentModel = $null; AgentReasoningEffort = $null
         AgentPermissionMode = 'inherit'; TrustedWorkspaceRoots = $workspace; RequireApproval = $false; AllowAgentNetwork = $false
         MattermostServerUrl = $script:endpoint; MattermostChannelId = 'ui-channel'; MattermostToken = $token
@@ -116,6 +119,7 @@ function Start-IsolatedApp([string]$FollowUpMode) {
     $start.WorkingDirectory = [IO.Path]::GetTempPath()
     $start.ArgumentList.Add('--data-dir'); $start.ArgumentList.Add($script:data)
     $start.Environment['CAB_LIVE_STEERING_FIXTURE'] = '1'
+    if ($Provider -eq 'claude') { $start.Environment['CAB_CLAUDE_STEERING_FIXTURE'] = '1' }
     $start.Environment['CAB_LIVE_STEERING_RELEASE_FILE'] = $script:gate
     $start.Environment['CAB_LIVE_STEERING_OBSERVATIONS_FILE'] = $script:observations
     $script:app = [Diagnostics.Process]::Start($start)
@@ -181,9 +185,10 @@ try {
     Wait-For { @(Read-Observations | Where-Object { $_.method -eq 'turn/steer' -and $_.outcome -eq 'accepted' }).Count -eq 1 } 'accepted steer RPC'
     Send-Request ('other-user-' + [guid]::NewGuid().ToString('N')) $thread 'bob' 'LIVE_STEER_OTHER_USER_1 different owner'
     Send-Request ('other-thread-' + [guid]::NewGuid().ToString('N')) $otherThread 'alice' 'LIVE_STEER_OTHER_THREAD_1 different thread'
-    Wait-For { @((Read-Results).replies).Count -ge 4 } 'receipts for the active request and three follow-ups'
+    Send-Request ('folder-' + [guid]::NewGuid().ToString('N')) $thread 'alice' ('folder ' + (Join-Path $script:data 'workspace'))
+    Wait-For { @((Read-Results).replies).Count -ge 5 } 'receipts for the active request, follow-ups and folder confirmation'
     Wait-For { @(Read-Observations | Where-Object { $_.method -eq 'turn/start' }).Count -eq 1 } 'single held turn before queued follow-ups start'
-    Assert (@(Read-Observations | Where-Object { $_.method -eq 'turn/steer' }).Count -eq 1) 'An unrelated user or thread was sent to the active turn.'
+    Assert (@(Read-Observations | Where-Object { $_.method -eq 'turn/steer' }).Count -eq 1) 'An unrelated user, thread or folder configuration command was sent to the active turn.'
     Set-Content -LiteralPath $script:gate -Value 'release steered and independent turns' -Encoding utf8
     Wait-For { (Completed-Records).Count -eq 3 } 'steered request and independent requests to complete'
     Assert (@(Read-Observations | Where-Object { $_.method -eq 'turn/start' }).Count -eq 3) 'Expected the two unmatched follow-ups to run after the active turn.'
@@ -193,19 +198,23 @@ try {
     Write-Output 'PASS Steering matches user and thread and publishes one final reply per execution'
     Stop-IsolatedApp
 
-    Start-IsolatedApp 'steer' | Out-Null
-    $thread = 'follow-unsupported-' + [guid]::NewGuid().ToString('N')
-    Send-Request ('unsupported-1-' + [guid]::NewGuid().ToString('N')) $thread 'alice' 'LIVE_STEER_UNSUPPORTED_1 active turn'
-    Wait-For { @(Running-Records).Count -eq 1 } 'unsupported steer active turn'
-    Send-Request ('unsupported-2-' + [guid]::NewGuid().ToString('N')) $thread 'alice' 'LIVE_STEER_QUEUE_2 queued after rejection'
-    Wait-For { @(Read-Observations | Where-Object { $_.method -eq 'turn/steer' -and $_.outcome -eq 'unsupported' }).Count -eq 1 } 'explicit unsupported steer response'
-    Set-Content -LiteralPath $script:gate -Value 'release unsupported queue fallback' -Encoding utf8
-    Wait-For { (Completed-Records).Count -eq 2 } 'unsupported follow-up queued execution'
-    Assert (@(Read-Observations | Where-Object { $_.method -eq 'turn/start' }).Count -eq 2) 'Explicit steering rejection did not fall back to a queued second turn.'
-    Assert-FinalReplies 2
-    $checks.Add(@{ name = 'Explicit steering rejection falls back to queue'; passed = $true })
-    Write-Output 'PASS Explicit steering rejection falls back to queue'
-    Stop-IsolatedApp
+    if ($Provider -eq 'codex') {
+        Start-IsolatedApp 'steer' | Out-Null
+        $thread = 'follow-unsupported-' + [guid]::NewGuid().ToString('N')
+        Send-Request ('unsupported-1-' + [guid]::NewGuid().ToString('N')) $thread 'alice' 'LIVE_STEER_UNSUPPORTED_1 active turn'
+        Wait-For { @(Running-Records).Count -eq 1 } 'unsupported steer active turn'
+        Send-Request ('unsupported-2-' + [guid]::NewGuid().ToString('N')) $thread 'alice' 'LIVE_STEER_QUEUE_2 queued after rejection'
+        Wait-For { @(Read-Observations | Where-Object { $_.method -eq 'turn/steer' -and $_.outcome -eq 'unsupported' }).Count -eq 1 } 'explicit unsupported steer response'
+        Set-Content -LiteralPath $script:gate -Value 'release unsupported queue fallback' -Encoding utf8
+        Wait-For { (Completed-Records).Count -eq 2 } 'unsupported follow-up queued execution'
+        Assert (@(Read-Observations | Where-Object { $_.method -eq 'turn/start' }).Count -eq 2) 'Explicit steering rejection did not fall back to a queued second turn.'
+        Assert-FinalReplies 2
+        $checks.Add(@{ name = 'Explicit steering rejection falls back to queue'; passed = $true })
+        Write-Output 'PASS Explicit steering rejection falls back to queue'
+        Stop-IsolatedApp
+    } else {
+        Write-Output 'SKIP Claude stream-json has no explicit native steer-rejection response to fixture safely.'
+    }
 
     Start-IsolatedApp 'steer' | Out-Null
     $thread = 'follow-unknown-' + [guid]::NewGuid().ToString('N')

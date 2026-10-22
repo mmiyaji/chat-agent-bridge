@@ -31,7 +31,7 @@
   <data name="ChatFollowUpModeLabel" xml:space="preserve"><value>実行中に届いたメッセージ</value></data>
   <data name="ChatFollowUpModeQueue" xml:space="preserve"><value>順番に実行（既定）</value></data>
   <data name="ChatFollowUpModeSteer" xml:space="preserve"><value>実行中の依頼へ追加</value></data>
-  <data name="ChatFollowUpModeHelp" xml:space="preserve"><value>実行中への追加はCodexのApp Server接続で利用できます。同じユーザー・スレッドの追加指示が対象です。未対応の接続方式や毎回承認では順番に実行します。</value></data>
+  <data name="ChatFollowUpModeHelp" xml:space="preserve"><value>Codex App ServerとClaude Codeで利用できます。同じユーザー・スレッドの追加指示を、AIが受け取れるタイミングで反映します。未対応の接続方式や毎回承認では順番に実行します。</value></data>
   <data name="SettingsReviewFollowUpMode" xml:space="preserve"><value>実行中に届いたメッセージ</value></data>
   <data name="FollowUpApplied" xml:space="preserve"><value>実行中へ追加</value></data>
   <data name="FollowUpAppliedHelp" xml:space="preserve"><value>回答は元の依頼にまとめて返され、別の実行にはなりません。</value></data>

@@ -338,7 +338,7 @@ function Run-Scenario([string]$Language, [string]$Theme) {
 
     $queueLabel = if ($Language -eq 'ja') { '順番に実行（既定）' } else { 'Run in order (default)' }
     $steerLabel = if ($Language -eq 'ja') { '実行中の依頼へ追加' } else { 'Add to the running request' }
-    $modeHelp = if ($Language -eq 'ja') { '実行中への追加はCodexのApp Server接続で利用できます。' } else { 'Steering is available through the Codex App Server connection.' }
+    $modeHelp = if ($Language -eq 'ja') { 'Codex App ServerとClaude Codeで利用できます。' } else { 'Available with Codex App Server and Claude Code.' }
 
     $expand = $null
     if (-not $combo.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$expand)) {

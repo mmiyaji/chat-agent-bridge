@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using ChatAgentBridge.Core.Localization;
 using ChatAgentBridge.Core.Sessions;
+using ChatAgentBridge.Core.AppServer;
 
 namespace ChatAgentBridge.Core;
 
@@ -21,6 +22,11 @@ public interface IAgentRunner
     Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
         IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken = default)
         => RunAsync(settings, prompt, cancellationToken);
+
+    Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
+        IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged,
+        CancellationToken cancellationToken = default)
+        => RunAsync(settings, prompt, progress, cancellationToken);
 }
 
 public sealed class AgentRunner : IAgentRunner
@@ -29,10 +35,15 @@ public sealed class AgentRunner : IAgentRunner
 
     public Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
         CancellationToken cancellationToken = default)
-        => RunAsync(settings, prompt, progress: null, cancellationToken);
+        => RunAsync(settings, prompt, progress: null, activeTurnChanged: null, cancellationToken);
 
     public async Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
         IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken = default)
+        => await RunAsync(settings, prompt, progress, activeTurnChanged: null, cancellationToken).ConfigureAwait(false);
+
+    public async Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
+        IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged,
+        CancellationToken cancellationToken = default)
     {
         var totalTimer = Stopwatch.StartNew();
         ArgumentNullException.ThrowIfNull(settings);
@@ -52,7 +63,7 @@ public sealed class AgentRunner : IAgentRunner
         var queueTimer = Stopwatch.StartNew();
         using var workspaceLease = await AgentWorkspaceGate.AcquireAsync(workspace, cancellationToken).ConfigureAwait(false);
         var queueMilliseconds = queueTimer.Elapsed.TotalMilliseconds;
-        var result = await RunLockedAsync(settings, workspace, prompt, progress, cancellationToken).ConfigureAwait(false);
+        var result = await RunLockedAsync(settings, workspace, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false);
         return result with
         {
             Metrics = (result.Metrics ?? new AgentExecutionMetrics()) with
@@ -64,7 +75,7 @@ public sealed class AgentRunner : IAgentRunner
     }
 
     private static async Task<AgentRunResult> RunLockedAsync(BridgeSettings settings, string workspace, string prompt,
-        IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken)
+        IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -81,6 +92,14 @@ public sealed class AgentRunner : IAgentRunner
         string executable;
         try { executable = nodePackage?.Executable ?? CodexExecutableResolver.Resolve(invocation.Executable); }
         catch (InvalidOperationException ex) { return new AgentRunResult(false, -1, "", ex.Message); }
+
+        if (invocation.Provider == AgentProfile.Claude && settings.AgentMode == "exec" &&
+            ChatFollowUpPolicy.Normalize(settings.ChatFollowUpMode) == ChatFollowUpPolicy.Steer && activeTurnChanged is not null)
+        {
+            var streamed = await ClaudeCode.ClaudeStreamingRunner.TryRunAsync(invocation, executable, nodePackage?.EntryPoint,
+                workspace, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false);
+            if (streamed is not null) return streamed;
+        }
         var start = new ProcessStartInfo
         {
             FileName = executable,
