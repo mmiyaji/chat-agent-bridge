@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -140,10 +141,13 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
             ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("slack", ChatReconnectionState.Reconnected, _reconnectAttempt, null));
         _reconnectAttempt = 0;
         Connected?.Invoke();
+        // Per-connection receive buffers; each JsonDocument is disposed before the next receive reuses them.
+        var receiveBuffer = new byte[16 * 1024];
+        var receiveContent = new ArrayBufferWriter<byte>(receiveBuffer.Length);
         while (!cancellationToken.IsCancellationRequested && socket.State == WebSocketState.Open)
         {
             JsonDocument? received;
-            try { received = await ReceiveJsonAsync(socket, cancellationToken).ConfigureAwait(false); }
+            try { received = await ReceiveJsonAsync(socket, receiveBuffer, receiveContent, cancellationToken).ConfigureAwait(false); }
             catch (Exception ex) when (ex is WebSocketException or IOException) { throw new SlackReconnectException(ex); }
             using var document = received;
             if (document is null)
@@ -406,20 +410,19 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
         await socket.SendAsync(bytes, WebSocketMessageType.Text, true, ct).ConfigureAwait(false);
     }
 
-    private static async Task<JsonDocument?> ReceiveJsonAsync(ClientWebSocket socket, CancellationToken ct)
+    private static async Task<JsonDocument?> ReceiveJsonAsync(ClientWebSocket socket, byte[] buffer, ArrayBufferWriter<byte> content, CancellationToken ct)
     {
-        var buffer = new byte[16 * 1024];
-        using var content = new MemoryStream();
+        content.ResetWrittenCount();
         WebSocketReceiveResult result;
         do
         {
             result = await socket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
             if (result.MessageType == WebSocketMessageType.Close) return null;
             if (result.MessageType != WebSocketMessageType.Text) throw new InvalidOperationException("Slack sent a non-text WebSocket message.");
-            if (content.Length + result.Count > MaxMessageBytes) throw new InvalidOperationException("Slack WebSocket message exceeded the 1 MiB limit.");
-            content.Write(buffer, 0, result.Count);
+            if (content.WrittenCount + result.Count > MaxMessageBytes) throw new InvalidOperationException("Slack WebSocket message exceeded the 1 MiB limit.");
+            content.Write(buffer.AsSpan(0, result.Count));
         } while (!result.EndOfMessage);
-        try { return JsonDocument.Parse(content.ToArray()); }
+        try { return JsonDocument.Parse(content.WrittenMemory); }
         catch (JsonException) { return null; }
     }
 
