@@ -118,6 +118,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private InboxItem? _notificationApprovedItem;
     private InboxItem? _automaticallyApprovedItem;
     private bool _processingPolicies;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<Task, byte> _receivedAudits = new();
     private readonly HashSet<InboxItem> _notifiedRequests = [];
     private readonly HashSet<InboxItem> _automaticallyAttempted = [];
     private readonly Dictionary<InboxItem, PropertyChangedEventHandler> _requestHandlers = [];
@@ -485,7 +486,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             {
                 var accessSettings = Volatile.Read(ref _accessSettings);
                 if (_disconnecting || accessSettings is null || !HasAccess(accessSettings, request, settings)) return;
-                await AuditAsync("received", request, null, token);
+                QueueReceivedAudit(request);
                 if (request.CancellationTargetMessageId is not null)
                 {
                     await TryHandleChatControlAsync(transport, settings, request, token);
@@ -524,6 +525,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (ApproveCommand.ExecutionTask is { IsCompleted: false } execution) await execution;
             if (SendResultCommand.ExecutionTask is { IsCompleted: false } reply) await reply;
             if (SendAttachmentsCommand.ExecutionTask is { IsCompleted: false } attachments) await attachments;
+            await Task.WhenAll(_receivedAudits.Keys);
             await FinishConnectionProgressAsync(transport);
             await _connectionNotice;
             await transport.DisposeAsync();
@@ -858,6 +860,20 @@ public sealed partial class ChatInboxViewModel : ObservableObject
 
     private Task AuditAsync(string kind, ChatRequest request, Guid? executionId, CancellationToken token = default) =>
         _audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, kind, executionId, request.Provider, request.ChannelId, request.ThreadId), token);
+
+    // The receive path must not wait for disk. The event timestamp is taken here, so ordering is unchanged.
+    private void QueueReceivedAudit(ChatRequest request)
+    {
+        var tracked = ObserveReceivedAuditAsync(AuditAsync("received", request, null));
+        _receivedAudits[tracked] = 0;
+        _ = tracked.ContinueWith(task => _receivedAudits.TryRemove(task, out _), TaskScheduler.Default);
+    }
+
+    private async Task ObserveReceivedAuditAsync(Task audit)
+    {
+        try { await audit.ConfigureAwait(false); }
+        catch (Exception) { Status += " " + DesktopText.Get("InboxAuditSaveFailed"); }
+    }
 
     private async Task<AppServerDecision> HandleApprovalAsync(InboxItem item, AppServerApproval approval, CancellationToken token)
     {

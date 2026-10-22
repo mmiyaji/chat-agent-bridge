@@ -73,6 +73,45 @@ public sealed class HistoryTests
     }
 
     [Fact]
+    public async Task AuditStore_CachedDocumentFollowsExternalFileChanges()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new AuditStore(directory.Path);
+        var first = new AuditEvent(DateTimeOffset.UtcNow.AddMinutes(-2), "received", null, "local", "", "");
+        await store.AppendAsync(first);
+        Assert.Single(await store.ListAsync());
+
+        var path = Path.Combine(directory.Path, "audit.json");
+        var external = new AuditEvent(DateTimeOffset.UtcNow.AddMinutes(-1), "failed", null, "slack", "C-external-channel", "T1");
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new
+        {
+            SchemaVersion = 1,
+            Records = new[] { first, external, external with { Timestamp = external.Timestamp.AddSeconds(1) } }
+        }));
+        Assert.Equal(3, (await store.ListAsync()).Count);
+
+        // An append after the external edit must build on the edited file, not on the stale parse.
+        await store.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, "started", null, "local", "", ""));
+        Assert.Equal(4, (await new AuditStore(directory.Path).ListAsync()).Count);
+
+        File.Delete(path);
+        Assert.Empty(await store.ListAsync());
+        await File.WriteAllTextAsync(path, "{");
+        await Assert.ThrowsAsync<InvalidDataException>(() => store.ListAsync());
+    }
+
+    [Fact]
+    public async Task AuditStore_ListedRecordsCannotChangeCachedState()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new AuditStore(directory.Path);
+        await store.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, "received", null, "local", "", ""));
+        var listed = (AuditEvent[])await store.ListAsync();
+        listed[0] = listed[0] with { Kind = "failed" };
+        Assert.Equal("received", Assert.Single(await store.ListAsync()).Kind);
+    }
+
+    [Fact]
     public async Task Stores_SerializeConcurrentInstancesForSameFile()
     {
         using var directory = new TemporaryDirectory();
