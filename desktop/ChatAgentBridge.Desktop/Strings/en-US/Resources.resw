@@ -275,6 +275,18 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="chatAgentBridgeDesktopMainPageTextBlock033.Text" xml:space="preserve">
     <value>Automatic sharing posts successful results to the original thread, where anyone with access can read them. Choosing Do not share also disables manual sharing of result text.</value>
   </data>
+  <data name="ChatFollowUpMode.Header" xml:space="preserve">
+    <value>Messages received during execution</value>
+  </data>
+  <data name="ChatFollowUpModeQueue.Content" xml:space="preserve">
+    <value>Run in order (default)</value>
+  </data>
+  <data name="ChatFollowUpModeSteer.Content" xml:space="preserve">
+    <value>Add to the running request</value>
+  </data>
+  <data name="ChatFollowUpModeHelp.Text" xml:space="preserve">
+    <value>Steering is available through the Codex App Server connection. It applies to additional instructions from the same user and thread. Unsupported connection types and per-request approval always queue messages.</value>
+  </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock034.Text" xml:space="preserve">
     <value>Allowed chat accounts and conversations</value>
   </data>

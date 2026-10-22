@@ -28,6 +28,19 @@
   <data name="ChatControlStop" xml:space="preserve"><value>Stop requested. Running: {0}; pending cancelled: {1}.</value></data>
   <data name="ChatControlStopNone" xml:space="preserve"><value>No running or pending requests from you in this thread.</value></data>
   <data name="ChatControlFailed" xml:space="preserve"><value>Could not process a chat control command. Check the request on this PC.</value></data>
+  <data name="ChatFollowUpModeLabel" xml:space="preserve"><value>Messages received during execution</value></data>
+  <data name="ChatFollowUpModeQueue" xml:space="preserve"><value>Run in order (default)</value></data>
+  <data name="ChatFollowUpModeSteer" xml:space="preserve"><value>Add to the running request</value></data>
+  <data name="ChatFollowUpModeHelp" xml:space="preserve"><value>Steering is available through the Codex App Server connection. It applies to additional instructions from the same user and thread. Unsupported connection types and per-request approval always queue messages.</value></data>
+  <data name="SettingsReviewFollowUpMode" xml:space="preserve"><value>Messages received during execution</value></data>
+  <data name="FollowUpApplied" xml:space="preserve"><value>Added to running request</value></data>
+  <data name="FollowUpAppliedHelp" xml:space="preserve"><value>The reply is combined with the original request; it does not start a separate execution.</value></data>
+  <data name="FollowUpUncertain" xml:space="preserve"><value>Delivery unconfirmed</value></data>
+  <data name="FollowUpUncertainHelp" xml:space="preserve"><value>Delivery could not be confirmed. It will not be retried automatically to avoid duplicates. Check the reply before resending manually.</value></data>
+  <data name="ProgressFollowUpApplied" xml:space="preserve"><value>Added to the running request. The answer will be combined with the original request.</value></data>
+  <data name="ProgressFollowUpUncertain" xml:space="preserve"><value>Follow-up delivery could not be confirmed. It will not be retried automatically to avoid duplicates. Check the answer before resending.</value></data>
+  <data name="AuditFollowUpApplied" xml:space="preserve"><value>Follow-up added to running request</value></data>
+  <data name="AuditFollowUpUncertain" xml:space="preserve"><value>Follow-up delivery unconfirmed</value></data>
   <data name="InboxReconnecting" xml:space="preserve"><value>Connection lost. Retrying automatically (attempt {0}, in {1}s). New requests will wait until the connection returns.</value></data>
   <data name="InboxReconnected" xml:space="preserve"><value>Reconnected. Waiting for requests from allowed users. Requests sent while disconnected must be reposted.</value></data>
   <data name="ProgressReceived" xml:space="preserve"><value>📥 Request received. Waiting for approval on the PC or for execution to start.</value></data>

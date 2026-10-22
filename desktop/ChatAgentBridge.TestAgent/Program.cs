@@ -267,6 +267,12 @@ if (args is not ["app-server", ..])
     return;
 }
 
+if (Environment.GetEnvironmentVariable("CAB_LIVE_STEERING_FIXTURE") == "1")
+{
+    await AppServerFollowUpFixture.RunAsync();
+    return;
+}
+
 var threadId = Guid.NewGuid().ToString("D");
 var turnId = "fixture-turn";
 var inputPending = false;

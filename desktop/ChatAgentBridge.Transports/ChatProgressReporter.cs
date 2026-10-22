@@ -11,7 +11,9 @@ public enum ChatProgressState
     Failed,
     Cancelled,
     Rejected,
-    Disconnected
+    Disconnected,
+    FollowUpApplied,
+    FollowUpUncertain
 }
 
 /// <summary>
@@ -365,5 +367,6 @@ public sealed class ChatProgressReporter : IAsyncDisposable
 
     private static bool IsTerminalState(ChatProgressState state) =>
         state is ChatProgressState.Completed or ChatProgressState.Failed or ChatProgressState.Cancelled
-            or ChatProgressState.Rejected or ChatProgressState.Disconnected;
+            or ChatProgressState.Rejected or ChatProgressState.Disconnected
+            or ChatProgressState.FollowUpApplied or ChatProgressState.FollowUpUncertain;
 }

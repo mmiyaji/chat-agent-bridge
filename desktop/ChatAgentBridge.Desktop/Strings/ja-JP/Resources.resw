@@ -275,6 +275,18 @@
   <data name="chatAgentBridgeDesktopMainPageTextBlock033.Text" xml:space="preserve">
     <value>自動共有は成功時の結果本文を元のスレッドへ返信します。スレッドの閲覧者全員に公開されます。「共有しない」では本文の手動送信も無効です。</value>
   </data>
+  <data name="ChatFollowUpMode.Header" xml:space="preserve">
+    <value>実行中に届いたメッセージ</value>
+  </data>
+  <data name="ChatFollowUpModeQueue.Content" xml:space="preserve">
+    <value>順番に実行（既定）</value>
+  </data>
+  <data name="ChatFollowUpModeSteer.Content" xml:space="preserve">
+    <value>実行中の依頼へ追加</value>
+  </data>
+  <data name="ChatFollowUpModeHelp.Text" xml:space="preserve">
+    <value>実行中への追加はCodexのApp Server接続で利用できます。同じユーザー・スレッドの追加指示が対象です。未対応の接続方式や毎回承認では順番に実行します。</value>
+  </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock034.Text" xml:space="preserve">
     <value>チャットのアカウント・会話範囲</value>
   </data>

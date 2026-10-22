@@ -41,6 +41,8 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
         "エージェント変更済み" => DesktopText.Get("AgentSwitchCompleted"),
         "エージェント変更不可" => DesktopText.Get("AgentSwitchFailed"),
         "エージェント変更・再投稿が必要" => DesktopText.Get("AgentSwitchResubmit"),
+        "実行中へ追加" => DesktopText.Get("FollowUpApplied"),
+        "追加指示の反映未確認" => DesktopText.Get("FollowUpUncertain"),
         _ when State.StartsWith("失敗 (", StringComparison.Ordinal) => DesktopText.Get("ApprovalFailed", State[4..^1]),
         _ => State
     };
@@ -66,6 +68,7 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     [ObservableProperty] public partial string AttachmentStatus { get; set; } = "";
     public ChatProgressReporter? Progress { get; set; }
     public Task ReceiptNotification { get; set; } = Task.CompletedTask;
+    internal string FollowUpSummary { get; set; } = "";
 }
 
 public sealed partial class InboxConversation(string key) : ObservableObject
@@ -488,35 +491,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (await TryHandleChatAnswerAsync(transport, settings, request, token)) return;
                 if (await TryHandleAgentCommandAsync(transport, settings, request, token)) return;
                 if (await TryHandleChatControlAsync(transport, settings, request, token)) return;
-                var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                if (!App.DispatcherQueue.TryEnqueue(() =>
-                {
-                    if (!token.IsCancellationRequested && !_closing)
-                    {
-                        if (Requests.Count >= 100)
-                        {
-                            var completed = Requests.FirstOrDefault(item => item.State is not ("承認待ち" or "実行中"));
-                            if (completed is null)
-                            {
-                                _droppedCount++;
-                                OverflowNotice = DesktopText.Get("InboxOverflow", _droppedCount, request.Provider, request.ChannelId, request.MessageId);
-                                completion.TrySetResult();
-                                return;
-                            }
-                            Requests.Remove(completed);
-                            if (completed.Progress is { } oldProgress) _ = oldProgress.DisposeAsync();
-                            _notifiedRequests.Remove(completed);
-                            _automaticallyAttempted.Remove(completed);
-                        }
-                        var item = new InboxItem(request, transport, settings);
-                        InitializeProgress(item);
-                        Requests.Add(item);
-                        _ = ProcessPendingPoliciesAsync();
-                        Status = DesktopText.Get("InboxRequestReceived", request.Provider);
-                    }
-                    completion.TrySetResult();
-                })) completion.TrySetCanceled();
-                await completion.Task;
+                var completion = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
+                if (!App.DispatcherQueue.TryEnqueue(() => completion.TrySetResult(
+                    AcceptReceivedRequestAsync(request, transport, settings, token)))) completion.TrySetCanceled();
+                await await completion.Task;
             }, cancellationToken);
             Status = DesktopText.Get("InboxConnectionEnded");
             HasConnectionError = !_disconnecting && !_closing && !cancellationToken.IsCancellationRequested;
@@ -657,11 +635,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             {
                 result = effectiveSettings.AgentMode == "app-server"
                     ? await _serverRunner.RunAsync(key, effectiveSettings, agentPrompt,
-                        new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct), Progress: progress), _execution.Token)
+                        new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct), Progress: progress,
+                            ActiveTurnChanged: turn => SetActiveTurn(item, turn)), _execution.Token)
                     : await _runner.RunAsync(key, effectiveSettings, agentPrompt, _execution.Token, progress);
             }
             finally
             {
+                await CloseActiveTurnAsync(item);
                 item.LiveOutput.Finish();
                 NotifyActiveRequestProperties();
             }
@@ -688,7 +668,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     var answer = ExtractReply(result);
                     if (!string.IsNullOrWhiteSpace(answer) && (await new AgentConnectionStore().ListAsync(token)).Count > 0)
                         await new ConversationSummaryStore().RecordAsync(key, AgentProfile.ResolveProvider(effectiveSettings),
-                            updated.SessionId, item.Prompt[..Math.Min(item.Prompt.Length, 90000)],
+                            updated.SessionId, SummaryPrompt(item),
                             answer[..Math.Min(answer.Length, 90000)], token);
                 }
                 catch (Exception) { NotificationStatus = DesktopText.Get("AgentSummarySaveFailed"); }
@@ -750,6 +730,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         }
         finally
         {
+            await CloseActiveTurnAsync(item);
             if (record is not null) _history.EndTracking(record.Id);
             _execution?.Dispose();
             _execution = null;
@@ -1072,7 +1053,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         left.AgentModel == right.AgentModel && left.AgentReasoningEffort == right.AgentReasoningEffort &&
         left.AgentPermissionMode == right.AgentPermissionMode && left.AllowAgentNetwork == right.AllowAgentNetwork &&
         left.TrustedWorkspaceRoots == right.TrustedWorkspaceRoots && left.ChatApprovalMode == right.ChatApprovalMode &&
-        left.ChatResultMode == right.ChatResultMode && left.ShareApprovalsInChat == right.ShareApprovalsInChat &&
+        left.ChatResultMode == right.ChatResultMode && left.ChatFollowUpMode == right.ChatFollowUpMode && left.ShareApprovalsInChat == right.ShareApprovalsInChat &&
         left.ShareAgentQuestionsInChat == right.ShareAgentQuestionsInChat;
 
     private static string BoundedReply(string text) => text.Length > 4000

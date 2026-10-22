@@ -79,6 +79,7 @@ public sealed class SettingsStore
                 TrustedWorkspaceRoots = ExecutionPolicy.NormalizeTrustedRoots(stored.TrustedWorkspaceRoots),
                 ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(stored.ChatApprovalMode),
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(stored.ChatResultMode),
+                ChatFollowUpMode = ChatFollowUpPolicy.Normalize(stored.ChatFollowUpMode),
                 SlackAllowedChannelIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedChannelIds ?? ""),
                 SlackAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedThreadIds ?? ""),
                 MattermostAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.MattermostAllowedThreadIds ?? ""),
@@ -117,7 +118,7 @@ public sealed class SettingsStore
         string mattermostAllowedUsers;
         string slackAllowedUsers;
         string slackAllowedChannels, slackAllowedThreads, mattermostAllowedThreads;
-        string permissionMode, approvalMode, resultMode, trustedRoots, attachmentMode;
+        string permissionMode, approvalMode, resultMode, followUpMode, trustedRoots, attachmentMode;
         try
         {
             mattermostAllowedUsers = ChatAccessPolicy.NormalizeAllowedUsers(settings.MattermostAllowedUserIds);
@@ -128,6 +129,7 @@ public sealed class SettingsStore
             permissionMode = ExecutionPolicy.NormalizePermissionMode(settings.AgentPermissionMode);
             approvalMode = ExecutionPolicy.NormalizeChatApprovalMode(settings.ChatApprovalMode);
             resultMode = ExecutionPolicy.NormalizeChatResultMode(settings.ChatResultMode);
+            followUpMode = ChatFollowUpPolicy.Normalize(settings.ChatFollowUpMode);
             trustedRoots = ExecutionPolicy.NormalizeTrustedRoots(settings.TrustedWorkspaceRoots);
             attachmentMode = FileAttachmentPolicy.NormalizeMode(settings.FileAttachmentApprovalMode);
         }
@@ -171,6 +173,7 @@ public sealed class SettingsStore
             TrustedWorkspaceRoots = trustedRoots,
             ChatApprovalMode = approvalMode,
             ChatResultMode = resultMode,
+            ChatFollowUpMode = followUpMode,
             SlackAllowedChannelIds = slackAllowedChannels,
             SlackAllowedThreadIds = slackAllowedThreads,
             MattermostAllowedThreadIds = mattermostAllowedThreads,
@@ -256,6 +259,7 @@ public sealed class SettingsStore
         public string? TrustedWorkspaceRoots { get; set; }
         public string? ChatApprovalMode { get; set; }
         public string? ChatResultMode { get; set; }
+        public string? ChatFollowUpMode { get; set; }
         public string? SlackAllowedChannelIds { get; set; }
         public string? SlackAllowedThreadIds { get; set; }
         public string? MattermostAllowedThreadIds { get; set; }

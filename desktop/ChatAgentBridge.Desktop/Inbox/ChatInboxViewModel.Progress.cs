@@ -33,6 +33,8 @@ public sealed partial class ChatInboxViewModel
             ChatProgressState.Cancelled => "ProgressCancelled",
             ChatProgressState.Rejected => "ProgressRejected",
             ChatProgressState.Disconnected => "ProgressDisconnected",
+            ChatProgressState.FollowUpApplied => "ProgressFollowUpApplied",
+            ChatProgressState.FollowUpUncertain => "ProgressFollowUpUncertain",
             _ => "ProgressReceived"
         };
         var seconds = Math.Max(0, (long)elapsed.TotalSeconds);

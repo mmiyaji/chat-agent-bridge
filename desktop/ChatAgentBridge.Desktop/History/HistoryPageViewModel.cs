@@ -52,6 +52,8 @@ public sealed record AuditHistoryRow(AuditEvent Record, string? ChatLabel = null
     public string Kind => Record.Kind switch
     {
         "received" => DesktopText.Get("AuditReceived"),
+        "follow_up_applied" => DesktopText.Get("AuditFollowUpApplied"),
+        "follow_up_uncertain" => DesktopText.Get("AuditFollowUpUncertain"),
         "approved" => DesktopText.Get("AuditApproved"),
         "rejected" => DesktopText.Get("AuditRejected"),
         "started" => DesktopText.Get("AuditStarted"),

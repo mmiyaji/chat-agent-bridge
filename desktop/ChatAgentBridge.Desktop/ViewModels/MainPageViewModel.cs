@@ -89,7 +89,7 @@ public partial class MainPageViewModel : ObservableObject
                 nameof(MattermostServerUrl) or nameof(MattermostBypassProxy) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
                 nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(PostConnectionNotice) or
                 nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or nameof(ChatApprovalMode) or
-                nameof(ChatResultMode) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
+                nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
                 nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
                 RefreshSetupStepper();
             if (e.PropertyName is nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or
@@ -223,6 +223,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string TrustedWorkspaceRoots { get; set; } = string.Empty;
     [ObservableProperty] public partial string ChatApprovalMode { get; set; } = "first";
     [ObservableProperty] public partial string ChatResultMode { get; set; } = "manual";
+    [ObservableProperty] public partial string ChatFollowUpMode { get; set; } = ChatFollowUpPolicy.Queue;
     [ObservableProperty] public partial string FileAttachmentApprovalMode { get; set; } = "always";
     [ObservableProperty] public partial double FileAttachmentMaxSizeMb { get; set; } = 10;
     [ObservableProperty] public partial double FileAttachmentMaxCount { get; set; } = 3;
@@ -322,6 +323,7 @@ public partial class MainPageViewModel : ObservableObject
             TrustedWorkspaceRoots = _settings.TrustedWorkspaceRoots;
             ChatApprovalMode = _settings.ChatApprovalMode;
             ChatResultMode = _settings.ChatResultMode;
+            ChatFollowUpMode = _settings.ChatFollowUpMode;
             FileAttachmentApprovalMode = _settings.FileAttachmentApprovalMode;
             FileAttachmentMaxSizeMb = _settings.FileAttachmentMaxSizeMb;
             FileAttachmentMaxCount = _settings.FileAttachmentMaxCount;
@@ -463,6 +465,7 @@ public partial class MainPageViewModel : ObservableObject
                 AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(AgentPermissionMode),
                 ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode),
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(ChatResultMode),
+                ChatFollowUpMode = ChatFollowUpPolicy.Normalize(ChatFollowUpMode),
                 FileAttachmentApprovalMode = FileAttachmentPolicy.NormalizeMode(FileAttachmentApprovalMode),
                 FileAttachmentMaxSizeMb = ToAttachmentLimit(FileAttachmentMaxSizeMb),
                 FileAttachmentMaxCount = ToAttachmentLimit(FileAttachmentMaxCount),
@@ -496,6 +499,7 @@ public partial class MainPageViewModel : ObservableObject
             if (AgentPermissionMode == draft.AgentPermissionMode) AgentPermissionMode = snapshot.AgentPermissionMode;
             if (ChatApprovalMode == draft.ChatApprovalMode) ChatApprovalMode = snapshot.ChatApprovalMode;
             if (ChatResultMode == draft.ChatResultMode) ChatResultMode = snapshot.ChatResultMode;
+            if (ChatFollowUpMode == draft.ChatFollowUpMode) ChatFollowUpMode = snapshot.ChatFollowUpMode;
             if (FileAttachmentApprovalMode == draft.FileAttachmentApprovalMode) FileAttachmentApprovalMode = snapshot.FileAttachmentApprovalMode;
             if (FileAttachmentMaxSizeMb.Equals(attachmentSize)) FileAttachmentMaxSizeMb = snapshot.FileAttachmentMaxSizeMb;
             if (FileAttachmentMaxCount.Equals(attachmentCount)) FileAttachmentMaxCount = snapshot.FileAttachmentMaxCount;
@@ -842,6 +846,7 @@ public partial class MainPageViewModel : ObservableObject
         TrustedWorkspaceRoots = TrustedWorkspaceRoots,
         ChatApprovalMode = ChatApprovalMode,
         ChatResultMode = ChatResultMode,
+        ChatFollowUpMode = ChatFollowUpMode,
         FileAttachmentApprovalMode = FileAttachmentApprovalMode,
         FileAttachmentMaxSizeMb = ToAttachmentDraftLimit(FileAttachmentMaxSizeMb, 1, 100),
         FileAttachmentMaxCount = ToAttachmentDraftLimit(FileAttachmentMaxCount, 1, 10),

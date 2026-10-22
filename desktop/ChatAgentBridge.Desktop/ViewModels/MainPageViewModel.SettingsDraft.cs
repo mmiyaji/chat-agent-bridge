@@ -139,6 +139,7 @@ public partial class MainPageViewModel
         Track(() => ShareAgentQuestionsInChat, value => ShareAgentQuestionsInChat = value, baseline.ShareAgentQuestionsInChat);
         Track(() => ChatApprovalMode, value => ChatApprovalMode = value, baseline.ChatApprovalMode);
         Track(() => ChatResultMode, value => ChatResultMode = value, baseline.ChatResultMode);
+        Track(() => ChatFollowUpMode, value => ChatFollowUpMode = value, baseline.ChatFollowUpMode);
         Track(() => SlackAllowedChannelIds, value => SlackAllowedChannelIds = value, baseline.SlackAllowedChannelIds);
         Track(() => SlackAllowedThreadIds, value => SlackAllowedThreadIds = value, baseline.SlackAllowedThreadIds);
         Track(() => MattermostAllowedThreadIds, value => MattermostAllowedThreadIds = value, baseline.MattermostAllowedThreadIds);
@@ -176,7 +177,7 @@ public partial class MainPageViewModel
         nameof(MattermostBypassProxy) or nameof(PostConnectionNotice) or nameof(SlackBotToken) or
         nameof(SlackAppToken) or nameof(MattermostAllowedUserIds) or nameof(SlackAllowedUserIds) or
         nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(ChatApprovalMode) or
-        nameof(ChatResultMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or
+        nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or
         nameof(MattermostAllowedThreadIds) or nameof(FileAttachmentApprovalMode) or
         nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb);
 }

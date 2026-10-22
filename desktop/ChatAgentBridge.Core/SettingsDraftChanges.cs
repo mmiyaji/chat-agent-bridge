@@ -35,7 +35,7 @@ public readonly record struct SettingsDraftChanges(bool Agent, bool Chat, bool G
         settings.MattermostBypassProxy, settings.PostConnectionNotice, settings.SlackBotToken,
         settings.SlackAppToken, settings.MattermostAllowedUserIds, settings.SlackAllowedUserIds,
         settings.ShareApprovalsInChat, settings.ShareAgentQuestionsInChat, settings.ChatApprovalMode,
-        settings.ChatResultMode, settings.SlackAllowedChannelIds, settings.SlackAllowedThreadIds,
+        settings.ChatResultMode, settings.ChatFollowUpMode, settings.SlackAllowedChannelIds, settings.SlackAllowedThreadIds,
         settings.MattermostAllowedThreadIds, settings.FileAttachmentApprovalMode);
 
     private static string? OptionalText(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

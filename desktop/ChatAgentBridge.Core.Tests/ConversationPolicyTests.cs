@@ -84,6 +84,21 @@ public sealed class ConversationPolicyTests
     }
 
     [Fact]
+    public void FollowUpSteeringPreservesQueueFingerprintAndCreatesSeparateConsentScope()
+    {
+        var settings = Settings;
+        var queueFingerprint = ConversationExecutionPolicy.GetFingerprint(Owner, settings);
+        var steeringFingerprint = ConversationExecutionPolicy.GetFingerprint(Owner,
+            settings with { ChatFollowUpMode = ChatFollowUpPolicy.Steer });
+
+        Assert.Equal(LegacyFingerprint(Owner, settings), queueFingerprint);
+        Assert.Equal(Digest(queueFingerprint + "\0chat-follow-up-steer"), steeringFingerprint);
+        Assert.NotEqual(queueFingerprint, steeringFingerprint);
+        Assert.Equal(queueFingerprint, ConversationExecutionPolicy.GetFingerprint(Owner,
+            settings with { ChatFollowUpMode = "unknown" }));
+    }
+
+    [Fact]
     public void ConversationOverridesDoNotEscalateUnspecifiedDefaults()
     {
         var binding = new SessionBinding(Owner, Settings.WorkspaceRoot, "codex", "exec --json -", Guid.NewGuid().ToString(),
