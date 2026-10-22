@@ -85,6 +85,7 @@
                 </settings:SettingsCard>
                 <TextBlock x:Name="ActionStatus" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           AutomationProperties.AutomationId="AboutActionStatus"
                            AutomationProperties.LiveSetting="Polite" />
 
                 <TextBlock x:Uid="AboutLegalHeading" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,0" localization:LocalizedResourceKey.Key="AboutLegalHeading" />
@@ -97,6 +98,11 @@
                 <settings:SettingsCard x:Uid="AboutPrivacy" IsClickEnabled="True" Click="Privacy_Click"
                                        AutomationProperties.AutomationId="AboutPrivacy">
                     <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE72E;" /></settings:SettingsCard.HeaderIcon>
+                </settings:SettingsCard>
+                <settings:SettingsCard x:Uid="AboutThirdPartyLicenses" IsClickEnabled="True" Click="ThirdPartyLicenses_Click"
+                                       localization:LocalizedResourceKey.Key="AboutThirdPartyLicenses"
+                                       AutomationProperties.AutomationId="AboutThirdPartyLicenses">
+                    <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="Library" /></settings:SettingsCard.HeaderIcon>
                 </settings:SettingsCard>
 
                 <Button x:Uid="AboutExit" HorizontalAlignment="Left" Margin="0,8,0,0"

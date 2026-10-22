@@ -20,6 +20,7 @@ Updating
 Use Check for updates in About when you want to look for a portable update. The check is manual. Review the offered version, download it, and choose the explicit restart action to apply it. The updater replaces only files listed in portable-files.json; your Data folder and other unlisted files are kept. Keep a separate backup of Data before updating. The updater runs from a self-contained Windows executable and does not require PowerShell or administrator access. Older portable releases do not include the updater, so download and extract a current ZIP once before using in-app updates.
 
 Files
+- About > Third-party licenses shows the included licenses and copyright notices offline. THIRD-PARTY-NOTICES.txt and Assets/Licenses contain the same notices in the distribution folder; retain them when copying the app.
 - SHA256SUMS.txt contains SHA-256 hashes for the payload files inside the ZIP.
 - portable-release.json identifies the release version and x64 or ARM64 package architecture.
 - portable-files.json lists the files managed by the updater.

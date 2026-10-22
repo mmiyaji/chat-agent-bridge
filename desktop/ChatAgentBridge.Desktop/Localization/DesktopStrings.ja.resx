@@ -746,4 +746,8 @@
   <data name="PortableIdentityStarting" xml:space="preserve"><value>通知を設定するためアプリを終了しています。自動的に再起動します。</value></data>
   <data name="PortableIdentityFailed" xml:space="preserve"><value>通知を設定できませんでした (HRESULT {0})。</value></data>
   <data name="PortableIdentityLastFailed" xml:space="preserve"><value>前回の通知設定が完了しませんでした (HRESULT {0})。</value></data>
+  <data name="ThirdPartyLicensesTitle" xml:space="preserve"><value>第三者ライセンス</value></data>
+  <data name="ThirdPartyLicensesComponent" xml:space="preserve"><value>コンポーネント</value></data>
+  <data name="ThirdPartyLicensesLoading" xml:space="preserve"><value>読み込み中…</value></data>
+  <data name="ThirdPartyLicensesReadFailed" xml:space="preserve"><value>同梱のライセンス表記を読み込めませんでした。配布アーカイブからアプリを再度展開してください。</value></data>
 </root>

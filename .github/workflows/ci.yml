@@ -46,6 +46,11 @@ jobs:
         run: dotnet test desktop/ChatAgentBridge.Transports.Tests/ChatAgentBridge.Transports.Tests.csproj -c Release --logger trx --results-directory TestResults/Transports
       - name: Build portable desktop
         run: dotnet publish desktop/ChatAgentBridge.Desktop/ChatAgentBridge.Desktop.csproj -c Release -p:Platform=x64 -r win-x64 --self-contained true -p:CABPortable=true -o "${{ runner.temp }}/portable-ci"
+      - name: Validate bundled third-party notices
+        shell: pwsh
+        run: |
+          ./desktop/Test-ThirdPartyNotices.ps1 -SelfTest
+          ./desktop/Test-ThirdPartyNotices.ps1 -PublishDirectory "${{ runner.temp }}/portable-ci"
       - name: Test results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -1,0 +1,3 @@
+# Preserve upstream license bytes, including original whitespace, for notice hash validation.
+/desktop/THIRD-PARTY-NOTICES.txt -text -whitespace
+/desktop/ChatAgentBridge.Desktop/Assets/Licenses/LICENSE-*.txt -text -whitespace

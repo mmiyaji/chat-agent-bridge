@@ -431,6 +431,8 @@ finally {
 }
 
 Remove-KnownPackagingMetadata -Layout $layout
+# Validate notices for newly created archives without changing validation of older releases.
+& (Join-Path $PSScriptRoot 'Test-ThirdPartyNotices.ps1') -PublishDirectory $layout
 Copy-Item -LiteralPath (Join-Path $distributionDir 'README.portable.ja.txt') -Destination $layout
 Copy-Item -LiteralPath (Join-Path $distributionDir 'README.portable.en.txt') -Destination $layout
 if ($IdentityCertificateThumbprint) {

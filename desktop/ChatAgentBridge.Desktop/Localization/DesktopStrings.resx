@@ -746,4 +746,8 @@ After: {2}</value></data>
   <data name="PortableIdentityStarting" xml:space="preserve"><value>Closing the app to configure notifications. It will restart automatically.</value></data>
   <data name="PortableIdentityFailed" xml:space="preserve"><value>Could not configure notifications (HRESULT {0}).</value></data>
   <data name="PortableIdentityLastFailed" xml:space="preserve"><value>The last notification setup did not complete (HRESULT {0}).</value></data>
+  <data name="ThirdPartyLicensesTitle" xml:space="preserve"><value>Third-party licenses</value></data>
+  <data name="ThirdPartyLicensesComponent" xml:space="preserve"><value>Component</value></data>
+  <data name="ThirdPartyLicensesLoading" xml:space="preserve"><value>Loading…</value></data>
+  <data name="ThirdPartyLicensesReadFailed" xml:space="preserve"><value>Could not read the bundled license notices. Extract the app again from the distribution archive.</value></data>
 </root>

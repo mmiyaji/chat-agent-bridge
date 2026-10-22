@@ -14,6 +14,7 @@ public sealed partial class AboutPage : Page
     private readonly bool _isStorePackage;
     private string? _storeUri;
     private bool _storeCheckInProgress;
+    private bool _licensesOpen;
 
     public AboutPage()
     {
@@ -111,6 +112,23 @@ public sealed partial class AboutPage : Page
 
     private async void Terms_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: false);
     private async void Privacy_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: true);
+
+    private async void ThirdPartyLicenses_Click(object sender, RoutedEventArgs e)
+    {
+        if (_licensesOpen) return;
+        _licensesOpen = true;
+        try
+        {
+            await ThirdPartyLicensesDialog.ShowAsync(XamlRoot);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException or System.Runtime.InteropServices.COMException)
+        {
+            ActionStatus.Text = DesktopText.Get("ThirdPartyLicensesReadFailed");
+            ActionStatus.Visibility = Visibility.Visible;
+            ActionStatus.StartBringIntoView();
+        }
+        finally { _licensesOpen = false; }
+    }
 
     private async void Exit_Click(object sender, RoutedEventArgs e) => await App.Tray.ShowCloseConfirmationAsync();
 }
