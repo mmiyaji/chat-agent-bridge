@@ -16,6 +16,7 @@
     xmlns:tray="using:ChatAgentBridge_Desktop.Tray"
     xmlns:deployment="using:ChatAgentBridge_Desktop.Deployment"
     xmlns:diagrams="using:ChatAgentBridge_Desktop.Diagrams"
+    xmlns:maintenance="using:ChatAgentBridge_Desktop.Maintenance"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Grid>
@@ -205,6 +206,7 @@
                                     <localization:LanguageSettings x:Name="SettingsLanguage" AutomationProperties.AutomationId="LanguageCard" />
                                     <appearance:AppearanceSettings />
                                 </StackPanel>
+                                <maintenance:DataManagementControl />
                                 <Expander IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="OverviewDetailsExpander">
                                     <Expander.Header>
                                         <StackPanel Spacing="4">

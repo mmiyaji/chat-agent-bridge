@@ -14,6 +14,7 @@ public sealed partial class HistoryPageViewModel
     private CancellationTokenSource? _chatNameCancellation;
     private int _chatNameGeneration;
     private bool _chatNameUpdatesEnabled = true;
+    private Task _chatNameRefreshTask = Task.CompletedTask;
 
     private async Task LoadCachedChatNamesAsync(IReadOnlyList<SessionBinding> bindings)
     {
@@ -27,6 +28,13 @@ public sealed partial class HistoryPageViewModel
     {
         _chatNameUpdatesEnabled = enabled;
         if (!enabled) CancelChatNameRefresh();
+    }
+
+    internal async Task PauseChatNameUpdatesAsync()
+    {
+        SetChatNameUpdatesEnabled(false);
+        // Drain the final cache write before data maintenance removes or restores files.
+        await _chatNameRefreshTask;
     }
 
     private void CancelChatNameRefresh()
@@ -44,7 +52,13 @@ public sealed partial class HistoryPageViewModel
         var cancellation = _chatNameCancellation = new CancellationTokenSource();
         var generation = _chatNameGeneration;
         var keys = _nameBindings.Select(binding => binding.Key).ToArray();
-        _ = RefreshChatNamesAsync(keys, generation, cancellation.Token);
+        _chatNameRefreshTask = RefreshChatNamesAfterAsync(_chatNameRefreshTask, keys, generation, cancellation.Token);
+    }
+
+    private async Task RefreshChatNamesAfterAsync(Task previous, SessionKey[] keys, int generation, CancellationToken cancellationToken)
+    {
+        await previous;
+        await RefreshChatNamesAsync(keys, generation, cancellationToken);
     }
 
     private async Task RefreshChatNamesAsync(SessionKey[] keys, int generation, CancellationToken cancellationToken)

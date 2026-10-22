@@ -85,6 +85,14 @@ public sealed partial class MainWindow : Window
         ? page.TryResolveUnsavedSettingsAsync() : Task.FromResult(true);
 
     internal bool CanRestartForUpdate => RootFrame.Content is MainPage page && page.CanRestartForPortableUpdate;
+    internal Task ReloadAfterDataMaintenanceAsync() => RootFrame.Content is MainPage page
+        ? page.ReloadAfterDataMaintenanceAsync() : Task.CompletedTask;
+    internal Task<bool> PrepareForDataMaintenanceAsync() => RootFrame.Content is MainPage page
+        ? page.PrepareForDataMaintenanceAsync() : Task.FromResult(false);
+    internal void FinishDataMaintenance()
+    {
+        if (RootFrame.Content is MainPage page) page.FinishDataMaintenance();
+    }
     internal Task<bool> PrepareForPortableUpdateAsync() => RootFrame.Content is MainPage page
         ? page.PrepareForPortableUpdateAsync() : Task.FromResult(false);
     internal void CancelPortableUpdatePreparation()

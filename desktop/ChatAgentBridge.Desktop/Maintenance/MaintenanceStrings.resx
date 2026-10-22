@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+<resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+<resheader name="version"><value>2.0</value></resheader>
+<resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+<resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Heading" xml:space="preserve"><value>Data and recovery</value></data>
+  <data name="Description" xml:space="preserve"><value>Back up settings, inspect local storage, and remove selected data.</value></data>
+  <data name="Location" xml:space="preserve"><value>App data folder</value></data>
+  <data name="ExportHeading" xml:space="preserve"><value>Back up agent and connection preferences</value></data>
+  <data name="ExportDescription" xml:space="preserve"><value>Includes CLI locations, model, workspace, server and channels. Tokens, CLI arguments, user/thread permissions, automatic approvals, appearance and Windows startup settings are excluded. Keep the file private.</value></data>
+  <data name="ImportHeading" xml:space="preserve"><value>Restore preferences</value></data>
+  <data name="ImportDescription" xml:space="preserve"><value>Review the CLI and folder locations. Sign in again and select authorized chat users after restoring.</value></data>
+  <data name="ClearHeading" xml:space="preserve"><value>Remove local data</value></data>
+  <data name="ClearDescription" xml:space="preserve"><value>Execution and audit history retain up to 500 records each. Usage statistics are stored separately. Select what to remove.</value></data>
+  <data name="Open" xml:space="preserve"><value>Open folder</value></data>
+  <data name="Export" xml:space="preserve"><value>Back up</value></data>
+  <data name="Import" xml:space="preserve"><value>Restore</value></data>
+  <data name="Clear" xml:space="preserve"><value>Remove</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Failed" xml:space="preserve"><value>Could not complete this operation. Check the file format, file access, and storage space. No credentials are included in backup files.</value></data>
+  <data name="Busy" xml:space="preserve"><value>Finish active work, pending approvals, or settings changes first.</value></data>
+  <data name="Exported" xml:space="preserve"><value>Backup saved. It contains no connection tokens or authorization settings.</value></data>
+  <data name="Restored" xml:space="preserve"><value>Preferences restored. Chat is disconnected. Check the CLI and workspace, enter connection tokens, and configure authorized users before reconnecting. The original settings file is retained locally as settings-original-before-restore.json. Keep that private recovery file on this PC; do not share it.</value></data>
+  <data name="Cleared" xml:space="preserve"><value>Selected local data removed. Chat remains disconnected.</value></data>
+  <data name="TrustWorkspace" xml:space="preserve"><value>I trust the workspace shown above and want to restore it.</value></data>
+  <data name="RestoreNotice" xml:space="preserve"><value>This replaces agent and connection preferences. Tokens, permitted users/threads, automatic connection, automatic execution and attachment approvals are not restored. CLI arguments return to provider defaults; custom arguments must be entered again. Without the checkbox below, the working folder stays unset. Check that the CLI location is trustworthy.</value></data>
+  <data name="ClearNotice" xml:space="preserve"><value>This permanently removes only the selected app data. Connections stop first. Files in your workspace, chat-server posts, and histories maintained by agent CLIs are unaffected. Usage totals are kept unless selected here.</value></data>
+  <data name="ExecutionHistory" xml:space="preserve"><value>Execution and audit history</value></data>
+  <data name="Conversations" xml:space="preserve"><value>Conversation links, handoff notes and attachment approvals</value></data>
+  <data name="UsageStatistics" xml:space="preserve"><value>Usage statistics</value></data>
+  <data name="Diagnostics" xml:space="preserve"><value>Notification diagnostics</value></data>
+</root>
