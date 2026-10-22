@@ -44,6 +44,17 @@ public sealed class LocalDataManagerTests : IDisposable
     }
 
     [Fact]
+    public async Task RemovingDetailsAndStatisticsCanRecoverAnUnreadableStatisticsFile()
+    {
+        await new ExecutionHistoryStore(_directory).RecordAsync(new ExecutionRecord { Status = "completed" });
+        await File.WriteAllTextAsync(Path.Combine(_directory, "activity-statistics.json"), "broken JSON");
+        await new LocalDataManager(_directory).ClearAsync([LocalDataKind.ExecutionHistory, LocalDataKind.UsageStatistics]);
+        Assert.Empty(await new ExecutionHistoryStore(_directory).ListAsync());
+        var snapshot = await new ActivityStatisticsStore(_directory).ReadAsync(DateOnly.FromDateTime(DateTime.Today), 30, TimeZoneInfo.Local);
+        Assert.Equal(0, snapshot.Activity.TotalExecutions);
+    }
+
+    [Fact]
     public async Task DiagnosticsCleanupIsLimitedToKnownFiles()
     {
         var path = Path.Combine(_directory, "diagnostics"); Directory.CreateDirectory(path);

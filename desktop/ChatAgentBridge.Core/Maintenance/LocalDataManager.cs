@@ -32,7 +32,7 @@ public sealed class LocalDataManager(string directory)
         if (selected.Contains(LocalDataKind.ExecutionHistory))
             EnsureSafe(Path.Combine(_directory, "activity-statistics.json"));
         // Initialize statistics before erasing detail, so keeping statistics never loses its migration source.
-        if (selected.Contains(LocalDataKind.ExecutionHistory))
+        if (selected.Contains(LocalDataKind.ExecutionHistory) && !selected.Contains(LocalDataKind.UsageStatistics))
         {
             var history = await new History.ExecutionHistoryStore(_directory).ListAsync(ct);
             await new History.ActivityStatisticsStore(_directory).MigrateAsync(history, ct);
