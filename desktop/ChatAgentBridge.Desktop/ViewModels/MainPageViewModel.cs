@@ -871,6 +871,17 @@ public partial class MainPageViewModel : ObservableObject
         "read-only" => ViewModelText.Get("PermissionReadOnly"), "workspace-write" => ViewModelText.Get("PermissionWorkspaceWrite"),
         "full-access" => ViewModelText.Get("PermissionFullAccess"), "ask" => ViewModelText.Get("PermissionAsk"), _ => ViewModelText.Get("PermissionCliDefault")
     };
+    public ChatFollowUpPolicy.SteerRequirements GetFollowUpSteerRequirements() =>
+        ChatFollowUpPolicy.GetSteerRequirements(AgentProvider, UseAppServer, ChatApprovalMode);
+    public string CurrentChatApprovalLabel => ChatApprovalLabel(ChatApprovalMode);
+    public static string SteerApprovalLabel => ChatApprovalLabel(ChatFollowUpPolicy.SteerApprovalMode);
+    public void ApplyFollowUpSteer(ChatFollowUpPolicy.SteerRequirements requirements)
+    {
+        if (requirements.RequiresAppServer) UseAppServer = true;
+        if (requirements.RequiresApprovalChange) ChatApprovalMode = ChatFollowUpPolicy.SteerApprovalMode;
+        ChatFollowUpMode = ChatFollowUpPolicy.Steer;
+    }
+    public void RevertFollowUpToQueue() => ChatFollowUpMode = ChatFollowUpPolicy.Queue;
     private static string ChatApprovalLabel(string value) => value switch
     { "first" => ViewModelText.Get("ApprovalFirstOnly"), "auto" => ViewModelText.Get("ApprovalAutomatic"), _ => ViewModelText.Get("ApprovalEveryTime") };
     private static string ResultLabel(string value) => value switch

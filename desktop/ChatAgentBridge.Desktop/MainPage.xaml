@@ -521,7 +521,8 @@
                                         </ComboBox>
                                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock033" x:Uid="chatAgentBridgeDesktopMainPageTextBlock033" />
                                         <ComboBox SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatFollowUpMode, Mode=TwoWay}"
-                                                  HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ChatFollowUpMode" x:Uid="ChatFollowUpMode">
+                                                  HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ChatFollowUpMode" x:Uid="ChatFollowUpMode"
+                                                  SelectionChanged="ChatFollowUpMode_SelectionChanged">
                                             <ComboBoxItem Tag="queue" AutomationProperties.AutomationId="ChatFollowUpModeQueue" x:Uid="ChatFollowUpModeQueue" />
                                             <ComboBoxItem Tag="steer" AutomationProperties.AutomationId="ChatFollowUpModeSteer" x:Uid="ChatFollowUpModeSteer" />
                                         </ComboBox>

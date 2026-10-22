@@ -148,6 +148,29 @@ public sealed partial class MainPage : Page
         ViewModel.AutoConnectProvider = value;
     }
 
+    private bool _followUpDialogOpen;
+
+    private async void ChatFollowUpMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Programmatic changes (loading, discarding a draft, reverting) must not ask again.
+        if (sender is not ComboBox { SelectedValue: ChatFollowUpPolicy.Steer } combo || _followUpDialogOpen ||
+            !(combo.IsDropDownOpen || combo.FocusState != FocusState.Unfocused) ||
+            e.RemovedItems.Count == 0 || XamlRoot is null) return;
+        _followUpDialogOpen = true;
+        // The selection is already in the draft; hold auto-save so it cannot open its own dialog behind this one.
+        _settingsPromptOpen = true;
+        try
+        {
+            if (!await FollowUpSteerDialog.ShowAsync(ViewModel, XamlRoot)) ViewModel.RevertFollowUpToQueue();
+        }
+        finally
+        {
+            _settingsPromptOpen = false;
+            _followUpDialogOpen = false;
+            ScheduleSettingsAutoSave();
+        }
+    }
+
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
 
     internal async Task ShutdownAsync()

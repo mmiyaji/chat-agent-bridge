@@ -32,6 +32,16 @@
   <data name="ChatFollowUpModeQueue" xml:space="preserve"><value>Run in order (default)</value></data>
   <data name="ChatFollowUpModeSteer" xml:space="preserve"><value>Add to the running request</value></data>
   <data name="ChatFollowUpModeHelp" xml:space="preserve"><value>Available with Codex App Server and Claude Code. Additional instructions from the same user and thread are delivered when the agent can accept them. Unsupported connections and per-request approval queue messages.</value></data>
+  <data name="FollowUpSteerTitle" xml:space="preserve"><value>Add messages to the running request?</value></data>
+  <data name="FollowUpSteerExplanation" xml:space="preserve"><value>While a request is running, messages from the same user and thread are passed to the running agent. They are applied when the agent can accept them, and a message sent just before the request finishes may not be applied.</value></data>
+  <data name="FollowUpSteerTokenNote" xml:space="preserve"><value>Each added message can make the agent do extra work, which can increase token usage. At most 10 messages can be added to one run.</value></data>
+  <data name="FollowUpSteerChangesHeader" xml:space="preserve"><value>This feature needs the following settings. If you agree, they are changed in the draft and take effect after you save:</value></data>
+  <data name="FollowUpSteerChangeAppServer" xml:space="preserve"><value>Connection: use Codex App Server (currently exec)</value></data>
+  <data name="FollowUpSteerChangeApproval" xml:space="preserve"><value>Approval for chat requests: {0} -> {1}</value></data>
+  <data name="FollowUpSteerNoChanges" xml:space="preserve"><value>No other settings need to change.</value></data>
+  <data name="FollowUpSteerUnsupported" xml:space="preserve"><value>The current provider ({0}) does not support this. Choose Codex or Claude Code first.</value></data>
+  <data name="FollowUpSteerApply" xml:space="preserve"><value>Agree and change</value></data>
+  <data name="FollowUpSteerEnable" xml:space="preserve"><value>Enable</value></data>
   <data name="SettingsReviewFollowUpMode" xml:space="preserve"><value>Messages received during execution</value></data>
   <data name="FollowUpApplied" xml:space="preserve"><value>Added to running request</value></data>
   <data name="FollowUpPending" xml:space="preserve"><value>Waiting for the agent to receive follow-up</value></data>

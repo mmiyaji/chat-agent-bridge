@@ -356,6 +356,17 @@ function Run-Scenario([string]$Language, [string]$Theme) {
     Add-Pass "Localized follow-up label, options, and wrapped help ($scenario)" $modeHelp
 
     Set-FollowUpMode 'steer' $steerLabel
+    $steerDialog = Wait-ProcessElement 'FollowUpSteerDialog' 8
+    Capture-Window "${scenario}-steer-explanation.png"
+    Invoke-Pattern (Wait-Element $steerDialog 'CloseButton' 5) 'decline the live follow-up explanation'
+    Wait-ForAbsent 'FollowUpSteerDialog'
+    Assert-SelectedMode 'queue' $queueLabel
+    Add-Pass "Declining the explanation keeps queue mode ($scenario)"
+
+    Set-FollowUpMode 'steer' $steerLabel
+    $steerDialog = Wait-ProcessElement 'FollowUpSteerDialog' 8
+    Invoke-Pattern (Wait-Element $steerDialog 'PrimaryButton' 5) 'agree to the live follow-up explanation'
+    Wait-ForAbsent 'FollowUpSteerDialog'
     $dialog = Wait-Element $script:activeWindow 'SensitiveSettingsConfirmation' 15
     Capture-Window "${scenario}-steer-confirmation.png"
     Invoke-Pattern (Wait-Element $dialog 'CloseButton' 5) 'cancel sensitive follow-up confirmation'
@@ -364,6 +375,9 @@ function Run-Scenario([string]$Language, [string]$Theme) {
     Add-Pass "Cancel restores queue mode and keeps persisted queue ($scenario)"
 
     Set-FollowUpMode 'steer' $steerLabel
+    $steerDialog = Wait-ProcessElement 'FollowUpSteerDialog' 8
+    Invoke-Pattern (Wait-Element $steerDialog 'PrimaryButton' 5) 'agree to the live follow-up explanation'
+    Wait-ForAbsent 'FollowUpSteerDialog'
     $dialog = Wait-Element $script:activeWindow 'SensitiveSettingsConfirmation' 15
     Invoke-Pattern (Wait-Element $dialog 'PrimaryButton' 5) 'approve sensitive follow-up confirmation'
     Wait-ForAbsent 'SensitiveSettingsConfirmation'
