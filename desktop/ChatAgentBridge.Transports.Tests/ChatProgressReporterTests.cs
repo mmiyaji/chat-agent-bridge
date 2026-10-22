@@ -27,6 +27,30 @@ public sealed class ChatProgressReporterTests
         Assert.DoesNotContain(transport.Updates.SkipWhile(update => update.Text != "Completed"), update => update.Text == "Running");
     }
 
+    [Theory]
+    [InlineData(ChatProgressState.FollowUpApplied)]
+    [InlineData(ChatProgressState.FollowUpUncertain)]
+    public async Task FollowUpPendingHeartbeatRemainsPendingAndFinishesOnce(ChatProgressState terminal)
+    {
+        var transport = new FakeProgressTransport();
+        await using var reporter = CreateReporter(transport, interval: TimeSpan.FromMilliseconds(25));
+
+        await reporter.ReceiveAsync();
+        await reporter.StartFollowUpAsync();
+        await transport.WaitForUpdatesAsync(2);
+
+        Assert.All(transport.Updates, update => Assert.Equal(ChatProgressState.FollowUpPending.ToString(), update.Text));
+        Assert.Single(transport.CompletedProgress);
+
+        await reporter.FinishAsync(terminal);
+        await reporter.DisposeAsync();
+
+        Assert.Equal(terminal.ToString(), transport.Updates[^1].Text);
+        Assert.DoesNotContain(transport.Updates.Take(transport.Updates.Count - 1), update => update.Text == ChatProgressState.Running.ToString());
+        Assert.All(transport.Updates.Take(transport.Updates.Count - 1), update => Assert.Equal(ChatProgressState.FollowUpPending.ToString(), update.Text));
+        Assert.Single(transport.CompletedProgress);
+    }
+
     [Fact]
     public async Task FinishWaitsForHeartbeatCallBeforeWritingTerminalState()
     {
@@ -231,12 +255,12 @@ public sealed class ChatProgressReporterTests
 
         public async Task UpdateProgressAsync(ChatRequest request, ChatProgressMessage message, string text, CancellationToken cancellationToken)
         {
-            if (text == "Completed")
+            if (text is "Completed" or "FollowUpApplied" or "FollowUpUncertain")
             {
                 lock (_sync) LifecycleOrder.Add("terminal-update");
                 if (FailTerminalUpdate) throw new InvalidOperationException("terminal update failed");
             }
-            var isHeartbeat = text == "Running" && Interlocked.Increment(ref _heartbeatCalls) > 1;
+            var isHeartbeat = (text is "Running" or "FollowUpPending") && Interlocked.Increment(ref _heartbeatCalls) > 1;
             if (BlockHeartbeat && isHeartbeat)
             {
                 HeartbeatEntered.TrySetResult();

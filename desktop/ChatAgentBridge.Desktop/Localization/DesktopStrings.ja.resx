@@ -34,6 +34,9 @@
   <data name="ChatFollowUpModeHelp" xml:space="preserve"><value>Codex App ServerとClaude Codeで利用できます。同じユーザー・スレッドの追加指示を、AIが受け取れるタイミングで反映します。未対応の接続方式や毎回承認では順番に実行します。</value></data>
   <data name="SettingsReviewFollowUpMode" xml:space="preserve"><value>実行中に届いたメッセージ</value></data>
   <data name="FollowUpApplied" xml:space="preserve"><value>実行中へ追加</value></data>
+  <data name="FollowUpPending" xml:space="preserve"><value>追加指示の受領待ち</value></data>
+  <data name="FollowUpPendingHelp" xml:space="preserve"><value>CLIへ送信済みです。AIが次の入力を受け取るまで待っています。自動で再送することはありません。</value></data>
+  <data name="ProgressFollowUpPending" xml:space="preserve"><value>追加指示を送信しました。AIの受領を待っています。回答は元の依頼にまとめて返します。</value></data>
   <data name="FollowUpAppliedHelp" xml:space="preserve"><value>回答は元の依頼にまとめて返され、別の実行にはなりません。</value></data>
   <data name="FollowUpUncertain" xml:space="preserve"><value>追加指示の反映未確認</value></data>
   <data name="FollowUpUncertainHelp" xml:space="preserve"><value>追加指示が届いたか確認できませんでした。二重実行を避けるため自動で再実行はしません。回答を確認してから再送してください。</value></data>

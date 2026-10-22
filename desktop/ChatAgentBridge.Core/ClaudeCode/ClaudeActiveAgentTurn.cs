@@ -4,21 +4,21 @@ namespace ChatAgentBridge.Core.ClaudeCode;
 
 internal interface IClaudeInputChannel
 {
-    Task<bool> WriteAsync(string line, CancellationToken cancellationToken);
+    Task<bool> WriteAsync(string line, CancellationToken cancellationToken, Action? writeAttemptStarted = null);
     Task CloseAsync();
 }
 
-/// <summary>Accepts follow-ups only after a replay acknowledgement confirms their UUID and session.</summary>
+/// <summary>Accepts follow-ups after serializing their write and confirms them from replay events later.</summary>
 internal sealed class ClaudeActiveAgentTurn(
     IClaudeInputChannel input,
     string sessionId,
     Action<string> registerReplay,
     Action<string> removeReplay,
     Func<string, CancellationToken, Task<bool>> waitForReplay,
-    Func<bool> processExited) : IActiveAgentTurn
+    Func<bool> processExited) : IQueuedActiveAgentTurn
 {
     private const int MaxInputs = 100;
-    private static readonly TimeSpan RequestLimit = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan WriteLimit = TimeSpan.FromSeconds(5);
     private readonly SemaphoreSlim _send = new(1, 1);
     private int _active = 1;
     private int _count;
@@ -27,10 +27,17 @@ internal sealed class ClaudeActiveAgentTurn(
 
     public async Task<AgentTurnInputResult> AddInputAsync(string text, CancellationToken cancellationToken = default)
     {
+        var submission = await SubmitInputAsync(text, cancellationToken).ConfigureAwait(false);
+        if (submission is null) return AgentTurnInputResult.NotAccepted;
+        return await submission.Confirmation.ConfigureAwait(false);
+    }
+
+    public async Task<AgentTurnInputSubmission?> SubmitInputAsync(string text, CancellationToken cancellationToken = default)
+    {
         if (string.IsNullOrWhiteSpace(text) || Volatile.Read(ref _active) == 0 || cancellationToken.IsCancellationRequested)
-            return AgentTurnInputResult.NotAccepted;
+            return null;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(RequestLimit);
+        timeout.CancelAfter(WriteLimit);
         var entered = false;
         var writeAttempted = false;
         string? pendingId = null;
@@ -38,31 +45,32 @@ internal sealed class ClaudeActiveAgentTurn(
         {
             await _send.WaitAsync(timeout.Token).ConfigureAwait(false);
             entered = true;
-            if (Volatile.Read(ref _active) == 0 || processExited() || Interlocked.Increment(ref _count) > MaxInputs)
-                return AgentTurnInputResult.NotAccepted;
+            if (Volatile.Read(ref _active) == 0 || processExited() || _count >= MaxInputs)
+                return null;
+            _count++;
             var id = pendingId = Guid.NewGuid().ToString("D");
             var payload = ClaudeStreamingRunner.SerializeUserMessage(id, sessionId, text);
             registerReplay(id);
-            writeAttempted = true;
-            if (!await input.WriteAsync(payload, timeout.Token).ConfigureAwait(false))
-                return AgentTurnInputResult.NotAccepted;
-            var acknowledged = await waitForReplay(id, timeout.Token).ConfigureAwait(false);
-            return acknowledged ? AgentTurnInputResult.Accepted : AgentTurnInputResult.DeliveryUnknown;
+            if (!await input.WriteAsync(payload, timeout.Token, () => writeAttempted = true).ConfigureAwait(false))
+            {
+                removeReplay(id);
+                pendingId = null;
+                return null;
+            }
+            pendingId = null; // The confirmation task now owns and removes this pending replay entry.
+            return new AgentTurnInputSubmission(ConfirmAsync(id, cancellationToken));
         }
         catch (OperationCanceledException)
         {
-            return writeAttempted ? AgentTurnInputResult.DeliveryUnknown : AgentTurnInputResult.NotAccepted;
+            if (pendingId is not null) removeReplay(pendingId);
+            return writeAttempted ? UnknownSubmission() : null;
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
         {
-            return writeAttempted ? AgentTurnInputResult.DeliveryUnknown : AgentTurnInputResult.NotAccepted;
-        }
-        finally
-        {
-            if (entered) _send.Release();
-            // Late acknowledgements after a timeout cannot accumulate or affect another request.
             if (pendingId is not null) removeReplay(pendingId);
+            return writeAttempted ? UnknownSubmission() : null;
         }
+        finally { if (entered) _send.Release(); }
     }
 
     public async Task CloseInputAsync()
@@ -72,4 +80,20 @@ internal sealed class ClaudeActiveAgentTurn(
         try { await input.CloseAsync().ConfigureAwait(false); }
         finally { _send.Release(); }
     }
+
+    private async Task<AgentTurnInputResult> ConfirmAsync(string id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var acknowledged = await waitForReplay(id, cancellationToken).ConfigureAwait(false);
+            return acknowledged ? AgentTurnInputResult.Accepted : AgentTurnInputResult.DeliveryUnknown;
+        }
+        catch (OperationCanceledException) { return AgentTurnInputResult.DeliveryUnknown; }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
+        { return AgentTurnInputResult.DeliveryUnknown; }
+        finally { removeReplay(id); }
+    }
+
+    private static AgentTurnInputSubmission UnknownSubmission()
+        => new(Task.FromResult(AgentTurnInputResult.DeliveryUnknown));
 }

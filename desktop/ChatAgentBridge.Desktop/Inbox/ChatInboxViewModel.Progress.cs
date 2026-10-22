@@ -34,6 +34,7 @@ public sealed partial class ChatInboxViewModel
             ChatProgressState.Rejected => "ProgressRejected",
             ChatProgressState.Disconnected => "ProgressDisconnected",
             ChatProgressState.FollowUpApplied => "ProgressFollowUpApplied",
+            ChatProgressState.FollowUpPending => "ProgressFollowUpPending",
             ChatProgressState.FollowUpUncertain => "ProgressFollowUpUncertain",
             _ => "ProgressReceived"
         };
@@ -58,6 +59,8 @@ public sealed partial class ChatInboxViewModel
         if (item.Progress is null) return;
         await item.ReceiptNotification;
         await item.Progress.FinishAsync(state, cancellationToken);
+        if (state is ChatProgressState.FollowUpApplied or ChatProgressState.FollowUpUncertain)
+            await item.Progress.DisposeAsync();
     }
 
     private async Task FinishConnectionProgressAsync(IChatTransport transport)

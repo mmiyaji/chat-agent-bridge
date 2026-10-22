@@ -41,6 +41,115 @@ public sealed class ClaudeStreamingTests
     }
 
     [Fact]
+    public async Task SubmitReturnsBeforeDelayedReplayAndConfirmsWhenReplayArrives()
+    {
+        var channel = new FakeInputChannel();
+        var acknowledgements = new AckController();
+        var turn = CreateTurn(channel, acknowledgements);
+
+        var submission = await turn.SubmitInputAsync("delayed replay");
+
+        Assert.NotNull(submission);
+        Assert.False(submission.Confirmation.IsCompleted);
+        Assert.Single(channel.Lines);
+        acknowledgements.Complete(Assert.Single(acknowledgements.PendingIds), true);
+        Assert.Equal(AgentTurnInputResult.Accepted, await submission.Confirmation);
+    }
+
+    [Fact]
+    public async Task ReplayConfirmationCanArriveAfterTurnDeactivation()
+    {
+        var channel = new FakeInputChannel();
+        var acknowledgements = new AckController();
+        var turn = CreateTurn(channel, acknowledgements);
+
+        var submission = await turn.SubmitInputAsync("already submitted");
+        turn.Deactivate();
+        acknowledgements.Complete(Assert.Single(acknowledgements.PendingIds), true);
+
+        Assert.Equal(AgentTurnInputResult.Accepted, await submission!.Confirmation);
+        var rejected = await turn.SubmitInputAsync("after terminal");
+        Assert.Null(rejected);
+        Assert.Single(channel.Lines);
+    }
+
+    [Fact]
+    public async Task EndOfStreamCompletesPendingReplayAsUnknown()
+    {
+        var session = Guid.NewGuid().ToString("D");
+        var reader = Reader(session);
+        const string id = "dff35df5-c918-4fc5-a81b-2ea5dc5df57f";
+        reader.RegisterReplay(id);
+        var pending = reader.WaitForReplayAsync(id, CancellationToken.None);
+
+        await reader.ReadTask;
+
+        Assert.False(await pending);
+    }
+
+    [Fact]
+    public async Task ReplayRegisteredAfterEndOfStreamCompletesAsUnknown()
+    {
+        var reader = Reader(Guid.NewGuid().ToString("D"));
+        await reader.ReadTask;
+
+        const string id = "8e2ee8f4-dcd1-44cf-978a-15f7c3d15fa8";
+        reader.RegisterReplay(id);
+
+        Assert.False(await reader.WaitForReplayAsync(id, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task MultipleSubmissionsSerializeWritesWithoutWaitingForEachReplay()
+    {
+        var channel = new FakeInputChannel();
+        var acknowledgements = new AckController();
+        var turn = CreateTurn(channel, acknowledgements);
+
+        var first = await turn.SubmitInputAsync("first queued message");
+        var second = await turn.SubmitInputAsync("second queued message");
+
+        Assert.Equal(2, channel.Lines.Count);
+        Assert.Equal("first queued message", MessageText(channel.Lines[0]));
+        Assert.Equal("second queued message", MessageText(channel.Lines[1]));
+        Assert.False(first!.Confirmation.IsCompleted);
+        Assert.False(second!.Confirmation.IsCompleted);
+        acknowledgements.Complete(acknowledgements.PendingIds[1], true);
+        acknowledgements.Complete(acknowledgements.PendingIds[0], true);
+        Assert.Equal(AgentTurnInputResult.Accepted, await first.Confirmation);
+        Assert.Equal(AgentTurnInputResult.Accepted, await second.Confirmation);
+    }
+
+    [Fact]
+    public async Task CancellationAfterSubmissionCompletesConfirmationAsUnknown()
+    {
+        var channel = new FakeInputChannel();
+        var acknowledgements = new AckController();
+        var turn = CreateTurn(channel, acknowledgements);
+        using var cancellation = new CancellationTokenSource();
+
+        var submission = await turn.SubmitInputAsync("write succeeded", cancellation.Token);
+        cancellation.Cancel();
+
+        Assert.Equal(AgentTurnInputResult.DeliveryUnknown, await submission!.Confirmation);
+        Assert.Single(channel.Lines);
+    }
+
+    [Fact]
+    public async Task RejectedBeforeWriteReturnsNoSubmission()
+    {
+        var channel = new FakeInputChannel { RejectWrites = true };
+        var acknowledgements = new AckController();
+        var turn = CreateTurn(channel, acknowledgements);
+
+        var submission = await turn.SubmitInputAsync("closed input");
+
+        Assert.Null(submission);
+        Assert.Empty(channel.Lines);
+        Assert.Empty(acknowledgements.PendingIds);
+    }
+
+    [Fact]
     public async Task DeactivatedTurnRejectsInputWithoutWriting()
     {
         var channel = new FakeInputChannel();
@@ -178,12 +287,32 @@ public sealed class ClaudeStreamingTests
             modelUsage = new Dictionary<string, object> { [model] = new { } }
         };
 
+    private static ClaudeActiveAgentTurn CreateTurn(FakeInputChannel channel, AckController acknowledgements)
+        => new(channel, Guid.NewGuid().ToString("D"), acknowledgements.Register, acknowledgements.Remove,
+            acknowledgements.WaitAsync, () => false);
+
+    private static string MessageText(string line)
+        => JsonDocument.Parse(line).RootElement.GetProperty("message").GetProperty("content").GetString()!;
+
+    private sealed class AckController
+    {
+        private readonly Dictionary<string, TaskCompletionSource<bool>> _acks = new(StringComparer.Ordinal);
+        public List<string> PendingIds => _acks.Keys.ToList();
+        public void Register(string id) => _acks.Add(id, new(TaskCreationOptions.RunContinuationsAsynchronously));
+        public void Remove(string id) => _acks.Remove(id);
+        public Task<bool> WaitAsync(string id, CancellationToken token) => _acks[id].Task.WaitAsync(token);
+        public void Complete(string id, bool accepted) => _acks[id].TrySetResult(accepted);
+    }
+
     private sealed class FakeInputChannel : IClaudeInputChannel
     {
+        public bool RejectWrites { get; init; }
         public List<string> Lines { get; } = [];
-        public Task<bool> WriteAsync(string line, CancellationToken cancellationToken)
+        public Task<bool> WriteAsync(string line, CancellationToken cancellationToken, Action? writeAttemptStarted = null)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (RejectWrites) return Task.FromResult(false);
+            writeAttemptStarted?.Invoke();
             Lines.Add(line);
             return Task.FromResult(true);
         }
@@ -219,6 +348,7 @@ public sealed class ClaudeStreamingProcessTests : IDisposable
         SetEnvironment("CAB_LIVE_STEERING_RELEASE_FILE", Path.Combine(data, ".cab-live-steering-release"));
         SetEnvironment("CAB_CLAUDE_STEERING_INIT_UNSUPPORTED", null);
         SetEnvironment("CAB_CLAUDE_STEERING_INIT_DELAY_MS", null);
+        SetEnvironment("CAB_CLAUDE_STEERING_FIRST_ACK_DELAY_MS", null);
     }
 
     [Fact]
@@ -248,6 +378,18 @@ public sealed class ClaudeStreamingProcessTests : IDisposable
             new AgentRunner().RunAsync(Settings(), "LIVE_STEER_STEER_1", null, _ => { }, cancellation.Token));
 
         Assert.Empty(File.ReadAllText(Path.Combine(_runRoot, "data", "protocol-observations.jsonl")));
+    }
+
+    [Fact]
+    public async Task InitialPromptReplayCanArriveAfterFiveSeconds()
+    {
+        Assert.True(File.Exists(_fixture), $"Offline fixture executable was not built: {_fixture}");
+        SetEnvironment("CAB_CLAUDE_STEERING_FIRST_ACK_DELAY_MS", "6000");
+
+        var result = await new AgentRunner().RunAsync(Settings(), "LIVE_STEER_STEER_1", null, _ => { });
+
+        Assert.True(result.Success, result.Error);
+        Assert.Contains("LIVE_STEER_FINAL", result.Claude!.FinalMessage);
     }
 
     private BridgeSettings Settings() => new()

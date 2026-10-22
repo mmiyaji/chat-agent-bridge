@@ -13,7 +13,7 @@ public sealed partial class InboxItem
     public string StateTone => State switch
     {
         "承認待ち" => "pending",
-        "実行中" or "自動実行を準備" => "running",
+        "実行中" or "自動実行を準備" or "追加指示の受領待ち" => "running",
         "完了" or "フォルダー変更済み" or "エージェント変更済み" or "実行中へ追加" => "success",
         "実行／記録エラー" or "フォルダー変更不可" or "エージェント変更不可" or
         "許可設定を確認できず実行不可" => "error",

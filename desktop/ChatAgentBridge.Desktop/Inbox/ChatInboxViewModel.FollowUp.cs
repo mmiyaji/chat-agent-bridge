@@ -17,7 +17,7 @@ public sealed partial class ChatInboxViewModel
         if (token.IsCancellationRequested || _closing) return;
         if (Requests.Count >= 100)
         {
-            var completed = Requests.FirstOrDefault(item => item.State is not ("承認待ち" or "実行中"));
+            var completed = Requests.FirstOrDefault(item => item.State is not ("承認待ち" or "実行中" or "追加指示の受領待ち"));
             if (completed is null)
             {
                 _droppedCount++;
@@ -69,9 +69,34 @@ public sealed partial class ChatInboxViewModel
     private async Task CloseActiveTurnAsync(InboxItem owner)
     {
         SetActiveTurn(owner, null);
+        // Bound the combined feedback work if many acknowledgements settle on a broken connection.
+        var feedback = owner.FollowUpFeedbackDeadline ??= new();
+        feedback.CancelAfter(TimeSpan.FromSeconds(10));
         // Include acknowledged additions in the handoff summary before completing this execution.
         await _followUpGate.WaitAsync();
-        _followUpGate.Release();
+        Task[] confirmations;
+        try { confirmations = owner.FollowUpConfirmations.ToArray(); }
+        finally { _followUpGate.Release(); }
+        try
+        {
+            await Task.WhenAll(confirmations);
+            // Confirmation continuations may finish out of order. Keep the original input order
+            // when constructing the handoff context, and retain only a bounded tail.
+            var summary = "";
+            foreach (var input in owner.FollowUpInputs.Where(item => item.State == "実行中へ追加"))
+            {
+                var combined = summary + "\n\n" + input.Prompt;
+                summary = combined.Length <= 44000 ? combined : combined[^44000..];
+            }
+            owner.FollowUpSummary = summary;
+        }
+        finally
+        {
+            owner.FollowUpConfirmations.Clear();
+            owner.FollowUpInputs.Clear();
+            feedback.Dispose();
+            owner.FollowUpFeedbackDeadline = null;
+        }
     }
 
     private async Task<bool> TryAddFollowUpAsync(InboxItem incoming, CancellationToken token)
@@ -104,33 +129,85 @@ public sealed partial class ChatInboxViewModel
             if (!ReferenceEquals(context, Volatile.Read(ref _activeTurn)) || context.Owner.State != "実行中") return false;
 
             AgentTurnInputResult result;
-            try { result = await context.Handle.AddInputAsync(incoming.Prompt, token); }
+            try
+            {
+                if (context.Handle is IQueuedActiveAgentTurn queued)
+                {
+                    var submission = await queued.SubmitInputAsync(incoming.Prompt, token);
+                    if (submission is null) return false;
+                    if (!submission.Confirmation.IsCompleted)
+                    {
+                        incoming.ExecutionId = context.Owner.ExecutionId;
+                        incoming.SessionLabel = context.Owner.SessionLabel;
+                        incoming.AllowsResultSharing = false;
+                        incoming.State = "追加指示の受領待ち";
+                        incoming.FullOutput = DesktopText.Get("FollowUpPendingHelp");
+                        context.Owner.FollowUpFeedbackDeadline ??= new();
+                        if (incoming.Progress is { } progress)
+                        {
+                            await incoming.ReceiptNotification;
+                            await progress.StartFollowUpAsync();
+                        }
+                        context.Owner.FollowUpInputs.Add(incoming);
+                        context.Owner.FollowUpConfirmations.Add(
+                            ObserveFollowUpConfirmationAsync(context.Owner, incoming, submission.Confirmation));
+                        return true;
+                    }
+                    result = await submission.Confirmation;
+                }
+                else result = await context.Handle.AddInputAsync(incoming.Prompt, token);
+            }
             catch (Exception) { result = AgentTurnInputResult.DeliveryUnknown; }
             if (result == AgentTurnInputResult.NotAccepted) return false;
             incoming.ExecutionId = context.Owner.ExecutionId;
             incoming.SessionLabel = context.Owner.SessionLabel;
             incoming.AllowsResultSharing = false;
-            if (result == AgentTurnInputResult.Accepted)
-            {
-                incoming.State = "実行中へ追加";
-                incoming.FullOutput = DesktopText.Get("FollowUpAppliedHelp");
-                // Preserve only bounded context; usage remains on the original execution record.
-                var combined = context.Owner.FollowUpSummary + "\n\n" + incoming.Prompt;
-                context.Owner.FollowUpSummary = combined.Length <= 44000 ? combined : combined[^44000..];
-                await AuditFollowUpAsync("follow_up_applied", incoming);
-                await FinishProgressAsync(incoming, ChatProgressState.FollowUpApplied);
-            }
-            else
-            {
-                incoming.State = "追加指示の反映未確認";
-                incoming.FullOutput = DesktopText.Get("FollowUpUncertainHelp");
-                await AuditFollowUpAsync("follow_up_uncertain", incoming);
-                await FinishProgressAsync(incoming, ChatProgressState.FollowUpUncertain);
-            }
-            Status = incoming.FullOutput;
+            context.Owner.FollowUpInputs.Add(incoming);
+            await CompleteFollowUpAsync(context.Owner, incoming, result);
             return true;
         }
         finally { _followUpGate.Release(); }
+    }
+
+    private async Task ObserveFollowUpConfirmationAsync(InboxItem owner, InboxItem incoming,
+        Task<AgentTurnInputResult> confirmation)
+    {
+        AgentTurnInputResult result;
+        try { result = await confirmation; }
+        catch (Exception) { result = AgentTurnInputResult.DeliveryUnknown; }
+        await _followUpGate.WaitAsync();
+        try
+        {
+            await CompleteFollowUpAsync(owner, incoming, result);
+        }
+        catch (Exception)
+        {
+            incoming.State = "追加指示の反映未確認";
+            incoming.FullOutput = DesktopText.Get("FollowUpUncertainHelp");
+            Status = incoming.FullOutput;
+        }
+        finally { _followUpGate.Release(); }
+    }
+
+    private async Task CompleteFollowUpAsync(InboxItem owner, InboxItem incoming, AgentTurnInputResult result)
+    {
+        if (result == AgentTurnInputResult.Accepted)
+        {
+            incoming.State = "実行中へ追加";
+            incoming.FullOutput = DesktopText.Get("FollowUpAppliedHelp");
+            await AuditFollowUpAsync("follow_up_applied", incoming);
+            await FinishProgressAsync(incoming, ChatProgressState.FollowUpApplied,
+                owner.FollowUpFeedbackDeadline?.Token ?? CancellationToken.None);
+        }
+        else
+        {
+            incoming.State = "追加指示の反映未確認";
+            incoming.FullOutput = DesktopText.Get("FollowUpUncertainHelp");
+            await AuditFollowUpAsync("follow_up_uncertain", incoming);
+            await FinishProgressAsync(incoming, ChatProgressState.FollowUpUncertain,
+                owner.FollowUpFeedbackDeadline?.Token ?? CancellationToken.None);
+        }
+        Status = incoming.FullOutput;
     }
 
     private async Task AuditFollowUpAsync(string kind, InboxItem item)

@@ -13,7 +13,8 @@ public enum ChatProgressState
     Rejected,
     Disconnected,
     FollowUpApplied,
-    FollowUpUncertain
+    FollowUpUncertain,
+    FollowUpPending
 }
 
 /// <summary>
@@ -46,6 +47,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     private bool _terminal;
     private bool _disposed;
     private bool _progressCompleted;
+    private ChatProgressState _heartbeatState = ChatProgressState.Running;
 
     public ChatProgressReporter(
         IChatTransport transport,
@@ -95,7 +97,11 @@ public sealed class ChatProgressReporter : IAsyncDisposable
         }
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken = default)
+    public Task StartAsync(CancellationToken cancellationToken = default) => StartCoreAsync(ChatProgressState.Running, cancellationToken);
+
+    public Task StartFollowUpAsync(CancellationToken cancellationToken = default) => StartCoreAsync(ChatProgressState.FollowUpPending, cancellationToken);
+
+    private async Task StartCoreAsync(ChatProgressState state, CancellationToken cancellationToken)
     {
         if (_transport is null || !await EnterLifecycleAsync(cancellationToken).ConfigureAwait(false))
             return;
@@ -113,13 +119,17 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             }
 
             _started = true;
+            _heartbeatState = state;
             _elapsed.Start();
             if (_message is null)
                 return;
 
-            var text = Format(ChatProgressState.Running);
+            var text = Format(state);
             if (text is not null)
                 await TryUpdateAsync(_message, text, cancellationToken, allowTerminal: false).ConfigureAwait(false);
+
+            if (state == ChatProgressState.FollowUpPending)
+                await CompleteProgressAsync().ConfigureAwait(false);
 
             if (!_terminal && !_disposed && _heartbeatTask is null)
                 _heartbeatTask = HeartbeatLoopAsync(_heartbeatStop.Token);
@@ -192,7 +202,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
                 var message = _message;
                 if (message is null || _terminal || _disposed)
                     return;
-                var text = Format(ChatProgressState.Running);
+                var text = Format(_heartbeatState);
                 if (text is not null)
                     await TryUpdateAsync(message, text, cancellationToken, allowTerminal: false).ConfigureAwait(false);
             }

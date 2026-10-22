@@ -34,6 +34,9 @@
   <data name="ChatFollowUpModeHelp" xml:space="preserve"><value>Available with Codex App Server and Claude Code. Additional instructions from the same user and thread are delivered when the agent can accept them. Unsupported connections and per-request approval queue messages.</value></data>
   <data name="SettingsReviewFollowUpMode" xml:space="preserve"><value>Messages received during execution</value></data>
   <data name="FollowUpApplied" xml:space="preserve"><value>Added to running request</value></data>
+  <data name="FollowUpPending" xml:space="preserve"><value>Waiting for the agent to receive follow-up</value></data>
+  <data name="FollowUpPendingHelp" xml:space="preserve"><value>Sent to the CLI. Waiting for the agent to accept the next input. It will not be resent automatically.</value></data>
+  <data name="ProgressFollowUpPending" xml:space="preserve"><value>Follow-up sent; waiting for the agent to receive it. The answer will be combined with the original request.</value></data>
   <data name="FollowUpAppliedHelp" xml:space="preserve"><value>The reply is combined with the original request; it does not start a separate execution.</value></data>
   <data name="FollowUpUncertain" xml:space="preserve"><value>Delivery unconfirmed</value></data>
   <data name="FollowUpUncertainHelp" xml:space="preserve"><value>Delivery could not be confirmed. It will not be retried automatically to avoid duplicates. Check the reply before resending manually.</value></data>

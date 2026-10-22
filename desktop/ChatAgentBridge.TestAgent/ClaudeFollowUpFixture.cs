@@ -15,6 +15,7 @@ internal static class ClaudeFollowUpFixture
     };
     private static readonly SemaphoreSlim OutputGate = new(1, 1);
     private static readonly SemaphoreSlim ObservationGate = new(1, 1);
+    private static readonly object FollowUpGate = new();
     private static string _observationsPath = "";
     private static string _releasePath = "";
 
@@ -34,6 +35,7 @@ internal static class ClaudeFollowUpFixture
         var initialized = false;
         string? activeMarker = null;
         string? activeUuid = null;
+        var acceptedFollowUps = new List<PendingFollowUp>();
         Task? completion = null;
 
         while (await Console.In.ReadLineAsync() is { } line)
@@ -100,10 +102,12 @@ internal static class ClaudeFollowUpFixture
 
                         await WriteAsync(new { type = "system", subtype = "init", session_id = sessionId, model });
                         await RecordAsync(activeMarker, "turn/start", "started", activeUuid, sessionId);
+                        if (int.TryParse(Environment.GetEnvironmentVariable("CAB_CLAUDE_STEERING_FIRST_ACK_DELAY_MS"), out var firstAckDelayMs))
+                            await Task.Delay(Math.Clamp(firstAckDelayMs, 0, 30000));
                         // Claude's native stream echoes the accepted user frame, retaining its identity.
                         await WriteAsync(new { type = "user", uuid = activeUuid, session_id = sessionId, isReplay = true, message = root.TryGetProperty("message", out var message) ? message : default });
                         await WriteAsync(new { type = "assistant", message = new { content = new[] { new { type = "text", text = activeMarker + " fixture turn is waiting for release." } } } });
-                        completion = CompleteWhenReleasedAsync(activeMarker, activeUuid, sessionId, model);
+                        completion = CompleteWhenReleasedAsync(activeMarker, activeUuid, sessionId, model, acceptedFollowUps);
                     }
                     else if (activeMarker is not null)
                     {
@@ -118,7 +122,27 @@ internal static class ClaudeFollowUpFixture
                         var outcome = activeMarker == "LIVE_STEER_UNKNOWN_1" ? "delivery-unknown" :
                             activeMarker == "LIVE_STEER_STEER_1" && followUpMarker == "LIVE_STEER_STEER_2" ? "accepted" : "unsupported";
                         await RecordAsync(activeMarker, "turn/steer", outcome, root.TryGetProperty("uuid", out var followUuid) ? followUuid.GetString() : null, sessionId, followUpMarker);
-                        if (outcome != "delivery-unknown")
+                        if (outcome == "accepted")
+                        {
+                            var hitLimit = false;
+                            lock (FollowUpGate)
+                            {
+                                if (acceptedFollowUps.Count >= 100)
+                                    hitLimit = true;
+                                else
+                                    acceptedFollowUps.Add(new PendingFollowUp(
+                                        root.TryGetProperty("uuid", out followUuid) ? followUuid.GetString() : null,
+                                        root.TryGetProperty("message", out var acceptedMessage) ? acceptedMessage.Clone() : default,
+                                        followUpMarker));
+                            }
+                            if (hitLimit)
+                            {
+                                await Console.Error.WriteLineAsync("Offline Claude fixture reached its 100 accepted follow-up frame limit.");
+                                Environment.ExitCode = 2;
+                                return;
+                            }
+                        }
+                        else if (outcome != "delivery-unknown")
                             await WriteAsync(new { type = "user", uuid = root.TryGetProperty("uuid", out followUuid) ? followUuid.GetString() : null, session_id = sessionId, isReplay = true, message = root.TryGetProperty("message", out var followMessage) ? followMessage : default });
                     }
                 }
@@ -180,7 +204,7 @@ internal static class ClaudeFollowUpFixture
         await RecordAsync(marker, "turn/completed", "completed", null, sessionId);
     }
 
-    private static async Task CompleteWhenReleasedAsync(string marker, string? uuid, string sessionId, string model)
+    private static async Task CompleteWhenReleasedAsync(string marker, string? uuid, string sessionId, string model, List<PendingFollowUp> acceptedFollowUps)
     {
         var deadline = DateTimeOffset.UtcNow.AddMinutes(2);
         while (!File.Exists(_releasePath) && DateTimeOffset.UtcNow < deadline)
@@ -192,14 +216,39 @@ internal static class ClaudeFollowUpFixture
             return;
         }
 
+        PendingFollowUp[] followUps;
+        lock (FollowUpGate) followUps = acceptedFollowUps.ToArray();
+        if (followUps.Length == 0)
+        {
+            await WriteResultAsync(sessionId, model, "LIVE_STEER_FINAL single fixture response");
+        }
+        else
+        {
+            // Claude may report the original result before replaying an accepted follow-up frame.
+            // Keep the second result behind that delayed ACK so the host must drain the whole stream.
+            await WriteResultAsync(sessionId, model, "LIVE_STEER_FRAGMENT_ORIGINAL original fixture result");
+            await RecordAsync(marker, "turn/result", "original-result", uuid, sessionId);
+            await Task.Delay(1200);
+            foreach (var followUp in followUps)
+            {
+                await WriteAsync(new { type = "user", uuid = followUp.Uuid, session_id = sessionId, isReplay = true, message = followUp.Message });
+                await RecordAsync(marker, "turn/steer-ack", "acknowledged", followUp.Uuid, sessionId, followUp.Marker);
+            }
+            var followUpMarkers = string.Join(" ", followUps.Select(followUp => followUp.Marker));
+            await WriteResultAsync(sessionId, model, $"LIVE_STEER_FRAGMENT_FOLLOWUP follow-up fixture result {followUpMarkers}; LIVE_STEER_FINAL single fixture response");
+            await RecordAsync(marker, "turn/result", "follow-up-result", uuid, sessionId);
+        }
+        await RecordAsync(marker, "turn/completed", "completed", uuid, sessionId);
+    }
+
+    private static async Task WriteResultAsync(string sessionId, string model, string result)
+    {
         await WriteAsync(new
         {
-            type = "result", subtype = "success", session_id = sessionId,
-            result = "LIVE_STEER_FINAL single fixture response",
+            type = "result", subtype = "success", session_id = sessionId, result,
             usage = new { input_tokens = 100, output_tokens = 20, cache_read_input_tokens = 50, cache_creation_input_tokens = 0 },
             modelUsage = new Dictionary<string, object> { [model] = new { } }
         });
-        await RecordAsync(marker, "turn/completed", "completed", uuid, sessionId);
     }
 
     private static string ExtractText(JsonElement value)
@@ -284,4 +333,6 @@ internal static class ClaudeFollowUpFixture
     }
 
     private static StringComparison PathComparison => OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    private sealed record PendingFollowUp(string? Uuid, JsonElement Message, string Marker);
 }

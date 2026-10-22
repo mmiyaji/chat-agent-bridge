@@ -41,6 +41,15 @@ public interface IActiveAgentTurn
     Task<AgentTurnInputResult> AddInputAsync(string text, CancellationToken cancellationToken = default);
 }
 
+/// <summary>A live turn that can confirm message delivery after its input has been submitted.</summary>
+public interface IQueuedActiveAgentTurn : IActiveAgentTurn
+{
+    /// <summary>Returns null only when no user input was written; otherwise confirmation may arrive later.</summary>
+    Task<AgentTurnInputSubmission?> SubmitInputAsync(string text, CancellationToken cancellationToken = default);
+}
+
+public sealed record AgentTurnInputSubmission(Task<AgentTurnInputResult> Confirmation);
+
 public enum AgentTurnInputResult { Accepted, NotAccepted, DeliveryUnknown }
 
 /// <param name="PromptAccepted">The server confirmed a turn for the prompt, rather than only creating an empty thread.</param>

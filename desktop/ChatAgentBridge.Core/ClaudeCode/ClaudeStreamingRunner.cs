@@ -13,6 +13,7 @@ internal static class ClaudeStreamingRunner
     private const int MaxLineCharacters = 2 * 1024 * 1024;
     private const int MaxCapturedCharacters = 1_000_000;
     private static readonly TimeSpan ProtocolTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan InitialPromptAckTimeout = TimeSpan.FromSeconds(60);
 
     // A null result means the CLI exited before any user message could be written. The caller may safely
     // retry with its established one-shot invocation because no prompt reached Claude.
@@ -92,7 +93,8 @@ internal static class ClaudeStreamingRunner
             var initialMessage = SerializeUserMessage(initialId, sessionId, prompt);
             firstUserWriteAttempted = true;
             await input.WriteAsync(initialMessage, cancellationToken).ConfigureAwait(false);
-            var accepted = await WaitProtocolAsync(reader.WaitForReplayAsync(initialId, cancellationToken), process, cancellationToken).ConfigureAwait(false);
+            var accepted = await WaitProtocolAsync(reader.WaitForReplayAsync(initialId, cancellationToken), process, cancellationToken,
+                InitialPromptAckTimeout).ConfigureAwait(false);
             reader.RemoveReplay(initialId);
             if (!accepted)
             {
@@ -154,6 +156,7 @@ internal static class ClaudeStreamingRunner
         {
             activeTurn?.Deactivate();
             SafeNotify(activeTurnChanged, null);
+            reader.EndInputs();
             if (!process.HasExited) Kill(process);
             await BoundedCleanupAsync(process, reader.ReadTask, stderrTask).ConfigureAwait(false);
         }
@@ -162,10 +165,11 @@ internal static class ClaudeStreamingRunner
             => new(false, -1, "", error);
     }
 
-    private static async Task<bool> WaitProtocolAsync(Task<bool> signal, Process process, CancellationToken token)
+    private static async Task<bool> WaitProtocolAsync(Task<bool> signal, Process process, CancellationToken token,
+        TimeSpan? timeoutDuration = null)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-        timeout.CancelAfter(ProtocolTimeout);
+        timeout.CancelAfter(timeoutDuration ?? ProtocolTimeout);
         try
         {
             var exited = process.WaitForExitAsync(timeout.Token);
@@ -242,12 +246,13 @@ internal static class ClaudeStreamingRunner
     {
         private readonly SemaphoreSlim _gate = new(1, 1);
         private bool _closed;
-        public async Task<bool> WriteAsync(string line, CancellationToken token)
+        public async Task<bool> WriteAsync(string line, CancellationToken token, Action? writeAttemptStarted = null)
         {
             await _gate.WaitAsync(token).ConfigureAwait(false);
             try
             {
                 if (_closed) return false;
+                writeAttemptStarted?.Invoke();
                 await writer.WriteLineAsync(line.AsMemory(), token).ConfigureAwait(false);
                 await writer.FlushAsync(token).ConfigureAwait(false);
                 return true;
@@ -269,6 +274,7 @@ internal static class ClaudeStreamingRunner
         private readonly IProgress<AgentRunProgress>? _progress;
         private readonly string _expectedSessionId;
         private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _replays = new(StringComparer.Ordinal);
+        private readonly object _replayGate = new();
         private readonly TaskCompletionSource<bool> _initialized = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource<bool> _firstResult = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly List<string> _resultTexts = [];
@@ -277,6 +283,7 @@ internal static class ClaudeStreamingRunner
         private string? _sessionId;
         private string? _initializeRequestId;
         private bool _badProtocol;
+        private int _readEnded;
         private bool _resultFailed;
         private bool _outputTruncated;
         private int _resultCount;
@@ -312,43 +319,65 @@ internal static class ClaudeStreamingRunner
 
         internal void RegisterReplay(string id)
         {
-            if (_replays.Count >= 101 || !_replays.TryAdd(id, new(TaskCreationOptions.RunContinuationsAsynchronously)))
-                throw new InvalidOperationException("Too many pending Claude input acknowledgements.");
+            var replay = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            lock (_replayGate)
+            {
+                if (_replays.Count >= 101 || !_replays.TryAdd(id, replay))
+                    throw new InvalidOperationException("Too many pending Claude input acknowledgements.");
+                // Registration can race EOF. If EOF's snapshot already ran, settle this replay here.
+                if (_readEnded != 0) replay.TrySetResult(false);
+            }
         }
 
         internal void RemoveReplay(string id) => _replays.TryRemove(id, out _);
+
+        internal void EndInputs()
+        {
+            lock (_replayGate)
+            {
+                _readEnded = 1;
+                foreach (var replay in _replays.Values) replay.TrySetResult(false);
+            }
+        }
 
         internal async Task<bool> WaitForReplayAsync(string id, CancellationToken token)
             => _replays.TryGetValue(id, out var ack) && await ack.Task.WaitAsync(token).ConfigureAwait(false);
 
         private async Task ReadAsync()
         {
-            var line = new StringBuilder();
-            var buffer = new char[8192];
-            var dropping = false;
-            while (true)
+            try
             {
-                var read = await _stdout.ReadAsync(buffer.AsMemory()).ConfigureAwait(false);
-                if (read == 0) break;
-                for (var i = 0; i < read; i++)
+                var line = new StringBuilder();
+                var buffer = new char[8192];
+                var dropping = false;
+                while (true)
                 {
-                    var ch = buffer[i];
-                    if (ch == '\n')
+                    var read = await _stdout.ReadAsync(buffer.AsMemory()).ConfigureAwait(false);
+                    if (read == 0) break;
+                    for (var i = 0; i < read; i++)
                     {
-                        if (!dropping) await ProcessLineAsync(line.ToString().TrimEnd('\r')).ConfigureAwait(false);
-                        line.Clear(); dropping = false;
-                    }
-                    else if (!dropping)
-                    {
-                        if (line.Length >= MaxLineCharacters) { dropping = true; line.Clear(); _badProtocol = true; }
-                        else line.Append(ch);
+                        var ch = buffer[i];
+                        if (ch == '\n')
+                        {
+                            if (!dropping) await ProcessLineAsync(line.ToString().TrimEnd('\r')).ConfigureAwait(false);
+                            line.Clear(); dropping = false;
+                        }
+                        else if (!dropping)
+                        {
+                            if (line.Length >= MaxLineCharacters) { dropping = true; line.Clear(); _badProtocol = true; }
+                            else line.Append(ch);
+                        }
                     }
                 }
+                if (!dropping && line.Length > 0) await ProcessLineAsync(line.ToString()).ConfigureAwait(false);
             }
-            if (!dropping && line.Length > 0) await ProcessLineAsync(line.ToString()).ConfigureAwait(false);
-            _initialized.TrySetResult(false);
-            foreach (var replay in _replays.Values) replay.TrySetResult(false);
-            if (!_firstResult.Task.IsCompleted) _firstResult.TrySetResult(false);
+            finally
+            {
+                // An EOF or reader failure means outstanding replays can no longer be confirmed.
+                EndInputs();
+                _initialized.TrySetResult(false);
+                if (!_firstResult.Task.IsCompleted) _firstResult.TrySetResult(false);
+            }
         }
 
         private async Task ProcessLineAsync(string text)

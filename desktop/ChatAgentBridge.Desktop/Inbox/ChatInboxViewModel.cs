@@ -42,6 +42,7 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
         "エージェント変更不可" => DesktopText.Get("AgentSwitchFailed"),
         "エージェント変更・再投稿が必要" => DesktopText.Get("AgentSwitchResubmit"),
         "実行中へ追加" => DesktopText.Get("FollowUpApplied"),
+        "追加指示の受領待ち" => DesktopText.Get("FollowUpPending"),
         "追加指示の反映未確認" => DesktopText.Get("FollowUpUncertain"),
         _ when State.StartsWith("失敗 (", StringComparison.Ordinal) => DesktopText.Get("ApprovalFailed", State[4..^1]),
         _ => State
@@ -69,6 +70,9 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public ChatProgressReporter? Progress { get; set; }
     public Task ReceiptNotification { get; set; } = Task.CompletedTask;
     internal string FollowUpSummary { get; set; } = "";
+    internal List<Task> FollowUpConfirmations { get; } = [];
+    internal List<InboxItem> FollowUpInputs { get; } = [];
+    internal CancellationTokenSource? FollowUpFeedbackDeadline { get; set; }
 }
 
 public sealed partial class InboxConversation(string key) : ObservableObject
@@ -266,8 +270,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         var latest = conversation.Requests.LastOrDefault();
         if (latest is null) return false;
         if (StateFilter == "pending" && !conversation.Requests.Any(item => item.State == "承認待ち")) return false;
-        if (StateFilter == "active" && !conversation.Requests.Any(item => item.State == "実行中")) return false;
-        if (StateFilter == "completed" && !conversation.Requests.Any(item => item.State is not ("承認待ち" or "実行中" or "自動実行を準備"))) return false;
+        if (StateFilter == "active" && !conversation.Requests.Any(item => item.State is "実行中" or "追加指示の受領待ち")) return false;
+        if (StateFilter == "completed" && !conversation.Requests.Any(item => item.State is not ("承認待ち" or "実行中" or "自動実行を準備" or "追加指示の受領待ち"))) return false;
         var query = SearchText.Trim();
         return query.Length == 0 || conversation.Identity.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
             conversation.Requests.Any(item => item.Prompt.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
