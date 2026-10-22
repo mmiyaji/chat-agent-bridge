@@ -10,7 +10,7 @@ archives include them in the updater's managed file manifest and payload checksu
 The inventory records the restored package versions, package hashes, source URLs,
 notice filenames, and the self-contained runtime. It covers the current desktop
 and updater dependencies, including native Windows App SDK components, WebView2
-loader/projection, Windows ML, Windows SDK/C#/WinRT, Community Toolkit, .NET, and
+loader/projection, Windows SDK/C#/WinRT, Community Toolkit, .NET, and
 the Fluent System Icons SVG/font subset. It includes vendor notices as supplied;
 some describe optional components beyond the features used by this app.
 

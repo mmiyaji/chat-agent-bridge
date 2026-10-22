@@ -28,16 +28,9 @@
         "CommunityToolkit.WinUI.Helpers/8.2.251219",
         "CommunityToolkit.WinUI.Triggers/8.2.251219",
         "Microsoft.Web.WebView2/1.0.3719.77",
-        "Microsoft.Windows.AI.MachineLearning/2.1.74",
-        "Microsoft.WindowsAppSDK.AI/2.5.5",
         "Microsoft.WindowsAppSDK.Foundation/2.3.12",
         "Microsoft.WindowsAppSDK.InteractiveExperiences/2.1.9",
-        "Microsoft.WindowsAppSDK.ML/2.1.94",
-        "Microsoft.WindowsAppSDK.Search/2.5.5",
-        "Microsoft.WindowsAppSDK.Widgets/2.0.5",
         "Microsoft.WindowsAppSDK.WinUI/2.3.9",
-        "Microsoft.WindowsAppSDK/2.5.1",
-        "System.Numerics.Tensors/9.0.0",
         "System.Security.Cryptography.Pkcs/10.0.13",
         "System.Security.Cryptography.ProtectedData/10.0.13"
       ],
@@ -162,21 +155,6 @@
       "publishedRuntimeDependencyIn": []
     },
     {
-      "id": "Microsoft.WindowsAppSDK",
-      "version": "2.5.1",
-      "nugetContentSha512": "WgKPzT1H2s17azODD1jNZje69z1hGz8VSh3bIylTtXHVg7hLyrn8Y+rswFqF41UX8ea7ELeoyqN80zZ6EHwCFA==",
-      "licenseExpression": null,
-      "licenseMetadataType": "file",
-      "packageLicenseFile": "license.txt",
-      "licenseUrl": "https://aka.ms/deprecateLicenseUrl",
-      "projectUrl": "https://github.com/microsoft/windowsappsdk",
-      "repositoryUrl": null,
-      "noticeFile": "LICENSE-WindowsAppSDK.txt",
-      "publishedRuntimeDependencyIn": [
-        "ChatAgentBridge.Desktop"
-      ]
-    },
-    {
       "id": "CommunityToolkit.Mvvm",
       "version": "8.4.2",
       "nugetContentSha512": "WadCzGEc2U+3e20avRLng4qNtt4zoOGWrdUISqJWrHe3/FSnrYjuM5Sb4yQb09LhkBXrrI4Zt3dLKgRMbItsrg==",
@@ -231,21 +209,6 @@
       "repositoryUrl": null,
       "noticeFile": "LICENSE-WindowsAppSDK.txt",
       "publishedRuntimeDependencyIn": []
-    },
-    {
-      "id": "Microsoft.WindowsAppSDK.Widgets",
-      "version": "2.0.5",
-      "nugetContentSha512": "lRz+8+QU65gV8hRzLVE+GRsPKZ42lnzqkmsw96HzQd/DuFYfr4JYpUU7ZZ5YrkV2EfQe4BCmoRKAeZ3WwalMcg==",
-      "licenseExpression": null,
-      "licenseMetadataType": "file",
-      "packageLicenseFile": "license.txt",
-      "licenseUrl": "https://aka.ms/deprecateLicenseUrl",
-      "projectUrl": "https://github.com/microsoft/windowsappsdk",
-      "repositoryUrl": null,
-      "noticeFile": "LICENSE-WindowsAppSDK.txt",
-      "publishedRuntimeDependencyIn": [
-        "ChatAgentBridge.Desktop"
-      ]
     },
     {
       "id": "Microsoft.NET.ILLink.Tasks",
@@ -317,21 +280,6 @@
       ]
     },
     {
-      "id": "Microsoft.Windows.AI.MachineLearning",
-      "version": "2.1.74",
-      "nugetContentSha512": "/Z1yAQ0J53eD1RrOl5anTDS0UQOgneERY//hLljwGcWeUX9ynCvOl5qUxAsfWvwsZZGcvV4WKjAvnAtA6N5i+w==",
-      "licenseExpression": null,
-      "licenseMetadataType": "file",
-      "packageLicenseFile": "license.txt",
-      "licenseUrl": "https://aka.ms/deprecateLicenseUrl",
-      "projectUrl": "https://github.com/microsoft/windowsappsdk",
-      "repositoryUrl": null,
-      "noticeFile": "LICENSE-WindowsML.txt",
-      "publishedRuntimeDependencyIn": [
-        "ChatAgentBridge.Desktop"
-      ]
-    },
-    {
       "id": "Microsoft.WindowsAppSDK.WinUI",
       "version": "2.3.9",
       "nugetContentSha512": "GiuYUQqMYD5lycT+X2AGX1rlbHU/zf8xoPeZNXZbJj4mZcSr4STsxeRUMxnTUQLAmmjjQaPrTIRjn78vbPhAvg==",
@@ -357,51 +305,6 @@
       "projectUrl": "https://dot.net/",
       "repositoryUrl": "https://github.com/dotnet/dotnet",
       "noticeFile": "LICENSE-DotNetRuntime.txt",
-      "publishedRuntimeDependencyIn": [
-        "ChatAgentBridge.Desktop"
-      ]
-    },
-    {
-      "id": "Microsoft.WindowsAppSDK.AI",
-      "version": "2.5.5",
-      "nugetContentSha512": "f6XA05BsTAmDDsWGiFQdcAujNlbET5QbqxhBo7iHPJJix+RJajXKv1XlO19M78GtEpi2AYGEv08dPxER8ESYAw==",
-      "licenseExpression": null,
-      "licenseMetadataType": "file",
-      "packageLicenseFile": "license.txt",
-      "licenseUrl": "https://aka.ms/deprecateLicenseUrl",
-      "projectUrl": "https://github.com/microsoft/windowsappsdk",
-      "repositoryUrl": null,
-      "noticeFile": "LICENSE-WindowsAppSDK.txt",
-      "publishedRuntimeDependencyIn": [
-        "ChatAgentBridge.Desktop"
-      ]
-    },
-    {
-      "id": "System.Numerics.Tensors",
-      "version": "9.0.0",
-      "nugetContentSha512": "hyJB4UlpAi19Xr9AXzu2NuagKC4lPfHObNMEAA0HmqFz2rX7wKgzeYzO/jM/eBHDhnUGFFEjk5cOoJaxqg5J4A==",
-      "licenseExpression": "MIT",
-      "licenseMetadataType": "expression",
-      "packageLicenseFile": "MIT",
-      "licenseUrl": "https://licenses.nuget.org/MIT",
-      "projectUrl": "https://dot.net/",
-      "repositoryUrl": "https://github.com/dotnet/runtime",
-      "noticeFile": "LICENSE-DotNetRuntime.txt",
-      "publishedRuntimeDependencyIn": [
-        "ChatAgentBridge.Desktop"
-      ]
-    },
-    {
-      "id": "Microsoft.WindowsAppSDK.ML",
-      "version": "2.1.94",
-      "nugetContentSha512": "b21CWVubc3WqWNJ9+fy7n+s83LgwBpIzYrOuSUmHAqPB0pH+ttjgiknnDA/oF7wCbjiaUb4KDXVV7Mya3f18Ug==",
-      "licenseExpression": null,
-      "licenseMetadataType": "file",
-      "packageLicenseFile": "license.txt",
-      "licenseUrl": "https://aka.ms/deprecateLicenseUrl",
-      "projectUrl": "https://github.com/microsoft/windowsappsdk",
-      "repositoryUrl": "https://github.com/microsoft/windowsml",
-      "noticeFile": "LICENSE-WindowsAppSDK.txt",
       "publishedRuntimeDependencyIn": [
         "ChatAgentBridge.Desktop"
       ]
@@ -480,21 +383,6 @@
       ]
     },
     {
-      "id": "Microsoft.WindowsAppSDK.Search",
-      "version": "2.5.5",
-      "nugetContentSha512": "uvYkXi9TB4rk/kgWn5XHEkMNMU+xhjY+S0QWsxEs8wYT/dXAjfHvW30+JVoW/THZ/9jIMinEn4gliCSVRFV0Sw==",
-      "licenseExpression": null,
-      "licenseMetadataType": "file",
-      "packageLicenseFile": "license.txt",
-      "licenseUrl": "https://aka.ms/deprecateLicenseUrl",
-      "projectUrl": "https://github.com/microsoft/windowsappsdk",
-      "repositoryUrl": null,
-      "noticeFile": "LICENSE-WindowsAppSDK.txt",
-      "publishedRuntimeDependencyIn": [
-        "ChatAgentBridge.Desktop"
-      ]
-    },
-    {
       "id": "Microsoft.Windows.SDK.NET.Ref",
       "version": "10.0.26100.57",
       "nugetContentSha512": "BG2X8tqoPJu7Lde8hlg/3bF9QwOW3VsxI7MGPEQM5+i4YG0WgNeesIeia2VTRkVEnoC9SdxpFGJtdGQHHIBwcA==",
@@ -534,12 +422,6 @@
       "provenance": "Installed by the target system; not bundled by this portable distribution"
     },
     {
-      "name": "Windows ML Runtime",
-      "noticeFile": "LICENSE-WindowsML.txt",
-      "version": "2.1.74",
-      "provenance": "Microsoft.Windows.AI.MachineLearning NuGet package"
-    },
-    {
       "name": "Windows SDK .NET targeting pack",
       "noticeFile": "LICENSE-WindowsSDK.txt",
       "version": "10.0.26100.57",
@@ -576,14 +458,9 @@
       "bytes": 353601
     },
     {
-      "file": "LICENSE-WindowsML.txt",
-      "sha256": "55a3520885014eec248a53dd8b202a1df1a33d8f1d07285e417d64b6c3f4e051",
-      "bytes": 345242
-    },
-    {
       "file": "LICENSE-DotNetRuntime.txt",
-      "sha256": "2d157dde6c2f71898e65e4f8a5fde8fe5fdc866223f695e4c4e32fc0457d8b9a",
-      "bytes": 154995
+      "sha256": "d0d32d5b11e5c26bb5770c5b52d3d05e4b3870d9175ab2833370f9830efd1406",
+      "bytes": 79260
     },
     {
       "file": "LICENSE-FluentSystemIcons.txt",
@@ -598,8 +475,8 @@
   ],
   "aggregateNotice": {
     "file": "desktop/THIRD-PARTY-NOTICES.txt",
-    "sha256": "a733fa15059d438754cf5859f90db9fe7f9bbd54c1d0504e49892678465c7f06",
-    "bytes": 908673
+    "sha256": "efbc3b5d4d3b7fd5c468854fe6b8abb7a5652d872260a10ed53326bdb59fc818",
+    "bytes": 487418
   },
   "auditNotes": [
     "Desktop publish evidence was captured from win-x64; win-arm64 is explicitly allowed for the same reviewed package versions, runtime version, and notice documents. The release pipeline should run the validator for both RIDs.",

@@ -11,17 +11,12 @@
   },
   {
     "name": "Microsoft Windows App SDK",
-    "components": "Microsoft.WindowsAppSDK 2.5.1 and runtime component package family; includes full package NOTICE.txt",
+    "components": "Microsoft.WindowsAppSDK component packages (Foundation, InteractiveExperiences, WinUI, Base, DWrite, Runtime); includes full package NOTICE.txt",
     "file": "LICENSE-WindowsAppSDK.txt"
   },
   {
-    "name": "Microsoft Windows ML Runtime",
-    "components": "Microsoft.Windows.AI.MachineLearning 2.1.74; includes full ThirdPartyNotices.txt",
-    "file": "LICENSE-WindowsML.txt"
-  },
-  {
     "name": ".NET runtime and managed libraries",
-    "components": ".NET 10.0.13 self-contained runtime; System.Numerics.Tensors 9.0.0; System.Security.Cryptography.ProtectedData 10.0.13; includes runtime and package third-party notices",
+    "components": ".NET 10.0.13 self-contained runtime; System.Security.Cryptography.ProtectedData 10.0.13; includes runtime and package third-party notices",
     "file": "LICENSE-DotNetRuntime.txt"
   },
   {
