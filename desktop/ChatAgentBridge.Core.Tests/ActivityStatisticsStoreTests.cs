@@ -63,6 +63,33 @@ public sealed class ActivityStatisticsStoreTests
     }
 
     [Fact]
+    public async Task CachedStatisticsFollowExternalFileChangesAndRepeatedReadsStayConsistent()
+    {
+        using var directory = new TemporaryDirectory();
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var history = new ExecutionHistoryStore(directory.Path);
+        await history.RecordAsync(new ExecutionRecord { StartedAt = DateTimeOffset.Now.AddMinutes(-5), FinishedAt = DateTimeOffset.Now, Status = "completed" });
+        var store = new ActivityStatisticsStore(directory.Path);
+        for (var i = 0; i < 3; i++)
+            Assert.Equal(1, (await store.ReadAsync(today, 30, TimeZoneInfo.Local)).Activity.TotalExecutions);
+
+        // Replacing the file behind the store's back (here with a cleared document) must be noticed.
+        var path = Path.Combine(directory.Path, "activity-statistics.json");
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new
+        {
+            SchemaVersion = 1, MigrationCompleted = true, MigratedFromAvailableRetainedHistory = false,
+            Days = Array.Empty<object>(), Active = Array.Empty<object>(), FinalizedIds = Array.Empty<object>()
+        }));
+        Assert.Equal(0, (await store.ReadAsync(today, 30, TimeZoneInfo.Local)).Activity.TotalExecutions);
+
+        // A later record builds on the externally written file, not on the stale parse.
+        await history.RecordAsync(new ExecutionRecord { StartedAt = DateTimeOffset.Now.AddMinutes(-1), FinishedAt = DateTimeOffset.Now, Status = "failed" });
+        var snapshot = await store.ReadAsync(today, 30, TimeZoneInfo.Local);
+        Assert.Equal(1, snapshot.Activity.TotalExecutions);
+        Assert.Equal(1, snapshot.Activity.Failed);
+    }
+
+    [Fact]
     public async Task DurableUsageMatchesHistoryAggregationForScopesUnknownCountersCacheAndRepricing()
     {
         using var directory = new TemporaryDirectory();

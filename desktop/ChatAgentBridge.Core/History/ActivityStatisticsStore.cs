@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json.Serialization;
 using ChatAgentBridge.Core.Pricing;
 
@@ -12,6 +13,9 @@ public sealed class ActivityStatisticsStore
     public const int MaxActiveExecutions = 500;
     public const int MaxUsageGroupsPerDay = MaxModelsPerDay * 12;
     public const string OtherModelsKey = "__other_models__";
+    // Once a statistics file has recorded that migration completed, later checks skip the lock and the file read.
+    private static readonly ConcurrentDictionary<string, byte> MigratedPaths = new(
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
     private readonly string _path;
 
     public ActivityStatisticsStore(string? directory = null)
@@ -23,12 +27,13 @@ public sealed class ActivityStatisticsStore
     public async Task MigrateAsync(IReadOnlyList<ExecutionRecord> retainedHistory, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(retainedHistory);
+        if (MigratedPaths.ContainsKey(_path) && File.Exists(_path)) return;
         var gate = HistoryFileStore.LockFor(_path);
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var document = await ReadDocumentAsync(cancellationToken).ConfigureAwait(false);
-            if (document.MigrationCompleted) return;
+            if (document.MigrationCompleted) { MigratedPaths[_path] = 0; return; }
             var migrated = EmptyDocument();
             foreach (var record in retainedHistory.OrderBy(item => item.StartedAt))
             {
@@ -41,6 +46,7 @@ public sealed class ActivityStatisticsStore
             migrated.TimeZoneId = TimeZoneInfo.Local.Id;
             Prune(migrated);
             await WriteAsync(migrated, cancellationToken).ConfigureAwait(false);
+            MigratedPaths[_path] = 0;
         }
         finally { gate.Release(); }
     }
@@ -52,6 +58,8 @@ public sealed class ActivityStatisticsStore
         Validate(record);
         var gate = HistoryFileStore.LockFor(_path);
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        // The cached document is edited in place; drop it unless this call ends in a successful write.
+        var committed = false;
         try
         {
             var document = await ReadDocumentAsync(cancellationToken).ConfigureAwait(false);
@@ -84,8 +92,14 @@ public sealed class ActivityStatisticsStore
             }
             Prune(document);
             await WriteAsync(document, cancellationToken).ConfigureAwait(false);
+            committed = true;
+            MigratedPaths[_path] = 0;
         }
-        finally { gate.Release(); }
+        finally
+        {
+            if (!committed) HistoryFileStore.Invalidate(_path);
+            gate.Release();
+        }
     }
 
     /// <summary>Finalizes stale active markers after restart; never imports a new event from history.</summary>
@@ -94,11 +108,12 @@ public sealed class ActivityStatisticsStore
         ArgumentNullException.ThrowIfNull(liveExecutionIds);
         var gate = HistoryFileStore.LockFor(_path);
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var committed = false;
         try
         {
             var document = await ReadDocumentAsync(cancellationToken).ConfigureAwait(false);
             var stale = document.Active.Where(marker => !liveExecutionIds.Contains(marker.Id) && !HistoryFileStore.IsLive(marker.Id)).ToArray();
-            if (stale.Length == 0) return;
+            if (stale.Length == 0) { committed = true; return; }
             foreach (var marker in stale)
             {
                 document.Active.Remove(marker);
@@ -109,8 +124,13 @@ public sealed class ActivityStatisticsStore
             }
             Prune(document);
             await WriteAsync(document, cancellationToken).ConfigureAwait(false);
+            committed = true;
         }
-        finally { gate.Release(); }
+        finally
+        {
+            if (!committed) HistoryFileStore.Invalidate(_path);
+            gate.Release();
+        }
     }
 
     public async Task<ActivityStatisticsSnapshot> ReadAsync(DateOnly endDay, int dayCount, TimeZoneInfo zone,
@@ -201,15 +221,23 @@ public sealed class ActivityStatisticsStore
             document.MigrationCompleted = true;
             document.TimeZoneId = TimeZoneInfo.Local.Id;
             await WriteAsync(document, cancellationToken).ConfigureAwait(false);
+            MigratedPaths[_path] = 0;
         }
         finally { gate.Release(); }
     }
 
+    // Callers hold the per-path lock. The result is the cached parse: only RecordAsync and
+    // ReconcileStaleActivesAsync edit it, and they invalidate it unless they finish with a write.
     private async Task<StatisticsDocument> ReadDocumentAsync(CancellationToken ct)
     {
-        if (File.Exists(_path) && new FileInfo(_path).Length > 64L * 1024 * 1024)
+        var fileInfo = new FileInfo(_path);
+        if (fileInfo.Exists && fileInfo.Length > 64L * 1024 * 1024)
             throw new InvalidDataException("Activity statistics file exceeds its size limit.");
-        var doc = await HistoryFileStore.ReadAsync(_path, EmptyDocument, ct).ConfigureAwait(false);
+        return await HistoryFileStore.ReadCachedAsync(_path, EmptyDocument, ValidateDocument, ct).ConfigureAwait(false);
+    }
+
+    private static void ValidateDocument(StatisticsDocument doc)
+    {
         if (doc.SchemaVersion != 1 || doc.Days is null || doc.Active is null || doc.FinalizedIds is null)
             throw new InvalidDataException("Activity statistics file has an unsupported schema or missing collections.");
         if (doc.Days.Count > MaxDays || doc.Active.Count > MaxActiveExecutions || doc.FinalizedIds.Count > MaxRecentFinalizedIds)
@@ -238,7 +266,6 @@ public sealed class ActivityStatisticsStore
         var finalizedIds = new HashSet<Guid>();
         if (doc.FinalizedIds.Any(marker => marker is null || marker.Id == Guid.Empty || marker.StartedAt == default || !finalizedIds.Add(marker.Id)))
             throw new InvalidDataException("Activity statistics contain an invalid finalized marker.");
-        return doc;
     }
 
     private static void ValidateUsage(UsageAggregate usage)
@@ -254,8 +281,9 @@ public sealed class ActivityStatisticsStore
                 throw new InvalidDataException("Activity statistics contain an invalid cost feature.");
     }
 
+    // Derived data that only this class reads, so skip indentation to shrink the file and the write.
     private Task WriteAsync(StatisticsDocument document, CancellationToken ct) =>
-        HistoryFileStore.WriteAtomicAsync(_path, document, ct);
+        HistoryFileStore.WriteAtomicAsync(_path, document, ct, indented: false);
 
     private static StatisticsDocument EmptyDocument() => new() { SchemaVersion = 1, Days = [], Active = [], FinalizedIds = [] };
 

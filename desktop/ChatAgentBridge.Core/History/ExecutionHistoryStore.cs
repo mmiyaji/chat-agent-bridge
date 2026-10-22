@@ -64,14 +64,14 @@ public sealed class ExecutionHistoryStore
         finally { gate.Release(); }
     }
 
-    private async Task<HistoryDocument> ReadFileAsync(CancellationToken ct)
-    {
-        var file = await HistoryFileStore.ReadAsync(_filePath, static () => new HistoryDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = [] }, ct).ConfigureAwait(false);
-        HistoryFileStore.CheckSchema(file.SchemaVersion);
-        var records = HistoryFileStore.ValidateLoadedRecords(file.Records);
-        foreach (var record in records) ValidateLoaded(record);
-        return file;
-    }
+    // Callers hold the per-path lock and must not mutate the returned document; it is the cached parse of the file.
+    private Task<HistoryDocument> ReadFileAsync(CancellationToken ct) =>
+        HistoryFileStore.ReadCachedAsync(_filePath, static () => new HistoryDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = [] }, static file =>
+        {
+            HistoryFileStore.CheckSchema(file.SchemaVersion);
+            var records = HistoryFileStore.ValidateLoadedRecords(file.Records);
+            foreach (var record in records) ValidateLoaded(record);
+        }, ct);
 
     private static void Validate(ExecutionRecord record)
     {
