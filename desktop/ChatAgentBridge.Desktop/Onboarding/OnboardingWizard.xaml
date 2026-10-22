@@ -12,8 +12,8 @@
             <Button Grid.Column="1"  Command="{x:Bind ViewModel.DeferOnboardingCommand}" VerticalAlignment="Top" AutomationProperties.AutomationId="OnboardingDefer"  x:Uid="OnboardingDefer" />
         </Grid>
 
-        <ScrollViewer x:Name="WizardScrollViewer" AutomationProperties.AutomationId="WizardScroll" Grid.Row="1" Padding="8,0,12,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel Spacing="16" HorizontalAlignment="Stretch">
+        <ScrollViewer x:Name="WizardScrollViewer" AutomationProperties.AutomationId="WizardScroll" Grid.Row="1" Padding="0,0,12,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="16" HorizontalAlignment="Stretch" Margin="8,0,0,0">
                 <InfoBar AutomationProperties.AutomationId="WizardStatus" IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
                          Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
                          Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"

@@ -109,9 +109,28 @@ public sealed partial class OnboardingWizard : UserControl
                 _markedFields.Add(target);
                 first ??= input;
             }
-            if (first is Control control) control.Focus(FocusState.Programmatic);
-            first?.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0.3, AnimationDesired = false });
+            if (first is null) return;
+            // Wrapping, the status bar opening and focus each change the layout, so reveal the field once the
+            // layout has settled and again afterwards; a single early request lands on stale positions.
+            RevealField(first);
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => RevealField(first));
         });
+    }
+
+    private void RevealField(FrameworkElement field)
+    {
+        if (!ViewModel.IsOnboardingActive || field.XamlRoot is null) return;
+        WizardScrollViewer.UpdateLayout();
+        if (field is Control control) control.Focus(FocusState.Programmatic);
+        WizardScrollViewer.UpdateLayout();
+        if (WizardScrollViewer.Content is not UIElement content) return;
+        var top = field.TransformToVisual(content).TransformPoint(new Windows.Foundation.Point(0, 0)).Y;
+        var bottom = top + field.ActualHeight;
+        var viewTop = WizardScrollViewer.VerticalOffset;
+        var viewBottom = viewTop + WizardScrollViewer.ViewportHeight;
+        // A field that is already fully visible stays put, so the status message above it is not scrolled away.
+        if (top - 16 >= viewTop && bottom + 16 <= viewBottom) return;
+        WizardScrollViewer.ChangeView(null, Math.Clamp(top - WizardScrollViewer.ViewportHeight / 3, 0, WizardScrollViewer.ScrollableHeight), null, true);
     }
 
     private void FocusMissingConsent()
