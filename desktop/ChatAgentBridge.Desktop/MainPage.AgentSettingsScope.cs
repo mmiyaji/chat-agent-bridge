@@ -18,6 +18,8 @@ public sealed partial class MainPage
     private bool _syncingAgentScope;
     private bool _changingAgentScope;
     private bool _agentScopeInitialized;
+    private string? _pendingAgentScope;
+    private bool _agentScopeDispatchScheduled;
 
     private void InitializeAgentSettingsScope()
     {
@@ -39,7 +41,6 @@ public sealed partial class MainPage
         _agentProfileDetails = new AgentProfileEditorControl();
         _agentProfileDetails.Configure(ViewModel, ConfirmSensitiveSettingsAsync, ReloadProcessEnvironment);
         _agentProfileDetails.OpenCommonSettings += async () => await SelectAgentSettingsScopeAsync("common");
-        _agentProfileDetails.PropertyChanged += (_, _) => UpdateAgentScopeEnabled();
 
         _agentScopeNavigation = new NavigationView
         {
@@ -59,10 +60,10 @@ public sealed partial class MainPage
             AutomationProperties.SetAutomationId(item, "AgentScope" + (key switch { "common" => "Common", "codex" => "Codex", "claude" => "Claude", "gemini" => "Gemini", "github-copilot" => "Copilot", _ => "Custom" }));
             _agentScopeNavigation.MenuItems.Add(item);
         }
-        _agentScopeNavigation.SelectionChanged += async (_, args) =>
+        _agentScopeNavigation.SelectionChanged += (_, args) =>
         {
             if (!_syncingAgentScope && args.SelectedItemContainer is NavigationViewItem { Tag: string scope })
-                await SelectAgentSettingsScopeAsync(scope);
+                QueueAgentScopeSelection(scope);
         };
         var page = new StackPanel { Spacing = 16, Margin = new Thickness(16) };
         page.Children.Add(_agentScopeCommonGroup);
@@ -79,21 +80,35 @@ public sealed partial class MainPage
 
     private void UpdateAgentScopeLayout(double width)
     {
-        if (_agentScopeNavigation is null) return;
-        _agentScopeNavigation.PaneDisplayMode = width >= 1000
+        if (_agentScopeNavigation is null || width <= 0) return;
+        var mode = width >= 1000
             ? NavigationViewPaneDisplayMode.Left
             : NavigationViewPaneDisplayMode.Top;
+        if (_agentScopeNavigation.PaneDisplayMode == mode) return;
+        _agentScopeNavigation.PaneDisplayMode = mode;
         _agentScopeNavigation.IsPaneOpen = width >= 1000;
     }
 
-    private void UpdateAgentScopeEnabled()
+    private void QueueAgentScopeSelection(string scope)
     {
-        var enabled = !_changingAgentScope && (_agentProfileDetails?.CanChangeSelection ?? true);
-        // Disable navigation alone, not NavigationView.Content: the running
-        // check's cancel button and its feedback must remain usable.
-        if (_agentScopeNavigation is not null)
-            foreach (var item in _agentScopeNavigation.MenuItems.OfType<NavigationViewItem>())
-                item.IsEnabled = enabled;
+        _pendingAgentScope = scope;
+        if (_agentScopeDispatchScheduled) return;
+        _agentScopeDispatchScheduled = true;
+        // Top navigation moves the clicked overflow container into its primary
+        // host after SelectionChanged returns. Do not disable or reselect those
+        // containers from inside that event (including before an async await).
+        if (!DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
+        {
+            try
+            {
+                while (_pendingAgentScope is { } next)
+                {
+                    _pendingAgentScope = null;
+                    await SelectAgentSettingsScopeAsync(next);
+                }
+            }
+            finally { _agentScopeDispatchScheduled = false; }
+        })) _agentScopeDispatchScheduled = false;
     }
 
     private void RefreshAgentScopeLabels()
@@ -126,9 +141,8 @@ public sealed partial class MainPage
 
     private async Task<bool> SelectAgentSettingsScopeAsync(string scope)
     {
-        if (_changingAgentScope || _agentProfileDetails is null || !_agentScopeKeys.Contains(scope)) { ApplyAgentScopeSelection(); return false; }
+        if (_changingAgentScope || _agentProfileDetails is null || !_agentScopeKeys.Contains(scope)) return false;
         _changingAgentScope = true;
-        UpdateAgentScopeEnabled();
         try
         {
             if (!await ViewModel.SavePendingSettingsAsync() || !await _agentProfileDetails.TryFlushAsync()) return false;
@@ -140,9 +154,8 @@ public sealed partial class MainPage
         }
         finally
         {
-            ApplyAgentScopeSelection();
+            if (_pendingAgentScope is null) ApplyAgentScopeSelection();
             _changingAgentScope = false;
-            UpdateAgentScopeEnabled();
         }
     }
 

@@ -4,7 +4,8 @@ param(
  [ValidateSet('en','ja')][string]$Language='en',
  [ValidateSet('light','dark')][string]$Theme='light',
  [string]$AppDirectory=(Join-Path $PSScriptRoot 'artifacts/settings-scope-local'),
- [string]$TestAgentPath=(Join-Path $PSScriptRoot 'artifacts/settings-scope-test-agent/ChatAgentBridge.TestAgent.exe')
+ [string]$TestAgentPath=(Join-Path $PSScriptRoot 'artifacts/settings-scope-test-agent/ChatAgentBridge.TestAgent.exe'),
+ [ValidateRange(0,200)][int]$StressCycles=0
 )
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
@@ -253,6 +254,43 @@ try {
  Assert ((Results).connections -eq 1) 'Shared workspace edit disconnected chat.'
  Capture "changed-workspace-$Language-$Theme"
  Add-Pass 'Shared workspace changes invalidate old CLI verification without dropping chat connection'
+ if($StressCycles -gt 0){
+  $beforeStress=(Get-FileHash $settingsPath).Hash
+  $random=[Random]::new(20261023)
+  $switches=0
+  foreach($cycle in 0..($StressCycles-1)){
+   Resize-Test (@(500,1000,1440)[$cycle % 3])
+   foreach($page in @('agent','connections')){
+    $navId=if($page -eq 'agent'){'NavAgentSettings'}else{'NavConnections'}
+    if($null -eq (Find-Element $script:window $navId)){Click-Actual 'TogglePaneButton'}
+    Select-Element $navId
+    Start-Sleep -Milliseconds 120
+    Top
+    $scopeNav=if($page -eq 'agent'){'AgentScopeList'}else{'ConnectionScopeList'}
+    $choices=if($page -eq 'agent'){@('AgentScopeCodex','AgentScopeClaude','AgentScopeGemini','AgentScopeCopilot','AgentScopeCustom','AgentScopeCommon')}else{@('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeCommon')}
+    $choices=@($choices|Sort-Object {$random.Next()})
+    foreach($id in $choices){
+     if($script:app.HasExited){throw "App exited during stress cycle $cycle / $id"}
+     $target=Find-Element $script:window $id
+     if($null -eq $target -or $target.Current.IsOffscreen){
+      $more=Find-Element (Wait-Element $scopeNav) 'TopNavOverflowButton'
+      Invoke-Element $more 'stress overflow'
+      $target=Wait-ProcessElement $id
+     }
+     Invoke-Element $target ('stress '+$id)
+     Start-Sleep -Milliseconds 90
+     $switches++
+    }
+   }
+   if(($cycle+1) % 10 -eq 0){Write-Output "Stress progress: $($cycle+1) cycles / $switches scope switches"}
+  }
+  Start-Sleep -Milliseconds 750
+  Assert (-not $script:app.HasExited) 'App exited after stress.'
+  Assert ((Get-FileHash $settingsPath).Hash -eq $beforeStress) 'Stress browsing changed saved active settings.'
+  Assert ((Results).connections -eq 1) 'Stress browsing dropped the loopback chat connection.'
+  Capture "stress-final-$Language-$Theme"
+  Add-Pass "Seed 20261023: $switches random scope switches with page changes and resizing; settings and connection retained"
+ }
  Write-Output "Settings scope UI evidence: $script:root"
 }
 catch { $script:results.Add(@{name='Settings scope UI';status='FAIL';detail=$_.Exception.Message});try{Capture 'failure'}catch{};throw }

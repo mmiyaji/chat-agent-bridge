@@ -1,3 +1,39 @@
+# Settings navigation endurance regression — 2026-10-23
+
+The reported crash was reproduced in the native app at a 500 px window width,
+selecting Custom from the agent tabs' More menu with persisted CLI verification.
+Windows recorded a native access violation in Microsoft.UI.Xaml.Controls.dll;
+the managed unhandled-exception handler was not invoked.
+
+Selection callbacks now defer and coalesce scope changes until the native
+NavigationView selection event returns. They no longer disable/reselect item
+containers inside that event. Responsive layout only changes navigation mode
+when crossing the breakpoint. A failed save preserves a newer queued selection
+instead of dropping it and leaving the selected tab inconsistent with its editor.
+
+Validation evidence (isolated profiles only):
+- 900 agent scope switches across widths 500/1250/1440/1000/500, with real cached
+  CLI verification: no crash; saved active settings hash unchanged.
+  Evidence: `desktop/artifacts/scope-switch-repro-7bb52f2e0591477785c0f427b27d8ef8/`.
+- Japanese/dark: eight existing scenario groups plus 50 seeded random cycles,
+  450 scope switches, 100 outer-page selections and 50 resizes passed. Saved
+  active settings and the single loopback chat connection were retained.
+  Evidence: `desktop/artifacts/1fb580a4-87e8-477e-b303-2b8de775e118/`.
+- Final build, English/light: the same eight scenario groups and 50 random
+  cycles (450 scope switches) passed, retaining saved settings and connection.
+  Minimum-width screenshots in both themes were reviewed: outline icons and
+  native overflow controls remained visible, with vertical scrolling available.
+  Evidence: `desktop/artifacts/d62ab774-9dda-45f2-b999-283d2ab1dcba/`.
+- Portable publish, localization consistency and bundled third-party notices
+  checks passed. Review found and fixed the pending-selection loss on failed
+  transitions; no remaining release-blocking issue was identified in this diff.
+- Reproducible random runner: `desktop/SettingsScopesUiSmoke.ps1 -StressCycles 50`.
+  Uses seed 20261023, an offline CLI and loopback Mattermost; no real AI requests
+  or external chat messages. A finite stress run does not prove absence of every
+  race or a memory leak.
+
+---
+
 # Outline icons and responsive settings tabs — 2026-10-23
 
 Target: design option 2's top tabs for constrained windows; retain option 1's
@@ -17,8 +53,8 @@ Findings resolved:
   were updated and validated against the published payload.
 - Medium and small windows use native top NavigationView tabs. Its More menu
   exposes overflow choices, including all six agent scopes at minimum width.
-- Added detail padding in both orientations. Busy guards disable scope choices
-  rather than the detail pane, preserving access to the CLI cancel button.
+- Added detail padding in both orientations. Editor busy guards preserve access
+  to the CLI cancel button; the endurance fix above supersedes disabling tabs.
 - WinUI rejected shared PathIcon geometry in the first isolated run. Each icon
   now creates its own path through a DataTemplate; restart tests pass.
 

@@ -16,6 +16,8 @@ public sealed partial class MainPage
     private StackPanel? _connectionScopeSlackGroup;
     private string _connectionSettingsScope = "common";
     private bool _syncingConnectionScopeSelection;
+    private string? _pendingConnectionScope;
+    private bool _connectionScopeDispatchScheduled;
 
     /// <summary>Builds the local connection-settings navigation while retaining the XAML-owned controls.</summary>
     private void InitializeConnectionSettingsScope()
@@ -82,7 +84,16 @@ public sealed partial class MainPage
         _connectionScopeNavigation.SelectionChanged += (_, args) =>
         {
             if (_syncingConnectionScopeSelection || args.SelectedItemContainer is not NavigationViewItem item) return;
-            SetConnectionSettingsScope(item.Tag as string ?? "common");
+            _pendingConnectionScope = item.Tag as string ?? "common";
+            if (_connectionScopeDispatchScheduled) return;
+            _connectionScopeDispatchScheduled = true;
+            if (!DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                _connectionScopeDispatchScheduled = false;
+                if (_pendingConnectionScope is not { } next) return;
+                _pendingConnectionScope = null;
+                SetConnectionSettingsScope(next);
+            })) _connectionScopeDispatchScheduled = false;
         };
         shell.Children.Add(_connectionScopeNavigation);
 
@@ -113,11 +124,13 @@ public sealed partial class MainPage
 
     private void UpdateConnectionScopeNavigation(double availableWidth)
     {
-        if (_connectionScopeNavigation is null) return;
+        if (_connectionScopeNavigation is null || availableWidth <= 0) return;
         var showNavigation = availableWidth >= ConnectionScopeNavigationBreakpoint;
-        _connectionScopeNavigation.PaneDisplayMode = showNavigation
+        var mode = showNavigation
             ? NavigationViewPaneDisplayMode.Left
             : NavigationViewPaneDisplayMode.Top;
+        if (_connectionScopeNavigation.PaneDisplayMode == mode) return;
+        _connectionScopeNavigation.PaneDisplayMode = mode;
         _connectionScopeNavigation.IsPaneOpen = showNavigation;
     }
 
