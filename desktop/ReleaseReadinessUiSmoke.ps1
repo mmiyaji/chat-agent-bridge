@@ -337,8 +337,8 @@ function Run-RestoredStageScenario() {
         Add-Pass 'Persisted stage prompts after restart'
         Invoke-Element (Wait-Element $dialog 'CloseButton') 'choose Later for restored update'
         Wait-ForAbsent $script:activeWindow 'PortableUpdateApplyConfirmation'
-        if (-not (Find-Element $script:activeWindow 'PortableApplyUpdate')) { Invoke-Element (Wait-Element $script:activeWindow 'NavAbout') 'return to portable updates after Later' }
-        if (-not (Wait-Enabled $script:activeWindow 'PortableApplyUpdate' 10)) { throw 'Apply was not available after choosing Later.' }
+        if (-not (Find-Element $script:activeWindow 'PortableUpdateNoticeAction')) { Invoke-Element (Wait-Element $script:activeWindow 'NavAbout') 'return to portable updates after Later' }
+        if (-not (Wait-Enabled $script:activeWindow 'PortableUpdateNoticeAction' 10)) { throw 'Apply was not available after choosing Later.' }
         Add-Pass 'Later preserves ready-to-apply state'
         Close-WithConfirmation $script:activeWindow $process
 
@@ -354,8 +354,8 @@ function Run-RestoredStageScenario() {
         Add-Pass 'Persisted stage prompts again after Later and relaunch'
         Invoke-Element (Wait-Element $dialog 'CloseButton') 'choose Later after relaunch'
         Wait-ForAbsent $script:activeWindow 'PortableUpdateApplyConfirmation'
-        if (-not (Find-Element $script:activeWindow 'PortableApplyUpdate')) { Invoke-Element (Wait-Element $script:activeWindow 'NavAbout') 'return to portable updates after second Later' }
-        if (-not (Wait-Enabled $script:activeWindow 'PortableApplyUpdate' 10)) { throw 'Apply was not available after the second Later choice.' }
+        if (-not (Find-Element $script:activeWindow 'PortableUpdateNoticeAction')) { Invoke-Element (Wait-Element $script:activeWindow 'NavAbout') 'return to portable updates after second Later' }
+        if (-not (Wait-Enabled $script:activeWindow 'PortableUpdateNoticeAction' 10)) { throw 'Apply was not available after the second Later choice.' }
         Add-Pass 'Second Later leaves Apply available; staged payload was never executed'
         Close-WithConfirmation $script:activeWindow $process
     }

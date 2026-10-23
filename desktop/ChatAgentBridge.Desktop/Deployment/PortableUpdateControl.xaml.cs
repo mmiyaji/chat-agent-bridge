@@ -68,14 +68,28 @@ public sealed partial class PortableUpdateControl : UserControl
         IncludePrereleasesCheckBox.IsEnabled = updates.IsSupported && !updates.IsBusy && !_savingPreference;
 
         var hasUpdate = !string.IsNullOrWhiteSpace(updates.AvailableVersion);
+        var updateAvailable = hasUpdate && !updates.IsDownloaded && !updates.IsBusy &&
+            updates.Status == DesktopText.Get("PortableUpdateAvailable", updates.AvailableVersion);
+        var updateReady = updates.IsDownloaded && !updates.IsBusy &&
+            updates.Status == DesktopText.Get("PortableUpdateReady", updates.AvailableVersion ?? string.Empty);
+        var showUpdateNotice = updateAvailable || updateReady;
+        UpdateNotice.IsOpen = showUpdateNotice;
+        UpdateNotice.Title = DesktopText.Get(updateReady ? "PortableUpdateNoticeReady" : "PortableUpdateNoticeAvailable");
+        UpdateNotice.Message = updates.Status;
+        UpdateNotice.Severity = updateReady ? InfoBarSeverity.Success : InfoBarSeverity.Warning;
+        UpdateNoticeAction.Content = DesktopText.Get(updateReady ? "PortableUpdateApplyPrimary" : "PortableUpdateDownloadPrimary");
+        AutomationProperties.SetName(UpdateNoticeAction, UpdateNoticeAction.Content?.ToString() ?? string.Empty);
+        UpdateNoticeAction.IsEnabled = updates.IsSupported && !_dialogOpen && !_downloadRequested;
+        StatusText.Visibility = showUpdateNotice ? Visibility.Collapsed : Visibility.Visible;
+
         CheckUpdatesButton.IsEnabled = updates.IsSupported && !updates.IsBusy && !_savingPreference && !_dialogOpen && !_downloadRequested;
         ReleaseNotesLink.NavigateUri = updates.AvailableReleasePage ?? new Uri("https://github.com/mmiyaji/chat-agent-bridge/releases");
         AutomationProperties.SetHelpText(ReleaseNotesLink, ReleaseNotesLink.NavigateUri.AbsoluteUri);
         ToolTipService.SetToolTip(ReleaseNotesLink, ReleaseNotesLink.NavigateUri.AbsoluteUri);
-        UpdateActions.Visibility = hasUpdate || updates.IsBusy ? Visibility.Visible : Visibility.Collapsed;
-        DownloadUpdateButton.Visibility = hasUpdate && !updates.IsDownloaded ? Visibility.Visible : Visibility.Collapsed;
+        UpdateActions.Visibility = !showUpdateNotice && (hasUpdate || updates.IsBusy) ? Visibility.Visible : Visibility.Collapsed;
+        DownloadUpdateButton.Visibility = hasUpdate && !updates.IsDownloaded && !updateAvailable ? Visibility.Visible : Visibility.Collapsed;
         DownloadUpdateButton.IsEnabled = updates.IsSupported && hasUpdate && !updates.IsDownloaded && !updates.IsBusy && !_dialogOpen && !_downloadRequested;
-        ApplyUpdateButton.Visibility = updates.IsDownloaded ? Visibility.Visible : Visibility.Collapsed;
+        ApplyUpdateButton.Visibility = updates.IsDownloaded && !updateReady ? Visibility.Visible : Visibility.Collapsed;
         ApplyUpdateButton.IsEnabled = updates.IsSupported && updates.IsDownloaded && !updates.IsBusy && !_dialogOpen && !_downloadRequested;
         CancelUpdateButton.Visibility = updates.IsBusy ? Visibility.Visible : Visibility.Collapsed;
         CancelUpdateButton.IsEnabled = updates.IsBusy;
@@ -149,6 +163,14 @@ public sealed partial class PortableUpdateControl : UserControl
                 await ConfirmApplyUpdateAsync(root, downloadCompleted: false);
         }
         catch (Exception) { RefreshState(); }
+    }
+
+    private void UpdateNoticeAction_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.PortableUpdates.IsDownloaded)
+            ApplyUpdate_Click(sender, e);
+        else
+            DownloadUpdate_Click(sender, e);
     }
 
     private async Task ConfirmApplyUpdateAsync(XamlRoot root, bool downloadCompleted)

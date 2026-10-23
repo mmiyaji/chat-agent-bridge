@@ -654,6 +654,9 @@
   <data name="PortableUpdatePreferenceSaveFailed" xml:space="preserve"><value>更新の設定を保存できませんでした。以前の設定に戻しました。</value></data>
   <data name="PortableUpdateBadgeAvailable" xml:space="preserve"><value>更新があります</value></data>
   <data name="PortableUpdateNavigationAvailable" xml:space="preserve"><value>情報 — バージョン {0} に更新できます</value></data>
+  <data name="PortableUpdateNoticeAvailable" xml:space="preserve"><value>更新があります</value></data>
+  <data name="PortableUpdateNoticeReady" xml:space="preserve"><value>更新の準備ができました</value></data>
+  <data name="PortableUpdateDownloadPrimary" xml:space="preserve"><value>更新をダウンロード</value></data>
   <data name="ModelCatalogTimedOut" xml:space="preserve"><value>モデル候補の取得が時間切れになりました。CLIのログイン状態とネットワーク接続を確認し、再実行してください。</value></data>
   <data name="ModelCatalogLaunchFailed" xml:space="preserve"><value>モデル候補の取得に使うCLIを起動できません。実行ファイルのパス・アクセス権・必要な実行環境を確認してください。</value></data>
   <data name="ModelCatalogAccessDenied" xml:space="preserve"><value>モデル候補の取得中にアクセスが拒否されました。作業フォルダーとCLI実行ファイルのアクセス権を確認してください。</value></data>

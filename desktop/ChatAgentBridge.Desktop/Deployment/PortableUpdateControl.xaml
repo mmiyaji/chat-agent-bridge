@@ -4,6 +4,14 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:settings="using:CommunityToolkit.WinUI.Controls">
     <StackPanel Spacing="8" AutomationProperties.AutomationId="PortableUpdateCard">
+        <InfoBar x:Name="UpdateNotice" IsOpen="False" IsClosable="False"
+                 AutomationProperties.AutomationId="PortableUpdateNotice"
+                 AutomationProperties.LiveSetting="Polite">
+            <InfoBar.ActionButton>
+                <Button x:Name="UpdateNoticeAction" AutomationProperties.AutomationId="PortableUpdateNoticeAction"
+                        Style="{StaticResource AccentButtonStyle}" Click="UpdateNoticeAction_Click" />
+            </InfoBar.ActionButton>
+        </InfoBar>
         <settings:SettingsCard x:Uid="PortableUpdateHeading">
             <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE895;" /></settings:SettingsCard.HeaderIcon>
             <settings:SettingsCard.Description>
