@@ -29,14 +29,23 @@ public static class AttachmentUiNative {
 '@
 function Write-Json([string]$Name, $Value) { $Value | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $dataPath $Name) -Encoding utf8 }
 function UI([string[]]$Arguments) {
+    if ($Arguments[0] -eq 'wait-for') { Wait-ForElement $Arguments; return '' }
     if ($Arguments[0] -eq 'scroll-into-view') { Scroll-ToElement $Arguments[1]; return '' }
     $output = & winapp ui @Arguments -a $script:appProcess.Id --json 2>&1
     if ($LASTEXITCODE -ne 0) { throw "UI command failed ($LASTEXITCODE): $($Arguments -join ' '): $($output -join ' ')" }
     return $output
 }
-function Root { [System.Windows.Automation.AutomationElement]::FromHandle($script:appProcess.MainWindowHandle) }
+function Root {
+    if ($null -eq $script:appProcess) { return $null }
+    $script:appProcess.Refresh()
+    $handle = $script:appProcess.MainWindowHandle
+    if ($handle -eq [IntPtr]::Zero) { return $null }
+    [System.Windows.Automation.AutomationElement]::FromHandle($handle)
+}
 function Element([string]$Id) {
-    (Root).FindFirst([System.Windows.Automation.TreeScope]::Descendants,
+    $rootElement = Root
+    if ($null -eq $rootElement) { return $null }
+    $rootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
         [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,$Id))
 }
 function Has-Text([string]$Text) {
@@ -44,6 +53,64 @@ function Has-Text([string]$Text) {
         if ($element.Current.Name.Contains($Text)) { return $true }
     }
     return $false
+}
+function Automation-TextValues([System.Windows.Automation.AutomationElement]$Item) {
+    $values = [Collections.Generic.List[string]]::new()
+    if (-not [string]::IsNullOrEmpty($Item.Current.Name)) { $values.Add($Item.Current.Name) }
+    try {
+        $valuePattern = $Item.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+        if (-not [string]::IsNullOrEmpty($valuePattern.Current.Value)) { $values.Add($valuePattern.Current.Value) }
+    } catch { }
+    try {
+        $textPattern = $Item.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
+        $text = $textPattern.DocumentRange.GetText(-1)
+        if (-not [string]::IsNullOrEmpty($text)) { $values.Add($text) }
+    } catch { }
+    return $values
+}
+function Wait-ForElement([string[]]$Arguments) {
+    if ($Arguments.Count -lt 2) { throw 'wait-for requires an AutomationId.' }
+    $id = $Arguments[1]
+    $property = $null; $expected = $null; $contains = $false; $gone = $false; $timeoutMs = 5000
+    for ($index = 2; $index -lt $Arguments.Count; $index++) {
+        switch ($Arguments[$index]) {
+            '-p' { if (++$index -ge $Arguments.Count) { throw 'wait-for -p requires a property.' }; $property = $Arguments[$index]; break }
+            '--value' { if (++$index -ge $Arguments.Count) { throw 'wait-for --value requires a value.' }; $expected = $Arguments[$index]; break }
+            '--contains' { $contains = $true; break }
+            '--gone' { $gone = $true; break }
+            '-t' { if (++$index -ge $Arguments.Count) { throw 'wait-for -t requires a timeout in milliseconds.' }; $timeoutMs = [int]$Arguments[$index]; break }
+            default { throw "Unsupported wait-for option: $($Arguments[$index])" }
+        }
+    }
+    if ($timeoutMs -lt 0) { throw 'wait-for timeout cannot be negative.' }
+
+    $condition = [System.Windows.Automation.PropertyCondition]::new(
+        [System.Windows.Automation.AutomationElement]::AutomationIdProperty, $id)
+    $deadline = [DateTime]::UtcNow.AddMilliseconds($timeoutMs)
+    do {
+        $rootElement = Root
+        $item = if ($null -eq $rootElement) { $null } else { $rootElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition) }
+        if ($gone) {
+            if ($null -eq $item) { return }
+        } elseif ($null -ne $item) {
+            if ($null -eq $expected) { return }
+            if ($property -eq 'IsEnabled') {
+                $actual = [string]$item.Current.IsEnabled
+                $matched = if ($contains) { $actual.Contains($expected, [StringComparison]::OrdinalIgnoreCase) } else { $actual.Equals($expected, [StringComparison]::OrdinalIgnoreCase) }
+                if ($matched) { return }
+            } elseif ($null -eq $property -or $property -in @('Name', 'Value', 'Text')) {
+                $values = if ($property -eq 'Name') { @($item.Current.Name) } else { @(Automation-TextValues $item) }
+                foreach ($actual in $values) {
+                    if ($null -eq $actual) { continue }
+                    $matched = if ($contains) { $actual.Contains($expected, [StringComparison]::OrdinalIgnoreCase) } else { $actual.Equals($expected, [StringComparison]::OrdinalIgnoreCase) }
+                    if ($matched) { return }
+                }
+            } else { throw "Unsupported wait-for property: $property" }
+        }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+    $detail = if ($gone) { 'to disappear' } elseif ($null -ne $property) { "to have $property '$expected'" } else { "to match '$expected'" }
+    throw "Timed out waiting for $id $detail."
 }
 function Assert-True([bool]$Value,[string]$Message) { if (-not $Value) { throw $Message } }
 function Check([string]$Name,[scriptblock]$Body) {
@@ -57,6 +124,15 @@ function Wait-Element([string]$Id,[int]$Seconds=8) {
     do { $item=Element $Id; if ($null -ne $item) { return $item }; Start-Sleep -Milliseconds 150 }
     while ([DateTime]::UtcNow -lt $deadline)
     throw "Timed out waiting for $Id"
+}
+function Wait-ElementInView([string]$Id,[int]$Seconds=8) {
+    $deadline=[DateTime]::UtcNow.AddSeconds($Seconds)
+    do {
+        $item=Element $Id
+        if ($item -and -not $item.Current.IsOffscreen -and $item.Current.BoundingRectangle.Height -gt 0) { return $item }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw "Timed out waiting for $Id to come onscreen"
 }
 function Navigate([string]$Id) {
     $item=Element $Id
@@ -72,7 +148,10 @@ function Resize([int]$Width,[int]$Height=760) {
 }
 function Capture([string]$Name) {
     Start-Sleep -Milliseconds 250
-    UI @('screenshot','--focus','-w',"$($script:appProcess.MainWindowHandle)",'-o',(Join-Path $dataPath $Name)) | Out-Null
+    $script:appProcess.Refresh()
+    $windowHandle = $script:appProcess.MainWindowHandle
+    if ($windowHandle -eq [IntPtr]::Zero) { return }
+    UI @('screenshot','--focus','-w',"$windowHandle",'-o',(Join-Path $dataPath $Name)) | Out-Null
 }
 function Scroll-ToElement([string]$Id) {
     $viewport=Element 'MainContentScroll'
@@ -127,6 +206,23 @@ function Select-Request([string]$Text) {
 function Set-Value([string]$Id,[string]$Text) {
     UI @('set-value',$Id,$Text) | Out-Null
     Start-Sleep -Milliseconds 180
+}
+function Confirm-SensitiveSettingsAutoSave([string]$Property,[object]$ExpectedValue,[switch]$CommitTextInput) {
+    # NumberBox edits save on focus loss; selection controls save through the normal debounce.
+    if ($CommitTextInput) { Navigate 'NavChat' }
+    UI @('wait-for','SensitiveSettingsConfirmation','-t','10000') | Out-Null
+    UI @('invoke','PrimaryButton') | Out-Null
+    UI @('wait-for','SensitiveSettingsConfirmation','--gone','-t','5000') | Out-Null
+    $deadline=[DateTime]::UtcNow.AddSeconds(8)
+    do {
+        $saved=Get-Content -LiteralPath (Join-Path $dataPath 'settings.json') -Raw | ConvertFrom-Json
+        if ($saved.$Property -eq $ExpectedValue) {
+            if (-not $CommitTextInput) { Navigate 'NavChat' }
+            return
+        }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw "Sensitive setting $Property did not auto-save to '$ExpectedValue'."
 }
 function Post([string]$Id,[string]$Prompt) {
     $body=@{id=$Id;thread='attachments-thread';user='alice';text=$Prompt;mention=$false;plain=$false}|ConvertTo-Json -Compress
@@ -205,7 +301,7 @@ try {
         MattermostAllowedUserIds='alice';ChatApprovalMode='always';ChatResultMode='manual';AutoConnectProvider='none'
         FileAttachmentApprovalMode='always';FileAttachmentMaxSizeMb=10;FileAttachmentMaxCount=3;FileAttachmentMaxTotalSizeMb=20
     }
-    Write-Json 'onboarding.json' @{SchemaVersion=3;Step=4;Status='completed'}
+    Write-Json 'onboarding.json' @{schemaVersion=3;step=4;status='completed'}
     Write-Json 'language.json' @{Language=$Language}
     Write-Json 'appearance.json' @{Theme='dark'}
     $env:CAB_FILE_ATTACHMENTS_WORKSPACE=$workspace
@@ -257,21 +353,18 @@ try {
         Navigate 'NavConnections'
         Resize 720 760
         Choose 'ConnectionsJump' $(if($Language -eq 'ja'){'生成ファイルの添付'}else{'File attachments'})
-        $narrowSettings=Wait-Element 'FileAttachmentApprovalMode'
-        Assert-True (-not $narrowSettings.Current.IsOffscreen) 'Narrow settings navigation did not bring attachment settings into view'
+        $narrowSettings=Wait-ElementInView 'FileAttachmentApprovalMode'
         Capture 'light-settings-narrow.png'
         if ($Language -eq 'ja') {
             Resize 500 760
-            $compactMode=Wait-Element 'FileAttachmentApprovalMode'
-            Assert-True (-not $compactMode.Current.IsOffscreen) 'Compact Japanese attachment settings moved off-screen'
+            $compactMode=Wait-ElementInView 'FileAttachmentApprovalMode'
             Capture 'ja-settings-500.png'
         }
         Resize 1160 840
         Select-Theme 'dark'
         Navigate 'NavConnections'
         Choose 'ConnectionsJump' $(if($Language -eq 'ja'){'生成ファイルの添付'}else{'File attachments'})
-        $darkSettings=Wait-Element 'FileAttachmentApprovalMode'
-        Assert-True (-not $darkSettings.Current.IsOffscreen) 'Settings navigation did not bring attachment settings into view'
+        $darkSettings=Wait-ElementInView 'FileAttachmentApprovalMode'
         Capture 'dark-settings.png'
         Navigate 'NavChat'
         $script:checks.Add(@{name='Light/dark dialog and narrow settings captures';passed=$true})
@@ -280,9 +373,7 @@ try {
     Check 'First mode requests explicit consent, then uploads later files automatically in the same session' {
         Navigate 'NavConnections'
         Choose 'FileAttachmentApprovalMode' $(if($Language -eq 'ja'){'スレッドの初回のみ確認'}else{'Ask once per conversation'})
-        UI @('invoke','SaveConnections') | Out-Null
-        UI @('wait-for','SaveConnections','-p','IsEnabled','--value','True','-t','5000') | Out-Null
-        Navigate 'NavChat'
+        Confirm-SensitiveSettingsAutoSave 'FileAttachmentApprovalMode' 'first'
         Run-Request 'attachment-2' 'second.txt'
         $before=Invoke-RestMethod "$script:endpoint/test/results"
         Assert-True ($before.uploads.Count -eq 0) 'First mode uploaded before a user approved the first file'
@@ -304,9 +395,7 @@ try {
         Navigate 'NavConnections'
         Choose 'ConnectionsJump' $(if($Language -eq 'ja'){'生成ファイルの添付'}else{'File attachments'})
         Set-Value 'FileAttachmentMaxSizeMb' '11'
-        UI @('invoke','SaveConnections') | Out-Null
-        UI @('wait-for','SaveConnections','-p','IsEnabled','--value','True','-t','5000') | Out-Null
-        Navigate 'NavChat'
+        Confirm-SensitiveSettingsAutoSave 'FileAttachmentMaxSizeMb' 11 -CommitTextInput
         Run-Request 'attachment-4' 'fourth.txt'
         $changed=Invoke-RestMethod "$script:endpoint/test/results"
         Assert-True ($changed.uploads.Count -eq 2) 'Changed limits reused old consent without asking'
