@@ -430,10 +430,10 @@
       "runtimeSourceUrl": "https://github.com/microsoft/CsWinRT"
     },
     {
-      "name": "Fluent System Icons Arrow Circle Up glyph",
+      "name": "Fluent System Icons Arrow Circle Up glyph and regular settings icons",
       "noticeFile": "LICENSE-FluentSystemIcons.txt",
       "version": "revision 4c94ad5f4081168c0d45bdc368f230ecb757cd09",
-      "provenance": "Assets/Icons/FluentSystemIcons SVG plus UpdateAvailable.ttf subset"
+      "provenance": "Assets/Icons/FluentSystemIcons SVGs plus UpdateAvailable.ttf subset; SettingsScopeIcons.xaml retains the regular SVG path geometry"
     },
     {
       "name": "Windows operating-system APIs",
@@ -475,12 +475,12 @@
   ],
   "aggregateNotice": {
     "file": "desktop/THIRD-PARTY-NOTICES.txt",
-    "sha256": "efbc3b5d4d3b7fd5c468854fe6b8abb7a5652d872260a10ed53326bdb59fc818",
-    "bytes": 487418
+    "sha256": "61d17634f408ba6fae979999ee9e2bac2d3eca1c4f241da53ebad8c26655d90f",
+    "bytes": 487523
   },
   "auditNotes": [
     "Desktop publish evidence was captured from win-x64; win-arm64 is explicitly allowed for the same reviewed package versions, runtime version, and notice documents. The release pipeline should run the validator for both RIDs.",
-    "The pinned Fluent System Icons NOTICE lists replace, avocado, and yargs third-party assets. They are absent from the shipped Arrow Circle Up SVG and U+E0A2 one-glyph font subset; the icon README and pinned MIT license are applicable.",
+    "The pinned Fluent System Icons NOTICE lists replace, avocado, and yargs third-party assets. They are absent from the shipped Arrow Circle Up SVG, eight regular settings SVGs and U+E0A2 one-glyph font subset; the icon README and pinned MIT license are applicable.",
     "The legacy SEA package made by scripts/build-exe.mjs is outside this Windows portable payload. That script emits its own THIRD-PARTY-NOTICES.txt containing the Node.js LICENSE and ws LICENSE; the current .NET portable package does not include node.exe."
   ],
   "legacyNodeDistribution": {

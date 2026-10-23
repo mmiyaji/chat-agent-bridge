@@ -10,10 +10,7 @@ public sealed partial class MainPage
 {
     private readonly string[] _agentScopeKeys = ["common", "codex", "claude", "gemini", "github-copilot", "custom"];
     private AgentProfileEditorControl? _agentProfileDetails;
-    private ListView? _agentScopeNavigation;
-    private ComboBox? _agentScopePicker;
-    private Grid? _agentScopeShell;
-    private StackPanel? _agentScopePage;
+    private NavigationView? _agentScopeNavigation;
     private StackPanel? _agentScopeCommonGroup;
     private TextBlock? _agentScopeCommonHeading;
     private TextBlock? _agentScopeCommonHelp;
@@ -21,16 +18,6 @@ public sealed partial class MainPage
     private bool _syncingAgentScope;
     private bool _changingAgentScope;
     private bool _agentScopeInitialized;
-
-    private static StackPanel ScopeNavigationLabel(Symbol symbol, string text)
-    {
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
-        var icon = new SymbolIcon(symbol) { Width = 16, Height = 16, VerticalAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetAccessibilityView(icon, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
-        row.Children.Add(icon);
-        row.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
-        return row;
-    }
 
     private void InitializeAgentSettingsScope()
     {
@@ -54,83 +41,73 @@ public sealed partial class MainPage
         _agentProfileDetails.OpenCommonSettings += async () => await SelectAgentSettingsScopeAsync("common");
         _agentProfileDetails.PropertyChanged += (_, _) => UpdateAgentScopeEnabled();
 
-        _agentScopeNavigation = new ListView { SelectionMode = ListViewSelectionMode.Single, VerticalAlignment = VerticalAlignment.Top };
+        _agentScopeNavigation = new NavigationView
+        {
+            PaneDisplayMode = NavigationViewPaneDisplayMode.Left,
+            IsPaneOpen = true,
+            OpenPaneLength = 200,
+            IsPaneToggleButtonVisible = false,
+            IsBackButtonVisible = NavigationViewBackButtonVisible.Collapsed,
+            IsSettingsVisible = false
+        };
         AutomationProperties.SetAutomationId(_agentScopeNavigation, "AgentScopeList");
-        _agentScopePicker = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 0, 0, 16) };
-        AutomationProperties.SetAutomationId(_agentScopePicker, "AgentScopePicker");
+        AutomationProperties.SetName(_agentScopeNavigation, DesktopText.Get("AgentScopePicker"));
         for (var i = 0; i < _agentScopeKeys.Length; i++)
         {
             var key = _agentScopeKeys[i];
-            var item = new ListViewItem { Tag = key };
+            var item = new NavigationViewItem { Tag = key };
             AutomationProperties.SetAutomationId(item, "AgentScope" + (key switch { "common" => "Common", "codex" => "Codex", "claude" => "Claude", "gemini" => "Gemini", "github-copilot" => "Copilot", _ => "Custom" }));
-            _agentScopeNavigation.Items.Add(item);
-            _agentScopePicker.Items.Add(new ComboBoxItem { Tag = key });
+            _agentScopeNavigation.MenuItems.Add(item);
         }
-        _agentScopeNavigation.SelectionChanged += async (_, _) =>
+        _agentScopeNavigation.SelectionChanged += async (_, args) =>
         {
-            if (!_syncingAgentScope && _agentScopeNavigation.SelectedItem is ListViewItem { Tag: string scope })
+            if (!_syncingAgentScope && args.SelectedItemContainer is NavigationViewItem { Tag: string scope })
                 await SelectAgentSettingsScopeAsync(scope);
         };
-        _agentScopePicker.SelectionChanged += async (_, _) =>
-        {
-            if (!_syncingAgentScope && _agentScopePicker.SelectedItem is ComboBoxItem { Tag: string scope })
-                await SelectAgentSettingsScopeAsync(scope);
-        };
-        _agentScopePage = new StackPanel { Spacing = 16 };
-        _agentScopePage.Children.Add(_agentScopeCommonGroup);
-        _agentScopePage.Children.Add(_agentProfileDetails);
-        _agentScopeShell = new Grid { ColumnSpacing = 24 };
-        _agentScopeShell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200) });
-        _agentScopeShell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        _agentScopeShell.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        _agentScopeShell.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        _agentScopeShell.Children.Add(_agentScopeNavigation);
-        _agentScopeShell.Children.Add(_agentScopePicker);
-        _agentScopeShell.Children.Add(_agentScopePage);
-        original.Children.Add(_agentScopeShell);
+        var page = new StackPanel { Spacing = 16, Margin = new Thickness(16) };
+        page.Children.Add(_agentScopeCommonGroup);
+        page.Children.Add(_agentProfileDetails);
+        _agentScopeNavigation.Content = page;
+        original.Children.Add(_agentScopeNavigation);
         original.Spacing = 0;
-        original.SizeChanged += (_, args) => UpdateAgentScopeLayout(args.NewSize.Width);
+        _agentScopeNavigation.SizeChanged += (_, args) => UpdateAgentScopeLayout(args.NewSize.Width);
         Loaded += (_, _) => RefreshAgentScopeLabels();
         ApplyAgentScopeSelection();
         RefreshAgentScopeLabels();
-        UpdateAgentScopeLayout(original.ActualWidth);
+        UpdateAgentScopeLayout(_agentScopeNavigation.ActualWidth);
     }
 
     private void UpdateAgentScopeLayout(double width)
     {
-        if (_agentScopeShell is null || _agentScopeNavigation is null || _agentScopePicker is null || _agentScopePage is null) return;
-        var wide = width >= 760;
-        _agentScopeNavigation.Visibility = wide ? Visibility.Visible : Visibility.Collapsed;
-        _agentScopePicker.Visibility = wide ? Visibility.Collapsed : Visibility.Visible;
-        Grid.SetColumnSpan(_agentScopePicker, 2);
-        Grid.SetRow(_agentScopePage, wide ? 0 : 1);
-        Grid.SetColumn(_agentScopePage, wide ? 1 : 0);
-        Grid.SetColumnSpan(_agentScopePage, wide ? 1 : 2);
+        if (_agentScopeNavigation is null) return;
+        _agentScopeNavigation.PaneDisplayMode = width >= 1000
+            ? NavigationViewPaneDisplayMode.Left
+            : NavigationViewPaneDisplayMode.Top;
+        _agentScopeNavigation.IsPaneOpen = width >= 1000;
     }
 
     private void UpdateAgentScopeEnabled()
     {
         var enabled = !_changingAgentScope && (_agentProfileDetails?.CanChangeSelection ?? true);
-        if (_agentScopeNavigation is not null) _agentScopeNavigation.IsEnabled = enabled;
-        if (_agentScopePicker is not null) _agentScopePicker.IsEnabled = enabled;
+        // Disable navigation alone, not NavigationView.Content: the running
+        // check's cancel button and its feedback must remain usable.
+        if (_agentScopeNavigation is not null)
+            foreach (var item in _agentScopeNavigation.MenuItems.OfType<NavigationViewItem>())
+                item.IsEnabled = enabled;
     }
 
     private void RefreshAgentScopeLabels()
     {
-        if (_agentScopeNavigation is null || _agentScopePicker is null) return;
+        if (_agentScopeNavigation is null) return;
         string[] labels = [DesktopText.Get("AgentScopeCommon"), "Codex", "Claude Code", "Gemini CLI", "GitHub Copilot", DesktopText.Get("AgentScopeCustom")];
+        string[] iconKeys = ["common", "codex", "claude", "gemini", "github-copilot", "custom"];
         for (var i = 0; i < labels.Length; i++)
         {
-            var item = (ListViewItem)_agentScopeNavigation.Items[i];
-            item.Content = ScopeNavigationLabel(i == 0 ? Symbol.Folder : Symbol.Library, labels[i]);
+            var item = (NavigationViewItem)_agentScopeNavigation.MenuItems[i];
+            item.Content = ScopeNavigationLabel(iconKeys[i], labels[i]);
             AutomationProperties.SetName(item, labels[i]);
-            var choice = (ComboBoxItem)_agentScopePicker.Items[i];
-            choice.Content = labels[i];
-            AutomationProperties.SetName(choice, labels[i]);
         }
         AutomationProperties.SetName(_agentScopeNavigation, DesktopText.Get("AgentScopePicker"));
-        AutomationProperties.SetName(_agentScopePicker, DesktopText.Get("AgentScopePicker"));
-        _agentScopePicker.Header = DesktopText.Get("AgentScopePicker");
         _agentScopeCommonHeading!.Text = DesktopText.Get("AgentScopeCommon");
         _agentScopeCommonHelp!.Text = DesktopText.Get("AgentScopeCommonHelp");
         _agentProfileDetails?.RefreshLocalizedText();
@@ -140,8 +117,8 @@ public sealed partial class MainPage
     {
         _syncingAgentScope = true;
         var index = Array.IndexOf(_agentScopeKeys, _agentSettingsScope);
-        if (_agentScopeNavigation is not null) _agentScopeNavigation.SelectedIndex = index;
-        if (_agentScopePicker is not null) _agentScopePicker.SelectedIndex = index;
+        if (_agentScopeNavigation is not null && index >= 0 && index < _agentScopeNavigation.MenuItems.Count)
+            _agentScopeNavigation.SelectedItem = _agentScopeNavigation.MenuItems[index];
         if (_agentScopeCommonGroup is not null) _agentScopeCommonGroup.Visibility = ToVisibility(_agentSettingsScope == "common");
         if (_agentProfileDetails is not null) _agentProfileDetails.Visibility = ToHiddenVisibility(_agentSettingsScope == "common");
         _syncingAgentScope = false;

@@ -21,7 +21,7 @@
   },
   {
     "name": "Fluent System Icons",
-    "components": "Arrow Circle Up 20 filled SVG and UpdateAvailable.ttf one-glyph font subset; Microsoft Corporation copyright 2020; upstream revision 4c94ad5f4081168c0d45bdc368f230ecb757cd09",
+    "components": "Arrow Circle Up 20 filled SVG, UpdateAvailable.ttf one-glyph font subset, and eight 20 regular settings SVGs (Folder, Window Console, Code, Sparkle, Bot, Apps, Chat, Chat Multiple); Microsoft Corporation copyright 2020; upstream revision 4c94ad5f4081168c0d45bdc368f230ecb757cd09",
     "file": "LICENSE-FluentSystemIcons.txt"
   },
   {

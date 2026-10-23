@@ -1,4 +1,47 @@
-# WinUI settings scope review — 2026-10-23
+# Outline icons and responsive settings tabs — 2026-10-23
+
+Target: design option 2's top tabs for constrained windows; retain option 1's
+side list when the content width is at least 1000 effective pixels. This is a
+responsive adaptation: the concept is wide and edits Claude, while the final
+medium capture selects the offline Codex fixture. No pixel-perfect claim.
+
+Source and implementation were opened together in
+`desktop/artifacts/c9e83ba0-9dec-444a-ba90-c6999acf5dc3/design2-responsive-comparison.png`.
+
+Findings resolved:
+- The original 20 px glyphs were clipped by a 16 px box. The new icons use
+  original Fluent System Icons regular SVG paths in a 20 px canvas/Viewbox.
+- Distinct, generic outline symbols identify the providers; no third-party
+  product logos are bundled. The pinned Microsoft MIT license and attribution
+  remain accessible from the Information page; inventory and aggregate notice
+  were updated and validated against the published payload.
+- Medium and small windows use native top NavigationView tabs. Its More menu
+  exposes overflow choices, including all six agent scopes at minimum width.
+- Added detail padding in both orientations. Busy guards disable scope choices
+  rather than the detail pane, preserving access to the CLI cancel button.
+- WinUI rejected shared PathIcon geometry in the first isolated run. Each icon
+  now creates its own path through a DataTemplate; restart tests pass.
+
+Fidelity: native typography, theme-aware foregrounds and surfaces, 20 px vector
+outline icons, aligned inputs, and a native selected-tab underline. Existing
+production copy and real settings controls are retained. The separate activation
+action and CLI catalog feedback remain visible; browsing never activates a profile.
+
+Final native smoke: eight scenario groups pass in Japanese/dark and English/light
+at 1440, 1000 and 500 window widths. Tests include selecting every compact scope,
+CLI checks, cancellation rollback, save failure, activation, restart/cache restore
+and keeping the loopback chat connection alive. Screenshots were visually reviewed.
+- Dark: `desktop/artifacts/c9e83ba0-9dec-444a-ba90-c6999acf5dc3/`.
+- Light: `desktop/artifacts/932f0509-81e9-4f69-9e94-7c401013f170/`.
+- Portable publish, localization consistency and third-party notice validation pass.
+
+No remaining P0/P1/P2 visual issues against the requested responsive direction.
+
+final result: passed
+
+---
+
+# Previous WinUI settings scope review — 2026-10-23
 
 Selected target: design option 1, `exec-9b837a0f-ed60-47fc-b6eb-1cbd7e4c718d.png`.
 Implementation: native Agent settings and Connection settings, on an isolated profile.

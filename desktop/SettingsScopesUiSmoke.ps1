@@ -89,6 +89,18 @@ $env:CAB_LIVE_STEERING_MODEL_LIST='1'
 function Top { $p=(Wait-Element 'MainContentScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern); if($p.Current.VerticallyScrollable){$p.SetScrollPercent(-1,0)};Start-Sleep -Milliseconds 150 }
 function Value($id,$value){$e=Wait-Element $id;$pattern=$null;if($e.TryGetCurrentPattern([Windows.Automation.ValuePattern]::Pattern,[ref]$pattern)){([Windows.Automation.ValuePattern]$pattern).SetValue($value)}else{$inner=$e.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Edit));($inner.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).SetValue($value)}}
 function Choose-Scope($id){Top;Wait-For {(Wait-Element $id).Current.IsEnabled} "scope $id enabled";Click-Actual $id;Start-Sleep -Milliseconds 200}
+function Choose-CompactScope($navId,$id){
+ Top
+ $target=Find-Element $script:window $id
+ if($null -eq $target -or $target.Current.IsOffscreen){
+   $overflow=Find-Element (Wait-Element $navId) 'TopNavOverflowButton'
+   Assert ($null -ne $overflow -and -not $overflow.Current.IsOffscreen) ('Missing overflow for '+$id)
+   Invoke-Element $overflow 'open settings tab overflow'
+   $target=Wait-ProcessElement $id
+ }
+ Invoke-Element $target ('select compact '+$id)
+ Start-Sleep -Milliseconds 500
+}
 function Drafts { $p=Join-Path $script:data 'agent-settings-drafts.json';if(Test-Path $p){Get-Content $p -Raw|ConvertFrom-Json}else{$null} }
 try {
  Start-IsolatedApp
@@ -148,10 +160,19 @@ try {
  Add-Pass 'Shared, Mattermost and Slack settings switch without changing connection or provider'
  Select-Element 'NavAgentSettings'
  Choose-Scope 'AgentScopeCodex'
+ Resize-Test 1000
+ Top
+ Capture "agent-medium-$Language-$Theme"
+ Assert (-not (Wait-Element 'AgentScopeCodex').Current.IsOffscreen) 'Medium-width tab is offscreen.'
  Resize-Test 500
  Top
  Capture "agent-narrow-$Language-$Theme"
- Assert (-not (Wait-Element 'AgentScopePicker').Current.IsOffscreen) 'Narrow scope picker missing.'
+ foreach($id in @('AgentScopeClaude','AgentScopeGemini','AgentScopeCopilot','AgentScopeCustom','AgentScopeCommon','AgentScopeCodex')){
+   Choose-CompactScope 'AgentScopeList' $id
+ }
+ Assert ((Get-Content $settingsPath -Raw|ConvertFrom-Json).AgentModel -eq 'codex-offline-fixture') 'Compact scope browsing activated an agent.'
+ Capture "agent-narrow-selected-$Language-$Theme"
+ Assert (-not (Wait-Element 'AgentScopeList').Current.IsOffscreen) 'Narrow scope tabs missing.'
  $e=Scroll-ToElement 'AgentExecutable';Point-At $e
  $e=Scroll-ToElement 'UseAgentProfile';Point-At $e
  Capture "agent-narrow-bottom-$Language-$Theme"
@@ -159,8 +180,12 @@ try {
  Click-Actual 'NavConnections'
  Top
  Capture "connection-narrow-$Language-$Theme"
- Assert (-not (Wait-Element 'ConnectionScopePicker').Current.IsOffscreen) 'Narrow connection picker missing.'
- Add-Pass 'Both pages expose full-width scope pickers and reachable controls at minimum width'
+ foreach($id in @('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeCommon')){
+   Choose-CompactScope 'ConnectionScopeList' $id
+ }
+ Assert ((Results).connections -eq 1 -and (Results).totalConnections -eq 1) 'Compact scope browsing reconnected chat.'
+ Assert (-not (Wait-Element 'ConnectionScopeList').Current.IsOffscreen) 'Narrow connection tabs missing.'
+ Add-Pass 'Both pages expose top scope tabs and reachable controls at minimum width'
  Resize-Test 1440
  Select-Element 'NavAgentSettings'
  Choose-Scope 'AgentScopeClaude'

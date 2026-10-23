@@ -16,3 +16,41 @@ glyph inside a themed circle; no additional font installation is required.
 
 Reproduce the subset with fontTools:
   pyftsubset FluentSystemIcons-Filled.ttf --unicodes=U+E0A2 --name-IDs='*' --name-legacy --name-languages='*' --output-file=UpdateAvailable.ttf
+
+Settings navigation uses the following 20 px regular (outline) icons, from the
+same pinned revision and MIT license. These are generic UI symbols rather than
+Codex, Claude, Gemini or GitHub product logos. The unmodified SVGs are included;
+AgentSettings/SettingsScopeIcons.xaml carries the same path data for native,
+theme-aware rendering. The Viewbox scales the entire path instead of clipping it.
+
+ic_fluent_apps_20_regular.svg
+Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Apps/SVG/ic_fluent_apps_20_regular.svg
+SHA-256: 69554ad42b056af10fe104a7e4ece5fd71a15ba7c92a09eac0b5139383c3a62a
+
+ic_fluent_bot_20_regular.svg
+Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Bot/SVG/ic_fluent_bot_20_regular.svg
+SHA-256: 631c9cca4dd7c5bfc3ccdc51dd5001891c6f22e2448e14e3983379a0ec440363
+
+ic_fluent_chat_20_regular.svg
+Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Chat/SVG/ic_fluent_chat_20_regular.svg
+SHA-256: 887ddc4469df53b75d350965d7f0d3cb5e0468bf1acc13b76a55c593fd8fe7a7
+
+ic_fluent_chat_multiple_20_regular.svg
+Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Chat%20Multiple/SVG/ic_fluent_chat_multiple_20_regular.svg
+SHA-256: 5e1afc86239ccc9abfe7a3acdf5e5a4c679c0960e4da2dc3085d295e826c6869
+
+ic_fluent_code_20_regular.svg
+Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Code/SVG/ic_fluent_code_20_regular.svg
+SHA-256: 0bcade33aefaa780083fd78a2bed146849d90a8c3b8beecef13c3b0cfed942ad
+
+ic_fluent_folder_20_regular.svg
+Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Folder/SVG/ic_fluent_folder_20_regular.svg
+SHA-256: 7fb7fb2567a518b9e09997c9ddd4588a78c9e02fd1c3e2bb714efa7798a2e560
+
+ic_fluent_sparkle_20_regular.svg
+Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Sparkle/SVG/ic_fluent_sparkle_20_regular.svg
+SHA-256: 7f74c3f121a1c1ef8df1c6696e7c091f1e46ff0086d046ab03ccdbe76082456f
+
+ic_fluent_window_console_20_regular.svg
+Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Window%20Console/SVG/ic_fluent_window_console_20_regular.svg
+SHA-256: f2b46d93f5b922c79ecd04c9cbad61c26f6bd0491b80763de4409f059c43a202

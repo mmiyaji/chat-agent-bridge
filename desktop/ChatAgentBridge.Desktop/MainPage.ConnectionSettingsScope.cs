@@ -7,11 +7,8 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
-    private const double ConnectionScopeNavigationBreakpoint = 760;
-    private ListView? _connectionScopeNavigation;
-    private ComboBox? _connectionScopePicker;
-    private Grid? _connectionScopeShell;
-    private StackPanel? _connectionScopePage;
+    private const double ConnectionScopeNavigationBreakpoint = 1000;
+    private NavigationView? _connectionScopeNavigation;
     private TextBlock? _connectionScopeHeading;
     private TextBlock? _connectionScopeDescription;
     private StackPanel? _connectionScopeCommonGroup;
@@ -66,112 +63,62 @@ public sealed partial class MainPage
             originalContent.Children.Add(element);
         }
 
-        var shell = new Grid { ColumnSpacing = 20 };
-        shell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200) });
-        shell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        shell.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        shell.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        _connectionScopeShell = shell;
+        var shell = new Grid();
 
-        _connectionScopeNavigation = new ListView
+        _connectionScopeNavigation = new NavigationView
         {
-            SelectionMode = ListViewSelectionMode.Single,
-            IsItemClickEnabled = false,
-            VerticalAlignment = VerticalAlignment.Top,
-            Margin = new Thickness(0, 4, 0, 0)
+            PaneDisplayMode = NavigationViewPaneDisplayMode.Left,
+            IsPaneOpen = true,
+            OpenPaneLength = 200,
+            IsPaneToggleButtonVisible = false,
+            IsBackButtonVisible = NavigationViewBackButtonVisible.Collapsed,
+            IsSettingsVisible = false
         };
         AutomationProperties.SetAutomationId(_connectionScopeNavigation, "ConnectionScopeList");
+        AutomationProperties.SetName(_connectionScopeNavigation, DesktopText.Get("AgentScopePicker"));
         AddConnectionScopeItem(_connectionScopeNavigation, "common", DesktopText.Get("AgentScopeCommon"), "ConnectionScopeCommon");
         AddConnectionScopeItem(_connectionScopeNavigation, "mattermost", MrtText.Get("MattermostSectionTitle.Text"), "ConnectionScopeMattermost");
         AddConnectionScopeItem(_connectionScopeNavigation, "slack", MrtText.Get("SlackSectionTitle.Text"), "ConnectionScopeSlack");
-        _connectionScopeNavigation.SelectionChanged += (_, _) =>
+        _connectionScopeNavigation.SelectionChanged += (_, args) =>
         {
-            if (_syncingConnectionScopeSelection || _connectionScopeNavigation.SelectedItem is not ListViewItem item) return;
+            if (_syncingConnectionScopeSelection || args.SelectedItemContainer is not NavigationViewItem item) return;
             SetConnectionSettingsScope(item.Tag as string ?? "common");
         };
-        Grid.SetColumn(_connectionScopeNavigation, 0);
         shell.Children.Add(_connectionScopeNavigation);
 
-        _connectionScopePicker = new ComboBox
-        {
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            Margin = new Thickness(0, 0, 0, 12)
-        };
-        AutomationProperties.SetAutomationId(_connectionScopePicker, "ConnectionScopePicker");
-        AddConnectionScopeChoice(_connectionScopePicker, "common", DesktopText.Get("AgentScopeCommon"));
-        AddConnectionScopeChoice(_connectionScopePicker, "mattermost", MrtText.Get("MattermostSectionTitle.Text"));
-        AddConnectionScopeChoice(_connectionScopePicker, "slack", MrtText.Get("SlackSectionTitle.Text"));
-        _connectionScopePicker.SelectionChanged += (_, _) =>
-        {
-            if (_syncingConnectionScopeSelection || _connectionScopePicker.SelectedItem is not ComboBoxItem item) return;
-            SetConnectionSettingsScope(item.Tag as string ?? "common");
-        };
-        Grid.SetColumn(_connectionScopePicker, 0);
-        shell.Children.Add(_connectionScopePicker);
-
-        var page = new StackPanel { Spacing = 12 };
-        _connectionScopePage = page;
+        var page = new StackPanel { Spacing = 12, Margin = new Thickness(16) };
         page.Children.Add(_connectionScopeHeading);
         page.Children.Add(_connectionScopeCommonGroup);
         page.Children.Add(_connectionScopeMattermostGroup);
         page.Children.Add(_connectionScopeSlackGroup);
-        Grid.SetColumn(page, 1);
-        shell.Children.Add(page);
+        _connectionScopeNavigation.Content = page;
         originalContent.Children.Add(shell);
 
-        shell.SizeChanged += (_, _) => UpdateConnectionScopeNavigation(shell.ActualWidth);
+        _connectionScopeNavigation.SizeChanged += (_, args) => UpdateConnectionScopeNavigation(args.NewSize.Width);
         SetConnectionSettingsScope("common");
         RefreshConnectionScopeLabels(System.Globalization.CultureInfo.CurrentUICulture);
-        UpdateConnectionScopeNavigation(originalContent.ActualWidth);
+        UpdateConnectionScopeNavigation(_connectionScopeNavigation.ActualWidth);
     }
 
     private static T? FindLocalizedElement<T>(Panel panel, string key) where T : FrameworkElement =>
         panel.Children.OfType<T>().FirstOrDefault(element => LocalizedResourceKey.GetKey(element) == key);
 
-    private static void AddConnectionScopeItem(ListView navigation, string key, string label, string automationId)
+    private static void AddConnectionScopeItem(NavigationView navigation, string key, string label, string automationId)
     {
-        var item = new ListViewItem { Content = ScopeNavigationLabel(key == "common" ? Symbol.Setting : Symbol.Link, label), Tag = key };
+        var item = new NavigationViewItem { Content = ScopeNavigationLabel(key, label), Tag = key };
         AutomationProperties.SetAutomationId(item, automationId);
         AutomationProperties.SetName(item, label);
-        navigation.Items.Add(item);
-    }
-
-    private static void AddConnectionScopeChoice(ComboBox picker, string key, string label)
-    {
-        var item = new ComboBoxItem { Content = label, Tag = key };
-        AutomationProperties.SetName(item, label);
-        picker.Items.Add(item);
+        navigation.MenuItems.Add(item);
     }
 
     private void UpdateConnectionScopeNavigation(double availableWidth)
     {
-        if (_connectionScopeNavigation is null || _connectionScopePicker is null ||
-            _connectionScopeShell is null || _connectionScopePage is null) return;
+        if (_connectionScopeNavigation is null) return;
         var showNavigation = availableWidth >= ConnectionScopeNavigationBreakpoint;
-        _connectionScopeNavigation.Visibility = showNavigation ? Visibility.Visible : Visibility.Collapsed;
-        _connectionScopePicker.Visibility = showNavigation ? Visibility.Collapsed : Visibility.Visible;
-        if (showNavigation)
-        {
-            Grid.SetRow(_connectionScopeNavigation, 0);
-            Grid.SetColumn(_connectionScopeNavigation, 0);
-            Grid.SetRow(_connectionScopePicker, 0);
-            Grid.SetColumn(_connectionScopePicker, 0);
-            Grid.SetColumnSpan(_connectionScopePicker, 1);
-            Grid.SetRow(_connectionScopePage, 0);
-            Grid.SetColumn(_connectionScopePage, 1);
-            Grid.SetColumnSpan(_connectionScopePage, 1);
-        }
-        else
-        {
-            Grid.SetRow(_connectionScopePicker, 0);
-            Grid.SetColumn(_connectionScopePicker, 0);
-            Grid.SetColumnSpan(_connectionScopePicker, 2);
-            Grid.SetRow(_connectionScopeNavigation, 1);
-            Grid.SetColumn(_connectionScopeNavigation, 0);
-            Grid.SetRow(_connectionScopePage, 1);
-            Grid.SetColumn(_connectionScopePage, 0);
-            Grid.SetColumnSpan(_connectionScopePage, 2);
-        }
+        _connectionScopeNavigation.PaneDisplayMode = showNavigation
+            ? NavigationViewPaneDisplayMode.Left
+            : NavigationViewPaneDisplayMode.Top;
+        _connectionScopeNavigation.IsPaneOpen = showNavigation;
     }
 
     private void SetConnectionSettingsScope(string scope)
@@ -196,15 +143,17 @@ public sealed partial class MainPage
 
         _syncingConnectionScopeSelection = true;
         if (_connectionScopeNavigation is not null)
-            _connectionScopeNavigation.SelectedIndex = _connectionSettingsScope switch { "mattermost" => 1, "slack" => 2, _ => 0 };
-        if (_connectionScopePicker is not null)
-            _connectionScopePicker.SelectedIndex = _connectionSettingsScope switch { "mattermost" => 1, "slack" => 2, _ => 0 };
+        {
+            var index = _connectionSettingsScope switch { "mattermost" => 1, "slack" => 2, _ => 0 };
+            _connectionScopeNavigation.SelectedItem = _connectionScopeNavigation.MenuItems[index];
+        }
         _syncingConnectionScopeSelection = false;
     }
 
     private void RefreshConnectionScopeLabels(System.Globalization.CultureInfo culture)
     {
-        if (_connectionScopeNavigation is null || _connectionScopePicker is null) return;
+        if (_connectionScopeNavigation is null) return;
+        string[] iconKeys = ["common", "mattermost", "slack"];
         var labels = new[]
         {
             DesktopText.Get("AgentScopeCommon"),
@@ -213,20 +162,13 @@ public sealed partial class MainPage
         };
         for (var index = 0; index < labels.Length; index++)
         {
-            if (_connectionScopeNavigation.Items[index] is ListViewItem navigationItem)
+            if (_connectionScopeNavigation.MenuItems[index] is NavigationViewItem navigationItem)
             {
-                navigationItem.Content = ScopeNavigationLabel(index == 0 ? Symbol.Setting : Symbol.Link, labels[index]);
+                navigationItem.Content = ScopeNavigationLabel(iconKeys[index], labels[index]);
                 AutomationProperties.SetName(navigationItem, labels[index]);
-            }
-            if (_connectionScopePicker.Items[index] is ComboBoxItem pickerItem)
-            {
-                pickerItem.Content = labels[index];
-                AutomationProperties.SetName(pickerItem, labels[index]);
             }
         }
         AutomationProperties.SetName(_connectionScopeNavigation, DesktopText.Get("AgentScopePicker"));
-        AutomationProperties.SetName(_connectionScopePicker, DesktopText.Get("AgentScopePicker"));
-        _connectionScopePicker.Header = DesktopText.Get("AgentScopePicker");
         if (_connectionScopeDescription is not null) _connectionScopeDescription.Text = DesktopText.Get("ConnectionScopeCommonHelp");
         SetConnectionSettingsScope(_connectionSettingsScope);
     }
