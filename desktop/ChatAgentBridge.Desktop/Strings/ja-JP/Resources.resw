@@ -840,6 +840,7 @@
   <data name="AboutHeading.Text" xml:space="preserve"><value>情報</value></data>
   <data name="AboutDescription.Text" xml:space="preserve"><value>製品情報、更新、法的情報を確認できます。</value></data>
   <data name="AboutBuildTimestampLabel.Header" xml:space="preserve"><value>ビルド日時</value></data>
+  <data name="AboutBuildTimestampLabel.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>ビルド日時</value></data>
   <data name="AboutPackageLabel.Header" xml:space="preserve"><value>パッケージ</value></data>
   <data name="AboutLinksHeading.Text" xml:space="preserve"><value>ヘルプとフィードバック</value></data>
   <data name="AboutTechnicalDetails.Header" xml:space="preserve"><value>アプリの詳細</value></data>
