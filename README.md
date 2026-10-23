@@ -4,38 +4,50 @@
 
 Chat Agent Bridge is a Windows app that accepts requests from Slack or Mattermost and runs AI agents on your PC. You can send requests from a phone or another computer, review results and add instructions in the same thread.
 
-It is intended for devices where you cannot use the Codex or Claude Code desktop app. Work runs through the CLI and project on your Windows PC, which must have Bridge running and remain online.
+It is intended for devices where you cannot use the Codex or Claude Code desktop app. Bridge starts a command-line agent (CLI) installed on your Windows PC and runs the request in the working folder you selected.
 
-![General: connection status and startup preferences](docs/assets/screenshots/general-en.png)
+## System overview and request flow
 
-> Screenshots show the development build running on a Windows PC on October 24, 2026, using dedicated demo settings and sample usage records. They contain no real conversations or credentials. This README shows light mode; the Japanese README shows dark mode. Released versions may differ.
+![Requests travel from Slack or Mattermost on another device to Chat Agent Bridge and a CLI on the Windows PC; results return to chat](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)
 
-## What you can do
+This is the diagram shown in the app's setup guide and General page. It uses Codex and Claude Code as examples. Gemini CLI and GitHub Copilot CLI use the same arrangement.
 
-| Goal | Features |
+1. **Post from another device** in Slack or Mattermost. That device does not need an agent CLI installed.
+2. **Bridge on the Windows PC** receives the post and checks allowed users and conversation approval settings. Requests that need approval wait for a decision on the PC.
+3. **The selected CLI** runs the request in the configured working folder. It connects to AI services according to its own settings and performs file operations or commands.
+4. **Share the result in the original thread.** By default, you review it on the PC before sending it; automatic replies are also available. Replies from the same user in that thread continue the conversation on supported CLIs.
+
+Keep the Windows PC running with Bridge connected to chat. It can run in the system tray, but cannot process requests while the PC is asleep or signed out.
+
+## Main features
+
+| Feature | Description |
 | --- | --- |
-| Work from chat | Send requests through Slack or Mattermost and continue with replies from the same user in the same thread |
-| Choose your agent | Switch agents and models, choosing whether to pass along conversation context |
-| Follow the work | Chat progress updates, live output on the PC, and request cancellation |
-| Send another instruction | Queue it, or add it to a running request on supported agents |
-| Control access | Allowed users, channels, threads and trusted working folders |
-| Control sharing | Conversation approvals, manual or automatic result sharing, and attachment approval, size and count limits |
-| Review your activity | Conversations, execution and operation history, an activity calendar, and token, cache and estimated-cost charts |
-| Keep it convenient | Setup wizard, startup and auto-connect preferences, system tray mode and portable updates |
+| Chat requests | Slack and Mattermost requests with thread-based conversation continuation |
+| Agent and model changes | Change them from the PC or chat; choose whether to pass conversation notes when switching agents |
+| Progress and cancellation | Chat progress posts, live output on the PC and request cancellation |
+| Additional instructions | Queue messages or add them to a running request on supported agents |
+| Access restrictions | Allowed users, channels, threads and trusted working folders |
+| Approval and sharing | Request approvals, result sharing, attachment approvals and upload limits |
+| History and usage | Conversation management, execution and operation history, an activity calendar, and token, cache and estimated-cost charts |
+| Startup and appearance | Setup wizard, startup and auto-connect, system tray mode, English/Japanese and light/dark appearance |
 
-## Get started
+## Installation and setup
 
-1. Download the Windows **x64 / ARM64** portable ZIP for your PC from [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases).
-2. Extract the entire folder to a writable location and run `ChatAgentBridge.Desktop.exe`. No administrator rights or separate .NET runtime installation is required.
-3. Install your chosen agent CLI separately and sign in through that CLI. Select the CLI and working folder in the setup wizard, then check that the app recognizes it.
-4. In **Chat settings**, configure your Slack or Mattermost bot and allowed users. Connect from **Chat**. You will need a Slack app with the required permissions, or a Mattermost bot token.
-5. Mention the bot to send a request. In Mattermost, you can also start with `!cab <your request>`. Approve the first request on the PC, then reply in the same thread to continue.
+Portable builds are available for Windows. The app does not require administrator rights or a separate .NET runtime installation. Install and authenticate your chosen CLI and prepare the chat bot separately.
 
-Defaults require approval for the first request in a conversation, manual result sharing, and approval for every attachment. A CLI check verifies recognition; it does not guarantee a valid login or available quota.
+1. Download the **x64 / ARM64** ZIP for your PC from [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases).
+2. Extract the entire folder to a writable location and run `ChatAgentBridge.Desktop.exe`.
+3. Install the CLI and sign in through it. Select the CLI and working folder in the setup guide, then run the CLI check.
+4. In **Chat settings**, configure connection details and allowed users. Slack requires an app with the necessary permissions; Mattermost requires a bot token.
+5. Connect from **Chat**, then mention the bot to send a request. In Mattermost, you can also start with `!cab <your request>`.
+6. Approve the first request on the PC. After execution, review and share the result. Reply in the same thread to continue.
+
+Defaults require approval for the first request in a conversation, manual result sharing and approval for every attachment. The CLI check identifies the CLI and version. Check authentication and available quota through the CLI itself.
 
 ## Supported agents
 
-Manage shared working-folder and trust settings separately from each agent's CLI and model configuration. You can browse for a CLI executable and change a conversation's agent or model from the PC or chat.
+The working folder and trusted locations are shared settings. Configure the executable and model separately for each agent. You can also select the CLI executable with a file picker.
 
 | Agent | Conversation continuation | Model settings |
 | --- | --- | --- |
@@ -43,27 +55,33 @@ Manage shared working-folder and trust settings separately from each agent's CLI
 | Gemini CLI / GitHub Copilot CLI | Supported | Enter a model name; reasoning settings remain CLI-managed |
 | Other CLI | Independent execution for each request | Configure the CLI or its launch arguments |
 
-Codex App Server and Claude Code support additions to running requests. Other connections queue them. Availability depends on the CLI version, authentication and account. Gemini live-service validation remains limited by the authentication environment. See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるcli).
+Change a conversation's agent or model from its details on the PC or from chat. Agent switching uses CLIs checked and registered in the app. You choose whether to pass conversation notes to the new agent.
+
+Codex App Server and Claude Code also support adding instructions to running requests. This applies to posts from the same user in the same thread. Other connections and per-request approval settings queue messages.
+
+See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるcli) for version and authentication requirements. Some Gemini live-service checks remain incomplete because of authentication-environment restrictions.
 
 <details>
 <summary>Agent settings screenshot</summary>
 
-![Agent settings: shared and per-CLI configuration](docs/assets/screenshots/agents-en.png)
+![Shared working folder and per-CLI execution settings](docs/assets/screenshots/agents-en.png)
 
 </details>
 
-## Approval and sharing settings
+## Approvals, access and sharing
 
-**Chat settings** separates approval and sharing rules common to both services from their connection details and allowed users.
+**Chat settings** contains approval and sharing rules common to both services, along with each service's connection details and allowed users.
 
-- Require approval for every request, only the first request, or allow requests automatically. This is separate from the CLI's permission to perform individual operations.
-- Share results manually, automatically, or not at all. Sent content is visible to everyone who can access the destination chat or thread.
-- File attachments require approval each time by default. You can instead require approval only for the first attachment in a thread, allow automatic attachments, or prohibit attachments. Set file size and count limits too.
-- Changing the working folder from chat still requires a trusted location and approval on the PC.
+- **Request approval** can be required every time, only for the first request, or handled automatically. This approval starts the request; the CLI's permission to perform individual operations is configured separately.
+- **Access restrictions** specify who and which conversations can send requests. Register folders where requests may start as trusted working folders. Changing the folder from chat requires a location within that scope and approval on the PC.
+- **Result sharing** can be manual, automatic or disabled. Sent content is visible to everyone who can access the destination chat or thread.
+- **Generated file attachments** require approval each time by default. You can instead require approval only for the first attachment in a thread, allow automatic attachments or prohibit attachments. Set per-file size, total size and file count limits.
 
-![Chat settings: approvals, sharing, additional instructions and attachments](docs/assets/screenshots/chat-settings-en.png)
+![Request approvals, result sharing, additional instructions and file attachment settings](docs/assets/screenshots/chat-settings-en.png)
 
-Common actions are also available in chat.
+## Chat commands
+
+After starting a request, reply in the same thread. Actions are scoped to the requester and conversation.
 
 | Command | Purpose |
 | --- | --- |
@@ -73,28 +91,33 @@ Common actions are also available in chat.
 | `!cab agent` | List registered agents and switching options |
 | `!cab folder "C:\Projects\MyApp"` | Request a working-folder change |
 
-In Mattermost, the requester can also click the 🛑 reaction on the bot's progress post to cancel that request. Stopping does not undo file changes already made.
+On the PC, you can inspect live output and stop a request. In Mattermost, the requester can also click the 🛑 reaction on the bot's progress post to cancel it. Stopping does not undo file changes already made.
 
 ## History and usage
 
-Find saved conversations by name or working folder and change their model or agent. Review execution and operation history alongside daily activity and usage by model.
+Find saved conversations by name or working folder and change their model or agent. Review execution times, statuses, operation records and usage recorded by this app.
 
-![History and usage: activity calendar with sample records](docs/assets/screenshots/history-en.png)
+![Daily activity calendar with sample records](docs/assets/screenshots/history-en.png)
 
-Token and cache figures cover what the CLI reports; missing values are not guessed. Estimated costs are reference values, not your bill or subscription quota. Automatic price-table updates and higher-priority manual price overrides are available.
+Usage is shown by day and model. Token and cache figures use CLI-reported values; missing values remain unknown. Estimated costs use public pricing and are reference values, not bills or subscription quotas. Price tables can update automatically, with manual overrides taking priority over downloaded prices.
 
-## Appearance and startup settings
+## Appearance, startup and updates
 
-The app supports English and Japanese, selecting Japanese for a Japanese Windows language preference and falling back to English otherwise. Choose light, dark or system appearance.
+The app uses Japanese when the Windows language preference is Japanese and English otherwise. You can override the language in the app. Choose light, dark or system appearance.
 
-**General** groups startup, auto-connect and system tray preferences. The app can keep running in the tray or exit completely. It cannot operate while the PC is asleep or signed out.
+**General** contains Windows sign-in startup, app auto-connect and system tray preferences. You can also choose whether closing the window moves it to the tray or exits the app.
 
-Portable builds can check for and apply updates from **About**, retaining the adjacent `Data` folder. For manual updates, close the app and keep `Data`. Moving to another PC requires reconfiguring chat tokens and CLI authentication.
+![Current status, startup, auto-connect and system tray settings](docs/assets/screenshots/general-en.png)
 
-## About this project and further reading
+Portable builds can check for and apply updates from **About**. Settings and history are stored in the adjacent `Data` folder and retained during updates. For manual updates, close the app and keep `Data`. Moving to another PC requires reconfiguring chat tokens and CLI authentication.
 
-This is an unofficial development preview for personal workflows, not an official OpenAI, Anthropic, Google, GitHub, Slack or Mattermost app. Requests and results are sent to the configured AI and chat services. Read the [Terms of Use](docs/terms.en.md) and [Privacy Policy](docs/privacy-policy.en.md) before use.
+Screenshots show the development build on a Windows PC on October 24, 2026, using dedicated demo settings and sample usage records. They contain no real conversations or credentials. This README shows light mode; the Japanese version shows dark mode. Released versions may differ.
 
+## Project and documentation
+
+This is an unofficial development preview for personal workflows, not an official OpenAI, Anthropic, Google, GitHub, Slack or Mattermost app. Check the settings and terms of the chat and AI services you use.
+
+- [Terms of Use](docs/terms.en.md) / [Privacy Policy](docs/privacy-policy.en.md)
 - [Windows app guide and development instructions (Japanese)](desktop/README.ja.md)
 - [Portable edition guide](desktop/distribution/README.portable.en.txt)
 - [Report a bug or suggest a feature](https://github.com/mmiyaji/chat-agent-bridge/issues)
