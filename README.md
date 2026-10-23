@@ -2,11 +2,9 @@
 
 **English** · [日本語](README.ja.md) · [Download](https://github.com/mmiyaji/chat-agent-bridge/releases)
 
-**Use Slack or Mattermost as the interface to AI agents on your own PC.**
+Chat Agent Bridge is a Windows app that accepts requests from Slack or Mattermost and runs AI agents on your PC. You can send requests from a phone or another computer, review results and add instructions in the same thread.
 
-Send a request from your phone or another computer and let an AI agent work in a project on your Windows PC. Keep working through familiar chat threads when you cannot use the Codex or Claude Code desktop app on the device at hand.
-
-Chat Agent Bridge handles the requests, approvals and replies between chat and your local CLI. Your working folder and CLI stay on the Windows PC, which must be running and online.
+It is intended for devices where you cannot use the Codex or Claude Code desktop app. Work runs through the CLI and project on your Windows PC, which must have Bridge running and remain online.
 
 ![General: connection status and startup preferences](docs/assets/screenshots/general-en.png)
 
@@ -35,7 +33,7 @@ Chat Agent Bridge handles the requests, approvals and replies between chat and y
 
 Defaults require approval for the first request in a conversation, manual result sharing, and approval for every attachment. A CLI check verifies recognition; it does not guarantee a valid login or available quota.
 
-## Choose agents and models
+## Supported agents
 
 Manage shared working-folder and trust settings separately from each agent's CLI and model configuration. You can browse for a CLI executable and change a conversation's agent or model from the PC or chat.
 
@@ -54,7 +52,7 @@ Codex App Server and Claude Code support additions to running requests. Other co
 
 </details>
 
-## Decide what runs and what gets shared
+## Approval and sharing settings
 
 **Chat settings** separates approval and sharing rules common to both services from their connection details and allowed users.
 
@@ -77,7 +75,7 @@ Common actions are also available in chat.
 
 In Mattermost, the requester can also click the 🛑 reaction on the bot's progress post to cancel that request. Stopping does not undo file changes already made.
 
-## Review history and usage
+## History and usage
 
 Find saved conversations by name or working folder and change their model or agent. Review execution and operation history alongside daily activity and usage by model.
 
@@ -85,7 +83,7 @@ Find saved conversations by name or working folder and change their model or age
 
 Token and cache figures cover what the CLI reports; missing values are not guessed. Estimated costs are reference values, not your bill or subscription quota. Automatic price-table updates and higher-priority manual price overrides are available.
 
-## At home on Windows
+## Appearance and startup settings
 
 The app supports English and Japanese, selecting Japanese for a Japanese Windows language preference and falling back to English otherwise. Choose light, dark or system appearance.
 
