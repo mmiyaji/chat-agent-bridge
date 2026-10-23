@@ -43,20 +43,30 @@
                 <NavigationViewItem  Tag="history" AutomationProperties.AutomationId="NavHistory" Icon="Clock"  x:Uid="NavHistory" />
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>
+                <NavigationViewItem Tag="chat" AutomationProperties.AutomationId="NavChatConnectionStatus"
+                                    AutomationProperties.LiveSetting="Polite"
+                                    Content="{x:Bind local:MainPage.ConnectionNavigationCompactLabel(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
+                                    AutomationProperties.Name="{x:Bind local:MainPage.ConnectionNavigationLabel(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionLabel), Mode=OneWay}"
+                                    ToolTipService.ToolTip="{x:Bind local:MainPage.ConnectionNavigationTooltip(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionLabel, InboxPage.ViewModel.Status), Mode=OneWay}">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{x:Bind local:MainPage.ConnectionNavigationGlyph(InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
+                                  FontSize="16" Style="{x:Bind local:MainPage.ConnectionNavigationStyle(InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
+                                  AutomationProperties.AccessibilityView="Raw" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem x:Name="AboutNavigationItem" Tag="about" AutomationProperties.AutomationId="NavAbout" x:Uid="NavAbout">
                     <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;" /></NavigationViewItem.Icon>
                     <NavigationViewItem.InfoBadge>
                         <InfoBadge x:Name="AboutUpdateBadge" Visibility="Collapsed" Style="{StaticResource AttentionIconInfoBadgeStyle}"
-                                   Background="{ThemeResource ControlFillColorTransparentBrush}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                   Background="{ThemeResource UpdateBadgeBackgroundBrush}" Foreground="{ThemeResource UpdateBadgeForegroundBrush}"
                                    Width="24" Height="24" MinWidth="24" MinHeight="24" MaxHeight="24" Padding="2"
                                    AutomationProperties.AccessibilityView="Control" AutomationProperties.AutomationId="NavAboutUpdateBadge">
                             <InfoBadge.Resources>
                                 <Thickness x:Key="IconInfoBadgeFontIconMargin">0</Thickness>
                             </InfoBadge.Resources>
-                            <!-- Fluent System Icons: Arrow Circle Up (filled). Source and MIT license: Assets/Icons/FluentSystemIcons. -->
+                            <!-- Windows Fluent download glyph inside a circular update badge. -->
                             <InfoBadge.IconSource>
-                                <FontIconSource FontFamily="ms-appx:///Assets/Icons/FluentSystemIcons/UpdateAvailable.ttf#FluentSystemIcons-Filled"
-                                                Glyph="&#xE0A2;" FontSize="20" IsTextScaleFactorEnabled="False" />
+                                <FontIconSource Glyph="&#xE896;" FontSize="14" IsTextScaleFactorEnabled="False" />
                             </InfoBadge.IconSource>
                         </InfoBadge>
                     </NavigationViewItem.InfoBadge>

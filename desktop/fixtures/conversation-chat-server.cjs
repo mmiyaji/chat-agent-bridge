@@ -11,6 +11,7 @@ const reactionAdds = [];
 const reactionRemoves = [];
 let failProgressEdits = false;
 let offlineUntil = 0;
+let totalConnections = 0;
 const sockets = new Set();
 const server = http.createServer(async (req, res) => {
   let raw = '';
@@ -41,7 +42,7 @@ const server = http.createServer(async (req, res) => {
     for (const ws of sockets) if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
     res.end(JSON.stringify({ delivered: sockets.size }));
   } else if (req.url === '/test/results') {
-    res.end(JSON.stringify({ replies, updates, reactions, reactionAdds, reactionRemoves, connections: sockets.size }));
+    res.end(JSON.stringify({ replies, updates, reactions, reactionAdds, reactionRemoves, connections: sockets.size, totalConnections }));
   } else if (req.url === '/test/progress-errors' && req.method === 'POST') {
     failProgressEdits = body.enabled === true;
     res.end('{}');
@@ -90,6 +91,7 @@ wss.on('connection', ws => {
     const message = JSON.parse(raw.toString());
     if (message.action !== 'authentication_challenge' || message.data?.token !== 'offline-ui-fixture') { ws.close(); return; }
     sockets.add(ws);
+    totalConnections++;
     ws.send(JSON.stringify({ seq_reply: 1, status: 'OK' }));
   });
   ws.on('close', () => sockets.delete(ws));

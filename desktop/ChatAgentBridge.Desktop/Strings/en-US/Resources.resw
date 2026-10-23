@@ -1107,7 +1107,9 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="TrayUnavailable" xml:space="preserve"><value>The system tray is unavailable. This window will remain open.</value></data>
   <data name="StartWithWindows.OnContent" xml:space="preserve"><value>On</value></data>
   <data name="StartWithWindows.OffContent" xml:space="preserve"><value>Off</value></data>
-  <data name="PortableUpdateHeading.Header" xml:space="preserve"><value>Portable version updates</value></data>
+  <data name="PortableUpdateSection.Header" xml:space="preserve"><value>App updates</value></data>
+  <data name="PortableUpdateSection.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>App updates</value></data>
+  <data name="PortableUpdateHeading.Header" xml:space="preserve"><value>Check for updates</value></data>
   <data name="PortableUpdateDescription.Text" xml:space="preserve"><value>Update the portable app while keeping your settings.</value></data>
   <data name="PortableUpdateIncludePrereleases.Content" xml:space="preserve"><value>Include preview releases</value></data>
   <data name="PortableUpdateIncludePrereleases.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Include preview releases</value></data>

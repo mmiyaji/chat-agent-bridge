@@ -1107,7 +1107,9 @@
   <data name="TrayUnavailable" xml:space="preserve"><value>システム トレイを利用できないため、このウィンドウは開いたままになります。</value></data>
   <data name="StartWithWindows.OnContent" xml:space="preserve"><value>オン</value></data>
   <data name="StartWithWindows.OffContent" xml:space="preserve"><value>オフ</value></data>
-  <data name="PortableUpdateHeading.Header" xml:space="preserve"><value>ポータブル版の更新</value></data>
+  <data name="PortableUpdateSection.Header" xml:space="preserve"><value>アプリの更新</value></data>
+  <data name="PortableUpdateSection.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>アプリの更新</value></data>
+  <data name="PortableUpdateHeading.Header" xml:space="preserve"><value>更新の確認</value></data>
   <data name="PortableUpdateDescription.Text" xml:space="preserve"><value>設定を引き継いでポータブル版を更新できます。</value></data>
   <data name="PortableUpdateIncludePrereleases.Content" xml:space="preserve"><value>プレビュー版を含める</value></data>
   <data name="PortableUpdateIncludePrereleases.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>プレビュー版を含める</value></data>

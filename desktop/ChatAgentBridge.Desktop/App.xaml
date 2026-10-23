@@ -12,6 +12,8 @@
             </ResourceDictionary.MergedDictionaries>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="UpdateBadgeBackgroundBrush" Color="#3284F5" />
+                    <SolidColorBrush x:Key="UpdateBadgeForegroundBrush" Color="White" />
                     <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="#D5E8D4" />
                     <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="#A5D6A3" />
                     <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="#60B570" />
@@ -21,6 +23,8 @@
                     <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="#B45B5B" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="UpdateBadgeBackgroundBrush" Color="#3284F5" />
+                    <SolidColorBrush x:Key="UpdateBadgeForegroundBrush" Color="White" />
                     <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="#294734" />
                     <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="#376C43" />
                     <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="#4D9D59" />
@@ -30,6 +34,8 @@
                     <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="#D99B9B" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="UpdateBadgeBackgroundBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="UpdateBadgeForegroundBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
                     <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="{ThemeResource SystemColorHighlightColor}" />
                     <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="{ThemeResource SystemColorHighlightColor}" />
                     <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="{ThemeResource SystemColorHighlightColor}" />
