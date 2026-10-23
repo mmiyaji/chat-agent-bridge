@@ -250,7 +250,7 @@
     <value>Next: configure the agent and an existing workspace folder.</value>
   </data>
   <data name="NextConnectToChat" xml:space="preserve">
-    <value>Next: connect to the saved destination from Chat Inbox.</value>
+    <value>Next: connect to the saved destination from Chat.</value>
   </data>
   <data name="NextSaveConnection" xml:space="preserve">
     <value>Next: configure connection details and allowed users.</value>
@@ -484,7 +484,7 @@
     <value>Check the saved guidance data. Your settings were not overwritten.</value>
   </data>
   <data name="WizardSafetyDescription" xml:space="preserve">
-    <value>Save your settings to finish. You can test the chat connection later from Chat inbox.</value>
+    <value>Save your settings to finish. You can test the chat connection later from Chat.</value>
   </data>
   <data name="WizardSaveFailed" xml:space="preserve">
     <value>Could not save setup</value>
@@ -703,10 +703,10 @@ Conversation ID (first message): {2}</value></data>
   <data name="CliModelsUnavailableDetails" xml:space="preserve"><value>CLI startup and version check succeeded. Model discovery failed: {0}</value></data>
   <data name="TrustedFolderRecoveryChanged" xml:space="preserve"><value>The folder changed or cannot be trusted safely. Check the workspace path and run the CLI check again.</value></data>
   <data name="WizardConnectionDeferredTitle" xml:space="preserve"><value>Settings saved and setup complete</value></data>
-  <data name="WizardConnectionDeferredDetails" xml:space="preserve"><value>The connection test is not complete. Connect from Chat inbox when ready. If already connected, reconnect to use the changed settings.</value></data>
+  <data name="WizardConnectionDeferredDetails" xml:space="preserve"><value>The connection test is not complete. Connect from Chat when ready. If already connected, reconnect to use the changed settings.</value></data>
   <data name="WizardSkipStep" xml:space="preserve"><value>Skip this setting</value></data>
   <data name="WizardSkippedTitle" xml:space="preserve"><value>Setup finished with items left</value></data>
-  <data name="WizardSkippedDetails" xml:space="preserve"><value>Not set yet: {0}. You can finish them later from the Overview and Chat inbox pages.</value></data>
+  <data name="WizardSkippedDetails" xml:space="preserve"><value>Not set yet: {0}. You can finish them later from the Overview and Chat pages.</value></data>
   <data name="WizardSkippedNotice" xml:space="preserve"><value>Not set yet: {0}. You can finish now and set them up later.</value></data>
   <data name="WizardSkippedCli" xml:space="preserve"><value>CLI check</value></data>
   <data name="WizardSkippedChat" xml:space="preserve"><value>chat connection</value></data>

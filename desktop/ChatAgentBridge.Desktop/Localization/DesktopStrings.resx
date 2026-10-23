@@ -503,7 +503,7 @@
   <data name="HistoryDirectMessage" xml:space="preserve"><value>Direct message</value></data>
   <data name="ChatModelCurrent" xml:space="preserve"><value>Current model: {0}&#10;Reasoning effort: {1}&#10;!cab model list — available models&#10;!cab model MODEL_ID — change this conversation&#10;!cab model default — follow agent settings</value></data>
   <data name="ChatModelList" xml:space="preserve"><value>Models available from the CLI (cached for 5 minutes). Use !cab model MODEL_ID to select one:</value></data>
-  <data name="ChatModelMoreInPc" xml:space="preserve"><value>See all candidates in History &amp; conversations on this PC.</value></data>
+  <data name="ChatModelMoreInPc" xml:space="preserve"><value>See all candidates in History and usage on this PC.</value></data>
   <data name="ChatModelUnsupported" xml:space="preserve"><value>Model selection is available for Codex, Claude Code, Gemini CLI and GitHub Copilot CLI.</value></data>
   <data name="ChatModelBusy" xml:space="preserve"><value>Wait until execution finishes and resolve this conversation's pending requests before changing models.</value></data>
   <data name="ChatModelUnavailable" xml:space="preserve"><value>No models were returned. Check the CLI and its sign-in status on this PC.</value></data>

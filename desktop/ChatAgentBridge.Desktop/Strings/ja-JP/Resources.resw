@@ -28,10 +28,10 @@
     <value>チャット設定</value>
   </data>
   <data name="NavChat.Content" xml:space="preserve">
-    <value>チャット受信</value>
+    <value>チャット</value>
   </data>
   <data name="NavHistory.Content" xml:space="preserve">
-    <value>履歴と会話</value>
+    <value>履歴と利用状況</value>
   </data>
   <data name="ReloadSettings.Content" xml:space="preserve">
     <value>設定を再読み込み</value>
@@ -67,7 +67,7 @@
     <value>チャットへ接続</value>
   </data>
   <data name="SetupChatLink.Content" xml:space="preserve">
-    <value>チャット受信</value>
+    <value>チャット</value>
   </data>
   <data name="StartOnboarding.Content" xml:space="preserve">
     <value>初期設定ガイドを開く</value>
@@ -92,7 +92,7 @@
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock008.Text" xml:space="preserve">
     <value>1. エージェント設定でCLI・モデル・作業フォルダーを設定します。
-2. 接続先と許可ユーザーを設定し、チャット受信からSlackまたはMattermostへ接続します。
+2. 接続先と許可ユーザーを設定し、チャットからSlackまたはMattermostへ接続します。
 3. 別の端末から依頼を送ります。Mattermostは !cab 依頼内容、または先頭で接続したBotを @メンションして依頼します。SlackはBotへのメンションまたはスレッドへの返信に !cab 依頼内容を含めます。
 4. PCで依頼を確認して実行し、結果を確認して共有を承認すると、同じスレッドへ返ります。
 
@@ -325,7 +325,7 @@
     <value>候補を取得すると、現在のモデルがCLIから報告した推論レベルだけを選べます。「CLIの既定値」を選ぶと、強さの指定をCLIに任せます。モデル別の対応が未取得の場合は保存値をそのまま保持します。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock037.Text" xml:space="preserve">
-    <value>契約で使えるモデル名やエイリアスを入力します。モデルによって料金・速度・精度が変わります。保存済みの会話ごとに変える場合は「履歴と会話」から指定できます。</value>
+    <value>契約で使えるモデル名やエイリアスを入力します。モデルによって料金・速度・精度が変わります。保存済みの会話ごとに変える場合は「履歴と利用状況」から指定できます。</value>
   </data>
   <data name="FetchModels.Content" xml:space="preserve">
     <value>CLIモデル候補を取得</value>
@@ -397,7 +397,7 @@
     <value>チャット設定</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock047.Text" xml:space="preserve">
-    <value>使うサービスの接続先と許可ユーザーを設定し、「チャット受信」から接続してください。</value>
+    <value>使うサービスの接続先と許可ユーザーを設定し、「チャット」から接続してください。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock048.Text" xml:space="preserve">
     <value>受信するチャンネルのIDを指定します。BotとのDMを使う場合は、そのDMのチャンネルIDです。先頭の @メンションか !cab 依頼内容で開始し、開始した本人は同じスレッドへ普通に返信して続けられます。通常のチャンネルではBotの参加も必要です。</value>
@@ -499,7 +499,7 @@
     <value>変更を保存</value>
   </data>
   <data name="historyHistoryPageTextBlock001.Text" xml:space="preserve">
-    <value>履歴と会話</value>
+    <value>履歴と利用状況</value>
   </data>
   <data name="historyHistoryPageTextBlock002.Text" xml:space="preserve">
     <value>保存済みの会話を管理します。依頼本文や実行結果は保存しません。</value>
@@ -571,7 +571,7 @@
     <value>監査イベントはまだありません。チャット操作を行うと、この一覧にメタデータが追加されます。</value>
   </data>
   <data name="inboxChatInboxPageTextBlock001.Text" xml:space="preserve">
-    <value>チャット受信</value>
+    <value>チャット</value>
   </data>
   <data name="inboxChatInboxPageTextBlock002.Text" xml:space="preserve">
     <value>届いた依頼を会話ごとに確認します。会話を続けるには、元のチャットスレッドに返信してください。</value>

@@ -250,7 +250,7 @@
     <value>次の操作：エージェントと既存の作業フォルダーを設定します。</value>
   </data>
   <data name="NextConnectToChat" xml:space="preserve">
-    <value>次の操作：チャット受信で保存済みの接続先へ接続します。</value>
+    <value>次の操作：チャットで保存済みの接続先へ接続します。</value>
   </data>
   <data name="NextSaveConnection" xml:space="preserve">
     <value>次の操作：接続情報と許可ユーザーを設定します。</value>
@@ -484,7 +484,7 @@
     <value>保存済みの案内データを確認してください。設定は上書きしていません。</value>
   </data>
   <data name="WizardSafetyDescription" xml:space="preserve">
-    <value>設定を保存して完了できます。チャットの接続テストは、後から「チャット受信」で行うこともできます。</value>
+    <value>設定を保存して完了できます。チャットの接続テストは、後から「チャット」で行うこともできます。</value>
   </data>
   <data name="WizardSaveFailed" xml:space="preserve">
     <value>初期設定を保存できませんでした</value>
@@ -703,10 +703,10 @@ AIの操作権限: {8}</value>
   <data name="CliModelsUnavailableDetails" xml:space="preserve"><value>CLIの起動・バージョン確認は成功しました。モデル候補の取得で失敗しました：{0}</value></data>
   <data name="TrustedFolderRecoveryChanged" xml:space="preserve"><value>フォルダーが変更されたか、安全に信頼対象へ追加できません。作業先を確認してCLIを再チェックしてください。</value></data>
   <data name="WizardConnectionDeferredTitle" xml:space="preserve"><value>設定を保存して完了しました</value></data>
-  <data name="WizardConnectionDeferredDetails" xml:space="preserve"><value>接続テストはまだ完了していません。「チャット受信」から接続できます。すでに接続中の場合は、変更した設定を使うために再接続してください。</value></data>
+  <data name="WizardConnectionDeferredDetails" xml:space="preserve"><value>接続テストはまだ完了していません。「チャット」から接続できます。すでに接続中の場合は、変更した設定を使うために再接続してください。</value></data>
   <data name="WizardSkipStep" xml:space="preserve"><value>この設定をスキップ</value></data>
   <data name="WizardSkippedTitle" xml:space="preserve"><value>未設定の項目を残して完了しました</value></data>
-  <data name="WizardSkippedDetails" xml:space="preserve"><value>未設定: {0}。概要・チャット受信の画面から後で設定できます。</value></data>
+  <data name="WizardSkippedDetails" xml:space="preserve"><value>未設定: {0}。概要・チャットの画面から後で設定できます。</value></data>
   <data name="WizardSkippedNotice" xml:space="preserve"><value>未設定: {0}。このまま完了して、後で設定できます。</value></data>
   <data name="WizardSkippedCli" xml:space="preserve"><value>CLIの確認</value></data>
   <data name="WizardSkippedChat" xml:space="preserve"><value>チャット接続</value></data>

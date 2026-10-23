@@ -503,7 +503,7 @@
   <data name="HistoryDirectMessage" xml:space="preserve"><value>ダイレクトメッセージ</value></data>
   <data name="ChatModelCurrent" xml:space="preserve"><value>現在のモデル: {0}&#10;推論の強さ: {1}&#10;!cab model list — 候補を取得&#10;!cab model モデルID — この会話のモデルを変更&#10;!cab model default — エージェント設定に戻す</value></data>
   <data name="ChatModelList" xml:space="preserve"><value>CLIから取得したモデル候補（5分間キャッシュ）。!cab model モデルID で選択してください:</value></data>
-  <data name="ChatModelMoreInPc" xml:space="preserve"><value>すべての候補はPCの「履歴と会話」で確認できます。</value></data>
+  <data name="ChatModelMoreInPc" xml:space="preserve"><value>すべての候補はPCの「履歴と利用状況」で確認できます。</value></data>
   <data name="ChatModelUnsupported" xml:space="preserve"><value>モデル切り替えはCodex・Claude Code・Gemini CLI・GitHub Copilot CLIで利用できます。</value></data>
   <data name="ChatModelBusy" xml:space="preserve"><value>実行の完了と、この会話の承認待ち依頼の処理後に、もう一度モデルを変更してください。</value></data>
   <data name="ChatModelUnavailable" xml:space="preserve"><value>モデル候補がありません。PCでCLIとログイン状態を確認してください。</value></data>
