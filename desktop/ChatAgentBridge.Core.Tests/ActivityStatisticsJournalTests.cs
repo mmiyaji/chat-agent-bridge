@@ -82,6 +82,27 @@ public sealed class ActivityStatisticsJournalTests
     }
 
     [Fact]
+    public async Task EventsAppendedAfterACheckpointSurviveAColdRead()
+    {
+        // The journal generation is derived from the checkpoint twice: from the in-memory document when the
+        // snapshot is written, and from the deserialized file on a cold read. They must agree, or a restart
+        // would silently discard every delta recorded after a compaction.
+        using var data = new TestData();
+        var store = new ActivityStatisticsStore(data.Path);
+        // The first record writes the snapshot; the next MaxJournalEvents - 1 fill the journal and the one after compacts it.
+        for (var i = 0; i < ActivityStatisticsStore.MaxJournalEvents + 1; i++)
+            await store.RecordAsync(Completed());
+        Assert.False(File.Exists(data.Journal));
+        await store.RecordAsync(Completed());
+        await store.RecordAsync(Completed());
+        Assert.True(File.Exists(data.Journal));
+
+        using var reopened = data.Copy();
+        Assert.Equal(ActivityStatisticsStore.MaxJournalEvents + 3,
+            (await Read(new ActivityStatisticsStore(reopened.Path))).Activity.TotalExecutions);
+    }
+
+    [Fact]
     public async Task FailedAppendDoesNotPolluteCachedAggregatesAndCanBeRetried()
     {
         if (!OperatingSystem.IsWindows()) return;
