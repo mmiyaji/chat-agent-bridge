@@ -221,16 +221,16 @@
   <data name="WorkspaceChangeFailed" xml:space="preserve"><value>作業フォルダーを変更できませんでした。実行結果欄で指定先と信頼フォルダーを確認してください。</value></data>
   <data name="WorkspaceChangeFailedChatReply" xml:space="preserve"><value>Chat Agent Bridge: 作業フォルダーを変更できませんでした。絶対パス・フォルダーの存在・信頼範囲をPCで確認してください。AIは実行していません。</value></data>
   <data name="InboxSessionPreflight" xml:space="preserve"><value>実行前にセッションを確認します</value></data>
-  <data name="InboxDisconnected" xml:space="preserve"><value>切断中。接続設定を確認してから接続してください。</value></data>
+  <data name="InboxDisconnected" xml:space="preserve"><value>切断中。チャット設定を確認してから接続してください。</value></data>
   <data name="InboxOutputIntro" xml:space="preserve"><value>実行結果はここに表示されます。依頼の実行と結果共有は、会話の承認・共有設定に従います。</value></data>
   <data name="UsageAfterExecution" xml:space="preserve"><value>利用量は実行後に表示します。</value></data>
   <data name="InboxPreparingConnection" xml:space="preserve"><value>接続準備中…</value></data>
-  <data name="InboxAllowedUsersRequired" xml:space="preserve"><value>接続設定で許可するユーザーIDを登録してください。空欄では依頼を受け付けません。</value></data>
+  <data name="InboxAllowedUsersRequired" xml:space="preserve"><value>チャット設定で許可するユーザーIDを登録してください。空欄では依頼を受け付けません。</value></data>
   <data name="WorkspaceConfigureAndSave" xml:space="preserve"><value>作業フォルダーを設定してください。</value></data>
   <data name="InboxConnectedWaiting" xml:space="preserve"><value>接続しました。許可ユーザーの依頼を待っています。切断中の依頼は再投稿してください。</value></data>
   <data name="InboxConnectedChatNotice" xml:space="preserve"><value>Chat Agent Bridge: 接続しました。許可されたユーザーの依頼をPCで確認してから実行します。切断中に投稿した依頼は取り込まれないため、必要な依頼は再投稿してください。</value></data>
   <data name="InboxConnectingWaiting" xml:space="preserve"><value>接続処理中／受信待ち。失敗時はここに表示します。</value></data>
-  <data name="InboxConnectionFailed" xml:space="preserve"><value>接続できません。保存済みの作業フォルダー・接続設定を確認してください。</value></data>
+  <data name="InboxConnectionFailed" xml:space="preserve"><value>接続できません。保存済みの作業フォルダー・チャット設定を確認してください。</value></data>
   <data name="InboxOverflow" xml:space="preserve"><value>上限により未受理: {0}件。最後: {1} / {2} / {3}。処理後にチャットから再送してください。</value></data>
   <data name="InboxRequestReceived" xml:space="preserve"><value>依頼を受信しました。{0} の承認待ちを確認してください。</value></data>
   <data name="InboxConnectionEnded" xml:space="preserve"><value>接続が終了しました。再接続後、未実行の依頼を再投稿してください。</value></data>
@@ -263,7 +263,7 @@
   <data name="InboxResultSendCancelled" xml:space="preserve"><value>結果の送信をキャンセルしました。</value></data>
   <data name="InboxResultSendFailed" xml:space="preserve"><value>結果の送信または監査記録に失敗しました。再送前にスレッドを確認してください。</value></data>
   <data name="InboxExecutionSettingsChanged" xml:space="preserve"><value>実行設定を変更しました。次の投稿から保存した設定を使用します。再接続は不要です。変更前に受信した依頼は、再投稿や再承認が必要な場合があります。</value></data>
-  <data name="InboxConnectionSettingsChanged" xml:space="preserve"><value>サーバー・チャンネル・トークン・プロキシ設定を変更したため、安全のため古い接続を終了しました。保存した接続設定で接続し直してください。</value></data>
+  <data name="InboxConnectionSettingsChanged" xml:space="preserve"><value>サーバー・チャンネル・トークン・プロキシ設定を変更したため、安全のため古い接続を終了しました。保存したチャット設定で接続し直してください。</value></data>
   <data name="InboxPermissionsUnavailable" xml:space="preserve"><value>許可設定を読み込めません。依頼の実行・結果共有を停止しました。設定を修復して再接続してください。</value></data>
   <data name="InboxExecutionPausedSettingsChanged" xml:space="preserve"><value>許可範囲または実行・会話設定が変更されたため、実行・結果共有を停止しました。設定を確認して、必要な依頼を再投稿してください。</value></data>
   <data name="InboxStatusNoticeFailed" xml:space="preserve"><value>チャットへの状態通知に失敗しました。</value></data>
@@ -682,11 +682,11 @@
   <data name="SidebarConnectionError" xml:space="preserve"><value>接続エラー</value></data>
   <data name="InboxQueueSummary" xml:space="preserve"><value>承認待ち {0}件 · 実行中 {1}件</value></data>
   <data name="SettingsDraftAgent" xml:space="preserve"><value>エージェント設定</value></data>
-  <data name="SettingsDraftChat" xml:space="preserve"><value>接続設定</value></data>
+  <data name="SettingsDraftChat" xml:space="preserve"><value>チャット設定</value></data>
   <data name="SettingsDraftGeneral" xml:space="preserve"><value>自動接続</value></data>
   <data name="SettingsDraftClean" xml:space="preserve"><value>保存済み（変更なし）</value></data>
   <data name="SettingsDraftChanged" xml:space="preserve"><value>未保存：{0}</value></data>
-  <data name="SettingsDraftSaveHelp" xml:space="preserve"><value>エージェント設定・接続設定・自動接続の変更をまとめて保存します。チャットへの反映には再接続が必要です。</value></data>
+  <data name="SettingsDraftSaveHelp" xml:space="preserve"><value>エージェント設定・チャット設定・自動接続の変更をまとめて保存します。チャットへの反映には再接続が必要です。</value></data>
   <data name="SettingsDraftDialogTitle" xml:space="preserve"><value>未保存の変更があります</value></data>
   <data name="SettingsDraftDialogMessage" xml:space="preserve"><value>{0}
 

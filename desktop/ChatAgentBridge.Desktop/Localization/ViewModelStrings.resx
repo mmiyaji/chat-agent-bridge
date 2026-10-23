@@ -595,7 +595,7 @@ Internal user ID: {2}</value></data>
     <value>Agent setup: {0}. Open agent settings.</value>
   </data>
   <data name="OverviewConnectionAccessibleName" xml:space="preserve">
-    <value>Chat setup: {0}. Open connection settings.</value>
+    <value>Chat setup: {0}. Open chat settings.</value>
   </data>
   <data name="OverviewChatAccessibleName" xml:space="preserve">
     <value>Connection: {0}. Open chat.</value>
@@ -616,7 +616,7 @@ Internal user ID: {2}</value></data>
   <data name="OverviewAutoConnectNeedsSlack" xml:space="preserve"><value>Set up Slack connection</value></data>
   <data name="OverviewAutoConnectNeedsMattermost" xml:space="preserve"><value>Set up Mattermost connection</value></data>
   <data name="OverviewAutoConnectError" xml:space="preserve"><value>Could not load saved settings</value></data>
-  <data name="OverviewAutoConnectAccessibleName" xml:space="preserve"><value>Automatic chat connection: {0}. Open connection settings.</value></data>
+  <data name="OverviewAutoConnectAccessibleName" xml:space="preserve"><value>Automatic chat connection: {0}. Open chat settings.</value></data>
   <data name="OverviewError" xml:space="preserve"><value>Needs attention</value></data>
   <data name="OverviewConnectionError" xml:space="preserve"><value>Connection failed</value></data>
   <data name="LanguageRestartTitle" xml:space="preserve"><value>Restart required</value></data>
@@ -638,7 +638,7 @@ Internal user ID: {2}</value></data>
   <data name="MattermostThreadLookupResolved" xml:space="preserve"><value>Conversation checked. Review the ID, then choose Add this conversation.</value></data>
   <data name="MattermostThreadLookupInvalidUrl" xml:space="preserve"><value>Enter a valid HTTPS Mattermost server URL (HTTP is allowed only for localhost).</value></data>
   <data name="MattermostThreadLookupInvalidLink" xml:space="preserve"><value>Enter a Mattermost post link from this server, or a valid post ID. Links with query strings or fragments are not accepted.</value></data>
-  <data name="MattermostThreadLookupMissingCredentials" xml:space="preserve"><value>Enter the Mattermost access token in the connection settings first.</value></data>
+  <data name="MattermostThreadLookupMissingCredentials" xml:space="preserve"><value>Enter the Mattermost access token in the chat settings first.</value></data>
   <data name="MattermostThreadLookupInvalidToken" xml:space="preserve"><value>The access token could not be used in a request. Check the token value.</value></data>
   <data name="MattermostThreadLookupUnauthorized" xml:space="preserve"><value>Mattermost rejected the access token. Check that it is current.</value></data>
   <data name="MattermostThreadLookupForbidden" xml:space="preserve"><value>This token cannot read that post. Check its Mattermost permissions.</value></data>

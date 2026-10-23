@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
-  <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>Open connection settings</value></data>
+  <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>Open chat settings</value></data>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>Connect without a proxy</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>Turn on for a direct connection to your internal Mattermost server. When off, the system proxy settings are used. This applies to user lookup, post link checks, and sending and receiving messages. Reconnect after changing this setting.</value></data>
   <data name="MainNavigation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
@@ -22,10 +22,10 @@
     <value>Agent settings</value>
   </data>
   <data name="NavConnections.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Connection settings</value>
+    <value>Chat settings</value>
   </data>
   <data name="NavConnections.Content" xml:space="preserve">
-    <value>Connection settings</value>
+    <value>Chat settings</value>
   </data>
   <data name="NavChat.Content" xml:space="preserve">
     <value>Chat inbox</value>
@@ -61,7 +61,7 @@
     <value>Chat connection information</value>
   </data>
   <data name="SetupConnectionsLink.Content" xml:space="preserve">
-    <value>Connection settings</value>
+    <value>Chat settings</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock005.Text" xml:space="preserve">
     <value>Connect to chat</value>
@@ -92,7 +92,7 @@
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock008.Text" xml:space="preserve">
     <value>1. Choose the CLI, model, and working folder in Agent settings.
-2. Save the chat credentials in Connection settings, then connect from Chat inbox.
+2. Save the chat credentials in Chat settings, then connect from Chat inbox.
 3. Send a request from another device. In Mattermost, start with !cab or an @mention of the connected bot, followed by your request. In Slack, mention the bot or use !cab in a thread reply.
 4. Review and approve the request on this PC, then review and share the result to return it to the same thread.
 
@@ -291,7 +291,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Allowed chat accounts and conversations</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock035.Text" xml:space="preserve">
-    <value>The allowed user IDs in the connection settings are still required. A blank thread list adds no restriction. A nonempty list allows requests only in the listed existing threads; new top-level conversations are blocked. Review changes to the lists, then reconnect.</value>
+    <value>The allowed user IDs in the chat settings are still required. A blank thread list adds no restriction. A nonempty list allows requests only in the listed existing threads; new top-level conversations are blocked. Review changes to the lists, then reconnect.</value>
   </data>
   <data name="SlackAllowedChannelIds.Header" xml:space="preserve">
     <value>Slack channel IDs</value>
@@ -355,7 +355,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Check contents before manual execution</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock041.Text" xml:space="preserve">
-    <value>The approval method for requests received from chat is configured in Connection settings.</value>
+    <value>The approval method for requests received from chat is configured in Chat settings.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock042.Text" xml:space="preserve">
     <value>Start and connect</value>
@@ -394,7 +394,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Execution result (this PC only)</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock046.Text" xml:space="preserve">
-    <value>Connection settings</value>
+    <value>Chat settings</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock047.Text" xml:space="preserve">
     <value>Configure your service and allowed users, then connect from Chat inbox.</value>
@@ -1161,7 +1161,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ChatAttachmentsHelp.Text" xml:space="preserve"><value>Approval and size and count limits for generated files sent to chat</value></data>
   <data name="CodexChatSharingTitle.Text" xml:space="preserve"><value>Codex only: share operations and questions</value></data>
   <data name="CodexChatSharingHelp.Text" xml:space="preserve"><value>Requires Codex App Server, which supports operation approval and questions. Enable App Server in Agent settings to use these options.</value></data>
-  <data name="SlackConversationScopeHelp.Text" xml:space="preserve"><value>The allowed user IDs in the connection settings are still required. A blank thread list adds no restriction. A nonempty list allows requests only in the listed existing threads; new top-level conversations are blocked. Review changes to the lists, then reconnect.</value></data>
+  <data name="SlackConversationScopeHelp.Text" xml:space="preserve"><value>The allowed user IDs in the chat settings are still required. A blank thread list adds no restriction. A nonempty list allows requests only in the listed existing threads; new top-level conversations are blocked. Review changes to the lists, then reconnect.</value></data>
   <data name="AgentBasicAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Basic setup</value></data>
   <data name="AgentCommonAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Common execution settings</value></data>
   <data name="AgentModelSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Selected CLI: model and reasoning</value></data>

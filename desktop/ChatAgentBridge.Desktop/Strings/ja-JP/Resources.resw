@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
-  <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>接続設定を開く</value></data>
+  <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>チャット設定を開く</value></data>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>プロキシを使わず直接接続</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>社内のMattermostへ直接接続する場合にオンにします。オフはシステムのプロキシ設定を使用します。ユーザー検索・投稿リンクの確認・メッセージ送受信すべてに適用します。変更後は再接続してください。</value></data>
   <data name="MainNavigation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
@@ -22,10 +22,10 @@
     <value>エージェント設定</value>
   </data>
   <data name="NavConnections.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>接続設定</value>
+    <value>チャット設定</value>
   </data>
   <data name="NavConnections.Content" xml:space="preserve">
-    <value>接続設定</value>
+    <value>チャット設定</value>
   </data>
   <data name="NavChat.Content" xml:space="preserve">
     <value>チャット受信</value>
@@ -61,7 +61,7 @@
     <value>チャット接続情報</value>
   </data>
   <data name="SetupConnectionsLink.Content" xml:space="preserve">
-    <value>接続設定</value>
+    <value>チャット設定</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock005.Text" xml:space="preserve">
     <value>チャットへ接続</value>
@@ -291,7 +291,7 @@
     <value>チャットのアカウント・会話範囲</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock035.Text" xml:space="preserve">
-    <value>接続設定で許可したユーザーIDは引き続き必要です。スレッドリストが空欄なら追加制限はありません。入力がある場合は、リスト内の既存スレッドでのみ依頼できます。新しい会話は開始できません。リストの変更内容を確認した後、再接続してください。</value>
+    <value>チャット設定で許可したユーザーIDは引き続き必要です。スレッドリストが空欄なら追加制限はありません。入力がある場合は、リスト内の既存スレッドでのみ依頼できます。新しい会話は開始できません。リストの変更内容を確認した後、再接続してください。</value>
   </data>
   <data name="SlackAllowedChannelIds.Header" xml:space="preserve">
     <value>SlackチャンネルID</value>
@@ -355,7 +355,7 @@
     <value>手動実行の前に内容を確認する</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock041.Text" xml:space="preserve">
-    <value>チャットから届いた依頼の承認方法は「接続設定」で設定します。</value>
+    <value>チャットから届いた依頼の承認方法は「チャット設定」で設定します。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock042.Text" xml:space="preserve">
     <value>起動と接続</value>
@@ -394,7 +394,7 @@
     <value>実行結果（このPCのみ）</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock046.Text" xml:space="preserve">
-    <value>接続設定</value>
+    <value>チャット設定</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock047.Text" xml:space="preserve">
     <value>使うサービスの接続先と許可ユーザーを設定し、「チャット受信」から接続してください。</value>
@@ -1161,7 +1161,7 @@
   <data name="ChatAttachmentsHelp.Text" xml:space="preserve"><value>生成ファイルの送信承認と、サイズ・個数の上限</value></data>
   <data name="CodexChatSharingTitle.Text" xml:space="preserve"><value>Codex 専用：操作承認と質問の共有</value></data>
   <data name="CodexChatSharingHelp.Text" xml:space="preserve"><value>操作承認と質問に対応する Codex App Server で利用できます。エージェント設定で App Server を有効にすると設定できます。</value></data>
-  <data name="SlackConversationScopeHelp.Text" xml:space="preserve"><value>接続設定で許可したユーザーIDは引き続き必要です。スレッドリストが空欄なら追加制限はありません。入力がある場合は、リスト内の既存スレッドでのみ依頼できます。新しい会話は開始できません。リストの変更内容を確認した後、再接続してください。</value></data>
+  <data name="SlackConversationScopeHelp.Text" xml:space="preserve"><value>チャット設定で許可したユーザーIDは引き続き必要です。スレッドリストが空欄なら追加制限はありません。入力がある場合は、リスト内の既存スレッドでのみ依頼できます。新しい会話は開始できません。リストの変更内容を確認した後、再接続してください。</value></data>
   <data name="AgentBasicAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>基本設定</value></data>
   <data name="AgentCommonAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>共通の実行設定</value></data>
   <data name="AgentModelSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>選択中の CLI：モデル・推論レベル</value></data>
