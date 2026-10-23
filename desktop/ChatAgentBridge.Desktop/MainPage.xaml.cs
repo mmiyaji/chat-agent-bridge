@@ -78,7 +78,11 @@ public sealed partial class MainPage : Page
             if (args.PropertyName is nameof(ChatInboxViewModel.IsConnectionConfirmed) or nameof(ChatInboxViewModel.IsConnected) or nameof(ChatInboxViewModel.HasConnectionError))
                 ViewModel.SetChatConnectionState(InboxPage.ViewModel.IsConnectionConfirmed, InboxPage.ViewModel.IsConnected, InboxPage.ViewModel.HasConnectionError);
         };
-        ViewModel.SettingsSaved += () => _ = InboxPage.ViewModel.RefreshAccessAsync();
+        ViewModel.SettingsSaved += () =>
+        {
+            _ = InboxPage.ViewModel.RefreshAccessAsync();
+            if (IsAgentSelected) _ = EnsureAgentSettingsScopeAsync();
+        };
         InboxPage.OpenRequested += () => MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>()
             .First(item => item.Tag as string == "chat");
         Loaded += MainPage_Loaded;
@@ -107,6 +111,8 @@ public sealed partial class MainPage : Page
         HistoryPage.ViewModel.RefreshLocalizedText();
         Bindings.Update();
         MrtText.Refresh(this, culture);
+        RefreshAgentScopeLabels();
+        RefreshConnectionScopeLabels(culture);
         RefreshAutoConnectSelectionBox();
         RefreshPortableUpdateBadge();
         if (!ViewModel.IsOnboardingActive) ScheduleDeferredLanguageRefresh();
@@ -182,6 +188,7 @@ public sealed partial class MainPage : Page
 
     internal async Task ShutdownAsync()
     {
+        if (_agentProfileDetails is not null) await _agentProfileDetails.ShutdownAsync();
         ViewModel.CancelForWindowClose();
         InboxPage.ViewModel.Close();
         var tasks = new[]
@@ -238,6 +245,9 @@ public sealed partial class MainPage : Page
         // overlaps with the settings load. Onboarding needs the loaded settings.
         var startupRefresh = ViewModel.RefreshStartupAsync();
         await ViewModel.LoadAsync();
+        InitializeAgentSettingsScope();
+        InitializeConnectionSettingsScope();
+        if (IsAgentSelected) await EnsureAgentSettingsScopeAsync();
         var startupProvider = ViewModel.AutoConnectProvider;
         MattermostTokenBox.Password = ViewModel.MattermostToken;
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
@@ -315,6 +325,7 @@ public sealed partial class MainPage : Page
         if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshIfStaleAsync();
         if (pageChanged && IsOverviewSelected && _hasLoaded) _ = ViewModel.RefreshStartupAsync();
         if (pageChanged && IsAboutSelected) AboutPage.ResetScroll();
+        if (IsAgentSelected) _ = EnsureAgentSettingsScopeAsync();
         if (pageChanged) ScheduleDeferredLanguageRefresh();
     }
 

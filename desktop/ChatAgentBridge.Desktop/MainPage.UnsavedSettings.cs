@@ -49,8 +49,10 @@ public sealed partial class MainPage
             return;
         }
         CommitSettingsNumberEdit();
-        if (_hasLoaded && !ViewModel.IsOnboardingActive && !IsSettingsSurface(tag) &&
-            tag != _selectedNavigationTag && ViewModel.HasUnsavedSettings)
+        var leavingAgentDraft = _selectedNavigationTag == "agent" && tag != "agent" &&
+            (_agentProfileDetails?.HasPendingEdits ?? false);
+        if (_hasLoaded && !ViewModel.IsOnboardingActive &&
+            (leavingAgentDraft || (!IsSettingsSurface(tag) && tag != _selectedNavigationTag && ViewModel.HasUnsavedSettings)))
         {
             // SelectionChanged cannot be cancelled. Restore the selection before
             // changing page visibility, then replay only the approved destination.
@@ -107,6 +109,46 @@ public sealed partial class MainPage
     internal async Task<bool> TryResolveUnsavedSettingsAsync()
     {
         if (_settingsPromptOpen || _sensitiveSettingsDialogOpen) return false;
+        if (_agentProfileDetails is { } editor)
+        {
+            if (editor.Editor.IsCheckingCli)
+            {
+                editor.Editor.CancelCliCheckCommand.Execute(null);
+                if (editor.Editor.CheckCliCommand.ExecutionTask is { } pendingCheck) await pendingCheck;
+            }
+            editor.Editor.CancelModelCatalogLookup();
+            if (!await editor.TryFlushAsync())
+            {
+                if (!editor.HasPendingEdits || XamlRoot is null) return false;
+                _settingsPromptOpen = true;
+                try
+                {
+                    var dialog = new ContentDialog
+                    {
+                        XamlRoot = XamlRoot, RequestedTheme = App.Appearance.RequestedTheme,
+                        Title = DesktopText.Get("SettingsDraftDialogTitle"),
+                        Content = new TextBlock { Text = DesktopText.Get("SettingsDraftDialogMessage", DesktopText.Get("SettingsDraftAgent")), TextWrapping = TextWrapping.Wrap },
+                        PrimaryButtonText = DesktopText.Get("SettingsDraftSave"),
+                        SecondaryButtonText = DesktopText.Get("SettingsDraftDiscard"),
+                        CloseButtonText = DesktopText.Get("SettingsDraftCancel"), DefaultButton = ContentDialogButton.Close
+                    };
+                    AutomationProperties.SetAutomationId(dialog, "UnsavedAgentProfileDialog");
+                    var choice = await dialog.ShowAsync();
+                    if (choice == ContentDialogResult.None) return false;
+                    if (choice == ContentDialogResult.Primary)
+                    {
+                        if (!await editor.TryFlushAsync()) return false;
+                    }
+                    else if (!await editor.Editor.DiscardPendingSettingsAsync()) return false;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Agent profile resolution: {ex.GetType().Name}");
+                    return false;
+                }
+                finally { _settingsPromptOpen = false; }
+            }
+        }
         CommitSettingsNumberEdit();
         if (ViewModel.IsOnboardingActive || !ViewModel.HasUnsavedSettings) return true;
         if (XamlRoot is null) return false;

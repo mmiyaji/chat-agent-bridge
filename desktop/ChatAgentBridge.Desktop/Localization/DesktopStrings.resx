@@ -789,4 +789,9 @@ After: {2}</value></data>
   <data name="ActivityOtherModels" xml:space="preserve"><value>Other models</value></data>
   <data name="ActivityStatisticsUnavailable" xml:space="preserve"><value>Usage statistics could not be read. Totals and charts are hidden to avoid showing incomplete values. Try refreshing or inspect the local data folder.</value></data>
   <data name="ActivityStatisticsMigrationCoverage" xml:space="preserve"><value>Includes the history retained when statistics were first enabled. Earlier records already removed from history cannot be recovered.</value></data>
+  <data name="AgentScopeCommon" xml:space="preserve"><value>Shared settings</value></data>
+  <data name="AgentScopeCustom" xml:space="preserve"><value>Other CLI</value></data>
+  <data name="AgentScopePicker" xml:space="preserve"><value>Edit settings for</value></data>
+  <data name="AgentScopeCommonHelp" xml:space="preserve"><value>Workspace, trusted folders and local run approval apply to every agent.</value></data>
+  <data name="ConnectionScopeCommonHelp" xml:space="preserve"><value>Approval, result sharing and attachment settings apply to both Slack and Mattermost.</value></data>
 </root>

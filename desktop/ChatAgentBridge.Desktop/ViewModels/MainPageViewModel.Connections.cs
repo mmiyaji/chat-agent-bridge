@@ -32,6 +32,7 @@ public partial class MainPageViewModel
         OnPropertyChanged(nameof(HasRegisteredClaudeConnection));
         OnPropertyChanged(nameof(HasRegisteredGeminiConnection));
         OnPropertyChanged(nameof(HasRegisteredCopilotConnection));
+        OnPropertyChanged(nameof(HasVerifiedAgentEditor));
     }
 
     private async Task LoadAgentConnectionsAsync()
@@ -80,18 +81,8 @@ public partial class MainPageViewModel
         }
         try
         {
-            var profile = new AgentConnectionProfile(
-                AgentProvider,
-                CliExecutablePath,
-                AgentProvider == AgentProfile.Codex ? (UseAppServer ? "app-server" : AgentProfile.DefaultCodexArguments)
-                    : AgentProvider == AgentProfile.Claude ? "" : AgentArguments,
-                AgentProvider == AgentProfile.Codex && UseAppServer ? "app-server" : "exec",
-                AgentModel,
-                AgentReasoningEffort,
-                AgentPermissionMode,
-                AllowAgentNetwork,
-                CliVersion,
-                _cliCheckedAt ?? throw new InvalidOperationException("A current CLI check is required before registration."));
+            var profile = CreateCheckedAgentConnectionProfile()
+                ?? throw new InvalidOperationException("A current CLI check is required before registration.");
             await _agentConnectionStore.SaveVerifiedAsync(profile);
             await LoadAgentConnectionsAsync();
             ConnectionRegistrationStatus = ViewModelText.Get("ConnectionRegistered", AgentProviderDisplayName);
@@ -100,6 +91,41 @@ public partial class MainPageViewModel
         {
             ConnectionRegistrationStatus = ViewModelText.Get("ConnectionRegistrationFailed", ex.Message);
         }
+    }
+
+    private AgentConnectionProfile? CreateCheckedAgentConnectionProfile()
+    {
+        if (!CanRegisterAgentConnection() || _cliCheckedAt is not { } checkedAt) return null;
+        var candidate = new AgentConnectionProfile(
+            AgentProvider,
+            CliExecutablePath,
+            AgentProvider == AgentProfile.Codex ? (UseAppServer ? "app-server" : AgentProfile.DefaultCodexArguments)
+                : AgentProvider == AgentProfile.Claude ? "" : AgentArguments,
+            AgentProvider == AgentProfile.Codex && UseAppServer ? "app-server" : "exec",
+            AgentModel,
+            AgentReasoningEffort,
+            AgentPermissionMode,
+            AllowAgentNetwork,
+            CliVersion,
+            checkedAt);
+        try
+        {
+            // ApplyTo runs the verified-store validator and returns its canonical agent values.
+            var normalized = candidate.ApplyTo(new BridgeSettings());
+            return candidate with
+            {
+                Provider = normalized.AgentProvider,
+                Executable = normalized.AgentExecutable,
+                Arguments = normalized.AgentArguments,
+                Mode = normalized.AgentMode,
+                Model = normalized.AgentModel,
+                ReasoningEffort = normalized.AgentReasoningEffort,
+                PermissionMode = normalized.AgentPermissionMode,
+                CliVersion = candidate.CliVersion.Trim(),
+                CheckedAt = candidate.CheckedAt.ToUniversalTime()
+            };
+        }
+        catch (ArgumentException) { return null; }
     }
 
     [RelayCommand(CanExecute = nameof(HasRegisteredCodexConnection))]

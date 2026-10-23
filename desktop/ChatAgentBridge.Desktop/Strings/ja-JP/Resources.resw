@@ -135,7 +135,7 @@
     <value>フォルダーを選択…</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock016.Text" xml:space="preserve">
-    <value>変更後はチャットの再接続が必要です。既存の会話の作業先は変わりません。</value>
+    <value>新しい会話にはこの作業フォルダーを使います。既存の会話の作業先は変わりません。</value>
   </data>
   <data name="AgentProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>使うエージェント</value>
@@ -1195,4 +1195,38 @@
   <data name="AboutThirdPartyLicenses.Header" xml:space="preserve"><value>第三者ライセンス</value></data>
   <data name="AboutThirdPartyLicenses.Description" xml:space="preserve"><value>同梱ライブラリ・アイコンのライセンスと著作権表記を確認します。</value></data>
   <data name="AboutDiagnostics.Header" xml:space="preserve"><value>診断・サポート</value></data>
+  <data name="AgentEditorWorkspaceHeader.Text" xml:space="preserve"><value>共通の作業フォルダー</value></data>
+  <data name="AgentEditorWorkspaceDescription.Text" xml:space="preserve"><value>すべてのエージェントに適用</value></data>
+  <data name="AgentEditorOpenCommonSettings.Content" xml:space="preserve"><value>共通設定を開く</value></data>
+  <data name="AgentEditorExecutionHeading.Text" xml:space="preserve"><value>このエージェントの実行設定</value></data>
+  <data name="AgentEditorExecutionDescription.Text" xml:space="preserve"><value>選択したエージェントの設定を編集します。</value></data>
+  <data name="AgentEditorExecutableLabel.Text" xml:space="preserve"><value>CLI実行ファイル</value></data>
+  <data name="AgentEditorExecutable.PlaceholderText" xml:space="preserve"><value>実行ファイル名、または絶対パス</value></data>
+  <data name="AgentEditorCliCheckHint.Text" xml:space="preserve"><value>バージョンとモデル候補を確認します</value></data>
+  <data name="CancelAgentCliCheck.Content" xml:space="preserve"><value>確認を中断</value></data>
+  <data name="RetryCliCheck.Content" xml:space="preserve"><value>もう一度確認</value></data>
+  <data name="AgentEditorModelLabel.Text" xml:space="preserve"><value>使用するモデル</value></data>
+  <data name="AgentEditorModel.PlaceholderText" xml:space="preserve"><value>CLIの既定値を使う</value></data>
+  <data name="AgentEditorReasoningLabel.Text" xml:space="preserve"><value>推論の強さ</value></data>
+  <data name="AgentEditorPermissionLabel.Text" xml:space="preserve"><value>操作権限</value></data>
+  <data name="PermissionInherit.Content" xml:space="preserve"><value>CLIの既定値を使う</value></data>
+  <data name="PermissionReadOnly.Content" xml:space="preserve"><value>読み取り専用</value></data>
+  <data name="PermissionWorkspaceWrite.Content" xml:space="preserve"><value>作業フォルダーへの書き込み</value></data>
+  <data name="PermissionAsk.Content" xml:space="preserve"><value>操作ごとに確認</value></data>
+  <data name="PermissionFullAccess.Content" xml:space="preserve"><value>フルアクセス</value></data>
+  <data name="AgentEditorArgumentsLabel.Text" xml:space="preserve"><value>起動引数</value></data>
+  <data name="AgentProfileDetails.Text" xml:space="preserve"><value>詳細設定</value></data>
+  <data name="AgentProfileDetailsSummary.Text" xml:space="preserve"><value>接続方式・起動引数・環境変数</value></data>
+  <data name="AgentProfilePendingChanges" xml:space="preserve"><value>この設定はまだ使用されていません。CLIを確認し、「この設定を使用」を選択してください。</value></data>
+  <data name="RetryAgentDraftSave.Content" xml:space="preserve"><value>保存を再試行</value></data>
+  <data name="UseAgentProfile.Content" xml:space="preserve"><value>この設定を使用</value></data>
+  <data name="AgentProfileInUse.Text" xml:space="preserve"><value>使用中</value></data>
+  <data name="AgentEditorChecking" xml:space="preserve"><value>CLIを確認中…</value></data>
+  <data name="AgentEditorChecked" xml:space="preserve"><value>CLI確認済み</value></data>
+  <data name="AgentEditorCheckFailed" xml:space="preserve"><value>CLIの確認に失敗</value></data>
+  <data name="AgentEditorNotChecked" xml:space="preserve"><value>CLI未確認</value></data>
+  <data name="AgentEditorModelChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>CLIから取得したモデル候補</value></data>
+  <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>推論の強さ</value></data>
+  <data name="AgentEditorPermission.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>操作権限</value></data>
+  <data name="AgentEditorModelChoices.PlaceholderText" xml:space="preserve"><value>CLIから取得した候補から選択</value></data>
 </root>

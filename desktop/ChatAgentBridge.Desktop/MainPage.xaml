@@ -107,7 +107,7 @@
                             <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" Text="{x:Bind local:MainPage.SettingsAutoSaveStatus(ViewModel.HasUnsavedSettings, ViewModel.IsLoading, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="AgentSettingsSaveState" />
                         </Grid>
                         <Button Style="{StaticResource AccentButtonStyle}" Click="RetrySettingsAutoSave_Click" IsEnabled="{x:Bind ViewModel.CanSavePendingSettings, Mode=OneWay}" Visibility="{x:Bind local:MainPage.SettingsAutoSaveRetryVisibility(ViewModel.HasUnsavedSettings, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SaveSettings" x:Uid="SettingsAutoSaveRetry" localization:LocalizedResourceKey.Key="SettingsAutoSaveRetry" />
-                        <ComboBox Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="440" HorizontalAlignment="Left" SelectedIndex="-1" SelectionChanged="AgentJump_SelectionChanged" AutomationProperties.AutomationId="AgentSettingsJump" x:Uid="AgentSettingsJump">
+                        <ComboBox Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="440" HorizontalAlignment="Left" SelectedIndex="-1" SelectionChanged="AgentJump_SelectionChanged" Visibility="Collapsed" AutomationProperties.AutomationId="AgentSettingsJump" x:Uid="AgentSettingsJump">
                             <ComboBoxItem Tag="basic" AutomationProperties.AutomationId="JumpAgentBasic" x:Uid="JumpAgentBasic" />
                             <ComboBoxItem Tag="common" AutomationProperties.AutomationId="JumpAgentCommon" x:Uid="JumpAgentCommon" />
                             <ComboBoxItem Tag="model" AutomationProperties.AutomationId="JumpAgentModel" x:Uid="JumpAgentModel" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.SupportsModel), Mode=OneWay}" />
@@ -125,7 +125,7 @@
                             <TextBlock Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" Text="{x:Bind local:MainPage.SettingsAutoSaveStatus(ViewModel.HasUnsavedSettings, ViewModel.IsLoading, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="ConnectionSettingsSaveState" />
                         </Grid>
                         <Button Style="{StaticResource AccentButtonStyle}" Click="RetrySettingsAutoSave_Click" IsEnabled="{x:Bind ViewModel.CanSavePendingSettings, Mode=OneWay}" Visibility="{x:Bind local:MainPage.SettingsAutoSaveRetryVisibility(ViewModel.HasUnsavedSettings, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SaveConnections" x:Uid="SettingsAutoSaveRetry" localization:LocalizedResourceKey.Key="SettingsAutoSaveRetry" />
-                        <ComboBox x:Name="ConnectionsJump" Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="440" HorizontalAlignment="Left" SelectionChanged="ConnectionsJump_SelectionChanged" AutomationProperties.AutomationId="ConnectionsJump" x:Uid="ConnectionsJump">
+                        <ComboBox x:Name="ConnectionsJump" Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="440" HorizontalAlignment="Left" SelectionChanged="ConnectionsJump_SelectionChanged" Visibility="Collapsed" AutomationProperties.AutomationId="ConnectionsJump" x:Uid="ConnectionsJump">
                             <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="JumpMattermost" />
                             <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="JumpSlack" />
                             <ComboBoxItem Tag="approval" AutomationProperties.AutomationId="JumpApproval" x:Uid="JumpApproval" />
@@ -523,7 +523,6 @@
                                         </StackPanel>
                                     </Expander.Header>
                                     <StackPanel Spacing="12">
-                                        <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock031" x:Uid="chatAgentBridgeDesktopMainPageTextBlock031" />
                                         <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatApprovalMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ChatApprovalMode" x:Uid="ChatApprovalMode">
                                             <ComboBoxItem  Tag="always"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem006" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem006" /><ComboBoxItem  Tag="first"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem007" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem007" /><ComboBoxItem  Tag="auto"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem008" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem008" />
                                         </ComboBox>
@@ -550,7 +549,7 @@
                                         </StackPanel>
                                     </Expander.Header>
                                     <StackPanel Spacing="12">
-                                        <TextBlock Text="Mattermost" AutomationProperties.AutomationId="MattermostSettingsHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
+
                                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock048" x:Uid="chatAgentBridgeDesktopMainPageTextBlock048" />
                                         <StackPanel Spacing="8"><TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock049" x:Uid="chatAgentBridgeDesktopMainPageTextBlock049" /><TextBox Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com"  AutomationProperties.AutomationId="MattermostServerUrl"  x:Uid="MattermostServerUrl" /></StackPanel>
                                         <StackPanel Spacing="8">
@@ -596,7 +595,7 @@
                                         </StackPanel>
                                     </Expander.Header>
                                     <StackPanel Spacing="12">
-                                        <TextBlock Text="Slack" AutomationProperties.AutomationId="SlackSettingsHeading" Style="{StaticResource SubtitleTextBlockStyle}" />
+
                                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock054" x:Uid="chatAgentBridgeDesktopMainPageTextBlock054" />
                                         <StackPanel Spacing="8"><TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock055" x:Uid="chatAgentBridgeDesktopMainPageTextBlock055" /><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="SlackBotTokenBox" Grid.ColumnSpan="2" Padding="12,5,44,6" PasswordChanged="SlackBotTokenBox_PasswordChanged"  AutomationProperties.AutomationId="SlackBotToken"  x:Uid="SlackBotToken" /><ToggleButton x:Name="SlackBotTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="SlackBotTokenReveal" /></Grid></StackPanel>
                                         <StackPanel Spacing="8"><TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock056" x:Uid="chatAgentBridgeDesktopMainPageTextBlock056" /><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="SlackAppTokenBox" Grid.ColumnSpan="2" Padding="12,5,44,6" PasswordChanged="SlackAppTokenBox_PasswordChanged"  AutomationProperties.AutomationId="SlackAppToken"  x:Uid="SlackAppToken" /><ToggleButton x:Name="SlackAppTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="SlackAppTokenReveal" /></Grid></StackPanel>

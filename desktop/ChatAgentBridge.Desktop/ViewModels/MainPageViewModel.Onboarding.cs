@@ -63,7 +63,7 @@ public partial class MainPageViewModel
 
     public async Task InitializeOnboardingAsync()
     {
-        if (!IsSettingsLoaded) return;
+        if (_isAgentProfileEditor || !IsSettingsLoaded) return;
         try
         {
             var progress = await _onboardingProgressStore.LoadAsync();
@@ -188,7 +188,7 @@ public partial class MainPageViewModel
         IsOnboardingActive = false;
         IsStatusOpen = false;
     });
-    private bool CanOnboardingAction() => IsSettingsLoaded && !IsLoading && !IsRunning && !IsOnboardingBusy && !IsCheckingCli;
+    private bool CanOnboardingAction() => !_isAgentProfileEditor && IsSettingsLoaded && !IsLoading && !IsRunning && !IsOnboardingBusy && !IsCheckingCli;
     private bool CanGoBackInOnboarding() => CanOnboardingAction() && OnboardingStep > 0;
     private bool HasChosenChatConfiguration() => (IsWizardSlack || IsWizardMattermost) && MissingChatFields().Count == 0;
     private IReadOnlyList<WizardField> MissingChatFields() => IsWizardSlack

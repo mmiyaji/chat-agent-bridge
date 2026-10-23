@@ -33,10 +33,13 @@ public partial class MainPageViewModel
     private bool HasCurrentCliCheck() => CliCheckSucceeded && _checkedCliSignature == CurrentCliSignature() &&
         (!SupportsReasoning || string.IsNullOrWhiteSpace(AgentModel) || ModelCatalog.Models.Any(model => string.Equals(model.Id, AgentModel.Trim(), StringComparison.Ordinal)));
 
-    private string CurrentConnectionSignature() => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
-        System.Text.Encoding.UTF8.GetBytes(string.Join("\n", AgentProvider, AgentExecutable, AgentArguments,
-        UseAppServer, AgentModel?.Trim() ?? "", AgentReasoningEffort ?? "", AgentPermissionMode, AllowAgentNetwork,
-        CliVersion, CliExecutablePath))));
+    private string CurrentConnectionSignature() => CreateConnectionSignature(CreateSettingsSnapshot(), CliVersion, CliExecutablePath);
+
+    private static string CreateConnectionSignature(BridgeSettings settings, string cliVersion, string cliExecutablePath) =>
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n",
+            settings.AgentProvider, settings.AgentExecutable, settings.AgentArguments,
+            settings.AgentMode == "app-server", settings.AgentModel?.Trim() ?? "", settings.AgentReasoningEffort ?? "",
+            settings.AgentPermissionMode, settings.AllowAgentNetwork, cliVersion, cliExecutablePath))));
 
     private bool CanRegisterAgentConnection() => HasCurrentCliCheck() &&
         SupportsModel &&
@@ -111,7 +114,7 @@ public partial class MainPageViewModel
             CliVersion = result.Version;
             CliExecutablePath = result.Executable;
             if (!IsCustomProvider && !result.ProviderRecognized) { CliCheckFailed = true; CliCheckSummary = ViewModelText.Get("UnrecognizedCliProvider"); return; }
-            if (IsBasicProvider)
+            if (IsBasicProvider || IsCustomProvider)
             {
                 InvalidateModelCatalog();
                 _checkedCliSignature = signature;

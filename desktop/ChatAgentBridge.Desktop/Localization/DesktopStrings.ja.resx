@@ -789,4 +789,9 @@
   <data name="ActivityOtherModels" xml:space="preserve"><value>その他のモデル</value></data>
   <data name="ActivityStatisticsUnavailable" xml:space="preserve"><value>利用実績の集計を読み込めませんでした。不完全な値を表示しないよう、合計とグラフを非表示にしています。再読み込みするか、保存先の状態を確認してください。</value></data>
   <data name="ActivityStatisticsMigrationCoverage" xml:space="preserve"><value>集計開始時に残っていた履歴を含みます。それ以前に履歴から削除された記録は復旧できません。</value></data>
+  <data name="AgentScopeCommon" xml:space="preserve"><value>共通設定</value></data>
+  <data name="AgentScopeCustom" xml:space="preserve"><value>その他の CLI</value></data>
+  <data name="AgentScopePicker" xml:space="preserve"><value>設定する対象</value></data>
+  <data name="AgentScopeCommonHelp" xml:space="preserve"><value>作業フォルダー・信頼するフォルダー・PCでの実行確認は、すべてのエージェントに適用されます。</value></data>
+  <data name="ConnectionScopeCommonHelp" xml:space="preserve"><value>承認・結果共有・添付の設定は、SlackとMattermostに共通です。</value></data>
 </root>

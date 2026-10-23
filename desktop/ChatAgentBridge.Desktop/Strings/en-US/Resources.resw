@@ -135,7 +135,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Select folder...</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock016.Text" xml:space="preserve">
-    <value>Reconnect chat after changing the workspace. Existing conversations keep their own workspace.</value>
+    <value>New conversations use this workspace. Existing conversations keep their own workspace.</value>
   </data>
   <data name="AgentProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Agent to use</value>
@@ -1195,4 +1195,38 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AboutThirdPartyLicenses.Header" xml:space="preserve"><value>Third-party licenses</value></data>
   <data name="AboutThirdPartyLicenses.Description" xml:space="preserve"><value>Licenses and acknowledgments for included libraries and icons.</value></data>
   <data name="AboutDiagnostics.Header" xml:space="preserve"><value>Diagnostics and support</value></data>
+  <data name="AgentEditorWorkspaceHeader.Text" xml:space="preserve"><value>Shared workspace</value></data>
+  <data name="AgentEditorWorkspaceDescription.Text" xml:space="preserve"><value>Applies to every agent</value></data>
+  <data name="AgentEditorOpenCommonSettings.Content" xml:space="preserve"><value>Shared settings</value></data>
+  <data name="AgentEditorExecutionHeading.Text" xml:space="preserve"><value>Agent execution settings</value></data>
+  <data name="AgentEditorExecutionDescription.Text" xml:space="preserve"><value>Changes here apply only to this agent configuration.</value></data>
+  <data name="AgentEditorExecutableLabel.Text" xml:space="preserve"><value>CLI executable</value></data>
+  <data name="AgentEditorExecutable.PlaceholderText" xml:space="preserve"><value>Executable name or full path</value></data>
+  <data name="AgentEditorCliCheckHint.Text" xml:space="preserve"><value>Check version and available models</value></data>
+  <data name="CancelAgentCliCheck.Content" xml:space="preserve"><value>Cancel check</value></data>
+  <data name="RetryCliCheck.Content" xml:space="preserve"><value>Check again</value></data>
+  <data name="AgentEditorModelLabel.Text" xml:space="preserve"><value>Model</value></data>
+  <data name="AgentEditorModel.PlaceholderText" xml:space="preserve"><value>CLI default</value></data>
+  <data name="AgentEditorReasoningLabel.Text" xml:space="preserve"><value>Reasoning effort</value></data>
+  <data name="AgentEditorPermissionLabel.Text" xml:space="preserve"><value>Action permissions</value></data>
+  <data name="PermissionInherit.Content" xml:space="preserve"><value>Use CLI default</value></data>
+  <data name="PermissionReadOnly.Content" xml:space="preserve"><value>Read only</value></data>
+  <data name="PermissionWorkspaceWrite.Content" xml:space="preserve"><value>Workspace write</value></data>
+  <data name="PermissionAsk.Content" xml:space="preserve"><value>Approve each action</value></data>
+  <data name="PermissionFullAccess.Content" xml:space="preserve"><value>Full access</value></data>
+  <data name="AgentEditorArgumentsLabel.Text" xml:space="preserve"><value>Launch arguments</value></data>
+  <data name="AgentProfileDetails.Text" xml:space="preserve"><value>Advanced settings</value></data>
+  <data name="AgentProfileDetailsSummary.Text" xml:space="preserve"><value>Connection mode, launch arguments and environment</value></data>
+  <data name="AgentProfilePendingChanges" xml:space="preserve"><value>These settings are not in use yet. Check the CLI, then choose Use these settings.</value></data>
+  <data name="RetryAgentDraftSave.Content" xml:space="preserve"><value>Retry saving</value></data>
+  <data name="UseAgentProfile.Content" xml:space="preserve"><value>Use these settings</value></data>
+  <data name="AgentProfileInUse.Text" xml:space="preserve"><value>In use</value></data>
+  <data name="AgentEditorChecking" xml:space="preserve"><value>Checking CLI…</value></data>
+  <data name="AgentEditorChecked" xml:space="preserve"><value>CLI verified</value></data>
+  <data name="AgentEditorCheckFailed" xml:space="preserve"><value>CLI check failed</value></data>
+  <data name="AgentEditorNotChecked" xml:space="preserve"><value>CLI not checked</value></data>
+  <data name="AgentEditorModelChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Available models</value></data>
+  <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Reasoning effort</value></data>
+  <data name="AgentEditorPermission.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Action permissions</value></data>
+  <data name="AgentEditorModelChoices.PlaceholderText" xml:space="preserve"><value>Select from CLI candidates</value></data>
 </root>

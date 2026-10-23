@@ -6,7 +6,7 @@ namespace ChatAgentBridge_Desktop.ViewModels;
 
 public partial class MainPageViewModel
 {
-    private readonly CliVerificationStore _cliVerificationStore = new();
+    private CliVerificationStore _cliVerificationStore = new();
     [ObservableProperty] public partial bool IsCliCheckRestored { get; set; }
 
     private async Task RestoreCliVerificationAsync()

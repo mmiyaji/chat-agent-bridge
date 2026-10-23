@@ -5,9 +5,10 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
-    private void OpenManualWorkspaceSettings_Click(object sender, RoutedEventArgs e)
+    private async void OpenManualWorkspaceSettings_Click(object sender, RoutedEventArgs e)
     {
         OpenAgentSettings_Click(sender, e);
+        if (!await SelectAgentSettingsScopeAsync("common")) return;
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
             if (!IsAgentSelected) return;

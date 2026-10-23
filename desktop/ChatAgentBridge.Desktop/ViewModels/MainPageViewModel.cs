@@ -32,6 +32,7 @@ public partial class MainPageViewModel : ObservableObject
     private bool _lastSaveSucceeded;
     private bool _adjustingAgentPermissionMode;
     private bool _agentPermissionModeAdjusted;
+    private readonly bool _isAgentProfileEditor;
     private Startup.StartupState? _startupState;
     private readonly Startup.StartupOperationGuard _startupOperations = new();
 
@@ -39,8 +40,9 @@ public partial class MainPageViewModel : ObservableObject
     public ExecutionUi.LiveOutputViewModel LiveOutput { get; } = new();
     public ObservableCollection<ReasoningEffortChoice> ReasoningEffortCandidates { get; } = [];
 
-    public MainPageViewModel()
+    public MainPageViewModel(bool isAgentProfileEditor = false)
     {
+        _isAgentProfileEditor = isAgentProfileEditor;
         ReasoningEffortCandidates.Add(ReasoningEffortChoice.Default);
         ModelCatalog = new ModelCatalogViewModel(CreateSettingsSnapshot, ApplyCatalogModelSelection);
         SaveSettingsCommand.PropertyChanged += (_, _) =>
@@ -66,6 +68,10 @@ public partial class MainPageViewModel : ObservableObject
             WizardSettingChanged(e.PropertyName);
             if (e.PropertyName is nameof(CliCheckSucceeded) or nameof(CliCheckFailed) or nameof(IsCheckingCli) or nameof(CliVersion) or nameof(IsCliCheckRestored))
                 RefreshOverviewStatus();
+            if (e.PropertyName is nameof(IsLoading) or nameof(IsCheckingCli) or nameof(CliCheckSucceeded) or nameof(CliCheckFailed) or
+                nameof(CliVersion) or nameof(AgentProvider) or nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentModel) or
+                nameof(AgentReasoningEffort) or nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(UseAppServer) or nameof(HasUnsavedSettings))
+                OnPropertyChanged(nameof(HasVerifiedAgentEditor));
             if (e.PropertyName is nameof(IsSettingsLoaded) or nameof(IsLoading) or nameof(IsRunning))
             {
                 StartOnboardingCommand.NotifyCanExecuteChanged();
@@ -273,10 +279,27 @@ public partial class MainPageViewModel : ObservableObject
     public Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? ServerApprovalHandler { get; set; }
     public Func<AppServerInput, CancellationToken, Task<IReadOnlyDictionary<string, string[]>?>>? ServerInputHandler { get; set; }
     public string MattermostToken { get; private set; } = string.Empty;
+    public bool IsAgentProfileEditor => _isAgentProfileEditor;
+    public BridgeSettings? PersistedSettings => _settings;
     public event Action? SettingsSaved;
 
     public async Task LoadAsync()
     {
+        if (_isAgentProfileEditor)
+        {
+            if (_agentEditorSharedSettings is null || _agentEditorProvider is null)
+            {
+                IsSettingsLoaded = false;
+                StatusTitle = ViewModelText.Get("SettingsLoadFailed");
+                StatusMessage = ViewModelText.Get("SettingsLoadFailedDetails", "An agent profile must be selected first.");
+                StatusSeverity = "Error";
+                IsStatusOpen = true;
+                IsLoading = false;
+                return;
+            }
+            await LoadAgentEditorCoreAsync(_agentEditorSharedSettings, _agentEditorProvider);
+            return;
+        }
         _restoringSettingsDraft = true;
         IsLoading = true;
         IsSettingsLoaded = false;
@@ -287,6 +310,7 @@ public partial class MainPageViewModel : ObservableObject
         try
         {
             _settings = await _settingsStore.LoadAsync();
+            OnPropertyChanged(nameof(PersistedSettings));
             // Probing a missing or network workspace path can block; keep it off the UI thread.
             var settingsFilePath = Path.Combine(_settingsStore.DirectoryPath, "settings.json");
             var loadedWorkspaceRoot = _settings.WorkspaceRoot;
@@ -349,6 +373,7 @@ public partial class MainPageViewModel : ObservableObject
         catch (Exception ex)
         {
             _settings = null;
+            OnPropertyChanged(nameof(PersistedSettings));
             IsSettingsLoaded = false;
             _hasSavedSettings = false;
             StatusTitle = ViewModelText.Get("SettingsLoadFailed");
@@ -371,7 +396,7 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnAgentProviderChanged(string value)
     {
         InvalidateModelCatalog();
-        if (IsLoading || _restoringSettingsDraft) return;
+        if (_isAgentProfileEditor || IsLoading || _restoringSettingsDraft) return;
         UseAppServer = false;
         if (IsBasicProvider) SetAgentPermissionMode("inherit", adjusted: false);
         AgentModel = "";
@@ -473,20 +498,39 @@ public partial class MainPageViewModel : ObservableObject
                 FileAttachmentMaxCount = ToAttachmentLimit(FileAttachmentMaxCount),
                 FileAttachmentMaxTotalSizeMb = ToAttachmentLimit(FileAttachmentMaxTotalSizeMb)
             };
-            FileAttachmentPolicy.Validate(snapshot);
-            if (string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot) ||
-                !Path.IsPathFullyQualified(snapshot.WorkspaceRoot) || !Directory.Exists(snapshot.WorkspaceRoot))
-                throw new InvalidOperationException(ViewModelText.Get("WorkspaceMustBeExistingAbsolutePath"));
-            if (!ExecutionPolicy.IsWorkspaceTrusted(snapshot, snapshot.WorkspaceRoot))
-                throw new InvalidOperationException(ViewModelText.Get("WorkspaceOutsideTrustedRoots"));
-            if (snapshot.AgentProvider == AgentProfile.Codex && AgentProfile.ResolveProvider(snapshot) == AgentProfile.Custom &&
-                (snapshot.AgentPermissionMode != "inherit" ||
-                 snapshot.AgentModel is not null || snapshot.AgentReasoningEffort is not null))
-                throw new InvalidOperationException(ViewModelText.Get("CodexExecutableRequiredForAgentSettings"));
-            _ = AgentProfile.BuildInvocation(snapshot);
+            if (!_isAgentProfileEditor)
+            {
+                FileAttachmentPolicy.Validate(snapshot);
+                if (string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot) ||
+                    !Path.IsPathFullyQualified(snapshot.WorkspaceRoot) || !Directory.Exists(snapshot.WorkspaceRoot))
+                    throw new InvalidOperationException(ViewModelText.Get("WorkspaceMustBeExistingAbsolutePath"));
+                if (!ExecutionPolicy.IsWorkspaceTrusted(snapshot, snapshot.WorkspaceRoot))
+                    throw new InvalidOperationException(ViewModelText.Get("WorkspaceOutsideTrustedRoots"));
+                if (snapshot.AgentProvider == AgentProfile.Codex && AgentProfile.ResolveProvider(snapshot) == AgentProfile.Custom &&
+                    (snapshot.AgentPermissionMode != "inherit" ||
+                     snapshot.AgentModel is not null || snapshot.AgentReasoningEffort is not null))
+                    throw new InvalidOperationException(ViewModelText.Get("CodexExecutableRequiredForAgentSettings"));
+                _ = AgentProfile.BuildInvocation(snapshot);
+            }
+            else if (!string.Equals(snapshot.AgentProvider, _agentEditorProvider, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("The selected provider changed while this profile was being edited.");
+            }
             if (!await ConfirmSensitiveDraftAsync(_settings!, snapshot)) return;
-            await _settingsStore.SaveAsync(snapshot);
+            if (_isAgentProfileEditor)
+            {
+                var agentDraft = new AgentSettingsDraft(_agentEditorProvider!, snapshot.AgentExecutable,
+                    snapshot.AgentArguments, snapshot.AgentMode, snapshot.AgentModel,
+                    snapshot.AgentReasoningEffort, snapshot.AgentPermissionMode, snapshot.AllowAgentNetwork);
+                await (_agentSettingsDraftStore ??= new AgentSettingsDraftStore(_settingsStore.DirectoryPath))
+                    .SaveAsync(agentDraft);
+            }
+            else
+            {
+                await _settingsStore.SaveAsync(snapshot);
+            }
             _settings = snapshot;
+            OnPropertyChanged(nameof(PersistedSettings));
             AllowSensitiveSettingsConfirmationRetry();
             _hasSavedSettings = true;
             saved = true;
@@ -506,7 +550,7 @@ public partial class MainPageViewModel : ObservableObject
             if (FileAttachmentMaxSizeMb.Equals(attachmentSize)) FileAttachmentMaxSizeMb = snapshot.FileAttachmentMaxSizeMb;
             if (FileAttachmentMaxCount.Equals(attachmentCount)) FileAttachmentMaxCount = snapshot.FileAttachmentMaxCount;
             if (FileAttachmentMaxTotalSizeMb.Equals(attachmentTotal)) FileAttachmentMaxTotalSizeMb = snapshot.FileAttachmentMaxTotalSizeMb;
-            _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
+            if (!_isAgentProfileEditor) _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
             UpdateSavedAgentSummary();
             RefreshSetupStepper();
             SetStatus(ViewModelText.Get("SettingsSaved"), ViewModelText.Get("SettingsSavedReconnect"), "Success");
@@ -708,10 +752,10 @@ public partial class MainPageViewModel : ObservableObject
         }
     }
 
-    private bool CanRun() => !_closing && IsSettingsLoaded && _settings is not null && !IsLoading && !IsRunning &&
+    private bool CanRun() => !_isAgentProfileEditor && !_closing && IsSettingsLoaded && _settings is not null && !IsLoading && !IsRunning &&
         !_unsupportedSavedEffort && !HasUnsavedSettings && !IsSensitiveConfirmationPending;
     private bool CanSaveSettings() => !_closing && IsSettingsLoaded && !IsLoading && !IsRunning &&
-        !_savingSettings && _settings is not null && !_unsupportedSavedEffort;
+        !_savingSettings && _settings is not null && (!_unsupportedSavedEffort || _isAgentProfileEditor);
     private bool CanReloadSettings() => !IsLoading && !IsRunning;
 
     private bool CanCancelRun() => IsRunning && _runCancellation is { IsCancellationRequested: false };

@@ -61,7 +61,14 @@ internal static class AppServerFollowUpFixture
                     case "initialized":
                         break;
                     case "model/list":
-                        if (hasId) await RespondAsync(new { id, result = new { data = Array.Empty<object>(), nextCursor = (string?)null } });
+                        if (hasId)
+                        {
+                            object[] models = Environment.GetEnvironmentVariable("CAB_LIVE_STEERING_MODEL_LIST") == "1"
+                                ? [new { id = "codex-offline-fixture", model = "codex-offline-fixture", displayName = "Offline UI fixture", isDefault = true,
+                                    defaultReasoningEffort = "medium", supportedReasoningEfforts = new[] { new { reasoningEffort = "medium", description = "Fixture medium" }, new { reasoningEffort = "high", description = "Fixture high" } } }]
+                                : [];
+                            await RespondAsync(new { id, result = new { data = models, nextCursor = (string?)null } });
+                        }
                         break;
                     case "thread/start":
                         _threadId = Guid.NewGuid().ToString("D");

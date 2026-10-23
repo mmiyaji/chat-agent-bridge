@@ -33,6 +33,7 @@ public sealed partial class MainPage
     private void ConnectionsJump_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
         if (sender is not ComboBox { SelectedItem: ComboBoxItem { Tag: string section } } picker) return;
+        SetConnectionSettingsScope(section switch { "mattermost" => "mattermost", "slack" => "slack", _ => "common" });
         Expander? target = section switch
         {
             "mattermost" => MattermostSettingsCard,
@@ -57,28 +58,11 @@ public sealed partial class MainPage
         });
     }
 
-    private void AgentJump_SelectionChanged(object sender, SelectionChangedEventArgs args)
+    private async void AgentJump_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
         if (sender is not ComboBox { SelectedItem: ComboBoxItem { Tag: string section } } picker) return;
-        Expander? target = section switch
-        {
-            "basic" => AgentBasicSettings,
-            "common" => AgentCommonSettings,
-            "model" when ViewModel.SupportsModel => AgentModelSettings,
-            "permissions" when !ViewModel.IsBasicProvider => AgentPermissionsSettings,
-            "codex" when ViewModel.IsCodexProvider => CodexSettings,
-            "advanced" => AgentAdvancedSettings,
-            "registrations" => AgentRegistrationsSettings,
-            "explanation" => AgentExecutionExplanation,
-            _ => null
-        };
         picker.SelectedIndex = -1;
-        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
-        {
-            if (!IsAgentSelected || target is null) return;
-            target.IsExpanded = true;
-            target.UpdateLayout();
-            target.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0, AnimationDesired = false });
-        });
+        if (section is "common" or "basic" or "explanation") await SelectAgentSettingsScopeAsync("common");
+        else if (await SelectAgentSettingsScopeAsync(ViewModel.AgentProvider)) _agentProfileDetails?.OpenSection(section);
     }
 }

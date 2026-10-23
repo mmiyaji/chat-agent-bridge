@@ -5,7 +5,7 @@ namespace ChatAgentBridge_Desktop.ViewModels;
 
 public partial class MainPageViewModel
 {
-    private bool CanSaveGeneralSettings() => !_closing && IsSettingsLoaded && !IsLoading &&
+    private bool CanSaveGeneralSettings() => !_isAgentProfileEditor && !_closing && IsSettingsLoaded && !IsLoading &&
         !IsRunning && !_savingSettings && !SaveSettingsCommand.IsRunning;
 
     [RelayCommand(CanExecute = nameof(CanSaveGeneralSettings))]
