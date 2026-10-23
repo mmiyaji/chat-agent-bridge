@@ -6,9 +6,12 @@ internal sealed class MattermostBotCache
     private readonly int _capacity;
     private readonly TimeSpan _ttl;
     private readonly Func<DateTimeOffset> _now;
-    private readonly Dictionary<string, (bool IsBot, DateTimeOffset Expires)> _entries = new(StringComparer.Ordinal);
-    private readonly Queue<string> _order = new();
+    private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
+    // Oldest-first. Each entry owns exactly one node, so expiry and refresh unlink it and the list never outgrows the cache.
+    private readonly LinkedList<string> _order = new();
     private readonly object _gate = new();
+
+    private sealed record Entry(bool IsBot, DateTimeOffset Expires, LinkedListNode<string> Node);
 
     internal MattermostBotCache(int capacity = 1_000, TimeSpan? ttl = null, Func<DateTimeOffset>? now = null)
     {
@@ -29,7 +32,7 @@ internal sealed class MattermostBotCache
                     isBot = entry.IsBot;
                     return true;
                 }
-                _entries.Remove(userId);
+                Remove(userId, entry);
             }
         }
         isBot = false;
@@ -40,10 +43,21 @@ internal sealed class MattermostBotCache
     {
         lock (_gate)
         {
-            if (!_entries.ContainsKey(userId)) _order.Enqueue(userId);
-            _entries[userId] = (isBot, _now() + _ttl);
-            // The queue may hold ids already removed on expiry; dequeue until the live count is within capacity.
-            while (_entries.Count > _capacity && _order.TryDequeue(out var oldest)) _entries.Remove(oldest);
+            if (_entries.TryGetValue(userId, out var existing)) Remove(userId, existing);
+            _entries[userId] = new Entry(isBot, _now() + _ttl, _order.AddLast(userId));
+            while (_entries.Count > _capacity && _order.First is { } oldest) Remove(oldest.Value, _entries[oldest.Value]);
         }
+    }
+
+    // Test hook: the number of tracked ids must always equal the number of live entries.
+    internal (int Entries, int Tracked) Sizes()
+    {
+        lock (_gate) return (_entries.Count, _order.Count);
+    }
+
+    private void Remove(string userId, Entry entry)
+    {
+        _order.Remove(entry.Node);
+        _entries.Remove(userId);
     }
 }
