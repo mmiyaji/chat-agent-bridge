@@ -11,7 +11,10 @@ public enum ChatProgressState
     Failed,
     Cancelled,
     Rejected,
-    Disconnected
+    Disconnected,
+    FollowUpApplied,
+    FollowUpUncertain,
+    FollowUpPending
 }
 
 /// <summary>
@@ -43,6 +46,8 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     private bool _started;
     private bool _terminal;
     private bool _disposed;
+    private bool _progressCompleted;
+    private ChatProgressState _heartbeatState = ChatProgressState.Running;
 
     public ChatProgressReporter(
         IChatTransport transport,
@@ -92,7 +97,11 @@ public sealed class ChatProgressReporter : IAsyncDisposable
         }
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken = default)
+    public Task StartAsync(CancellationToken cancellationToken = default) => StartCoreAsync(ChatProgressState.Running, cancellationToken);
+
+    public Task StartFollowUpAsync(CancellationToken cancellationToken = default) => StartCoreAsync(ChatProgressState.FollowUpPending, cancellationToken);
+
+    private async Task StartCoreAsync(ChatProgressState state, CancellationToken cancellationToken)
     {
         if (_transport is null || !await EnterLifecycleAsync(cancellationToken).ConfigureAwait(false))
             return;
@@ -110,13 +119,17 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             }
 
             _started = true;
+            _heartbeatState = state;
             _elapsed.Start();
             if (_message is null)
                 return;
 
-            var text = Format(ChatProgressState.Running);
+            var text = Format(state);
             if (text is not null)
                 await TryUpdateAsync(_message, text, cancellationToken, allowTerminal: false).ConfigureAwait(false);
+
+            if (state == ChatProgressState.FollowUpPending)
+                await CompleteProgressAsync().ConfigureAwait(false);
 
             if (!_terminal && !_disposed && _heartbeatTask is null)
                 _heartbeatTask = HeartbeatLoopAsync(_heartbeatStop.Token);
@@ -142,7 +155,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             // entered its provider call will observe this flag and cannot publish a stale Running edit.
             _terminal = true;
             _heartbeatStop.Cancel();
-            CompleteProgress();
+            await CompleteProgressAsync().ConfigureAwait(false);
             await DrainHeartbeatAsync().ConfigureAwait(false);
             _elapsed.Stop();
 
@@ -168,7 +181,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
                 return;
             _disposed = true;
             _heartbeatStop.Cancel();
-            CompleteProgress();
+            await CompleteProgressAsync().ConfigureAwait(false);
             await DrainHeartbeatAsync().ConfigureAwait(false);
             _elapsed.Stop();
         }
@@ -189,7 +202,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
                 var message = _message;
                 if (message is null || _terminal || _disposed)
                     return;
-                var text = Format(ChatProgressState.Running);
+                var text = Format(_heartbeatState);
                 if (text is not null)
                     await TryUpdateAsync(message, text, cancellationToken, allowTerminal: false).ConfigureAwait(false);
             }
@@ -314,12 +327,25 @@ public sealed class ChatProgressReporter : IAsyncDisposable
         catch { }
     }
 
-    private void CompleteProgress()
+    private async Task CompleteProgressAsync()
     {
-        if (_message is null || _lifecycleTransport is null)
+        if (_message is null || _lifecycleTransport is null || _progressCompleted)
             return;
-        try { _lifecycleTransport.CompleteProgress(_message); }
+        _progressCompleted = true;
+        using var timeout = new CancellationTokenSource(_timeout);
+        Task? cleanup = null;
+        try
+        {
+            cleanup = _lifecycleTransport.CompleteProgressAsync(_message, timeout.Token);
+            await cleanup.WaitAsync(timeout.Token).ConfigureAwait(false);
+        }
         catch (Exception ex) { ReportFailure(ex); }
+        finally
+        {
+            if (cleanup is not null)
+                _ = cleanup.ContinueWith(completed => { _ = completed.Exception; }, CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        }
     }
 
     private async Task<bool> EnterLifecycleAsync(CancellationToken cancellationToken)
@@ -351,5 +377,6 @@ public sealed class ChatProgressReporter : IAsyncDisposable
 
     private static bool IsTerminalState(ChatProgressState state) =>
         state is ChatProgressState.Completed or ChatProgressState.Failed or ChatProgressState.Cancelled
-            or ChatProgressState.Rejected or ChatProgressState.Disconnected;
+            or ChatProgressState.Rejected or ChatProgressState.Disconnected
+            or ChatProgressState.FollowUpApplied or ChatProgressState.FollowUpUncertain;
 }

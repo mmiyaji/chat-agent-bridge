@@ -1,3 +1,4 @@
+using ChatAgentBridge.Core;
 using ChatAgentBridge_Desktop.Inbox;
 using ChatAgentBridge_Desktop.ViewModels;
 using Microsoft.UI.Xaml;
@@ -28,8 +29,10 @@ public sealed partial class OnboardingWizard : UserControl
         {
             if (args.PropertyName is nameof(ViewModel.OnboardingChatProvider) or nameof(ViewModel.OnboardingStep) or nameof(ViewModel.IsOnboardingActive))
                 PasswordRevealControl.Hide(this);
+            if (args.PropertyName is nameof(ViewModel.OnboardingChatProvider) or nameof(ViewModel.OnboardingStep))
+                ClearFieldHighlights();
         };
-        ViewModel.OnboardingConsentFocusRequested += FocusMissingConsent;
+        ViewModel.OnboardingFieldsFocusRequested += FocusMissingFields;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
 
@@ -64,6 +67,70 @@ public sealed partial class OnboardingWizard : UserControl
         PasswordRevealControl.Hide(this);
         WizardScrollViewer.ChangeView(null, 0, null, true);
         DispatcherQueue.TryEnqueue(() => WizardScrollViewer.ChangeView(null, 0, null, true));
+    }
+
+    private readonly List<FrameworkElement> _markedFields = [];
+
+    private void ClearFieldHighlights()
+    {
+        foreach (var field in _markedFields) FieldHighlight.Clear(field);
+        _markedFields.Clear();
+    }
+
+    private (FrameworkElement Target, FrameworkElement Input) Resolve(WizardField field) => field switch
+    {
+        WizardField.WorkspaceRoot => (WorkspaceRootBox, WorkspaceRootBox),
+        WizardField.AgentProvider => (AgentProviderCombo, AgentProviderCombo),
+        WizardField.AgentExecutable => (AgentExecutableBox, AgentExecutableBox),
+        WizardField.CliCheck => (CheckCliButton, CheckCliButton),
+        // A password box shares a grid with its reveal button; outline the whole row.
+        WizardField.SlackBotToken => ((FrameworkElement)SlackBotTokenBox.Parent, SlackBotTokenBox),
+        WizardField.SlackAppToken => ((FrameworkElement)SlackAppTokenBox.Parent, SlackAppTokenBox),
+        WizardField.SlackAllowedUsers => (SlackAllowedUsersBox, SlackAllowedUsersBox),
+        WizardField.MattermostServerUrl => (MattermostServerUrlBox, MattermostServerUrlBox),
+        WizardField.MattermostChannel => (MattermostChannelBox, MattermostChannelBox),
+        WizardField.MattermostToken => ((FrameworkElement)MattermostTokenBox.Parent, MattermostTokenBox),
+        WizardField.MattermostAllowedUsers => (MattermostAllowedUsersBox, MattermostAllowedUsersBox),
+        _ => throw new ArgumentOutOfRangeException(nameof(field), field, null)
+    };
+
+    /// <summary>Outlines every missing required input and moves focus to the first one.</summary>
+    private void FocusMissingFields(IReadOnlyList<WizardField> fields)
+    {
+        if (fields.Contains(WizardField.Terms) || fields.Contains(WizardField.Privacy)) { FocusMissingConsent(); return; }
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            ClearFieldHighlights();
+            FrameworkElement? first = null;
+            foreach (var field in fields)
+            {
+                var (target, input) = Resolve(field);
+                FieldHighlight.Mark(target, input);
+                _markedFields.Add(target);
+                first ??= input;
+            }
+            if (first is null) return;
+            // Wrapping, the status bar opening and focus each change the layout, so reveal the field once the
+            // layout has settled and again afterwards; a single early request lands on stale positions.
+            RevealField(first);
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => RevealField(first));
+        });
+    }
+
+    private void RevealField(FrameworkElement field)
+    {
+        if (!ViewModel.IsOnboardingActive || field.XamlRoot is null) return;
+        WizardScrollViewer.UpdateLayout();
+        if (field is Control control) control.Focus(FocusState.Programmatic);
+        WizardScrollViewer.UpdateLayout();
+        if (WizardScrollViewer.Content is not UIElement content) return;
+        var top = field.TransformToVisual(content).TransformPoint(new Windows.Foundation.Point(0, 0)).Y;
+        var bottom = top + field.ActualHeight;
+        var viewTop = WizardScrollViewer.VerticalOffset;
+        var viewBottom = viewTop + WizardScrollViewer.ViewportHeight;
+        // A field that is already fully visible stays put, so the status message above it is not scrolled away.
+        if (top - 16 >= viewTop && bottom + 16 <= viewBottom) return;
+        WizardScrollViewer.ChangeView(null, Math.Clamp(top - WizardScrollViewer.ViewportHeight / 3, 0, WizardScrollViewer.ScrollableHeight), null, true);
     }
 
     private void FocusMissingConsent()

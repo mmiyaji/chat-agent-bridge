@@ -19,7 +19,7 @@ public sealed class SettingsSensitiveChangesTests
                      nameof(BridgeSettings.MattermostAllowedUserIds), nameof(BridgeSettings.SlackAllowedUserIds) })
             yield return [name, nameof(SettingsSensitiveChanges.ChatAccess)];
         foreach (var name in new[] { nameof(BridgeSettings.ChatResultMode), nameof(BridgeSettings.ShareApprovalsInChat),
-                     nameof(BridgeSettings.ShareAgentQuestionsInChat) })
+                     nameof(BridgeSettings.ShareAgentQuestionsInChat), nameof(BridgeSettings.ChatFollowUpMode) })
             yield return [name, nameof(SettingsSensitiveChanges.ChatSharing)];
         foreach (var name in new[] { nameof(BridgeSettings.FileAttachmentApprovalMode), nameof(BridgeSettings.FileAttachmentMaxSizeMb),
                      nameof(BridgeSettings.FileAttachmentMaxCount), nameof(BridgeSettings.FileAttachmentMaxTotalSizeMb) })

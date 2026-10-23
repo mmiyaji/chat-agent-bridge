@@ -75,7 +75,8 @@ public sealed class CodexAppServerClient : IAppServerRpcClient
         try { await _readLoop.WaitAsync(TimeSpan.FromSeconds(1)).ConfigureAwait(false); }
         catch (TimeoutException) { }
         catch (OperationCanceledException) { }
-        _writeGate.Dispose();
+        // Requests and scoped turn handles can still be unwinding after shutdown. Keep the
+        // semaphore alive so their finally blocks can release it safely.
         _lifetime.Dispose();
     }
 
@@ -153,8 +154,8 @@ public sealed class CodexAppServerClient : IAppServerRpcClient
             {
                 var code = error.TryGetProperty("code", out var codeValue) && codeValue.TryGetInt32(out var number) ? number : 0;
                 var message = error.TryGetProperty("message", out var messageValue) && messageValue.ValueKind == JsonValueKind.String
-                    ? messageValue.GetString() : "unknown App Server error";
-                pending.TrySetException(new InvalidOperationException($"Codex App Server error {code}: {message}"));
+                    ? messageValue.GetString() ?? "unknown App Server error" : "unknown App Server error";
+                pending.TrySetException(new AppServerRpcException(code, message));
             }
             else pending.TrySetResult(root.TryGetProperty("result", out var result) ? result.Clone() : default);
             return;

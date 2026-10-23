@@ -121,6 +121,26 @@ public sealed class FileAttachmentCollectorTests
     }
 
     [Fact]
+    public async Task DiscoveryKeepsSensitiveNameRulesCaseInsensitive()
+    {
+        using var fixture = new Fixture();
+        var before = await fixture.Collector.CaptureBeforeAsync(fixture.Workspace, fixture.Data, default);
+        foreach (var name in new[]
+        {
+            "SECRET-notes.txt", "settingsBackup.txt", "notes_SESSION.txt", "private.KEY", "tool.PS1", ".hidden.txt"
+        })
+        {
+            await File.WriteAllTextAsync(fixture.Path(name), "excluded");
+        }
+        await File.WriteAllTextAsync(fixture.Path("safe-report.TXT"), "safe");
+
+        var scan = await fixture.Collector.DiscoverAsync(before, fixture.Settings, default);
+
+        Assert.True(scan.IsComplete);
+        Assert.Equal("safe-report.TXT", Assert.Single(scan.Candidates).RelativePath);
+    }
+
+    [Fact]
     public async Task KeepsExistingFilesOutAndPreservesAnIncompleteSnapshotFlag()
     {
         using var fixture = new Fixture();

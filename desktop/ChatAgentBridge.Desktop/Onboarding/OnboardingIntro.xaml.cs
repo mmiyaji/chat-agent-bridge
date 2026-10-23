@@ -4,6 +4,7 @@ using System.Globalization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace ChatAgentBridge_Desktop.Onboarding;
 
@@ -18,12 +19,22 @@ public sealed partial class OnboardingIntro : UserControl
         IntroLanguageSettings.ApplyImmediately = true;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
+        TermsConsentCheckBox.Checked += (_, _) => SetMissingHighlight(TermsConsentBorder, false);
+        PrivacyConsentCheckBox.Checked += (_, _) => SetMissingHighlight(PrivacyConsentBorder, false);
+    }
+
+    private void SetMissingHighlight(Border border, bool missing)
+    {
+        border.BorderBrush = missing ? (Brush)Resources["MissingConsentBorderBrush"] : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        border.Background = missing ? (Brush)Resources["MissingConsentBackgroundBrush"] : null;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs args)
     {
         LanguageSettings.LanguageChanged -= OnLanguageChanged;
         LanguageSettings.LanguageChanged += OnLanguageChanged;
+        SetMissingHighlight(TermsConsentBorder, false);
+        SetMissingHighlight(PrivacyConsentBorder, false);
         RefreshLanguage(CultureInfo.CurrentUICulture);
     }
 
@@ -50,6 +61,9 @@ public sealed partial class OnboardingIntro : UserControl
 
     public void FocusMissingConsent()
     {
+        // Mark every unchecked consent, not just the first one that receives focus.
+        SetMissingHighlight(TermsConsentBorder, !ViewModel.HasAcceptedTerms);
+        SetMissingHighlight(PrivacyConsentBorder, !ViewModel.HasAcceptedPrivacy);
         var target = !ViewModel.HasAcceptedTerms ? TermsConsentCheckBox : PrivacyConsentCheckBox;
         target.Focus(FocusState.Programmatic);
         // Align above the fold rather than only revealing the checkbox's last

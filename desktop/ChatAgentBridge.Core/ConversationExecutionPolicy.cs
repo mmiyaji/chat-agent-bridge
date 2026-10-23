@@ -48,9 +48,15 @@ public static class ConversationExecutionPolicy
         var baseFingerprint = Digest(payload);
         // Keep the historical digest byte-for-byte for the default-off setting so persisted
         // approvals remain valid when upgrading. Opting in creates a distinct consent scope.
-        return settings.ShareAgentQuestionsInChat
+        var fingerprint = settings.ShareAgentQuestionsInChat
             ? Digest(baseFingerprint + "\0share-agent-questions")
             : baseFingerprint;
+        if (ChatFollowUpPolicy.Normalize(settings.ChatFollowUpMode) != ChatFollowUpPolicy.Steer) return fingerprint;
+        var steerFingerprint = Digest(fingerprint + "\0chat-follow-up-steer");
+        // Earlier versions advertised live additions only for Codex. Expanding Claude execution
+        // must not silently reuse first-request consent from that earlier behavior.
+        return settings.AgentProvider == AgentProfile.Claude && settings.AgentMode == "exec"
+            ? Digest(steerFingerprint + "\0claude-stream-input-v1") : steerFingerprint;
     }
 
     private static string Digest(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();

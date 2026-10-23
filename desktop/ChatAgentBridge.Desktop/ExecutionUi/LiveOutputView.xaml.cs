@@ -65,7 +65,12 @@ public sealed partial class LiveOutputView : UserControl
     {
         var view = (LiveOutputView)sender;
         if (args.OldValue is LiveOutputViewModel oldViewModel)
+        {
             oldViewModel.PropertyChanged -= view.ViewModel_PropertyChanged;
+            oldViewModel.IsViewVisible = null;
+        }
+        if (args.NewValue is LiveOutputViewModel hostedViewModel)
+            hostedViewModel.IsViewVisible = view.IsEffectivelyVisible;
         if (view._isLoaded && args.NewValue is LiveOutputViewModel newViewModel)
             newViewModel.PropertyChanged += view.ViewModel_PropertyChanged;
         view._selectionStart = 0;
@@ -83,6 +88,15 @@ public sealed partial class LiveOutputView : UserControl
     {
         if (e.PropertyName == nameof(LiveOutputViewModel.FollowOutput) && ViewModel?.FollowOutput == true)
             ScrollToEndIfFollowing();
+    }
+
+    /// <summary>True when the output can actually be seen: loaded, expanded and no collapsed ancestor.</summary>
+    private bool IsEffectivelyVisible()
+    {
+        if (!_isLoaded || !OutputExpander.IsExpanded) return false;
+        for (DependencyObject? current = this; current is not null; current = VisualTreeHelper.GetParent(current))
+            if (current is UIElement { Visibility: Visibility.Collapsed }) return false;
+        return true;
     }
 
     private void LiveOutputView_Loaded(object sender, RoutedEventArgs e)
@@ -190,19 +204,24 @@ public sealed partial class LiveOutputView : UserControl
         if (_followScrollPending)
             return;
 
-        // TextBox content extent changes after TextChanged. Defer until layout so the
-        // new ScrollableHeight is available, then follow only if the user still follows.
+        // TextBox content extent changes after TextChanged. Defer until the next layout
+        // pass (no forced synchronous layout) so the new ScrollableHeight is available,
+        // then follow only if the user still follows.
         _followScrollPending = true;
         EventHandler<object>? layoutUpdated = null;
-        layoutUpdated = (_, _) =>
+        void Complete()
         {
+            if (!_followScrollPending) return;
             LayoutUpdated -= layoutUpdated;
             _followScrollPending = false;
             if (ViewModel?.FollowOutput == true && _outputScrollViewer is not null)
                 _outputScrollViewer.ChangeView(null, _outputScrollViewer.ScrollableHeight, null, true);
-        };
+        }
+        layoutUpdated = (_, _) => Complete();
         LayoutUpdated += layoutUpdated;
-        OutputTextBox.UpdateLayout();
+        // If nothing invalidates layout, LayoutUpdated may never fire; finish on a later
+        // dispatcher pass so the pending guard cannot block subsequent text changes.
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, Complete);
     }
 
     private static ScrollViewer? FindScrollViewer(DependencyObject parent)

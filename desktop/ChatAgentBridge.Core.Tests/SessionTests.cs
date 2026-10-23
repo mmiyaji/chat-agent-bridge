@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.Sessions;
 
@@ -417,6 +418,85 @@ public sealed class SessionTests
             await Assert.ThrowsAsync<InvalidDataException>(() => store.ListAsync());
             await File.WriteAllTextAsync(Path.Combine(directory, "sessions.json"), "{\"Bindings\":[]}");
             await Assert.ThrowsAsync<InvalidDataException>(() => store.ListAsync());
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task SessionStore_CachedDocumentFollowsExternalChangesAndOwnWrites()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var store = new SessionStore(directory);
+            var first = Key(thread: "t1");
+            var second = Key(thread: "t2");
+            await store.SaveAsync(Binding(first, Guid.NewGuid()));
+            Assert.NotNull(await store.FindAsync(first));
+            Assert.Null(await store.FindAsync(second));
+
+            // Another store instance (or process) rewrites the file; the cached parse must be dropped.
+            var path = Path.Combine(directory, "sessions.json");
+            await new SessionStore(directory).SaveAsync(Binding(second, Guid.NewGuid()));
+            Assert.NotNull(await store.FindAsync(second));
+
+            var replacement = JsonSerializer.Serialize(new { SchemaVersion = 1, Bindings = new[] { Binding(second, Guid.NewGuid()) } });
+            await File.WriteAllTextAsync(path, replacement);
+            Assert.Null(await store.FindAsync(first));
+            Assert.Single(await store.ListAsync());
+
+            // A write after the external edit builds on the edited file.
+            await store.SaveAsync(Binding(first, Guid.NewGuid()));
+            Assert.Equal(2, (await new SessionStore(directory).ListAsync()).Count);
+
+            File.Delete(path);
+            Assert.Empty(await store.ListAsync());
+            await File.WriteAllTextAsync(path, "{");
+            await Assert.ThrowsAsync<InvalidDataException>(() => store.FindAsync(first));
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task SessionStore_ReadersCannotMutateTheCachedDocument()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var store = new SessionStore(directory);
+            var key = Key();
+            await store.SaveAsync(Binding(key, Guid.NewGuid()));
+            var listed = (SessionBinding[])await store.ListAsync();
+            listed[0] = listed[0] with { Model = "mutated" };
+            Assert.Null((await store.FindAsync(key))!.Model);
+
+            await store.UpdateModelAsync(key, "gpt-test");
+            Assert.Equal("gpt-test", (await store.FindAsync(key))!.Model);
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task SessionStore_PrunesLeastRecentlyUpdatedBindingsBeyondTheRetentionCap()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var now = DateTimeOffset.UtcNow;
+            var seeded = Enumerable.Range(0, SessionStore.MaxBindings + 1)
+                .Select(index => Binding(Key(thread: $"seed-{index}"), Guid.NewGuid()) with { UpdatedAt = now.AddMinutes(-index - 10) }).ToArray();
+            await File.WriteAllTextAsync(Path.Combine(directory, "sessions.json"), JsonSerializer.Serialize(new { SchemaVersion = 1, Bindings = seeded }));
+            var store = new SessionStore(directory);
+            Assert.Equal(SessionStore.MaxBindings + 1, (await store.ListAsync()).Count);
+
+            await store.SaveAsync(Binding(Key(thread: "fresh"), Guid.NewGuid()));
+
+            var kept = await new SessionStore(directory).ListAsync();
+            Assert.Equal(SessionStore.MaxBindings, kept.Count);
+            Assert.Contains(kept, item => item.Key.ThreadId == "fresh");
+            Assert.Contains(kept, item => item.Key.ThreadId == "seed-0");
+            Assert.DoesNotContain(kept, item => item.Key.ThreadId == $"seed-{SessionStore.MaxBindings}");
+            Assert.DoesNotContain(kept, item => item.Key.ThreadId == $"seed-{SessionStore.MaxBindings - 1}");
         }
         finally { DeleteDirectory(directory); }
     }

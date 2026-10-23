@@ -15,6 +15,8 @@ public sealed partial class MainPage : Page
     private int _scrollResetGeneration;
     private int _languageRefreshGeneration;
     private System.Globalization.CultureInfo? _inProcessLanguage;
+    // Pages whose layout has already been re-localized for _inProcessLanguage.
+    private readonly HashSet<string> _languageRefreshedTags = new(StringComparer.Ordinal);
     private bool _handlingStartupToggle;
     private bool _refreshingAutoConnectSelection;
     private readonly Onboarding.OnboardingWizard _wizard;
@@ -98,6 +100,7 @@ public sealed partial class MainPage : Page
     private void RefreshLanguage(System.Globalization.CultureInfo culture)
     {
         _inProcessLanguage = culture;
+        _languageRefreshedTags.Clear();
         ViewModel.RefreshLocalizedText();
         InboxPage.ViewModel.RefreshLocalizedText();
         HistoryPage.ViewModel.RefreshLocalizedText();
@@ -111,6 +114,9 @@ public sealed partial class MainPage : Page
     private void ScheduleDeferredLanguageRefresh()
     {
         if (_inProcessLanguage is not { } culture || ViewModel.IsOnboardingActive) return;
+        // Each page needs the deferred pass once per language change, not on every visit.
+        var tag = _selectedNavigationTag;
+        if (tag is not null && _languageRefreshedTags.Contains(tag)) return;
         var generation = ++_languageRefreshGeneration;
         DispatcherQueue.TryEnqueue(() =>
         {
@@ -123,6 +129,7 @@ public sealed partial class MainPage : Page
                 UpdateLayout();
                 MrtText.Refresh(this, culture);
                 RefreshAutoConnectSelectionBox();
+                if (tag is not null) _languageRefreshedTags.Add(tag);
             });
         });
     }
@@ -146,6 +153,28 @@ public sealed partial class MainPage : Page
     {
         if (_refreshingAutoConnectSelection || sender is not ComboBox { SelectedValue: string value }) return;
         ViewModel.AutoConnectProvider = value;
+    }
+
+    private bool _followUpDialogOpen;
+
+    private async void ChatFollowUpMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Programmatic changes (loading, discarding a draft, reverting) must not ask again.
+        if (sender is not ComboBox { SelectedValue: ChatFollowUpPolicy.Steer } || _followUpDialogOpen ||
+            ViewModel.IsApplyingSettings || e.RemovedItems.Count == 0 || XamlRoot is null) return;
+        _followUpDialogOpen = true;
+        // The selection is already in the draft; hold auto-save so it cannot open its own dialog behind this one.
+        _settingsPromptOpen = true;
+        try
+        {
+            if (!await FollowUpSteerDialog.ShowAsync(ViewModel, XamlRoot)) ViewModel.RevertFollowUpToQueue();
+        }
+        finally
+        {
+            _settingsPromptOpen = false;
+            _followUpDialogOpen = false;
+            ScheduleSettingsAutoSave();
+        }
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
@@ -204,13 +233,17 @@ public sealed partial class MainPage : Page
     {
         if (_hasLoaded) return;
         _hasLoaded = true;
+        // The Windows startup-task query does not depend on saved settings, so it
+        // overlaps with the settings load. Onboarding needs the loaded settings.
+        var startupRefresh = ViewModel.RefreshStartupAsync();
         await ViewModel.LoadAsync();
         var startupProvider = ViewModel.AutoConnectProvider;
         MattermostTokenBox.Password = ViewModel.MattermostToken;
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
-        await ViewModel.RefreshStartupAsync();
         await ViewModel.InitializeOnboardingAsync();
+        await startupRefresh;
+        ViewModel.RefreshOverviewStatus();
         if (!App.IsNotificationOnlyLaunch && ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive && !ViewModel.IsLoading &&
             !ViewModel.HasUnsavedSettings && !ViewModel.IsSensitiveConfirmationPending &&
             ViewModel.AutoConnectProvider == startupProvider)
@@ -263,7 +296,7 @@ public sealed partial class MainPage : Page
         IsAboutSelected = tag == "about";
         if (!IsAgentSelected) ViewModel.CancelModelCatalogLookup();
         ViewModel.IsStatusOpen = false;
-        Bindings.Update();
+        if (pageChanged) Bindings.Update();
         if (pageChanged && _hasLoaded)
         {
             var generation = ++_scrollResetGeneration;
@@ -278,7 +311,7 @@ public sealed partial class MainPage : Page
                 });
             }
         }
-        if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshAsync();
+        if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshIfStaleAsync();
         if (pageChanged && IsOverviewSelected && _hasLoaded) _ = ViewModel.RefreshStartupAsync();
         if (pageChanged && IsAboutSelected) AboutPage.ResetScroll();
         if (pageChanged) ScheduleDeferredLanguageRefresh();

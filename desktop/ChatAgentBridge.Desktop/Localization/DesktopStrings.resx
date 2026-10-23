@@ -28,11 +28,37 @@
   <data name="ChatControlStop" xml:space="preserve"><value>Stop requested. Running: {0}; pending cancelled: {1}.</value></data>
   <data name="ChatControlStopNone" xml:space="preserve"><value>No running or pending requests from you in this thread.</value></data>
   <data name="ChatControlFailed" xml:space="preserve"><value>Could not process a chat control command. Check the request on this PC.</value></data>
+  <data name="ChatFollowUpModeLabel" xml:space="preserve"><value>Messages received during execution</value></data>
+  <data name="ChatFollowUpModeQueue" xml:space="preserve"><value>Run in order (default)</value></data>
+  <data name="ChatFollowUpModeSteer" xml:space="preserve"><value>Add to the running request</value></data>
+  <data name="ChatFollowUpModeHelp" xml:space="preserve"><value>Available with Codex App Server and Claude Code. Additional instructions from the same user and thread are delivered when the agent can accept them. Unsupported connections and per-request approval queue messages.</value></data>
+  <data name="FollowUpSteerTitle" xml:space="preserve"><value>Add messages to the running request?</value></data>
+  <data name="FollowUpSteerExplanation" xml:space="preserve"><value>While a request is running, messages from the same user and thread are passed to the running agent. They are applied when the agent can accept them, and a message sent just before the request finishes may not be applied.</value></data>
+  <data name="FollowUpSteerTokenNote" xml:space="preserve"><value>Each added message can make the agent do extra work, which can increase token usage. At most 10 messages can be added to one run.</value></data>
+  <data name="FollowUpSteerChangesHeader" xml:space="preserve"><value>This feature needs the following settings. If you agree, they are changed in the draft and take effect after you save:</value></data>
+  <data name="FollowUpSteerChangeAppServer" xml:space="preserve"><value>Connection: use Codex App Server (currently exec)</value></data>
+  <data name="FollowUpSteerChangeApproval" xml:space="preserve"><value>Approval for chat requests: {0} -> {1}</value></data>
+  <data name="FollowUpSteerNoChanges" xml:space="preserve"><value>No other settings need to change.</value></data>
+  <data name="FollowUpSteerUnsupported" xml:space="preserve"><value>The current provider ({0}) does not support this. Choose Codex or Claude Code first.</value></data>
+  <data name="FollowUpSteerApply" xml:space="preserve"><value>Agree and change</value></data>
+  <data name="FollowUpSteerEnable" xml:space="preserve"><value>Enable</value></data>
+  <data name="SettingsReviewFollowUpMode" xml:space="preserve"><value>Messages received during execution</value></data>
+  <data name="FollowUpApplied" xml:space="preserve"><value>Added to running request</value></data>
+  <data name="FollowUpPending" xml:space="preserve"><value>Waiting for the agent to receive follow-up</value></data>
+  <data name="FollowUpPendingHelp" xml:space="preserve"><value>Sent to the CLI. Waiting for the agent to accept the next input. It will not be resent automatically.</value></data>
+  <data name="ProgressFollowUpPending" xml:space="preserve"><value>Follow-up sent; waiting for the agent to receive it. The answer will be combined with the original request.</value></data>
+  <data name="FollowUpAppliedHelp" xml:space="preserve"><value>The reply is combined with the original request; it does not start a separate execution.</value></data>
+  <data name="FollowUpUncertain" xml:space="preserve"><value>Delivery unconfirmed</value></data>
+  <data name="FollowUpUncertainHelp" xml:space="preserve"><value>Delivery could not be confirmed. It will not be retried automatically to avoid duplicates. Check the reply before resending manually.</value></data>
+  <data name="ProgressFollowUpApplied" xml:space="preserve"><value>Added to the running request. The answer will be combined with the original request.</value></data>
+  <data name="ProgressFollowUpUncertain" xml:space="preserve"><value>Follow-up delivery could not be confirmed. It will not be retried automatically to avoid duplicates. Check the answer before resending.</value></data>
+  <data name="AuditFollowUpApplied" xml:space="preserve"><value>Follow-up added to running request</value></data>
+  <data name="AuditFollowUpUncertain" xml:space="preserve"><value>Follow-up delivery unconfirmed</value></data>
   <data name="InboxReconnecting" xml:space="preserve"><value>Connection lost. Retrying automatically (attempt {0}, in {1}s). New requests will wait until the connection returns.</value></data>
   <data name="InboxReconnected" xml:space="preserve"><value>Reconnected. Waiting for requests from allowed users. Requests sent while disconnected must be reposted.</value></data>
   <data name="ProgressReceived" xml:space="preserve"><value>📥 Request received. Waiting for approval on the PC or for execution to start.</value></data>
   <data name="ProgressRunning" xml:space="preserve"><value>⏳ The AI agent is running. Elapsed {0}. This post updates about every 30 seconds while running.</value></data>
-  <data name="ProgressReactionCancelHint" xml:space="preserve"><value>To cancel, add a 🛑 reaction to this post (requester only).</value></data>
+  <data name="ProgressReactionCancelHint" xml:space="preserve"><value>To stop, click 🛑 below (requester only). If it is missing, reply `!cab stop` in this thread.</value></data>
   <data name="ProgressCompleted" xml:space="preserve"><value>✅ Completed. Elapsed {0}.</value></data>
   <data name="ProgressFailed" xml:space="preserve"><value>❌ Execution or recording failed. Elapsed {0}. Check the details on the PC.</value></data>
   <data name="ProgressCancelled" xml:space="preserve"><value>⏹ Execution stopped. Elapsed {0}.</value></data>
@@ -306,6 +332,8 @@
   <data name="AppearanceReadFailed" xml:space="preserve"><value>Could not read the saved theme. The Windows setting is used. Select a theme to save it again.</value></data>
   <data name="AppearanceSaveFailed" xml:space="preserve"><value>Could not save the theme. The previous setting is still in use. Check access to the settings folder and try again.</value></data>
   <data name="AboutProductName" xml:space="preserve"><value>Chat Agent Bridge</value></data>
+  <data name="AboutBuildTimestamp" xml:space="preserve"><value>{0:g} (UTC{0:zzz})</value></data>
+  <data name="AboutBuildTimestampUnknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="AboutUnpackaged" xml:space="preserve"><value>Unpackaged</value></data>
   <data name="AboutStoreReady" xml:space="preserve"><value>Store distribution is available for this installation. Update checks are manual and read-only; use the Store to install an update.</value></data>
   <data name="AboutStoreDevelopment" xml:space="preserve"><value>Development preview. Store page and update checks become available after Microsoft Store distribution.</value></data>

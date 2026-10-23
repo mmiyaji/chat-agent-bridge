@@ -1,4 +1,5 @@
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.AppServer;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -18,17 +19,18 @@ public sealed class SessionAgentRunner
     }
 
     public Task<AgentRunResult> RunAsync(SessionKey key, BridgeSettings settings, string prompt,
-        CancellationToken cancellationToken = default, IProgress<AgentRunProgress>? progress = null)
+        CancellationToken cancellationToken = default, IProgress<AgentRunProgress>? progress = null,
+        Action<IActiveAgentTurn?>? activeTurnChanged = null)
     {
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(prompt);
         return _store.WithSessionLockAsync(key,
-            token => RunLockedAsync(key, settings, prompt, progress, token), cancellationToken);
+            token => RunLockedAsync(key, settings, prompt, progress, activeTurnChanged, token), cancellationToken);
     }
 
     private async Task<AgentRunResult> RunLockedAsync(SessionKey key, BridgeSettings settings, string prompt,
-        IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken)
+        IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged, CancellationToken cancellationToken)
     {
         settings = await _store.ApplyWorkspaceAsync(key, settings, cancellationToken).ConfigureAwait(false);
         var existing = await _store.FindExecutionBindingAsync(key, cancellationToken).ConfigureAwait(false);
@@ -51,7 +53,7 @@ public sealed class SessionAgentRunner
         {
             if (existing is not null)
                 throw new InvalidOperationException("This chat thread has a saved agent session. Restore the saved provider settings or detach the saved session before changing agent arguments.");
-            return await _runner.RunAsync(settings, prompt, progress, cancellationToken).ConfigureAwait(false);
+            return await _runner.RunAsync(settings, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false);
         }
 
         var workspace = NormalizeWorkspace(settings.WorkspaceRoot);
@@ -75,7 +77,7 @@ public sealed class SessionAgentRunner
                 AgentModel = existing.Model ?? settings.AgentModel,
                 AgentReasoningEffort = EffectiveEffort(existing, settings)
             };
-            var resumed = await _runner.RunAsync(resumedSettings, prompt, progress, cancellationToken).ConfigureAwait(false);
+            var resumed = await _runner.RunAsync(resumedSettings, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false);
             var resumedClaude = tracksClaude ? resumed.Claude ?? ClaudeOutputParser.Parse(resumed.Output) : null;
             if (tracksClaude && resumed.Success && resumedClaude?.HasResult != true)
                 resumed = FailClosed(resumed, "Claude Code exited successfully without a terminal result event; the saved session was retained.");
@@ -108,7 +110,7 @@ public sealed class SessionAgentRunner
         var newSettings = settings with { WorkspaceRoot = workspace, AgentModel = existing?.Model ?? settings.AgentModel,
             AgentReasoningEffort = existing is null ? settings.AgentReasoningEffort : EffectiveEffort(existing, settings),
             AgentArguments = tracksClaude ? "" : settings.AgentArguments };
-        var result = await _runner.RunAsync(newSettings, prompt, progress, cancellationToken).ConfigureAwait(false);
+        var result = await _runner.RunAsync(newSettings, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false);
         var claudeOutput = tracksClaude ? result.Claude ?? ClaudeOutputParser.Parse(result.Output) : null;
         if (tracksClaude && result.Success && claudeOutput?.HasResult != true)
             result = FailClosed(result, "Claude Code exited successfully without a terminal result event.");

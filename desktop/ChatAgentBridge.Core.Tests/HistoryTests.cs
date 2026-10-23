@@ -8,6 +8,8 @@ public sealed class HistoryTests
     [Theory]
     [InlineData("workspace_changed")]
     [InlineData("model_changed")]
+    [InlineData("follow_up_applied")]
+    [InlineData("follow_up_uncertain")]
     public async Task ConfigurationChangeAuditCanBeRecordedAndReloaded(string kind)
     {
         using var directory = new TemporaryDirectory();
@@ -68,6 +70,73 @@ public sealed class HistoryTests
         Assert.Equal(500, events.Count);
         Assert.Equal(start.AddMinutes(500), events[0].Timestamp);
         Assert.DoesNotContain(events, item => item.Timestamp == start);
+    }
+
+    [Fact]
+    public async Task AuditStore_AppendsBatchInTimestampOrderAndRetainsNewestFiveHundred()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new AuditStore(directory.Path);
+        var start = DateTimeOffset.UtcNow.AddMinutes(-600);
+        await store.AppendManyAsync(Enumerable.Range(0, 510).Reverse().Select(index =>
+            new AuditEvent(start.AddMinutes(index), "received", null, "local", "", "")));
+
+        var events = await store.ListAsync();
+        Assert.Equal(500, events.Count);
+        Assert.Equal(start.AddMinutes(509), events[0].Timestamp);
+        Assert.Equal(start.AddMinutes(10), events[^1].Timestamp);
+    }
+
+    [Fact]
+    public async Task AuditStore_ValidatesEntireBatchBeforeWriting()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new AuditStore(directory.Path);
+        var valid = new AuditEvent(DateTimeOffset.UtcNow, "received", null, "local", "", "");
+        var invalid = valid with { Kind = "received: private details" };
+
+        await Assert.ThrowsAsync<ArgumentException>(() => store.AppendManyAsync([valid, invalid]));
+
+        Assert.Empty(await store.ListAsync());
+    }
+
+    [Fact]
+    public async Task AuditStore_CachedDocumentFollowsExternalFileChanges()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new AuditStore(directory.Path);
+        var first = new AuditEvent(DateTimeOffset.UtcNow.AddMinutes(-2), "received", null, "local", "", "");
+        await store.AppendAsync(first);
+        Assert.Single(await store.ListAsync());
+
+        var path = Path.Combine(directory.Path, "audit.json");
+        var external = new AuditEvent(DateTimeOffset.UtcNow.AddMinutes(-1), "failed", null, "slack", "C-external-channel", "T1");
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new
+        {
+            SchemaVersion = 1,
+            Records = new[] { first, external, external with { Timestamp = external.Timestamp.AddSeconds(1) } }
+        }));
+        Assert.Equal(3, (await store.ListAsync()).Count);
+
+        // An append after the external edit must build on the edited file, not on the stale parse.
+        await store.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, "started", null, "local", "", ""));
+        Assert.Equal(4, (await new AuditStore(directory.Path).ListAsync()).Count);
+
+        File.Delete(path);
+        Assert.Empty(await store.ListAsync());
+        await File.WriteAllTextAsync(path, "{");
+        await Assert.ThrowsAsync<InvalidDataException>(() => store.ListAsync());
+    }
+
+    [Fact]
+    public async Task AuditStore_ListedRecordsCannotChangeCachedState()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new AuditStore(directory.Path);
+        await store.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, "received", null, "local", "", ""));
+        var listed = (AuditEvent[])await store.ListAsync();
+        listed[0] = listed[0] with { Kind = "failed" };
+        Assert.Equal("received", Assert.Single(await store.ListAsync()).Kind);
     }
 
     [Fact]

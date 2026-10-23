@@ -6,6 +6,9 @@ const portFile = process.argv[2];
 if (!portFile) throw new Error('Provide an output file for the ephemeral loopback port.');
 const replies = [];
 const updates = [];
+const reactions = [];
+const reactionAdds = [];
+const reactionRemoves = [];
 let failProgressEdits = false;
 let offlineUntil = 0;
 const sockets = new Set();
@@ -29,6 +32,7 @@ const server = http.createServer(async (req, res) => {
       post_id: body.post_id || '',
       emoji_name: body.emoji_name || 'octagonal_sign'
     };
+    if (!reactions.some(item => item.user_id === reaction.user_id && item.post_id === reaction.post_id && item.emoji_name === reaction.emoji_name)) reactions.push(reaction);
     const event = {
       event: 'reaction_added',
       data: { reaction: JSON.stringify(reaction) },
@@ -37,7 +41,7 @@ const server = http.createServer(async (req, res) => {
     for (const ws of sockets) if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
     res.end(JSON.stringify({ delivered: sockets.size }));
   } else if (req.url === '/test/results') {
-    res.end(JSON.stringify({ replies, updates, connections: sockets.size }));
+    res.end(JSON.stringify({ replies, updates, reactions, reactionAdds, reactionRemoves, connections: sockets.size }));
   } else if (req.url === '/test/progress-errors' && req.method === 'POST') {
     failProgressEdits = body.enabled === true;
     res.end('{}');
@@ -49,6 +53,20 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(401).end('{}');
   } else if (req.url === '/api/v4/users/me') {
     res.end(JSON.stringify({ id: 'ui-bridge', username: 'cc-agent-bot', is_bot: true }));
+  } else if (req.url === '/api/v4/reactions' && req.method === 'POST') {
+    if (body.user_id !== 'ui-bridge' || body.emoji_name !== 'octagonal_sign' || !replies.some(post => post.id === body.post_id)) { res.writeHead(400).end('{}'); return; }
+    const reaction = { user_id: body.user_id, post_id: body.post_id, emoji_name: body.emoji_name };
+    if (!reactions.some(item => item.user_id === reaction.user_id && item.post_id === reaction.post_id && item.emoji_name === reaction.emoji_name)) reactions.push(reaction);
+    reactionAdds.push(reaction);
+    // Mirror Mattermost's own-reaction echo; it must never cancel the request.
+    for (const ws of sockets) if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ event: 'reaction_added', data: { reaction: JSON.stringify(reaction) }, broadcast: { channel_id: 'ui-channel' } }));
+    res.end(JSON.stringify(reaction));
+  } else if (req.url.startsWith('/api/v4/users/ui-bridge/posts/') && req.url.endsWith('/reactions/octagonal_sign') && req.method === 'DELETE') {
+    const postId = req.url.split('/')[6];
+    const index = reactions.findIndex(item => item.user_id === 'ui-bridge' && item.post_id === postId && item.emoji_name === 'octagonal_sign');
+    if (index >= 0) reactions.splice(index, 1);
+    reactionRemoves.push({ user_id: 'ui-bridge', post_id: postId, emoji_name: 'octagonal_sign' });
+    res.end('{}');
   } else if (req.url.startsWith('/api/v4/users/')) {
     res.end(JSON.stringify({ id: req.url.split('/').at(-1), is_bot: false }));
   } else if (req.url === '/api/v4/posts' && req.method === 'POST') {

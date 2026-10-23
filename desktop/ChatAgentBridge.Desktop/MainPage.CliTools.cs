@@ -55,6 +55,8 @@ public sealed partial class MainPage
         try
         {
             _environmentRefresher.Refresh();
+            ChatAgentBridge.Core.CodexExecutableResolver.ClearCache();
+            ChatAgentBridge.Core.NodeCliPackageResolver.ClearCache();
             ChatAgentBridge.Core.AppServer.CodexAppServerRunner.ClearSharedIdleProcesses();
             ViewModel.OnProcessEnvironmentReloaded();
             ViewModel.StatusTitle = ViewModelText.Get("EnvironmentReloadedTitle");

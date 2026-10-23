@@ -275,6 +275,18 @@
   <data name="chatAgentBridgeDesktopMainPageTextBlock033.Text" xml:space="preserve">
     <value>自動共有は成功時の結果本文を元のスレッドへ返信します。スレッドの閲覧者全員に公開されます。「共有しない」では本文の手動送信も無効です。</value>
   </data>
+  <data name="ChatFollowUpMode.Header" xml:space="preserve">
+    <value>実行中に届いたメッセージ</value>
+  </data>
+  <data name="ChatFollowUpModeQueue.Content" xml:space="preserve">
+    <value>順番に実行（既定）</value>
+  </data>
+  <data name="ChatFollowUpModeSteer.Content" xml:space="preserve">
+    <value>実行中の依頼へ追加</value>
+  </data>
+  <data name="ChatFollowUpModeHelp.Text" xml:space="preserve">
+    <value>Codex App ServerとClaude Codeで利用できます。同じユーザー・スレッドの追加指示を、AIが受け取れるタイミングで反映します。未対応の接続方式や毎回承認では順番に実行します。</value>
+  </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock034.Text" xml:space="preserve">
     <value>チャットのアカウント・会話範囲</value>
   </data>
@@ -337,7 +349,7 @@
     <value>実行中の操作許可・質問を画面で受け取る（Codex専用）</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock040.Text" xml:space="preserve">
-    <value>オンではCodex App Serverを利用します。オフではCLIへ依頼を渡して完了を待ちます。Claude Code・Gemini CLI・GitHub Copilot CLIも会話を継続しますが、実行中の追加質問には対応しません。</value>
+    <value>オンではCodex App Serverを利用します。オフではCLIへ依頼を渡して完了を待ちます。各CLIでも会話を継続できます。実行中の操作承認やAIからの質問への回答はCodex App Serverで利用できます。</value>
   </data>
   <data name="RequireApproval.Header" xml:space="preserve">
     <value>手動実行の前に内容を確認する</value>
@@ -827,10 +839,12 @@
   <data name="NavAbout.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>情報</value></data>
   <data name="AboutHeading.Text" xml:space="preserve"><value>情報</value></data>
   <data name="AboutDescription.Text" xml:space="preserve"><value>製品情報、更新、法的情報を確認できます。</value></data>
+  <data name="AboutBuildTimestampLabel.Header" xml:space="preserve"><value>ビルド日時</value></data>
+  <data name="AboutBuildTimestampLabel.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>ビルド日時</value></data>
   <data name="AboutPackageLabel.Header" xml:space="preserve"><value>パッケージ</value></data>
   <data name="AboutLinksHeading.Text" xml:space="preserve"><value>ヘルプとフィードバック</value></data>
   <data name="AboutTechnicalDetails.Header" xml:space="preserve"><value>アプリの詳細</value></data>
-  <data name="AboutTechnicalDetails.Description" xml:space="preserve"><value>配布形式・パッケージ識別名</value></data>
+  <data name="AboutTechnicalDetails.Description" xml:space="preserve"><value>ビルド日時・配布形式・パッケージ識別名</value></data>
   <data name="AboutVersionCaption.Text" xml:space="preserve"><value>バージョン</value></data>
   <data name="AboutProviderValue.Text" xml:space="preserve"><value>作成者: mmiyaji</value></data>
   <data name="AboutWebsite.Header" xml:space="preserve"><value>公式ウェブサイト</value></data>

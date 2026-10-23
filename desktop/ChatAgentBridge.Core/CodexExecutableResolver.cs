@@ -5,6 +5,11 @@ namespace ChatAgentBridge.Core;
 /// <summary>Finds a native Codex CLI executable so Windows never invokes an npm shell shim.</summary>
 public static class CodexExecutableResolver
 {
+    private static readonly CliDiscoveryCache<string> NativeCache = new();
+
+    /// <summary>Drops cached discovery results, for example after the process environment was reloaded.</summary>
+    public static void ClearCache() => NativeCache.Clear();
+
     public static string Resolve(string configuredExecutable)
     {
         if (string.IsNullOrWhiteSpace(configuredExecutable))
@@ -18,9 +23,13 @@ public static class CodexExecutableResolver
         if (leaf.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && File.Exists(configuredExecutable))
             return Path.GetFullPath(configuredExecutable);
 
-        var native = FindInstalledDesktopCodex()
+        var environment = string.Join('\n', Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            RuntimeInformation.ProcessArchitecture, Directory.GetCurrentDirectory(),
+            Environment.GetEnvironmentVariable("PATH") ?? "");
+        var native = NativeCache.GetOrResolve(configuredExecutable, environment, File.Exists, () =>
+            FindInstalledDesktopCodex()
             ?? FindNpmNativeCodex(isShim ? Path.GetDirectoryName(Path.GetFullPath(configuredExecutable)) : null)
-            ?? FindNpmNativeCodexFromPath();
+            ?? FindNpmNativeCodexFromPath());
         if (native is not null) return native;
 
         if (isShim)

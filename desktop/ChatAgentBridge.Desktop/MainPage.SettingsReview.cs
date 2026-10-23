@@ -54,6 +54,9 @@ public sealed partial class MainPage
         Add("Results", Results(saved.ChatResultMode), Results(draft.ChatResultMode));
         Add("Approvals", saved.ShareApprovalsInChat, draft.ShareApprovalsInChat);
         Add("Questions", saved.ShareAgentQuestionsInChat, draft.ShareAgentQuestionsInChat);
+        string FollowUpMode(string mode) => DesktopText.Get(ChatFollowUpPolicy.Normalize(mode) == ChatFollowUpPolicy.Steer
+            ? "ChatFollowUpModeSteer" : "ChatFollowUpModeQueue");
+        Add("FollowUpMode", FollowUpMode(saved.ChatFollowUpMode), FollowUpMode(draft.ChatFollowUpMode));
         string Attachment(string mode) => MrtText.Get("FileAttachmentMode" + (mode switch { "disabled" => "Disabled", "first" => "First", "auto" => "Auto", _ => "Always" }) + ".Content");
         Add("AttachmentApproval", Attachment(saved.FileAttachmentApprovalMode), Attachment(draft.FileAttachmentApprovalMode));
         Add("AttachmentSize", saved.FileAttachmentMaxSizeMb, draft.FileAttachmentMaxSizeMb);

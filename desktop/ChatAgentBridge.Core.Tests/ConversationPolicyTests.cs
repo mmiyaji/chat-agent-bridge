@@ -84,6 +84,39 @@ public sealed class ConversationPolicyTests
     }
 
     [Fact]
+    public void FollowUpSteeringPreservesQueueFingerprintAndCreatesSeparateConsentScope()
+    {
+        var settings = Settings;
+        var queueFingerprint = ConversationExecutionPolicy.GetFingerprint(Owner, settings);
+        var steeringFingerprint = ConversationExecutionPolicy.GetFingerprint(Owner,
+            settings with { ChatFollowUpMode = ChatFollowUpPolicy.Steer });
+
+        Assert.Equal(LegacyFingerprint(Owner, settings), queueFingerprint);
+        Assert.Equal(Digest(queueFingerprint + "\0chat-follow-up-steer"), steeringFingerprint);
+        Assert.NotEqual(queueFingerprint, steeringFingerprint);
+        Assert.Equal(queueFingerprint, ConversationExecutionPolicy.GetFingerprint(Owner,
+            settings with { ChatFollowUpMode = "unknown" }));
+    }
+
+    [Fact]
+    public void ClaudeStreamingRequiresRenewedConsentButQueueKeepsExistingConsent()
+    {
+        var settings = Settings with { AgentProvider = AgentProfile.Claude, AgentMode = "exec", AgentExecutable = "claude" };
+        var queueFingerprint = ConversationExecutionPolicy.GetFingerprint(Owner, settings);
+        var previousSteerFingerprint = Digest(queueFingerprint + "\0chat-follow-up-steer");
+        var binding = new SessionBinding(Owner, settings.WorkspaceRoot, "claude", "", Guid.NewGuid().ToString(),
+            DateTimeOffset.UtcNow, FirstApprovalFingerprint: previousSteerFingerprint);
+        var live = settings with { ChatFollowUpMode = ChatFollowUpPolicy.Steer };
+
+        Assert.Equal(LegacyFingerprint(Owner, settings), queueFingerprint);
+        Assert.Equal(Digest(previousSteerFingerprint + "\0claude-stream-input-v1"),
+            ConversationExecutionPolicy.GetFingerprint(Owner, live));
+        Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner, live, binding));
+        Assert.False(ConversationExecutionPolicy.RequiresApproval(Owner, live,
+            binding with { FirstApprovalFingerprint = ConversationExecutionPolicy.GetFingerprint(Owner, live) }));
+    }
+
+    [Fact]
     public void ConversationOverridesDoNotEscalateUnspecifiedDefaults()
     {
         var binding = new SessionBinding(Owner, Settings.WorkspaceRoot, "codex", "exec --json -", Guid.NewGuid().ToString(),

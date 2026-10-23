@@ -85,6 +85,14 @@ if (!args.Contains("--print") && structuredFormatIndex >= 0 && structuredFormatI
     return;
 }
 
+if (Environment.GetEnvironmentVariable("CAB_CLAUDE_STEERING_FIXTURE") == "1" &&
+    args.Contains("--print") && args.Contains("--input-format") && Array.IndexOf(args, "--input-format") + 1 < args.Length &&
+    args[Array.IndexOf(args, "--input-format") + 1] == "stream-json")
+{
+    await ClaudeFollowUpFixture.RunAsync(args);
+    return;
+}
+
 if (args.Contains("--input-format") && Array.IndexOf(args, "--input-format") + 1 < args.Length
     && args[Array.IndexOf(args, "--input-format") + 1] == "stream-json")
 {
@@ -124,6 +132,12 @@ if (args.Contains("--input-format") && Array.IndexOf(args, "--input-format") + 1
 }
 if (args.Contains("--print"))
 {
+    if (Environment.GetEnvironmentVariable("CAB_CLAUDE_STEERING_FIXTURE") == "1")
+    {
+        await ClaudeFollowUpFixture.RunOneShotAsync(args);
+        return;
+    }
+
     // Deliberately gated live-output UI fixture. It can run only from an explicitly marked,
     // isolated workspace, emits sanitized provider-shaped progress and stderr before result,
     // and waits for the E2E harness to release completion.
@@ -264,6 +278,12 @@ if (args is ["exec", ..])
 if (args is not ["app-server", ..])
 {
     Console.Write(await Console.In.ReadToEndAsync());
+    return;
+}
+
+if (Environment.GetEnvironmentVariable("CAB_LIVE_STEERING_FIXTURE") == "1")
+{
+    await AppServerFollowUpFixture.RunAsync();
     return;
 }
 

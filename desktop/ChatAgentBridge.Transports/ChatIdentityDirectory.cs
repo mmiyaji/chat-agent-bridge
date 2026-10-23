@@ -14,11 +14,13 @@ public sealed record ChatIdentityLabels(string? SiteName = null, string? Channel
 public sealed class ChatIdentityDirectory : IDisposable
 {
     private const int MaxEntries = 2000;
+    private const int MaxCacheBytes = 1024 * 1024;
     private const int MaxRequests = 40;
+    private static readonly TimeSpan CacheFlushTimeout = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan OverallTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan SuccessTtl = TimeSpan.FromHours(24);
     private static readonly TimeSpan FailureTtl = TimeSpan.FromMinutes(5);
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> CacheGates = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _cachePath;
     private readonly HttpClient _http;
@@ -26,6 +28,8 @@ public sealed class ChatIdentityDirectory : IDisposable
     private readonly HttpClient? _mattermostDirectHttp;
     private readonly SemaphoreSlim _gate;
     private readonly SemaphoreSlim _resolveGate = new(1, 1);
+    private bool _cacheDirty;
+    internal int CacheWriteCount { get; private set; }
 
     public ChatIdentityDirectory(string? directory = null)
     {
@@ -79,9 +83,11 @@ public sealed class ChatIdentityDirectory : IDisposable
         var requested = keys.Distinct().ToArray();
         cancellationToken.ThrowIfCancellationRequested();
         await _resolveGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        Dictionary<CacheKey, CacheEntry>? store = null;
+        _cacheDirty = false;
         try
         {
-            var store = await ReadStoreAsync(cancellationToken).ConfigureAwait(false);
+            store = await ReadStoreAsync(cancellationToken).ConfigureAwait(false);
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(OverallTimeout);
             var budget = new RequestBudget();
@@ -136,7 +142,20 @@ public sealed class ChatIdentityDirectory : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             return requested.ToDictionary(key => key, key => Merge(store, key));
         }
-        finally { _resolveGate.Release(); }
+        finally
+        {
+            try
+            {
+                // Persist completed lookups and cooldowns even when the caller cancels later work.
+                if (_cacheDirty && store is not null)
+                {
+                    using var flushTimeout = new CancellationTokenSource(CacheFlushTimeout);
+                    try { await PersistAsync(store, flushTimeout.Token).ConfigureAwait(false); }
+                    catch (OperationCanceledException) when (flushTimeout.IsCancellationRequested) { }
+                }
+            }
+            finally { _resolveGate.Release(); }
+        }
     }
 
     private async Task ResolveMattermostAsync(BridgeSettings settings, SessionKey[] keys, Uri baseUri, string origin,
@@ -188,7 +207,7 @@ public sealed class ChatIdentityDirectory : IDisposable
         if (data is not null)
         {
             store[key] = Entry(key, siteName, data.IsDirectMessage ? "Direct message" : data.Name, data.IsDirectMessage, true);
-            await PersistAsync(store, cancellationToken).ConfigureAwait(false);
+            _cacheDirty = true;
         }
         return data;
     }
@@ -249,7 +268,7 @@ public sealed class ChatIdentityDirectory : IDisposable
             {
                 // Re-read the response's direct/group marker because the common cache path only receives labels.
                 store[cacheKey] = fetched with { IsDirectMessage = channelId.StartsWith('D') || fetched.ChannelName == "Direct message" };
-                await PersistAsync(store, cancellationToken).ConfigureAwait(false);
+                _cacheDirty = true;
             }
             if (budget.Limited) return;
         }
@@ -277,7 +296,7 @@ public sealed class ChatIdentityDirectory : IDisposable
                 success ? channelData?.IsDirectMessage == true : previous?.IsDirectMessage == true, success),
             _ => Entry(key, success ? value : previous?.SiteName ?? siteName, null, false, success)
         };
-        await PersistAsync(store, cancellationToken).ConfigureAwait(false);
+        _cacheDirty = true;
     }
 
     private static bool budgetGuard(CancellationToken token) { token.ThrowIfCancellationRequested(); return true; }
@@ -348,13 +367,15 @@ public sealed class ChatIdentityDirectory : IDisposable
                     latest[pair.Key] = pair.Value;
             var dir = Path.GetDirectoryName(_cachePath)!;
             Directory.CreateDirectory(dir);
-            var selected = latest.Values.OrderByDescending(entry => entry.CheckedAtUtc).Take(MaxEntries).ToArray();
+            var selected = SelectWritableEntries(latest.Values);
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(new CacheDocument(1, selected), JsonOptions);
             var temp = Path.Combine(dir, $"chat-identities.{Guid.NewGuid():N}.tmp");
             try
             {
                 await using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous | FileOptions.WriteThrough))
-                    await JsonSerializer.SerializeAsync(stream, new CacheDocument(1, selected), JsonOptions, cancellationToken).ConfigureAwait(false);
+                    await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
                 File.Move(temp, _cachePath, overwrite: true);
+                CacheWriteCount++;
             }
             finally { try { if (File.Exists(temp)) File.Delete(temp); } catch (IOException) { } }
         }
@@ -393,11 +414,29 @@ public sealed class ChatIdentityDirectory : IDisposable
     private static bool IsCoolingDown(Dictionary<CacheKey, CacheEntry> store, string provider, string origin) =>
         !NeedsRefresh(store, new CacheKey(provider, origin, "cooldown", "api"));
 
-    private async Task RecordCooldownAsync(string provider, string origin, Dictionary<CacheKey, CacheEntry> store, CancellationToken cancellationToken)
+    private Task RecordCooldownAsync(string provider, string origin, Dictionary<CacheKey, CacheEntry> store, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var key = new CacheKey(provider, origin, "cooldown", "api");
         store[key] = Entry(key, null, null, false, false);
-        await PersistAsync(store, cancellationToken).ConfigureAwait(false);
+        _cacheDirty = true;
+        return Task.CompletedTask;
+    }
+
+    private static CacheEntry[] SelectWritableEntries(IEnumerable<CacheEntry> entries)
+    {
+        var ordered = entries.OrderByDescending(entry => entry.CheckedAtUtc).Take(MaxEntries);
+        var selected = new List<CacheEntry>();
+        var size = JsonSerializer.SerializeToUtf8Bytes(new CacheDocument(1, []), JsonOptions).Length;
+        foreach (var entry in ordered)
+        {
+            var entrySize = JsonSerializer.SerializeToUtf8Bytes(entry, JsonOptions).Length;
+            var nextSize = size + entrySize + (selected.Count == 0 ? 0 : 1);
+            if (nextSize > MaxCacheBytes) break;
+            selected.Add(entry);
+            size = nextSize;
+        }
+        return selected.ToArray();
     }
 
     private static CacheEntry Entry(CacheKey key, string? site, string? channel, bool direct, bool success, string? user = null) =>
@@ -438,7 +477,7 @@ public sealed class ChatIdentityDirectory : IDisposable
         try
         {
             var info = new FileInfo(_cachePath);
-            if (info.Length > 1024 * 1024) return [];
+            if (info.Length > MaxCacheBytes) return [];
             await using var stream = new FileStream(_cachePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
             var doc = await JsonSerializer.DeserializeAsync<CacheDocument>(stream, JsonOptions, cancellationToken).ConfigureAwait(false);
             if (doc?.Version != 1 || doc.Entries is null) return [];

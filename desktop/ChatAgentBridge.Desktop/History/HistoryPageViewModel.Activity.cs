@@ -174,10 +174,9 @@ public sealed partial class HistoryPageViewModel
 
     private void ApplyExecutionDayFilter()
     {
-        Executions.Clear();
-        foreach (var record in _activityRecords.Where(record => ExecutionDayFilter is null ||
-                     DateOnly.FromDateTime(record.StartedAt.ToLocalTime().DateTime) == ExecutionDayFilter))
-            Executions.Add(new(record, ExecutionChatLabel(record)));
+        ReplaceItems(Executions, _activityRecords.Where(record => ExecutionDayFilter is null ||
+                     DateOnly.FromDateTime(record.StartedAt.ToLocalTime().DateTime) == ExecutionDayFilter)
+            .Select(record => new ExecutionHistoryRow(record, ExecutionChatLabel(record))).ToArray());
         HasExecutions = Executions.Count > 0;
         OnPropertyChanged(nameof(ExecutionsTabTitle));
         OnPropertyChanged(nameof(ExecutionSummary));

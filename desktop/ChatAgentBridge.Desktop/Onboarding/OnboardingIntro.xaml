@@ -5,6 +5,10 @@
     xmlns:local="using:ChatAgentBridge_Desktop.Onboarding"
     xmlns:localization="using:ChatAgentBridge_Desktop.Localization"
     xmlns:diagrams="using:ChatAgentBridge_Desktop.Diagrams">
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="MissingConsentBorderBrush" Color="{ThemeResource SystemFillColorCritical}" />
+        <SolidColorBrush x:Key="MissingConsentBackgroundBrush" Color="{ThemeResource SystemFillColorCriticalBackground}" />
+    </UserControl.Resources>
     <StackPanel x:Name="IntroStackPanel" Spacing="16" HorizontalAlignment="Stretch">
         <localization:LanguageSettings x:Name="IntroLanguageSettings" />
         <TextBlock x:Name="IntroHeading" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock001" />
@@ -28,8 +32,12 @@
             <Button x:Name="PrivacyButton" Grid.Row="0" Grid.Column="1" Click="ShowPrivacy_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardPrivacy">
                 <TextBlock x:Name="PrivacyButtonText" TextWrapping="Wrap" TextAlignment="Center"  x:Uid="onboardingOnboardingIntroTextBlock006" />
             </Button>
-            <CheckBox x:Name="TermsConsentCheckBox" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"  IsChecked="{x:Bind ViewModel.HasAcceptedTerms, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptTerms"  x:Uid="WizardAcceptTerms" />
-            <CheckBox x:Name="PrivacyConsentCheckBox" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" IsChecked="{x:Bind ViewModel.HasAcceptedPrivacy, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptPrivacy"><TextBlock x:Name="PrivacyConsentText" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock007" /></CheckBox>
+            <Border x:Name="TermsConsentBorder" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Padding="0" CornerRadius="4" BorderThickness="2" BorderBrush="Transparent">
+                <CheckBox x:Name="TermsConsentCheckBox" HorizontalAlignment="Stretch" Padding="12,5,0,0"  IsChecked="{x:Bind ViewModel.HasAcceptedTerms, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptTerms"  x:Uid="WizardAcceptTerms" />
+            </Border>
+            <Border x:Name="PrivacyConsentBorder" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Padding="0" CornerRadius="4" BorderThickness="2" BorderBrush="Transparent">
+                <CheckBox x:Name="PrivacyConsentCheckBox" HorizontalAlignment="Stretch" Padding="12,5,0,0" IsChecked="{x:Bind ViewModel.HasAcceptedPrivacy, Mode=TwoWay}" AutomationProperties.AutomationId="WizardAcceptPrivacy"><TextBlock x:Name="PrivacyConsentText" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock007" /></CheckBox>
+            </Border>
         </Grid>
         <TextBlock Text="{x:Bind ViewModel.ConsentStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardConsentStatus" />
     </StackPanel>

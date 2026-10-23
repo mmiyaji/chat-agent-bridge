@@ -27,7 +27,7 @@ public sealed partial class SessionStore
     {
         ValidateKey(key);
         await _gate.WaitAsync(token).ConfigureAwait(false);
-        try { return (await ReadAsync(token).ConfigureAwait(false)).Agents?.FirstOrDefault(item => item.Key == key); }
+        try { return (await ReadSharedAsync(token).ConfigureAwait(false)).Agents?.FirstOrDefault(item => item.Key == key); }
         finally { _gate.Release(); }
     }
 
@@ -37,7 +37,7 @@ public sealed partial class SessionStore
         await _gate.WaitAsync(token).ConfigureAwait(false);
         try
         {
-            var document = await ReadAsync(token).ConfigureAwait(false);
+            var document = await ReadSharedAsync(token).ConfigureAwait(false);
             if (document.Agents?.Any(item => item.Key == key && item.StartNewSession) == true) return null;
             return document.Bindings!.FirstOrDefault(item => item.Key == key);
         }

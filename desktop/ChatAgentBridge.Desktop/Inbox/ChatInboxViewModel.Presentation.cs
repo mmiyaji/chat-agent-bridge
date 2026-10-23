@@ -13,12 +13,12 @@ public sealed partial class InboxItem
     public string StateTone => State switch
     {
         "承認待ち" => "pending",
-        "実行中" or "自動実行を準備" => "running",
-        "完了" or "フォルダー変更済み" or "エージェント変更済み" => "success",
+        "実行中" or "自動実行を準備" or "追加指示の受領待ち" => "running",
+        "完了" or "フォルダー変更済み" or "エージェント変更済み" or "実行中へ追加" => "success",
         "実行／記録エラー" or "フォルダー変更不可" or "エージェント変更不可" or
         "許可設定を確認できず実行不可" => "error",
         "キャンセル" or "拒否" or "許可取り消し・実行不可" => "stopped",
-        "接続終了・再受信が必要" or "作業先変更・再投稿が必要" or "エージェント変更・再投稿が必要" => "warning",
+        "接続終了・再受信が必要" or "作業先変更・再投稿が必要" or "エージェント変更・再投稿が必要" or "追加指示の反映未確認" => "warning",
         _ when State.StartsWith("失敗 (", StringComparison.Ordinal) => "error",
         _ => "neutral"
     };

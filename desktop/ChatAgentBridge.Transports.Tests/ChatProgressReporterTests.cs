@@ -27,6 +27,30 @@ public sealed class ChatProgressReporterTests
         Assert.DoesNotContain(transport.Updates.SkipWhile(update => update.Text != "Completed"), update => update.Text == "Running");
     }
 
+    [Theory]
+    [InlineData(ChatProgressState.FollowUpApplied)]
+    [InlineData(ChatProgressState.FollowUpUncertain)]
+    public async Task FollowUpPendingHeartbeatRemainsPendingAndFinishesOnce(ChatProgressState terminal)
+    {
+        var transport = new FakeProgressTransport();
+        await using var reporter = CreateReporter(transport, interval: TimeSpan.FromMilliseconds(25));
+
+        await reporter.ReceiveAsync();
+        await reporter.StartFollowUpAsync();
+        await transport.WaitForUpdatesAsync(2);
+
+        Assert.All(transport.Updates, update => Assert.Equal(ChatProgressState.FollowUpPending.ToString(), update.Text));
+        Assert.Single(transport.CompletedProgress);
+
+        await reporter.FinishAsync(terminal);
+        await reporter.DisposeAsync();
+
+        Assert.Equal(terminal.ToString(), transport.Updates[^1].Text);
+        Assert.DoesNotContain(transport.Updates.Take(transport.Updates.Count - 1), update => update.Text == ChatProgressState.Running.ToString());
+        Assert.All(transport.Updates.Take(transport.Updates.Count - 1), update => Assert.Equal(ChatProgressState.FollowUpPending.ToString(), update.Text));
+        Assert.Single(transport.CompletedProgress);
+    }
+
     [Fact]
     public async Task FinishWaitsForHeartbeatCallBeforeWritingTerminalState()
     {
@@ -136,6 +160,58 @@ public sealed class ChatProgressReporterTests
         Assert.Equal(new[] { "complete", "terminal-update" }, transport.LifecycleOrder);
     }
 
+    [Fact]
+    public async Task FinishAwaitsControlCleanupBeforeFinalEditAndDisposesOnlyOnce()
+    {
+        var transport = new AsyncCleanupTransport();
+        var reporter = CreateReporter(transport, interval: TimeSpan.FromHours(1));
+        await reporter.ReceiveAsync();
+        var finish = reporter.FinishAsync(ChatProgressState.Completed);
+        await transport.CleanupStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.False(finish.IsCompleted);
+        Assert.Empty(transport.Updates);
+        Assert.Single(transport.CompletedProgress);
+        transport.ReleaseCleanup.TrySetResult();
+        await finish.WaitAsync(TimeSpan.FromSeconds(2));
+        await reporter.DisposeAsync();
+        Assert.Equal("Completed", Assert.Single(transport.Updates).Text);
+        Assert.Single(transport.CompletedProgress);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CleanupFailureOrTimeoutDoesNotBlockTerminalEdit(bool fail)
+    {
+        var transport = new AsyncCleanupTransport { FailCleanup = fail };
+        var failures = 0;
+        await using var reporter = new ChatProgressReporter(transport, Request, (state, _) => state.ToString(),
+            _ => Task.FromResult(true), _ => Interlocked.Increment(ref failures),
+            TimeSpan.FromHours(1), TimeSpan.FromMilliseconds(100));
+        await reporter.ReceiveAsync();
+        await reporter.FinishAsync(ChatProgressState.Completed).WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("Completed", Assert.Single(transport.Updates).Text);
+        Assert.Single(transport.CompletedProgress);
+        Assert.True(failures > 0);
+        transport.ReleaseCleanup.TrySetResult();
+    }
+
+    private sealed class AsyncCleanupTransport : FakeProgressTransport, IChatProgressLifecycleTransport
+    {
+        public TaskCompletionSource CleanupStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ReleaseCleanup { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public bool FailCleanup { get; init; }
+
+        public async Task CompleteProgressAsync(ChatProgressMessage message, CancellationToken cancellationToken = default)
+        {
+            CompleteProgress(message);
+            CleanupStarted.TrySetResult();
+            if (FailCleanup) throw new IOException("test cleanup failure");
+            // Deliberately ignores cancellation to verify the reporter's own time bound.
+            await ReleaseCleanup.Task;
+        }
+    }
+
     private static ChatProgressReporter CreateReporter(
         FakeProgressTransport transport,
         TimeSpan interval,
@@ -148,7 +224,7 @@ public sealed class ChatProgressReporterTests
             interval,
             TimeSpan.FromSeconds(1));
 
-    private sealed class FakeProgressTransport : IChatTransport, IChatProgressTransport, IChatProgressLifecycleTransport
+    private class FakeProgressTransport : IChatTransport, IChatProgressTransport, IChatProgressLifecycleTransport
     {
         private readonly object _sync = new();
         private int _heartbeatCalls;
@@ -179,12 +255,12 @@ public sealed class ChatProgressReporterTests
 
         public async Task UpdateProgressAsync(ChatRequest request, ChatProgressMessage message, string text, CancellationToken cancellationToken)
         {
-            if (text == "Completed")
+            if (text is "Completed" or "FollowUpApplied" or "FollowUpUncertain")
             {
                 lock (_sync) LifecycleOrder.Add("terminal-update");
                 if (FailTerminalUpdate) throw new InvalidOperationException("terminal update failed");
             }
-            var isHeartbeat = text == "Running" && Interlocked.Increment(ref _heartbeatCalls) > 1;
+            var isHeartbeat = (text is "Running" or "FollowUpPending") && Interlocked.Increment(ref _heartbeatCalls) > 1;
             if (BlockHeartbeat && isHeartbeat)
             {
                 HeartbeatEntered.TrySetResult();

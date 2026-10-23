@@ -35,9 +35,14 @@ public sealed class LocalDataManagerTests : IDisposable
     [Fact]
     public async Task RemovingStatisticsDoesNotReimportRetainedHistory()
     {
-        await new ExecutionHistoryStore(_directory).RecordAsync(new ExecutionRecord { Status = "completed" });
+        var history = new ExecutionHistoryStore(_directory);
+        await history.RecordAsync(new ExecutionRecord { Status = "completed" });
+        await history.RecordAsync(new ExecutionRecord { Status = "completed" });
+        var journal = Path.Combine(_directory, "activity-statistics.journal.jsonl");
+        Assert.True(File.Exists(journal));
         await new LocalDataManager(_directory).ClearAsync([LocalDataKind.UsageStatistics]);
-        Assert.Single(await new ExecutionHistoryStore(_directory).ListAsync());
+        Assert.False(File.Exists(journal));
+        Assert.Equal(2, (await history.ListAsync()).Count);
         var statistics = new ActivityStatisticsStore(_directory);
         await statistics.MigrateAsync(await new ExecutionHistoryStore(_directory).ListAsync());
         Assert.Equal(0, (await statistics.ReadAsync(DateOnly.FromDateTime(DateTime.Today), 30, TimeZoneInfo.Local, "turn", null)).Activity.TotalExecutions);

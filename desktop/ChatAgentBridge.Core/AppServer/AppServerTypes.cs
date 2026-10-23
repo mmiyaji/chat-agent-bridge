@@ -33,7 +33,24 @@ public sealed record AppServerRunOptions(
     string? SessionId = null,
     Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? ApprovalHandler = null,
     Func<AppServerInput, CancellationToken, Task<IReadOnlyDictionary<string, string[]>?>>? InputHandler = null,
-    IProgress<AgentRunProgress>? Progress = null);
+    IProgress<AgentRunProgress>? Progress = null,
+    Action<IActiveAgentTurn?>? ActiveTurnChanged = null);
+
+public interface IActiveAgentTurn
+{
+    Task<AgentTurnInputResult> AddInputAsync(string text, CancellationToken cancellationToken = default);
+}
+
+/// <summary>A live turn that can confirm message delivery after its input has been submitted.</summary>
+public interface IQueuedActiveAgentTurn : IActiveAgentTurn
+{
+    /// <summary>Returns null only when no user input was written; otherwise confirmation may arrive later.</summary>
+    Task<AgentTurnInputSubmission?> SubmitInputAsync(string text, CancellationToken cancellationToken = default);
+}
+
+public sealed record AgentTurnInputSubmission(Task<AgentTurnInputResult> Confirmation);
+
+public enum AgentTurnInputResult { Accepted, NotAccepted, DeliveryUnknown }
 
 /// <param name="PromptAccepted">The server confirmed a turn for the prompt, rather than only creating an empty thread.</param>
 public sealed record AppServerRunResult(AgentRunResult Result, string? SessionId, bool PromptAccepted = false);
@@ -45,6 +62,12 @@ public interface IAppServerRunner
 }
 
 public sealed record AppServerRpcError(int Code, string Message, object? Data = null);
+
+public sealed class AppServerRpcException(int code, string message) : InvalidOperationException($"Codex App Server error {code}: {message}")
+{
+    public int Code { get; } = code;
+    public string ServerMessage { get; } = message;
+}
 
 public sealed record AppServerServerRequest(JsonElement Id, string Method, JsonElement Params);
 

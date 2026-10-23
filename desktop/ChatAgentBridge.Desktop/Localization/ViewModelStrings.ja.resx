@@ -704,6 +704,13 @@ AIの操作権限: {8}</value>
   <data name="TrustedFolderRecoveryChanged" xml:space="preserve"><value>フォルダーが変更されたか、安全に信頼対象へ追加できません。作業先を確認してCLIを再チェックしてください。</value></data>
   <data name="WizardConnectionDeferredTitle" xml:space="preserve"><value>設定を保存して完了しました</value></data>
   <data name="WizardConnectionDeferredDetails" xml:space="preserve"><value>接続テストはまだ完了していません。「チャット受信」から接続できます。すでに接続中の場合は、変更した設定を使うために再接続してください。</value></data>
+  <data name="WizardSkipStep" xml:space="preserve"><value>この設定をスキップ</value></data>
+  <data name="WizardSkippedTitle" xml:space="preserve"><value>未設定の項目を残して完了しました</value></data>
+  <data name="WizardSkippedDetails" xml:space="preserve"><value>未設定: {0}。概要・チャット受信の画面から後で設定できます。</value></data>
+  <data name="WizardSkippedNotice" xml:space="preserve"><value>未設定: {0}。このまま完了して、後で設定できます。</value></data>
+  <data name="WizardSkippedCli" xml:space="preserve"><value>CLIの確認</value></data>
+  <data name="WizardSkippedChat" xml:space="preserve"><value>チャット接続</value></data>
+  <data name="WizardSkippedSeparator" xml:space="preserve"><value>、</value></data>
   <data name="SessionCliProviderHelp" xml:space="preserve"><value>Gemini CLI・GitHub Copilot CLIは同じチャットスレッドの会話を継続し、モデル名を直接指定できます。モデル候補の取得とアプリからの推論・操作権限の上書きには対応しません。事前にCLIへログインしてください。</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>このCLIではモデル候補を取得できません。CLIと契約が対応するモデルID・別名を直接入力するか、空欄でCLIの既定モデルを使ってください。モデルの利用可否は実行時に確認されます。推論と操作権限はCLIの設定に従います。</value></data>
 </root>

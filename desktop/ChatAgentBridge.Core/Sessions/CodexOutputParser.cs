@@ -40,7 +40,16 @@ public static class CodexOutputParser
             try
             {
                 using var document = JsonDocument.Parse(trimmed, new JsonDocumentOptions { MaxDepth = 64 });
-                var root = document.RootElement;
+                AddParsed(document.RootElement);
+            }
+            catch (JsonException) { }
+        }
+
+        /// <summary>Consumes a line already parsed by the caller (same semantics as <see cref="AddLine(string)"/>).</summary>
+        internal void AddParsed(JsonElement root)
+        {
+            try
+            {
                 if (root.ValueKind != JsonValueKind.Object) return;
                 if (!root.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.String)
                     return;

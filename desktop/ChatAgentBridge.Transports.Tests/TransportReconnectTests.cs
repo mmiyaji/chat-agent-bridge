@@ -20,6 +20,7 @@ public sealed class TransportReconnectTests
         var callbackCount = 0;
         var ordinaryRequestCount = 0;
         var postCount = 0;
+        var reactionBodies = new ConcurrentQueue<JsonDocument>();
         LoopbackServer? server = null;
         await using var serverLifetime = server = new LoopbackServer(HandleMattermostHttpAsync, HandleMattermostSocketAsync);
         await using var transport = new MattermostWebSocketTransport();
@@ -45,7 +46,7 @@ public sealed class TransportReconnectTests
             if (Interlocked.Increment(ref ordinaryRequestCount) == 1)
             {
                 var completedProgress = await transport.PostProgressAsync(request, "Finished", ct);
-                transport.CompleteProgress(completedProgress);
+                await transport.CompleteProgressAsync(completedProgress, ct);
                 return;
             }
 
@@ -64,11 +65,25 @@ public sealed class TransportReconnectTests
         Assert.Equal(original.UserId, stop.UserId);
         Assert.Equal(original.MessageId, stop.CancellationTargetMessageId);
 
+        Assert.Equal(2, reactionBodies.Count);
+        foreach (var body in reactionBodies)
+        {
+            using (body)
+            {
+                Assert.Equal("bot-1", body.RootElement.GetProperty("user_id").GetString());
+                Assert.Equal("octagonal_sign", body.RootElement.GetProperty("emoji_name").GetString());
+                Assert.Contains(body.RootElement.GetProperty("post_id").GetString(), new[] { "progress-1", "progress-2" });
+            }
+        }
+
         // The test socket sends a duplicate after the accepted reaction. It must not dispatch twice.
         await Task.Delay(100, cancellation.Token);
         Assert.Equal(3, Volatile.Read(ref callbackCount));
         cancellation.Cancel();
         await run.WaitAsync(TimeSpan.FromSeconds(5));
+        await transport.DisposeAsync();
+        Assert.Contains(server.HttpRequests, item => item.Method == "DELETE" && item.Path == "/api/v4/users/bot-1/posts/progress-1/reactions/octagonal_sign");
+        Assert.Contains(server.HttpRequests, item => item.Method == "DELETE" && item.Path == "/api/v4/users/bot-1/posts/progress-2/reactions/octagonal_sign");
 
         async Task HandleMattermostHttpAsync(HttpListenerContext context)
         {
@@ -84,6 +99,15 @@ public sealed class TransportReconnectTests
                 var rootId = index == 1 ? "incoming-1" : "incoming-2";
                 await server!.WriteJsonAsync(context, HttpStatusCode.Created,
                     JsonSerializer.Serialize(new { id, channel_id = "channel-1", root_id = rootId }));
+            }
+            else if (context.Request.HttpMethod == "POST" && path == "/api/v4/reactions")
+            {
+                using var body = await JsonDocument.ParseAsync(context.Request.InputStream);
+                reactionBodies.Enqueue(JsonDocument.Parse(body.RootElement.GetRawText()));
+                var status = body.RootElement.GetProperty("post_id").GetString() == "progress-1"
+                    ? HttpStatusCode.Forbidden
+                    : HttpStatusCode.Created;
+                await server!.WriteJsonAsync(context, status, "{}");
             }
             else await server!.WriteJsonAsync(context, HttpStatusCode.NotFound, "{}");
         }
@@ -107,6 +131,7 @@ public sealed class TransportReconnectTests
             await SendReactionAsync("reaction_added", "{bad json");
             await SendReactionAsync("reaction_added", Reaction("thumbsup", "member-1", "progress-2", "channel-1"));
             await SendReactionAsync("reaction_removed", Reaction("octagonal_sign", "member-1", "progress-2", "channel-1"));
+            await SendReactionAsync("reaction_added", Reaction("octagonal_sign", "bot-1", "progress-2", "channel-1"));
             await SendReactionAsync("reaction_added", Reaction("octagonal_sign", "member-2", "progress-2", "channel-1"));
             await SendReactionAsync("reaction_added", Reaction("octagonal_sign", "member-1", "progress-1", "channel-1"));
             await SendReactionAsync("reaction_added", Reaction("octagonal_sign", "member-1", "result-1", "channel-1"));
@@ -126,6 +151,185 @@ public sealed class TransportReconnectTests
 
             static string Reaction(string emoji, string actor, string postId, string channelId) =>
                 JsonSerializer.Serialize(new { emoji_name = emoji, user_id = actor, post_id = postId, channel_id = channelId, id = "reaction-1" });
+        }
+    }
+
+    [Fact]
+    public async Task Mattermost_stalled_seed_and_cleanup_stay_bounded_and_late_seed_is_removed()
+    {
+        var completed = new TaskCompletionSource<TimeSpan>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var lateDelete = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var deleteCount = 0;
+        LoopbackServer? server = null;
+        await using var serverLifetime = server = new LoopbackServer(HandleMattermostHttpAsync, HandleMattermostSocketAsync);
+        await using var transport = new MattermostWebSocketTransport();
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+        var run = transport.RunAsync(new BridgeSettings
+        {
+            MattermostServerUrl = server.BaseUri.ToString(),
+            MattermostChannelId = "channel-1",
+            MattermostToken = "local-test-token",
+            MattermostAllowedUserIds = "member-1",
+            MattermostBypassProxy = true
+        }, async (request, ct) =>
+        {
+            var handle = await transport.PostProgressAsync(request, "Working", ct);
+            var started = DateTime.UtcNow;
+            await transport.CompleteProgressAsync(handle, ct);
+            completed.TrySetResult(DateTime.UtcNow - started);
+        }, cancellation.Token);
+
+        var cleanupElapsed = await completed.Task.WaitAsync(TimeSpan.FromSeconds(7), cancellation.Token);
+        Assert.True(cleanupElapsed < TimeSpan.FromSeconds(3), $"Cleanup took {cleanupElapsed}.");
+        await lateDelete.Task.WaitAsync(TimeSpan.FromSeconds(4), cancellation.Token);
+        Assert.True(Volatile.Read(ref deleteCount) >= 2);
+
+        cancellation.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(5));
+
+        async Task HandleMattermostHttpAsync(HttpListenerContext context)
+        {
+            var path = context.Request.Url?.AbsolutePath;
+            if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/me")
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{\"id\":\"bot-1\",\"username\":\"cab-bot\",\"is_bot\":true}");
+            else if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/member-1")
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{\"id\":\"member-1\",\"username\":\"member\",\"is_bot\":false}");
+            else if (context.Request.HttpMethod == "POST" && path == "/api/v4/posts")
+                await server!.WriteJsonAsync(context, HttpStatusCode.Created,
+                    "{\"id\":\"progress-late\",\"channel_id\":\"channel-1\",\"root_id\":\"incoming-1\"}");
+            else if (context.Request.HttpMethod == "POST" && path == "/api/v4/reactions")
+            {
+                _ = await new StreamReader(context.Request.InputStream).ReadToEndAsync();
+                await Task.Delay(TimeSpan.FromMilliseconds(2300)); // Ignores client cancellation to model a late provider response.
+                try { await server!.WriteJsonAsync(context, HttpStatusCode.Created, "{}"); }
+                catch (HttpListenerException) { }
+            }
+            else if (context.Request.HttpMethod == "DELETE" && path == "/api/v4/users/bot-1/posts/progress-late/reactions/octagonal_sign")
+            {
+                if (Interlocked.Increment(ref deleteCount) == 1)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(2300)); // Ignores client cancellation to model stalled cleanup.
+                    try { await server!.WriteJsonAsync(context, HttpStatusCode.NoContent, "{}"); }
+                    catch (HttpListenerException) { }
+                }
+                else
+                {
+                    await server!.WriteJsonAsync(context, HttpStatusCode.NoContent, "{}");
+                    lateDelete.TrySetResult();
+                }
+            }
+            else await server!.WriteJsonAsync(context, HttpStatusCode.NotFound, "{}");
+        }
+
+        async Task HandleMattermostSocketAsync(int connection, WebSocket socket, CancellationToken ct)
+        {
+            await ReadSocketMessageAsync(socket, ct);
+            await SendSocketJsonAsync(socket, "{\"seq_reply\":1,\"status\":\"OK\"}", ct);
+            var post = JsonSerializer.Serialize(new
+            {
+                id = "incoming-1", channel_id = "channel-1", user_id = "member-1", message = "!cab work", root_id = ""
+            });
+            await SendSocketJsonAsync(socket, JsonSerializer.Serialize(new { @event = "posted", data = new { post } }), ct);
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+        }
+    }
+
+    [Fact]
+    public async Task Mattermost_ignores_cancellation_from_noncooperative_seed_handler_and_cleans_late_marker()
+    {
+        var seedStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSeed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondDelete = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new LateSeedMattermostHandler(seedStarted, releaseSeed, secondDelete);
+        var http = new HttpClient(handler);
+        await using var transport = new MattermostWebSocketTransport(http,
+            new Uri("https://mattermost.test/"), "test-token", "channel-1", "bot-1");
+        var request = new ChatRequest("mattermost", "channel-1", "thread-1", "member-1", "work", "incoming-1");
+
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+        var progress = await transport.PostProgressAsync(request, "Working", CancellationToken.None)
+            .WaitAsync(TimeSpan.FromSeconds(3));
+        timer.Stop();
+        Assert.True(timer.Elapsed < TimeSpan.FromSeconds(3), $"Progress post took {timer.Elapsed}.");
+        await seedStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+
+        await transport.CompleteProgressAsync(progress, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(3));
+        Assert.Equal(1, handler.DeleteCount);
+        releaseSeed.TrySetResult();
+        await secondDelete.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        Assert.Equal(2, handler.DeleteCount);
+    }
+
+    [Fact]
+    public async Task Mattermost_dispose_during_run_reset_prevents_http_client_recreation()
+    {
+        var progressPosted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var deleteStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var identityRequests = 0;
+        LoopbackServer? server = null;
+        await using var serverLifetime = server = new LoopbackServer(HandleMattermostHttpAsync, HandleMattermostSocketAsync);
+        await using var transport = new MattermostWebSocketTransport();
+        var settings = new BridgeSettings
+        {
+            MattermostServerUrl = server.BaseUri.ToString(),
+            MattermostChannelId = "channel-1",
+            MattermostToken = "local-test-token",
+            MattermostAllowedUserIds = "member-1",
+            MattermostBypassProxy = true
+        };
+
+        var firstRun = transport.RunAsync(settings, async (request, ct) =>
+        {
+            _ = await transport.PostProgressAsync(request, "Working", ct);
+            progressPosted.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+        }, CancellationToken.None);
+        await progressPosted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var resetRun = transport.RunAsync(settings, static (_, _) => Task.CompletedTask, CancellationToken.None);
+        await deleteStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var dispose = transport.DisposeAsync().AsTask();
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => resetRun);
+        await dispose.WaitAsync(TimeSpan.FromSeconds(5));
+        await firstRun.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(1, Volatile.Read(ref identityRequests));
+
+        async Task HandleMattermostHttpAsync(HttpListenerContext context)
+        {
+            var path = context.Request.Url?.AbsolutePath;
+            if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/me")
+            {
+                Interlocked.Increment(ref identityRequests);
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{\"id\":\"bot-1\",\"username\":\"cab-bot\",\"is_bot\":true}");
+            }
+            else if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/member-1")
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{\"id\":\"member-1\",\"username\":\"member\",\"is_bot\":false}");
+            else if (context.Request.HttpMethod == "POST" && path == "/api/v4/posts")
+                await server!.WriteJsonAsync(context, HttpStatusCode.Created,
+                    "{\"id\":\"progress-reset\",\"channel_id\":\"channel-1\",\"root_id\":\"incoming-1\"}");
+            else if (context.Request.HttpMethod == "POST" && path == "/api/v4/reactions")
+                await server!.WriteJsonAsync(context, HttpStatusCode.Created, "{}");
+            else if (context.Request.HttpMethod == "DELETE" && path == "/api/v4/users/bot-1/posts/progress-reset/reactions/octagonal_sign")
+            {
+                deleteStarted.TrySetResult();
+                await Task.Delay(TimeSpan.FromMilliseconds(2300)); // Ignore client cancellation during reset cleanup.
+                try { await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{}"); }
+                catch (HttpListenerException) { }
+            }
+            else await server!.WriteJsonAsync(context, HttpStatusCode.NotFound, "{}");
+        }
+
+        async Task HandleMattermostSocketAsync(int connection, WebSocket socket, CancellationToken ct)
+        {
+            await ReadSocketMessageAsync(socket, ct);
+            await SendSocketJsonAsync(socket, "{\"seq_reply\":1,\"status\":\"OK\"}", ct);
+            var post = JsonSerializer.Serialize(new
+            {
+                id = "incoming-1", channel_id = "channel-1", user_id = "member-1", message = "!cab work", root_id = ""
+            });
+            await SendSocketJsonAsync(socket, JsonSerializer.Serialize(new { @event = "posted", data = new { post } }), ct);
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
         }
     }
 
@@ -351,6 +555,37 @@ public sealed class TransportReconnectTests
             content.Write(buffer, 0, result.Count);
         } while (!result.EndOfMessage);
         return Encoding.UTF8.GetString(content.ToArray());
+    }
+
+    private sealed class LateSeedMattermostHandler(TaskCompletionSource seedStarted, TaskCompletionSource releaseSeed,
+        TaskCompletionSource secondDelete) : HttpMessageHandler
+    {
+        private int _deleteCount;
+        public int DeleteCount => Volatile.Read(ref _deleteCount);
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri?.AbsolutePath;
+            if (request.Method == HttpMethod.Post && path == "/api/v4/posts")
+                return Json(HttpStatusCode.Created, "{\"id\":\"progress-async\",\"channel_id\":\"channel-1\",\"root_id\":\"thread-1\"}");
+            if (request.Method == HttpMethod.Post && path == "/api/v4/reactions")
+            {
+                seedStarted.TrySetResult();
+                await releaseSeed.Task; // Deliberately ignores the supplied cancellation token.
+                return Json(HttpStatusCode.Created, "{}");
+            }
+            if (request.Method == HttpMethod.Delete && path == "/api/v4/users/bot-1/posts/progress-async/reactions/octagonal_sign")
+            {
+                if (Interlocked.Increment(ref _deleteCount) >= 2) secondDelete.TrySetResult();
+                return Json(HttpStatusCode.OK, "{}");
+            }
+            return Json(HttpStatusCode.NotFound, "{}");
+        }
+
+        private static HttpResponseMessage Json(HttpStatusCode status, string body) => new(status)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json")
+        };
     }
 
     private sealed class SlackApiHandler(Action onOpen, Uri serverBase) : HttpMessageHandler

@@ -63,6 +63,143 @@ public sealed class AppServerTests
     }
 
     [Fact]
+    public async Task ActiveTurnHandleSteersOnlyItsTurnAndBecomesStaleAtCompletion()
+    {
+        using var temp = new TempDirectory();
+        var factory = new FakeProcessFactory();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        IActiveAgentTurn? handle = null;
+        var callbackValues = new List<IActiveAgentTurn?>();
+        factory.Client.OnTurnStart = (client, _) =>
+        {
+            client.RaiseNotification("turn/started", new { threadId = FakeClient.ThreadId, turnId = "turn-1" });
+            started.TrySetResult();
+            return Task.CompletedTask;
+        };
+        using var runner = new CodexAppServerRunner(factory);
+        var run = runner.RunAsync(new BridgeSettings { WorkspaceRoot = temp.Path }, "initial prompt",
+            new AppServerRunOptions(ActiveTurnChanged: active => { callbackValues.Add(active); if (active is not null) handle = active; }));
+
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.NotNull(handle);
+        Assert.Equal(AgentTurnInputResult.Accepted, await handle!.AddInputAsync("follow-up"));
+
+        var steer = Assert.Single(factory.Client.Requests, request => request.Method == "turn/steer");
+        Assert.Equal(FakeClient.ThreadId, steer.Parameters.GetProperty("threadId").GetString());
+        Assert.Equal("turn-1", steer.Parameters.GetProperty("expectedTurnId").GetString());
+        var input = Assert.Single(steer.Parameters.GetProperty("input").EnumerateArray());
+        Assert.Equal("text", input.GetProperty("type").GetString());
+        Assert.Equal("follow-up", input.GetProperty("text").GetString());
+        Assert.Equal(new[] { "expectedTurnId", "input", "threadId" }, steer.Parameters.EnumerateObject().Select(property => property.Name).Order().ToArray());
+        Assert.Single(factory.Client.Requests, request => request.Method == "turn/start");
+
+        factory.Client.RaiseNotification("turn/completed", new
+        {
+            threadId = FakeClient.ThreadId, turn = new { id = "turn-1", status = "completed" }
+        });
+        await run.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(AgentTurnInputResult.NotAccepted, await handle.AddInputAsync("too late"));
+        Assert.Contains(callbackValues, value => value is null);
+        Assert.Single(factory.Client.Requests, request => request.Method == "turn/steer");
+    }
+
+    [Fact]
+    public async Task ActiveTurnHandleSerializesInputsAndDistinguishesRejectedFromUnknownDelivery()
+    {
+        using var temp = new TempDirectory();
+        var factory = new FakeProcessFactory();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        IActiveAgentTurn? handle = null;
+        var inFlight = 0;
+        var maxInFlight = 0;
+        var concurrencyGate = new object();
+        factory.Client.OnTurnStart = (client, _) =>
+        {
+            client.RaiseNotification("turn/started", new { threadId = FakeClient.ThreadId, turnId = "turn-1" });
+            started.TrySetResult();
+            return Task.CompletedTask;
+        };
+        factory.Client.OnTurnSteer = async ct =>
+        {
+            var current = Interlocked.Increment(ref inFlight);
+            lock (concurrencyGate) maxInFlight = Math.Max(maxInFlight, current);
+            try { await Task.Delay(20, ct); }
+            finally { Interlocked.Decrement(ref inFlight); }
+        };
+        using var runner = new CodexAppServerRunner(factory);
+        var run = runner.RunAsync(new BridgeSettings { WorkspaceRoot = temp.Path }, "initial prompt",
+            new AppServerRunOptions(ActiveTurnChanged: active => { if (active is not null) handle = active; }));
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.NotNull(handle);
+
+        var serializedResults = await Task.WhenAll(
+            handle!.AddInputAsync("one"), handle.AddInputAsync("two"), handle.AddInputAsync("three"));
+        Assert.All(serializedResults, result => Assert.Equal(AgentTurnInputResult.Accepted, result));
+        Assert.Equal(1, maxInFlight);
+
+        factory.Client.OnTurnSteer = _ => throw new AppServerRpcException(-32601, "Method not found: turn/steer");
+        Assert.Equal(AgentTurnInputResult.NotAccepted, await handle.AddInputAsync("unsupported"));
+
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(20));
+        factory.Client.OnTurnSteer = ct => Task.Delay(Timeout.InfiniteTimeSpan, ct);
+        Assert.Equal(AgentTurnInputResult.DeliveryUnknown, await handle.AddInputAsync("possibly delivered", cancellation.Token));
+
+        factory.Client.RaiseNotification("turn/completed", new
+        {
+            threadId = FakeClient.ThreadId, turn = new { id = "turn-1", status = "completed" }
+        });
+        await run.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task TurnCompletedBeforeTurnStartResponseDoesNotPublishHandle()
+    {
+        using var temp = new TempDirectory();
+        var factory = new FakeProcessFactory();
+        var activations = new List<IActiveAgentTurn?>();
+        factory.Client.OnTurnStart = (client, _) =>
+        {
+            client.RaiseNotification("turn/started", new { threadId = FakeClient.ThreadId, turnId = "turn-1" });
+            client.RaiseNotification("turn/completed", new
+            {
+                threadId = FakeClient.ThreadId, turn = new { id = "turn-1", status = "completed" }
+            });
+            return Task.CompletedTask;
+        };
+        using var runner = new CodexAppServerRunner(factory);
+
+        var result = await runner.RunAsync(new BridgeSettings { WorkspaceRoot = temp.Path }, "fast prompt",
+            new AppServerRunOptions(ActiveTurnChanged: active => activations.Add(active))).WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(result.Result.Success);
+        Assert.DoesNotContain(activations, active => active is not null);
+        Assert.Contains(activations, active => active is null);
+    }
+
+    [Fact]
+    public async Task ActiveTurnHandleValidatesReplyAndKeepsSerializationGateUntilTimedOutRpcSettles()
+    {
+        var client = new FakeClient();
+        var mismatchedReplyHandle = new ActiveAgentTurn(client, FakeClient.ThreadId, "turn-1", TimeSpan.FromMilliseconds(100));
+        client.TurnSteerResponse = new { turnId = "different-turn" };
+        Assert.Equal(AgentTurnInputResult.DeliveryUnknown, await mismatchedReplyHandle.AddInputAsync("wrong reply"));
+        mismatchedReplyHandle.Deactivate();
+
+        client.TurnSteerResponse = new { turnId = "turn-1" };
+        var heldRpc = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        client.OnTurnSteer = _ => heldRpc.Task;
+        var handle = new ActiveAgentTurn(client, FakeClient.ThreadId, "turn-1", TimeSpan.FromMilliseconds(20));
+        Assert.Equal(AgentTurnInputResult.DeliveryUnknown, await handle.AddInputAsync("uncertain"));
+
+        client.OnTurnSteer = _ => Task.CompletedTask;
+        var followingInput = handle.AddInputAsync("after rpc settles");
+        Assert.False(followingInput.IsCompleted);
+        heldRpc.SetResult();
+        Assert.Equal(AgentTurnInputResult.Accepted, await followingInput.WaitAsync(TimeSpan.FromSeconds(2)));
+        handle.Deactivate();
+    }
+
+    [Fact]
     public async Task ClearingIdleProcessesPreservesActiveLeaseAndAllowsFreshLaunchAndReuse()
     {
         using var temp = new TempDirectory();
@@ -402,6 +539,8 @@ public sealed class AppServerTests
         public string Workspace { get; set; } = "";
         public List<(string Method, JsonElement Parameters)> Requests { get; } = [];
         public Func<FakeClient, CancellationToken, Task>? OnTurnStart { get; set; }
+        public Func<CancellationToken, Task>? OnTurnSteer { get; set; }
+        public object TurnSteerResponse { get; set; } = new { turnId = "turn-1" };
         public event Action<string, JsonElement>? NotificationReceived;
         public Func<AppServerServerRequest, CancellationToken, Task<AppServerServerResponse>>? ServerRequestHandler { get; set; }
         public Task<Exception?> Closed { get; } = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously).Task;
@@ -414,9 +553,11 @@ public sealed class AppServerTests
             {
                 "thread/start" or "thread/resume" => new { thread = new { id = ThreadIdOverride ?? ThreadId }, cwd = Workspace },
                 "turn/start" => new { turn = new { id = "turn-1", status = "inProgress" } },
+                "turn/steer" => TurnSteerResponse,
                 _ => new { }
             };
             if (method == "turn/start" && OnTurnStart is not null) await OnTurnStart(this, cancellationToken);
+            if (method == "turn/steer" && OnTurnSteer is not null) await OnTurnSteer(cancellationToken);
             return JsonSerializer.SerializeToElement(response);
         }
         public Task NotifyAsync(string method, object? parameters = null, CancellationToken cancellationToken = default)

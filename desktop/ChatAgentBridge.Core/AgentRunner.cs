@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using ChatAgentBridge.Core.Localization;
 using ChatAgentBridge.Core.Sessions;
+using ChatAgentBridge.Core.AppServer;
 
 namespace ChatAgentBridge.Core;
 
@@ -21,6 +23,11 @@ public interface IAgentRunner
     Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
         IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken = default)
         => RunAsync(settings, prompt, cancellationToken);
+
+    Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
+        IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged,
+        CancellationToken cancellationToken = default)
+        => RunAsync(settings, prompt, progress, cancellationToken);
 }
 
 public sealed class AgentRunner : IAgentRunner
@@ -29,10 +36,15 @@ public sealed class AgentRunner : IAgentRunner
 
     public Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
         CancellationToken cancellationToken = default)
-        => RunAsync(settings, prompt, progress: null, cancellationToken);
+        => RunAsync(settings, prompt, progress: null, activeTurnChanged: null, cancellationToken);
 
     public async Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
         IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken = default)
+        => await RunAsync(settings, prompt, progress, activeTurnChanged: null, cancellationToken).ConfigureAwait(false);
+
+    public async Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
+        IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged,
+        CancellationToken cancellationToken = default)
     {
         var totalTimer = Stopwatch.StartNew();
         ArgumentNullException.ThrowIfNull(settings);
@@ -52,7 +64,7 @@ public sealed class AgentRunner : IAgentRunner
         var queueTimer = Stopwatch.StartNew();
         using var workspaceLease = await AgentWorkspaceGate.AcquireAsync(workspace, cancellationToken).ConfigureAwait(false);
         var queueMilliseconds = queueTimer.Elapsed.TotalMilliseconds;
-        var result = await RunLockedAsync(settings, workspace, prompt, progress, cancellationToken).ConfigureAwait(false);
+        var result = await RunLockedAsync(settings, workspace, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false);
         return result with
         {
             Metrics = (result.Metrics ?? new AgentExecutionMetrics()) with
@@ -64,7 +76,7 @@ public sealed class AgentRunner : IAgentRunner
     }
 
     private static async Task<AgentRunResult> RunLockedAsync(BridgeSettings settings, string workspace, string prompt,
-        IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken)
+        IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -81,6 +93,14 @@ public sealed class AgentRunner : IAgentRunner
         string executable;
         try { executable = nodePackage?.Executable ?? CodexExecutableResolver.Resolve(invocation.Executable); }
         catch (InvalidOperationException ex) { return new AgentRunResult(false, -1, "", ex.Message); }
+
+        if (invocation.Provider == AgentProfile.Claude && settings.AgentMode == "exec" &&
+            ChatFollowUpPolicy.Normalize(settings.ChatFollowUpMode) == ChatFollowUpPolicy.Steer && activeTurnChanged is not null)
+        {
+            var streamed = await ClaudeCode.ClaudeStreamingRunner.TryRunAsync(invocation, executable, nodePackage?.EntryPoint,
+                workspace, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false);
+            if (streamed is not null) return streamed;
+        }
         var start = new ProcessStartInfo
         {
             FileName = executable,
@@ -233,12 +253,9 @@ public sealed class AgentRunner : IAgentRunner
                     if (!droppingLongLine)
                     {
                         var text = line!.ToString();
-                        codexParser?.AddLine(text);
-                        claudeParser?.AddLine(text);
                         if (cliParser is not null)
                             foreach (var update in cliParser.AddLine(text)) SafeReport(progress, update);
-                        if (progressParser is not null)
-                            foreach (var update in progressParser.ParseLine(text)) SafeReport(progress, update);
+                        else ProcessEventLine(text, codexParser, claudeParser, progressParser, progress);
                     }
                     line!.Clear();
                     droppingLongLine = false;
@@ -252,16 +269,45 @@ public sealed class AgentRunner : IAgentRunner
         }
         if (!droppingLongLine && line is { Length: > 0 })
         {
-            codexParser?.AddLine(line.ToString());
-            claudeParser?.AddLine(line.ToString());
+            var tail = line.ToString();
             if (cliParser is not null)
-                foreach (var update in cliParser.AddLine(line.ToString())) SafeReport(progress, update);
-            if (progressParser is not null)
-                foreach (var update in progressParser.ParseLine(line.ToString())) SafeReport(progress, update);
+                foreach (var update in cliParser.AddLine(tail)) SafeReport(progress, update);
+            else ProcessEventLine(tail, codexParser, claudeParser, progressParser, progress);
         }
         var cliSession = cliParser?.Snapshot();
         return (cliSession?.FinalMessage ?? builder.ToString(), codexParser?.Snapshot(), claudeParser?.Snapshot(), cliSession,
             truncated || cliParser?.Truncated == true);
+    }
+
+    // Parses the line once and shares the JsonElement with the accumulators and the progress parser.
+    // Each consumer keeps its own limits, so results match the string-based AddLine/ParseLine paths.
+    private static void ProcessEventLine(string text, CodexOutputParser.Accumulator? codexParser,
+        ClaudeOutputParser.Accumulator? claudeParser, AgentRunProgressParser? progressParser,
+        IProgress<AgentRunProgress>? progress)
+    {
+        var trimmed = text.Trim();
+        // Progress requires text[0] == '{', so a line the accumulators skip yields no progress either.
+        if (trimmed.Length == 0 || trimmed.Length > CodexOutputParser.MaxLineCharacters || trimmed[0] != '{') return;
+        JsonDocument document;
+        try { document = JsonDocument.Parse(trimmed, new JsonDocumentOptions { MaxDepth = 32 }); }
+        catch (JsonException)
+        {
+            // Invalid JSON, or deeper than the progress limit: only the accumulators accept depth up to 64.
+            codexParser?.AddLine(text);
+            claudeParser?.AddLine(text);
+            return;
+        }
+        using (document)
+        {
+            var root = document.RootElement;
+            codexParser?.AddParsed(root);
+            claudeParser?.AddParsed(root);
+            if (progressParser is null || text.Length > AgentRunProgressParser.MaxLineCharacters || text[0] != '{') return;
+            // Raw-line parsing only tolerates JSON whitespace after the value.
+            foreach (var ch in text.AsSpan(trimmed.Length))
+                if (ch is not (' ' or '\t' or '\r' or '\n')) return;
+            foreach (var update in progressParser.ParseRoot(root)) SafeReport(progress, update);
+        }
     }
 
     private static async Task<string> ReadBoundedTextAsync(StreamReader reader, int limit, IProgress<AgentRunProgress>? progress)

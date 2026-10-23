@@ -30,6 +30,7 @@ public sealed record BridgeSettings
     public string TrustedWorkspaceRoots { get; init; } = "";
     public string ChatApprovalMode { get; init; } = "first";
     public string ChatResultMode { get; init; } = "manual";
+    public string ChatFollowUpMode { get; init; } = ChatFollowUpPolicy.Queue;
     public string SlackAllowedChannelIds { get; init; } = "";
     public string SlackAllowedThreadIds { get; init; } = "";
     public string MattermostAllowedThreadIds { get; init; } = "";

@@ -6,7 +6,7 @@ public sealed class AuditStore
     {
         "received", "approved", "rejected", "started", "completed", "failed", "cancelled", "reply_sent",
         "reply_failed", "detached", "workspace_changed", "model_changed", "agent_changed",
-        "attachment_approved", "attachment_sent", "attachment_failed"
+        "attachment_approved", "attachment_sent", "attachment_failed", "follow_up_applied", "follow_up_uncertain"
     };
     private readonly string _filePath;
 
@@ -19,15 +19,30 @@ public sealed class AuditStore
     public async Task AppendAsync(AuditEvent record, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(record);
-        Validate(record);
+        await AppendManyAsync([record], cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task AppendManyAsync(IEnumerable<AuditEvent> recordsToAppend, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(recordsToAppend);
+        // Snapshot and validate before acquiring the file lock so callers cannot mutate a batch while it is written.
+        var batch = recordsToAppend.ToArray();
+        foreach (var record in batch)
+        {
+            ArgumentNullException.ThrowIfNull(record);
+            Validate(record);
+        }
+        if (batch.Length == 0) return;
         var gate = HistoryFileStore.LockFor(_filePath);
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var file = await ReadFileAsync(cancellationToken).ConfigureAwait(false);
             var records = file.Records!.ToList();
-            records.Add(record);
-            records = records.OrderBy(item => item.Timestamp).TakeLast(HistoryFileStore.MaxRecords).ToList();
+            records.AddRange(batch);
+            records = records.Select((record, index) => (record, index))
+                .OrderBy(item => item.record.Timestamp).ThenBy(item => item.index)
+                .TakeLast(HistoryFileStore.MaxRecords).Select(item => item.record).ToList();
             await HistoryFileStore.WriteAtomicAsync(_filePath,
                 new AuditDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = records }, cancellationToken).ConfigureAwait(false);
         }
@@ -46,14 +61,14 @@ public sealed class AuditStore
         finally { gate.Release(); }
     }
 
-    private async Task<AuditDocument> ReadFileAsync(CancellationToken ct)
-    {
-        var file = await HistoryFileStore.ReadAsync(_filePath, static () => new AuditDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = [] }, ct).ConfigureAwait(false);
-        HistoryFileStore.CheckSchema(file.SchemaVersion);
-        var records = HistoryFileStore.ValidateLoadedRecords(file.Records);
-        foreach (var record in records) ValidateLoaded(record);
-        return file;
-    }
+    // Callers hold the per-path lock and must not mutate the returned document; it is the cached parse of the file.
+    private Task<AuditDocument> ReadFileAsync(CancellationToken ct) =>
+        HistoryFileStore.ReadCachedAsync(_filePath, static () => new AuditDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = [] }, static file =>
+        {
+            HistoryFileStore.CheckSchema(file.SchemaVersion);
+            var records = HistoryFileStore.ValidateLoadedRecords(file.Records);
+            foreach (var record in records) ValidateLoaded(record);
+        }, ct);
 
     private static void Validate(AuditEvent record)
     {

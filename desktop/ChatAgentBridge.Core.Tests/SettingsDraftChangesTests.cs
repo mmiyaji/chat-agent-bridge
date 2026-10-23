@@ -23,7 +23,7 @@ public sealed class SettingsDraftChangesTests
         nameof(BridgeSettings.SlackAppToken), nameof(BridgeSettings.MattermostAllowedUserIds),
         nameof(BridgeSettings.SlackAllowedUserIds), nameof(BridgeSettings.ShareApprovalsInChat),
         nameof(BridgeSettings.ShareAgentQuestionsInChat), nameof(BridgeSettings.ChatApprovalMode),
-        nameof(BridgeSettings.ChatResultMode), nameof(BridgeSettings.SlackAllowedChannelIds),
+        nameof(BridgeSettings.ChatResultMode), nameof(BridgeSettings.ChatFollowUpMode), nameof(BridgeSettings.SlackAllowedChannelIds),
         nameof(BridgeSettings.SlackAllowedThreadIds), nameof(BridgeSettings.MattermostAllowedThreadIds),
         nameof(BridgeSettings.FileAttachmentApprovalMode), nameof(BridgeSettings.FileAttachmentMaxSizeMb),
         nameof(BridgeSettings.FileAttachmentMaxCount), nameof(BridgeSettings.FileAttachmentMaxTotalSizeMb)

@@ -7,9 +7,24 @@ public static class NodeCliPackageResolver
 {
     public sealed record Resolution(string Executable, string EntryPoint, string PackageName);
 
+    private static readonly CliDiscoveryCache<Resolution> Cache = new();
+
+    /// <summary>Drops cached discovery results, for example after the process environment was reloaded.</summary>
+    public static void ClearCache() => Cache.Clear();
+
     public static Resolution? Resolve(string configuredExecutable, string provider)
     {
         if (!OperatingSystem.IsWindows() || !AgentProfile.IsBasicCliProvider(provider)) return null;
+        var environment = string.Join('\n', provider, Directory.GetCurrentDirectory(),
+            Environment.GetEnvironmentVariable("PATH") ?? "");
+        // Failures throw and are never cached; a null result (not a shim) is cheap to recompute.
+        return Cache.GetOrResolve(configuredExecutable, environment,
+            resolution => File.Exists(resolution.Executable) && File.Exists(resolution.EntryPoint),
+            () => ResolveUncached(configuredExecutable, provider));
+    }
+
+    private static Resolution? ResolveUncached(string configuredExecutable, string provider)
+    {
         var shim = FindShim(configuredExecutable, provider);
         if (shim is null) return null;
 

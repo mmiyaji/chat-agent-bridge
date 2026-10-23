@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using System.Collections.Concurrent;
 using System.Reflection;
 using Microsoft.Windows.ApplicationModel.Resources;
 
@@ -71,14 +72,15 @@ internal static class MrtText
             if (current is Border border && border.Child is { } borderChild) pending.Push(borderChild);
             if (current is UserControl userControl && userControl.Content is { } userContent) pending.Push(userContent);
             if (current is ContentControl contentControl && contentControl.Content is DependencyObject content) pending.Push(content);
-            if (current.GetType().GetProperty("Header", BindingFlags.Instance | BindingFlags.Public)?.GetValue(current) is DependencyObject header)
+            var typeInfo = GetTypeInfo(current.GetType());
+            if (typeInfo.Header?.GetValue(current) is DependencyObject header)
                 pending.Push(header);
-            if (current.GetType().GetProperty("ActionButton", BindingFlags.Instance | BindingFlags.Public)?.GetValue(current) is DependencyObject actionButton)
+            if (typeInfo.ActionButton?.GetValue(current) is DependencyObject actionButton)
                 pending.Push(actionButton);
             // Flyout content is not part of the visual tree while its popup is
             // closed, but it still owns x:Uid labels that need to refresh.
-            if (current.GetType().GetProperty("Flyout", BindingFlags.Instance | BindingFlags.Public)?.GetValue(current) is { } flyout &&
-                flyout.GetType().GetProperty("Content", BindingFlags.Instance | BindingFlags.Public)?.GetValue(flyout) is DependencyObject flyoutContent)
+            if (typeInfo.Flyout?.GetValue(current) is { } flyout &&
+                GetTypeInfo(flyout.GetType()).Content?.GetValue(flyout) is DependencyObject flyoutContent)
                 pending.Push(flyoutContent);
             var count = VisualTreeHelper.GetChildrenCount(current);
             for (var i = 0; i < count; i++) pending.Push(VisualTreeHelper.GetChild(current, i));
@@ -96,9 +98,10 @@ internal static class MrtText
         // automation ID differs or is absent; existing matching IDs remain a
         // convenient fallback. Apply only string-valued resource properties and
         // leave active bindings and nested rich content alone.
+        var typeInfo = GetTypeInfo(element.GetType());
         foreach (var property in LocalizedStringProperties)
         {
-            var info = element.GetType().GetProperty(property, BindingFlags.Instance | BindingFlags.Public);
+            typeInfo.Localized.TryGetValue(property, out var info);
             if (info?.CanWrite != true || info.PropertyType != typeof(string) && info.PropertyType != typeof(object) || IsBound(element, property)) continue;
             var currentValue = info.GetValue(element);
             if (currentValue is not null and not string) continue;
@@ -110,20 +113,42 @@ internal static class MrtText
             AutomationProperties.SetName(element, automationName);
     }
 
+    /// <summary>Reflection lookups resolved once per control type; Refresh walks the tree on every language change.</summary>
+    private sealed class TypeInfo(Type type)
+    {
+        private static PropertyInfo? Find(Type t, string name) => t.GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
+        public PropertyInfo? Header { get; } = Find(type, "Header");
+        public PropertyInfo? ActionButton { get; } = Find(type, "ActionButton");
+        public PropertyInfo? Flyout { get; } = Find(type, "Flyout");
+        public PropertyInfo? Content { get; } = Find(type, "Content");
+        public Dictionary<string, PropertyInfo?> Localized { get; } = LocalizedStringProperties.ToDictionary(name => name, name => Find(type, name));
+    }
+
+    private static readonly ConcurrentDictionary<Type, TypeInfo> TypeInfos = new();
+
+    private static TypeInfo GetTypeInfo(Type type) => TypeInfos.GetOrAdd(type, static t => new TypeInfo(t));
+
+    private static readonly ConcurrentDictionary<(Type, string), DependencyProperty?> DependencyProperties = new();
+
     private static readonly string[] LocalizedStringProperties =
         ["Text", "Content", "Header", "PlaceholderText", "Title", "Message", "Description", "Subtitle", "OnContent", "OffContent"];
 
     private static bool IsBound(FrameworkElement element, string property)
     {
+        var dependencyProperty = DependencyProperties.GetOrAdd((element.GetType(), property), static key => FindDependencyProperty(key.Item1, key.Item2));
+        return dependencyProperty is not null && element.GetBindingExpression(dependencyProperty) is not null;
+    }
+
+    private static DependencyProperty? FindDependencyProperty(Type elementType, string property)
+    {
         var propertyName = $"{property}Property";
-        for (var type = element.GetType(); type is not null; type = type.BaseType)
+        for (var type = elementType; type is not null; type = type.BaseType)
         {
             var dependencyProperty = type.GetField(propertyName, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)?.GetValue(null) as DependencyProperty
                 ?? type.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)?.GetValue(null) as DependencyProperty;
-            if (dependencyProperty is not null)
-                return element.GetBindingExpression(dependencyProperty) is not null;
+            if (dependencyProperty is not null) return dependencyProperty;
         }
-        return false;
+        return null;
     }
 
     private static void Apply(string id, string property, ResourceContext context, Action<string> set)

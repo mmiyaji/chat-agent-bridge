@@ -89,7 +89,7 @@ public partial class MainPageViewModel : ObservableObject
                 nameof(MattermostServerUrl) or nameof(MattermostBypassProxy) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
                 nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(PostConnectionNotice) or
                 nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or nameof(ChatApprovalMode) or
-                nameof(ChatResultMode) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
+                nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
                 nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
                 RefreshSetupStepper();
             if (e.PropertyName is nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or
@@ -223,6 +223,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string TrustedWorkspaceRoots { get; set; } = string.Empty;
     [ObservableProperty] public partial string ChatApprovalMode { get; set; } = "first";
     [ObservableProperty] public partial string ChatResultMode { get; set; } = "manual";
+    [ObservableProperty] public partial string ChatFollowUpMode { get; set; } = ChatFollowUpPolicy.Queue;
     [ObservableProperty] public partial string FileAttachmentApprovalMode { get; set; } = "always";
     [ObservableProperty] public partial double FileAttachmentMaxSizeMb { get; set; } = 10;
     [ObservableProperty] public partial double FileAttachmentMaxCount { get; set; } = 3;
@@ -286,8 +287,10 @@ public partial class MainPageViewModel : ObservableObject
         try
         {
             _settings = await _settingsStore.LoadAsync();
-            _hasSavedSettings = File.Exists(Path.Combine(_settingsStore.DirectoryPath, "settings.json"));
-            _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
+            // Probing a missing or network workspace path can block; keep it off the UI thread.
+            var settingsFilePath = Path.Combine(_settingsStore.DirectoryPath, "settings.json");
+            var loadedWorkspaceRoot = _settings.WorkspaceRoot;
+            (_hasSavedSettings, _savedWorkspaceExists) = await Task.Run(() => (File.Exists(settingsFilePath), Directory.Exists(loadedWorkspaceRoot)));
             WorkspaceRoot = _settings.WorkspaceRoot;
             AgentExecutable = _settings.AgentExecutable;
             AgentArguments = _settings.AgentArguments;
@@ -322,6 +325,7 @@ public partial class MainPageViewModel : ObservableObject
             TrustedWorkspaceRoots = _settings.TrustedWorkspaceRoots;
             ChatApprovalMode = _settings.ChatApprovalMode;
             ChatResultMode = _settings.ChatResultMode;
+            ChatFollowUpMode = _settings.ChatFollowUpMode;
             FileAttachmentApprovalMode = _settings.FileAttachmentApprovalMode;
             FileAttachmentMaxSizeMb = _settings.FileAttachmentMaxSizeMb;
             FileAttachmentMaxCount = _settings.FileAttachmentMaxCount;
@@ -463,6 +467,7 @@ public partial class MainPageViewModel : ObservableObject
                 AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(AgentPermissionMode),
                 ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode),
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(ChatResultMode),
+                ChatFollowUpMode = ChatFollowUpPolicy.Normalize(ChatFollowUpMode),
                 FileAttachmentApprovalMode = FileAttachmentPolicy.NormalizeMode(FileAttachmentApprovalMode),
                 FileAttachmentMaxSizeMb = ToAttachmentLimit(FileAttachmentMaxSizeMb),
                 FileAttachmentMaxCount = ToAttachmentLimit(FileAttachmentMaxCount),
@@ -496,6 +501,7 @@ public partial class MainPageViewModel : ObservableObject
             if (AgentPermissionMode == draft.AgentPermissionMode) AgentPermissionMode = snapshot.AgentPermissionMode;
             if (ChatApprovalMode == draft.ChatApprovalMode) ChatApprovalMode = snapshot.ChatApprovalMode;
             if (ChatResultMode == draft.ChatResultMode) ChatResultMode = snapshot.ChatResultMode;
+            if (ChatFollowUpMode == draft.ChatFollowUpMode) ChatFollowUpMode = snapshot.ChatFollowUpMode;
             if (FileAttachmentApprovalMode == draft.FileAttachmentApprovalMode) FileAttachmentApprovalMode = snapshot.FileAttachmentApprovalMode;
             if (FileAttachmentMaxSizeMb.Equals(attachmentSize)) FileAttachmentMaxSizeMb = snapshot.FileAttachmentMaxSizeMb;
             if (FileAttachmentMaxCount.Equals(attachmentCount)) FileAttachmentMaxCount = snapshot.FileAttachmentMaxCount;
@@ -842,6 +848,7 @@ public partial class MainPageViewModel : ObservableObject
         TrustedWorkspaceRoots = TrustedWorkspaceRoots,
         ChatApprovalMode = ChatApprovalMode,
         ChatResultMode = ChatResultMode,
+        ChatFollowUpMode = ChatFollowUpMode,
         FileAttachmentApprovalMode = FileAttachmentApprovalMode,
         FileAttachmentMaxSizeMb = ToAttachmentDraftLimit(FileAttachmentMaxSizeMb, 1, 100),
         FileAttachmentMaxCount = ToAttachmentDraftLimit(FileAttachmentMaxCount, 1, 10),
@@ -866,6 +873,18 @@ public partial class MainPageViewModel : ObservableObject
         "read-only" => ViewModelText.Get("PermissionReadOnly"), "workspace-write" => ViewModelText.Get("PermissionWorkspaceWrite"),
         "full-access" => ViewModelText.Get("PermissionFullAccess"), "ask" => ViewModelText.Get("PermissionAsk"), _ => ViewModelText.Get("PermissionCliDefault")
     };
+    public ChatFollowUpPolicy.SteerRequirements GetFollowUpSteerRequirements() =>
+        ChatFollowUpPolicy.GetSteerRequirements(AgentProvider, UseAppServer, ChatApprovalMode);
+    public string CurrentChatApprovalLabel => ChatApprovalLabel(ChatApprovalMode);
+    public static string SteerApprovalLabel => ChatApprovalLabel(ChatFollowUpPolicy.SteerApprovalMode);
+    public void ApplyFollowUpSteer(ChatFollowUpPolicy.SteerRequirements requirements)
+    {
+        if (requirements.RequiresAppServer) UseAppServer = true;
+        if (requirements.RequiresApprovalChange) ChatApprovalMode = ChatFollowUpPolicy.SteerApprovalMode;
+        ChatFollowUpMode = ChatFollowUpPolicy.Steer;
+    }
+    public bool IsApplyingSettings => _initializingSettings || _restoringSettingsDraft || IsLoading || !IsSettingsLoaded;
+    public void RevertFollowUpToQueue() => ChatFollowUpMode = ChatFollowUpPolicy.Queue;
     private static string ChatApprovalLabel(string value) => value switch
     { "first" => ViewModelText.Get("ApprovalFirstOnly"), "auto" => ViewModelText.Get("ApprovalAutomatic"), _ => ViewModelText.Get("ApprovalEveryTime") };
     private static string ResultLabel(string value) => value switch

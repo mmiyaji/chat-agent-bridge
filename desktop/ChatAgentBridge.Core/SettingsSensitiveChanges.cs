@@ -31,7 +31,8 @@ public readonly record struct SettingsSensitiveChanges(
                 (draft.ChatApprovalMode, draft.SlackAllowedChannelIds, draft.SlackAllowedThreadIds,
                 draft.MattermostAllowedThreadIds, draft.MattermostAllowedUserIds, draft.SlackAllowedUserIds),
             (saved.ChatResultMode, saved.ShareApprovalsInChat, saved.ShareAgentQuestionsInChat) !=
-                (draft.ChatResultMode, draft.ShareApprovalsInChat, draft.ShareAgentQuestionsInChat),
+                (draft.ChatResultMode, draft.ShareApprovalsInChat, draft.ShareAgentQuestionsInChat) ||
+            saved.ChatFollowUpMode != draft.ChatFollowUpMode,
             (saved.FileAttachmentApprovalMode, saved.FileAttachmentMaxSizeMb, saved.FileAttachmentMaxCount,
                 saved.FileAttachmentMaxTotalSizeMb) !=
                 (draft.FileAttachmentApprovalMode, draft.FileAttachmentMaxSizeMb, draft.FileAttachmentMaxCount,

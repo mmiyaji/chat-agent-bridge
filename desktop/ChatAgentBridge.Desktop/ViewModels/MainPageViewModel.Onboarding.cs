@@ -54,7 +54,12 @@ public partial class MainPageViewModel
     public string OnboardingProgress => $"[{Math.Clamp(OnboardingStep, 0, 4) + 1}/5]";
     public string WizardSummary => ViewModelText.Get("WizardSummary", AgentProviderDisplayName, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, string.IsNullOrWhiteSpace(AgentReasoningEffort) ? ViewModelText.Get("DefaultCliValue") : AgentReasoningEffort, WorkspaceRoot, IsWizardSlack ? "Slack" : "Mattermost", ViewModelText.Get(WizardAutoConnect ? "Enabled" : "Disabled"), ChatApprovalLabel(ChatApprovalMode), ResultLabel(ChatResultMode), PermissionLabel(AgentPermissionMode));
     public event Action<int>? OnboardingNavigateRequested;
-    public event Action? OnboardingConsentFocusRequested;
+    /// <summary>Raised when the user tries to continue with required inputs missing, so the page can highlight and focus them.</summary>
+    public event Action<IReadOnlyList<WizardField>>? OnboardingFieldsFocusRequested;
+    private IReadOnlyList<WizardField>? _pendingFieldFocus;
+    // Focus is moved only after the action ends: while it runs the clicked button is disabled, and a focused
+    // control that becomes disabled hands focus on afterwards, which would override the field.
+    private void RequestFieldFocus(IReadOnlyList<WizardField> fields) { if (fields.Count > 0) _pendingFieldFocus = fields; }
 
     public async Task InitializeOnboardingAsync()
     {
@@ -98,7 +103,7 @@ public partial class MainPageViewModel
             if (!HasAcceptedTerms || !HasAcceptedPrivacy)
             {
                 SetStatus(ViewModelText.Get("ConsentRequired"), ViewModelText.Get("ConsentRequiredDetails"), "Warning");
-                OnboardingConsentFocusRequested?.Invoke();
+                RequestFieldFocus(OnboardingFieldChecks.Consent(HasAcceptedTerms, HasAcceptedPrivacy));
                 return;
             }
             await _onboardingConsentStore.SaveAsync(new OnboardingConsent(OnboardingConsentStore.CurrentPolicyVersion, DateTimeOffset.UtcNow));
@@ -110,33 +115,65 @@ public partial class MainPageViewModel
         if (!_hasCurrentConsent || !HasAcceptedTerms || !HasAcceptedPrivacy) { SetStatus(ViewModelText.Get("ReviewConsent"), ViewModelText.Get("ReviewConsentDetails"), "Warning"); return; }
         if (OnboardingStep == 1)
         {
-            if (AgentProvider is not ("codex" or "claude" or "gemini" or "github-copilot" or "custom") || string.IsNullOrWhiteSpace(AgentExecutable)) { SetStatus(ViewModelText.Get("SelectAgent"), ViewModelText.Get("SelectAgentDetails"), "Warning"); return; }
-            if (!Path.IsPathFullyQualified(WorkspaceRoot) || !Directory.Exists(WorkspaceRoot)) { SetStatus(ViewModelText.Get("CheckWorkspace"), ViewModelText.Get("CheckWorkspaceDetails"), "Warning"); return; }
+            var providerSelected = AgentProvider is "codex" or "claude" or "gemini" or "github-copilot" or "custom";
+            var workspaceUsable = Path.IsPathFullyQualified(WorkspaceRoot) && Directory.Exists(WorkspaceRoot);
+            var missingAgent = OnboardingFieldChecks.AgentStep(providerSelected, AgentExecutable, workspaceUsable);
+            if (missingAgent.Contains(WizardField.AgentProvider) || missingAgent.Contains(WizardField.AgentExecutable)) { SetStatus(ViewModelText.Get("SelectAgent"), ViewModelText.Get("SelectAgentDetails"), "Warning"); RequestFieldFocus(missingAgent); return; }
+            if (!workspaceUsable) { SetStatus(ViewModelText.Get("CheckWorkspace"), ViewModelText.Get("CheckWorkspaceDetails"), "Warning"); RequestFieldFocus(missingAgent); return; }
             if (!ExecutionPolicy.IsWorkspaceTrusted(CreateSettingsSnapshot(), WorkspaceRoot))
             {
                 var trust = CliProbeService.DescribeUntrustedWorkspace(WorkspaceRoot);
                 CliCheckFailed = true;
                 CliCheckSummary = trust.Message;
                 SetCliTrustRecovery(trust, CurrentCliSignature());
+                RequestFieldFocus([WizardField.WorkspaceRoot]);
                 return;
             }
         }
-        if (OnboardingStep == 2 && !HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("CheckCliAndModel"), CliCheckSucceeded ? ViewModelText.Get("SelectedModelUnavailable") : ViewModelText.Get("RunCliCheckDetails"), "Warning"); return; }
-        if (OnboardingStep == 3 && !HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get(IsWizardSlack ? "SlackConnectionFields" : "MattermostConnectionFields"), "Warning"); return; }
-        if (OnboardingStep == 4)
-        {
-            if (!HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("RecheckCli"), ViewModelText.Get("RecheckCliDetails"), "Warning"); return; }
-            if (!HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get("MissingChatConfig"), "Warning"); return; }
-        }
+        if (OnboardingStep == 2 && !HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("CheckCliAndModel"), CliCheckSucceeded ? ViewModelText.Get("SelectedModelUnavailable") : ViewModelText.Get("RunCliCheckDetails"), "Warning"); RequestFieldFocus(OnboardingFieldChecks.CliStep(false)); return; }
+        if (OnboardingStep == 3 && !HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get(IsWizardSlack ? "SlackConnectionFields" : "MattermostConnectionFields"), "Warning"); RequestFieldFocus(MissingChatFields()); return; }
         await SaveSettingsAsync();
         if (!_lastSaveSucceeded) return;
         if (OnboardingStep < 4) { await AdvanceOnboardingAsync(OnboardingStep + 1); return; }
         await SaveOnboardingProgressAsync("completed", 4);
         IsOnboardingActive = false;
-        if (!_chatConnectionConfirmed || _wizardConnectedProvider != OnboardingChatProvider || _wizardConnectedSettings != CreateSettingsSnapshot())
+        var skipped = SkippedWizardItems();
+        if (skipped.Length > 0)
+            SetStatus(ViewModelText.Get("WizardSkippedTitle"), ViewModelText.Get("WizardSkippedDetails", skipped), "Informational");
+        else if (!_chatConnectionConfirmed || _wizardConnectedProvider != OnboardingChatProvider || _wizardConnectedSettings != CreateSettingsSnapshot())
             SetStatus(ViewModelText.Get("WizardConnectionDeferredTitle"), ViewModelText.Get("WizardConnectionDeferredDetails"), "Informational");
         else
             IsStatusOpen = false;
+    });
+    /// <summary>The steps that can be left for later; the wizard may finish without them.</summary>
+    public bool CanSkipOnboardingStep => OnboardingStep is 2 or 3;
+    public string OnboardingSkipLabel => ViewModelText.Get("WizardSkipStep");
+    public bool HasWizardSkippedNotice => SkippedWizardItems().Length > 0;
+    public string WizardSkippedNotice => SkippedWizardItems() is { Length: > 0 } items ? ViewModelText.Get("WizardSkippedNotice", items) : "";
+    private string SkippedWizardItems()
+    {
+        var items = new List<string>();
+        if (!HasCurrentCliCheck()) items.Add(ViewModelText.Get("WizardSkippedCli"));
+        if (!HasChosenChatConfiguration()) items.Add(ViewModelText.Get("WizardSkippedChat"));
+        return string.Join(ViewModelText.Get("WizardSkippedSeparator"), items);
+    }
+    partial void OnOnboardingStepChanged(int value) => RefreshWizardSkipState();
+    private void RefreshWizardSkipState()
+    {
+        OnPropertyChanged(nameof(CanSkipOnboardingStep));
+        OnPropertyChanged(nameof(HasWizardSkippedNotice));
+        OnPropertyChanged(nameof(WizardSkippedNotice));
+        OnPropertyChanged(nameof(OnboardingSkipLabel));
+    }
+    [RelayCommand]
+    private Task SkipOnboardingStepAsync() => RunOnboardingActionAsync(async () =>
+    {
+        if (!CanSkipOnboardingStep) return;
+        IsStatusOpen = false;
+        // The entered values are kept; only the missing-input check is waived for this step.
+        await SaveSettingsAsync();
+        if (!_lastSaveSucceeded) return;
+        await AdvanceOnboardingAsync(OnboardingStep + 1);
     });
     public async Task<bool> SaveWizardConnectionSettingsAsync()
     {
@@ -153,9 +190,12 @@ public partial class MainPageViewModel
     });
     private bool CanOnboardingAction() => IsSettingsLoaded && !IsLoading && !IsRunning && !IsOnboardingBusy && !IsCheckingCli;
     private bool CanGoBackInOnboarding() => CanOnboardingAction() && OnboardingStep > 0;
-    private bool HasChosenChatConfiguration() => IsWizardSlack
-        ? !string.IsNullOrWhiteSpace(SlackBotToken) && !string.IsNullOrWhiteSpace(SlackAppToken) && HasAllowedUsers(SlackAllowedUserIds)
-        : IsWizardMattermost && IsWizardMattermostUrlValid() && !string.IsNullOrWhiteSpace(MattermostChannelId) && !string.IsNullOrWhiteSpace(MattermostToken) && HasAllowedUsers(MattermostAllowedUserIds);
+    private bool HasChosenChatConfiguration() => (IsWizardSlack || IsWizardMattermost) && MissingChatFields().Count == 0;
+    private IReadOnlyList<WizardField> MissingChatFields() => IsWizardSlack
+        ? OnboardingFieldChecks.SlackChat(SlackBotToken, SlackAppToken, HasAllowedUsers(SlackAllowedUserIds))
+        : IsWizardMattermost
+            ? OnboardingFieldChecks.MattermostChat(IsWizardMattermostUrlValid(), MattermostChannelId, MattermostToken, HasAllowedUsers(MattermostAllowedUserIds))
+            : [];
     private bool IsWizardMattermostUrlValid() => Uri.TryCreate(MattermostServerUrl.Trim(), UriKind.Absolute, out var uri) &&
         (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback) &&
         string.IsNullOrEmpty(uri.UserInfo) && string.IsNullOrEmpty(uri.Query) && string.IsNullOrEmpty(uri.Fragment);
@@ -173,6 +213,14 @@ public partial class MainPageViewModel
         IsOnboardingBusy = true;
         try { await action(); }
         catch { SetStatus(ViewModelText.Get("WizardSaveFailed"), ViewModelText.Get("WizardSaveFailedDetails"), "Error"); }
-        finally { IsOnboardingBusy = false; }
+        finally
+        {
+            IsOnboardingBusy = false;
+            if (_pendingFieldFocus is { } fields)
+            {
+                _pendingFieldFocus = null;
+                OnboardingFieldsFocusRequested?.Invoke(fields);
+            }
+        }
     }
 }

@@ -98,6 +98,9 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
             var turnRequestSent = false;
             using var immediateKill = cancellationToken.Register(process.KillTree);
             TaskCompletionSource<JsonElement>? turnFinished = null;
+            var turnLifecycleGate = new object();
+            var turnHasCompleted = false;
+            ActiveAgentTurn? activeTurnHandle = null;
             Exception? notificationError = null;
             var usageEvents = new List<UsageEvent>();
             var streamedAgentMessageItems = options.Progress is null ? null : new HashSet<string>(StringComparer.Ordinal);
@@ -196,10 +199,19 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                     }
                     if (method is "turn/completed" or "turn/failed" && turnFinished is { } completion)
                     {
+                        if (threadId is null || eventThreadId is null || !SameId(threadId, eventThreadId)
+                            || eventTurnId is null || turnId is null || !SameId(turnId, eventTurnId)) return;
                         var completedTurn = Property(parameters, "turn");
                         if (completedTurn.ValueKind == JsonValueKind.Undefined) completedTurn = parameters;
                         if (method == "turn/failed") notificationError = new InvalidOperationException(StringAt(completedTurn, "error", "message") ?? "Codex turn failed.");
-                        completion.TrySetResult(completedTurn.Clone());
+                        lock (turnLifecycleGate)
+                        {
+                            turnHasCompleted = true;
+                            activeTurnHandle?.Deactivate();
+                            activeTurnHandle = null;
+                            try { options.ActiveTurnChanged?.Invoke(null); } catch { /* Observers cannot break turn cleanup. */ }
+                            completion.TrySetResult(completedTurn.Clone());
+                        }
                     }
                 }
                 catch (Exception ex) { notificationError = ex; turnFinished?.TrySetException(ex); }
@@ -218,7 +230,16 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                 progressSource.StandardErrorReceived += stderrHandler;
             }
             using var turnAttachment = new ClientTurnAttachment(client, notificationHandler, progressSource, stderrHandler,
-                () => Interlocked.Exchange(ref progressTurnActive, 0));
+                () =>
+                {
+                    Interlocked.Exchange(ref progressTurnActive, 0);
+                    lock (turnLifecycleGate)
+                    {
+                        activeTurnHandle?.Deactivate();
+                        activeTurnHandle = null;
+                        try { options.ActiveTurnChanged?.Invoke(null); } catch { /* Observers cannot break cleanup. */ }
+                    }
+                });
 
             try
             {
@@ -259,6 +280,17 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                 turnRequestSent = true;
                 var turnStart = await client.RequestAsync("turn/start", turnParameters, cancellationToken).ConfigureAwait(false);
                 turnId = StringAt(turnStart, "turn", "id") ?? StringAt(turnStart, "turnId");
+                if (!string.IsNullOrWhiteSpace(turnId))
+                {
+                    lock (turnLifecycleGate)
+                    {
+                        if (!turnHasCompleted)
+                        {
+                            activeTurnHandle = new ActiveAgentTurn(client, threadId, turnId);
+                            try { options.ActiveTurnChanged?.Invoke(activeTurnHandle); } catch { /* Observers cannot break the run. */ }
+                        }
+                    }
+                }
                 var completed = await WaitForTurnAsync(turnFinished.Task, process, cancellationToken).ConfigureAwait(false);
                 Volatile.Write(ref progressTurnActive, 0);
                 var status = StringAt(completed, "status") ?? StringAt(completed, "state") ?? "completed";
@@ -287,6 +319,12 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
+                lock (turnLifecycleGate)
+                {
+                    activeTurnHandle?.Deactivate();
+                    activeTurnHandle = null;
+                    try { options.ActiveTurnChanged?.Invoke(null); } catch { /* Observers cannot break cancellation cleanup. */ }
+                }
                 if (threadId is not null && turnId is not null)
                 {
                     using var interruptTimeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));

@@ -6,10 +6,15 @@ namespace ChatAgentBridge.Core.Sessions;
 public sealed partial class SessionStore
 {
     private const int CurrentSchemaVersion = 1;
+    /// <summary>Active bindings kept per store; beyond this the least recently updated are dropped on the next write.</summary>
+    internal const int MaxBindings = 5000;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> PathGates = new(
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<(string Path, SessionKey Key), SemaphoreSlim> SessionGates = new();
+    // Parsed document per file, valid while the file's last-write time and length are unchanged. Only touched under _gate.
+    private static readonly ConcurrentDictionary<string, CachedSessions> DocumentCache = new(
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
     private readonly string _filePath;
     private readonly SemaphoreSlim _gate;
     private readonly IConversationTextProtector _textProtector;
@@ -39,7 +44,7 @@ public sealed partial class SessionStore
     public async Task<IReadOnlyList<SessionBinding>> ListAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try { return (await ReadAsync(cancellationToken).ConfigureAwait(false)).Bindings!.ToArray(); }
+        try { return (await ReadSharedAsync(cancellationToken).ConfigureAwait(false)).Bindings!.ToArray(); }
         finally { _gate.Release(); }
     }
 
@@ -47,7 +52,7 @@ public sealed partial class SessionStore
     {
         ValidateKey(key);
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try { return (await ReadAsync(cancellationToken).ConfigureAwait(false)).Bindings!.FirstOrDefault(item => item.Key == key); }
+        try { return (await ReadSharedAsync(cancellationToken).ConfigureAwait(false)).Bindings!.FirstOrDefault(item => item.Key == key); }
         finally { _gate.Release(); }
     }
 
@@ -55,7 +60,7 @@ public sealed partial class SessionStore
     {
         ValidateKey(key);
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try { return (await ReadAsync(cancellationToken).ConfigureAwait(false)).Workspaces!.FirstOrDefault(item => item.Key == key)?.WorkspaceRoot; }
+        try { return (await ReadSharedAsync(cancellationToken).ConfigureAwait(false)).Workspaces!.FirstOrDefault(item => item.Key == key)?.WorkspaceRoot; }
         finally { _gate.Release(); }
     }
 
@@ -292,7 +297,33 @@ public sealed partial class SessionStore
         }, cancellationToken);
     }
 
-    private async Task<StoredSessions> ReadAsync(CancellationToken cancellationToken)
+    /// <summary>Returns a private copy that the caller may edit and pass to <see cref="WriteAsync"/>.</summary>
+    private async Task<StoredSessions> ReadAsync(CancellationToken cancellationToken) =>
+        CloneDocument(await ReadSharedAsync(cancellationToken).ConfigureAwait(false));
+
+    /// <summary>Returns the cached document. Read-only: never edit it or hand it to callers.</summary>
+    private async Task<StoredSessions> ReadSharedAsync(CancellationToken cancellationToken)
+    {
+        var info = new FileInfo(_filePath);
+        var stamp = info.Exists ? new FileStamp(info.LastWriteTimeUtc.Ticks, info.Length) : new FileStamp(-1, -1);
+        if (DocumentCache.TryGetValue(_filePath, out var cached) && cached.Stamp == stamp) return cached.Document;
+        DocumentCache.TryRemove(_filePath, out _);
+        // The stamp was taken before the read, so a concurrent external write makes the next call read again.
+        var document = await LoadAsync(cancellationToken).ConfigureAwait(false);
+        DocumentCache[_filePath] = new CachedSessions(stamp, document);
+        return document;
+    }
+
+    private static StoredSessions CloneDocument(StoredSessions source) => new()
+    {
+        SchemaVersion = source.SchemaVersion,
+        Bindings = source.Bindings is null ? null : [.. source.Bindings],
+        Workspaces = source.Workspaces is null ? null : [.. source.Workspaces],
+        Agents = source.Agents is null ? null : [.. source.Agents],
+        ArchivedBindings = source.ArchivedBindings is null ? null : [.. source.ArchivedBindings]
+    };
+
+    private async Task<StoredSessions> LoadAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(_filePath)) return new StoredSessions { SchemaVersion = CurrentSchemaVersion, Bindings = [], Workspaces = [] };
         try
@@ -329,6 +360,7 @@ public sealed partial class SessionStore
 
     private async Task WriteAsync(StoredSessions document, CancellationToken cancellationToken)
     {
+        PruneBindings(document);
         Directory.CreateDirectory(DirectoryPath);
         var temp = Path.Combine(DirectoryPath, $"sessions.{Guid.NewGuid():N}.tmp");
         try
@@ -341,8 +373,26 @@ public sealed partial class SessionStore
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             await AtomicFile.ReplaceAsync(temp, _filePath, cancellationToken).ConfigureAwait(false);
+            var info = new FileInfo(_filePath);
+            DocumentCache[_filePath] = new CachedSessions(new FileStamp(info.LastWriteTimeUtc.Ticks, info.Length), CloneDocument(document));
+        }
+        catch
+        {
+            DocumentCache.TryRemove(_filePath, out _);
+            throw;
         }
         finally { if (File.Exists(temp)) File.Delete(temp); }
+    }
+
+    /// <summary>Drops the least recently updated bindings beyond <see cref="MaxBindings"/>, keeping ones awaiting an agent handoff.</summary>
+    private static void PruneBindings(StoredSessions document)
+    {
+        var bindings = document.Bindings;
+        if (bindings is null || bindings.Count <= MaxBindings) return;
+        var dropped = bindings.Where(item => item.NextAgentProvider is null)
+            .OrderBy(item => item.UpdatedAt).Take(bindings.Count - MaxBindings)
+            .Select(item => item.Key).ToHashSet();
+        bindings.RemoveAll(item => dropped.Contains(item.Key));
     }
 
     private static void ValidateBinding(SessionBinding? binding)
@@ -422,4 +472,8 @@ public sealed partial class SessionStore
     }
 
     private sealed record WorkspaceOverride(SessionKey Key, string WorkspaceRoot);
+
+    private readonly record struct FileStamp(long LastWriteTicks, long Length);
+
+    private sealed record CachedSessions(FileStamp Stamp, StoredSessions Document);
 }

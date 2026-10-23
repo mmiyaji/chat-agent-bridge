@@ -38,7 +38,16 @@ public static class ClaudeOutputParser
             try
             {
                 using var document = JsonDocument.Parse(trimmed, new JsonDocumentOptions { MaxDepth = 64 });
-                var root = document.RootElement;
+                AddParsed(document.RootElement);
+            }
+            catch (JsonException) { }
+        }
+
+        /// <summary>Consumes a line already parsed by the caller (same semantics as <see cref="AddLine(string)"/>).</summary>
+        internal void AddParsed(JsonElement root)
+        {
+            try
+            {
                 if (root.ValueKind != JsonValueKind.Object || !TryString(root, "type", out var type)) return;
                 if (RecognizedEvents.Contains(type!)) _hasEvents = true;
                 if (TryString(root, "session_id", out var session) && Guid.TryParse(session, out var id))
