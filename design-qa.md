@@ -1,3 +1,21 @@
+# Settings sidebar width adjustment — 2026-10-24
+
+Lowered the local settings navigation breakpoint from 1000 to 900 effective
+pixels on both Agent settings and Chat settings. This keeps the side list at
+1240 DIP window width with the outer sidebar open. Smaller widths still use
+native top tabs and the More menu.
+
+- Japanese/dark and English/light: all ten scenario groups plus 45 random
+  scope switches per theme passed, preserving active settings and chat connection.
+- Added UI assertions that both pages retain vertical scope lists at 1240 DIP;
+  existing tests continue to check top tabs at 1000/500 DIP window widths.
+- Reviewed screenshots of both pages at the relaxed width in both themes:
+  controls and action labels remain within the content pane; paths can truncate.
+- Evidence: `desktop/artifacts/5d01f1fe-0450-4d0a-9f28-2c7094bc614b/` and
+  `desktop/artifacts/6f1018c3-7599-49c7-8afd-c3b221f392a2/`.
+
+---
+
 # Custom CLI tab regression — 2026-10-24
 
 The Other CLI tab failed to load because its editor queried AgentConnectionStore

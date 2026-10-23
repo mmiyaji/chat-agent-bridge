@@ -81,12 +81,12 @@ public sealed partial class MainPage
     private void UpdateAgentScopeLayout(double width)
     {
         if (_agentScopeNavigation is null || width <= 0) return;
-        var mode = width >= 1000
+        var mode = width >= 900
             ? NavigationViewPaneDisplayMode.Left
             : NavigationViewPaneDisplayMode.Top;
         if (_agentScopeNavigation.PaneDisplayMode == mode) return;
         _agentScopeNavigation.PaneDisplayMode = mode;
-        _agentScopeNavigation.IsPaneOpen = width >= 1000;
+        _agentScopeNavigation.IsPaneOpen = width >= 900;
     }
 
     private void QueueAgentScopeSelection(string scope)

@@ -188,6 +188,19 @@ try {
  Add-Pass 'Shared, Mattermost and Slack settings switch without changing connection or provider'
  Select-Element 'NavAgentSettings'
  Choose-Scope 'AgentScopeCodex'
+ Resize-Test 1240
+ Top
+ $first=(Wait-Element 'AgentScopeCommon').Current.BoundingRectangle
+ $next=(Wait-Element 'AgentScopeCodex').Current.BoundingRectangle
+ Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Agent scopes should remain in a side list at the relaxed width.'
+ Capture "agent-relaxed-sidebar-$Language-$Theme"
+ Select-Element 'NavConnections'
+ $first=(Wait-Element 'ConnectionScopeCommon').Current.BoundingRectangle
+ $next=(Wait-Element 'ConnectionScopeMattermost').Current.BoundingRectangle
+ Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Chat scopes should remain in a side list at the relaxed width.'
+ Capture "chat-relaxed-sidebar-$Language-$Theme"
+ Add-Pass 'Both settings pages retain the side list in a narrower window'
+ Select-Element 'NavAgentSettings'
  Resize-Test 1000
  Top
  Capture "agent-medium-$Language-$Theme"
