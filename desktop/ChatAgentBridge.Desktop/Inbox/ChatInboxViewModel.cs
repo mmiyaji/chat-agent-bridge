@@ -118,7 +118,6 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private InboxItem? _notificationApprovedItem;
     private InboxItem? _automaticallyApprovedItem;
     private bool _processingPolicies;
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<Task, byte> _receivedAudits = new();
     private readonly HashSet<InboxItem> _notifiedRequests = [];
     private readonly HashSet<InboxItem> _automaticallyAttempted = [];
     private readonly Dictionary<InboxItem, PropertyChangedEventHandler> _requestHandlers = [];
@@ -480,13 +479,18 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private async Task ReceiveAsync(IChatTransport transport, BridgeSettings settings, CancellationTokenSource connection)
     {
         var cancellationToken = connection.Token;
+        var receivedAudits = new ReceivedAuditQueue(_audit, _ => ReportReceivedAuditFailure(connection));
         try
         {
             await transport.RunAsync(settings, async (request, token) =>
             {
                 var accessSettings = Volatile.Read(ref _accessSettings);
                 if (_disconnecting || accessSettings is null || !HasAccess(accessSettings, request, settings)) return;
-                QueueReceivedAudit(request);
+                await QueueReceivedAuditAsync(receivedAudits, request, cancellationToken);
+                // A full queue can yield while the user revokes access or disconnects.
+                cancellationToken.ThrowIfCancellationRequested();
+                accessSettings = Volatile.Read(ref _accessSettings);
+                if (_disconnecting || accessSettings is null || !HasAccess(accessSettings, request, settings)) return;
                 if (request.CancellationTargetMessageId is not null)
                 {
                     await TryHandleChatControlAsync(transport, settings, request, token);
@@ -517,6 +521,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             ConnectionEnded?.Invoke();
             RequestExecutionCancellation();
             connection.Cancel();
+            try
+            {
+                if (!await receivedAudits.CompleteAndDrainAsync(TimeSpan.FromMilliseconds(1500)))
+                    ReportReceivedAuditFailure(connection);
+            }
+            finally { await receivedAudits.DisposeAsync(); }
             foreach (var item in Requests.Where(item => item.State == "承認待ち")) item.State = "接続終了・再受信が必要";
             ApproveCommand.NotifyCanExecuteChanged();
             RejectCommand.NotifyCanExecuteChanged();
@@ -525,7 +535,6 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (ApproveCommand.ExecutionTask is { IsCompleted: false } execution) await execution;
             if (SendResultCommand.ExecutionTask is { IsCompleted: false } reply) await reply;
             if (SendAttachmentsCommand.ExecutionTask is { IsCompleted: false } attachments) await attachments;
-            await Task.WhenAll(_receivedAudits.Keys);
             await FinishConnectionProgressAsync(transport);
             await _connectionNotice;
             await transport.DisposeAsync();
@@ -861,24 +870,24 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private Task AuditAsync(string kind, ChatRequest request, Guid? executionId, CancellationToken token = default) =>
         _audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, kind, executionId, request.Provider, request.ChannelId, request.ThreadId), token);
 
-    // The receive path must not wait for disk. The event timestamp is taken here, so ordering is unchanged.
-    private void QueueReceivedAudit(ChatRequest request)
+    // The receive path may backpressure on its bounded queue, but never waits for a disk write.
+    private static ValueTask QueueReceivedAuditAsync(ReceivedAuditQueue queue, ChatRequest request, CancellationToken token)
     {
-        var tracked = ObserveReceivedAuditAsync(AuditAsync("received", request, null));
-        _receivedAudits[tracked] = 0;
-        _ = tracked.ContinueWith(task => _receivedAudits.TryRemove(task, out _), TaskScheduler.Default);
+        var record = new AuditEvent(DateTimeOffset.UtcNow, "received", null, request.Provider,
+            request.ChannelId, request.ThreadId);
+        return queue.EnqueueAsync(record, token);
     }
 
-    private async Task ObserveReceivedAuditAsync(Task audit)
+    private void ReportReceivedAuditFailure(CancellationTokenSource connection)
     {
-        try { await audit.ConfigureAwait(false); }
-        catch (Exception)
+        void Report()
         {
-            // This continuation runs on a pool thread, but Status is bound to the UI.
-            void Report() => Status += " " + DesktopText.Get("InboxAuditSaveFailed");
-            if (App.DispatcherQueue.HasThreadAccess) Report();
-            else App.DispatcherQueue.TryEnqueue(Report);
+            if (!ReferenceEquals(_connection, connection) || _closing) return;
+            var warning = DesktopText.Get("InboxAuditSaveFailed");
+            if (!Status.Contains(warning, StringComparison.Ordinal)) Status = (Status + " " + warning).Trim();
         }
+        if (App.DispatcherQueue.HasThreadAccess) Report();
+        else App.DispatcherQueue.TryEnqueue(Report);
     }
 
     private async Task<AppServerDecision> HandleApprovalAsync(InboxItem item, AppServerApproval approval, CancellationToken token)

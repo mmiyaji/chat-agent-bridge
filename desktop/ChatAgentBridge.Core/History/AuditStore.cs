@@ -19,15 +19,30 @@ public sealed class AuditStore
     public async Task AppendAsync(AuditEvent record, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(record);
-        Validate(record);
+        await AppendManyAsync([record], cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task AppendManyAsync(IEnumerable<AuditEvent> recordsToAppend, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(recordsToAppend);
+        // Snapshot and validate before acquiring the file lock so callers cannot mutate a batch while it is written.
+        var batch = recordsToAppend.ToArray();
+        foreach (var record in batch)
+        {
+            ArgumentNullException.ThrowIfNull(record);
+            Validate(record);
+        }
+        if (batch.Length == 0) return;
         var gate = HistoryFileStore.LockFor(_filePath);
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var file = await ReadFileAsync(cancellationToken).ConfigureAwait(false);
             var records = file.Records!.ToList();
-            records.Add(record);
-            records = records.OrderBy(item => item.Timestamp).TakeLast(HistoryFileStore.MaxRecords).ToList();
+            records.AddRange(batch);
+            records = records.Select((record, index) => (record, index))
+                .OrderBy(item => item.record.Timestamp).ThenBy(item => item.index)
+                .TakeLast(HistoryFileStore.MaxRecords).Select(item => item.record).ToList();
             await HistoryFileStore.WriteAtomicAsync(_filePath,
                 new AuditDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = records }, cancellationToken).ConfigureAwait(false);
         }

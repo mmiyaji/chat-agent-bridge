@@ -73,6 +73,34 @@ public sealed class HistoryTests
     }
 
     [Fact]
+    public async Task AuditStore_AppendsBatchInTimestampOrderAndRetainsNewestFiveHundred()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new AuditStore(directory.Path);
+        var start = DateTimeOffset.UtcNow.AddMinutes(-600);
+        await store.AppendManyAsync(Enumerable.Range(0, 510).Reverse().Select(index =>
+            new AuditEvent(start.AddMinutes(index), "received", null, "local", "", "")));
+
+        var events = await store.ListAsync();
+        Assert.Equal(500, events.Count);
+        Assert.Equal(start.AddMinutes(509), events[0].Timestamp);
+        Assert.Equal(start.AddMinutes(10), events[^1].Timestamp);
+    }
+
+    [Fact]
+    public async Task AuditStore_ValidatesEntireBatchBeforeWriting()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new AuditStore(directory.Path);
+        var valid = new AuditEvent(DateTimeOffset.UtcNow, "received", null, "local", "", "");
+        var invalid = valid with { Kind = "received: private details" };
+
+        await Assert.ThrowsAsync<ArgumentException>(() => store.AppendManyAsync([valid, invalid]));
+
+        Assert.Empty(await store.ListAsync());
+    }
+
+    [Fact]
     public async Task AuditStore_CachedDocumentFollowsExternalFileChanges()
     {
         using var directory = new TemporaryDirectory();

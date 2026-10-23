@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory)][string]$AppDirectory,
     [ValidateSet('en', 'ja')][string]$Language = 'en',
-    [ValidateSet('light', 'dark')][string]$Theme = 'light'
+    [ValidateSet('light', 'dark')][string]$Theme = 'light',
+    [ValidateRange(1, 256)][int]$FailureBurstCount = 1
 )
 
 $ErrorActionPreference = 'Stop'
@@ -29,10 +30,13 @@ function Wait-For([scriptblock]$Condition, [string]$Description, [int]$Seconds =
     throw "Timed out waiting for $Description."
 }
 function Read-Results { Invoke-RestMethod -Uri "$endpoint/test/results" -TimeoutSec 3 }
-function Send-Status([string]$Thread) {
+function Post-Status([string]$Thread) {
     $body = @{ id = [guid]::NewGuid().ToString('N'); thread = $Thread; user = 'alice'; text = 'status' } | ConvertTo-Json -Compress
     $delivery = Invoke-RestMethod -Uri "$endpoint/test/request" -Method Post -ContentType 'application/json' -Body ([Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 3
     Assert ($delivery.delivered -eq 1) 'Expected exactly one isolated Mattermost receiver.'
+}
+function Send-Status([string]$Thread) {
+    Post-Status $Thread
     Wait-For { @((Read-Results).replies | Where-Object root_id -eq $Thread).Count -eq 1 } "status reply for $Thread"
 }
 function Invoke-Ui([string[]]$Command) {
@@ -98,14 +102,29 @@ try {
     # JSON, this exercises an actual save failure after a successful cached read.
     $beforeBytes = [IO.File]::ReadAllBytes($auditPath)
     $auditLock = [IO.File]::Open($auditPath, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
-    Send-Status 'audit-locked'
+    for ($index = 0; $index -lt $FailureBurstCount; $index++) { Post-Status "audit-locked-$index" }
+    Wait-For { @((Read-Results).replies | Where-Object { $_.root_id -like 'audit-locked-*' }).Count -eq $FailureBurstCount } 'status replies while audit writes fail'
     Invoke-Ui @('wait-for', 'ChatStatus', '--value', $expected, '--contains', '-t', '10000') | Out-Null
     $after = (Invoke-Ui @('get-value', 'ChatStatus')).text
+    Assert (([string]$after).Split([string[]]@($expected), [StringSplitOptions]::None).Length -eq 2) 'Audit warning was duplicated.'
     Assert ([Linq.Enumerable]::SequenceEqual[byte]($beforeBytes, [IO.File]::ReadAllBytes($auditPath))) 'Locked audit file unexpectedly changed.'
     $checks.Add('actual audit save denied; localized warning displayed in bound UI')
     Screenshot 'audit-save-failed'
 
+    $disconnectWhileLockedMs = $null
+    if ($FailureBurstCount -gt 1) {
+        $stopwatch = [Diagnostics.Stopwatch]::StartNew()
+        Invoke-Ui @('invoke', 'DisconnectChat') | Out-Null
+        Wait-For { (Invoke-Ui @('get-property', 'ConnectMattermost', '-p', 'IsEnabled')).properties.IsEnabled -eq 'True' } 'bounded audit drain and disconnect' 5
+        $disconnectWhileLockedMs = $stopwatch.Elapsed.TotalMilliseconds
+        Assert ($disconnectWhileLockedMs -lt 3000) 'Audit backlog delayed disconnect for more than three seconds.'
+        $checks.Add('burst audits have bounded disconnect time and a single warning')
+    }
     $auditLock.Dispose(); $auditLock = $null
+    if ($FailureBurstCount -gt 1) {
+        Invoke-Ui @('invoke', 'ConnectMattermost') | Out-Null
+        Wait-For { (Read-Results).connections -eq 1 } 'reconnect after audit backlog'
+    }
     Send-Status 'audit-recovered'
     Wait-For { try { @((Get-Content -LiteralPath $auditPath -Raw | ConvertFrom-Json).Records | Where-Object { $_.Kind -eq 'received' -and $_.ThreadId -eq 'audit-recovered' }).Count -eq 1 } catch { $false } } 'audit save after releasing lock'
     Assert (@((Get-Content -LiteralPath (Join-Path $data 'history.json') -Raw | ConvertFrom-Json).Records).Count -eq 0) 'An AI execution was unexpectedly recorded.'
@@ -113,7 +132,7 @@ try {
     Invoke-Ui @('invoke', 'DisconnectChat') | Out-Null
     Wait-For { (Read-Results).connections -eq 0 } 'clean disconnect'
     $checks.Add('disconnect remained usable after failure')
-    Save-Json (Join-Path $runRoot 'result.json') @{ Passed = $true; Language = $Language; Theme = $Theme; StatusBefore = $before; StatusAfter = $after; ExpectedWarning = $expected; Checks = @($checks); ArtifactRoot = $runRoot }
+    Save-Json (Join-Path $runRoot 'result.json') @{ Passed = $true; Language = $Language; Theme = $Theme; StatusBefore = $before; StatusAfter = $after; ExpectedWarning = $expected; FailureBurstCount = $FailureBurstCount; DisconnectWhileLockedMs = $disconnectWhileLockedMs; Checks = @($checks); ArtifactRoot = $runRoot }
     Write-Output "PASS $Language/$Theme $runRoot"
 } catch {
     if ($app -and -not $app.HasExited) {
