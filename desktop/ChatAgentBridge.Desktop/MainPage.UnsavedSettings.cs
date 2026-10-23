@@ -29,6 +29,14 @@ public sealed partial class MainPage
     private async void MainNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         if (_restoringSettingsNavigation || args.SelectedItem is not NavigationViewItem item || item.Tag is not string tag) return;
+        // The connection indicator is a shortcut to the inbox, rather than a
+        // separate page. Keep its destination selected in the main menu too.
+        if (tag == "chat" && sender.FooterMenuItems.Contains(item))
+        {
+            sender.SelectedItem = sender.MenuItems.OfType<NavigationViewItem>()
+                .First(destination => destination.Tag as string == "chat");
+            return;
+        }
         if (_allowNextSettingsNavigation)
         {
             _allowNextSettingsNavigation = false;
