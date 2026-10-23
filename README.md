@@ -6,6 +6,8 @@ Chat Agent Bridge is a Windows app that accepts requests from Slack or Mattermos
 
 It is intended for devices where you cannot use the Codex or Claude Code desktop app. Bridge starts a command-line agent (CLI) installed on your Windows PC and runs the request in the working folder you selected.
 
+> Prefer the agent provider's official remote-control features when they are available to you. Chat Agent Bridge is developed as an alternative for environments where those official features cannot be used.
+
 ## System overview and request flow
 
 ![Requests travel from Slack or Mattermost on another device to Chat Agent Bridge and a CLI on the Windows PC; results return to chat](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)

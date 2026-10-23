@@ -6,6 +6,8 @@ Chat Agent Bridgeは、SlackやMattermostからWindows PC上のAIエージェン
 
 CodexやClaude Codeのデスクトップアプリを使えない端末からの利用を想定しています。BridgeはWindows PCにインストールしたコマンドライン版のエージェント（CLI）を起動し、指定した作業フォルダーで依頼を実行します。
 
+> AIエージェントの提供元が公式のリモート操作機能を用意している場合は、そちらの利用を推奨します。Chat Agent Bridgeは、利用環境などの制約で公式機能を使えない場合の代替手段として開発しています。
+
 ## システム構成と依頼の流れ
 
 ![別の端末のSlackまたはMattermostから、Windows PC上のChat Agent Bridgeを経由してCLIを実行し、結果を受け取る構成](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.svg)
