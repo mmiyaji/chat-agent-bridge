@@ -119,7 +119,9 @@
                     </settings:SettingsExpander.Items>
                 </settings:SettingsExpander>
                 <Button x:Uid="AboutExit" HorizontalAlignment="Left" Margin="0,8,0,0"
-                        AutomationProperties.AutomationId="AboutExit" Click="Exit_Click" />
+                        AutomationProperties.AutomationId="AboutExit" Click="Exit_Click">
+                            <Button.Resources><ResourceDictionary Source="ms-appx:///ImpactActionResources.xaml" /></Button.Resources>
+                        </Button>
             </StackPanel>
         </ScrollViewer>
     </Grid>

@@ -502,8 +502,10 @@
                                 </InfoBar>
                                 <TextBox  Text="{x:Bind ViewModel.Prompt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="100" MaxHeight="180" AutomationProperties.AutomationId="Prompt"  x:Uid="Prompt" />
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button  Command="{x:Bind ViewModel.RunCommand}" AutomationProperties.AutomationId="RunAgent"  x:Uid="RunAgent" />
-                                    <Button  Command="{x:Bind ViewModel.CancelRunCommand}" AutomationProperties.AutomationId="CancelAgent"  x:Uid="CancelAgent" />
+                                    <Button  Command="{x:Bind ViewModel.RunCommand}" Style="{StaticResource AccentButtonStyle}" AutomationProperties.AutomationId="RunAgent"  x:Uid="RunAgent" />
+                                    <Button  Command="{x:Bind ViewModel.CancelRunCommand}" AutomationProperties.AutomationId="CancelAgent"  x:Uid="CancelAgent">
+                                        <Button.Resources><ResourceDictionary Source="ms-appx:///ImpactActionResources.xaml" /></Button.Resources>
+                                    </Button>
                                 </StackPanel>
                                 <executionUi:LiveOutputView ViewModel="{x:Bind ViewModel.LiveOutput, Mode=OneWay}"
                                                             CancelCommand="{x:Bind ViewModel.CancelRunCommand, Mode=OneWay}"

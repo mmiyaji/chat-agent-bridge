@@ -62,7 +62,9 @@
                 <Button Grid.Row="2" Command="{x:Bind CancelCommand, Mode=OneWay}"
                         HorizontalAlignment="Stretch"
                         Visibility="{x:Bind executionUi:LiveOutputView.ShowWhenSingle(ViewModel.IsActive), Mode=OneWay}"
-                        AutomationProperties.AutomationId="LiveOutputCancel" x:Uid="LiveOutputCancel" />
+                        AutomationProperties.AutomationId="LiveOutputCancel" x:Uid="LiveOutputCancel">
+                            <Button.Resources><ResourceDictionary Source="ms-appx:///ImpactActionResources.xaml" /></Button.Resources>
+                        </Button>
             </Grid>
         </StackPanel>
     </Expander>

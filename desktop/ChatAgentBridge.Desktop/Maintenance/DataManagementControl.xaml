@@ -12,7 +12,9 @@
    </settings:SettingsCard>
    <settings:SettingsCard x:Name="ExportCard"><Button x:Name="ExportButton" Click="Export_Click" AutomationProperties.AutomationId="SettingsBackupExport" /></settings:SettingsCard>
    <settings:SettingsCard x:Name="ImportCard"><Button x:Name="ImportButton" Click="Import_Click" AutomationProperties.AutomationId="SettingsBackupImport" /></settings:SettingsCard>
-   <settings:SettingsCard x:Name="ClearCard"><Button x:Name="ClearButton" Click="Clear_Click" AutomationProperties.AutomationId="DataClear" /></settings:SettingsCard>
+   <settings:SettingsCard x:Name="ClearCard"><Button x:Name="ClearButton" Click="Clear_Click" AutomationProperties.AutomationId="DataClear">
+       <Button.Resources><ResourceDictionary Source="ms-appx:///ImpactActionResources.xaml" /></Button.Resources>
+   </Button></settings:SettingsCard>
    <settings:SettingsCard>
     <settings:SettingsCard.Description><TextBlock x:Name="Sizes" TextWrapping="Wrap" AutomationProperties.AutomationId="DataManagementSizes" /></settings:SettingsCard.Description>
     <Button x:Name="RefreshButton" Click="Refresh_Click" AutomationProperties.AutomationId="DataRefresh" />
