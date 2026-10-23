@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.Sessions;
@@ -152,6 +153,112 @@ public sealed class ChatIdentityDirectoryTests
         using var corrupt = new ChatIdentityDirectory(new RecordingHandler(_ => throw new InvalidOperationException()), temp.Path);
         var result = await corrupt.ReadCachedAsync([key]);
         Assert.Equal(new ChatIdentityLabels(), result[key]);
+    }
+
+    [Fact]
+    public async Task Resolve_batches_cache_writes_and_warm_cache_makes_no_requests()
+    {
+        using var temp = new TemporaryDirectory();
+        var handler = new RecordingHandler(request => request.RequestUri!.AbsolutePath switch
+        {
+            "/api/auth.test" => Json("{\"ok\":true,\"team_id\":\"T12345678\",\"team\":\"Workspace\"}"),
+            "/api/users.info" => Json("{\"ok\":true,\"user\":{\"id\":\"U12345678\",\"name\":\"alice\"}}"),
+            "/api/conversations.info" => Json("{\"ok\":true,\"channel\":{\"id\":\"C12345678\",\"name\":\"room\"}}"),
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound)
+        });
+        var key = new SessionKey("slack", "C12345678", "t", "U12345678", "slack");
+        using var directory = new ChatIdentityDirectory(handler, temp.Path);
+
+        await directory.ResolveAsync(new BridgeSettings { SlackBotToken = "token" }, [key]);
+        Assert.Equal(1, directory.CacheWriteCount);
+        var requestCount = handler.Requests.Count;
+        await directory.ResolveAsync(new BridgeSettings { SlackBotToken = "token" }, [key]);
+
+        Assert.Equal(requestCount, handler.Requests.Count);
+        Assert.Equal(1, directory.CacheWriteCount);
+    }
+
+    [Fact]
+    public async Task Cache_serialization_stays_within_reader_limit_for_long_japanese_labels()
+    {
+        using var temp = new TemporaryDirectory();
+        const int maxCacheBytes = 1024 * 1024;
+        var label = new string('あ', 128);
+        var now = DateTimeOffset.UtcNow.ToString("O");
+        var rows = new List<object>();
+        string SerializeRows() => JsonSerializer.Serialize(new { version = 1, entries = rows }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        object MakeRow(int index) => new
+        {
+            key = new { provider = "slack", origin = "slack", kind = "user", id = "U" + (10000000 + index).ToString() },
+            siteName = label, channelName = label, userName = label,
+            isDirectMessage = false, success = true, checkedAtUtc = now
+        };
+        object MakeTailRow(int index, string tailLabel) => new
+        {
+            key = new { provider = "slack", origin = "slack", kind = "user", id = "U" + (10000000 + index).ToString() },
+            siteName = tailLabel, channelName = tailLabel, userName = tailLabel,
+            isDirectMessage = false, success = true, checkedAtUtc = now
+        };
+        var emptySize = Encoding.UTF8.GetByteCount(SerializeRows());
+        rows.Add(MakeRow(0));
+        var rowSize = Encoding.UTF8.GetByteCount(SerializeRows()) - emptySize;
+        rows.Clear();
+        var rowCount = (maxCacheBytes - 4000 - emptySize) / rowSize;
+        for (var index = 0; index < rowCount; index++) rows.Add(MakeRow(index));
+        var bestTail = "";
+        var bestSize = Encoding.UTF8.GetByteCount(SerializeRows());
+        for (var length = 0; length <= 128; length++)
+        {
+            rows.Add(MakeTailRow(rowCount, new string('あ', length)));
+            var candidateSize = Encoding.UTF8.GetByteCount(SerializeRows());
+            rows.RemoveAt(rows.Count - 1);
+            if (candidateSize <= maxCacheBytes - 100 && candidateSize > bestSize)
+            {
+                bestTail = new string('あ', length);
+                bestSize = candidateSize;
+            }
+        }
+        rows.Add(MakeTailRow(rowCount, bestTail));
+        var seed = SerializeRows();
+        Assert.InRange(Encoding.UTF8.GetByteCount(seed), 1, maxCacheBytes);
+        await File.WriteAllTextAsync(Path.Combine(temp.Path, "chat-identities.json"), seed, Encoding.UTF8);
+
+        var handler = new RecordingHandler(request => request.RequestUri!.AbsolutePath switch
+        {
+            "/api/auth.test" => Json("{\"ok\":true,\"team_id\":\"T12345678\",\"team\":\"Workspace\"}"),
+            "/api/users.info" => Json("{\"ok\":true,\"user\":{\"id\":\"U99999999\",\"name\":\"alice\"}}"),
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound)
+        });
+        var key = new SessionKey("slack", "C11111111", "t", "U99999999", "slack");
+        using var directory = new ChatIdentityDirectory(handler, temp.Path);
+        await directory.ResolveAsync(new BridgeSettings { SlackBotToken = "token" }, [key]);
+
+        var cachePath = Path.Combine(temp.Path, "chat-identities.json");
+        Assert.True(new FileInfo(cachePath).Length <= maxCacheBytes);
+        var cached = await directory.ReadCachedAsync([key]);
+        Assert.Equal("@alice", cached[key].UserName);
+    }
+
+    [Fact]
+    public async Task Cancellation_persists_completed_partial_lookup_results()
+    {
+        using var temp = new TemporaryDirectory();
+        using var handler = new CancelOnSecondUserHandler();
+        using var directory = new ChatIdentityDirectory(handler, temp.Path);
+        var keys = new[]
+        {
+            new SessionKey("slack", "C12345678", "t", "U11111111", "slack"),
+            new SessionKey("slack", "C12345678", "t", "U22222222", "slack")
+        };
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => directory.ResolveAsync(
+            new BridgeSettings { SlackBotToken = "token" }, keys, cancellation.Token));
+
+        using var offline = new ChatIdentityDirectory(new RecordingHandler(_ => throw new InvalidOperationException()), temp.Path);
+        var cached = await offline.ReadCachedAsync(keys);
+        Assert.Equal("@first", cached[keys[0]].UserName);
+        Assert.Null(cached[keys[1]].UserName);
     }
 
     [Fact]
@@ -361,6 +468,20 @@ public sealed class ChatIdentityDirectoryTests
             if (Interlocked.Increment(ref _calls) == 1)
                 await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             return await inner.SendAsyncForTest(request, cancellationToken);
+        }
+    }
+
+    private sealed class CancelOnSecondUserHandler : HttpMessageHandler
+    {
+        private int _userCalls;
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.RequestUri!.AbsolutePath == "/api/auth.test")
+                return Json("{\"ok\":true,\"team_id\":\"T12345678\",\"team\":\"Workspace\"}");
+            if (request.RequestUri.AbsolutePath == "/api/users.info" && Interlocked.Increment(ref _userCalls) == 2)
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            var id = Uri.UnescapeDataString(request.RequestUri!.Query.Split('=', 2)[1]);
+            return Json($"{{\"ok\":true,\"user\":{{\"id\":\"{id}\",\"name\":\"first\"}}}}");
         }
     }
 }
