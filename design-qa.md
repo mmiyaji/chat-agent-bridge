@@ -1,3 +1,31 @@
+# Custom CLI tab regression — 2026-10-24
+
+The Other CLI tab failed to load because its editor queried AgentConnectionStore
+with `custom`, a provider intentionally excluded from registered chat-switching
+profiles. The resulting argument error restored the previous tab. Skip that
+lookup for custom editors, retaining their existing draft and activation rules.
+
+The previous endurance run checked liveness and persisted settings, but did not
+assert that every requested tab remained selected. The runner now asserts final
+selection in wide, overflow and random navigation, and explicitly checks the
+custom editor's initial fields, confirmed executable edit, independent draft,
+tab round trip, compact layout and restoration after restart. The new opening
+assertion failed against the pre-fix binary and passed with the fix.
+
+- Japanese/dark: all nine scenario groups and 90 random switches passed;
+  saved active settings and the loopback chat connection were retained.
+  Evidence: `desktop/artifacts/2d24a4e7-0efa-4e63-8bd0-1097ed485def/`.
+- English/light: the same nine scenarios and 90 random switches passed, including
+  compact custom editor and post-restart draft assertions. Both themes' compact
+  screenshots were reviewed; native tabs and fields remain visible and scrollable.
+  Evidence: `desktop/artifacts/eb85c4ca-4646-49c8-bc93-f4f2032bd6d6/`.
+- Portable publish, localization consistency and diff review passed. The change
+  preserves the restriction on registering custom CLIs as chat-switch profiles.
+- Tests use isolated settings, an offline executable and loopback Mattermost;
+  they do not execute user CLIs or send external messages.
+
+---
+
 # Settings navigation endurance regression — 2026-10-23
 
 The reported crash was reproduced in the native app at a 500 px window width,

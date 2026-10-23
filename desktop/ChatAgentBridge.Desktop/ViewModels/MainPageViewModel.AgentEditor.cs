@@ -32,7 +32,11 @@ public partial class MainPageViewModel
         {
             _agentSettingsDraftStore ??= new AgentSettingsDraftStore(_settingsStore.DirectoryPath);
             var draft = (await _agentSettingsDraftStore.ListAsync()).FirstOrDefault(item => item.Provider == provider);
-            var registered = await _agentConnectionStore.FindAsync(provider);
+            // Custom CLIs have editable drafts but are intentionally excluded
+            // from the verified profiles used for chat-side agent switching.
+            var registered = provider == AgentProfile.Custom
+                ? null
+                : await _agentConnectionStore.FindAsync(provider);
             BridgeSettings editorBaseline;
             if (draft is not null)
                 editorBaseline = draft.ApplyTo(shared);

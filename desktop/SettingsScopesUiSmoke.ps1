@@ -89,7 +89,13 @@ $previousModelListEnv=$env:CAB_LIVE_STEERING_MODEL_LIST
 $env:CAB_LIVE_STEERING_MODEL_LIST='1'
 function Top { $p=(Wait-Element 'MainContentScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern); if($p.Current.VerticallyScrollable){$p.SetScrollPercent(-1,0)};Start-Sleep -Milliseconds 150 }
 function Value($id,$value){$e=Wait-Element $id;$pattern=$null;if($e.TryGetCurrentPattern([Windows.Automation.ValuePattern]::Pattern,[ref]$pattern)){([Windows.Automation.ValuePattern]$pattern).SetValue($value)}else{$inner=$e.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Edit));($inner.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).SetValue($value)}}
-function Choose-Scope($id){Top;Wait-For {(Wait-Element $id).Current.IsEnabled} "scope $id enabled";Click-Actual $id;Start-Sleep -Milliseconds 200}
+function Choose-Scope($id){
+ Top
+ Wait-For {(Wait-Element $id).Current.IsEnabled} "scope $id enabled"
+ Invoke-Element (Wait-Element $id) ('select '+$id)
+ Start-Sleep -Milliseconds 200
+ Wait-For {((Wait-Element $id).GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)).Current.IsSelected} ('scope selected: '+$id)
+}
 function Choose-CompactScope($navId,$id){
  Top
  $target=Find-Element $script:window $id
@@ -101,6 +107,7 @@ function Choose-CompactScope($navId,$id){
  }
  Invoke-Element $target ('select compact '+$id)
  Start-Sleep -Milliseconds 500
+ Wait-For {((Wait-Element $id).GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)).Current.IsSelected} ('compact scope selected: '+$id)
 }
 function Drafts { $p=Join-Path $script:data 'agent-settings-drafts.json';if(Test-Path $p){Get-Content $p -Raw|ConvertFrom-Json}else{$null} }
 try {
@@ -112,6 +119,26 @@ try {
  Wait-For {(Wait-Element 'AgentExecutable').Current.IsEnabled} 'agent editor initialized'
  Capture "agent-codex-$Language-$Theme"
  Assert ((Get-FileHash $settingsPath).Hash -eq $initialSettingsHash) 'Opening the editor changed active settings.'
+ Choose-Scope 'AgentScopeCustom'
+ Wait-For {
+  ((Wait-Element 'AgentScopeCustom').GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)).Current.IsSelected -and
+  (Wait-Element 'AgentExecutable').Current.IsEnabled -and
+  ((Wait-Element 'AgentExecutable').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).Current.Value -eq ''
+ } 'custom CLI editor selected with empty executable'
+ Value 'AgentExecutable' $agentPath
+ (Wait-Element 'CheckCli').SetFocus()
+ Wait-For {
+  $confirmation=Find-Element $script:window 'SensitiveSettingsConfirmation'
+  if($confirmation){Invoke-Element (Find-Element $confirmation 'PrimaryButton') 'confirm isolated custom executable change'}
+  (Drafts).Drafts | Where-Object { $_.Provider -eq 'custom' -and $_.Executable -eq $agentPath }
+ } 'custom CLI draft persisted'
+ Choose-Scope 'AgentScopeCodex'
+ Choose-Scope 'AgentScopeCustom'
+ Assert (((Wait-Element 'AgentExecutable').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).Current.Value -eq $agentPath) 'Custom CLI draft was lost after switching.'
+ Assert ((Get-FileHash $settingsPath).Hash -eq $initialSettingsHash) 'Custom CLI browsing or editing changed active settings.'
+ Capture "agent-custom-$Language-$Theme"
+ Choose-Scope 'AgentScopeCodex'
+ Add-Pass 'Custom CLI opens, persists an isolated draft and restores it without activating the provider'
  Choose-Scope 'AgentScopeClaude'
  Assert ((Get-FileHash $settingsPath).Hash -eq $initialSettingsHash) 'Selecting Claude changed the active provider.'
  $model=Scroll-ToElement 'AgentModel'
@@ -135,7 +162,7 @@ try {
  Assert ((Get-FileHash $settingsPath).Hash -eq $initialSettingsHash) 'Cancel changed the active configuration.'
  Add-Pass 'Cancelling a sensitive profile edit restores the field and preserves both saved draft and active settings'
  Choose-Scope 'AgentScopeCodex'
- Click-Actual 'CheckCli'
+ Invoke-Element (Wait-Element 'CheckCli') 'check isolated CLI'
  Wait-For {(Wait-Element 'CheckCli').Current.IsEnabled} 'CLI check finishes'
  Capture "agent-checked-$Language-$Theme"
  Assert (Test-Path (Join-Path $script:data 'agent-cli-cache/codex/cli-verification.json')) 'Provider CLI check cache missing.'
@@ -144,7 +171,7 @@ try {
  (Wait-Element 'CheckCli').SetFocus()
  Wait-For {(Drafts).Drafts | Where-Object {$_.Provider -eq 'codex' -and $_.Model -eq 'codex-offline-fixture'}} 'active-provider editor draft saved separately'
  Assert ((Get-FileHash $settingsPath).Hash -eq $initialSettingsHash) 'Editing the active provider implicitly applied settings.'
- Click-Actual 'CheckCli'
+ Invoke-Element (Wait-Element 'CheckCli') 'recheck isolated CLI with edited model'
  Wait-For {(Wait-Element 'UseAgentProfile').Current.IsEnabled} 'verified edited profile can be applied'
  $use=Scroll-ToElement 'UseAgentProfile'
  Click-Actual 'UseAgentProfile'
@@ -170,6 +197,10 @@ try {
  Capture "agent-narrow-$Language-$Theme"
  foreach($id in @('AgentScopeClaude','AgentScopeGemini','AgentScopeCopilot','AgentScopeCustom','AgentScopeCommon','AgentScopeCodex')){
    Choose-CompactScope 'AgentScopeList' $id
+   if($id -eq 'AgentScopeCustom'){
+    Assert (((Wait-Element 'AgentExecutable').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).Current.Value -eq $agentPath) 'Compact custom tab did not restore its editor.'
+    Capture "agent-custom-narrow-$Language-$Theme"
+   }
  }
  Assert ((Get-Content $settingsPath -Raw|ConvertFrom-Json).AgentModel -eq 'codex-offline-fixture') 'Compact scope browsing activated an agent.'
  Capture "agent-narrow-selected-$Language-$Theme"
@@ -233,6 +264,8 @@ try {
  Select-Element 'NavAgentSettings'
  Wait-For {(Wait-Element 'AgentEditorStatus').Current.Name -eq $(if($Language -eq 'ja'){'CLI確認済み'}else{'CLI verified'})} 'CLI cache restored after restart'
  Capture "agent-restored-$Language-$Theme"
+ Choose-Scope 'AgentScopeCustom'
+ Assert (((Wait-Element 'AgentExecutable').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).Current.Value -eq $agentPath) 'Custom CLI draft was lost after restart.'
  Choose-Scope 'AgentScopeClaude'
  Assert (((Wait-Element 'AgentModel').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).Current.Value -eq 'ui-claude-draft') 'Inactive draft was lost after restart.'
  Add-Pass 'Restart restores active model, per-agent drafts, CLI verification and chat connection'
@@ -279,6 +312,11 @@ try {
      }
      Invoke-Element $target ('stress '+$id)
      Start-Sleep -Milliseconds 90
+     Wait-For {
+      $selectedScope=Find-Element $script:window $id
+      $null -ne $selectedScope -and
+      $selectedScope.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected
+     } ('stress scope selected: '+$id)
      $switches++
     }
    }
