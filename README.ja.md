@@ -1,210 +1,105 @@
 # Chat Agent Bridge
 
-**Windowsポータブルプレビュー版：** [v0.1.0-preview.5](https://github.com/mmiyaji/chat-agent-bridge/releases/tag/v0.1.0-preview.5) からx64またはARM64のZIPを取得し、`ChatAgentBridge.Portable` フォルダー全体を展開して `ChatAgentBridge.Desktop.exe` を起動してください。管理者権限・証明書登録・.NET / Windows App SDKの別途導入は不要です。設定は隣の `Data` に保存し、エージェントCLIとログインは別途設定します。移行や自動起動の注意点はZIP同梱の日本語README、検証範囲は[検証記録](docs/windows-portable-validation.ja.md)を参照してください。
+[English](README.md) · **日本語** · [ダウンロード](https://github.com/mmiyaji/chat-agent-bridge/releases)
 
-> WinUI 3 / C# ネイティブ版は `main` で開発しています。ビルド・起動手順は [desktop/README.ja.md](desktop/README.ja.md)、機能対応と進捗は [移行計画](docs/winui-migration-plan.ja.md) を参照してください。以下は移行元の TypeScript 版の説明です。
+**Slack・Mattermostを、ローカルPCのAIエージェントへの窓口に。**
 
-Windows用の単体実行ファイルに対応しています。`npm run package:exe` で生成した `release/ChatAgentBridge.exe` をダブルクリックし、表示された管理画面URLをブラウザーで開いてください。自動起動は `--open-browser` で指定できます。利用時のNode.js/npmは不要です。詳しくは [実行ファイル版の使い方](docs/executable.ja.md) を参照してください。
+スマートフォンや別のPCからチャットで依頼し、手元のWindows PCにあるプロジェクトでAIエージェントを動かせます。CodexやClaude Codeのデスクトップアプリを使えない端末からも、普段のチャットを通じて作業を続けるためのアプリです。
 
-## 新しい接続管理画面
+チャットが操作窓口になり、Chat Agent Bridgeが依頼・承認・結果のやり取りを橋渡しします。作業フォルダーとCLIはWindows PC側に置いたまま使います。Bridgeを起動したPCがオンラインである必要があります。
 
-起動後の管理画面でエージェントとSlack/Mattermostを設定し、接続・切断できます。CodexはApp Serverに対応し、承認・追加入力を同じチャットスレッドから返せます。実行中に同じユーザー・スレッドから届いた追加指示は、既定では順番に処理し、設定を変更するとCodex App ServerやClaude Codeの実行中依頼へ追加できます。詳しくは [接続管理とハーネス](docs/harness-modernization.md) を参照してください。
+![全般：接続状態・起動設定をまとめて確認](docs/assets/screenshots/general-ja.png)
 
+> 画面写真は2026年10月24日のWindows実機上の開発版です。撮影専用の設定・サンプル利用履歴を使っており、実際の会話や認証情報は含みません。日本語はダーク、英語版READMEはライト表示です。公開版とは画面が異なる場合があります。
 
-- Languages: [English](README.md) / [Japanese](README.ja.md)
+## 主な機能
 
-Chat Agent Bridge は、チャットスレッドからローカル PC 上の開発エージェントを継続操作するためのローカル bridge サービスです。
+| やりたいこと | できること |
+| --- | --- |
+| チャットから作業を頼む | Slack・Mattermostの投稿から依頼し、同じユーザーのスレッド返信で会話を継続 |
+| AIを使い分ける | エージェント・モデルを切り替え。会話の引き継ぎメモを渡すか選択 |
+| 実行を見守る | 受付・進捗・完了の投稿、PCでの途中出力の確認、依頼の中断 |
+| 追加の指示を送る | 順番に実行するか、対応するエージェントの実行中の依頼へ追加するか選択 |
+| 使える範囲を決める | 許可ユーザー・チャンネル・スレッド・信頼する作業フォルダーを設定 |
+| 共有する内容を選ぶ | 会話の承認、結果の手動／自動共有、添付ファイルの承認・サイズ・個数を設定 |
+| 作業を振り返る | 会話・実行・操作の履歴、利用カレンダー、トークン・キャッシュ・推定コストのグラフ |
+| 日常的に使う | 初期設定ウィザード、自動起動・自動接続、トレイ常駐、ポータブル版の更新機能 |
 
-## このプロジェクトの位置づけ
+## 使い始める
 
-このプロジェクトは、公式プロダクト側で安定したリモートコントロールセッション機能が整うまでの間に、個人開発用途で使うことを想定した非公式ツールです。
+1. [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases)から、PCに合うWindows **x64 / ARM64** のポータブルZIPをダウンロードします。
+2. フォルダー全体を書き込み可能な場所へ展開し、`ChatAgentBridge.Desktop.exe`を起動します。管理者権限や別途の.NETランタイム導入は不要です。
+3. 使うAIのCLIを別途インストールし、そのCLIでログインします。ウィザードでCLI・作業フォルダーを選び、CLIチェックで認識を確認します。
+4. **チャット設定**でSlackまたはMattermostのBotと許可ユーザーを設定し、**チャット**から接続します。Slack側のアプリ作成・権限設定、Mattermost側のBotトークンの準備が必要です。
+5. Botへのメンションから依頼します。Mattermostでは`!cab <依頼内容>`でも開始できます。初回の依頼をPCで承認し、続きは同じスレッドへ返信します。
 
-ローカル PC 上でのセルフホスト運用を前提としており、OpenAI、Anthropic、Slack、Mattermost、Cursor、Google の公式製品ではありません。
+初期値は「会話の最初だけ承認」「結果は手動で共有」「ファイル添付は毎回確認」です。CLIチェックはCLIの認識を確認するもので、ログインや利用枠の有効性を保証しません。
 
-現状の実装は Windows 前提で、主に PowerShell を使う Windows 環境で開発・検証しています。
+## エージェントとモデルを使い分ける
 
-## できること
+共通の作業フォルダー・信頼範囲と、エージェントごとのCLI・モデル設定を分けて管理できます。CLI実行ファイルはファイル選択にも対応します。会話ごとのエージェント・モデル変更はPCとチャットから操作できます。
 
-- チャットスレッドをローカル agent session に紐付ける
-- 同じ PC 上の repository、未コミット変更、ローカルツール状態を維持したまま継続操作する
-- スレッドの最初のメッセージから working directory を決定し、指定がなければ番号付きの repo picker を出す
-- 紐付いた folder に過去の Claude Code session があれば、`~/.claude/projects` の実データから resume 候補を提示する
-- チャンネルごとに既定の working directory を記憶する
-- allowed directory root をチャットまたは Admin UI から実行時に追加・削除できる（再起動不要）
-- Slack と Mattermost の chat adapter を使う
-- Codex、Claude Code、Cursor、Gemini CLI の agent adapter を使う
-- 承認フロー、監査ログ、repo 切り替え、Admin UI を提供する
-- Mattermost の `bot` mode と `self` mode をサポートする
+| エージェント | 会話の継続 | モデル設定 |
+| --- | --- | --- |
+| Codex / Claude Code | 対応 | CLIから取得した候補を選択。対応する推論の強さも選択 |
+| Gemini CLI / GitHub Copilot CLI | 対応 | モデル名を入力。推論設定はCLI側で管理 |
+| その他のCLI | 毎回独立した実行 | CLIの設定・起動引数で指定 |
 
-## クイックスタート
+Codex App Server・Claude Codeでは実行中の追加指示にも対応します。その他の接続では順番待ちになります。利用できるモデルや機能は、CLIのバージョン・認証・契約によって異なります。Geminiの実サービス検証には認証環境による制約が残っています。[CLIごとの対応範囲](desktop/README.ja.md#利用できるcli)も参照してください。
 
-以下のコマンドは Windows + PowerShell を前提としています。
+<details>
+<summary>エージェント設定の画面</summary>
 
-1. 依存をインストールします。
+![エージェント設定：共通設定とCLIごとの設定](docs/assets/screenshots/agents-ja.png)
 
-```powershell
-npm install
-npm run check
-```
+</details>
 
-2. 最低限の環境変数を設定します。
+## 承認と共有をコントロールする
 
-```powershell
-$env:CAB_ALLOWED_DIRS="$env:USERPROFILE\Documents\git"
-$env:CAB_DEFAULT_WORKDIR="$env:USERPROFILE\Documents\git\chat-agent-bridge"
-```
+**チャット設定**では、Slack・Mattermostに共通する承認・共有ルールと、サービスごとの接続情報・許可ユーザーを分けて設定します。
 
-3. bridge を起動します。
+- 会話の承認は「毎回」「初回のみ」「自動」から選べます。実際にCLIが行う操作の権限とは別の設定です。
+- 結果は手動共有・自動共有・共有しないを選べます。送信した内容は、そのチャットやスレッドを見られる人に公開されます。
+- 生成ファイルの添付は「毎回確認」が既定です。「スレッド初回のみ確認」「自動添付」「禁止」へ変更でき、サイズ・個数の上限も指定できます。
+- チャットから作業フォルダーを変更する場合も、信頼範囲の確認とPCでの承認が必要です。
 
-```powershell
-npm run dev
-```
+![チャット設定：承認・結果共有・追加指示・添付のルール](docs/assets/screenshots/chat-settings-ja.png)
 
-接続済みのチャットスレッドから `@Chat Agent Bridge status` を送ると疎通確認できます。
+よく使う操作はチャットからも行えます。
 
-detached service として動かす場合:
+| コマンド | 用途 |
+| --- | --- |
+| `!cab command` | 利用できるコマンド一覧 |
+| `!cab status` / `!cab stop` | 自分の依頼の状態確認・中断 |
+| `!cab model` | 会話のモデル確認・変更方法 |
+| `!cab agent` | 登録済みエージェントと切り替え方法 |
+| `!cab folder "C:\Projects\MyApp"` | 作業フォルダーの変更を依頼 |
 
-```powershell
-npm run service:start
-npm run service:status
-```
+Mattermostでは、Botの進捗投稿にある🛑リアクションを依頼した本人が押すことでも中断できます。中断しても、すでに行われたファイル変更は元に戻りません。
 
-Windows ログオン時に bridge を自動起動する場合:
+## 履歴と利用状況を振り返る
 
-```powershell
-npm run service:install-autostart
-```
+保存済みの会話は名前や作業フォルダーで探し、モデルやエージェントを変更できます。実行・操作履歴に加え、日別の利用カレンダーやモデル別の利用量を確認できます。
 
-## 最初のメンションから始まる典型的な流れ
+![履歴と利用状況：サンプル履歴による利用カレンダー](docs/assets/screenshots/history-ja.png)
 
-新しいスレッドの最初のメッセージで、どの working directory で動くかが決まります。典型的なやり取りは次のようになります。
+トークン・キャッシュはCLIが報告した範囲を表示し、未報告の値は推測しません。推定コストは参考値で、実際の請求額やサブスクリプションの利用枠ではありません。料金表の自動更新と、優先して使う手動料金設定に対応します。
 
-```
-あなた: @Chat Agent Bridge haruhi ログイン画面を直して
-Bridge: This folder (`...\haruhi`) has previous Claude Code sessions. Reply with a number to resume, or `new` to start fresh. Your instruction will run after you choose.
-        1. `a1b2c3d4` - fix login redirect loop (2026-07-01T09:12:00.000Z)
-        2. `9f8e7d6c` - add MUI theme toggle (2026-06-28T14:03:00.000Z)
-あなた: 1
-Bridge: (session `a1b2c3d4` を `...\haruhi` で resume し、「ログイン画面を直して」を実行する)
-```
+## Windowsでの使い勝手
 
-最初のメッセージに alias や path がなければ、bridge が先に尋ねます。
+日本語・英語に対応し、Windowsの言語を自動認識します。日本語以外は英語にフォールバックします。ライト・ダーク・システム設定への追従を選択できます。
 
-```
-あなた: @Chat Agent Bridge ログイン画面を直して
-Bridge: Choose a working directory for this thread (allowed roots only). Reply with a number, or `keep` to stay on `...\chat-agent-bridge`.
-        1. `haruhi` -> `...\haruhi`
-        2. `inori` -> `...\inori`
-あなた: 1
-Bridge: (スレッドを `haruhi` に紐付け、必要なら Claude Code の resume picker を出したうえで「ログイン画面を直して」を実行する)
-```
+全般画面で自動起動・自動接続・トレイ常駐を設定できます。トレイに格納しても稼働を続け、完全終了も選べます。PCのスリープ・サインアウト中は動作しません。
 
-チャンネルごとに既定の working directory を設定しておくと、以降のスレッドで directory picker を省略できます: `@Chat Agent Bridge channel-default haruhi`
+ポータブル版はアプリ内の**情報**から更新を確認・適用できます。更新時も同じフォルダーの`Data`を引き継ぎます。手動で更新する場合も、アプリを終了して`Data`を残してください。別PCへの移行では、接続トークンやCLIのログインを再設定する必要があります。
 
-## デモ
+## プロジェクトについて・詳しい案内
 
-Slack の例:
+個人の開発作業を想定した非公式の開発プレビューです。OpenAI・Anthropic・Google・GitHub・Slack・Mattermostの公式アプリではありません。CLIの依頼や結果は各AIサービス・チャットサービスへ送信されます。利用前に[利用規約](docs/terms.ja.md)と[プライバシーポリシー](docs/privacy-policy.ja.md)を確認してください。
 
-![Slack demo](docs/assets/slack-demo-2026-03-31.gif)
+- [Windowsアプリの詳細ガイド・開発手順](desktop/README.ja.md)
+- [ポータブル版の案内](desktop/distribution/README.portable.ja.txt)
+- [不具合報告・機能の提案](https://github.com/mmiyaji/chat-agent-bridge/issues)
+- [サードパーティーのライセンス](desktop/THIRD-PARTY-NOTICES.txt)（アプリの「情報」からも閲覧可能）
 
-## よく使う service コマンド
-
-```powershell
-npm run service:start
-npm run service:status
-npm run service:restart
-npm run service:restart:build
-npm run service:stop
-npm run service:install-autostart
-npm run service:uninstall-autostart
-```
-
-## アーキテクチャ
-
-```mermaid
-flowchart TD
-    subgraph Chat["チャット基盤"]
-        Slack["Slack\n(HTTP / Socket Mode)"]
-        Mattermost["Mattermost\n(HTTP / WebSocket)"]
-    end
-
-    subgraph Bridge["Chat Agent Bridge (ローカル)"]
-        direction TB
-        Adapter["Chat Adapter\nslack-adapter / mattermost-adapter"]
-        BridgeSvc["Bridge Service\nrouting / approvals / sessions / job queue"]
-        StateStore["File State Store\nstate.json"]
-        AuditLog["Audit Logger\naudit.jsonl"]
-        AdminSrv["Admin Server\n:8788/admin"]
-    end
-
-    subgraph Agents["Agent Adapter"]
-        Codex["Codex CLI\ncodex-agent"]
-        Claude["Claude Code CLI\nclaude-agent"]
-        Cursor["Cursor CLI\ncursor-agent"]
-        Gemini["Gemini CLI\ngemini"]
-    end
-
-    subgraph LocalFS["ローカルマシン"]
-        Repos["Git repository\nCAB_ALLOWED_DIRS"]
-        Settings["admin-settings.json"]
-    end
-
-    Browser["Browser\nAdmin UI"]
-    User["ユーザー"]
-
-    User -- "メッセージ" --> Slack
-    User -- "メッセージ" --> Mattermost
-    Slack -- "イベント" --> Adapter
-    Mattermost -- "イベント" --> Adapter
-    Adapter --> BridgeSvc
-    BridgeSvc --> StateStore
-    BridgeSvc --> AuditLog
-    BridgeSvc --> Codex
-    BridgeSvc --> Claude
-    BridgeSvc --> Cursor
-    BridgeSvc --> Gemini
-    Codex -- "spawn" --> Repos
-    Claude -- "spawn / stream-json" --> Repos
-    Cursor -- "spawn" --> Repos
-    Gemini -- "spawn" --> Repos
-    BridgeSvc -- "返信" --> Adapter
-    Adapter -- "投稿" --> Slack
-    Adapter -- "投稿" --> Mattermost
-    AdminSrv --> StateStore
-    AdminSrv --> BridgeSvc
-    Browser -- "HTTP" --> AdminSrv
-    Settings --> BridgeSvc
-```
-
-## ドキュメント
-
-- インストールと基本設定: [docs/install.md](docs/install.md)
-- Slack 設定: [docs/slack-setup.md](docs/slack-setup.md)
-- Mattermost 設定: [docs/mattermost-setup.md](docs/mattermost-setup.md)
-- 運用と service 管理: [docs/operations.md](docs/operations.md)
-- テストと E2E: [docs/testing.md](docs/testing.md)
-- アーキテクチャ: [docs/architecture.md](docs/architecture.md)
-
-## 補足
-
-- bridge は既定で `http://<bridge-host>:8788/admin` に Admin UI を立てます
-- 初期設定は `http://<bridge-host>:8788/admin/onboarding` から始められます
-- Codex はローカルの `codex` CLI を使い、既存 login をそのまま利用できます
-- Cursor は既定で `cursor-agent --trust` を使い、model は Admin UI から別設定できます。既定 model は `Auto` です
-- Gemini は既定で `gemini --approval-mode yolo` を使い、command と model は Admin UI から設定できます
-- bridge は Codex child process に `CHAT_AGENT_BRIDGE=1` を注入するため、外部 hook 側で重複通知を抑制できます
-- Mattermost の `MATTERMOST_ACTOR_MODE=self` は user token 運用向けで、self-DM でもメンションが必要です
-- Claude Code の resume 候補は `~/.claude/projects/<encoded-cwd>/*.jsonl` から読み込みます（`CAB_CLAUDE_PROJECTS_DIR` で変更可能）。working directory として受理されるのは `CAB_ALLOWED_DIRS` 配下のみです
-- Admin UI には read-only の Environment パネル（`GET /admin/api/environment`）があり、allowed roots、repo alias、channel default、agent に渡す `CHAT_AGENT_BRIDGE_*` 変数名を確認できます
-- allowed directory root は実行時に変更できます。チャットからは `allow-dir <absolute-path>` / `allow-dir remove <absolute-path>` / `allow-dirs`、Admin UI からは「Allowed directory roots」欄です。変更は即時反映・永続化されますが、`CAB_ALLOWED_DIRS` 環境変数が設定されていれば次回再起動時に再び優先されます。優先順位の詳細は [docs/install.md](docs/install.md) を参照してください
-- `npm run service:install-autostart` で Windows ログオン時に bridge を起動する scheduled task を登録できます。`npm run service:uninstall-autostart` で解除できます。詳細は [docs/operations.md](docs/operations.md) を参照してください
-
-## 免責事項
-
-- このツールは現状有姿で提供され、いかなる保証もありません
-- 安定性、正確性、安全性、特定用途への適合性は保証しません
-- 利用はすべて自己責任です
-- データ消失、repository 破損、アカウント問題、サービス停止、セキュリティ事故、費用発生、その他あらゆるトラブルについて作者は責任を負いません
-- この bridge は実ファイル、repository、接続済みチャット基盤に対してローカル agent 操作を発火できます。利用前に設定を必ず確認してください
-- allowed directories、token、network access、公開範囲は最小限に絞ってください
-- ローカル環境での遠隔操作に伴う運用・セキュリティリスクを受け入れられない環境では使用しないでください
+旧TypeScript版の資料は[インストール手順](docs/install.md)・[構成](docs/architecture.md)に残しています。現在のWindowsアプリの導入手順とは異なります。

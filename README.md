@@ -1,231 +1,105 @@
 # Chat Agent Bridge
 
-**Windows portable preview:** download the x64 or ARM64 ZIP from [v0.1.0-preview.5](https://github.com/mmiyaji/chat-agent-bridge/releases/tag/v0.1.0-preview.5), extract the entire `ChatAgentBridge.Portable` folder, and run `ChatAgentBridge.Desktop.exe`. No administrator rights, certificate registration, or separate .NET / Windows App SDK installation is required. Settings are stored in the adjacent `Data` folder; agent CLIs and their login are configured separately. See the included English README for migration and startup details.
+**English** · [日本語](README.ja.md) · [Download](https://github.com/mmiyaji/chat-agent-bridge/releases)
 
-> The native WinUI 3 / C# application is maintained on `main`. See the [desktop guide (Japanese)](desktop/README.ja.md) and [migration plan](docs/winui-migration-plan.ja.md). The documentation below describes the original TypeScript implementation retained during migration.
+**Use Slack or Mattermost as the interface to AI agents on your own PC.**
 
-The native app supports Codex, Claude Code, Gemini CLI, and GitHub Copilot CLI conversations. Gemini and Copilot use their structured output and an explicit session UUID per chat user and thread; model identifiers can be entered in the app or with `!cab model <name>`. Their model catalogs and reasoning controls remain CLI-managed. Install and authenticate each CLI separately; older versions without the required JSON output cannot be resumed safely. See the [native CLI guide](desktop/README.ja.md#利用できるcli).
+Send a request from your phone or another computer and let an AI agent work in a project on your Windows PC. Keep working through familiar chat threads when you cannot use the Codex or Claude Code desktop app on the device at hand.
 
-Under **Connection settings → Common settings → Messages received during execution**, choose to queue messages (default) or add them to the running request. Live additions are supported by Codex App Server and Claude Code for the same user and thread. Per-request approval and unsupported connections keep messages queued. Claude processes additions when it can accept input, sometimes as another response in the same CLI process. An unconfirmed delivery is never retried automatically.
+Chat Agent Bridge handles the requests, approvals and replies between chat and your local CLI. Your working folder and CLI stay on the Windows PC, which must be running and online.
 
-The native app supports English and Japanese. By default it uses Japanese when the Windows preferred language is Japanese, and English for every other language. Choose **Language / 表示言語** in the first setup page or **General → Language and appearance** to override this. The first setup page changes immediately; after setup, the app offers to restart to apply the change. CLI responses and user content retain their original language. See the [Terms of Use](docs/terms.en.md) and [Privacy Policy](docs/privacy-policy.en.md) for the development preview.
+![General: connection status and startup preferences](docs/assets/screenshots/general-en.png)
 
-In **General**, Windows startup, auto-connect, system tray, language, and theme preferences are grouped below current status. Preferences are saved as they change; permission, access, and sharing changes require review before applying. Auto-connect applies on the next app launch. Setup details and the architecture image remain available in the expanded details section.
+> Screenshots show the development build running on a Windows PC on October 24, 2026, using dedicated demo settings and sample usage records. They contain no real conversations or credentials. This README shows light mode; the Japanese README shows dark mode. Released versions may differ.
 
-Choose **General → Language and appearance** for Light, Dark, or Use system setting. Theme changes are saved and applied immediately without restarting. The default follows the Windows app color setting.
+## What you can do
 
-When close-to-tray is off, clicking × asks whether to exit, move to the system tray for this time, or cancel. Moving to the tray from this dialog keeps the app running without changing the saved preference. Exiting disconnects chat and cancels active and pending work.
+| Goal | Features |
+| --- | --- |
+| Work from chat | Send requests through Slack or Mattermost and continue with replies from the same user in the same thread |
+| Choose your agent | Switch agents and models, choosing whether to pass along conversation context |
+| Follow the work | Chat progress updates, live output on the PC, and request cancellation |
+| Send another instruction | Queue it, or add it to a running request on supported agents |
+| Control access | Allowed users, channels, threads and trusted working folders |
+| Control sharing | Conversation approvals, manual or automatic result sharing, and attachment approval, size and count limits |
+| Review your activity | Conversations, execution and operation history, an activity calendar, and token, cache and estimated-cost charts |
+| Keep it convenient | Setup wizard, startup and auto-connect preferences, system tray mode and portable updates |
 
-Under **General → System tray**, enable keeping the app running when its window is closed (off by default), or choose **Move to system tray**. Chat connections, work, and approval notifications remain active while hidden. Click the tray icon to reopen; its menu and the settings page offer **Exit completely**, which disconnects and cancels work regardless of the tray setting. Windows may place the icon in its hidden indicators area. Background mode does not run through sleep or sign-out. The preference is saved separately in `background.json` in the data folder.
+## Get started
 
-The **About** page at the bottom of the sidebar shows product and package information, provider and support links, development notes, Terms of Use, and the Privacy Policy. Store page and manual update checks are available for Microsoft Store distributions. The development preview displays its distribution status instead.
+1. Download the Windows **x64 / ARM64** portable ZIP for your PC from [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases).
+2. Extract the entire folder to a writable location and run `ChatAgentBridge.Desktop.exe`. No administrator rights or separate .NET runtime installation is required.
+3. Install your chosen agent CLI separately and sign in through that CLI. Select the CLI and working folder in the setup wizard, then check that the app recognizes it.
+4. In **Chat settings**, configure your Slack or Mattermost bot and allowed users. Connect from **Chat**. You will need a Slack app with the required permissions, or a Mattermost bot token.
+5. Mention the bot to send a request. In Mattermost, you can also start with `!cab <your request>`. Approve the first request on the PC, then reply in the same thread to continue.
 
-Build a standalone Windows x64 executable with `npm run package:exe`. Double-click `release/ChatAgentBridge.exe`, then open the displayed control center URL. Browser launch is opt-in via `--open-browser`. Node.js/npm are not required on the target machine. Agent CLIs still require separate installation. See [executable instructions (Japanese)](docs/executable.ja.md).
+Defaults require approval for the first request in a conversation, manual result sharing, and approval for every attachment. A CLI check verifies recognition; it does not guarantee a valid login or available quota.
 
-The new connection control center manages Slack/Mattermost and local agent connections. Codex uses App Server with native chat approvals and input. See [connection control center](docs/harness-modernization.md).
+## Choose agents and models
 
+Manage shared working-folder and trust settings separately from each agent's CLI and model configuration. You can browse for a CLI executable and change a conversation's agent or model from the PC or chat.
 
-- Languages: [English](README.md) / [Japanese](README.ja.md)
+| Agent | Conversation continuation | Model settings |
+| --- | --- | --- |
+| Codex / Claude Code | Supported | Select CLI-provided model and supported reasoning-effort candidates |
+| Gemini CLI / GitHub Copilot CLI | Supported | Enter a model name; reasoning settings remain CLI-managed |
+| Other CLI | Independent execution for each request | Configure the CLI or its launch arguments |
 
-Chat Agent Bridge is a local bridge service that lets you continue operating a development agent from chat threads while preserving local machine context.
+Codex App Server and Claude Code support additions to running requests. Other connections queue them. Availability depends on the CLI version, authentication and account. Gemini live-service validation remains limited by the authentication environment. See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるcli).
 
-## Project status
+<details>
+<summary>Agent settings screenshot</summary>
 
-This project is an unofficial personal tool intended for individual development workflows until official remote-control session support becomes available in upstream products.
+![Agent settings: shared and per-CLI configuration](docs/assets/screenshots/agents-en.png)
 
-It is designed for local, self-hosted use on a machine you control. It is not an official OpenAI, Anthropic, Slack, Mattermost, Cursor, or Google product.
+</details>
 
-The current implementation is Windows-first and is developed and validated primarily on Windows with PowerShell.
+## Decide what runs and what gets shared
 
-## What it does
+**Chat settings** separates approval and sharing rules common to both services from their connection details and allowed users.
 
-- Binds a chat thread to a local agent session
-- Keeps local repository context, uncommitted work, and tool state on the same machine
-- Picks the working directory from the first message of a thread, or offers a numbered repo picker when none is given
-- Offers to resume a prior Claude Code session for the bound folder, based on the real `~/.claude/projects` session store
-- Remembers a default working directory per chat channel
-- Lets you add or remove allowed directory roots at runtime from chat or the Admin UI, without a restart
-- Supports Slack and Mattermost chat adapters
-- Supports Codex, Claude Code, Cursor, and Gemini CLI agent adapters
-- Adds approvals, audit logging, repo targeting, and an admin surface
-- Supports Mattermost `bot` mode and `self` mode
+- Require approval for every request, only the first request, or allow requests automatically. This is separate from the CLI's permission to perform individual operations.
+- Share results manually, automatically, or not at all. Sent content is visible to everyone who can access the destination chat or thread.
+- File attachments require approval each time by default. You can instead require approval only for the first attachment in a thread, allow automatic attachments, or prohibit attachments. Set file size and count limits too.
+- Changing the working folder from chat still requires a trusted location and approval on the PC.
 
-## Quick start
+![Chat settings: approvals, sharing, additional instructions and attachments](docs/assets/screenshots/chat-settings-en.png)
 
-The commands below assume a Windows environment with PowerShell.
+Common actions are also available in chat.
 
-This bridge assumes the local CLI for the selected agent is already installed and authenticated on the same machine before you use it from chat. The bridge does not perform interactive login flows for Codex, Claude Code, Cursor, or Gemini on your behalf.
+| Command | Purpose |
+| --- | --- |
+| `!cab command` | List available commands |
+| `!cab status` / `!cab stop` | Check or stop your requests |
+| `!cab model` | View the current model and how to change it |
+| `!cab agent` | List registered agents and switching options |
+| `!cab folder "C:\Projects\MyApp"` | Request a working-folder change |
 
-1. Install dependencies:
+In Mattermost, the requester can also click the 🛑 reaction on the bot's progress post to cancel that request. Stopping does not undo file changes already made.
 
-```powershell
-npm install
-npm run check
-```
+## Review history and usage
 
-2. Set the minimum environment:
+Find saved conversations by name or working folder and change their model or agent. Review execution and operation history alongside daily activity and usage by model.
 
-```powershell
-$env:CAB_ALLOWED_DIRS="$env:USERPROFILE\Documents\git"
-$env:CAB_DEFAULT_WORKDIR="$env:USERPROFILE\Documents\git\chat-agent-bridge"
-```
+![History and usage: activity calendar with sample records](docs/assets/screenshots/history-en.png)
 
-3. Start the bridge:
+Token and cache figures cover what the CLI reports; missing values are not guessed. Estimated costs are reference values, not your bill or subscription quota. Automatic price-table updates and higher-priority manual price overrides are available.
 
-```powershell
-npm run dev
-```
+## At home on Windows
 
-Demo: send `@Chat Agent Bridge status` from a connected chat thread.
+The app supports English and Japanese, selecting Japanese for a Japanese Windows language preference and falling back to English otherwise. Choose light, dark or system appearance.
 
-Or run it as a detached service:
+**General** groups startup, auto-connect and system tray preferences. The app can keep running in the tray or exit completely. It cannot operate while the PC is asleep or signed out.
 
-```powershell
-npm run service:start
-npm run service:status
-```
+Portable builds can check for and apply updates from **About**, retaining the adjacent `Data` folder. For manual updates, close the app and keep `Data`. Moving to another PC requires reconfiguring chat tokens and CLI authentication.
 
-To start the bridge automatically at Windows logon:
+## About this project and further reading
 
-```powershell
-npm run service:install-autostart
-```
+This is an unofficial development preview for personal workflows, not an official OpenAI, Anthropic, Google, GitHub, Slack or Mattermost app. Requests and results are sent to the configured AI and chat services. Read the [Terms of Use](docs/terms.en.md) and [Privacy Policy](docs/privacy-policy.en.md) before use.
 
-## Typical first-mention flow
+- [Windows app guide and development instructions (Japanese)](desktop/README.ja.md)
+- [Portable edition guide](desktop/distribution/README.portable.en.txt)
+- [Report a bug or suggest a feature](https://github.com/mmiyaji/chat-agent-bridge/issues)
+- [Third-party notices](desktop/THIRD-PARTY-NOTICES.txt), also available in the app's About page
 
-The first message of a new thread decides where the agent runs. A typical exchange looks like this:
-
-```
-You:    @Chat Agent Bridge haruhi fix the login screen
-Bridge: This folder (`...\haruhi`) has previous Claude Code sessions. Reply with a number to resume, or `new` to start fresh. Your instruction will run after you choose.
-        1. `a1b2c3d4` - fix login redirect loop (2026-07-01T09:12:00.000Z)
-        2. `9f8e7d6c` - add MUI theme toggle (2026-06-28T14:03:00.000Z)
-You:    1
-Bridge: (resumes session `a1b2c3d4` in `...\haruhi` and runs "fix the login screen")
-```
-
-If the alias or path is omitted from the first message, the bridge asks first:
-
-```
-You:    @Chat Agent Bridge fix the login screen
-Bridge: Choose a working directory for this thread (allowed roots only). Reply with a number, or `keep` to stay on `...\chat-agent-bridge`.
-        1. `haruhi` -> `...\haruhi`
-        2. `inori` -> `...\inori`
-You:    1
-Bridge: (binds the thread to `haruhi`, then offers the Claude Code resume picker if applicable, then runs "fix the login screen")
-```
-
-Set a default per channel to skip the directory picker on future threads: `@Chat Agent Bridge channel-default haruhi`.
-
-## Demo
-
-Slack example:
-
-![Slack demo](docs/assets/slack-demo-2026-03-31.gif)
-
-## Common service commands
-
-```powershell
-npm run service:start
-npm run service:status
-npm run service:restart
-npm run service:restart:build
-npm run service:stop
-npm run service:install-autostart
-npm run service:uninstall-autostart
-```
-
-## Architecture
-
-```mermaid
-flowchart TD
-    subgraph Chat["Chat Providers"]
-        Slack["Slack\n(HTTP / Socket Mode)"]
-        Mattermost["Mattermost\n(HTTP / WebSocket)"]
-    end
-
-    subgraph Bridge["Chat Agent Bridge (Local)"]
-        direction TB
-        Adapter["Chat Adapter\nslack-adapter / mattermost-adapter"]
-        BridgeSvc["Bridge Service\nrouting / approvals / sessions / job queue"]
-        StateStore["File State Store\nstate.json"]
-        AuditLog["Audit Logger\naudit.jsonl"]
-        AdminSrv["Admin Server\n:8788/admin"]
-    end
-
-    subgraph Agents["Agent Adapters"]
-        Codex["Codex CLI\ncodex-agent"]
-        Claude["Claude Code CLI\nclaude-agent"]
-        Cursor["Cursor CLI\ncursor-agent"]
-        Gemini["Gemini CLI\ngemini"]
-    end
-
-    subgraph LocalFS["Local Machine"]
-        Repos["Git Repositories\nCAB_ALLOWED_DIRS"]
-        Settings["admin-settings.json"]
-    end
-
-    Browser["Browser\nAdmin UI"]
-    User["User"]
-
-    User -- "message" --> Slack
-    User -- "message" --> Mattermost
-    Slack -- "event" --> Adapter
-    Mattermost -- "event" --> Adapter
-    Adapter --> BridgeSvc
-    BridgeSvc --> StateStore
-    BridgeSvc --> AuditLog
-    BridgeSvc --> Codex
-    BridgeSvc --> Claude
-    BridgeSvc --> Cursor
-    BridgeSvc --> Gemini
-    Codex -- "spawn" --> Repos
-    Claude -- "spawn / stream-json" --> Repos
-    Cursor -- "spawn" --> Repos
-    Gemini -- "spawn" --> Repos
-    BridgeSvc -- "reply" --> Adapter
-    Adapter -- "post" --> Slack
-    Adapter -- "post" --> Mattermost
-    AdminSrv --> StateStore
-    AdminSrv --> BridgeSvc
-    Browser -- "HTTP" --> AdminSrv
-    Settings --> BridgeSvc
-```
-
-## Documentation
-
-- Windows CI/CD and distribution: [docs/ci-cd.ja.md](docs/ci-cd.ja.md)
-- Install and base configuration: [docs/install.md](docs/install.md)
-- Slack setup: [docs/slack-setup.md](docs/slack-setup.md)
-- Mattermost setup: [docs/mattermost-setup.md](docs/mattermost-setup.md)
-- Operations and service management: [docs/operations.md](docs/operations.md)
-- Testing and E2E flows: [docs/testing.md](docs/testing.md)
-- Architecture: [docs/architecture.md](docs/architecture.md)
-
-## Notes
-
-- The bridge starts an admin server by default on `http://<bridge-host>:8788/admin`
-- Initial setup can be guided from `http://<bridge-host>:8788/admin/onboarding`
-- Before using any agent through the bridge, verify that the corresponding local CLI can already run successfully in the same environment in non-interactive mode
-- Codex sessions use the locally installed `codex` CLI and can reuse an existing local login
-- Claude Code is expected to be installed and authenticated locally before bridge execution
-- Cursor uses `cursor-agent --trust` by default and exposes a separate model setting in the Admin UI. The default model is `Auto`.
-- Cursor is expected to be installed and authenticated locally before bridge execution
-- Gemini uses `gemini --approval-mode yolo` by default and exposes separate command and model settings in the Admin UI.
-- Gemini is expected to be installed and authenticated locally before bridge execution
-- The bridge injects `CHAT_AGENT_BRIDGE=1` into Codex child processes so external hooks can suppress duplicate notifications
-- In Mattermost, `MATTERMOST_ACTOR_MODE=self` is intended for user-token operation, accepts only self-DMs, and still requires a mention in that self-DM
-- Claude Code resume candidates are read from `~/.claude/projects/<encoded-cwd>/*.jsonl` (override with `CAB_CLAUDE_PROJECTS_DIR`); only directories inside `CAB_ALLOWED_DIRS` are ever accepted as a working directory
-- The Admin UI has a read-only Environment panel (`GET /admin/api/environment`) showing allowed roots, repo aliases, channel defaults, and the `CHAT_AGENT_BRIDGE_*` variable names passed to agents
-- Allowed directory roots can be changed at runtime: from chat with `allow-dir <absolute-path>` / `allow-dir remove <absolute-path>` / `allow-dirs`, or from the Admin UI's "Allowed directory roots" field. Changes apply immediately and are persisted, but the `CAB_ALLOWED_DIRS` environment variable takes precedence again on the next restart if set. See [docs/install.md](docs/install.md) for the full precedence order
-- `npm run service:install-autostart` registers a Windows Task Scheduler task that starts the bridge at logon; `npm run service:uninstall-autostart` removes it. See [docs/operations.md](docs/operations.md)
-
-## Disclaimer
-
-- This tool is provided as-is, with no warranty of any kind.
-- The author does not guarantee stability, correctness, security, or fitness for any purpose.
-- Use of this tool is entirely at your own risk.
-- The author is not responsible for any data loss, repository damage, account issues, service disruption, security incidents, costs, or any other trouble caused by using this project.
-- This bridge can trigger local agent actions against real files, repositories, and connected chat systems. Review the configuration carefully before using it.
-- Restrict allowed directories, tokens, network access, and chat exposure to the minimum required for your environment.
-- Do not use this project in environments where you cannot accept the operational and security risks of remote-triggered local execution.
+Documentation for the earlier TypeScript implementation remains in the [installation guide](docs/install.md) and [architecture guide](docs/architecture.md). Those instructions differ from the current Windows app.
