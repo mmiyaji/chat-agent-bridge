@@ -7,6 +7,12 @@ public interface IChatConnectionEvents
     event Action? Connected;
 }
 
+/// <summary>Refreshes request filters without changing the authenticated socket identity.</summary>
+public interface IChatLiveAccessSettings
+{
+    void UpdateAccessSettings(BridgeSettings settings);
+}
+
 /// <summary>Reports automatic recovery from a transient chat socket failure.</summary>
 public interface IChatReconnectionEvents
 {

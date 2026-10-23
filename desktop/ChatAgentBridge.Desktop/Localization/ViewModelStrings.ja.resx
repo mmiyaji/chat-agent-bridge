@@ -379,10 +379,10 @@
     <value>設定を保存しました</value>
   </data>
   <data name="SettingsSavedReconnect" xml:space="preserve">
-    <value>変更をチャット接続へ反映するには、「チャット受信」で再接続してください。</value>
+    <value>次の依頼から保存した設定を使用します。サーバー・チャンネル・トークン・プロキシの変更時は接続し直してください。</value>
   </data>
   <data name="SettingsSavedReconnectDetails" xml:space="preserve">
-    <value>承認設定などの変更を反映するため、一度切断してこの画面から再接続してください。</value>
+    <value>実行・許可設定は次の投稿から反映されます。サーバー・チャンネル・トークン・プロキシの変更時は接続し直してください。</value>
   </data>
   <data name="SetupAgentReady" xml:space="preserve">
     <value>完了：保存済み。CLIやログイン状態はここでは確認していません。</value>

@@ -137,7 +137,7 @@ public sealed class PortableIdentityCoordinator(string dataDirectory, bool hasLi
                     try { if (!helper.HasExited) helper.Kill(); }
                     catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception) { }
                 }
-                window?.CancelPortableUpdatePreparation();
+                if (window is not null) await window.CancelPortableUpdatePreparationAsync();
             }
             helper?.Dispose();
             End();

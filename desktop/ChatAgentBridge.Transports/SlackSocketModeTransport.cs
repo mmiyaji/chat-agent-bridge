@@ -9,7 +9,7 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProgressTransport, IChatFileTransport, IChatConnectionEvents, IChatReconnectionEvents
+public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProgressTransport, IChatFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatLiveAccessSettings
 {
     public event Action? Connected;
     public event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
@@ -29,6 +29,9 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
     private long _connectionGeneration;
     private long _fileUploadConnectionGeneration;
     private readonly object _progressOwner = new();
+    private BridgeSettings? _liveAccessSettings;
+
+    public void UpdateAccessSettings(BridgeSettings settings) => Volatile.Write(ref _liveAccessSettings, settings);
 
     public SlackSocketModeTransport() : this(TransportHttp.CreateClient(), new Uri("https://slack.com/api/"),
         fileUploadHttp: TransportHttp.CreateClient(timeout: TimeSpan.FromMinutes(2))) { }
@@ -51,6 +54,7 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
 
     public async Task RunAsync(BridgeSettings settings, Func<ChatRequest, CancellationToken, Task> onRequest, CancellationToken cancellationToken)
     {
+        UpdateAccessSettings(settings);
         ObjectDisposedException.ThrowIf(_disposed, this);
         Interlocked.Increment(ref _connectionGeneration);
         _connected = false;
@@ -173,7 +177,9 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
                 try { await SendAsync(socket, new { envelope_id = envelopeId }, cancellationToken).ConfigureAwait(false); }
                 catch (Exception ex) when (ex is WebSocketException or IOException) { throw new SlackReconnectException(ex); }
                 if (!envelope.TryGetProperty("payload", out var payload) || !payload.TryGetProperty("event", out var evt)) continue;
-                var request = await ParseRequestAsync(evt, _botUserId, settings, sessions, cancellationToken, continuations).ConfigureAwait(false);
+                var currentSettings = Volatile.Read(ref _liveAccessSettings) ?? settings;
+                if (!ChatConnectionPolicy.Matches("slack", currentSettings, settings)) continue;
+                var request = await ParseRequestAsync(evt, _botUserId, currentSettings, sessions, cancellationToken, continuations).ConfigureAwait(false);
                 if (request is null || !_seen.TryAdd(request.MessageId)) continue;
                 // Remember before delivery so live follow-ups in a brand-new thread are accepted while the first run is active.
                 continuations.Remember(ChatSessionScope.Create("slack", request.ChannelId, request.ThreadId, request.UserId));
@@ -418,8 +424,8 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
         {
             result = await socket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
             if (result.MessageType == WebSocketMessageType.Close) return null;
-            if (result.MessageType != WebSocketMessageType.Text) throw new InvalidOperationException("Slack sent a non-text WebSocket message.");
-            if (content.WrittenCount + result.Count > MaxMessageBytes) throw new InvalidOperationException("Slack WebSocket message exceeded the 1 MiB limit.");
+            if (result.MessageType != WebSocketMessageType.Text || content.WrittenCount + result.Count > MaxMessageBytes)
+                throw new SlackReconnectException();
             content.Write(buffer.AsSpan(0, result.Count));
         } while (!result.EndOfMessage);
         try { return JsonDocument.Parse(content.WrittenMemory); }

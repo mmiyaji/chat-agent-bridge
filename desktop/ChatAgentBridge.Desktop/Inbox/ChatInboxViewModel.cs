@@ -110,6 +110,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private Task? _receiveTask;
     private IChatTransport? _transport;
     private BridgeSettings? _accessSettings;
+    private BridgeSettings? _connectionSettings;
+    internal BridgeSettings? ActiveConnectionSettings => _connectionSettings;
+    private readonly SemaphoreSlim _accessRefreshGate = new(1, 1);
     private InboxItem? _activeItem;
     private Task _connectionNotice = Task.CompletedTask;
     private bool _disconnecting;
@@ -460,6 +463,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             _automaticallyAttempted.Clear();
             Selected = null;
             _transport = transport;
+            _connectionSettings = settings;
             var connection = new CancellationTokenSource();
             _connection = connection;
             SubscribeConnectionEvents(transport, settings, connection);
@@ -484,25 +488,37 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             await transport.RunAsync(settings, async (request, token) =>
             {
-                var accessSettings = Volatile.Read(ref _accessSettings);
-                if (_disconnecting || accessSettings is null || !HasAccess(accessSettings, request, settings)) return;
+                // The socket retains its authenticated identity, but each new request uses
+                // the latest saved execution defaults and access rules.
+                BridgeSettings accessSettings;
+                try { accessSettings = await _store.LoadAsync(token); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or
+                    System.Security.Cryptography.CryptographicException or ArgumentException or FormatException)
+                {
+                    Volatile.Write(ref _accessSettings, null);
+                    App.DispatcherQueue.TryEnqueue(() => { HasConnectionError = true; Status = DesktopText.Get("InboxPermissionsUnavailable"); });
+                    return;
+                }
+                Volatile.Write(ref _accessSettings, accessSettings);
+                if (_disconnecting || !CanReceive(accessSettings, request, settings)) return;
                 await QueueReceivedAuditAsync(receivedAudits, request, cancellationToken);
                 // A full queue can yield while the user revokes access or disconnects.
                 cancellationToken.ThrowIfCancellationRequested();
-                accessSettings = Volatile.Read(ref _accessSettings);
-                if (_disconnecting || accessSettings is null || !HasAccess(accessSettings, request, settings)) return;
+                var latestAccess = Volatile.Read(ref _accessSettings);
+                if (_disconnecting || latestAccess is null || !CanReceive(latestAccess, request, settings)) return;
+                accessSettings = latestAccess;
                 if (request.CancellationTargetMessageId is not null)
                 {
-                    await TryHandleChatControlAsync(transport, settings, request, token);
+                    await TryHandleChatControlAsync(transport, accessSettings, request, token);
                     return;
                 }
                 if (_approvalBroker.TryHandle(request)) return;
-                if (await TryHandleChatAnswerAsync(transport, settings, request, token)) return;
-                if (await TryHandleAgentCommandAsync(transport, settings, request, token)) return;
-                if (await TryHandleChatControlAsync(transport, settings, request, token)) return;
+                if (await TryHandleChatAnswerAsync(transport, accessSettings, request, token)) return;
+                if (await TryHandleAgentCommandAsync(transport, accessSettings, request, token)) return;
+                if (await TryHandleChatControlAsync(transport, accessSettings, request, token)) return;
                 var completion = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (!App.DispatcherQueue.TryEnqueue(() => completion.TrySetResult(
-                    AcceptReceivedRequestAsync(request, transport, settings, token)))) completion.TrySetCanceled();
+                    AcceptReceivedRequestAsync(request, transport, accessSettings, token)))) completion.TrySetCanceled();
                 await await completion.Task;
             }, cancellationToken);
             Status = DesktopText.Get("InboxConnectionEnded");
@@ -538,7 +554,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await FinishConnectionProgressAsync(transport);
             await _connectionNotice;
             await transport.DisposeAsync();
-            if (ReferenceEquals(_transport, transport)) _transport = null;
+            if (ReferenceEquals(_transport, transport)) { _transport = null; _connectionSettings = null; OnPropertyChanged(nameof(ConnectionProvider)); }
             if (ReferenceEquals(_connection, connection)) _connection = null;
             connection.Dispose();
             IsConnectionConfirmed = false;
@@ -908,23 +924,23 @@ public sealed partial class ChatInboxViewModel : ObservableObject
 
     private static bool HasAccess(BridgeSettings current, ChatRequest request, BridgeSettings received)
     {
-        if (!ChatAccessPolicy.IsAllowedRequest(current, request.Provider, request.UserId, request.ChannelId, request.ThreadId) ||
-            !SameExecutionDefaults(current, received)) return false;
-        if (request.Provider == "mattermost")
-            return current.MattermostChannelId == request.ChannelId && received.MattermostChannelId == request.ChannelId &&
-                current.MattermostToken == received.MattermostToken &&
-                ChatSessionScope.Create(request.Provider, request.ChannelId, request.ThreadId, request.UserId, current.MattermostServerUrl).Origin ==
-                ChatSessionScope.Create(request.Provider, request.ChannelId, request.ThreadId, request.UserId, received.MattermostServerUrl).Origin;
-        return request.Provider == "slack" && current.SlackBotToken == received.SlackBotToken && current.SlackAppToken == received.SlackAppToken;
+        return CanReceive(current, request, received) && SameExecutionDefaults(current, received);
     }
+
+    private static bool CanReceive(BridgeSettings current, ChatRequest request, BridgeSettings connected) =>
+        ChatAccessPolicy.IsAllowedRequest(current, request.Provider, request.UserId, request.ChannelId, request.ThreadId) &&
+        (request.Provider != "mattermost" || string.Equals(current.MattermostChannelId, request.ChannelId, StringComparison.Ordinal)) &&
+        ChatConnectionPolicy.Matches(request.Provider, current, connected);
 
     public async Task RefreshAccessAsync()
     {
+        await _accessRefreshGate.WaitAsync();
         try
         {
             var settings = await _store.LoadAsync();
             var previous = Volatile.Read(ref _accessSettings);
             Volatile.Write(ref _accessSettings, settings);
+            if (_transport is IChatLiveAccessSettings live) live.UpdateAccessSettings(settings);
             if (_attachmentTransferActive && previous is not null && !SameAttachmentPolicy(previous, settings))
                 RequestExecutionCancellation();
             foreach (var item in Requests.Where(item => !HasAccess(settings, item.Request, item.Settings)))
@@ -933,7 +949,17 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 item.ResultText = "";
             }
             if (_activeItem is { } active && !HasAccess(settings, active.Request, active.Settings)) RequestExecutionCancellation();
-            if (IsConnected && previous is not null && !SameExecutionDefaults(previous, settings))
+            if (IsConnected && _connectionSettings is { } connected && ConnectionProvider is { } provider &&
+                !ChatConnectionPolicy.Matches(provider, settings, connected))
+            {
+                // Old credentials or a different server/channel must never remain a green,
+                // apparently usable connection after the settings have been saved.
+                IsConnectionConfirmed = false;
+                await DisconnectAsync();
+                HasConnectionError = true;
+                Status = DesktopText.Get("InboxConnectionSettingsChanged");
+            }
+            else if (IsConnected && previous is not null && !SameExecutionDefaults(previous, settings))
                 Status = DesktopText.Get("InboxExecutionSettingsChanged");
         }
         catch (Exception)
@@ -942,7 +968,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             RequestExecutionCancellation();
             foreach (var item in Requests) { if (item.State == "承認待ち") item.State = "許可設定を確認できず実行不可"; item.ResultText = ""; }
             Status = DesktopText.Get("InboxPermissionsUnavailable");
+            HasConnectionError = true;
         }
+        finally { _accessRefreshGate.Release(); }
         ApproveCommand.NotifyCanExecuteChanged();
         RejectCommand.NotifyCanExecuteChanged();
         SendResultCommand.NotifyCanExecuteChanged();

@@ -262,9 +262,10 @@
   <data name="InboxResultSent" xml:space="preserve"><value>結果本文を元のスレッドへ送信しました。</value></data>
   <data name="InboxResultSendCancelled" xml:space="preserve"><value>結果の送信をキャンセルしました。</value></data>
   <data name="InboxResultSendFailed" xml:space="preserve"><value>結果の送信または監査記録に失敗しました。再送前にスレッドを確認してください。</value></data>
-  <data name="InboxExecutionSettingsChanged" xml:space="preserve"><value>実行設定を変更しました。保留中の依頼は実行しません。切断して再接続し、必要な依頼を再投稿してください。</value></data>
+  <data name="InboxExecutionSettingsChanged" xml:space="preserve"><value>実行設定を変更しました。次の投稿から保存した設定を使用します。再接続は不要です。変更前に受信した依頼は、再投稿や再承認が必要な場合があります。</value></data>
+  <data name="InboxConnectionSettingsChanged" xml:space="preserve"><value>サーバー・チャンネル・トークン・プロキシ設定を変更したため、安全のため古い接続を終了しました。保存した接続設定で接続し直してください。</value></data>
   <data name="InboxPermissionsUnavailable" xml:space="preserve"><value>許可設定を読み込めません。依頼の実行・結果共有を停止しました。設定を修復して再接続してください。</value></data>
-  <data name="InboxExecutionPausedSettingsChanged" xml:space="preserve"><value>許可範囲または実行・会話設定が変更されたため、実行・結果共有を停止しました。設定確認後に再接続・再投稿してください。</value></data>
+  <data name="InboxExecutionPausedSettingsChanged" xml:space="preserve"><value>許可範囲または実行・会話設定が変更されたため、実行・結果共有を停止しました。設定を確認して、必要な依頼を再投稿してください。</value></data>
   <data name="InboxStatusNoticeFailed" xml:space="preserve"><value>チャットへの状態通知に失敗しました。</value></data>
   <data name="InboxConnectionNoticeFailed" xml:space="preserve"><value>接続状態のチャット通知に失敗しました。</value></data>
   <data name="InboxAuditSaveFailed" xml:space="preserve"><value>履歴・監査の保存にも失敗しました。</value></data>
@@ -675,6 +676,10 @@
   <data name="InboxConnectionReadyLabel" xml:space="preserve"><value>依頼を受信できます</value></data>
   <data name="InboxConnectionWorkingLabel" xml:space="preserve"><value>接続処理中</value></data>
   <data name="InboxConnectionOfflineLabel" xml:space="preserve"><value>未接続</value></data>
+  <data name="SidebarConnectionConnected" xml:space="preserve"><value>接続中</value></data>
+  <data name="SidebarConnectionConnecting" xml:space="preserve"><value>接続処理中</value></data>
+  <data name="SidebarConnectionDisconnected" xml:space="preserve"><value>未接続</value></data>
+  <data name="SidebarConnectionError" xml:space="preserve"><value>接続エラー</value></data>
   <data name="InboxQueueSummary" xml:space="preserve"><value>承認待ち {0}件 · 実行中 {1}件</value></data>
   <data name="SettingsDraftAgent" xml:space="preserve"><value>エージェント設定</value></data>
   <data name="SettingsDraftChat" xml:space="preserve"><value>接続設定</value></data>

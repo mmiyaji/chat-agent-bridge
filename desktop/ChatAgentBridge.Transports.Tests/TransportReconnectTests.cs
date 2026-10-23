@@ -421,6 +421,180 @@ public sealed class TransportReconnectTests
     }
 
     [Fact]
+    public async Task Mattermost_retries_transient_author_lookup_while_handling_post_and_delivers_once()
+    {
+        var accepted = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var authorLookups = 0;
+        var delivered = 0;
+        LoopbackServer? server = null;
+        await using var serverLifetime = server = new LoopbackServer(HandleHttpAsync, HandleSocketAsync);
+        await using var transport = new MattermostWebSocketTransport();
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        var settings = new BridgeSettings
+        {
+            MattermostServerUrl = server.BaseUri.ToString(), MattermostChannelId = "channel-1",
+            MattermostToken = "local-test-token", MattermostAllowedUserIds = "member-1", MattermostBypassProxy = true
+        };
+
+        var run = transport.RunAsync(settings, (request, _) =>
+        {
+            Interlocked.Increment(ref delivered);
+            accepted.TrySetResult(request);
+            return Task.CompletedTask;
+        }, cancellation.Token);
+        var result = await accepted.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+        Assert.Equal("incoming-retried", result.MessageId);
+        Assert.Equal(2, Volatile.Read(ref authorLookups));
+        Assert.Equal(1, Volatile.Read(ref delivered));
+        cancellation.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(5));
+
+        async Task HandleHttpAsync(HttpListenerContext context)
+        {
+            var path = context.Request.Url?.AbsolutePath;
+            if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/me")
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{\"id\":\"bot-1\",\"username\":\"cab-bot\",\"is_bot\":true}");
+            else if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/member-1" && Interlocked.Increment(ref authorLookups) == 1)
+                await server!.WriteJsonAsync(context, HttpStatusCode.ServiceUnavailable, "{}");
+            else if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/member-1")
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{\"id\":\"member-1\",\"username\":\"member\",\"is_bot\":false}");
+            else await server!.WriteJsonAsync(context, HttpStatusCode.NotFound, "{}");
+        }
+
+        async Task HandleSocketAsync(int _, WebSocket socket, CancellationToken ct)
+        {
+            await ReadSocketMessageAsync(socket, ct);
+            await SendSocketJsonAsync(socket, "{\"seq_reply\":1,\"status\":\"OK\"}", ct);
+            var post = JsonSerializer.Serialize(new
+            {
+                id = "incoming-retried", channel_id = "channel-1", user_id = "member-1", message = "!cab do work", root_id = ""
+            });
+            await SendSocketJsonAsync(socket, JsonSerializer.Serialize(new { @event = "posted", data = new { post } }), ct);
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+        }
+    }
+
+    [Fact]
+    public async Task Mattermost_reconnects_after_invalid_websocket_frame_and_resumes_receiving()
+    {
+        var accepted = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+        LoopbackServer? server = null;
+        await using var serverLifetime = server = new LoopbackServer(HandleHttpAsync, HandleSocketAsync);
+        await using var transport = new MattermostWebSocketTransport();
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        var settings = new BridgeSettings
+        {
+            MattermostServerUrl = server.BaseUri.ToString(), MattermostChannelId = "channel-1",
+            MattermostToken = "local-test-token", MattermostAllowedUserIds = "member-1", MattermostBypassProxy = true
+        };
+
+        var run = transport.RunAsync(settings, (request, _) =>
+        {
+            accepted.TrySetResult(request);
+            return Task.CompletedTask;
+        }, cancellation.Token);
+        var result = await accepted.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+        Assert.Equal("after-invalid-frame", result.MessageId);
+        Assert.Equal(2, server.SocketConnections);
+        cancellation.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(5));
+
+        async Task HandleHttpAsync(HttpListenerContext context)
+        {
+            var path = context.Request.Url?.AbsolutePath;
+            if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/me")
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{\"id\":\"bot-1\",\"username\":\"cab-bot\",\"is_bot\":true}");
+            else if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/member-1")
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{\"id\":\"member-1\",\"username\":\"member\",\"is_bot\":false}");
+            else await server!.WriteJsonAsync(context, HttpStatusCode.NotFound, "{}");
+        }
+
+        async Task HandleSocketAsync(int connection, WebSocket socket, CancellationToken ct)
+        {
+            await ReadSocketMessageAsync(socket, ct);
+            await SendSocketJsonAsync(socket, "{\"seq_reply\":1,\"status\":\"OK\"}", ct);
+            if (connection == 1)
+            {
+                await socket.SendAsync(new byte[] { 0x01, 0x02 }, WebSocketMessageType.Binary, true, ct);
+                return;
+            }
+            var post = JsonSerializer.Serialize(new
+            {
+                id = "after-invalid-frame", channel_id = "channel-1", user_id = "member-1", message = "!cab do work", root_id = ""
+            });
+            await SendSocketJsonAsync(socket, JsonSerializer.Serialize(new { @event = "posted", data = new { post } }), ct);
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+        }
+    }
+
+    [Fact]
+    public async Task Mattermost_live_access_settings_revoke_and_add_users_on_the_active_socket()
+    {
+        var firstAccepted = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var addedAccepted = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sendAfterPolicyUpdate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var delivered = 0;
+        LoopbackServer? server = null;
+        await using var serverLifetime = server = new LoopbackServer(HandleHttpAsync, HandleSocketAsync);
+        await using var transport = new MattermostWebSocketTransport();
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        var settings = new BridgeSettings
+        {
+            MattermostServerUrl = server.BaseUri.ToString(), MattermostChannelId = "channel-1",
+            MattermostToken = "local-test-token", MattermostAllowedUserIds = "member-1", MattermostBypassProxy = true
+        };
+        var run = transport.RunAsync(settings, (request, _) =>
+        {
+            Interlocked.Increment(ref delivered);
+            if (request.UserId == "member-1") firstAccepted.TrySetResult(request);
+            if (request.UserId == "member-2") addedAccepted.TrySetResult(request);
+            return Task.CompletedTask;
+        }, cancellation.Token);
+
+        await firstAccepted.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+        transport.UpdateAccessSettings(settings with { MattermostAllowedUserIds = "member-2" });
+        sendAfterPolicyUpdate.TrySetResult();
+        var added = await addedAccepted.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+        Assert.Equal("added-user", added.MessageId);
+        Assert.Equal(2, Volatile.Read(ref delivered));
+        cancellation.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(5));
+
+        async Task HandleHttpAsync(HttpListenerContext context)
+        {
+            var path = context.Request.Url?.AbsolutePath;
+            if (context.Request.HttpMethod == "GET" && path == "/api/v4/users/me")
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, "{\"id\":\"bot-1\",\"username\":\"cab-bot\",\"is_bot\":true}");
+            else if (context.Request.HttpMethod == "GET" && path is "/api/v4/users/member-1" or "/api/v4/users/member-2")
+            {
+                var id = path.EndsWith("member-1", StringComparison.Ordinal) ? "member-1" : "member-2";
+                await server!.WriteJsonAsync(context, HttpStatusCode.OK, JsonSerializer.Serialize(new { id, username = id, is_bot = false }));
+            }
+            else await server!.WriteJsonAsync(context, HttpStatusCode.NotFound, "{}");
+        }
+
+        async Task HandleSocketAsync(int _, WebSocket socket, CancellationToken ct)
+        {
+            await ReadSocketMessageAsync(socket, ct);
+            await SendSocketJsonAsync(socket, "{\"seq_reply\":1,\"status\":\"OK\"}", ct);
+            await SendPostAsync("initial-user", "member-1");
+            await sendAfterPolicyUpdate.Task.WaitAsync(ct);
+            await SendPostAsync("revoked-user", "member-1");
+            await SendPostAsync("added-user", "member-2");
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+
+            Task SendPostAsync(string id, string userId)
+            {
+                var post = JsonSerializer.Serialize(new
+                {
+                    id, channel_id = "channel-1", user_id = userId, message = "!cab do work", root_id = ""
+                });
+                return SendSocketJsonAsync(socket, JsonSerializer.Serialize(new { @event = "posted", data = new { post } }), ct);
+            }
+        }
+    }
+
+    [Fact]
     public async Task Mattermost_bad_credentials_fail_without_reconnect_retry()
     {
         LoopbackServer? server = null;
@@ -535,6 +709,97 @@ public sealed class TransportReconnectTests
         Assert.Equal(0, Volatile.Read(ref reconnects));
     }
 
+    [Fact]
+    public async Task Slack_reconnects_after_invalid_websocket_frame_and_resumes_receiving()
+    {
+        var accepted = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var openCount = 0;
+        await using var server = new LoopbackServer(_ => Task.CompletedTask, HandleSocketAsync);
+        using var http = new HttpClient(new SlackApiHandler(() => Interlocked.Increment(ref openCount), server.BaseUri));
+        await using var transport = new SlackSocketModeTransport(http, new Uri("https://slack.test/api/"), "test-token",
+            allowInsecureLoopbackSocketForTests: true);
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        var run = transport.RunAsync(new BridgeSettings
+        {
+            SlackBotToken = "test-token", SlackAppToken = "test-app-token", SlackAllowedUserIds = "U1"
+        }, (request, _) =>
+        {
+            accepted.TrySetResult(request);
+            return Task.CompletedTask;
+        }, cancellation.Token);
+        var result = await accepted.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+        Assert.Equal("2.0", result.MessageId);
+        Assert.Equal(2, Volatile.Read(ref openCount));
+        cancellation.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(5));
+
+        async Task HandleSocketAsync(int connection, WebSocket socket, CancellationToken ct)
+        {
+            if (connection == 1)
+            {
+                await socket.SendAsync(new byte[] { 0x01, 0x02 }, WebSocketMessageType.Binary, true, ct);
+                return;
+            }
+            await SendSocketJsonAsync(socket, SlackEventEnvelope, ct);
+            await ReadSocketMessageAsync(socket, ct);
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+        }
+    }
+
+    [Fact]
+    public async Task Slack_live_access_settings_revoke_and_add_users_on_the_active_socket()
+    {
+        var firstAccepted = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var addedAccepted = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sendAfterPolicyUpdate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var openCount = 0;
+        var delivered = 0;
+        await using var server = new LoopbackServer(_ => Task.CompletedTask, HandleSocketAsync);
+        using var http = new HttpClient(new SlackApiHandler(() => Interlocked.Increment(ref openCount), server.BaseUri));
+        await using var transport = new SlackSocketModeTransport(http, new Uri("https://slack.test/api/"), "test-token",
+            allowInsecureLoopbackSocketForTests: true);
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        var settings = new BridgeSettings
+        {
+            SlackBotToken = "test-token", SlackAppToken = "test-app-token", SlackAllowedUserIds = "U1"
+        };
+        var run = transport.RunAsync(settings, (request, _) =>
+        {
+            Interlocked.Increment(ref delivered);
+            if (request.UserId == "U1") firstAccepted.TrySetResult(request);
+            if (request.UserId == "U2") addedAccepted.TrySetResult(request);
+            return Task.CompletedTask;
+        }, cancellation.Token);
+
+        await firstAccepted.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+        transport.UpdateAccessSettings(settings with { SlackAllowedUserIds = "U2" });
+        sendAfterPolicyUpdate.TrySetResult();
+        var added = await addedAccepted.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+        Assert.Equal("3.0", added.MessageId);
+        Assert.Equal(2, Volatile.Read(ref delivered));
+        Assert.Equal(1, Volatile.Read(ref openCount));
+        cancellation.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(5));
+
+        async Task HandleSocketAsync(int _, WebSocket socket, CancellationToken ct)
+        {
+            await SendEventAsync("2.0", "U1");
+            await ReadSocketMessageAsync(socket, ct);
+            await sendAfterPolicyUpdate.Task.WaitAsync(ct);
+            await SendEventAsync("2.1", "U1");
+            await ReadSocketMessageAsync(socket, ct);
+            await SendEventAsync("3.0", "U2");
+            await ReadSocketMessageAsync(socket, ct);
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+
+            Task SendEventAsync(string timestamp, string userId) => SendSocketJsonAsync(socket, JsonSerializer.Serialize(new
+            {
+                type = "events_api", envelope_id = $"event-{timestamp}",
+                payload = new { @event = new { type = "message", channel = "C1", user = userId, text = "!cab do work", ts = timestamp, thread_ts = "1.0" } }
+            }), ct);
+        }
+    }
+
     private const string SlackEventEnvelope = """{"type":"events_api","envelope_id":"event-1","payload":{"event":{"type":"message","channel":"C1","user":"U1","text":"!cab do work","ts":"2.0","thread_ts":"1.0"}}}""";
 
     private static async Task SendSocketJsonAsync(WebSocket socket, string json, CancellationToken cancellationToken)
@@ -643,6 +908,7 @@ public sealed class TransportReconnectTests
         private readonly Func<HttpListenerContext, Task> _handleHttp;
         private readonly Func<int, WebSocket, CancellationToken, Task> _handleSocket;
         public Uri BaseUri => _baseUri;
+        public int SocketConnections => Volatile.Read(ref _socketCount);
         public ConcurrentQueue<(string Method, string Path)> HttpRequests { get; } = new();
 
         public async Task WriteJsonAsync(HttpListenerContext context, HttpStatusCode status, string body)

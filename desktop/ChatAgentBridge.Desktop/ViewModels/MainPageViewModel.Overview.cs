@@ -69,9 +69,9 @@ public partial class MainPageViewModel
         OverviewConnectionAccessibleName = ViewModelText.Get("OverviewConnectionAccessibleName", OverviewConnectionStatus);
 
         var chatError = loadFailed || _chatConnectionFailed;
-        OverviewChatStatus = ViewModelText.Get(checking ? "OverviewChecking" : _chatConnectionConfirmed ? "OverviewConnected" : chatError ? "OverviewConnectionError" : _chatConnectionPreparing ? "OverviewConnecting" : "OverviewOffline");
-        OverviewChatGlyph = checking ? OverviewPendingGlyph : _chatConnectionConfirmed ? OverviewCheckGlyph : chatError ? OverviewErrorGlyph : _chatConnectionPreparing ? OverviewPendingGlyph : OverviewWarningGlyph;
-        OverviewChatIconState = checking ? OverviewIconState.Neutral : _chatConnectionConfirmed ? OverviewIconState.Ready : chatError ? OverviewIconState.Error : _chatConnectionPreparing ? OverviewIconState.Neutral : OverviewIconState.Attention;
+        OverviewChatStatus = ViewModelText.Get(checking ? "OverviewChecking" : chatError ? "OverviewConnectionError" : _chatConnectionConfirmed ? "OverviewConnected" : _chatConnectionPreparing ? "OverviewConnecting" : "OverviewOffline");
+        OverviewChatGlyph = checking ? OverviewPendingGlyph : chatError ? OverviewErrorGlyph : _chatConnectionConfirmed ? OverviewCheckGlyph : _chatConnectionPreparing ? OverviewPendingGlyph : OverviewWarningGlyph;
+        OverviewChatIconState = checking ? OverviewIconState.Neutral : chatError ? OverviewIconState.Error : _chatConnectionConfirmed ? OverviewIconState.Ready : _chatConnectionPreparing ? OverviewIconState.Neutral : OverviewIconState.Attention;
         OverviewChatAccessibleName = ViewModelText.Get("OverviewChatAccessibleName", OverviewChatStatus);
 
         var cliVerified = HasCurrentCliCheck();

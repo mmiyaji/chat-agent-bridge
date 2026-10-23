@@ -41,6 +41,7 @@ public sealed partial class MainPage : Page
         InitializeSettingsAutoSave();
         InitializeLanguageRestart();
         InitializePortableUpdateBadge();
+        InitializePortableUpdateRecoveryProbe();
         UpdateNavigationContentOffset();
         _wizard = new Onboarding.OnboardingWizard(ViewModel, InboxPage.ViewModel, ReloadProcessEnvironment);
         WizardHost.Content = _wizard;

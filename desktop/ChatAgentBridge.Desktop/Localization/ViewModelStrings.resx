@@ -379,10 +379,10 @@
     <value>Settings saved</value>
   </data>
   <data name="SettingsSavedReconnect" xml:space="preserve">
-    <value>Reconnect from Chat Inbox to apply the changes to the chat connection.</value>
+    <value>New chat requests use the saved settings. Server, channel, token, or proxy changes require a new connection.</value>
   </data>
   <data name="SettingsSavedReconnectDetails" xml:space="preserve">
-    <value>Disconnect once, then reconnect here to apply approval setting changes.</value>
+    <value>Execution and permission settings apply to new messages. Connect again after changing the server, channel, token, or proxy.</value>
   </data>
   <data name="SetupAgentReady" xml:space="preserve">
     <value>Complete: saved. The CLI and login status were not checked here.</value>

@@ -329,7 +329,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
                 try { helper.Kill(entireProcessTree: true); await helper.WaitForExitAsync(); }
                 catch (InvalidOperationException) { }
             }
-            if (!_committing && App.Window is MainWindow window) window.CancelPortableUpdatePreparation();
+            if (!_committing && App.Window is MainWindow window) await window.CancelPortableUpdatePreparationAsync();
             helper?.Dispose();
             EndOperation();
         }

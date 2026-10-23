@@ -49,6 +49,12 @@ public sealed partial class InboxConversation
 
 public sealed partial class ChatInboxViewModel
 {
+    public string? ConnectionProvider => _transport switch
+    {
+        ChatAgentBridge.Transports.MattermostWebSocketTransport => "mattermost",
+        ChatAgentBridge.Transports.SlackSocketModeTransport => "slack",
+        _ => null
+    };
     public string ConnectionTone => HasConnectionError ? "error" : IsConnectionConfirmed ? "success" : IsConnected ? "running" : "neutral";
     public string ConnectionLabel => DesktopText.Get(HasConnectionError ? "InboxConnectionErrorLabel" :
         IsConnectionConfirmed ? "InboxConnectionReadyLabel" : IsConnected ? "InboxConnectionWorkingLabel" : "InboxConnectionOfflineLabel");
@@ -86,6 +92,7 @@ public sealed partial class ChatInboxViewModel
     }
     private void NotifyConnectionPresentation()
     {
+        OnPropertyChanged(nameof(ConnectionProvider));
         OnPropertyChanged(nameof(ConnectionTone));
         OnPropertyChanged(nameof(ConnectionLabel));
         OnPropertyChanged(nameof(ShowEmptyConversationList));

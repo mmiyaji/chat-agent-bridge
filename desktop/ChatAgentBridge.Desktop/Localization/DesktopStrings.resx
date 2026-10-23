@@ -262,9 +262,10 @@
   <data name="InboxResultSent" xml:space="preserve"><value>Result text sent to the original thread.</value></data>
   <data name="InboxResultSendCancelled" xml:space="preserve"><value>Sending the result was canceled.</value></data>
   <data name="InboxResultSendFailed" xml:space="preserve"><value>Could not send the result or save the audit record. Check the thread before resending.</value></data>
-  <data name="InboxExecutionSettingsChanged" xml:space="preserve"><value>Execution settings changed. Pending requests will not run. Disconnect, reconnect, and resubmit any needed requests.</value></data>
+  <data name="InboxExecutionSettingsChanged" xml:space="preserve"><value>Execution settings changed. New messages use the saved settings without reconnecting. Requests received before the change may need to be resubmitted or approved again.</value></data>
+  <data name="InboxConnectionSettingsChanged" xml:space="preserve"><value>The server, channel, token, or proxy setting changed. The old connection was closed for safety. Connect again to use the saved connection settings.</value></data>
   <data name="InboxPermissionsUnavailable" xml:space="preserve"><value>Could not load permission settings. Request execution and result sharing are stopped. Repair the settings and reconnect.</value></data>
-  <data name="InboxExecutionPausedSettingsChanged" xml:space="preserve"><value>Execution and result sharing stopped because access scope or execution and conversation settings changed. Check the settings, reconnect, and resubmit.</value></data>
+  <data name="InboxExecutionPausedSettingsChanged" xml:space="preserve"><value>Execution and result sharing stopped because access scope or execution and conversation settings changed. Check the settings and resubmit the request.</value></data>
   <data name="InboxStatusNoticeFailed" xml:space="preserve"><value>Chat status notification failed.</value></data>
   <data name="InboxConnectionNoticeFailed" xml:space="preserve"><value>Chat connection status notification failed.</value></data>
   <data name="InboxAuditSaveFailed" xml:space="preserve"><value>Could not save history or audit data.</value></data>
@@ -675,6 +676,10 @@
   <data name="InboxConnectionReadyLabel" xml:space="preserve"><value>Ready to receive requests</value></data>
   <data name="InboxConnectionWorkingLabel" xml:space="preserve"><value>Connecting</value></data>
   <data name="InboxConnectionOfflineLabel" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="SidebarConnectionConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="SidebarConnectionConnecting" xml:space="preserve"><value>Connecting</value></data>
+  <data name="SidebarConnectionDisconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="SidebarConnectionError" xml:space="preserve"><value>Error</value></data>
   <data name="InboxQueueSummary" xml:space="preserve"><value>{0} awaiting approval · {1} running</value></data>
   <data name="SettingsDraftAgent" xml:space="preserve"><value>Agent settings</value></data>
   <data name="SettingsDraftChat" xml:space="preserve"><value>Connection settings</value></data>

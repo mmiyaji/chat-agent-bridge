@@ -99,4 +99,6 @@ public sealed partial class MainWindow : Window
     {
         if (RootFrame.Content is MainPage page) page.CancelPortableUpdatePreparation();
     }
+    internal Task CancelPortableUpdatePreparationAsync() => RootFrame.Content is MainPage page
+        ? page.CancelPortableUpdatePreparationAsync() : Task.CompletedTask;
 }

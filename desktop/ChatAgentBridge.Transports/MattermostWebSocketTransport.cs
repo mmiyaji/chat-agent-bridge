@@ -8,7 +8,7 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed partial class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatProgressLifecycleTransport, IChatFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatConnectionNotifications
+public sealed partial class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatProgressLifecycleTransport, IChatFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatConnectionNotifications, IChatLiveAccessSettings
 {
     public event Action? Connected;
     public event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
@@ -32,6 +32,9 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
     private long _fileUploadConnectionGeneration;
     private readonly object _progressOwner = new();
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
+    private BridgeSettings? _liveAccessSettings;
+
+    public void UpdateAccessSettings(BridgeSettings settings) => Volatile.Write(ref _liveAccessSettings, settings);
 
     public MattermostWebSocketTransport() { }
 
@@ -53,6 +56,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
 
     public async Task RunAsync(BridgeSettings settings, Func<ChatRequest, CancellationToken, Task> onRequest, CancellationToken cancellationToken)
     {
+        UpdateAccessSettings(settings);
         await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         Uri root;
         string token;
@@ -188,25 +192,26 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
                 Connected?.Invoke();
             }
             if (!envelope.TryGetProperty("event", out var eventName) || eventName.ValueKind != JsonValueKind.String) continue;
+            var currentSettings = Volatile.Read(ref _liveAccessSettings) ?? settings;
+            if (!ChatConnectionPolicy.Matches("mattermost", currentSettings, settings)) continue;
             if (eventName.GetString() == "reaction_added")
             {
-                await ProcessStopReactionAsync(envelope, settings, onRequest, cancellationToken).ConfigureAwait(false);
+                await ProcessStopReactionAsync(envelope, currentSettings, onRequest, cancellationToken).ConfigureAwait(false);
                 continue;
             }
             if (eventName.GetString() != "posted") continue;
             if (!envelope.TryGetProperty("data", out var data) || !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
 
             var post = postJson.GetString()!;
-            await ProcessPostAsync(post, settings, _currentUserId ?? "", username, sessions, continuations, _seen,
+            await ProcessPostAsync(post, currentSettings, _currentUserId ?? "", username, sessions, continuations, _seen,
                 async (request, ct) =>
                 {
                     if (!_botCache.TryGet(request.UserId, out var isBot))
                     {
-                        var authorRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
-                            new Uri(root, $"api/v4/users/{Uri.EscapeDataString(request.UserId)}"), token);
                         MattermostUser author;
-                        try { author = await TransportHttp.SendJsonAsync<MattermostUser>(ActiveHttp, authorRequest, ct).ConfigureAwait(false); }
-                        catch (InvalidOperationException) { return false; }
+                        try { author = await GetAuthorWithRetryAsync(root, token, request.UserId, ct).ConfigureAwait(false); }
+                        catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or IOException ||
+                            ex is OperationCanceledException && !ct.IsCancellationRequested) { return false; }
                         isBot = author.IsBot;
                         _botCache.Set(request.UserId, isBot);
                     }
@@ -216,6 +221,33 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
                 }, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    private async Task<MattermostUser> GetAuthorWithRetryAsync(Uri root, string token, string userId,
+        CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 3;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                var request = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
+                    new Uri(root, $"api/v4/users/{Uri.EscapeDataString(userId)}"), token);
+                return await TransportHttp.SendJsonAsync<MattermostUser>(ActiveHttp, request, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (attempt < maxAttempts && IsRetryableAuthorLookupFailure(ex, cancellationToken))
+            {
+                // Mattermost does not guarantee replay of a post after a later reconnect.
+                // Retry the bounded author lookup while this event is still being handled.
+                await Task.Delay(TimeSpan.FromMilliseconds(250 * attempt), cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private static bool IsRetryableAuthorLookupFailure(Exception error, CancellationToken cancellationToken) =>
+        error is HttpRequestException or IOException ||
+        error is OperationCanceledException && !cancellationToken.IsCancellationRequested ||
+        error is InvalidOperationException invalid && (invalid.Message.Contains("HTTP 429", StringComparison.Ordinal) ||
+            TryGetHttpStatus(invalid.Message, out var status) && status >= 500);
 
     private async Task<MattermostUser> GetIdentityWithRetryAsync(Uri root, string token, CancellationToken cancellationToken)
     {
@@ -557,8 +589,8 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         {
             result = await socket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
             if (result.MessageType == WebSocketMessageType.Close) return null;
-            if (result.MessageType != WebSocketMessageType.Text) throw new InvalidOperationException("Mattermost sent a non-text WebSocket message.");
-            if (content.WrittenCount + result.Count > MaxMessageBytes) throw new InvalidOperationException("Mattermost WebSocket message exceeded the 1 MiB limit.");
+            if (result.MessageType != WebSocketMessageType.Text || content.WrittenCount + result.Count > MaxMessageBytes)
+                throw new MattermostReconnectException();
             content.Write(buffer.AsSpan(0, result.Count));
         } while (!result.EndOfMessage);
         try { return JsonDocument.Parse(content.WrittenMemory); }
