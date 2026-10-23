@@ -872,7 +872,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private async Task ObserveReceivedAuditAsync(Task audit)
     {
         try { await audit.ConfigureAwait(false); }
-        catch (Exception) { Status += " " + DesktopText.Get("InboxAuditSaveFailed"); }
+        catch (Exception)
+        {
+            // This continuation runs on a pool thread, but Status is bound to the UI.
+            void Report() => Status += " " + DesktopText.Get("InboxAuditSaveFailed");
+            if (App.DispatcherQueue.HasThreadAccess) Report();
+            else App.DispatcherQueue.TryEnqueue(Report);
+        }
     }
 
     private async Task<AppServerDecision> HandleApprovalAsync(InboxItem item, AppServerApproval approval, CancellationToken token)
