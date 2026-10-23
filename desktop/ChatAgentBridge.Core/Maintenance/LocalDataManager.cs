@@ -30,7 +30,10 @@ public sealed class LocalDataManager(string directory)
         // Validate every selected target before migration reads or aggregate writes as well as deletion.
         foreach (var kind in selected) _ = Files(kind).ToArray();
         if (selected.Contains(LocalDataKind.ExecutionHistory))
+        {
             EnsureSafe(Path.Combine(_directory, "activity-statistics.json"));
+            EnsureSafe(Path.Combine(_directory, "activity-statistics.journal.jsonl"));
+        }
         // Initialize statistics before erasing detail, so keeping statistics never loses its migration source.
         if (selected.Contains(LocalDataKind.ExecutionHistory) && !selected.Contains(LocalDataKind.UsageStatistics))
         {
@@ -48,6 +51,7 @@ public sealed class LocalDataManager(string directory)
         if (selected.Contains(LocalDataKind.UsageStatistics))
         {
             EnsureSafe(Path.Combine(_directory, "activity-statistics.json"));
+            EnsureSafe(Path.Combine(_directory, "activity-statistics.journal.jsonl"));
             await new History.ActivityStatisticsStore(_directory).ClearAsync(ct);
         }
     }
@@ -70,7 +74,7 @@ public sealed class LocalDataManager(string directory)
         {
             LocalDataKind.ExecutionHistory => ["history.json", "audit.json"],
             LocalDataKind.Conversations => ConversationFiles,
-            LocalDataKind.UsageStatistics => ["activity-statistics.json"],
+            LocalDataKind.UsageStatistics => ["activity-statistics.json", "activity-statistics.journal.jsonl"],
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
         return names.Select(name => Checked(Path.Combine(_directory, name))).ToArray();

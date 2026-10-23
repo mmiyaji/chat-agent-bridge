@@ -133,8 +133,14 @@ public sealed class ActivityStatisticsStoreTests
         for (var i = 0; i < ActivityStatisticsStore.MaxActiveExecutions; i++)
             await store.RecordAsync(new ExecutionRecord { Id = Guid.NewGuid(), Status = "running" });
         await Assert.ThrowsAsync<IOException>(() => store.RecordAsync(new ExecutionRecord { Id = Guid.NewGuid(), Status = "running" }));
-        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(directory.Path, "activity-statistics.json")));
-        Assert.Equal(ActivityStatisticsStore.MaxActiveExecutions, document.RootElement.GetProperty("Active").GetArrayLength());
+        // Reopen through a fresh path so the assertion covers the durable snapshot and
+        // journal rather than an in-process cache or an implementation-specific checkpoint.
+        using var reopened = new TemporaryDirectory();
+        Directory.CreateDirectory(reopened.Path);
+        foreach (var file in Directory.EnumerateFiles(directory.Path, "activity-statistics*"))
+            File.Copy(file, Path.Combine(reopened.Path, Path.GetFileName(file)));
+        await Assert.ThrowsAsync<IOException>(() => new ActivityStatisticsStore(reopened.Path)
+            .RecordAsync(new ExecutionRecord { Id = Guid.NewGuid(), Status = "running" }));
     }
 
     [Fact]

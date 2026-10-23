@@ -5,7 +5,7 @@ using ChatAgentBridge.Core.Pricing;
 namespace ChatAgentBridge.Core.History;
 
 /// <summary>Durable, privacy-minimized day/model statistics that outlive the bounded execution list.</summary>
-public sealed class ActivityStatisticsStore
+public sealed partial class ActivityStatisticsStore
 {
     public const int MaxDays = 3660;
     public const int MaxModelsPerDay = 128;
@@ -17,11 +17,13 @@ public sealed class ActivityStatisticsStore
     private static readonly ConcurrentDictionary<string, byte> MigratedPaths = new(
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
     private readonly string _path;
+    private readonly string _journalPath;
 
     public ActivityStatisticsStore(string? directory = null)
     {
         var dataDirectory = directory ?? new SettingsStore().DirectoryPath;
         _path = Path.Combine(Path.GetFullPath(dataDirectory), "activity-statistics.json");
+        _journalPath = Path.Combine(Path.GetFullPath(dataDirectory), "activity-statistics.journal.jsonl");
     }
 
     public async Task MigrateAsync(IReadOnlyList<ExecutionRecord> retainedHistory, CancellationToken cancellationToken = default)
@@ -63,41 +65,17 @@ public sealed class ActivityStatisticsStore
         try
         {
             var document = await ReadDocumentAsync(cancellationToken).ConfigureAwait(false);
-            if (!document.MigrationCompleted)
+            if (ApplyRecord(document, record))
             {
-                // An explicit event stream can exist before history has been read. Keep it intact and mark
-                // migration complete; future history reads must never import an older view over it.
-                document.MigrationCompleted = true;
-                document.TimeZoneId = TimeZoneInfo.Local.Id;
+                if (!File.Exists(_path)) await WriteAsync(document, cancellationToken).ConfigureAwait(false);
+                else await AppendRecordAsync(document, record, cancellationToken).ConfigureAwait(false);
             }
-            if (record.Status == "running")
-            {
-                if (document.FinalizedIds.Any(marker => marker.Id == record.Id)) return;
-                var active = document.Active.FirstOrDefault(marker => marker.Id == record.Id);
-                if (active is not null)
-                {
-                    active.StartedAt = record.StartedAt;
-                    active.Day = LocalDay(record.StartedAt);
-                    active.Model = ActivityModel(record);
-                }
-                else AddActive(document, record);
-            }
-            else
-            {
-                var active = document.Active.FirstOrDefault(marker => marker.Id == record.Id);
-                if (active is null && document.FinalizedIds.Any(marker => marker.Id == record.Id)) return;
-                if (active is null && document.CutoffStartedAt is { } cutoff && record.StartedAt <= cutoff) return;
-                if (active is not null) document.Active.Remove(active);
-                AddFinalized(document, record);
-            }
-            Prune(document);
-            await WriteAsync(document, cancellationToken).ConfigureAwait(false);
             committed = true;
             MigratedPaths[_path] = 0;
         }
         finally
         {
-            if (!committed) HistoryFileStore.Invalidate(_path);
+            if (!committed) InvalidateDocuments();
             gate.Release();
         }
     }
@@ -128,7 +106,7 @@ public sealed class ActivityStatisticsStore
         }
         finally
         {
-            if (!committed) HistoryFileStore.Invalidate(_path);
+            if (!committed) InvalidateDocuments();
             gate.Release();
         }
     }
@@ -220,6 +198,9 @@ public sealed class ActivityStatisticsStore
             var document = EmptyDocument();
             document.MigrationCompleted = true;
             document.TimeZoneId = TimeZoneInfo.Local.Id;
+            // Also distinguishes successive empty checkpoints, so an old journal
+            // cannot repopulate statistics after an explicit clear.
+            document.CutoffStartedAt = DateTimeOffset.UtcNow;
             await WriteAsync(document, cancellationToken).ConfigureAwait(false);
             MigratedPaths[_path] = 0;
         }
@@ -228,13 +209,7 @@ public sealed class ActivityStatisticsStore
 
     // Callers hold the per-path lock. The result is the cached parse: only RecordAsync and
     // ReconcileStaleActivesAsync edit it, and they invalidate it unless they finish with a write.
-    private async Task<StatisticsDocument> ReadDocumentAsync(CancellationToken ct)
-    {
-        var fileInfo = new FileInfo(_path);
-        if (fileInfo.Exists && fileInfo.Length > 64L * 1024 * 1024)
-            throw new InvalidDataException("Activity statistics file exceeds its size limit.");
-        return await HistoryFileStore.ReadCachedAsync(_path, EmptyDocument, ValidateDocument, ct).ConfigureAwait(false);
-    }
+    private Task<StatisticsDocument> ReadDocumentAsync(CancellationToken ct) => ReadMergedDocumentAsync(ct);
 
     private static void ValidateDocument(StatisticsDocument doc)
     {
@@ -281,9 +256,9 @@ public sealed class ActivityStatisticsStore
                 throw new InvalidDataException("Activity statistics contain an invalid cost feature.");
     }
 
-    // Derived data that only this class reads, so skip indentation to shrink the file and the write.
+    // Checkpoints are infrequent; ordinary execution updates append bounded, privacy-minimized deltas.
     private Task WriteAsync(StatisticsDocument document, CancellationToken ct) =>
-        HistoryFileStore.WriteAtomicAsync(_path, document, ct, indented: false);
+        WriteSnapshotAsync(document, ct);
 
     private static StatisticsDocument EmptyDocument() => new() { SchemaVersion = 1, Days = [], Active = [], FinalizedIds = [] };
 
@@ -424,7 +399,7 @@ public sealed class ActivityStatisticsStore
     private sealed class ModelCountEntry { public string? Model { get; set; } public int Count { get; set; } }
     private sealed class ActiveMarker { public Guid Id { get; set; } public DateTimeOffset StartedAt { get; set; } public DateOnly Day { get; set; } public string? Model { get; set; } }
     private sealed class IdMarker { public Guid Id { get; set; } public DateTimeOffset StartedAt { get; set; } }
-    private sealed class StatisticsDocument { public int SchemaVersion { get; set; } public bool MigrationCompleted { get; set; } public bool MigratedFromAvailableRetainedHistory { get; set; } public string? TimeZoneId { get; set; } public DateTimeOffset? CutoffStartedAt { get; set; } public List<DayAggregate> Days { get; set; } = []; public List<ActiveMarker> Active { get; set; } = []; public List<IdMarker> FinalizedIds { get; set; } = []; }
+    private sealed class StatisticsDocument { public int SchemaVersion { get; set; } [JsonIgnore] public string? JournalGeneration { get; set; } public bool MigrationCompleted { get; set; } public bool MigratedFromAvailableRetainedHistory { get; set; } public string? TimeZoneId { get; set; } public DateTimeOffset? CutoffStartedAt { get; set; } public List<DayAggregate> Days { get; set; } = []; public List<ActiveMarker> Active { get; set; } = []; public List<IdMarker> FinalizedIds { get; set; } = []; }
 
     private sealed class UsageAggregate
     {
