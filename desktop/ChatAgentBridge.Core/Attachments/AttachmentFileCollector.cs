@@ -10,6 +10,22 @@ public sealed class AttachmentFileCollector
     private const int MaxCandidates = 100;
     private const long MaxHashBytes = 100L * 1024 * 1024;
     private const int BufferSize = 64 * 1024;
+    private static readonly HashSet<char> InvalidFileNameChars = new(Path.GetInvalidFileNameChars());
+    private static readonly string[] SensitiveFileNamePrefixes =
+    [
+        "secret", "settings", "credentials", "tokens", "auth", "id_rsa", "id_ed25519", "id_ecdsa", "id_dsa"
+    ];
+    private static readonly string[] SensitiveFileNameSubstrings = ["history", "session", "appstate", "audit", "staging"];
+    private static readonly string[] ReservedFileNameBases =
+    [
+        "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+    ];
+    private static readonly string[] BlockedExtensions =
+    [
+        ".pem", ".key", ".pfx", ".p12", ".cer", ".kdbx", ".ppk", ".jks", ".keystore", ".p8", ".der",
+        ".exe", ".dll", ".bat", ".cmd", ".ps1", ".lnk"
+    ];
 
     public Task<FileAttachmentSnapshot> CaptureBeforeAsync(string workspace, string dataDirectory, CancellationToken cancellationToken) =>
         Task.Run(() => CaptureBefore(workspace, dataDirectory, cancellationToken), cancellationToken);
@@ -89,13 +105,18 @@ public sealed class AttachmentFileCollector
                     token.ThrowIfCancellationRequested();
                     if (++entriesSeen > MaxEntries) { complete = false; stack.Clear(); AddError("Entry limit reached."); break; }
                     var entry = entries.Current;
-                    if (IsExcludedPath(entry, root, data)) continue;
+                    var fileName = Path.GetFileName(entry);
+                    if (!IsSafeFileName(fileName) || IsExcludedPath(entry, root, data, checkFileName: false)) continue;
                     FileAttributes attributes;
                     try { attributes = File.GetAttributes(entry); }
                     catch (Exception ex) when (IsExpectedFileError(ex)) { complete = false; AddError("Some workspace entries could not be inspected."); continue; }
                     if ((attributes & (FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint)) != 0) continue;
-                    if ((attributes & FileAttributes.Directory) != 0) { stack.Push((entry, depth + 1)); continue; }
-                    if (!IsSafeFileName(Path.GetFileName(entry)) || before.BaselinePaths.Contains(Path.GetFullPath(entry))) continue;
+                    if ((attributes & FileAttributes.Directory) != 0)
+                    {
+                        stack.Push((entry, depth + 1));
+                        continue;
+                    }
+                    if (before.BaselinePaths.Contains(Path.GetFullPath(entry))) continue;
                     if (candidates.Count >= MaxCandidates) { complete = false; AddError("Candidate limit reached."); stack.Clear(); break; }
                     try
                     {
@@ -142,7 +163,7 @@ public sealed class AttachmentFileCollector
             token.ThrowIfCancellationRequested();
             if (candidate is null || !IsSha256(candidate.Sha256)) throw new InvalidDataException("Attachment candidate is invalid.");
             var full = Path.GetFullPath(candidate.FullPath);
-            if (!seen.Add(full) || !IsWithin(full, root) || IsExcludedPath(full, root, data) || !IsSafeFileName(Path.GetFileName(full)))
+            if (!seen.Add(full) || !IsWithin(full, root) || IsExcludedPath(full, root, data))
                 throw new InvalidDataException("Attachment path is duplicate, excluded, or outside the workspace.");
             var relative = Path.GetRelativePath(root, full);
             if (!string.Equals(relative, candidate.RelativePath, PathComparison) || relative.StartsWith(".." + Path.DirectorySeparatorChar, PathComparison) || Path.IsPathRooted(relative))
@@ -180,25 +201,39 @@ public sealed class AttachmentFileCollector
 
     private static bool IsSafeFileName(string name)
     {
-        if (string.IsNullOrWhiteSpace(name) || name[0] == '.' || name.EndsWith(' ') || name.EndsWith('.') ||
-            name.Any(ch => char.IsControl(ch) || Path.GetInvalidFileNameChars().Contains(ch) || "<>:\"/\\|?*".Contains(ch))) return false;
-        var lower = name.ToLowerInvariant();
-        if (lower.StartsWith("secret", StringComparison.Ordinal) || lower.StartsWith("settings", StringComparison.Ordinal) ||
-            lower.StartsWith("credentials", StringComparison.Ordinal) || lower.StartsWith("tokens", StringComparison.Ordinal) ||
-            lower.StartsWith("auth", StringComparison.Ordinal) || lower.Contains("history", StringComparison.Ordinal) ||
-            lower.Contains("session", StringComparison.Ordinal) || lower.Contains("appstate", StringComparison.Ordinal) ||
-            lower.Contains("audit", StringComparison.Ordinal) || lower.Contains("staging", StringComparison.Ordinal) ||
-            lower.StartsWith("id_rsa", StringComparison.Ordinal) || lower.StartsWith("id_ed25519", StringComparison.Ordinal) ||
-            lower.StartsWith("id_ecdsa", StringComparison.Ordinal) || lower.StartsWith("id_dsa", StringComparison.Ordinal)) return false;
-        var baseName = name.Split('.')[0];
-        if (new[] { "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" }
-            .Contains(baseName, StringComparer.OrdinalIgnoreCase)) return false;
-        var extension = Path.GetExtension(name);
-        return !new[] { ".pem", ".key", ".pfx", ".p12", ".cer", ".kdbx", ".ppk", ".jks", ".keystore", ".p8", ".der", ".exe", ".dll", ".bat", ".cmd", ".ps1", ".lnk" }
-            .Contains(extension, StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(name) || name[0] == '.' || name[^1] is ' ' or '.') return false;
+
+        foreach (var ch in name)
+        {
+            if (char.IsControl(ch) || InvalidFileNameChars.Contains(ch) || "<>:\"/\\|?*".Contains(ch)) return false;
+        }
+
+        var nameSpan = name.AsSpan();
+        foreach (var token in SensitiveFileNamePrefixes)
+        {
+            if (nameSpan.StartsWith(token, StringComparison.OrdinalIgnoreCase)) return false;
+        }
+        foreach (var token in SensitiveFileNameSubstrings)
+        {
+            if (nameSpan.Contains(token, StringComparison.OrdinalIgnoreCase)) return false;
+        }
+
+        var dot = nameSpan.IndexOf('.');
+        var baseName = dot < 0 ? nameSpan : nameSpan[..dot];
+        foreach (var reserved in ReservedFileNameBases)
+        {
+            if (baseName.Equals(reserved, StringComparison.OrdinalIgnoreCase)) return false;
+        }
+
+        var extension = Path.GetExtension(nameSpan);
+        foreach (var blockedExtension in BlockedExtensions)
+        {
+            if (extension.Equals(blockedExtension, StringComparison.OrdinalIgnoreCase)) return false;
+        }
+        return true;
     }
 
-    private static bool IsExcludedPath(string path, string root, string? dataDirectory)
+    private static bool IsExcludedPath(string path, string root, string? dataDirectory, bool checkFileName = true)
     {
         if (!IsWithin(path, root)) return true;
         var relative = Path.GetRelativePath(root, path);
@@ -214,7 +249,7 @@ public sealed class AttachmentFileCollector
             part.Equals(".claude", StringComparison.OrdinalIgnoreCase) || part.Equals(".codex", StringComparison.OrdinalIgnoreCase) ||
             part.Equals(".ssh", StringComparison.OrdinalIgnoreCase) || part.Equals(".aws", StringComparison.OrdinalIgnoreCase))) return true;
         if (dataDirectory is not null && IsWithin(Path.GetFullPath(path), dataDirectory)) return true;
-        return !IsSafeFileName(Path.GetFileName(path));
+        return checkFileName && !IsSafeFileName(Path.GetFileName(path));
     }
 
     private static string CanonicalDirectory(string path)
