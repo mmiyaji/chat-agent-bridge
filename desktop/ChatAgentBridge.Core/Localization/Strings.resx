@@ -73,4 +73,10 @@
   <data name="ProgressClaudeSessionReady" xml:space="preserve"><value>Claude session ready</value></data>
   <data name="ProgressStartingItem" xml:space="preserve"><value>Starting {0}</value></data>
   <data name="ProgressFinishedItem" xml:space="preserve"><value>Finished {0}</value></data>
+  <data name="DiscordActionApprove" xml:space="preserve"><value>Approve</value></data>
+  <data name="DiscordActionReject" xml:space="preserve"><value>Reject</value></data>
+  <data name="DiscordToolApprovalApprove" xml:space="preserve"><value>Approve tool</value></data>
+  <data name="DiscordActionStop" xml:space="preserve"><value>Stop</value></data>
+  <data name="DiscordActionBusy" xml:space="preserve"><value>An approval is already being handled. Try again shortly.</value></data>
+  <data name="DiscordActionUnavailable" xml:space="preserve"><value>This approval is no longer available.</value></data>
 </root>

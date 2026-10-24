@@ -34,6 +34,8 @@ public readonly record struct SettingsDraftChanges(bool Agent, bool Chat, bool G
         settings.MattermostServerUrl.Trim(), settings.MattermostChannelId.Trim(), settings.MattermostToken,
         settings.MattermostBypassProxy, settings.PostConnectionNotice, settings.SlackBotToken,
         settings.SlackAppToken, settings.MattermostAllowedUserIds, settings.SlackAllowedUserIds,
+        settings.DiscordBotToken, settings.DiscordAllowedUserIds, settings.DiscordAllowedGuildIds,
+        settings.DiscordAllowedChannelIds, settings.DiscordAllowedThreadIds, settings.DiscordAllowDirectMessages,
         settings.ShareApprovalsInChat, settings.ShareAgentQuestionsInChat, settings.ChatApprovalMode,
         settings.ChatResultMode, settings.ChatFollowUpMode, settings.SlackAllowedChannelIds, settings.SlackAllowedThreadIds,
         settings.MattermostAllowedThreadIds, settings.FileAttachmentApprovalMode);

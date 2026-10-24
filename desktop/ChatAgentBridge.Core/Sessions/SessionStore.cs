@@ -189,7 +189,7 @@ public sealed partial class SessionStore
     }
 
     private Task ClearConversationNotesAsync(SessionKey key, CancellationToken token) =>
-        key.Provider is "slack" or "mattermost" && key.UserId is not null && key.Origin is not null
+        key.Provider is "slack" or "mattermost" or "discord" && key.UserId is not null && key.Origin is not null
             ? new ConversationSummaryStore(DirectoryPath, _textProtector).ClearAsync(key, token)
             : Task.CompletedTask;
 
@@ -433,16 +433,22 @@ public sealed partial class SessionStore
     {
         if (key is null) throw new ArgumentException("Session key is required.");
         ValidateIdentifier(key.Provider, "provider");
+        if (key.Provider is not ("slack" or "mattermost" or "discord" or AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Custom))
+            throw new ArgumentException("Session provider is unsupported.");
         ValidateIdentifier(key.ChannelId, "channel id");
         ValidateIdentifier(key.ThreadId, "thread id");
         if ((key.UserId is null) != (key.Origin is null))
             throw new ArgumentException("Session user id and origin must either both be present or both be absent.");
+        if (key.Provider == "discord" && key.UserId is null)
+            throw new ArgumentException("Discord sessions must be scoped to their owning user.");
         if (key.UserId is not null)
         {
             ValidateScopedIdentity(key.UserId, "user id");
             ValidateScopedIdentity(key.Origin!, "origin");
             if (key.Provider.Equals("slack", StringComparison.OrdinalIgnoreCase) && key.Origin != "slack")
                 throw new ArgumentException("Slack session origin must be 'slack'.");
+            if (key.Provider.Equals("discord", StringComparison.OrdinalIgnoreCase) && key.Origin != "discord")
+                throw new ArgumentException("Discord session origin must be 'discord'.");
             if (key.Provider.Equals("mattermost", StringComparison.OrdinalIgnoreCase) &&
                 (key.Origin!.Length != 64 || key.Origin.Any(c => !Uri.IsHexDigit(c))))
                 throw new ArgumentException("Mattermost session origin must be a SHA-256 hex digest.");

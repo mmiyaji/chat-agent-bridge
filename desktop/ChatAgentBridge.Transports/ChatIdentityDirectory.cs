@@ -11,7 +11,7 @@ namespace ChatAgentBridge.Transports;
 public sealed record ChatIdentityLabels(string? SiteName = null, string? ChannelName = null, string? UserName = null, bool IsDirectMessage = false);
 
 /// <summary>Resolves and caches safe display labels for chat history identities.</summary>
-public sealed class ChatIdentityDirectory : IDisposable
+public sealed partial class ChatIdentityDirectory : IDisposable
 {
     private const int MaxEntries = 2000;
     private const int MaxCacheBytes = 1024 * 1024;
@@ -121,6 +121,7 @@ public sealed class ChatIdentityDirectory : IDisposable
             {
                 var mmKeys = new List<(SessionKey Key, string Origin)>();
                 var slackKeys = new List<SessionKey>();
+                var discordKeys = new List<SessionKey>();
                 foreach (var key in requested)
                 {
                     if (key.Provider.Equals("mattermost", StringComparison.OrdinalIgnoreCase))
@@ -130,6 +131,8 @@ public sealed class ChatIdentityDirectory : IDisposable
                     }
                     else if (key.Provider.Equals("slack", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(settings.SlackBotToken))
                         slackKeys.Add(key);
+                    else if (key.Provider == "discord" && key.Origin == "discord" && !string.IsNullOrWhiteSpace(settings.DiscordBotToken))
+                        discordKeys.Add(key);
                 }
 
                 foreach (var group in mmKeys.GroupBy(item => item.Origin, StringComparer.Ordinal))
@@ -159,6 +162,9 @@ public sealed class ChatIdentityDirectory : IDisposable
                     if (!IsCoolingDown(store, "slack", "slack"))
                         await ResolveSlackAsync(settings, slackKeys.ToArray(), store, budget, timeout.Token).ConfigureAwait(false);
                 }
+                if (discordKeys.Count > 0 && !timeout.IsCancellationRequested && !budget.Limited &&
+                    !IsCoolingDown(store, "discord", "discord"))
+                    await ResolveDiscordAsync(settings, discordKeys.ToArray(), store, budget, timeout.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { }
             catch (OperationCanceledException) { throw; }
@@ -412,7 +418,7 @@ public sealed class ChatIdentityDirectory : IDisposable
         finally { _gate.Release(); }
     }
 
-    private static bool IsValidEntry(CacheEntry entry) => entry.Key is { Provider: "slack" or "mattermost", Kind: "site" or "team" or "channel" or "user" or "cooldown", Origin: not null, Id: not null } &&
+    private static bool IsValidEntry(CacheEntry entry) => entry.Key is { Provider: "slack" or "mattermost" or "discord", Kind: "site" or "team" or "channel" or "user" or "cooldown", Origin: not null, Id: not null } &&
         entry.CheckedAtUtc != default && entry.CheckedAtUtc <= DateTimeOffset.UtcNow.AddMinutes(5) &&
         IsSafeCachedLabel(entry.SiteName) && IsSafeCachedLabel(entry.ChannelName) && IsSafeCachedLabel(entry.UserName);
 
@@ -421,7 +427,7 @@ public sealed class ChatIdentityDirectory : IDisposable
     private static ChatIdentityLabels Merge(Dictionary<CacheKey, CacheEntry> store, SessionKey key)
     {
         var provider = key.Provider.ToLowerInvariant();
-        var origin = provider == "mattermost" ? key.Origin : "slack";
+        var origin = provider == "mattermost" ? key.Origin : provider;
         if (origin is null) return new();
         var site = provider == "mattermost" ? GetFreshOrStale(store, provider, origin, "site", "site")?.SiteName : null;
         var channel = GetFreshOrStale(store, provider, origin, "channel", key.ChannelId);

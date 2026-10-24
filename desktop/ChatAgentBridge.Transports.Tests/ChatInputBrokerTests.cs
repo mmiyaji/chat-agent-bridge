@@ -77,6 +77,7 @@ public sealed class ChatInputBrokerTests
         string code = GetCode(await transport.Reply.Task.WaitAsync(TimeSpan.FromSeconds(2)));
 
         Assert.True(broker.TryHandle(Origin with { Text = $"answer {code} 1 1", UserId = "other-user" }, OriginId));
+        Assert.True(broker.TryHandle(Origin with { Text = $"answer {code} 1 1", GuildId = "different-guild" }, OriginId));
         Assert.True(broker.TryHandle(Origin with { Text = $"answer {code} 1 1" }, "different-origin"));
         authorized = false;
         Assert.True(broker.TryHandle(Origin with { Text = $"answer {code} 1 1" }, OriginId));

@@ -44,4 +44,15 @@ public sealed class OnboardingFieldChecksTests
         Assert.Equal([WizardField.MattermostChannel], OnboardingFieldChecks.MattermostChat(true, "", "t", true));
         Assert.Empty(OnboardingFieldChecks.MattermostChat(true, "c", "t", true));
     }
+
+    [Fact]
+    public void DiscordChatRequiresTokenAndUsersAndGuildOrDirectMessageOptIn()
+    {
+        Assert.Equal([WizardField.DiscordBotToken, WizardField.DiscordAllowedUsers, WizardField.DiscordAllowedGuilds],
+            OnboardingFieldChecks.DiscordChat(null, false, false, false));
+        Assert.Equal([WizardField.DiscordAllowedGuilds],
+            OnboardingFieldChecks.DiscordChat("token", true, false, false));
+        Assert.Empty(OnboardingFieldChecks.DiscordChat("token", true, false, true));
+        Assert.Empty(OnboardingFieldChecks.DiscordChat("token", true, true, false));
+    }
 }

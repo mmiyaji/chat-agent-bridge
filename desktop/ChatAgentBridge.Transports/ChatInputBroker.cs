@@ -230,6 +230,7 @@ public sealed class ChatInputBroker
         string.Equals(pending.Origin.Provider, incoming.Provider, StringComparison.OrdinalIgnoreCase) &&
         string.Equals(pending.OriginId, originId, StringComparison.Ordinal) &&
         string.Equals(pending.Origin.ChannelId, incoming.ChannelId, StringComparison.Ordinal) &&
+        string.Equals(pending.Origin.GuildId, incoming.GuildId, StringComparison.Ordinal) &&
         string.Equals(pending.Origin.ThreadId, incoming.ThreadId, StringComparison.Ordinal) &&
         string.Equals(pending.Origin.UserId, incoming.UserId, StringComparison.Ordinal);
 

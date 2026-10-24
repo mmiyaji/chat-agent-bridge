@@ -47,6 +47,12 @@ public sealed record ChatRequest(
     /// <summary>Files attached to this exact incoming message. IDs are opaque provider identifiers, never URLs.</summary>
     public IReadOnlyList<IncomingChatFile> IncomingFiles { get; init; } = Array.Empty<IncomingChatFile>();
 
+    /// <summary>The Discord guild that owns the channel, or null for a direct message.</summary>
+    public string? GuildId { get; init; }
+
+    /// <summary>The Discord channel that contained MessageId; differs from ChannelId for a new public thread.</summary>
+    public string? SourceChannelId { get; init; }
+
     /// <summary>A fixed, user-safe marker when incoming attachments could not be represented safely.</summary>
     public string? IncomingFilesError { get; init; }
     /// <summary>
@@ -112,6 +118,40 @@ public interface IChatProgressLifecycleTransport
         CompleteProgress(message);
         return Task.CompletedTask;
     }
+}
+
+public enum ChatActionKind
+{
+    RequestApproval,
+    ToolApproval
+}
+
+public enum ChatActionDecision
+{
+    Approve,
+    Reject
+}
+
+public enum ChatActionResult
+{
+    Completed,
+    Busy,
+    Unavailable
+}
+
+/// <summary>Posts transport-owned approval controls and routes their one-time decisions.</summary>
+public interface IChatActionTransport
+{
+    /// <summary>
+    /// Publishes an approval message with buttons. The returned lease invalidates the controls when
+    /// disposed. A callback returning Busy keeps the controls available for a later click.
+    /// </summary>
+    Task<IAsyncDisposable> PostActionsAsync(
+        ChatRequest origin,
+        string text,
+        ChatActionKind kind,
+        Func<ChatActionDecision, CancellationToken, Task<ChatActionResult>> handler,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>An opaque handle for a progress message created by an <see cref="IChatProgressTransport"/>.</summary>

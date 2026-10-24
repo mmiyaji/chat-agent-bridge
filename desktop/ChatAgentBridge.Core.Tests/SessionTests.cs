@@ -73,6 +73,28 @@ public sealed class SessionTests
     }
 
     [Fact]
+    public async Task DiscordSessionsPersistAndRemainIsolatedByOwnerAndProvider()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var store = new SessionStore(directory);
+            var owner = ChatSessionScope.Create("discord", "323456789012345678", "423456789012345678", "123456789012345678");
+            var otherOwner = ChatSessionScope.Create("discord", "323456789012345678", "423456789012345678", "223456789012345678");
+            var slack = ChatSessionScope.Create("slack", "323456789012345678", "423456789012345678", "123456789012345678");
+            await store.SaveAsync(Binding(owner, Guid.NewGuid()));
+            await store.SaveAsync(Binding(otherOwner, Guid.NewGuid()));
+            await store.SaveAsync(Binding(slack, Guid.NewGuid()));
+            var restored = new SessionStore(directory);
+            Assert.NotNull(await restored.FindAsync(owner));
+            Assert.NotEqual((await restored.FindAsync(owner))!.SessionId, (await restored.FindAsync(otherOwner))!.SessionId);
+            Assert.NotEqual((await restored.FindAsync(owner))!.SessionId, (await restored.FindAsync(slack))!.SessionId);
+            Assert.Equal("discord", owner.Origin);
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
     public async Task SessionDisplayName_RenamesAreTrimmedPersistedAndIsolatedByExactSessionKey()
     {
         var directory = NewDirectory();
@@ -131,7 +153,7 @@ public sealed class SessionTests
             await store.SaveAsync(Binding(key, Guid.NewGuid()));
             await Assert.ThrowsAsync<ArgumentException>(() => store.UpdateDisplayNameAsync(key, "bad\nname"));
             await Assert.ThrowsAsync<ArgumentException>(() => store.UpdateDisplayNameAsync(key, new string('x', 81)));
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => store.UpdateDisplayNameAsync(Key("missing"), "name"));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => store.UpdateDisplayNameAsync(Key(AgentProfile.Codex), "name"));
         }
         finally { DeleteDirectory(directory); }
     }

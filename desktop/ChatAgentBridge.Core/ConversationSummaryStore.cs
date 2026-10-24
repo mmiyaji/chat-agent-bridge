@@ -266,8 +266,9 @@ public sealed class ConversationSummaryStore
         ValidateIdentifier(key.ChannelId, "channel id");
         ValidateIdentifier(key.ThreadId, "thread id");
         if (!key.Provider.Equals("slack", StringComparison.OrdinalIgnoreCase) &&
-            !key.Provider.Equals("mattermost", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Session provider must be 'slack' or 'mattermost'.");
+            !key.Provider.Equals("mattermost", StringComparison.OrdinalIgnoreCase) &&
+            !key.Provider.Equals("discord", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Session provider must be 'slack', 'mattermost', or 'discord'.");
         if (key.UserId is null || key.Origin is null)
             throw new ArgumentException("Session user id and origin are required.");
         if (key.UserId is not null)
@@ -276,6 +277,8 @@ public sealed class ConversationSummaryStore
             ValidateScopedIdentity(key.Origin!, "origin");
             if (key.Provider.Equals("slack", StringComparison.OrdinalIgnoreCase) && key.Origin != "slack")
                 throw new ArgumentException("Slack session origin must be 'slack'.");
+            if (key.Provider.Equals("discord", StringComparison.OrdinalIgnoreCase) && key.Origin != "discord")
+                throw new ArgumentException("Discord session origin must be 'discord'.");
             if (key.Provider.Equals("mattermost", StringComparison.OrdinalIgnoreCase) &&
                 (key.Origin!.Length != 64 || key.Origin.Any(c => !Uri.IsHexDigit(c))))
                 throw new ArgumentException("Mattermost session origin must be a SHA-256 hex digest.");

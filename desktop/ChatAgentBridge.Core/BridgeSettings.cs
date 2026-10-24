@@ -20,6 +20,12 @@ public sealed record BridgeSettings
     public bool PostConnectionNotice { get; init; }
     public string SlackBotToken { get; init; } = "";
     public string SlackAppToken { get; init; } = "";
+    public string DiscordBotToken { get; init; } = "";
+    public string DiscordAllowedUserIds { get; init; } = "";
+    public string DiscordAllowedGuildIds { get; init; } = "";
+    public string DiscordAllowedChannelIds { get; init; } = "";
+    public string DiscordAllowedThreadIds { get; init; } = "";
+    public bool DiscordAllowDirectMessages { get; init; }
     public string MattermostAllowedUserIds { get; init; } = "";
     public string SlackAllowedUserIds { get; init; } = "";
     public bool ShareApprovalsInChat { get; init; }

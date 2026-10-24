@@ -16,4 +16,5 @@ internal sealed class BoundedSeenSet(int capacity)
             return true;
         }
     }
+
 }

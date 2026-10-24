@@ -44,4 +44,54 @@ public sealed class ChatAccessPolicyTests
         Assert.Throws<FormatException>(() => ChatAccessPolicy.NormalizeScopes(
             string.Join("\n", Enumerable.Range(0, 101).Select(i => $"root{i}"))));
     }
+
+    [Fact]
+    public void DiscordRequestsRequireAllowedUserAndGuildAndApplyParentChannelAndThreadScopes()
+    {
+        const string user = "123456789012345678";
+        const string guild = "223456789012345678";
+        const string parent = "323456789012345678";
+        const string thread = "423456789012345678";
+        var settings = new BridgeSettings
+        {
+            DiscordAllowedUserIds = user,
+            DiscordAllowedGuildIds = guild,
+            DiscordAllowedChannelIds = parent,
+            DiscordAllowedThreadIds = thread
+        };
+
+        Assert.True(ChatAccessPolicy.IsAllowedRequest(settings, "discord", user, parent, thread, guild));
+        Assert.False(ChatAccessPolicy.IsAllowedRequest(settings, "discord", "523456789012345678", parent, thread, guild));
+        Assert.False(ChatAccessPolicy.IsAllowedRequest(settings, "discord", user, parent, thread, "623456789012345678"));
+        Assert.False(ChatAccessPolicy.IsAllowedRequest(settings with { DiscordAllowedGuildIds = "" }, "discord", user, parent, thread, guild));
+        Assert.False(ChatAccessPolicy.IsAllowedRequest(settings, "discord", user, "723456789012345678", thread, guild));
+        Assert.False(ChatAccessPolicy.IsAllowedRequest(settings, "discord", user, parent, "823456789012345678", guild));
+    }
+
+    [Fact]
+    public void DiscordDirectMessagesRequireExplicitOptInAndHonorConfiguredScopes()
+    {
+        const string user = "123456789012345678";
+        const string channel = "323456789012345678";
+        var settings = new BridgeSettings { DiscordAllowedUserIds = user };
+        Assert.False(ChatAccessPolicy.IsAllowedRequest(settings, "discord", user, channel, channel));
+        Assert.True(ChatAccessPolicy.IsAllowedRequest(settings with { DiscordAllowDirectMessages = true }, "discord", user, channel, channel));
+        Assert.False(ChatAccessPolicy.IsAllowedRequest(settings with
+        {
+            DiscordAllowDirectMessages = true, DiscordAllowedChannelIds = "423456789012345678"
+        }, "discord", user, channel, channel));
+        Assert.False(ChatAccessPolicy.IsAllowedRequest(settings with
+        {
+            DiscordAllowDirectMessages = true, DiscordAllowedGuildIds = "523456789012345678"
+        }, "discord", user, channel, channel, "623456789012345678"));
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("１２３")]
+    [InlineData("18446744073709551616")]
+    [InlineData("123456789012345678x")]
+    public void DiscordSnowflakeNormalizationRejectsInvalidNumbers(string value)
+        => Assert.Throws<FormatException>(() => ChatAccessPolicy.NormalizeDiscordSnowflakes(value));
 }

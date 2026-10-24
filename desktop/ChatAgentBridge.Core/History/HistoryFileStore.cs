@@ -129,8 +129,8 @@ internal static class HistoryFileStore
 
     internal static void ValidateSource(string source)
     {
-        if (source is not ("local" or "slack" or "mattermost"))
-            throw new ArgumentException("Source must be local, slack, or mattermost.", nameof(source));
+        if (source is not ("local" or "slack" or "mattermost" or "discord"))
+            throw new ArgumentException("Source must be local, slack, mattermost, or discord.", nameof(source));
     }
 
     internal static IReadOnlyList<T> ValidateLoadedRecords<T>(IReadOnlyList<T>? records) where T : class

@@ -61,6 +61,21 @@ public sealed class InboxConversationStoreTests
     }
 
     [Fact]
+    public async Task SaveAndList_PreservesDiscordIdentityMetadataAndRejectsUnknownProviders()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var key = new SessionKey("discord", "323456789012345678", "423456789012345678", "123456789012345678", "discord");
+            var row = Snapshot(key, state: "completed");
+            await new InboxConversationStore(directory).SaveAsync([row]);
+            Assert.Equal(row, Assert.Single(await new InboxConversationStore(directory).ListAsync()));
+            Assert.False(InboxConversationStore.IsValidSnapshot(row with { Key = key with { Provider = "random" } }));
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
     public async Task SaveAsync_RetainsNewestFiveHundredRows()
     {
         var directory = NewDirectory();

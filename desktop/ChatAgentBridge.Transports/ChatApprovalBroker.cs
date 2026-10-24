@@ -30,7 +30,8 @@ public sealed class ChatApprovalBroker
         AppServerApproval approval,
         Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? localHandler,
         CancellationToken cancellationToken = default,
-        bool publishToThread = false)
+        bool publishToThread = false,
+        Func<CancellationToken, Task<bool>>? canDecideInChat = null)
     {
         ArgumentNullException.ThrowIfNull(transport);
         ArgumentNullException.ThrowIfNull(origin);
@@ -69,9 +70,27 @@ public sealed class ChatApprovalBroker
 
         using var callbackCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         using var timeoutCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        IAsyncDisposable? actionLease = null;
         try
         {
-            await transport.ReplyAsync(origin, FormatRequest(approval, pending.Code), cancellationToken).ConfigureAwait(false);
+            if (transport is IChatActionTransport actions)
+                actionLease = await actions.PostActionsAsync(origin, FormatRequest(approval, pending.Code, 1800),
+                    ChatActionKind.ToolApproval, async (decision, ct) =>
+                    {
+                        if (ct.IsCancellationRequested || cancellationToken.IsCancellationRequested ||
+                            canDecideInChat is not null && !await canDecideInChat(ct).ConfigureAwait(false))
+                            return ChatActionResult.Unavailable;
+                        lock (_sync)
+                        {
+                            if (!_pending.TryGetValue(pending.Code, out var current) || !ReferenceEquals(current, pending))
+                                return ChatActionResult.Unavailable;
+                            return pending.Completion.TrySetResult(decision == ChatActionDecision.Approve
+                                ? AppServerDecision.Accept : AppServerDecision.Decline)
+                                ? ChatActionResult.Completed : ChatActionResult.Unavailable;
+                        }
+                    }, cancellationToken).ConfigureAwait(false);
+            else
+                await transport.ReplyAsync(origin, FormatRequest(approval, pending.Code), cancellationToken).ConfigureAwait(false);
             Task<AppServerDecision>? localTask = localHandler is null
                 ? null
                 : InvokeLocalAsync(localHandler, approval, callbackCancellation.Token);
@@ -98,6 +117,8 @@ public sealed class ChatApprovalBroker
                 if (_pending.TryGetValue(pending.Code, out PendingApproval? current) && ReferenceEquals(current, pending))
                     _pending.Remove(pending.Code);
             }
+            if (actionLease is not null)
+                try { await actionLease.DisposeAsync().ConfigureAwait(false); } catch (Exception) { }
         }
     }
 
@@ -141,14 +162,15 @@ public sealed class ChatApprovalBroker
         string.Equals(origin.Provider, incoming.Provider, StringComparison.OrdinalIgnoreCase) &&
         string.Equals(origin.ChannelId, incoming.ChannelId, StringComparison.Ordinal) &&
         string.Equals(origin.ThreadId, incoming.ThreadId, StringComparison.Ordinal) &&
-        string.Equals(origin.UserId, incoming.UserId, StringComparison.Ordinal);
+        string.Equals(origin.UserId, incoming.UserId, StringComparison.Ordinal) &&
+        string.Equals(origin.GuildId, incoming.GuildId, StringComparison.Ordinal);
 
-    private static string FormatRequest(AppServerApproval approval, string code)
+    private static string FormatRequest(AppServerApproval approval, string code, int maximumCharacters = 3000)
     {
         string footer = $"\n{CoreText.Get("ApprovalPermissionLine", code)}\n{CoreText.Get("ApprovalRejectLine", code)}";
         var builder = new StringBuilder();
         builder.AppendLine(CoreText.Get("ApprovalRequestTitle"));
-        int remaining = 3000 - builder.Length - footer.Length;
+        int remaining = maximumCharacters - builder.Length - footer.Length;
         Append(CoreText.Get("ApprovalMethodLabel"), approval.Method);
         Append(CoreText.Get("ApprovalDescriptionLabel"), approval.Description);
         Append(CoreText.Get("ApprovalCommandLabel"), approval.Command);

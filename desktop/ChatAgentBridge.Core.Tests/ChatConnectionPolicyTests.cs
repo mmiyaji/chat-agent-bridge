@@ -17,6 +17,15 @@ public sealed class ChatConnectionPolicyTests
         SlackAppToken = "xapp-app"
     };
 
+    [Fact]
+    public void DiscordConnectionIdentityUsesOnlyBotToken()
+    {
+        var connected = new BridgeSettings { DiscordBotToken = "discord-token" };
+        var accessChange = connected with { DiscordAllowedGuildIds = "123456789012345678", DiscordAllowDirectMessages = true };
+        Assert.True(ChatConnectionPolicy.Matches("discord", accessChange, connected));
+        Assert.False(ChatConnectionPolicy.Matches("discord", accessChange with { DiscordBotToken = "other-token" }, connected));
+    }
+
     [Theory]
     [InlineData("execution")]
     [InlineData("followup")]

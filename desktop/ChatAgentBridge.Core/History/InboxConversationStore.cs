@@ -167,7 +167,7 @@ public sealed class InboxConversationStore
 
     private static void ValidateKey(SessionKey? key)
     {
-        if (key is null || key.Provider is not ("slack" or "mattermost"))
+        if (key is null || key.Provider is not ("slack" or "mattermost" or "discord"))
             throw new ArgumentException("Inbox conversation provider is invalid.");
         ValidateIdentity(key.ChannelId, "channel id");
         ValidateIdentity(key.ThreadId, "thread id");
@@ -175,6 +175,10 @@ public sealed class InboxConversationStore
         if (key.Provider == "slack")
         {
             if (key.Origin != "slack") throw new ArgumentException("Slack inbox origin must be 'slack'.");
+        }
+        else if (key.Provider == "discord")
+        {
+            if (key.Origin != "discord") throw new ArgumentException("Discord inbox origin must be 'discord'.");
         }
         else if (key.Origin is null || key.Origin.Length != 64 || key.Origin.Any(c => !IsLowerHex(c)))
             throw new ArgumentException("Mattermost inbox origin must be a lowercase SHA-256 hex digest.");

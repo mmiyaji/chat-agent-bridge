@@ -50,7 +50,7 @@ public sealed class SettingsStore
             if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Custom))
                 throw new InvalidDataException("Settings contain an unsupported agent provider.");
             var autoConnect = stored.AutoConnectProvider ?? "none";
-            if (autoConnect is not ("none" or "mattermost" or "slack"))
+            if (autoConnect is not ("none" or "mattermost" or "slack" or "discord"))
                 throw new InvalidDataException("Settings contain an unsupported auto-connect provider.");
             var settings = new BridgeSettings
             {
@@ -69,6 +69,12 @@ public sealed class SettingsStore
                 PostConnectionNotice = stored.PostConnectionNotice,
                 SlackBotToken = Unprotect(stored.SlackBotToken),
                 SlackAppToken = Unprotect(stored.SlackAppToken),
+                DiscordBotToken = Unprotect(stored.DiscordBotToken),
+                DiscordAllowedUserIds = ChatAccessPolicy.NormalizeDiscordSnowflakes(stored.DiscordAllowedUserIds ?? ""),
+                DiscordAllowedGuildIds = ChatAccessPolicy.NormalizeDiscordSnowflakes(stored.DiscordAllowedGuildIds ?? ""),
+                DiscordAllowedChannelIds = ChatAccessPolicy.NormalizeDiscordSnowflakes(stored.DiscordAllowedChannelIds ?? ""),
+                DiscordAllowedThreadIds = ChatAccessPolicy.NormalizeDiscordSnowflakes(stored.DiscordAllowedThreadIds ?? ""),
+                DiscordAllowDirectMessages = stored.DiscordAllowDirectMessages,
                 MattermostAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(stored.MattermostAllowedUserIds ?? ""),
                 SlackAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(stored.SlackAllowedUserIds ?? ""),
                 ShareApprovalsInChat = stored.ShareApprovalsInChat,
@@ -115,13 +121,14 @@ public sealed class SettingsStore
         if (settings.AgentMode is not ("exec" or "app-server"))
             throw new ArgumentException("Agent mode must be exec or app-server.", nameof(settings));
         var provider = AgentProfile.ResolveProvider(settings);
-        if (settings.AutoConnectProvider is not ("none" or "mattermost" or "slack"))
-            throw new ArgumentException("Auto-connect provider must be none, mattermost, or slack.", nameof(settings));
+        if (settings.AutoConnectProvider is not ("none" or "mattermost" or "slack" or "discord"))
+            throw new ArgumentException("Auto-connect provider must be none, mattermost, slack, or discord.", nameof(settings));
         var model = AgentProfile.NormalizeModel(settings.AgentModel);
         var effort = AgentProfile.NormalizeReasoningEffort(settings.AgentReasoningEffort);
         string mattermostAllowedUsers;
         string slackAllowedUsers;
         string slackAllowedChannels, slackAllowedThreads, mattermostAllowedThreads;
+        string discordAllowedUsers, discordAllowedGuilds, discordAllowedChannels, discordAllowedThreads;
         string permissionMode, approvalMode, resultMode, followUpMode, trustedRoots, attachmentMode;
         try
         {
@@ -130,6 +137,10 @@ public sealed class SettingsStore
             slackAllowedChannels = ChatAccessPolicy.NormalizeScopes(settings.SlackAllowedChannelIds);
             slackAllowedThreads = ChatAccessPolicy.NormalizeScopes(settings.SlackAllowedThreadIds);
             mattermostAllowedThreads = ChatAccessPolicy.NormalizeScopes(settings.MattermostAllowedThreadIds);
+            discordAllowedUsers = ChatAccessPolicy.NormalizeDiscordSnowflakes(settings.DiscordAllowedUserIds);
+            discordAllowedGuilds = ChatAccessPolicy.NormalizeDiscordSnowflakes(settings.DiscordAllowedGuildIds);
+            discordAllowedChannels = ChatAccessPolicy.NormalizeDiscordSnowflakes(settings.DiscordAllowedChannelIds);
+            discordAllowedThreads = ChatAccessPolicy.NormalizeDiscordSnowflakes(settings.DiscordAllowedThreadIds);
             permissionMode = ExecutionPolicy.NormalizePermissionMode(settings.AgentPermissionMode);
             approvalMode = ExecutionPolicy.NormalizeChatApprovalMode(settings.ChatApprovalMode);
             resultMode = ExecutionPolicy.NormalizeChatResultMode(settings.ChatResultMode);
@@ -167,6 +178,12 @@ public sealed class SettingsStore
             PostConnectionNotice = settings.PostConnectionNotice,
             SlackBotToken = Protect(settings.SlackBotToken),
             SlackAppToken = Protect(settings.SlackAppToken),
+            DiscordBotToken = Protect(settings.DiscordBotToken),
+            DiscordAllowedUserIds = discordAllowedUsers,
+            DiscordAllowedGuildIds = discordAllowedGuilds,
+            DiscordAllowedChannelIds = discordAllowedChannels,
+            DiscordAllowedThreadIds = discordAllowedThreads,
+            DiscordAllowDirectMessages = settings.DiscordAllowDirectMessages,
             MattermostAllowedUserIds = mattermostAllowedUsers,
             SlackAllowedUserIds = slackAllowedUsers,
             ShareApprovalsInChat = settings.ShareApprovalsInChat,
@@ -253,6 +270,12 @@ public sealed class SettingsStore
         public bool PostConnectionNotice { get; set; }
         public string? SlackBotToken { get; set; }
         public string? SlackAppToken { get; set; }
+        public string? DiscordBotToken { get; set; }
+        public string? DiscordAllowedUserIds { get; set; }
+        public string? DiscordAllowedGuildIds { get; set; }
+        public string? DiscordAllowedChannelIds { get; set; }
+        public string? DiscordAllowedThreadIds { get; set; }
+        public bool DiscordAllowDirectMessages { get; set; }
         public string? MattermostAllowedUserIds { get; set; }
         public string? SlackAllowedUserIds { get; set; }
         public bool ShareApprovalsInChat { get; set; }

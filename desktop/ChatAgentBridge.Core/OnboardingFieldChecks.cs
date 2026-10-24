@@ -15,7 +15,10 @@ public enum WizardField
     MattermostServerUrl,
     MattermostChannel,
     MattermostToken,
-    MattermostAllowedUsers
+    MattermostAllowedUsers,
+    DiscordBotToken,
+    DiscordAllowedUsers,
+    DiscordAllowedGuilds
 }
 
 /// <summary>Lists the missing required inputs of a wizard step, in the order they appear on screen.</summary>
@@ -58,6 +61,16 @@ public static class OnboardingFieldChecks
         if (string.IsNullOrWhiteSpace(channelId)) missing.Add(WizardField.MattermostChannel);
         if (string.IsNullOrWhiteSpace(token)) missing.Add(WizardField.MattermostToken);
         if (!hasAllowedUsers) missing.Add(WizardField.MattermostAllowedUsers);
+        return missing;
+    }
+
+    public static IReadOnlyList<WizardField> DiscordChat(string? botToken, bool hasAllowedUsers, bool hasAllowedGuilds,
+        bool allowDirectMessages)
+    {
+        var missing = new List<WizardField>();
+        if (string.IsNullOrWhiteSpace(botToken)) missing.Add(WizardField.DiscordBotToken);
+        if (!hasAllowedUsers) missing.Add(WizardField.DiscordAllowedUsers);
+        if (!hasAllowedGuilds && !allowDirectMessages) missing.Add(WizardField.DiscordAllowedGuilds);
         return missing;
     }
 }
