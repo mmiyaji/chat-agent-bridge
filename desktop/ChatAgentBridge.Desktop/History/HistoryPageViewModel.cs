@@ -198,7 +198,7 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
                 return provider switch
                 {
                     AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code",
-                    AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI", _ => provider
+                    AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI", AgentProfile.Antigravity => "Antigravity CLI", _ => provider
                 };
             var leaf = Path.GetFileName(Binding.AgentExecutable.Trim().Trim('"'));
             var name = Path.GetFileNameWithoutExtension(leaf);
@@ -670,12 +670,12 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     private bool CanRefresh() => !IsBusy;
     private bool CanDetachSelectedSession() => SelectedSession is not null && !IsBusy;
     private bool CanEditSelectedSessionModel() => SelectedSession is { Binding.NextAgentProvider: null } selected && !IsBusy &&
-        ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot;
+        ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity;
 
     private bool CanSwitchSelectedAgent() => SelectedSession is { } selected && !IsBusy &&
         selected.Binding.Key.UserId is not null && selected.Binding.Key.Origin is not null &&
         selected.Binding.Key.Provider is "slack" or "mattermost" or "discord" &&
-        ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot;
+        ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity;
 
     [RelayCommand(CanExecute = nameof(CanSwitchSelectedAgent))]
     private async Task SwitchSelectedAgentAsync()

@@ -43,6 +43,7 @@
                         <ComboBoxItem Content="Claude Code" Tag="claude" />
                         <ComboBoxItem Content="Gemini CLI" Tag="gemini" />
                         <ComboBoxItem Content="GitHub Copilot CLI" Tag="github-copilot" />
+                        <ComboBoxItem Content="Antigravity CLI" Tag="antigravity" />
                         <ComboBoxItem Tag="custom" AutomationProperties.AutomationId="WizardCustomCli" x:Uid="WizardCustomCli" />
                     </ComboBox>
                     <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" AutomationProperties.AutomationId="WizardBasicProviderHelp" />
@@ -90,7 +91,7 @@
                     <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" />
                     <StackPanel Spacing="8" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.SupportsModel), Mode=OneWay}">
                         <TextBlock Text="{x:Bind ViewModel.ModelCatalog.Status, Mode=OneWay}" TextWrapping="Wrap" />
-                        <ComboBox   ItemsSource="{x:Bind ViewModel.ModelCatalog.Models, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.ModelCatalog.SelectedModel, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsReasoning, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardModelCandidates"  x:Uid="WizardModelCandidates" />
+                        <ComboBox   ItemsSource="{x:Bind ViewModel.ModelCatalog.Models, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.ModelCatalog.SelectedModel, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModelCatalog, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardModelCandidates"  x:Uid="WizardModelCandidates" />
                         <TextBox  MaxLength="256" Text="{x:Bind ViewModel.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" AutomationProperties.AutomationId="WizardOptionalModel"  x:Uid="WizardOptionalModel" />
                         <ComboBox  ItemsSource="{x:Bind ViewModel.ReasoningEffortCandidates, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.SelectedReasoningEffort, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsReasoning, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardReasoningEffort"  x:Uid="WizardReasoningEffort" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.SupportsReasoning), Mode=OneWay}" />
                         <TextBlock Text="{x:Bind ViewModel.ModelEffortStatus, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.SupportsReasoning), Mode=OneWay}" />
@@ -199,7 +200,7 @@
                     <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock023" x:Uid="onboardingOnboardingWizardTextBlock023" />
                     <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentPermissionMode, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.CanConfigureAgentPermission, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentPermissionMode" x:Uid="WizardAgentPermissionMode">
                         <ComboBoxItem  Tag="inherit"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem007" x:Uid="onboardingOnboardingWizardComboBoxItem007" />
-                        <ComboBoxItem  Tag="read-only"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem008" x:Uid="onboardingOnboardingWizardComboBoxItem008" />
+                        <ComboBoxItem  Tag="read-only" IsEnabled="{x:Bind ViewModel.CanSelectReadOnlyPermission, Mode=OneWay}"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem008" x:Uid="onboardingOnboardingWizardComboBoxItem008" />
                         <ComboBoxItem  Tag="workspace-write"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem009" x:Uid="onboardingOnboardingWizardComboBoxItem009" />
                         <ComboBoxItem  Tag="full-access"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem010" x:Uid="onboardingOnboardingWizardComboBoxItem010" />
                         <ComboBoxItem  Tag="ask" IsEnabled="{x:Bind local:OnboardingWizard.SupportsOperationApproval(ViewModel.IsCodexProvider, ViewModel.UseAppServer), Mode=OneWay}"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem011" x:Uid="onboardingOnboardingWizardComboBoxItem011" />

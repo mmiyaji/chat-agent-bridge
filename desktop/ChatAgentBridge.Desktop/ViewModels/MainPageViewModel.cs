@@ -142,21 +142,24 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnAgentExecutableChanged(string value) => InvalidateModelCatalog();
     [ObservableProperty] public partial string AgentArguments { get; set; } = "exec --json -";
     partial void OnAgentArgumentsChanged(string value) => InvalidateModelCatalog();
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(IsBasicProvider)), NotifyPropertyChangedFor(nameof(IsArgumentsEditable)), NotifyPropertyChangedFor(nameof(BasicProviderHelp)), NotifyPropertyChangedFor(nameof(AgentProviderDisplayName)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(SupportsReasoning)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat)), NotifyPropertyChangedFor(nameof(CanConfigureAgentPermission)), NotifyPropertyChangedFor(nameof(AgentPermissionStatus))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(IsBasicProvider)), NotifyPropertyChangedFor(nameof(IsArgumentsEditable)), NotifyPropertyChangedFor(nameof(BasicProviderHelp)), NotifyPropertyChangedFor(nameof(AgentProviderDisplayName)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(SupportsReasoning)), NotifyPropertyChangedFor(nameof(SupportsModelCatalog)), NotifyPropertyChangedFor(nameof(IsAntigravityProvider)), NotifyPropertyChangedFor(nameof(CanSelectReadOnlyPermission)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat)), NotifyPropertyChangedFor(nameof(CanConfigureAgentPermission)), NotifyPropertyChangedFor(nameof(AgentPermissionStatus))]
     public partial string AgentProvider { get; set; } = "codex";
     public bool IsCodexProvider => AgentProvider == "codex";
     public bool IsCustomProvider => AgentProvider == "custom";
-    public bool IsBasicProvider => AgentProvider is "gemini" or "github-copilot" or "custom";
+    public bool IsAntigravityProvider => AgentProvider == "antigravity";
+    public bool IsBasicProvider => AgentProvider is "gemini" or "github-copilot" or "antigravity" or "custom";
     public bool IsArgumentsEditable => IsBasicProvider;
-    public bool SupportsModel => AgentProvider is "codex" or "claude" or "gemini" or "github-copilot";
+    public bool SupportsModel => AgentProvider is "codex" or "claude" or "gemini" or "github-copilot" or "antigravity";
     public bool SupportsReasoning => AgentProvider is "codex" or "claude";
+    // Antigravity lists models with `agy models` on request, but has no per-model effort levels.
+    public bool SupportsModelCatalog => SupportsReasoning || IsAntigravityProvider;
     public string AgentProviderDisplayName => AgentProvider switch
     {
         "codex" => "Codex", "claude" => "Claude Code", "gemini" => "Gemini CLI",
-        "github-copilot" => "GitHub Copilot CLI", _ => ViewModelText.Get("CustomCliName")
+        "github-copilot" => "GitHub Copilot CLI", "antigravity" => "Antigravity CLI", _ => ViewModelText.Get("CustomCliName")
     };
-    public string BasicProviderHelp => ViewModelText.Get(IsCustomProvider ? "BasicProviderHelp" : "SessionCliProviderHelp");
-    public bool CanFetchModelCandidates => SupportsReasoning && IsSettingsLoaded && !IsRunning && !_closing;
+    public string BasicProviderHelp => ViewModelText.Get(IsCustomProvider ? "BasicProviderHelp" : IsAntigravityProvider ? "AntigravityProviderHelp" : "SessionCliProviderHelp");
+    public bool CanFetchModelCandidates => SupportsModelCatalog && IsSettingsLoaded && !IsRunning && !_closing;
     [ObservableProperty] public partial string AgentModel { get; set; } = "";
     partial void OnAgentModelChanged(string value)
     {
@@ -244,8 +247,11 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string SlackAllowedThreadIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostAllowedThreadIds { get; set; } = string.Empty;
     public bool CanConfigureAgentNetwork => IsCodexProvider && AgentPermissionMode is "workspace-write" or "ask";
-    public bool CanConfigureAgentPermission => !IsBasicProvider;
-    public string AgentPermissionStatus => IsBasicProvider ? ViewModelText.Get("BasicPermissionManagedByCli")
+    // Antigravity maps workspace-write and full-access onto its own flags; the other basic CLIs manage permissions themselves.
+    public bool CanConfigureAgentPermission => !IsBasicProvider || IsAntigravityProvider;
+    public bool CanSelectReadOnlyPermission => !IsAntigravityProvider;
+    public string AgentPermissionStatus => IsAntigravityProvider ? ViewModelText.Get("AntigravityPermissionHelp")
+        : IsBasicProvider ? ViewModelText.Get("BasicPermissionManagedByCli")
         : _agentPermissionModeAdjusted ? ViewModelText.Get("AskPermissionChangedToReadOnly") : string.Empty;
     private string NetworkPolicyLabel => !IsCodexProvider ? ViewModelText.Get("NetworkManagedByCli")
         : AgentPermissionMode == "full-access" ? ViewModelText.Get("NetworkUnrestrictedFullAccess")
@@ -413,11 +419,12 @@ public partial class MainPageViewModel : ObservableObject
         if (IsBasicProvider) SetAgentPermissionMode("inherit", adjusted: false);
         AgentModel = "";
         AgentReasoningEffort = null;
-        AgentExecutable = value switch { "claude" => "claude", "codex" => "codex", "gemini" => "gemini", "github-copilot" => "copilot", _ => "" };
+        AgentExecutable = value switch { "claude" => "claude", "codex" => "codex", "gemini" => "gemini", "github-copilot" => "copilot", "antigravity" => "agy", _ => "" };
         AgentArguments = value switch
         {
             "claude" => "--print --output-format stream-json --verbose", "codex" => "exec --json -",
-            "gemini" => AgentProfile.DefaultGeminiArguments, "github-copilot" => AgentProfile.DefaultGitHubCopilotArguments, _ => ""
+            "gemini" => AgentProfile.DefaultGeminiArguments, "github-copilot" => AgentProfile.DefaultGitHubCopilotArguments,
+            "antigravity" => AgentProfile.DefaultAntigravityArguments, _ => ""
         };
     }
 
@@ -808,7 +815,7 @@ public partial class MainPageViewModel : ObservableObject
     private void InvalidateModelCatalog()
     {
         if (ModelCatalog is not null)
-            ModelCatalog.Invalidate(IsBasicProvider ? ViewModelText.Get(IsCustomProvider ? "BasicModelManagedByCli" : "ManualModelCandidatesUnavailable") : null);
+            ModelCatalog.Invalidate(IsBasicProvider && !SupportsModelCatalog ? ViewModelText.Get(IsCustomProvider ? "BasicModelManagedByCli" : "ManualModelCandidatesUnavailable") : null);
     }
 
     public void SetMattermostToken(string value)

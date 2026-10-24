@@ -12,6 +12,7 @@ public partial class MainPageViewModel
     private AgentConnectionProfile? _registeredClaudeConnection;
     private AgentConnectionProfile? _registeredGeminiConnection;
     private AgentConnectionProfile? _registeredCopilotConnection;
+    private AgentConnectionProfile? _registeredAntigravityConnection;
 
     [ObservableProperty] public partial string RegisteredConnectionSummary { get; set; } = ViewModelText.Get("NoRegisteredConnections");
     [ObservableProperty] public partial string ConnectionRegistrationStatus { get; set; } = "";
@@ -20,6 +21,7 @@ public partial class MainPageViewModel
     public bool HasRegisteredClaudeConnection => _registeredClaudeConnection is not null;
     public bool HasRegisteredGeminiConnection => _registeredGeminiConnection is not null;
     public bool HasRegisteredCopilotConnection => _registeredCopilotConnection is not null;
+    public bool HasRegisteredAntigravityConnection => _registeredAntigravityConnection is not null;
 
     private void RefreshConnectionCommands()
     {
@@ -28,10 +30,12 @@ public partial class MainPageViewModel
         LoadRegisteredClaudeConnectionCommand.NotifyCanExecuteChanged();
         LoadRegisteredGeminiConnectionCommand.NotifyCanExecuteChanged();
         LoadRegisteredCopilotConnectionCommand.NotifyCanExecuteChanged();
+        LoadRegisteredAntigravityConnectionCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(HasRegisteredCodexConnection));
         OnPropertyChanged(nameof(HasRegisteredClaudeConnection));
         OnPropertyChanged(nameof(HasRegisteredGeminiConnection));
         OnPropertyChanged(nameof(HasRegisteredCopilotConnection));
+        OnPropertyChanged(nameof(HasRegisteredAntigravityConnection));
         OnPropertyChanged(nameof(HasVerifiedAgentEditor));
     }
 
@@ -44,10 +48,12 @@ public partial class MainPageViewModel
             _registeredClaudeConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Claude);
             _registeredGeminiConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Gemini);
             _registeredCopilotConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.GitHubCopilot);
+            _registeredAntigravityConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Antigravity);
             var names = profiles.Select(profile => profile.Provider switch
             {
                 AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code",
-                AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI", _ => profile.Provider
+                AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI",
+                AgentProfile.Antigravity => "Antigravity CLI", _ => profile.Provider
             }).ToArray();
             RegisteredConnectionSummary = names.Length == 0
                 ? ViewModelText.Get("NoRegisteredConnections")
@@ -61,6 +67,7 @@ public partial class MainPageViewModel
             _registeredClaudeConnection = null;
             _registeredGeminiConnection = null;
             _registeredCopilotConnection = null;
+            _registeredAntigravityConnection = null;
             RegisteredConnectionSummary = ViewModelText.Get("RegisteredConnectionsUnavailable", ex.Message);
             RefreshConnectionCommands();
         }
@@ -139,6 +146,9 @@ public partial class MainPageViewModel
 
     [RelayCommand(CanExecute = nameof(HasRegisteredCopilotConnection))]
     private void LoadRegisteredCopilotConnection() => ApplyRegisteredConnection(_registeredCopilotConnection);
+
+    [RelayCommand(CanExecute = nameof(HasRegisteredAntigravityConnection))]
+    private void LoadRegisteredAntigravityConnection() => ApplyRegisteredConnection(_registeredAntigravityConnection);
 
     private void ApplyRegisteredConnection(AgentConnectionProfile? profile)
     {

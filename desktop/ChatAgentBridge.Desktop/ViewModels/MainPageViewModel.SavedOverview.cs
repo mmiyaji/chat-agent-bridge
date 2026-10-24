@@ -8,7 +8,7 @@ public partial class MainPageViewModel
     public string SavedAgentName => _settings?.AgentProvider switch
     {
         "codex" => "Codex", "claude" => "Claude Code", "gemini" => "Gemini CLI",
-        "github-copilot" => "GitHub Copilot", "custom" => DesktopText.Get("GeneralSavedOtherCli"),
+        "github-copilot" => "GitHub Copilot", "antigravity" => "Antigravity CLI", "custom" => DesktopText.Get("GeneralSavedOtherCli"),
         _ => ViewModelText.Get("NotLoaded")
     };
     public string SavedModel => string.IsNullOrWhiteSpace(_settings?.AgentModel) || _settings.AgentModel == "default"

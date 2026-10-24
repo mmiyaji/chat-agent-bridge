@@ -8,7 +8,7 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
-    private readonly string[] _agentScopeKeys = ["common", "codex", "claude", "gemini", "github-copilot", "custom"];
+    private readonly string[] _agentScopeKeys = ["common", "codex", "claude", "gemini", "github-copilot", "antigravity", "custom"];
     private AgentProfileEditorControl? _agentProfileDetails;
     private NavigationView? _agentScopeNavigation;
     private StackPanel? _agentScopeCommonGroup;
@@ -57,7 +57,7 @@ public sealed partial class MainPage
         {
             var key = _agentScopeKeys[i];
             var item = new NavigationViewItem { Tag = key };
-            AutomationProperties.SetAutomationId(item, "AgentScope" + (key switch { "common" => "Common", "codex" => "Codex", "claude" => "Claude", "gemini" => "Gemini", "github-copilot" => "Copilot", _ => "Custom" }));
+            AutomationProperties.SetAutomationId(item, "AgentScope" + (key switch { "common" => "Common", "codex" => "Codex", "claude" => "Claude", "gemini" => "Gemini", "github-copilot" => "Copilot", "antigravity" => "Antigravity", _ => "Custom" }));
             _agentScopeNavigation.MenuItems.Add(item);
         }
         _agentScopeNavigation.SelectionChanged += (_, args) =>
@@ -114,8 +114,8 @@ public sealed partial class MainPage
     private void RefreshAgentScopeLabels()
     {
         if (_agentScopeNavigation is null) return;
-        string[] labels = [DesktopText.Get("AgentScopeCommon"), "Codex", "Claude Code", "Gemini CLI", "GitHub Copilot", DesktopText.Get("AgentScopeCustom")];
-        string[] iconKeys = ["common", "codex", "claude", "gemini", "github-copilot", "custom"];
+        string[] labels = [DesktopText.Get("AgentScopeCommon"), "Codex", "Claude Code", "Gemini CLI", "GitHub Copilot", "Antigravity CLI", DesktopText.Get("AgentScopeCustom")];
+        string[] iconKeys = ["common", "codex", "claude", "gemini", "github-copilot", "antigravity", "custom"];
         for (var i = 0; i < labels.Length; i++)
         {
             var item = (NavigationViewItem)_agentScopeNavigation.MenuItems[i];

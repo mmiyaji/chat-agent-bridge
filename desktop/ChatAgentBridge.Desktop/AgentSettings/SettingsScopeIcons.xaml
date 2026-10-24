@@ -49,6 +49,14 @@
             </Canvas>
         </Viewbox>
     </DataTemplate>
+    <!-- Original simple arch glyph (not from Fluent System Icons); used for the Antigravity CLI row. -->
+    <DataTemplate x:Key="SettingsScopeIcon_arch">
+        <Viewbox Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center">
+            <Canvas Width="20" Height="20">
+                <Path Data="M3 16.5 L10 3.5 L17 16.5 M6.5 12.5 H13.5" Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+            </Canvas>
+        </Viewbox>
+    </DataTemplate>
     <DataTemplate x:Key="SettingsScopeIcon_folder">
         <Viewbox Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center">
             <Canvas Width="20" Height="20">

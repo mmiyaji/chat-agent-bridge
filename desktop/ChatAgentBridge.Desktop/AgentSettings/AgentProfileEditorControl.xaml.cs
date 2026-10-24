@@ -456,7 +456,7 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
                  nameof(MainPageViewModel.CliCheckSucceeded) or nameof(MainPageViewModel.CliCheckFailed) or
                  nameof(MainPageViewModel.CliVersion) or nameof(MainPageViewModel.CliCheckSummary) or
                  nameof(MainPageViewModel.AgentProvider) or nameof(MainPageViewModel.AgentProviderDisplayName) or
-                 nameof(MainPageViewModel.SupportsModel) or nameof(MainPageViewModel.SupportsReasoning) or
+                 nameof(MainPageViewModel.SupportsModel) or nameof(MainPageViewModel.SupportsReasoning) or nameof(MainPageViewModel.SupportsModelCatalog) or nameof(MainPageViewModel.CanSelectReadOnlyPermission) or
                  nameof(MainPageViewModel.IsArgumentsEditable) or nameof(MainPageViewModel.CanConfigureAgentNetwork) or
                  nameof(MainPageViewModel.CanConfigureAgentPermission) or nameof(MainPageViewModel.AgentPermissionStatus) or
                  nameof(MainPageViewModel.HasVerifiedAgentEditor) or

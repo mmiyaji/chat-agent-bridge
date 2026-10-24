@@ -16,6 +16,7 @@ public sealed partial class MainPage
             "claude" => "code",
             "gemini" => "sparkle",
             "github-copilot" => "bot",
+            "antigravity" => "arch",
             "mattermost" => "chat",
             "slack" => "number_symbol",
             "discord" => "people_community",

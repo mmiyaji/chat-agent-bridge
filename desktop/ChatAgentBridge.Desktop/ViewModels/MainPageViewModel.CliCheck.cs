@@ -123,6 +123,9 @@ public partial class MainPageViewModel
                 CliCheckSucceeded = true;
                 CliCheckSummary = ViewModelText.Get("BasicCliCheckSucceeded");
                 await SaveCliVerificationAsync(settings, result, generation, cancellation.Token);
+                // Antigravity can list models without a turn. This is best effort: a failed lookup never fails the CLI check.
+                if (IsAntigravityProvider && generation == _cliCheckGeneration && signature == CurrentCliSignature())
+                    await ModelCatalog.FetchModelsCommand.ExecuteAsync(null);
                 return;
             }
             CliCheckSummary = ViewModelText.Get("CliStartedFetchingModels");
