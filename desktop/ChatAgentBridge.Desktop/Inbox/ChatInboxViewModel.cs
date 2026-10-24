@@ -78,6 +78,10 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
 public sealed partial class InboxConversation(string key) : ObservableObject
 {
     public string Key { get; } = key;
+    internal InboxConversationSnapshot? Snapshot { get; set; }
+    internal int PreviousRequestCount { get; set; }
+    public string Workspace => Snapshot?.WorkspaceRoot ?? "";
+    public DateTimeOffset LastActivity => Requests.LastOrDefault()?.ReceivedAt ?? Snapshot?.UpdatedAt ?? default;
     public ObservableCollection<InboxItem> Requests { get; } = [];
     [ObservableProperty] public partial string Identity { get; set; } = "";
     [ObservableProperty] public partial string Title { get; set; } = "";
@@ -207,6 +211,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public string EmptyListMessage => DesktopText.Get(Requests.Count == 0 ? "InboxWaitingForRequests" : "InboxNoMatches");
     partial void OnSelectedChanged(InboxItem? value)
     {
+        NotifyRestoredSelection();
         OnPropertyChanged(nameof(SelectedLiveOutput));
         OnPropertyChanged(nameof(SelectedAttachmentStatus));
         SendAttachmentsCommand.NotifyCanExecuteChanged();
@@ -221,6 +226,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         OnPropertyChanged(nameof(ConversationRequests));
         OnPropertyChanged(nameof(SelectedRequestCountLabel));
         OnPropertyChanged(nameof(HasSelectedConversation));
+        NotifyRestoredSelection();
         if (value is not null && (Selected is null || !value.Requests.Contains(Selected))) Selected = PreferredRequest(value);
         ApproveCommand.NotifyCanExecuteChanged(); RejectCommand.NotifyCanExecuteChanged();
         CancelCommand.NotifyCanExecuteChanged(); SendResultCommand.NotifyCanExecuteChanged();
@@ -271,7 +277,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private bool MatchesFilter(InboxConversation conversation)
     {
         var latest = conversation.Requests.LastOrDefault();
-        if (latest is null) return false;
+        if (latest is null)
+        {
+            if (StateFilter is "pending" or "active") return false;
+            var restoredQuery = SearchText.Trim();
+            return restoredQuery.Length == 0 || $"{conversation.Title} {conversation.Location} {conversation.Identity} {conversation.Workspace}"
+                .Contains(restoredQuery, StringComparison.CurrentCultureIgnoreCase);
+        }
         if (StateFilter == "pending" && !conversation.Requests.Any(item => item.State == "承認待ち")) return false;
         if (StateFilter == "active" && !conversation.Requests.Any(item => item.State is "実行中" or "追加指示の受領待ち")) return false;
         if (StateFilter == "completed" && !conversation.Requests.Any(item => item.State is not ("承認待ち" or "実行中" or "自動実行を準備" or "追加指示の受領待ち"))) return false;
@@ -308,7 +320,16 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private void RefreshConversations()
     {
         var groups = Requests.GroupBy(ConversationKey).ToDictionary(group => group.Key, group => group.OrderBy(item => item.ReceivedAt).ToArray());
-        foreach (var existing in Conversations.Where(item => !groups.ContainsKey(item.Key)).ToArray()) Conversations.Remove(existing);
+        foreach (var existing in Conversations.Where(item => !groups.ContainsKey(item.Key)).ToArray())
+        {
+            existing.PreviousRequestCount = existing.RequestCount;
+            existing.Requests.Clear();
+            if (existing.Snapshot is { } snapshot)
+            {
+                existing.Snapshot = snapshot with { State = snapshot.State is "pending" or "running" ? "interrupted" : snapshot.State };
+                ApplyRestoredPresentation(existing);
+            }
+        }
         foreach (var group in groups.OrderByDescending(pair => pair.Value[^1].ReceivedAt))
         {
             var conversation = Conversations.FirstOrDefault(item => item.Key == group.Key);
@@ -337,10 +358,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             conversation.StateSummary = stateItem.StateDisplay;
             conversation.StateTone = stateItem.StateTone;
             conversation.Activity = latest.ReceivedAt.ToString("g", System.Globalization.CultureInfo.CurrentCulture);
-            conversation.RequestCount = items.Length;
+            conversation.RequestCount = (int)Math.Min(int.MaxValue, (long)conversation.PreviousRequestCount + items.Length);
+            UpdateConversationSnapshot(conversation, latest, stateItem);
             conversation.RefreshPresentation();
         }
-        var sorted = Conversations.OrderByDescending(item => item.Requests.LastOrDefault()?.ReceivedAt).ToArray();
+        var sorted = Conversations.OrderByDescending(item => item.LastActivity).ToArray();
+        foreach (var old in sorted.Skip(500).Where(item => item.Requests.Count == 0)) Conversations.Remove(old);
+        sorted = sorted.Where(Conversations.Contains).ToArray();
         for (var index = 0; index < sorted.Length; index++)
         {
             var current = Conversations.IndexOf(sorted[index]);
@@ -356,6 +380,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         }
         else if (SelectedConversation is not null && (Selected is null || !SelectedConversation.Requests.Contains(Selected)))
             Selected = PreferredRequest(SelectedConversation);
+        NotifyRestoredSelection();
+        QueueConversationSave();
     }
     public Func<InboxItem, CancellationToken, Task<bool>>? ConfirmAsync { get; set; }
     public Func<InboxItem, string, Task<bool>>? ConfirmReplyAsync { get; set; }
@@ -384,6 +410,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             foreach (InboxItem item in e.OldItems)
             {
+                var conversation = Conversations.FirstOrDefault(row => row.Requests.Contains(item));
+                if (conversation is not null && conversation.PreviousRequestCount < int.MaxValue)
+                    conversation.PreviousRequestCount++;
                 if (_requestHandlers.Remove(item, out var handler)) item.PropertyChanged -= handler;
                 item.LiveOutput.Dispose();
             }
@@ -433,6 +462,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         Status = DesktopText.Get("InboxPreparingConnection");
         try
         {
+            await EnsureConversationsRestoredAsync();
             var settings = await _store.LoadAsync();
             var allowed = transport is MattermostWebSocketTransport ? settings.MattermostAllowedUserIds : settings.SlackAllowedUserIds;
             if (string.IsNullOrWhiteSpace(allowed))
@@ -458,7 +488,6 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             }
             // Reconnection invalidates pending work from the previous connection.
             Requests.Clear();
-            Conversations.Clear();
             _notifiedRequests.Clear();
             _automaticallyAttempted.Clear();
             Selected = null;
@@ -1165,5 +1194,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         _emptyLiveOutput.Dispose();
     }
 
-    internal Task WaitForConnectionShutdownAsync() => _receiveTask ?? Task.CompletedTask;
+    internal async Task WaitForConnectionShutdownAsync()
+    {
+        if (_receiveTask is { } receive) await receive;
+        if (_conversationRestoreTask is { } restore) await restore;
+        await _conversationSaveTask;
+    }
 }

@@ -11,12 +11,13 @@ public sealed class LocalDataManagerTests : IDisposable
     public async Task RemovingConversationDataPreservesSettingsAndUnrelatedFiles()
     {
         Directory.CreateDirectory(_directory);
-        foreach (var name in new[] { "sessions.json", "conversation-summaries.json", "attachment-consents.json", "chat-identities.json", "settings.json", "keep.txt" })
+        foreach (var name in new[] { "sessions.json", "conversation-summaries.json", "chat-conversations.json", "attachment-consents.json", "chat-identities.json", "settings.json", "keep.txt" })
             await File.WriteAllTextAsync(Path.Combine(_directory, name), "sentinel");
         await new LocalDataManager(_directory).ClearAsync([LocalDataKind.Conversations]);
         Assert.True(File.Exists(Path.Combine(_directory, "settings.json")));
         Assert.True(File.Exists(Path.Combine(_directory, "keep.txt")));
         Assert.False(File.Exists(Path.Combine(_directory, "sessions.json")));
+        Assert.False(File.Exists(Path.Combine(_directory, "chat-conversations.json")));
         Assert.False(File.Exists(Path.Combine(_directory, "attachment-consents.json")));
         Assert.False(File.Exists(Path.Combine(_directory, "chat-identities.json")));
     }

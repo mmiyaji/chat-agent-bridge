@@ -8,7 +8,7 @@ public sealed class LocalDataManager(string directory)
 {
     private readonly string _directory = Path.GetFullPath(directory);
     private static readonly string[] ConversationFiles =
-        ["sessions.json", "conversation-summaries.json", "attachment-consents.json", "chat-identities.json"];
+        ["sessions.json", "conversation-summaries.json", "chat-conversations.json", "attachment-consents.json", "chat-identities.json"];
 
     public IReadOnlyList<LocalDataSize> Inspect() => Enum.GetValues<LocalDataKind>().Select(kind =>
     {

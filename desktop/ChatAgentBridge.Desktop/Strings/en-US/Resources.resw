@@ -860,6 +860,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AboutPrivacy.Header" xml:space="preserve"><value>Privacy policy</value></data>
   <data name="AboutExit.Content" xml:space="preserve"><value>Exit application</value></data>
   <data name="InboxConversationsHeading.Text" xml:space="preserve"><value>Conversations</value></data>
+  <data name="InboxRestoredTitleLabel.Text" xml:space="preserve"><value>Title</value></data>
+  <data name="InboxRestoredLocationLabel.Text" xml:space="preserve"><value>Location</value></data>
+  <data name="InboxRestoredActivityLabel.Text" xml:space="preserve"><value>Last activity</value></data>
+  <data name="InboxRestoredWorkspaceLabel.Text" xml:space="preserve"><value>Workspace</value></data>
   <data name="InboxConversationHelp.Text" xml:space="preserve"><value>Search by sender, channel, thread, or message. New activity appears first.</value></data>
   <data name="InboxSearch.Header" xml:space="preserve"><value>Search</value></data>
   <data name="InboxSearch.PlaceholderText" xml:space="preserve"><value>Search conversations</value></data>

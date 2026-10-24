@@ -25,6 +25,7 @@ public sealed partial class MainPage
             if (!DataWorkIdle) { CancelPortableUpdatePreparation(); return false; }
             App.PendingRequestNotifications.ClearAll();
             await HistoryPage.ViewModel.PauseChatNameUpdatesAsync();
+            await InboxPage.ViewModel.PauseConversationPersistenceAsync();
             return true;
         }
         catch
@@ -38,12 +39,14 @@ public sealed partial class MainPage
     {
         CancelPortableUpdatePreparation();
         HistoryPage.ViewModel.SetChatNameUpdatesEnabled(true);
+        InboxPage.ViewModel.ResumeConversationPersistence();
     }
 
     internal async Task ReloadAfterDataMaintenanceAsync()
     {
         await ViewModel.LoadAsync();
         await InboxPage.ViewModel.RefreshAccessAsync();
+        await InboxPage.ViewModel.ReloadConversationsAsync();
         await HistoryPage.ViewModel.RefreshAsync();
     }
 }

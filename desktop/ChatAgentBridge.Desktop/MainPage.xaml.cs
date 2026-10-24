@@ -201,7 +201,8 @@ public sealed partial class MainPage : Page
             InboxPage.ViewModel.DisconnectCommand.ExecutionTask,
             InboxPage.ViewModel.WaitForConnectionShutdownAsync()
         }.OfType<Task>();
-        await Task.WhenAll(tasks);
+        try { await Task.WhenAll(tasks); }
+        finally { await InboxPage.ViewModel.FlushConversationPersistenceAsync(); }
     }
     public static Style OverviewIconStyle(OverviewIconState state) => (Style)Application.Current.Resources[state switch
     {

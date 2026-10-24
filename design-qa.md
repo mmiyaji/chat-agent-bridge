@@ -1,3 +1,34 @@
+# Chat conversation restoration — 2026-10-24
+
+The Chat list now restores bounded metadata across restarts. Restored rows have
+no live request objects, transports, approval actions, prompt bodies or result
+bodies. Pending/running snapshots become Interrupted; receiving a new request
+uses the normal access and approval checks.
+
+- Core tests: 1002/1002 passed. Focused metadata/deletion tests: 15/15 passed,
+  including named labels, owner/server isolation, interrupted-state conversion,
+  retention limits, invalid JSON and preservation of existing data on rejection.
+- Native English and Japanese smoke runs: 7/7 checks each, using an isolated
+  loopback Mattermost fixture and self-contained offline TestAgent. No real
+  chat posts or AI calls were made.
+- Killed and restarted real desktop processes with pending and running requests:
+  rows restored, old actions were unavailable, and execution/history/result-post
+  counts did not increase. A new same-thread request merged into its row and ran
+  only after fresh approval. Completed state survived a confirmed graceful exit.
+- Offline restoration also passed with malformed legacy sessions.json. Legacy
+  migration and cached display names cannot block valid metadata restoration.
+- Reviewed light/dark screenshots at 1280 x 850 DIP in English and Japanese;
+  restored cards, status labels and paths wrap without clipping or overlap.
+- English evidence: `desktop/artifacts/317bae08-9c5c-421a-b877-793ff3635ab6/`.
+  Japanese evidence: `desktop/artifacts/cdc751f7-efcb-4b71-9c39-60307a41bb35/`.
+  Final local publish: `desktop/artifacts/inbox-persistence-verified/`.
+- Review fixes: drain the last save after execution/connection shutdown, isolate
+  optional legacy migration, and pause/drain writes before data deletion or restore.
+  Conversation-data deletion includes chat-conversations.json.
+- No push, release or publication was performed.
+
+---
+
 # Default-window settings sidebars — 2026-10-24
 
 Reduced both local navigation breakpoints from 900 to 850 effective pixels.

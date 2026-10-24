@@ -9,6 +9,8 @@ public sealed partial class ChatInboxPage : Page
     public ChatInboxViewModel ViewModel { get; } = new();
     public event Action? OpenRequested;
     public event Action? ConnectionSettingsRequested;
+    private bool _windowClosedSubscribed;
+    private bool _openAppCallbackConfigured;
 
     private void OpenConnectionSettings_Click(object sender, RoutedEventArgs e) => ConnectionSettingsRequested?.Invoke();
 
@@ -32,9 +34,18 @@ public sealed partial class ChatInboxPage : Page
             ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
         App.PendingRequestNotifications.ActionCompleted += () => NotificationActionNotice.IsOpen = false;
         ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
-        Loaded += (_, _) =>
+        Loaded += Page_Loaded;
+    }
+
+    private async void Page_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (!_windowClosedSubscribed)
         {
             App.Window.Closed += WindowClosed;
+            _windowClosedSubscribed = true;
+        }
+        if (!_openAppCallbackConfigured)
+        {
             App.PendingRequestNotifications.SetOpenAppCallback(() =>
             {
                 ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
@@ -42,7 +53,10 @@ public sealed partial class ChatInboxPage : Page
                 OpenRequested?.Invoke();
                 App.Tray.ShowWindow();
             });
-        };
+            _openAppCallbackConfigured = true;
+        }
+
+        await ViewModel.EnsureConversationsRestoredAsync();
     }
 
     private Task OpenInboxAsync(InboxItem item)

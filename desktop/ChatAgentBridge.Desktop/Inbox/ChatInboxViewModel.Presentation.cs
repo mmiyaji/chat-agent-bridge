@@ -28,11 +28,22 @@ public sealed partial class InboxConversation
 {
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
     public partial string StateTone { get; set; } = "neutral";
-    public string ListTitle => Requests.FirstOrDefault()?.Prompt.Replace('\r', ' ').Replace('\n', ' ').Trim() is { Length: > 0 } text
-        ? text[..Math.Min(text.Length, 120)] : Title;
-    public string ActivityCompact => Requests.LastOrDefault()?.ReceivedAt.ToString("t") ?? "";
+    public string ListTitle
+    {
+        get
+        {
+            if (Requests.FirstOrDefault()?.Prompt.Replace('\r', ' ').Replace('\n', ' ').Trim() is { Length: > 0 } text)
+                return text[..Math.Min(text.Length, 120)];
+            if (Snapshot?.DisplayName is { Length: > 0 } name) return name;
+            if (Snapshot?.ChannelName is { Length: > 0 } channel) return channel;
+            var folder = System.IO.Path.GetFileName(Workspace.TrimEnd('\\', '/'));
+            return folder.Length > 0 ? folder : Title;
+        }
+    }
+    public string ActivityCompact => LastActivity == default ? "" : LastActivity.ToLocalTime().ToString(
+        LastActivity.LocalDateTime.Date == DateTime.Today ? "t" : "d");
     public string ListTooltip => $"{ListTitle}\n{Title}\n{Location}\n{StateSummary}\n{Activity}";
-    public bool HasSeveralRequests => RequestCount > 1;
+    public bool HasSeveralRequests => Requests.Count > 1 && LatestPrompt.Length > 0;
     public void RefreshLocalizedText()
     {
         OnPropertyChanged(nameof(RequestCountLabel));
@@ -41,6 +52,9 @@ public sealed partial class InboxConversation
 
     public void RefreshPresentation()
     {
+        OnPropertyChanged(nameof(Workspace));
+        OnPropertyChanged(nameof(LastActivity));
+        OnPropertyChanged(nameof(HasSeveralRequests));
         OnPropertyChanged(nameof(ListTitle));
         OnPropertyChanged(nameof(ActivityCompact));
         OnPropertyChanged(nameof(ListTooltip));
@@ -81,8 +95,13 @@ public sealed partial class ChatInboxViewModel
         OnPropertyChanged(nameof(ClearConversationFiltersLabel));
         OnPropertyChanged(nameof(SelectedOutput));
         OnPropertyChanged(nameof(SelectedUsage));
+        OnPropertyChanged(nameof(RestoredConversationDescription));
         foreach (var request in Requests) request.RefreshLocalizedText();
-        foreach (var conversation in Conversations) conversation.RefreshLocalizedText();
+        foreach (var conversation in Conversations)
+        {
+            if (conversation.Requests.Count == 0) ApplyRestoredPresentation(conversation);
+            conversation.RefreshLocalizedText();
+        }
     }
 
     partial void OnStatusChanged(string value)

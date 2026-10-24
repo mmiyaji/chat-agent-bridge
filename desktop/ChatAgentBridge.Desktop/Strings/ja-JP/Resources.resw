@@ -860,6 +860,10 @@
   <data name="AboutPrivacy.Header" xml:space="preserve"><value>プライバシーポリシー</value></data>
   <data name="AboutExit.Content" xml:space="preserve"><value>アプリを終了</value></data>
   <data name="InboxConversationsHeading.Text" xml:space="preserve"><value>会話</value></data>
+  <data name="InboxRestoredTitleLabel.Text" xml:space="preserve"><value>タイトル</value></data>
+  <data name="InboxRestoredLocationLabel.Text" xml:space="preserve"><value>場所</value></data>
+  <data name="InboxRestoredActivityLabel.Text" xml:space="preserve"><value>最終アクティビティ</value></data>
+  <data name="InboxRestoredWorkspaceLabel.Text" xml:space="preserve"><value>作業フォルダー</value></data>
   <data name="InboxConversationHelp.Text" xml:space="preserve"><value>送信者、チャンネル、スレッド、メッセージを検索できます。新しい会話が先に表示されます。</value></data>
   <data name="InboxSearch.Header" xml:space="preserve"><value>検索</value></data>
   <data name="InboxSearch.PlaceholderText" xml:space="preserve"><value>会話を検索</value></data>

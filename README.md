@@ -85,6 +85,8 @@ See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるc
 
 After starting a request, reply in the same thread. Actions are scoped to the requester and conversation.
 
+The Chat conversation list is restored after a restart. It stores display names, chat identities, working folders, last activity and status, without request or result bodies. Requests that were awaiting approval or running appear as interrupted and are never resumed automatically. Post a new `!cab` request in the same thread to continue.
+
 | Command | Purpose |
 | --- | --- |
 | `!cab command` | List available commands |
