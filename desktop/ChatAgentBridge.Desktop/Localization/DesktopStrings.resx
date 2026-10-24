@@ -760,10 +760,10 @@ After: {2}</value></data>
   <data name="SettingsReviewEmpty" xml:space="preserve"><value>Not set</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>Model candidates cannot be fetched for this CLI. Enter a model ID or alias supported by your CLI and account, or leave it blank for the CLI default. Model access is checked when you run a request; reasoning and permissions follow the CLI configuration.</value></data>
   <data name="ChatModelManualEntry" xml:space="preserve"><value>This CLI cannot return model candidates. Use !cab model MODEL_ID with an ID or alias supported by your CLI and account, or !cab model default to follow agent settings. Access is checked when you run a request.</value></data>
-  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows notifications</value></data>
-  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>If Windows notifications do not appear, configure this Windows user only. Standard notifications continue to work without this optional setup.</value></data>
-  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>Status</value></data>
-  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>Windows notifications</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Approval notifications</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>Windows notifications alert you when a chat request or AI operation needs approval. You can approve or reject it from the notification.</value></data>
+  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>Additional notification registration</value></data>
+  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>Additional registration</value></data>
   <data name="PortableIdentityPublisher" xml:space="preserve"><value>Publisher: {0}</value></data>
   <data name="PortableIdentityFingerprint" xml:space="preserve"><value>Certificate SHA-256: {0}</value></data>
   <data name="PortableIdentityRegisteredLocation" xml:space="preserve"><value>Registered location: {0}</value></data>
@@ -771,10 +771,10 @@ After: {2}</value></data>
   <data name="PortableIdentityNotRegistered" xml:space="preserve"><value>This folder is not registered with Windows.</value></data>
   <data name="PortableIdentityActive" xml:space="preserve"><value>Notification registration is active.</value></data>
   <data name="PortableIdentityInactive" xml:space="preserve"><value>Notification registration is not active for this process.</value></data>
-  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>Setup and removal run after the app closes, then restart it. Your data folder and portable updater stay in place.</value></data>
-  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>Optional setup</value></data>
-  <data name="PortableIdentityConfigure" xml:space="preserve"><value>Set up Windows notifications and restart</value></data>
-  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>Update registration and restart</value></data>
+  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>Use this only if approval notifications do not arrive. Registration and removal restart the app. Your settings and updater are kept.</value></data>
+  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>If notifications do not appear</value></data>
+  <data name="PortableIdentityConfigure" xml:space="preserve"><value>Register notifications and restart</value></data>
+  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>Register again and restart</value></data>
   <data name="PortableIdentityRemove" xml:space="preserve"><value>Remove registration and restart</value></data>
   <data name="PortableIdentityRefresh" xml:space="preserve"><value>Refresh status</value></data>
   <data name="PortableIdentityConfigureTitle" xml:space="preserve"><value>Set up Windows notifications?</value></data>
@@ -838,4 +838,9 @@ After: {2}</value></data>
   <data name="InboxDisabledLabel" xml:space="preserve"><value>Disabled</value></data>
   <data name="InboxUnknownParticipant" xml:space="preserve"><value>Unknown participant</value></data>
   <data name="InboxUnknownLocation" xml:space="preserve"><value>Location unavailable</value></data>
+  <data name="GeneralSavedOtherCli" xml:space="preserve"><value>Other CLI</value></data>
+  <data name="GeneralNotificationRegistered" xml:space="preserve"><value>Additional registration is active for this Windows user. Approval requests can use it to send notifications.</value></data>
+  <data name="GeneralNotificationRestart" xml:space="preserve"><value>Registration is saved. Restart the app to use it for approval notifications.</value></data>
+  <data name="GeneralNotificationAvailable" xml:space="preserve"><value>If approval notifications do not appear, you can register this portable app for the current Windows user. Setup is unnecessary when notifications already work.</value></data>
+  <data name="GeneralNotificationUnavailable" xml:space="preserve"><value>Additional registration is unavailable in this build or environment. This does not mean standard notifications are disabled. Details are available below.</value></data>
 </root>

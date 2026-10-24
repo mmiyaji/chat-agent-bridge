@@ -12,16 +12,23 @@
     <StackPanel Spacing="8" AutomationProperties.AutomationId="TraySettingsCard">
         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="TraySettingsHeading" AutomationProperties.AutomationId="TraySettingsHeading" />
         <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="TrayBehaviorSettingRow">
-            <settings:SettingsCard.Header><TextBlock x:Uid="CloseToTrayLabel" TextWrapping="Wrap" localization:LocalizedResourceKey.Key="CloseToTrayLabel" /></settings:SettingsCard.Header>
+            <settings:SettingsCard.Header><TextBlock x:Uid="CloseBehaviorLabel" TextWrapping="Wrap" localization:LocalizedResourceKey.Key="CloseBehaviorLabel" /></settings:SettingsCard.Header>
             <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="DockBottom" /></settings:SettingsCard.HeaderIcon>
             <settings:SettingsCard.Description><TextBlock x:Uid="TraySettingsDescription" TextWrapping="Wrap" AutomationProperties.AutomationId="TraySettingsDescription" /></settings:SettingsCard.Description>
-            <ToggleSwitch x:Name="CloseToTrayToggle" x:Uid="CloseToTrayToggle" Toggled="CloseToTrayToggle_Toggled" AutomationProperties.AutomationId="CloseToTrayToggle" />
+            <ComboBox x:Name="CloseBehaviorComboBox" x:Uid="CloseBehaviorComboBox" SelectionChanged="CloseBehaviorComboBox_SelectionChanged" AutomationProperties.AutomationId="CloseBehaviorComboBox" MinWidth="220">
+                <ComboBoxItem x:Uid="CloseBehaviorAskEveryTime" AutomationProperties.AutomationId="CloseBehaviorAskEveryTime" />
+                <ComboBoxItem x:Uid="CloseBehaviorMoveToTray" AutomationProperties.AutomationId="CloseBehaviorMoveToTray" />
+                <ComboBoxItem x:Uid="CloseBehaviorExitApp" AutomationProperties.AutomationId="CloseBehaviorExitApp" />
+            </ComboBox>
         </settings:SettingsCard>
         <Expander x:Uid="TrayActions" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="TrayActionsExpander" localization:LocalizedResourceKey.Key="TrayActions">
             <StackPanel Spacing="8">
-                <Button x:Name="MoveToTrayButton" x:Uid="MoveToTrayButton" Click="MoveToTrayButton_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="MoveToTrayButton" />
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <Button x:Name="MoveToTrayButton" x:Uid="MoveToTrayButton" Click="MoveToTrayButton_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="MoveToTrayButton" />
+                    <Button Grid.Column="1" x:Name="ExitCompletelyButton" x:Uid="ExitCompletelyButton" Click="ExitCompletelyButton_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ExitCompletelyButton" />
+                </Grid>
                 <TextBlock x:Uid="TrayExitDescription" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="TrayExitDescription" />
-                <Button x:Name="ExitCompletelyButton" x:Uid="ExitCompletelyButton" Click="ExitCompletelyButton_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="ExitCompletelyButton" />
             </StackPanel>
         </Expander>
         <TextBlock x:Name="StatusText" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="TraySettingsStatus" />

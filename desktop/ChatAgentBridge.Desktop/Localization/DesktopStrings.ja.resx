@@ -760,10 +760,10 @@
   <data name="SettingsReviewEmpty" xml:space="preserve"><value>未設定</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>このCLIではモデル候補を取得できません。CLIと契約が対応するモデルID・別名を直接入力するか、空欄でCLIの既定モデルを使ってください。モデルの利用可否は実行時に確認されます。推論と操作権限はCLIの設定に従います。</value></data>
   <data name="ChatModelManualEntry" xml:space="preserve"><value>このCLIではモデル候補を取得できません。!cab model モデル名 で、CLIと契約が対応するモデルID・別名を指定できます。!cab model default でエージェント設定に戻します。利用可否は実行時に確認されます。</value></data>
-  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows 通知</value></data>
-  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>Windows 通知が表示されない場合は、この Windows ユーザーに対してのみ設定できます。この任意設定を行わなくても、通常の通知は引き続き利用できます。</value></data>
-  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>状態</value></data>
-  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>Windows 通知</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>承認待ちの通知</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>チャットからの依頼やAIの操作が承認待ちになると、Windows通知でお知らせします。通知のボタンから承認・拒否できます。</value></data>
+  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>通知の追加登録</value></data>
+  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>追加登録の状態</value></data>
   <data name="PortableIdentityPublisher" xml:space="preserve"><value>発行元: {0}</value></data>
   <data name="PortableIdentityFingerprint" xml:space="preserve"><value>証明書の SHA-256: {0}</value></data>
   <data name="PortableIdentityRegisteredLocation" xml:space="preserve"><value>登録先: {0}</value></data>
@@ -771,10 +771,10 @@
   <data name="PortableIdentityNotRegistered" xml:space="preserve"><value>このフォルダーは Windows に登録されていません。</value></data>
   <data name="PortableIdentityActive" xml:space="preserve"><value>通知の登録が有効です。</value></data>
   <data name="PortableIdentityInactive" xml:space="preserve"><value>このプロセスでは通知の登録が有効ではありません。</value></data>
-  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>設定と削除はアプリ終了後に実行し、その後アプリを再起動します。データフォルダーとポータブル更新機能はそのまま使えます。</value></data>
-  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>任意の設定</value></data>
-  <data name="PortableIdentityConfigure" xml:space="preserve"><value>Windows 通知を設定して再起動</value></data>
-  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>登録を更新して再起動</value></data>
+  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>承認待ちの通知が届かない場合のみ使います。追加登録・解除ではアプリが再起動します。設定とアップデーターは引き継がれます。</value></data>
+  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>通知が届かない場合</value></data>
+  <data name="PortableIdentityConfigure" xml:space="preserve"><value>通知を追加登録して再起動</value></data>
+  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>追加登録をやり直して再起動</value></data>
   <data name="PortableIdentityRemove" xml:space="preserve"><value>登録を削除して再起動</value></data>
   <data name="PortableIdentityRefresh" xml:space="preserve"><value>状態を更新</value></data>
   <data name="PortableIdentityConfigureTitle" xml:space="preserve"><value>Windows 通知を設定しますか？</value></data>
@@ -838,4 +838,9 @@
   <data name="InboxDisabledLabel" xml:space="preserve"><value>無効</value></data>
   <data name="InboxUnknownParticipant" xml:space="preserve"><value>参加者名を取得できません</value></data>
   <data name="InboxUnknownLocation" xml:space="preserve"><value>場所を取得できません</value></data>
+  <data name="GeneralSavedOtherCli" xml:space="preserve"><value>その他のCLI</value></data>
+  <data name="GeneralNotificationRegistered" xml:space="preserve"><value>このWindowsユーザー向けの追加登録が有効です。承認待ちの通知に使用します。</value></data>
+  <data name="GeneralNotificationRestart" xml:space="preserve"><value>追加登録は保存済みです。承認待ちの通知に使うにはアプリを再起動してください。</value></data>
+  <data name="GeneralNotificationAvailable" xml:space="preserve"><value>承認待ちの通知が届かない場合、このポータブル版を現在のWindowsユーザーに追加登録できます。通知が届いていれば設定は不要です。</value></data>
+  <data name="GeneralNotificationUnavailable" xml:space="preserve"><value>このビルドまたは環境では追加登録を利用できません。通常の通知が無効という意味ではありません。理由は診断情報で確認できます。</value></data>
 </root>

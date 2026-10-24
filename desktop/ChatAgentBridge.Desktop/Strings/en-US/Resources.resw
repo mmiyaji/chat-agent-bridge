@@ -1090,11 +1090,11 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PricingRateMinimum.Text" xml:space="preserve"><value>Minimum</value></data>
   <data name="PricingRateMaximum.Text" xml:space="preserve"><value>Maximum</value></data>
   <data name="PricingNever.Text" xml:space="preserve"><value>Never</value></data>
-  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows notifications</value></data>
-  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>If Windows notifications do not appear, configure this Windows user only. Standard notifications continue to work without this optional setup.</value></data>
-  <data name="PortableIdentityStateHeading.Text" xml:space="preserve"><value>Status</value></data>
-  <data name="PortableIdentityActionsHeading.Text" xml:space="preserve"><value>Optional setup</value></data>
-  <data name="PortableIdentityConfigure.Content" xml:space="preserve"><value>Set up Windows notifications and restart</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Approval notifications</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>Windows notifications alert you when a chat request or AI operation needs approval. You can approve or reject it from the notification.</value></data>
+  <data name="PortableIdentityStateHeading.Text" xml:space="preserve"><value>Additional notification registration</value></data>
+  <data name="PortableIdentityActionsHeading.Text" xml:space="preserve"><value>If notifications do not appear</value></data>
+  <data name="PortableIdentityConfigure.Content" xml:space="preserve"><value>Register notifications and restart</value></data>
   <data name="PortableIdentityRemove.Content" xml:space="preserve"><value>Remove registration and restart</value></data>
   <data name="PortableIdentityRefresh.Content" xml:space="preserve"><value>Refresh status</value></data>
   <data name="PricingNoAutomaticPrice.Text" xml:space="preserve"><value>No automatic rate is available for this model.</value></data>
@@ -1110,10 +1110,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="CloseToTrayToggle.OnContent" xml:space="preserve"><value>On</value></data>
   <data name="CloseToTrayToggle.OffContent" xml:space="preserve"><value>Off</value></data>
   <data name="CloseToTrayToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Keep running in system tray when the window is closed</value></data>
-  <data name="TraySettingsDescription.Text" xml:space="preserve"><value>When enabled, closing the window keeps Chat Agent Bridge and its chat connection running in the system tray. Use the tray menu to open the window or exit.</value></data>
+  <data name="TraySettingsDescription.Text" xml:space="preserve"><value>Choose what happens when you close the window. Moving to the tray keeps chat connections running; exiting stops them.</value></data>
   <data name="MoveToTrayButton.Content" xml:space="preserve"><value>Move to system tray</value></data>
-  <data name="TrayExitDescription.Text" xml:space="preserve"><value>Exit completely closes the app and cancels pending and running work.</value></data>
-  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>Exit completely</value></data>
+  <data name="TrayExitDescription.Text" xml:space="preserve"><value>Exiting disconnects chats and stops running or waiting requests.</value></data>
+  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>Exit app</value></data>
   <data name="TraySaveFailed" xml:space="preserve"><value>Could not save the tray setting. The previous setting has been restored.</value></data>
   <data name="TrayExitFailed" xml:space="preserve"><value>The app could not exit completely. Try again.</value></data>
   <data name="TrayUnavailable" xml:space="preserve"><value>The system tray is unavailable. This window will remain open.</value></data>
@@ -1286,4 +1286,16 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="WizardConnectDiscord.Content" xml:space="preserve"><value>Connect Discord</value></data>
   <data name="WizardConnectDiscord.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Connect Discord</value></data>
   <data name="ConnectDiscord.Content" xml:space="preserve"><value>Connect to Discord</value></data>
+  <data name="CloseBehaviorLabel.Text" xml:space="preserve"><value>When the window closes</value></data>
+  <data name="CloseBehaviorComboBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>When the window closes</value></data>
+  <data name="CloseBehaviorAskEveryTime.Content" xml:space="preserve"><value>Ask every time</value></data>
+  <data name="CloseBehaviorMoveToTray.Content" xml:space="preserve"><value>Move to system tray</value></data>
+  <data name="CloseBehaviorExitApp.Content" xml:space="preserve"><value>Exit app</value></data>
+  <data name="GeneralSavedModelLabel.Text" xml:space="preserve"><value>Model</value></data>
+  <data name="GeneralSavedReasoningLabel.Text" xml:space="preserve"><value>Reasoning effort</value></data>
+  <data name="GeneralSavedTechnicalDetails.Header" xml:space="preserve"><value>Paths and storage</value></data>
+  <data name="GeneralSavedExecutableLabel.Text" xml:space="preserve"><value>CLI executable</value></data>
+  <data name="GeneralNotificationDiagnostics.Header" xml:space="preserve"><value>Diagnostic details</value></data>
+  <data name="GeneralSavedAgentEdit.Content" xml:space="preserve"><value>Agent settings</value></data>
+  <data name="GeneralSavedWorkspaceEdit.Content" xml:space="preserve"><value>Change folder</value></data>
 </root>

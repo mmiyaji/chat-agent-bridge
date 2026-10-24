@@ -268,11 +268,15 @@
                                                 </StackPanel>
                                                 <TextBlock Text="{x:Bind ViewModel.SetupNextAction, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupNextAction" />
                                                 <TextBlock Text="{x:Bind ViewModel.SetupDraftNotice, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSetupDraftNotice), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SetupDraftNotice" />
-                                                <Button Click="ReloadSettings_Click" IsEnabled="{x:Bind local:MainPage.CanReloadSettings(ViewModel.IsLoading, ViewModel.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="SetupReloadSettings" x:Uid="SetupReloadSettings" />
-                                                <StackPanel Spacing="8" HorizontalAlignment="Left">
-                                                    <Button Click="StartOnboarding_Click" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" AutomationProperties.AutomationId="StartOnboarding" x:Uid="StartOnboarding" />
-                                                    <Button Click="ShowTerms_Click" AutomationProperties.AutomationId="OverviewTerms" x:Uid="OverviewTerms" />
-                                                    <Button Click="ShowPrivacy_Click" AutomationProperties.AutomationId="OverviewPrivacy" x:Uid="OverviewPrivacy" />
+                                                <Grid ColumnSpacing="8" RowSpacing="8" SizeChanged="SetupActions_SizeChanged" AutomationProperties.AutomationId="SetupActions">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                    <Button x:Name="SetupReloadAction" Click="ReloadSettings_Click" IsEnabled="{x:Bind local:MainPage.CanReloadSettings(ViewModel.IsLoading, ViewModel.IsRunning), Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SetupReloadSettings" x:Uid="SetupReloadSettings" />
+                                                    <Button x:Name="SetupGuideAction" Grid.Column="1" Click="StartOnboarding_Click" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="StartOnboarding" x:Uid="StartOnboarding" />
+                                                </Grid>
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <HyperlinkButton Click="ShowTerms_Click" AutomationProperties.AutomationId="OverviewTerms" x:Uid="OverviewTerms" />
+                                                    <HyperlinkButton Click="ShowPrivacy_Click" AutomationProperties.AutomationId="OverviewPrivacy" x:Uid="OverviewPrivacy" />
                                                 </StackPanel>
                                             </StackPanel>
                                         </Border>
@@ -287,12 +291,35 @@
                                         <Border Padding="20" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                             <StackPanel Spacing="12">
                                                 <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock009" x:Uid="chatAgentBridgeDesktopMainPageTextBlock009" />
-                                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock010" x:Uid="chatAgentBridgeDesktopMainPageTextBlock010" />
-                                                <TextBlock Text="{x:Bind ViewModel.SavedAgentSummary, Mode=OneWay}" TextWrapping="Wrap" />
-                                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock011" x:Uid="chatAgentBridgeDesktopMainPageTextBlock011" />
-                                                <TextBlock Text="{x:Bind ViewModel.WorkspaceRoot, Mode=OneWay}" TextWrapping="Wrap" />
-                                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock012" x:Uid="chatAgentBridgeDesktopMainPageTextBlock012" />
-                                                <TextBlock Text="{x:Bind ViewModel.SettingsLocation, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SettingsLocation" />
+                                                <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="SavedAgentCard">
+                                                    <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="Setting" /></settings:SettingsCard.HeaderIcon>
+                                                    <settings:SettingsCard.Header><TextBlock Text="{x:Bind ViewModel.SavedAgentName, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SavedAgentName" /></settings:SettingsCard.Header>
+                                                    <settings:SettingsCard.Description>
+                                                        <Grid ColumnSpacing="12" RowSpacing="4">
+                                                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                            <TextBlock x:Uid="GeneralSavedModelLabel" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                            <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.SavedModel, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SavedModel" />
+                                                            <TextBlock Grid.Row="1" x:Uid="GeneralSavedReasoningLabel" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{x:Bind ViewModel.SavedReasoning, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SavedReasoning" />
+                                                        </Grid>
+                                                    </settings:SettingsCard.Description>
+                                                    <Button Click="OpenSavedAgentSettings_Click" x:Uid="GeneralSavedAgentEdit" AutomationProperties.AutomationId="SavedAgentEdit" />
+                                                </settings:SettingsCard>
+                                                <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="SavedWorkspaceCard">
+                                                    <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="Folder" /></settings:SettingsCard.HeaderIcon>
+                                                    <settings:SettingsCard.Header><TextBlock TextWrapping="Wrap" x:Uid="chatAgentBridgeDesktopMainPageTextBlock011" /></settings:SettingsCard.Header>
+                                                    <settings:SettingsCard.Description><TextBlock Text="{x:Bind ViewModel.SavedWorkspace, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="SavedWorkspace" /></settings:SettingsCard.Description>
+                                                    <Button Click="OpenSavedWorkspaceSettings_Click" x:Uid="GeneralSavedWorkspaceEdit" AutomationProperties.AutomationId="SavedWorkspaceEdit" />
+                                                </settings:SettingsCard>
+                                                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" x:Uid="GeneralSavedTechnicalDetails" AutomationProperties.AutomationId="SavedSettingsDetails">
+                                                    <StackPanel Spacing="8">
+                                                        <TextBlock x:Uid="GeneralSavedExecutableLabel" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                                        <TextBlock Text="{x:Bind ViewModel.SavedExecutable, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="SavedExecutable" />
+                                                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="chatAgentBridgeDesktopMainPageTextBlock012" />
+                                                        <TextBlock Text="{x:Bind ViewModel.SettingsLocation, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="SettingsLocation" />
+                                                    </StackPanel>
+                                                </Expander>
                                             </StackPanel>
                                         </Border>
                                         <Button Click="OpenWorkbench_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="OpenWorkbench" x:Uid="OpenWorkbench" />
@@ -311,7 +338,7 @@
                                     </Expander.Header>
                                     <StackPanel Spacing="12">
                                         <StackPanel Spacing="8" AutomationProperties.AutomationId="WorkspaceCard">
-                                            <TextBox  Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  AutomationProperties.AutomationId="WorkspaceRoot"   x:Uid="WorkspaceRoot" />
+                                            <TextBox x:Name="WorkspaceRootInput" Text="{x:Bind ViewModel.WorkspaceRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  AutomationProperties.AutomationId="WorkspaceRoot"   x:Uid="WorkspaceRoot" />
                                             <Button  Click="BrowseWorkspace_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="BrowseWorkspace"  x:Uid="BrowseWorkspace" />
                                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock016" x:Uid="chatAgentBridgeDesktopMainPageTextBlock016" />
                                         </StackPanel>

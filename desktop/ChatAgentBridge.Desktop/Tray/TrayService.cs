@@ -20,7 +20,8 @@ public sealed class TrayService : IDisposable
     private bool _closeConfirmationOpen;
     private ContentDialog? _closeConfirmation;
 
-    public bool CloseToTray { get; private set; }
+    public WindowCloseBehavior CloseBehavior { get; private set; }
+    public bool CloseToTray => CloseBehavior == WindowCloseBehavior.MoveToSystemTray;
     public bool IsAvailable => !_disposed && _exitTask is null && _native.IsAvailable;
     public event EventHandler? AvailabilityChanged;
 
@@ -28,19 +29,25 @@ public sealed class TrayService : IDisposable
     {
         _window = window;
         _store = store;
-        CloseToTray = preferences.CloseToTray;
+        CloseBehavior = preferences.CloseBehavior;
         _native = new(WinRT.Interop.WindowNative.GetWindowHandle(window), ShowWindow, () => _ = ExitAsync());
         _native.AvailabilityChanged += NativeAvailabilityChanged;
         window.AppWindow.Closing += WindowClosing;
     }
 
-    public async Task SetCloseToTrayAsync(bool enabled)
+    public Task SetCloseToTrayAsync(bool enabled) => SetCloseBehaviorAsync(enabled
+            ? WindowCloseBehavior.MoveToSystemTray
+            : WindowCloseBehavior.AskEveryTime);
+
+    public async Task SetCloseBehaviorAsync(WindowCloseBehavior behavior)
     {
+        if (!Enum.IsDefined(behavior))
+            behavior = WindowCloseBehavior.AskEveryTime;
         await _saveGate.WaitAsync();
         try
         {
-            await _store.SaveAsync(new(enabled));
-            CloseToTray = enabled;
+            await _store.SaveAsync(new(behavior));
+            CloseBehavior = behavior;
         }
         finally { _saveGate.Release(); }
     }
@@ -71,8 +78,18 @@ public sealed class TrayService : IDisposable
     {
         if (_allowClose || _native.SessionEnding) return;
         args.Cancel = true;
-        if (CloseToTray && IsAvailable) HideWindow();
-        else _ = ShowCloseConfirmationAsync();
+        switch (CloseBehavior)
+        {
+            case WindowCloseBehavior.MoveToSystemTray when IsAvailable:
+                HideWindow();
+                break;
+            case WindowCloseBehavior.ExitApp:
+                _ = ExitAsync();
+                break;
+            default:
+                _ = ShowCloseConfirmationAsync();
+                break;
+        }
     }
 
     // Explicit close actions offer the same choices even when closing the
@@ -123,7 +140,7 @@ public sealed class TrayService : IDisposable
             else if (result == ContentDialogResult.Secondary && IsAvailable)
             {
                 // This is a one-time choice; it deliberately does not modify
-                // or save the persistent CloseToTray preference.
+                // or save the persistent close behavior.
                 HideWindow();
             }
         }

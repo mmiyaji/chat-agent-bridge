@@ -973,6 +973,7 @@ public partial class MainPageViewModel : ObservableObject
 
     private void UpdateSavedAgentSummary()
     {
+        RefreshSavedOverview();
         SavedAgentSummary = string.IsNullOrWhiteSpace(AgentExecutable)
             ? ViewModelText.Get("AgentNotConfigured")
             : ViewModelText.Get("SavedAgentSummary", AgentExecutable, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, AgentReasoningEffort ?? ViewModelText.Get("DefaultCliValue"), ViewModelText.Get(UseAppServer ? "InteractiveExecution" : "RunToCompletion"));

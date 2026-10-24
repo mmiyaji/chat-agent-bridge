@@ -1090,11 +1090,11 @@
   <data name="PricingRateMinimum.Text" xml:space="preserve"><value>最小</value></data>
   <data name="PricingRateMaximum.Text" xml:space="preserve"><value>最大</value></data>
   <data name="PricingNever.Text" xml:space="preserve"><value>未確認</value></data>
-  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows 通知</value></data>
-  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>Windows 通知が表示されない場合は、この Windows ユーザーに対してのみ設定できます。この任意設定を行わなくても、通常の通知は引き続き利用できます。</value></data>
-  <data name="PortableIdentityStateHeading.Text" xml:space="preserve"><value>状態</value></data>
-  <data name="PortableIdentityActionsHeading.Text" xml:space="preserve"><value>任意の設定</value></data>
-  <data name="PortableIdentityConfigure.Content" xml:space="preserve"><value>Windows 通知を設定して再起動</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>承認待ちの通知</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>チャットからの依頼やAIの操作が承認待ちになると、Windows通知でお知らせします。通知のボタンから承認・拒否できます。</value></data>
+  <data name="PortableIdentityStateHeading.Text" xml:space="preserve"><value>通知の追加登録</value></data>
+  <data name="PortableIdentityActionsHeading.Text" xml:space="preserve"><value>通知が届かない場合</value></data>
+  <data name="PortableIdentityConfigure.Content" xml:space="preserve"><value>通知を追加登録して再起動</value></data>
   <data name="PortableIdentityRemove.Content" xml:space="preserve"><value>登録を削除して再起動</value></data>
   <data name="PortableIdentityRefresh.Content" xml:space="preserve"><value>状態を更新</value></data>
   <data name="PricingNoAutomaticPrice.Text" xml:space="preserve"><value>このモデルの自動単価はありません。</value></data>
@@ -1110,10 +1110,10 @@
   <data name="CloseToTrayToggle.OnContent" xml:space="preserve"><value>オン</value></data>
   <data name="CloseToTrayToggle.OffContent" xml:space="preserve"><value>オフ</value></data>
   <data name="CloseToTrayToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>ウィンドウを閉じたときもシステム トレイで実行する</value></data>
-  <data name="TraySettingsDescription.Text" xml:space="preserve"><value>オンにすると、ウィンドウを閉じてもChat Agent Bridgeとチャット接続はシステム トレイで実行されます。トレイ メニューからウィンドウを開くか、アプリを終了できます。</value></data>
+  <data name="TraySettingsDescription.Text" xml:space="preserve"><value>閉じるたびに確認するか、トレイへ移動するか、終了するかを選びます。トレイではチャット接続を続け、終了すると停止します。</value></data>
   <data name="MoveToTrayButton.Content" xml:space="preserve"><value>システム トレイに移動</value></data>
-  <data name="TrayExitDescription.Text" xml:space="preserve"><value>完全終了するとアプリを閉じ、実行中および待機中の処理をキャンセルします。</value></data>
-  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>完全終了</value></data>
+  <data name="TrayExitDescription.Text" xml:space="preserve"><value>アプリを終了すると、チャット接続を切断し、実行中・待機中の処理を停止します。</value></data>
+  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>アプリを終了</value></data>
   <data name="TraySaveFailed" xml:space="preserve"><value>トレイ設定を保存できませんでした。以前の設定に戻しました。</value></data>
   <data name="TrayExitFailed" xml:space="preserve"><value>アプリを完全終了できませんでした。もう一度お試しください。</value></data>
   <data name="TrayUnavailable" xml:space="preserve"><value>システム トレイを利用できないため、このウィンドウは開いたままになります。</value></data>
@@ -1286,4 +1286,16 @@
   <data name="WizardConnectDiscord.Content" xml:space="preserve"><value>Discordに接続</value></data>
   <data name="WizardConnectDiscord.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discordに接続</value></data>
   <data name="ConnectDiscord.Content" xml:space="preserve"><value>Discordに接続</value></data>
+  <data name="CloseBehaviorLabel.Text" xml:space="preserve"><value>ウィンドウを閉じたとき</value></data>
+  <data name="CloseBehaviorComboBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>ウィンドウを閉じたとき</value></data>
+  <data name="CloseBehaviorAskEveryTime.Content" xml:space="preserve"><value>毎回確認する</value></data>
+  <data name="CloseBehaviorMoveToTray.Content" xml:space="preserve"><value>システム トレイに移動</value></data>
+  <data name="CloseBehaviorExitApp.Content" xml:space="preserve"><value>アプリを終了</value></data>
+  <data name="GeneralSavedModelLabel.Text" xml:space="preserve"><value>モデル</value></data>
+  <data name="GeneralSavedReasoningLabel.Text" xml:space="preserve"><value>推論の強さ</value></data>
+  <data name="GeneralSavedTechnicalDetails.Header" xml:space="preserve"><value>実行ファイルと保存先</value></data>
+  <data name="GeneralSavedExecutableLabel.Text" xml:space="preserve"><value>CLI実行ファイル</value></data>
+  <data name="GeneralNotificationDiagnostics.Header" xml:space="preserve"><value>診断情報</value></data>
+  <data name="GeneralSavedAgentEdit.Content" xml:space="preserve"><value>エージェント設定</value></data>
+  <data name="GeneralSavedWorkspaceEdit.Content" xml:space="preserve"><value>作業先を変更</value></data>
 </root>
