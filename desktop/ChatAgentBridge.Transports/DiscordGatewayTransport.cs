@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.WebSockets;
@@ -49,10 +50,13 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
     private readonly object _actionLock = new();
     private readonly Dictionary<string, PendingAction> _actions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, LiveProgress> _progress = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, string> _threadParents = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _createdThreads = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, LinkedListNode<ThreadParentCacheEntry>> _threadParentCache = new(StringComparer.Ordinal);
+    private readonly LinkedList<ThreadParentCacheEntry> _threadParentLru = new();
     private readonly object _progressOwner = new();
     private BridgeSettings? _liveSettings;
+    private DiscordAllowedIds _allowedIds = DiscordAllowedIds.Empty;
+    private DateTimeOffset? _connectedSince;
     private CancellationTokenSource? _runLifetime;
     private string? _token;
     private string? _botUserId;
@@ -66,7 +70,16 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
     public event Action? Connected;
     public event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
 
-    public void UpdateAccessSettings(BridgeSettings settings) => Volatile.Write(ref _liveSettings, settings);
+    public void UpdateAccessSettings(BridgeSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        var users = ChatAccessPolicy.NormalizeAllowedUsers(ChatAccessPolicy.NormalizeDiscordSnowflakes(settings.DiscordAllowedUserIds))
+            .Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
+        var guilds = ChatAccessPolicy.NormalizeDiscordSnowflakes(settings.DiscordAllowedGuildIds)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
+        Volatile.Write(ref _allowedIds, new DiscordAllowedIds(users, guilds, settings.DiscordAllowDirectMessages));
+        Volatile.Write(ref _liveSettings, settings);
+    }
 
     public DiscordGatewayTransport() : this(TransportHttp.CreateClient(timeout: TimeSpan.FromSeconds(15)),
         new Uri("https://discord.com/api/v10/"), null, null, TransportHttp.CreateClient(timeout: TimeSpan.FromMinutes(2))) { }
@@ -140,16 +153,22 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
                 if (!runToken.IsCancellationRequested) throw new DiscordReconnectException();
             }
             catch (OperationCanceledException) when (runToken.IsCancellationRequested) { SetDisconnected(); return; }
-            catch (DiscordReconnectException)
+            catch (DiscordReconnectException ex)
             {
                 SetDisconnected();
+                if (ex.QueueOverflow)
+                {
+                    ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("discord", ChatReconnectionState.Reconnecting, _reconnectAttempt + 1, null));
+                    try { await WaitForQueueDrainAsync(messageQueue.Reader, dispatchTask, runToken).ConfigureAwait(false); }
+                    catch (OperationCanceledException) when (runToken.IsCancellationRequested) { return; }
+                }
                 var attempt = ++_reconnectAttempt;
                 var delay = _retryDelay(attempt);
                 ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("discord", ChatReconnectionState.Reconnecting, attempt, delay));
                 try { await Task.Delay(delay, runToken).ConfigureAwait(false); }
                 catch (OperationCanceledException) when (runToken.IsCancellationRequested) { return; }
                 try { gatewayUrl = await GetGatewayUrlAsync(runToken).ConfigureAwait(false); }
-                catch (Exception ex) when (IsTransient(ex, runToken)) { }
+                catch (Exception gatewayLookupError) when (IsTransient(gatewayLookupError, runToken)) { }
             }
             catch
             {
@@ -168,6 +187,19 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
         }
     }
 
+    private static async Task WaitForQueueDrainAsync(ChannelReader<QueuedDiscordMessage> reader, Task dispatchTask, CancellationToken ct)
+    {
+        while (reader.CanCount && reader.Count > 64)
+        {
+            if (dispatchTask.IsCompleted)
+            {
+                await dispatchTask.ConfigureAwait(false);
+                throw new InvalidOperationException("Discord message dispatcher stopped while draining its backlog.");
+            }
+            await Task.Delay(TimeSpan.FromMilliseconds(250), ct).ConfigureAwait(false);
+        }
+    }
+
     private async Task RunConnectionAsync(string gatewayUrl, BridgeSettings settings, SessionStore sessions,
         DiscordContinuationTracker continuations, ChannelWriter<QueuedDiscordMessage> messageWriter, Task dispatchTask,
         CancellationToken cancellationToken)
@@ -180,9 +212,13 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
 
         int? heartbeatInterval = null;
         bool heartbeatAcknowledged = true;
-        DateTimeOffset nextHeartbeat = DateTimeOffset.MaxValue;
         bool identified = false;
-        Task<string?> receiveTask = socket.ReceiveAsync(cancellationToken);
+        using var heartbeatDeadline = new HeartbeatDeadline();
+        using var receiveLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        CancellationToken receiveToken = receiveLifetime.Token;
+        Task<string?> receiveTask = socket.ReceiveAsync(receiveToken);
+        try
+        {
         while (!cancellationToken.IsCancellationRequested)
         {
             if (dispatchTask.IsFaulted) await dispatchTask.ConfigureAwait(false);
@@ -198,38 +234,35 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
                     !hello.RootElement.TryGetProperty("d", out var helloData) || !TryReadInt(helloData, "heartbeat_interval", out var interval) || interval is < 100 or > 300_000)
                     throw new DiscordReconnectException();
                 heartbeatInterval = interval;
-                nextHeartbeat = DateTimeOffset.UtcNow.AddMilliseconds(Jitter(interval));
+                heartbeatDeadline.Reset(TimeSpan.FromMilliseconds(Jitter(interval)));
                 await SendIdentifyOrResumeAsync(socket, settings, cancellationToken).ConfigureAwait(false);
                 identified = true;
-                receiveTask = socket.ReceiveAsync(cancellationToken);
+                receiveTask = socket.ReceiveAsync(receiveToken);
                 continue;
             }
 
-            TimeSpan wait = nextHeartbeat - DateTimeOffset.UtcNow;
-            if (wait < TimeSpan.Zero) wait = TimeSpan.Zero;
-            Task timer = Task.Delay(wait, cancellationToken);
-            Task winner = await Task.WhenAny(receiveTask, timer, dispatchTask).ConfigureAwait(false);
+            Task deadlineTask = heartbeatDeadline.Task;
+            Task winner = await Task.WhenAny(receiveTask, deadlineTask, dispatchTask).ConfigureAwait(false);
             if (winner == dispatchTask)
             {
                 await dispatchTask.ConfigureAwait(false);
                 throw new InvalidOperationException("Discord message dispatcher stopped unexpectedly.");
             }
-            if (winner == timer)
+            if (winner == deadlineTask)
             {
                 if (!heartbeatAcknowledged) throw new DiscordReconnectException();
                 heartbeatAcknowledged = false;
                 try { await SendGatewayAsync(socket, 1, LastSequence, cancellationToken).ConfigureAwait(false); }
                 catch (Exception ex) when (ex is WebSocketException or IOException) { throw new DiscordReconnectException(ex); }
-                nextHeartbeat = DateTimeOffset.UtcNow.AddMilliseconds(heartbeatInterval.Value);
+                heartbeatDeadline.Reset(TimeSpan.FromMilliseconds(heartbeatInterval.Value));
                 continue;
             }
-
             string? raw;
             try { raw = await receiveTask.ConfigureAwait(false); }
             catch (DiscordGatewayCloseException ex) { throw MapGatewayClose(ex.CloseCode); }
             catch (Exception ex) when (ex is WebSocketException or IOException) { throw new DiscordReconnectException(ex); }
             if (raw is null) throw new DiscordReconnectException();
-            receiveTask = socket.ReceiveAsync(cancellationToken);
+            receiveTask = socket.ReceiveAsync(receiveToken);
             using var document = ParseJson(raw);
             if (document is null || !TryReadInt(document.RootElement, "op", out var opcode)) continue;
             var root = document.RootElement;
@@ -240,7 +273,7 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
             {
                 heartbeatAcknowledged = false;
                 await SendGatewayAsync(socket, 1, LastSequence, cancellationToken).ConfigureAwait(false);
-                nextHeartbeat = DateTimeOffset.UtcNow.AddMilliseconds(heartbeatInterval.Value);
+                heartbeatDeadline.Reset(TimeSpan.FromMilliseconds(heartbeatInterval.Value));
                 continue;
             }
             if (opcode == 7) throw new DiscordReconnectException();
@@ -271,10 +304,11 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
             if (!DiscordSettingsStillMatch(currentSettings, settings)) continue;
             if (name == "MESSAGE_CREATE")
             {
+                if (!IsAllowedGatewayMessage(data, currentSettings)) continue;
                 if (!messageWriter.TryWrite(new QueuedDiscordMessage(data.Clone(), eventSequence)))
                 {
                     LastSequence = LastProcessedMessageSequence;
-                    throw new DiscordReconnectException();
+                    throw new DiscordReconnectException(queueOverflow: true);
                 }
             }
             else if (name == "INTERACTION_CREATE")
@@ -284,6 +318,26 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
                     _ = HandleInteractionAsync(data, currentSettings, socket, cancellationToken);
             }
         }
+        }
+        finally
+        {
+            receiveLifetime.Cancel();
+            try { await receiveTask.ConfigureAwait(false); } catch (OperationCanceledException) { } catch (Exception) { }
+        }
+    }
+
+    private bool IsAllowedGatewayMessage(JsonElement data, BridgeSettings settings)
+    {
+        if (!TryReadInt(data, "type", out int type) || type is not (0 or 19)) return false;
+        if (!data.TryGetProperty("author", out var author) || !TryReadString(author, "id", out var userId) ||
+            string.Equals(userId, _botUserId, StringComparison.Ordinal) ||
+            (author.TryGetProperty("bot", out var bot) && bot.ValueKind == JsonValueKind.True) ||
+            (data.TryGetProperty("webhook_id", out var webhook) && webhook.ValueKind == JsonValueKind.String)) return false;
+        var ids = Volatile.Read(ref _allowedIds);
+        if (!ids.Users.Contains(userId)) return false;
+        string? guildId = ReadString(data, "guild_id");
+        if (guildId is null) return ids.AllowDirectMessages && settings.DiscordAllowDirectMessages;
+        return ids.Guilds.Contains(guildId);
     }
 
     private async Task DispatchQueuedMessagesAsync(ChannelReader<QueuedDiscordMessage> reader, BridgeSettings settings,
@@ -415,19 +469,55 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
     private async Task<string?> ResolveThreadParentAsync(string channelId, CancellationToken ct)
     {
         lock (_stateLock)
-            if (_threadParents.TryGetValue(channelId, out var cached)) return cached;
+            if (TryGetThreadParentCache(channelId, out var cached)) return cached;
         try
         {
             var channel = await SendApiAsync<DiscordChannelInfo>(HttpMethod.Get, $"channels/{Escape(channelId)}", null, ct).ConfigureAwait(false);
-            if (channel.Type is not (10 or 11 or 12) || string.IsNullOrWhiteSpace(channel.ParentId)) return null;
-            lock (_stateLock)
-            {
-                _threadParents[channelId] = channel.ParentId;
-                while (_threadParents.Count > 2_000) _threadParents.Remove(_threadParents.Keys.First());
-            }
-            return channel.ParentId;
+            string? parent = channel.Type is 10 or 11 or 12 && !string.IsNullOrWhiteSpace(channel.ParentId) ? channel.ParentId : null;
+            lock (_stateLock) RememberThreadParentCache(channelId, parent);
+            if (parent is null) return null;
+            return parent;
         }
-        catch (InvalidOperationException) { return null; }
+        catch (InvalidOperationException ex) when (ex is not DiscordConfigurationException && !IsTransient(ex, ct))
+        {
+            lock (_stateLock) RememberThreadParentCache(channelId, null);
+            return null;
+        }
+    }
+
+    private bool TryGetThreadParentCache(string channelId, out string? parent)
+    {
+        parent = null;
+        if (!_threadParentCache.TryGetValue(channelId, out var node)) return false;
+        if (node.Value.ExpiresAt <= DateTimeOffset.UtcNow)
+        {
+            _threadParentCache.Remove(channelId);
+            _threadParentLru.Remove(node);
+            return false;
+        }
+        _threadParentLru.Remove(node);
+        _threadParentLru.AddLast(node);
+        parent = node.Value.ParentId;
+        return true;
+    }
+
+    private void RememberThreadParentCache(string channelId, string? parent)
+    {
+        if (_threadParentCache.TryGetValue(channelId, out var prior))
+        {
+            _threadParentCache.Remove(channelId);
+            _threadParentLru.Remove(prior);
+        }
+        var entry = new ThreadParentCacheEntry(channelId, parent,
+            DateTimeOffset.UtcNow + (parent is null ? TimeSpan.FromSeconds(30) : TimeSpan.FromMinutes(10)));
+        var node = _threadParentLru.AddLast(entry);
+        _threadParentCache[channelId] = node;
+        while (_threadParentCache.Count > 2_000)
+        {
+            var oldest = _threadParentLru.First!;
+            _threadParentLru.RemoveFirst();
+            _threadParentCache.Remove(oldest.Value.ChannelId);
+        }
     }
 
     private async Task<DiscordChannelResponse> CreatePublicThreadAsync(string channelId, string messageId, string text, CancellationToken ct)
@@ -801,13 +891,21 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
 
     private void OnConnected()
     {
-        lock (_stateLock) { _connected = true; Interlocked.Increment(ref _generation); }
+        lock (_stateLock) { _connected = true; _connectedSince = DateTimeOffset.UtcNow; Interlocked.Increment(ref _generation); }
         if (_reconnectAttempt > 0) ReconnectionStatusChanged?.Invoke(new ChatReconnectionStatus("discord", ChatReconnectionState.Reconnected, _reconnectAttempt, null));
-        _reconnectAttempt = 0;
         Connected?.Invoke();
     }
 
-    private void SetDisconnected() { lock (_stateLock) { _connected = false; Interlocked.Increment(ref _generation); } }
+    private void SetDisconnected()
+    {
+        lock (_stateLock)
+        {
+            if (_connectedSince is { } since && DateTimeOffset.UtcNow - since >= TimeSpan.FromSeconds(30)) _reconnectAttempt = 0;
+            _connectedSince = null;
+            _connected = false;
+            Interlocked.Increment(ref _generation);
+        }
+    }
     private void ClearGatewaySession() { _sessionId = null; _resumeGatewayUrl = null; LastSequence = null; LastProcessedMessageSequence = null; }
     private Exception MapGatewayClose(int code) => code switch
     {
@@ -821,7 +919,11 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
     private static bool DiscordSettingsStillMatch(BridgeSettings current, BridgeSettings started) =>
         string.Equals(current.DiscordBotToken, started.DiscordBotToken, StringComparison.Ordinal);
 
-    private static TimeSpan RetryDelay(int attempt) => TimeSpan.FromSeconds(Math.Min(30, Math.Pow(2, Math.Clamp(attempt - 1, 0, 5))));
+    private static TimeSpan RetryDelay(int attempt)
+    {
+        double ceiling = Math.Min(30, Math.Pow(2, Math.Clamp(attempt - 1, 0, 5)));
+        return TimeSpan.FromSeconds(ceiling * (0.5 + Random.Shared.NextDouble() * 0.5));
+    }
     private static int Jitter(int interval) => Random.Shared.Next(Math.Max(1, interval / 2), interval);
     private static Uri BuildGatewayUri(string value)
     {
@@ -1047,13 +1149,72 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
         IReadOnlyList<IncomingChatFile> Files, string? FilesError);
     private sealed record GatewayBotResponse([property: JsonPropertyName("url")] string? Url);
     private sealed record QueuedDiscordMessage(JsonElement Data, long? Sequence);
+    private sealed record ThreadParentCacheEntry(string ChannelId, string? ParentId, DateTimeOffset ExpiresAt);
+    private sealed record DiscordAllowedIds(HashSet<string> Users, HashSet<string> Guilds, bool AllowDirectMessages)
+    {
+        internal static DiscordAllowedIds Empty { get; } = new(new HashSet<string>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal), false);
+    }
     private sealed record DiscordChannelResponse([property: JsonPropertyName("id")] string? Id);
     private sealed record DiscordChannelInfo([property: JsonPropertyName("id")] string? Id,
         [property: JsonPropertyName("parent_id")] string? ParentId,
         [property: JsonPropertyName("guild_id")] string? GuildId,
         [property: JsonPropertyName("type")] int Type);
     private sealed record DiscordMessageResponse([property: JsonPropertyName("id")] string? Id);
-    private sealed class DiscordReconnectException(Exception? inner = null) : Exception("Discord Gateway connection was interrupted.", inner);
+    private sealed class DiscordReconnectException(Exception? inner = null, bool queueOverflow = false)
+        : Exception("Discord Gateway connection was interrupted.", inner)
+    {
+        internal bool QueueOverflow { get; } = queueOverflow;
+    }
+
+    internal sealed class HeartbeatDeadline : IDisposable
+    {
+        private readonly object _gate = new();
+        private readonly Timer _timer;
+        private TaskCompletionSource _completion = NewCompletion();
+        private long _dueTimestamp;
+        private bool _disposed;
+
+        internal HeartbeatDeadline() => _timer = new Timer(OnElapsed, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+        internal void OnElapsed(object? state)
+        {
+            lock (_gate)
+            {
+                if (_disposed) return;
+                long remaining = _dueTimestamp - Stopwatch.GetTimestamp();
+                if (remaining > 0)
+                {
+                    _timer.Change(TimeSpan.FromSeconds((double)remaining / Stopwatch.Frequency), Timeout.InfiniteTimeSpan);
+                    return;
+                }
+                _completion.TrySetResult();
+            }
+        }
+
+        internal Task Task { get { lock (_gate) return _completion.Task; } }
+
+        internal void Reset(TimeSpan dueTime)
+        {
+            lock (_gate)
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                _completion = NewCompletion();
+                _dueTimestamp = Stopwatch.GetTimestamp() + (long)(dueTime.TotalSeconds * Stopwatch.Frequency);
+                _timer.Change(dueTime, Timeout.InfiniteTimeSpan);
+            }
+        }
+
+        public void Dispose()
+        {
+            lock (_gate)
+            {
+                if (_disposed) return;
+                _disposed = true;
+                _timer.Dispose();
+            }
+        }
+        private static TaskCompletionSource NewCompletion() => new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
 }
 
 internal interface IDiscordGatewaySocket : IAsyncDisposable
@@ -1085,22 +1246,26 @@ internal sealed class ClientDiscordGatewaySocket(Uri uri) : IDiscordGatewaySocke
     }
     public async Task<string?> ReceiveAsync(CancellationToken cancellationToken)
     {
-        byte[] buffer = new byte[16 * 1024];
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(16 * 1024);
         var content = new ArrayBufferWriter<byte>();
-        ValueWebSocketReceiveResult result;
-        do
+        try
         {
-            result = await _socket.ReceiveAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
-            if (result.MessageType == WebSocketMessageType.Close)
+            ValueWebSocketReceiveResult result;
+            do
             {
-                int code = _socket.CloseStatus is { } status ? (int)status : 0;
-                throw new DiscordGatewayCloseException(code);
-            }
-            if (result.MessageType != WebSocketMessageType.Text || content.WrittenCount + result.Count > DiscordGatewayTransport.MaxGatewayMessageBytes)
-                throw new IOException("Discord Gateway message exceeded its limit.");
-            content.Write(buffer.AsSpan(0, result.Count));
-        } while (!result.EndOfMessage);
-        return Encoding.UTF8.GetString(content.WrittenSpan);
+                result = await _socket.ReceiveAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    int code = _socket.CloseStatus is { } status ? (int)status : 0;
+                    throw new DiscordGatewayCloseException(code);
+                }
+                if (result.MessageType != WebSocketMessageType.Text || content.WrittenCount + result.Count > DiscordGatewayTransport.MaxGatewayMessageBytes)
+                    throw new IOException("Discord Gateway message exceeded its limit.");
+                content.Write(buffer.AsSpan(0, result.Count));
+            } while (!result.EndOfMessage);
+            return Encoding.UTF8.GetString(content.WrittenSpan);
+        }
+        finally { ArrayPool<byte>.Shared.Return(buffer, clearArray: true); }
     }
     public async ValueTask DisposeAsync() { _socket.Dispose(); await Task.CompletedTask.ConfigureAwait(false); }
 }

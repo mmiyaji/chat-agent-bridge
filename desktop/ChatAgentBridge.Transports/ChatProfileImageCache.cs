@@ -12,7 +12,7 @@ namespace ChatAgentBridge.Transports;
 public sealed class ChatProfileImageCache : IDisposable
 {
     private const int MaxImageBytes = 512 * 1024;
-    private const int MaxImages = 100;
+    private const int MaxImages = 600;
     private const long MaxCacheBytes = 50L * 1024 * 1024;
     private const int MaxApiResponseBytes = 128 * 1024;
     private const int MaxRequestsPerResolution = 2;
@@ -22,8 +22,8 @@ public sealed class ChatProfileImageCache : IDisposable
     private static readonly SemaphoreSlim RequestSlots = new(64, 64);
     private static readonly SemaphoreSlim[] KeyGates = Enumerable.Range(0, 64).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
     private static readonly SemaphoreSlim[] DirectoryGates = Enumerable.Range(0, 16).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
-
     private readonly string _cacheDirectory;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> _lastAccessTouches = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _httpSync = new();
     private HttpMessageHandler? _injectedHandler;
     private readonly bool _ownsInjectedHandler;
@@ -257,7 +257,11 @@ public sealed class ChatProfileImageCache : IDisposable
             if (DateTime.UtcNow - info.LastWriteTimeUtc >= SuccessTtl) continue;
             if (info.Length is <= 0 or > MaxImageBytes) { TryDelete(path); continue; }
             var bytes = await File.ReadAllBytesAsync(path, token).ConfigureAwait(false);
-            if (TryValidateImage(bytes, out var validated) && extension == validated) return path;
+            if (TryValidateImage(bytes, out var validated) && extension == validated)
+            {
+                TouchAccessTime(path);
+                return path;
+            }
             TryDelete(path);
         }
         return null;
@@ -336,7 +340,10 @@ public sealed class ChatProfileImageCache : IDisposable
             EnsureSafeDirectory();
             var files = Directory.EnumerateFiles(_cacheDirectory)
                 .Where(path => IsRecognizedCacheFile(Path.GetFileName(path)) && IsRegularCacheFile(path))
-                .Select(path => new FileInfo(path)).OrderByDescending(info => info.LastWriteTimeUtc).ToList();
+                .Select(path => new FileInfo(path))
+                .OrderByDescending(info => SafeLastAccessTimeUtc(info))
+                .ThenByDescending(info => info.LastWriteTimeUtc)
+                .ToList();
             var images = files.Where(info => info.Extension is ".png" or ".jpg").ToList();
             long total = images.Sum(info => info.Length);
             foreach (var file in files.Where(info => info.Extension == ".fail").Skip(100)) TryDelete(file.FullName);
@@ -348,6 +355,29 @@ public sealed class ChatProfileImageCache : IDisposable
             }
         }
         finally { gate.Release(); }
+    }
+
+    private DateTime SafeLastAccessTimeUtc(FileInfo info)
+    {
+        return _lastAccessTouches.TryGetValue(info.FullName, out var accessed) && accessed > info.LastWriteTimeUtc
+            ? accessed : info.LastWriteTimeUtc;
+    }
+
+    private void TouchAccessTime(string path)
+    {
+        var now = DateTime.UtcNow;
+        var lastTouch = _lastAccessTouches.GetOrAdd(path, DateTime.MinValue);
+        if (now - lastTouch < TimeSpan.FromMinutes(5) ||
+            !_lastAccessTouches.TryUpdate(path, now, lastTouch)) return;
+        // Keep access recency in bounded memory: avoid a metadata write (or following
+        // a concurrently replaced path) on every cache hit. Download time survives restart.
+        if (_lastAccessTouches.Count > 1024)
+        {
+            foreach (var entry in _lastAccessTouches.Where(entry => now - entry.Value > TimeSpan.FromHours(1)))
+                _lastAccessTouches.TryRemove(entry.Key, out _);
+            foreach (var entry in _lastAccessTouches.OrderBy(entry => entry.Value).Take(Math.Max(0, _lastAccessTouches.Count - 768)))
+                _lastAccessTouches.TryRemove(entry.Key, out _);
+        }
     }
 
     private async Task EnsureCacheDirectoryAsync(CancellationToken token)

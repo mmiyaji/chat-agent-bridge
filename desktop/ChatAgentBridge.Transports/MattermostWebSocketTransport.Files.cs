@@ -14,12 +14,18 @@ public sealed partial class MattermostWebSocketTransport
         if (request.IncomingFiles.Count > TransportHttp.MaxIncomingFileCount) throw new InvalidOperationException("Mattermost requests may contain at most five attachments.");
         var generation = Volatile.Read(ref _fileUploadConnectionGeneration);
         var resolved = new List<IncomingChatFile>(request.IncomingFiles.Count);
+        MattermostIncomingPostContext? post = null;
         foreach (var candidate in request.IncomingFiles)
         {
             EnsureIncomingFileConnection(request, generation, cancellationToken);
             ValidateMattermostFileId(candidate.Id);
             var info = await GetIncomingFileInfoAsync(candidate.Id, _token!, cancellationToken).ConfigureAwait(false);
-            await ValidateMattermostFileAssociationAsync(request, candidate.Id, info, cancellationToken).ConfigureAwait(false);
+            ValidateMattermostFileMetadata(request, candidate.Id, info);
+            // All files in this preflight share the same original post. Downloads still fetch
+            // fresh membership/metadata immediately before each transfer.
+            post ??= await GetIncomingPostContextAsync(request, cancellationToken).ConfigureAwait(false);
+            ValidateMattermostFileAssociation(request, candidate.Id, post);
+            EnsureIncomingFileAccess(request);
             resolved.Add(new IncomingChatFile(info.Id!, info.Name!, info.Size, info.MimeType));
         }
         EnsureIncomingFileConnection(request, generation, cancellationToken);
@@ -94,13 +100,27 @@ public sealed partial class MattermostWebSocketTransport
 
     private async Task ValidateMattermostFileAssociationAsync(ChatRequest request, string id, MattermostIncomingFileInfo info, CancellationToken cancellationToken)
     {
+        ValidateMattermostFileMetadata(request, id, info);
+        var post = await GetIncomingPostContextAsync(request, cancellationToken).ConfigureAwait(false);
+        ValidateMattermostFileAssociation(request, id, post);
+    }
+
+    private static void ValidateMattermostFileMetadata(ChatRequest request, string id, MattermostIncomingFileInfo info)
+    {
         if (!string.Equals(info.Id, id, StringComparison.Ordinal) || string.IsNullOrWhiteSpace(info.Name) || info.Size < 0 ||
             !string.Equals(info.PostId, request.MessageId, StringComparison.Ordinal))
             throw new InvalidOperationException("Mattermost file is not attached to the approved request message.");
+    }
 
+    private async Task<MattermostIncomingPostContext> GetIncomingPostContextAsync(ChatRequest request, CancellationToken cancellationToken)
+    {
         var postRequest = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
             new Uri(_serverUri!, $"api/v4/posts/{Uri.EscapeDataString(request.MessageId)}"), _token!);
-        var post = await TransportHttp.SendBoundedJsonAsync<MattermostIncomingPostContext>(ActiveFileUploadHttp, postRequest, cancellationToken).ConfigureAwait(false);
+        return await TransportHttp.SendBoundedJsonAsync<MattermostIncomingPostContext>(ActiveFileUploadHttp, postRequest, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static void ValidateMattermostFileAssociation(ChatRequest request, string id, MattermostIncomingPostContext post)
+    {
         var rootId = string.IsNullOrWhiteSpace(post.RootId) ? post.Id : post.RootId;
         if (!string.Equals(post.Id, request.MessageId, StringComparison.Ordinal) ||
             !string.Equals(post.ChannelId, request.ChannelId, StringComparison.Ordinal) ||

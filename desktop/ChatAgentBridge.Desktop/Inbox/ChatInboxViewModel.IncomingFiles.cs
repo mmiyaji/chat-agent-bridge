@@ -41,7 +41,7 @@ public sealed partial class ChatInboxViewModel
             if (!await CheckAccessAsync(item, token)) throw new OperationCanceledException(token);
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
             timeout.CancelAfter(TimeSpan.FromMinutes(2));
-            var files = await transport.ResolveIncomingFilesAsync(item.Request, timeout.Token);
+            var files = await transport.GetIncomingFileCandidatesAsync(item.Request, timeout.Token);
             if (files.Count != item.Request.IncomingFiles.Count) throw new IncomingFilesException();
             item.SetResolvedIncomingFiles(files);
             lease = await IncomingAttachmentStager.PrepareAsync(item.Workspace,
@@ -57,12 +57,12 @@ public sealed partial class ChatInboxViewModel
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
-            lease?.Dispose();
+            if (lease is not null) await lease.DisposeAsync();
             throw;
         }
         catch (Exception)
         {
-            lease?.Dispose();
+            if (lease is not null) await lease.DisposeAsync();
             throw new IncomingFilesException();
         }
     }

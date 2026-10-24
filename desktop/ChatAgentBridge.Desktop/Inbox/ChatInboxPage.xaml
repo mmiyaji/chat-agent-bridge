@@ -104,6 +104,7 @@
                                     QueryIcon="Find"
                                     TextChanged="InboxSearch_TextChanged"
                                     QuerySubmitted="InboxSearch_QuerySubmitted"
+                                    KeyDown="InboxSearch_KeyDown"
                                     AutomationProperties.AutomationId="InboxSearch" x:Uid="InboxSearch">
                         <AutoSuggestBox.ItemTemplate>
                             <DataTemplate x:DataType="inbox:InboxConversation">
@@ -134,7 +135,7 @@
                                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                                 <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                    <Grid Width="32" Height="32" Loaded="ConversationPersonPicture_Loaded">
+                                    <Grid Width="32" Height="32" Loaded="ConversationPersonPicture_Loaded" Unloaded="ConversationPersonPicture_Unloaded" DataContextChanged="ConversationPersonPicture_DataContextChanged">
                                     <PersonPicture Width="32" Height="32" DisplayName="{x:Bind AvatarDisplayName, Mode=OneWay}"
                                                    AutomationProperties.Name="{x:Bind PersonName, Mode=OneWay}"
                                                    AutomationProperties.AccessibilityView="Control"

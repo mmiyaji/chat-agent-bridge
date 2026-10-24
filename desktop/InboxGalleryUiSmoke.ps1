@@ -7,7 +7,9 @@ param(
     [ValidateSet('both', 'en', 'ja')]
     [string]$Language = 'both',
     [ValidateSet('both', 'light', 'dark')]
-    [string]$Theme = 'both'
+    [string]$Theme = 'both',
+    [ValidateRange(6, 500)]
+    [int]$RestoredConversationCount = 6
 )
 
 $ErrorActionPreference = 'Stop'
@@ -352,6 +354,13 @@ function Write-GallerySnapshots([string]$Workspace, [string]$Origin) {
             DisplayName=$row.Display; UserName=$row.UserName; ChannelName=$row.ChannelName; SiteName=$row.Site; IsDirectMessage=$row.Direct
         }
     }
+    for ($index = $entries.Count; $index -lt $RestoredConversationCount; $index++) {
+        $entries += @{
+            Key = @{ Provider='mattermost'; ChannelId="bulk-channel-$index"; ThreadId="bulk-thread-$index"; UserId="bulk-user-$index"; Origin=$Origin }
+            WorkspaceRoot=$Workspace; UpdatedAt=$now.AddSeconds(-$index); State='completed'; RequestCount=1
+            DisplayName="Bulk conversation $index"; UserName=$null; ChannelName="Bulk room $index"; SiteName='Offline Gallery'; IsDirectMessage=$false
+        }
+    }
     Save-Json (Join-Path $script:data 'chat-conversations.json') @{ SchemaVersion=1; Entries=$entries }
 }
 
@@ -368,6 +377,15 @@ function Search-Input([string]$Text) {
         [Windows.Forms.SendKeys]::SendWait($Text)
     }
     Start-Sleep -Milliseconds 300
+    $search = Wait-Element 'InboxSearch'
+    $edit = $search.FindFirst([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,
+            [Windows.Automation.ControlType]::Edit))
+    if (-not $edit) { $edit = $search }
+    $valuePattern = $null
+    if ($edit.TryGetCurrentPattern([Windows.Automation.ValuePattern]::Pattern, [ref]$valuePattern)) {
+        Assert ([string]$valuePattern.Current.Value -ceq [string]$Text) "Search input did not retain the full typed query. Expected '$Text'; actual '$($valuePattern.Current.Value)'."
+    }
 }
 
 function Find-Suggestion([string]$Text, [int]$Seconds = 8) {
@@ -461,7 +479,7 @@ function Run-Scenario([string]$Language, [string]$Theme) {
     Wait-For { (Results).connections -eq 1 } 'connected isolated Inbox'
 
     $restoredCount = (Wait-Element 'InboxConversationCount').Current.Name
-    Assert ($restoredCount -match '6|６') "Expected six restored conversations; count label was '$restoredCount'."
+    Assert ($restoredCount -match "(?<!\d)$RestoredConversationCount(?!\d)") "Expected $RestoredConversationCount restored conversations; count label was '$restoredCount'."
     $restoredAvatar = Find-Element $script:window 'InboxConversationPersonPicture'
     if (-not $restoredAvatar) { $restoredAvatar = Find-RawDescendant $script:window 'InboxConversationPersonPicture' }
     if (-not $restoredAvatar) {
@@ -501,6 +519,15 @@ function Run-Scenario([string]$Language, [string]$Theme) {
     Assert ((Wait-Element 'ApproveChat').Current.IsEnabled) 'Approve is disabled for a live pending request.'
     Assert ((Wait-Element 'RejectChat').Current.IsEnabled) 'Reject is disabled for a live pending request.'
     Assert-CommandUnavailable 'CancelChat' 'Pending request'
+
+    if ($RestoredConversationCount -ge 100) {
+        Search-Input 'GALLERY_PENDING_SEARCH_TARGET'
+        Assert ((Get-ElementText (Wait-Element 'InboxSelectedPrompt')).Contains('GALLERY_PENDING_SEARCH_TARGET')) 'Batch search reset lost the still-visible selected conversation.'
+        Assert ((Wait-Element 'ApproveChat').Current.IsEnabled) 'Batch filtering disabled approval for the selected pending request.'
+        Search-Input ''
+        Assert ((Get-ElementText (Wait-Element 'InboxSelectedPrompt')).Contains('GALLERY_PENDING_SEARCH_TARGET')) 'Clearing the batch search lost selection.'
+        Add-Check "$script:scenarioName large-list search keeps selected conversation" 'PASS' "$RestoredConversationCount restored conversations; batch narrow and restore retain selection."
+    }
 
     # Search has local suggestions, empty results, escape/cancel, and direct candidate selection.
     Search-Input 'NO_SUCH_GALLERY_CONVERSATION_'
