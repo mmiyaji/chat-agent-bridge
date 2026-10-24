@@ -34,6 +34,8 @@
     <Compile Include="..\ChatAgentBridge.Desktop\Notifications\NotificationActivationRelay.cs" Link="Notifications\NotificationActivationRelay.cs" />
     <Compile Include="..\ChatAgentBridge.Desktop\Notifications\NotificationDiagnostics.cs" Link="Notifications\NotificationDiagnostics.cs" />
     <Compile Include="..\ChatAgentBridge.Desktop\Notifications\NotificationLaunchArguments.cs" Link="Notifications\NotificationLaunchArguments.cs" />
+    <Compile Include="..\ChatAgentBridge.Desktop\Inbox\InboxListPrompt.cs" Link="Inbox\InboxListPrompt.cs" />
+    <Compile Include="..\ChatAgentBridge.Desktop\Inbox\BatchObservableCollection.cs" Link="Inbox\BatchObservableCollection.cs" />
   </ItemGroup>
 
 </Project>

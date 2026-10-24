@@ -57,6 +57,38 @@ public sealed class ChatProfileImageCacheTests
     }
 
     [Fact]
+    public async Task Cache_pruning_keeps_recently_accessed_images_within_the_count_limit()
+    {
+        using var temp = new TemporaryDirectory();
+        var settings = new BridgeSettings { MattermostServerUrl = "https://chat.example.test/", MattermostToken = "secret" };
+        var key = ChatSessionScope.Create("mattermost", "channel", "thread", MmUser, settings.MattermostServerUrl);
+        string saved;
+        using (var cache = new ChatProfileImageCache(new RecordingHandler(_ => ImageResponse(Png())), temp.Path))
+            saved = Assert.IsType<string>(await cache.ResolveAsync(settings, key));
+
+        var directory = Path.Combine(temp.Path, "avatar-cache");
+        File.SetLastAccessTimeUtc(saved, DateTime.UtcNow.AddDays(-2));
+        for (var index = 0; index < 600; index++)
+        {
+            var name = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("old-" + index))).ToLowerInvariant();
+            var file = Path.Combine(directory, name + ".png");
+            await File.WriteAllBytesAsync(file, Png());
+            File.SetLastAccessTimeUtc(file, DateTime.UtcNow.AddDays(-1));
+        }
+
+        using (var cache = new ChatProfileImageCache(new RecordingHandler(_ => throw new InvalidOperationException()), temp.Path))
+        {
+            Assert.Equal(saved, await cache.ResolveAsync(settings, key));
+            var newKey = ChatSessionScope.Create("mattermost", "other", "thread", "abcdef0123456789abcdef0123", settings.MattermostServerUrl);
+            await cache.ResolveAsync(settings, newKey);
+        }
+
+        var remaining = Directory.EnumerateFiles(directory, "*.png").ToArray();
+        Assert.True(remaining.Length <= 600);
+        Assert.Contains(saved, remaining, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Mattermost_origin_mismatch_never_sends_configured_token()
     {
         using var temp = new TemporaryDirectory();

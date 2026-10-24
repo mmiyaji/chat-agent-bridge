@@ -20,6 +20,12 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public BridgeSettings? EffectiveSettings { get; set; }
     public string Source => $"{Request.Provider} / {Request.ChannelId} / {Request.UserId}";
     public string Prompt => Request.Text;
+    // ChatRequest and the session scope inputs are immutable for an inbox item.
+    // Keep the serialized grouping key so state/workspace changes do not rebuild it.
+    internal string ConversationKey { get; } = System.Text.Json.JsonSerializer.Serialize(ChatSessionScope.Create(
+        request.Provider, request.ChannelId, request.ThreadId, request.UserId,
+        request.Provider == "mattermost" ? settings.MattermostServerUrl : null));
+    internal string ListPrompt { get; } = InboxListPrompt.Get(request.Text);
     public DateTimeOffset ReceivedAt { get; } = DateTimeOffset.Now;
     [ObservableProperty] public partial string Workspace { get; set; } = settings.WorkspaceRoot;
     [ObservableProperty] public partial string State { get; set; } = "承認待ち";
@@ -122,6 +128,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private Task _connectionNotice = Task.CompletedTask;
     private bool _disconnecting;
     private bool _closing;
+    private bool _searchUpdateImmediate;
+    private CancellationTokenSource? _searchDebounce;
+    private string _appliedSearchText = "";
+    private bool _conversationRefreshQueued;
+    private bool _conversationRefreshAll;
+    private readonly HashSet<string> _pendingConversationRefreshKeys = [];
     private bool _hasRuntimeStatus;
     private InboxItem? _notificationApprovedItem;
     private InboxItem? _automaticallyApprovedItem;
@@ -166,8 +178,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [ObservableProperty] public partial string StateFilter { get; set; } = "all";
     [ObservableProperty] public partial bool IsDetailOpen { get; set; }
     [ObservableProperty] public partial bool IsWideLayout { get; set; } = true;
-    public ObservableCollection<InboxConversation> VisibleConversations { get; } = [];
-    public ObservableCollection<InboxConversation> SearchSuggestions { get; } = [];
+    public BatchObservableCollection<InboxConversation> VisibleConversations { get; } = [];
+    public BatchObservableCollection<InboxConversation> SearchSuggestions { get; } = [];
     public IEnumerable<InboxItem> ConversationRequests => SelectedConversation?.Requests ?? [];
     public string SelectedOutput => Selected?.FullOutput ?? DesktopText.Get("InboxSelectConversation");
     public string SelectedUsage => Selected?.Usage ?? DesktopText.Get("UsageAfterExecution");
@@ -248,13 +260,22 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     }
     partial void OnSearchTextChanged(string value)
     {
-        RefreshVisibleConversations();
-        RefreshSearchSuggestions(value);
+        _searchDebounce?.Cancel();
+        _searchDebounce?.Dispose();
+        _searchDebounce = null;
+        if (_closing) return;
+        if (_searchUpdateImmediate)
+        {
+            ApplySearchText(value);
+            return;
+        }
+        var debounce = _searchDebounce = new CancellationTokenSource();
+        _ = ApplySearchTextAfterDelayAsync(value, debounce);
     }
     partial void OnStateFilterChanged(string value)
     {
         RefreshVisibleConversations();
-        RefreshSearchSuggestions(SearchText);
+        RefreshSearchSuggestions(_appliedSearchText);
     }
     private bool CanCancel() => IsExecuting && Selected is not null && ReferenceEquals(Selected, _activeItem) && _execution is { IsCancellationRequested: false };
     private bool CanReturnToActiveRequest() => HasOtherRequestRunning;
@@ -269,7 +290,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [RelayCommand]
     private void ClearConversationFilters()
     {
-        SearchText = string.Empty;
+        ApplySearchTextImmediately(string.Empty);
         StateFilter = "all";
     }
 
@@ -287,15 +308,52 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public void SelectRequest(InboxItem? item)
     {
         if (item is null) return;
+        // A notification or an automatic policy can select a request in the same
+        // UI turn in which it was received, before the queued list refresh runs.
+        FlushConversationRefresh();
         Selected = item;
         SelectedConversation = Conversations.FirstOrDefault(conversation => conversation.Requests.Contains(item));
     }
     public void RevealRequest(InboxItem? item)
     {
-        SearchText = "";
+        ApplySearchTextImmediately("");
         StateFilter = "all";
         SelectRequest(item);
         IsDetailOpen = true;
+    }
+    private async Task ApplySearchTextAfterDelayAsync(string value, CancellationTokenSource debounce)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(200), debounce.Token);
+            App.DispatcherQueue.TryEnqueue(() =>
+            {
+                if (!_closing && ReferenceEquals(_searchDebounce, debounce) && SearchText == value)
+                    ApplySearchText(value);
+            });
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private void ApplySearchText(string value)
+    {
+        _appliedSearchText = value;
+        RefreshVisibleConversations();
+        RefreshSearchSuggestions(value);
+        SearchApplied?.Invoke();
+    }
+
+    public event Action? SearchApplied;
+
+    private void ApplySearchTextImmediately(string value)
+    {
+        _searchDebounce?.Cancel();
+        _searchDebounce?.Dispose();
+        _searchDebounce = null;
+        _searchUpdateImmediate = true;
+        try { SearchText = value; }
+        finally { _searchUpdateImmediate = false; }
+        if (_appliedSearchText != value) ApplySearchText(value);
     }
     private bool MatchesFilter(InboxConversation conversation)
     {
@@ -303,14 +361,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (latest is null)
         {
             if (StateFilter is "pending" or "active") return false;
-            var restoredQuery = SearchText.Trim();
+            var restoredQuery = _appliedSearchText.Trim();
             return restoredQuery.Length == 0 || $"{conversation.Title} {conversation.Location} {conversation.Identity} {conversation.ListTitle} {conversation.Workspace}"
                 .Contains(restoredQuery, StringComparison.CurrentCultureIgnoreCase);
         }
         if (StateFilter == "pending" && !conversation.Requests.Any(item => item.State == "承認待ち")) return false;
         if (StateFilter == "active" && !conversation.Requests.Any(item => item.State is "実行中" or "追加指示の受領待ち")) return false;
         if (StateFilter == "completed" && !conversation.Requests.Any(item => item.State is not ("承認待ち" or "実行中" or "自動実行を準備" or "追加指示の受領待ち"))) return false;
-        var query = SearchText.Trim();
+        var query = _appliedSearchText.Trim();
         return query.Length == 0 || conversation.Identity.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
             conversation.ListTitle.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
             conversation.Requests.Any(item => item.Prompt.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
@@ -318,13 +376,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     }
     public void RefreshSearchSuggestions(string? query)
     {
-        SearchSuggestions.Clear();
         var normalized = query?.Trim() ?? "";
-        if (normalized.Length == 0) return;
-        foreach (var conversation in Conversations.Where(MatchesStateFilter)
+        InboxConversation[] wanted = normalized.Length == 0 ? [] : Conversations.Where(MatchesStateFilter)
             .Where(item => item.MatchesSearchMetadata(normalized))
-            .OrderByDescending(item => item.LastActivity).Take(8))
-            SearchSuggestions.Add(conversation);
+            .OrderByDescending(item => item.LastActivity).Take(8).ToArray();
+        SearchSuggestions.ReplaceAll(wanted);
     }
 
     private bool MatchesStateFilter(InboxConversation conversation)
@@ -356,19 +412,32 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         var wanted = Conversations.Where(MatchesFilter).ToArray();
         var wantedSet = wanted.ToHashSet();
-        foreach (var old in VisibleConversations.Where(item => !wantedSet.Contains(item)).ToArray()) VisibleConversations.Remove(old);
-        for (var index = 0; index < wanted.Length; index++)
+        var selected = SelectedConversation;
+        var batched = EstimateCollectionEdits(VisibleConversations, wanted) >= 16;
+        if (batched)
+            VisibleConversations.ReplaceAll(wanted);
+        else
         {
-            if (index < VisibleConversations.Count && ReferenceEquals(VisibleConversations[index], wanted[index])) continue;
-            var current = VisibleConversations.IndexOf(wanted[index]);
-            if (current < 0) VisibleConversations.Insert(index, wanted[index]);
-            else if (current != index) VisibleConversations.Move(current, index);
+            foreach (var old in VisibleConversations.Where(item => !wantedSet.Contains(item)).ToArray()) VisibleConversations.Remove(old);
+            for (var index = 0; index < wanted.Length; index++)
+            {
+                if (index < VisibleConversations.Count && ReferenceEquals(VisibleConversations[index], wanted[index])) continue;
+                var current = VisibleConversations.IndexOf(wanted[index]);
+                if (current < 0) VisibleConversations.Insert(index, wanted[index]);
+                else if (current != index) VisibleConversations.Move(current, index);
+            }
         }
         if (SelectedConversation is not null && !wantedSet.Contains(SelectedConversation))
         {
             SelectedConversation = null;
             Selected = null;
             IsDetailOpen = false;
+        }
+        else if (batched && selected is not null && wantedSet.Contains(selected))
+        {
+            // A Reset clears ListView's target selection. x:Bind is OneWay and the
+            // page ignores null SelectionChanged events, so reapply the same source.
+            OnPropertyChanged(nameof(SelectedConversation));
         }
         OnPropertyChanged(nameof(ConversationCountLabel));
         OnPropertyChanged(nameof(HasVisibleConversations));
@@ -378,13 +447,47 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         OnPropertyChanged(nameof(EmptyConversationHeading));
         OnPropertyChanged(nameof(EmptyConversationDescription));
     }
-    private static string ConversationKey(InboxItem item) => System.Text.Json.JsonSerializer.Serialize(CreateSessionKey(item));
-    private void RefreshConversations(InboxItem? changedItem = null)
+
+    private static int EstimateCollectionEdits<T>(IReadOnlyList<T> current, IReadOnlyList<T> wanted) where T : class
     {
-        var changedKey = changedItem is null ? null : ConversationKey(changedItem);
-        var groups = Requests.GroupBy(ConversationKey).ToDictionary(group => group.Key, group => group.OrderBy(item => item.ReceivedAt).ToArray());
+        var edits = Math.Abs(current.Count - wanted.Count);
+        for (var index = 0; index < Math.Min(current.Count, wanted.Count); index++)
+            if (!ReferenceEquals(current[index], wanted[index])) edits++;
+        return edits;
+    }
+    private void QueueConversationRefresh(InboxItem? changedItem = null)
+    {
+        if (_closing) return;
+        if (changedItem is null) _conversationRefreshAll = true;
+        else _pendingConversationRefreshKeys.Add(changedItem.ConversationKey);
+        if (_conversationRefreshQueued) return;
+        _conversationRefreshQueued = true;
+        if (!App.DispatcherQueue.TryEnqueue(FlushConversationRefresh))
+        {
+            _conversationRefreshQueued = false;
+        }
+    }
+
+    private void FlushConversationRefresh()
+    {
+        if (!_conversationRefreshQueued && !_conversationRefreshAll && _pendingConversationRefreshKeys.Count == 0) return;
+        _conversationRefreshQueued = false;
+        var refreshAll = _conversationRefreshAll;
+        var changedKeys = _pendingConversationRefreshKeys.ToHashSet(StringComparer.Ordinal);
+        _conversationRefreshAll = false;
+        _pendingConversationRefreshKeys.Clear();
+        RefreshConversations(refreshAll ? null : changedKeys);
+    }
+
+    private void RefreshConversations(HashSet<string>? changedKeys)
+    {
+        IEnumerable<InboxItem> refreshItems = changedKeys is null
+            ? Requests : Requests.Where(item => changedKeys.Contains(item.ConversationKey));
+        var groups = refreshItems.GroupBy(item => item.ConversationKey)
+            .ToDictionary(group => group.Key, group => group.OrderBy(item => item.ReceivedAt).ToArray());
         var byKey = Conversations.ToDictionary(item => item.Key);
-        foreach (var existing in Conversations.Where(item => item.Requests.Count > 0 && !groups.ContainsKey(item.Key)).ToArray())
+        foreach (var existing in Conversations.Where(item => item.Requests.Count > 0 &&
+            (changedKeys is null || changedKeys.Contains(item.Key)) && !groups.ContainsKey(item.Key)).ToArray())
         {
             existing.PreviousRequestCount = existing.RequestCount;
             existing.Requests.Clear();
@@ -396,7 +499,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         }
         foreach (var group in groups.OrderByDescending(pair => pair.Value[^1].ReceivedAt))
         {
-            if (changedKey is not null && group.Key != changedKey) continue;
+            if (changedKeys is not null && !changedKeys.Contains(group.Key)) continue;
             var conversation = byKey.GetValueOrDefault(group.Key);
             if (conversation is null)
             {
@@ -494,7 +597,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 {
                     if (args.PropertyName == nameof(InboxItem.State) && item.State != "承認待ち")
                         _ = CompleteRequestActionsAsync(item);
-                    if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.Workspace)) RefreshConversations(item);
+                    if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.Workspace)) QueueConversationRefresh(item);
                     if (ReferenceEquals(item, Selected))
                     {
                         if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.SessionLabel))
@@ -517,7 +620,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 _requestHandlers[item] = handler;
             }
         }
-        RefreshConversations();
+        QueueConversationRefresh();
     }
 
     private bool CanConnect() => !_closing && !IsConnected && !IsExecuting;
@@ -936,7 +1039,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         finally
         {
             try { await CloseActiveTurnAsync(item); }
-            finally { incomingFiles?.Dispose(); }
+            finally { if (incomingFiles is not null) await incomingFiles.DisposeAsync(); }
             if (record is not null) _history.EndTracking(record.Id);
             _execution?.Dispose();
             _execution = null;
@@ -1343,6 +1446,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public void Close()
     {
         if (_closing) return;
+        _searchDebounce?.Cancel();
+        _searchDebounce?.Dispose();
+        _searchDebounce = null;
+        FlushConversationRefresh();
         _closing = true;
         CloseAvatars();
         IsConnectionConfirmed = false;

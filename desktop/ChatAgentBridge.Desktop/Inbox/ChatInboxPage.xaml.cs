@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml;
 using ChatAgentBridge_Desktop.Localization;
+using System.Collections.Specialized;
 
 namespace ChatAgentBridge_Desktop.Inbox;
 
@@ -11,6 +12,8 @@ public sealed partial class ChatInboxPage : Page
     public event Action? ConnectionSettingsRequested;
     private bool _windowClosedSubscribed;
     private bool _openAppCallbackConfigured;
+    private bool _searchSuggestionsAllowed;
+    private string _lastUserSearchText = "";
 
     private void OpenConnectionSettings_Click(object sender, RoutedEventArgs e) => ConnectionSettingsRequested?.Invoke();
 
@@ -40,8 +43,39 @@ public sealed partial class ChatInboxPage : Page
             ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
         App.PendingRequestNotifications.ActionCompleted += () => NotificationActionNotice.IsOpen = false;
         ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
+        ViewModel.SearchSuggestions.CollectionChanged += SearchSuggestions_CollectionChanged;
+        ViewModel.SearchApplied += () => DispatcherQueue.TryEnqueue(RefreshSuggestionPopup);
         Loaded += Page_Loaded;
-        Unloaded += (_, _) => InboxApprovalHelpTip.IsOpen = false;
+        Unloaded += Page_Unloaded;
+    }
+
+    private void Page_Unloaded(object sender, RoutedEventArgs e)
+    {
+        _searchSuggestionsAllowed = false;
+        InboxSearchBox.IsSuggestionListOpen = false;
+        InboxApprovalHelpTip.IsOpen = false;
+    }
+
+    private void SearchSuggestions_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        => RefreshSuggestionPopup();
+
+    private void RefreshSuggestionPopup()
+    {
+        var search = InboxSearchBox;
+        search.IsSuggestionListOpen = _searchSuggestionsAllowed && HasSearchFocus() &&
+            search.Text.Trim().Length > 0 && ViewModel.SearchSuggestions.Count > 0;
+    }
+
+    private bool HasSearchFocus()
+    {
+        if (XamlRoot is null) return false;
+        var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        while (focused is not null)
+        {
+            if (ReferenceEquals(focused, InboxSearchBox)) return true;
+            focused = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(focused);
+        }
+        return false;
     }
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
@@ -114,7 +148,10 @@ public sealed partial class ChatInboxPage : Page
 
     private void Conversation_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is ListView { SelectedItem: InboxConversation conversation }) ViewModel.SelectedConversation = conversation;
+        if (sender is ListView { SelectedItem: InboxConversation conversation })
+        {
+            ViewModel.SelectedConversation = conversation;
+        }
     }
 
     private void Conversation_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
@@ -129,13 +166,25 @@ public sealed partial class ChatInboxPage : Page
     private void InboxSearch_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs e)
     {
         if (e.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+        {
+            _searchSuggestionsAllowed = true;
+            _lastUserSearchText = sender.Text;
             ViewModel.SearchText = sender.Text;
-        sender.IsSuggestionListOpen = e.Reason == AutoSuggestionBoxTextChangeReason.UserInput &&
-            sender.Text.Trim().Length > 0 && ViewModel.SearchSuggestions.Count > 0;
+        }
+        else if (sender.Text != _lastUserSearchText) _searchSuggestionsAllowed = false;
+        sender.IsSuggestionListOpen = false;
+    }
+
+    private void InboxSearch_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key != Windows.System.VirtualKey.Escape) return;
+        _searchSuggestionsAllowed = false;
+        InboxSearchBox.IsSuggestionListOpen = false;
     }
 
     private void InboxSearch_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs e)
     {
+        _searchSuggestionsAllowed = false;
         sender.IsSuggestionListOpen = false;
         if (e.ChosenSuggestion is InboxConversation conversation)
         {
@@ -165,13 +214,27 @@ public sealed partial class ChatInboxPage : Page
     private void ConversationPersonPicture_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: InboxConversation conversation })
-            _ = ViewModel.EnsureAvatarAsync(conversation);
+            ViewModel.TrackAvatarLoaded(conversation, sender);
+    }
+
+    private void ConversationPersonPicture_Unloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element)
+            ViewModel.TrackAvatarUnloaded(element);
+    }
+
+    private void ConversationPersonPicture_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs e)
+    {
+        if (!sender.IsLoaded) return;
+        if (e.NewValue is InboxConversation conversation)
+            ViewModel.TrackAvatarLoaded(conversation, sender);
+        else
+            ViewModel.TrackAvatarUnloaded(sender);
     }
 
     public static Microsoft.UI.Xaml.Media.Imaging.BitmapImage? AvatarImage(string? path)
     {
-        if (string.IsNullOrWhiteSpace(path) || !Uri.TryCreate(path, UriKind.Absolute, out var uri) ||
-            !uri.IsFile || !File.Exists(path)) return null;
+        if (string.IsNullOrWhiteSpace(path) || !Uri.TryCreate(path, UriKind.Absolute, out var uri) || !uri.IsFile) return null;
         return new Microsoft.UI.Xaml.Media.Imaging.BitmapImage
         {
             DecodePixelWidth = 64,

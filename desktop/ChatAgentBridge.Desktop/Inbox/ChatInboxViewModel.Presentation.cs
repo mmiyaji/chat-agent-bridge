@@ -34,8 +34,8 @@ public sealed partial class InboxConversation
     {
         get
         {
-            if (Requests.FirstOrDefault()?.Prompt.Replace('\r', ' ').Replace('\n', ' ').Trim() is { Length: > 0 } text)
-                return text[..Math.Min(text.Length, 120)];
+            if (Requests.FirstOrDefault()?.ListPrompt is { Length: > 0 } text)
+                return text;
             if (Snapshot?.DisplayName is { Length: > 0 } name) return name;
             if (Snapshot?.ChannelName is { Length: > 0 } channel) return channel;
             var folder = System.IO.Path.GetFileName(Workspace.TrimEnd('\\', '/'));
