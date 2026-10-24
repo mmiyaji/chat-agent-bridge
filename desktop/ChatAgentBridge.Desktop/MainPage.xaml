@@ -19,6 +19,10 @@
     xmlns:maintenance="using:ChatAgentBridge_Desktop.Maintenance"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+    <Page.Resources>
+        <!-- The sidebar sizer is created in code; naming it here generates the XAML type metadata its style needs. -->
+        <Style x:Key="NavigationPaneSizerTypeMetadata" TargetType="appearance:NavigationPaneSizer" />
+    </Page.Resources>
     <Grid>
         <NavigationView x:Name="MainNavigation" Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsOnboardingActive), Mode=OneWay}"
                         IsBackButtonVisible="Collapsed"
@@ -28,6 +32,10 @@
                         SelectionChanged="MainNavigation_SelectionChanged"
 
                         AutomationProperties.AutomationId="MainNavigation" x:Uid="MainNavigation">
+            <NavigationView.Resources>
+                <!-- Trimmed labels use the room the default 20px right gap reserves for an expand chevron the sidebar never shows. -->
+                <Thickness x:Key="NavigationViewItemContentPresenterMargin">4,-1,6,-1</Thickness>
+            </NavigationView.Resources>
             <NavigationView.MenuItems>
                 <NavigationViewItem  Tag="overview"  AutomationProperties.AutomationId="NavOverview" x:Uid="NavOverview">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Home" /></NavigationViewItem.Icon>
@@ -36,14 +44,14 @@
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Play" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Tag="agent" AutomationProperties.AutomationId="NavAgentSettings" x:Uid="NavAgentSettings">
-                    <!-- Keep the source's 20px box; NavigationView scales it into its icon slot. -->
+                    <!-- Segoe Fluent glyphs match the other items' size and stroke weight. -->
                     <NavigationViewItem.Icon>
-                        <PathIcon Data="F1 M12 5.5C11.4477 5.5 11 5.94772 11 6.5C11 7.05228 11.4477 7.5 12 7.5C12.5523 7.5 13 7.05228 13 6.5C13 5.94772 12.5523 5.5 12 5.5ZM7 6.5C7 5.94772 7.44772 5.5 8 5.5C8.55228 5.5 9 5.94772 9 6.5C9 7.05228 8.55228 7.5 8 7.5C7.44772 7.5 7 7.05228 7 6.5ZM10.5 2.5C10.5 2.22386 10.2761 2 10 2C9.72386 2 9.5 2.22386 9.5 2.5V3H6.5C5.67157 3 5 3.67157 5 4.5V8.5C5 9.32843 5.67157 10 6.5 10H13.5C14.3284 10 15 9.32843 15 8.5V4.5C15 3.67157 14.3284 3 13.5 3H10.5V2.5ZM6.5 4H13.5C13.7761 4 14 4.22386 14 4.5V8.5C14 8.77614 13.7761 9 13.5 9H6.5C6.22386 9 6 8.77614 6 8.5V4.5C6 4.22386 6.22386 4 6.5 4ZM10.25 17.9984C12.8656 17.9649 14.4449 17.4031 15.3718 16.5574C16.247 15.7588 16.4607 14.7813 16.4947 14.0019H16.5V13.3124C16.5 12.3131 15.69 11.5031 14.6907 11.5031H11.5V11.5H8.5V11.5031H5.3093C4.31005 11.5031 3.5 12.3131 3.5 13.3124V14.0019H3.50533C3.53931 14.7813 3.75297 15.7588 4.6282 16.5574C5.55506 17.4031 7.13442 17.9649 9.75 17.9984V18H10.25V17.9984ZM5.3093 12.5031H14.6907C15.1377 12.5031 15.5 12.8654 15.5 13.3124V13.75C15.5 14.4396 15.3688 15.2064 14.6978 15.8187C14.0103 16.446 12.6605 17 10 17C7.33946 17 5.98969 16.446 5.30224 15.8187C4.63123 15.2064 4.5 14.4396 4.5 13.75V13.3124C4.5 12.8654 4.86233 12.5031 5.3093 12.5031Z" Width="20" Height="20" AutomationProperties.AccessibilityView="Raw" />
+                        <FontIcon Glyph="&#xE99A;" AutomationProperties.AccessibilityView="Raw" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Tag="connections" AutomationProperties.AutomationId="NavConnections" x:Uid="NavConnections">
                     <NavigationViewItem.Icon>
-                        <PathIcon Data="F1 M8.53828 2C4.94843 2 2.03828 4.91015 2.03828 8.5C2.03828 9.651 2.33787 10.7334 2.86353 11.6719L2.06779 13.7542C1.7745 14.5216 2.48048 15.2957 3.2716 15.0741L5.75898 14.3774C6.60219 14.7768 7.5448 15 8.53828 15C12.1281 15 15.0383 12.0899 15.0383 8.5C15.0383 4.91015 12.1281 2 8.53828 2ZM3.03828 8.5C3.03828 5.46243 5.50071 3 8.53828 3C11.5758 3 14.0383 5.46243 14.0383 8.5C14.0383 11.5376 11.5758 14 8.53828 14C7.63615 14 6.78612 13.7832 6.03606 13.3993L5.86185 13.3101L3.0019 14.1111L3.97101 11.5753L3.84272 11.3655C3.33247 10.5313 3.03828 9.55079 3.03828 8.5ZM11.5009 18C9.53124 18 7.76622 17.1239 6.57422 15.7402C7.13727 15.8926 7.7266 15.981 8.33392 15.9973C9.22932 16.629 10.3218 17 11.5009 17C12.403 17 13.253 16.7832 14.0031 16.3993L14.1773 16.3101L17.0373 17.1111L16.0681 14.5752L16.1964 14.3655C16.7067 13.5313 17.0009 12.5508 17.0009 11.5C17.0009 10.3455 16.6452 9.27414 16.0374 8.38943C16.0286 7.78165 15.9475 7.19137 15.8024 6.6268C17.1506 7.81779 18.0009 9.5596 18.0009 11.5C18.0009 12.651 17.7013 13.7333 17.1756 14.6719L17.9714 16.7542C18.2646 17.5216 17.5587 18.2957 16.7675 18.0741L14.2802 17.3774C13.437 17.7768 12.4943 18 11.5009 18Z" Width="20" Height="20" AutomationProperties.AccessibilityView="Raw" />
+                        <FontIcon Glyph="&#xE8F2;" AutomationProperties.AccessibilityView="Raw" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Tag="chat" AutomationProperties.AutomationId="NavChat" Icon="Message" x:Uid="NavChat" />

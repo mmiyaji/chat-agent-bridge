@@ -6,7 +6,8 @@ namespace ChatAgentBridge.Core.Appearance;
 public sealed record LayoutPreferences(double? SidebarWidth = null, double? SettingsNavigationWidth = null,
     double? InboxListWidth = null)
 {
-    public const double MinSidebarWidth = 200, MaxSidebarWidth = 400;
+    // Narrow sidebars keep the icons and trim item labels with an ellipsis.
+    public const double MinSidebarWidth = 120, MaxSidebarWidth = 400;
     public const double MinSettingsNavigationWidth = 160, MaxSettingsNavigationWidth = 320;
     // The upper bound only rejects corrupt values; the page also keeps room for the detail pane.
     public const double MinInboxListWidth = 280, MaxInboxListWidth = 1600;
