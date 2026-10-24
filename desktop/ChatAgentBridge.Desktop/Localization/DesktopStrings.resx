@@ -32,6 +32,7 @@
   <data name="ChatControlAgentClaude" xml:space="preserve"><value>Claude Code</value></data>
   <data name="ChatControlAgentGemini" xml:space="preserve"><value>Gemini CLI</value></data>
   <data name="ChatControlAgentCopilot" xml:space="preserve"><value>GitHub Copilot CLI</value></data>
+  <data name="ChatControlAgentAntigravity" xml:space="preserve"><value>Antigravity CLI</value></data>
   <data name="ChatControlAgentCustom" xml:space="preserve"><value>{0}</value></data>
   <data name="ChatControlConnected" xml:space="preserve"><value>connected</value></data>
   <data name="ChatControlReconnecting" xml:space="preserve"><value>reconnecting</value></data>
@@ -248,7 +249,7 @@
   <data name="InboxReconnectFailed" xml:space="preserve"><value>Connection failed. Check credentials, destination, and network, then reconnect and resubmit any unexecuted requests.</value></data>
   <data name="WorkspaceOutsideTrustedRootsShort" xml:space="preserve"><value>The workspace is outside the trusted folders.</value></data>
   <data name="InboxApprovalRequiredAgain" xml:space="preserve"><value>Conversation execution settings changed, so approval is required again.</value></data>
-  <data name="InboxNewConversation" xml:space="preserve"><value>New conversation (Codex, Claude Code, Gemini CLI and GitHub Copilot CLI save the continuation session)</value></data>
+  <data name="InboxNewConversation" xml:space="preserve"><value>New conversation (Codex, Claude Code, Gemini CLI, GitHub Copilot CLI and Antigravity CLI save the continuation session)</value></data>
   <data name="InboxContinueSession" xml:space="preserve"><value>Continuing session: {0}</value></data>
   <data name="InboxSessionModel" xml:space="preserve"><value>&#10;Execution model: {0} / reasoning effort: {1}</value></data>
   <data name="InboxConversationOwner" xml:space="preserve"><value>&#10;Conversation owner: {0}</value></data>
@@ -522,7 +523,7 @@
   <data name="ChatModelCurrent" xml:space="preserve"><value>Current model: {0}&#10;Reasoning effort: {1}&#10;!cab model list — available models&#10;!cab model MODEL_ID — change this conversation&#10;!cab model default — follow agent settings</value></data>
   <data name="ChatModelList" xml:space="preserve"><value>Models available from the CLI (cached for 5 minutes). Use !cab model MODEL_ID to select one:</value></data>
   <data name="ChatModelMoreInPc" xml:space="preserve"><value>See all candidates in History and usage on this PC.</value></data>
-  <data name="ChatModelUnsupported" xml:space="preserve"><value>Model selection is available for Codex, Claude Code, Gemini CLI and GitHub Copilot CLI.</value></data>
+  <data name="ChatModelUnsupported" xml:space="preserve"><value>Model selection is available for Codex, Claude Code, Gemini CLI, GitHub Copilot CLI and Antigravity CLI.</value></data>
   <data name="ChatModelBusy" xml:space="preserve"><value>Wait until execution finishes and resolve this conversation's pending requests before changing models.</value></data>
   <data name="ChatModelUnavailable" xml:space="preserve"><value>No models were returned. Check the CLI and its sign-in status on this PC.</value></data>
   <data name="ChatModelNoSession" xml:space="preserve"><value>Reply in a thread with an existing AI conversation to change its model. For the first request, choose the initial model in Agent settings on this PC.</value></data>
@@ -538,9 +539,9 @@
   <data name="AgentSummaryHelp" xml:space="preserve"><value>Brief local notes contain up to three recent successful requests and results. They are encrypted on this PC. No extra AI call is made to generate them; transferring adds input tokens to the target agent. Review the excerpts before transferring.</value></data>
   <data name="AgentSummaryUnavailable" xml:space="preserve"><value>No matching notes are available. A successful request in this app version prepares notes for later switches. You can switch now without a summary. Native CLI history is not imported.</value></data>
   <data name="AgentSwitchConfirm" xml:space="preserve"><value>Target: {0}&#10;CLI: {1}&#10;Model: {2}&#10;Tool permissions: {3}&#10;Workspace: {4}&#10;Handoff: {5}&#10;The target starts a new AI session in the same chat thread. Previous sessions are retained locally. The next request requires approval on this PC.</value></data>
-  <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>Register a different CLI in Agent settings first: choose Codex, Claude Code, Gemini CLI or GitHub Copilot CLI, run Check CLI, then Register this CLI connection.</value></data>
+  <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>Register a different CLI in Agent settings first: choose Codex, Claude Code, Gemini CLI, GitHub Copilot CLI or Antigravity CLI, run Check CLI, then Register this CLI connection.</value></data>
   <data name="AgentSwitchNoConnections" xml:space="preserve"><value>none; register connections on this PC first</value></data>
-  <data name="AgentSwitchCommands" xml:space="preserve"><value>Registered CLI connections: {0}&#10;Choose explicitly:&#10;!cab agent codex summary / !cab agent codex fresh&#10;!cab agent claude summary / !cab agent claude fresh&#10;!cab agent gemini summary / !cab agent gemini fresh&#10;!cab agent github-copilot summary / !cab agent github-copilot fresh&#10;summary transfers recent local excerpts; fresh starts without them. Switching always requires approval on this PC. No executable paths can be supplied from chat.</value></data>
+  <data name="AgentSwitchCommands" xml:space="preserve"><value>Registered CLI connections: {0}&#10;Choose explicitly:&#10;!cab agent codex summary / !cab agent codex fresh&#10;!cab agent claude summary / !cab agent claude fresh&#10;!cab agent gemini summary / !cab agent gemini fresh&#10;!cab agent github-copilot summary / !cab agent github-copilot fresh&#10;!cab agent antigravity summary / !cab agent antigravity fresh&#10;summary transfers recent local excerpts; fresh starts without them. Switching always requires approval on this PC. No executable paths can be supplied from chat.</value></data>
   <data name="AgentSwitchSaved" xml:space="preserve"><value>Switched to {0}. Send the next request in this thread; approval is required on this PC. Please repost any pending requests cancelled by the switch.</value></data>
   <data name="AgentSwitchCompleted" xml:space="preserve"><value>AI agent changed</value></data>
   <data name="AgentSwitchFailed" xml:space="preserve"><value>Could not switch the agent. Check the registered CLI, trusted workspace, and summary availability on this PC, then retry.</value></data>

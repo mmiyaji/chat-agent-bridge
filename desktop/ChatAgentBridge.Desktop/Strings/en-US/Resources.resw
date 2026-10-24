@@ -162,7 +162,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Other CLI startup arguments</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock018.Text" xml:space="preserve">
-    <value>The app manages model and conversation continuation arguments for supported CLIs. Configure additional Gemini CLI or GitHub Copilot CLI options here. Custom CLIs must accept request text through standard input.</value>
+    <value>The app manages model and conversation continuation arguments for supported CLIs. Configure additional Gemini CLI, GitHub Copilot CLI or Antigravity CLI options here. Custom CLIs must accept request text through standard input.</value>
   </data>
   <data name="SettingsCheckCli.Content" xml:space="preserve">
     <value>Check CLI</value>
@@ -340,7 +340,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Models reported by the CLI</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock038.Text" xml:space="preserve">
-    <value>Codex and Claude Code candidates are reported by the CLI. Enter a model name directly for Gemini CLI and GitHub Copilot CLI. Account access is checked when you run a request.</value>
+    <value>Codex, Claude Code and Antigravity CLI candidates are reported by the CLI. Enter a model name directly for Gemini CLI and GitHub Copilot CLI. Account access is checked when you run a request.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock039.Text" xml:space="preserve">
     <value>The project folder where the agent reads and writes files. In Slack, use !cab folder followed by an absolute path to request a change within your trusted folders. Approval on this PC is required.</value>
@@ -1029,7 +1029,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AddSlackThreadButton.Content" xml:space="preserve"><value>Add this conversation</value></data>
   <data name="HistoryCompactFilters.Header" xml:space="preserve"><value>Filters</value></data>
   <data name="AgentConnectionRegistrationTitle.Text" xml:space="preserve"><value>Register this CLI connection</value></data>
-  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>Register Codex, Claude Code, Gemini CLI or GitHub Copilot CLI after a successful check. This saves its local executable and selected agent options for conversation switching; it does not copy login credentials. After registration, brief successful-conversation excerpts are encrypted on this PC for handoff.</value></data>
+  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>Register Codex, Claude Code, Gemini CLI, GitHub Copilot CLI or Antigravity CLI after a successful check. This saves its local executable and selected agent options for conversation switching; it does not copy login credentials. After registration, brief successful-conversation excerpts are encrypted on this PC for handoff.</value></data>
   <data name="RegisterAgentConnection.Content" xml:space="preserve"><value>Register this CLI connection</value></data>
   <data name="RegisteredConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Registered CLI connections</value></data>
   <data name="LoadRegisteredCodexConnection.Content" xml:space="preserve"><value>Load saved Codex</value></data>
@@ -1167,7 +1167,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentAdvancedSectionTitle.Text" xml:space="preserve"><value>Selected CLI: advanced settings</value></data>
   <data name="AgentAdvancedSectionHelp.Text" xml:space="preserve"><value>Executable location, arguments, and environment reload</value></data>
   <data name="AgentRegistrationsTitle.Text" xml:space="preserve"><value>Saved CLI registrations</value></data>
-  <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Register or restore Codex, Claude Code, Gemini CLI and GitHub Copilot CLI connections</value></data>
+  <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Register or restore Codex, Claude Code, Gemini CLI, GitHub Copilot CLI and Antigravity CLI connections</value></data>
   <data name="AgentExecutionExplanationTitle.Text" xml:space="preserve"><value>How execution approval works</value></data>
   <data name="AgentExecutionExplanationHelp.Text" xml:space="preserve"><value>Review the approval flow and current execution policy</value></data>
   <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>Open the service you use. Approval and attachment settings apply to all chat services.</value></data>
@@ -1211,6 +1211,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="SettingsAutoSaveRetry.Content" xml:space="preserve"><value>Review changes / retry</value></data>
   <data name="LoadRegisteredGeminiConnection.Content" xml:space="preserve"><value>Load registered Gemini CLI</value></data>
   <data name="LoadRegisteredCopilotConnection.Content" xml:space="preserve"><value>Load registered GitHub Copilot CLI</value></data>
+  <data name="LoadRegisteredAntigravityConnection.Content" xml:space="preserve"><value>Load registered Antigravity CLI</value></data>
   <data name="ManualWorkspaceError.Title" xml:space="preserve"><value>Check the work folder before running</value></data>
   <data name="ManualWorkspaceSettings.Content" xml:space="preserve"><value>Open trusted folder settings</value></data>
   <data name="AboutThirdPartyLicenses.Header" xml:space="preserve"><value>Third-party licenses</value></data>

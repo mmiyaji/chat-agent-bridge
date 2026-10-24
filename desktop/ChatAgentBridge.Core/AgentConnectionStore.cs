@@ -139,8 +139,10 @@ public sealed class AgentConnectionStore
         string permissionMode;
         try { permissionMode = ExecutionPolicy.NormalizePermissionMode(profile.PermissionMode); }
         catch (ArgumentException ex) { throw new ArgumentException("The CLI permission mode is invalid.", nameof(profile), ex); }
-        if (provider is AgentProfile.Gemini or AgentProfile.GitHubCopilot && permissionMode != "inherit")
-            throw new ArgumentException("Gemini CLI and GitHub Copilot profiles must inherit their CLI permission settings.", nameof(profile));
+        if (AgentProfile.IsBasicCliProvider(provider) && !AgentProfile.SupportsPermissionMode(provider, permissionMode))
+            throw new ArgumentException(provider == AgentProfile.Antigravity
+                ? "Antigravity CLI profiles support the inherit, workspace-write, and full-access permission modes."
+                : "Gemini CLI and GitHub Copilot profiles must inherit their CLI permission settings.", nameof(profile));
         if (permissionMode == "ask" && provider != AgentProfile.Codex)
             throw new ArgumentException("Ask permission mode is available only for Codex App Server profiles.", nameof(profile));
         if (permissionMode == "ask" && mode != "app-server")
@@ -154,7 +156,7 @@ public sealed class AgentConnectionStore
             effort = AgentProfile.NormalizeReasoningEffort(profile.ReasoningEffort);
         }
         catch (ArgumentException ex) { throw new ArgumentException("The model or reasoning effort is invalid.", nameof(profile), ex); }
-        if (provider is AgentProfile.Gemini or AgentProfile.GitHubCopilot && effort is not null)
+        if (AgentProfile.IsBasicCliProvider(provider) && effort is not null)
             throw new ArgumentException("Reasoning effort overrides are unavailable for this CLI.", nameof(profile));
         var version = profile.CliVersion?.Trim() ?? "";
         if (version.Length is 0 or > 512 || version.Any(char.IsControl))
@@ -202,7 +204,7 @@ public sealed class AgentConnectionStore
         var normalized = provider?.Trim().ToLowerInvariant();
         return normalized switch
         {
-            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot => normalized,
+            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity => normalized,
             _ => throw new ArgumentException("Only supported CLI profiles can be registered.", nameof(provider))
         };
     }

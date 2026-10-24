@@ -222,7 +222,7 @@ try {
  Resize-Test 500
  Top
  Capture "agent-narrow-$Language-$Theme"
- foreach($id in @('AgentScopeClaude','AgentScopeGemini','AgentScopeCopilot','AgentScopeCustom','AgentScopeCommon','AgentScopeCodex')){
+ foreach($id in @('AgentScopeClaude','AgentScopeGemini','AgentScopeCopilot','AgentScopeAntigravity','AgentScopeCustom','AgentScopeCommon','AgentScopeCodex')){
    Choose-CompactScope 'AgentScopeList' $id
    if($id -eq 'AgentScopeCustom'){
     Assert (((Wait-Element 'AgentExecutable').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).Current.Value -eq $agentPath) 'Compact custom tab did not restore its editor.'
@@ -327,7 +327,7 @@ try {
     Start-Sleep -Milliseconds 120
     Top
     $scopeNav=if($page -eq 'agent'){'AgentScopeList'}else{'ConnectionScopeList'}
-    $choices=if($page -eq 'agent'){@('AgentScopeCodex','AgentScopeClaude','AgentScopeGemini','AgentScopeCopilot','AgentScopeCustom','AgentScopeCommon')}else{@('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeCommon')}
+    $choices=if($page -eq 'agent'){@('AgentScopeCodex','AgentScopeClaude','AgentScopeGemini','AgentScopeCopilot','AgentScopeAntigravity','AgentScopeCustom','AgentScopeCommon')}else{@('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeCommon')}
     $choices=@($choices|Sort-Object {$random.Next()})
     foreach($id in $choices){
      if($script:app.HasExited){throw "App exited during stress cycle $cycle / $id"}

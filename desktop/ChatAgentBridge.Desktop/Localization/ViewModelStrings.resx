@@ -714,6 +714,8 @@ Conversation ID (first message): {2}</value></data>
   <data name="WizardSkippedCli" xml:space="preserve"><value>CLI check</value></data>
   <data name="WizardSkippedChat" xml:space="preserve"><value>chat connection</value></data>
   <data name="WizardSkippedSeparator" xml:space="preserve"><value>, </value></data>
+  <data name="AntigravityProviderHelp" xml:space="preserve"><value>Antigravity CLI (agy) continues conversations in the same chat thread. Fetch the models your account can use, or enter a model ID directly. Reasoning effort follows the CLI configuration. Sign in through the CLI first.</value></data>
+  <data name="AntigravityPermissionHelp" xml:space="preserve"><value>Antigravity CLI runs without prompts in headless mode and automatically denies edits and commands unless you choose Workspace write or Full access here, or add allow rules to agy's settings.json. Read-only and per-action approval are unavailable. Keep the CLI default to use agy's own settings.</value></data>
   <data name="SessionCliProviderHelp" xml:space="preserve"><value>Gemini CLI and GitHub Copilot CLI continue conversations in the same chat thread and accept a model name entered here. Model catalog lookup and app overrides for reasoning or execution permissions are unavailable. Sign in through the CLI first.</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>Model candidates cannot be fetched for this CLI. Enter a model ID or alias supported by your CLI and account, or leave it blank for the CLI default. Model access is checked when you run a request; reasoning and permissions follow the CLI configuration.</value></data>
   <data name="OverviewAutoConnectDiscordReady" xml:space="preserve"><value>On: Discord</value></data>

@@ -14,7 +14,7 @@ public static class NodeCliPackageResolver
 
     public static Resolution? Resolve(string configuredExecutable, string provider)
     {
-        if (!OperatingSystem.IsWindows() || !AgentProfile.IsBasicCliProvider(provider)) return null;
+        if (!OperatingSystem.IsWindows() || !AgentProfile.UsesNpmShim(provider)) return null;
         var environment = string.Join('\n', provider, Directory.GetCurrentDirectory(),
             Environment.GetEnvironmentVariable("PATH") ?? "");
         // Failures throw and are never cached; a null result (not a shim) is cheap to recompute.

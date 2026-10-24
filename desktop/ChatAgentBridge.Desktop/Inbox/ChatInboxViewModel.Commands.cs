@@ -110,6 +110,7 @@ public sealed partial class ChatInboxViewModel
                 AgentProfile.Claude => DesktopText.Get("ChatControlAgentClaude"),
                 AgentProfile.Gemini => DesktopText.Get("ChatControlAgentGemini"),
                 AgentProfile.GitHubCopilot => DesktopText.Get("ChatControlAgentCopilot"),
+                AgentProfile.Antigravity => DesktopText.Get("ChatControlAgentAntigravity"),
                 _ => DesktopText.Get("ChatControlAgentCustom", Path.GetFileName(effective.AgentExecutable))
             };
             var model = CleanStatusField(effective.AgentModel ?? DesktopText.Get("CliDefault"), 100);

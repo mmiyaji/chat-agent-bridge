@@ -118,7 +118,7 @@ public partial class MainPageViewModel
         if (!_hasCurrentConsent || !HasAcceptedTerms || !HasAcceptedPrivacy) { SetStatus(ViewModelText.Get("ReviewConsent"), ViewModelText.Get("ReviewConsentDetails"), "Warning"); return; }
         if (OnboardingStep == 1)
         {
-            var providerSelected = AgentProvider is "codex" or "claude" or "gemini" or "github-copilot" or "custom";
+            var providerSelected = AgentProvider is "codex" or "claude" or "gemini" or "github-copilot" or "antigravity" or "custom";
             var workspaceUsable = Path.IsPathFullyQualified(WorkspaceRoot) && Directory.Exists(WorkspaceRoot);
             var missingAgent = OnboardingFieldChecks.AgentStep(providerSelected, AgentExecutable, workspaceUsable);
             if (missingAgent.Contains(WizardField.AgentProvider) || missingAgent.Contains(WizardField.AgentExecutable)) { SetStatus(ViewModelText.Get("SelectAgent"), ViewModelText.Get("SelectAgentDetails"), "Warning"); RequestFieldFocus(missingAgent); return; }

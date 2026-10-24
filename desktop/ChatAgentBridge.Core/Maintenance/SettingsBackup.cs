@@ -70,6 +70,7 @@ public sealed record SettingsBackup
             AgentProfile.Codex => Mode == "app-server" ? "app-server" : AgentProfile.DefaultCodexArguments,
             AgentProfile.Gemini => AgentProfile.DefaultGeminiArguments,
             AgentProfile.GitHubCopilot => AgentProfile.DefaultGitHubCopilotArguments,
+            AgentProfile.Antigravity => AgentProfile.DefaultAntigravityArguments,
             _ => ""
         };
         return new BridgeSettings
@@ -99,7 +100,7 @@ public sealed record SettingsBackup
     private void Validate()
     {
         if (SchemaVersion != 1 || CreatedAt == default ||
-            Provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Custom) ||
+            Provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Custom) ||
             Mode is not ("exec" or "app-server") || Mode == "app-server" && Provider != AgentProfile.Codex)
             throw new InvalidDataException("Unsupported backup format.");
         foreach (var value in new[] { Executable, Workspace, MattermostServer, MattermostChannel, SlackChannel })

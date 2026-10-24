@@ -19,7 +19,7 @@ public sealed partial class HistoryPage
             ItemsSource = choices.Select(profile => profile.Provider switch
             {
                 AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code", AgentProfile.Gemini => "Gemini CLI",
-                AgentProfile.GitHubCopilot => "GitHub Copilot CLI", _ => profile.Provider
+                AgentProfile.GitHubCopilot => "GitHub Copilot CLI", AgentProfile.Antigravity => "Antigravity CLI", _ => profile.Provider
             }).ToArray(),
             SelectedIndex = choices.Length > 0 ? Math.Max(0, Array.FindIndex(choices, profile => profile.Provider == current)) : -1
         };

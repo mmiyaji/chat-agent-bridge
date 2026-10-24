@@ -158,7 +158,7 @@ public sealed partial class DiagnosticsControl : UserControl
     private static string SafeProvider(string value) => value switch
     {
         AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude", AgentProfile.Gemini => "Gemini",
-        AgentProfile.GitHubCopilot => "GitHub Copilot", AgentProfile.Custom => "Custom", _ => "Unknown"
+        AgentProfile.GitHubCopilot => "GitHub Copilot", AgentProfile.Antigravity => "Antigravity", AgentProfile.Custom => "Custom", _ => "Unknown"
     };
 
     private static string GetSavedChatProviders(BridgeSettings settings)

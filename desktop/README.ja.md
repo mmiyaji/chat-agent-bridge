@@ -115,17 +115,20 @@ Claude Codeでは、途中メッセージを受け取る実行に `--include-par
 
 ## 利用できるCLI
 
-初期設定とエージェント設定では、Codex、Claude Code、Gemini CLI、GitHub Copilot CLI、その他のCLIを選べます。各CLIを事前にインストールし、必要なログインをCLI自身で完了してください。
+初期設定とエージェント設定では、Codex、Claude Code、Gemini CLI、GitHub Copilot CLI、Antigravity CLI、その他のCLIを選べます。各CLIを事前にインストールし、必要なログインをCLI自身で完了してください。
 
 | CLI | 会話の自動継続 | モデル・推論候補 | CLIチェック |
 | --- | --- | --- | --- |
 | Codex / Claude Code | 対応 | CLIから取得 | バージョンとモデル候補 |
 | Gemini CLI / GitHub Copilot CLI | 対応（ユーザー・スレッドごとの会話IDで再開） | アプリでモデル名を指定。推論はCLI側の設定 | バージョン・CLIの識別 |
+| Antigravity CLI（`agy`） | 対応（ユーザー・スレッドごとの会話IDを `--conversation` で再開） | `agy models` から取得、またはモデル名を指定。推論はCLI側の設定 | バージョン（`agy --version`）・CLIの識別 |
 | その他のCLI | 未対応（毎回独立した実行） | CLI設定・起動引数で指定 | バージョンのみ |
 
-Gemini CLIは `--output-format stream-json`、GitHub Copilot CLIは `--output-format json` に対応する版が必要です。会話IDと完了イベントを確認できない出力は失敗として扱い、別のユーザーや直前のCLI会話に接続しません。モデル名はエージェント設定・初期設定・会話のモデル変更画面、または対象スレッドの `!cab model <モデル名>` から指定します。空欄または `!cab model default` はCLI／アプリの既定値に戻します。この版ではGemini・Copilotの候補取得は未対応です。CLI自身で利用可能なモデル名を確認してください。
+Gemini CLIは `--output-format stream-json`、GitHub Copilot CLIは `--output-format json` に対応する版が必要です。会話IDと完了イベントを確認できない出力は失敗として扱い、別のユーザーや直前のCLI会話に接続しません。モデル名はエージェント設定・初期設定・会話のモデル変更画面、または対象スレッドの `!cab model <モデル名>` から指定します。空欄または `!cab model default` はCLI／アプリの既定値に戻します。この版ではGemini・Copilotの候補取得は未対応です。CLI自身で利用可能なモデル名を確認してください。Antigravity CLIは、エージェント設定の「CLIモデル候補を取得」（CLIチェック後にも自動で試行）で `agy models` の一覧から選べます。
 
-4種類のCLIを確認・登録すると、PCの会話詳細や `!cab agent <codex|claude|gemini|github-copilot> <summary|fresh>` で切り替えられます。`summary` は会話メモを参考情報として引き継ぎ、`fresh` はメモを渡しません。新しいCLIの会話は別の会話IDで開始し、実行権限や依頼承認を会話メモから変更しません。
+5種類のCLIを確認・登録すると、PCの会話詳細や `!cab agent <codex|claude|gemini|github-copilot|antigravity> <summary|fresh>` で切り替えられます（`agy` は `antigravity` の別名です）。`summary` は会話メモを参考情報として引き継ぎ、`fresh` はメモを渡しません。新しいCLIの会話は別の会話IDで開始し、実行権限や依頼承認を会話メモから変更しません。
+
+Antigravity CLI（`agy`、ネイティブ実行ファイル）は、依頼を標準入力に渡して `--output-format stream-json` で1回分を実行し、会話の再開には `--conversation <会話ID>` を使います。`--conversation`・`--continue`・`-c`・`--print`・`-p`・`--prompt`・`-i`・`--prompt-interactive`・`--input-format`・`--remote-control`・`--project`・`--new-project` はアプリが管理するため、起動引数に指定するとエラーになります。操作権限は「CLIの既定値を使う」（フラグなし。agyの `settings.json` の許可ルールに従う）、「フォルダー内の編集を自動許可」（`--mode accept-edits`）、「フルアクセス」（`--dangerously-skip-permissions`）から選べ、読み取り専用と操作ごとの確認は使えません。ヘッドレス実行では確認画面を出せないため、権限モードを「フォルダー内の編集を自動許可」または「フルアクセス」にするか、agyの `settings.json` に許可ルールを追加しない限り、ファイル編集やコマンド実行は自動的に拒否されます（実行自体は成功扱いです）。拒否された操作があった場合は、返信の末尾にその旨と対処方法を追記します。推論の強さ（`--effort`）はアプリから指定できません。
 
 その他のCLIは、非対話モードで標準入力から依頼を受け取り、標準出力へ結果を返す必要があります。操作権限はCLI側の設定に従い、アプリから権限の解除やサンドボックスの追加は行いません。チャットの依頼承認・結果返信・許可ユーザーの制限は共通して適用します。CLIチェックの成功は、認証、モデルの利用可否、AIの実行成功を示しません。チェックでAIへの依頼は送りません。
 

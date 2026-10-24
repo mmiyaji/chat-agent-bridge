@@ -88,7 +88,7 @@ public sealed partial class ModelCatalogViewModel : ObservableObject, IDisposabl
         try
         {
             var settings = _settingsFactory();
-            if (AgentProfile.ResolveProvider(settings) is not (AgentProfile.Codex or AgentProfile.Claude))
+            if (!AgentProfile.HasModelCatalog(AgentProfile.ResolveProvider(settings)))
             {
                 if (generation == _generation)
                     Status = DesktopText.Get("ModelCatalogUnsupported");

@@ -182,6 +182,9 @@ public sealed class AgentRunner : IAgentRunner
         var validCliResult = cliSession is { HasResult: true, SessionId: not null, TurnFailed: false };
         if (structuredCli) error = StructuredCliDiagnostics.Error(invocation.Provider, error, process.ExitCode, validCliResult);
         var usage = codex?.Usage ?? claude?.Usage ?? cliSession?.Usage;
+        // Antigravity does not name the model in its output; the selected model is the one it ran.
+        if (invocation.Provider == AgentProfile.Antigravity && usage is { Model: null } && invocation.Model is not null)
+            usage = usage with { Model = invocation.Model };
         var success = process.ExitCode == 0;
         var exitCode = process.ExitCode;
         if (success && invocation.Provider == AgentProfile.Claude && claude?.HasResult != true)

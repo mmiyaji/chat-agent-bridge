@@ -5,13 +5,15 @@ using ChatAgentBridge.Core.Localization;
 namespace ChatAgentBridge.Core;
 
 public sealed record CliSessionOutput(string Provider, string? SessionId, string? FinalMessage,
-    bool HasResult, bool TurnFailed, AgentUsage? Usage = null);
+    bool HasResult, bool TurnFailed, AgentUsage? Usage = null, IReadOnlyList<string>? DeniedActions = null);
 
-/// <summary>Parses Gemini stream-json and Copilot CLI JSONL without exposing raw event payloads.</summary>
+/// <summary>Parses Gemini and Antigravity stream-json and Copilot CLI JSONL without exposing raw event payloads.</summary>
 public static class CliSessionOutputParser
 {
     internal const int MaxLineCharacters = 64 * 1024;
     internal const int MaxMessageCharacters = 1_000_000;
+    private const int MaxDeniedActions = 8;
+    private const int MaxTrackedSteps = 4096;
 
     public static CliSessionOutput Parse(string output, string provider)
     {
@@ -36,6 +38,12 @@ public static class CliSessionOutputParser
         private string? _sessionId;
         private string? _model;
         private string? _deltaMessageId;
+        private readonly StringBuilder _stepText = new();
+        private readonly Dictionary<int, string> _stepTexts = [];
+        private readonly HashSet<int> _announcedSteps = [];
+        private readonly Dictionary<int, (long? Input, long? Output, long? Cached)> _stepUsage = [];
+        private readonly List<string> _deniedActions = [];
+        private bool _streamedText;
         private bool _hasResult;
         private bool _failed;
         private bool _invalid;
@@ -59,8 +67,15 @@ public static class CliSessionOutputParser
             {
                 using var document = JsonDocument.Parse(line, new JsonDocumentOptions { MaxDepth = 32 });
                 var root = document.RootElement;
-                if (root.ValueKind != JsonValueKind.Object || String(root, "type") is null) { Invalidate(); return []; }
-                return _provider == AgentProfile.Gemini ? Gemini(root) : Copilot(root);
+                // Antigravity names its event discriminator "event"; the other CLIs use "type".
+                if (root.ValueKind != JsonValueKind.Object || String(root, _provider == AgentProfile.Antigravity ? "event" : "type") is null)
+                { Invalidate(); return []; }
+                return _provider switch
+                {
+                    AgentProfile.Gemini => Gemini(root),
+                    AgentProfile.Antigravity => Antigravity(root),
+                    _ => Copilot(root)
+                };
             }
             catch (JsonException) { Invalidate(); return []; }
         }
@@ -68,8 +83,15 @@ public static class CliSessionOutputParser
         internal CliSessionOutput Snapshot()
         {
             var invalid = _invalid || _sessionId is null;
-            return new(_provider, invalid ? null : _sessionId, _message.Length == 0 ? null : _message.ToString(),
-                _hasResult, _failed || invalid || !_hasResult, _usage);
+            var message = _message.Length == 0 ? null : _message.ToString();
+            if (_deniedActions.Count > 0)
+            {
+                // The CLI reports success after auto-denying tools it could not prompt for; tell the user why nothing changed.
+                var note = CoreText.Get("CliAntigravityActionsDenied", string.Join(", ", _deniedActions));
+                message = message is null ? note : message.TrimEnd() + "\n\n" + note;
+            }
+            return new(_provider, invalid ? null : _sessionId, message,
+                _hasResult, _failed || invalid || !_hasResult, _usage, _deniedActions.Count == 0 ? null : _deniedActions.ToArray());
         }
 
         private IReadOnlyList<AgentRunProgress> Gemini(JsonElement root)
@@ -105,6 +127,110 @@ public static class CliSessionOutputParser
                     return Activity(_failed ? "ProgressTurnFailed" : "ProgressFinished");
             }
             return [];
+        }
+
+        private IReadOnlyList<AgentRunProgress> Antigravity(JsonElement root)
+        {
+            if (_hasResult) { Invalidate(); return []; }
+            switch (String(root, "event"))
+            {
+                case "init":
+                    Bind(String(root, "conversation_id"));
+                    return Activity("ProgressWorking");
+                case "step_update":
+                    return AntigravityStep(Property(root, "step_update"));
+                case "result":
+                    var result = Property(root, "result");
+                    // The conversation id is also on init, so a result that omits it keeps the earlier binding.
+                    if (String(result, "conversation_id") is { } conversationId) Bind(conversationId);
+                    var status = String(result, "status");
+                    _hasResult = status is not null;
+                    _failed |= !string.Equals(status, "SUCCESS", StringComparison.OrdinalIgnoreCase);
+                    // result.usage totals the whole conversation, so a resumed turn is priced from this run's model calls.
+                    // It is only a fallback for the first turn, where both totals are the same.
+                    var (input, output, cached) = _stepUsage.Count > 0
+                        ? (Sum(_stepUsage.Values.Select(usage => usage.Input)), Sum(_stepUsage.Values.Select(usage => usage.Output)),
+                            Sum(_stepUsage.Values.Select(usage => usage.Cached)))
+                        : Counter(result, "num_turns") == 1 ? AntigravityUsage(Property(result, "usage")) : default;
+                    if (input is not null || output is not null || cached is not null)
+                        _usage = new AgentUsage { InputTokens = input, OutputTokens = output, CachedInputTokens = cached,
+                            Scope = "turn", Source = "antigravity.stream-json" };
+                    var denied = Property(result, "denied_actions");
+                    if (denied.ValueKind == JsonValueKind.Array)
+                        foreach (var action in denied.EnumerateArray())
+                        {
+                            var name = SafeLabel(String(action, "display_name") ?? String(action, "action"));
+                            if (name is not null && _deniedActions.Count < MaxDeniedActions && !_deniedActions.Contains(name))
+                                _deniedActions.Add(name);
+                        }
+                    // The final response replaces streamed text; the streamed text is the fallback when it is empty.
+                    var response = String(result, "response");
+                    _message.Clear();
+                    Append(string.IsNullOrWhiteSpace(response) ? _stepText.ToString() : response);
+                    var progress = new List<AgentRunProgress>();
+                    // A reply that never streamed is shown once, at the end.
+                    if (!_streamedText && _message.Length > 0) progress.AddRange(AgentRunProgressParser.Split("stdout", _message.ToString()));
+                    progress.AddRange(Activity(_failed ? "ProgressTurnFailed" : "ProgressFinished"));
+                    return progress;
+            }
+            return [];
+        }
+
+        private IReadOnlyList<AgentRunProgress> AntigravityStep(JsonElement step)
+        {
+            if (step.ValueKind != JsonValueKind.Object) return [];
+            if (String(step, "conversation_id") is { } conversationId) Bind(conversationId);
+            var index = Property(step, "step_index") is { ValueKind: JsonValueKind.Number } number && number.TryGetInt32(out var parsed) ? parsed : -1;
+            var state = String(step, "state");
+            switch (String(step, "step_type"))
+            {
+                case "agent_response":
+                    // Each response step is one model call; a later update for the same step replaces its counters.
+                    var usage = AntigravityUsage(Property(step, "usage"));
+                    if (index >= 0 && usage != default && (_stepUsage.ContainsKey(index) || _stepUsage.Count < MaxTrackedSteps))
+                        _stepUsage[index] = usage;
+                    var delta = String(step, "text_delta");
+                    if (string.IsNullOrEmpty(delta)) return [];
+                    var known = _stepTexts.TryGetValue(index, out var previous);
+                    // A terminal update can repeat the whole step text instead of only the new part.
+                    if (state == "DONE" && known && string.Equals(previous, delta, StringComparison.Ordinal)) return [];
+                    if (known || _stepTexts.Count < MaxTrackedSteps) _stepTexts[index] = known ? previous + delta : delta;
+                    if (!known && _stepText.Length > 0 && _stepText.Length < MaxMessageCharacters) _stepText.Append('\n');
+                    _stepText.Append(delta, 0, Math.Min(delta.Length, Math.Max(0, MaxMessageCharacters - _stepText.Length)));
+                    _streamedText = true;
+                    return AgentRunProgressParser.Split("stdout", delta);
+                case "tool":
+                    if (state == "ACTIVE")
+                    {
+                        // The same tool step is updated several times; announce it once.
+                        if (index >= 0 && (_announcedSteps.Count >= MaxTrackedSteps || !_announcedSteps.Add(index))) return [];
+                        var toolName = SafeLabel(String(step, "tool_name") ?? String(Property(step, "tool_info"), "name"));
+                        return AgentRunProgressParser.Split("activity",
+                            (toolName is null ? CoreText.Get("ProgressUsingGenericTool") : CoreText.Get("ProgressUsingTool", toolName)) + Environment.NewLine);
+                    }
+                    return state is "DONE" or "ERROR" ? Activity("ProgressCommandFinished") : [];
+            }
+            return [];
+        }
+
+        // output_tokens already includes thinking_tokens (total = input + output), and input includes cache reads.
+        private static (long? Input, long? Output, long? Cached) AntigravityUsage(JsonElement usage)
+            => (Counter(usage, "input_tokens"), Counter(usage, "output_tokens"), Counter(usage, "cache_read_tokens"));
+
+        private static long? Sum(IEnumerable<long?> counts)
+        {
+            long? total = null;
+            try { foreach (var count in counts) if (count is { } value) total = checked((total ?? 0) + value); }
+            catch (OverflowException) { return null; }
+            return total;
+        }
+
+        /// <summary>Returns a short printable label for a tool or action name, or null when there is none.</summary>
+        private static string? SafeLabel(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+            var clean = new string(name.Where(character => !char.IsControl(character)).Take(64).ToArray()).Trim();
+            return clean.Length == 0 ? null : clean;
         }
 
         private IReadOnlyList<AgentRunProgress> Copilot(JsonElement root)

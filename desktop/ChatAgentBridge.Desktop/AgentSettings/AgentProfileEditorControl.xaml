@@ -118,7 +118,7 @@
                              Text="{x:Bind Editor.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              AutomationProperties.AutomationId="AgentModel" GotFocus="DraftField_GotFocus" LostFocus="DraftField_LostFocus" />
                     <Button x:Name="FetchModelsButton" Grid.Column="2" x:Uid="FetchModels" localization:LocalizedResourceKey.Key="FetchModels"
-                            Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsReasoning), Mode=OneWay}" AutomationProperties.AutomationId="FetchModels" IsEnabled="{x:Bind Editor.CanFetchModelCandidates, Mode=OneWay}"
+                            Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsModelCatalog), Mode=OneWay}" AutomationProperties.AutomationId="FetchModels" IsEnabled="{x:Bind Editor.CanFetchModelCandidates, Mode=OneWay}"
                             Command="{x:Bind Editor.ModelCatalog.FetchModelsCommand}" />
                 </Grid>
 
@@ -130,7 +130,7 @@
                 <TextBlock Text="{x:Bind Editor.ModelCatalog.Status, Mode=OneWay}" TextWrapping="Wrap"
                            Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            AutomationProperties.AutomationId="ModelCatalogStatus"
-                           Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsReasoning), Mode=OneWay}" />
+                           Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsModelCatalog), Mode=OneWay}" />
                 <TextBlock Text="{x:Bind Editor.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsBasicProvider), Mode=OneWay}" />
                 <Grid x:Name="ReasoningGrid" ColumnSpacing="10" Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsReasoning), Mode=OneWay}">
@@ -153,7 +153,8 @@
                     <ComboBox localization:LocalizedResourceKey.Key="AgentEditorPermission" HorizontalAlignment="Stretch" x:Name="PermissionCombo" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{x:Bind Editor.AgentPermissionMode, Mode=TwoWay}"
                               AutomationProperties.AutomationId="AgentPermissionMode" SelectionChanged="DraftSelection_Changed">
                         <ComboBoxItem x:Uid="PermissionInherit" Tag="inherit" localization:LocalizedResourceKey.Key="PermissionInherit" />
-                        <ComboBoxItem x:Uid="PermissionReadOnly" Tag="read-only" localization:LocalizedResourceKey.Key="PermissionReadOnly" />
+                        <ComboBoxItem x:Uid="PermissionReadOnly" Tag="read-only" localization:LocalizedResourceKey.Key="PermissionReadOnly"
+                                      Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.CanSelectReadOnlyPermission), Mode=OneWay}" />
                         <ComboBoxItem x:Uid="PermissionWorkspaceWrite" Tag="workspace-write" localization:LocalizedResourceKey.Key="PermissionWorkspaceWrite" />
                         <ComboBoxItem x:Uid="PermissionAsk" Tag="ask" localization:LocalizedResourceKey.Key="PermissionAsk"
                                       Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.UseAppServer), Mode=OneWay}" />

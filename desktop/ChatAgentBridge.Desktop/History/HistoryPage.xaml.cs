@@ -318,10 +318,12 @@ public sealed partial class HistoryPage : Page
         var isAppServer = string.Equals(binding.AgentArguments, "app-server", StringComparison.OrdinalIgnoreCase);
         var isClaude = string.Equals(binding.AgentArguments, "claude-stream-json-v1", StringComparison.Ordinal);
         var provider = ConversationAgentService.ProviderOf(binding) ?? AgentProfile.Custom;
-        var supportsCatalog = provider is AgentProfile.Codex or AgentProfile.Claude;
+        var supportsCatalog = AgentProfile.HasModelCatalog(provider);
+        // Antigravity lists models but has no per-model reasoning levels.
+        var supportsEffort = provider is AgentProfile.Codex or AgentProfile.Claude;
         var isSessionCli = AgentProfile.IsBasicCliProvider(provider);
         var currentModel = string.IsNullOrWhiteSpace(binding.Model) ? globalSettings.AgentModel : binding.Model;
-        var currentEffort = !supportsCatalog ? null : binding.ReasoningEffort ??
+        var currentEffort = !supportsEffort ? null : binding.ReasoningEffort ??
             (binding.Model is null || string.Equals(binding.Model, globalSettings.AgentModel, StringComparison.Ordinal)
                 ? globalSettings.AgentReasoningEffort : null);
         var efforts = new System.Collections.ObjectModel.ObservableCollection<ChatAgentBridge_Desktop.ViewModels.ReasoningEffortChoice>
@@ -330,7 +332,7 @@ public sealed partial class HistoryPage : Page
         };
         ChatAgentBridge_Desktop.ViewModels.ReasoningEffortChoice? selectedEffort = currentEffort is null
             ? ChatAgentBridge_Desktop.ViewModels.ReasoningEffortChoice.InheritDefault : null;
-        var effortStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = supportsCatalog ? Visibility.Visible : Visibility.Collapsed };
+        var effortStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = supportsEffort ? Visibility.Visible : Visibility.Collapsed };
         var unsupportedEffort = false;
         var selectedModelId = currentModel;
         var isApplyingSelection = false;
@@ -343,8 +345,8 @@ public sealed partial class HistoryPage : Page
             ItemsSource = efforts,
             DisplayMemberPath = "SelectionLabel",
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            IsEnabled = supportsCatalog,
-            Visibility = supportsCatalog ? Visibility.Visible : Visibility.Collapsed
+            IsEnabled = supportsEffort,
+            Visibility = supportsEffort ? Visibility.Visible : Visibility.Collapsed
         };
         var catalog = new ModelCatalogViewModel(() => new BridgeSettings
         {
@@ -508,7 +510,7 @@ public sealed partial class HistoryPage : Page
                         catalogStatus,
                         effortCandidates,
                         effortStatus,
-                        new TextBlock { Text = DesktopText.Get("ReasoningEffortOptionsInfo"), TextWrapping = TextWrapping.Wrap, Visibility = supportsCatalog ? Visibility.Visible : Visibility.Collapsed },
+                        new TextBlock { Text = DesktopText.Get("ReasoningEffortOptionsInfo"), TextWrapping = TextWrapping.Wrap, Visibility = supportsEffort ? Visibility.Visible : Visibility.Collapsed },
                         new TextBlock { Text = DesktopText.Get("CliReportedOptionsInfo"), TextWrapping = TextWrapping.Wrap, Visibility = supportsCatalog ? Visibility.Visible : Visibility.Collapsed }
                     }
                 }
@@ -525,7 +527,7 @@ public sealed partial class HistoryPage : Page
             if (await dialog.ShowAsync() != ContentDialogResult.Primary) return null;
             return new ModelExecutionSelection(
                 string.IsNullOrWhiteSpace(model.Text) ? null : model.Text.Trim(),
-                supportsCatalog ? (dirtyEffortSelection ? selectedEffort?.Id : binding.ReasoningEffort) : null);
+                supportsEffort ? (dirtyEffortSelection ? selectedEffort?.Id : binding.ReasoningEffort) : null);
         }
         finally
         {
@@ -554,10 +556,12 @@ public sealed partial class HistoryPage : Page
         var permission = CreateChoice("SessionAgentPermissionMode", DesktopText.Get("AiToolPermission"), binding.AgentPermissionMode,
             (null, DesktopText.Get("UseGlobalSettings")), ("inherit", DesktopText.Get("CliDefault")), ("read-only", DesktopText.Get("ReadAndPlanOnly")),
             ("workspace-write", DesktopText.Get("AutoAllowWorkspaceEdits")), ("full-access", DesktopText.Get("FullAccess")), ("ask", DesktopText.Get("AskPerAction")));
-        var cliManagedPermissions = AgentProfile.IsBasicCliProvider(ConversationAgentService.ProviderOf(binding) ?? AgentProfile.Custom);
+        var bindingProvider = ConversationAgentService.ProviderOf(binding) ?? AgentProfile.Custom;
+        var cliManagedPermissions = AgentProfile.IsBasicCliProvider(bindingProvider);
         foreach (var item in permission.Items.OfType<ComboBoxItem>())
         {
-            if (cliManagedPermissions) item.IsEnabled = item.Tag as string is "<global>" or "inherit";
+            // Antigravity accepts the global default plus the modes the bridge maps onto agy flags.
+            if (cliManagedPermissions) item.IsEnabled = item.Tag as string is "<global>" || AgentProfile.SupportsPermissionMode(bindingProvider, item.Tag as string ?? "");
             else if (string.Equals(item.Tag as string, "ask", StringComparison.Ordinal))
                 item.IsEnabled = string.Equals(binding.AgentArguments, "app-server", StringComparison.OrdinalIgnoreCase);
         }

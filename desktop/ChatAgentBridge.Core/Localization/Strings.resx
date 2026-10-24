@@ -26,6 +26,7 @@
   <data name="CliWorkspaceUntrusted" xml:space="preserve"><value>The CLI does not trust this workspace. Open the configured CLI in this workspace and review its trust settings, then retry.</value></data>
   <data name="CliModelUnavailable" xml:space="preserve"><value>The selected model is unavailable to this CLI or account. Choose an available model or return to the default model, then retry.</value></data>
   <data name="CliDiagnosticsHidden" xml:space="preserve"><value>The CLI wrote diagnostics to standard error.</value></data>
+  <data name="CliAntigravityActionsDenied" xml:space="preserve"><value>Note: Antigravity CLI automatically denied these actions because headless mode cannot ask for permission: {0}. In Agent Settings, set the tool permission mode to Workspace write or Full access, or add allow rules to agy's settings.json.</value></data>
   <data name="CliStructuredResultInvalid" xml:space="preserve"><value>The CLI did not report a valid successful result and session UUID. Check that the installed CLI supports the configured structured output format.</value></data>
   <data name="ApprovalPermissionLine" xml:space="preserve"><value>Approve: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>Reject: !cab reject {0}</value></data>

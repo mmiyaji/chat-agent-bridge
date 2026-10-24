@@ -29,8 +29,27 @@ if (args is ["--version"])
         ? "codex-cli 1.2.3 (offline fixture)"
         : exeName.Equals("claude", StringComparison.OrdinalIgnoreCase)
             ? "Claude Code 1.2.3 (offline fixture)"
-            : "ChatAgentBridge.TestAgent 1.2.3 (offline fixture)");
+            : exeName.Equals("agy", StringComparison.OrdinalIgnoreCase)
+                ? "1.2.3"
+                : "ChatAgentBridge.TestAgent 1.2.3 (offline fixture)");
     await Console.Out.WriteLineAsync(version);
+    return;
+}
+
+// Antigravity (agy) fixtures. Selected only when this fixture is launched as agy.exe; the real CLI
+// lists models as "id<TAB>label" on stdout and writes its progress banner to stderr.
+var isAntigravityFixture = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "").Equals("agy", StringComparison.OrdinalIgnoreCase);
+if (isAntigravityFixture && args is ["--help"])
+{
+    // The real agy prints its usage to stderr and exits 0.
+    await Console.Error.WriteLineAsync("Usage of agy.exe:");
+    return;
+}
+if (isAntigravityFixture && args is ["models"])
+{
+    await Console.Error.WriteLineAsync("Fetching available models...");
+    await Console.Out.WriteLineAsync("fixture-agy-fast\tFixture Agy Fast");
+    await Console.Out.WriteLineAsync("fixture-agy-deep\tFixture Agy Deep (Thinking)");
     return;
 }
 
@@ -40,18 +59,37 @@ var structuredFormatIndex = Array.IndexOf(args, "--output-format");
 if (!args.Contains("--print") && structuredFormatIndex >= 0 && structuredFormatIndex + 1 < args.Length &&
     args[structuredFormatIndex + 1] is "stream-json" or "json")
 {
-    var isGemini = args[structuredFormatIndex + 1] == "stream-json";
+    var isGemini = args[structuredFormatIndex + 1] == "stream-json" && !isAntigravityFixture;
+    var isAntigravity = args[structuredFormatIndex + 1] == "stream-json" && isAntigravityFixture;
     var fixtureIndex = Array.IndexOf(args, "--cab-cli-fixture");
     var fixtureMode = fixtureIndex >= 0 && fixtureIndex + 1 < args.Length ? args[fixtureIndex + 1] : "success";
-    var resumeIndex = Array.IndexOf(args, "--resume");
+    var resumeIndex = Array.IndexOf(args, isAntigravity ? "--conversation" : "--resume");
     var fixtureSessionId = resumeIndex >= 0 && resumeIndex + 1 < args.Length ? args[resumeIndex + 1] : Guid.NewGuid().ToString("D");
     var fixturePrompt = await Console.In.ReadToEndAsync();
     var fixtureModelIndex = Array.IndexOf(args, "--model");
     var fixtureModel = fixtureModelIndex >= 0 && fixtureModelIndex + 1 < args.Length ? args[fixtureModelIndex + 1] : "fixture-default";
-    var fixtureReply = $"{(isGemini ? "gemini" : "copilot")}-e2e: {(resumeIndex >= 0 ? "resumed" : "new")}; model={fixtureModel}; prompt={fixturePrompt}";
+    var fixtureReply = $"{(isAntigravity ? "antigravity" : isGemini ? "gemini" : "copilot")}-e2e: {(resumeIndex >= 0 ? "resumed" : "new")}; model={fixtureModel}; prompt={fixturePrompt}";
     if (fixtureMode == "malformed") await Console.Out.WriteLineAsync("{malformed fixture");
     if (fixtureMode == "oversized") await Console.Out.WriteLineAsync(new string('x', 64 * 1024 + 1));
-    if (isGemini)
+    if (isAntigravity)
+    {
+        if (fixtureMode != "missing-id") await WriteAsync(new { @event = "init", conversation_id = fixtureSessionId, init = new { cwd = Environment.CurrentDirectory, permission_mode = "request-review" } });
+        if (fixtureMode == "conflicting-id") await WriteAsync(new { @event = "init", conversation_id = Guid.NewGuid().ToString("D") });
+        await WriteAsync(new { @event = "step_update", step_update = new { conversation_id = fixtureSessionId, step_index = 0, state = "DONE", step_type = "user_input", text_delta = "hidden-user-payload" } });
+        await WriteAsync(new { @event = "step_update", step_update = new { conversation_id = fixtureSessionId, step_index = 1, state = "ACTIVE", step_type = "tool", tool_name = "synthetic",
+            tool_info = new { name = "synthetic", parameters = new { command = "hidden-tool-arguments" } } } });
+        await WriteAsync(new { @event = "step_update", step_update = new { conversation_id = fixtureSessionId, step_index = 1, state = "DONE", step_type = "tool", tool_name = "synthetic" } });
+        await WriteAsync(new { @event = "step_update", step_update = new { conversation_id = fixtureSessionId, step_index = 2, state = "ACTIVE", step_type = "agent_response", text_delta = fixtureReply[..12] } });
+        var antigravityUsage = new { input_tokens = 100, output_tokens = 5, thinking_tokens = 2, cache_read_tokens = 75, total_tokens = 105 };
+        await WriteAsync(new { @event = "step_update", step_update = new { conversation_id = fixtureSessionId, step_index = 2, state = "DONE", step_type = "agent_response", text_delta = fixtureReply[12..],
+            usage = antigravityUsage } });
+        // Like the real CLI, the result totals the whole conversation, so a resumed run reports more than its own call.
+        var turns = resumeIndex >= 0 ? 2 : 1;
+        if (fixtureMode != "missing-result") await WriteAsync(new { @event = "result", result = new { conversation_id = fixtureSessionId,
+            status = fixtureMode == "failure" ? "ERROR" : "SUCCESS", response = fixtureReply, duration_seconds = 0.1, num_turns = turns,
+            usage = new { input_tokens = 100 * turns, output_tokens = 5 * turns, thinking_tokens = 2 * turns, cache_read_tokens = 75 * turns, total_tokens = 105 * turns } } });
+    }
+    else if (isGemini)
     {
         if (fixtureMode != "missing-id") await WriteAsync(new { type = "init", session_id = fixtureSessionId, model = fixtureModel });
         if (fixtureMode == "conflicting-id") await WriteAsync(new { type = "init", session_id = Guid.NewGuid().ToString("D"), model = fixtureModel });
