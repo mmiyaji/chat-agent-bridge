@@ -7,7 +7,7 @@ Validated on Windows on 2026-10-24. All automated runs use isolated data directo
 | Area | Result |
 | --- | --- |
 | Core tests | 1,060 passed |
-| Transport tests | 250 passed, including 21 Discord cases |
+| Transport tests | 251 passed, including 22 Discord cases |
 | Native Discord workflow | 8 checks passed using loopback REST/Gateway and the local TestAgent |
 | Settings UI | English/Japanese × light/dark passed; wide and 500-DIP layouts inspected |
 | Static validation | PowerShell/Node syntax, resource XML and `git diff --check` passed |
@@ -28,4 +28,25 @@ Native evidence is stored locally at `desktop/artifacts/d807b9be-cdcc-483a-bfc2-
 
 ## Live service check
 
-Developer Portal setup and bot installation are separate from the automated results above. Live checks require the user to enter a bot token directly in the app. Real account permissions, server overrides and Discord rate limits are not simulated by the offline fixture. Record live results separately after connecting; do not describe the fixture as live-service verification.
+The user installed the bot and entered its token directly in an isolated app profile. Live checks used the real Discord Gateway/REST service and the dedicated `#cab-discord-test` channel in `ruhenheim`. Agent execution used the repository's offline TestAgent; these checks did not call a paid AI service.
+
+| Live workflow | Result |
+| --- | --- |
+| Connection and `!cab help` | Connected; bot created a thread and returned the command list |
+| Initial approval | Requester clicked Discord Approve; execution and automatic result reply completed |
+| Same-owner continuation | Plain replies resumed the same CLI session, including after app restart |
+| Incoming files | Synthetic text log and PNG downloaded; prompts contained local temporary-file references |
+| Generated-file upload | No automatic upload under the default consent policy; PC confirmation showed one unchecked 32-byte `first.txt`, and only the selected file was sent |
+| Rejection | Discord Reject prevented CLI execution |
+| Stop button | Requester cancelled an approval-pending request; progress changed to stopped and controls were removed |
+| Restart safety | Unapproved request was restored as interrupted; fixture call count stayed unchanged; clicking its old approval returned a private unavailable notice |
+| Names | History resolved server, channel and user names; a second restart restored those names in Inbox from the identity cache |
+| Terminal controls | Final build removed Stop from completed/stopped progress posts |
+
+The first live CLI execution failed because an artifact-only launcher set the fixture transcript path incorrectly. The launcher was corrected and subsequent executions passed. Live testing also found that terminal message edits could preserve a stale Stop button; commit `856c0eb` fixes the payload and adds a regression test. Existing posts from the earlier build can still contain old controls; the restarted transport refuses them.
+
+Live evidence is under `desktop/artifacts/01d74cb9-d747-4df3-9376-c181e1052198/`, including `discord-live-file-roundtrip.png` and `discord-live-stop-final.png`. The final ordinary portable publish is `desktop/artifacts/discord-live-final`.
+
+The isolated app was left open and disconnected after verification. Its offline TestAgent cannot respond to real Discord requests unattended. The user's normal chat profile was not changed.
+
+Wrong-owner, wrong-server and replay attempts were exercised with synthetic identities in the isolated tests, not a second real Discord account. Actual cancellation of a running paid CLI was not repeated against Discord; the live Stop check cancelled pending work. Server-specific permission overrides, DM operation and rate-limit behavior were not exhaustively exercised live. Existing Inbox rows use cached names on restoration; refreshing History does not immediately relabel already loaded Inbox rows.
