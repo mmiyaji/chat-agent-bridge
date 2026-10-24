@@ -101,6 +101,7 @@ public sealed partial class MainPage
             })) _connectionScopeDispatchScheduled = false;
         };
         shell.Children.Add(_connectionScopeNavigation);
+        AttachSettingsNavigationResizer(_connectionScopeNavigation, shell, "ConnectionScopeSizer");
 
         var page = new StackPanel { Spacing = 12, Margin = new Thickness(16) };
         page.Children.Add(_connectionScopeHeading);

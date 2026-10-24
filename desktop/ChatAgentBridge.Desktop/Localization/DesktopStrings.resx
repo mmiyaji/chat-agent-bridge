@@ -843,4 +843,7 @@ After: {2}</value></data>
   <data name="GeneralNotificationRestart" xml:space="preserve"><value>Registration is saved. Restart the app to use it for approval notifications.</value></data>
   <data name="GeneralNotificationAvailable" xml:space="preserve"><value>If approval notifications do not appear, you can register this portable app for the current Windows user. Setup is unnecessary when notifications already work.</value></data>
   <data name="GeneralNotificationUnavailable" xml:space="preserve"><value>Additional registration is unavailable in this build or environment. This does not mean standard notifications are disabled. Details are available below.</value></data>
+  <data name="PaneSizerSidebar" xml:space="preserve"><value>Resize the sidebar</value></data>
+  <data name="PaneSizerSettings" xml:space="preserve"><value>Resize the settings menu</value></data>
+  <data name="PaneSizerHelp" xml:space="preserve"><value>Drag or use the arrow keys to change the width.</value></data>
 </root>

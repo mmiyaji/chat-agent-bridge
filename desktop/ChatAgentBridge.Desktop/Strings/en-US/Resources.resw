@@ -555,6 +555,15 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="SavedSessionsSplitter.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Drag to resize the saved conversations list</value>
   </data>
+  <data name="InboxConversationsSplitter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Resize the conversation list</value>
+  </data>
+  <data name="InboxConversationsSplitter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Use the arrow keys to resize the conversation list and details pane.</value>
+  </data>
+  <data name="InboxConversationsSplitter.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Drag to resize the conversation list</value>
+  </data>
   <data name="EmptySavedSessions.Text" xml:space="preserve">
     <value>No saved sessions. Some executions do not return a session ID, even when execution history is available.</value>
   </data>

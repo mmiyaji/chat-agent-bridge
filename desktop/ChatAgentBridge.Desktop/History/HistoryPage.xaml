@@ -82,7 +82,7 @@
                         </Button>
                     </Grid>
 
-                    <Grid x:Name="SessionBrowser" Grid.Row="1" ColumnSpacing="12">
+                    <Grid x:Name="SessionBrowser" Grid.Row="1" ColumnSpacing="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition x:Name="SessionListColumn" Width="380" MinWidth="280" />
                             <ColumnDefinition x:Name="SessionSplitterColumn" Width="12" />

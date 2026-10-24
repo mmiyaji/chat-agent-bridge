@@ -36,6 +36,7 @@ public partial class App : Application
     public static PendingRequestNotificationService PendingRequestNotifications { get; private set; } = null!;
     public static string SystemLanguageTag { get; private set; } = "en-US";
     public static Appearance.AppAppearance Appearance { get; private set; } = null!;
+    public static Appearance.AppLayout Layout { get; private set; } = null!;
     public static PricingCatalogManager Pricing { get; private set; } = null!;
     public static Tray.TrayService Tray { get; private set; } = null!;
     public static PortableUpdateCoordinator PortableUpdates { get; private set; } = null!;
@@ -128,14 +129,16 @@ public partial class App : Application
 
         try { SystemLanguageTag = Windows.System.UserProfile.GlobalizationPreferences.Languages.FirstOrDefault() ?? System.Globalization.CultureInfo.InstalledUICulture.Name; }
         catch { SystemLanguageTag = System.Globalization.CultureInfo.InstalledUICulture.Name; }
-        // The three preference reads are independent; run them together so the
+        // The preference reads are independent; run them together so the
         // slowest file read, not their sum, delays the first window.
         var backgroundStore = new ChatAgentBridge.Core.BackgroundPreferencesStore(new ChatAgentBridge.Core.SettingsStore());
         Appearance = new(new ChatAgentBridge.Core.Appearance.AppearancePreferencesStore(new ChatAgentBridge.Core.SettingsStore()));
         var languageTask = LoadLanguagePreferenceAsync();
         var appearanceTask = Appearance.InitializeAsync();
         var backgroundTask = LoadBackgroundPreferencesAsync(backgroundStore);
-        await Task.WhenAll(languageTask, appearanceTask, backgroundTask);
+        Layout = new(new ChatAgentBridge.Core.Appearance.LayoutPreferencesStore(new ChatAgentBridge.Core.SettingsStore()));
+        var layoutTask = Layout.InitializeAsync();
+        await Task.WhenAll(languageTask, appearanceTask, backgroundTask, layoutTask);
         ApplyLanguagePreference((await languageTask).Language);
         var background = await backgroundTask;
 
@@ -154,6 +157,7 @@ public partial class App : Application
         Tray = new(mainWindow, backgroundStore, background);
         Window.Closed += (_, _) =>
         {
+            _ = Layout.FlushAsync();
             Tray.Dispose();
             _portableUpdateLifetime.Cancel();
             PortableUpdates.Dispose();

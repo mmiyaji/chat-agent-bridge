@@ -69,7 +69,10 @@ public sealed partial class MainPage
         page.Children.Add(_agentScopeCommonGroup);
         page.Children.Add(_agentProfileDetails);
         _agentScopeNavigation.Content = page;
-        original.Children.Add(_agentScopeNavigation);
+        var shell = new Grid();
+        shell.Children.Add(_agentScopeNavigation);
+        AttachSettingsNavigationResizer(_agentScopeNavigation, shell, "AgentScopeSizer");
+        original.Children.Add(shell);
         original.Spacing = 0;
         _agentScopeNavigation.SizeChanged += (_, args) => UpdateAgentScopeLayout(args.NewSize.Width);
         Loaded += (_, _) => RefreshAgentScopeLabels();
