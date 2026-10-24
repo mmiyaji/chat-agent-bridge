@@ -412,6 +412,9 @@
   <data name="InboxRestoredDescription" xml:space="preserve"><value>Previous requests are not resumed. To continue, post a new !cab request in the same chat thread. Request and result bodies are not saved in this list.</value></data>
   <data name="InboxPersistenceLoadFailed" xml:space="preserve"><value>The conversation list could not be restored. The original file was kept, and no requests were resumed automatically.</value></data>
   <data name="InboxPersistenceSaveFailed" xml:space="preserve"><value>The conversation list could not be saved. It may not be restored the next time the app starts.</value></data>
+  <data name="InboxPersistenceSomeRowsRejected" xml:space="preserve"><value>{0} conversations could not be saved because their metadata is invalid. Other conversations were saved. Check the working folder and related settings.</value></data>
+  <data name="InboxPersistenceAllRowsRejected" xml:space="preserve"><value>{0} conversations could not be saved because their metadata is invalid. Existing saved data was not overwritten. Check the working folder and related settings.</value></data>
+  <data name="InboxWorkspaceInvalid" xml:space="preserve"><value>The working folder setting is invalid. In Agent settings, select an existing folder using its full absolute path.</value></data>
   <data name="InboxInterrupted" xml:space="preserve"><value>Interrupted</value></data>
   <data name="InboxRestoredIdle" xml:space="preserve"><value>Restored · idle</value></data>
   <data name="InboxClearFiltersLabel" xml:space="preserve"><value>Clear filters</value></data>

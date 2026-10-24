@@ -105,6 +105,69 @@ public sealed class InboxConversationStoreTests
         finally { DeleteDirectory(directory); }
     }
 
+    [Fact]
+    public void SelectValidSnapshots_KeepsFirstValidPerKeyAndCountsInvalidRows()
+    {
+        var valid = Snapshot(state: "completed", requestCount: 7, displayName: "Kept", userName: "alice",
+            channelName: "Bridge chat", siteName: "Workspace", isDirectMessage: true);
+        var duplicate = valid with { DisplayName = "Discarded" };
+        var invalidWorkspace = valid with { WorkspaceRoot = "relative/path" };
+        var invalidCount = Snapshot(thread: "bad-count", requestCount: -1);
+        var invalidIdentity = Snapshot(thread: "bad-identity") with
+            { Key = new SessionKey("slack", "", "bad-identity", "user", "slack") };
+
+        var selection = InboxConversationStore.SelectValidSnapshots(
+            [valid, invalidWorkspace, invalidCount, invalidIdentity, duplicate]);
+
+        Assert.Equal(4, selection.RejectedCount);
+        var selected = Assert.Single(selection.Entries);
+        Assert.Equal(valid, selected);
+        Assert.True(InboxConversationStore.IsValidSnapshot(valid));
+        Assert.False(InboxConversationStore.IsValidSnapshot(invalidWorkspace));
+    }
+
+    [Fact]
+    public async Task SelectedValidRowsCanBeSavedAndRestoredDespiteOneRejectedRow()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var selection = InboxConversationStore.SelectValidSnapshots([
+                Snapshot(thread: "valid-pending", state: "pending"),
+                Snapshot(thread: "bad-relative", workspaceRoot: "relative-folder"),
+                Snapshot(thread: "valid-completed", state: "completed")]);
+            Assert.Equal(1, selection.RejectedCount);
+            await new InboxConversationStore(directory).SaveAsync(selection.Entries);
+            var restored = await new InboxConversationStore(directory).ListAsync();
+            Assert.Equal(2, restored.Count);
+            Assert.Contains(restored, row => row.Key.ThreadId == "valid-pending" && row.State == "interrupted");
+            Assert.Contains(restored, row => row.Key.ThreadId == "valid-completed" && row.State == "completed");
+            Assert.DoesNotContain(restored, row => row.Key.ThreadId == "bad-relative");
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task SelectValidSnapshots_AllInvalidReturnsEmptyAndLeavesExistingFileUntouched()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var store = new InboxConversationStore(directory);
+            await store.SaveAsync([Snapshot(state: "completed")]);
+            var path = Path.Combine(directory, "chat-conversations.json");
+            var original = await File.ReadAllBytesAsync(path);
+
+            var selection = InboxConversationStore.SelectValidSnapshots(
+                [Snapshot(workspaceRoot: "relative"), Snapshot(requestCount: -1)]);
+
+            Assert.Empty(selection.Entries);
+            Assert.Equal(2, selection.RejectedCount);
+            Assert.Equal(original, await File.ReadAllBytesAsync(path));
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
     [Theory]
     [InlineData("not json")]
     [InlineData("{\"SchemaVersion\":2,\"Entries\":[]}")]

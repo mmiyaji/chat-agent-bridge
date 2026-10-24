@@ -9,6 +9,9 @@ public sealed record InboxConversationSnapshot(SessionKey Key, string WorkspaceR
     string State, int RequestCount, string? DisplayName = null, string? UserName = null,
     string? ChannelName = null, string? SiteName = null, bool IsDirectMessage = false);
 
+/// <summary>Valid snapshot rows selected for persistence and the number rejected during selection.</summary>
+public sealed record InboxConversationSaveSelection(IReadOnlyList<InboxConversationSnapshot> Entries, int RejectedCount);
+
 /// <summary>
 /// Persists bounded inbox display metadata only. Listing normalizes pending and running rows to
 /// interrupted so a restored item is never presented as an actionable in-flight request.
@@ -34,6 +37,36 @@ public sealed class InboxConversationStore
     }
 
     public string DirectoryPath { get; }
+
+    /// <summary>Returns whether a snapshot passes the same validation used by save and load.</summary>
+    public static bool IsValidSnapshot(InboxConversationSnapshot? snapshot)
+    {
+        try
+        {
+            ValidateSnapshot(snapshot);
+            return true;
+        }
+        catch (ArgumentException) { return false; }
+    }
+
+    /// <summary>Selects valid rows, keeping only the first valid row for each session key.</summary>
+    public static InboxConversationSaveSelection SelectValidSnapshots(IReadOnlyList<InboxConversationSnapshot> snapshots)
+    {
+        ArgumentNullException.ThrowIfNull(snapshots);
+        var entries = new List<InboxConversationSnapshot>(snapshots.Count);
+        var uniqueKeys = new HashSet<SessionKey>();
+        var rejectedCount = 0;
+        foreach (var snapshot in snapshots)
+        {
+            if (!IsValidSnapshot(snapshot) || !uniqueKeys.Add(snapshot!.Key))
+            {
+                rejectedCount++;
+                continue;
+            }
+            entries.Add(snapshot!);
+        }
+        return new InboxConversationSaveSelection(entries.ToArray(), rejectedCount);
+    }
 
     /// <summary>Atomically replaces the complete metadata snapshot, retaining the newest 500 rows.</summary>
     public async Task SaveAsync(IReadOnlyList<InboxConversationSnapshot> snapshots,

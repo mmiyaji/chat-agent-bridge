@@ -412,6 +412,9 @@
   <data name="InboxRestoredDescription" xml:space="preserve"><value>以前の依頼は再開されません。続けるには、同じチャットスレッドへ「!cab 依頼内容」を新しく投稿してください。この一覧には依頼本文や結果本文は保存されません。</value></data>
   <data name="InboxPersistenceLoadFailed" xml:space="preserve"><value>会話一覧を復元できませんでした。元のファイルは保持されており、依頼は自動的に再開されませんでした。</value></data>
   <data name="InboxPersistenceSaveFailed" xml:space="preserve"><value>会話一覧を保存できませんでした。次回起動時に復元されない可能性があります。</value></data>
+  <data name="InboxPersistenceSomeRowsRejected" xml:space="preserve"><value>会話情報が不正なため、{0}件を保存できませんでした。他の会話は保存しました。作業フォルダーなどの設定を確認してください。</value></data>
+  <data name="InboxPersistenceAllRowsRejected" xml:space="preserve"><value>会話情報が不正なため、{0}件を保存できませんでした。既存の保存データは上書きしていません。作業フォルダーなどの設定を確認してください。</value></data>
+  <data name="InboxWorkspaceInvalid" xml:space="preserve"><value>作業フォルダーの設定が不正です。エージェント設定で、存在するフォルダーの絶対パスを選択してください。</value></data>
   <data name="InboxInterrupted" xml:space="preserve"><value>中断</value></data>
   <data name="InboxRestoredIdle" xml:space="preserve"><value>復元済み・待機中</value></data>
   <data name="InboxClearFiltersLabel" xml:space="preserve"><value>絞り込みを解除</value></data>

@@ -19,6 +19,7 @@ public sealed partial class ChatInboxViewModel
     private (long Ticks, long Length)? _conversationNamesStamp;
     private IReadOnlyDictionary<SessionKey, ChatIdentityLabels> _cachedConversationNames = new Dictionary<SessionKey, ChatIdentityLabels>();
     private HashSet<SessionKey> _cachedConversationNameKeys = [];
+    private int _lastReportedRejectedConversationCount;
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasConversationPersistenceWarning))]
     public partial string ConversationPersistenceWarning { get; set; } = "";
@@ -26,6 +27,21 @@ public sealed partial class ChatInboxViewModel
     public bool HasSelectedRequest => Selected is not null && SelectedConversation?.Requests.Contains(Selected) == true;
     public bool HasSelectedRestoredConversation => SelectedConversation is { Requests.Count: 0 };
     public string RestoredConversationDescription => DesktopText.Get("InboxRestoredDescription");
+
+    private static bool IsValidInboxWorkspacePath(string? path) =>
+        !string.IsNullOrWhiteSpace(path) && path.Length <= 2048 && !path.Any(char.IsControl) && Path.IsPathFullyQualified(path);
+
+    private void ReportInvalidWorkspaceSettings()
+    {
+        Volatile.Write(ref _accessSettings, null);
+        RequestExecutionCancellation();
+        foreach (var item in Requests.Where(item => item.State == "承認待ち"))
+            item.State = "許可設定を確認できず実行不可";
+        HasConnectionError = true;
+        Status = DesktopText.Get("InboxWorkspaceInvalid");
+        ApproveCommand.NotifyCanExecuteChanged();
+        RejectCommand.NotifyCanExecuteChanged();
+    }
 
     private void NotifyRestoredSelection()
     {
@@ -197,10 +213,24 @@ public sealed partial class ChatInboxViewModel
             _pendingConversationSnapshots = null;
             try
             {
+                var selection = InboxConversationStore.SelectValidSnapshots(snapshots);
+                if (selection.RejectedCount != _lastReportedRejectedConversationCount)
+                {
+                    _lastReportedRejectedConversationCount = selection.RejectedCount;
+                    if (selection.RejectedCount > 0)
+                        System.Diagnostics.Trace.TraceWarning("Conversation metadata save rejected {0} rows.", selection.RejectedCount);
+                }
+                if (selection.RejectedCount > 0 && selection.Entries.Count == 0)
+                {
+                    ConversationPersistenceWarning = DesktopText.Get("InboxPersistenceAllRowsRejected", selection.RejectedCount);
+                    continue; // Never replace a previous good file with an empty rejected batch.
+                }
+                snapshots = selection.Entries.ToArray();
+                var validKeys = snapshots.Select(item => item.Key).ToHashSet();
                 var names = await ReadCachedConversationNamesAsync(snapshots.Select(item => item.Key));
                 foreach (var conversation in Conversations)
                 {
-                    if (conversation.Snapshot is not { } snapshot) continue;
+                    if (conversation.Snapshot is not { } snapshot || !validKeys.Contains(snapshot.Key)) continue;
                     var named = WithCachedNames(snapshot, names.GetValueOrDefault(snapshot.Key));
                     if (named == snapshot) continue;
                     conversation.Snapshot = named;
@@ -213,7 +243,8 @@ public sealed partial class ChatInboxViewModel
                     await Task.Run(() => new InboxConversationStore(_store.DirectoryPath).SaveAsync(snapshots));
                     _lastSavedConversationSnapshots = snapshots;
                 }
-                ConversationPersistenceWarning = "";
+                ConversationPersistenceWarning = selection.RejectedCount == 0 ? "" :
+                    DesktopText.Get("InboxPersistenceSomeRowsRejected", selection.RejectedCount);
             }
             catch (Exception) { ConversationPersistenceWarning = DesktopText.Get("InboxPersistenceSaveFailed"); }
             // The first snapshot is written immediately. Briefly collect subsequent state changes,
@@ -246,6 +277,7 @@ public sealed partial class ChatInboxViewModel
         Selected = null;
         _conversationPersistenceReady = false;
         _lastSavedConversationSnapshots = null;
+        _lastReportedRejectedConversationCount = 0;
         _conversationNamesStamp = null;
         _cachedConversationNameKeys.Clear();
         _cachedConversationNames = new Dictionary<SessionKey, ChatIdentityLabels>();

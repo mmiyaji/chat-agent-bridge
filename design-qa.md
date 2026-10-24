@@ -1,3 +1,36 @@
+# Conversation save validation and lazy identity clients — 2026-10-24
+
+Implemented the recommended follow-up without changing the 150 ms save cooldown.
+
+- Settings writes reject nonempty relative, control-character-containing, or over
+  2048-character workspace paths before touching the existing file. Empty setup
+  values remain supported. Legacy invalid paths remain readable for repair, but
+  cannot connect, receive requests, or pass execution access checks.
+- Select valid conversation metadata rows before saving. Reject invalid and
+  duplicate rows individually, show a localized rejected-count warning, and emit
+  count-only Trace diagnostics when the count changes. An all-rejected nonempty
+  batch preserves the previous file. Disk reads and direct store saves retain
+  strict validation; restored metadata still grants no execution authority.
+- Identity cache-only reads create no HttpClients or handlers. Network clients
+  are created on first use and reused, with proxy separation and owned-handler
+  disposal preserved.
+- Full suites: Core 1013 passed; Transports 201 passed. Local portable publish:
+  `desktop/artifacts/inbox-validation-verified/`.
+- Native smoke: 9 checks passed in English and 9 in Japanese, including restart
+  interruption without replay, fresh same-thread approval, offline restoration,
+  invalid-workspace blocking, and partial invalid-row isolation followed by a
+  successful valid-row save. The invalid-row case starts no agent executions.
+  English: `desktop/artifacts/cbf78b31-4739-4c62-a03e-a29598bf9161/`.
+  Japanese: `desktop/artifacts/99841dfd-30d4-4557-b555-6f693e03409a/`.
+- Three offline launches with 500 seeded metadata rows took 129–185 ms from
+  opening Inbox to its first visible row, including restoration. Keep the current
+  virtualized list and single visible-list refresh; no bulk-reset change was
+  justified by this measurement. This is a local observation, not a performance
+  guarantee. Evidence:
+  `desktop/artifacts/inbox-initial-display-probe-bb9ee683bfdc4f2a859432ac38aa11be.json`.
+- No external chat posts, real AI calls, push, release or publication occurred.
+
+---
 # Conversation persistence hardening — 2026-10-24
 
 Fixed orphan metadata cleanup and reduced work during conversation state changes.

@@ -370,6 +370,113 @@ try {
     Capture-Window 'offline-restored-dark.png'
     Add-Pass 'Inbox metadata rows restore offline despite malformed legacy session data'
 
+    # A corrupt legacy session file should not prevent inbox recovery, but an invalid
+    # configured workspace must block a new connection without mutating saved inbox data.
+    Stop-AppOnly
+    Write-JsonFile (Join-Path $script:data 'sessions.json') @{ SchemaVersion = 1; Bindings = @(); Workspaces = @() }
+    $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
+    $settings.AutoConnectProvider = 'none'
+    $settings.WorkspaceRoot = 'relative-folder'
+    Write-JsonFile $settingsPath $settings
+    Start-ExistingIsolatedApp $false
+    Start-Inbox $false
+    $metadataPath = Join-Path $script:data 'chat-conversations.json'
+    $metadataBeforeInvalidConnect = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($metadataPath)))
+    $historyBeforeInvalidConnect = @(Read-UiHistory).Count
+    Assert ((Results).connections -eq 0) 'Invalid-workspace check started with an unexpected chat connection.'
+    Invoke-Element (Wait-Element 'ConnectMattermost') 'connect with invalid workspace setting'
+    $connectionError = Wait-Element 'InboxConnectionError' 12
+    $errorText = [Collections.Generic.List[string]]::new()
+    $errorText.Add($connectionError.Current.Name)
+    $errorChildren = $connectionError.FindAll([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.Condition]::TrueCondition)
+    foreach ($child in $errorChildren) { if (-not [string]::IsNullOrWhiteSpace($child.Current.Name)) { $errorText.Add($child.Current.Name) } }
+    $expectedError = if ($Language -eq 'ja') { '作業フォルダーの設定が不正です。エージェント設定で、存在するフォルダーの絶対パスを選択してください。' } else { 'The working folder setting is invalid. In Agent settings, select an existing folder using its full absolute path.' }
+    Assert (($errorText -join "`n") -like "*$expectedError*") "Connect did not show localized InboxWorkspaceInvalid text: '$($errorText -join ' | ')'"
+    Assert ((Results).connections -eq 0) 'Invalid workspace unexpectedly opened a loopback chat connection.'
+    Assert (@(Read-UiHistory).Count -eq $historyBeforeInvalidConnect) 'Invalid-workspace connect changed execution history.'
+    $metadataAfterInvalidConnect = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($metadataPath)))
+    Assert ($metadataAfterInvalidConnect -eq $metadataBeforeInvalidConnect) 'Invalid-workspace connect changed chat conversation metadata bytes.'
+    Add-Pass 'Invalid workspace shows localized error without connecting or changing history or Inbox metadata'
+
+    # Exercise save-time row isolation with an existing, trusted workspace path that
+    # exceeds the persisted metadata limit. Approval stays required, so no agent turn runs.
+    Stop-AppOnly
+    $workspaceRoot = Join-Path $script:data 'workspace'
+    $longWorkspace = $workspaceRoot
+    for ($segment = 0; $segment -lt 13; $segment++) {
+        $longWorkspace = Join-Path $longWorkspace ('segment-' + $segment.ToString('D2') + ('x' * 165))
+    }
+    [IO.Directory]::CreateDirectory($longWorkspace) | Out-Null
+    Assert ($longWorkspace.Length -gt 2048) "Could not create a per-thread workspace path over 2048 characters (length $($longWorkspace.Length))."
+    $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
+    $settings.WorkspaceRoot = $workspaceRoot
+    $settings.TrustedWorkspaceRoots = $workspaceRoot
+    $settings.AutoConnectProvider = 'mattermost'
+    $settings.ChatApprovalMode = 'always'
+    Write-JsonFile $settingsPath $settings
+    $invalidRowThread = 'inbox-invalid-row-' + [guid]::NewGuid().ToString('N')
+    $scope = (Find-InboxEntry $thread).Key
+    $invalidRowKey = @{
+        Provider = 'mattermost'; ChannelId = $scope.ChannelId; ThreadId = $invalidRowThread
+        UserId = $scope.UserId; Origin = $scope.Origin
+    }
+    Write-JsonFile (Join-Path $script:data 'sessions.json') @{
+        SchemaVersion = 1; Bindings = @(); Agents = @()
+        Workspaces = @(@{ Key = $invalidRowKey; WorkspaceRoot = $longWorkspace })
+    }
+    Start-ExistingIsolatedApp
+    Start-Inbox
+    $turnStartsBeforeInvalidRow = @((Read-Observations | Where-Object { $_.method -eq 'turn/start' })).Count
+    $historyBeforeInvalidRow = @(Read-UiHistory).Count
+    Send-Request ('invalid-row-' + [guid]::NewGuid().ToString('N')) $invalidRowThread 'invalid metadata workspace row'
+    $warningResourcePath = Join-Path $repo ('desktop/ChatAgentBridge.Desktop/Localization/DesktopStrings' + $(if ($Language -eq 'ja') { '.ja' } else { '' }) + '.resx')
+    [xml]$warningResources = Get-Content -LiteralPath $warningResourcePath -Raw
+    $expectedSomeRejected = $warningResources.SelectSingleNode("/root/data[@name='InboxPersistenceSomeRowsRejected']/value").InnerText.Replace('{0}', '1')
+    Wait-For {
+        $element = Find-Element $script:window 'InboxConversationPersistenceWarning'
+        if (-not $element) { return $false }
+        $names = @($element.Current.Name)
+        foreach ($child in $element.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)) { $names += $child.Current.Name }
+        ($names -join "`n") -like "*$expectedSomeRejected*"
+    } 'one-row Inbox metadata rejection warning' 20
+    $invalidRowWarning = Wait-Element 'InboxConversationPersistenceWarning'
+    $warningText = [Collections.Generic.List[string]]::new()
+    $warningText.Add($invalidRowWarning.Current.Name)
+    $warningChildren = $invalidRowWarning.FindAll([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.Condition]::TrueCondition)
+    foreach ($child in $warningChildren) { if (-not [string]::IsNullOrWhiteSpace($child.Current.Name)) { $warningText.Add($child.Current.Name) } }
+    Assert (($warningText -join "`n") -like "*$expectedSomeRejected*") "Save did not report one rejected row while preserving other rows: '$($warningText -join ' | ')'"
+    $afterInvalidRowDocument = Read-InboxDocument
+    Assert (@($afterInvalidRowDocument.Entries | Where-Object { $_.Key.ThreadId -eq $invalidRowThread }).Count -eq 0) 'Invalid overlong-workspace row was persisted.'
+    Assert ($afterInvalidRowDocument.Entries.Count -ge 3) 'Rejecting an invalid row erased previously valid conversations.'
+    Assert ((Results).connections -eq 1) 'Invalid-row save case lost its loopback connection.'
+    Assert (@(Read-UiHistory).Count -eq $historyBeforeInvalidRow) 'Pending invalid-row test request unexpectedly created execution history.'
+    Assert (@((Read-Observations | Where-Object { $_.method -eq 'turn/start' })).Count -eq $turnStartsBeforeInvalidRow) 'Pending invalid-row test request unexpectedly started an agent turn.'
+
+    $validAfterInvalidThread = 'inbox-valid-after-invalid-' + [guid]::NewGuid().ToString('N')
+    Send-Request ('valid-after-invalid-' + [guid]::NewGuid().ToString('N')) $validAfterInvalidThread 'valid row after rejected metadata'
+    Wait-InboxEntry $validAfterInvalidThread 'pending' 1 | Out-Null
+    $validAfterInvalidDoc = Read-InboxDocument
+    Assert (@($validAfterInvalidDoc.Entries | Where-Object { $_.Key.ThreadId -eq $invalidRowThread }).Count -eq 0) 'A later save reintroduced the rejected invalid row.'
+    Assert (@($validAfterInvalidDoc.Entries | Where-Object { $_.Key.ThreadId -eq $validAfterInvalidThread }).Count -eq 1) 'A valid row was not saved alongside the rejected row.'
+    Wait-For {
+        $element = Find-Element $script:window 'InboxConversationPersistenceWarning'
+        if (-not $element) { return $false }
+        $names = @($element.Current.Name)
+        foreach ($child in $element.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition)) { $names += $child.Current.Name }
+        ($names -join "`n") -like "*$expectedSomeRejected*"
+    } 'persistent one-row Inbox metadata rejection warning' 20
+    $warningText = [Collections.Generic.List[string]]::new()
+    $warningText.Add((Wait-Element 'InboxConversationPersistenceWarning').Current.Name)
+    $warningChildren = (Wait-Element 'InboxConversationPersistenceWarning').FindAll([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.Condition]::TrueCondition)
+    foreach ($child in $warningChildren) { if (-not [string]::IsNullOrWhiteSpace($child.Current.Name)) { $warningText.Add($child.Current.Name) } }
+    Assert (($warningText -join "`n") -like "*$expectedSomeRejected*") 'The persistence warning disappeared before the invalid row was repaired.'
+    Assert (@(Read-UiHistory).Count -eq $historyBeforeInvalidRow) 'Valid follow-up request unexpectedly created execution history.'
+    Assert (@((Read-Observations | Where-Object { $_.method -eq 'turn/start' })).Count -eq $turnStartsBeforeInvalidRow) 'Valid follow-up request unexpectedly started an agent turn.'
+    Add-Pass 'Invalid metadata row is isolated while valid conversation rows continue to save without execution'
+
     Save-Evidence
     Write-Output "PASS Inbox persistence UI smoke completed: $script:root"
 }

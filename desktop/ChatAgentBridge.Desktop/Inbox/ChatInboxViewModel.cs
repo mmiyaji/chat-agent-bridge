@@ -485,11 +485,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await _audit.ListAsync();
             await _sessions.ListAsync();
             if (_closing) { await transport.DisposeAsync(); IsConnected = false; return; }
-            if (string.IsNullOrWhiteSpace(settings.WorkspaceRoot) || !Directory.Exists(settings.WorkspaceRoot))
+            if (!IsValidInboxWorkspacePath(settings.WorkspaceRoot) || !Directory.Exists(settings.WorkspaceRoot))
             {
                 await transport.DisposeAsync();
                 IsConnected = false;
-                Status = DesktopText.Get("WorkspaceConfigureAndSave");
+                Status = DesktopText.Get("InboxWorkspaceInvalid");
                 HasConnectionError = true;
                 return;
             }
@@ -533,6 +533,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 {
                     Volatile.Write(ref _accessSettings, null);
                     App.DispatcherQueue.TryEnqueue(() => { HasConnectionError = true; Status = DesktopText.Get("InboxPermissionsUnavailable"); });
+                    return;
+                }
+                if (!IsValidInboxWorkspacePath(accessSettings.WorkspaceRoot))
+                {
+                    Volatile.Write(ref _accessSettings, null);
+                    App.DispatcherQueue.TryEnqueue(ReportInvalidWorkspaceSettings);
                     return;
                 }
                 Volatile.Write(ref _accessSettings, accessSettings);
@@ -974,6 +980,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         try
         {
             var settings = await _store.LoadAsync();
+            if (!IsValidInboxWorkspacePath(settings.WorkspaceRoot))
+            {
+                ReportInvalidWorkspaceSettings();
+                return;
+            }
             var previous = Volatile.Read(ref _accessSettings);
             Volatile.Write(ref _accessSettings, settings);
             if (_transport is IChatLiveAccessSettings live) live.UpdateAccessSettings(settings);
@@ -1017,7 +1028,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         var settings = await _store.LoadAsync(token);
         Volatile.Write(ref _accessSettings, settings);
-        var allowed = HasAccess(settings, item.Request, item.Settings);
+        var allowed = IsValidInboxWorkspacePath(settings.WorkspaceRoot) && HasAccess(settings, item.Request, item.Settings);
         if (allowed && item.ExecutionPolicyFingerprint is { } fingerprint)
         {
             var key = CreateSessionKey(item);

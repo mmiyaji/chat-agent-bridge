@@ -108,6 +108,10 @@ public sealed class SettingsStore
     public async Task SaveAsync(BridgeSettings settings, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        if (settings.WorkspaceRoot is null || settings.WorkspaceRoot.Length > 0 &&
+            (settings.WorkspaceRoot.Length > 2048 || settings.WorkspaceRoot.Any(char.IsControl) ||
+             !Path.IsPathFullyQualified(settings.WorkspaceRoot)))
+            throw new ArgumentException("Workspace root must be an absolute path of at most 2048 characters without control characters.", nameof(settings));
         if (settings.AgentMode is not ("exec" or "app-server"))
             throw new ArgumentException("Agent mode must be exec or app-server.", nameof(settings));
         var provider = AgentProfile.ResolveProvider(settings);
