@@ -68,6 +68,7 @@ public sealed class ChatIdentityDirectoryDiscordTests
             Calls++;
             Hosts.Add(request.RequestUri!.Host);
             Assert.Equal("Bot", request.Headers.Authorization?.Scheme);
+            Assert.Contains("DiscordBot", request.Headers.UserAgent.ToString());
             if (Redirect)
             {
                 var redirect = new HttpResponseMessage(HttpStatusCode.Found);

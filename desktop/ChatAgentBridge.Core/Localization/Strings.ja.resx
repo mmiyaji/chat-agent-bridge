@@ -79,4 +79,5 @@
   <data name="DiscordActionStop" xml:space="preserve"><value>中断</value></data>
   <data name="DiscordActionBusy" xml:space="preserve"><value>承認を処理中です。しばらくしてから再度お試しください。</value></data>
   <data name="DiscordActionUnavailable" xml:space="preserve"><value>この承認は利用できなくなりました。</value></data>
+  <data name="DiscordActionClosed" xml:space="preserve"><value>この承認は終了しました。現在の状態は進捗メッセージまたは PC で確認してください。</value></data>
 </root>

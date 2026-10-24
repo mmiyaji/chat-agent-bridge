@@ -111,6 +111,7 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
         _runLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         CancellationToken runToken = _runLifetime.Token;
         var sessions = _injectedSessions ?? new SessionStore();
+        await LoadPendingOwnerReservationsAsync(sessions, runToken).ConfigureAwait(false);
         var continuations = new DiscordContinuationTracker();
         var messageQueue = Channel.CreateBounded<QueuedDiscordMessage>(new BoundedChannelOptions(128)
         { FullMode = BoundedChannelFullMode.Wait, SingleReader = true, SingleWriter = true });
@@ -380,6 +381,7 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
         if (inThread || isDirectMessage)
         {
             var key = ChatSessionScope.Create("discord", request.ChannelId, request.ThreadId, request.UserId);
+            if (IsPendingOwnerMismatch(key)) return;
             if (continuations.IsOwnedByAnotherUser(key)) return;
             var allSessions = await sessions.ListAsync(ct).ConfigureAwait(false);
             if (allSessions.Any(session => session.Key.Provider == "discord" && session.Key.ChannelId == request.ChannelId &&
@@ -558,14 +560,17 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
                     return;
                 }
                 lock (_actionLock) _actions.Remove(action.Nonce);
-                await TryEditComponentsAsync(action.ChannelId!, action.MessageId!, null, ct).ConfigureAwait(false);
+                await TryCloseActionAsync(action.ChannelId!, action.MessageId!, ct).ConfigureAwait(false);
+                if (result == ChatActionResult.Unavailable)
+                    await SendInteractionStatusAsync(interactionToken, CoreText.Get("DiscordActionUnavailable"), ct).ConfigureAwait(false);
             }
             catch
             {
                 if (target.Value.Action is { } action)
                 {
                     lock (_actionLock) _actions.Remove(action.Nonce);
-                    await TryEditComponentsAsync(action.ChannelId!, action.MessageId!, null, ct).ConfigureAwait(false);
+                    await TryCloseActionAsync(action.ChannelId!, action.MessageId!, ct).ConfigureAwait(false);
+                    await SendInteractionStatusAsync(interactionToken, CoreText.Get("DiscordActionUnavailable"), ct).ConfigureAwait(false);
                 }
             }
         }, CancellationToken.None);
@@ -638,6 +643,7 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
                 allowed_mentions = new { parse = Array.Empty<string>(), users = Array.Empty<string>(), roles = Array.Empty<string>(), replied_user = false }
             })
         };
+        DiscordHttp.ConfigureRequest(request);
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -684,11 +690,28 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
         catch { }
     }
 
+    private async Task TryCloseActionAsync(string channel, string message, CancellationToken ct = default)
+    {
+        try
+        {
+            var payload = new
+            {
+                content = CoreText.Get("DiscordActionClosed"),
+                components = Array.Empty<object>(),
+                allowed_mentions = new { parse = Array.Empty<string>(), users = Array.Empty<string>(), roles = Array.Empty<string>(), replied_user = false }
+            };
+            await SendApiAsync<DiscordMessageResponse>(HttpMethod.Patch,
+                $"channels/{Escape(channel)}/messages/{Escape(message)}", payload, ct).ConfigureAwait(false);
+        }
+        catch { }
+    }
+
     private async Task<T> SendApiAsync<T>(HttpMethod method, string path, object? body, CancellationToken ct)
     {
         for (int attempt = 0; ; attempt++)
         {
             using var request = new HttpRequestMessage(method, new Uri(_apiBase, path));
+            DiscordHttp.ConfigureRequest(request);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bot", _token ?? throw new InvalidOperationException("Discord is not connected."));
             if (body is not null) request.Content = TransportHttp.JsonContent(body);
             using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
@@ -733,6 +756,7 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
         for (int attempt = 0; ; attempt++)
         {
             using var retryRequest = new HttpRequestMessage(HttpMethod.Post, uri);
+            DiscordHttp.ConfigureRequest(retryRequest);
             if (body is not null) retryRequest.Content = new StringContent(body, Encoding.UTF8, "application/json");
             using var response = await _http.SendAsync(retryRequest, ackToken).ConfigureAwait(false);
             if (response.StatusCode == (HttpStatusCode)429 && attempt < 1)
@@ -783,12 +807,15 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
 
     private void SetDisconnected() { lock (_stateLock) { _connected = false; Interlocked.Increment(ref _generation); } }
     private void ClearGatewaySession() { _sessionId = null; _resumeGatewayUrl = null; LastSequence = null; LastProcessedMessageSequence = null; }
-    private static Exception MapGatewayClose(int code) => code switch
+    private Exception MapGatewayClose(int code) => code switch
     {
         4014 => new DiscordConfigurationException("message_content_intent"),
         4004 => new DiscordConfigurationException("authentication"),
+        4007 or 4009 => ClearAndReconnect(),
+        4010 or 4011 or 4012 or 4013 => new DiscordConfigurationException("gateway_configuration"),
         _ => new DiscordReconnectException(new WebSocketException($"Discord Gateway closed with code {code}."))
     };
+    private Exception ClearAndReconnect() { ClearGatewaySession(); return new DiscordReconnectException(); }
     private static bool DiscordSettingsStillMatch(BridgeSettings current, BridgeSettings started) =>
         string.Equals(current.DiscordBotToken, started.DiscordBotToken, StringComparison.Ordinal);
 
@@ -984,7 +1011,7 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
             if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
             owner.RemoveAction(action);
             if (action.MessageId is not null && action.ChannelId is not null && action.Generation == Volatile.Read(ref owner._generation))
-                await owner.TryEditComponentsAsync(action.ChannelId, action.MessageId, null).ConfigureAwait(false);
+                await owner.TryCloseActionAsync(action.ChannelId, action.MessageId).ConfigureAwait(false);
         }
     }
 
@@ -1045,6 +1072,7 @@ internal sealed class ClientDiscordGatewaySocket(Uri uri) : IDiscordGatewaySocke
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
         _socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+        _socket.Options.SetRequestHeader("User-Agent", DiscordHttp.UserAgent);
         await _socket.ConnectAsync(uri, cancellationToken).ConfigureAwait(false);
     }
     public async Task SendAsync(string text, CancellationToken cancellationToken)

@@ -4,6 +4,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.History;
+using ChatAgentBridge.Core.Localization;
 using ChatAgentBridge.Core.Sessions;
 using ChatAgentBridge.Transports;
 
@@ -193,6 +195,12 @@ public sealed class DiscordGatewayTransportTests
         Click("replay");
         await posted.Task.WaitAsync(TimeSpan.FromSeconds(2));
         await lease.DisposeAsync();
+        string closedBody = await api.LastRequestBodyAsync();
+        using (var closed = JsonDocument.Parse(closedBody))
+        {
+            Assert.Equal(CoreText.Get("DiscordActionClosed"), closed.RootElement.GetProperty("content").GetString());
+            Assert.Empty(closed.RootElement.GetProperty("components").EnumerateArray());
+        }
         lifetime.Cancel();
         await run.WaitAsync(TimeSpan.FromSeconds(2));
         Assert.Equal(6, api.Requests.Count(request => request.RequestUri!.AbsolutePath.EndsWith("/callback", StringComparison.Ordinal)));
@@ -350,6 +358,124 @@ public sealed class DiscordGatewayTransportTests
         Assert.Equal("missing_permissions", error.Code);
     }
 
+    [Fact]
+    public async Task Restored_pending_thread_owner_is_deny_only_until_same_owner_explicitly_restarts()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "discord-owner-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var sessionStore = new SessionStore(directory);
+            var inbox = new InboxConversationStore(directory);
+            await inbox.SaveAsync([new InboxConversationSnapshot(
+                new SessionKey("discord", "111", "222", "123", "discord"), directory,
+                DateTimeOffset.UtcNow, "pending", 1)]);
+
+            var socket = new FakeSocket();
+            socket.Enqueue("""{"op":10,"d":{"heartbeat_interval":300000}}""");
+            socket.Enqueue("""{"op":0,"s":1,"t":"READY","d":{"session_id":"session","resume_gateway_url":"wss://gateway.discord.gg","user":{"id":"bot"}}}""");
+            socket.Enqueue("""{"op":0,"s":2,"t":"MESSAGE_CREATE","d":{"id":"other-owner","channel_id":"222","thread_id":"111","guild_id":"456","author":{"id":"777"},"content":"!cab takeover","type":0}}""");
+            socket.Enqueue("""{"op":0,"s":3,"t":"MESSAGE_CREATE","d":{"id":"same-owner-reply","channel_id":"222","thread_id":"111","guild_id":"456","author":{"id":"123"},"content":"continue","type":0}}""");
+            socket.Enqueue("""{"op":0,"s":4,"t":"MESSAGE_CREATE","d":{"id":"same-owner-restart","channel_id":"222","thread_id":"111","guild_id":"456","author":{"id":"123"},"content":"!cab restart","type":0}}""");
+            var api = new RecordingHandler(request => request.RequestUri!.AbsolutePath == "/api/v10/gateway/bot"
+                ? Json(HttpStatusCode.OK, """{"url":"wss://gateway.discord.gg"}""")
+                : throw new Xunit.Sdk.XunitException($"Unexpected API request: {request.RequestUri}"));
+            await using var transport = new DiscordGatewayTransport(new HttpClient(api), new Uri(ApiBase),
+                socketFactory: _ => socket, sessions: sessionStore, retryDelay: _ => TimeSpan.FromMilliseconds(5));
+            var handled = new ConcurrentQueue<ChatRequest>();
+            using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            var run = transport.RunAsync(AllowedSettings(), (request, _) => { handled.Enqueue(request); return Task.CompletedTask; }, lifetime.Token);
+            await Task.Delay(150);
+            lifetime.Cancel();
+            await run.WaitAsync(TimeSpan.FromSeconds(2));
+            var onlyRequest = Assert.Single(handled);
+            Assert.Equal("same-owner-restart", onlyRequest.MessageId);
+            Assert.Equal("123", onlyRequest.UserId);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
+    public async Task Restored_owner_reservation_remains_deny_only_after_original_user_is_revoked()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "discord-revoked-owner-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var sessionStore = new SessionStore(directory);
+            await new InboxConversationStore(directory).SaveAsync([new InboxConversationSnapshot(
+                new SessionKey("discord", "111", "222", "123", "discord"), directory,
+                DateTimeOffset.UtcNow, "interrupted", 1)]);
+            var socket = new FakeSocket();
+            socket.Enqueue("""{"op":10,"d":{"heartbeat_interval":300000}}""");
+            socket.Enqueue("""{"op":0,"s":1,"t":"READY","d":{"session_id":"session","resume_gateway_url":"wss://gateway.discord.gg","user":{"id":"bot"}}}""");
+            socket.Enqueue("""{"op":0,"s":2,"t":"MESSAGE_CREATE","d":{"id":"takeover","channel_id":"222","thread_id":"111","guild_id":"456","author":{"id":"777"},"content":"!cab takeover","type":0}}""");
+            socket.Enqueue("""{"op":0,"s":3,"t":"MESSAGE_CREATE","d":{"id":"revoked-owner","channel_id":"222","thread_id":"111","guild_id":"456","author":{"id":"123"},"content":"!cab restart","type":0}}""");
+            var api = new RecordingHandler(request => request.RequestUri!.AbsolutePath == "/api/v10/gateway/bot"
+                ? Json(HttpStatusCode.OK, """{"url":"wss://gateway.discord.gg"}""")
+                : throw new Xunit.Sdk.XunitException($"Unexpected API request: {request.RequestUri}"));
+            await using var transport = new DiscordGatewayTransport(new HttpClient(api), new Uri(ApiBase),
+                socketFactory: _ => socket, sessions: sessionStore, retryDelay: _ => TimeSpan.FromMilliseconds(5));
+            using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            var run = transport.RunAsync(AllowedSettings() with { DiscordAllowedUserIds = "777" },
+                (_, _) => throw new Xunit.Sdk.XunitException("A revoked owner or another user took over a reserved thread"), lifetime.Token);
+            await Task.Delay(150);
+            lifetime.Cancel();
+            await run.WaitAsync(TimeSpan.FromSeconds(2));
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData(4007)]
+    [InlineData(4009)]
+    public async Task Invalid_gateway_session_close_codes_clear_session_before_identifying_again(int closeCode)
+    {
+        var first = new FakeSocket();
+        first.Enqueue("""{"op":10,"d":{"heartbeat_interval":300000}}""");
+        first.Enqueue("""{"op":0,"s":1,"t":"READY","d":{"session_id":"session","resume_gateway_url":"wss://gateway.discord.gg","user":{"id":"bot"}}}""");
+        first.EnqueueCloseCode(closeCode);
+        var second = new FakeSocket();
+        second.Enqueue("""{"op":10,"d":{"heartbeat_interval":300000}}""");
+        second.Enqueue("""{"op":0,"s":2,"t":"RESUMED","d":{}}""");
+        int socketIndex = 0;
+        var api = new RecordingHandler(_ => Json(HttpStatusCode.OK, """{"url":"wss://gateway.discord.gg"}"""));
+        await using var transport = new DiscordGatewayTransport(new HttpClient(api), new Uri(ApiBase),
+            socketFactory: _ => Interlocked.Increment(ref socketIndex) == 1 ? first : second,
+            retryDelay: _ => TimeSpan.FromMilliseconds(5));
+        var reconnected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var connectedCount = 0;
+        transport.Connected += () => { if (Interlocked.Increment(ref connectedCount) > 1) reconnected.TrySetResult(); };
+        using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        var run = transport.RunAsync(AllowedSettings(), (_, _) => Task.CompletedTask, lifetime.Token);
+        await reconnected.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Contains(second.Sent, value => value.Contains("\"op\":2", StringComparison.Ordinal));
+        Assert.DoesNotContain(second.Sent, value => value.Contains("\"op\":6", StringComparison.Ordinal));
+        lifetime.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(2));
+    }
+
+    [Theory]
+    [InlineData(4010)]
+    [InlineData(4011)]
+    [InlineData(4012)]
+    [InlineData(4013)]
+    public async Task Invalid_gateway_configuration_close_codes_stop_retrying(int closeCode)
+    {
+        var socket = new FakeSocket();
+        socket.Enqueue("""{"op":10,"d":{"heartbeat_interval":300000}}""");
+        socket.EnqueueCloseCode(closeCode);
+        int sockets = 0;
+        var api = new RecordingHandler(_ => Json(HttpStatusCode.OK, """{"url":"wss://gateway.discord.gg"}"""));
+        await using var transport = new DiscordGatewayTransport(new HttpClient(api), new Uri(ApiBase),
+            socketFactory: _ => { Interlocked.Increment(ref sockets); return socket; },
+            retryDelay: _ => TimeSpan.FromMilliseconds(5));
+        using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        var error = await Assert.ThrowsAsync<DiscordConfigurationException>(() => transport.RunAsync(AllowedSettings(), (_, _) => Task.CompletedTask, lifetime.Token));
+        Assert.Equal("gateway_configuration", error.Code);
+        Assert.Equal(1, sockets);
+    }
+
     private static async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
     {
         var deadline = DateTimeOffset.UtcNow + timeout;
@@ -414,6 +540,7 @@ public sealed class DiscordGatewayTransportTests
         }
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            Assert.Equal(DiscordHttp.UserAgent, request.Headers.UserAgent.ToString());
             _requests.Enqueue(request);
             if (request.Content is not null) _bodies.Enqueue(await request.Content.ReadAsStringAsync(cancellationToken));
             return respond(request);
@@ -428,6 +555,7 @@ public sealed class DiscordGatewayTransportTests
         internal bool AckHeartbeats { get; init; }
         internal int CloseAfterHeartbeatDelayMs { get; init; }
         internal void Enqueue(string? value) => _incoming.Writer.TryWrite(value);
+        internal void EnqueueCloseCode(int code) => _incoming.Writer.TryWrite($"__CLOSE:{code}__");
         internal void Close() => _incoming.Writer.TryWrite(null);
         public Task ConnectAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         public Task SendAsync(string text, CancellationToken cancellationToken)
@@ -441,7 +569,13 @@ public sealed class DiscordGatewayTransportTests
             }
             return Task.CompletedTask;
         }
-        public async Task<string?> ReceiveAsync(CancellationToken cancellationToken) => await _incoming.Reader.ReadAsync(cancellationToken);
+        public async Task<string?> ReceiveAsync(CancellationToken cancellationToken)
+        {
+            string? value = await _incoming.Reader.ReadAsync(cancellationToken);
+            if (value is not null && value.StartsWith("__CLOSE:", StringComparison.Ordinal) && value.EndsWith("__", StringComparison.Ordinal) &&
+                int.TryParse(value.AsSpan(8, value.Length - 10), out int code)) throw new DiscordGatewayCloseException(code);
+            return value;
+        }
         public ValueTask DisposeAsync() { _incoming.Writer.TryComplete(); return ValueTask.CompletedTask; }
     }
 }

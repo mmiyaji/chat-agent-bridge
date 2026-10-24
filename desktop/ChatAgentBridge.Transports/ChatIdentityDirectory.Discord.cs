@@ -64,6 +64,7 @@ public sealed partial class ChatIdentityDirectory
     private async Task<JsonDocument> DiscordJsonAsync(string path, string token, RequestBudget budget, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("https://discord.com/api/v10/" + path));
+        DiscordHttp.ConfigureRequest(request);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bot", token.Trim());
         return await SendJsonAsync(request, GetDefaultClient(ref _http), budget, cancellationToken).ConfigureAwait(false);
     }

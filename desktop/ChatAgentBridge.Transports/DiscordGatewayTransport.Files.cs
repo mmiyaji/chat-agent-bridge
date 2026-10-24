@@ -35,6 +35,7 @@ public sealed partial class DiscordGatewayTransport
 
         // CDN requests intentionally carry no bot Authorization header and reject all redirects.
         using var cdnRequest = new HttpRequestMessage(HttpMethod.Get, url);
+        DiscordHttp.ConfigureRequest(cdnRequest);
         using var response = await _cdnHttp.SendAsync(cdnRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         if ((int)response.StatusCode is >= 300 and < 400)
             throw new InvalidOperationException("Discord attachment redirects are not allowed.");
@@ -77,6 +78,7 @@ public sealed partial class DiscordGatewayTransport
             }
             using var message = new HttpRequestMessage(HttpMethod.Post,
                 new Uri(_apiBase, $"channels/{Uri.EscapeDataString(request.ThreadId)}/messages")) { Content = form };
+            DiscordHttp.ConfigureRequest(message);
             message.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bot", _token);
             try
             {
@@ -121,6 +123,7 @@ public sealed partial class DiscordGatewayTransport
     {
         using var request = new HttpRequestMessage(HttpMethod.Get,
             new Uri(_apiBase, $"channels/{Uri.EscapeDataString(channelId)}/messages/{Uri.EscapeDataString(messageId)}"));
+        DiscordHttp.ConfigureRequest(request);
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bot", _token);
         using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode) throw new InvalidOperationException($"Discord API request failed with HTTP {(int)response.StatusCode}.");

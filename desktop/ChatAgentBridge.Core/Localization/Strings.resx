@@ -79,4 +79,5 @@
   <data name="DiscordActionStop" xml:space="preserve"><value>Stop</value></data>
   <data name="DiscordActionBusy" xml:space="preserve"><value>An approval is already being handled. Try again shortly.</value></data>
   <data name="DiscordActionUnavailable" xml:space="preserve"><value>This approval is no longer available.</value></data>
+  <data name="DiscordActionClosed" xml:space="preserve"><value>This approval is closed. Check the progress message or PC for the current status.</value></data>
 </root>
