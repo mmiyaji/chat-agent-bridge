@@ -1073,6 +1073,7 @@ internal sealed class ClientDiscordGatewaySocket(Uri uri) : IDiscordGatewaySocke
     {
         _socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
         _socket.Options.SetRequestHeader("User-Agent", DiscordHttp.UserAgent);
+        TransportHttp.ConfigureDiscordGatewayProxy(_socket.Options, uri);
         await _socket.ConnectAsync(uri, cancellationToken).ConfigureAwait(false);
     }
     public async Task SendAsync(string text, CancellationToken cancellationToken)

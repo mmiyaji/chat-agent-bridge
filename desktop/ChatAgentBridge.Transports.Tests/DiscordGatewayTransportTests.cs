@@ -261,6 +261,20 @@ public sealed class DiscordGatewayTransportTests
     }
 
     [Fact]
+    public void Gateway_websocket_uses_system_proxy_except_for_loopback_fixtures()
+    {
+        using var proxiedSocket = new System.Net.WebSockets.ClientWebSocket();
+        var proxied = proxiedSocket.Options;
+        TransportHttp.ConfigureDiscordGatewayProxy(proxied, new Uri("wss://gateway.discord.gg/"));
+        Assert.Same(HttpClient.DefaultProxy, proxied.Proxy);
+
+        using var directSocket = new System.Net.WebSockets.ClientWebSocket();
+        var direct = directSocket.Options;
+        TransportHttp.ConfigureDiscordGatewayProxy(direct, new Uri("ws://127.0.0.1:43210/"));
+        Assert.Null(direct.Proxy);
+    }
+
+    [Fact]
     public async Task Progress_edits_and_stop_remain_bound_to_the_thread_across_gateway_resume()
     {
         var first = new FakeSocket { AckHeartbeats = true, CloseAfterHeartbeatDelayMs = 200 };

@@ -31,6 +31,14 @@ internal static class TransportHttp
         options.Proxy = bypassProxy ? null : proxy ?? HttpClient.DefaultProxy;
     }
 
+    internal static void ConfigureDiscordGatewayProxy(ClientWebSocketOptions options, Uri gatewayUri)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(gatewayUri);
+        // Production only accepts Discord hosts. Fixture loopback sockets must bypass local system proxies.
+        options.Proxy = IsLoopback(gatewayUri.Host) ? null : HttpClient.DefaultProxy;
+    }
+
     internal static Uri MattermostBaseUri(string value)
     {
         if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) ||
