@@ -12,17 +12,19 @@ internal static class AttachmentHandlePolicy
     private const uint FileAttributeHidden = 0x00000002;
     private const uint FileAttributeSystem = 0x00000004;
     private const uint FileAttributeReparsePoint = 0x00000400;
+    private const uint GenericRead = 0x80000000;
+    private const uint GenericWrite = 0x40000000;
+    private const uint DeleteAccess = 0x00010000;
+    private const uint ShareRead = 0x00000001;
+    private const uint OpenExisting = 3;
+    private const uint OpenReparsePoint = 0x00200000;
+    private const int FileDispositionInfo = 4;
 
     public static void EnsureSafe(FileStream stream, string workspace, string expectedPath)
     {
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("Safe attachment handle verification is supported only on Windows.");
-        if (!GetFileInformationByHandle(stream.SafeFileHandle, out var information))
-            throw new InvalidDataException("Attachment handle could not be verified.", new Win32Exception(Marshal.GetLastWin32Error()));
-        if (information.NumberOfLinks != 1 ||
-            (information.FileAttributes & (FileAttributeDevice | FileAttributeDirectory | FileAttributeHidden |
-                FileAttributeSystem | FileAttributeReparsePoint)) != 0)
-            throw new InvalidDataException("Attachment file is linked, hidden, a system file, or is not a regular file.");
+        var information = GetInformation(stream.SafeFileHandle);
 
         var finalPath = GetFinalPath(stream);
         var normalizedRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspace));
@@ -31,6 +33,50 @@ internal static class AttachmentHandlePolicy
         if (IsNetworkPath(normalizedFinal) || !IsWithin(normalizedFinal, normalizedRoot) ||
             !string.Equals(normalizedFinal, normalizedExpected, StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("Attachment handle resolved outside the requested workspace file.");
+    }
+
+    public static AttachmentFileIdentity GetIdentity(FileStream stream)
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("Safe attachment handle verification is supported only on Windows.");
+        var info = GetInformation(stream.SafeFileHandle);
+        var creationFileTime = ((long)(uint)info.CreationTime.dwHighDateTime << 32) | (uint)info.CreationTime.dwLowDateTime;
+        return new AttachmentFileIdentity(info.VolumeSerialNumber, info.FileIndexHigh, info.FileIndexLow,
+            DateTime.FromFileTimeUtc(creationFileTime).Ticks);
+    }
+
+    public static void DeleteVerifiedFile(string path, string workspace, AttachmentFileIdentity expectedIdentity,
+        long? expectedLength, string? expectedSha256)
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("Safe attachment handle verification is supported only on Windows.");
+        using var handle = CreateFile(path, GenericRead | GenericWrite | DeleteAccess, ShareRead, IntPtr.Zero,
+            OpenExisting, OpenReparsePoint, IntPtr.Zero);
+        if (handle.IsInvalid) throw new IOException("Incoming attachment could not be opened for safe cleanup.", new Win32Exception(Marshal.GetLastWin32Error()));
+        using var stream = new FileStream(handle, FileAccess.ReadWrite);
+        EnsureSafe(stream, workspace, path);
+        if (GetIdentity(stream) != expectedIdentity) return;
+        if (stream.Length > IncomingAttachmentStager.MaximumAttachmentBytes) return;
+        if (expectedLength is not null && stream.Length != expectedLength.Value) return;
+        if (expectedSha256 is not null)
+        {
+            stream.Position = 0;
+            var actualHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream));
+            if (!string.Equals(actualHash, expectedSha256, StringComparison.Ordinal)) return;
+        }
+        var disposition = new FileDispositionInformation { DeleteFile = true };
+        if (!SetFileInformationByHandle(stream.SafeFileHandle, FileDispositionInfo, ref disposition,
+                (uint)Marshal.SizeOf<FileDispositionInformation>()))
+            throw new IOException("Incoming attachment could not be safely deleted.", new Win32Exception(Marshal.GetLastWin32Error()));
+    }
+
+    private static ByHandleFileInformation GetInformation(Microsoft.Win32.SafeHandles.SafeFileHandle handle)
+    {
+        if (!GetFileInformationByHandle(handle, out var information))
+            throw new InvalidDataException("Attachment handle could not be verified.", new Win32Exception(Marshal.GetLastWin32Error()));
+        if (information.NumberOfLinks != 1 ||
+            (information.FileAttributes & (FileAttributeDevice | FileAttributeDirectory | FileAttributeHidden |
+                FileAttributeSystem | FileAttributeReparsePoint)) != 0)
+            throw new InvalidDataException("Attachment file is linked, hidden, a system file, or is not a regular file.");
+        return information;
     }
 
     private static string GetFinalPath(FileStream stream)
@@ -61,6 +107,18 @@ internal static class AttachmentHandlePolicy
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern uint GetFinalPathNameByHandle(Microsoft.Win32.SafeHandles.SafeFileHandle file, StringBuilder path, uint pathLength, uint flags);
 
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CreateFileW")]
+    private static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFile(string fileName, uint desiredAccess, uint shareMode,
+        IntPtr securityAttributes, uint creationDisposition, uint flagsAndAttributes, IntPtr templateFile);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetFileInformationByHandle(Microsoft.Win32.SafeHandles.SafeFileHandle file, int fileInformationClass,
+        ref FileDispositionInformation information, uint bufferSize);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FileDispositionInformation { [MarshalAs(UnmanagedType.U1)] public bool DeleteFile; }
+
     [StructLayout(LayoutKind.Sequential)]
     private struct ByHandleFileInformation
     {
@@ -75,4 +133,6 @@ internal static class AttachmentHandlePolicy
         public uint FileIndexHigh;
         public uint FileIndexLow;
     }
+
+    internal readonly record struct AttachmentFileIdentity(uint VolumeSerialNumber, uint FileIndexHigh, uint FileIndexLow, long CreationTimeUtcTicks);
 }

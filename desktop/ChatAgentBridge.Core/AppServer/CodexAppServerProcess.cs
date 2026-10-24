@@ -63,6 +63,7 @@ internal sealed class CodexAppServerProcess : IAppServerProcess, IAppServerProgr
         _ = ReadBoundedAsync(process.StandardError, 16_000, _stderrBuffer, _stderrSync, ReportStandardError);
     }
 
+    public Process? NativeProcess => _process;
     public IAppServerRpcClient Client => _client;
     public event Action<string>? StandardErrorReceived;
     public Task<int?> ExitCode { get; }

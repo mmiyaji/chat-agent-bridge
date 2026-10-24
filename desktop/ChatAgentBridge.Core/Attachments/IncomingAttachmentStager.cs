@@ -29,7 +29,8 @@ public static class IncomingAttachmentStager
         string workspace,
         IReadOnlyList<IncomingAttachmentDescriptor> descriptors,
         Func<IncomingAttachmentDescriptor, Stream, long, CancellationToken, Task> downloader,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? recoveryDataDirectory = null)
     {
         ArgumentNullException.ThrowIfNull(descriptors);
         ArgumentNullException.ThrowIfNull(downloader);
@@ -58,12 +59,16 @@ public static class IncomingAttachmentStager
 
         EnsureDirectoryTreeSafe(root);
         var stagingDirectory = Path.Combine(root, ".cab-incoming-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(stagingDirectory);
+        IncomingAttachmentRecovery.Registration? registration = null;
+        if (recoveryDataDirectory is not null)
+            registration = IncomingAttachmentRecovery.CreateRegistration(recoveryDataDirectory, root, stagingDirectory,
+                normalized.Select((item, index) => Path.Combine(stagingDirectory, $"file-{index + 1}{item.Extension}")).ToArray());
         var staged = new List<StagedIncomingAttachment>(normalized.Count);
         var knownPaths = new List<string>(normalized.Count);
         long totalWritten = 0;
         try
         {
+            Directory.CreateDirectory(stagingDirectory);
             EnsureDirectoryTreeSafe(root);
             EnsurePlainDirectory(stagingDirectory);
             for (var index = 0; index < normalized.Count; index++)
@@ -72,18 +77,22 @@ public static class IncomingAttachmentStager
                 var item = normalized[index];
                 var path = Path.Combine(stagingDirectory, $"file-{index + 1}{item.Extension}");
                 knownPaths.Add(path);
+                var currentIndex = index;
                 await StageOneAsync(root, path, item.Descriptor, item.DisplayName, item.Extension,
-                    downloader, () => totalWritten, amount => totalWritten = checked(totalWritten + amount), cancellationToken)
+                    downloader, () => totalWritten, amount => totalWritten = checked(totalWritten + amount), cancellationToken,
+                    registration is null ? null : identity => registration.RecordFileCreated(currentIndex, identity),
+                    registration is null ? null : (identity, length, hash) => registration.RecordFileCompleted(currentIndex, identity, length, hash))
                     .ConfigureAwait(false);
                 var actualSize = new FileInfo(path).Length;
                 staged.Add(new StagedIncomingAttachment(item.Descriptor, item.DisplayName, path, actualSize));
             }
             EnsureDirectoryTreeSafe(root);
-            return new IncomingAttachmentLease(root, stagingDirectory, staged);
+            return new IncomingAttachmentLease(root, stagingDirectory, staged, registration);
         }
         catch
         {
-            IncomingAttachmentLease.CleanupKnownPaths(root, stagingDirectory, knownPaths);
+            if (registration is null) IncomingAttachmentLease.CleanupKnownPaths(root, stagingDirectory, knownPaths);
+            else registration.DisposeAndCleanup();
             throw;
         }
     }
@@ -112,13 +121,17 @@ public static class IncomingAttachmentStager
         Func<IncomingAttachmentDescriptor, Stream, long, CancellationToken, Task> downloader,
         Func<long> getTotalWritten,
         Action<long> addTotalWritten,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Action<AttachmentHandlePolicy.AttachmentFileIdentity>? fileCreated = null,
+        Action<AttachmentHandlePolicy.AttachmentFileIdentity, long, string>? fileCompleted = null)
     {
         using (var file = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
                    64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
         {
             EnsurePathIsGeneratedChild(path, Path.GetDirectoryName(path)!);
             AttachmentHandlePolicy.EnsureSafe(file, root, path);
+            var identity = AttachmentHandlePolicy.GetIdentity(file);
+            fileCreated?.Invoke(identity);
             var bounded = new BoundedWriteStream(file, MaximumAttachmentBytes, MaximumTotalBytes,
                 getTotalWritten, addTotalWritten, leaveOpen: true);
             await downloader(descriptor, bounded, descriptor.Size, cancellationToken).ConfigureAwait(false);
@@ -128,6 +141,12 @@ public static class IncomingAttachmentStager
             await file.FlushAsync(cancellationToken).ConfigureAwait(false);
             file.Flush(flushToDisk: true);
             AttachmentHandlePolicy.EnsureSafe(file, root, path);
+            if (fileCompleted is not null)
+            {
+                file.Position = 0;
+                var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(file));
+                fileCompleted(identity, file.Length, hash);
+            }
         }
 
         EnsurePlainFile(path);
@@ -318,17 +337,27 @@ public static class IncomingAttachmentStager
 public sealed class IncomingAttachmentLease : IDisposable
 {
     private readonly string _stagingDirectory;
+    private readonly IncomingAttachmentRecovery.Registration? _registration;
     private int _disposed;
 
-    internal IncomingAttachmentLease(string workspace, string stagingDirectory, IReadOnlyList<StagedIncomingAttachment> attachments)
+    internal IncomingAttachmentLease(string workspace, string stagingDirectory, IReadOnlyList<StagedIncomingAttachment> attachments,
+        IncomingAttachmentRecovery.Registration? registration)
     {
         Workspace = workspace;
         _stagingDirectory = stagingDirectory;
         Attachments = attachments;
+        _registration = registration;
     }
 
     public string Workspace { get; }
     public IReadOnlyList<StagedIncomingAttachment> Attachments { get; }
+
+    /// <summary>Binds any worker started in this async flow to this lease for crash recovery.</summary>
+    public IDisposable BeginExecutionScope()
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        return _registration?.BeginExecutionScope() ?? IncomingAttachmentRecovery.BeginEmptyExecutionScope();
+    }
 
     public string BuildPrompt(string originalPrompt)
     {
@@ -350,7 +379,8 @@ public sealed class IncomingAttachmentLease : IDisposable
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
-        CleanupKnownPaths(Workspace, _stagingDirectory, Attachments.Select(item => item.Path));
+        if (_registration is null) CleanupKnownPaths(Workspace, _stagingDirectory, Attachments.Select(item => item.Path));
+        else _registration.DisposeAndCleanup();
     }
 
     internal static void CleanupKnownPaths(string workspace, string stagingDirectory, IEnumerable<string> knownPaths)

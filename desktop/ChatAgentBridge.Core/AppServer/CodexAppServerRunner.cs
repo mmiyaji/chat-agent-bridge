@@ -81,8 +81,11 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                 await InitializeAsync(process.Client, cancellationToken).ConfigureAwait(false);
                 initializeMilliseconds = initTimer.Elapsed.TotalMilliseconds;
             }
+            // Register reused workers too, before any turn can receive attachment paths.
+            try { IncomingAttachmentRecovery.TrackProcess(process.NativeProcess); }
+            catch { process.KillTree(); throw; }
         }
-        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or IOException)
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
             if (pooledLease is not null) await pooledLease.ReleaseAsync(false).ConfigureAwait(false);
             else if (newlyStartedProcess is not null) { newlyStartedProcess.KillTree(); await newlyStartedProcess.DisposeAsync().ConfigureAwait(false); }

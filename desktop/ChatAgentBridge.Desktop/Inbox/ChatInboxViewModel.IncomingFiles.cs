@@ -51,7 +51,7 @@ public sealed partial class ChatInboxViewModel
                     if (!await CheckAccessAsync(item, ct)) throw new OperationCanceledException(ct);
                     var file = files.Single(file => file.Id == descriptor.Id);
                     await transport.DownloadFileAsync(item.Request, file, destination, maxBytes, ct);
-                }, timeout.Token);
+                }, timeout.Token, recoveryDataDirectory: _store.DirectoryPath);
             if (!await CheckAccessAsync(item, token)) throw new OperationCanceledException(token);
             return lease;
         }

@@ -122,6 +122,14 @@ public sealed class AgentRunner : IAgentRunner
         try
         {
             if (!process.Start()) return new AgentRunResult(false, -1, "", "Agent process did not start.");
+            try { IncomingAttachmentRecovery.TrackProcess(process); }
+            catch
+            {
+                try { process.Kill(entireProcessTree: true); }
+                catch (InvalidOperationException) { }
+                catch (System.ComponentModel.Win32Exception) { }
+                throw;
+            }
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {

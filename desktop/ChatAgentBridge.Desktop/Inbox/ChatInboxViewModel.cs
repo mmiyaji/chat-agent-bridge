@@ -761,6 +761,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             AgentRunResult result;
             try
             {
+                using var incomingExecution = incomingFiles?.BeginExecutionScope();
                 result = effectiveSettings.AgentMode == "app-server"
                     ? await _serverRunner.RunAsync(key, effectiveSettings, agentPrompt,
                         new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct), Progress: progress,
@@ -868,8 +869,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         }
         finally
         {
-            await CloseActiveTurnAsync(item);
-            incomingFiles?.Dispose();
+            try { await CloseActiveTurnAsync(item); }
+            finally { incomingFiles?.Dispose(); }
             if (record is not null) _history.EndTracking(record.Id);
             _execution?.Dispose();
             _execution = null;

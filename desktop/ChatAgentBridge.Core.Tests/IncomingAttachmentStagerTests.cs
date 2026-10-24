@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using ChatAgentBridge.Core;
 
 namespace ChatAgentBridge.Core.Tests;
@@ -175,6 +176,233 @@ public sealed class IncomingAttachmentStagerTests
         Assert.Equal("keep", await File.ReadAllTextAsync(sentinel));
         Directory.Delete(stagingDirectory);
     }
+
+    [Fact]
+    public async Task RecoveryRemovesOnlyRegisteredAbandonedFiles()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var stage = Path.Combine(fixture.Workspace, ".cab-incoming-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(stage);
+        var registeredPath = Path.Combine(stage, "file-1.txt");
+        await File.WriteAllTextAsync(registeredPath, "orphan");
+        var identity = ReadIdentity(registeredPath);
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(registeredPath)));
+        var unregisteredPath = Path.Combine(stage, "worker-output.txt");
+        await File.WriteAllTextAsync(unregisteredPath, "keep");
+        WriteManifest(fixture.Root, fixture.Workspace, stage,
+            [new IncomingAttachmentRecovery.FileEntry("file-1.txt", IncomingAttachmentRecovery.FileIdentity.From(identity), 6, hash)]);
+
+        Assert.Equal(0, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.False(File.Exists(registeredPath));
+        Assert.Equal("keep", await File.ReadAllTextAsync(unregisteredPath));
+        Assert.True(Directory.Exists(stage));
+    }
+
+    [Fact]
+    public async Task RecoverySkipsAnActiveLeaseAndRecoversAfterItsLockIsReleased()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var descriptor = new IncomingAttachmentDescriptor("id", "notes.txt", 1, null);
+        var lease = await IncomingAttachmentStager.PrepareAsync(fixture.Workspace, [descriptor], WriteBytes("x"u8.ToArray()),
+            recoveryDataDirectory: fixture.Root);
+        var path = Assert.Single(lease.Attachments).Path;
+        Assert.Equal(0, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.True(File.Exists(path));
+        lease.Dispose();
+        Assert.False(File.Exists(path));
+        Assert.Empty(Directory.EnumerateFiles(Path.Combine(fixture.Root, "incoming-attachments"), "*.json"));
+    }
+
+    [Fact]
+    public async Task RecoverySkipsMatchingLiveWorkerAndCleansPidReuseMismatch()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var stage = Path.Combine(fixture.Workspace, ".cab-incoming-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(stage);
+        var path = Path.Combine(stage, "file-1.txt");
+        await File.WriteAllTextAsync(path, "orphan");
+        var identity = ReadIdentity(path);
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(path)));
+        var current = System.Diagnostics.Process.GetCurrentProcess();
+        var started = current.StartTime.ToUniversalTime().Ticks;
+        WriteManifest(fixture.Root, fixture.Workspace, stage,
+            [new IncomingAttachmentRecovery.FileEntry("file-1.txt", IncomingAttachmentRecovery.FileIdentity.From(identity), 6, hash)],
+            current.Id, started);
+
+        Assert.Equal(0, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.True(File.Exists(path));
+        WriteManifest(fixture.Root, fixture.Workspace, stage,
+            [new IncomingAttachmentRecovery.FileEntry("file-1.txt", IncomingAttachmentRecovery.FileIdentity.From(identity), 6, hash)],
+            current.Id, started + TimeSpan.TicksPerSecond);
+        Assert.Equal(1, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public async Task RecoveryPreservesModifiedOrReplacedRegisteredFiles()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        foreach (var replace in new[] { false, true })
+        {
+            var stage = Path.Combine(fixture.Workspace, ".cab-incoming-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(stage);
+            var path = Path.Combine(stage, "file-1.txt");
+            await File.WriteAllTextAsync(path, "owned");
+            var identity = ReadIdentity(path);
+            var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(path)));
+            WriteManifest(fixture.Root, fixture.Workspace, stage,
+                [new IncomingAttachmentRecovery.FileEntry("file-1.txt", IncomingAttachmentRecovery.FileIdentity.From(identity), 5, hash)]);
+            if (replace)
+            {
+                File.Delete(path);
+                await File.WriteAllTextAsync(path, "replaced");
+            }
+            else await File.AppendAllTextAsync(path, "changed");
+
+            Assert.Equal(0, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+            Assert.True(File.Exists(path));
+        }
+    }
+
+    [Fact]
+    public async Task RecoveryPreservesHardLinkedCandidates()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var stage = Path.Combine(fixture.Workspace, ".cab-incoming-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(stage);
+        var path = Path.Combine(stage, "file-1.txt");
+        await File.WriteAllTextAsync(path, "keep");
+        var identity = ReadIdentity(path);
+        var hardLink = Path.Combine(fixture.Root, "hard-link.txt");
+        if (!CreateHardLink(hardLink, path, IntPtr.Zero)) return;
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(path)));
+        WriteManifest(fixture.Root, fixture.Workspace, stage,
+            [new IncomingAttachmentRecovery.FileEntry("file-1.txt", IncomingAttachmentRecovery.FileIdentity.From(identity), 4, hash)]);
+
+        Assert.Equal(0, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.Equal("keep", await File.ReadAllTextAsync(path));
+        Assert.Equal("keep", await File.ReadAllTextAsync(hardLink));
+    }
+
+    [Fact]
+    public async Task DisposeRetainsRegistryWhenCleanupFailsAndRecoveryCanRetry()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var descriptor = new IncomingAttachmentDescriptor("id", "notes.txt", 1, null);
+        var lease = await IncomingAttachmentStager.PrepareAsync(fixture.Workspace, [descriptor], WriteBytes("x"u8.ToArray()),
+            recoveryDataDirectory: fixture.Root);
+        var path = Assert.Single(lease.Attachments).Path;
+        var stage = Path.GetDirectoryName(path)!;
+        var unknown = Path.Combine(stage, "worker-output.txt");
+        await File.WriteAllTextAsync(unknown, "keep until worker cleanup");
+        lease.Dispose();
+        Assert.True(File.Exists(unknown));
+        Assert.Single(Directory.EnumerateFiles(Path.Combine(fixture.Root, "incoming-attachments"), "*.json"));
+
+        File.Delete(unknown);
+        Assert.Equal(1, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.False(Directory.Exists(stage));
+    }
+
+    [Fact]
+    public async Task DisposeReleasesLeaseLockWhenManifestCannotBeDeleted()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var descriptor = new IncomingAttachmentDescriptor("id", "notes.txt", 1, null);
+        var lease = await IncomingAttachmentStager.PrepareAsync(fixture.Workspace, [descriptor], WriteBytes("x"u8.ToArray()),
+            recoveryDataDirectory: fixture.Root);
+        var registry = Path.Combine(fixture.Root, "incoming-attachments");
+        var manifest = Assert.Single(Directory.EnumerateFiles(registry, "*.json"));
+        var lockPath = Path.ChangeExtension(manifest, ".lock");
+        File.SetAttributes(manifest, File.GetAttributes(manifest) | FileAttributes.ReadOnly);
+
+        lease.Dispose();
+
+        using (new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) { }
+        Assert.True(File.Exists(manifest));
+        File.SetAttributes(manifest, FileAttributes.Normal);
+        Assert.Equal(1, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.False(File.Exists(manifest));
+    }
+
+    [Fact]
+    public async Task DisposeRetainsFileInUseAndRecoveryRetriesAfterHandleCloses()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var descriptor = new IncomingAttachmentDescriptor("id", "notes.txt", 1, null);
+        var lease = await IncomingAttachmentStager.PrepareAsync(fixture.Workspace, [descriptor], WriteBytes("x"u8.ToArray()),
+            recoveryDataDirectory: fixture.Root);
+        var path = Assert.Single(lease.Attachments).Path;
+        var registry = Path.Combine(fixture.Root, "incoming-attachments");
+
+        using (var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            lease.Dispose();
+            Assert.True(File.Exists(path));
+            Assert.Single(Directory.EnumerateFiles(registry, "*.json"));
+        }
+
+        Assert.Equal(1, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public async Task RecoveryLeavesMalformedPathsAndReparsePointCandidatesAlone()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var outside = Path.Combine(fixture.Root, "keep.txt");
+        await File.WriteAllTextAsync(outside, "keep");
+        var malformedStage = Path.Combine(fixture.Workspace, ".cab-incoming-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(malformedStage);
+        WriteManifest(fixture.Root, fixture.Workspace, malformedStage,
+            [new IncomingAttachmentRecovery.FileEntry("..\\keep.txt", null, null, null)]);
+
+        var linkedStage = Path.Combine(fixture.Workspace, ".cab-incoming-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(linkedStage);
+        var linkedPath = Path.Combine(linkedStage, "file-1.txt");
+        try { File.CreateSymbolicLink(linkedPath, outside); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException) { return; }
+        var targetIdentity = ReadIdentity(outside);
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(outside)));
+        WriteManifest(fixture.Root, fixture.Workspace, linkedStage,
+            [new IncomingAttachmentRecovery.FileEntry("file-1.txt", IncomingAttachmentRecovery.FileIdentity.From(targetIdentity), 4, hash)]);
+        var oversizedId = Guid.NewGuid().ToString("N");
+        File.WriteAllBytes(Path.Combine(fixture.Root, "incoming-attachments", oversizedId + ".json"), new byte[16 * 1024 + 1]);
+
+        Assert.Equal(0, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.Equal("keep", await File.ReadAllTextAsync(outside));
+        Assert.True(File.Exists(linkedPath));
+        Assert.True(File.Exists(Path.Combine(fixture.Root, "incoming-attachments", oversizedId + ".json")));
+    }
+
+    private static AttachmentHandlePolicy.AttachmentFileIdentity ReadIdentity(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+        return AttachmentHandlePolicy.GetIdentity(stream);
+    }
+
+    private static void WriteManifest(string dataDirectory, string workspace, string stage,
+        IncomingAttachmentRecovery.FileEntry[] files, int? workerId = null, long? workerStartTicks = null)
+    {
+        var registry = Path.Combine(dataDirectory, "incoming-attachments");
+        Directory.CreateDirectory(registry);
+        var id = Guid.NewGuid().ToString("N");
+        var manifest = new IncomingAttachmentRecovery.Manifest(1, id, workspace, stage, files, workerId, workerStartTicks);
+        File.WriteAllBytes(Path.Combine(registry, id + ".json"), JsonSerializer.SerializeToUtf8Bytes(manifest));
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static extern bool CreateHardLink(string newFileName, string existingFileName, IntPtr securityAttributes);
 
     private static Func<IncomingAttachmentDescriptor, Stream, long, CancellationToken, Task> WriteBytes(byte[] bytes) =>
         async (_, output, _, token) => await output.WriteAsync(bytes, token);

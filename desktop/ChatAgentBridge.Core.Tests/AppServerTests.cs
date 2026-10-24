@@ -9,6 +9,32 @@ public sealed class AppServerTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task IncomingAttachmentsRequireWorkerIdentityBeforeSendingATurn(bool reuseProcesses)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var temp = new TempDirectory();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "workspace")).FullName;
+        var data = Directory.CreateDirectory(Path.Combine(temp.Path, "data")).FullName;
+        using var files = await IncomingAttachmentStager.PrepareAsync(workspace,
+            [new IncomingAttachmentDescriptor("test", "input.txt", 4, "text/plain")],
+            (_, stream, _, token) => stream.WriteAsync("test"u8.ToArray(), token).AsTask(),
+            recoveryDataDirectory: data);
+        using var scope = files.BeginExecutionScope();
+        var factory = new FakeProcessFactory();
+        using var runner = new CodexAppServerRunner(factory, enableProcessReuse: reuseProcesses);
+
+        var result = await runner.RunAsync(new BridgeSettings { WorkspaceRoot = workspace }, "read input");
+
+        Assert.False(result.Result.Success);
+        Assert.False(result.PromptAccepted);
+        Assert.True(factory.LastProcess!.WasKilled);
+        Assert.DoesNotContain(factory.Client.Requests, request => request.Method == "turn/start");
+        Assert.True(File.Exists(files.Attachments[0].Path));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task CancellingActiveTurnInterruptsItAndNeverReusesItsProcess(bool reuseProcesses)
     {
         using var temp = new TempDirectory();

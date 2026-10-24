@@ -88,6 +88,8 @@ public interface IAppServerRpcClient : IAsyncDisposable
 
 public interface IAppServerProcess : IAsyncDisposable
 {
+    /// <summary>Native worker identity for attachment crash recovery; synthetic processes may omit it.</summary>
+    System.Diagnostics.Process? NativeProcess => null;
     IAppServerRpcClient Client { get; }
     Task<int?> ExitCode { get; }
     Task<string> StandardError { get; }
