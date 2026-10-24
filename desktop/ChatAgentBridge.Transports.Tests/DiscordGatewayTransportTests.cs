@@ -372,6 +372,258 @@ public sealed class DiscordGatewayTransportTests
         Assert.DoesNotContain(api.Requests, request => request.Method == HttpMethod.Post);
     }
 
+    [Theory]
+    [InlineData(429, 4)]
+    [InlineData(503, 2)]
+    public async Task Thread_lookup_transient_failures_retry_without_losing_the_reply(int statusCode, int expectedLookups)
+    {
+        var socket = new FakeSocket();
+        socket.Enqueue("""{"op":10,"d":{"heartbeat_interval":300000}}""");
+        socket.Enqueue("""{"op":0,"s":1,"t":"READY","d":{"session_id":"session","resume_gateway_url":"wss://gateway.discord.gg","user":{"id":"bot"}}}""");
+        socket.Enqueue("""{"op":0,"s":2,"t":"MESSAGE_CREATE","d":{"id":"retry-message","channel_id":"101","guild_id":"456","author":{"id":"123"},"content":"!cab inspect","type":0}}""");
+        int lookups = 0;
+        var api = new RecordingHandler(request =>
+        {
+            string path = request.RequestUri!.AbsolutePath;
+            if (path == "/api/v10/gateway/bot") return Json(HttpStatusCode.OK, """{"url":"wss://gateway.discord.gg"}""");
+            if (path == "/api/v10/channels/101")
+            {
+                if (Interlocked.Increment(ref lookups) < expectedLookups)
+                {
+                    var response = Json((HttpStatusCode)statusCode, "{}");
+                    if (statusCode == 429) response.Headers.TryAddWithoutValidation("Retry-After", "0.05");
+                    return response;
+                }
+                return Json(HttpStatusCode.OK, """{"id":"101","guild_id":"456","type":0}""");
+            }
+            if (request.Method == HttpMethod.Post && path.EndsWith("/threads", StringComparison.Ordinal))
+                return Json(HttpStatusCode.OK, """{"id":"created-thread"}""");
+            throw new Xunit.Sdk.XunitException($"Unexpected API request: {request.Method} {path}");
+        });
+        await using var transport = new DiscordGatewayTransport(new HttpClient(api), new Uri(ApiBase),
+            socketFactory: _ => socket, retryDelay: _ => TimeSpan.FromMilliseconds(5));
+        var handled = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        var run = transport.RunAsync(AllowedSettings(), (request, _) => { handled.TrySetResult(request); return Task.CompletedTask; }, lifetime.Token);
+        var result = await handled.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("retry-message", result.MessageId);
+        Assert.Equal("created-thread", result.ThreadId);
+        Assert.Equal(expectedLookups, lookups);
+        lifetime.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public async Task Non_thread_channel_results_are_negative_cached_for_repeated_messages()
+    {
+        var socket = new FakeSocket();
+        socket.Enqueue("""{"op":10,"d":{"heartbeat_interval":300000}}""");
+        socket.Enqueue("""{"op":0,"s":1,"t":"READY","d":{"session_id":"session","resume_gateway_url":"wss://gateway.discord.gg","user":{"id":"bot"}}}""");
+        socket.Enqueue("""{"op":0,"s":2,"t":"MESSAGE_CREATE","d":{"id":"cache-one","channel_id":"101","guild_id":"456","author":{"id":"123"},"content":"!cab inspect","type":0}}""");
+        socket.Enqueue("""{"op":0,"s":3,"t":"MESSAGE_CREATE","d":{"id":"cache-two","channel_id":"101","guild_id":"456","author":{"id":"123"},"content":"!cab inspect","type":0}}""");
+        int lookups = 0;
+        var api = new RecordingHandler(request => request.RequestUri!.AbsolutePath switch
+        {
+            "/api/v10/gateway/bot" => Json(HttpStatusCode.OK, """{"url":"wss://gateway.discord.gg"}"""),
+            "/api/v10/channels/101" => CountAndReturn(),
+            _ when request.Method == HttpMethod.Post && request.RequestUri.AbsolutePath.EndsWith("/threads", StringComparison.Ordinal)
+                => Json(HttpStatusCode.OK, """{"id":"created-thread"}"""),
+            _ => throw new Xunit.Sdk.XunitException($"Unexpected API request: {request.RequestUri}")
+        });
+        HttpResponseMessage CountAndReturn()
+        {
+            Interlocked.Increment(ref lookups);
+            return Json(HttpStatusCode.OK, """{"id":"101","guild_id":"456","type":0}""");
+        }
+        await using var transport = new DiscordGatewayTransport(new HttpClient(api), new Uri(ApiBase),
+            socketFactory: _ => socket, retryDelay: _ => TimeSpan.FromMilliseconds(5));
+        var handled = new ConcurrentBag<ChatRequest>();
+        var bothHandled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        var run = transport.RunAsync(AllowedSettings(), (request, _) =>
+        {
+            handled.Add(request);
+            if (handled.Count == 2) bothHandled.TrySetResult();
+            return Task.CompletedTask;
+        }, lifetime.Token);
+        await bothHandled.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(1, lookups);
+        Assert.Equal(2, handled.Count);
+        lifetime.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public async Task Thread_parent_cache_evicts_old_entries_after_its_capacity()
+    {
+        const int distinctChannels = 2_001;
+        var socket = new FakeSocket();
+        socket.Enqueue("""{"op":10,"d":{"heartbeat_interval":300000}}""");
+        socket.Enqueue("""{"op":0,"s":1,"t":"READY","d":{"session_id":"session","resume_gateway_url":"wss://gateway.discord.gg","user":{"id":"bot"}}}""");
+        var channelLookups = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
+        var api = new RecordingHandler(request =>
+        {
+            string path = request.RequestUri!.AbsolutePath;
+            if (path == "/api/v10/gateway/bot") return Json(HttpStatusCode.OK, """{"url":"wss://gateway.discord.gg"}""");
+            if (request.Method == HttpMethod.Get && path.StartsWith("/api/v10/channels/", StringComparison.Ordinal))
+            {
+                string channel = path["/api/v10/channels/".Length..];
+                channelLookups.AddOrUpdate(channel, 1, static (_, count) => count + 1);
+                return Json(HttpStatusCode.OK, $"{{\"id\":\"{channel}\",\"guild_id\":\"456\",\"type\":0}}");
+            }
+            if (request.Method == HttpMethod.Post && path.EndsWith("/threads", StringComparison.Ordinal))
+                return Json(HttpStatusCode.OK, """{"id":"created-thread"}""");
+            throw new Xunit.Sdk.XunitException($"Unexpected API request: {request.Method} {path}");
+        });
+        await using var transport = new DiscordGatewayTransport(new HttpClient(api), new Uri(ApiBase),
+            socketFactory: _ => socket, retryDelay: _ => TimeSpan.FromMilliseconds(5));
+        int handled = 0;
+        using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var run = transport.RunAsync(AllowedSettings(), (_, _) => { Interlocked.Increment(ref handled); return Task.CompletedTask; }, lifetime.Token);
+        for (int start = 0; start < distinctChannels; start += 100)
+        {
+            int end = Math.Min(distinctChannels, start + 100);
+            for (int index = start; index < end; index++)
+            {
+                string channel = (1_000 + index).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                socket.Enqueue($"{{\"op\":0,\"s\":{index + 2},\"t\":\"MESSAGE_CREATE\",\"d\":{{\"id\":\"cache-{index}\",\"channel_id\":\"{channel}\",\"guild_id\":\"456\",\"author\":{{\"id\":\"123\"}},\"content\":\"!cab inspect\",\"type\":0}}}}");
+            }
+            await WaitUntilAsync(() => Volatile.Read(ref handled) >= end, TimeSpan.FromSeconds(5));
+        }
+        socket.Enqueue("""{"op":0,"s":5000,"t":"MESSAGE_CREATE","d":{"id":"cache-first-again","channel_id":"1000","guild_id":"456","author":{"id":"123"},"content":"!cab inspect","type":0}}""");
+        await WaitUntilAsync(() => Volatile.Read(ref handled) == distinctChannels + 1, TimeSpan.FromSeconds(5));
+        Assert.Equal(2, channelLookups["1000"]);
+        lifetime.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public async Task Saturated_message_queue_keeps_heartbeat_live_and_replays_without_losing_replies()
+    {
+        const int replayCount = 130;
+        var first = new FakeSocket { AckHeartbeats = true };
+        first.Enqueue("""{"op":10,"d":{"heartbeat_interval":100}}""");
+        first.Enqueue("""{"op":0,"s":1,"t":"READY","d":{"session_id":"session","resume_gateway_url":"wss://gateway.discord.gg","user":{"id":"bot"}}}""");
+        first.Enqueue("""{"op":0,"s":2,"t":"MESSAGE_CREATE","d":{"id":"sat-0","channel_id":"dm","author":{"id":"123"},"content":"!cab inspect","type":0}}""");
+        int sockets = 0;
+        var api = new RecordingHandler(request => request.RequestUri!.AbsolutePath == "/api/v10/gateway/bot"
+            ? Json(HttpStatusCode.OK, """{"url":"wss://gateway.discord.gg"}""")
+            : throw new Xunit.Sdk.XunitException($"Unexpected API request: {request.RequestUri}"));
+        var retryAttempts = new ConcurrentQueue<int>();
+        await using var transport = new DiscordGatewayTransport(new HttpClient(api), new Uri(ApiBase),
+            socketFactory: _ =>
+            {
+                if (Interlocked.Increment(ref sockets) == 1) return first;
+                var resumed = new FakeSocket();
+                resumed.Enqueue("""{"op":10,"d":{"heartbeat_interval":300000}}""");
+                resumed.Enqueue("""{"op":0,"s":2,"t":"RESUMED","d":{}}""");
+                for (int index = 1; index <= replayCount; index++)
+                    resumed.Enqueue($"{{\"op\":0,\"s\":{index + 2},\"t\":\"MESSAGE_CREATE\",\"d\":{{\"id\":\"sat-{index}\",\"channel_id\":\"dm\",\"author\":{{\"id\":\"123\"}},\"content\":\"continue\",\"type\":0}}}}");
+                return resumed;
+            },
+            retryDelay: attempt => { retryAttempts.Enqueue(attempt); return TimeSpan.FromMilliseconds(5); });
+        var connectedAgain = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        int connectedCount = 0;
+        transport.Connected += () => { if (Interlocked.Increment(ref connectedCount) > 1) connectedAgain.TrySetResult(); };
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handled = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
+        using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+        var run = transport.RunAsync(AllowedSettings(), async (request, ct) =>
+        {
+            if (request.MessageId == "sat-0")
+            {
+                started.TrySetResult();
+                await Task.Delay(350, ct);
+            }
+            handled.AddOrUpdate(request.MessageId, 1, static (_, count) => count + 1);
+        }, lifetime.Token);
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await WaitUntilAsync(() => first.Sent.Any(value => value.Contains("\"op\":1", StringComparison.Ordinal)), TimeSpan.FromSeconds(2));
+        for (int index = 1; index <= replayCount; index++)
+            first.Enqueue($"{{\"op\":0,\"s\":{index + 2},\"t\":\"MESSAGE_CREATE\",\"d\":{{\"id\":\"sat-{index}\",\"channel_id\":\"dm\",\"author\":{{\"id\":\"123\"}},\"content\":\"continue\",\"type\":0}}}}");
+        await connectedAgain.Task.WaitAsync(TimeSpan.FromSeconds(4));
+        await WaitUntilAsync(() => handled.Count == replayCount + 1, TimeSpan.FromSeconds(6));
+        Assert.All(handled.Values, count => Assert.Equal(1, count));
+        Assert.NotEmpty(retryAttempts);
+        Assert.Contains(1, retryAttempts);
+        lifetime.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public async Task Saturated_queue_surfaces_dispatcher_failure_without_opening_more_sockets()
+    {
+        var socket = new FakeSocket();
+        socket.Enqueue("""{"op":10,"d":{"heartbeat_interval":300000}}""");
+        socket.Enqueue("""{"op":0,"s":1,"t":"READY","d":{"session_id":"session","resume_gateway_url":"wss://gateway.discord.gg","user":{"id":"bot"}}}""");
+        socket.Enqueue("""{"op":0,"s":2,"t":"MESSAGE_CREATE","d":{"id":"fault-0","channel_id":"dm","author":{"id":"123"},"content":"!cab inspect","type":0}}""");
+        int sockets = 0;
+        var api = new RecordingHandler(request => request.RequestUri!.AbsolutePath == "/api/v10/gateway/bot"
+            ? Json(HttpStatusCode.OK, """{"url":"wss://gateway.discord.gg"}""")
+            : throw new Xunit.Sdk.XunitException($"Unexpected API request: {request.RequestUri}"));
+        await using var transport = new DiscordGatewayTransport(new HttpClient(api), new Uri(ApiBase),
+            socketFactory: _ => { Interlocked.Increment(ref sockets); return socket; },
+            retryDelay: _ => TimeSpan.FromMilliseconds(5));
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var failDispatch = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var run = transport.RunAsync(AllowedSettings(), async (request, _) =>
+        {
+            if (request.MessageId == "fault-0")
+            {
+                started.TrySetResult();
+                await failDispatch.Task;
+            }
+        }, lifetime.Token);
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        EnqueueSaturatedDmMessages(socket, "fault", 1, 140);
+        await Task.Delay(400);
+        Assert.Equal(1, sockets);
+        failDispatch.TrySetException(new InvalidOperationException("fixture dispatcher failed"));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => run.WaitAsync(TimeSpan.FromSeconds(2)));
+        Assert.Equal("fixture dispatcher failed", error.Message);
+        Assert.Equal(1, sockets);
+    }
+
+    [Fact]
+    public async Task Cancellation_while_saturated_stops_promptly_without_reconnecting()
+    {
+        var socket = new FakeSocket();
+        socket.Enqueue("""{"op":10,"d":{"heartbeat_interval":300000}}""");
+        socket.Enqueue("""{"op":0,"s":1,"t":"READY","d":{"session_id":"session","resume_gateway_url":"wss://gateway.discord.gg","user":{"id":"bot"}}}""");
+        socket.Enqueue("""{"op":0,"s":2,"t":"MESSAGE_CREATE","d":{"id":"cancel-0","channel_id":"dm","author":{"id":"123"},"content":"!cab inspect","type":0}}""");
+        int sockets = 0;
+        var api = new RecordingHandler(request => request.RequestUri!.AbsolutePath == "/api/v10/gateway/bot"
+            ? Json(HttpStatusCode.OK, """{"url":"wss://gateway.discord.gg"}""")
+            : throw new Xunit.Sdk.XunitException($"Unexpected API request: {request.RequestUri}"));
+        await using var transport = new DiscordGatewayTransport(new HttpClient(api), new Uri(ApiBase),
+            socketFactory: _ => { Interlocked.Increment(ref sockets); return socket; },
+            retryDelay: _ => TimeSpan.FromMilliseconds(5));
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var run = transport.RunAsync(AllowedSettings(), async (request, ct) =>
+        {
+            if (request.MessageId == "cancel-0")
+            {
+                started.TrySetResult();
+                await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+            }
+        }, lifetime.Token);
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        EnqueueSaturatedDmMessages(socket, "cancel", 1, 140);
+        await Task.Delay(400);
+        Assert.Equal(1, sockets);
+        lifetime.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(1, sockets);
+    }
+
+    private static void EnqueueSaturatedDmMessages(FakeSocket socket, string prefix, int first, int last)
+    {
+        for (int index = first; index <= last; index++)
+            socket.Enqueue($"{{\"op\":0,\"s\":{index + 2},\"t\":\"MESSAGE_CREATE\",\"d\":{{\"id\":\"{prefix}-{index}\",\"channel_id\":\"dm\",\"author\":{{\"id\":\"123\"}},\"content\":\"continue\",\"type\":0}}}}");
+    }
+
     [Fact]
     public async Task Thread_permission_failure_surfaces_without_waiting_for_the_next_heartbeat()
     {
