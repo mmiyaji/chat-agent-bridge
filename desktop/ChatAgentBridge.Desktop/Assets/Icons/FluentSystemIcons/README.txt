@@ -11,8 +11,10 @@ The original SVG is included beside this notice for reference.
 UpdateAvailable.ttf is a one-glyph subset of the same revision's
 fonts/FluentSystemIcons-Filled.ttf, retaining U+E0A2
 (ic_fluent_arrow_circle_up_20_filled). These assets are retained from the earlier
-update badge design. The current MainPage badge uses the Windows Fluent download
-glyph inside a themed circle; no additional font installation is required.
+update badge design. The current MainPage badge uses the official Arrow Download
+20 regular SVG inside a themed circle. MainPage.xaml renders its path as a
+template-owned Path with the theme foreground; no additional font installation
+is required.
 
 Reproduce the subset with fontTools:
   pyftsubset FluentSystemIcons-Filled.ttf --unicodes=U+E0A2 --name-IDs='*' --name-legacy --name-languages='*' --output-file=UpdateAvailable.ttf
@@ -22,6 +24,10 @@ same pinned revision and MIT license. These are generic UI symbols rather than
 Codex, Claude, Gemini or GitHub product logos. The unmodified SVGs are included;
 AgentSettings/SettingsScopeIcons.xaml carries the same path data for native,
 theme-aware rendering. The Viewbox scales the entire path instead of clipping it.
+
+ic_fluent_arrow_download_20_regular.svg
+Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Arrow%20Download/SVG/ic_fluent_arrow_download_20_regular.svg
+SHA-256: 28e752ccfd95feb1850de1da3d170f34fd31765417d3431a7dbf3da89840ea33
 
 ic_fluent_apps_20_regular.svg
 Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Apps/SVG/ic_fluent_apps_20_regular.svg

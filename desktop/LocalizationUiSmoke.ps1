@@ -77,6 +77,12 @@ function Wait-Element([string]$AutomationId, [int]$Seconds = $TimeoutSeconds) {
     $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
     $revealed = $false
     do {
+        if ($script:activeProcess) {
+            $script:activeProcess.Refresh()
+            if ($script:activeProcess.HasExited) {
+                throw "Desktop process exited with code $($script:activeProcess.ExitCode) while waiting for '$AutomationId'."
+            }
+        }
         $element = Find-Element $script:activeWindow $AutomationId
         if ($element -and -not $element.Current.IsOffscreen -and $element.Current.BoundingRectangle.Height -gt 0) { return $element }
         if ($element -and -not $revealed -and $AutomationId -notin @('CloseButton','ArchitectureViewerDialog','PolicyBody')) {
