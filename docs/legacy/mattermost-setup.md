@@ -136,4 +136,4 @@ Connection reliability:
 
 There is an opt-in Docker-based Mattermost integration harness for websocket-mode tests.
 
-See [testing.md](legacy/testing.md) for the exact commands and scenarios.
+See [testing.md](testing.md) for the exact commands and scenarios.

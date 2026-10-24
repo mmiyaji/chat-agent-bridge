@@ -160,8 +160,8 @@ Gemini must already be installed and authenticated locally before the bridge can
 
 ## Next steps
 
-- Slack setup: [slack-setup.md](../slack-setup.md)
-- Mattermost setup: [mattermost-setup.md](../mattermost-setup.md)
+- Slack setup: [slack-setup.md](slack-setup.md)
+- Mattermost setup: [mattermost-setup.md](mattermost-setup.md)
 - Operations: [operations.md](operations.md)
 - Testing: [testing.md](testing.md)
 
