@@ -27,7 +27,7 @@ A chat post causes the CLI on your PC to read and write files and run commands. 
 
 ![Requests travel from Slack, Mattermost or Discord on another device to Chat Agent Bridge and a CLI on the Windows PC; results return to chat](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)
 
-This is the diagram shown in the app's setup guide and General page. It uses Codex and Claude Code as examples. Gemini CLI and GitHub Copilot CLI use the same arrangement.
+This is the diagram shown in the app's setup guide and General page. It uses Codex and Claude Code as examples. Gemini CLI, GitHub Copilot CLI and Antigravity CLI use the same arrangement.
 
 1. **Post from another device** in Slack, Mattermost or Discord. That device does not need an agent CLI installed.
 2. **Bridge on the Windows PC** receives the post and checks allowed users and conversation approval settings. Requests that need approval wait for a decision.
@@ -41,7 +41,7 @@ This is the diagram shown in the app's setup guide and General page. It uses Cod
 | OS | Windows 10 (version 1809 or later) or Windows 11 |
 | CPU | x64 / ARM64 (a separate ZIP for each) |
 | Additional installs | None (no administrator rights or separate .NET runtime required) |
-| CLI | Codex, Claude Code, Gemini CLI, GitHub Copilot CLI or another CLI (install and sign in yourself) |
+| CLI | Codex, Claude Code, Gemini CLI, GitHub Copilot CLI, Antigravity CLI or another CLI (install and sign in yourself) |
 | Chat | Slack (Socket Mode), Mattermost (bot token), Discord (Gateway) |
 | Network | The PC connects out to the chat service; no public URL or open port is needed |
 
@@ -83,6 +83,7 @@ The working folder and trusted locations are shared settings. Configure the exec
 | --- | --- | --- |
 | Codex / Claude Code | Supported | Select CLI-provided model and supported reasoning-effort candidates |
 | Gemini CLI / GitHub Copilot CLI | Supported | Enter a model name; reasoning settings remain CLI-managed |
+| Antigravity CLI (`agy`) | Supported | Fetch the model list from `agy models` or enter a model name; reasoning stays CLI-managed. Headless mode auto-denies edits and commands unless the permission mode is workspace write or full access, or `settings.json` has allow rules |
 | Other CLI | Independent execution for each request | Configure the CLI or its launch arguments |
 
 Change a conversation's agent or model from its details on the PC or from chat. Agent switching uses CLIs checked and registered in the app. You choose whether to pass conversation notes to the new agent.
