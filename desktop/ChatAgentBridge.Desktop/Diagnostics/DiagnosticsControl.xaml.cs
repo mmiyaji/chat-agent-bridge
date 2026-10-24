@@ -163,7 +163,7 @@ public sealed partial class DiagnosticsControl : UserControl
 
     private static string GetSavedChatProviders(BridgeSettings settings)
     {
-        var providers = new List<string>(2);
+        var providers = new List<string>(3);
         if (!string.IsNullOrWhiteSpace(settings.SlackBotToken) &&
             !string.IsNullOrWhiteSpace(settings.SlackAppToken) &&
             !string.IsNullOrWhiteSpace(settings.SlackAllowedUserIds))
@@ -173,6 +173,10 @@ public sealed partial class DiagnosticsControl : UserControl
             !string.IsNullOrWhiteSpace(settings.MattermostToken) &&
             !string.IsNullOrWhiteSpace(settings.MattermostAllowedUserIds))
             providers.Add("Mattermost");
+        if (!string.IsNullOrWhiteSpace(settings.DiscordBotToken) &&
+            !string.IsNullOrWhiteSpace(settings.DiscordAllowedUserIds) &&
+            (settings.DiscordAllowDirectMessages || !string.IsNullOrWhiteSpace(settings.DiscordAllowedGuildIds)))
+            providers.Add("Discord");
         return string.Join(", ", providers);
     }
 

@@ -10,6 +10,7 @@ public sealed partial class MainPage
         !InboxPage.ViewModel.IsExecuting && !InboxPage.ViewModel.SendResultCommand.IsRunning &&
         !InboxPage.ViewModel.SendAttachmentsCommand.IsRunning &&
         !InboxPage.ViewModel.ConnectSlackCommand.IsRunning && !InboxPage.ViewModel.ConnectMattermostCommand.IsRunning &&
+        !InboxPage.ViewModel.ConnectDiscordCommand.IsRunning &&
         !InboxPage.ViewModel.Requests.Any(item => item.State is "承認待ち" or "自動実行を準備" or "実行中");
 
     internal async Task<bool> PrepareForDataMaintenanceAsync()
@@ -25,6 +26,7 @@ public sealed partial class MainPage
             if (!DataWorkIdle) { CancelPortableUpdatePreparation(); return false; }
             App.PendingRequestNotifications.ClearAll();
             await HistoryPage.ViewModel.PauseChatNameUpdatesAsync();
+            await InboxPage.ViewModel.PauseConversationPersistenceAsync();
             return true;
         }
         catch
@@ -38,12 +40,14 @@ public sealed partial class MainPage
     {
         CancelPortableUpdatePreparation();
         HistoryPage.ViewModel.SetChatNameUpdatesEnabled(true);
+        InboxPage.ViewModel.ResumeConversationPersistence();
     }
 
     internal async Task ReloadAfterDataMaintenanceAsync()
     {
         await ViewModel.LoadAsync();
         await InboxPage.ViewModel.RefreshAccessAsync();
+        await InboxPage.ViewModel.ReloadConversationsAsync();
         await HistoryPage.ViewModel.RefreshAsync();
     }
 }

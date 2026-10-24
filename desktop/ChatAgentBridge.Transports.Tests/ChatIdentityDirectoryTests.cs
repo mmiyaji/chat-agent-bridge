@@ -14,6 +14,56 @@ public sealed class ChatIdentityDirectoryTests
     private const string MmChannel = "1123456789abcdefghijklmnop";
 
     [Fact]
+    public async Task Cached_reads_create_no_clients_and_resolve_creates_and_reuses_only_the_needed_client()
+    {
+        using var temp = new TemporaryDirectory();
+        var key = new SessionKey("slack", "C12345678", "t", "U12345678", "slack");
+        using (var offline = new ChatIdentityDirectory(temp.Path))
+        {
+            Assert.Equal(0, offline.CreatedHttpClientCount);
+            await offline.ReadCachedAsync([key]);
+            Assert.Equal(0, offline.CreatedHttpClientCount);
+        }
+        var handler = new RecordingHandler(request => request.RequestUri!.AbsolutePath switch
+        {
+            "/api/auth.test" => Json("{\"ok\":true,\"team_id\":\"T12345678\",\"team\":\"Workspace\"}"),
+            "/api/users.info" => Json("{\"ok\":true,\"user\":{\"id\":\"U12345678\",\"name\":\"alice\"}}"),
+            "/api/conversations.info" => Json("{\"ok\":true,\"channel\":{\"id\":\"C12345678\",\"name\":\"room\"}}"),
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound)
+        });
+        var directory = new ChatIdentityDirectory(handler, temp.Path);
+
+        Assert.Equal(0, directory.CreatedHttpClientCount);
+        await directory.ReadCachedAsync([key]);
+        Assert.Equal(0, directory.CreatedHttpClientCount);
+
+        await directory.ResolveAsync(new BridgeSettings { SlackBotToken = "token" }, [key]);
+        Assert.Equal(1, directory.CreatedHttpClientCount);
+        await directory.ResolveAsync(new BridgeSettings { SlackBotToken = "token" }, [key]);
+        Assert.Equal(1, directory.CreatedHttpClientCount);
+        Assert.Equal(3, handler.Requests.Count);
+
+        directory.Dispose();
+        directory.Dispose();
+        Assert.Equal(1, directory.CreatedHttpClientCount);
+        Assert.Equal(1, handler.DisposeCount);
+    }
+
+    [Fact]
+    public void Disposing_unused_directory_creates_no_client_and_disposes_owned_injected_handler_once()
+    {
+        var handler = new DisposeCountingHandler();
+        var directory = new ChatIdentityDirectory(handler);
+
+        Assert.Equal(0, directory.CreatedHttpClientCount);
+        directory.Dispose();
+        directory.Dispose();
+
+        Assert.Equal(0, directory.CreatedHttpClientCount);
+        Assert.Equal(1, handler.DisposeCount);
+    }
+
+    [Fact]
     public async Task Mattermost_resolves_cached_labels_once_per_user_and_channel_and_persists_only_labels()
     {
         using var temp = new TemporaryDirectory();
@@ -444,12 +494,30 @@ public sealed class ChatIdentityDirectoryTests
     private sealed class RecordingHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {
         public List<HttpRequestMessage> Requests { get; } = [];
+        public int DisposeCount { get; private set; }
         public int CountContaining(string path) => Requests.Count(request => request.RequestUri!.AbsolutePath.Contains(path, StringComparison.Ordinal));
         public Task<HttpResponseMessage> SendAsyncForTest(HttpRequestMessage request, CancellationToken cancellationToken) => SendAsync(request, cancellationToken);
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Requests.Add(new HttpRequestMessage(request.Method, request.RequestUri) { Headers = { Authorization = request.Headers.Authorization } });
             return Task.FromResult(respond(request));
+        }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) DisposeCount++;
+            base.Dispose(disposing);
+        }
+    }
+
+    private sealed class DisposeCountingHandler : HttpMessageHandler
+    {
+        public int DisposeCount { get; private set; }
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) DisposeCount++;
+            base.Dispose(disposing);
         }
     }
 

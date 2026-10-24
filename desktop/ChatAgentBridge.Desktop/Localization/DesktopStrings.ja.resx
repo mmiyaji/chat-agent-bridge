@@ -22,7 +22,17 @@
   <data name="ArchitectureImageName" xml:space="preserve"><value>アーキテクチャ図</value></data>
   <data name="ArchitectureLoadError" xml:space="preserve"><value>アーキテクチャ図を読み込めませんでした。</value></data>
   <data name="ChatControlNoRequests" xml:space="preserve"><value>このスレッドに、あなたの依頼はありません。</value></data>
-  <data name="ChatControlStatus" xml:space="preserve"><value>状態: {0}。承認待ち: {1}件。接続: {2}。</value></data>
+  <data name="ChatControlStatusHeader" xml:space="preserve"><value>このスレッドの実行中・待機中の依頼（{0}件）。接続: {1}</value></data>
+  <data name="ChatControlStatusEmpty" xml:space="preserve"><value>このスレッドに自分の実行中・待機中の依頼はありません。接続: {0}。</value></data>
+  <data name="ChatControlStatusApproval" xml:space="preserve"><value>承認待ち</value></data>
+  <data name="ChatControlStatusQueued" xml:space="preserve"><value>自動実行待ち</value></data>
+  <data name="ChatControlStatusRow" xml:space="preserve"><value>• {0} · {1} · モデル {2} · {3}</value></data>
+  <data name="ChatControlStatusMore" xml:space="preserve"><value>ほか{0}件</value></data>
+  <data name="ChatControlAgentCodex" xml:space="preserve"><value>Codex</value></data>
+  <data name="ChatControlAgentClaude" xml:space="preserve"><value>Claude Code</value></data>
+  <data name="ChatControlAgentGemini" xml:space="preserve"><value>Gemini CLI</value></data>
+  <data name="ChatControlAgentCopilot" xml:space="preserve"><value>GitHub Copilot CLI</value></data>
+  <data name="ChatControlAgentCustom" xml:space="preserve"><value>{0}</value></data>
   <data name="ChatControlConnected" xml:space="preserve"><value>接続済み</value></data>
   <data name="ChatControlReconnecting" xml:space="preserve"><value>再接続中</value></data>
   <data name="ChatControlStop" xml:space="preserve"><value>停止を要求しました。実行中: {0}件、待機中の取り消し: {1}件。</value></data>
@@ -278,7 +288,7 @@
   <data name="ManualShareShort" xml:space="preserve"><value>手動共有</value></data>
   <data name="AutoAllowEdits" xml:space="preserve"><value>編集を自動許可</value></data>
   <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: 切断します。未実行の依頼・切断中に投稿する依頼は実行されません。再接続後に必要な依頼を再投稿してください。</value></data>
-  <data name="InboxClaudeLoginInstructions" xml:space="preserve"><value>Claude Codeが未ログインです。このWindowsユーザーでターミナルからClaude Codeを起動し、/login を完了してから再度依頼してください。Slackへの再ログインは不要です。</value></data>
+  <data name="InboxClaudeLoginInstructions" xml:space="preserve"><value>Claude Codeが未ログインです。このWindowsユーザーでターミナルからClaude Codeを起動し、/login を完了してから再度依頼してください。チャットサービスへの再接続は不要です。</value></data>
   <data name="InboxUpdatedSessionLabel" xml:space="preserve"><value>継続セッション: {0}&#10;実行モデル: {1} / 推論レベル: {2}</value></data>
   <data name="InboxExecutionStateChatNotice" xml:space="preserve"><value>Chat Agent Bridge: {0}。結果はローカルのWinUI画面で確認してください。</value></data>
   <data name="ConfirmDetachTitle" xml:space="preserve"><value>このセッションを切り離しますか？</value></data>
@@ -400,7 +410,7 @@
   <data name="InboxWaitingForRequests" xml:space="preserve"><value>接続すると、許可された利用者からの依頼がここに表示されます。</value></data>
   <data name="InboxNoMatches" xml:space="preserve"><value>条件に一致する会話はありません。検索や状態の絞り込みを変更してください。</value></data>
   <data name="InboxEmptyOfflineHeading" xml:space="preserve"><value>チャットに接続されていません</value></data>
-  <data name="InboxEmptyOfflineDescription" xml:space="preserve"><value>上のSlackまたはMattermostに接続すると、許可されたユーザーからの依頼を受信できます。</value></data>
+  <data name="InboxEmptyOfflineDescription" xml:space="preserve"><value>上のSlack、Mattermost、またはDiscordに接続すると、許可されたユーザーからの依頼を受信できます。</value></data>
   <data name="InboxEmptyConnectingHeading" xml:space="preserve"><value>チャットに接続しています</value></data>
   <data name="InboxEmptyConnectingDescription" xml:space="preserve"><value>接続が完了すると、依頼がここに表示されます。</value></data>
   <data name="InboxEmptyWaitingHeading" xml:space="preserve"><value>依頼を待っています</value></data>
@@ -409,6 +419,14 @@
   <data name="InboxEmptyFilteredDescription" xml:space="preserve"><value>検索または状態の絞り込みを変更・解除してください。</value></data>
   <data name="InboxEmptyDetailHeading" xml:space="preserve"><value>会話を選択</value></data>
   <data name="InboxEmptyDetailDescription" xml:space="preserve"><value>一覧から会話を選ぶと、依頼や応答を確認できます。</value></data>
+  <data name="InboxRestoredDescription" xml:space="preserve"><value>以前の依頼は再開されません。続けるには、同じチャットスレッドへ「!cab 依頼内容」を新しく投稿してください。この一覧には依頼本文や結果本文は保存されません。</value></data>
+  <data name="InboxPersistenceLoadFailed" xml:space="preserve"><value>会話一覧を復元できませんでした。元のファイルは保持されており、依頼は自動的に再開されませんでした。</value></data>
+  <data name="InboxPersistenceSaveFailed" xml:space="preserve"><value>会話一覧を保存できませんでした。次回起動時に復元されない可能性があります。</value></data>
+  <data name="InboxPersistenceSomeRowsRejected" xml:space="preserve"><value>会話情報が不正なため、{0}件を保存できませんでした。他の会話は保存しました。作業フォルダーなどの設定を確認してください。</value></data>
+  <data name="InboxPersistenceAllRowsRejected" xml:space="preserve"><value>会話情報が不正なため、{0}件を保存できませんでした。既存の保存データは上書きしていません。作業フォルダーなどの設定を確認してください。</value></data>
+  <data name="InboxWorkspaceInvalid" xml:space="preserve"><value>作業フォルダーの設定が不正です。エージェント設定で、存在するフォルダーの絶対パスを選択してください。</value></data>
+  <data name="InboxInterrupted" xml:space="preserve"><value>中断</value></data>
+  <data name="InboxRestoredIdle" xml:space="preserve"><value>復元済み・待機中</value></data>
   <data name="InboxClearFiltersLabel" xml:space="preserve"><value>絞り込みを解除</value></data>
   <data name="InboxOneConversation" xml:space="preserve"><value>会話 1 件</value></data>
   <data name="InboxOneRequest" xml:space="preserve"><value>依頼 1 件</value></data>
@@ -475,7 +493,7 @@
   <data name="ChatInputTextReply" xml:space="preserve"><value>回答: !cab answer {0} {1} 回答内容</value></data>
   <data name="ChatInputOptionReply" xml:space="preserve"><value>選択肢の番号で回答: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>別の回答: !cab answer {0} {1} other 回答内容</value></data>
-  <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:&#10;&gt; !cab &lt;依頼&gt; — エージェントに依頼する&#10;&gt; !cab command / !cab commands / !cab help — この一覧を表示する&#10;&gt; !cab agent — 登録済みCLI接続と要約あり／なしの切り替え方法を表示&#10;&gt; !cab model / !cab model list / !cab model モデルID / !cab model default — この会話のモデル確認・候補取得・変更・既定に戻す&#10;&gt; !cab status — 自分の依頼状況を表示する&#10;&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す&#10;&gt; !cab folder &quot;C:\path&quot; — 作業先変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要&#10;&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）&#10;&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する&#10;&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する&#10;&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する&#10;&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効&#10;新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このスレッドにある自分の依頼だけに適用されます。</value></data>
+  <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:&#10;&gt; !cab &lt;依頼&gt; — エージェントに依頼する&#10;&gt; !cab command / !cab commands / !cab help — この一覧を表示する&#10;&gt; !cab agent — 登録済みCLI接続と要約あり／なしの切り替え方法を表示&#10;&gt; !cab model / !cab model list / !cab model モデルID / !cab model default — この会話のモデル確認・候補取得・変更・既定に戻す&#10;&gt; !cab status — このスレッドにある自分の実行中・承認待ち・待機中の依頼を、状態・実効エージェント・モデル・作業先とともに表示する&#10;&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す&#10;&gt; !cab folder &quot;C:\path&quot; — 作業先変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要&#10;&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）&#10;&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する&#10;&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する&#10;&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する&#10;&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効&#10;新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このプロバイダー、チャンネル、スレッド、サーバー接続元にある自分の依頼だけに適用されます。状態表示は最大10件で、他の依頼者の依頼は表示しません。</value></data>
   <data name="HistoryWorkspaceFilterLabel" xml:space="preserve"><value>作業フォルダー</value></data>
   <data name="HistoryWorkspaceAll" xml:space="preserve"><value>すべての作業フォルダー</value></data>
   <data name="HistorySortLabel" xml:space="preserve"><value>並び順</value></data>
@@ -742,10 +760,10 @@
   <data name="SettingsReviewEmpty" xml:space="preserve"><value>未設定</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>このCLIではモデル候補を取得できません。CLIと契約が対応するモデルID・別名を直接入力するか、空欄でCLIの既定モデルを使ってください。モデルの利用可否は実行時に確認されます。推論と操作権限はCLIの設定に従います。</value></data>
   <data name="ChatModelManualEntry" xml:space="preserve"><value>このCLIではモデル候補を取得できません。!cab model モデル名 で、CLIと契約が対応するモデルID・別名を指定できます。!cab model default でエージェント設定に戻します。利用可否は実行時に確認されます。</value></data>
-  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows 通知</value></data>
-  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>Windows 通知が表示されない場合は、この Windows ユーザーに対してのみ設定できます。この任意設定を行わなくても、通常の通知は引き続き利用できます。</value></data>
-  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>状態</value></data>
-  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>Windows 通知</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>承認待ちの通知</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>チャットからの依頼やAIの操作が承認待ちになると、Windows通知でお知らせします。通知のボタンから承認・拒否できます。</value></data>
+  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>通知の追加登録</value></data>
+  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>追加登録の状態</value></data>
   <data name="PortableIdentityPublisher" xml:space="preserve"><value>発行元: {0}</value></data>
   <data name="PortableIdentityFingerprint" xml:space="preserve"><value>証明書の SHA-256: {0}</value></data>
   <data name="PortableIdentityRegisteredLocation" xml:space="preserve"><value>登録先: {0}</value></data>
@@ -753,10 +771,10 @@
   <data name="PortableIdentityNotRegistered" xml:space="preserve"><value>このフォルダーは Windows に登録されていません。</value></data>
   <data name="PortableIdentityActive" xml:space="preserve"><value>通知の登録が有効です。</value></data>
   <data name="PortableIdentityInactive" xml:space="preserve"><value>このプロセスでは通知の登録が有効ではありません。</value></data>
-  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>設定と削除はアプリ終了後に実行し、その後アプリを再起動します。データフォルダーとポータブル更新機能はそのまま使えます。</value></data>
-  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>任意の設定</value></data>
-  <data name="PortableIdentityConfigure" xml:space="preserve"><value>Windows 通知を設定して再起動</value></data>
-  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>登録を更新して再起動</value></data>
+  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>承認待ちの通知が届かない場合のみ使います。追加登録・解除ではアプリが再起動します。設定とアップデーターは引き継がれます。</value></data>
+  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>通知が届かない場合</value></data>
+  <data name="PortableIdentityConfigure" xml:space="preserve"><value>通知を追加登録して再起動</value></data>
+  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>追加登録をやり直して再起動</value></data>
   <data name="PortableIdentityRemove" xml:space="preserve"><value>登録を削除して再起動</value></data>
   <data name="PortableIdentityRefresh" xml:space="preserve"><value>状態を更新</value></data>
   <data name="PortableIdentityConfigureTitle" xml:space="preserve"><value>Windows 通知を設定しますか？</value></data>
@@ -793,5 +811,36 @@
   <data name="AgentScopeCustom" xml:space="preserve"><value>その他の CLI</value></data>
   <data name="AgentScopePicker" xml:space="preserve"><value>設定する対象</value></data>
   <data name="AgentScopeCommonHelp" xml:space="preserve"><value>作業フォルダー・信頼するフォルダー・PCでの実行確認は、すべてのエージェントに適用されます。</value></data>
-  <data name="ConnectionScopeCommonHelp" xml:space="preserve"><value>承認・結果共有・添付の設定は、SlackとMattermostに共通です。</value></data>
+  <data name="ConnectionScopeCommonHelp" xml:space="preserve"><value>承認・結果共有・添付の設定は、Slack、Mattermost、Discordに共通です。</value></data>
+  <data name="IncomingFilesSummary" xml:space="preserve"><value>受信添付: {0}個（{1}）。依頼の承認後、対応ファイルをAIへ渡します。最大5個、1個10MB、合計20MB。PNG/JPEG/WebP画像、UTF-8のTXT/LOG/MD/CSV/JSONに対応します。一時コピーは実行後に削除するため、後の依頼で必要な場合は再添付してください。添付付きの追加指示は別の実行として順番に処理します。</value></data>
+  <data name="IncomingFileNamePending" xml:space="preserve"><value>ファイル名は承認後に確認</value></data>
+  <data name="IncomingFilesInvalid" xml:space="preserve"><value>添付を受け付けられません。対応形式のファイルを5個以内で依頼に添付してください。</value></data>
+  <data name="IncomingFilesFailed" xml:space="preserve"><value>添付をAIに渡せなかったため、エージェントは起動していません。PNG/JPEG/WebP画像、UTF-8のTXT/LOG/MD/CSV/JSONを最大5個、1個10MB、合計20MB以内で添付してください。ファイルへのアクセス権と信頼する作業フォルダーも確認してください。Slackでは files:read 権限も必要です。新しい依頼に再添付してください。</value></data>
+  <data name="IncomingFilesFailedTitle" xml:space="preserve"><value>添付の受信に失敗</value></data>
+  <data name="SettingsReviewDiscordUsers" xml:space="preserve"><value>Discordの許可ユーザー</value></data>
+  <data name="SettingsReviewDiscordGuilds" xml:space="preserve"><value>Discordの許可サーバー</value></data>
+  <data name="SettingsReviewDiscordChannels" xml:space="preserve"><value>Discordの許可チャンネル</value></data>
+  <data name="SettingsReviewDiscordThreads" xml:space="preserve"><value>Discordの許可スレッド</value></data>
+  <data name="SettingsReviewDiscordDirectMessages" xml:space="preserve"><value>Discordのダイレクトメッセージ</value></data>
+  <data name="DiscordInboxApprovalWaiting" xml:space="preserve"><value>この依頼は承認待ちです。ボタンは依頼した本人だけが操作できます。</value></data>
+  <data name="DiscordInboxApprovalPostFailed" xml:space="preserve"><value>Discordに承認ボタンを投稿できませんでした。PC側で承認・拒否してください。</value></data>
+  <data name="DiscordInboxConfigurationMissing" xml:space="preserve"><value>チャット設定でDiscordのBotトークンと許可ユーザーIDを入力してください。サーバーで使う場合は許可サーバーIDも指定し、DMで使う場合はDMを有効にしてください。</value></data>
+  <data name="DiscordInboxAuthenticationFailed" xml:space="preserve"><value>DiscordがBotトークンを受け付けませんでした。チャット設定のBotトークンを確認してください。アプリケーションIDや公開鍵は使用できません。</value></data>
+  <data name="DiscordInboxMessageContentRequired" xml:space="preserve"><value>Discord Developer PortalのBot設定でMessage Content Intentを有効にしてから再接続してください。</value></data>
+  <data name="DiscordInboxPermissionsRequired" xml:space="preserve"><value>DiscordのBot権限を確認してください。チャンネルを見る・メッセージを送信・メッセージ履歴を読む・公開スレッドを作成・スレッドで送信・ファイルを添付が必要です。</value></data>
+  <data name="InboxApprovalPolicyHelp" xml:space="preserve"><value>実行の承認: {0}。{1}。</value></data>
+  <data name="InboxResultPolicyHelp" xml:space="preserve"><value>結果の共有: {0}。{1}。</value></data>
+  <data name="InboxAttachmentPolicyHelp" xml:space="preserve"><value>ファイルの承認: {0}。実行や結果の共有とは別の設定で、必要な場合は個別に確認します。結果を共有しない設定の場合、添付ファイルも送信できません。</value></data>
+  <data name="InboxEffectivePolicy" xml:space="preserve"><value>この依頼に適用される設定</value></data>
+  <data name="InboxConfiguredPolicy" xml:space="preserve"><value>現在の設定。会話ごとの上書きは実行前に反映されます</value></data>
+  <data name="InboxApprovalFirstLabel" xml:space="preserve"><value>この会話の初回依頼で承認が必要</value></data>
+  <data name="InboxAttachmentFirstLabel" xml:space="preserve"><value>このセッションの初回ファイル共有で確認が必要</value></data>
+  <data name="InboxDisabledLabel" xml:space="preserve"><value>無効</value></data>
+  <data name="InboxUnknownParticipant" xml:space="preserve"><value>参加者名を取得できません</value></data>
+  <data name="InboxUnknownLocation" xml:space="preserve"><value>場所を取得できません</value></data>
+  <data name="GeneralSavedOtherCli" xml:space="preserve"><value>その他のCLI</value></data>
+  <data name="GeneralNotificationRegistered" xml:space="preserve"><value>このWindowsユーザー向けの追加登録が有効です。承認待ちの通知に使用します。</value></data>
+  <data name="GeneralNotificationRestart" xml:space="preserve"><value>追加登録は保存済みです。承認待ちの通知に使うにはアプリを再起動してください。</value></data>
+  <data name="GeneralNotificationAvailable" xml:space="preserve"><value>承認待ちの通知が届かない場合、このポータブル版を現在のWindowsユーザーに追加登録できます。通知が届いていれば設定は不要です。</value></data>
+  <data name="GeneralNotificationUnavailable" xml:space="preserve"><value>このビルドまたは環境では追加登録を利用できません。通常の通知が無効という意味ではありません。理由は診断情報で確認できます。</value></data>
 </root>

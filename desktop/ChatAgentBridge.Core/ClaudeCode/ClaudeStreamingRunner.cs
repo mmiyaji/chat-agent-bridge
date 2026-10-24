@@ -53,6 +53,8 @@ internal static class ClaudeStreamingRunner
         try
         {
             if (!process.Start()) return new AgentRunResult(false, -1, "", "Claude Code CLI did not start.");
+            try { IncomingAttachmentRecovery.TrackProcess(process); }
+            catch { Kill(process); throw; }
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {

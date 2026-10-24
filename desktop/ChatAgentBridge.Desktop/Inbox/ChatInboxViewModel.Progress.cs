@@ -66,6 +66,8 @@ public sealed partial class ChatInboxViewModel
     private async Task FinishConnectionProgressAsync(IChatTransport transport)
     {
         var pending = Requests.Where(item => ReferenceEquals(item.Transport, transport) && item.Progress is not null).ToArray();
+        foreach (var item in Requests.Where(item => ReferenceEquals(item.Transport, transport)).ToArray())
+            await CompleteRequestActionsAsync(item);
         await FinishProgressBatchAsync(pending, ChatProgressState.Disconnected, dispose: true);
     }
 

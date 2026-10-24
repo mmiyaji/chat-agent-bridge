@@ -49,6 +49,118 @@ public sealed class SettingsStoreTests : IDisposable
         await Assert.ThrowsAsync<InvalidDataException>(() => store.LoadAsync());
     }
 
+    [Fact]
+    public async Task SaveAsync_AcceptsAbsoluteAndEmptyWorkspaceRoots()
+    {
+        var store = new SettingsStore(_directory);
+
+        await store.SaveAsync(new BridgeSettings { WorkspaceRoot = Path.GetFullPath(Path.GetTempPath()) });
+        Assert.Equal(Path.GetFullPath(Path.GetTempPath()), (await store.LoadAsync()).WorkspaceRoot);
+
+        await store.SaveAsync(new BridgeSettings { WorkspaceRoot = "" });
+        Assert.Equal("", (await store.LoadAsync()).WorkspaceRoot);
+    }
+
+    [Fact]
+    public async Task DiscordSettingsPersistAndLegacyFilesDefaultDiscordFields()
+    {
+        var store = new SettingsStore(_directory);
+        var settings = new BridgeSettings
+        {
+            DiscordAllowedUserIds = "123456789012345678;123456789012345678",
+            DiscordAllowedGuildIds = "223456789012345678",
+            DiscordAllowedChannelIds = "323456789012345678",
+            DiscordAllowedThreadIds = "423456789012345678",
+            DiscordAllowDirectMessages = true,
+            AutoConnectProvider = "discord"
+        };
+        await store.SaveAsync(settings);
+        var loaded = await store.LoadAsync();
+        Assert.Equal("123456789012345678", loaded.DiscordAllowedUserIds);
+        Assert.Equal(settings.DiscordAllowedGuildIds, loaded.DiscordAllowedGuildIds);
+        Assert.Equal(settings.DiscordAllowedChannelIds, loaded.DiscordAllowedChannelIds);
+        Assert.Equal(settings.DiscordAllowedThreadIds, loaded.DiscordAllowedThreadIds);
+        Assert.True(loaded.DiscordAllowDirectMessages);
+        Assert.Equal("discord", loaded.AutoConnectProvider);
+
+        var path = Path.Combine(_directory, "settings.json");
+        var json = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
+        foreach (var name in new[] { "DiscordBotToken", "DiscordAllowedUserIds", "DiscordAllowedGuildIds", "DiscordAllowedChannelIds", "DiscordAllowedThreadIds", "DiscordAllowDirectMessages" })
+            json.AsObject().Remove(name);
+        await File.WriteAllTextAsync(path, json.ToJsonString());
+        loaded = await store.LoadAsync();
+        Assert.Empty(loaded.DiscordBotToken);
+        Assert.Empty(loaded.DiscordAllowedUserIds);
+        Assert.False(loaded.DiscordAllowDirectMessages);
+    }
+
+    [Theory]
+    [InlineData("DiscordAllowedUserIds")]
+    [InlineData("DiscordAllowedGuildIds")]
+    [InlineData("DiscordAllowedChannelIds")]
+    [InlineData("DiscordAllowedThreadIds")]
+    public async Task SaveRejectsMalformedDiscordListsWithoutChangingSettings(string property)
+    {
+        var store = new SettingsStore(_directory);
+        await store.SaveAsync(new BridgeSettings());
+        var path = Path.Combine(_directory, "settings.json");
+        var original = await File.ReadAllBytesAsync(path);
+        var invalid = new BridgeSettings();
+        invalid = property switch
+        {
+            "DiscordAllowedUserIds" => invalid with { DiscordAllowedUserIds = "-1" },
+            "DiscordAllowedGuildIds" => invalid with { DiscordAllowedGuildIds = "-1" },
+            "DiscordAllowedChannelIds" => invalid with { DiscordAllowedChannelIds = "-1" },
+            _ => invalid with { DiscordAllowedThreadIds = "-1" }
+        };
+        await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(invalid));
+        Assert.Equal(original, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task DiscordBotTokenUsesWindowsDpapiAndRoundTrips()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var store = new SettingsStore(_directory);
+        const string token = "discord-secret-token";
+        await store.SaveAsync(new BridgeSettings { DiscordBotToken = token });
+        var serialized = await File.ReadAllTextAsync(Path.Combine(_directory, "settings.json"));
+        Assert.DoesNotContain(token, serialized, StringComparison.Ordinal);
+        Assert.Contains("dpapi:", serialized, StringComparison.Ordinal);
+        Assert.Equal(token, (await store.LoadAsync()).DiscordBotToken);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("relative/workspace")]
+    [InlineData("C:relative\\workspace")]
+    [InlineData("bad\u0001path")]
+    public async Task SaveAsync_RejectsInvalidWorkspaceRootsWithoutChangingExistingFile(string? workspaceRoot)
+    {
+        var store = new SettingsStore(_directory);
+        await store.SaveAsync(new BridgeSettings { WorkspaceRoot = Path.GetFullPath(Path.GetTempPath()) });
+        var path = Path.Combine(_directory, "settings.json");
+        var original = await File.ReadAllBytesAsync(path);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(new BridgeSettings { WorkspaceRoot = workspaceRoot! }));
+
+        Assert.Equal(original, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task SaveAsync_RejectsWorkspaceRootLongerThan2048WithoutChangingExistingFile()
+    {
+        var store = new SettingsStore(_directory);
+        await store.SaveAsync(new BridgeSettings { WorkspaceRoot = Path.GetFullPath(Path.GetTempPath()) });
+        var path = Path.Combine(_directory, "settings.json");
+        var original = await File.ReadAllBytesAsync(path);
+        var tooLong = Path.GetPathRoot(Path.GetTempPath())! + new string('a', 2048);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(new BridgeSettings { WorkspaceRoot = tooLong }));
+
+        Assert.Equal(original, await File.ReadAllBytesAsync(path));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_directory)) Directory.Delete(_directory, recursive: true);

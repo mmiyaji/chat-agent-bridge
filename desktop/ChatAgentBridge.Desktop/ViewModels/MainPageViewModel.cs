@@ -93,7 +93,7 @@ public partial class MainPageViewModel : ObservableObject
                 nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
                 nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AutoConnectProvider) or nameof(RequireApproval) or
                 nameof(MattermostServerUrl) or nameof(MattermostBypassProxy) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
-                nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(PostConnectionNotice) or
+                nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(DiscordBotToken) or nameof(DiscordAllowedUserIds) or nameof(DiscordAllowedGuildIds) or nameof(DiscordAllowedChannelIds) or nameof(DiscordAllowedThreadIds) or nameof(DiscordAllowDirectMessages) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(PostConnectionNotice) or
                 nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or nameof(ChatApprovalMode) or
                 nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
                 nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
@@ -211,8 +211,14 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string MattermostChannelId { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackBotToken { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackAppToken { get; set; } = string.Empty;
+    [ObservableProperty] public partial string DiscordBotToken { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostAllowedUserIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackAllowedUserIds { get; set; } = string.Empty;
+    [ObservableProperty] public partial string DiscordAllowedUserIds { get; set; } = string.Empty;
+    [ObservableProperty] public partial string DiscordAllowedGuildIds { get; set; } = string.Empty;
+    [ObservableProperty] public partial string DiscordAllowedChannelIds { get; set; } = string.Empty;
+    [ObservableProperty] public partial string DiscordAllowedThreadIds { get; set; } = string.Empty;
+    [ObservableProperty] public partial bool DiscordAllowDirectMessages { get; set; }
     [ObservableProperty] public partial bool ShareApprovalsInChat { get; set; }
     [ObservableProperty] public partial bool ShareAgentQuestionsInChat { get; set; }
     [ObservableProperty] public partial bool PostConnectionNotice { get; set; }
@@ -339,8 +345,14 @@ public partial class MainPageViewModel : ObservableObject
             MattermostToken = _settings.MattermostToken;
             SlackBotToken = _settings.SlackBotToken;
             SlackAppToken = _settings.SlackAppToken;
+            DiscordBotToken = _settings.DiscordBotToken;
             MattermostAllowedUserIds = _settings.MattermostAllowedUserIds;
             SlackAllowedUserIds = _settings.SlackAllowedUserIds;
+            DiscordAllowedUserIds = _settings.DiscordAllowedUserIds;
+            DiscordAllowedGuildIds = _settings.DiscordAllowedGuildIds;
+            DiscordAllowedChannelIds = _settings.DiscordAllowedChannelIds;
+            DiscordAllowedThreadIds = _settings.DiscordAllowedThreadIds;
+            DiscordAllowDirectMessages = _settings.DiscordAllowDirectMessages;
             ShareApprovalsInChat = _settings.ShareApprovalsInChat;
             ShareAgentQuestionsInChat = _settings.ShareAgentQuestionsInChat;
             RequireApproval = _settings.RequireApproval;
@@ -485,6 +497,10 @@ public partial class MainPageViewModel : ObservableObject
                 AgentReasoningEffort = AgentProfile.NormalizeReasoningEffort(AgentReasoningEffort),
                 MattermostAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(MattermostAllowedUserIds),
                 SlackAllowedUserIds = ChatAccessPolicy.NormalizeAllowedUsers(SlackAllowedUserIds),
+                DiscordAllowedUserIds = ChatAccessPolicy.NormalizeDiscordSnowflakes(DiscordAllowedUserIds),
+                DiscordAllowedGuildIds = ChatAccessPolicy.NormalizeDiscordSnowflakes(DiscordAllowedGuildIds),
+                DiscordAllowedChannelIds = ChatAccessPolicy.NormalizeDiscordSnowflakes(DiscordAllowedChannelIds),
+                DiscordAllowedThreadIds = ChatAccessPolicy.NormalizeDiscordSnowflakes(DiscordAllowedThreadIds),
                 SlackAllowedChannelIds = ChatAccessPolicy.NormalizeScopes(SlackAllowedChannelIds),
                 SlackAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(SlackAllowedThreadIds),
                 MattermostAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(MattermostAllowedThreadIds),
@@ -538,6 +554,10 @@ public partial class MainPageViewModel : ObservableObject
             // Normalize only the draft that was written. A later edit must remain a draft.
             if (MattermostAllowedUserIds == draft.MattermostAllowedUserIds) MattermostAllowedUserIds = snapshot.MattermostAllowedUserIds;
             if (SlackAllowedUserIds == draft.SlackAllowedUserIds) SlackAllowedUserIds = snapshot.SlackAllowedUserIds;
+            if (DiscordAllowedUserIds == draft.DiscordAllowedUserIds) DiscordAllowedUserIds = snapshot.DiscordAllowedUserIds;
+            if (DiscordAllowedGuildIds == draft.DiscordAllowedGuildIds) DiscordAllowedGuildIds = snapshot.DiscordAllowedGuildIds;
+            if (DiscordAllowedChannelIds == draft.DiscordAllowedChannelIds) DiscordAllowedChannelIds = snapshot.DiscordAllowedChannelIds;
+            if (DiscordAllowedThreadIds == draft.DiscordAllowedThreadIds) DiscordAllowedThreadIds = snapshot.DiscordAllowedThreadIds;
             if (SlackAllowedChannelIds == draft.SlackAllowedChannelIds) SlackAllowedChannelIds = snapshot.SlackAllowedChannelIds;
             if (SlackAllowedThreadIds == draft.SlackAllowedThreadIds) SlackAllowedThreadIds = snapshot.SlackAllowedThreadIds;
             if (MattermostAllowedThreadIds == draft.MattermostAllowedThreadIds) MattermostAllowedThreadIds = snapshot.MattermostAllowedThreadIds;
@@ -833,15 +853,20 @@ public partial class MainPageViewModel : ObservableObject
         var agentReady = _hasSavedSettings && !string.IsNullOrWhiteSpace(_settings.AgentExecutable) && !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && _savedWorkspaceExists;
         var mattermostCredentials = !string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) && !string.IsNullOrWhiteSpace(_settings.MattermostChannelId) && !string.IsNullOrWhiteSpace(_settings.MattermostToken);
         var slackCredentials = !string.IsNullOrWhiteSpace(_settings.SlackBotToken) && !string.IsNullOrWhiteSpace(_settings.SlackAppToken);
+        var discordCredentials = !string.IsNullOrWhiteSpace(_settings.DiscordBotToken);
         var mattermostAllowed = HasAllowedUsers(_settings.MattermostAllowedUserIds);
         var slackAllowed = HasAllowedUsers(_settings.SlackAllowedUserIds);
-        var connectionReady = (mattermostCredentials && mattermostAllowed) || (slackCredentials && slackAllowed);
+        var discordUsersAllowed = HasDiscordIds(_settings.DiscordAllowedUserIds);
+        var discordGuildRequired = !_settings.DiscordAllowDirectMessages && !HasDiscordIds(_settings.DiscordAllowedGuildIds);
+        var discordAllowed = discordUsersAllowed && !discordGuildRequired;
+        var connectionReady = (mattermostCredentials && mattermostAllowed) || (slackCredentials && slackAllowed) || (discordCredentials && discordAllowed);
         SetupStepOneStatus = agentReady ? ViewModelText.Get("SetupAgentReady")
             : !_hasSavedSettings || string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) ? ViewModelText.Get("SetupAgentWorkspaceMissing")
             : !_savedWorkspaceExists ? ViewModelText.Get("SetupWorkspaceNotFound")
             : ViewModelText.Get("SetupExecutableMissing");
         SetupStepTwoStatus = connectionReady ? ViewModelText.Get("SetupChatConfigSaved")
-            : mattermostCredentials && !mattermostAllowed || slackCredentials && !slackAllowed ? ViewModelText.Get("SetupAllowedUsersMissing")
+            : mattermostCredentials && !mattermostAllowed || slackCredentials && !slackAllowed || discordCredentials && !discordUsersAllowed ? ViewModelText.Get("SetupAllowedUsersMissing")
+            : discordCredentials && discordGuildRequired ? ViewModelText.Get("SetupDiscordGuildIdsMissing")
             : agentReady ? ViewModelText.Get("SetupChatConfigMissing")
             : ViewModelText.Get("SetupChatAfterStepOne");
         SetupStepThreeStatus = _chatConnectionConfirmed ? ViewModelText.Get("SetupWaitingForChatRequest")
@@ -865,6 +890,12 @@ public partial class MainPageViewModel : ObservableObject
         catch (FormatException) { return false; }
     }
 
+    private static bool HasDiscordIds(string value)
+    {
+        try { return ChatAccessPolicy.NormalizeDiscordSnowflakes(value).Length > 0; }
+        catch (FormatException) { return false; }
+    }
+
     private BridgeSettings CreateSettingsSnapshot() => _settings! with
     {
         WorkspaceRoot = WorkspaceRoot.Trim(),
@@ -882,6 +913,12 @@ public partial class MainPageViewModel : ObservableObject
         MattermostToken = MattermostToken,
         SlackBotToken = SlackBotToken,
         SlackAppToken = SlackAppToken,
+        DiscordBotToken = DiscordBotToken,
+        DiscordAllowedUserIds = DiscordAllowedUserIds,
+        DiscordAllowedGuildIds = DiscordAllowedGuildIds,
+        DiscordAllowedChannelIds = DiscordAllowedChannelIds,
+        DiscordAllowedThreadIds = DiscordAllowedThreadIds,
+        DiscordAllowDirectMessages = DiscordAllowDirectMessages,
         MattermostAllowedUserIds = MattermostAllowedUserIds,
         SlackAllowedUserIds = SlackAllowedUserIds,
         ShareApprovalsInChat = ShareApprovalsInChat,
@@ -936,6 +973,7 @@ public partial class MainPageViewModel : ObservableObject
 
     private void UpdateSavedAgentSummary()
     {
+        RefreshSavedOverview();
         SavedAgentSummary = string.IsNullOrWhiteSpace(AgentExecutable)
             ? ViewModelText.Get("AgentNotConfigured")
             : ViewModelText.Get("SavedAgentSummary", AgentExecutable, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, AgentReasoningEffort ?? ViewModelText.Get("DefaultCliValue"), ViewModelText.Get(UseAppServer ? "InteractiveExecution" : "RunToCompletion"));

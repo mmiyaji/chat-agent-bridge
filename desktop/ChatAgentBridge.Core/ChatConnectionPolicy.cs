@@ -18,6 +18,7 @@ public static class ChatConnectionPolicy
             "mattermost" => MatchesMattermost(current, connected),
             "slack" => string.Equals(current.SlackBotToken, connected.SlackBotToken, StringComparison.Ordinal) &&
                 string.Equals(current.SlackAppToken, connected.SlackAppToken, StringComparison.Ordinal),
+            "discord" => string.Equals(current.DiscordBotToken, connected.DiscordBotToken, StringComparison.Ordinal),
             _ => false
         };
     }

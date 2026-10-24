@@ -27,9 +27,13 @@ public readonly record struct SettingsSensitiveChanges(
                 (draft.AgentPermissionMode, draft.AllowAgentNetwork, draft.RequireApproval),
             saved.TrustedWorkspaceRoots != draft.TrustedWorkspaceRoots,
             (saved.ChatApprovalMode, saved.SlackAllowedChannelIds, saved.SlackAllowedThreadIds,
-                saved.MattermostAllowedThreadIds, saved.MattermostAllowedUserIds, saved.SlackAllowedUserIds) !=
+                saved.MattermostAllowedThreadIds, saved.MattermostAllowedUserIds, saved.SlackAllowedUserIds,
+                saved.DiscordAllowedUserIds, saved.DiscordAllowedGuildIds, saved.DiscordAllowedChannelIds,
+                saved.DiscordAllowedThreadIds, saved.DiscordAllowDirectMessages) !=
                 (draft.ChatApprovalMode, draft.SlackAllowedChannelIds, draft.SlackAllowedThreadIds,
-                draft.MattermostAllowedThreadIds, draft.MattermostAllowedUserIds, draft.SlackAllowedUserIds),
+                draft.MattermostAllowedThreadIds, draft.MattermostAllowedUserIds, draft.SlackAllowedUserIds,
+                draft.DiscordAllowedUserIds, draft.DiscordAllowedGuildIds, draft.DiscordAllowedChannelIds,
+                draft.DiscordAllowedThreadIds, draft.DiscordAllowDirectMessages),
             (saved.ChatResultMode, saved.ShareApprovalsInChat, saved.ShareAgentQuestionsInChat) !=
                 (draft.ChatResultMode, draft.ShareApprovalsInChat, draft.ShareAgentQuestionsInChat) ||
             saved.ChatFollowUpMode != draft.ChatFollowUpMode,
@@ -40,6 +44,7 @@ public readonly record struct SettingsSensitiveChanges(
             (saved.MattermostServerUrl.Trim(), saved.MattermostChannelId.Trim(), saved.MattermostToken,
                 saved.SlackBotToken, saved.SlackAppToken) !=
                 (draft.MattermostServerUrl.Trim(), draft.MattermostChannelId.Trim(), draft.MattermostToken,
-                draft.SlackBotToken, draft.SlackAppToken));
+                draft.SlackBotToken, draft.SlackAppToken) ||
+            !string.Equals(saved.DiscordBotToken, draft.DiscordBotToken, StringComparison.Ordinal));
     }
 }

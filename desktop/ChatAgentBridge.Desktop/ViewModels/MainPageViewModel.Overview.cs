@@ -12,7 +12,6 @@ public partial class MainPageViewModel
     private const string OverviewWarningGlyph = "\uE7BA";
     private const string OverviewPendingGlyph = "\uE895";
     private const string OverviewErrorGlyph = "\uE783";
-    private const string OverviewOffGlyph = "\uE7E8";
     [ObservableProperty] public partial OverviewIconState OverviewAgentIconState { get; set; }
     [ObservableProperty] public partial OverviewIconState OverviewConnectionIconState { get; set; }
     [ObservableProperty] public partial OverviewIconState OverviewChatIconState { get; set; }
@@ -31,11 +30,9 @@ public partial class MainPageViewModel
     [ObservableProperty] public partial string OverviewCliGlyph { get; set; } = OverviewPendingGlyph;
     [ObservableProperty] public partial string OverviewCliAccessibleName { get; set; } = ViewModelText.Get("OverviewCliAccessibleName", ViewModelText.Get("OverviewCliNotChecked"));
     [ObservableProperty] public partial string OverviewStartupStatus { get; set; } = ViewModelText.Get("OverviewChecking");
-    [ObservableProperty] public partial string OverviewStartupGlyph { get; set; } = OverviewPendingGlyph;
     [ObservableProperty] public partial OverviewIconState OverviewStartupIconState { get; set; }
     [ObservableProperty] public partial string OverviewStartupAccessibleName { get; set; } = ViewModelText.Get("OverviewStartupAccessibleName", ViewModelText.Get("OverviewChecking"));
     [ObservableProperty] public partial string OverviewAutoConnectStatus { get; set; } = ViewModelText.Get("OverviewChecking");
-    [ObservableProperty] public partial string OverviewAutoConnectGlyph { get; set; } = OverviewPendingGlyph;
     [ObservableProperty] public partial OverviewIconState OverviewAutoConnectIconState { get; set; }
     [ObservableProperty] public partial string OverviewAutoConnectAccessibleName { get; set; } = ViewModelText.Get("OverviewAutoConnectAccessibleName", ViewModelText.Get("OverviewChecking"));
 
@@ -54,7 +51,10 @@ public partial class MainPageViewModel
         var slackReady = _settings is not null &&
             !string.IsNullOrWhiteSpace(_settings.SlackBotToken) &&
             !string.IsNullOrWhiteSpace(_settings.SlackAppToken) && HasAllowedUsers(_settings.SlackAllowedUserIds);
-        var connectionReady = mattermostReady || slackReady;
+        var discordReady = _settings is not null && !string.IsNullOrWhiteSpace(_settings.DiscordBotToken) &&
+            HasDiscordIds(_settings.DiscordAllowedUserIds) &&
+            (_settings.DiscordAllowDirectMessages || HasDiscordIds(_settings.DiscordAllowedGuildIds));
+        var connectionReady = mattermostReady || slackReady || discordReady;
 
         var workspaceMissing = _settings is not null && !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && !_savedWorkspaceExists;
         var agentError = loadFailed || workspaceMissing;
@@ -94,14 +94,6 @@ public partial class MainPageViewModel
             StartupState.Error => "OverviewStartupError",
             _ => "OverviewStartupUnavailable"
         });
-        OverviewStartupGlyph = startupChecking ? OverviewPendingGlyph : startupState switch
-        {
-            StartupState.Enabled => OverviewCheckGlyph,
-            StartupState.Disabled => OverviewOffGlyph,
-            StartupState.DisabledByUser or StartupState.DisabledByPolicy => OverviewWarningGlyph,
-            StartupState.Error => OverviewErrorGlyph,
-            _ => OverviewPendingGlyph
-        };
         OverviewStartupIconState = startupChecking || startupState is StartupState.Unavailable or null
             ? OverviewIconState.Neutral
             : startupState switch
@@ -118,6 +110,7 @@ public partial class MainPageViewModel
         {
             "slack" => slackReady,
             "mattermost" => mattermostReady,
+            "discord" => discordReady,
             _ => false
         };
         var autoConnectChecking = checking;
@@ -127,17 +120,15 @@ public partial class MainPageViewModel
             : savedAutoConnect == "none" ? "OverviewAutoConnectOff"
             : autoConnectConfigured && savedAutoConnect == "slack" ? "OverviewAutoConnectSlackReady"
             : autoConnectConfigured && savedAutoConnect == "mattermost" ? "OverviewAutoConnectMattermostReady"
+            : autoConnectConfigured && savedAutoConnect == "discord" ? "OverviewAutoConnectDiscordReady"
             : savedAutoConnect == "slack" ? "OverviewAutoConnectNeedsSlack"
             : savedAutoConnect == "mattermost" ? "OverviewAutoConnectNeedsMattermost"
+            : savedAutoConnect == "discord" ? "OverviewAutoConnectNeedsDiscord"
             : "OverviewAutoConnectOff";
         OverviewAutoConnectStatus = ViewModelText.Get(autoConnectStatusKey);
-        OverviewAutoConnectGlyph = autoConnectChecking ? OverviewPendingGlyph
-            : autoConnectError ? OverviewErrorGlyph
-            : savedAutoConnect is "slack" or "mattermost" ? autoConnectConfigured ? OverviewCheckGlyph : OverviewWarningGlyph
-            : OverviewOffGlyph;
         OverviewAutoConnectIconState = autoConnectChecking ? OverviewIconState.Neutral
             : autoConnectError ? OverviewIconState.Error
-            : savedAutoConnect is "slack" or "mattermost" ? autoConnectConfigured ? OverviewIconState.Ready : OverviewIconState.Attention
+            : savedAutoConnect is "slack" or "mattermost" or "discord" ? autoConnectConfigured ? OverviewIconState.Ready : OverviewIconState.Attention
             : OverviewIconState.Neutral;
         OverviewAutoConnectAccessibleName = ViewModelText.Get("OverviewAutoConnectAccessibleName", OverviewAutoConnectStatus);
     }

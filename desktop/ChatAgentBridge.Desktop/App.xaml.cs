@@ -163,6 +163,9 @@ public partial class App : Application
             _pricingLifetime.Cancel();
         };
         Window.Activate();
+        // Recovery uses only app-owned records and exclusive leases; it can run
+        // alongside another window without touching active incoming attachments.
+        _ = RecoverIncomingAttachmentsAsync(dataDirectory);
         if (!IsNotificationOnlyLaunch) PendingRequestNotifications.ProcessStartupActivation();
         if (DeploymentRuntime.IsPortable && updateReadyEvent is not null &&
             updateReadyEvent.StartsWith(@"Local\ChatAgentBridge.Update.", StringComparison.Ordinal) &&
@@ -174,6 +177,20 @@ public partial class App : Application
         }
         _ = RunPricingUpdatesAsync(_pricingLifetime.Token);
         _ = RunPortableUpdateChecksAsync();
+    }
+
+    private static async Task RecoverIncomingAttachmentsAsync(string dataDirectory)
+    {
+        try
+        {
+            await Task.Run(() => ChatAgentBridge.Core.IncomingAttachmentRecovery.RecoverAbandoned(dataDirectory));
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or ArgumentException or
+            NotSupportedException or System.Security.SecurityException)
+        {
+            // Read-only/unavailable data locations must not prevent startup.
+            // Keep ownership records for a later recovery attempt.
+        }
     }
 
     private static async Task<LanguagePreferences> LoadLanguagePreferenceAsync()

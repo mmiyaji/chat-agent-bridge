@@ -43,7 +43,7 @@
     <value>Main content</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock001.Text" xml:space="preserve">
-    <value>From a device that cannot use the Codex or Claude Code desktop apps, you can use Slack/Mattermost to request an AI agent on a running local PC.</value>
+    <value>From a device that cannot use the Codex or Claude Code desktop apps, you can use Slack, Mattermost, or Discord to request an AI agent on a running local PC.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock002.Text" xml:space="preserve">
     <value>Setup progress</value>
@@ -85,15 +85,15 @@
     <value>Use chat to send requests to your PC</value>
   </data>
   <data name="OverviewArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Requests can be made from Slack or Mattermost on another device, and Chat Agent Bridge on the running PC will receive them. After checking on your PC, run the selected AI CLI and receive the checked and shared results in the same thread.</value>
+    <value>Requests can be made from Slack, Mattermost, or Discord on another device, and Chat Agent Bridge on the running PC will receive them. After checking on your PC, run the selected AI CLI and receive the checked and shared results in the same thread.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock007.Text" xml:space="preserve">
-    <value>A request sent from a phone or browser through Slack or Mattermost reaches Chat Agent Bridge on your running PC. The bridge runs the selected AI CLI in the selected project. Shared results return to the same thread. Where AI processing takes place depends on the CLI and AI service settings.</value>
+    <value>A request sent from a phone or browser through Slack, Mattermost, or Discord reaches Chat Agent Bridge on your running PC. The bridge runs the selected AI CLI in the selected project. Shared results return to the same thread. Where AI processing takes place depends on the CLI and AI service settings.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock008.Text" xml:space="preserve">
     <value>1. Choose the CLI, model, and working folder in Agent settings.
 2. Save the chat credentials in Chat settings, then connect from Chat.
-3. Send a request from another device. In Mattermost, start with !cab or an @mention of the connected bot, followed by your request. In Slack, mention the bot or use !cab in a thread reply.
+3. Send a request from another device. In Mattermost, start with !cab or mention the connected bot. In Slack, mention the bot or use !cab in a thread reply. In Discord, mention the bot or start with !cab; Bridge opens a thread for follow-up.
 4. Review and approve the request on this PC, then review and share the result to return it to the same thread.
 
 Keep this app and your local PC running to stay connected.</value>
@@ -475,10 +475,10 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Tool approvals and privacy</value>
   </data>
   <data name="ShareApprovalsInChat.Header" xml:space="preserve">
-    <value>Publish operation approval details to thread</value>
+    <value>Allow optional remote approvals in Discord</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock060.Text" xml:space="preserve">
-    <value>When enabled, the commands and working folders displayed for operation authorization on the Codex app-server will be posted to the chat thread. All participants in the thread can see it. The initial state is off.</value>
+    <value>When enabled, Discord posts initial approval requests and Codex App Server tool approval details in the conversation with buttons for optional remote approval or denial. Everyone in the conversation can see them, but only the original request sender can use the buttons. PC approval remains available. Off by default.</value>
   </data>
   <data name="ShareAgentQuestionsInChat.Header" xml:space="preserve">
     <value>Share nonsecret agent questions in chat</value>
@@ -610,10 +610,10 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Use PC AI from chat</value>
   </data>
   <data name="WizardArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Diagram showing how Slack or Mattermost makes a request to an app on a PC and the AI CLI on the PC responds.</value>
+    <value>Diagram showing how Slack, Mattermost, or Discord makes a request to an app on a PC and the AI CLI on the PC responds.</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock002.Text" xml:space="preserve">
-    <value>Use Slack or Mattermost to send requests to the selected AI CLI on this PC. Project files and the CLI stay on this PC. AI processing and data transmission follow the settings of the CLI and AI service.</value>
+    <value>Use Slack, Mattermost, or Discord to send requests to the selected AI CLI on this PC. Project files and the CLI stay on this PC. AI processing and data transmission follow the settings of the CLI and AI service.</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock003.Text" xml:space="preserve">
     <value>Keep this app and your PC running while using chat. Requests and responses are sent to the selected external AI service. Review what information is sent and each service's policies.</value>
@@ -855,11 +855,15 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AboutStorePage.Content" xml:space="preserve"><value>Open Store page</value></data>
   <data name="AboutCheckUpdates.Content" xml:space="preserve"><value>Check for updates</value></data>
   <data name="AboutLegalHeading.Text" xml:space="preserve"><value>Terms and privacy</value></data>
-  <data name="AboutDataHandling.Text" xml:space="preserve"><value>This app exchanges messages with Slack or Mattermost and your configured agent CLI. The CLI may send prompts and related data to its AI service according to that service’s settings.</value></data>
+  <data name="AboutDataHandling.Text" xml:space="preserve"><value>This app exchanges messages with Slack, Mattermost, or Discord and your configured agent CLI. The CLI may send prompts and related data to its AI service according to that service’s settings.</value></data>
   <data name="AboutTerms.Header" xml:space="preserve"><value>Terms of use</value></data>
   <data name="AboutPrivacy.Header" xml:space="preserve"><value>Privacy policy</value></data>
   <data name="AboutExit.Content" xml:space="preserve"><value>Exit application</value></data>
   <data name="InboxConversationsHeading.Text" xml:space="preserve"><value>Conversations</value></data>
+  <data name="InboxRestoredTitleLabel.Text" xml:space="preserve"><value>Title</value></data>
+  <data name="InboxRestoredLocationLabel.Text" xml:space="preserve"><value>Location</value></data>
+  <data name="InboxRestoredActivityLabel.Text" xml:space="preserve"><value>Last activity</value></data>
+  <data name="InboxRestoredWorkspaceLabel.Text" xml:space="preserve"><value>Workspace</value></data>
   <data name="InboxConversationHelp.Text" xml:space="preserve"><value>Search by sender, channel, thread, or message. New activity appears first.</value></data>
   <data name="InboxSearch.Header" xml:space="preserve"><value>Search</value></data>
   <data name="InboxSearch.PlaceholderText" xml:space="preserve"><value>Search conversations</value></data>
@@ -878,9 +882,17 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="InboxContextLabel.Text" xml:space="preserve"><value>Execution and conversation details</value></data>
   <data name="InboxResultLabel.Text" xml:space="preserve"><value>Execution result</value></data>
   <data name="InboxApprove.Content" xml:space="preserve"><value>Approve / run</value></data>
+  <data name="InboxApproveBar.Label" xml:space="preserve"><value>Approve</value></data>
   <data name="InboxReject.Content" xml:space="preserve"><value>Reject</value></data>
+  <data name="InboxRejectBar.Label" xml:space="preserve"><value>Reject</value></data>
   <data name="InboxStop.Content" xml:space="preserve"><value>Stop</value></data>
+  <data name="InboxStopBar.Label" xml:space="preserve"><value>Stop</value></data>
   <data name="InboxShare.Content" xml:space="preserve"><value>Share result</value></data>
+  <data name="InboxShareBar.Label" xml:space="preserve"><value>Share result</value></data>
+  <data name="InboxAttachmentsBar.Label" xml:space="preserve"><value>Review and send files</value></data>
+  <data name="InboxApprovalHelpButton.AutomationProperties.Name" xml:space="preserve"><value>Approval and sharing help</value></data>
+  <data name="InboxApprovalHelpTip.Title" xml:space="preserve"><value>Approval and file sharing</value></data>
+  <data name="InboxApprovalHelpTip.Subtitle" xml:space="preserve"><value>These permissions are checked separately for the selected request.</value></data>
   <data name="InboxConnectionDetails.Header" xml:space="preserve"><value>Connection and notification details</value></data>
   <data name="WizardCustomCli.Content" xml:space="preserve">
     <value>Other CLI (custom)</value>
@@ -1078,11 +1090,11 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PricingRateMinimum.Text" xml:space="preserve"><value>Minimum</value></data>
   <data name="PricingRateMaximum.Text" xml:space="preserve"><value>Maximum</value></data>
   <data name="PricingNever.Text" xml:space="preserve"><value>Never</value></data>
-  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows notifications</value></data>
-  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>If Windows notifications do not appear, configure this Windows user only. Standard notifications continue to work without this optional setup.</value></data>
-  <data name="PortableIdentityStateHeading.Text" xml:space="preserve"><value>Status</value></data>
-  <data name="PortableIdentityActionsHeading.Text" xml:space="preserve"><value>Optional setup</value></data>
-  <data name="PortableIdentityConfigure.Content" xml:space="preserve"><value>Set up Windows notifications and restart</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Approval notifications</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>Windows notifications alert you when a chat request or AI operation needs approval. You can approve or reject it from the notification.</value></data>
+  <data name="PortableIdentityStateHeading.Text" xml:space="preserve"><value>Additional notification registration</value></data>
+  <data name="PortableIdentityActionsHeading.Text" xml:space="preserve"><value>If notifications do not appear</value></data>
+  <data name="PortableIdentityConfigure.Content" xml:space="preserve"><value>Register notifications and restart</value></data>
   <data name="PortableIdentityRemove.Content" xml:space="preserve"><value>Remove registration and restart</value></data>
   <data name="PortableIdentityRefresh.Content" xml:space="preserve"><value>Refresh status</value></data>
   <data name="PricingNoAutomaticPrice.Text" xml:space="preserve"><value>No automatic rate is available for this model.</value></data>
@@ -1098,10 +1110,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="CloseToTrayToggle.OnContent" xml:space="preserve"><value>On</value></data>
   <data name="CloseToTrayToggle.OffContent" xml:space="preserve"><value>Off</value></data>
   <data name="CloseToTrayToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Keep running in system tray when the window is closed</value></data>
-  <data name="TraySettingsDescription.Text" xml:space="preserve"><value>When enabled, closing the window keeps Chat Agent Bridge and its chat connection running in the system tray. Use the tray menu to open the window or exit.</value></data>
+  <data name="TraySettingsDescription.Text" xml:space="preserve"><value>Choose what happens when you close the window. Moving to the tray keeps chat connections running; exiting stops them.</value></data>
   <data name="MoveToTrayButton.Content" xml:space="preserve"><value>Move to system tray</value></data>
-  <data name="TrayExitDescription.Text" xml:space="preserve"><value>Exit completely closes the app and cancels pending and running work.</value></data>
-  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>Exit completely</value></data>
+  <data name="TrayExitDescription.Text" xml:space="preserve"><value>Exiting disconnects chats and stops running or waiting requests.</value></data>
+  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>Exit app</value></data>
   <data name="TraySaveFailed" xml:space="preserve"><value>Could not save the tray setting. The previous setting has been restored.</value></data>
   <data name="TrayExitFailed" xml:space="preserve"><value>The app could not exit completely. Try again.</value></data>
   <data name="TrayUnavailable" xml:space="preserve"><value>The system tray is unavailable. This window will remain open.</value></data>
@@ -1130,7 +1142,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="CliReviewTrust.Content" xml:space="preserve"><value>Review trusted folder</value></data>
   <data name="WorkspaceTrustError.Title" xml:space="preserve"><value>Review workspace trust</value></data>
   <data name="InboxConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Connection status and details</value></data>
-  <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>Connection and notification details. Conversations continue in the original Slack or Mattermost thread.</value></data>
+  <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>Connection and notification details. Conversations continue in the original Slack, Mattermost, or Discord conversation.</value></data>
   <data name="InboxRequestContext.Header" xml:space="preserve"><value>Workspace and request details</value></data>
   <data name="AgentSettingsGuide.Text" xml:space="preserve"><value>Choose a CLI and workspace, then use Check CLI to verify it.</value></data>
   <data name="AgentBasicTitle.Text" xml:space="preserve"><value>Basic setup</value></data>
@@ -1149,9 +1161,9 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Register or restore Codex, Claude Code, Gemini CLI and GitHub Copilot CLI connections</value></data>
   <data name="AgentExecutionExplanationTitle.Text" xml:space="preserve"><value>How execution approval works</value></data>
   <data name="AgentExecutionExplanationHelp.Text" xml:space="preserve"><value>Review the approval flow and current execution policy</value></data>
-  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>Open the service you use. Approval and attachment settings apply to both services.</value></data>
+  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>Open the service you use. Approval and attachment settings apply to all chat services.</value></data>
   <data name="ChatCommonTitle.Text" xml:space="preserve"><value>Common chat behavior</value></data>
-  <data name="ChatCommonHelp.Text" xml:space="preserve"><value>Request approval and result posting for both services</value></data>
+  <data name="ChatCommonHelp.Text" xml:space="preserve"><value>Request approval and result posting for all chat services</value></data>
   <data name="ChatScopeOverview.Text" xml:space="preserve"><value>Open the service you use to set credentials, allowed users, and conversation restrictions.</value></data>
   <data name="MattermostSectionTitle.Text" xml:space="preserve"><value>Mattermost</value></data>
   <data name="MattermostSectionHelp.Text" xml:space="preserve"><value>Server, tokens, allowed users, and conversation restrictions</value></data>
@@ -1229,4 +1241,61 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Reasoning effort</value></data>
   <data name="AgentEditorPermission.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Action permissions</value></data>
   <data name="AgentEditorModelChoices.PlaceholderText" xml:space="preserve"><value>Select from CLI candidates</value></data>
+  <data name="DiscordSectionTitle.Text" xml:space="preserve"><value>Discord</value></data>
+  <data name="DiscordSectionTitle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord</value></data>
+  <data name="DiscordSectionHelp.Text" xml:space="preserve"><value>Connect a Discord bot and restrict which users and servers may reach it.</value></data>
+  <data name="DiscordSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord bot settings</value></data>
+  <data name="DiscordBotSetupHelp.Text" xml:space="preserve"><value>Create a bot in the Discord Developer Portal, enable the Message Content intent, then invite it to your server. Use the bot token only; never use a user token. Enable Developer Mode in Discord to copy user, server, channel, and thread IDs.</value></data>
+  <data name="DiscordBotTokenLabel.Text" xml:space="preserve"><value>Bot token</value></data>
+  <data name="DiscordBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord bot token</value></data>
+  <data name="DiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Show or hide Discord bot token</value></data>
+  <data name="DiscordAllowedUserIdsLabel.Text" xml:space="preserve"><value>Allowed user IDs</value></data>
+  <data name="DiscordAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord user IDs</value></data>
+  <data name="DiscordAllowedUserIdsHelp.Text" xml:space="preserve"><value>Required. Enter one Discord user ID per line. Usernames are not used.</value></data>
+  <data name="DiscordAllowedGuildIdsLabel.Text" xml:space="preserve"><value>Allowed server IDs</value></data>
+  <data name="DiscordAllowedGuildIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord server IDs</value></data>
+  <data name="DiscordAllowedGuildIdsHelp.Text" xml:space="preserve"><value>Required when direct messages are disabled. Enter one server ID per line.</value></data>
+  <data name="DiscordAllowDirectMessages.Header" xml:space="preserve"><value>Allow direct messages</value></data>
+  <data name="DiscordAllowDirectMessages.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="DiscordAllowDirectMessages.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="DiscordAllowDirectMessages.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allow Discord direct messages</value></data>
+  <data name="DiscordAllowDirectMessagesHelp.Text" xml:space="preserve"><value>Off by default. When enabled, allowed users can send requests in direct messages without a server ID.</value></data>
+  <data name="DiscordAllowedChannelIdsLabel.Text" xml:space="preserve"><value>Allowed channel IDs (optional)</value></data>
+  <data name="DiscordAllowedChannelIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord channel IDs</value></data>
+  <data name="DiscordAllowedChannelIdsHelp.Text" xml:space="preserve"><value>Optional additional restriction. Enter one channel ID per line.</value></data>
+  <data name="DiscordAllowedThreadIdsLabel.Text" xml:space="preserve"><value>Allowed thread IDs (optional)</value></data>
+  <data name="DiscordAllowedThreadIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord thread IDs</value></data>
+  <data name="DiscordAllowedThreadIdsHelp.Text" xml:space="preserve"><value>Optional additional restriction. Enter one thread ID per line.</value></data>
+  <data name="AutoConnectOptionDiscord.Content" xml:space="preserve"><value>Discord</value></data>
+  <data name="WizardProviderDiscord.Content" xml:space="preserve"><value>Discord</value></data>
+  <data name="WizardDiscordTitle.Text" xml:space="preserve"><value>Configure a Discord bot</value></data>
+  <data name="WizardDiscordBotSetupHelp.Text" xml:space="preserve"><value>Create a bot in the Discord Developer Portal, enable the Message Content intent, then invite it to your server. Use the bot token only; never use a user token. Enable Developer Mode in Discord to copy user, server, channel, and thread IDs.</value></data>
+  <data name="WizardDiscordBotTokenLabel.Text" xml:space="preserve"><value>Bot token</value></data>
+  <data name="WizardDiscordBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord bot token</value></data>
+  <data name="WizardDiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Show or hide Discord bot token</value></data>
+  <data name="WizardDiscordAllowedUsersLabel.Text" xml:space="preserve"><value>Allowed user IDs</value></data>
+  <data name="WizardDiscordAllowedUsers.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord user IDs</value></data>
+  <data name="WizardDiscordAllowedUsersHelp.Text" xml:space="preserve"><value>Required. Enter one Discord user ID per line. Usernames are not used.</value></data>
+  <data name="WizardDiscordAllowedGuildsLabel.Text" xml:space="preserve"><value>Allowed server IDs</value></data>
+  <data name="WizardDiscordAllowedGuilds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord server IDs</value></data>
+  <data name="WizardDiscordAllowedGuildsHelp.Text" xml:space="preserve"><value>Required when direct messages are disabled. Enter one server ID per line.</value></data>
+  <data name="WizardDiscordAllowedChannelsLabel.Text" xml:space="preserve"><value>Allowed channel IDs (optional)</value></data>
+  <data name="WizardDiscordAllowedChannels.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord channel IDs</value></data>
+  <data name="WizardDiscordAllowedThreadsLabel.Text" xml:space="preserve"><value>Allowed thread IDs (optional)</value></data>
+  <data name="WizardDiscordAllowedThreads.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord thread IDs</value></data>
+  <data name="WizardConnectDiscord.Content" xml:space="preserve"><value>Connect Discord</value></data>
+  <data name="WizardConnectDiscord.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Connect Discord</value></data>
+  <data name="ConnectDiscord.Content" xml:space="preserve"><value>Connect to Discord</value></data>
+  <data name="CloseBehaviorLabel.Text" xml:space="preserve"><value>When the window closes</value></data>
+  <data name="CloseBehaviorComboBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>When the window closes</value></data>
+  <data name="CloseBehaviorAskEveryTime.Content" xml:space="preserve"><value>Ask every time</value></data>
+  <data name="CloseBehaviorMoveToTray.Content" xml:space="preserve"><value>Move to system tray</value></data>
+  <data name="CloseBehaviorExitApp.Content" xml:space="preserve"><value>Exit app</value></data>
+  <data name="GeneralSavedModelLabel.Text" xml:space="preserve"><value>Model</value></data>
+  <data name="GeneralSavedReasoningLabel.Text" xml:space="preserve"><value>Reasoning effort</value></data>
+  <data name="GeneralSavedTechnicalDetails.Header" xml:space="preserve"><value>Paths and storage</value></data>
+  <data name="GeneralSavedExecutableLabel.Text" xml:space="preserve"><value>CLI executable</value></data>
+  <data name="GeneralNotificationDiagnostics.Header" xml:space="preserve"><value>Diagnostic details</value></data>
+  <data name="GeneralSavedAgentEdit.Content" xml:space="preserve"><value>Agent settings</value></data>
+  <data name="GeneralSavedWorkspaceEdit.Content" xml:space="preserve"><value>Change folder</value></data>
 </root>

@@ -161,6 +161,7 @@ public sealed class AgentModeSettingsTests
 
         var settings = await new SettingsStore(temp.Path).LoadAsync();
         Assert.Equal("exec", settings.AgentMode);
+        Assert.Equal("workspace", settings.WorkspaceRoot); // Legacy values remain readable so the UI can repair them.
     }
 
     [Fact]
@@ -168,7 +169,7 @@ public sealed class AgentModeSettingsTests
     {
         using var temp = new SettingsDirectory();
         var store = new SettingsStore(temp.Path);
-        await store.SaveAsync(new BridgeSettings { AgentMode = "app-server", WorkspaceRoot = "workspace" });
+        await store.SaveAsync(new BridgeSettings { AgentMode = "app-server", WorkspaceRoot = temp.Path });
         Assert.Equal("app-server", (await store.LoadAsync()).AgentMode);
         await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(new BridgeSettings { AgentMode = "unknown" }));
 

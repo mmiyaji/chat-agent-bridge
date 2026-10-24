@@ -44,12 +44,7 @@ public sealed partial class ChatInboxViewModel
             string reply;
             if (kind == ChatControlCommandKind.Status)
             {
-                var active = own.FirstOrDefault(item => ReferenceEquals(item, _activeItem));
-                var latest = active ?? own.LastOrDefault();
-                reply = latest is null ? DesktopText.Get("ChatControlNoRequests") :
-                    DesktopText.Get("ChatControlStatus", ControlState(latest),
-                        own.Count(item => item.State == "承認待ち" && !ReferenceEquals(item, _activeItem)),
-                        DesktopText.Get(IsConnectionConfirmed ? "ChatControlConnected" : "ChatControlReconnecting"));
+                reply = await BuildChatControlStatusAsync(own, token);
             }
             else
             {
@@ -84,6 +79,68 @@ public sealed partial class ChatInboxViewModel
 
     private string ControlState(InboxItem item) => _waitingForInput.ContainsKey(item)
         ? DesktopText.Get("ChatInputWaiting") : item.StateDisplay;
+
+    private async Task<string> BuildChatControlStatusAsync(IReadOnlyList<InboxItem> own, CancellationToken token)
+    {
+        var connection = DesktopText.Get(IsConnectionConfirmed ? "ChatControlConnected" : "ChatControlReconnecting");
+        var live = own.Where(item => item.State is "承認待ち" or "追加指示の受領待ち" ||
+                ReferenceEquals(item, _activeItem) && item.State == "実行中")
+            .OrderBy(item => ReferenceEquals(item, _activeItem) ? 0 : 1)
+            .ThenBy(item => item.ReceivedAt)
+            .ToArray();
+        if (live.Length == 0)
+            return DesktopText.Get("ChatControlStatusEmpty", connection);
+
+        var rows = new List<string>(Math.Min(live.Length, ChatControlStatusFormatter.MaximumRows));
+        for (var index = 0; index < Math.Min(live.Length, ChatControlStatusFormatter.MaximumRows); index++)
+        {
+            var item = live[index];
+            var active = ReferenceEquals(item, _activeItem);
+            var state = active && item.State == "実行中"
+                ? ControlState(item)
+                : item.State == "追加指示の受領待ち"
+                    ? DesktopText.Get("ChatControlStatusQueued")
+                    : _notifiedRequests.Contains(item)
+                        ? DesktopText.Get("ChatControlStatusApproval")
+                        : DesktopText.Get("ChatControlStatusQueued");
+            var effective = await GetEffectiveStatusSettingsAsync(item, token);
+            var agent = AgentProfile.ResolveProvider(effective) switch
+            {
+                AgentProfile.Codex => DesktopText.Get("ChatControlAgentCodex"),
+                AgentProfile.Claude => DesktopText.Get("ChatControlAgentClaude"),
+                AgentProfile.Gemini => DesktopText.Get("ChatControlAgentGemini"),
+                AgentProfile.GitHubCopilot => DesktopText.Get("ChatControlAgentCopilot"),
+                _ => DesktopText.Get("ChatControlAgentCustom", Path.GetFileName(effective.AgentExecutable))
+            };
+            var model = CleanStatusField(effective.AgentModel ?? DesktopText.Get("CliDefault"), 100);
+            agent = CleanStatusField(agent, 60);
+            var workspace = CleanStatusField(effective.WorkspaceRoot, 140);
+            rows.Add(DesktopText.Get("ChatControlStatusRow", state, agent, model, workspace));
+        }
+        return ChatControlStatusFormatter.Format(
+            DesktopText.Get("ChatControlStatusHeader", live.Length, connection), rows, live.Length,
+            remaining => DesktopText.Get("ChatControlStatusMore", remaining));
+    }
+
+    private static string CleanStatusField(string value, int maxLength)
+    {
+        var cleaned = new string(value.Select(character => char.IsControl(character) || character is '\u061C' or '\u200E' or '\u200F' or
+            '\u202A' or '\u202B' or '\u202C' or '\u202D' or '\u202E' or '\u2066' or '\u2067' or '\u2068' or '\u2069'
+                ? ' ' : character).ToArray()).Trim().Replace("@", "＠", StringComparison.Ordinal)
+            .Replace("<", "‹", StringComparison.Ordinal).Replace(">", "›", StringComparison.Ordinal);
+        return cleaned.Length <= maxLength ? cleaned : cleaned[..(maxLength - 1)] + "…";
+    }
+
+    private async Task<BridgeSettings> GetEffectiveStatusSettingsAsync(InboxItem item, CancellationToken token)
+    {
+        if (item.EffectiveSettings is { } effective) return effective;
+        var key = CreateSessionKey(item);
+        var workspaceSettings = await _sessions.ApplyWorkspaceAsync(key, item.Settings, token);
+        var binding = await _sessions.FindExecutionBindingAsync(key, token);
+        effective = ConversationExecutionPolicy.GetEffectiveSettings(workspaceSettings, binding);
+        item.Workspace = effective.WorkspaceRoot;
+        return effective;
+    }
 
     private async Task ReplyToControlAsync(IChatTransport transport, BridgeSettings received,
         ChatRequest request, string text, CancellationToken token)

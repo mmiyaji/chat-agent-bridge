@@ -8,7 +8,7 @@
         <settings:SettingsExpander x:Name="IdentityExpander" x:Uid="PortableIdentityHeading" IsExpanded="False"
                                    AutomationProperties.AutomationId="PortableIdentityExpander">
             <settings:SettingsExpander.HeaderIcon>
-                <FontIcon Glyph="&#xE72E;" />
+                <SymbolIcon Symbol="Message" />
             </settings:SettingsExpander.HeaderIcon>
             <settings:SettingsExpander.Items>
                 <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="PortableIdentityStateCard">
@@ -21,8 +21,10 @@
                             <InfoBar x:Name="StatusInfoBar" IsOpen="True" IsClosable="False"
                                      AutomationProperties.AutomationId="PortableIdentityStatus"
                                      AutomationProperties.LiveSetting="Polite" />
-                            <TextBlock x:Name="IdentityDetails" TextWrapping="Wrap"
-                                       AutomationProperties.AutomationId="PortableIdentityDetails" />
+                            <Expander x:Uid="GeneralNotificationDiagnostics" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="NotificationDiagnostics">
+                                <TextBlock x:Name="IdentityDetails" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                           AutomationProperties.AutomationId="PortableIdentityDetails" />
+                            </Expander>
                             <ProgressRing x:Name="OperationProgress" Width="20" Height="20" IsActive="False"
                                           Visibility="Collapsed" AutomationProperties.AutomationId="PortableIdentityProgress" />
                         </StackPanel>

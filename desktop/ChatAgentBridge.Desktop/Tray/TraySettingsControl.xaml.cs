@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using ChatAgentBridge.Core;
 using ChatAgentBridge_Desktop.Localization;
 
 namespace ChatAgentBridge_Desktop.Tray;
@@ -20,7 +21,12 @@ public sealed partial class TraySettingsControl : UserControl
     private void TraySettingsControl_Loaded(object sender, RoutedEventArgs e)
     {
         isInitializing = true;
-        CloseToTrayToggle.IsOn = App.Tray.CloseToTray;
+        CloseBehaviorComboBox.SelectedIndex = App.Tray.CloseBehavior switch
+        {
+            WindowCloseBehavior.MoveToSystemTray => 1,
+            WindowCloseBehavior.ExitApp => 2,
+            _ => 0
+        };
         isInitializing = false;
 
         if (!isSubscribed)
@@ -41,46 +47,59 @@ public sealed partial class TraySettingsControl : UserControl
         }
     }
 
-    private async void CloseToTrayToggle_Toggled(object sender, RoutedEventArgs e)
+    private void CloseBehaviorComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (isInitializing)
-        {
-            return;
-        }
-
-        if (isSaving)
-        {
-            isInitializing = true;
-            CloseToTrayToggle.IsOn = App.Tray.CloseToTray;
-            isInitializing = false;
-            return;
-        }
-
-        bool previousValue = App.Tray.CloseToTray;
-        bool requestedValue = CloseToTrayToggle.IsOn;
+        if (isInitializing || CloseBehaviorComboBox.SelectedIndex < 0) return;
+        if (isSaving) return;
         isSaving = true;
-        CloseToTrayToggle.IsEnabled = false;
+        // Let ComboBox finish selecting/collapsing before changing its enabled state.
+        if (!DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+            async () => await SaveCloseBehaviorAsync()))
+        {
+            isSaving = false;
+            RestoreSelectedBehavior();
+            StatusText.Text = GetString("TraySaveFailed");
+        }
+    }
+
+    private async Task SaveCloseBehaviorAsync()
+    {
+        var requestedValue = CloseBehaviorComboBox.SelectedIndex switch
+        {
+            1 => WindowCloseBehavior.MoveToSystemTray,
+            2 => WindowCloseBehavior.ExitApp,
+            _ => WindowCloseBehavior.AskEveryTime
+        };
+        CloseBehaviorComboBox.IsEnabled = false;
         StatusText.Text = string.Empty;
 
         try
         {
-            await App.Tray.SetCloseToTrayAsync(requestedValue);
+            await App.Tray.SetCloseBehaviorAsync(requestedValue);
         }
         catch
         {
-            isInitializing = true;
-            CloseToTrayToggle.IsOn = previousValue;
-            isInitializing = false;
+            RestoreSelectedBehavior();
             StatusText.Text = GetString("TraySaveFailed");
         }
         finally
         {
-            isInitializing = true;
-            CloseToTrayToggle.IsOn = App.Tray.CloseToTray;
-            isInitializing = false;
+            RestoreSelectedBehavior();
             isSaving = false;
-            CloseToTrayToggle.IsEnabled = true;
+            CloseBehaviorComboBox.IsEnabled = true;
         }
+    }
+
+    private void RestoreSelectedBehavior()
+    {
+        isInitializing = true;
+        CloseBehaviorComboBox.SelectedIndex = App.Tray.CloseBehavior switch
+        {
+            WindowCloseBehavior.MoveToSystemTray => 1,
+            WindowCloseBehavior.ExitApp => 2,
+            _ => 0
+        };
+        isInitializing = false;
     }
 
     private void MoveToTrayButton_Click(object sender, RoutedEventArgs e)

@@ -40,6 +40,13 @@
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable\</IntermediateOutputPath>
   </PropertyGroup>
 
+  <!-- Native Discord fixture hooks never enter ordinary portable distributions. -->
+  <PropertyGroup Condition="'$(CABDiscordFixture)' == 'true' and '$(CABPortable)' == 'true'">
+    <DefineConstants>$(DefineConstants);CAB_DISCORD_FIXTURE</DefineConstants>
+    <OutputPath>bin\$(Platform)\$(Configuration)\portable-discord-fixture\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable-discord-fixture\</IntermediateOutputPath>
+  </PropertyGroup>
+
   <!-- Identity is additive. Ordinary portable builds retain their original notification registration. -->
   <PropertyGroup Condition="'$(CABPortable)' == 'true' and '$(CABPortableIdentity)' == 'true'">
     <ApplicationManifest>../portable-identity/app.portable.manifest</ApplicationManifest>
@@ -117,6 +124,7 @@
     <Content Include="Assets\OverviewArchitecture.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Assets\OverviewArchitecture.en.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Assets\Icons\FluentSystemIcons\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\Icons\MaterialSymbols\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Assets\Licenses\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="Assets\SplashScreen.scale-200.png" />

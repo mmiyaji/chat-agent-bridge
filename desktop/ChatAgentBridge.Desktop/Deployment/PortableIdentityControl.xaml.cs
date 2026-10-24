@@ -69,10 +69,13 @@ public sealed partial class PortableIdentityControl : UserControl
         IdentityExpander.Header = DesktopText.Get("PortableIdentityHeading.Header");
         IdentityExpander.Description = DesktopText.Get("PortableIdentityHeading.Description");
         StatusInfoBar.Title = DesktopText.Get("PortableIdentityStatusLabel");
-        StatusInfoBar.Message = identity.Status;
+        StatusInfoBar.Message = identity.IsActive ? DesktopText.Get("GeneralNotificationRegistered")
+            : identity.IsRegistered ? DesktopText.Get("GeneralNotificationRestart")
+            : identity.CanConfigure ? DesktopText.Get("GeneralNotificationAvailable")
+            : DesktopText.Get("GeneralNotificationUnavailable");
         StatusInfoBar.Severity = identity.IsActive ? InfoBarSeverity.Success : InfoBarSeverity.Informational;
 
-        var details = new List<string>();
+        var details = new List<string> { identity.Status };
         if (!string.IsNullOrWhiteSpace(identity.Publisher))
             details.Add(DesktopText.Get("PortableIdentityPublisher", identity.Publisher));
         if (!string.IsNullOrWhiteSpace(identity.CertificateFingerprint))

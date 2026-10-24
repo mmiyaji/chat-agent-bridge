@@ -65,9 +65,9 @@ function Click-Actual($id) {
  [ImpactInput]::mouse_event(4,0,0,0,[UIntPtr]::Zero)
  Start-Sleep -Milliseconds 200
 }
-function Resize-Test($width) {
+function Resize-Test($width, [int]$height = 0) {
  $scale=[ConnectionSmokeNative]::GetDpiForWindow($script:app.MainWindowHandle)/96.0
- $height=if($width -ge 1000){1024}else{840}
+ if($height -eq 0){$height=if($width -ge 1000){1024}else{840}}
  [void][ConnectionSmokeNative]::SetWindowPos($script:app.MainWindowHandle,[IntPtr]::Zero,20,20,[int]($width*$scale),[int]($height*$scale),0x0010)
  Start-Sleep -Milliseconds 300
 }
@@ -112,6 +112,20 @@ function Choose-CompactScope($navId,$id){
 function Drafts { $p=Join-Path $script:data 'agent-settings-drafts.json';if(Test-Path $p){Get-Content $p -Raw|ConvertFrom-Json}else{$null} }
 try {
  Start-IsolatedApp
+ Resize-Test 1160 800
+ Select-Element 'NavAgentSettings'
+ Wait-For {(Wait-Element 'AgentExecutable').Current.IsEnabled} 'default-size agent editor initialized'
+ $first=(Wait-Element 'AgentScopeCommon').Current.BoundingRectangle
+ $next=(Wait-Element 'AgentScopeCodex').Current.BoundingRectangle
+ Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Agent side list must be visible at the default 1160 x 800 size.'
+ Point-At (Wait-Element 'BrowseAgentExecutable')
+ Capture "agent-default-sidebar-$Language-$Theme"
+ Select-Element 'NavConnections'
+ $first=(Wait-Element 'ConnectionScopeCommon').Current.BoundingRectangle
+ $next=(Wait-Element 'ConnectionScopeMattermost').Current.BoundingRectangle
+ Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Chat side list must be visible at the default 1160 x 800 size.'
+ Capture "chat-default-sidebar-$Language-$Theme"
+ Add-Pass 'Both settings pages show side lists at the actual default window size'
  Resize-Test 1440
  $settingsPath=Join-Path $script:data 'settings.json'
  $initialSettingsHash=(Get-FileHash $settingsPath).Hash

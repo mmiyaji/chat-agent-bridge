@@ -33,11 +33,12 @@ public sealed partial class MainPage
     private void ConnectionsJump_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
         if (sender is not ComboBox { SelectedItem: ComboBoxItem { Tag: string section } } picker) return;
-        SetConnectionSettingsScope(section switch { "mattermost" => "mattermost", "slack" => "slack", _ => "common" });
+        SetConnectionSettingsScope(section switch { "mattermost" => "mattermost", "slack" => "slack", "discord" => "discord", _ => "common" });
         Expander? target = section switch
         {
             "mattermost" => MattermostSettingsCard,
             "slack" => SlackSettingsCard,
+            "discord" => DiscordSettingsCard,
             "approval" => ChatApprovalSettingsCard,
             "attachments" => FileAttachmentSettings,
             "codex-sharing" when ViewModel.IsCodexProvider => CodexChatSharingSettings,

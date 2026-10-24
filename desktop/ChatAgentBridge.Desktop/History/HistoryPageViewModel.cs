@@ -42,6 +42,7 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record, string? ChatLab
         "local" => DesktopText.Get("Local"),
         "slack" => "Slack",
         "mattermost" => "Mattermost",
+        "discord" => "Discord",
         _ => string.IsNullOrWhiteSpace(source) ? DesktopText.Get("UnknownProvider") : source
     };
 }
@@ -76,6 +77,7 @@ public sealed record AuditHistoryRow(AuditEvent Record, string? ChatLabel = null
         "local" => DesktopText.Get("Local"),
         "slack" => "Slack",
         "mattermost" => "Mattermost",
+        "discord" => "Discord",
         _ => DesktopText.Get("UnknownProvider")
     };
     public string Summary => $"{Timestamp} · {Source} · {Kind}";
@@ -91,6 +93,7 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
     {
         "mattermost" => "Mattermost",
         "slack" => "Slack",
+        "discord" => "Discord",
         "local" => DesktopText.Get("Local"),
         _ => DesktopText.Get("UnknownProvider")
     };
@@ -236,7 +239,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public ObservableCollection<string> WorkspaceFilters { get; } = [DesktopText.Get("HistoryWorkspaceAll")];
     public ObservableCollection<string> SessionSortOptions { get; } =
         [DesktopText.Get("HistorySortRecent"), DesktopText.Get("HistorySortName"), DesktopText.Get("HistorySortUsage")];
-    public ObservableCollection<string> ProviderFilters { get; } = [DesktopText.Get("HistoryProviderAll"), "Slack", "Mattermost", DesktopText.Get("Local")];
+    public ObservableCollection<string> ProviderFilters { get; } = [DesktopText.Get("HistoryProviderAll"), "Slack", "Mattermost", "Discord", DesktopText.Get("Local")];
     [ObservableProperty] public partial string SearchQuery { get; set; } = string.Empty;
     [ObservableProperty] public partial string ProviderFilter { get; set; } = DesktopText.Get("HistoryProviderAll");
     [ObservableProperty] public partial string WorkspaceFilter { get; set; } = DesktopText.Get("HistoryWorkspaceAll");
@@ -361,7 +364,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         try
         {
             ReplaceOptions(ProviderFilters,
-                [DesktopText.Get("HistoryProviderAll"), "Slack", "Mattermost", DesktopText.Get("Local")]);
+                [DesktopText.Get("HistoryProviderAll"), "Slack", "Mattermost", "Discord", DesktopText.Get("Local")]);
             ReplaceOptions(SessionSortOptions,
                 [DesktopText.Get("HistorySortRecent"), DesktopText.Get("HistorySortName"), DesktopText.Get("HistorySortUsage")]);
             var allWorkspace = DesktopText.Get("HistoryWorkspaceAll");
@@ -671,7 +674,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
 
     private bool CanSwitchSelectedAgent() => SelectedSession is { } selected && !IsBusy &&
         selected.Binding.Key.UserId is not null && selected.Binding.Key.Origin is not null &&
-        selected.Binding.Key.Provider is "slack" or "mattermost" &&
+        selected.Binding.Key.Provider is "slack" or "mattermost" or "discord" &&
         ConversationAgentService.ProviderOf(selected.Binding) is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot;
 
     [RelayCommand(CanExecute = nameof(CanSwitchSelectedAgent))]

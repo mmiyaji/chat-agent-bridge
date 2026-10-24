@@ -393,11 +393,14 @@
   <data name="SetupAllowedUsersMissing" xml:space="preserve">
     <value>次のステップ：接続先ごとに許可するユーザーIDを1行1人で設定します。空欄では全員を拒否します。</value>
   </data>
+  <data name="SetupDiscordGuildIdsMissing" xml:space="preserve">
+    <value>次のステップ：許可するDiscordサーバーIDを1つ以上入力するか、ダイレクトメッセージを明示的に有効にします。</value>
+  </data>
   <data name="SetupChatAfterStepOne" xml:space="preserve">
     <value>未設定：ステップ1の後に接続情報を設定します。</value>
   </data>
   <data name="SetupChatConfigMissing" xml:space="preserve">
-    <value>次のステップ：SlackまたはMattermostの接続情報と許可ユーザーを設定します。</value>
+    <value>次のステップ：Slack、Mattermost、またはDiscordの接続情報と許可ユーザーを設定します。</value>
   </data>
   <data name="SetupChatConfigSaved" xml:space="preserve">
     <value>完了：接続情報と許可するユーザーIDを保存済み。</value>
@@ -463,7 +466,7 @@
     <value>このPCで使うAIと、作業するフォルダーを選びます。CLIのインストールとログインは事前に必要です。</value>
   </data>
   <data name="WizardChatDescription" xml:space="preserve">
-    <value>SlackまたはMattermostを選び、接続情報と利用を許可する本人のユーザーIDを入力します。</value>
+    <value>Slack、Mattermost、またはDiscordを選び、接続情報と利用を許可するユーザーIDを入力します。</value>
   </data>
   <data name="WizardCliDescription" xml:space="preserve">
     <value>CLIのバージョンを確認します。Codex・Claude Codeではモデル候補も取得します。AIへ作業の依頼は送りません。</value>
@@ -713,4 +716,7 @@ AIの操作権限: {8}</value>
   <data name="WizardSkippedSeparator" xml:space="preserve"><value>、</value></data>
   <data name="SessionCliProviderHelp" xml:space="preserve"><value>Gemini CLI・GitHub Copilot CLIは同じチャットスレッドの会話を継続し、モデル名を直接指定できます。モデル候補の取得とアプリからの推論・操作権限の上書きには対応しません。事前にCLIへログインしてください。</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>このCLIではモデル候補を取得できません。CLIと契約が対応するモデルID・別名を直接入力するか、空欄でCLIの既定モデルを使ってください。モデルの利用可否は実行時に確認されます。推論と操作権限はCLIの設定に従います。</value></data>
+  <data name="OverviewAutoConnectDiscordReady" xml:space="preserve"><value>オン：Discord</value></data>
+  <data name="OverviewAutoConnectNeedsDiscord" xml:space="preserve"><value>Discord Botとアクセス設定が必要</value></data>
+  <data name="DiscordConnectionFields" xml:space="preserve"><value>Botトークンと許可するユーザーIDを入力してください。ダイレクトメッセージを有効にしない場合は、許可するサーバーIDも1つ以上必要です。</value></data>
 </root>

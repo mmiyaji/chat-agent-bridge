@@ -26,7 +26,7 @@ public partial class MainPageViewModel
     [ObservableProperty, NotifyPropertyChangedFor(nameof(OnboardingTitle)), NotifyPropertyChangedFor(nameof(OnboardingDescription)), NotifyPropertyChangedFor(nameof(OnboardingNextLabel)), NotifyPropertyChangedFor(nameof(OnboardingProgress)), NotifyPropertyChangedFor(nameof(IsWizardIntro)), NotifyPropertyChangedFor(nameof(IsWizardAgentStep)), NotifyPropertyChangedFor(nameof(IsWizardCliStep)), NotifyPropertyChangedFor(nameof(IsWizardChatStep)), NotifyPropertyChangedFor(nameof(IsWizardSafetyStep)), NotifyCanExecuteChangedFor(nameof(PreviousOnboardingCommand))]
     public partial int OnboardingStep { get; set; }
     [ObservableProperty] public partial bool IsOnboardingActive { get; set; }
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsWizardSlack)), NotifyPropertyChangedFor(nameof(IsWizardMattermost)), NotifyPropertyChangedFor(nameof(WizardSummary)), NotifyPropertyChangedFor(nameof(WizardAutoConnect))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsWizardSlack)), NotifyPropertyChangedFor(nameof(IsWizardMattermost)), NotifyPropertyChangedFor(nameof(IsWizardDiscord)), NotifyPropertyChangedFor(nameof(WizardSummary)), NotifyPropertyChangedFor(nameof(WizardAutoConnect))]
     public partial string OnboardingChatProvider { get; set; } = "slack";
     public bool WizardAutoConnect
     {
@@ -40,6 +40,7 @@ public partial class MainPageViewModel
     public bool IsWizardSafetyStep => OnboardingStep == 4;
     public bool IsWizardSlack => OnboardingChatProvider == "slack";
     public bool IsWizardMattermost => OnboardingChatProvider == "mattermost";
+    public bool IsWizardDiscord => OnboardingChatProvider == "discord";
     public string OnboardingTitle => $"{OnboardingProgress} " + (OnboardingStep switch
     { 0 => ViewModelText.Get("WizardStepIntro"), 1 => ViewModelText.Get("WizardStepAgent"), 2 => ViewModelText.Get("WizardStepCli"), 3 => ViewModelText.Get("WizardStepChat"), _ => ViewModelText.Get("WizardStepSafety") });
     public string OnboardingDescription => OnboardingStep switch
@@ -52,7 +53,7 @@ public partial class MainPageViewModel
     };
     public string OnboardingNextLabel => OnboardingStep == 0 ? ViewModelText.Get("ConsentAndContinue") : OnboardingStep == 4 ? ViewModelText.Get("SaveAndFinish") : ViewModelText.Get("SaveAndContinue");
     public string OnboardingProgress => $"[{Math.Clamp(OnboardingStep, 0, 4) + 1}/5]";
-    public string WizardSummary => ViewModelText.Get("WizardSummary", AgentProviderDisplayName, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, string.IsNullOrWhiteSpace(AgentReasoningEffort) ? ViewModelText.Get("DefaultCliValue") : AgentReasoningEffort, WorkspaceRoot, IsWizardSlack ? "Slack" : "Mattermost", ViewModelText.Get(WizardAutoConnect ? "Enabled" : "Disabled"), ChatApprovalLabel(ChatApprovalMode), ResultLabel(ChatResultMode), PermissionLabel(AgentPermissionMode));
+    public string WizardSummary => ViewModelText.Get("WizardSummary", AgentProviderDisplayName, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, string.IsNullOrWhiteSpace(AgentReasoningEffort) ? ViewModelText.Get("DefaultCliValue") : AgentReasoningEffort, WorkspaceRoot, IsWizardSlack ? "Slack" : IsWizardMattermost ? "Mattermost" : "Discord", ViewModelText.Get(WizardAutoConnect ? "Enabled" : "Disabled"), ChatApprovalLabel(ChatApprovalMode), ResultLabel(ChatResultMode), PermissionLabel(AgentPermissionMode));
     public event Action<int>? OnboardingNavigateRequested;
     /// <summary>Raised when the user tries to continue with required inputs missing, so the page can highlight and focus them.</summary>
     public event Action<IReadOnlyList<WizardField>>? OnboardingFieldsFocusRequested;
@@ -79,7 +80,9 @@ public partial class MainPageViewModel
         }
         catch { SetStatus(ViewModelText.Get("WizardProgressLoadFailed"), ViewModelText.Get("WizardProgressLoadFailedDetails"), "Error"); }
     }
-    private string PreferredWizardProvider() => AutoConnectProvider is "slack" or "mattermost" ? AutoConnectProvider : !string.IsNullOrWhiteSpace(MattermostToken) && string.IsNullOrWhiteSpace(SlackBotToken) ? "mattermost" : "slack";
+    private string PreferredWizardProvider() => AutoConnectProvider is "slack" or "mattermost" or "discord" ? AutoConnectProvider
+        : !string.IsNullOrWhiteSpace(DiscordBotToken) && string.IsNullOrWhiteSpace(MattermostToken) && string.IsNullOrWhiteSpace(SlackBotToken) ? "discord"
+        : !string.IsNullOrWhiteSpace(MattermostToken) && string.IsNullOrWhiteSpace(SlackBotToken) ? "mattermost" : "slack";
     [RelayCommand(CanExecute = nameof(CanOnboardingAction))]
     private Task StartOnboardingAsync() => RunOnboardingActionAsync(async () =>
     {
@@ -131,7 +134,7 @@ public partial class MainPageViewModel
             }
         }
         if (OnboardingStep == 2 && !HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("CheckCliAndModel"), CliCheckSucceeded ? ViewModelText.Get("SelectedModelUnavailable") : ViewModelText.Get("RunCliCheckDetails"), "Warning"); RequestFieldFocus(OnboardingFieldChecks.CliStep(false)); return; }
-        if (OnboardingStep == 3 && !HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get(IsWizardSlack ? "SlackConnectionFields" : "MattermostConnectionFields"), "Warning"); RequestFieldFocus(MissingChatFields()); return; }
+        if (OnboardingStep == 3 && !HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get(IsWizardSlack ? "SlackConnectionFields" : IsWizardMattermost ? "MattermostConnectionFields" : "DiscordConnectionFields"), "Warning"); RequestFieldFocus(MissingChatFields()); return; }
         await SaveSettingsAsync();
         if (!_lastSaveSucceeded) return;
         if (OnboardingStep < 4) { await AdvanceOnboardingAsync(OnboardingStep + 1); return; }
@@ -190,12 +193,14 @@ public partial class MainPageViewModel
     });
     private bool CanOnboardingAction() => !_isAgentProfileEditor && IsSettingsLoaded && !IsLoading && !IsRunning && !IsOnboardingBusy && !IsCheckingCli;
     private bool CanGoBackInOnboarding() => CanOnboardingAction() && OnboardingStep > 0;
-    private bool HasChosenChatConfiguration() => (IsWizardSlack || IsWizardMattermost) && MissingChatFields().Count == 0;
+    private bool HasChosenChatConfiguration() => (IsWizardSlack || IsWizardMattermost || IsWizardDiscord) && MissingChatFields().Count == 0;
     private IReadOnlyList<WizardField> MissingChatFields() => IsWizardSlack
         ? OnboardingFieldChecks.SlackChat(SlackBotToken, SlackAppToken, HasAllowedUsers(SlackAllowedUserIds))
         : IsWizardMattermost
             ? OnboardingFieldChecks.MattermostChat(IsWizardMattermostUrlValid(), MattermostChannelId, MattermostToken, HasAllowedUsers(MattermostAllowedUserIds))
-            : [];
+            : IsWizardDiscord
+                ? OnboardingFieldChecks.DiscordChat(DiscordBotToken, HasAllowedUsers(DiscordAllowedUserIds), HasDiscordIds(DiscordAllowedGuildIds), DiscordAllowDirectMessages)
+                : [];
     private bool IsWizardMattermostUrlValid() => Uri.TryCreate(MattermostServerUrl.Trim(), UriKind.Absolute, out var uri) &&
         (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback) &&
         string.IsNullOrEmpty(uri.UserInfo) && string.IsNullOrEmpty(uri.Query) && string.IsNullOrEmpty(uri.Fragment);

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Text.Json;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.AppServer;
@@ -162,6 +163,47 @@ public sealed class AgentLiveProgressTests
         Assert.Contains("live app-server stderr", string.Concat(updatesArray.Where(update => update.Stream == "stderr").Select(update => update.Text)), StringComparison.Ordinal);
         var assistantText = updatesArray.Where(update => update.Stream == "stdout").Select(update => update.Text).ToArray();
         Assert.Equal(withDelta ? "hello world" : "fallback text" + Environment.NewLine, string.Concat(assistantText));
+    }
+
+    [Fact]
+    public async Task AppServer_ProgressLocalizesKnownItemTypesInsteadOfShowingProtocolNames()
+    {
+        var previousUiCulture = CultureInfo.CurrentUICulture;
+        var previousCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("ja-JP");
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("ja-JP");
+            using var workspace = new TemporaryDirectory();
+            var factory = new FakeAppServerFactory(client =>
+            {
+                var thread = FakeAppServerClient.ThreadId;
+                client.Emit("turn/started", new { threadId = thread, turnId = "active-turn" });
+                client.Emit("item/started", new { threadId = thread, turnId = "active-turn", item = new { id = "file-1", type = "fileChange" } });
+                client.Emit("item/completed", new { threadId = thread, turnId = "active-turn", item = new { id = "file-1", type = "fileChange" } });
+                client.Emit("turn/completed", new { threadId = thread, turnId = "active-turn", turn = new { id = "active-turn", status = "completed" } });
+                return Task.CompletedTask;
+            });
+            var updates = new ConcurrentQueue<AgentRunProgress>();
+            var result = await new CodexAppServerRunner(factory).RunAsync(new BridgeSettings
+            {
+                WorkspaceRoot = workspace.Path,
+                AgentExecutable = "codex",
+                AgentProvider = AgentProfile.Codex,
+                AgentMode = "app-server"
+            }, "prompt", new AppServerRunOptions(Progress: new InlineProgress(updates.Enqueue)));
+
+            Assert.True(result.Result.Success, result.Result.Error);
+            var activity = string.Concat(updates.Where(update => update.Stream == "activity").Select(update => update.Text));
+            Assert.Contains(CoreText.Get("ProgressStartingItem", CoreText.Get("ProgressItemFileChange")), activity, StringComparison.Ordinal);
+            Assert.Contains(CoreText.Get("ProgressFinishedItem", CoreText.Get("ProgressItemFileChange")), activity, StringComparison.Ordinal);
+            Assert.DoesNotContain("fileChange", activity, StringComparison.Ordinal);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousUiCulture;
+            CultureInfo.CurrentCulture = previousCulture;
+        }
     }
 
     [Fact]

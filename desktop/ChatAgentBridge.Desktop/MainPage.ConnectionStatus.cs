@@ -50,6 +50,7 @@ public sealed partial class MainPage
     {
         "mattermost" => "Mattermost",
         "slack" => "Slack",
+        "discord" => "Discord",
         _ => MrtText.Get("NavChat.Content")
     };
 }

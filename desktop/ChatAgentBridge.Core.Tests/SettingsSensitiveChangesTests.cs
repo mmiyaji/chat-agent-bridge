@@ -16,7 +16,10 @@ public sealed class SettingsSensitiveChangesTests
         yield return [nameof(BridgeSettings.TrustedWorkspaceRoots), nameof(SettingsSensitiveChanges.TrustedWorkspaces)];
         foreach (var name in new[] { nameof(BridgeSettings.ChatApprovalMode), nameof(BridgeSettings.SlackAllowedChannelIds),
                      nameof(BridgeSettings.SlackAllowedThreadIds), nameof(BridgeSettings.MattermostAllowedThreadIds),
-                     nameof(BridgeSettings.MattermostAllowedUserIds), nameof(BridgeSettings.SlackAllowedUserIds) })
+                     nameof(BridgeSettings.MattermostAllowedUserIds), nameof(BridgeSettings.SlackAllowedUserIds),
+                     nameof(BridgeSettings.DiscordAllowedUserIds), nameof(BridgeSettings.DiscordAllowedGuildIds),
+                     nameof(BridgeSettings.DiscordAllowedChannelIds), nameof(BridgeSettings.DiscordAllowedThreadIds),
+                     nameof(BridgeSettings.DiscordAllowDirectMessages) })
             yield return [name, nameof(SettingsSensitiveChanges.ChatAccess)];
         foreach (var name in new[] { nameof(BridgeSettings.ChatResultMode), nameof(BridgeSettings.ShareApprovalsInChat),
                      nameof(BridgeSettings.ShareAgentQuestionsInChat), nameof(BridgeSettings.ChatFollowUpMode) })
@@ -25,7 +28,8 @@ public sealed class SettingsSensitiveChangesTests
                      nameof(BridgeSettings.FileAttachmentMaxCount), nameof(BridgeSettings.FileAttachmentMaxTotalSizeMb) })
             yield return [name, nameof(SettingsSensitiveChanges.FileAttachments)];
         foreach (var name in new[] { nameof(BridgeSettings.MattermostServerUrl), nameof(BridgeSettings.MattermostChannelId),
-                     nameof(BridgeSettings.MattermostToken), nameof(BridgeSettings.SlackBotToken), nameof(BridgeSettings.SlackAppToken) })
+                     nameof(BridgeSettings.MattermostToken), nameof(BridgeSettings.SlackBotToken), nameof(BridgeSettings.SlackAppToken),
+                     nameof(BridgeSettings.DiscordBotToken) })
             yield return [name, nameof(SettingsSensitiveChanges.ConnectionIdentity)];
         foreach (var name in new[] { nameof(BridgeSettings.WorkspaceRoot), nameof(BridgeSettings.AgentModel),
                      nameof(BridgeSettings.AgentReasoningEffort), nameof(BridgeSettings.AutoConnectProvider),

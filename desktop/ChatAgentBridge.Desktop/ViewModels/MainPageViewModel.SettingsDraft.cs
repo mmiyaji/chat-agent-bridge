@@ -133,8 +133,14 @@ public partial class MainPageViewModel
         Track(() => PostConnectionNotice, value => PostConnectionNotice = value, baseline.PostConnectionNotice);
         Track(() => SlackBotToken, value => SlackBotToken = value, baseline.SlackBotToken);
         Track(() => SlackAppToken, value => SlackAppToken = value, baseline.SlackAppToken);
+        Track(() => DiscordBotToken, value => DiscordBotToken = value, baseline.DiscordBotToken);
         Track(() => MattermostAllowedUserIds, value => MattermostAllowedUserIds = value, baseline.MattermostAllowedUserIds);
         Track(() => SlackAllowedUserIds, value => SlackAllowedUserIds = value, baseline.SlackAllowedUserIds);
+        Track(() => DiscordAllowedUserIds, value => DiscordAllowedUserIds = value, baseline.DiscordAllowedUserIds);
+        Track(() => DiscordAllowedGuildIds, value => DiscordAllowedGuildIds = value, baseline.DiscordAllowedGuildIds);
+        Track(() => DiscordAllowedChannelIds, value => DiscordAllowedChannelIds = value, baseline.DiscordAllowedChannelIds);
+        Track(() => DiscordAllowedThreadIds, value => DiscordAllowedThreadIds = value, baseline.DiscordAllowedThreadIds);
+        Track(() => DiscordAllowDirectMessages, value => DiscordAllowDirectMessages = value, baseline.DiscordAllowDirectMessages);
         Track(() => ShareApprovalsInChat, value => ShareApprovalsInChat = value, baseline.ShareApprovalsInChat);
         Track(() => ShareAgentQuestionsInChat, value => ShareAgentQuestionsInChat = value, baseline.ShareAgentQuestionsInChat);
         Track(() => ChatApprovalMode, value => ChatApprovalMode = value, baseline.ChatApprovalMode);
@@ -176,6 +182,8 @@ public partial class MainPageViewModel
         nameof(AutoConnectProvider) or nameof(MattermostServerUrl) or nameof(MattermostChannelId) or
         nameof(MattermostBypassProxy) or nameof(PostConnectionNotice) or nameof(SlackBotToken) or
         nameof(SlackAppToken) or nameof(MattermostAllowedUserIds) or nameof(SlackAllowedUserIds) or
+        nameof(DiscordBotToken) or nameof(DiscordAllowedUserIds) or nameof(DiscordAllowedGuildIds) or
+        nameof(DiscordAllowedChannelIds) or nameof(DiscordAllowedThreadIds) or nameof(DiscordAllowDirectMessages) or
         nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(ChatApprovalMode) or
         nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or
         nameof(MattermostAllowedThreadIds) or nameof(FileAttachmentApprovalMode) or

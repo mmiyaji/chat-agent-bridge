@@ -22,7 +22,17 @@
   <data name="ArchitectureImageName" xml:space="preserve"><value>Architecture diagram</value></data>
   <data name="ArchitectureLoadError" xml:space="preserve"><value>The architecture diagram could not be loaded.</value></data>
   <data name="ChatControlNoRequests" xml:space="preserve"><value>No requests from you in this thread.</value></data>
-  <data name="ChatControlStatus" xml:space="preserve"><value>Status: {0}. Pending approval: {1}. Connection: {2}.</value></data>
+  <data name="ChatControlStatusHeader" xml:space="preserve"><value>Live requests in this thread ({0}); connection: {1}</value></data>
+  <data name="ChatControlStatusEmpty" xml:space="preserve"><value>No live requests from you in this thread. Connection: {0}.</value></data>
+  <data name="ChatControlStatusApproval" xml:space="preserve"><value>Waiting for approval</value></data>
+  <data name="ChatControlStatusQueued" xml:space="preserve"><value>Queued</value></data>
+  <data name="ChatControlStatusRow" xml:space="preserve"><value>• {0} · {1} · model {2} · {3}</value></data>
+  <data name="ChatControlStatusMore" xml:space="preserve"><value>…and {0} more</value></data>
+  <data name="ChatControlAgentCodex" xml:space="preserve"><value>Codex</value></data>
+  <data name="ChatControlAgentClaude" xml:space="preserve"><value>Claude Code</value></data>
+  <data name="ChatControlAgentGemini" xml:space="preserve"><value>Gemini CLI</value></data>
+  <data name="ChatControlAgentCopilot" xml:space="preserve"><value>GitHub Copilot CLI</value></data>
+  <data name="ChatControlAgentCustom" xml:space="preserve"><value>{0}</value></data>
   <data name="ChatControlConnected" xml:space="preserve"><value>connected</value></data>
   <data name="ChatControlReconnecting" xml:space="preserve"><value>reconnecting</value></data>
   <data name="ChatControlStop" xml:space="preserve"><value>Stop requested. Running: {0}; pending cancelled: {1}.</value></data>
@@ -93,7 +103,7 @@
   <data name="WorkingFolder" xml:space="preserve"><value>Working folder</value></data>
   <data name="AllowOperation" xml:space="preserve"><value>Allow action</value></data>
   <data name="Allow" xml:space="preserve"><value>Allow</value></data>
-  <data name="Deny" xml:space="preserve"><value>Deny</value></data>
+  <data name="Deny" xml:space="preserve"><value>Reject</value></data>
   <data name="Other" xml:space="preserve"><value>Other</value></data>
   <data name="EnterAnswer" xml:space="preserve"><value>Enter an answer</value></data>
   <data name="AnswerToCodex" xml:space="preserve"><value>Answer Codex</value></data>
@@ -278,7 +288,7 @@
   <data name="ManualShareShort" xml:space="preserve"><value>Share manually</value></data>
   <data name="AutoAllowEdits" xml:space="preserve"><value>Automatically allow edits</value></data>
   <data name="InboxDisconnectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Disconnecting. Unexecuted requests and requests posted while disconnected will not run. Resubmit any needed requests after reconnecting.</value></data>
-  <data name="InboxClaudeLoginInstructions" xml:space="preserve"><value>Claude Code is not logged in. In this Windows user account, open Claude Code in a terminal and complete /login, then submit the request again. You do not need to log in to Slack again.</value></data>
+  <data name="InboxClaudeLoginInstructions" xml:space="preserve"><value>Claude Code is not logged in. In this Windows user account, open Claude Code in a terminal and complete /login, then submit the request again. You do not need to reconnect your chat service.</value></data>
   <data name="InboxUpdatedSessionLabel" xml:space="preserve"><value>Continuing session: {0}&#10;Execution model: {1} / reasoning effort: {2}</value></data>
   <data name="InboxExecutionStateChatNotice" xml:space="preserve"><value>Chat Agent Bridge: {0}. Check the result in the local WinUI app.</value></data>
   <data name="ConfirmDetachTitle" xml:space="preserve"><value>Detach this session?</value></data>
@@ -400,7 +410,7 @@
   <data name="InboxWaitingForRequests" xml:space="preserve"><value>Connect above to receive requests from allowed users.</value></data>
   <data name="InboxNoMatches" xml:space="preserve"><value>No conversations match. Change your search or state filter.</value></data>
   <data name="InboxEmptyOfflineHeading" xml:space="preserve"><value>Inbox is disconnected</value></data>
-  <data name="InboxEmptyOfflineDescription" xml:space="preserve"><value>Connect Slack or Mattermost above to receive requests from allowed users.</value></data>
+  <data name="InboxEmptyOfflineDescription" xml:space="preserve"><value>Connect Slack, Mattermost, or Discord above to receive requests from allowed users.</value></data>
   <data name="InboxEmptyConnectingHeading" xml:space="preserve"><value>Connecting to chat</value></data>
   <data name="InboxEmptyConnectingDescription" xml:space="preserve"><value>The inbox will show requests after the connection is ready.</value></data>
   <data name="InboxEmptyWaitingHeading" xml:space="preserve"><value>Waiting for requests</value></data>
@@ -409,6 +419,14 @@
   <data name="InboxEmptyFilteredDescription" xml:space="preserve"><value>Change or clear the search or state filter to see conversations.</value></data>
   <data name="InboxEmptyDetailHeading" xml:space="preserve"><value>Select a conversation</value></data>
   <data name="InboxEmptyDetailDescription" xml:space="preserve"><value>Choose a conversation from the list to review its requests and responses.</value></data>
+  <data name="InboxRestoredDescription" xml:space="preserve"><value>Previous requests are not resumed. To continue, post a new !cab request in the same chat thread. Request and result bodies are not saved in this list.</value></data>
+  <data name="InboxPersistenceLoadFailed" xml:space="preserve"><value>The conversation list could not be restored. The original file was kept, and no requests were resumed automatically.</value></data>
+  <data name="InboxPersistenceSaveFailed" xml:space="preserve"><value>The conversation list could not be saved. It may not be restored the next time the app starts.</value></data>
+  <data name="InboxPersistenceSomeRowsRejected" xml:space="preserve"><value>{0} conversations could not be saved because their metadata is invalid. Other conversations were saved. Check the working folder and related settings.</value></data>
+  <data name="InboxPersistenceAllRowsRejected" xml:space="preserve"><value>{0} conversations could not be saved because their metadata is invalid. Existing saved data was not overwritten. Check the working folder and related settings.</value></data>
+  <data name="InboxWorkspaceInvalid" xml:space="preserve"><value>The working folder setting is invalid. In Agent settings, select an existing folder using its full absolute path.</value></data>
+  <data name="InboxInterrupted" xml:space="preserve"><value>Interrupted</value></data>
+  <data name="InboxRestoredIdle" xml:space="preserve"><value>Restored · idle</value></data>
   <data name="InboxClearFiltersLabel" xml:space="preserve"><value>Clear filters</value></data>
   <data name="InboxOneConversation" xml:space="preserve"><value>1 conversation</value></data>
   <data name="InboxOneRequest" xml:space="preserve"><value>1 request</value></data>
@@ -475,7 +493,7 @@
   <data name="ChatInputTextReply" xml:space="preserve"><value>Reply: !cab answer {0} {1} your answer</value></data>
   <data name="ChatInputOptionReply" xml:space="preserve"><value>Reply with an option number: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>For another answer: !cab answer {0} {1} other your answer</value></data>
-  <data name="ChatControlHelp" xml:space="preserve"><value>Commands for this account and thread:&#10;&gt; !cab &lt;request&gt; — send a request to the agent&#10;&gt; !cab command / !cab commands / !cab help — show this list&#10;&gt; !cab agent — list registered CLI connections and summary/fresh switch commands&#10;&gt; !cab model / !cab model list / !cab model MODEL_ID / !cab model default — view or change your conversation model&#10;&gt; !cab status — show your request status&#10;&gt; !cab stop — stop your active request and cancel your queued requests&#10;&gt; !cab folder &quot;C:\path&quot; — request a workspace change; the folder must be trusted and needs approval on this PC&#10;&gt; !cab approve CODE / !cab reject CODE — decide an approval when sharing approvals in chat is enabled (codes expire after 5 minutes; otherwise decide on this PC)&#10;&gt; !cab answer CODE question-number option-number — answer an app-server question with an option number&#10;&gt; !cab answer CODE question-number your answer — give a free-text answer&#10;&gt; !cab answer CODE question-number other your answer — give another answer when that question allows it&#10;&gt; Answers can be shared only when app-server question sharing is enabled; questions AppServer marks secret stay on this PC. Answer codes expire after 5 minutes.&#10;Start a new conversation with a new post (thread); reply in the same thread to continue it. Commands and replies apply only to your own requests in this thread.</value></data>
+  <data name="ChatControlHelp" xml:space="preserve"><value>Commands for this account and thread:&#10;&gt; !cab &lt;request&gt; — send a request to the agent&#10;&gt; !cab command / !cab commands / !cab help — show this list&#10;&gt; !cab agent — list registered CLI connections and summary/fresh switch commands&#10;&gt; !cab model / !cab model list / !cab model MODEL_ID / !cab model default — view or change your conversation model&#10;&gt; !cab status — list live requests in this thread with status, effective agent, model and workspace&#10;&gt; !cab stop — stop your active request and cancel your queued requests&#10;&gt; !cab folder &quot;C:\path&quot; — request a workspace change; the folder must be trusted and needs approval on this PC&#10;&gt; !cab approve CODE / !cab reject CODE — decide an approval when sharing approvals in chat is enabled (codes expire after 5 minutes; otherwise decide on this PC)&#10;&gt; !cab answer CODE question-number option-number — answer an app-server question with an option number&#10;&gt; !cab answer CODE question-number your answer — give a free-text answer&#10;&gt; !cab answer CODE question-number other your answer — give another answer when that question allows it&#10;&gt; Answers can be shared only when app-server question sharing is enabled; questions AppServer marks secret stay on this PC. Answer codes expire after 5 minutes.&#10;Start a new conversation with a new post (thread); reply in the same thread to continue it. Commands and replies apply only to requests from you in this provider, channel, thread and server origin. Status lists at most 10 live requests and never includes requests from another requester.</value></data>
   <data name="HistoryWorkspaceFilterLabel" xml:space="preserve"><value>Workspace</value></data>
   <data name="HistoryWorkspaceAll" xml:space="preserve"><value>All workspaces</value></data>
   <data name="HistorySortLabel" xml:space="preserve"><value>Sort</value></data>
@@ -742,10 +760,10 @@ After: {2}</value></data>
   <data name="SettingsReviewEmpty" xml:space="preserve"><value>Not set</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>Model candidates cannot be fetched for this CLI. Enter a model ID or alias supported by your CLI and account, or leave it blank for the CLI default. Model access is checked when you run a request; reasoning and permissions follow the CLI configuration.</value></data>
   <data name="ChatModelManualEntry" xml:space="preserve"><value>This CLI cannot return model candidates. Use !cab model MODEL_ID with an ID or alias supported by your CLI and account, or !cab model default to follow agent settings. Access is checked when you run a request.</value></data>
-  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Windows notifications</value></data>
-  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>If Windows notifications do not appear, configure this Windows user only. Standard notifications continue to work without this optional setup.</value></data>
-  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>Status</value></data>
-  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>Windows notifications</value></data>
+  <data name="PortableIdentityHeading.Header" xml:space="preserve"><value>Approval notifications</value></data>
+  <data name="PortableIdentityHeading.Description" xml:space="preserve"><value>Windows notifications alert you when a chat request or AI operation needs approval. You can approve or reject it from the notification.</value></data>
+  <data name="PortableIdentityStateHeading" xml:space="preserve"><value>Additional notification registration</value></data>
+  <data name="PortableIdentityStatusLabel" xml:space="preserve"><value>Additional registration</value></data>
   <data name="PortableIdentityPublisher" xml:space="preserve"><value>Publisher: {0}</value></data>
   <data name="PortableIdentityFingerprint" xml:space="preserve"><value>Certificate SHA-256: {0}</value></data>
   <data name="PortableIdentityRegisteredLocation" xml:space="preserve"><value>Registered location: {0}</value></data>
@@ -753,10 +771,10 @@ After: {2}</value></data>
   <data name="PortableIdentityNotRegistered" xml:space="preserve"><value>This folder is not registered with Windows.</value></data>
   <data name="PortableIdentityActive" xml:space="preserve"><value>Notification registration is active.</value></data>
   <data name="PortableIdentityInactive" xml:space="preserve"><value>Notification registration is not active for this process.</value></data>
-  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>Setup and removal run after the app closes, then restart it. Your data folder and portable updater stay in place.</value></data>
-  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>Optional setup</value></data>
-  <data name="PortableIdentityConfigure" xml:space="preserve"><value>Set up Windows notifications and restart</value></data>
-  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>Update registration and restart</value></data>
+  <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>Use this only if approval notifications do not arrive. Registration and removal restart the app. Your settings and updater are kept.</value></data>
+  <data name="PortableIdentityActionsHeading" xml:space="preserve"><value>If notifications do not appear</value></data>
+  <data name="PortableIdentityConfigure" xml:space="preserve"><value>Register notifications and restart</value></data>
+  <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>Register again and restart</value></data>
   <data name="PortableIdentityRemove" xml:space="preserve"><value>Remove registration and restart</value></data>
   <data name="PortableIdentityRefresh" xml:space="preserve"><value>Refresh status</value></data>
   <data name="PortableIdentityConfigureTitle" xml:space="preserve"><value>Set up Windows notifications?</value></data>
@@ -793,5 +811,36 @@ After: {2}</value></data>
   <data name="AgentScopeCustom" xml:space="preserve"><value>Other CLI</value></data>
   <data name="AgentScopePicker" xml:space="preserve"><value>Edit settings for</value></data>
   <data name="AgentScopeCommonHelp" xml:space="preserve"><value>Workspace, trusted folders and local run approval apply to every agent.</value></data>
-  <data name="ConnectionScopeCommonHelp" xml:space="preserve"><value>Approval, result sharing and attachment settings apply to both Slack and Mattermost.</value></data>
+  <data name="ConnectionScopeCommonHelp" xml:space="preserve"><value>Approval, result sharing and attachment settings apply to Slack, Mattermost and Discord.</value></data>
+  <data name="IncomingFilesSummary" xml:space="preserve"><value>Attached files: {0} ({1}). After request approval, supported files are passed to the agent. Up to 5 files, 10 MB each, 20 MB total. PNG/JPEG/WebP images and UTF-8 TXT/LOG/MD/CSV/JSON files only. Temporary copies are deleted after execution; attach them again if a later request needs them. File-bearing follow-ups wait for a separate run.</value></data>
+  <data name="IncomingFileNamePending" xml:space="preserve"><value>name checked after approval</value></data>
+  <data name="IncomingFilesInvalid" xml:space="preserve"><value>The attached files cannot be accepted. Send no more than 5 supported files with your request.</value></data>
+  <data name="IncomingFilesFailed" xml:space="preserve"><value>The attached files could not be passed to the agent; no agent was started. Use PNG/JPEG/WebP images or UTF-8 TXT/LOG/MD/CSV/JSON files, up to 5 files, 10 MB each and 20 MB total. Check file access and the trusted working folder. Slack also requires files:read. Attach the files again with a new request.</value></data>
+  <data name="IncomingFilesFailedTitle" xml:space="preserve"><value>Attachment reception failed</value></data>
+  <data name="SettingsReviewDiscordUsers" xml:space="preserve"><value>Discord allowed users</value></data>
+  <data name="SettingsReviewDiscordGuilds" xml:space="preserve"><value>Discord allowed servers</value></data>
+  <data name="SettingsReviewDiscordChannels" xml:space="preserve"><value>Discord allowed channels</value></data>
+  <data name="SettingsReviewDiscordThreads" xml:space="preserve"><value>Discord allowed threads</value></data>
+  <data name="SettingsReviewDiscordDirectMessages" xml:space="preserve"><value>Discord direct messages</value></data>
+  <data name="DiscordInboxApprovalWaiting" xml:space="preserve"><value>This request is waiting for your approval. Only the requester can use these buttons.</value></data>
+  <data name="DiscordInboxApprovalPostFailed" xml:space="preserve"><value>Could not post Discord approval buttons. Approve or reject on this PC.</value></data>
+  <data name="DiscordInboxConfigurationMissing" xml:space="preserve"><value>Enter the Discord bot token and allowed user IDs in Chat settings. Allow server IDs for server conversations, or explicitly enable direct messages.</value></data>
+  <data name="DiscordInboxAuthenticationFailed" xml:space="preserve"><value>Discord rejected the bot token. Check the Bot token in Chat settings; an application ID or public key cannot be used.</value></data>
+  <data name="DiscordInboxMessageContentRequired" xml:space="preserve"><value>Enable Message Content Intent in Discord Developer Portal &gt; Bot, then reconnect.</value></data>
+  <data name="DiscordInboxPermissionsRequired" xml:space="preserve"><value>Check the Discord bot permissions: View Channel, Send Messages, Read Message History, Create Public Threads, Send Messages in Threads, and Attach Files.</value></data>
+  <data name="InboxApprovalPolicyHelp" xml:space="preserve"><value>Execution approval: {0}. {1} for this request.</value></data>
+  <data name="InboxResultPolicyHelp" xml:space="preserve"><value>Result sharing: {0}. {1} for this request.</value></data>
+  <data name="InboxAttachmentPolicyHelp" xml:space="preserve"><value>File approval: {0}. This is separate from execution and result approval; a confirmation is shown when this policy requires one. When result sharing is set to no sharing, attachments are blocked too.</value></data>
+  <data name="InboxEffectivePolicy" xml:space="preserve"><value>Effective settings</value></data>
+  <data name="InboxConfiguredPolicy" xml:space="preserve"><value>Current configured settings; conversation overrides are resolved before execution</value></data>
+  <data name="InboxApprovalFirstLabel" xml:space="preserve"><value>Approval required for the first request in this conversation</value></data>
+  <data name="InboxAttachmentFirstLabel" xml:space="preserve"><value>Confirm the first file share in this session</value></data>
+  <data name="InboxDisabledLabel" xml:space="preserve"><value>Disabled</value></data>
+  <data name="InboxUnknownParticipant" xml:space="preserve"><value>Unknown participant</value></data>
+  <data name="InboxUnknownLocation" xml:space="preserve"><value>Location unavailable</value></data>
+  <data name="GeneralSavedOtherCli" xml:space="preserve"><value>Other CLI</value></data>
+  <data name="GeneralNotificationRegistered" xml:space="preserve"><value>Additional registration is active for this Windows user. Approval requests can use it to send notifications.</value></data>
+  <data name="GeneralNotificationRestart" xml:space="preserve"><value>Registration is saved. Restart the app to use it for approval notifications.</value></data>
+  <data name="GeneralNotificationAvailable" xml:space="preserve"><value>If approval notifications do not appear, you can register this portable app for the current Windows user. Setup is unnecessary when notifications already work.</value></data>
+  <data name="GeneralNotificationUnavailable" xml:space="preserve"><value>Additional registration is unavailable in this build or environment. This does not mean standard notifications are disabled. Details are available below.</value></data>
 </root>

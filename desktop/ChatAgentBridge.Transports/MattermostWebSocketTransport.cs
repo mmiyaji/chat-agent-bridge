@@ -8,7 +8,7 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed partial class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatProgressLifecycleTransport, IChatFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatConnectionNotifications, IChatLiveAccessSettings
+public sealed partial class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatProgressLifecycleTransport, IChatFileTransport, IChatIncomingFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatConnectionNotifications, IChatLiveAccessSettings
 {
     public event Action? Connected;
     public event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
@@ -470,7 +470,12 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         var isThreadReply = !string.IsNullOrWhiteSpace(post.RootId) &&
             !string.Equals(post.RootId, post.Id, StringComparison.Ordinal);
         if (!TryGetTriggeredText(post.Message, currentUsername, allowPlainThreadReplies, isThreadReply, out var text)) return null;
-        return new ChatRequest("mattermost", post.ChannelId, threadId, post.UserId, text, post.Id);
+        var files = ReadIncomingFileIds(post.FileIds, out var filesError);
+        return new ChatRequest("mattermost", post.ChannelId, threadId, post.UserId, text, post.Id)
+        {
+            IncomingFiles = files,
+            IncomingFilesError = filesError
+        };
     }
 
     internal static async Task<bool> ProcessPostAsync(
@@ -575,6 +580,27 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
             value.ValueKind == JsonValueKind.String && string.Equals(value.GetString(), "true", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static IReadOnlyList<IncomingChatFile> ReadIncomingFileIds(JsonElement? value, out string? error)
+    {
+        error = null;
+        if (value is null || value.Value.ValueKind == JsonValueKind.Undefined || value.Value.ValueKind == JsonValueKind.Null)
+            return Array.Empty<IncomingChatFile>();
+        if (value.Value.ValueKind != JsonValueKind.Array) { error = "invalid_attachment_metadata"; return Array.Empty<IncomingChatFile>(); }
+        var files = new List<IncomingChatFile>();
+        foreach (var item in value.Value.EnumerateArray())
+        {
+            if (files.Count == TransportHttp.MaxIncomingFileCount)
+            { error = "too_many_attachments"; return files; }
+            if (item.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(item.GetString()))
+            { error = "invalid_attachment_metadata"; return Array.Empty<IncomingChatFile>(); }
+            var id = item.GetString()!;
+            if (files.Any(file => string.Equals(file.Id, id, StringComparison.Ordinal)))
+            { error = "invalid_attachment_metadata"; return Array.Empty<IncomingChatFile>(); }
+            files.Add(new IncomingChatFile(id, string.Empty, 0, null));
+        }
+        return files;
+    }
+
     private static async Task SendAsync(ClientWebSocket socket, object value, CancellationToken ct)
     {
         var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value, TransportHttp.JsonOptions));
@@ -612,5 +638,6 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         [property: JsonPropertyName("user_id")] string UserId,
         [property: JsonPropertyName("message")] string Message,
         [property: JsonPropertyName("root_id")] string? RootId,
-        [property: JsonPropertyName("props")] JsonElement? Props);
+        [property: JsonPropertyName("props")] JsonElement? Props,
+        [property: JsonPropertyName("file_ids")] JsonElement? FileIds);
 }

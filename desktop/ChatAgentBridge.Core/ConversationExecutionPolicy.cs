@@ -42,10 +42,20 @@ public static class ConversationExecutionPolicy
             settings.MattermostAllowedUserIds, settings.SlackAllowedUserIds,
             settings.MattermostChannelId, settings.MattermostAllowedThreadIds,
             settings.SlackAllowedChannelIds, settings.SlackAllowedThreadIds,
-            CredentialDigest = Digest(key.Provider == "slack"
-                ? settings.SlackBotToken + "\0" + settings.SlackAppToken : settings.MattermostToken)
+            CredentialDigest = Digest(key.Provider switch
+            {
+                "slack" => settings.SlackBotToken + "\0" + settings.SlackAppToken,
+                "discord" => settings.DiscordBotToken,
+                _ => settings.MattermostToken
+            })
         });
         var baseFingerprint = Digest(payload);
+        if (key.Provider == "discord")
+            baseFingerprint = Digest(baseFingerprint + "\0discord\0" + JsonSerializer.Serialize(new
+            {
+                settings.DiscordAllowedUserIds, settings.DiscordAllowedGuildIds, settings.DiscordAllowedChannelIds,
+                settings.DiscordAllowedThreadIds, settings.DiscordAllowDirectMessages
+            }));
         // Keep the historical digest byte-for-byte for the default-off setting so persisted
         // approvals remain valid when upgrading. Opting in creates a distinct consent scope.
         var fingerprint = settings.ShareAgentQuestionsInChat

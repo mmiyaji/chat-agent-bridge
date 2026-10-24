@@ -106,6 +106,8 @@ public sealed class AttachmentConsentStore
     }
 
     private static bool IsValidEntry(ConsentEntry? entry) => entry is not null &&
+        entry.Provider is "slack" or "mattermost" or "discord" &&
+        (entry.Provider != "discord" || entry.UserId is not null && entry.Origin == "discord") &&
         HasText(entry.Provider, 128) && HasText(entry.ChannelId, 512) && HasText(entry.ThreadId, 512) &&
         (entry.UserId is null || entry.UserId.Length <= 512) && (entry.Origin is null || entry.Origin.Length <= 512) &&
         HasText(entry.SessionId, 512) && IsFingerprint(entry.Fingerprint) && entry.ApprovedAtUtc != default && entry.ApprovedAtUtc.Offset == TimeSpan.Zero;
@@ -113,9 +115,12 @@ public sealed class AttachmentConsentStore
     private static void ValidateIdentity(SessionKey key, string sessionId, string fingerprint)
     {
         ArgumentNullException.ThrowIfNull(key);
-        if (!HasText(key.Provider, 128) || !HasText(key.ChannelId, 512) || !HasText(key.ThreadId, 512) || !HasText(sessionId, 512) ||
+        if (key.Provider is not ("slack" or "mattermost" or "discord") ||
+            !HasText(key.Provider, 128) || !HasText(key.ChannelId, 512) || !HasText(key.ThreadId, 512) || !HasText(sessionId, 512) ||
             (key.UserId is not null && key.UserId.Length > 512) || (key.Origin is not null && key.Origin.Length > 512))
             throw new ArgumentException("Attachment consent requires a complete conversation and native session identity.");
+        if (key.Provider == "discord" && (key.UserId is null || key.Origin != "discord"))
+            throw new ArgumentException("Discord attachment consent requires an owner-scoped Discord session.");
         if (!IsFingerprint(fingerprint)) throw new ArgumentException("Attachment consent fingerprint must be a SHA-256 digest.", nameof(fingerprint));
     }
 

@@ -4,6 +4,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <!-- Loopback hooks are compiled only into explicit native test builds. -->
+  <PropertyGroup Condition="'$(CABDiscordFixture)' == 'true'">
+    <DefineConstants>$(DefineConstants);CAB_DISCORD_FIXTURE</DefineConstants>
+    <OutputPath>bin\$(Platform)\$(Configuration)\discord-fixture\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\discord-fixture\</IntermediateOutputPath>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ChatAgentBridge.Core\ChatAgentBridge.Core.csproj" />
   </ItemGroup>

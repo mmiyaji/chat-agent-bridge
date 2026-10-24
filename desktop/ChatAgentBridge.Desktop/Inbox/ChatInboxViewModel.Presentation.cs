@@ -8,6 +8,8 @@ public sealed partial class InboxItem
     {
         OnPropertyChanged(nameof(StateDisplay));
         OnPropertyChanged(nameof(RequestLabel));
+        OnPropertyChanged(nameof(PromptDisplay));
+        OnPropertyChanged(nameof(IncomingFilesSummary));
     }
 
     public string StateTone => State switch
@@ -15,7 +17,7 @@ public sealed partial class InboxItem
         "承認待ち" => "pending",
         "実行中" or "自動実行を準備" or "追加指示の受領待ち" => "running",
         "完了" or "フォルダー変更済み" or "エージェント変更済み" or "実行中へ追加" => "success",
-        "実行／記録エラー" or "フォルダー変更不可" or "エージェント変更不可" or
+        "実行／記録エラー" or "添付受信エラー" or "フォルダー変更不可" or "エージェント変更不可" or
         "許可設定を確認できず実行不可" => "error",
         "キャンセル" or "拒否" or "許可取り消し・実行不可" => "stopped",
         "接続終了・再受信が必要" or "作業先変更・再投稿が必要" or "エージェント変更・再投稿が必要" or "追加指示の反映未確認" => "warning",
@@ -28,20 +30,65 @@ public sealed partial class InboxConversation
 {
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
     public partial string StateTone { get; set; } = "neutral";
-    public string ListTitle => Requests.FirstOrDefault()?.Prompt.Replace('\r', ' ').Replace('\n', ' ').Trim() is { Length: > 0 } text
-        ? text[..Math.Min(text.Length, 120)] : Title;
-    public string ActivityCompact => Requests.LastOrDefault()?.ReceivedAt.ToString("t") ?? "";
+    public string ListTitle
+    {
+        get
+        {
+            if (Requests.FirstOrDefault()?.Prompt.Replace('\r', ' ').Replace('\n', ' ').Trim() is { Length: > 0 } text)
+                return text[..Math.Min(text.Length, 120)];
+            if (Snapshot?.DisplayName is { Length: > 0 } name) return name;
+            if (Snapshot?.ChannelName is { Length: > 0 } channel) return channel;
+            var folder = System.IO.Path.GetFileName(Workspace.TrimEnd('\\', '/'));
+            return folder.Length > 0 ? folder : Title;
+        }
+    }
+    public string PersonName => Snapshot?.UserName is { Length: > 0 } name &&
+        !string.Equals(name, Snapshot.Key.UserId, StringComparison.Ordinal)
+            ? name : DesktopText.Get("InboxUnknownParticipant");
+    public string AvatarDisplayName => Snapshot?.UserName is { Length: > 0 } name &&
+        !string.Equals(name, Snapshot.Key.UserId, StringComparison.Ordinal) ? name : "";
+    public string DisplayLocation => Snapshot?.ChannelName is { Length: > 0 } channel
+        ? channel : DesktopText.Get("InboxUnknownLocation");
+    public string TitleLocation => $"{Title} · {DisplayLocation}";
+    public string SuggestionTitle => ListTitle;
+    public string SuggestionSubtitle => $"{PersonName} · {DisplayLocation} · {StateSummary}";
+    public bool MatchesSearchMetadata(string query)
+    {
+        var needle = query.Trim();
+        if (needle.Length == 0) return true;
+        return new[] { Identity, Title, Location, ListTitle, LatestPrompt, Workspace }
+            .Any(value => value.Contains(needle, StringComparison.CurrentCultureIgnoreCase)) ||
+            Requests.Any(item => item.Prompt.Contains(needle, StringComparison.CurrentCultureIgnoreCase) ||
+                item.Workspace.Contains(needle, StringComparison.CurrentCultureIgnoreCase));
+    }
+    public string ActivityCompact => LastActivity == default ? "" : LastActivity.ToLocalTime().ToString(
+        LastActivity.LocalDateTime.Date == DateTime.Today ? "t" : "d");
     public string ListTooltip => $"{ListTitle}\n{Title}\n{Location}\n{StateSummary}\n{Activity}";
-    public bool HasSeveralRequests => RequestCount > 1;
+    public bool HasSeveralRequests => Requests.Count > 1 && LatestPrompt.Length > 0;
     public void RefreshLocalizedText()
     {
         OnPropertyChanged(nameof(RequestCountLabel));
+        OnPropertyChanged(nameof(PersonName));
+        OnPropertyChanged(nameof(AvatarDisplayName));
+        OnPropertyChanged(nameof(DisplayLocation));
+        OnPropertyChanged(nameof(TitleLocation));
+        OnPropertyChanged(nameof(SuggestionTitle));
+        OnPropertyChanged(nameof(SuggestionSubtitle));
         OnPropertyChanged(nameof(ListTooltip));
     }
 
     public void RefreshPresentation()
     {
+        OnPropertyChanged(nameof(Workspace));
+        OnPropertyChanged(nameof(LastActivity));
+        OnPropertyChanged(nameof(HasSeveralRequests));
         OnPropertyChanged(nameof(ListTitle));
+        OnPropertyChanged(nameof(PersonName));
+        OnPropertyChanged(nameof(AvatarDisplayName));
+        OnPropertyChanged(nameof(DisplayLocation));
+        OnPropertyChanged(nameof(TitleLocation));
+        OnPropertyChanged(nameof(SuggestionTitle));
+        OnPropertyChanged(nameof(SuggestionSubtitle));
         OnPropertyChanged(nameof(ActivityCompact));
         OnPropertyChanged(nameof(ListTooltip));
     }
@@ -53,6 +100,7 @@ public sealed partial class ChatInboxViewModel
     {
         ChatAgentBridge.Transports.MattermostWebSocketTransport => "mattermost",
         ChatAgentBridge.Transports.SlackSocketModeTransport => "slack",
+        ChatAgentBridge.Transports.DiscordGatewayTransport => "discord",
         _ => null
     };
     public string ConnectionTone => HasConnectionError ? "error" : IsConnectionConfirmed ? "success" : IsConnected ? "running" : "neutral";
@@ -81,8 +129,13 @@ public sealed partial class ChatInboxViewModel
         OnPropertyChanged(nameof(ClearConversationFiltersLabel));
         OnPropertyChanged(nameof(SelectedOutput));
         OnPropertyChanged(nameof(SelectedUsage));
+        OnPropertyChanged(nameof(RestoredConversationDescription));
         foreach (var request in Requests) request.RefreshLocalizedText();
-        foreach (var conversation in Conversations) conversation.RefreshLocalizedText();
+        foreach (var conversation in Conversations)
+        {
+            if (conversation.Requests.Count == 0) ApplyRestoredPresentation(conversation);
+            conversation.RefreshLocalizedText();
+        }
     }
 
     partial void OnStatusChanged(string value)

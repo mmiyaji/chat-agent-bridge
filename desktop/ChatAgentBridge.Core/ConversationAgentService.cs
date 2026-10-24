@@ -10,7 +10,7 @@ public sealed class ConversationAgentService(SessionStore sessions, AgentConnect
     public async Task SwitchAsync(SessionBinding expected, BridgeSettings defaults, AgentSwitchSelection selection,
         Func<CancellationToken, Task<bool>> canSwitch, CancellationToken token = default)
     {
-        if (expected.Key.UserId is null || expected.Key.Origin is null || expected.Key.Provider is not ("slack" or "mattermost"))
+        if (expected.Key.UserId is null || expected.Key.Origin is null || expected.Key.Provider is not ("slack" or "mattermost" or "discord"))
             throw new ArgumentException("Agent switching requires an owner-scoped chat conversation.", nameof(expected));
         using var operation = sessions.TryBeginConversationOperation(expected.Key)
             ?? throw new InvalidOperationException("The conversation is busy.");

@@ -1,3 +1,166 @@
+# Incoming chat files and detailed status — 2026-10-24
+
+- Slack and Mattermost requests carry opaque attachment IDs. After normal request
+  approval, resolve canonical file metadata, verify the exact message association,
+  and download within a two-minute budget. Allow up to five PNG/JPEG/WebP images
+  or UTF-8 TXT/LOG/MD/CSV/JSON files, 10 MiB each and 20 MiB total.
+- Stage generated filenames in a unique workspace-local `.cab-incoming-*` folder.
+  Reject unsafe directory trees, linked handles, invalid text/image signatures,
+  size mismatches and excess bytes. Roll back failed batches and remove known
+  staged paths after execution. Cleanup does not recurse or follow junctions.
+  An abrupt process termination can leave temporary files in the workspace.
+- Pass local file references as untrusted data without granting additional
+  permissions. File-bearing follow-ups use the ordinary queue rather than
+  forwarding only their text into an active turn. Incoming staging directories
+  are excluded from outgoing attachment discovery and preparation.
+- Slack requires files:read. Only hosted/snippet files with is_external=false and
+  an exact channel/message/thread share can be downloaded; external files are
+  rejected even if their URL points to an allowed host. Credentials go only to
+  HTTPS files.slack.com; redirects are disabled. Mattermost verifies file/post
+  identity, requester, channel, root and file list and preserves proxy selection.
+  File metadata responses are bounded to 1 MiB. Both providers recheck access
+  immediately before download and after transfer, including revocation races.
+- Expanded `!cab status` lists running, approval-waiting and queued requests with
+  effective agent, model and workspace. Restrict replies to the same transport,
+  origin, channel, thread and requester under fresh access checks. Limit output
+  to ten rows / 3800 characters and neutralize mentions and direction controls.
+- Desktop builds successfully. Core suite: 1031 passed; strengthened Unicode
+  status truncation test: 2/2 passed. Transports suite: 218 passed. XML/resource
+  uniqueness, fixture JavaScript syntax and git whitespace checks passed.
+- Received filenames in the request detail update from the pending placeholder
+  to canonical sanitized names once metadata has been resolved.
+- Final native smoke: 5/5 English light and 5/5 Japanese dark. Verified no
+  metadata/byte downloads before approval, approved path delivery and cleanup,
+  rejection without download/execution, malformed-input warning without agent
+  start, running/queued status with agent/model/workspace, requester/thread
+  isolation, denied-user silence, and file availability during a held agent run.
+  Final screenshots also show the resolved filename in the localized detail.
+  English: `desktop/artifacts/33e72137-0ae4-4b86-bf94-abc1ac418acc/`.
+  Japanese: `desktop/artifacts/8ef518fb-978c-46d4-9ba7-b20e397f9dc2/`.
+  These runs used loopback Mattermost and a local TestAgent; live Slack downloads
+  and real model image interpretation have not been exercised in this task.
+- Local portable build: `desktop/artifacts/incoming-files-final/`.
+  No push, release, external chat posts or real AI service calls occurred.
+
+---
+# Conversation save validation and lazy identity clients — 2026-10-24
+
+Implemented the recommended follow-up without changing the 150 ms save cooldown.
+
+- Settings writes reject nonempty relative, control-character-containing, or over
+  2048-character workspace paths before touching the existing file. Empty setup
+  values remain supported. Legacy invalid paths remain readable for repair, but
+  cannot connect, receive requests, or pass execution access checks.
+- Select valid conversation metadata rows before saving. Reject invalid and
+  duplicate rows individually, show a localized rejected-count warning, and emit
+  count-only Trace diagnostics when the count changes. An all-rejected nonempty
+  batch preserves the previous file. Disk reads and direct store saves retain
+  strict validation; restored metadata still grants no execution authority.
+- Identity cache-only reads create no HttpClients or handlers. Network clients
+  are created on first use and reused, with proxy separation and owned-handler
+  disposal preserved.
+- Full suites: Core 1013 passed; Transports 201 passed. Local portable publish:
+  `desktop/artifacts/inbox-validation-verified/`.
+- Native smoke: 9 checks passed in English and 9 in Japanese, including restart
+  interruption without replay, fresh same-thread approval, offline restoration,
+  invalid-workspace blocking, and partial invalid-row isolation followed by a
+  successful valid-row save. The invalid-row case starts no agent executions.
+  English: `desktop/artifacts/cbf78b31-4739-4c62-a03e-a29598bf9161/`.
+  Japanese: `desktop/artifacts/99841dfd-30d4-4557-b555-6f693e03409a/`.
+- Three offline launches with 500 seeded metadata rows took 129–185 ms from
+  opening Inbox to its first visible row, including restoration. Keep the current
+  virtualized list and single visible-list refresh; no bulk-reset change was
+  justified by this measurement. This is a local observation, not a performance
+  guarantee. Evidence:
+  `desktop/artifacts/inbox-initial-display-probe-bb9ee683bfdc4f2a859432ac38aa11be.json`.
+- No external chat posts, real AI calls, push, release or publication occurred.
+
+---
+# Conversation persistence hardening — 2026-10-24
+
+Fixed orphan metadata cleanup and reduced work during conversation state changes.
+
+- Conversation cleanup and size inspection include only top-level atomic temporary
+  files with one of the five known conversation-store stems and a 32-hex GUID.
+  Unknown/malformed names and nested files remain untouched; all selected paths
+  retain the existing reparse-point checks.
+- Re-tested the review's actual orphan artifact: 1 file / 54 bytes was counted
+  before cleanup and 0 files / 0 bytes afterward. An explicitly created matching
+  symlink was rejected, and its target contents were preserved on this host.
+- Refresh only the affected conversation for state/workspace changes. Avoid
+  rebuilding restored-row presentation and repeated linear collection searches.
+  Reuse cached labels until the identity-cache file changes or a new identity is
+  needed, and update labels only when their values change.
+- Keep the first save immediate, collect subsequent snapshots for 150 ms, skip
+  identical snapshots, and bypass the cooldown when draining for maintenance or
+  shutdown. Storage remains atomic; approval and execution state are not restored.
+- Full Core test suite: 1004 passed. Native restart smoke: 7/7 English and 7/7
+  Japanese, including pending/running interruption, fresh approval, graceful
+  shutdown, result-post counts, and offline restoration with bad legacy sessions.
+  English: `desktop/artifacts/dc0eaf79-02fd-4a93-920b-f214793b1d9f/`.
+  Japanese: `desktop/artifacts/1d953d2d-aa5e-45a4-9c0e-9a2c49e64248/`.
+- Sequential burst comparison used 500 seeded rows and 30 approval-required
+  messages on both builds. Both kept all 30 new requests (35 with the seed's
+  count), had one fixture connection, and started no agents or history records.
+  Atomic metadata replacements fell from 30 to 2. Observed CPU was 1375 vs 937.5
+  ms; timings are one-run observations, not a general performance guarantee.
+  Evidence: `desktop/artifacts/inbox-hardening-perf-comparison-0f2803e46fbe498eac4e807e3b65d70e.json`.
+- Local publish: `desktop/artifacts/inbox-hardening-verified/`.
+  No external chat posts, real AI requests, push, release or publication occurred.
+
+---
+
+# Chat conversation restoration — 2026-10-24
+
+The Chat list now restores bounded metadata across restarts. Restored rows have
+no live request objects, transports, approval actions, prompt bodies or result
+bodies. Pending/running snapshots become Interrupted; receiving a new request
+uses the normal access and approval checks.
+
+- Core tests: 1002/1002 passed. Focused metadata/deletion tests: 15/15 passed,
+  including named labels, owner/server isolation, interrupted-state conversion,
+  retention limits, invalid JSON and preservation of existing data on rejection.
+- Native English and Japanese smoke runs: 7/7 checks each, using an isolated
+  loopback Mattermost fixture and self-contained offline TestAgent. No real
+  chat posts or AI calls were made.
+- Killed and restarted real desktop processes with pending and running requests:
+  rows restored, old actions were unavailable, and execution/history/result-post
+  counts did not increase. A new same-thread request merged into its row and ran
+  only after fresh approval. Completed state survived a confirmed graceful exit.
+- Offline restoration also passed with malformed legacy sessions.json. Legacy
+  migration and cached display names cannot block valid metadata restoration.
+- Reviewed light/dark screenshots at 1280 x 850 DIP in English and Japanese;
+  restored cards, status labels and paths wrap without clipping or overlap.
+- English evidence: `desktop/artifacts/317bae08-9c5c-421a-b877-793ff3635ab6/`.
+  Japanese evidence: `desktop/artifacts/cdc751f7-efcb-4b71-9c39-60307a41bb35/`.
+  Final local publish: `desktop/artifacts/inbox-persistence-verified/`.
+- Review fixes: drain the last save after execution/connection shutdown, isolate
+  optional legacy migration, and pause/drain writes before data deletion or restore.
+  Conversation-data deletion includes chat-conversations.json.
+- No push, release or publication was performed.
+
+---
+
+# Default-window settings sidebars — 2026-10-24
+
+Reduced both local navigation breakpoints from 900 to 850 effective pixels.
+The app's initial window remains 1160 x 800 DIP; the settings navigation has
+871 DIP available on the verified desktop. No window enlargement is needed.
+
+- Added a 1160 x 800 phase to the native settings runner, before wide-layout
+  checks. Both Agent settings and Chat settings must expose vertical scope lists.
+  This assertion fails against the published 900-DIP build and passes with 850.
+- Japanese/dark: all eleven scenario groups plus 27 seeded random switches
+  passed, retaining settings and loopback connection. Screenshot review covered
+  the default size, and the 500-DIP checks preserve the top-tab fallback.
+  Evidence: `desktop/artifacts/45b3baaf-81d4-494b-8e45-981df50f5407/`.
+- English/light: a separate native launch verified the untouched startup window
+  is 1160 x 800 DIP. Both side lists and selection work; 500-DIP width uses top
+  tabs. Reviewed default-size screenshots for both settings pages.
+  Evidence: `desktop/artifacts/default-sidebar-en-light/`.
+
+---
+
 # Settings sidebar width adjustment — 2026-10-24
 
 Lowered the local settings navigation breakpoint from 1000 to 900 effective

@@ -44,12 +44,39 @@ public sealed record ChatRequest(
     string Text,
     string MessageId)
 {
+    /// <summary>Files attached to this exact incoming message. IDs are opaque provider identifiers, never URLs.</summary>
+    public IReadOnlyList<IncomingChatFile> IncomingFiles { get; init; } = Array.Empty<IncomingChatFile>();
+
+    /// <summary>The Discord guild that owns the channel, or null for a direct message.</summary>
+    public string? GuildId { get; init; }
+
+    /// <summary>The Discord channel that contained MessageId; differs from ChannelId for a new public thread.</summary>
+    public string? SourceChannelId { get; init; }
+
+    /// <summary>A fixed, user-safe marker when incoming attachments could not be represented safely.</summary>
+    public string? IncomingFilesError { get; init; }
     /// <summary>
     /// Transport-generated stop signal target. When set, the request represents a cancellation
     /// signal for this original request's MessageId and must not be treated as a new AI request.
     /// Ordinary posted messages leave this unset.
     /// </summary>
     public string? CancellationTargetMessageId { get; init; }
+}
+
+/// <summary>Opaque file identity and provider supplied display metadata for an incoming message attachment.</summary>
+public sealed record IncomingChatFile(string Id, string Name, long Size, string? ContentType);
+
+/// <summary>Optional support for resolving and downloading files attached to an approved incoming request.</summary>
+public interface IChatIncomingFileTransport
+{
+    Task<IReadOnlyList<IncomingChatFile>> ResolveIncomingFilesAsync(ChatRequest request, CancellationToken cancellationToken);
+
+    Task DownloadFileAsync(
+        ChatRequest request,
+        IncomingChatFile file,
+        Stream destination,
+        long maxBytes,
+        CancellationToken cancellationToken);
 }
 
 public interface IChatTransport : IAsyncDisposable
@@ -91,6 +118,40 @@ public interface IChatProgressLifecycleTransport
         CompleteProgress(message);
         return Task.CompletedTask;
     }
+}
+
+public enum ChatActionKind
+{
+    RequestApproval,
+    ToolApproval
+}
+
+public enum ChatActionDecision
+{
+    Approve,
+    Reject
+}
+
+public enum ChatActionResult
+{
+    Completed,
+    Busy,
+    Unavailable
+}
+
+/// <summary>Posts transport-owned approval controls and routes their one-time decisions.</summary>
+public interface IChatActionTransport
+{
+    /// <summary>
+    /// Publishes an approval message with buttons. The returned lease invalidates the controls when
+    /// disposed. A callback returning Busy keeps the controls available for a later click.
+    /// </summary>
+    Task<IAsyncDisposable> PostActionsAsync(
+        ChatRequest origin,
+        string text,
+        ChatActionKind kind,
+        Func<ChatActionDecision, CancellationToken, Task<ChatActionResult>> handler,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>An opaque handle for a progress message created by an <see cref="IChatProgressTransport"/>.</summary>

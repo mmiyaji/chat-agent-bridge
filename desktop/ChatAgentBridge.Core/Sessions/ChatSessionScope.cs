@@ -27,9 +27,13 @@ public static class ChatSessionScope
         {
             origin = "slack";
         }
+        else if (string.Equals(normalizedProvider, "discord", StringComparison.Ordinal))
+        {
+            origin = "discord";
+        }
         else
         {
-            throw new ArgumentException("User-scoped sessions are supported for Slack and Mattermost.", nameof(provider));
+            throw new ArgumentException("User-scoped sessions are supported for Slack, Mattermost, and Discord.", nameof(provider));
         }
 
         return new SessionKey(normalizedProvider!, channelId, threadId, userId, origin);

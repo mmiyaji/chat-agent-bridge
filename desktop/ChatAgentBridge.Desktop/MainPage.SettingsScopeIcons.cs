@@ -17,7 +17,8 @@ public sealed partial class MainPage
             "gemini" => "sparkle",
             "github-copilot" => "bot",
             "mattermost" => "chat",
-            "slack" => "chat_multiple",
+            "slack" => "number_symbol",
+            "discord" => "people_community",
             _ => "apps"
         };
         // Scale the original geometry into its own box. A glyph with a smaller

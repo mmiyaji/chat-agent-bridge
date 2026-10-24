@@ -9,6 +9,8 @@ public sealed partial class ChatInboxPage : Page
     public ChatInboxViewModel ViewModel { get; } = new();
     public event Action? OpenRequested;
     public event Action? ConnectionSettingsRequested;
+    private bool _windowClosedSubscribed;
+    private bool _openAppCallbackConfigured;
 
     private void OpenConnectionSettings_Click(object sender, RoutedEventArgs e) => ConnectionSettingsRequested?.Invoke();
 
@@ -25,16 +27,32 @@ public sealed partial class ChatInboxPage : Page
         ViewModel.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(ViewModel.Selected))
-                DispatcherQueue.TryEnqueue(() => InboxDetailScroll.ChangeView(null, 0, null, true));
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    InboxApprovalHelpTip.IsOpen = false;
+                    InboxDetailScroll.ChangeView(null, 0, null, true);
+                });
+            else if (args.PropertyName == nameof(ViewModel.SelectedConversation))
+                DispatcherQueue.TryEnqueue(() => InboxApprovalHelpTip.IsOpen = false);
         };
         ViewModel.ConnectionEnded += () => App.PendingRequestNotifications.ClearAll();
         App.PendingRequestNotifications.StatusChanged += () =>
             ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
         App.PendingRequestNotifications.ActionCompleted += () => NotificationActionNotice.IsOpen = false;
         ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
-        Loaded += (_, _) =>
+        Loaded += Page_Loaded;
+        Unloaded += (_, _) => InboxApprovalHelpTip.IsOpen = false;
+    }
+
+    private async void Page_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (!_windowClosedSubscribed)
         {
             App.Window.Closed += WindowClosed;
+            _windowClosedSubscribed = true;
+        }
+        if (!_openAppCallbackConfigured)
+        {
             App.PendingRequestNotifications.SetOpenAppCallback(() =>
             {
                 ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
@@ -42,7 +60,10 @@ public sealed partial class ChatInboxPage : Page
                 OpenRequested?.Invoke();
                 App.Tray.ShowWindow();
             });
-        };
+            _openAppCallbackConfigured = true;
+        }
+
+        await ViewModel.EnsureConversationsRestoredAsync();
     }
 
     private Task OpenInboxAsync(InboxItem item)
@@ -67,6 +88,8 @@ public sealed partial class ChatInboxPage : Page
 
     private void Page_SizeChanged(object sender, Microsoft.UI.Xaml.SizeChangedEventArgs e)
     {
+        ConnectionActions.Orientation = e.NewSize.Width >= 680
+            ? Orientation.Horizontal : Orientation.Vertical;
         ViewModel.IsWideLayout = e.NewSize.Width >= 840;
         if (ViewModel.IsWideLayout)
         {
@@ -101,6 +124,60 @@ public sealed partial class ChatInboxPage : Page
             OpenConversation(conversation);
             e.Handled = true;
         }
+    }
+
+    private void InboxSearch_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs e)
+    {
+        if (e.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            ViewModel.SearchText = sender.Text;
+        sender.IsSuggestionListOpen = e.Reason == AutoSuggestionBoxTextChangeReason.UserInput &&
+            sender.Text.Trim().Length > 0 && ViewModel.SearchSuggestions.Count > 0;
+    }
+
+    private void InboxSearch_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs e)
+    {
+        sender.IsSuggestionListOpen = false;
+        if (e.ChosenSuggestion is InboxConversation conversation)
+        {
+            // A request can change state or be removed while its suggestion is open.
+            if (ViewModel.VisibleConversations.Contains(conversation)) OpenConversation(conversation);
+            return;
+        }
+
+        // Keep arbitrary text as a normal list filter; never choose a result implicitly.
+        ViewModel.SearchText = e.QueryText;
+        if (!ViewModel.IsWideLayout) ViewModel.IsDetailOpen = false;
+    }
+
+    private void ApprovalHelp_Click(object sender, RoutedEventArgs e)
+    {
+        InboxApprovalHelpTip.CloseButtonContent = DesktopText.Get("Close");
+        InboxApprovalHelpTip.IsOpen = true;
+    }
+
+    private void ApprovalHelp_Close(TeachingTip sender, object args) => sender.IsOpen = false;
+
+    public static Visibility AvatarVisibility(string? path) => string.IsNullOrEmpty(path) ? Visibility.Collapsed : Visibility.Visible;
+
+    public static Visibility ConnectCommandsVisibility(bool wide, bool connected) =>
+        wide || !connected ? Visibility.Visible : Visibility.Collapsed;
+
+    private void ConversationPersonPicture_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: InboxConversation conversation })
+            _ = ViewModel.EnsureAvatarAsync(conversation);
+    }
+
+    public static Microsoft.UI.Xaml.Media.Imaging.BitmapImage? AvatarImage(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !Uri.TryCreate(path, UriKind.Absolute, out var uri) ||
+            !uri.IsFile || !File.Exists(path)) return null;
+        return new Microsoft.UI.Xaml.Media.Imaging.BitmapImage
+        {
+            DecodePixelWidth = 64,
+            DecodePixelHeight = 64,
+            UriSource = uri
+        };
     }
 
     private void OpenConversation(InboxConversation conversation)
@@ -153,7 +230,7 @@ public sealed partial class ChatInboxPage : Page
                 Content = new TextBlock
                 {
                     Text = changesAgent ? item.SessionLabel : DesktopText.Get("InboxRunConfirmBody", item.Source, item.Request.ThreadId, item.SessionLabel, item.Workspace,
-                        executionSettings.AgentExecutable, executionSettings.AgentMode == "app-server" ? "app-server" : executionSettings.AgentArguments, item.Prompt),
+                        executionSettings.AgentExecutable, executionSettings.AgentMode == "app-server" ? "app-server" : executionSettings.AgentArguments, item.PromptDisplay),
                     TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap
                 },
                 MaxHeight = 400

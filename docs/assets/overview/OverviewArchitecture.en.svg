@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="500" viewBox="0 0 1080 500" role="img" aria-labelledby="title desc">
   <title id="title">Send requests from chat to an AI agent on your PC</title>
-  <desc id="desc">Use Slack or Mattermost on another device to send requests to Chat Agent Bridge on your running PC. It starts Codex CLI or Claude Code CLI in your project and can return results to the same chat.</desc>
+  <desc id="desc">Use Slack, Mattermost, or Discord on another device to send requests to Chat Agent Bridge on your running PC. It starts Codex CLI or Claude Code CLI in your project and can return results to the same chat.</desc>
   <defs>
     <marker id="arrowBlue" markerWidth="6" markerHeight="6" refX="10" refY="6" viewBox="0 0 12 12" orient="auto"><path d="M1 1 L11 6 L1 11 Z" fill="#2864A5"/></marker>
     <marker id="arrowSlate" markerWidth="6" markerHeight="6" refX="10" refY="6" viewBox="0 0 12 12" orient="auto"><path d="M1 1 L11 6 L1 11 Z" fill="#526579"/></marker>
@@ -24,7 +24,9 @@
   <rect x="296" y="136" width="211" height="248" rx="16" fill="#EEF5FC" stroke="#A9C4DF" stroke-width="2"/>
   <path d="M333 174 h64 a13 13 0 0 1 13 13 v25 a13 13 0 0 1-13 13 h-22 l-15 14 v-14 h-27 a13 13 0 0 1-13-13 v-25 a13 13 0 0 1 13-13z" fill="#FFFFFF" stroke="#2864A5" stroke-width="3"/>
   <path d="M386 226 h57 a12 12 0 0 1 12 12 v20 a12 12 0 0 1-12 12 h-20 l-13 12 v-12 h-24 a12 12 0 0 1-12-12 v-20 a12 12 0 0 1 12-12z" fill="#DDEAF6" stroke="#2864A5" stroke-width="3"/>
-  <text x="317" y="318" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" font-weight="700" fill="#23364A">Slack or</text><text x="317" y="360" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" font-weight="700" fill="#23364A">Mattermost</text>
+  <text x="317" y="302" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="20" font-weight="700" fill="#23364A">Slack /</text>
+  <text x="317" y="334" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="20" font-weight="700" fill="#23364A">Mattermost /</text>
+  <text x="317" y="366" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="20" font-weight="700" fill="#23364A">Discord</text>
   <text x="328" y="424" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="24" fill="#526579">Chat connects you</text>
 
   <!-- Request and result travel between chat and bridge -->

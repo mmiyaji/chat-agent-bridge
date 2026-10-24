@@ -11,7 +11,7 @@ namespace ChatAgentBridge.Transports;
 public sealed record ChatIdentityLabels(string? SiteName = null, string? ChannelName = null, string? UserName = null, bool IsDirectMessage = false);
 
 /// <summary>Resolves and caches safe display labels for chat history identities.</summary>
-public sealed class ChatIdentityDirectory : IDisposable
+public sealed partial class ChatIdentityDirectory : IDisposable
 {
     private const int MaxEntries = 2000;
     private const int MaxCacheBytes = 1024 * 1024;
@@ -23,9 +23,15 @@ public sealed class ChatIdentityDirectory : IDisposable
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> CacheGates = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _cachePath;
-    private readonly HttpClient _http;
-    private readonly HttpClient? _mattermostProxyHttp;
-    private readonly HttpClient? _mattermostDirectHttp;
+    private readonly object _httpSync = new();
+    private HttpClient? _http;
+    private HttpClient? _mattermostProxyHttp;
+    private HttpClient? _mattermostDirectHttp;
+    private HttpMessageHandler? _injectedHandler;
+    private readonly bool _useInjectedClient;
+    private readonly bool _ownsInjectedHandler;
+    private int _createdHttpClientCount;
+    private bool _disposed;
     private readonly SemaphoreSlim _gate;
     private readonly SemaphoreSlim _resolveGate = new(1, 1);
     private bool _cacheDirty;
@@ -34,9 +40,6 @@ public sealed class ChatIdentityDirectory : IDisposable
     public ChatIdentityDirectory(string? directory = null)
     {
         _cachePath = Path.Combine(Path.GetFullPath(directory ?? new SettingsStore().DirectoryPath), "chat-identities.json");
-        _http = new HttpClient(CreateHandler(), disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
-        _mattermostProxyHttp = new HttpClient(CreateHandler(bypassProxy: false), disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
-        _mattermostDirectHttp = new HttpClient(CreateHandler(bypassProxy: true), disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
         _gate = CacheGates.GetOrAdd(_cachePath, static _ => new SemaphoreSlim(1, 1));
     }
 
@@ -46,9 +49,31 @@ public sealed class ChatIdentityDirectory : IDisposable
     private ChatIdentityDirectory(HttpMessageHandler handler, string directory, bool ownsHandler)
     {
         _cachePath = Path.Combine(Path.GetFullPath(directory), "chat-identities.json");
-        _http = new HttpClient(handler, ownsHandler) { Timeout = Timeout.InfiniteTimeSpan };
+        _injectedHandler = handler ?? throw new ArgumentNullException(nameof(handler));
+        _useInjectedClient = true;
+        _ownsInjectedHandler = ownsHandler;
         _gate = CacheGates.GetOrAdd(_cachePath, static _ => new SemaphoreSlim(1, 1));
     }
+
+    internal int CreatedHttpClientCount => Volatile.Read(ref _createdHttpClientCount);
+
+    private HttpClient GetClient(ref HttpClient? client, Func<HttpMessageHandler> handlerFactory)
+    {
+        lock (_httpSync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (client is not null) return client;
+            var handler = _injectedHandler ?? handlerFactory();
+            client = new HttpClient(handler, _useInjectedClient ? _ownsInjectedHandler : true)
+            { Timeout = Timeout.InfiniteTimeSpan };
+            if (_injectedHandler is not null) _injectedHandler = null;
+            Interlocked.Increment(ref _createdHttpClientCount);
+            return client;
+        }
+    }
+
+    private HttpClient GetDefaultClient(ref HttpClient? client, bool bypassProxy = false) =>
+        GetClient(ref client, () => CreateHandler(bypassProxy));
 
     internal static SocketsHttpHandler CreateHandler(bool bypassProxy = false) => new()
     {
@@ -96,6 +121,7 @@ public sealed class ChatIdentityDirectory : IDisposable
             {
                 var mmKeys = new List<(SessionKey Key, string Origin)>();
                 var slackKeys = new List<SessionKey>();
+                var discordKeys = new List<SessionKey>();
                 foreach (var key in requested)
                 {
                     if (key.Provider.Equals("mattermost", StringComparison.OrdinalIgnoreCase))
@@ -105,6 +131,8 @@ public sealed class ChatIdentityDirectory : IDisposable
                     }
                     else if (key.Provider.Equals("slack", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(settings.SlackBotToken))
                         slackKeys.Add(key);
+                    else if (key.Provider == "discord" && key.Origin == "discord" && !string.IsNullOrWhiteSpace(settings.DiscordBotToken))
+                        discordKeys.Add(key);
                 }
 
                 foreach (var group in mmKeys.GroupBy(item => item.Origin, StringComparer.Ordinal))
@@ -134,6 +162,9 @@ public sealed class ChatIdentityDirectory : IDisposable
                     if (!IsCoolingDown(store, "slack", "slack"))
                         await ResolveSlackAsync(settings, slackKeys.ToArray(), store, budget, timeout.Token).ConfigureAwait(false);
                 }
+                if (discordKeys.Count > 0 && !timeout.IsCancellationRequested && !budget.Limited &&
+                    !IsCoolingDown(store, "discord", "discord"))
+                    await ResolveDiscordAsync(settings, discordKeys.ToArray(), store, budget, timeout.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { }
             catch (OperationCanceledException) { throw; }
@@ -305,7 +336,11 @@ public sealed class ChatIdentityDirectory : IDisposable
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var client = bypassProxy ? _mattermostDirectHttp ?? _http : _mattermostProxyHttp ?? _http;
+        var client = _useInjectedClient
+            ? GetDefaultClient(ref _http)
+            : bypassProxy
+                ? GetDefaultClient(ref _mattermostDirectHttp, bypassProxy: true)
+                : GetDefaultClient(ref _mattermostProxyHttp);
         return await SendJsonAsync(request, client, budget, cancellationToken).ConfigureAwait(false);
     }
 
@@ -316,7 +351,7 @@ public sealed class ChatIdentityDirectory : IDisposable
         if (query is not null) builder.Query = string.Join("&", query.Select(pair => Uri.EscapeDataString(pair.Key) + "=" + Uri.EscapeDataString(pair.Value)));
         using var request = new HttpRequestMessage(method == "auth.test" ? HttpMethod.Post : HttpMethod.Get, builder.Uri);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var doc = await SendJsonAsync(request, _http, budget, cancellationToken).ConfigureAwait(false);
+        var doc = await SendJsonAsync(request, GetDefaultClient(ref _http), budget, cancellationToken).ConfigureAwait(false);
         if (!doc.RootElement.TryGetProperty("ok", out var ok) || ok.ValueKind != JsonValueKind.True)
         {
             var rateLimited = doc.RootElement.TryGetProperty("error", out var error) && error.GetString() == "ratelimited";
@@ -383,7 +418,7 @@ public sealed class ChatIdentityDirectory : IDisposable
         finally { _gate.Release(); }
     }
 
-    private static bool IsValidEntry(CacheEntry entry) => entry.Key is { Provider: "slack" or "mattermost", Kind: "site" or "team" or "channel" or "user" or "cooldown", Origin: not null, Id: not null } &&
+    private static bool IsValidEntry(CacheEntry entry) => entry.Key is { Provider: "slack" or "mattermost" or "discord", Kind: "site" or "team" or "channel" or "user" or "cooldown", Origin: not null, Id: not null } &&
         entry.CheckedAtUtc != default && entry.CheckedAtUtc <= DateTimeOffset.UtcNow.AddMinutes(5) &&
         IsSafeCachedLabel(entry.SiteName) && IsSafeCachedLabel(entry.ChannelName) && IsSafeCachedLabel(entry.UserName);
 
@@ -392,7 +427,7 @@ public sealed class ChatIdentityDirectory : IDisposable
     private static ChatIdentityLabels Merge(Dictionary<CacheKey, CacheEntry> store, SessionKey key)
     {
         var provider = key.Provider.ToLowerInvariant();
-        var origin = provider == "mattermost" ? key.Origin : "slack";
+        var origin = provider == "mattermost" ? key.Origin : provider;
         if (origin is null) return new();
         var site = provider == "mattermost" ? GetFreshOrStale(store, provider, origin, "site", "site")?.SiteName : null;
         var channel = GetFreshOrStale(store, provider, origin, "channel", key.ChannelId);
@@ -487,7 +522,20 @@ public sealed class ChatIdentityDirectory : IDisposable
         catch (Exception) { return []; }
     }
 
-    public void Dispose() { _http.Dispose(); _mattermostProxyHttp?.Dispose(); _mattermostDirectHttp?.Dispose(); _resolveGate.Dispose(); }
+    public void Dispose()
+    {
+        lock (_httpSync)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _http?.Dispose();
+            _mattermostProxyHttp?.Dispose();
+            _mattermostDirectHttp?.Dispose();
+            if (_http is null && _ownsInjectedHandler) _injectedHandler?.Dispose();
+            _injectedHandler = null;
+        }
+        _resolveGate.Dispose();
+    }
 
     private sealed class RequestBudget { private int _count; public bool Limited { get; set; } public bool TryTake() { if (Limited) return false; if (++_count <= MaxRequests) return true; Limited = true; return false; } }
     private sealed class ApiRateLimitedException : Exception;
