@@ -228,5 +228,3 @@ Released under the [MIT License](LICENSE). Check the terms and contracts of the 
 - [Portable edition guide](desktop/distribution/README.portable.en.txt)
 - [Report a bug or suggest a feature](https://github.com/mmiyaji/chat-agent-bridge/issues)
 - [Third-party notices](desktop/THIRD-PARTY-NOTICES.txt), also available in the app's About page
-
-Documentation for the earlier TypeScript implementation has moved to [docs/legacy](docs/legacy/). Those instructions differ from the current Windows app.

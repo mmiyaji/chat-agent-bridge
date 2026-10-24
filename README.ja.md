@@ -228,5 +228,3 @@ PCでも実行中の出力を確認し、依頼を中断できます。
 - [ポータブル版の案内](desktop/distribution/README.portable.ja.txt)
 - [不具合報告・機能の提案](https://github.com/mmiyaji/chat-agent-bridge/issues)
 - [サードパーティーのライセンス](desktop/THIRD-PARTY-NOTICES.txt)（アプリの「情報」からも閲覧可能）
-
-旧TypeScript版の資料は[docs/legacy](docs/legacy/)に移しました。現在のWindowsアプリとは手順・構成が異なります。

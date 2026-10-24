@@ -1,6 +1,6 @@
 # Mattermost setup / Mattermostの設定
 
-Chat Agent BridgeのWindowsアプリをMattermostへ接続する手順です。旧TypeScript版の手順（HTTP/WebSocketモード、環境変数、Docker検証）は[docs/legacy/mattermost-setup.md](legacy/mattermost-setup.md)にあります。
+Chat Agent BridgeのWindowsアプリをMattermostへ接続する手順です。
 
 ## Botを準備する
 
@@ -54,7 +54,7 @@ Bridgeは、ここで設定した1つの会話だけを監視します。トー�
 
 ## English
 
-This guide connects the Chat Agent Bridge Windows app to Mattermost. The earlier TypeScript bridge instructions (HTTP/WebSocket modes, environment variables and Docker tests) are in [docs/legacy/mattermost-setup.md](legacy/mattermost-setup.md).
+This guide connects the Chat Agent Bridge Windows app to Mattermost.
 
 ### Prepare the bot
 
