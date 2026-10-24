@@ -69,6 +69,13 @@ public sealed record IncomingChatFile(string Id, string Name, long Size, string?
 /// <summary>Optional support for resolving and downloading files attached to an approved incoming request.</summary>
 public interface IChatIncomingFileTransport
 {
+    /// <summary>
+    /// Gets untrusted preflight descriptors without necessarily fetching them again from the API.
+    /// DownloadFileAsync must verify the canonical metadata and request association before writing any bytes.
+    /// </summary>
+    Task<IReadOnlyList<IncomingChatFile>> GetIncomingFileCandidatesAsync(ChatRequest request, CancellationToken cancellationToken)
+        => ResolveIncomingFilesAsync(request, cancellationToken);
+
     Task<IReadOnlyList<IncomingChatFile>> ResolveIncomingFilesAsync(ChatRequest request, CancellationToken cancellationToken);
 
     Task DownloadFileAsync(

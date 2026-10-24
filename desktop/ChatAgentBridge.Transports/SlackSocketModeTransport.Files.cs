@@ -9,6 +9,17 @@ public sealed partial class SlackSocketModeTransport
 {
     private const string SlackFilesHost = "files.slack.com";
 
+    public Task<IReadOnlyList<IncomingChatFile>> GetIncomingFileCandidatesAsync(ChatRequest request, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ValidateIncomingFileRequest(request);
+        EnsureIncomingFileAccess(request);
+        var candidates = IncomingFileCandidates.FromEvent(request);
+        foreach (var file in candidates) ValidateSlackFileId(file.Id);
+        return candidates.Any(file => file.Size == 0)
+            ? ResolveIncomingFilesAsync(request, cancellationToken) : Task.FromResult(candidates);
+    }
+
     private static IReadOnlyList<IncomingChatFile> ReadIncomingFiles(JsonElement evt, out string? error)
     {
         error = null;

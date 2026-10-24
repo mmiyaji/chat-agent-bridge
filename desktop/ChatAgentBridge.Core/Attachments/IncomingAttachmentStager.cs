@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Security.Cryptography;
 
 namespace ChatAgentBridge.Core;
 
@@ -25,12 +26,22 @@ public static class IncomingAttachmentStager
 
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
-    public static async Task<IncomingAttachmentLease> PrepareAsync(
+    public static Task<IncomingAttachmentLease> PrepareAsync(
         string workspace,
         IReadOnlyList<IncomingAttachmentDescriptor> descriptors,
         Func<IncomingAttachmentDescriptor, Stream, long, CancellationToken, Task> downloader,
         CancellationToken cancellationToken = default,
         string? recoveryDataDirectory = null)
+        // Directory validation, durable recovery registration and cleanup all include synchronous I/O.
+        // An async method alone would still run this prefix on its UI caller's thread.
+        => Task.Run(() => PrepareCoreAsync(workspace, descriptors, downloader, cancellationToken, recoveryDataDirectory), cancellationToken);
+
+    private static async Task<IncomingAttachmentLease> PrepareCoreAsync(
+        string workspace,
+        IReadOnlyList<IncomingAttachmentDescriptor> descriptors,
+        Func<IncomingAttachmentDescriptor, Stream, long, CancellationToken, Task> downloader,
+        CancellationToken cancellationToken,
+        string? recoveryDataDirectory)
     {
         ArgumentNullException.ThrowIfNull(descriptors);
         ArgumentNullException.ThrowIfNull(downloader);
@@ -132,8 +143,9 @@ public static class IncomingAttachmentStager
             AttachmentHandlePolicy.EnsureSafe(file, root, path);
             var identity = AttachmentHandlePolicy.GetIdentity(file);
             fileCreated?.Invoke(identity);
+            using var hash = fileCompleted is null ? null : IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             var bounded = new BoundedWriteStream(file, MaximumAttachmentBytes, MaximumTotalBytes,
-                getTotalWritten, addTotalWritten, leaveOpen: true);
+                getTotalWritten, addTotalWritten, leaveOpen: true, hash);
             await downloader(descriptor, bounded, descriptor.Size, cancellationToken).ConfigureAwait(false);
             bounded.Finish();
             if (bounded.BytesWritten != descriptor.Size)
@@ -143,9 +155,7 @@ public static class IncomingAttachmentStager
             AttachmentHandlePolicy.EnsureSafe(file, root, path);
             if (fileCompleted is not null)
             {
-                file.Position = 0;
-                var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(file));
-                fileCompleted(identity, file.Length, hash);
+                fileCompleted(identity, file.Length, Convert.ToHexString(hash!.GetHashAndReset()));
             }
         }
 
@@ -267,10 +277,11 @@ public static class IncomingAttachmentStager
         private readonly Func<long> _getTotalWritten;
         private readonly Action<long> _addTotalWritten;
         private readonly bool _leaveOpen;
+        private readonly IncrementalHash? _hash;
         private bool _finished;
 
         public BoundedWriteStream(Stream inner, long maximumFileBytes, long maximumTotalBytes,
-            Func<long> getTotalWritten, Action<long> addTotalWritten, bool leaveOpen)
+            Func<long> getTotalWritten, Action<long> addTotalWritten, bool leaveOpen, IncrementalHash? hash = null)
         {
             _inner = inner;
             _maximumFileBytes = maximumFileBytes;
@@ -278,6 +289,7 @@ public static class IncomingAttachmentStager
             _getTotalWritten = getTotalWritten;
             _addTotalWritten = addTotalWritten;
             _leaveOpen = leaveOpen;
+            _hash = hash;
         }
 
         public long BytesWritten { get; private set; }
@@ -296,19 +308,19 @@ public static class IncomingAttachmentStager
         {
             CheckWrite(count);
             _inner.Write(buffer, offset, count);
-            CommitWrite(count);
+            CommitWrite(buffer.AsSpan(offset, count));
         }
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             CheckWrite(buffer.Length);
             await _inner.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-            CommitWrite(buffer.Length);
+            CommitWrite(buffer.Span);
         }
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckWrite(count);
             await _inner.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
-            CommitWrite(count);
+            CommitWrite(buffer.AsSpan(offset, count));
         }
         protected override void Dispose(bool disposing)
         {
@@ -326,15 +338,16 @@ public static class IncomingAttachmentStager
             if (count < 0 || BytesWritten > _maximumFileBytes - count || _getTotalWritten() > _maximumTotalBytes - count)
                 throw new InvalidDataException("Incoming attachment exceeded the configured byte limit.");
         }
-        private void CommitWrite(int count)
+        private void CommitWrite(ReadOnlySpan<byte> bytes)
         {
-            BytesWritten = checked(BytesWritten + count);
-            _addTotalWritten(count);
+            _hash?.AppendData(bytes);
+            BytesWritten = checked(BytesWritten + bytes.Length);
+            _addTotalWritten(bytes.Length);
         }
     }
 }
 
-public sealed class IncomingAttachmentLease : IDisposable
+public sealed class IncomingAttachmentLease : IDisposable, IAsyncDisposable
 {
     private readonly string _stagingDirectory;
     private readonly IncomingAttachmentRecovery.Registration? _registration;
@@ -382,6 +395,9 @@ public sealed class IncomingAttachmentLease : IDisposable
         if (_registration is null) CleanupKnownPaths(Workspace, _stagingDirectory, Attachments.Select(item => item.Path));
         else _registration.DisposeAndCleanup();
     }
+
+    /// <summary>Runs verification and removal on a worker, including the full-file safety hash.</summary>
+    public ValueTask DisposeAsync() => new(Task.Run(Dispose));
 
     internal static void CleanupKnownPaths(string workspace, string stagingDirectory, IEnumerable<string> knownPaths)
     {

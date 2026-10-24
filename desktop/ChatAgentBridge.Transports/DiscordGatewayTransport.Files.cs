@@ -12,6 +12,15 @@ public sealed partial class DiscordGatewayTransport
         "cdn.discordapp.com", "media.discordapp.net", "cdn.discordapp.net", "media.discordapp.com"
     };
 
+    public Task<IReadOnlyList<IncomingChatFile>> GetIncomingFileCandidatesAsync(ChatRequest request, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ValidateRequest(request);
+        var candidates = IncomingFileCandidates.FromEvent(request);
+        return candidates.Any(file => file.Size == 0)
+            ? ResolveIncomingFilesAsync(request, cancellationToken) : Task.FromResult(candidates);
+    }
+
     public async Task<IReadOnlyList<IncomingChatFile>> ResolveIncomingFilesAsync(ChatRequest request, CancellationToken cancellationToken)
     {
         ValidateRequest(request);
@@ -27,12 +36,15 @@ public sealed partial class DiscordGatewayTransport
         ArgumentNullException.ThrowIfNull(file);
         ArgumentNullException.ThrowIfNull(destination);
         if (!destination.CanWrite || maxBytes <= 0) throw new ArgumentOutOfRangeException(nameof(maxBytes));
+        var generation = Volatile.Read(ref _generation);
         var message = await ReadOriginalMessageAsync(request, cancellationToken).ConfigureAwait(false);
         var attachment = message.Attachments?.FirstOrDefault(item => string.Equals(item.Id, file.Id, StringComparison.Ordinal));
         if (attachment is null || !TryValidateCdnUrl(attachment.Url, out var url) ||
-            attachment.Size < 0 || attachment.Size > maxBytes)
+            attachment.Size < 0 || attachment.Size > maxBytes || attachment.Size != file.Size ||
+            !string.Equals(attachment.Filename, file.Name, StringComparison.Ordinal))
             throw new InvalidOperationException("The Discord attachment is no longer available or exceeds the permitted size.");
 
+        EnsureIncomingDownloadAccess(request, generation, cancellationToken);
         // CDN requests intentionally carry no bot Authorization header and reject all redirects.
         using var cdnRequest = new HttpRequestMessage(HttpMethod.Get, url);
         DiscordHttp.ConfigureRequest(cdnRequest);
@@ -53,10 +65,22 @@ public sealed partial class DiscordGatewayTransport
             if (read == 0) break;
             if (total > maxBytes - read) throw new InvalidOperationException("Discord attachment exceeds the permitted size.");
             total += read;
+            cancellationToken.ThrowIfCancellationRequested();
+            if (generation != Volatile.Read(ref _generation))
+                throw new InvalidOperationException("Discord connection changed during file download.");
             await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
         }
+        EnsureIncomingDownloadAccess(request, generation, cancellationToken);
         if (total != attachment.Size)
             throw new InvalidOperationException("Discord attachment size changed while it was being downloaded.");
+    }
+
+    private void EnsureIncomingDownloadAccess(ChatRequest request, long generation, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        ValidateRequest(request);
+        if (generation != Volatile.Read(ref _generation))
+            throw new InvalidOperationException("Discord connection changed during file download.");
     }
 
     public async Task<IReadOnlyList<string>> UploadFilesAsync(ChatRequest request,
