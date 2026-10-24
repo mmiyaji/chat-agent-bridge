@@ -16,8 +16,27 @@ def read(path):
     return entries
 
 def arguments(value):
-    value = value.replace("{{", "").replace("}}", "")
-    return set(re.findall(r"\{(\d+)(?:[^{}]*)\}", value))
+    """Validate composite-format strings while allowing reordered arguments."""
+    # Some unformatted help text contains literal braces. Only strings with a
+    # numeric format item use the composite-format contract checked here.
+    if not re.search(r"\{\d", value):
+        return set()
+    found = set()
+    index = 0
+    while index < len(value):
+        if value[index:index + 2] in ("{{", "}}"):
+            index += 2
+        elif value[index] == "{":
+            item = re.match(r"\{(\d+)(?:,\s*-?\d+)?(?::[^{}]*)?\}", value[index:])
+            if item is None:
+                raise ValueError("invalid or unclosed composite-format item")
+            found.add(item.group(1))
+            index += item.end()
+        elif value[index] == "}":
+            raise ValueError("unescaped closing brace")
+        else:
+            index += 1
+    return found
 
 
 def resource_keys(source, helper):
@@ -47,6 +66,9 @@ def resource_keys(source, helper):
             elif char == "," and depth == 0:
                 break
         argument = source[start:end]
+        if re.match(r'^\s*"[^"\\]*"\s*\+', argument):
+            # Suffixes in a constructed key are not complete resource keys.
+            continue
         for literal in re.finditer(r'"([^"\\]+)"', argument):
             prefix = argument[:literal.start()].rstrip()
             suffix = argument[literal.end():].lstrip()
@@ -64,11 +86,29 @@ def check_resource_key_scanner():
         ('ViewModelText.Get(mode switch { "first" => "ApprovalFirst", "auto" => "ApprovalAuto", _ => "ApprovalAlways" })',
          "ViewModelText", {"ApprovalFirst", "ApprovalAuto", "ApprovalAlways"}),
         ('DesktopText.Get("SettingsReview" + key)', "DesktopText", set()),
+        ('MrtText.Get("Confirm.Content", culture)', "MrtText", {"Confirm.Content"}),
+        ('MrtText.Get("Mode" + (mode switch { "auto" => "Auto", _ => "Always" }) + ".Content")',
+         "MrtText", set()),
     )
     for source, helper, expected in cases:
         actual = set(resource_keys(source, helper))
         if actual != expected:
             raise SystemExit(f"Resource key scanner regression: {source}: expected {expected}, got {actual}")
+
+
+def check_format_scanner():
+    for value, expected in (("{1}: {0:N0}", {"0", "1"}),
+                            ("{{literal}} {0,-12}", {"0"}),
+                            ("{{{0}}}", {"0"}),
+                            ("JSON: {example}", set())):
+        if arguments(value) != expected:
+            raise SystemExit(f"Format scanner regression: {value}")
+    for value in ("{0", "{0} }", "{0} {other}"):
+        try:
+            arguments(value)
+        except ValueError:
+            continue
+        raise SystemExit(f"Invalid format was accepted: {value}")
 
 pairs = [
     ("ChatAgentBridge.Core/Localization/Strings.resx", "ChatAgentBridge.Core/Localization/Strings.ja.resx"),
@@ -81,6 +121,7 @@ pairs = [
 ]
 catalogs = []
 check_resource_key_scanner()
+check_format_scanner()
 for english, japanese in pairs:
     en, ja = read(root / english), read(root / japanese)
     catalogs.append(en)
@@ -89,11 +130,15 @@ for english, japanese in pairs:
     for key in en.keys() & ja.keys():
         if not en[key].strip() or not ja[key].strip():
             errors.append(f"Empty translation: {english}: {key}")
-        if arguments(en[key]) != arguments(ja[key]):
-            errors.append(f"Format arguments differ: {english}: {key}")
+        try:
+            if arguments(en[key]) != arguments(ja[key]):
+                errors.append(f"Format arguments differ: {english}: {key}")
+        except ValueError as error:
+            errors.append(f"Invalid format arguments: {english}: {key}: {error}")
     print(f"{english}: {len(en)} English/Japanese resource keys")
 
-for helper, catalog in (("CoreText", catalogs[0]), ("DesktopText", catalogs[1]), ("ViewModelText", catalogs[4])):
+for helper, catalog in (("CoreText", catalogs[0]), ("DesktopText", catalogs[1]),
+                        ("ViewModelText", catalogs[4]), ("MrtText", catalogs[3])):
     for path in root.glob("ChatAgentBridge.*/**/*.cs"):
         if any(part in ("bin", "obj") for part in path.parts):
             continue
@@ -109,6 +154,11 @@ for path in (root / "ChatAgentBridge.Desktop").rglob("*.xaml"):
         uid = element.attrib.get("{http://schemas.microsoft.com/winfx/2006/xaml}Uid")
         if uid and not any(key.startswith(uid + ".") for key in catalogs[3]):
             errors.append(f"Missing x:Uid resources: {path.relative_to(root)}: {uid}")
+        localized_key = element.attrib.get(
+            "{using:ChatAgentBridge_Desktop.Localization}LocalizedResourceKey.Key")
+        if localized_key and not localized_key.startswith("{") and not any(
+                key.startswith(localized_key + ".") for key in catalogs[3]):
+            errors.append(f"Missing attached localization resources: {path.relative_to(root)}: {localized_key}")
         # MRT applies every matching property at runtime. A leftover '.Text' for
         # a Button can pass the XAML compiler and still crash InitializeComponent.
         control = element.tag.removeprefix("{http://schemas.microsoft.com/winfx/2006/xaml/presentation}")

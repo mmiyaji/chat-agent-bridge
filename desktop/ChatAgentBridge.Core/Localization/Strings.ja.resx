@@ -27,9 +27,9 @@
   <data name="CliModelUnavailable" xml:space="preserve"><value>選択したモデルは、このCLIまたはアカウントで利用できません。利用可能なモデルを選ぶか既定のモデルに戻してから、再試行してください。</value></data>
   <data name="CliDiagnosticsHidden" xml:space="preserve"><value>CLIが標準エラーに診断情報を出力しました。</value></data>
   <data name="CliStructuredResultInvalid" xml:space="preserve"><value>CLIから正常終了の結果と有効なセッションUUIDが返されませんでした。インストール済みのCLIが設定された構造化出力形式に対応しているか確認してください。</value></data>
-  <data name="ApprovalPermissionLine" xml:space="preserve"><value>許可: !cab approve {0}</value></data>
+  <data name="ApprovalPermissionLine" xml:space="preserve"><value>承認: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>拒否: !cab reject {0}</value></data>
-  <data name="ApprovalRequestTitle" xml:space="preserve"><value>Codex が操作の許可を求めています。</value></data>
+  <data name="ApprovalRequestTitle" xml:space="preserve"><value>Codex が操作の承認を求めています。</value></data>
   <data name="ApprovalMethodLabel" xml:space="preserve"><value>メソッド</value></data>
   <data name="ApprovalDescriptionLabel" xml:space="preserve"><value>説明</value></data>
   <data name="ApprovalCommandLabel" xml:space="preserve"><value>コマンド</value></data>
@@ -73,6 +73,13 @@
   <data name="ProgressClaudeSessionReady" xml:space="preserve"><value>Claude セッションを開始しました</value></data>
   <data name="ProgressStartingItem" xml:space="preserve"><value>{0}を開始</value></data>
   <data name="ProgressFinishedItem" xml:space="preserve"><value>{0}が終了しました</value></data>
+  <data name="ProgressGenericItem" xml:space="preserve"><value>処理</value></data>
+  <data name="ProgressItemFileChange" xml:space="preserve"><value>ファイル変更</value></data>
+  <data name="ProgressItemMcpToolCall" xml:space="preserve"><value>ツール呼び出し</value></data>
+  <data name="ProgressItemWebSearch" xml:space="preserve"><value>ウェブ検索</value></data>
+  <data name="ProgressItemImageGeneration" xml:space="preserve"><value>画像生成</value></data>
+  <data name="ProgressItemCollaborationMode" xml:space="preserve"><value>協働モードの変更</value></data>
+  <data name="ProgressItemContextCompaction" xml:space="preserve"><value>コンテキストの整理</value></data>
   <data name="DiscordActionApprove" xml:space="preserve"><value>承認</value></data>
   <data name="DiscordActionReject" xml:space="preserve"><value>拒否</value></data>
   <data name="DiscordToolApprovalApprove" xml:space="preserve"><value>ツールを承認</value></data>

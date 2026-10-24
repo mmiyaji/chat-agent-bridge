@@ -466,7 +466,7 @@
     <value>Choose the AI and workspace for this PC. Install and sign in to the CLI first.</value>
   </data>
   <data name="WizardChatDescription" xml:space="preserve">
-    <value>Choose Slack or Mattermost, enter its connection details, and specify the user IDs allowed to use it.</value>
+    <value>Choose Slack, Mattermost, or Discord, enter its connection details, and specify the user IDs allowed to use it.</value>
   </data>
   <data name="WizardCliDescription" xml:space="preserve">
     <value>Check the CLI version. Codex and Claude Code also provide model candidates. No AI task request is sent.</value>

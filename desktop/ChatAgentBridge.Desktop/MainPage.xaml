@@ -59,7 +59,7 @@
                     <NavigationViewItem.InfoBadge>
                         <InfoBadge x:Name="AboutUpdateBadge" Visibility="Collapsed" Style="{StaticResource AttentionIconInfoBadgeStyle}"
                                    Background="{ThemeResource UpdateBadgeBackgroundBrush}" Foreground="{ThemeResource UpdateBadgeForegroundBrush}"
-                                   Width="24" Height="24" MinWidth="24" MinHeight="24" MaxHeight="24" Padding="2"
+                                   Width="24" Height="24" MinWidth="24" MinHeight="24" MaxHeight="24" Padding="4"
                                    AutomationProperties.AccessibilityView="Control" AutomationProperties.AutomationId="NavAboutUpdateBadge">
                             <InfoBadge.Resources>
                                 <Thickness x:Key="IconInfoBadgeFontIconMargin">0</Thickness>
@@ -162,7 +162,7 @@
                                             <Button Grid.Row="2" Grid.Column="0" Click="OpenStartupSettings_Click" ToolTipService.ToolTip="{x:Bind ViewModel.StartupStatus, Mode=OneWay}" AutomationProperties.Name="{x:Bind ViewModel.OverviewStartupAccessibleName, Mode=OneWay}" AutomationProperties.AutomationId="OverviewStartupTile" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12">
                                                 <Grid ColumnSpacing="8">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                                    <FontIcon Style="{x:Bind local:MainPage.OverviewIconStyle(ViewModel.OverviewStartupIconState), Mode=OneWay}" Glyph="{x:Bind ViewModel.OverviewStartupGlyph, Mode=OneWay}" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" />
+                                                    <FontIcon Style="{x:Bind local:MainPage.OverviewIconStyle(ViewModel.OverviewStartupIconState), Mode=OneWay}" Glyph="&#xE7E8;" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" />
                                                     <StackPanel Grid.Column="1" Spacing="2">
                                                         <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewStartupLabel" localization:LocalizedResourceKey.Key="OverviewStartupLabel" />
                                                         <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewStartupHint" localization:LocalizedResourceKey.Key="OverviewStartupHint" />
@@ -173,7 +173,7 @@
                                             <Button Grid.Row="2" Grid.Column="1" Click="OpenAutoConnectSettings_Click" AutomationProperties.Name="{x:Bind ViewModel.OverviewAutoConnectAccessibleName, Mode=OneWay}" AutomationProperties.AutomationId="OverviewAutoConnectTile" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12">
                                                 <Grid ColumnSpacing="8">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                                    <FontIcon Style="{x:Bind local:MainPage.OverviewIconStyle(ViewModel.OverviewAutoConnectIconState), Mode=OneWay}" Glyph="{x:Bind ViewModel.OverviewAutoConnectGlyph, Mode=OneWay}" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" />
+                                                    <FontIcon Style="{x:Bind local:MainPage.OverviewIconStyle(ViewModel.OverviewAutoConnectIconState), Mode=OneWay}" Glyph="&#xE71B;" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" />
                                                     <StackPanel Grid.Column="1" Spacing="2">
                                                         <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewAutoConnectLabel" localization:LocalizedResourceKey.Key="OverviewAutoConnectLabel" />
                                                         <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" x:Uid="OverviewAutoConnectHint" localization:LocalizedResourceKey.Key="OverviewAutoConnectHint" />
@@ -196,7 +196,7 @@
                                         <ToggleSwitch x:Name="StartupToggle" IsOn="{x:Bind ViewModel.StartWithWindows, Mode=OneWay}" Toggled="StartupToggle_Toggled" IsEnabled="{x:Bind ViewModel.CanChangeStartup, Mode=OneWay}" AutomationProperties.AutomationId="StartWithWindows" x:Uid="StartWithWindows" />
                                     </settings:SettingsCard>
                                     <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" x:Uid="AutoConnectSettingRow" AutomationProperties.AutomationId="AutoConnectSettingRow">
-                                        <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="Message" /></settings:SettingsCard.HeaderIcon>
+                                        <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE71B;" /></settings:SettingsCard.HeaderIcon>
                                         <settings:SettingsCard.Description>
                                             <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock043" x:Uid="chatAgentBridgeDesktopMainPageTextBlock043" />
                                         </settings:SettingsCard.Description>

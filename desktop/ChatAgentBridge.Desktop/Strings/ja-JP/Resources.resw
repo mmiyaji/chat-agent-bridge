@@ -43,7 +43,7 @@
     <value>メイン コンテンツ</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock001.Text" xml:space="preserve">
-    <value>CodexやClaude Codeのデスクトップアプリを使えない端末から、Slack/Mattermostを窓口に、起動中のローカルPCのAIエージェントへ依頼できます。</value>
+    <value>CodexやClaude Codeのデスクトップアプリを使えない端末から、Slack、Mattermost、またはDiscordを通じて、起動中のローカルPCのAIエージェントへ依頼できます。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock002.Text" xml:space="preserve">
     <value>セットアップの進行状況</value>
@@ -85,18 +85,18 @@
     <value>チャットを窓口に、ローカルPCへ依頼</value>
   </data>
   <data name="OverviewArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>別の端末のSlackまたはMattermostから依頼し、起動中のPCのChat Agent Bridgeが受け取ります。PCで確認後、選択したAI CLIを実行し、確認して共有した結果を同じスレッドで受け取ります。</value>
+    <value>別の端末のSlack、Mattermost、またはDiscordから依頼し、起動中のPCのChat Agent Bridgeが受け取ります。PCで確認後、選択したAI CLIを実行し、確認して共有した結果を同じスレッドで受け取ります。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock007.Text" xml:space="preserve">
-    <value>図の説明：スマートフォンやブラウザーからSlackまたはMattermostへ送った依頼を、チャット経由で起動中のローカルPCのChat Agent Bridgeが受け取り、選択したAI CLIを設定済みプロジェクトで実行します。結果は同じチャットへ返ります。AI処理の場所はCLIやモデルの提供形態によります。</value>
+    <value>図の説明：スマートフォンやブラウザーからSlack、Mattermost、またはDiscordへ送った依頼を、チャット経由で起動中のローカルPCのChat Agent Bridgeが受け取り、選択したAI CLIを設定済みプロジェクトで実行します。結果は同じチャットへ返ります。AI処理の場所はCLIやモデルの提供形態によります。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock008.Text" xml:space="preserve">
     <value>1. エージェント設定でCLI・モデル・作業フォルダーを設定します。
-2. 接続先と許可ユーザーを設定し、チャットからSlackまたはMattermostへ接続します。
-3. 別の端末から依頼を送ります。Mattermostは !cab 依頼内容、または先頭で接続したBotを @メンションして依頼します。SlackはBotへのメンションまたはスレッドへの返信に !cab 依頼内容を含めます。
+2. 接続先と許可ユーザーを設定し、チャットからSlack、Mattermost、またはDiscordへ接続します。
+3. 別の端末から依頼を送ります。Mattermostは !cab または接続したBotへのメンションから始めます。SlackはBotへメンションするか、スレッドへの返信に !cab を含めます。DiscordはBotへのメンションまたは !cab から始めます。Bridgeがフォローアップ用のスレッドを作成します。
 4. PCで依頼を確認して実行し、結果を確認して共有を承認すると、同じスレッドへ返ります。
 
-ローカルPCではこのアプリを起動し、SlackまたはMattermostとの接続を保ってください。</value>
+ローカルPCではこのアプリを起動し、チャットサービスとの接続を保ってください。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock009.Text" xml:space="preserve">
     <value>保存済みの設定</value>
@@ -610,7 +610,7 @@
     <value>PCのAIをチャットから使う</value>
   </data>
   <data name="WizardArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>SlackまたはMattermostからPC上のアプリへ依頼し、PC上のAI CLIが応答する仕組みを示す図</value>
+    <value>Slack、Mattermost、またはDiscordからPC上のアプリへ依頼し、PC上のAI CLIが応答する仕組みを示す図</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock002.Text" xml:space="preserve">
     <value>Slack、Mattermost、またはDiscordを窓口にして、このPCの選択したAI CLIへ依頼を渡します。作業ファイルとCLIはこのPCにあり、AIの処理や情報の送信先はCLIと利用するAIサービスの設定に従います。</value>
@@ -1153,9 +1153,9 @@
   <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Codex・Claude Code・Gemini CLI・GitHub Copilot CLIの接続設定を登録・呼び出し</value></data>
   <data name="AgentExecutionExplanationTitle.Text" xml:space="preserve"><value>実行承認のしくみ</value></data>
   <data name="AgentExecutionExplanationHelp.Text" xml:space="preserve"><value>承認の流れと現在の実行ポリシーを確認</value></data>
-  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>使うサービスの設定を開いてください。承認や添付の設定は、サービスに共通です。</value></data>
+  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>使うサービスの設定を開いてください。承認や添付の設定は、各チャットサービスに共通です。</value></data>
   <data name="ChatCommonTitle.Text" xml:space="preserve"><value>共通のチャット動作</value></data>
-  <data name="ChatCommonHelp.Text" xml:space="preserve"><value>両サービス共通の依頼承認と結果の投稿方法</value></data>
+  <data name="ChatCommonHelp.Text" xml:space="preserve"><value>各チャットサービス共通の依頼承認と結果の投稿方法</value></data>
   <data name="ChatScopeOverview.Text" xml:space="preserve"><value>利用するサービスを開き、認証情報・許可ユーザー・会話の制限を設定してください。</value></data>
   <data name="MattermostSectionTitle.Text" xml:space="preserve"><value>Mattermost</value></data>
   <data name="MattermostSectionHelp.Text" xml:space="preserve"><value>サーバー、トークン、許可ユーザー、会話の制限</value></data>

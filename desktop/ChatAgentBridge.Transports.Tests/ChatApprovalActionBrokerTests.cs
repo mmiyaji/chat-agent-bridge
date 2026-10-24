@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using ChatAgentBridge.Core.AppServer;
 using ChatAgentBridge.Transports;
@@ -125,6 +126,35 @@ public sealed class ChatApprovalActionBrokerTests
         Assert.Contains($"!cab reject {code}", transport.Text);
         Assert.Equal(ChatActionResult.Completed, await transport.ClickAsync(ChatActionDecision.Reject));
         Assert.Equal(AppServerDecision.Decline, await request.WaitAsync(TimeSpan.FromSeconds(2)));
+    }
+
+    [Theory]
+    [InlineData("en-US", "Codex is requesting approval to perform an action.", "Approve: !cab approve ", "Reject: !cab reject ")]
+    [InlineData("ja-JP", "Codex が操作の承認を求めています。", "承認: !cab approve ", "拒否: !cab reject ")]
+    public async Task PublishedApprovalUsesLocalizedCopyAndKeepsCommandTokens(string cultureName, string title, string approveLine, string rejectLine)
+    {
+        var previousUiCulture = CultureInfo.CurrentUICulture;
+        var previousCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(cultureName);
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(cultureName);
+            var transport = new FakeActionTransport();
+            var request = new ChatApprovalBroker(TimeSpan.FromSeconds(3)).RequestAsync(
+                transport, Origin, Approval, null, publishToThread: true);
+            await transport.Posted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+            Assert.Contains(title, transport.Text, StringComparison.Ordinal);
+            Assert.Matches(Regex.Escape(approveLine) + "[0-9A-F]{12}", transport.Text);
+            Assert.Matches(Regex.Escape(rejectLine) + "[0-9A-F]{12}", transport.Text);
+            Assert.Equal(ChatActionResult.Completed, await transport.ClickAsync(ChatActionDecision.Reject));
+            Assert.Equal(AppServerDecision.Decline, await request.WaitAsync(TimeSpan.FromSeconds(2)));
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousUiCulture;
+            CultureInfo.CurrentCulture = previousCulture;
+        }
     }
 
     private static string GetCode(string text)

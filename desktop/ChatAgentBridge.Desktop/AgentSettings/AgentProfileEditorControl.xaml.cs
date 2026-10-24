@@ -374,7 +374,7 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
         {
             var picker = new FileOpenPicker(button.XamlRoot.ContentIslandEnvironment.AppWindowId)
             {
-                CommitButtonText = MrtText.Get("ChooseExecutable")
+                CommitButtonText = DesktopText.Get("ChooseExecutable")
             };
             ChatAgentBridge_Desktop.MainPage.ConfigureExecutablePicker(picker, Editor.AgentProvider);
             var file = await picker.PickSingleFileAsync();

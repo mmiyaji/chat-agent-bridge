@@ -182,7 +182,7 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                         if (canReportCurrentProgress && startedType == "commandExecution")
                             ReportProgress("activity", CoreText.Get("ProgressRunningCommand", StringAt(startedItem, "command") ?? CoreText.Get("ProgressGenericCommand")));
                         else if (canReportCurrentProgress && startedType is not null && startedType is not "agentMessage" and not "reasoning" and not "plan")
-                            ReportProgress("activity", CoreText.Get("ProgressStartingItem", startedType));
+                            ReportProgress("activity", CoreText.Get("ProgressStartingItem", AppServerItemLabel(startedType)));
                     }
                     if (method == "item/completed")
                     {
@@ -198,7 +198,7 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
                         else if (canReportCurrentProgress && StringAt(item, "type") == "commandExecution")
                             ReportProgress("activity", CoreText.Get("ProgressCommandFinished"));
                         else if (canReportCurrentProgress && StringAt(item, "type") is { } completedType && completedType is not "reasoning" and not "plan")
-                            ReportProgress("activity", CoreText.Get("ProgressFinishedItem", completedType));
+                            ReportProgress("activity", CoreText.Get("ProgressFinishedItem", AppServerItemLabel(completedType)));
                     }
                     if (method is "turn/completed" or "turn/failed" && turnFinished is { } completion)
                     {
@@ -496,6 +496,17 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
         }
         return result;
     }
+
+    private static string AppServerItemLabel(string type) => type switch
+    {
+        "fileChange" => CoreText.Get("ProgressItemFileChange"),
+        "mcpToolCall" => CoreText.Get("ProgressItemMcpToolCall"),
+        "webSearch" => CoreText.Get("ProgressItemWebSearch"),
+        "imageGeneration" => CoreText.Get("ProgressItemImageGeneration"),
+        "collaborationMode" => CoreText.Get("ProgressItemCollaborationMode"),
+        "contextCompaction" => CoreText.Get("ProgressItemContextCompaction"),
+        _ => CoreText.Get("ProgressGenericItem")
+    };
 
     private static JsonElement Property(JsonElement value, string name)
         => value.ValueKind == JsonValueKind.Object && value.TryGetProperty(name, out var found) ? found : default;

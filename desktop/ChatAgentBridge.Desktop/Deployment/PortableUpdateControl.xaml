@@ -14,10 +14,13 @@
                         <InfoBar x:Name="UpdateNotice" IsOpen="False" IsClosable="False"
                                  AutomationProperties.AutomationId="PortableUpdateNotice"
                                  AutomationProperties.LiveSetting="Polite">
-                            <InfoBar.ActionButton>
-                                <Button x:Name="UpdateNoticeAction" AutomationProperties.AutomationId="PortableUpdateNoticeAction"
-                                        Style="{StaticResource AccentButtonStyle}" Click="UpdateNoticeAction_Click" />
-                            </InfoBar.ActionButton>
+                            <InfoBar.Content>
+                                <Grid HorizontalAlignment="Stretch" Margin="0,0,16,12">
+                                    <Button x:Name="UpdateNoticeAction" AutomationProperties.AutomationId="PortableUpdateNoticeAction"
+                                            HorizontalAlignment="Right" Style="{StaticResource AccentButtonStyle}"
+                                            Click="UpdateNoticeAction_Click" />
+                                </Grid>
+                            </InfoBar.Content>
                         </InfoBar>
                         <settings:SettingsCard x:Uid="PortableUpdateHeading">
                             <settings:SettingsCard.Description>
@@ -66,13 +69,13 @@
                         <TextBlock x:Name="PreferenceError" Visibility="Collapsed" TextWrapping="Wrap"
                                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                    AutomationProperties.AutomationId="PortableUpdatePreferenceError" AutomationProperties.LiveSetting="Polite" />
-                        <StackPanel x:Name="UpdateActions" Spacing="8">
+                        <StackPanel x:Name="UpdateActions" Spacing="8" HorizontalAlignment="Stretch">
                             <Button x:Name="DownloadUpdateButton" x:Uid="PortableDownloadUpdate" AutomationProperties.AutomationId="PortableDownloadUpdate"
-                                    Click="DownloadUpdate_Click" HorizontalAlignment="Stretch" />
+                                    Click="DownloadUpdate_Click" HorizontalAlignment="Right" />
                             <Button x:Name="ApplyUpdateButton" x:Uid="PortableApplyUpdate" AutomationProperties.AutomationId="PortableApplyUpdate"
-                                    Click="ApplyUpdate_Click" HorizontalAlignment="Stretch" />
+                                    Click="ApplyUpdate_Click" HorizontalAlignment="Right" />
                             <Button x:Name="CancelUpdateButton" x:Uid="PortableCancelUpdate" AutomationProperties.AutomationId="PortableCancelUpdate"
-                                    Click="CancelUpdate_Click" HorizontalAlignment="Stretch" />
+                                    Click="CancelUpdate_Click" HorizontalAlignment="Right" />
                         </StackPanel>
                     </StackPanel>
                 </settings:SettingsCard>

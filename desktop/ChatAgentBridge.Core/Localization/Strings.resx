@@ -29,7 +29,7 @@
   <data name="CliStructuredResultInvalid" xml:space="preserve"><value>The CLI did not report a valid successful result and session UUID. Check that the installed CLI supports the configured structured output format.</value></data>
   <data name="ApprovalPermissionLine" xml:space="preserve"><value>Approve: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>Reject: !cab reject {0}</value></data>
-  <data name="ApprovalRequestTitle" xml:space="preserve"><value>Codex is requesting permission to perform an action.</value></data>
+  <data name="ApprovalRequestTitle" xml:space="preserve"><value>Codex is requesting approval to perform an action.</value></data>
   <data name="ApprovalMethodLabel" xml:space="preserve"><value>Method</value></data>
   <data name="ApprovalDescriptionLabel" xml:space="preserve"><value>Description</value></data>
   <data name="ApprovalCommandLabel" xml:space="preserve"><value>Command</value></data>
@@ -73,6 +73,13 @@
   <data name="ProgressClaudeSessionReady" xml:space="preserve"><value>Claude session ready</value></data>
   <data name="ProgressStartingItem" xml:space="preserve"><value>Starting {0}</value></data>
   <data name="ProgressFinishedItem" xml:space="preserve"><value>Finished {0}</value></data>
+  <data name="ProgressGenericItem" xml:space="preserve"><value>work item</value></data>
+  <data name="ProgressItemFileChange" xml:space="preserve"><value>file change</value></data>
+  <data name="ProgressItemMcpToolCall" xml:space="preserve"><value>tool call</value></data>
+  <data name="ProgressItemWebSearch" xml:space="preserve"><value>web search</value></data>
+  <data name="ProgressItemImageGeneration" xml:space="preserve"><value>image generation</value></data>
+  <data name="ProgressItemCollaborationMode" xml:space="preserve"><value>collaboration mode change</value></data>
+  <data name="ProgressItemContextCompaction" xml:space="preserve"><value>context compaction</value></data>
   <data name="DiscordActionApprove" xml:space="preserve"><value>Approve</value></data>
   <data name="DiscordActionReject" xml:space="preserve"><value>Reject</value></data>
   <data name="DiscordToolApprovalApprove" xml:space="preserve"><value>Approve tool</value></data>

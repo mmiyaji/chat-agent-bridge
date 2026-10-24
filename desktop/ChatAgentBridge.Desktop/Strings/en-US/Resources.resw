@@ -43,7 +43,7 @@
     <value>Main content</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock001.Text" xml:space="preserve">
-    <value>From a device that cannot use the Codex or Claude Code desktop apps, you can use Slack/Mattermost to request an AI agent on a running local PC.</value>
+    <value>From a device that cannot use the Codex or Claude Code desktop apps, you can use Slack, Mattermost, or Discord to request an AI agent on a running local PC.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock002.Text" xml:space="preserve">
     <value>Setup progress</value>
@@ -85,15 +85,15 @@
     <value>Use chat to send requests to your PC</value>
   </data>
   <data name="OverviewArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Requests can be made from Slack or Mattermost on another device, and Chat Agent Bridge on the running PC will receive them. After checking on your PC, run the selected AI CLI and receive the checked and shared results in the same thread.</value>
+    <value>Requests can be made from Slack, Mattermost, or Discord on another device, and Chat Agent Bridge on the running PC will receive them. After checking on your PC, run the selected AI CLI and receive the checked and shared results in the same thread.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock007.Text" xml:space="preserve">
-    <value>A request sent from a phone or browser through Slack or Mattermost reaches Chat Agent Bridge on your running PC. The bridge runs the selected AI CLI in the selected project. Shared results return to the same thread. Where AI processing takes place depends on the CLI and AI service settings.</value>
+    <value>A request sent from a phone or browser through Slack, Mattermost, or Discord reaches Chat Agent Bridge on your running PC. The bridge runs the selected AI CLI in the selected project. Shared results return to the same thread. Where AI processing takes place depends on the CLI and AI service settings.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock008.Text" xml:space="preserve">
     <value>1. Choose the CLI, model, and working folder in Agent settings.
 2. Save the chat credentials in Chat settings, then connect from Chat.
-3. Send a request from another device. In Mattermost, start with !cab or an @mention of the connected bot, followed by your request. In Slack, mention the bot or use !cab in a thread reply.
+3. Send a request from another device. In Mattermost, start with !cab or mention the connected bot. In Slack, mention the bot or use !cab in a thread reply. In Discord, mention the bot or start with !cab; Bridge opens a thread for follow-up.
 4. Review and approve the request on this PC, then review and share the result to return it to the same thread.
 
 Keep this app and your local PC running to stay connected.</value>
@@ -610,7 +610,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Use PC AI from chat</value>
   </data>
   <data name="WizardArchitecture.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Diagram showing how Slack or Mattermost makes a request to an app on a PC and the AI CLI on the PC responds.</value>
+    <value>Diagram showing how Slack, Mattermost, or Discord makes a request to an app on a PC and the AI CLI on the PC responds.</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock002.Text" xml:space="preserve">
     <value>Use Slack, Mattermost, or Discord to send requests to the selected AI CLI on this PC. Project files and the CLI stay on this PC. AI processing and data transmission follow the settings of the CLI and AI service.</value>
@@ -1153,9 +1153,9 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Register or restore Codex, Claude Code, Gemini CLI and GitHub Copilot CLI connections</value></data>
   <data name="AgentExecutionExplanationTitle.Text" xml:space="preserve"><value>How execution approval works</value></data>
   <data name="AgentExecutionExplanationHelp.Text" xml:space="preserve"><value>Review the approval flow and current execution policy</value></data>
-  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>Open the service you use. Approval and attachment settings apply to both services.</value></data>
+  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>Open the service you use. Approval and attachment settings apply to all chat services.</value></data>
   <data name="ChatCommonTitle.Text" xml:space="preserve"><value>Common chat behavior</value></data>
-  <data name="ChatCommonHelp.Text" xml:space="preserve"><value>Request approval and result posting for both services</value></data>
+  <data name="ChatCommonHelp.Text" xml:space="preserve"><value>Request approval and result posting for all chat services</value></data>
   <data name="ChatScopeOverview.Text" xml:space="preserve"><value>Open the service you use to set credentials, allowed users, and conversation restrictions.</value></data>
   <data name="MattermostSectionTitle.Text" xml:space="preserve"><value>Mattermost</value></data>
   <data name="MattermostSectionHelp.Text" xml:space="preserve"><value>Server, tokens, allowed users, and conversation restrictions</value></data>

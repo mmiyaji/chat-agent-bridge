@@ -103,7 +103,7 @@
   <data name="WorkingFolder" xml:space="preserve"><value>Working folder</value></data>
   <data name="AllowOperation" xml:space="preserve"><value>Allow action</value></data>
   <data name="Allow" xml:space="preserve"><value>Allow</value></data>
-  <data name="Deny" xml:space="preserve"><value>Deny</value></data>
+  <data name="Deny" xml:space="preserve"><value>Reject</value></data>
   <data name="Other" xml:space="preserve"><value>Other</value></data>
   <data name="EnterAnswer" xml:space="preserve"><value>Enter an answer</value></data>
   <data name="AnswerToCodex" xml:space="preserve"><value>Answer Codex</value></data>
