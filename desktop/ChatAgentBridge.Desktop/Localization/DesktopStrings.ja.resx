@@ -828,4 +828,14 @@
   <data name="DiscordInboxAuthenticationFailed" xml:space="preserve"><value>DiscordがBotトークンを受け付けませんでした。チャット設定のBotトークンを確認してください。アプリケーションIDや公開鍵は使用できません。</value></data>
   <data name="DiscordInboxMessageContentRequired" xml:space="preserve"><value>Discord Developer PortalのBot設定でMessage Content Intentを有効にしてから再接続してください。</value></data>
   <data name="DiscordInboxPermissionsRequired" xml:space="preserve"><value>DiscordのBot権限を確認してください。チャンネルを見る・メッセージを送信・メッセージ履歴を読む・公開スレッドを作成・スレッドで送信・ファイルを添付が必要です。</value></data>
+  <data name="InboxApprovalPolicyHelp" xml:space="preserve"><value>実行の承認: {0}。{1}。</value></data>
+  <data name="InboxResultPolicyHelp" xml:space="preserve"><value>結果の共有: {0}。{1}。</value></data>
+  <data name="InboxAttachmentPolicyHelp" xml:space="preserve"><value>ファイルの承認: {0}。実行や結果の共有とは別の設定で、必要な場合は個別に確認します。結果を共有しない設定の場合、添付ファイルも送信できません。</value></data>
+  <data name="InboxEffectivePolicy" xml:space="preserve"><value>この依頼に適用される設定</value></data>
+  <data name="InboxConfiguredPolicy" xml:space="preserve"><value>現在の設定。会話ごとの上書きは実行前に反映されます</value></data>
+  <data name="InboxApprovalFirstLabel" xml:space="preserve"><value>この会話の初回依頼で承認が必要</value></data>
+  <data name="InboxAttachmentFirstLabel" xml:space="preserve"><value>このセッションの初回ファイル共有で確認が必要</value></data>
+  <data name="InboxDisabledLabel" xml:space="preserve"><value>無効</value></data>
+  <data name="InboxUnknownParticipant" xml:space="preserve"><value>参加者名を取得できません</value></data>
+  <data name="InboxUnknownLocation" xml:space="preserve"><value>場所を取得できません</value></data>
 </root>

@@ -42,6 +42,25 @@ public sealed partial class InboxConversation
             return folder.Length > 0 ? folder : Title;
         }
     }
+    public string PersonName => Snapshot?.UserName is { Length: > 0 } name &&
+        !string.Equals(name, Snapshot.Key.UserId, StringComparison.Ordinal)
+            ? name : DesktopText.Get("InboxUnknownParticipant");
+    public string AvatarDisplayName => Snapshot?.UserName is { Length: > 0 } name &&
+        !string.Equals(name, Snapshot.Key.UserId, StringComparison.Ordinal) ? name : "";
+    public string DisplayLocation => Snapshot?.ChannelName is { Length: > 0 } channel
+        ? channel : DesktopText.Get("InboxUnknownLocation");
+    public string TitleLocation => $"{Title} · {DisplayLocation}";
+    public string SuggestionTitle => ListTitle;
+    public string SuggestionSubtitle => $"{PersonName} · {DisplayLocation} · {StateSummary}";
+    public bool MatchesSearchMetadata(string query)
+    {
+        var needle = query.Trim();
+        if (needle.Length == 0) return true;
+        return new[] { Identity, Title, Location, ListTitle, LatestPrompt, Workspace }
+            .Any(value => value.Contains(needle, StringComparison.CurrentCultureIgnoreCase)) ||
+            Requests.Any(item => item.Prompt.Contains(needle, StringComparison.CurrentCultureIgnoreCase) ||
+                item.Workspace.Contains(needle, StringComparison.CurrentCultureIgnoreCase));
+    }
     public string ActivityCompact => LastActivity == default ? "" : LastActivity.ToLocalTime().ToString(
         LastActivity.LocalDateTime.Date == DateTime.Today ? "t" : "d");
     public string ListTooltip => $"{ListTitle}\n{Title}\n{Location}\n{StateSummary}\n{Activity}";
@@ -49,6 +68,12 @@ public sealed partial class InboxConversation
     public void RefreshLocalizedText()
     {
         OnPropertyChanged(nameof(RequestCountLabel));
+        OnPropertyChanged(nameof(PersonName));
+        OnPropertyChanged(nameof(AvatarDisplayName));
+        OnPropertyChanged(nameof(DisplayLocation));
+        OnPropertyChanged(nameof(TitleLocation));
+        OnPropertyChanged(nameof(SuggestionTitle));
+        OnPropertyChanged(nameof(SuggestionSubtitle));
         OnPropertyChanged(nameof(ListTooltip));
     }
 
@@ -58,6 +83,12 @@ public sealed partial class InboxConversation
         OnPropertyChanged(nameof(LastActivity));
         OnPropertyChanged(nameof(HasSeveralRequests));
         OnPropertyChanged(nameof(ListTitle));
+        OnPropertyChanged(nameof(PersonName));
+        OnPropertyChanged(nameof(AvatarDisplayName));
+        OnPropertyChanged(nameof(DisplayLocation));
+        OnPropertyChanged(nameof(TitleLocation));
+        OnPropertyChanged(nameof(SuggestionTitle));
+        OnPropertyChanged(nameof(SuggestionSubtitle));
         OnPropertyChanged(nameof(ActivityCompact));
         OnPropertyChanged(nameof(ListTooltip));
     }

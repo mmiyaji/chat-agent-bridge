@@ -882,9 +882,17 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="InboxContextLabel.Text" xml:space="preserve"><value>Execution and conversation details</value></data>
   <data name="InboxResultLabel.Text" xml:space="preserve"><value>Execution result</value></data>
   <data name="InboxApprove.Content" xml:space="preserve"><value>Approve / run</value></data>
+  <data name="InboxApproveBar.Label" xml:space="preserve"><value>Approve</value></data>
   <data name="InboxReject.Content" xml:space="preserve"><value>Reject</value></data>
+  <data name="InboxRejectBar.Label" xml:space="preserve"><value>Reject</value></data>
   <data name="InboxStop.Content" xml:space="preserve"><value>Stop</value></data>
+  <data name="InboxStopBar.Label" xml:space="preserve"><value>Stop</value></data>
   <data name="InboxShare.Content" xml:space="preserve"><value>Share result</value></data>
+  <data name="InboxShareBar.Label" xml:space="preserve"><value>Share result</value></data>
+  <data name="InboxAttachmentsBar.Label" xml:space="preserve"><value>Review and send files</value></data>
+  <data name="InboxApprovalHelpButton.AutomationProperties.Name" xml:space="preserve"><value>Approval and sharing help</value></data>
+  <data name="InboxApprovalHelpTip.Title" xml:space="preserve"><value>Approval and file sharing</value></data>
+  <data name="InboxApprovalHelpTip.Subtitle" xml:space="preserve"><value>These permissions are checked separately for the selected request.</value></data>
   <data name="InboxConnectionDetails.Header" xml:space="preserve"><value>Connection and notification details</value></data>
   <data name="WizardCustomCli.Content" xml:space="preserve">
     <value>Other CLI (custom)</value>

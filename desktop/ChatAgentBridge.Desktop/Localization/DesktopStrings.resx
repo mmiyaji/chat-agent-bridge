@@ -828,4 +828,14 @@ After: {2}</value></data>
   <data name="DiscordInboxAuthenticationFailed" xml:space="preserve"><value>Discord rejected the bot token. Check the Bot token in Chat settings; an application ID or public key cannot be used.</value></data>
   <data name="DiscordInboxMessageContentRequired" xml:space="preserve"><value>Enable Message Content Intent in Discord Developer Portal &gt; Bot, then reconnect.</value></data>
   <data name="DiscordInboxPermissionsRequired" xml:space="preserve"><value>Check the Discord bot permissions: View Channel, Send Messages, Read Message History, Create Public Threads, Send Messages in Threads, and Attach Files.</value></data>
+  <data name="InboxApprovalPolicyHelp" xml:space="preserve"><value>Execution approval: {0}. {1} for this request.</value></data>
+  <data name="InboxResultPolicyHelp" xml:space="preserve"><value>Result sharing: {0}. {1} for this request.</value></data>
+  <data name="InboxAttachmentPolicyHelp" xml:space="preserve"><value>File approval: {0}. This is separate from execution and result approval; a confirmation is shown when this policy requires one. When result sharing is set to no sharing, attachments are blocked too.</value></data>
+  <data name="InboxEffectivePolicy" xml:space="preserve"><value>Effective settings</value></data>
+  <data name="InboxConfiguredPolicy" xml:space="preserve"><value>Current configured settings; conversation overrides are resolved before execution</value></data>
+  <data name="InboxApprovalFirstLabel" xml:space="preserve"><value>Approval required for the first request in this conversation</value></data>
+  <data name="InboxAttachmentFirstLabel" xml:space="preserve"><value>Confirm the first file share in this session</value></data>
+  <data name="InboxDisabledLabel" xml:space="preserve"><value>Disabled</value></data>
+  <data name="InboxUnknownParticipant" xml:space="preserve"><value>Unknown participant</value></data>
+  <data name="InboxUnknownLocation" xml:space="preserve"><value>Location unavailable</value></data>
 </root>

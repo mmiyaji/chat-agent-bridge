@@ -151,7 +151,9 @@ public sealed partial class ChatInboxViewModel
     {
         if (conversation.Snapshot is not { } snapshot) return;
         var provider = snapshot.Key.Provider switch { "mattermost" => "Mattermost", "discord" => "Discord", _ => "Slack" };
-        conversation.Title = string.Join(" · ", new[] { snapshot.SiteName ?? provider, snapshot.UserName ?? snapshot.Key.UserId });
+        var person = snapshot.UserName is { Length: > 0 } name && !string.Equals(name, snapshot.Key.UserId, StringComparison.Ordinal)
+            ? name : DesktopText.Get("InboxUnknownParticipant");
+        conversation.Title = string.Join(" · ", new[] { snapshot.SiteName ?? provider, person });
         conversation.Location = snapshot.ChannelName is { Length: > 0 } channel
             ? channel : DesktopText.Get("ConversationLocation", snapshot.Key.ChannelId, snapshot.Key.ThreadId);
         conversation.Identity = $"{conversation.Title} / {conversation.Location} / {snapshot.Key.ThreadId}";

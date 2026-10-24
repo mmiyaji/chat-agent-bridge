@@ -153,6 +153,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public partial bool IsExecuting { get; set; }
     partial void OnIsExecutingChanged(bool value)
     {
+        OnPropertyChanged(nameof(IsSelectedActiveExecution));
         SendAttachmentsCommand.NotifyCanExecuteChanged();
         NotifyActiveRequestProperties();
         if (!value) _ = ProcessPendingPoliciesAsync();
@@ -166,12 +167,18 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [ObservableProperty] public partial bool IsDetailOpen { get; set; }
     [ObservableProperty] public partial bool IsWideLayout { get; set; } = true;
     public ObservableCollection<InboxConversation> VisibleConversations { get; } = [];
+    public ObservableCollection<InboxConversation> SearchSuggestions { get; } = [];
     public IEnumerable<InboxItem> ConversationRequests => SelectedConversation?.Requests ?? [];
     public string SelectedOutput => Selected?.FullOutput ?? DesktopText.Get("InboxSelectConversation");
     public string SelectedUsage => Selected?.Usage ?? DesktopText.Get("UsageAfterExecution");
     public string ConversationCountLabel => DesktopText.Get(VisibleConversations.Count == 1 ? "InboxOneConversation" : "InboxConversationCount", VisibleConversations.Count);
     public string SelectedRequestCountLabel => DesktopText.Get(SelectedConversation?.Requests.Count == 1 ? "InboxOneRequest" : "InboxRequestCount", SelectedConversation?.Requests.Count ?? 0);
     public bool HasSelectedConversation => SelectedConversation is not null;
+    public bool IsSelectedPending => Selected?.State == "承認待ち";
+    public bool IsSelectedActiveExecution => IsExecuting && Selected is not null && ReferenceEquals(Selected, _activeItem);
+    public string SelectedApprovalPolicyHelp => GetSelectedPolicyHelp("InboxApprovalPolicyHelp", "ChatApprovalMode");
+    public string SelectedResultPolicyHelp => GetSelectedPolicyHelp("InboxResultPolicyHelp", "ChatResultMode");
+    public string SelectedAttachmentPolicyHelp => GetSelectedPolicyHelp("InboxAttachmentPolicyHelp", "FileAttachmentApprovalMode");
     public bool HasVisibleConversations => VisibleConversations.Count > 0;
     public bool HasConversationFilters => !string.IsNullOrWhiteSpace(SearchText) || StateFilter != "all";
     public bool ShowEmptyConversationList => !HasVisibleConversations && !HasConnectionError;
@@ -205,6 +212,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
 
     private void NotifyActiveRequestProperties()
     {
+        OnPropertyChanged(nameof(IsSelectedActiveExecution));
         OnPropertyChanged(nameof(HasOtherRequestRunning));
         OnPropertyChanged(nameof(ActiveRequestBannerText));
         ReturnToActiveRequestCommand.NotifyCanExecuteChanged();
@@ -212,6 +220,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public string EmptyListMessage => DesktopText.Get(Requests.Count == 0 ? "InboxWaitingForRequests" : "InboxNoMatches");
     partial void OnSelectedChanged(InboxItem? value)
     {
+        OnPropertyChanged(nameof(IsSelectedPending));
+        OnPropertyChanged(nameof(IsSelectedActiveExecution));
+        OnPropertyChanged(nameof(SelectedApprovalPolicyHelp));
+        OnPropertyChanged(nameof(SelectedResultPolicyHelp));
+        OnPropertyChanged(nameof(SelectedAttachmentPolicyHelp));
         NotifyRestoredSelection();
         OnPropertyChanged(nameof(SelectedLiveOutput));
         OnPropertyChanged(nameof(SelectedAttachmentStatus));
@@ -224,6 +237,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     }
     partial void OnSelectedConversationChanged(InboxConversation? value)
     {
+        _ = EnsureAvatarAsync(value);
         OnPropertyChanged(nameof(ConversationRequests));
         OnPropertyChanged(nameof(SelectedRequestCountLabel));
         OnPropertyChanged(nameof(HasSelectedConversation));
@@ -232,8 +246,16 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         ApproveCommand.NotifyCanExecuteChanged(); RejectCommand.NotifyCanExecuteChanged();
         CancelCommand.NotifyCanExecuteChanged(); SendResultCommand.NotifyCanExecuteChanged();
     }
-    partial void OnSearchTextChanged(string value) => RefreshVisibleConversations();
-    partial void OnStateFilterChanged(string value) => RefreshVisibleConversations();
+    partial void OnSearchTextChanged(string value)
+    {
+        RefreshVisibleConversations();
+        RefreshSearchSuggestions(value);
+    }
+    partial void OnStateFilterChanged(string value)
+    {
+        RefreshVisibleConversations();
+        RefreshSearchSuggestions(SearchText);
+    }
     private bool CanCancel() => IsExecuting && Selected is not null && ReferenceEquals(Selected, _activeItem) && _execution is { IsCancellationRequested: false };
     private bool CanReturnToActiveRequest() => HasOtherRequestRunning;
 
@@ -282,7 +304,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             if (StateFilter is "pending" or "active") return false;
             var restoredQuery = SearchText.Trim();
-            return restoredQuery.Length == 0 || $"{conversation.Title} {conversation.Location} {conversation.Identity} {conversation.Workspace}"
+            return restoredQuery.Length == 0 || $"{conversation.Title} {conversation.Location} {conversation.Identity} {conversation.ListTitle} {conversation.Workspace}"
                 .Contains(restoredQuery, StringComparison.CurrentCultureIgnoreCase);
         }
         if (StateFilter == "pending" && !conversation.Requests.Any(item => item.State == "承認待ち")) return false;
@@ -290,9 +312,46 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (StateFilter == "completed" && !conversation.Requests.Any(item => item.State is not ("承認待ち" or "実行中" or "自動実行を準備" or "追加指示の受領待ち"))) return false;
         var query = SearchText.Trim();
         return query.Length == 0 || conversation.Identity.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+            conversation.ListTitle.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
             conversation.Requests.Any(item => item.Prompt.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
                 item.Workspace.Contains(query, StringComparison.CurrentCultureIgnoreCase));
     }
+    public void RefreshSearchSuggestions(string? query)
+    {
+        SearchSuggestions.Clear();
+        var normalized = query?.Trim() ?? "";
+        if (normalized.Length == 0) return;
+        foreach (var conversation in Conversations.Where(MatchesStateFilter)
+            .Where(item => item.MatchesSearchMetadata(normalized))
+            .OrderByDescending(item => item.LastActivity).Take(8))
+            SearchSuggestions.Add(conversation);
+    }
+
+    private bool MatchesStateFilter(InboxConversation conversation)
+    {
+        var latest = conversation.Requests.LastOrDefault();
+        if (latest is null) return StateFilter is not ("pending" or "active");
+        if (StateFilter == "pending" && !conversation.Requests.Any(item => item.State == "承認待ち")) return false;
+        if (StateFilter == "active" && !conversation.Requests.Any(item => item.State is "実行中" or "追加指示の受領待ち")) return false;
+        if (StateFilter == "completed" && !conversation.Requests.Any(item => item.State is not ("承認待ち" or "実行中" or "自動実行を準備" or "追加指示の受領待ち"))) return false;
+        return true;
+    }
+
+    private string GetSelectedPolicyHelp(string resourceKey, string modeProperty)
+    {
+        var settings = Selected?.EffectiveSettings ?? Selected?.Settings;
+        var mode = settings is null ? null : modeProperty == "ChatApprovalMode"
+            ? settings.ChatApprovalMode : modeProperty == "ChatResultMode"
+                ? settings.ChatResultMode : settings.FileAttachmentApprovalMode;
+        var effective = Selected?.EffectiveSettings is not null;
+        var label = modeProperty == "ChatApprovalMode"
+            ? mode switch { "auto" => DesktopText.Get("Auto"), "first" => DesktopText.Get("InboxApprovalFirstLabel"), _ => DesktopText.Get("EveryTime") }
+            : modeProperty == "ChatResultMode"
+                ? mode switch { "auto" => DesktopText.Get("AutoReply"), "none" => DesktopText.Get("NoSharing"), _ => DesktopText.Get("ManualShareShort") }
+                : mode switch { "always" => DesktopText.Get("EveryTime"), "first" => DesktopText.Get("InboxAttachmentFirstLabel"), "auto" => DesktopText.Get("Auto"), "disabled" => DesktopText.Get("InboxDisabledLabel"), _ => DesktopText.Get("EveryTime") };
+        return DesktopText.Get(resourceKey, label, DesktopText.Get(effective ? "InboxEffectivePolicy" : "InboxConfiguredPolicy"));
+    }
+
     private void RefreshVisibleConversations()
     {
         var wanted = Conversations.Where(MatchesFilter).ToArray();
@@ -438,6 +497,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.Workspace)) RefreshConversations(item);
                     if (ReferenceEquals(item, Selected))
                     {
+                        if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.SessionLabel))
+                        {
+                            OnPropertyChanged(nameof(IsSelectedPending));
+                            OnPropertyChanged(nameof(SelectedApprovalPolicyHelp));
+                            OnPropertyChanged(nameof(SelectedResultPolicyHelp));
+                            OnPropertyChanged(nameof(SelectedAttachmentPolicyHelp));
+                        }
                         if (args.PropertyName == nameof(InboxItem.FullOutput)) OnPropertyChanged(nameof(SelectedOutput));
                         if (args.PropertyName == nameof(InboxItem.Usage)) OnPropertyChanged(nameof(SelectedUsage));
                         if (args.PropertyName == nameof(InboxItem.AttachmentStatus))
@@ -1278,6 +1344,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         if (_closing) return;
         _closing = true;
+        CloseAvatars();
         IsConnectionConfirmed = false;
         RequestExecutionCancellation();
         _connection?.Cancel();
