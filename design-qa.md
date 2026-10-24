@@ -1,3 +1,23 @@
+# Default-window settings sidebars — 2026-10-24
+
+Reduced both local navigation breakpoints from 900 to 850 effective pixels.
+The app's initial window remains 1160 x 800 DIP; the settings navigation has
+871 DIP available on the verified desktop. No window enlargement is needed.
+
+- Added a 1160 x 800 phase to the native settings runner, before wide-layout
+  checks. Both Agent settings and Chat settings must expose vertical scope lists.
+  This assertion fails against the published 900-DIP build and passes with 850.
+- Japanese/dark: all eleven scenario groups plus 27 seeded random switches
+  passed, retaining settings and loopback connection. Screenshot review covered
+  the default size, and the 500-DIP checks preserve the top-tab fallback.
+  Evidence: `desktop/artifacts/45b3baaf-81d4-494b-8e45-981df50f5407/`.
+- English/light: a separate native launch verified the untouched startup window
+  is 1160 x 800 DIP. Both side lists and selection work; 500-DIP width uses top
+  tabs. Reviewed default-size screenshots for both settings pages.
+  Evidence: `desktop/artifacts/default-sidebar-en-light/`.
+
+---
+
 # Settings sidebar width adjustment — 2026-10-24
 
 Lowered the local settings navigation breakpoint from 1000 to 900 effective

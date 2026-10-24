@@ -7,7 +7,7 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
-    private const double ConnectionScopeNavigationBreakpoint = 900;
+    private const double ConnectionScopeNavigationBreakpoint = 850;
     private NavigationView? _connectionScopeNavigation;
     private TextBlock? _connectionScopeHeading;
     private TextBlock? _connectionScopeDescription;
