@@ -475,10 +475,10 @@
     <value>操作承認とプライバシー</value>
   </data>
   <data name="ShareApprovalsInChat.Header" xml:space="preserve">
-    <value>操作承認の詳細をスレッドに公開</value>
+    <value>Discordでリモート承認を任意で許可</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock060.Text" xml:space="preserve">
-    <value>有効にすると、Codex app-serverでの操作承認に表示されるコマンドと作業フォルダーを、チャットのスレッドへ投稿します。スレッドの参加者全員が見られます。初期状態はオフです。</value>
+    <value>有効にすると、Discordの会話に最初の承認依頼とCodex App Serverのツール承認詳細を投稿し、任意でリモート承認・拒否するボタンを表示します。会話の参加者全員が内容を見られますが、ボタンを操作できるのは依頼を送信した本人だけです。PCでの承認も引き続き利用できます。既定ではオフです。</value>
   </data>
   <data name="ShareAgentQuestionsInChat.Header" xml:space="preserve">
     <value>機密ではないAIの質問をチャットに共有</value>
@@ -613,7 +613,7 @@
     <value>SlackまたはMattermostからPC上のアプリへ依頼し、PC上のAI CLIが応答する仕組みを示す図</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock002.Text" xml:space="preserve">
-    <value>SlackまたはMattermostを窓口にして、このPCの選択したAI CLIへ依頼を渡します。作業ファイルとCLIはこのPCにあり、AIの処理や情報の送信先はCLIと利用するAIサービスの設定に従います。</value>
+    <value>Slack、Mattermost、またはDiscordを窓口にして、このPCの選択したAI CLIへ依頼を渡します。作業ファイルとCLIはこのPCにあり、AIの処理や情報の送信先はCLIと利用するAIサービスの設定に従います。</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock003.Text" xml:space="preserve">
     <value>チャットから利用する間は、このデスクトップアプリとPCを起動したままにしてください。依頼や応答は、選んだ外部AIサービスへ送信されます。送信される情報と各サービスの取り扱いを確認してください。</value>
@@ -855,7 +855,7 @@
   <data name="AboutStorePage.Content" xml:space="preserve"><value>Store ページを開く</value></data>
   <data name="AboutCheckUpdates.Content" xml:space="preserve"><value>更新を確認</value></data>
   <data name="AboutLegalHeading.Text" xml:space="preserve"><value>利用規約とプライバシー</value></data>
-  <data name="AboutDataHandling.Text" xml:space="preserve"><value>このアプリは Slack または Mattermost と、設定済みのエージェント CLI との間でメッセージをやり取りします。CLI は、そのサービスの設定に従ってプロンプトや関連データを AI サービスへ送信する場合があります。</value></data>
+  <data name="AboutDataHandling.Text" xml:space="preserve"><value>このアプリは Slack、Mattermost、または Discord と、設定済みのエージェント CLI との間でメッセージをやり取りします。CLI は、そのサービスの設定に従ってプロンプトや関連データを AI サービスへ送信する場合があります。</value></data>
   <data name="AboutTerms.Header" xml:space="preserve"><value>利用規約</value></data>
   <data name="AboutPrivacy.Header" xml:space="preserve"><value>プライバシーポリシー</value></data>
   <data name="AboutExit.Content" xml:space="preserve"><value>アプリを終了</value></data>
@@ -1134,7 +1134,7 @@
   <data name="CliReviewTrust.Content" xml:space="preserve"><value>信頼するフォルダーを確認</value></data>
   <data name="WorkspaceTrustError.Title" xml:space="preserve"><value>作業フォルダーの信頼設定を確認してください</value></data>
   <data name="InboxConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>接続状態と詳細</value></data>
-  <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>接続と通知の詳細です。会話の継続は、元のSlack・Mattermostのスレッドに返信してください。</value></data>
+  <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>接続と通知の詳細です。会話は、元のSlack、Mattermost、またはDiscordのスレッドで続けてください。</value></data>
   <data name="InboxRequestContext.Header" xml:space="preserve"><value>作業先・依頼の詳細</value></data>
   <data name="AgentSettingsGuide.Text" xml:space="preserve"><value>CLIと作業フォルダーを選び、［CLIをチェック］で動作を確認します。</value></data>
   <data name="AgentBasicTitle.Text" xml:space="preserve"><value>基本設定</value></data>
@@ -1233,4 +1233,49 @@
   <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>推論の強さ</value></data>
   <data name="AgentEditorPermission.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>操作権限</value></data>
   <data name="AgentEditorModelChoices.PlaceholderText" xml:space="preserve"><value>CLIから取得した候補から選択</value></data>
+  <data name="DiscordSectionTitle.Text" xml:space="preserve"><value>Discord</value></data>
+  <data name="DiscordSectionTitle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord</value></data>
+  <data name="DiscordSectionHelp.Text" xml:space="preserve"><value>Discord Botを接続し、利用できるユーザーとサーバーを制限します。</value></data>
+  <data name="DiscordSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord Botの設定</value></data>
+  <data name="DiscordBotSetupHelp.Text" xml:space="preserve"><value>Discord Developer PortalでBotを作成し、Message Content Intentを有効にしてからサーバーに招待します。Botトークンのみを使用してください。ユーザートークンは使用しないでください。Discordの開発者モードを有効にすると、ユーザー・サーバー・チャンネル・スレッドのIDをコピーできます。</value></data>
+  <data name="DiscordBotTokenLabel.Text" xml:space="preserve"><value>Botトークン</value></data>
+  <data name="DiscordBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord Botトークン</value></data>
+  <data name="DiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord Botトークンの表示・非表示</value></data>
+  <data name="DiscordAllowedUserIdsLabel.Text" xml:space="preserve"><value>許可するユーザーID</value></data>
+  <data name="DiscordAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordユーザーID</value></data>
+  <data name="DiscordAllowedUserIdsHelp.Text" xml:space="preserve"><value>必須です。DiscordユーザーIDを1行に1つ入力してください。ユーザー名は使用しません。</value></data>
+  <data name="DiscordAllowedGuildIdsLabel.Text" xml:space="preserve"><value>許可するサーバーID</value></data>
+  <data name="DiscordAllowedGuildIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordサーバーID</value></data>
+  <data name="DiscordAllowedGuildIdsHelp.Text" xml:space="preserve"><value>ダイレクトメッセージを無効にする場合は必須です。サーバーIDを1行に1つ入力してください。</value></data>
+  <data name="DiscordAllowDirectMessages.Header" xml:space="preserve"><value>ダイレクトメッセージを許可</value></data>
+  <data name="DiscordAllowDirectMessages.OnContent" xml:space="preserve"><value>オン</value></data>
+  <data name="DiscordAllowDirectMessages.OffContent" xml:space="preserve"><value>オフ</value></data>
+  <data name="DiscordAllowDirectMessages.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discordのダイレクトメッセージを許可</value></data>
+  <data name="DiscordAllowDirectMessagesHelp.Text" xml:space="preserve"><value>既定ではオフです。有効にすると、許可されたユーザーはサーバーIDなしでDMから依頼できます。</value></data>
+  <data name="DiscordAllowedChannelIdsLabel.Text" xml:space="preserve"><value>許可するチャンネルID（任意）</value></data>
+  <data name="DiscordAllowedChannelIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordチャンネルID</value></data>
+  <data name="DiscordAllowedChannelIdsHelp.Text" xml:space="preserve"><value>追加の制限として設定できます。チャンネルIDを1行に1つ入力してください。</value></data>
+  <data name="DiscordAllowedThreadIdsLabel.Text" xml:space="preserve"><value>許可するスレッドID（任意）</value></data>
+  <data name="DiscordAllowedThreadIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordスレッドID</value></data>
+  <data name="DiscordAllowedThreadIdsHelp.Text" xml:space="preserve"><value>追加の制限として設定できます。スレッドIDを1行に1つ入力してください。</value></data>
+  <data name="AutoConnectOptionDiscord.Content" xml:space="preserve"><value>Discord</value></data>
+  <data name="WizardProviderDiscord.Content" xml:space="preserve"><value>Discord</value></data>
+  <data name="WizardDiscordTitle.Text" xml:space="preserve"><value>Discord Botを設定</value></data>
+  <data name="WizardDiscordBotSetupHelp.Text" xml:space="preserve"><value>Discord Developer PortalでBotを作成し、Message Content Intentを有効にしてからサーバーに招待します。Botトークンのみを使用してください。ユーザートークンは使用しないでください。Discordの開発者モードを有効にすると、ユーザー・サーバー・チャンネル・スレッドのIDをコピーできます。</value></data>
+  <data name="WizardDiscordBotTokenLabel.Text" xml:space="preserve"><value>Botトークン</value></data>
+  <data name="WizardDiscordBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord Botトークン</value></data>
+  <data name="WizardDiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord Botトークンの表示・非表示</value></data>
+  <data name="WizardDiscordAllowedUsersLabel.Text" xml:space="preserve"><value>許可するユーザーID</value></data>
+  <data name="WizardDiscordAllowedUsers.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordユーザーID</value></data>
+  <data name="WizardDiscordAllowedUsersHelp.Text" xml:space="preserve"><value>必須です。DiscordユーザーIDを1行に1つ入力してください。ユーザー名は使用しません。</value></data>
+  <data name="WizardDiscordAllowedGuildsLabel.Text" xml:space="preserve"><value>許可するサーバーID</value></data>
+  <data name="WizardDiscordAllowedGuilds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordサーバーID</value></data>
+  <data name="WizardDiscordAllowedGuildsHelp.Text" xml:space="preserve"><value>ダイレクトメッセージを無効にする場合は必須です。サーバーIDを1行に1つ入力してください。</value></data>
+  <data name="WizardDiscordAllowedChannelsLabel.Text" xml:space="preserve"><value>許可するチャンネルID（任意）</value></data>
+  <data name="WizardDiscordAllowedChannels.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordチャンネルID</value></data>
+  <data name="WizardDiscordAllowedThreadsLabel.Text" xml:space="preserve"><value>許可するスレッドID（任意）</value></data>
+  <data name="WizardDiscordAllowedThreads.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordスレッドID</value></data>
+  <data name="WizardConnectDiscord.Content" xml:space="preserve"><value>Discordに接続</value></data>
+  <data name="WizardConnectDiscord.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discordに接続</value></data>
+  <data name="ConnectDiscord.Content" xml:space="preserve"><value>Discordに接続</value></data>
 </root>

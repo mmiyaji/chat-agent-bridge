@@ -128,6 +128,7 @@
                         <ComboBox x:Name="ConnectionsJump" Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="440" HorizontalAlignment="Left" SelectionChanged="ConnectionsJump_SelectionChanged" Visibility="Collapsed" AutomationProperties.AutomationId="ConnectionsJump" x:Uid="ConnectionsJump">
                             <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="JumpMattermost" />
                             <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="JumpSlack" />
+                            <ComboBoxItem Content="Discord" Tag="discord" AutomationProperties.AutomationId="JumpDiscord" />
                             <ComboBoxItem Tag="approval" AutomationProperties.AutomationId="JumpApproval" x:Uid="JumpApproval" />
                             <ComboBoxItem Tag="attachments" AutomationProperties.AutomationId="JumpAttachments" x:Uid="JumpAttachments" />
                             <ComboBoxItem Tag="codex-sharing" AutomationProperties.AutomationId="JumpCodexSharing" x:Uid="JumpCodexSharing" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsCodexProvider), Mode=OneWay}" />
@@ -203,6 +204,7 @@
                                             <ComboBoxItem Tag="none" AutomationProperties.AutomationId="AutoConnectOptionNone" x:Uid="AutoConnectOptionNone" />
                                             <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="AutoConnectOptionMattermost" />
                                             <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="AutoConnectOptionSlack" />
+                                            <ComboBoxItem Content="Discord" Tag="discord" AutomationProperties.AutomationId="AutoConnectOptionDiscord" x:Uid="AutoConnectOptionDiscord" />
                                         </ComboBox>
                                     </settings:SettingsCard>
                                     <TextBlock Visibility="{x:Bind local:MainPage.SettingsAutoSaveRetryVisibility(ViewModel.HasUnsavedSettings, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" TextWrapping="Wrap" Text="{x:Bind local:MainPage.SettingsAutoSaveStatus(ViewModel.HasUnsavedSettings, ViewModel.IsLoading, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="GeneralSettingsSaveState" />
@@ -622,6 +624,43 @@
                                         </StackPanel>
                                         <TextBox  Text="{x:Bind ViewModel.SlackAllowedThreadIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="SlackAllowedThreadIds"  x:Uid="SlackAllowedThreadIds" />
                                         <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="SlackThreadIdsHelp" x:Uid="SlackAllowedThreadIdsHelp" localization:LocalizedResourceKey.Key="SlackAllowedThreadIdsHelp" />
+                                    </StackPanel>
+                                </Expander>
+                                <Expander x:Name="DiscordSettingsCard" AutomationProperties.AutomationId="DiscordSettingsCard" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" x:Uid="DiscordSectionAccessible" localization:LocalizedResourceKey.Key="DiscordSectionAccessible">
+                                    <Expander.Header>
+                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DiscordSectionTitle" localization:LocalizedResourceKey.Key="DiscordSectionTitle" />
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordSectionHelp" localization:LocalizedResourceKey.Key="DiscordSectionHelp" />
+                                        </StackPanel>
+                                    </Expander.Header>
+                                    <StackPanel Spacing="12">
+                                        <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordBotSetupHelp" localization:LocalizedResourceKey.Key="DiscordBotSetupHelp" />
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DiscordBotTokenLabel" />
+                                            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="DiscordBotTokenBox" Grid.ColumnSpan="2" Padding="12,5,44,6" PasswordChanged="DiscordBotTokenBox_PasswordChanged" AutomationProperties.AutomationId="DiscordBotToken" x:Uid="DiscordBotToken" /><ToggleButton x:Name="DiscordBotTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="DiscordBotTokenReveal" /></Grid>
+                                        </StackPanel>
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DiscordAllowedUserIdsLabel" />
+                                            <TextBox Text="{x:Bind ViewModel.DiscordAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" AutomationProperties.AutomationId="DiscordAllowedUserIds" x:Uid="DiscordAllowedUserIds" />
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordAllowedUserIdsHelp" />
+                                        </StackPanel>
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DiscordAllowedGuildIdsLabel" />
+                                            <TextBox Text="{x:Bind ViewModel.DiscordAllowedGuildIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" AutomationProperties.AutomationId="DiscordAllowedGuildIds" x:Uid="DiscordAllowedGuildIds" />
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordAllowedGuildIdsHelp" />
+                                        </StackPanel>
+                                        <ToggleSwitch IsOn="{x:Bind ViewModel.DiscordAllowDirectMessages, Mode=TwoWay}" AutomationProperties.AutomationId="DiscordAllowDirectMessages" x:Uid="DiscordAllowDirectMessages" />
+                                        <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordAllowDirectMessagesHelp" />
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DiscordAllowedChannelIdsLabel" />
+                                            <TextBox Text="{x:Bind ViewModel.DiscordAllowedChannelIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="DiscordAllowedChannelIds" x:Uid="DiscordAllowedChannelIds" />
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordAllowedChannelIdsHelp" />
+                                        </StackPanel>
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DiscordAllowedThreadIdsLabel" />
+                                            <TextBox Text="{x:Bind ViewModel.DiscordAllowedThreadIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="DiscordAllowedThreadIds" x:Uid="DiscordAllowedThreadIds" />
+                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordAllowedThreadIdsHelp" />
+                                        </StackPanel>
                                     </StackPanel>
                                 </Expander>
                                 <Expander x:Name="FileAttachmentSettings" AutomationProperties.AutomationId="FileAttachmentSettings" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="ChatAttachmentsAccessible" localization:LocalizedResourceKey.Key="ChatAttachmentsAccessible">

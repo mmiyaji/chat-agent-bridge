@@ -4,7 +4,7 @@ Provider: mmiyaji
 Contact: mail@ruhenheim.org
 
 1. About this application
-This unofficial tool lets you operate an AI agent CLI on a Windows PC you control through Slack or Mattermost. It is not an official product of OpenAI, Anthropic, Slack, Mattermost, or any other service. The terms and policies of each external service also apply.
+This unofficial tool lets you operate an AI agent CLI on a Windows PC you control through Slack, Mattermost, or Discord. It is not an official product of OpenAI, Anthropic, Slack, Mattermost, Discord, or any other service. The terms and policies of each external service also apply.
 
 2. As-is; no warranties
 The application is provided "as is." To the extent permitted by applicable law, no express or implied warranties are made regarding operation, availability, continued provision, fitness for a particular purpose, accuracy or completeness of AI output, security, data retention, or non-infringement of third-party rights. Interruptions, defects, or changes to external services or CLIs may make the application unavailable.

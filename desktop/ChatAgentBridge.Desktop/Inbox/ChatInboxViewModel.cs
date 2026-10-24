@@ -144,7 +144,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasProgressNotice))]
     public partial string ProgressNotice { get; set; } = "";
     public bool HasProgressNotice => !string.IsNullOrWhiteSpace(ProgressNotice);
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(ConnectDiscordCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsConnected { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsConnectionConfirmed { get; set; }
@@ -194,7 +194,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         get
         {
             if (_activeItem is not { } active) return "";
-            var provider = active.Request.Provider switch { "mattermost" => "Mattermost", "slack" => "Slack", _ => active.Request.Provider };
+            var provider = active.Request.Provider switch { "mattermost" => "Mattermost", "slack" => "Slack", "discord" => "Discord", _ => active.Request.Provider };
             var conversation = Conversations.FirstOrDefault(item => item.Requests.Contains(active));
             var identity = conversation?.Title ?? $"{provider} · {active.Request.UserId}";
             var prompt = active.Prompt.Replace('\r', ' ').Replace('\n', ' ').Trim();
@@ -355,7 +355,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             }
             var latest = items[^1];
             conversation.Identity = $"{latest.Request.Provider}  /  {latest.Request.ChannelId}  /  {latest.Request.ThreadId}  /  {latest.Request.UserId}";
-            var provider = latest.Request.Provider == "mattermost" ? "Mattermost" : latest.Request.Provider == "slack" ? "Slack" : latest.Request.Provider;
+            var provider = latest.Request.Provider switch { "mattermost" => "Mattermost", "slack" => "Slack", "discord" => "Discord", _ => latest.Request.Provider };
             conversation.Title = $"{provider} · {latest.Request.UserId}";
             conversation.Location = DesktopText.Get("ConversationLocation", latest.Request.ChannelId, latest.Request.ThreadId);
             conversation.LatestPrompt = latest.Prompt;
@@ -409,6 +409,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             foreach (var pair in _requestHandlers)
             {
+                _ = CompleteRequestActionsAsync(pair.Key);
                 pair.Key.PropertyChanged -= pair.Value;
                 pair.Key.LiveOutput.Dispose();
             }
@@ -418,6 +419,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             foreach (InboxItem item in e.OldItems)
             {
+                _ = CompleteRequestActionsAsync(item);
                 var conversation = Conversations.FirstOrDefault(row => row.Requests.Contains(item));
                 if (conversation is not null && conversation.PreviousRequestCount < int.MaxValue)
                     conversation.PreviousRequestCount++;
@@ -431,6 +433,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             {
                 PropertyChangedEventHandler handler = (_, args) =>
                 {
+                    if (args.PropertyName == nameof(InboxItem.State) && item.State != "承認待ち")
+                        _ = CompleteRequestActionsAsync(item);
                     if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.Workspace)) RefreshConversations(item);
                     if (ReferenceEquals(item, Selected))
                     {
@@ -459,6 +463,26 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private Task ConnectSlackAsync() => ConnectAsync(new SlackSocketModeTransport());
 
+    [RelayCommand(CanExecute = nameof(CanConnect))]
+    private async Task ConnectDiscordAsync()
+    {
+#if CAB_DISCORD_FIXTURE
+        var endpoint = Environment.GetEnvironmentVariable("CAB_DISCORD_FIXTURE_URL");
+        if (!string.IsNullOrWhiteSpace(endpoint))
+        {
+            var parent = Directory.GetParent(_store.DirectoryPath);
+            var settings = await _store.LoadAsync();
+            if (parent is null || !Guid.TryParseExact(parent.Name, "D", out _) ||
+                !File.Exists(Path.Combine(_store.DirectoryPath, ".cab-discord-fixture")) ||
+                settings.DiscordBotToken != "offline-discord-fixture")
+                throw new InvalidOperationException("Isolated Discord fixture profile is missing.");
+            await ConnectAsync(DiscordGatewayTransport.CreateLoopbackFixture(new Uri(endpoint), _sessions));
+            return;
+        }
+#endif
+        await ConnectAsync(new DiscordGatewayTransport());
+    }
+
     private async Task ConnectAsync(IChatTransport transport)
     {
         if (IsConnected || _closing) { await transport.DisposeAsync(); return; }
@@ -472,12 +496,27 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             await EnsureConversationsRestoredAsync();
             var settings = await _store.LoadAsync();
-            var allowed = transport is MattermostWebSocketTransport ? settings.MattermostAllowedUserIds : settings.SlackAllowedUserIds;
+            var allowed = transport switch
+            {
+                MattermostWebSocketTransport => settings.MattermostAllowedUserIds,
+                DiscordGatewayTransport => settings.DiscordAllowedUserIds,
+                _ => settings.SlackAllowedUserIds
+            };
             if (string.IsNullOrWhiteSpace(allowed))
             {
                 await transport.DisposeAsync();
                 IsConnected = false;
                 Status = DesktopText.Get("InboxAllowedUsersRequired");
+                HasConnectionError = true;
+                return;
+            }
+            if (transport is DiscordGatewayTransport &&
+                (string.IsNullOrWhiteSpace(settings.DiscordBotToken) ||
+                 !settings.DiscordAllowDirectMessages && string.IsNullOrWhiteSpace(settings.DiscordAllowedGuildIds)))
+            {
+                await transport.DisposeAsync();
+                IsConnected = false;
+                Status = DesktopText.Get("DiscordInboxConfigurationMissing");
                 HasConnectionError = true;
                 return;
             }
@@ -568,6 +607,18 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             HasConnectionError = !_disconnecting && !_closing && !cancellationToken.IsCancellationRequested;
         }
         catch (OperationCanceledException) { Status = DesktopText.Get("InboxDisconnectedNotice"); }
+        catch (DiscordConfigurationException error)
+        {
+            Status = DesktopText.Get(error.Code switch
+            {
+                "missing_configuration" => "DiscordInboxConfigurationMissing",
+                "authentication" => "DiscordInboxAuthenticationFailed",
+                "message_content_intent" => "DiscordInboxMessageContentRequired",
+                "missing_permissions" => "DiscordInboxPermissionsRequired",
+                _ => "InboxReconnectFailed"
+            });
+            HasConnectionError = true;
+        }
         catch (Exception)
         {
             // Provider error payloads can contain tokens or socket URLs.
@@ -668,7 +719,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (approvedAutomatically && (ConversationExecutionPolicy.RequiresApproval(key, effectiveSettings, binding) ||
                 (await _sessions.FindAgentSelectionAsync(key, token))?.RequiresApproval == true))
             {
-                if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
+                NotifyPendingRequest(item);
                 Status = DesktopText.Get("InboxApprovalRequiredAgain");
                 return;
             }
@@ -826,6 +877,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             IsExecuting = false;
             ConnectMattermostCommand.NotifyCanExecuteChanged();
             ConnectSlackCommand.NotifyCanExecuteChanged();
+            ConnectDiscordCommand.NotifyCanExecuteChanged();
             SendResultCommand.NotifyCanExecuteChanged();
         }
     }
@@ -967,7 +1019,13 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (!await CheckAccessAsync(item, token)) return AppServerDecision.Decline;
         var settings = Volatile.Read(ref _accessSettings);
         var decision = await _approvalBroker.RequestAsync(item.Transport, item.Request, approval, ServerApprovalHandler, token,
-            publishToThread: settings?.ShareApprovalsInChat == true);
+            publishToThread: settings?.ShareApprovalsInChat == true,
+            canDecideInChat: async ct =>
+            {
+                var current = await _store.LoadAsync(ct);
+                return current.ShareApprovalsInChat && ReferenceEquals(item.Transport, _transport) &&
+                    HasAccess(current, item.Request, item.Settings);
+            });
         if (decision == AppServerDecision.Accept && !await CheckAccessAsync(item, token)) return AppServerDecision.Decline;
         try { await AuditAsync(decision == AppServerDecision.Accept ? "approved" : "rejected", item.Request, item.ExecutionId, token); }
         catch (Exception) { return AppServerDecision.Decline; }
@@ -984,7 +1042,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     }
 
     private static bool CanReceive(BridgeSettings current, ChatRequest request, BridgeSettings connected) =>
-        ChatAccessPolicy.IsAllowedRequest(current, request.Provider, request.UserId, request.ChannelId, request.ThreadId) &&
+        ChatAccessPolicy.IsAllowedRequest(current, request.Provider, request.UserId, request.ChannelId, request.ThreadId, request.GuildId) &&
         (request.Provider != "mattermost" || string.Equals(current.MattermostChannelId, request.ChannelId, StringComparison.Ordinal)) &&
         ChatConnectionPolicy.Matches(request.Provider, current, connected);
 
@@ -1121,7 +1179,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (!await CheckAccessAsync(item, _connection?.Token ?? CancellationToken.None)) continue;
                 if (WorkspaceChatCommand.TryParse(item.Prompt, out _) || AgentChatCommand.TryParse(item.Prompt, out _))
                 {
-                    if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
+                    NotifyPendingRequest(item);
                     continue;
                 }
                 var key = CreateSessionKey(item);
@@ -1131,7 +1189,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (ConversationExecutionPolicy.RequiresApproval(key, effective, binding) ||
                     (await _sessions.FindAgentSelectionAsync(key))?.RequiresApproval == true)
                 {
-                    if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
+                    NotifyPendingRequest(item);
                     continue;
                 }
                 _automaticallyAttempted.Add(item);
@@ -1158,7 +1216,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             Status = DesktopText.Get("InboxAutomaticExecutionPaused");
             foreach (var item in Requests.Where(item => item.State == "承認待ち"))
-                if (_notifiedRequests.Add(item)) RequestReceived?.Invoke(item);
+                NotifyPendingRequest(item);
         }
         finally
         {

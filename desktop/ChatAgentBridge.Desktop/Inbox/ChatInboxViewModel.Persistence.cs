@@ -101,8 +101,8 @@ public sealed partial class ChatInboxViewModel
     }
 
     private static bool HasRestorableScope(SessionKey key) =>
-        key.Provider is "slack" or "mattermost" && !string.IsNullOrWhiteSpace(key.UserId) &&
-        (key.Provider == "slack" ? key.Origin == "slack" : key.Origin is { Length: 64 } origin &&
+        key.Provider is "slack" or "mattermost" or "discord" && !string.IsNullOrWhiteSpace(key.UserId) &&
+        (key.Provider is "slack" or "discord" ? key.Origin == key.Provider : key.Origin is { Length: 64 } origin &&
             origin.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f'));
 
     private static string? SafeLabel(string? value)
@@ -150,7 +150,7 @@ public sealed partial class ChatInboxViewModel
     private void ApplyConversationLabels(InboxConversation conversation)
     {
         if (conversation.Snapshot is not { } snapshot) return;
-        var provider = snapshot.Key.Provider == "mattermost" ? "Mattermost" : "Slack";
+        var provider = snapshot.Key.Provider switch { "mattermost" => "Mattermost", "discord" => "Discord", _ => "Slack" };
         conversation.Title = string.Join(" · ", new[] { snapshot.SiteName ?? provider, snapshot.UserName ?? snapshot.Key.UserId });
         conversation.Location = snapshot.ChannelName is { Length: > 0 } channel
             ? channel : DesktopText.Get("ConversationLocation", snapshot.Key.ChannelId, snapshot.Key.ThreadId);

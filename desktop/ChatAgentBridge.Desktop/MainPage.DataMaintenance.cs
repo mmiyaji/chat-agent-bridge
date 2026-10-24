@@ -10,6 +10,7 @@ public sealed partial class MainPage
         !InboxPage.ViewModel.IsExecuting && !InboxPage.ViewModel.SendResultCommand.IsRunning &&
         !InboxPage.ViewModel.SendAttachmentsCommand.IsRunning &&
         !InboxPage.ViewModel.ConnectSlackCommand.IsRunning && !InboxPage.ViewModel.ConnectMattermostCommand.IsRunning &&
+        !InboxPage.ViewModel.ConnectDiscordCommand.IsRunning &&
         !InboxPage.ViewModel.Requests.Any(item => item.State is "承認待ち" or "自動実行を準備" or "実行中");
 
     internal async Task<bool> PrepareForDataMaintenanceAsync()

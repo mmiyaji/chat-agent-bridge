@@ -19,6 +19,7 @@ public sealed partial class ChatInboxViewModel
                 if (!IsCurrent()) return;
                 if (status.State == ChatReconnectionState.Reconnecting)
                 {
+                    foreach (var item in _requestActions.Keys.ToArray()) _ = CompleteRequestActionsAsync(item);
                     IsConnectionConfirmed = false;
                     HasConnectionError = false;
                     var delay = Math.Max(1, (int)Math.Ceiling(status.NextRetryDelay?.TotalSeconds ?? 1));

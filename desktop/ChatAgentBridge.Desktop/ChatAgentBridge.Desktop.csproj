@@ -40,6 +40,13 @@
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable\</IntermediateOutputPath>
   </PropertyGroup>
 
+  <!-- Native Discord fixture hooks never enter ordinary portable distributions. -->
+  <PropertyGroup Condition="'$(CABDiscordFixture)' == 'true' and '$(CABPortable)' == 'true'">
+    <DefineConstants>$(DefineConstants);CAB_DISCORD_FIXTURE</DefineConstants>
+    <OutputPath>bin\$(Platform)\$(Configuration)\portable-discord-fixture\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable-discord-fixture\</IntermediateOutputPath>
+  </PropertyGroup>
+
   <!-- Identity is additive. Ordinary portable builds retain their original notification registration. -->
   <PropertyGroup Condition="'$(CABPortable)' == 'true' and '$(CABPortableIdentity)' == 'true'">
     <ApplicationManifest>../portable-identity/app.portable.manifest</ApplicationManifest>

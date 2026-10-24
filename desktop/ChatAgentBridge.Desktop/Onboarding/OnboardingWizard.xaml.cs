@@ -24,6 +24,7 @@ public sealed partial class OnboardingWizard : UserControl
         PasswordRevealControl.Attach(SlackBotTokenRevealButton, SlackBotTokenBox);
         PasswordRevealControl.Attach(SlackAppTokenRevealButton, SlackAppTokenBox);
         PasswordRevealControl.Attach(MattermostTokenRevealButton, MattermostTokenBox);
+        PasswordRevealControl.Attach(DiscordBotTokenRevealButton, DiscordBotTokenBox);
         IntroHost.Content = new OnboardingIntro(ViewModel);
         ViewModel.PropertyChanged += (_, args) =>
         {
@@ -91,6 +92,9 @@ public sealed partial class OnboardingWizard : UserControl
         WizardField.MattermostChannel => (MattermostChannelBox, MattermostChannelBox),
         WizardField.MattermostToken => ((FrameworkElement)MattermostTokenBox.Parent, MattermostTokenBox),
         WizardField.MattermostAllowedUsers => (MattermostAllowedUsersBox, MattermostAllowedUsersBox),
+        WizardField.DiscordBotToken => ((FrameworkElement)DiscordBotTokenBox.Parent, DiscordBotTokenBox),
+        WizardField.DiscordAllowedUsers => (DiscordAllowedUsersBox, DiscordAllowedUsersBox),
+        WizardField.DiscordAllowedGuilds => (DiscordAllowedGuildsBox, DiscordAllowedGuildsBox),
         _ => throw new ArgumentOutOfRangeException(nameof(field), field, null)
     };
 
@@ -156,6 +160,7 @@ public sealed partial class OnboardingWizard : UserControl
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
         MattermostTokenBox.Password = ViewModel.MattermostToken;
+        DiscordBotTokenBox.Password = ViewModel.DiscordBotToken;
     }
 
     public static Visibility ToVisibility(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
@@ -233,11 +238,17 @@ public sealed partial class OnboardingWizard : UserControl
     private void MattermostTokenBox_PasswordChanged(object sender, RoutedEventArgs e) =>
         ViewModel.SetMattermostToken(MattermostTokenBox.Password);
 
+    private void DiscordBotTokenBox_PasswordChanged(object sender, RoutedEventArgs e) =>
+        ViewModel.DiscordBotToken = DiscordBotTokenBox.Password;
+
     private async void ConnectSlack_Click(object sender, RoutedEventArgs e) =>
         await ConnectSelectedProviderAsync("slack");
 
     private async void ConnectMattermost_Click(object sender, RoutedEventArgs e) =>
         await ConnectSelectedProviderAsync("mattermost");
+
+    private async void ConnectDiscord_Click(object sender, RoutedEventArgs e) =>
+        await ConnectSelectedProviderAsync("discord");
 
     private async Task ConnectSelectedProviderAsync(string provider)
     {
@@ -256,6 +267,8 @@ public sealed partial class OnboardingWizard : UserControl
                 await Inbox.DisconnectCommand.ExecuteAsync(null);
             if (provider == "slack")
                 await Inbox.ConnectSlackCommand.ExecuteAsync(null);
+            else if (provider == "discord")
+                await Inbox.ConnectDiscordCommand.ExecuteAsync(null);
             else
                 await Inbox.ConnectMattermostCommand.ExecuteAsync(null);
             if (Inbox.IsConnected) ViewModel.RememberWizardConnectionSettings(provider);

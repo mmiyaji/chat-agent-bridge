@@ -81,6 +81,8 @@ public sealed partial class ChatInboxPage : Page
 
     private void Page_SizeChanged(object sender, Microsoft.UI.Xaml.SizeChangedEventArgs e)
     {
+        ConnectionActions.Orientation = e.NewSize.Width >= 680
+            ? Orientation.Horizontal : Orientation.Vertical;
         ViewModel.IsWideLayout = e.NewSize.Width >= 840;
         if (ViewModel.IsWideLayout)
         {

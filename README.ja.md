@@ -2,7 +2,7 @@
 
 [English](README.md) · **日本語** · [ダウンロード](https://github.com/mmiyaji/chat-agent-bridge/releases)
 
-Chat Agent Bridgeは、SlackやMattermostからWindows PC上のAIエージェントに作業を依頼するアプリです。スマートフォンや別のPCから依頼を送り、同じスレッドで結果を確認したり、追加の指示を送ったりできます。
+Chat Agent Bridgeは、Slack・Mattermost・DiscordからWindows PC上のAIエージェントに作業を依頼するアプリです。スマートフォンや別のPCから依頼を送り、同じスレッドで結果を確認したり、追加の指示を送ったりできます。
 
 CodexやClaude Codeのデスクトップアプリを使えない端末からの利用を想定しています。BridgeはWindows PCにインストールしたコマンドライン版のエージェント（CLI）を起動し、指定した作業フォルダーで依頼を実行します。
 
@@ -10,11 +10,11 @@ CodexやClaude Codeのデスクトップアプリを使えない端末からの�
 
 ## システム構成と依頼の流れ
 
-![別の端末のSlackまたはMattermostから、Windows PC上のChat Agent Bridgeを経由してCLIを実行し、結果を受け取る構成](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.svg)
+![別の端末のSlack・Mattermost・Discordから、Windows PC上のChat Agent Bridgeを経由してCLIを実行し、結果を受け取る構成](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.svg)
 
-アプリの初期設定ガイドと全般画面に掲載している構成図です。図ではCodexとClaude Codeを例にしています。Gemini CLIとGitHub Copilot CLIも同じ構成で利用できます。
+アプリの初期設定ガイドと全般画面に掲載している構成図です。図ではCodexとClaude Codeを例にしています。Gemini CLIとGitHub Copilot CLIも同じ構成で利用できます。Discordも同じ流れで利用し、PCからGatewayへ接続するため公開のコールバックURLは必要ありません。
 
-1. **別の端末**からSlackまたはMattermostに投稿します。操作する端末にAIエージェントのCLIを入れる必要はありません。
+1. **別の端末**からSlack・Mattermost・Discordに投稿します。操作する端末にAIエージェントのCLIを入れる必要はありません。
 2. **Windows PC上のBridge**が投稿を受け取り、許可ユーザーや会話の承認設定を確認します。承認が必要な依頼は、PCで承認するまで実行を待ちます。
 3. **選択したCLI**が、指定された作業フォルダーで依頼を実行します。CLIは自身の設定に従ってAIサービスへ通信し、ファイルの読み書きやコマンド実行を行います。
 4. **結果を元のスレッドへ投稿**します。既定ではPCで内容を確認してから送信し、自動返信にも変更できます。同じユーザーがスレッドへ返信すると、対応するCLIでは会話を継続します。
@@ -25,7 +25,7 @@ CodexやClaude Codeのデスクトップアプリを使えない端末からの�
 
 | 機能 | 内容 |
 | --- | --- |
-| チャットからの実行 | Slack・Mattermostからの依頼とスレッド単位の会話継続 |
+| チャットからの実行 | Slack・Mattermost・Discordからの依頼とスレッド単位の会話継続 |
 | エージェント・モデルの変更 | PCとチャットから変更。エージェント変更時に会話の引き継ぎメモを渡すか選択 |
 | 進捗確認・中断 | チャットへの進捗投稿、PCでの途中出力の表示、依頼の中断 |
 | 追加指示 | 順番待ち、または対応するエージェントの実行中の依頼への追加 |
@@ -42,7 +42,7 @@ Windows向けのポータブル版を配布しています。アプリ本体の�
 1. [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases)から、PCに合う**x64 / ARM64**のZIPを取得します。
 2. フォルダー全体を書き込み可能な場所へ展開し、`ChatAgentBridge.Desktop.exe`を起動します。
 3. 使うCLIをインストールしてCLI自身でログインします。初期設定ガイドでCLIと作業フォルダーを選び、CLIチェックを実行します。
-4. **チャット設定**でSlackまたはMattermostの接続情報と許可ユーザーを設定します。Slackでは必要な権限を持つアプリ、MattermostではBotトークンを用意します。
+4. **チャット設定**でSlack・Mattermost・Discordの接続情報と許可ユーザーを設定します。Slackでは必要な権限を持つアプリ、MattermostではBotトークンを用意します。DiscordはBotトークン・許可ユーザーID・許可サーバーIDとMessage Content Intentが必要です。[Discordの設定手順](docs/discord-setup.md)を参照してください。
 5. **チャット**から接続し、チャット側でBotにメンションして依頼します。Mattermostでは`!cab <依頼内容>`でも開始できます。
 6. PCで初回の依頼を承認します。実行後に結果を確認して共有し、続きは同じスレッドへ返信します。
 
@@ -73,7 +73,7 @@ Codex App ServerとClaude Codeでは、実行中の依頼へ追加指示を送�
 
 ## 承認・アクセス制限・共有
 
-**チャット設定**で、両サービス共通の承認・共有ルールと、サービスごとの接続情報・許可ユーザーを設定します。
+**チャット設定**で、各サービス共通の承認・共有ルールと、サービスごとの接続情報・許可ユーザーを設定します。
 
 - **依頼の承認**は毎回・初回のみ・自動から選べます。これは会話の依頼を開始するための承認です。CLIが個々の操作を行う権限は、別の設定で管理します。
 - **アクセス制限**では依頼を受け付けるユーザーや会話を指定します。「信頼する作業フォルダー」には実行を許可するフォルダーを登録します。チャットからのフォルダー変更にも、その範囲の確認とPCでの承認が必要です。
@@ -99,7 +99,7 @@ Codex App ServerとClaude Codeでは、実行中の依頼へ追加指示を送�
 
 `!cab status` は、そのスレッドで自分が依頼した実行中・承認待ち・順番待ちの処理を、エージェント・モデル・作業フォルダー付きで表示します。他のユーザーやスレッドの依頼は表示しません。返信はそのスレッドを閲覧できる人に公開されます。
 
-PCでは実行中の出力を確認して依頼を中断できます。Mattermostでは、Botの進捗投稿にある🛑リアクションを依頼した本人が押すことでも中断できます。中断しても、すでに行われたファイル変更は元に戻りません。
+PCでは実行中の出力を確認して依頼を中断できます。Mattermostでは、Botの進捗投稿にある🛑リアクションを依頼した本人が押すことでも中断できます。Discordでは進捗投稿の中断ボタンを使えます。チャットでの承認共有を有効にすると、依頼の承認・拒否ボタンも表示されます。どちらも依頼した本人だけが操作できます。中断しても、すでに行われたファイル変更は元に戻りません。
 
 ## 履歴と利用状況
 
@@ -123,7 +123,7 @@ PCでは実行中の出力を確認して依頼を中断できます。Mattermos
 
 ## プロジェクトと関連資料
 
-個人の開発作業を想定した非公式の開発プレビューです。OpenAI・Anthropic・Google・GitHub・Slack・Mattermostの公式アプリではありません。利用するチャットサービスとAIサービスの設定・契約も確認してください。
+個人の開発作業を想定した非公式の開発プレビューです。OpenAI・Anthropic・Google・GitHub・Slack・Mattermost・Discordの公式アプリではありません。利用するチャットサービスとAIサービスの設定・契約も確認してください。
 
 - [利用規約](docs/terms.ja.md) / [プライバシーポリシー](docs/privacy-policy.ja.md)
 - [Windowsアプリの詳細ガイド・開発手順](desktop/README.ja.md)

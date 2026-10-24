@@ -18,6 +18,7 @@ public sealed partial class MainPage
             "github-copilot" => "bot",
             "mattermost" => "chat",
             "slack" => "chat_multiple",
+            "discord" => "chat",
             _ => "apps"
         };
         // Scale the original geometry into its own box. A glyph with a smaller

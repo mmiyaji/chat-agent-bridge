@@ -54,7 +54,10 @@ public partial class MainPageViewModel
         var slackReady = _settings is not null &&
             !string.IsNullOrWhiteSpace(_settings.SlackBotToken) &&
             !string.IsNullOrWhiteSpace(_settings.SlackAppToken) && HasAllowedUsers(_settings.SlackAllowedUserIds);
-        var connectionReady = mattermostReady || slackReady;
+        var discordReady = _settings is not null && !string.IsNullOrWhiteSpace(_settings.DiscordBotToken) &&
+            HasDiscordIds(_settings.DiscordAllowedUserIds) &&
+            (_settings.DiscordAllowDirectMessages || HasDiscordIds(_settings.DiscordAllowedGuildIds));
+        var connectionReady = mattermostReady || slackReady || discordReady;
 
         var workspaceMissing = _settings is not null && !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && !_savedWorkspaceExists;
         var agentError = loadFailed || workspaceMissing;
@@ -118,6 +121,7 @@ public partial class MainPageViewModel
         {
             "slack" => slackReady,
             "mattermost" => mattermostReady,
+            "discord" => discordReady,
             _ => false
         };
         var autoConnectChecking = checking;
@@ -127,17 +131,19 @@ public partial class MainPageViewModel
             : savedAutoConnect == "none" ? "OverviewAutoConnectOff"
             : autoConnectConfigured && savedAutoConnect == "slack" ? "OverviewAutoConnectSlackReady"
             : autoConnectConfigured && savedAutoConnect == "mattermost" ? "OverviewAutoConnectMattermostReady"
+            : autoConnectConfigured && savedAutoConnect == "discord" ? "OverviewAutoConnectDiscordReady"
             : savedAutoConnect == "slack" ? "OverviewAutoConnectNeedsSlack"
             : savedAutoConnect == "mattermost" ? "OverviewAutoConnectNeedsMattermost"
+            : savedAutoConnect == "discord" ? "OverviewAutoConnectNeedsDiscord"
             : "OverviewAutoConnectOff";
         OverviewAutoConnectStatus = ViewModelText.Get(autoConnectStatusKey);
         OverviewAutoConnectGlyph = autoConnectChecking ? OverviewPendingGlyph
             : autoConnectError ? OverviewErrorGlyph
-            : savedAutoConnect is "slack" or "mattermost" ? autoConnectConfigured ? OverviewCheckGlyph : OverviewWarningGlyph
+            : savedAutoConnect is "slack" or "mattermost" or "discord" ? autoConnectConfigured ? OverviewCheckGlyph : OverviewWarningGlyph
             : OverviewOffGlyph;
         OverviewAutoConnectIconState = autoConnectChecking ? OverviewIconState.Neutral
             : autoConnectError ? OverviewIconState.Error
-            : savedAutoConnect is "slack" or "mattermost" ? autoConnectConfigured ? OverviewIconState.Ready : OverviewIconState.Attention
+            : savedAutoConnect is "slack" or "mattermost" or "discord" ? autoConnectConfigured ? OverviewIconState.Ready : OverviewIconState.Attention
             : OverviewIconState.Neutral;
         OverviewAutoConnectAccessibleName = ViewModelText.Get("OverviewAutoConnectAccessibleName", OverviewAutoConnectStatus);
     }

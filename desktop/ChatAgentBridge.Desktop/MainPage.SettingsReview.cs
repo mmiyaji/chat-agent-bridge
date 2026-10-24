@@ -47,6 +47,11 @@ public sealed partial class MainPage
         Add("SlackChannels", saved.SlackAllowedChannelIds, draft.SlackAllowedChannelIds);
         Add("SlackThreads", saved.SlackAllowedThreadIds, draft.SlackAllowedThreadIds);
         Add("MattermostThreads", saved.MattermostAllowedThreadIds, draft.MattermostAllowedThreadIds);
+        Add("DiscordUsers", saved.DiscordAllowedUserIds, draft.DiscordAllowedUserIds);
+        Add("DiscordGuilds", saved.DiscordAllowedGuildIds, draft.DiscordAllowedGuildIds);
+        Add("DiscordChannels", saved.DiscordAllowedChannelIds, draft.DiscordAllowedChannelIds);
+        Add("DiscordThreads", saved.DiscordAllowedThreadIds, draft.DiscordAllowedThreadIds);
+        Add("DiscordDirectMessages", saved.DiscordAllowDirectMessages, draft.DiscordAllowDirectMessages);
         string Results(string mode) => ViewModelText.Get(mode switch
         {
             "auto" => "ResultAutomatic", "none" => "ResultDoNotShare", _ => "ResultManual"
@@ -65,8 +70,8 @@ public sealed partial class MainPage
         // Server URLs can contain credentials in user-info or query parameters.
         Add("Server", saved.MattermostServerUrl, draft.MattermostServerUrl, hidden: true);
         Add("MattermostChannel", saved.MattermostChannelId, draft.MattermostChannelId);
-        Add("Credentials", (saved.MattermostToken, saved.SlackBotToken, saved.SlackAppToken),
-            (draft.MattermostToken, draft.SlackBotToken, draft.SlackAppToken), hidden: true);
+        Add("Credentials", (saved.MattermostToken, saved.SlackBotToken, saved.SlackAppToken, saved.DiscordBotToken),
+            (draft.MattermostToken, draft.SlackBotToken, draft.SlackAppToken, draft.DiscordBotToken), hidden: true);
         return details;
     }
 }

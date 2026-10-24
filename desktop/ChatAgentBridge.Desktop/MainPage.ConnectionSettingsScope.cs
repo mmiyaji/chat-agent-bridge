@@ -14,6 +14,7 @@ public sealed partial class MainPage
     private StackPanel? _connectionScopeCommonGroup;
     private StackPanel? _connectionScopeMattermostGroup;
     private StackPanel? _connectionScopeSlackGroup;
+    private StackPanel? _connectionScopeDiscordGroup;
     private string _connectionSettingsScope = "common";
     private bool _syncingConnectionScopeSelection;
     private string? _pendingConnectionScope;
@@ -51,6 +52,9 @@ public sealed partial class MainPage
         _connectionScopeSlackGroup = new StackPanel { Spacing = 16 };
         _connectionScopeSlackGroup.Children.Add(SlackSettingsCard);
 
+        _connectionScopeDiscordGroup = new StackPanel { Spacing = 16 };
+        _connectionScopeDiscordGroup.Children.Add(DiscordSettingsCard);
+
         // Detach the original panel's remaining elements so no XAML control is
         // recreated; all named fields and event handlers continue to point at
         // the original instances.
@@ -59,7 +63,7 @@ public sealed partial class MainPage
         {
             if (ReferenceEquals(element, guide) || ReferenceEquals(element, overview) ||
                 ReferenceEquals(element, ChatApprovalSettingsCard) || ReferenceEquals(element, MattermostSettingsCard) ||
-                ReferenceEquals(element, SlackSettingsCard) || ReferenceEquals(element, FileAttachmentSettings) ||
+                ReferenceEquals(element, SlackSettingsCard) || ReferenceEquals(element, DiscordSettingsCard) || ReferenceEquals(element, FileAttachmentSettings) ||
                 ReferenceEquals(element, CodexChatSharingSettings))
                 continue;
             originalContent.Children.Add(element);
@@ -81,6 +85,7 @@ public sealed partial class MainPage
         AddConnectionScopeItem(_connectionScopeNavigation, "common", DesktopText.Get("AgentScopeCommon"), "ConnectionScopeCommon");
         AddConnectionScopeItem(_connectionScopeNavigation, "mattermost", MrtText.Get("MattermostSectionTitle.Text"), "ConnectionScopeMattermost");
         AddConnectionScopeItem(_connectionScopeNavigation, "slack", MrtText.Get("SlackSectionTitle.Text"), "ConnectionScopeSlack");
+        AddConnectionScopeItem(_connectionScopeNavigation, "discord", MrtText.Get("DiscordSectionTitle.Text"), "ConnectionScopeDiscord");
         _connectionScopeNavigation.SelectionChanged += (_, args) =>
         {
             if (_syncingConnectionScopeSelection || args.SelectedItemContainer is not NavigationViewItem item) return;
@@ -102,6 +107,7 @@ public sealed partial class MainPage
         page.Children.Add(_connectionScopeCommonGroup);
         page.Children.Add(_connectionScopeMattermostGroup);
         page.Children.Add(_connectionScopeSlackGroup);
+        page.Children.Add(_connectionScopeDiscordGroup);
         _connectionScopeNavigation.Content = page;
         originalContent.Children.Add(shell);
 
@@ -137,27 +143,30 @@ public sealed partial class MainPage
     private void SetConnectionSettingsScope(string scope)
     {
         if (_connectionScopeHeading is null || _connectionScopeCommonGroup is null ||
-            _connectionScopeMattermostGroup is null || _connectionScopeSlackGroup is null) return;
-        _connectionSettingsScope = scope is "mattermost" or "slack" ? scope : "common";
+            _connectionScopeMattermostGroup is null || _connectionScopeSlackGroup is null || _connectionScopeDiscordGroup is null) return;
+        _connectionSettingsScope = scope is "mattermost" or "slack" or "discord" ? scope : "common";
         var isCommon = _connectionSettingsScope == "common";
         _connectionScopeHeading.Text = _connectionSettingsScope switch
         {
             "mattermost" => MrtText.Get("MattermostSectionTitle.Text"),
             "slack" => MrtText.Get("SlackSectionTitle.Text"),
+            "discord" => MrtText.Get("DiscordSectionTitle.Text"),
             _ => DesktopText.Get("AgentScopeCommon")
         };
         _connectionScopeHeading.Visibility = isCommon ? Visibility.Visible : Visibility.Collapsed;
         _connectionScopeCommonGroup.Visibility = isCommon ? Visibility.Visible : Visibility.Collapsed;
         _connectionScopeMattermostGroup.Visibility = _connectionSettingsScope == "mattermost" ? Visibility.Visible : Visibility.Collapsed;
         _connectionScopeSlackGroup.Visibility = _connectionSettingsScope == "slack" ? Visibility.Visible : Visibility.Collapsed;
+        _connectionScopeDiscordGroup.Visibility = _connectionSettingsScope == "discord" ? Visibility.Visible : Visibility.Collapsed;
         ChatApprovalSettingsCard.IsExpanded = isCommon;
         MattermostSettingsCard.IsExpanded = _connectionSettingsScope == "mattermost";
         SlackSettingsCard.IsExpanded = _connectionSettingsScope == "slack";
+        DiscordSettingsCard.IsExpanded = _connectionSettingsScope == "discord";
 
         _syncingConnectionScopeSelection = true;
         if (_connectionScopeNavigation is not null)
         {
-            var index = _connectionSettingsScope switch { "mattermost" => 1, "slack" => 2, _ => 0 };
+            var index = _connectionSettingsScope switch { "mattermost" => 1, "slack" => 2, "discord" => 3, _ => 0 };
             _connectionScopeNavigation.SelectedItem = _connectionScopeNavigation.MenuItems[index];
         }
         _syncingConnectionScopeSelection = false;
@@ -166,12 +175,13 @@ public sealed partial class MainPage
     private void RefreshConnectionScopeLabels(System.Globalization.CultureInfo culture)
     {
         if (_connectionScopeNavigation is null) return;
-        string[] iconKeys = ["common", "mattermost", "slack"];
+        string[] iconKeys = ["common", "mattermost", "slack", "discord"];
         var labels = new[]
         {
             DesktopText.Get("AgentScopeCommon"),
             MrtText.Get("MattermostSectionTitle.Text", culture),
-            MrtText.Get("SlackSectionTitle.Text", culture)
+            MrtText.Get("SlackSectionTitle.Text", culture),
+            MrtText.Get("DiscordSectionTitle.Text", culture)
         };
         for (var index = 0; index < labels.Length; index++)
         {

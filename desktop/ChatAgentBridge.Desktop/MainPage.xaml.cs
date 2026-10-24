@@ -38,6 +38,7 @@ public sealed partial class MainPage : Page
         PasswordRevealControl.Attach(MattermostTokenRevealButton, MattermostTokenBox);
         PasswordRevealControl.Attach(SlackBotTokenRevealButton, SlackBotTokenBox);
         PasswordRevealControl.Attach(SlackAppTokenRevealButton, SlackAppTokenBox);
+        PasswordRevealControl.Attach(DiscordBotTokenRevealButton, DiscordBotTokenBox);
         InitializeSettingsAutoSave();
         InitializeLanguageRestart();
         InitializePortableUpdateBadge();
@@ -55,6 +56,8 @@ public sealed partial class MainPage : Page
                 SlackBotTokenBox.Password = ViewModel.SlackBotToken;
             if (args.PropertyName == nameof(ViewModel.SlackAppToken))
                 SlackAppTokenBox.Password = ViewModel.SlackAppToken;
+            if (args.PropertyName == nameof(ViewModel.DiscordBotToken))
+                DiscordBotTokenBox.Password = ViewModel.DiscordBotToken;
             if (ViewModel.IsOnboardingActive && ViewModel.IsStatusOpen && args.PropertyName is nameof(ViewModel.IsStatusOpen) or nameof(ViewModel.StatusTitle) or nameof(ViewModel.StatusMessage))
                 _wizard.ResetScroll();
             if (args.PropertyName == nameof(ViewModel.IsSettingsLoaded) && ViewModel.IsSettingsLoaded)
@@ -62,6 +65,7 @@ public sealed partial class MainPage : Page
                 MattermostTokenBox.Password = ViewModel.MattermostToken;
                 SlackBotTokenBox.Password = ViewModel.SlackBotToken;
                 SlackAppTokenBox.Password = ViewModel.SlackAppToken;
+                DiscordBotTokenBox.Password = ViewModel.DiscordBotToken;
                 _wizard.SyncSecrets();
             }
             if (args.PropertyName == nameof(ViewModel.IsOnboardingActive))
@@ -69,6 +73,7 @@ public sealed partial class MainPage : Page
                 MattermostTokenBox.Password = ViewModel.MattermostToken;
                 SlackBotTokenBox.Password = ViewModel.SlackBotToken;
                 SlackAppTokenBox.Password = ViewModel.SlackAppToken;
+                DiscordBotTokenBox.Password = ViewModel.DiscordBotToken;
                 _wizard.SyncSecrets();
                 if (!ViewModel.IsOnboardingActive) ScheduleDeferredLanguageRefresh();
             }
@@ -198,6 +203,7 @@ public sealed partial class MainPage : Page
             InboxPage.ViewModel.SendAttachmentsCommand.ExecutionTask,
             InboxPage.ViewModel.ConnectMattermostCommand.ExecutionTask,
             InboxPage.ViewModel.ConnectSlackCommand.ExecutionTask,
+            InboxPage.ViewModel.ConnectDiscordCommand.ExecutionTask,
             InboxPage.ViewModel.DisconnectCommand.ExecutionTask,
             InboxPage.ViewModel.WaitForConnectionShutdownAsync()
         }.OfType<Task>();
@@ -253,6 +259,7 @@ public sealed partial class MainPage : Page
         MattermostTokenBox.Password = ViewModel.MattermostToken;
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
+        DiscordBotTokenBox.Password = ViewModel.DiscordBotToken;
         await ViewModel.InitializeOnboardingAsync();
         await startupRefresh;
         ViewModel.RefreshOverviewStatus();
@@ -260,10 +267,11 @@ public sealed partial class MainPage : Page
             !ViewModel.HasUnsavedSettings && !ViewModel.IsSensitiveConfirmationPending &&
             ViewModel.AutoConnectProvider == startupProvider)
         {
-            if (startupProvider is "mattermost" or "slack")
+            if (startupProvider is "mattermost" or "slack" or "discord")
                 MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "chat");
             if (startupProvider == "mattermost") await InboxPage.ViewModel.ConnectMattermostCommand.ExecuteAsync(null);
             else if (startupProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
+            else if (startupProvider == "discord") await InboxPage.ViewModel.ConnectDiscordCommand.ExecuteAsync(null);
         }
     }
 
@@ -274,6 +282,7 @@ public sealed partial class MainPage : Page
         MattermostTokenBox.Password = ViewModel.MattermostToken;
         SlackBotTokenBox.Password = ViewModel.SlackBotToken;
         SlackAppTokenBox.Password = ViewModel.SlackAppToken;
+        DiscordBotTokenBox.Password = ViewModel.DiscordBotToken;
     }
 
     private async void BrowseWorkspace_Click(object sender, RoutedEventArgs e)
@@ -363,6 +372,7 @@ public sealed partial class MainPage : Page
     private void MattermostTokenBox_PasswordChanged(object sender, RoutedEventArgs e) => ViewModel.SetMattermostToken(MattermostTokenBox.Password);
     private void SlackBotTokenBox_PasswordChanged(object sender, RoutedEventArgs e) => ViewModel.SlackBotToken = SlackBotTokenBox.Password;
     private void SlackAppTokenBox_PasswordChanged(object sender, RoutedEventArgs e) => ViewModel.SlackAppToken = SlackAppTokenBox.Password;
+    private void DiscordBotTokenBox_PasswordChanged(object sender, RoutedEventArgs e) => ViewModel.DiscordBotToken = DiscordBotTokenBox.Password;
 
     private async Task<bool> ConfirmExecutionAsync(BridgeSettings settings, string prompt)
     {

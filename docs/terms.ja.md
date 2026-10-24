@@ -4,7 +4,7 @@ Chat Agent Bridge 利用規約（開発プレビュー）
 お問い合わせ：mail@ruhenheim.org
 
 1. 本アプリについて
-本アプリは、利用者が管理するWindows PC上のAIエージェントCLIを、SlackまたはMattermostから操作するための非公式ツールです。OpenAI、Anthropic、Slack、Mattermost等の公式製品ではありません。各外部サービスの契約・規約も適用されます。
+本アプリは、利用者が管理するWindows PC上のAIエージェントCLIを、Slack、MattermostまたはDiscordから操作するための非公式ツールです。OpenAI、Anthropic、Slack、Mattermost、Discord等の公式製品ではありません。各外部サービスの契約・規約も適用されます。
 
 2. 現状有姿・無保証
 本アプリは現状有姿で提供します。適用法令で認められる範囲で、動作、可用性、継続提供、特定目的への適合性、AIの出力の正確性・完全性、セキュリティ、データ保持、第三者の権利を侵害しないことについて、明示・黙示を問わず保証しません。中断・不具合・外部サービスやCLIの変更により利用できなくなることがあります。

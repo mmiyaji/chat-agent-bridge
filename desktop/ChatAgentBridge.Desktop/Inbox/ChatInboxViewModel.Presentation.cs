@@ -69,6 +69,7 @@ public sealed partial class ChatInboxViewModel
     {
         ChatAgentBridge.Transports.MattermostWebSocketTransport => "mattermost",
         ChatAgentBridge.Transports.SlackSocketModeTransport => "slack",
+        ChatAgentBridge.Transports.DiscordGatewayTransport => "discord",
         _ => null
     };
     public string ConnectionTone => HasConnectionError ? "error" : IsConnectionConfirmed ? "success" : IsConnected ? "running" : "neutral";

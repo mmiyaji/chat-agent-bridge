@@ -393,11 +393,14 @@
   <data name="SetupAllowedUsersMissing" xml:space="preserve">
     <value>Next: enter one allowed user ID per line for each connection. An empty list denies everyone.</value>
   </data>
+  <data name="SetupDiscordGuildIdsMissing" xml:space="preserve">
+    <value>Next: enter at least one allowed Discord server ID, or explicitly enable direct messages.</value>
+  </data>
   <data name="SetupChatAfterStepOne" xml:space="preserve">
     <value>Not set: configure connection details after step 1.</value>
   </data>
   <data name="SetupChatConfigMissing" xml:space="preserve">
-    <value>Next: configure Slack or Mattermost connection details and allowed users.</value>
+    <value>Next: configure Slack, Mattermost, or Discord connection details and allowed users.</value>
   </data>
   <data name="SetupChatConfigSaved" xml:space="preserve">
     <value>Complete: connection details and allowed user IDs are saved.</value>
@@ -713,4 +716,7 @@ Conversation ID (first message): {2}</value></data>
   <data name="WizardSkippedSeparator" xml:space="preserve"><value>, </value></data>
   <data name="SessionCliProviderHelp" xml:space="preserve"><value>Gemini CLI and GitHub Copilot CLI continue conversations in the same chat thread and accept a model name entered here. Model catalog lookup and app overrides for reasoning or execution permissions are unavailable. Sign in through the CLI first.</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>Model candidates cannot be fetched for this CLI. Enter a model ID or alias supported by your CLI and account, or leave it blank for the CLI default. Model access is checked when you run a request; reasoning and permissions follow the CLI configuration.</value></data>
+  <data name="OverviewAutoConnectDiscordReady" xml:space="preserve"><value>On: Discord</value></data>
+  <data name="OverviewAutoConnectNeedsDiscord" xml:space="preserve"><value>Set up Discord bot and access</value></data>
+  <data name="DiscordConnectionFields" xml:space="preserve"><value>Enter a bot token and allowed user IDs, plus at least one allowed server ID unless direct messages are enabled.</value></data>
 </root>

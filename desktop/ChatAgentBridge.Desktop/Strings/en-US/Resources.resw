@@ -475,10 +475,10 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Tool approvals and privacy</value>
   </data>
   <data name="ShareApprovalsInChat.Header" xml:space="preserve">
-    <value>Publish operation approval details to thread</value>
+    <value>Allow optional remote approvals in Discord</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock060.Text" xml:space="preserve">
-    <value>When enabled, the commands and working folders displayed for operation authorization on the Codex app-server will be posted to the chat thread. All participants in the thread can see it. The initial state is off.</value>
+    <value>When enabled, Discord posts initial approval requests and Codex App Server tool approval details in the conversation with buttons for optional remote approval or denial. Everyone in the conversation can see them, but only the original request sender can use the buttons. PC approval remains available. Off by default.</value>
   </data>
   <data name="ShareAgentQuestionsInChat.Header" xml:space="preserve">
     <value>Share nonsecret agent questions in chat</value>
@@ -613,7 +613,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Diagram showing how Slack or Mattermost makes a request to an app on a PC and the AI CLI on the PC responds.</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock002.Text" xml:space="preserve">
-    <value>Use Slack or Mattermost to send requests to the selected AI CLI on this PC. Project files and the CLI stay on this PC. AI processing and data transmission follow the settings of the CLI and AI service.</value>
+    <value>Use Slack, Mattermost, or Discord to send requests to the selected AI CLI on this PC. Project files and the CLI stay on this PC. AI processing and data transmission follow the settings of the CLI and AI service.</value>
   </data>
   <data name="onboardingOnboardingIntroTextBlock003.Text" xml:space="preserve">
     <value>Keep this app and your PC running while using chat. Requests and responses are sent to the selected external AI service. Review what information is sent and each service's policies.</value>
@@ -855,7 +855,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AboutStorePage.Content" xml:space="preserve"><value>Open Store page</value></data>
   <data name="AboutCheckUpdates.Content" xml:space="preserve"><value>Check for updates</value></data>
   <data name="AboutLegalHeading.Text" xml:space="preserve"><value>Terms and privacy</value></data>
-  <data name="AboutDataHandling.Text" xml:space="preserve"><value>This app exchanges messages with Slack or Mattermost and your configured agent CLI. The CLI may send prompts and related data to its AI service according to that service’s settings.</value></data>
+  <data name="AboutDataHandling.Text" xml:space="preserve"><value>This app exchanges messages with Slack, Mattermost, or Discord and your configured agent CLI. The CLI may send prompts and related data to its AI service according to that service’s settings.</value></data>
   <data name="AboutTerms.Header" xml:space="preserve"><value>Terms of use</value></data>
   <data name="AboutPrivacy.Header" xml:space="preserve"><value>Privacy policy</value></data>
   <data name="AboutExit.Content" xml:space="preserve"><value>Exit application</value></data>
@@ -1134,7 +1134,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="CliReviewTrust.Content" xml:space="preserve"><value>Review trusted folder</value></data>
   <data name="WorkspaceTrustError.Title" xml:space="preserve"><value>Review workspace trust</value></data>
   <data name="InboxConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Connection status and details</value></data>
-  <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>Connection and notification details. Conversations continue in the original Slack or Mattermost thread.</value></data>
+  <data name="InboxConnectionHelp.Text" xml:space="preserve"><value>Connection and notification details. Conversations continue in the original Slack, Mattermost, or Discord conversation.</value></data>
   <data name="InboxRequestContext.Header" xml:space="preserve"><value>Workspace and request details</value></data>
   <data name="AgentSettingsGuide.Text" xml:space="preserve"><value>Choose a CLI and workspace, then use Check CLI to verify it.</value></data>
   <data name="AgentBasicTitle.Text" xml:space="preserve"><value>Basic setup</value></data>
@@ -1233,4 +1233,49 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Reasoning effort</value></data>
   <data name="AgentEditorPermission.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Action permissions</value></data>
   <data name="AgentEditorModelChoices.PlaceholderText" xml:space="preserve"><value>Select from CLI candidates</value></data>
+  <data name="DiscordSectionTitle.Text" xml:space="preserve"><value>Discord</value></data>
+  <data name="DiscordSectionTitle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord</value></data>
+  <data name="DiscordSectionHelp.Text" xml:space="preserve"><value>Connect a Discord bot and restrict which users and servers may reach it.</value></data>
+  <data name="DiscordSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord bot settings</value></data>
+  <data name="DiscordBotSetupHelp.Text" xml:space="preserve"><value>Create a bot in the Discord Developer Portal, enable the Message Content intent, then invite it to your server. Use the bot token only; never use a user token. Enable Developer Mode in Discord to copy user, server, channel, and thread IDs.</value></data>
+  <data name="DiscordBotTokenLabel.Text" xml:space="preserve"><value>Bot token</value></data>
+  <data name="DiscordBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord bot token</value></data>
+  <data name="DiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Show or hide Discord bot token</value></data>
+  <data name="DiscordAllowedUserIdsLabel.Text" xml:space="preserve"><value>Allowed user IDs</value></data>
+  <data name="DiscordAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord user IDs</value></data>
+  <data name="DiscordAllowedUserIdsHelp.Text" xml:space="preserve"><value>Required. Enter one Discord user ID per line. Usernames are not used.</value></data>
+  <data name="DiscordAllowedGuildIdsLabel.Text" xml:space="preserve"><value>Allowed server IDs</value></data>
+  <data name="DiscordAllowedGuildIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord server IDs</value></data>
+  <data name="DiscordAllowedGuildIdsHelp.Text" xml:space="preserve"><value>Required when direct messages are disabled. Enter one server ID per line.</value></data>
+  <data name="DiscordAllowDirectMessages.Header" xml:space="preserve"><value>Allow direct messages</value></data>
+  <data name="DiscordAllowDirectMessages.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="DiscordAllowDirectMessages.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="DiscordAllowDirectMessages.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allow Discord direct messages</value></data>
+  <data name="DiscordAllowDirectMessagesHelp.Text" xml:space="preserve"><value>Off by default. When enabled, allowed users can send requests in direct messages without a server ID.</value></data>
+  <data name="DiscordAllowedChannelIdsLabel.Text" xml:space="preserve"><value>Allowed channel IDs (optional)</value></data>
+  <data name="DiscordAllowedChannelIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord channel IDs</value></data>
+  <data name="DiscordAllowedChannelIdsHelp.Text" xml:space="preserve"><value>Optional additional restriction. Enter one channel ID per line.</value></data>
+  <data name="DiscordAllowedThreadIdsLabel.Text" xml:space="preserve"><value>Allowed thread IDs (optional)</value></data>
+  <data name="DiscordAllowedThreadIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord thread IDs</value></data>
+  <data name="DiscordAllowedThreadIdsHelp.Text" xml:space="preserve"><value>Optional additional restriction. Enter one thread ID per line.</value></data>
+  <data name="AutoConnectOptionDiscord.Content" xml:space="preserve"><value>Discord</value></data>
+  <data name="WizardProviderDiscord.Content" xml:space="preserve"><value>Discord</value></data>
+  <data name="WizardDiscordTitle.Text" xml:space="preserve"><value>Configure a Discord bot</value></data>
+  <data name="WizardDiscordBotSetupHelp.Text" xml:space="preserve"><value>Create a bot in the Discord Developer Portal, enable the Message Content intent, then invite it to your server. Use the bot token only; never use a user token. Enable Developer Mode in Discord to copy user, server, channel, and thread IDs.</value></data>
+  <data name="WizardDiscordBotTokenLabel.Text" xml:space="preserve"><value>Bot token</value></data>
+  <data name="WizardDiscordBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord bot token</value></data>
+  <data name="WizardDiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Show or hide Discord bot token</value></data>
+  <data name="WizardDiscordAllowedUsersLabel.Text" xml:space="preserve"><value>Allowed user IDs</value></data>
+  <data name="WizardDiscordAllowedUsers.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord user IDs</value></data>
+  <data name="WizardDiscordAllowedUsersHelp.Text" xml:space="preserve"><value>Required. Enter one Discord user ID per line. Usernames are not used.</value></data>
+  <data name="WizardDiscordAllowedGuildsLabel.Text" xml:space="preserve"><value>Allowed server IDs</value></data>
+  <data name="WizardDiscordAllowedGuilds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord server IDs</value></data>
+  <data name="WizardDiscordAllowedGuildsHelp.Text" xml:space="preserve"><value>Required when direct messages are disabled. Enter one server ID per line.</value></data>
+  <data name="WizardDiscordAllowedChannelsLabel.Text" xml:space="preserve"><value>Allowed channel IDs (optional)</value></data>
+  <data name="WizardDiscordAllowedChannels.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord channel IDs</value></data>
+  <data name="WizardDiscordAllowedThreadsLabel.Text" xml:space="preserve"><value>Allowed thread IDs (optional)</value></data>
+  <data name="WizardDiscordAllowedThreads.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord thread IDs</value></data>
+  <data name="WizardConnectDiscord.Content" xml:space="preserve"><value>Connect Discord</value></data>
+  <data name="WizardConnectDiscord.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Connect Discord</value></data>
+  <data name="ConnectDiscord.Content" xml:space="preserve"><value>Connect to Discord</value></data>
 </root>

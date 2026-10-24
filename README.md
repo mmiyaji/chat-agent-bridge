@@ -2,7 +2,7 @@
 
 **English** · [日本語](README.ja.md) · [Download](https://github.com/mmiyaji/chat-agent-bridge/releases)
 
-Chat Agent Bridge is a Windows app that accepts requests from Slack or Mattermost and runs AI agents on your PC. You can send requests from a phone or another computer, review results and add instructions in the same thread.
+Chat Agent Bridge is a Windows app that accepts requests from Slack, Mattermost or Discord and runs AI agents on your PC. You can send requests from a phone or another computer, review results and add instructions in the same thread.
 
 It is intended for devices where you cannot use the Codex or Claude Code desktop app. Bridge starts a command-line agent (CLI) installed on your Windows PC and runs the request in the working folder you selected.
 
@@ -10,11 +10,11 @@ It is intended for devices where you cannot use the Codex or Claude Code desktop
 
 ## System overview and request flow
 
-![Requests travel from Slack or Mattermost on another device to Chat Agent Bridge and a CLI on the Windows PC; results return to chat](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)
+![Requests travel from Slack, Mattermost or Discord on another device to Chat Agent Bridge and a CLI on the Windows PC; results return to chat](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)
 
-This is the diagram shown in the app's setup guide and General page. It uses Codex and Claude Code as examples. Gemini CLI and GitHub Copilot CLI use the same arrangement.
+This is the diagram shown in the app's setup guide and General page. It uses Codex and Claude Code as examples. Gemini CLI and GitHub Copilot CLI use the same arrangement. Discord also uses this flow with the PC maintaining an outbound Gateway connection; no public callback URL is needed.
 
-1. **Post from another device** in Slack or Mattermost. That device does not need an agent CLI installed.
+1. **Post from another device** in Slack, Mattermost or Discord. That device does not need an agent CLI installed.
 2. **Bridge on the Windows PC** receives the post and checks allowed users and conversation approval settings. Requests that need approval wait for a decision on the PC.
 3. **The selected CLI** runs the request in the configured working folder. It connects to AI services according to its own settings and performs file operations or commands.
 4. **Share the result in the original thread.** By default, you review it on the PC before sending it; automatic replies are also available. Replies from the same user in that thread continue the conversation on supported CLIs.
@@ -25,7 +25,7 @@ Keep the Windows PC running with Bridge connected to chat. It can run in the sys
 
 | Feature | Description |
 | --- | --- |
-| Chat requests | Slack and Mattermost requests with thread-based conversation continuation |
+| Chat requests | Slack, Mattermost and Discord requests with thread-based conversation continuation |
 | Agent and model changes | Change them from the PC or chat; choose whether to pass conversation notes when switching agents |
 | Progress and cancellation | Chat progress posts, live output on the PC and request cancellation |
 | Additional instructions | Queue messages or add them to a running request on supported agents |
@@ -42,7 +42,7 @@ Portable builds are available for Windows. The app does not require administrato
 1. Download the **x64 / ARM64** ZIP for your PC from [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases).
 2. Extract the entire folder to a writable location and run `ChatAgentBridge.Desktop.exe`.
 3. Install the CLI and sign in through it. Select the CLI and working folder in the setup guide, then run the CLI check.
-4. In **Chat settings**, configure connection details and allowed users. Slack requires an app with the necessary permissions; Mattermost requires a bot token.
+4. In **Chat settings**, configure connection details and allowed users. Slack requires an app with the necessary permissions; Mattermost requires a bot token. Discord requires a bot token, allowed user and server IDs, and Message Content Intent; see the [Discord setup guide](docs/discord-setup.md).
 5. Connect from **Chat**, then mention the bot to send a request. In Mattermost, you can also start with `!cab <your request>`.
 6. Approve the first request on the PC. After execution, review and share the result. Reply in the same thread to continue.
 
@@ -73,7 +73,7 @@ See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるc
 
 ## Approvals, access and sharing
 
-**Chat settings** contains approval and sharing rules common to both services, along with each service's connection details and allowed users.
+**Chat settings** contains approval and sharing rules common to all chat services, along with each service's connection details and allowed users.
 
 - **Request approval** can be required every time, only for the first request, or handled automatically. This approval starts the request; the CLI's permission to perform individual operations is configured separately.
 - **Access restrictions** specify who and which conversations can send requests. Register folders where requests may start as trusted working folders. Changing the folder from chat requires a location within that scope and approval on the PC.
@@ -97,7 +97,7 @@ The Chat conversation list is restored after a restart. It stores display names,
 | `!cab agent` | List registered agents and switching options |
 | `!cab folder "C:\Projects\MyApp"` | Request a working-folder change |
 
-On the PC, you can inspect live output and stop a request. In Mattermost, the requester can also click the 🛑 reaction on the bot's progress post to cancel it. Stopping does not undo file changes already made.
+On the PC, you can inspect live output and stop a request. In Mattermost, the requester can also click the 🛑 reaction on the bot's progress post to cancel it. Discord shows a Stop button on progress posts. Request approval buttons are available when sharing approvals in chat is enabled; only the original requester can use them. Stopping does not undo file changes already made.
 
 `!cab status` lists running, approval-waiting and queued requests for your current thread, including agent, model and working folder. It does not expose requests from other users or threads. The reply is visible to people who can read that thread.
 
@@ -123,7 +123,7 @@ Screenshots show the development build on a Windows PC on October 24, 2026, usin
 
 ## Project and documentation
 
-This is an unofficial development preview for personal workflows, not an official OpenAI, Anthropic, Google, GitHub, Slack or Mattermost app. Check the settings and terms of the chat and AI services you use.
+This is an unofficial development preview for personal workflows, not an official OpenAI, Anthropic, Google, GitHub, Slack, Mattermost or Discord app. Check the settings and terms of the chat and AI services you use.
 
 - [Terms of Use](docs/terms.en.md) / [Privacy Policy](docs/privacy-policy.en.md)
 - [Windows app guide and development instructions (Japanese)](desktop/README.ja.md)

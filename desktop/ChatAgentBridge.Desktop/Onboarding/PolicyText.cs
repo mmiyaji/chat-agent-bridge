@@ -11,7 +11,7 @@ public static class PolicyText
         お問い合わせ：mail@ruhenheim.org
 
         1. 本アプリについて
-        本アプリは、利用者が管理するWindows PC上のAIエージェントCLIを、SlackまたはMattermostから操作するための非公式ツールです。OpenAI、Anthropic、Slack、Mattermost等の公式製品ではありません。各外部サービスの契約・規約も適用されます。
+        本アプリは、利用者が管理するWindows PC上のAIエージェントCLIを、Slack、MattermostまたはDiscordから操作するための非公式ツールです。OpenAI、Anthropic、Slack、Mattermost、Discord等の公式製品ではありません。各外部サービスの契約・規約も適用されます。
 
         2. 現状有姿・無保証
         本アプリは現状有姿で提供します。適用法令で認められる範囲で、動作、可用性、継続提供、特定目的への適合性、AIの出力の正確性・完全性、セキュリティ、データ保持、第三者の権利を侵害しないことについて、明示・黙示を問わず保証しません。中断・不具合・外部サービスやCLIの変更により利用できなくなることがあります。
@@ -44,11 +44,11 @@ public static class PolicyText
         任意の「初回のみ承認」モードでは、上限付きのファイル送信同意記録をアプリデータフォルダーに保存します。記録には会話とネイティブセッションの識別子、会話と添付設定のフィンガープリント、承認日時が含まれますが、ファイル名、ファイル内容、ファイルごとのハッシュは含まれません。検出したファイル候補（名前、作業フォルダー内のパス、サイズ、更新日時、ハッシュを含む）はメモリー上で扱います。候補情報やファイル内容の一時コピーを別のディスクファイルには保存しません。承認後、送信対象のバイト列はアップロード中にメモリー上で扱います。
 
         3. 外部との通信と共有範囲
-        Slackまたは設定したMattermostサーバーとの間で、依頼・応答・接続状態等を送受信します。実行時には依頼文と作業に必要な情報を選択したCLIへ渡します。CLIは、その設定と提供者の方針に従い、AIサービス等へデータを送信する場合があります。ローカルPCでCLIを起動することは、AI処理やデータ保存がすべてPC内で完結することを意味しません。各外部サービスのプライバシーポリシー・契約も確認してください。
+        Slack、Discordまたは設定したMattermostサーバーとの間で、依頼・応答・接続状態等を送受信します。実行時には依頼文と作業に必要な情報を選択したCLIへ渡します。CLIは、その設定と提供者の方針に従い、AIサービス等へデータを送信する場合があります。ローカルPCでCLIを起動することは、AI処理やデータ保存がすべてPC内で完結することを意味しません。各外部サービスのプライバシーポリシー・契約も確認してください。
 
         チャットへ共有する結果や操作承認の詳細は、そのチャンネル・スレッドを閲覧できる人に見えます。許可ユーザーの設定は、チャット側での投稿の閲覧範囲を制限するものではありません。接続・切断時には本文を含まない状態通知を送る場合があります。
 
-        チャットへの結果共有が有効な場合、新たに作成された作業フォルダー内のファイルは、ファイル添付専用の承認設定に従って送信できます。初期設定では、転送ごとにファイルを選択して承認した後に限り、選択されたファイルの名前、内容、サイズを、その会話で設定されたSlackまたはMattermostへ送信します。依頼文の実行や結果共有の承認は、ファイルの送信を承認しません。任意の「初回のみ承認」モードでは、最初に承認すると、その後は設定された上限内で同じネイティブセッションから作成された適格ファイルを自動送信できます。任意の「自動」モードでは、この設定を明示的に選択して保存すると、転送ごとの確認なしに適格ファイルを送信します。上限はファイルごとに1～100 MiB、件数は1～10件、合計は1～100 MiBの範囲で設定できます。初期値はファイルごとに10 MiB、3件、合計20 MiBです。アプリは一部のファイル名や種類を除外しますが、内容から秘密情報を検出する検査は行いません。送信前にファイルを確認してください。送信したファイルは受信先チャンネル・スレッドを閲覧できる人に見え、各チャット提供者の取扱い・保存方針が適用されます。
+        チャットへの結果共有が有効な場合、新たに作成された作業フォルダー内のファイルは、ファイル添付専用の承認設定に従って送信できます。初期設定では、転送ごとにファイルを選択して承認した後に限り、選択されたファイルの名前、内容、サイズを、その会話で設定されたSlack、MattermostまたはDiscordへ送信します。依頼文の実行や結果共有の承認は、ファイルの送信を承認しません。任意の「初回のみ承認」モードでは、最初に承認すると、その後は設定された上限内で同じネイティブセッションから作成された適格ファイルを自動送信できます。任意の「自動」モードでは、この設定を明示的に選択して保存すると、転送ごとの確認なしに適格ファイルを送信します。上限はファイルごとに1～100 MiB、件数は1～10件、合計は1～100 MiBの範囲で設定できます。初期値はファイルごとに10 MiB、3件、合計20 MiBです。アプリは一部のファイル名や種類を除外しますが、内容から秘密情報を検出する検査は行いません。送信前にファイルを確認してください。送信したファイルは受信先チャンネル・スレッドを閲覧できる人に見え、各チャット提供者の取扱い・保存方針が適用されます。
 
         4. 提供者への送信
         この開発プレビューには、ブリッジ独自の解析・広告サービスへの利用情報や会話本文の自動送信を組み込んでいません。OS、配布ストア、CLI、チャット・AIサービスがそれぞれ行う情報の取扱いは、各提供者の方針に従います。利用者が問い合わせ等で情報を送る場合は、必要な範囲に絞り、トークン等を除いてください。
@@ -70,7 +70,7 @@ public static class PolicyText
         Contact: mail@ruhenheim.org
 
         1. About this application
-        This unofficial tool lets you operate an AI agent CLI on a Windows PC you control through Slack or Mattermost. It is not an official product of OpenAI, Anthropic, Slack, Mattermost, or any other service. The terms and policies of each external service also apply.
+        This unofficial tool lets you operate an AI agent CLI on a Windows PC you control through Slack, Mattermost, or Discord. It is not an official product of OpenAI, Anthropic, Slack, Mattermost, Discord, or any other service. The terms and policies of each external service also apply.
 
         2. As-is; no warranties
         The application is provided "as is." To the extent permitted by applicable law, no express or implied warranties are made regarding operation, availability, continued provision, fitness for a particular purpose, accuracy or completeness of AI output, security, data retention, or non-infringement of third-party rights. Interruptions, defects, or changes to external services or CLIs may make the application unavailable.
@@ -103,11 +103,11 @@ public static class PolicyText
         For the optional "first" file-approval mode, the application stores a bounded consent record in its data folder. The record contains conversation and native-session identifiers, a fingerprint of the conversation and attachment settings, and the approval time; it does not contain file names, file contents, or per-file hashes. Discovered file candidates (including names, workspace paths, sizes, timestamps, and hashes) are held in memory. The bridge does not save those candidates or create a separate on-disk staging copy of file contents. After approval, the bytes selected for transfer are held in memory while they are uploaded.
 
         3. External communications and sharing
-        The application exchanges requests, responses, and connection status with Slack or the Mattermost server you configure. During execution, it passes the request and information needed for the task to the selected CLI. Depending on its configuration and provider policies, the CLI may send data to AI services. Running a CLI on a local PC does not mean that all AI processing or data storage happens on that PC. Review the privacy policies and agreements of each external service.
+        The application exchanges requests, responses, and connection status with Slack, Discord, or the Mattermost server you configure. During execution, it passes the request and information needed for the task to the selected CLI. Depending on its configuration and provider policies, the CLI may send data to AI services. Running a CLI on a local PC does not mean that all AI processing or data storage happens on that PC. Review the privacy policies and agreements of each external service.
 
-        Results shared to chat and details of operation approvals are visible to people who can view that channel or thread. The authorized-user setting does not limit who can view posts on the chat service. Connection and disconnection notices that do not include message text may also be sent.
+        Results shared to chat and details of operation approvals are visible to people who can view that channel or thread. The authorized-user setting does not limit who can view posts on the chat service. Mattermost connection and disconnection notices that do not include message text may also be sent when that option is enabled.
 
-        When chat result sharing is enabled, newly created workspace files can be sent under a separate file-attachment approval setting. In the default mode, selected file names, contents, and sizes are sent to the Slack or Mattermost service configured for the conversation only after you select and approve each transfer; text execution or result-sharing approval does not approve files. The optional "first" mode requires an initial approval and can then automatically send later eligible files from the same native session within the configured limits. The optional "auto" mode sends eligible files without a per-transfer prompt after you explicitly enable and save that setting. Limits are configurable from 1–100 MiB per file, 1–10 files, and 1–100 MiB total; the defaults are 10 MiB, 3 files, and 20 MiB total. The application excludes certain file names and types, but does not inspect file contents to detect secrets. Review files before approving them. Sent files are visible to people who can view the recipient channel or thread and are subject to that chat provider's handling and retention policies.
+        When chat result sharing is enabled, newly created workspace files can be sent under a separate file-attachment approval setting. In the default mode, selected file names, contents, and sizes are sent to the Slack, Mattermost, or Discord service configured for the conversation only after you select and approve each transfer; text execution or result-sharing approval does not approve files. The optional "first" mode requires an initial approval and can then automatically send later eligible files from the same native session within the configured limits. The optional "auto" mode sends eligible files without a per-transfer prompt after you explicitly enable and save that setting. Limits are configurable from 1–100 MiB per file, 1–10 files, and 1–100 MiB total; the defaults are 10 MiB, 3 files, and 20 MiB total. The application excludes certain file names and types, but does not inspect file contents to detect secrets. Review files before approving them. Sent files are visible to people who can view the recipient channel or thread and are subject to that chat provider's handling and retention policies.
 
         4. Information sent to the provider
         This development preview does not include automatic sending of usage information or conversation text to a bridge-operated analytics or advertising service. Information handling by the OS, distribution store, CLI, chat, and AI services is governed by each provider's policies. If you send information to the provider, for example in a support request, limit it to what is needed and remove tokens and secrets.

@@ -10,7 +10,7 @@ public sealed partial class MainPage
     private BridgeSettings? _portableUpdateConnectionSettings;
     internal bool CanRestartForPortableUpdate => !_languageRestarting && !_portableUpdatePreparing && CanRestartForLanguage() &&
         !InboxPage.ViewModel.SendAttachmentsCommand.IsRunning && !InboxPage.ViewModel.ConnectMattermostCommand.IsRunning &&
-        !InboxPage.ViewModel.ConnectSlackCommand.IsRunning;
+        !InboxPage.ViewModel.ConnectSlackCommand.IsRunning && !InboxPage.ViewModel.ConnectDiscordCommand.IsRunning;
 
     internal async Task<bool> PrepareForPortableUpdateAsync()
     {
@@ -54,6 +54,7 @@ public sealed partial class MainPage
                     {
                         "mattermost" => inbox.ConnectMattermostCommand,
                         "slack" => inbox.ConnectSlackCommand,
+                        "discord" => inbox.ConnectDiscordCommand,
                         _ => null
                     };
                     if (command?.CanExecute(null) == true)
