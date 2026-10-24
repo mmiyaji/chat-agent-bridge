@@ -23,6 +23,8 @@ public sealed class FileAttachmentCollectorTests
         var before = await fixture.Collector.CaptureBeforeAsync(fixture.Workspace, fixture.Data, default);
 
         await File.WriteAllTextAsync(fixture.Path("new.txt"), "fresh");
+        Directory.CreateDirectory(fixture.Path(".cab-incoming-test"));
+        await File.WriteAllTextAsync(fixture.Path(".cab-incoming-test/file-1.txt"), "received input must not be uploaded");
         await File.WriteAllTextAsync(fixture.Path(".env.production"), "secret");
         await File.WriteAllTextAsync(fixture.Path("settings.local.json"), "secret");
         await File.WriteAllTextAsync(fixture.Path("credentials-backup.txt"), "secret");

@@ -101,6 +101,9 @@ public sealed partial class ChatInboxViewModel
 
     private async Task<bool> TryAddFollowUpAsync(InboxItem incoming, CancellationToken token)
     {
+        // File-bearing messages need their own approved download and staging lifecycle.
+        // Keep them in the ordinary queue instead of silently steering only their text.
+        if (incoming.Request.IncomingFiles.Count > 0 || incoming.Request.IncomingFilesError is not null) return false;
         if (ChatFollowUpPolicy.IsConfigurationCommand(incoming.Prompt)) return false;
         await _followUpGate.WaitAsync(token);
         try

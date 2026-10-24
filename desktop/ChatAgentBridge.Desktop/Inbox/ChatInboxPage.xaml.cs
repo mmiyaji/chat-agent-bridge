@@ -167,7 +167,7 @@ public sealed partial class ChatInboxPage : Page
                 Content = new TextBlock
                 {
                     Text = changesAgent ? item.SessionLabel : DesktopText.Get("InboxRunConfirmBody", item.Source, item.Request.ThreadId, item.SessionLabel, item.Workspace,
-                        executionSettings.AgentExecutable, executionSettings.AgentMode == "app-server" ? "app-server" : executionSettings.AgentArguments, item.Prompt),
+                        executionSettings.AgentExecutable, executionSettings.AgentMode == "app-server" ? "app-server" : executionSettings.AgentArguments, item.PromptDisplay),
                     TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap
                 },
                 MaxHeight = 400

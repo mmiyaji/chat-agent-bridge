@@ -9,7 +9,7 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProgressTransport, IChatFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatLiveAccessSettings
+public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProgressTransport, IChatFileTransport, IChatIncomingFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatLiveAccessSettings
 {
     public event Action? Connected;
     public event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
@@ -316,7 +316,8 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
             !TryString(evt, "user", out var user) || !TryString(evt, "text", out var text) ||
             !TryString(evt, "ts", out var timestamp)) return null;
         if (string.Equals(user, botUserId, StringComparison.Ordinal) || evt.TryGetProperty("bot_id", out _)) return null;
-        if (evt.TryGetProperty("subtype", out var subtype) && subtype.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(subtype.GetString())) return null;
+        if (evt.TryGetProperty("subtype", out var subtype) && subtype.ValueKind == JsonValueKind.String &&
+            !string.IsNullOrWhiteSpace(subtype.GetString()) && !string.Equals(subtype.GetString(), "file_share", StringComparison.Ordinal)) return null;
         if (eventType != "app_mention" && eventType != "message") return null;
 
         var threadTimestamp = TryString(evt, "thread_ts", out var thread) ? thread : null;
@@ -331,7 +332,12 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
         if (StartsWithTrigger(normalized) && !AgentChatCommand.TryParse(normalized, out _))
             normalized = normalized[Trigger.Length..].Trim();
         if (normalized.Length == 0) return null;
-        return new ChatRequest("slack", channel, root, user, normalized, timestamp);
+        var files = ReadIncomingFiles(evt, out var filesError);
+        return new ChatRequest("slack", channel, root, user, normalized, timestamp)
+        {
+            IncomingFiles = files,
+            IncomingFilesError = filesError
+        };
     }
 
     internal static async Task<ChatRequest?> ParseRequestAsync(JsonElement evt, string? botUserId,

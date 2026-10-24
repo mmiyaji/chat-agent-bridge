@@ -35,6 +35,20 @@ public sealed class TransportParserTests
     }
 
     [Fact]
+    public void Mattermost_captures_opaque_file_ids_only_for_triggered_posts_and_marks_excess_files()
+    {
+        var request = Mattermost("!cab inspect", fileIds: "[\"file-1\",\"file-2\"]");
+        Assert.NotNull(request);
+        Assert.Equal(new[] { "file-1", "file-2" }, request.IncomingFiles.Select(file => file.Id));
+        Assert.All(request.IncomingFiles, file => Assert.Equal(string.Empty, file.Name));
+        Assert.Null(Mattermost("no trigger", fileIds: "[\"file-1\"]")?.IncomingFiles.FirstOrDefault());
+
+        var tooMany = Mattermost("!cab inspect", fileIds: "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\"]");
+        Assert.Equal("too_many_attachments", tooMany?.IncomingFilesError);
+        Assert.Equal(5, tooMany!.IncomingFiles.Count);
+    }
+
+    [Fact]
     public void Mattermost_accepts_authenticated_username_mentions_for_direct_and_thread_posts()
     {
         var direct = Mattermost("@cc-agent-bot summarize this", root: "", currentUsername: "cc-agent-bot");
@@ -98,6 +112,22 @@ public sealed class TransportParserTests
     }
 
     [Fact]
+    public void Slack_captures_file_share_metadata_only_after_trigger_filter_and_marks_excess_files()
+    {
+        using var allowed = JsonDocument.Parse("""{"type":"message","subtype":"file_share","channel":"C1","user":"U2","text":"!cab inspect","ts":"5.2","thread_ts":"5.0","files":[{"id":"F1","name":"notes.txt","size":12,"mimetype":"text/plain"}]}""");
+        var request = SlackSocketModeTransport.ParseRequest(allowed.RootElement, "UBOT");
+        Assert.Single(request!.IncomingFiles);
+        Assert.Equal(new IncomingChatFile("F1", "notes.txt", 12, "text/plain"), request.IncomingFiles[0]);
+
+        using var rejected = JsonDocument.Parse("""{"type":"message","subtype":"file_share","channel":"C1","user":"U2","text":"no trigger","ts":"5.3","thread_ts":"5.0","files":[{"id":"F2","name":"x","size":2}]}""");
+        Assert.Null(SlackSocketModeTransport.ParseRequest(rejected.RootElement, "UBOT"));
+        using var excess = JsonDocument.Parse("""{"type":"message","subtype":"file_share","channel":"C1","user":"U2","text":"!cab inspect","ts":"5.4","thread_ts":"5.0","files":[{"id":"1","name":"1","size":1},{"id":"2","name":"2","size":1},{"id":"3","name":"3","size":1},{"id":"4","name":"4","size":1},{"id":"5","name":"5","size":1},{"id":"6","name":"6","size":1}]}""");
+        var excessRequest = SlackSocketModeTransport.ParseRequest(excess.RootElement, "UBOT");
+        Assert.Equal("too_many_attachments", excessRequest?.IncomingFilesError);
+        Assert.Equal(5, excessRequest!.IncomingFiles.Count);
+    }
+
+    [Fact]
     public void Slack_skips_own_user_and_bot_messages()
     {
         using var ownDoc = JsonDocument.Parse("""{"type":"app_mention","channel":"C1","user":"UBOT","text":"<@UBOT> ignore","ts":"1.2"}""");
@@ -133,10 +163,12 @@ public sealed class TransportParserTests
         string root = "root-1",
         bool isBot = false,
         string? props = null,
-        string? currentUsername = null)
+        string? currentUsername = null,
+        string? fileIds = null)
     {
         var propsJson = props ?? "{}";
-        var json = $$"""{"id":"post-1","channel_id":"{{channel}}","user_id":"{{user}}","message":"{{text}}","root_id":"{{root}}","props":{{propsJson}}}""";
+        var filesJson = fileIds is null ? "" : $",\"file_ids\":{fileIds}";
+        var json = $$"""{"id":"post-1","channel_id":"{{channel}}","user_id":"{{user}}","message":"{{text}}","root_id":"{{root}}","props":{{propsJson}}{{filesJson}}}""";
         return MattermostWebSocketTransport.ParsePost(json, "channel-1", "self", isBot, currentUsername);
     }
 }

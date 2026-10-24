@@ -44,12 +44,33 @@ public sealed record ChatRequest(
     string Text,
     string MessageId)
 {
+    /// <summary>Files attached to this exact incoming message. IDs are opaque provider identifiers, never URLs.</summary>
+    public IReadOnlyList<IncomingChatFile> IncomingFiles { get; init; } = Array.Empty<IncomingChatFile>();
+
+    /// <summary>A fixed, user-safe marker when incoming attachments could not be represented safely.</summary>
+    public string? IncomingFilesError { get; init; }
     /// <summary>
     /// Transport-generated stop signal target. When set, the request represents a cancellation
     /// signal for this original request's MessageId and must not be treated as a new AI request.
     /// Ordinary posted messages leave this unset.
     /// </summary>
     public string? CancellationTargetMessageId { get; init; }
+}
+
+/// <summary>Opaque file identity and provider supplied display metadata for an incoming message attachment.</summary>
+public sealed record IncomingChatFile(string Id, string Name, long Size, string? ContentType);
+
+/// <summary>Optional support for resolving and downloading files attached to an approved incoming request.</summary>
+public interface IChatIncomingFileTransport
+{
+    Task<IReadOnlyList<IncomingChatFile>> ResolveIncomingFilesAsync(ChatRequest request, CancellationToken cancellationToken);
+
+    Task DownloadFileAsync(
+        ChatRequest request,
+        IncomingChatFile file,
+        Stream destination,
+        long maxBytes,
+        CancellationToken cancellationToken);
 }
 
 public interface IChatTransport : IAsyncDisposable

@@ -9,6 +9,11 @@ const updates = [];
 const reactions = [];
 const reactionAdds = [];
 const reactionRemoves = [];
+const incomingFiles = new Map();
+const fileInfoRequests = [];
+const fileDownloads = [];
+const incomingPosts = new Map();
+const incomingPostRequests = [];
 let failProgressEdits = false;
 let offlineUntil = 0;
 let totalConnections = 0;
@@ -24,7 +29,23 @@ const server = http.createServer(async (req, res) => {
   catch { res.writeHead(400).end(); return; }
   res.setHeader('Content-Type', 'application/json');
   if (req.url === '/test/request' && req.method === 'POST') {
-    const post = { id: body.id, root_id: body.thread, channel_id: 'ui-channel', user_id: body.user, message: body.plain ? body.text : `${body.mention ? '@cc-agent-bot' : '!cab'} ${body.text}` };
+    const files = Array.isArray(body.files) ? body.files : [];
+    const fileIds = files.map((file, index) => String(file.id || `file-${body.id}-${index + 1}`));
+    files.forEach((file, index) => {
+      const id = fileIds[index];
+      const data = Buffer.from(file.content || 'offline attachment fixture', 'utf8');
+      incomingFiles.set(id, {
+        id, name: file.name || 'fixture.txt', size: data.length,
+        mime_type: file.mimeType || 'text/plain', post_id: body.id,
+        channel_id: 'ui-channel', data
+      });
+    });
+    const post = {
+      id: body.id, root_id: body.thread, channel_id: 'ui-channel', user_id: body.user || 'alice',
+      message: body.plain ? body.text : `${body.mention ? '@cc-agent-bot' : '!cab'} ${body.text}`,
+      file_ids: body.invalidFileIds ? 'invalid-file-ids' : fileIds
+    };
+    incomingPosts.set(post.id, post);
     for (const ws of sockets) if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ event: 'posted', data: { post: JSON.stringify(post) } }));
     res.end(JSON.stringify({ delivered: sockets.size }));
   } else if (req.url === '/test/reaction' && req.method === 'POST') {
@@ -42,7 +63,9 @@ const server = http.createServer(async (req, res) => {
     for (const ws of sockets) if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
     res.end(JSON.stringify({ delivered: sockets.size }));
   } else if (req.url === '/test/results') {
-    res.end(JSON.stringify({ replies, updates, reactions, reactionAdds, reactionRemoves, connections: sockets.size, totalConnections }));
+    res.end(JSON.stringify({ replies, updates, reactions, reactionAdds, reactionRemoves,
+      fileInfoRequests, incomingPostRequests, fileDownloads: fileDownloads.map(item => ({ id: item.id, post_id: item.post_id, bytes: item.bytes })),
+      connections: sockets.size, totalConnections }));
   } else if (req.url === '/test/progress-errors' && req.method === 'POST') {
     failProgressEdits = body.enabled === true;
     res.end('{}');
@@ -52,6 +75,28 @@ const server = http.createServer(async (req, res) => {
     res.end('{}');
   } else if (req.headers.authorization !== 'Bearer offline-ui-fixture') {
     res.writeHead(401).end('{}');
+  } else if (req.method === 'GET' && /^\/api\/v4\/files\/[^/]+\/info$/.test(req.url)) {
+    const id = decodeURIComponent(req.url.split('/')[4]);
+    const file = incomingFiles.get(id);
+    fileInfoRequests.push({ id, found: Boolean(file) });
+    if (!file) { res.writeHead(404).end('{}'); return; }
+    res.end(JSON.stringify({ id: file.id, name: file.name, size: file.size,
+      mime_type: file.mime_type, post_id: file.post_id }));
+  } else if (req.method === 'GET' && /^\/api\/v4\/posts\/[^/]+$/.test(req.url)) {
+    const id = decodeURIComponent(req.url.split('/')[4]);
+    const post = incomingPosts.get(id);
+    incomingPostRequests.push({ id, found: Boolean(post) });
+    if (!post) { res.writeHead(404).end('{}'); return; }
+    res.end(JSON.stringify({ id: post.id, channel_id: post.channel_id, user_id: post.user_id,
+      root_id: post.root_id, file_ids: post.file_ids }));
+  } else if (req.method === 'GET' && /^\/api\/v4\/files\/[^/]+$/.test(req.url)) {
+    const id = decodeURIComponent(req.url.split('/')[4]);
+    const file = incomingFiles.get(id);
+    if (!file) { res.writeHead(404).end('{}'); return; }
+    fileDownloads.push({ id, post_id: file.post_id, bytes: file.data.length });
+    res.setHeader('Content-Type', file.mime_type);
+    res.setHeader('Content-Length', String(file.data.length));
+    res.end(file.data);
   } else if (req.url === '/api/v4/users/me') {
     res.end(JSON.stringify({ id: 'ui-bridge', username: 'cc-agent-bot', is_bot: true }));
   } else if (req.url === '/api/v4/reactions' && req.method === 'POST') {

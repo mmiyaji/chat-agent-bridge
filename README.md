@@ -31,6 +31,7 @@ Keep the Windows PC running with Bridge connected to chat. It can run in the sys
 | Additional instructions | Queue messages or add them to a running request on supported agents |
 | Access restrictions | Allowed users, channels, threads and trusted working folders |
 | Approval and sharing | Request approvals, result sharing, attachment approvals and upload limits |
+| Files sent from chat | Pass screenshots and text/log files attached to a request to the local agent after request approval |
 | History and usage | Conversation management, execution and operation history, an activity calendar, and token, cache and estimated-cost charts |
 | Startup and appearance | Setup wizard, startup and auto-connect, system tray mode, English/Japanese and light/dark appearance |
 
@@ -78,6 +79,7 @@ See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるc
 - **Access restrictions** specify who and which conversations can send requests. Register folders where requests may start as trusted working folders. Changing the folder from chat requires a location within that scope and approval on the PC.
 - **Result sharing** can be manual, automatic or disabled. Sent content is visible to everyone who can access the destination chat or thread.
 - **Generated file attachments** require approval each time by default. You can instead require approval only for the first attachment in a thread, allow automatic attachments or prohibit attachments. Set per-file size, total size and file count limits.
+- **Files attached to incoming requests** are downloaded after request approval and placed in the trusted working folder for that run. Supported files are PNG/JPEG/WebP images and UTF-8 TXT/LOG/MD/CSV/JSON, limited to 5 files, 10 MB per file and 20 MB total. The agent receives local file paths; image inspection requires a CLI with image-reading tools. Temporary copies are deleted after the run, so reattach them if needed in a later request. File-bearing follow-ups wait for a separate run. Slack requires the bot's `files:read` permission and reauthorization after adding it. These incoming limits are separate from generated-file upload settings.
 
 ![Request approvals, result sharing, additional instructions and file attachment settings](docs/assets/screenshots/chat-settings-en.png)
 
@@ -96,6 +98,8 @@ The Chat conversation list is restored after a restart. It stores display names,
 | `!cab folder "C:\Projects\MyApp"` | Request a working-folder change |
 
 On the PC, you can inspect live output and stop a request. In Mattermost, the requester can also click the 🛑 reaction on the bot's progress post to cancel it. Stopping does not undo file changes already made.
+
+`!cab status` lists running, approval-waiting and queued requests for your current thread, including agent, model and working folder. It does not expose requests from other users or threads. The reply is visible to people who can read that thread.
 
 ## History and usage
 

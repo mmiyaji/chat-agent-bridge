@@ -71,10 +71,43 @@ internal static class TransportHttp
         }
     }
 
+    internal static async Task<T> SendBoundedJsonAsync<T>(HttpClient client, HttpRequestMessage request, CancellationToken cancellationToken, int maxBytes = 1024 * 1024)
+    {
+        using (request)
+        using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+        {
+            if (!response.IsSuccessStatusCode)
+                throw new InvalidOperationException($"Chat service request failed with HTTP {(int)response.StatusCode}.");
+            if (response.Content.Headers.ContentLength is long contentLength && contentLength > maxBytes)
+                throw new InvalidOperationException("Chat service returned oversized file metadata.");
+            await using var source = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var buffer = new MemoryStream();
+            var chunk = new byte[16 * 1024];
+            while (true)
+            {
+                var read = await source.ReadAsync(chunk, cancellationToken).ConfigureAwait(false);
+                if (read == 0) break;
+                if (buffer.Length > maxBytes - read) throw new InvalidOperationException("Chat service returned oversized file metadata.");
+                await buffer.WriteAsync(chunk.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+            }
+            buffer.Position = 0;
+            try
+            {
+                return await JsonSerializer.DeserializeAsync<T>(buffer, JsonOptions, cancellationToken).ConfigureAwait(false)
+                    ?? throw new InvalidOperationException("Chat service returned an empty response.");
+            }
+            catch (JsonException)
+            {
+                throw new InvalidOperationException("Chat service returned invalid file metadata.");
+            }
+        }
+    }
+
     internal static StringContent JsonContent<T>(T value) => new(
         JsonSerializer.Serialize(value, JsonOptions), Encoding.UTF8, "application/json");
 
     internal const int MaxUploadFileCount = 10;
+    internal const int MaxIncomingFileCount = 5;
     internal const long MaxUploadBytes = 100L * 1024 * 1024;
 
     internal static async Task ValidatePreparedFilesAsync(IReadOnlyList<PreparedFileAttachment> files, CancellationToken cancellationToken)

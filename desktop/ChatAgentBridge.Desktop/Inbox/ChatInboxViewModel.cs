@@ -41,6 +41,7 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
         "エージェント変更済み" => DesktopText.Get("AgentSwitchCompleted"),
         "エージェント変更不可" => DesktopText.Get("AgentSwitchFailed"),
         "エージェント変更・再投稿が必要" => DesktopText.Get("AgentSwitchResubmit"),
+        "添付受信エラー" => DesktopText.Get("IncomingFilesFailedTitle"),
         "実行中へ追加" => DesktopText.Get("FollowUpApplied"),
         "追加指示の受領待ち" => DesktopText.Get("FollowUpPending"),
         "追加指示の反映未確認" => DesktopText.Get("FollowUpUncertain"),
@@ -635,6 +636,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         var approvedByNotification = ReferenceEquals(_notificationApprovedItem, item);
         var approvedAutomatically = ReferenceEquals(_automaticallyApprovedItem, item);
         ExecutionRecord? record = null;
+        IncomingAttachmentLease? incomingFiles = null;
         try
         {
             var connection = _connection;
@@ -698,8 +700,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.FullOutput = DesktopText.Get("InboxAgentRunning");
             item.Usage = DesktopText.Get("UsageRunning");
             await StartProgressAsync(item);
+            incomingFiles = await PrepareIncomingFilesAsync(item, token);
             var attachmentBefore = await CaptureAttachmentBaselineAsync(item, effectiveSettings, token);
-            var agentPrompt = FileAttachmentAgentPrompt.Build(item.Request.Text,
+            if (!await CheckAccessAsync(item, token)) return;
+            var agentPrompt = FileAttachmentAgentPrompt.Build(incomingFiles?.BuildPrompt(item.Request.Text) ?? item.Request.Text,
                 item.AttachmentSettingsAtStart ?? effectiveSettings, attachmentBefore is not null);
             var progress = item.LiveOutput.Begin();
             NotifyActiveRequestProperties();
@@ -794,6 +798,15 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (record is not null) await FinishFailureAsync(record, "cancelled", item.Request);
             if (item.Progress is null) await NotifyRequestAsync(item, DesktopText.Get("InboxCancelChatNotice"));
         }
+        catch (IncomingFilesException)
+        {
+            item.State = "添付受信エラー";
+            item.FullOutput = DesktopText.Get("IncomingFilesFailed");
+            Status = item.FullOutput;
+            await FinishProgressAsync(item, ChatProgressState.Failed);
+            if (record is not null && record.Status == "running") await FinishFailureAsync(record, "failed", item.Request);
+            await NotifyRequestAsync(item, DesktopText.Get("IncomingFilesFailed"));
+        }
         catch (Exception)
         {
             if (record?.Status == "running" || record is null) item.State = "実行／記録エラー";
@@ -805,6 +818,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         finally
         {
             await CloseActiveTurnAsync(item);
+            incomingFiles?.Dispose();
             if (record is not null) _history.EndTracking(record.Id);
             _execution?.Dispose();
             _execution = null;

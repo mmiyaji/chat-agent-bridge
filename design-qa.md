@@ -1,3 +1,48 @@
+# Incoming chat files and detailed status — 2026-10-24
+
+- Slack and Mattermost requests carry opaque attachment IDs. After normal request
+  approval, resolve canonical file metadata, verify the exact message association,
+  and download within a two-minute budget. Allow up to five PNG/JPEG/WebP images
+  or UTF-8 TXT/LOG/MD/CSV/JSON files, 10 MiB each and 20 MiB total.
+- Stage generated filenames in a unique workspace-local `.cab-incoming-*` folder.
+  Reject unsafe directory trees, linked handles, invalid text/image signatures,
+  size mismatches and excess bytes. Roll back failed batches and remove known
+  staged paths after execution. Cleanup does not recurse or follow junctions.
+  An abrupt process termination can leave temporary files in the workspace.
+- Pass local file references as untrusted data without granting additional
+  permissions. File-bearing follow-ups use the ordinary queue rather than
+  forwarding only their text into an active turn. Incoming staging directories
+  are excluded from outgoing attachment discovery and preparation.
+- Slack requires files:read. Only hosted/snippet files with is_external=false and
+  an exact channel/message/thread share can be downloaded; external files are
+  rejected even if their URL points to an allowed host. Credentials go only to
+  HTTPS files.slack.com; redirects are disabled. Mattermost verifies file/post
+  identity, requester, channel, root and file list and preserves proxy selection.
+  File metadata responses are bounded to 1 MiB. Both providers recheck access
+  immediately before download and after transfer, including revocation races.
+- Expanded `!cab status` lists running, approval-waiting and queued requests with
+  effective agent, model and workspace. Restrict replies to the same transport,
+  origin, channel, thread and requester under fresh access checks. Limit output
+  to ten rows / 3800 characters and neutralize mentions and direction controls.
+- Desktop builds successfully. Core suite: 1031 passed; strengthened Unicode
+  status truncation test: 2/2 passed. Transports suite: 218 passed. XML/resource
+  uniqueness, fixture JavaScript syntax and git whitespace checks passed.
+- Received filenames in the request detail update from the pending placeholder
+  to canonical sanitized names once metadata has been resolved.
+- Final native smoke: 5/5 English light and 5/5 Japanese dark. Verified no
+  metadata/byte downloads before approval, approved path delivery and cleanup,
+  rejection without download/execution, malformed-input warning without agent
+  start, running/queued status with agent/model/workspace, requester/thread
+  isolation, denied-user silence, and file availability during a held agent run.
+  Final screenshots also show the resolved filename in the localized detail.
+  English: `desktop/artifacts/33e72137-0ae4-4b86-bf94-abc1ac418acc/`.
+  Japanese: `desktop/artifacts/8ef518fb-978c-46d4-9ba7-b20e397f9dc2/`.
+  These runs used loopback Mattermost and a local TestAgent; live Slack downloads
+  and real model image interpretation have not been exercised in this task.
+- Local portable build: `desktop/artifacts/incoming-files-final/`.
+  No push, release, external chat posts or real AI service calls occurred.
+
+---
 # Conversation save validation and lazy identity clients — 2026-10-24
 
 Implemented the recommended follow-up without changing the 150 ms save cooldown.

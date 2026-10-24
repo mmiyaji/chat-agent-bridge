@@ -222,7 +222,7 @@
                                   HorizontalAlignment="Stretch" AutomationProperties.LabeledBy="{x:Bind InboxRequestCountText}"
                                   AutomationProperties.AutomationId="ChatRequests" x:Uid="InboxRequestPicker" localization:LocalizedResourceKey.Key="InboxRequestPicker" />
                         <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="InboxPromptLabel" localization:LocalizedResourceKey.Key="InboxPromptLabel" />
-                        <TextBox Text="{x:Bind ViewModel.Selected.Prompt, Mode=OneWay, FallbackValue=''}" IsReadOnly="True" TextWrapping="Wrap"
+                        <TextBox Text="{x:Bind ViewModel.Selected.PromptDisplay, Mode=OneWay, FallbackValue=''}" IsReadOnly="True" TextWrapping="Wrap"
                                  AcceptsReturn="True" MinHeight="80" MaxHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="InboxSelectedPrompt" />
                         <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" x:Uid="InboxRequestContext" AutomationProperties.AutomationId="InboxRequestContext">
                             <StackPanel Spacing="8">

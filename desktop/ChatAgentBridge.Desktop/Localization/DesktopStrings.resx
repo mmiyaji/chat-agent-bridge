@@ -22,7 +22,17 @@
   <data name="ArchitectureImageName" xml:space="preserve"><value>Architecture diagram</value></data>
   <data name="ArchitectureLoadError" xml:space="preserve"><value>The architecture diagram could not be loaded.</value></data>
   <data name="ChatControlNoRequests" xml:space="preserve"><value>No requests from you in this thread.</value></data>
-  <data name="ChatControlStatus" xml:space="preserve"><value>Status: {0}. Pending approval: {1}. Connection: {2}.</value></data>
+  <data name="ChatControlStatusHeader" xml:space="preserve"><value>Live requests in this thread ({0}); connection: {1}</value></data>
+  <data name="ChatControlStatusEmpty" xml:space="preserve"><value>No live requests from you in this thread. Connection: {0}.</value></data>
+  <data name="ChatControlStatusApproval" xml:space="preserve"><value>Waiting for approval</value></data>
+  <data name="ChatControlStatusQueued" xml:space="preserve"><value>Queued</value></data>
+  <data name="ChatControlStatusRow" xml:space="preserve"><value>• {0} · {1} · model {2} · {3}</value></data>
+  <data name="ChatControlStatusMore" xml:space="preserve"><value>…and {0} more</value></data>
+  <data name="ChatControlAgentCodex" xml:space="preserve"><value>Codex</value></data>
+  <data name="ChatControlAgentClaude" xml:space="preserve"><value>Claude Code</value></data>
+  <data name="ChatControlAgentGemini" xml:space="preserve"><value>Gemini CLI</value></data>
+  <data name="ChatControlAgentCopilot" xml:space="preserve"><value>GitHub Copilot CLI</value></data>
+  <data name="ChatControlAgentCustom" xml:space="preserve"><value>{0}</value></data>
   <data name="ChatControlConnected" xml:space="preserve"><value>connected</value></data>
   <data name="ChatControlReconnecting" xml:space="preserve"><value>reconnecting</value></data>
   <data name="ChatControlStop" xml:space="preserve"><value>Stop requested. Running: {0}; pending cancelled: {1}.</value></data>
@@ -483,7 +493,7 @@
   <data name="ChatInputTextReply" xml:space="preserve"><value>Reply: !cab answer {0} {1} your answer</value></data>
   <data name="ChatInputOptionReply" xml:space="preserve"><value>Reply with an option number: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>For another answer: !cab answer {0} {1} other your answer</value></data>
-  <data name="ChatControlHelp" xml:space="preserve"><value>Commands for this account and thread:&#10;&gt; !cab &lt;request&gt; — send a request to the agent&#10;&gt; !cab command / !cab commands / !cab help — show this list&#10;&gt; !cab agent — list registered CLI connections and summary/fresh switch commands&#10;&gt; !cab model / !cab model list / !cab model MODEL_ID / !cab model default — view or change your conversation model&#10;&gt; !cab status — show your request status&#10;&gt; !cab stop — stop your active request and cancel your queued requests&#10;&gt; !cab folder &quot;C:\path&quot; — request a workspace change; the folder must be trusted and needs approval on this PC&#10;&gt; !cab approve CODE / !cab reject CODE — decide an approval when sharing approvals in chat is enabled (codes expire after 5 minutes; otherwise decide on this PC)&#10;&gt; !cab answer CODE question-number option-number — answer an app-server question with an option number&#10;&gt; !cab answer CODE question-number your answer — give a free-text answer&#10;&gt; !cab answer CODE question-number other your answer — give another answer when that question allows it&#10;&gt; Answers can be shared only when app-server question sharing is enabled; questions AppServer marks secret stay on this PC. Answer codes expire after 5 minutes.&#10;Start a new conversation with a new post (thread); reply in the same thread to continue it. Commands and replies apply only to your own requests in this thread.</value></data>
+  <data name="ChatControlHelp" xml:space="preserve"><value>Commands for this account and thread:&#10;&gt; !cab &lt;request&gt; — send a request to the agent&#10;&gt; !cab command / !cab commands / !cab help — show this list&#10;&gt; !cab agent — list registered CLI connections and summary/fresh switch commands&#10;&gt; !cab model / !cab model list / !cab model MODEL_ID / !cab model default — view or change your conversation model&#10;&gt; !cab status — list live requests in this thread with status, effective agent, model and workspace&#10;&gt; !cab stop — stop your active request and cancel your queued requests&#10;&gt; !cab folder &quot;C:\path&quot; — request a workspace change; the folder must be trusted and needs approval on this PC&#10;&gt; !cab approve CODE / !cab reject CODE — decide an approval when sharing approvals in chat is enabled (codes expire after 5 minutes; otherwise decide on this PC)&#10;&gt; !cab answer CODE question-number option-number — answer an app-server question with an option number&#10;&gt; !cab answer CODE question-number your answer — give a free-text answer&#10;&gt; !cab answer CODE question-number other your answer — give another answer when that question allows it&#10;&gt; Answers can be shared only when app-server question sharing is enabled; questions AppServer marks secret stay on this PC. Answer codes expire after 5 minutes.&#10;Start a new conversation with a new post (thread); reply in the same thread to continue it. Commands and replies apply only to requests from you in this provider, channel, thread and server origin. Status lists at most 10 live requests and never includes requests from another requester.</value></data>
   <data name="HistoryWorkspaceFilterLabel" xml:space="preserve"><value>Workspace</value></data>
   <data name="HistoryWorkspaceAll" xml:space="preserve"><value>All workspaces</value></data>
   <data name="HistorySortLabel" xml:space="preserve"><value>Sort</value></data>
@@ -802,4 +812,9 @@ After: {2}</value></data>
   <data name="AgentScopePicker" xml:space="preserve"><value>Edit settings for</value></data>
   <data name="AgentScopeCommonHelp" xml:space="preserve"><value>Workspace, trusted folders and local run approval apply to every agent.</value></data>
   <data name="ConnectionScopeCommonHelp" xml:space="preserve"><value>Approval, result sharing and attachment settings apply to both Slack and Mattermost.</value></data>
+  <data name="IncomingFilesSummary" xml:space="preserve"><value>Attached files: {0} ({1}). After request approval, supported files are passed to the agent. Up to 5 files, 10 MB each, 20 MB total. PNG/JPEG/WebP images and UTF-8 TXT/LOG/MD/CSV/JSON files only. Temporary copies are deleted after execution; attach them again if a later request needs them. File-bearing follow-ups wait for a separate run.</value></data>
+  <data name="IncomingFileNamePending" xml:space="preserve"><value>name checked after approval</value></data>
+  <data name="IncomingFilesInvalid" xml:space="preserve"><value>The attached files cannot be accepted. Send no more than 5 supported files with your request.</value></data>
+  <data name="IncomingFilesFailed" xml:space="preserve"><value>The attached files could not be passed to the agent; no agent was started. Use PNG/JPEG/WebP images or UTF-8 TXT/LOG/MD/CSV/JSON files, up to 5 files, 10 MB each and 20 MB total. Check file access and the trusted working folder. Slack also requires files:read. Attach the files again with a new request.</value></data>
+  <data name="IncomingFilesFailedTitle" xml:space="preserve"><value>Attachment reception failed</value></data>
 </root>

@@ -241,6 +241,7 @@ public sealed class AttachmentFileCollector
         if (parts.Any(part => part.Equals(".git", StringComparison.OrdinalIgnoreCase) || part.Equals("node_modules", StringComparison.OrdinalIgnoreCase) ||
             part.Equals("bin", StringComparison.OrdinalIgnoreCase) || part.Equals("obj", StringComparison.OrdinalIgnoreCase) ||
             part.Equals(".artifacts", StringComparison.OrdinalIgnoreCase) ||
+            part.StartsWith(".cab-incoming-", StringComparison.OrdinalIgnoreCase) ||
             part.Equals(".vs", StringComparison.OrdinalIgnoreCase) || part.Equals("vendor", StringComparison.OrdinalIgnoreCase) ||
             part.Equals(".cache", StringComparison.OrdinalIgnoreCase) || part.Equals("cache", StringComparison.OrdinalIgnoreCase) ||
             part.Equals("secrets", StringComparison.OrdinalIgnoreCase) || part.Equals("credentials", StringComparison.OrdinalIgnoreCase) ||
