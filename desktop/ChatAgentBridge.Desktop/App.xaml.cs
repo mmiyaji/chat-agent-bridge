@@ -157,6 +157,8 @@ public partial class App : Application
         Tray = new(mainWindow, backgroundStore, background);
         Window.Closed += (_, _) =>
         {
+            // Normal exits await this in TrayService before closing the window.
+            // Keep a best-effort fallback for an OS session-ending close.
             _ = Layout.FlushAsync();
             Tray.Dispose();
             _portableUpdateLifetime.Cancel();

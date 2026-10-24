@@ -191,7 +191,7 @@ public sealed class TrayService : IDisposable
             App.PendingRequestNotifications.ClearAll();
             // Cancellation kills CLI process trees and stops reconnects immediately.
             // Allow a bounded grace period for history writes and transport disposal.
-            await Task.WhenAll(_window.ShutdownAsync(), DrainPreferenceSaveAsync())
+            await Task.WhenAll(_window.ShutdownAsync(), DrainPreferenceSaveAsync(), App.Layout.FlushAsync())
                 .WaitAsync(TimeSpan.FromSeconds(5));
         }
         catch (Exception ex)
