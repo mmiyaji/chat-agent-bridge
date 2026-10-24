@@ -47,6 +47,16 @@ The first live CLI execution failed because an artifact-only launcher set the fi
 
 Live evidence is under `desktop/artifacts/01d74cb9-d747-4df3-9376-c181e1052198/`, including `discord-live-file-roundtrip.png` and `discord-live-stop-final.png`. The final ordinary portable publish is `desktop/artifacts/discord-live-final`.
 
-The isolated app was left open and disconnected after verification. Its offline TestAgent cannot respond to real Discord requests unattended. The user's normal chat profile was not changed.
+After the fixture phase, the isolated app was left open and disconnected. The user's normal chat profile was not changed.
 
 Wrong-owner, wrong-server and replay attempts were exercised with synthetic identities in the isolated tests, not a second real Discord account. Actual cancellation of a running paid CLI was not repeated against Discord; the live Stop check cancelled pending work. Server-specific permission overrides, DM operation and rate-limit behavior were not exhaustively exercised live. Existing Inbox rows use cached names on restoration; refreshing History does not immediately relabel already loaded Inbox rows.
+
+## Real AI continuation check
+
+On 2026-10-24 the same isolated profile was switched through the app's agent settings to the installed, authenticated Claude Code CLI 2.1.308, using `exec` and the economical `haiku` model alias. The app was relaunched with all inherited `CAB_*` fixture variables removed and its CLI check passed. The dedicated workspace and Discord access restrictions were preserved.
+
+In a new real Discord thread, the requester approved the initial request using the Discord button. Claude replied `準備できました。` and Bridge automatically posted the result. A plain reply in that thread asked for the previously supplied synthetic passphrase without repeating it; Claude correctly returned `瑠璃の橋-4729`. This second request ran without another initial-approval prompt and its result was also automatically posted. Neither request asked for tools, file access or external searches.
+
+Both execution records completed successfully and contain the same CLI session ID. The provider reported `claude-haiku-5-5`; the continuation recorded 27,883 cached-input tokens, confirming cache usage was captured with the real response.
+
+Unlike the earlier fixture runs, these two requests used the actual AI service. Evidence: `desktop/artifacts/01d74cb9-d747-4df3-9376-c181e1052198/discord-real-ai-continuation.png`. The app was left connected with the real CLI after this check; the separate normal user profile remains unchanged. Nothing was published or pushed.
