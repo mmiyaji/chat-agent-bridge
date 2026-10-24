@@ -449,7 +449,7 @@ public sealed class AntigravityCliTests : IDisposable
     [Fact]
     public void ProgressReportsToolStepsOnceAndStreamsResponseText()
     {
-        var accumulator = new CliSessionOutputParser.Accumulator(AgentProfile.Antigravity);
+        using var accumulator = new CliSessionOutputParser.Accumulator(AgentProfile.Antigravity);
         var progress = new List<AgentRunProgress>();
         foreach (var line in new[]
         {
@@ -473,7 +473,7 @@ public sealed class AntigravityCliTests : IDisposable
     [Fact]
     public void ProgressShowsAResponseThatNeverStreamedExactlyOnce()
     {
-        var accumulator = new CliSessionOutputParser.Accumulator(AgentProfile.Antigravity);
+        using var accumulator = new CliSessionOutputParser.Accumulator(AgentProfile.Antigravity);
         var progress = new List<AgentRunProgress>();
         progress.AddRange(accumulator.AddLine(L("""{"event":"init","conversation_id":"__ID__"}""")));
         progress.AddRange(accumulator.AddLine(L("""{"event":"result","result":{"conversation_id":"__ID__","status":"SUCCESS","response":"only in result"}}""")));
@@ -484,7 +484,7 @@ public sealed class AntigravityCliTests : IDisposable
     [Fact]
     public void ToolNamesInProgressAreSanitized()
     {
-        var accumulator = new CliSessionOutputParser.Accumulator(AgentProfile.Antigravity);
+        using var accumulator = new CliSessionOutputParser.Accumulator(AgentProfile.Antigravity);
         var toolName = "bad\u001b[31m" + new string('x', 200);
         var progress = accumulator.AddLine(Json(new
         {
