@@ -9,6 +9,9 @@ public sealed class LocalDataManager(string directory)
     private readonly string _directory = Path.GetFullPath(directory);
     private static readonly string[] ConversationFiles =
         ["sessions.json", "conversation-summaries.json", "chat-conversations.json", "attachment-consents.json", "chat-identities.json"];
+    private static readonly System.Text.RegularExpressions.Regex ConversationTemporaryFileName = new(
+        "^(?:sessions|conversation-summaries|chat-conversations|attachment-consents|chat-identities)\\.[0-9a-fA-F]{32}\\.tmp\\z",
+        System.Text.RegularExpressions.RegexOptions.CultureInvariant | System.Text.RegularExpressions.RegexOptions.Compiled);
 
     public IReadOnlyList<LocalDataSize> Inspect() => Enum.GetValues<LocalDataKind>().Select(kind =>
     {
@@ -70,14 +73,25 @@ public sealed class LocalDataManager(string directory)
                     .Select(Checked).ToArray()
                 : [];
         }
+        if (kind == LocalDataKind.Conversations)
+            return ConversationFiles
+                .Select(name => Checked(Path.Combine(_directory, name)))
+                .Concat(ConversationTemporaryFiles()).ToArray();
         string[] names = kind switch
         {
             LocalDataKind.ExecutionHistory => ["history.json", "audit.json"],
-            LocalDataKind.Conversations => ConversationFiles,
             LocalDataKind.UsageStatistics => ["activity-statistics.json", "activity-statistics.journal.jsonl"],
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
         return names.Select(name => Checked(Path.Combine(_directory, name))).ToArray();
+    }
+
+    private IEnumerable<string> ConversationTemporaryFiles()
+    {
+        if (!Directory.Exists(_directory)) return [];
+        return Directory.EnumerateFiles(_directory, "*", SearchOption.TopDirectoryOnly)
+            .Where(path => ConversationTemporaryFileName.IsMatch(Path.GetFileName(path)))
+            .Select(Checked).ToArray();
     }
 
     private string Checked(string path) { EnsureSafe(path); return path; }

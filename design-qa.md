@@ -1,3 +1,37 @@
+# Conversation persistence hardening — 2026-10-24
+
+Fixed orphan metadata cleanup and reduced work during conversation state changes.
+
+- Conversation cleanup and size inspection include only top-level atomic temporary
+  files with one of the five known conversation-store stems and a 32-hex GUID.
+  Unknown/malformed names and nested files remain untouched; all selected paths
+  retain the existing reparse-point checks.
+- Re-tested the review's actual orphan artifact: 1 file / 54 bytes was counted
+  before cleanup and 0 files / 0 bytes afterward. An explicitly created matching
+  symlink was rejected, and its target contents were preserved on this host.
+- Refresh only the affected conversation for state/workspace changes. Avoid
+  rebuilding restored-row presentation and repeated linear collection searches.
+  Reuse cached labels until the identity-cache file changes or a new identity is
+  needed, and update labels only when their values change.
+- Keep the first save immediate, collect subsequent snapshots for 150 ms, skip
+  identical snapshots, and bypass the cooldown when draining for maintenance or
+  shutdown. Storage remains atomic; approval and execution state are not restored.
+- Full Core test suite: 1004 passed. Native restart smoke: 7/7 English and 7/7
+  Japanese, including pending/running interruption, fresh approval, graceful
+  shutdown, result-post counts, and offline restoration with bad legacy sessions.
+  English: `desktop/artifacts/dc0eaf79-02fd-4a93-920b-f214793b1d9f/`.
+  Japanese: `desktop/artifacts/1d953d2d-aa5e-45a4-9c0e-9a2c49e64248/`.
+- Sequential burst comparison used 500 seeded rows and 30 approval-required
+  messages on both builds. Both kept all 30 new requests (35 with the seed's
+  count), had one fixture connection, and started no agents or history records.
+  Atomic metadata replacements fell from 30 to 2. Observed CPU was 1375 vs 937.5
+  ms; timings are one-run observations, not a general performance guarantee.
+  Evidence: `desktop/artifacts/inbox-hardening-perf-comparison-0f2803e46fbe498eac4e807e3b65d70e.json`.
+- Local publish: `desktop/artifacts/inbox-hardening-verified/`.
+  No external chat posts, real AI requests, push, release or publication occurred.
+
+---
+
 # Chat conversation restoration — 2026-10-24
 
 The Chat list now restores bounded metadata across restarts. Restored rows have

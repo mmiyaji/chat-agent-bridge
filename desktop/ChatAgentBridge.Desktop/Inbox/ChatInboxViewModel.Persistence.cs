@@ -14,6 +14,11 @@ public sealed partial class ChatInboxViewModel
     private InboxConversationSnapshot[]? _pendingConversationSnapshots;
     private bool _conversationPersistenceReady;
     private bool _conversationPersistencePaused;
+    private InboxConversationSnapshot[]? _lastSavedConversationSnapshots;
+    private CancellationTokenSource? _conversationSaveCooldown;
+    private (long Ticks, long Length)? _conversationNamesStamp;
+    private IReadOnlyDictionary<SessionKey, ChatIdentityLabels> _cachedConversationNames = new Dictionary<SessionKey, ChatIdentityLabels>();
+    private HashSet<SessionKey> _cachedConversationNameKeys = [];
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasConversationPersistenceWarning))]
     public partial string ConversationPersistenceWarning { get; set; } = "";
@@ -55,15 +60,10 @@ public sealed partial class ChatInboxViewModel
                 snapshots[binding.Key] = new(binding.Key, binding.WorkspaceRoot, binding.UpdatedAt,
                     "idle", 0, SafeLabel(binding.DisplayName));
             }
-            IReadOnlyDictionary<SessionKey, ChatIdentityLabels> names = new Dictionary<SessionKey, ChatIdentityLabels>();
-            try
-            {
-                using var directory = new ChatIdentityDirectory(_store.DirectoryPath);
-                names = await directory.ReadCachedAsync(snapshots.Keys);
-            }
-            catch (Exception) { /* Restore metadata even when the optional name cache is unavailable. */ }
+            var retained = snapshots.Values.OrderByDescending(item => item.UpdatedAt).Take(500).ToArray();
+            var names = await ReadCachedConversationNamesAsync(retained.Select(item => item.Key));
             if (_closing) return;
-            foreach (var item in snapshots.Values.OrderByDescending(item => item.UpdatedAt).Take(500))
+            foreach (var item in retained)
             {
                 var snapshot = WithCachedNames(item, names.GetValueOrDefault(item.Key));
                 var conversation = new InboxConversation(JsonSerializer.Serialize(snapshot.Key))
@@ -89,17 +89,47 @@ public sealed partial class ChatInboxViewModel
         (key.Provider == "slack" ? key.Origin == "slack" : key.Origin is { Length: 64 } origin &&
             origin.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f'));
 
-    private static string? SafeLabel(string? value) => string.IsNullOrWhiteSpace(value) ? null :
-        new string(value.Where(c => !char.IsControl(c)).Take(256).ToArray());
+    private static string? SafeLabel(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        return value.Length <= 256 && !value.Any(char.IsControl) ? value :
+            new string(value.Where(c => !char.IsControl(c)).Take(256).ToArray());
+    }
 
-    private static InboxConversationSnapshot WithCachedNames(InboxConversationSnapshot snapshot, ChatIdentityLabels? labels) =>
-        labels is null ? snapshot : snapshot with
+    private static InboxConversationSnapshot WithCachedNames(InboxConversationSnapshot snapshot, ChatIdentityLabels? labels)
+    {
+        if (labels is null) return snapshot;
+        var user = SafeLabel(labels.UserName) ?? snapshot.UserName;
+        var channel = SafeLabel(labels.ChannelName) ?? snapshot.ChannelName;
+        var site = SafeLabel(labels.SiteName) ?? snapshot.SiteName;
+        var direct = labels.ChannelName is null ? snapshot.IsDirectMessage : labels.IsDirectMessage;
+        return user == snapshot.UserName && channel == snapshot.ChannelName && site == snapshot.SiteName && direct == snapshot.IsDirectMessage
+            ? snapshot : snapshot with { UserName = user, ChannelName = channel, SiteName = site, IsDirectMessage = direct };
+    }
+
+    private async Task<IReadOnlyDictionary<SessionKey, ChatIdentityLabels>> ReadCachedConversationNamesAsync(IEnumerable<SessionKey> keys)
+    {
+        var requested = keys.ToHashSet();
+        try
         {
-            UserName = SafeLabel(labels.UserName) ?? snapshot.UserName,
-            ChannelName = SafeLabel(labels.ChannelName) ?? snapshot.ChannelName,
-            SiteName = SafeLabel(labels.SiteName) ?? snapshot.SiteName,
-            IsDirectMessage = labels.IsDirectMessage
-        };
+            var info = new FileInfo(Path.Combine(_store.DirectoryPath, "chat-identities.json"));
+            var stamp = info.Exists ? (info.LastWriteTimeUtc.Ticks, info.Length) : (-1L, -1L);
+            if (_conversationNamesStamp == stamp && requested.IsSubsetOf(_cachedConversationNameKeys))
+                return _cachedConversationNames;
+            // Capture the stamp before reading: an intervening cache replacement is read next time.
+            _conversationNamesStamp = stamp;
+            _cachedConversationNameKeys = requested;
+            using var directory = new ChatIdentityDirectory(_store.DirectoryPath);
+            _cachedConversationNames = await directory.ReadCachedAsync(requested);
+        }
+        catch (Exception)
+        {
+            // Cache errors are optional. Retry after a file change or a new identity, not on every state change.
+            _cachedConversationNames = _cachedConversationNames.Where(pair => requested.Contains(pair.Key))
+                .ToDictionary(pair => pair.Key, pair => pair.Value);
+        }
+        return _cachedConversationNames;
+    }
 
     private void ApplyConversationLabels(InboxConversation conversation)
     {
@@ -167,25 +197,35 @@ public sealed partial class ChatInboxViewModel
             _pendingConversationSnapshots = null;
             try
             {
-                // Name lookups use the existing local cache only; persistence never requires a network connection.
-                try
+                var names = await ReadCachedConversationNamesAsync(snapshots.Select(item => item.Key));
+                foreach (var conversation in Conversations)
                 {
-                    using var directory = new ChatIdentityDirectory(_store.DirectoryPath);
-                    var names = await directory.ReadCachedAsync(snapshots.Select(item => item.Key));
-                    foreach (var conversation in Conversations)
-                    {
-                        if (conversation.Snapshot is not { } snapshot) continue;
-                        conversation.Snapshot = WithCachedNames(snapshot, names.GetValueOrDefault(snapshot.Key));
-                        ApplyConversationLabels(conversation);
-                        conversation.RefreshPresentation();
-                    }
-                    snapshots = snapshots.Select(item => WithCachedNames(item, names.GetValueOrDefault(item.Key))).ToArray();
+                    if (conversation.Snapshot is not { } snapshot) continue;
+                    var named = WithCachedNames(snapshot, names.GetValueOrDefault(snapshot.Key));
+                    if (named == snapshot) continue;
+                    conversation.Snapshot = named;
+                    ApplyConversationLabels(conversation);
+                    conversation.RefreshPresentation();
                 }
-                catch (Exception) { /* Optional display labels must not prevent saving the list. */ }
-                await Task.Run(() => new InboxConversationStore(_store.DirectoryPath).SaveAsync(snapshots));
+                snapshots = snapshots.Select(item => WithCachedNames(item, names.GetValueOrDefault(item.Key))).ToArray();
+                if (_lastSavedConversationSnapshots is null || !snapshots.SequenceEqual(_lastSavedConversationSnapshots))
+                {
+                    await Task.Run(() => new InboxConversationStore(_store.DirectoryPath).SaveAsync(snapshots));
+                    _lastSavedConversationSnapshots = snapshots;
+                }
                 ConversationPersistenceWarning = "";
             }
             catch (Exception) { ConversationPersistenceWarning = DesktopText.Get("InboxPersistenceSaveFailed"); }
+            // The first snapshot is written immediately. Briefly collect subsequent state changes,
+            // keeping only the newest snapshot; shutdown/maintenance bypass this cooldown and drain it.
+            if (!_closing && !_conversationPersistencePaused)
+            {
+                using var cooldown = new CancellationTokenSource();
+                _conversationSaveCooldown = cooldown;
+                try { await Task.Delay(150, cooldown.Token); }
+                catch (OperationCanceledException) { }
+                finally { _conversationSaveCooldown = null; }
+            }
         }
     }
 
@@ -193,6 +233,7 @@ public sealed partial class ChatInboxViewModel
     {
         await EnsureConversationsRestoredAsync();
         _conversationPersistencePaused = true;
+        _conversationSaveCooldown?.Cancel();
         await _conversationSaveTask;
     }
 
@@ -204,6 +245,10 @@ public sealed partial class ChatInboxViewModel
         SelectedConversation = null;
         Selected = null;
         _conversationPersistenceReady = false;
+        _lastSavedConversationSnapshots = null;
+        _conversationNamesStamp = null;
+        _cachedConversationNameKeys.Clear();
+        _cachedConversationNames = new Dictionary<SessionKey, ChatIdentityLabels>();
         _conversationRestoreTask = null;
         ConversationPersistenceWarning = "";
         await EnsureConversationsRestoredAsync();
@@ -212,5 +257,9 @@ public sealed partial class ChatInboxViewModel
     internal void ResumeConversationPersistence() => _conversationPersistencePaused = false;
 
     // Call after execution and connection tasks have settled so their terminal-state writes are included.
-    internal Task FlushConversationPersistenceAsync() => _conversationSaveTask;
+    internal Task FlushConversationPersistenceAsync()
+    {
+        _conversationSaveCooldown?.Cancel();
+        return _conversationSaveTask;
+    }
 }

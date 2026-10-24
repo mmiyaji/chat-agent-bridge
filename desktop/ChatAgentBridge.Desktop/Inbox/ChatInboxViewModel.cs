@@ -295,14 +295,16 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private void RefreshVisibleConversations()
     {
         var wanted = Conversations.Where(MatchesFilter).ToArray();
-        foreach (var old in VisibleConversations.Where(item => !wanted.Contains(item)).ToArray()) VisibleConversations.Remove(old);
+        var wantedSet = wanted.ToHashSet();
+        foreach (var old in VisibleConversations.Where(item => !wantedSet.Contains(item)).ToArray()) VisibleConversations.Remove(old);
         for (var index = 0; index < wanted.Length; index++)
         {
+            if (index < VisibleConversations.Count && ReferenceEquals(VisibleConversations[index], wanted[index])) continue;
             var current = VisibleConversations.IndexOf(wanted[index]);
             if (current < 0) VisibleConversations.Insert(index, wanted[index]);
             else if (current != index) VisibleConversations.Move(current, index);
         }
-        if (SelectedConversation is not null && !wanted.Contains(SelectedConversation))
+        if (SelectedConversation is not null && !wantedSet.Contains(SelectedConversation))
         {
             SelectedConversation = null;
             Selected = null;
@@ -317,10 +319,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         OnPropertyChanged(nameof(EmptyConversationDescription));
     }
     private static string ConversationKey(InboxItem item) => System.Text.Json.JsonSerializer.Serialize(CreateSessionKey(item));
-    private void RefreshConversations()
+    private void RefreshConversations(InboxItem? changedItem = null)
     {
+        var changedKey = changedItem is null ? null : ConversationKey(changedItem);
         var groups = Requests.GroupBy(ConversationKey).ToDictionary(group => group.Key, group => group.OrderBy(item => item.ReceivedAt).ToArray());
-        foreach (var existing in Conversations.Where(item => !groups.ContainsKey(item.Key)).ToArray())
+        var byKey = Conversations.ToDictionary(item => item.Key);
+        foreach (var existing in Conversations.Where(item => item.Requests.Count > 0 && !groups.ContainsKey(item.Key)).ToArray())
         {
             existing.PreviousRequestCount = existing.RequestCount;
             existing.Requests.Clear();
@@ -332,7 +336,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         }
         foreach (var group in groups.OrderByDescending(pair => pair.Value[^1].ReceivedAt))
         {
-            var conversation = Conversations.FirstOrDefault(item => item.Key == group.Key);
+            if (changedKey is not null && group.Key != changedKey) continue;
+            var conversation = byKey.GetValueOrDefault(group.Key);
             if (conversation is null)
             {
                 conversation = new InboxConversation(group.Key);
@@ -363,10 +368,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             conversation.RefreshPresentation();
         }
         var sorted = Conversations.OrderByDescending(item => item.LastActivity).ToArray();
-        foreach (var old in sorted.Skip(500).Where(item => item.Requests.Count == 0)) Conversations.Remove(old);
-        sorted = sorted.Where(Conversations.Contains).ToArray();
+        var evicted = sorted.Skip(500).Where(item => item.Requests.Count == 0).ToHashSet();
+        foreach (var old in evicted) Conversations.Remove(old);
+        if (evicted.Count > 0) sorted = sorted.Where(item => !evicted.Contains(item)).ToArray();
         for (var index = 0; index < sorted.Length; index++)
         {
+            if (ReferenceEquals(Conversations[index], sorted[index])) continue;
             var current = Conversations.IndexOf(sorted[index]);
             if (current != index) Conversations.Move(current, index);
         }
@@ -423,7 +430,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             {
                 PropertyChangedEventHandler handler = (_, args) =>
                 {
-                    if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.Workspace)) RefreshConversations();
+                    if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.Workspace)) RefreshConversations(item);
                     if (ReferenceEquals(item, Selected))
                     {
                         if (args.PropertyName == nameof(InboxItem.FullOutput)) OnPropertyChanged(nameof(SelectedOutput));

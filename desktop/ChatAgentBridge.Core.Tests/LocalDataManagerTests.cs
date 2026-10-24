@@ -23,6 +23,77 @@ public sealed class LocalDataManagerTests : IDisposable
     }
 
     [Fact]
+    public async Task ConversationInspectionAndRemovalIncludeOnlyKnownTopLevelGuidTemps()
+    {
+        Directory.CreateDirectory(_directory);
+        var stems = new[] { "sessions", "conversation-summaries", "chat-conversations", "attachment-consents", "chat-identities" };
+        var expectedBytes = 0;
+        foreach (var (stem, index) in stems.Select((stem, index) => (stem, index)))
+        {
+            var bytes = Enumerable.Repeat((byte)index, index + 1).ToArray();
+            expectedBytes += bytes.Length;
+            await File.WriteAllBytesAsync(Path.Combine(_directory, $"{stem}.{Guid.NewGuid():N}.tmp"), bytes);
+        }
+
+        var dashedGuid = Guid.NewGuid().ToString("D");
+        var malformedAndUnrelated = new[]
+        {
+            $"sessions.{dashedGuid}.tmp",
+            "sessions.not-a-guid.tmp",
+            $"unrelated.{Guid.NewGuid():N}.tmp",
+            $"sessions.{Guid.NewGuid():N}.tmp.extra"
+        };
+        foreach (var name in malformedAndUnrelated)
+            await File.WriteAllTextAsync(Path.Combine(_directory, name), "keep");
+        var nested = Path.Combine(_directory, "nested");
+        Directory.CreateDirectory(nested);
+        var nestedTemp = Path.Combine(nested, $"sessions.{Guid.NewGuid():N}.tmp");
+        await File.WriteAllTextAsync(nestedTemp, "keep");
+
+        var manager = new LocalDataManager(_directory);
+        var conversationData = Assert.Single(manager.Inspect(), size => size.Kind == LocalDataKind.Conversations);
+        Assert.Equal(expectedBytes, conversationData.Bytes);
+        Assert.Equal(stems.Length, conversationData.Files);
+
+        await manager.ClearAsync([LocalDataKind.Conversations]);
+
+        Assert.Equal(0, Assert.Single(manager.Inspect(), size => size.Kind == LocalDataKind.Conversations).Bytes);
+        Assert.Equal(0, Assert.Single(manager.Inspect(), size => size.Kind == LocalDataKind.Conversations).Files);
+        foreach (var name in malformedAndUnrelated)
+            Assert.True(File.Exists(Path.Combine(_directory, name)));
+        Assert.True(File.Exists(nestedTemp));
+    }
+
+    [Fact]
+    public async Task ConversationCleanupRejectsLinkedKnownTempAndPreservesFiles()
+    {
+        Directory.CreateDirectory(_directory);
+        var outside = Path.Combine(Path.GetTempPath(), "cab-linked-temp-" + Guid.NewGuid().ToString("N"));
+        await File.WriteAllTextAsync(outside, "outside");
+        var linkedTemp = Path.Combine(_directory, $"chat-conversations.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            try { File.CreateSymbolicLink(linkedTemp, outside); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException or NotSupportedException)
+            {
+                return; // Symlink creation is unavailable on this host/account.
+            }
+
+            var otherTemp = Path.Combine(_directory, $"sessions.{Guid.NewGuid():N}.tmp");
+            await File.WriteAllTextAsync(otherTemp, "keep");
+            await Assert.ThrowsAsync<InvalidDataException>(() => new LocalDataManager(_directory).ClearAsync([LocalDataKind.Conversations]));
+            Assert.True(File.Exists(linkedTemp));
+            Assert.True(File.Exists(otherTemp));
+            Assert.Equal("outside", await File.ReadAllTextAsync(outside));
+        }
+        finally
+        {
+            if (File.Exists(linkedTemp)) File.Delete(linkedTemp);
+            if (File.Exists(outside)) File.Delete(outside);
+        }
+    }
+
+    [Fact]
     public async Task RemovingDetailsKeepsMigratedStatistics()
     {
         var store = new ExecutionHistoryStore(_directory);
