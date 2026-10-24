@@ -1,6 +1,6 @@
 # Slack setup / Slackの設定
 
-Chat Agent BridgeのWindowsアプリをSlackへ接続する手順です。旧TypeScript版の手順は[docs/legacy/slack-setup.md](legacy/slack-setup.md)にあります。
+Chat Agent BridgeのWindowsアプリをSlackへ接続する手順です。
 
 ## Slackアプリを準備する
 
@@ -64,7 +64,7 @@ BridgeはSocket Modeで、PCからSlackへ接続します。公開URLやポー�
 
 ## English
 
-This guide connects the Chat Agent Bridge Windows app to Slack. The earlier TypeScript bridge instructions are in [docs/legacy/slack-setup.md](legacy/slack-setup.md).
+This guide connects the Chat Agent Bridge Windows app to Slack.
 
 ### Prepare the Slack app
 

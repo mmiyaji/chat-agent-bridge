@@ -244,7 +244,7 @@ winapp run .\desktop\ChatAgentBridge.Desktop\bin\x64\Debug\net10.0-windows10.0.2
 .\desktop\SmokeTest.ps1 -AppPid 12345 -DataDirectory 'C:\TestData\ChatAgentBridge' -TestSessionDetach
 ```
 
-旧 TypeScript 版の設定・セッション・履歴は自動インポートしません。既存データを上書きしないよう保存先を分けています。破損設定や復号エラーでは実行・保存を停止し、ファイルを修復後に再読み込みしてください。
+破損設定や復号エラーでは実行・保存を停止し、ファイルを修復後に再読み込みしてください。
 
 UIテストは最初に空の隔離ディレクトリを指定します。`-TestSessionDetach` はテスト用のセッション関連付けを作って解除を確認するため、新しい空の保存先で実行してください。実在するCodexセッションやモデルは呼び出しません。
 
