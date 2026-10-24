@@ -26,6 +26,7 @@
   <data name="CliWorkspaceUntrusted" xml:space="preserve"><value>CLIでこの作業フォルダーが信頼されていません。この作業フォルダーで設定済みのCLIを開き、CLI側の信頼設定を確認してから、再試行してください。</value></data>
   <data name="CliModelUnavailable" xml:space="preserve"><value>選択したモデルは、このCLIまたはアカウントで利用できません。利用可能なモデルを選ぶか既定のモデルに戻してから、再試行してください。</value></data>
   <data name="CliDiagnosticsHidden" xml:space="preserve"><value>CLIが標準エラーに診断情報を出力しました。</value></data>
+  <data name="CliAntigravityActionsDenied" xml:space="preserve"><value>注意: Antigravity CLIはヘッドレスモードで許可を確認できないため、次の操作を自動的に拒否しました: {0}。エージェント設定で操作権限を「フォルダー内の編集を自動許可」または「フルアクセス」に変更するか、agyのsettings.jsonに許可ルールを追加してください。</value></data>
   <data name="CliStructuredResultInvalid" xml:space="preserve"><value>CLIから正常終了の結果と有効なセッションUUIDが返されませんでした。インストール済みのCLIが設定された構造化出力形式に対応しているか確認してください。</value></data>
   <data name="ApprovalPermissionLine" xml:space="preserve"><value>承認: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>拒否: !cab reject {0}</value></data>

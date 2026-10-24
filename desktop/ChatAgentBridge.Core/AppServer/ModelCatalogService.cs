@@ -48,6 +48,8 @@ public sealed class ModelCatalogService
         catch (ArgumentException ex) { throw new ModelCatalogException(ex.Message, ex); }
         if (provider == AgentProfile.Claude)
             return await GetClaudeModelsAsync(settings, cancellationToken).ConfigureAwait(false);
+        if (provider == AgentProfile.Antigravity)
+            return await GetAntigravityModelsAsync(settings, cancellationToken).ConfigureAwait(false);
         if (provider != AgentProfile.Codex)
             throw new ModelCatalogException("Model discovery is available only for supported agent providers.");
         if (string.IsNullOrWhiteSpace(settings.WorkspaceRoot))
@@ -247,6 +249,112 @@ public sealed class ModelCatalogService
             }
             else killOnCancellation.Dispose();
         }
+    }
+
+    /// <summary>Runs `agy models`, which lists "id&lt;TAB&gt;label" rows without starting a model turn.</summary>
+    private async Task<IReadOnlyList<ModelOption>> GetAntigravityModelsAsync(BridgeSettings settings, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(settings.WorkspaceRoot))
+            throw new ModelCatalogException("A workspace directory is required to discover Antigravity CLI models.");
+        var workspace = Path.GetFullPath(settings.WorkspaceRoot);
+        if (!Directory.Exists(workspace)) throw new ModelCatalogException("The configured workspace directory does not exist.");
+        var executable = string.IsNullOrWhiteSpace(settings.AgentExecutable) || IsCodexExecutable(settings.AgentExecutable)
+            ? "agy" : settings.AgentExecutable;
+
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(_timeout);
+        Process? process = null;
+        CancellationTokenRegistration killOnCancellation = default;
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = CodexExecutableResolver.Resolve(executable),
+                WorkingDirectory = workspace,
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardOutputEncoding = new UTF8Encoding(false),
+                StandardErrorEncoding = new UTF8Encoding(false),
+                CreateNoWindow = true
+            };
+            startInfo.ArgumentList.Add("models");
+            process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+            if (!process.Start()) throw new ModelCatalogException("Antigravity CLI did not start.");
+            killOnCancellation = deadline.Token.Register(static state => Kill((Process?)state), process);
+            process.StandardInput.Close();
+            // stderr carries the "Fetching available models..." banner and any account diagnostics; discard it.
+            var stderrDrain = DrainErrorAsync(process.StandardError);
+            var output = await ReadBoundedAsync(process.StandardOutput, 256 * 1024, deadline.Token).ConfigureAwait(false);
+            await process.WaitForExitAsync(deadline.Token).ConfigureAwait(false);
+            try { await stderrDrain.WaitAsync(TimeSpan.FromMilliseconds(500)).ConfigureAwait(false); }
+            catch (TimeoutException) { }
+            if (process.ExitCode != 0)
+                throw new ModelCatalogException("Could not retrieve the Antigravity CLI model catalog. Check the CLI and its sign-in status.");
+            return ParseAntigravityModels(output);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && deadline.IsCancellationRequested)
+        {
+            Kill(process);
+            throw new TimeoutException($"Antigravity CLI model discovery exceeded its {_timeout.TotalSeconds:0}-second time limit.");
+        }
+        catch (OperationCanceledException) { Kill(process); throw; }
+        catch (ModelCatalogException) { Kill(process); throw; }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or System.ComponentModel.Win32Exception)
+        {
+            Kill(process);
+            // Never return stderr; it may include account details.
+            throw new ModelCatalogException("Could not retrieve the Antigravity CLI model catalog. Check the CLI and its sign-in status.");
+        }
+        finally
+        {
+            killOnCancellation.Dispose();
+            if (process is not null)
+            {
+                Kill(process);
+                try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false); }
+                catch (TimeoutException) { }
+                catch (InvalidOperationException) { }
+                process.Dispose();
+            }
+        }
+    }
+
+    /// <summary>Parses `id&lt;TAB&gt;label` rows. Rows without a tab or with an unusable id (for example banner text) are ignored.</summary>
+    internal static IReadOnlyList<ModelOption> ParseAntigravityModels(string output)
+    {
+        var models = new List<ModelOption>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var rawLine in output.Split('\n'))
+        {
+            var line = rawLine.TrimEnd('\r');
+            var tab = line.IndexOf('\t');
+            if (tab <= 0) continue;
+            var rawId = line[..tab].Trim();
+            if (rawId.Length == 0 || rawId.Any(char.IsWhiteSpace)) continue;
+            string id;
+            try { id = AgentProfile.NormalizeModel(rawId)!; }
+            catch (ArgumentException) { continue; }
+            if (!seen.Add(id)) continue;
+            var label = Truncate(new string(line[(tab + 1)..].Where(character => !char.IsControl(character)).ToArray()).Trim(), 256);
+            models.Add(new(id, string.IsNullOrWhiteSpace(label) ? id : label, "", false));
+            if (models.Count >= MaxModels) break;
+        }
+        return models;
+    }
+
+    private static async Task<string> ReadBoundedAsync(StreamReader reader, int limit, CancellationToken cancellationToken)
+    {
+        var builder = new StringBuilder();
+        var buffer = new char[4096];
+        int read;
+        while ((read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false)) > 0)
+        {
+            if (builder.Length + read > limit) throw new ModelCatalogException("Antigravity CLI returned an oversized model catalog response.");
+            builder.Append(buffer, 0, read);
+        }
+        return builder.ToString();
     }
 
     private static bool IsCodexExecutable(string executable)

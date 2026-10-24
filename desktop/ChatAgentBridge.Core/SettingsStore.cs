@@ -47,7 +47,7 @@ public sealed class SettingsStore
             if (stored.AgentMode is not (null or "exec" or "app-server"))
                 throw new InvalidDataException("Settings contain an unsupported agent mode.");
             var provider = stored.AgentProvider ?? InferLegacyProvider(stored.AgentExecutable ?? "codex");
-            if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Custom))
+            if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Custom))
                 throw new InvalidDataException("Settings contain an unsupported agent provider.");
             var autoConnect = stored.AutoConnectProvider ?? "none";
             if (autoConnect is not ("none" or "mattermost" or "slack" or "discord"))
@@ -99,10 +99,10 @@ public sealed class SettingsStore
                 throw new InvalidDataException("A custom agent cannot use a provider model override.");
             if (provider == AgentProfile.Custom && settings.AgentReasoningEffort is not null)
                 throw new InvalidDataException("A custom agent cannot use a provider reasoning effort override.");
-            if (AgentProfile.IsBasicCliProvider(provider) && settings.AgentPermissionMode != "inherit")
-                throw new InvalidDataException("Gemini CLI and GitHub Copilot CLI settings must inherit CLI-managed permissions.");
+            if (AgentProfile.IsBasicCliProvider(provider) && !AgentProfile.SupportsPermissionMode(provider, settings.AgentPermissionMode))
+                throw new InvalidDataException("This CLI's settings use an unsupported permission mode.");
             if (AgentProfile.IsBasicCliProvider(provider) && settings.AgentReasoningEffort is not null)
-                throw new InvalidDataException("Gemini CLI and GitHub Copilot CLI do not support a reasoning effort override.");
+                throw new InvalidDataException("Gemini CLI, GitHub Copilot CLI, and Antigravity CLI do not support a reasoning effort override.");
             return settings;
         }
         catch (JsonException ex) { throw new InvalidDataException("Settings file contains invalid JSON.", ex); }
@@ -155,10 +155,10 @@ public sealed class SettingsStore
             throw new ArgumentException("A custom agent cannot use a provider model override.", nameof(settings));
         if (provider == AgentProfile.Custom && effort is not null)
             throw new ArgumentException("A custom agent cannot use a provider reasoning effort override.", nameof(settings));
-        if (AgentProfile.IsBasicCliProvider(provider) && permissionMode != "inherit")
-            throw new ArgumentException("Gemini CLI and GitHub Copilot CLI settings must inherit CLI-managed permissions.", nameof(settings));
+        if (AgentProfile.IsBasicCliProvider(provider) && !AgentProfile.SupportsPermissionMode(provider, permissionMode))
+            throw new ArgumentException(AgentProfile.UnsupportedPermissionModeMessage(provider), nameof(settings));
         if (AgentProfile.IsBasicCliProvider(provider) && effort is not null)
-            throw new ArgumentException("Gemini CLI and GitHub Copilot CLI do not support a reasoning effort override.", nameof(settings));
+            throw new ArgumentException("Gemini CLI, GitHub Copilot CLI, and Antigravity CLI do not support a reasoning effort override.", nameof(settings));
         Directory.CreateDirectory(DirectoryPath);
         var stored = new StoredSettings
         {

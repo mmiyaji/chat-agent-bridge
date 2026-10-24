@@ -10,7 +10,7 @@ internal static class StructuredCliDiagnostics
     internal static string Error(string provider, string stderr, int exitCode, bool hasValidResult)
     {
         if (!AgentProfile.IsBasicCliProvider(provider))
-            throw new ArgumentException("Structured CLI diagnostics require Gemini or GitHub Copilot.", nameof(provider));
+            throw new ArgumentException("Structured CLI diagnostics require Gemini, GitHub Copilot, or Antigravity.", nameof(provider));
         var diagnostic = stderr.AsSpan(0, Math.Min(stderr.Length, MaxDiagnosticCharacters));
         // Startup messages can contain several failures. Prefer the account blocker over
         // secondary workspace warnings; no matched value is ever inserted into the response.

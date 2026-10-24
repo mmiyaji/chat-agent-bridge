@@ -17,7 +17,7 @@ public sealed record SupportReport
     private static readonly HashSet<string> AllowedArchitectures = new(StringComparer.Ordinal)
         { "X86", "X64", "Arm", "Arm64", "Wasm", "S390x", "LoongArch64" };
     private static readonly HashSet<string> AllowedProviders = new(StringComparer.Ordinal)
-        { "Codex", "Claude", "Gemini", "GitHub Copilot", "Custom", "Unknown" };
+        { "Codex", "Claude", "Gemini", "GitHub Copilot", "Antigravity", "Custom", "Unknown" };
 
     public string Product { get; }
     public string Build { get; }

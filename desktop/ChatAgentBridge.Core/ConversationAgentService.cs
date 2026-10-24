@@ -44,7 +44,7 @@ public sealed class ConversationAgentService(SessionStore sessions, AgentConnect
     {
         if (binding.AgentArguments is "app-server" or "exec --json -") return AgentProfile.Codex;
         if (binding.AgentArguments == "claude-stream-json-v1") return AgentProfile.Claude;
-        foreach (var provider in new[] { AgentProfile.Gemini, AgentProfile.GitHubCopilot })
+        foreach (var provider in new[] { AgentProfile.Gemini, AgentProfile.GitHubCopilot, AgentProfile.Antigravity })
         {
             var prefix = CliSessionMarker(provider) + ":";
             if (binding.AgentArguments.StartsWith(prefix, StringComparison.Ordinal) &&
@@ -58,6 +58,7 @@ public sealed class ConversationAgentService(SessionStore sessions, AgentConnect
     {
         AgentProfile.Gemini => "gemini-stream-json-v1",
         AgentProfile.GitHubCopilot => "copilot-jsonl-v1",
+        AgentProfile.Antigravity => "antigravity-stream-json-v1",
         _ => throw new ArgumentException("Unsupported structured CLI provider.", nameof(provider))
     };
 }

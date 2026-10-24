@@ -7,17 +7,19 @@ public static class AgentProfile
     public const string Claude = "claude";
     public const string Gemini = "gemini";
     public const string GitHubCopilot = "github-copilot";
+    public const string Antigravity = "antigravity";
     public const string Custom = "custom";
     public const string DefaultCodexArguments = "exec --json -";
     public const string DefaultGeminiArguments = "--output-format stream-json";
     public const string DefaultGitHubCopilotArguments = "--output-format json --no-ask-user";
+    public const string DefaultAntigravityArguments = "--output-format stream-json";
 
     public static string ResolveProvider(BridgeSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
         var provider = string.IsNullOrWhiteSpace(settings.AgentProvider) ? Codex : settings.AgentProvider.Trim().ToLowerInvariant();
-        if (provider is not (Codex or Claude or Gemini or GitHubCopilot or Custom))
-            throw new ArgumentException("Agent provider must be codex, claude, gemini, github-copilot, or custom.", nameof(settings));
+        if (provider is not (Codex or Claude or Gemini or GitHubCopilot or Antigravity or Custom))
+            throw new ArgumentException("Agent provider must be codex, claude, gemini, github-copilot, antigravity, or custom.", nameof(settings));
 
         // Directly-created legacy settings often use an arbitrary executable with the old default provider.
         // Treat those as custom so their executable and arguments remain exactly as configured.
@@ -32,15 +34,15 @@ public static class AgentProfile
         var model = NormalizeModel(settings.AgentModel);
         var effort = NormalizeReasoningEffort(settings.AgentReasoningEffort);
         var permissionMode = ExecutionPolicy.NormalizePermissionMode(settings.AgentPermissionMode);
-        if (IsBasicCliProvider(provider) && permissionMode != "inherit")
-            throw new ArgumentException("Gemini CLI and GitHub Copilot CLI use their own permission settings; select inherit.", nameof(settings));
+        if (IsBasicCliProvider(provider) && !SupportsPermissionMode(provider, permissionMode))
+            throw new ArgumentException(UnsupportedPermissionModeMessage(provider), nameof(settings));
         if (provider == Custom && permissionMode != "inherit")
             throw new ArgumentException("Execution permission modes are supported only for Codex and Claude Code profiles.", nameof(settings));
         if (permissionMode == "ask" && provider == Codex && settings.AgentMode != "app-server")
             throw new ArgumentException("The ask permission mode requires Codex App Server mode, which can display approval requests. Select App Server mode or choose another permission mode.", nameof(settings));
         if (provider == Custom && model is not null)
             throw new ArgumentException("A model override is unavailable for a custom agent profile.", nameof(settings));
-        if (provider is Custom or Gemini or GitHubCopilot && effort is not null)
+        if ((provider == Custom || IsBasicCliProvider(provider)) && effort is not null)
             throw new ArgumentException("A reasoning effort override is unavailable for this agent profile; choose Codex or Claude Code.", nameof(settings));
 
         if (settings.AgentMode == "app-server")
@@ -65,8 +67,10 @@ public static class AgentProfile
             {
                 if (!Guid.TryParseExact(sessionId, "D", out var id))
                     throw new ArgumentException("The authorized CLI session id must be a UUID.", nameof(settings));
-                basicArguments = basicArguments.Concat(new[] { "--resume", id.ToString("D") }).ToArray();
+                basicArguments = basicArguments.Concat(new[] { provider == Antigravity ? "--conversation" : "--resume", id.ToString("D") }).ToArray();
             }
+            if (provider == Antigravity && permissionMode != "inherit")
+                basicArguments = SetAntigravityPermission(basicArguments, permissionMode);
             return new AgentInvocation(EffectiveExecutable(settings, provider), basicArguments, model, provider);
         }
 
@@ -118,7 +122,21 @@ public static class AgentProfile
     public static string ResolveEffectiveExecutable(BridgeSettings settings)
         => EffectiveExecutable(settings, ResolveProvider(settings));
 
-    public static bool IsBasicCliProvider(string provider) => provider is Gemini or GitHubCopilot;
+    public static bool IsBasicCliProvider(string provider) => provider is Gemini or GitHubCopilot or Antigravity;
+
+    /// <summary>Providers whose CLI can list selectable models without an AI turn.</summary>
+    public static bool HasModelCatalog(string provider) => provider is Codex or Claude or Antigravity;
+
+    /// <summary>Basic providers distribute as npm packages, except Antigravity which ships a native executable.</summary>
+    internal static bool UsesNpmShim(string provider) => provider is Gemini or GitHubCopilot;
+
+    /// <summary>Gemini and Copilot manage permissions themselves; Antigravity maps two modes onto its CLI flags.</summary>
+    public static bool SupportsPermissionMode(string provider, string permissionMode)
+        => permissionMode == "inherit" || provider == Antigravity && permissionMode is "workspace-write" or "full-access";
+
+    internal static string UnsupportedPermissionModeMessage(string provider) => provider == Antigravity
+        ? "Antigravity CLI supports the inherit, workspace-write, and full-access permission modes; read-only and ask are unavailable."
+        : "Gemini CLI and GitHub Copilot CLI use their own permission settings; select inherit.";
 
     /// <summary>Canonical provider arguments before the session runner adds its authorized resume id.</summary>
     internal static IReadOnlyList<string> GetStructuredCliArguments(BridgeSettings settings, string provider)
@@ -131,6 +149,8 @@ public static class AgentProfile
             // Require separate short options and values so a reserved selector cannot hide in a bundle.
             if (argument.Length > 2 && argument[0] == '-' && argument[1] != '-')
                 throw new ArgumentException("CLI short options must be separate arguments; do not bundle flags or attach their values.", nameof(settings));
+            if (provider == Antigravity && option is "--conversation" or "-c" or "--print" or "--input-format" or "--remote-control" or "--new-project" or "--project")
+                throw new ArgumentException("CLI session and prompt selection must be managed by the bridge; remove configured resume, continue, session, and prompt options.", nameof(settings));
             if (option is "--" or "--resume" or "-r" or "--continue" or "--session-id" or "--session-file" or "--new-session" or "--new-session-id" or "--session" or "--connect" or "--worktree" or "-w" or
                 "-C" or "--cwd" or "--directory" or "--working-directory" or "--prompt" or "-p" or "--interactive" or "--prompt-interactive" or "-i" ||
                 argument.StartsWith("-C", StringComparison.Ordinal) ||
@@ -142,7 +162,7 @@ public static class AgentProfile
         if (provider == GitHubCopilot)
             arguments = EnsureFlag(arguments.Where(value => value is not ("--silent" or "-s") &&
                 !value.StartsWith("--silent=", StringComparison.Ordinal)).ToArray(), "--no-ask-user");
-        arguments = SetOption(arguments, "--output-format", provider == Gemini ? "-o" : "--output-format", provider == Gemini ? "stream-json" : "json");
+        arguments = SetOption(arguments, "--output-format", provider == Gemini ? "-o" : "--output-format", provider is Gemini or Antigravity ? "stream-json" : "json");
         if (NormalizeModel(settings.AgentModel) is { } model)
             arguments = SetOption(arguments, "--model", "-m", model);
         return arguments;
@@ -150,7 +170,7 @@ public static class AgentProfile
 
     internal static string? FindWindowsNpmShim(string executable, string provider)
     {
-        if (!OperatingSystem.IsWindows() || !IsBasicCliProvider(provider)) return null;
+        if (!OperatingSystem.IsWindows() || !UsesNpmShim(provider)) return null;
         var command = provider == Gemini ? "gemini" : "copilot";
         var leaf = Path.GetFileName(executable.Trim().Trim('"'));
         if (Path.GetFileNameWithoutExtension(leaf).Equals(command, StringComparison.OrdinalIgnoreCase) &&
@@ -273,14 +293,36 @@ public static class AgentProfile
         if (provider == Claude && IsCodexExecutable(executable)) return "claude";
         if (provider == Gemini && IsCodexExecutable(executable)) return "gemini";
         if (provider == GitHubCopilot && IsCodexExecutable(executable)) return "copilot";
+        if (provider == Antigravity && IsCodexExecutable(executable)) return "agy";
         return executable;
     }
 
     private static IReadOnlyList<string> GetConfiguredCliArguments(string? arguments, string provider)
     {
         if (string.IsNullOrWhiteSpace(arguments) || arguments == DefaultCodexArguments)
-            return AgentArgumentParser.Parse(provider == Gemini ? DefaultGeminiArguments : DefaultGitHubCopilotArguments);
+            return AgentArgumentParser.Parse(provider switch
+            {
+                Gemini => DefaultGeminiArguments,
+                Antigravity => DefaultAntigravityArguments,
+                _ => DefaultGitHubCopilotArguments
+            });
         return AgentArgumentParser.Parse(arguments);
+    }
+
+    /// <summary>Replaces configured mode and approval flags so the selected permission mode is authoritative.</summary>
+    private static IReadOnlyList<string> SetAntigravityPermission(IReadOnlyList<string> arguments, string permissionMode)
+    {
+        var result = new List<string>();
+        for (var index = 0; index < arguments.Count; index++)
+        {
+            var argument = arguments[index];
+            if (argument == "--mode") { if (index + 1 < arguments.Count) index++; continue; }
+            if (argument.StartsWith("--mode=", StringComparison.Ordinal) || argument == "--dangerously-skip-permissions") continue;
+            result.Add(argument);
+        }
+        if (permissionMode == "full-access") result.Add("--dangerously-skip-permissions");
+        else { result.Add("--mode"); result.Add("accept-edits"); }
+        return result;
     }
 
     private static IReadOnlyList<string> EnsureFlag(IReadOnlyList<string> arguments, string flag)

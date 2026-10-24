@@ -163,7 +163,7 @@ public sealed class AgentSettingsDraftStore
         var normalized = provider?.Trim().ToLowerInvariant();
         return normalized switch
         {
-            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Custom => normalized,
+            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Custom => normalized,
             _ => throw new ArgumentException("Only supported agent providers can have settings drafts.", nameof(provider))
         };
     }

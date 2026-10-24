@@ -28,8 +28,8 @@ public sealed class ConversationModelService
             throw new InvalidOperationException("The conversation workspace is not trusted.");
         // This integration accepts manual model identifiers for these CLIs.
         // Do not spend an AI turn discovering a model catalog.
-        if (AgentProfile.IsBasicCliProvider(provider)) return Array.Empty<ModelOption>();
-        if (provider is not (AgentProfile.Codex or AgentProfile.Claude))
+        if (!AgentProfile.HasModelCatalog(provider) && AgentProfile.IsBasicCliProvider(provider)) return Array.Empty<ModelOption>();
+        if (!AgentProfile.HasModelCatalog(provider))
             throw new InvalidOperationException("This CLI does not support model discovery.");
         var key = (provider, settings.AgentExecutable, settings.AgentArguments, Path.GetFullPath(settings.WorkspaceRoot));
         await _catalogGate.WaitAsync(token).ConfigureAwait(false);
@@ -57,7 +57,7 @@ public sealed class ConversationModelService
         if (!ExecutionPolicy.IsWorkspaceTrusted(settings, binding.WorkspaceRoot))
             throw new InvalidOperationException("The conversation workspace is not trusted.");
         model = AgentProfile.NormalizeModel(model);
-        if (model is not null && !AgentProfile.IsBasicCliProvider(provider))
+        if (model is not null && AgentProfile.HasModelCatalog(provider))
         {
             var models = await GetModelsAsync(settings, token).ConfigureAwait(false);
             if (!models.Any(candidate => candidate.Id == model))

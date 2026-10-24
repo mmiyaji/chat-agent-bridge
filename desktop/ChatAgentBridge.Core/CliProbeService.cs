@@ -47,13 +47,13 @@ public sealed class CliProbeService
             : RecognizesProvider(provider, version);
         if (!recognized && AgentProfile.IsBasicCliProvider(provider))
         {
-            // Gemini and some Copilot versions print only a semver for --version. Help is
+            // Gemini, Antigravity (agy), and some Copilot versions print only a semver for --version. Help is
             // non-interactive and gives us a provider identity without starting a model turn.
             var (helpOutput, _, helpExitCode) = await RunCommandAsync(executable, workspace,
                 nodePrefix.Append("--help"), cancellationToken).ConfigureAwait(false);
             recognized = helpExitCode == 0 && RecognizesProvider(provider, Sanitize(helpOutput));
         }
-        if ((provider is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot) && !recognized)
+        if ((provider is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity) && !recognized)
             throw new InvalidOperationException(CoreText.Get("CliProviderMismatch", provider));
         return new CliProbeResult(executable, version, recognized);
     }
@@ -122,6 +122,8 @@ public sealed class CliProbeService
         AgentProfile.Claude => Regex.IsMatch(output, @"\bclaude\s+code\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         AgentProfile.Gemini => Regex.IsMatch(output, @"\bgemini(?:\s+cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         AgentProfile.GitHubCopilot => Regex.IsMatch(output, @"\bgithub\s+copilot(?:\s+cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+        // agy prints a bare semver for --version; its help starts with "Usage of agy" (agy.exe on Windows).
+        AgentProfile.Antigravity => Regex.IsMatch(output, @"\b(?:agy(?:\.exe)?|antigravity)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         _ => false
     };
 
