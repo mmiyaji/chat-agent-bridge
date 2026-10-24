@@ -430,10 +430,17 @@
       "runtimeSourceUrl": "https://github.com/microsoft/CsWinRT"
     },
     {
-      "name": "Fluent System Icons Arrow Circle Up and Arrow Download icons plus regular settings icons",
+      "name": "Fluent System Icons Arrow Circle Up and Arrow Download icons plus regular UI icons",
       "noticeFile": "LICENSE-FluentSystemIcons.txt",
       "version": "revision 4c94ad5f4081168c0d45bdc368f230ecb757cd09",
-      "provenance": "Assets/Icons/FluentSystemIcons SVGs plus UpdateAvailable.ttf subset; MainPage.xaml renders ic_fluent_arrow_download_20_regular.svg as a template-owned Path with theme foreground; SettingsScopeIcons.xaml retains regular SVG path geometry"
+      "provenance": "Assets/Icons/FluentSystemIcons SVGs plus UpdateAvailable.ttf subset; Arrow Download asset is retained from the earlier badge; SettingsScopeIcons.xaml renders the generic Bot, Chat Multiple, Chat, Number Symbol and People Community paths as fresh per-row template geometry"
+    },
+    {
+      "name": "Material Symbols Outlined Download icon",
+      "noticeFile": "LICENSE-MaterialSymbols.txt",
+      "version": "revision 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+      "provenance": "Assets/Icons/MaterialSymbols/download_wght300_20px.svg; MainPage.xaml uses its path inside the About update badge ControlTemplate with theme foreground",
+      "licenseSourceUrl": "https://github.com/google/material-design-icons/blob/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/LICENSE"
     },
     {
       "name": "Windows operating-system APIs",
@@ -468,6 +475,11 @@
       "bytes": 1078
     },
     {
+      "file": "LICENSE-MaterialSymbols.txt",
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+      "bytes": 11357
+    },
+    {
       "file": "LICENSE-WindowsSDK.txt",
       "sha256": "34960d6cfa615faac1f43cce3a001e72db53ce4bd21478843c50fbaf2aa0cda0",
       "bytes": 34636
@@ -475,12 +487,12 @@
   ],
   "aggregateNotice": {
     "file": "desktop/THIRD-PARTY-NOTICES.txt",
-    "sha256": "61d17634f408ba6fae979999ee9e2bac2d3eca1c4f241da53ebad8c26655d90f",
-    "bytes": 487523
+    "sha256": "7986092a5a556f496125237edf8de2c32d34651ab1a2f4d4fbc664894a05e251",
+    "bytes": 499267
   },
   "auditNotes": [
     "Desktop publish evidence was captured from win-x64; win-arm64 is explicitly allowed for the same reviewed package versions, runtime version, and notice documents. The release pipeline should run the validator for both RIDs.",
-    "The pinned Fluent System Icons NOTICE lists replace, avocado, and yargs third-party assets. They are absent from the shipped Arrow Circle Up SVG, Arrow Download SVG, eight regular settings SVGs and U+E0A2 one-glyph font subset; the icon README and pinned MIT license are applicable.",
+    "The pinned Fluent System Icons NOTICE lists replace, avocado, and yargs third-party assets. They are absent from the shipped Arrow Circle Up SVG, Arrow Download SVG, ten regular UI SVGs and U+E0A2 one-glyph font subset; the icon README and pinned MIT license are applicable.",
     "The legacy SEA package made by scripts/build-exe.mjs is outside this Windows portable payload. That script emits its own THIRD-PARTY-NOTICES.txt containing the Node.js LICENSE and ws LICENSE; the current .NET portable package does not include node.exe."
   ],
   "legacyNodeDistribution": {

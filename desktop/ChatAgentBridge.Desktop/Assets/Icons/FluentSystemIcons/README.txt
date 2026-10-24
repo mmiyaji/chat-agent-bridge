@@ -11,10 +11,9 @@ The original SVG is included beside this notice for reference.
 UpdateAvailable.ttf is a one-glyph subset of the same revision's
 fonts/FluentSystemIcons-Filled.ttf, retaining U+E0A2
 (ic_fluent_arrow_circle_up_20_filled). These assets are retained from the earlier
-update badge design. The current MainPage badge uses the official Arrow Download
-20 regular SVG inside a themed circle. MainPage.xaml renders its path as a
-template-owned Path with the theme foreground; no additional font installation
-is required.
+update badge design. The Arrow Download 20 regular SVG is retained from an
+earlier badge iteration; the current update badge uses Material Symbols
+Outlined Download. No additional font installation is required.
 
 Reproduce the subset with fontTools:
   pyftsubset FluentSystemIcons-Filled.ttf --unicodes=U+E0A2 --name-IDs='*' --name-legacy --name-languages='*' --output-file=UpdateAvailable.ttf
@@ -24,6 +23,19 @@ same pinned revision and MIT license. These are generic UI symbols rather than
 Codex, Claude, Gemini or GitHub product logos. The unmodified SVGs are included;
 AgentSettings/SettingsScopeIcons.xaml carries the same path data for native,
 theme-aware rendering. The Viewbox scales the entire path instead of clipping it.
+The main sidebar uses separate Bot and Chat Multiple PathIcons in MainPage.xaml.
+Their full 20 px source boxes are scaled by NavigationView's own icon Viewbox.
+
+Number Symbol and People Community 20 regular are generic symbols used for
+Slack and Discord settings rows. They are not service logos.
+
+ic_fluent_number_symbol_20_regular.svg
+Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Number%20Symbol/SVG/ic_fluent_number_symbol_20_regular.svg
+SHA-256: 0d2575799ba5febfa729d916112ac2ed7ad55a1ec9fa7fdbcc4c8775df67f86f
+
+ic_fluent_people_community_20_regular.svg
+Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/People%20Community/SVG/ic_fluent_people_community_20_regular.svg
+SHA-256: c2b019921a4826bb7d95d8590ebc50c6dfec1b470f7b2a1d6260c94d04f8be2a
 
 ic_fluent_arrow_download_20_regular.svg
 Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Arrow%20Download/SVG/ic_fluent_arrow_download_20_regular.svg

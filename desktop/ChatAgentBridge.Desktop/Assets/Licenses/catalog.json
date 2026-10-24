@@ -21,8 +21,13 @@
   },
   {
     "name": "Fluent System Icons",
-    "components": "Arrow Circle Up 20 filled SVG, Arrow Download 20 regular SVG, UpdateAvailable.ttf one-glyph font subset, and eight 20 regular settings SVGs (Folder, Window Console, Code, Sparkle, Bot, Apps, Chat, Chat Multiple); Microsoft Corporation copyright 2020; upstream revision 4c94ad5f4081168c0d45bdc368f230ecb757cd09",
+    "components": "Arrow Circle Up 20 filled SVG, Arrow Download 20 regular SVG, UpdateAvailable.ttf one-glyph font subset, and ten 20 regular UI SVGs (Folder, Window Console, Code, Sparkle, Bot, Apps, Chat, Chat Multiple, Number Symbol, People Community); Microsoft Corporation copyright 2020; upstream revision 4c94ad5f4081168c0d45bdc368f230ecb757cd09",
     "file": "LICENSE-FluentSystemIcons.txt"
+  },
+  {
+    "name": "Material Symbols",
+    "components": "Download 20px Material Symbols Outlined SVG, weight 300; upstream revision 10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+    "file": "LICENSE-MaterialSymbols.txt"
   },
   {
     "name": "Windows SDK and C#/WinRT",
