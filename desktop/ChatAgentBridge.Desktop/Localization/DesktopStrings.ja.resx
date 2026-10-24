@@ -843,4 +843,7 @@
   <data name="GeneralNotificationRestart" xml:space="preserve"><value>追加登録は保存済みです。承認待ちの通知に使うにはアプリを再起動してください。</value></data>
   <data name="GeneralNotificationAvailable" xml:space="preserve"><value>承認待ちの通知が届かない場合、このポータブル版を現在のWindowsユーザーに追加登録できます。通知が届いていれば設定は不要です。</value></data>
   <data name="GeneralNotificationUnavailable" xml:space="preserve"><value>このビルドまたは環境では追加登録を利用できません。通常の通知が無効という意味ではありません。理由は診断情報で確認できます。</value></data>
+  <data name="PaneSizerSidebar" xml:space="preserve"><value>サイドバーの幅を変更</value></data>
+  <data name="PaneSizerSettings" xml:space="preserve"><value>設定メニューの幅を変更</value></data>
+  <data name="PaneSizerHelp" xml:space="preserve"><value>ドラッグするか、矢印キーを使って幅を変更します。</value></data>
 </root>

@@ -6,6 +6,7 @@
     xmlns:inbox="using:ChatAgentBridge_Desktop.Inbox"
     xmlns:presentation="using:ChatAgentBridge_Desktop.Presentation"
     xmlns:executionUi="using:ChatAgentBridge_Desktop.ExecutionUi"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     SizeChanged="Page_SizeChanged"
     AutomationProperties.AutomationId="ChatScroll">
     <Grid RowSpacing="12">
@@ -85,8 +86,8 @@
                 <TextBlock Text="{x:Bind ViewModel.ActiveRequestBannerText, Mode=OneWay}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
             </Button>
         </StackPanel>
-        <Grid x:Name="BodyGrid" Grid.Row="2" ColumnSpacing="12">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /></Grid.ColumnDefinitions>
+        <Grid x:Name="BodyGrid" Grid.Row="2" ColumnSpacing="0">
+            <Grid.ColumnDefinitions><ColumnDefinition x:Name="ConversationColumn" Width="2*" /><ColumnDefinition x:Name="ConversationSplitterColumn" Width="12" /><ColumnDefinition x:Name="DetailColumn" Width="3*" /></Grid.ColumnDefinitions>
             <Grid x:Name="ConversationPane" RowSpacing="8"
                   Visibility="{x:Bind inbox:ChatInboxPage.ConversationPaneVisibility(ViewModel.IsWideLayout, ViewModel.IsDetailOpen), Mode=OneWay}">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
@@ -193,7 +194,11 @@
                 </ScrollViewer>
                 </Grid>
             </Grid>
-            <Grid x:Name="DetailPane" Grid.Column="1" RowSpacing="8"
+            <controls:GridSplitter x:Name="ConversationSplitter" Grid.Column="1" Width="12"
+                                   ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                                   AutomationProperties.AutomationId="InboxConversationsSplitter"
+                                   x:Uid="InboxConversationsSplitter" />
+            <Grid x:Name="DetailPane" Grid.Column="2" RowSpacing="8"
                   Visibility="{x:Bind inbox:ChatInboxPage.DetailPaneVisibility(ViewModel.IsWideLayout, ViewModel.IsDetailOpen), Mode=OneWay}">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                 <Border Grid.RowSpan="3" Style="{StaticResource ActivityCardStyle}" Padding="0" IsHitTestVisible="False" />

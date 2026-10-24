@@ -218,6 +218,35 @@ public sealed partial class MainPage : Page
         _ => "OverviewNeutralIconStyle"
     }];
 
+    private bool _sidebarResizerAttached;
+
+    private void InitializeSidebarResizer()
+    {
+        if (_sidebarResizerAttached || MainNavigation.Parent is not Panel host) return;
+        _sidebarResizerAttached = true;
+        Appearance.NavigationPaneResizer.Attach(MainNavigation, host,
+            ChatAgentBridge.Core.Appearance.LayoutPreferences.MinSidebarWidth, ChatAgentBridge.Core.Appearance.LayoutPreferences.MaxSidebarWidth,
+            App.Layout.Current.SidebarWidth,
+            width => App.Layout.Update(layout => layout with { SidebarWidth = width }),
+            "SidebarSizer", DesktopText.Get("PaneSizerSidebar"));
+    }
+
+    // Both settings pages share one menu width, so resizing either keeps them aligned.
+    private void AttachSettingsNavigationResizer(NavigationView navigation, Panel host, string automationId)
+    {
+        Appearance.NavigationPaneResizer.Attach(navigation, host,
+            ChatAgentBridge.Core.Appearance.LayoutPreferences.MinSettingsNavigationWidth, ChatAgentBridge.Core.Appearance.LayoutPreferences.MaxSettingsNavigationWidth,
+            App.Layout.Current.SettingsNavigationWidth,
+            width =>
+            {
+                App.Layout.Update(layout => layout with { SettingsNavigationWidth = width });
+                foreach (var other in new[] { _agentScopeNavigation, _connectionScopeNavigation })
+                    if (other is not null && !ReferenceEquals(other, navigation) && other.OpenPaneLength != width)
+                        other.OpenPaneLength = width;
+            },
+            automationId, DesktopText.Get("PaneSizerSettings"));
+    }
+
     private void MainNavigation_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args) =>
         UpdateNavigationContentOffset();
 
@@ -246,6 +275,7 @@ public sealed partial class MainPage : Page
 
     private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
+        InitializeSidebarResizer();
         if (_hasLoaded) return;
         _hasLoaded = true;
         // The Windows startup-task query does not depend on saved settings, so it

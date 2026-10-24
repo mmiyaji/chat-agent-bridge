@@ -17,9 +17,27 @@ public sealed partial class ChatInboxPage : Page
 
     private void OpenConnectionSettings_Click(object sender, RoutedEventArgs e) => ConnectionSettingsRequested?.Invoke();
 
+    private const double MinimumConversationListWidth = ChatAgentBridge.Core.Appearance.LayoutPreferences.MinInboxListWidth;
+    private const double MinimumConversationDetailWidth = 360;
+    private const double ConversationSplitterWidth = 12;
+    private bool _isResizingConversationList;
+
     public ChatInboxPage()
     {
         InitializeComponent();
+        ConversationSplitter.AddHandler(UIElement.ManipulationStartedEvent,
+            new Microsoft.UI.Xaml.Input.ManipulationStartedEventHandler((_, _) => _isResizingConversationList = true), true);
+        ConversationSplitter.AddHandler(UIElement.ManipulationCompletedEvent,
+            new Microsoft.UI.Xaml.Input.ManipulationCompletedEventHandler((_, _) => FinishConversationListResize()), true);
+        ConversationSplitter.AddHandler(UIElement.KeyDownEvent, new Microsoft.UI.Xaml.Input.KeyEventHandler((_, e) =>
+        {
+            if (e.Key is Windows.System.VirtualKey.Left or Windows.System.VirtualKey.Right) _isResizingConversationList = true;
+        }), true);
+        ConversationSplitter.AddHandler(UIElement.KeyUpEvent, new Microsoft.UI.Xaml.Input.KeyEventHandler((_, e) =>
+        {
+            if (e.Key is Windows.System.VirtualKey.Left or Windows.System.VirtualKey.Right) FinishConversationListResize();
+        }), true);
+        BodyGrid.SizeChanged += (_, _) => ApplyConversationColumnWidths();
         ViewModel.ConfirmAsync = ConfirmAsync;
         ViewModel.ConfirmReplyAsync = ConfirmReplyAsync;
         ViewModel.ConfirmAttachmentsAsync = ConfirmAttachmentsAsync;
@@ -127,18 +145,55 @@ public sealed partial class ChatInboxPage : Page
         ViewModel.IsWideLayout = e.NewSize.Width >= 840;
         if (ViewModel.IsWideLayout)
         {
-            BodyGrid.ColumnDefinitions[0].Width = new Microsoft.UI.Xaml.GridLength(2, Microsoft.UI.Xaml.GridUnitType.Star);
-            BodyGrid.ColumnDefinitions[1].Width = new Microsoft.UI.Xaml.GridLength(3, Microsoft.UI.Xaml.GridUnitType.Star);
-            Microsoft.UI.Xaml.Controls.Grid.SetColumn(DetailPane, 1);
+            Microsoft.UI.Xaml.Controls.Grid.SetColumn(DetailPane, 2);
             Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(DetailPane, 1);
+            ConversationSplitter.Visibility = Visibility.Visible;
+            ApplyConversationColumnWidths();
         }
         else
         {
-            BodyGrid.ColumnDefinitions[0].Width = new Microsoft.UI.Xaml.GridLength(1, Microsoft.UI.Xaml.GridUnitType.Star);
-            BodyGrid.ColumnDefinitions[1].Width = new Microsoft.UI.Xaml.GridLength(0);
+            ConversationColumn.MinWidth = 0;
+            DetailColumn.MinWidth = 0;
+            ConversationColumn.Width = new GridLength(1, GridUnitType.Star);
+            ConversationSplitterColumn.Width = new GridLength(0);
+            DetailColumn.Width = new GridLength(0);
             Microsoft.UI.Xaml.Controls.Grid.SetColumn(DetailPane, 0);
-            Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(DetailPane, 2);
+            Microsoft.UI.Xaml.Controls.Grid.SetColumnSpan(DetailPane, 3);
+            ConversationSplitter.Visibility = Visibility.Collapsed;
         }
+    }
+
+    private void FinishConversationListResize()
+    {
+        if (!_isResizingConversationList) return;
+        _isResizingConversationList = false;
+        if (ViewModel.IsWideLayout && ConversationPane.ActualWidth >= MinimumConversationListWidth)
+        {
+            var width = ConversationPane.ActualWidth;
+            App.Layout.Update(layout => layout with { InboxListWidth = width });
+        }
+        ApplyConversationColumnWidths();
+    }
+
+    // Until the user drags the splitter, the list keeps its original 2:3 share of the width.
+    private void ApplyConversationColumnWidths()
+    {
+        if (!ViewModel.IsWideLayout || _isResizingConversationList || BodyGrid.ActualWidth <= 0) return;
+        ConversationColumn.MinWidth = MinimumConversationListWidth;
+        DetailColumn.MinWidth = MinimumConversationDetailWidth;
+        ConversationSplitterColumn.Width = new GridLength(ConversationSplitterWidth);
+        if (App.Layout.Current.InboxListWidth is not { } preferred)
+        {
+            ConversationColumn.Width = new GridLength(2, GridUnitType.Star);
+            DetailColumn.Width = new GridLength(3, GridUnitType.Star);
+            return;
+        }
+        var contentWidth = BodyGrid.ActualWidth - BodyGrid.ColumnSpacing * 2 - ConversationSplitterWidth;
+        var width = Math.Clamp(preferred, MinimumConversationListWidth,
+            Math.Max(MinimumConversationListWidth, contentWidth - MinimumConversationDetailWidth));
+        // Star columns stay within the viewport while a window resize is being arranged.
+        ConversationColumn.Width = new GridLength(width, GridUnitType.Star);
+        DetailColumn.Width = new GridLength(Math.Max(MinimumConversationDetailWidth, contentWidth - width), GridUnitType.Star);
     }
 
     private void Conversation_ItemClick(object sender, ItemClickEventArgs e)
