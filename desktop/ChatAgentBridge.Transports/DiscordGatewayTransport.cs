@@ -470,8 +470,10 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
     public async Task UpdateProgressAsync(ChatRequest request, ChatProgressMessage message, string text, CancellationToken cancellationToken)
     {
         ValidateProgressHandle(request, message);
-        RenewProgressStop(message);
-        await EditMessageAsync(message.ThreadId, message.MessageId, LimitMessage(text), StopComponents(FindProgressNonce(message)), cancellationToken).ConfigureAwait(false);
+        string? nonce = FindProgressNonce(message);
+        if (nonce is not null) RenewProgressStop(message);
+        object components = nonce is null ? Array.Empty<object>() : StopComponents(nonce);
+        await EditMessageAsync(message.ThreadId, message.MessageId, LimitMessage(text), components, cancellationToken).ConfigureAwait(false);
     }
 
     public void CompleteProgress(ChatProgressMessage message)
@@ -960,10 +962,10 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
         lock (_actionLock) _actions.Remove(action.Nonce);
     }
     private void RemoveProgress(string nonce) { lock (_actionLock) _progress.Remove(nonce); }
-    private string FindProgressNonce(ChatProgressMessage handle)
+    private string? FindProgressNonce(ChatProgressMessage handle)
     {
         lock (_actionLock)
-            return _progress.FirstOrDefault(entry => entry.Value.Handle == handle).Key ?? "";
+            return _progress.FirstOrDefault(entry => entry.Value.Handle == handle).Key;
     }
     private bool HasSeenMessage(string id) { lock (_seenLock) return _seenMessageIds.Contains(id); }
     private void RememberSeenMessage(string id)

@@ -144,6 +144,29 @@ public sealed class DiscordGatewayTransportTests
     }
 
     [Fact]
+    public async Task Terminal_progress_edit_does_not_recreate_the_stop_button()
+    {
+        var api = new RecordingHandler(request => request.Method == HttpMethod.Post
+            ? Json(HttpStatusCode.OK, """{"id":"progress-message"}""")
+            : Json(HttpStatusCode.OK, "{}"));
+        await using var transport = NewTransport(api, new RecordingHandler(_ => throw new Xunit.Sdk.XunitException("No CDN request expected")));
+        transport.UpdateAccessSettings(AllowedSettings());
+        var request = Request(source: "thread");
+        var progress = await ((IChatProgressTransport)transport).PostProgressAsync(request, "working", CancellationToken.None);
+        await ((IChatProgressTransport)transport).UpdateProgressAsync(request, progress, "running", CancellationToken.None);
+        await ((IChatProgressLifecycleTransport)transport).CompleteProgressAsync(progress, CancellationToken.None);
+        await ((IChatProgressTransport)transport).UpdateProgressAsync(request, progress, "Failed", CancellationToken.None);
+
+        string[] bodies = api.Bodies.ToArray();
+        Assert.Equal(4, bodies.Length);
+        using var removed = JsonDocument.Parse(bodies[2]);
+        Assert.Empty(removed.RootElement.GetProperty("components").EnumerateArray());
+        using var terminal = JsonDocument.Parse(bodies[3]);
+        Assert.Equal("Failed", terminal.RootElement.GetProperty("content").GetString());
+        Assert.Empty(terminal.RootElement.GetProperty("components").EnumerateArray());
+    }
+
+    [Fact]
     public async Task Gateway_identifies_with_required_intents_acks_button_within_loop_and_routes_owner_scoped_decision()
     {
         var socket = new FakeSocket();
@@ -547,6 +570,7 @@ public sealed class DiscordGatewayTransportTests
         private readonly ConcurrentQueue<string> _bodies = new();
         internal int Count => _requests.Count;
         internal IReadOnlyCollection<HttpRequestMessage> Requests => _requests.ToArray();
+        internal IReadOnlyCollection<string> Bodies => _bodies.ToArray();
         internal async Task<string> LastRequestBodyAsync()
         {
             await Task.Delay(10);
