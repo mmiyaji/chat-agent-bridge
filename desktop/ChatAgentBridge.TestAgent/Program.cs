@@ -41,7 +41,8 @@ if (args is ["--version"])
 var isAntigravityFixture = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "").Equals("agy", StringComparison.OrdinalIgnoreCase);
 if (isAntigravityFixture && args is ["--help"])
 {
-    await Console.Out.WriteLineAsync("Usage of agy.exe:");
+    // The real agy prints its usage to stderr and exits 0.
+    await Console.Error.WriteLineAsync("Usage of agy.exe:");
     return;
 }
 if (isAntigravityFixture && args is ["models"])

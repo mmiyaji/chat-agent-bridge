@@ -49,9 +49,10 @@ public sealed class CliProbeService
         {
             // Gemini, Antigravity (agy), and some Copilot versions print only a semver for --version. Help is
             // non-interactive and gives us a provider identity without starting a model turn.
-            var (helpOutput, _, helpExitCode) = await RunCommandAsync(executable, workspace,
+            var (helpOutput, helpError, helpExitCode) = await RunCommandAsync(executable, workspace,
                 nodePrefix.Append("--help"), cancellationToken).ConfigureAwait(false);
-            recognized = helpExitCode == 0 && RecognizesProvider(provider, Sanitize(helpOutput));
+            // Go-based CLIs such as agy write their usage to stderr even on success.
+            recognized = helpExitCode == 0 && RecognizesProvider(provider, Sanitize(helpOutput + Environment.NewLine + helpError));
         }
         if ((provider is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity) && !recognized)
             throw new InvalidOperationException(CoreText.Get("CliProviderMismatch", provider));
