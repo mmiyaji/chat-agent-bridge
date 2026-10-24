@@ -42,6 +42,7 @@ public sealed class FileAttachmentAgentPromptTests
             SlackBotToken = "slack-secret-value",
             SlackAppToken = "app-secret-value",
             MattermostToken = "mattermost-secret-value",
+            DiscordBotToken = "discord-secret-value",
             MattermostChannelId = "channel-secret-value",
             FileAttachmentApprovalMode = "always",
             ChatResultMode = "manual"
@@ -53,9 +54,10 @@ public sealed class FileAttachmentAgentPromptTests
         Assert.DoesNotContain(settings.SlackBotToken, result, StringComparison.Ordinal);
         Assert.DoesNotContain(settings.SlackAppToken, result, StringComparison.Ordinal);
         Assert.DoesNotContain(settings.MattermostToken, result, StringComparison.Ordinal);
+        Assert.DoesNotContain(settings.DiscordBotToken, result, StringComparison.Ordinal);
         Assert.DoesNotContain(settings.MattermostChannelId, result, StringComparison.Ordinal);
         Assert.Contains("does not grant consent", result, StringComparison.Ordinal);
-        Assert.Contains("separate file consent and size/count limits", result, StringComparison.Ordinal);
+        Assert.Contains("handles Slack/Mattermost/Discord uploads under its separate file consent and size/count limits", result, StringComparison.Ordinal);
         Assert.Contains("Do not use alternate upload APIs", result, StringComparison.Ordinal);
     }
 }
