@@ -41,6 +41,7 @@ public static class CliSessionOutputParser
         private readonly StringBuilder _stepText = new();
         private readonly Dictionary<int, string> _stepTexts = [];
         private readonly HashSet<int> _announcedSteps = [];
+        private readonly Dictionary<int, (long? Input, long? Output, long? Cached)> _stepUsage = [];
         private readonly List<string> _deniedActions = [];
         private bool _streamedText;
         private bool _hasResult;
@@ -145,11 +146,12 @@ public static class CliSessionOutputParser
                     var status = String(result, "status");
                     _hasResult = status is not null;
                     _failed |= !string.Equals(status, "SUCCESS", StringComparison.OrdinalIgnoreCase);
-                    var usage = Property(result, "usage");
-                    var input = Counter(usage, "input_tokens");
-                    var output = Counter(usage, "output_tokens");
-                    var cached = Counter(usage, "cache_read_tokens");
-                    // output_tokens already includes thinking_tokens (total = input + output), and input includes cache reads.
+                    // result.usage totals the whole conversation, so a resumed turn is priced from this run's model calls.
+                    // It is only a fallback for the first turn, where both totals are the same.
+                    var (input, output, cached) = _stepUsage.Count > 0
+                        ? (Sum(_stepUsage.Values.Select(usage => usage.Input)), Sum(_stepUsage.Values.Select(usage => usage.Output)),
+                            Sum(_stepUsage.Values.Select(usage => usage.Cached)))
+                        : Counter(result, "num_turns") == 1 ? AntigravityUsage(Property(result, "usage")) : default;
                     if (input is not null || output is not null || cached is not null)
                         _usage = new AgentUsage { InputTokens = input, OutputTokens = output, CachedInputTokens = cached,
                             Scope = "turn", Source = "antigravity.stream-json" };
@@ -183,6 +185,10 @@ public static class CliSessionOutputParser
             switch (String(step, "step_type"))
             {
                 case "agent_response":
+                    // Each response step is one model call; a later update for the same step replaces its counters.
+                    var usage = AntigravityUsage(Property(step, "usage"));
+                    if (index >= 0 && usage != default && (_stepUsage.ContainsKey(index) || _stepUsage.Count < MaxTrackedSteps))
+                        _stepUsage[index] = usage;
                     var delta = String(step, "text_delta");
                     if (string.IsNullOrEmpty(delta)) return [];
                     var known = _stepTexts.TryGetValue(index, out var previous);
@@ -205,6 +211,18 @@ public static class CliSessionOutputParser
                     return state is "DONE" or "ERROR" ? Activity("ProgressCommandFinished") : [];
             }
             return [];
+        }
+
+        // output_tokens already includes thinking_tokens (total = input + output), and input includes cache reads.
+        private static (long? Input, long? Output, long? Cached) AntigravityUsage(JsonElement usage)
+            => (Counter(usage, "input_tokens"), Counter(usage, "output_tokens"), Counter(usage, "cache_read_tokens"));
+
+        private static long? Sum(IEnumerable<long?> counts)
+        {
+            long? total = null;
+            try { foreach (var count in counts) if (count is { } value) total = checked((total ?? 0) + value); }
+            catch (OverflowException) { return null; }
+            return total;
         }
 
         /// <summary>Returns a short printable label for a tool or action name, or null when there is none.</summary>

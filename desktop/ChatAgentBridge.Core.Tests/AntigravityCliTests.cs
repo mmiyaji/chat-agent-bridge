@@ -304,6 +304,47 @@ public sealed class AntigravityCliTests : IDisposable
         Assert.Null(CliSessionOutputParser.Parse(output, AgentProfile.Antigravity).Usage);
     }
 
+    private static string ResumedOutput(params string[] steps)
+        => string.Join('\n', new[] { L("""{"event":"init","conversation_id":"__ID__"}""") }.Concat(steps.Select(L)).Append(L(
+            """{"event":"result","result":{"conversation_id":"__ID__","status":"SUCCESS","response":"AGAIN","num_turns":4,"usage":{"input_tokens":30810,"output_tokens":481,"thinking_tokens":437,"cache_read_tokens":0,"total_tokens":31291}}}""")));
+
+    [Fact]
+    public void ResumedTurnUsesThisRunsStepUsageInsteadOfTheConversationTotal()
+    {
+        // Captured from agy 1.4.7 resuming a conversation: result.usage totals all four turns.
+        var usage = CliSessionOutputParser.Parse(ResumedOutput(
+            """{"event":"step_update","step_update":{"step_index":11,"state":"ACTIVE","step_type":"agent_response","text_delta":"AGAIN"}}""",
+            """{"event":"step_update","step_update":{"step_index":11,"state":"DONE","step_type":"agent_response","usage":{"input_tokens":8489,"output_tokens":69,"thinking_tokens":67,"cache_read_tokens":0,"total_tokens":8558}}}"""),
+            AgentProfile.Antigravity).Usage!;
+
+        Assert.Equal(8489, usage.InputTokens);
+        Assert.Equal(69, usage.OutputTokens);
+        Assert.Equal(0, usage.CachedInputTokens);
+        Assert.Equal("turn", usage.Scope);
+    }
+
+    [Fact]
+    public void StepUsageIsSummedAcrossModelCallsAndCountedOncePerStep()
+    {
+        var usage = CliSessionOutputParser.Parse(ResumedOutput(
+            """{"event":"step_update","step_update":{"step_index":3,"state":"ACTIVE","step_type":"agent_response","usage":{"input_tokens":1,"output_tokens":1}}}""",
+            """{"event":"step_update","step_update":{"step_index":3,"state":"DONE","step_type":"agent_response","usage":{"input_tokens":1000,"output_tokens":20,"cache_read_tokens":400}}}""",
+            """{"event":"step_update","step_update":{"step_index":4,"state":"DONE","step_type":"tool","usage":{"input_tokens":99999}}}""",
+            """{"event":"step_update","step_update":{"step_index":5,"state":"DONE","step_type":"agent_response","usage":{"input_tokens":1500,"output_tokens":30}}}"""),
+            AgentProfile.Antigravity).Usage!;
+
+        Assert.Equal(2500, usage.InputTokens);
+        Assert.Equal(50, usage.OutputTokens);
+        Assert.Equal(400, usage.CachedInputTokens);
+    }
+
+    [Fact]
+    public void ConversationTotalIsOnlyUsedForAFirstTurnWithoutStepUsage()
+    {
+        Assert.Equal(6742, CliSessionOutputParser.Parse(SampleOutput(), AgentProfile.Antigravity).Usage!.InputTokens);
+        Assert.Null(CliSessionOutputParser.Parse(ResumedOutput(), AgentProfile.Antigravity).Usage);
+    }
+
     [Fact]
     public void FallsBackToStreamedAgentResponseTextWhenTheResponseIsEmpty()
     {
@@ -604,7 +645,10 @@ public sealed class AntigravityCliTests : IDisposable
         Assert.True(second.Success, second.Error);
         Assert.Contains("antigravity-e2e: resumed; model=fixture-agy-fast; prompt=again", second.Output);
         Assert.Equal(conversation, second.CliSession!.SessionId);
+        // The resumed result totals 200 input tokens for the conversation; only this run's 100 are recorded.
         Assert.Equal(100, second.Usage!.InputTokens);
+        Assert.Equal(75, second.Usage.CachedInputTokens);
+        Assert.Equal("fixture-agy-fast", second.Usage.Model);
     }
 
     private string CopyTestAgentAs(string name)

@@ -80,10 +80,14 @@ if (!args.Contains("--print") && structuredFormatIndex >= 0 && structuredFormatI
             tool_info = new { name = "synthetic", parameters = new { command = "hidden-tool-arguments" } } } });
         await WriteAsync(new { @event = "step_update", step_update = new { conversation_id = fixtureSessionId, step_index = 1, state = "DONE", step_type = "tool", tool_name = "synthetic" } });
         await WriteAsync(new { @event = "step_update", step_update = new { conversation_id = fixtureSessionId, step_index = 2, state = "ACTIVE", step_type = "agent_response", text_delta = fixtureReply[..12] } });
-        await WriteAsync(new { @event = "step_update", step_update = new { conversation_id = fixtureSessionId, step_index = 2, state = "DONE", step_type = "agent_response", text_delta = fixtureReply[12..] } });
         var antigravityUsage = new { input_tokens = 100, output_tokens = 5, thinking_tokens = 2, cache_read_tokens = 75, total_tokens = 105 };
+        await WriteAsync(new { @event = "step_update", step_update = new { conversation_id = fixtureSessionId, step_index = 2, state = "DONE", step_type = "agent_response", text_delta = fixtureReply[12..],
+            usage = antigravityUsage } });
+        // Like the real CLI, the result totals the whole conversation, so a resumed run reports more than its own call.
+        var turns = resumeIndex >= 0 ? 2 : 1;
         if (fixtureMode != "missing-result") await WriteAsync(new { @event = "result", result = new { conversation_id = fixtureSessionId,
-            status = fixtureMode == "failure" ? "ERROR" : "SUCCESS", response = fixtureReply, duration_seconds = 0.1, num_turns = 1, usage = antigravityUsage } });
+            status = fixtureMode == "failure" ? "ERROR" : "SUCCESS", response = fixtureReply, duration_seconds = 0.1, num_turns = turns,
+            usage = new { input_tokens = 100 * turns, output_tokens = 5 * turns, thinking_tokens = 2 * turns, cache_read_tokens = 75 * turns, total_tokens = 105 * turns } } });
     }
     else if (isGemini)
     {
