@@ -215,8 +215,8 @@
                                         <TextBlock Text="{x:Bind ViewModel.SetupDraftNotice, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSetupDraftNotice), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="OverviewDraftNotice" />
                                     </StackPanel>
                                 </Border>
-                                <StackPanel Spacing="8" x:Name="StartupSettingsCard" AutomationProperties.AutomationId="StartupCard">
-                                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="StartupHeading" x:Uid="StartupHeading" />
+                                <StackPanel Spacing="{StaticResource SettingsCardSpacing}" x:Name="StartupSettingsCard" AutomationProperties.AutomationId="StartupCard">
+                                    <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" AutomationProperties.AutomationId="StartupHeading" x:Uid="StartupHeading" />
                                     <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" x:Uid="StartupSettingRow" AutomationProperties.AutomationId="StartupSettingRow">
                                         <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7E8;" /></settings:SettingsCard.HeaderIcon>
                                         <settings:SettingsCard.Description>
@@ -242,8 +242,8 @@
                                 </StackPanel>
                                 <tray:TraySettingsControl />
                                 <deployment:PortableIdentityControl />
-                                <StackPanel x:Name="GeneralAppearanceSection" Spacing="12" AutomationProperties.AutomationId="GeneralAppearanceSection">
-                                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="GeneralAppearanceSectionHeading" x:Uid="GeneralAppearanceSectionHeading" />
+                                <StackPanel x:Name="GeneralAppearanceSection" Spacing="{StaticResource SettingsCardSpacing}" AutomationProperties.AutomationId="GeneralAppearanceSection">
+                                    <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" AutomationProperties.AutomationId="GeneralAppearanceSectionHeading" x:Uid="GeneralAppearanceSectionHeading" />
                                     <localization:LanguageSettings x:Name="SettingsLanguage" AutomationProperties.AutomationId="LanguageCard" />
                                     <appearance:AppearanceSettings />
                                 </StackPanel>
