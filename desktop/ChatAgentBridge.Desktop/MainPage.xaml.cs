@@ -381,6 +381,7 @@ public sealed partial class MainPage : Page
         if (!IsAgentSelected) ViewModel.CancelModelCatalogLookup();
         ViewModel.IsStatusOpen = false;
         if (pageChanged) Bindings.Update();
+        if (pageChanged && _hasLoaded) PlayPageEntrance();
         if (pageChanged && _hasLoaded)
         {
             var generation = ++_scrollResetGeneration;
