@@ -336,6 +336,7 @@ public sealed partial class MainPage : Page
             else if (startupProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
             else if (startupProvider == "discord") await InboxPage.ViewModel.ConnectDiscordCommand.ExecuteAsync(null);
         }
+        InitializeFeatureTips();
     }
 
     private async void ReloadSettings_Click(object sender, RoutedEventArgs e)

@@ -849,4 +849,8 @@
   <data name="PaneSizerSidebar" xml:space="preserve"><value>サイドバーの幅を変更</value></data>
   <data name="PaneSizerSettings" xml:space="preserve"><value>設定メニューの幅を変更</value></data>
   <data name="PaneSizerHelp" xml:space="preserve"><value>ドラッグするか、矢印キーを使って幅を変更します。</value></data>
+  <data name="TipChatConnectTitle" xml:space="preserve"><value>チャットから依頼を受け付ける</value></data>
+  <data name="TipChatConnectBody" xml:space="preserve"><value>「チャット」を開いて Mattermost・Slack・Discord に接続すると、チャットで送られた依頼をこの PC で実行できます。</value></data>
+  <data name="TipOpenChat" xml:space="preserve"><value>チャットを開く</value></data>
+  <data name="TipGotIt" xml:space="preserve"><value>OK</value></data>
 </root>

@@ -849,4 +849,8 @@ After: {2}</value></data>
   <data name="PaneSizerSidebar" xml:space="preserve"><value>Resize the sidebar</value></data>
   <data name="PaneSizerSettings" xml:space="preserve"><value>Resize the settings menu</value></data>
   <data name="PaneSizerHelp" xml:space="preserve"><value>Drag or use the arrow keys to change the width.</value></data>
+  <data name="TipChatConnectTitle" xml:space="preserve"><value>Take requests from chat</value></data>
+  <data name="TipChatConnectBody" xml:space="preserve"><value>Open Chat and connect to Mattermost, Slack, or Discord to run requests sent from chat on this PC.</value></data>
+  <data name="TipOpenChat" xml:space="preserve"><value>Open chat</value></data>
+  <data name="TipGotIt" xml:space="preserve"><value>Got it</value></data>
 </root>
