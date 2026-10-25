@@ -37,7 +37,13 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
     public MainPageViewModel Editor { get; } = new(isAgentProfileEditor: true);
     public bool HasPendingEdits => Editor.HasUnsavedSettings;
     public string CheckStatusLabel => MrtText.Get(Editor.IsCheckingCli ? "AgentEditorChecking" : Editor.CliCheckSucceeded ? "AgentEditorChecked" : Editor.CliCheckFailed ? "AgentEditorCheckFailed" : "AgentEditorNotChecked");
-    public static Visibility CountVisibility(int count) => count > 0 ? Visibility.Visible : Visibility.Collapsed;
+    // One icon slot for every state keeps the status text from shifting when the check starts or finishes.
+    public string CheckStatusGlyph => Editor.CliCheckSucceeded ? "" : Editor.CliCheckFailed ? "" : "";
+    public Microsoft.UI.Xaml.Media.Brush CheckStatusBrush => (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[
+        Editor.CliCheckSucceeded ? "SystemFillColorSuccessBrush" : Editor.CliCheckFailed ? "SystemFillColorCriticalBrush" : "TextFillColorSecondaryBrush"];
+    public static Visibility InverseVisibility(bool value) => value ? Visibility.Collapsed : Visibility.Visible;
+    // The model list keeps its place while the check refreshes it; it is only disabled until choices arrive.
+    public static bool HasModelChoices(int count, bool loading) => count > 0 && !loading;
     public string CurrentProvider => _currentProvider;
     public bool CanChangeSelection => _isConfigured && !_isBusy && !_isShuttingDown && !Editor.IsCheckingCli &&
                                       !Editor.IsLoading && !Editor.ModelCatalog.IsLoading;
@@ -533,6 +539,8 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
     private void NotifyStateChanged()
     {
         OnPropertyChanged(nameof(CheckStatusLabel));
+        OnPropertyChanged(nameof(CheckStatusGlyph));
+        OnPropertyChanged(nameof(CheckStatusBrush));
         OnPropertyChanged(nameof(HasPendingEdits));
         OnPropertyChanged(nameof(CanChangeSelection));
         OnPropertyChanged(nameof(CanRunCliCheck));

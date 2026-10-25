@@ -29,6 +29,7 @@
                         IsSettingsVisible="False"
                         PaneDisplayMode="Auto" OpenPaneLength="240"
                         DisplayModeChanged="MainNavigation_DisplayModeChanged"
+                        ItemInvoked="MainNavigation_ItemInvoked"
                         SelectionChanged="MainNavigation_SelectionChanged"
 
                         AutomationProperties.AutomationId="MainNavigation" x:Uid="MainNavigation">
@@ -37,12 +38,24 @@
                 <Thickness x:Key="NavigationViewItemContentPresenterMargin">4,-1,6,-1</Thickness>
             </NavigationView.Resources>
             <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="OpenSettingsSearch" x:Uid="OpenSettingsSearch"
+                                    SelectsOnInvoked="False"
+                                    Visibility="{x:Bind local:MainPage.SearchTriggerVisibility(ViewModel.IsSettingsLoaded, ViewModel.IsOnboardingActive), Mode=OneWay}"
+                                    AutomationProperties.AutomationId="OpenSettingsSearch">
+                    <NavigationViewItem.Icon><SymbolIcon Symbol="Find" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem  Tag="overview"  AutomationProperties.AutomationId="NavOverview" x:Uid="NavOverview">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Home" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <!-- Gallery-style groups: everyday work first, then the settings pages. -->
+                <NavigationViewItemHeader x:Uid="NavGroupWork" AutomationProperties.AutomationId="NavGroupWork" />
                 <NavigationViewItem  Tag="workbench"  AutomationProperties.AutomationId="NavWorkbench" x:Uid="NavWorkbench">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Play" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem Tag="chat" AutomationProperties.AutomationId="NavChat" Icon="Message" x:Uid="NavChat" />
+                <NavigationViewItem  Tag="history" AutomationProperties.AutomationId="NavHistory" Icon="Clock"  x:Uid="NavHistory" />
+                <NavigationViewItemSeparator />
+                <NavigationViewItemHeader x:Uid="NavGroupSettings" AutomationProperties.AutomationId="NavGroupSettings" />
                 <NavigationViewItem Tag="agent" AutomationProperties.AutomationId="NavAgentSettings" x:Uid="NavAgentSettings">
                     <!-- Segoe Fluent glyphs match the other items' size and stroke weight. -->
                     <NavigationViewItem.Icon>
@@ -54,8 +67,6 @@
                         <FontIcon Glyph="&#xE8F2;" AutomationProperties.AccessibilityView="Raw" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Tag="chat" AutomationProperties.AutomationId="NavChat" Icon="Message" x:Uid="NavChat" />
-                <NavigationViewItem  Tag="history" AutomationProperties.AutomationId="NavHistory" Icon="Clock"  x:Uid="NavHistory" />
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>
                 <NavigationViewItem Tag="chat" AutomationProperties.AutomationId="NavChatConnectionStatus"
@@ -161,7 +172,7 @@
                     </StackPanel>
                     <ScrollViewer x:Name="MainContentScroll" Grid.Row="3" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind local:MainPage.CanUseForm(IsOverviewSelected, ViewModel.IsSettingsLoaded, ViewModel.IsLoading), Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="MainContentScroll"  x:Uid="MainContentScroll">
                         <Grid Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="1040" HorizontalAlignment="Left" AutomationProperties.AutomationId="FormContent">
-                            <StackPanel Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsOverviewSelected), Mode=OneTime}">
+                            <StackPanel x:Name="GeneralPagePanel" Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsOverviewSelected), Mode=OneTime}">
                                 <StackPanel Spacing="4">
                                     <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="GeneralPageTitle" x:Uid="GeneralPageTitle" />
                                     <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="GeneralPageDescription" x:Uid="GeneralPageDescription" />
@@ -211,8 +222,8 @@
                                         <TextBlock Text="{x:Bind ViewModel.SetupDraftNotice, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSetupDraftNotice), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="OverviewDraftNotice" />
                                     </StackPanel>
                                 </Border>
-                                <StackPanel Spacing="8" x:Name="StartupSettingsCard" AutomationProperties.AutomationId="StartupCard">
-                                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="StartupHeading" x:Uid="StartupHeading" />
+                                <StackPanel Spacing="{StaticResource SettingsCardSpacing}" x:Name="StartupSettingsCard" AutomationProperties.AutomationId="StartupCard">
+                                    <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" AutomationProperties.AutomationId="StartupHeading" x:Uid="StartupHeading" />
                                     <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" x:Uid="StartupSettingRow" AutomationProperties.AutomationId="StartupSettingRow">
                                         <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7E8;" /></settings:SettingsCard.HeaderIcon>
                                         <settings:SettingsCard.Description>
@@ -238,8 +249,8 @@
                                 </StackPanel>
                                 <tray:TraySettingsControl />
                                 <deployment:PortableIdentityControl />
-                                <StackPanel x:Name="GeneralAppearanceSection" Spacing="12" AutomationProperties.AutomationId="GeneralAppearanceSection">
-                                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" AutomationProperties.AutomationId="GeneralAppearanceSectionHeading" x:Uid="GeneralAppearanceSectionHeading" />
+                                <StackPanel x:Name="GeneralAppearanceSection" Spacing="{StaticResource SettingsCardSpacing}" AutomationProperties.AutomationId="GeneralAppearanceSection">
+                                    <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" AutomationProperties.AutomationId="GeneralAppearanceSectionHeading" x:Uid="GeneralAppearanceSectionHeading" />
                                     <localization:LanguageSettings x:Name="SettingsLanguage" AutomationProperties.AutomationId="LanguageCard" />
                                     <appearance:AppearanceSettings />
                                 </StackPanel>
@@ -335,7 +346,7 @@
                                 </Expander>
                             </StackPanel>
 
-                            <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
+                            <StackPanel x:Name="AgentPagePanel" Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="AgentSettingsGuide" localization:LocalizedResourceKey.Key="AgentSettingsGuide" />
                                 <Expander x:Name="AgentBasicSettings" AutomationProperties.AutomationId="AgentBasicSettings" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="AgentBasicAccessible" localization:LocalizedResourceKey.Key="AgentBasicAccessible">
                                     <Expander.Header>
@@ -539,7 +550,7 @@
                                     </StackPanel>
                                 </Expander>
                             </StackPanel>
-                            <StackPanel Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsWorkbenchSelected), Mode=OneTime}">
+                            <StackPanel x:Name="WorkbenchPagePanel" Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsWorkbenchSelected), Mode=OneTime}">
                                 <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock044" x:Uid="chatAgentBridgeDesktopMainPageTextBlock044" />
                                 <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock045" x:Uid="chatAgentBridgeDesktopMainPageTextBlock045" />
                                 <TextBlock Text="{x:Bind ViewModel.SavedAgentSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WorkbenchAgentSummary" />
@@ -569,7 +580,7 @@
                                 <TextBox  Text="{x:Bind ViewModel.Output, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="160" MaxHeight="400" AutomationProperties.AutomationId="AgentOutput"  x:Uid="AgentOutput" />
                                 <TextBlock Text="{x:Bind ViewModel.UsageSummary, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="LocalUsageSummary" />
                             </StackPanel>
-                            <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
+                            <StackPanel x:Name="ConnectionsPagePanel" Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="ChatSettingsGuide" localization:LocalizedResourceKey.Key="ChatSettingsGuide" />
                                 <Expander x:Name="ChatApprovalSettingsCard" AutomationProperties.AutomationId="ChatApprovalCard" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="ChatCommonAccessible" localization:LocalizedResourceKey.Key="ChatCommonAccessible">
                                     <Expander.Header>

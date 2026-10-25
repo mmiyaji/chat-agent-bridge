@@ -104,6 +104,8 @@ public sealed partial class MainPage
         AttachSettingsNavigationResizer(_connectionScopeNavigation, shell, "ConnectionScopeSizer");
 
         var page = new StackPanel { Spacing = 12, Margin = new Thickness(16) };
+        _connectionScopeBreadcrumb = CreateScopeBreadcrumb("ConnectionScopeBreadcrumb", () => SetConnectionSettingsScope("common"));
+        page.Children.Add(_connectionScopeBreadcrumb);
         page.Children.Add(_connectionScopeHeading);
         page.Children.Add(_connectionScopeCommonGroup);
         page.Children.Add(_connectionScopeMattermostGroup);
@@ -171,6 +173,7 @@ public sealed partial class MainPage
             _connectionScopeNavigation.SelectedItem = _connectionScopeNavigation.MenuItems[index];
         }
         _syncingConnectionScopeSelection = false;
+        UpdateScopeBreadcrumb(_connectionScopeBreadcrumb, "connections", _connectionScopeNavigation, isCommon);
     }
 
     private void RefreshConnectionScopeLabels(System.Globalization.CultureInfo culture)

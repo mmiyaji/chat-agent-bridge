@@ -18,7 +18,7 @@
         </StackPanel>
         <ScrollViewer x:Name="AboutScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="AboutScroll">
-            <StackPanel Spacing="8" AutomationProperties.AutomationId="AboutContent">
+            <StackPanel Spacing="{StaticResource SettingsCardSpacing}" AutomationProperties.AutomationId="AboutContent">
                 <settings:SettingsCard AutomationProperties.AutomationId="AboutProductCard">
                     <settings:SettingsCard.Header>
                         <TextBlock x:Name="ProductValue" Style="{StaticResource SubtitleTextBlockStyle}"
@@ -76,7 +76,7 @@
                                  NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/releases"
                                  HorizontalAlignment="Left" AutomationProperties.AutomationId="AboutReleaseNotes" localization:LocalizedResourceKey.Key="PortableUpdateReleaseNotes" />
 
-                <TextBlock x:Uid="AboutLinksHeading" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,0" localization:LocalizedResourceKey.Key="AboutLinksHeading" />
+                <TextBlock x:Uid="AboutLinksHeading" Style="{StaticResource SettingsSectionHeaderStyle}" localization:LocalizedResourceKey.Key="AboutLinksHeading" />
                 <settings:SettingsCard x:Uid="AboutWebsite" IsClickEnabled="True" Click="OpenLink_Click"
                                        Tag="https://ruhenheim.org" AutomationProperties.AutomationId="AboutWebsite">
                     <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE774;" /></settings:SettingsCard.HeaderIcon>
@@ -92,7 +92,7 @@
                            AutomationProperties.AutomationId="AboutActionStatus"
                            AutomationProperties.LiveSetting="Polite" />
 
-                <TextBlock x:Uid="AboutLegalHeading" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,8,0,0" localization:LocalizedResourceKey.Key="AboutLegalHeading" />
+                <TextBlock x:Uid="AboutLegalHeading" Style="{StaticResource SettingsSectionHeaderStyle}" localization:LocalizedResourceKey.Key="AboutLegalHeading" />
                 <TextBlock x:Uid="AboutDataHandling" TextWrapping="Wrap" Margin="0,0,0,4"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" localization:LocalizedResourceKey.Key="AboutDataHandling" />
                 <settings:SettingsCard x:Uid="AboutTerms" IsClickEnabled="True" Click="Terms_Click"

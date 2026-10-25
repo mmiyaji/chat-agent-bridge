@@ -1,5 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
+  <data name="OpenSettingsSearch.Content" xml:space="preserve"><value>Search settings</value></data>
+  <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Search settings</value></data>
+  <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Search settings (Ctrl+F)</value></data>
+  <data name="SettingsSearchBox.PlaceholderText" xml:space="preserve"><value>Search settings (Ctrl+F)</value></data>
+  <data name="SettingsSearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Search settings</value></data>
   <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>Open chat settings</value></data>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>Connect without a proxy</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>Turn on for a direct connection to your internal Mattermost server. When off, the system proxy settings are used. This applies to user lookup, post link checks, and sending and receiving messages. Reconnect after changing this setting.</value></data>
@@ -29,6 +34,12 @@
   </data>
   <data name="NavChat.Content" xml:space="preserve">
     <value>Chat</value>
+  </data>
+  <data name="NavGroupWork.Content" xml:space="preserve">
+    <value>Work</value>
+  </data>
+  <data name="NavGroupSettings.Content" xml:space="preserve">
+    <value>Settings</value>
   </data>
   <data name="NavHistory.Content" xml:space="preserve">
     <value>History and usage</value>
@@ -1246,6 +1257,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentEditorChecking" xml:space="preserve"><value>Checking CLI…</value></data>
   <data name="AgentEditorChecked" xml:space="preserve"><value>CLI verified</value></data>
   <data name="AgentEditorCheckFailed" xml:space="preserve"><value>CLI check failed</value></data>
+  <data name="AgentEditorModelChoicesBox.PlaceholderText" xml:space="preserve"><value>Check the CLI to choose a model</value></data>
   <data name="AgentEditorNotChecked" xml:space="preserve"><value>CLI not checked</value></data>
   <data name="AgentEditorModelChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Available models</value></data>
   <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Reasoning effort</value></data>

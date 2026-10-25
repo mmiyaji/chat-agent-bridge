@@ -9,8 +9,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
-    <StackPanel Spacing="8" AutomationProperties.AutomationId="TraySettingsCard">
-        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="TraySettingsHeading" AutomationProperties.AutomationId="TraySettingsHeading" />
+    <StackPanel Spacing="{StaticResource SettingsCardSpacing}" AutomationProperties.AutomationId="TraySettingsCard">
+        <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" x:Uid="TraySettingsHeading" AutomationProperties.AutomationId="TraySettingsHeading" />
         <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="TrayBehaviorSettingRow">
             <settings:SettingsCard.Header><TextBlock x:Uid="CloseBehaviorLabel" TextWrapping="Wrap" localization:LocalizedResourceKey.Key="CloseBehaviorLabel" /></settings:SettingsCard.Header>
             <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="DockBottom" /></settings:SettingsCard.HeaderIcon>

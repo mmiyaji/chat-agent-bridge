@@ -1,5 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
+  <data name="OpenSettingsSearch.Content" xml:space="preserve"><value>設定を検索</value></data>
+  <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>設定を検索</value></data>
+  <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>設定を検索（Ctrl+F）</value></data>
+  <data name="SettingsSearchBox.PlaceholderText" xml:space="preserve"><value>設定を検索（Ctrl+F）</value></data>
+  <data name="SettingsSearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>設定を検索</value></data>
   <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>チャット設定を開く</value></data>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>プロキシを使わず直接接続</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>社内のMattermostへ直接接続する場合にオンにします。オフはシステムのプロキシ設定を使用します。ユーザー検索・投稿リンクの確認・メッセージ送受信すべてに適用します。変更後は再接続してください。</value></data>
@@ -29,6 +34,12 @@
   </data>
   <data name="NavChat.Content" xml:space="preserve">
     <value>チャット</value>
+  </data>
+  <data name="NavGroupWork.Content" xml:space="preserve">
+    <value>作業</value>
+  </data>
+  <data name="NavGroupSettings.Content" xml:space="preserve">
+    <value>設定</value>
   </data>
   <data name="NavHistory.Content" xml:space="preserve">
     <value>履歴と利用状況</value>
@@ -1246,6 +1257,7 @@
   <data name="AgentEditorChecking" xml:space="preserve"><value>CLIを確認中…</value></data>
   <data name="AgentEditorChecked" xml:space="preserve"><value>CLI確認済み</value></data>
   <data name="AgentEditorCheckFailed" xml:space="preserve"><value>CLIの確認に失敗</value></data>
+  <data name="AgentEditorModelChoicesBox.PlaceholderText" xml:space="preserve"><value>CLIを確認するとモデルを選べます</value></data>
   <data name="AgentEditorNotChecked" xml:space="preserve"><value>CLI未確認</value></data>
   <data name="AgentEditorModelChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>CLIから取得したモデル候補</value></data>
   <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>推論の強さ</value></data>

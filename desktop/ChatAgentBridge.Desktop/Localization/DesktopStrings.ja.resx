@@ -81,6 +81,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="ApprovalPending" xml:space="preserve"><value>承認待ち</value></data>
+  <data name="NavChatPendingBadge" xml:space="preserve"><value>承認待ち {0} 件</value></data>
   <data name="ApprovalRunning" xml:space="preserve"><value>実行中</value></data>
   <data name="ApprovalCompleted" xml:space="preserve"><value>完了</value></data>
   <data name="ApprovalFailed" xml:space="preserve"><value>失敗 ({0})</value></data>
@@ -419,6 +420,7 @@
   <data name="InboxEmptyFilteredHeading" xml:space="preserve"><value>条件に一致する会話はありません</value></data>
   <data name="InboxEmptyFilteredDescription" xml:space="preserve"><value>検索または状態の絞り込みを変更・解除してください。</value></data>
   <data name="InboxEmptyDetailHeading" xml:space="preserve"><value>会話を選択</value></data>
+  <data name="NavShortcutTooltip" xml:space="preserve"><value>{0}（Ctrl+{1}）</value></data>
   <data name="InboxEmptyDetailDescription" xml:space="preserve"><value>一覧から会話を選ぶと、依頼や応答を確認できます。</value></data>
   <data name="InboxRestoredDescription" xml:space="preserve"><value>以前の依頼は再開されません。続けるには、同じチャットスレッドへ「!cab 依頼内容」を新しく投稿してください。この一覧には依頼本文や結果本文は保存されません。</value></data>
   <data name="InboxPersistenceLoadFailed" xml:space="preserve"><value>会話一覧を復元できませんでした。元のファイルは保持されており、依頼は自動的に再開されませんでした。</value></data>
@@ -847,4 +849,10 @@
   <data name="PaneSizerSidebar" xml:space="preserve"><value>サイドバーの幅を変更</value></data>
   <data name="PaneSizerSettings" xml:space="preserve"><value>設定メニューの幅を変更</value></data>
   <data name="PaneSizerHelp" xml:space="preserve"><value>ドラッグするか、矢印キーを使って幅を変更します。</value></data>
+  <data name="TipChatConnectTitle" xml:space="preserve"><value>チャットから依頼を受け付ける</value></data>
+  <data name="TipChatConnectBody" xml:space="preserve"><value>「チャット」を開いて Mattermost・Slack・Discord に接続すると、チャットで送られた依頼をこの PC で実行できます。</value></data>
+  <data name="TipOpenChat" xml:space="preserve"><value>チャットを開く</value></data>
+  <data name="TipGotIt" xml:space="preserve"><value>OK</value></data>
+  <data name="SearchScopeSettings" xml:space="preserve"><value>{0} の設定</value></data>
+  <data name="SearchNoResults" xml:space="preserve"><value>一致する設定がありません</value></data>
 </root>

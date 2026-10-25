@@ -81,6 +81,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="ApprovalPending" xml:space="preserve"><value>Awaiting approval</value></data>
+  <data name="NavChatPendingBadge" xml:space="preserve"><value>{0} awaiting approval</value></data>
   <data name="ApprovalRunning" xml:space="preserve"><value>Running</value></data>
   <data name="ApprovalCompleted" xml:space="preserve"><value>Completed</value></data>
   <data name="ApprovalFailed" xml:space="preserve"><value>Failed ({0})</value></data>
@@ -419,6 +420,7 @@
   <data name="InboxEmptyFilteredHeading" xml:space="preserve"><value>No matching conversations</value></data>
   <data name="InboxEmptyFilteredDescription" xml:space="preserve"><value>Change or clear the search or state filter to see conversations.</value></data>
   <data name="InboxEmptyDetailHeading" xml:space="preserve"><value>Select a conversation</value></data>
+  <data name="NavShortcutTooltip" xml:space="preserve"><value>{0} (Ctrl+{1})</value></data>
   <data name="InboxEmptyDetailDescription" xml:space="preserve"><value>Choose a conversation from the list to review its requests and responses.</value></data>
   <data name="InboxRestoredDescription" xml:space="preserve"><value>Previous requests are not resumed. To continue, post a new !cab request in the same chat thread. Request and result bodies are not saved in this list.</value></data>
   <data name="InboxPersistenceLoadFailed" xml:space="preserve"><value>The conversation list could not be restored. The original file was kept, and no requests were resumed automatically.</value></data>
@@ -847,4 +849,10 @@ After: {2}</value></data>
   <data name="PaneSizerSidebar" xml:space="preserve"><value>Resize the sidebar</value></data>
   <data name="PaneSizerSettings" xml:space="preserve"><value>Resize the settings menu</value></data>
   <data name="PaneSizerHelp" xml:space="preserve"><value>Drag or use the arrow keys to change the width.</value></data>
+  <data name="TipChatConnectTitle" xml:space="preserve"><value>Take requests from chat</value></data>
+  <data name="TipChatConnectBody" xml:space="preserve"><value>Open Chat and connect to Mattermost, Slack, or Discord to run requests sent from chat on this PC.</value></data>
+  <data name="TipOpenChat" xml:space="preserve"><value>Open chat</value></data>
+  <data name="TipGotIt" xml:space="preserve"><value>Got it</value></data>
+  <data name="SearchScopeSettings" xml:space="preserve"><value>{0} settings</value></data>
+  <data name="SearchNoResults" xml:space="preserve"><value>No matching settings</value></data>
 </root>

@@ -43,6 +43,7 @@ public sealed partial class MainPage : Page
         InitializeLanguageRestart();
         InitializePortableUpdateBadge();
         InitializePortableUpdateRecoveryProbe();
+        InitializePendingBadge();
         UpdateNavigationContentOffset();
         _wizard = new Onboarding.OnboardingWizard(ViewModel, InboxPage.ViewModel, ReloadProcessEnvironment);
         WizardHost.Content = _wizard;
@@ -104,7 +105,9 @@ public sealed partial class MainPage : Page
         HistoryPage.AgentSettingsRequested += () => OpenAgentSettings_Click(this, new RoutedEventArgs());
         InboxPage.ConnectionSettingsRequested += () => OpenConnections_Click(this, new RoutedEventArgs());
         ViewModel.OnboardingNavigateRequested += _ => _wizard.ResetScroll();
-        MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
+        // Search is a command row, so keep General as the initial selected page.
+        MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>()
+            .First(item => item.Tag as string == "overview");
     }
 
     private void RefreshLanguage(System.Globalization.CultureInfo culture)
@@ -190,6 +193,9 @@ public sealed partial class MainPage : Page
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+
+    public static Visibility SearchTriggerVisibility(bool isSettingsLoaded, bool isOnboardingActive) =>
+        isSettingsLoaded && !isOnboardingActive ? Visibility.Visible : Visibility.Collapsed;
 
     internal async Task ShutdownAsync()
     {
@@ -307,6 +313,7 @@ public sealed partial class MainPage : Page
     private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
         InitializeSidebarResizer();
+        InitializeNavigationShortcuts();
         if (_hasLoaded) return;
         _hasLoaded = true;
         // The Windows startup-task query does not depend on saved settings, so it
@@ -334,6 +341,7 @@ public sealed partial class MainPage : Page
             else if (startupProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
             else if (startupProvider == "discord") await InboxPage.ViewModel.ConnectDiscordCommand.ExecuteAsync(null);
         }
+        InitializeFeatureTips();
     }
 
     private async void ReloadSettings_Click(object sender, RoutedEventArgs e)
@@ -379,6 +387,7 @@ public sealed partial class MainPage : Page
         if (!IsAgentSelected) ViewModel.CancelModelCatalogLookup();
         ViewModel.IsStatusOpen = false;
         if (pageChanged) Bindings.Update();
+        if (pageChanged && _hasLoaded) PlayPageEntrance();
         if (pageChanged && _hasLoaded)
         {
             var generation = ++_scrollResetGeneration;

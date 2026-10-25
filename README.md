@@ -226,6 +226,7 @@ Released under the [MIT License](LICENSE). Check the terms and contracts of the 
 
 - [Terms of Use](docs/terms.en.md) / [Privacy Policy](docs/privacy-policy.en.md)
 - [Windows app guide and development instructions (Japanese)](desktop/README.ja.md)
+- [Portable release procedure (Japanese)](RELEASE.md)
 - [Portable edition guide](desktop/distribution/README.portable.en.txt)
 - [Report a bug or suggest a feature](https://github.com/mmiyaji/chat-agent-bridge/issues)
 - [Third-party notices](desktop/THIRD-PARTY-NOTICES.txt), also available in the app's About page
