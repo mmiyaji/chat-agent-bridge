@@ -53,6 +53,7 @@ public sealed partial class MainWindow : Window
         // Search jumps into the main pages, so it stays hidden during setup and while settings load.
         if (Page is { } page)
         {
+            page.SettingsSearchRequested += (_, _) => ShowSettingsSearch();
             page.ViewModel.PropertyChanged += (_, args) =>
             {
                 if (args.PropertyName is nameof(page.ViewModel.IsOnboardingActive) or nameof(page.ViewModel.IsSettingsLoaded))
@@ -65,7 +66,6 @@ public sealed partial class MainWindow : Window
     private void UpdateSettingsSearchVisibility()
     {
         var canSearch = Page?.CanSearchSettings == true;
-        OpenSettingsSearch.Visibility = canSearch ? Visibility.Visible : Visibility.Collapsed;
         if (!canSearch && SettingsSearchFlyout.IsOpen)
         {
             _restoreSearchTriggerFocusOnClose = false;
@@ -119,7 +119,7 @@ public sealed partial class MainWindow : Window
     {
         ClearSettingsSearchQuery();
         if (_restoreSearchTriggerFocusOnClose && !_settingsSearchResultSelected && Page?.CanSearchSettings == true)
-            OpenSettingsSearch.Focus(FocusState.Keyboard);
+            Page.FocusSettingsSearchTrigger();
         _restoreSearchTriggerFocusOnClose = false;
         _settingsSearchResultSelected = false;
     }
@@ -146,8 +146,6 @@ public sealed partial class MainWindow : Window
     }
 
     private void SettingsSearchBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args) { }
-
-    private void OpenSettingsSearch_Click(object sender, RoutedEventArgs args) => ShowSettingsSearch();
 
     private void SettingsSearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {

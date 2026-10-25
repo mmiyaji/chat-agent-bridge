@@ -105,7 +105,9 @@ public sealed partial class MainPage : Page
         HistoryPage.AgentSettingsRequested += () => OpenAgentSettings_Click(this, new RoutedEventArgs());
         InboxPage.ConnectionSettingsRequested += () => OpenConnections_Click(this, new RoutedEventArgs());
         ViewModel.OnboardingNavigateRequested += _ => _wizard.ResetScroll();
-        MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
+        // Search is a command row, so keep General as the initial selected page.
+        MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>()
+            .First(item => item.Tag as string == "overview");
     }
 
     private void RefreshLanguage(System.Globalization.CultureInfo culture)
@@ -191,6 +193,9 @@ public sealed partial class MainPage : Page
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+
+    public static Visibility SearchTriggerVisibility(bool isSettingsLoaded, bool isOnboardingActive) =>
+        isSettingsLoaded && !isOnboardingActive ? Visibility.Visible : Visibility.Collapsed;
 
     internal async Task ShutdownAsync()
     {

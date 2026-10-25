@@ -33,7 +33,7 @@ public static class SearchPanelInput {
  public static void Text(string text){foreach(char c in text)Send(new[]{new Input{type=1,scan=c,flags=4},new Input{type=1,scan=c,flags=6}});}
  public static void Click(int x,int y){var old=SetThreadDpiAwarenessContext(new IntPtr(-4));try{
   mouse_event(0xC001,(uint)((x-GetSystemMetrics(76))*65535/(GetSystemMetrics(78)-1)),(uint)((y-GetSystemMetrics(77))*65535/(GetSystemMetrics(79)-1)),0,UIntPtr.Zero);
-  Thread.Sleep(40);mouse_event(2,0,0,0,UIntPtr.Zero);mouse_event(4,0,0,0,UIntPtr.Zero);
+  Thread.Sleep(80);mouse_event(2,0,0,0,UIntPtr.Zero);Thread.Sleep(40);mouse_event(4,0,0,0,UIntPtr.Zero);
  }finally{SetThreadDpiAwarenessContext(old);}}
 }
 "@
@@ -51,16 +51,39 @@ function Windows {
  $filter=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty,$script:app.Id)
  [Windows.Automation.AutomationElement]::RootElement.FindAll([Windows.Automation.TreeScope]::Children,$filter)
 }
-function Find($id){
+function Find($id,[bool]$visible=$true){
  $filter=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$id)
  foreach($window in (Windows)){
   $item=$window.FindFirst([Windows.Automation.TreeScope]::Descendants,$filter)
-  if($item -and -not $item.Current.IsOffscreen -and $item.Current.BoundingRectangle.Width -gt 0){return $item}
+  if($item -and (-not $visible -or (-not $item.Current.IsOffscreen -and $item.Current.BoundingRectangle.Width -gt 0))){return $item}
  }
  return $null
 }
 function Element($id){Wait-For {$null -ne (Find $id)} "visible $id";Find $id}
-function Invoke($id){$e=Element $id;$selection=$null;if($e.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern,[ref]$selection)){([Windows.Automation.SelectionItemPattern]$selection).Select()}else{($e.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()}}
+function Invoke($id){
+ if($id -eq 'OpenSettingsSearch'){
+  if($null -eq (Find $id)){Invoke 'TogglePaneButton'}
+  [void](Element $id)
+  # A NavigationView command is invoked by a real click, not SelectionItemPattern.Select.
+  & winapp ui click $id -a $script:app.Id --json | Out-Null
+  if($LASTEXITCODE){throw 'Could not click the sidebar search action.'}
+  return
+ }
+ $e=Element $id;$selection=$null;if($e.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern,[ref]$selection)){([Windows.Automation.SelectionItemPattern]$selection).Select()}else{($e.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)).Invoke()}
+}
+function Assert-Selected($id){
+ $e=Find $id $false
+ # Minimal NavigationView unloads its closed menu; verify the visible destination instead.
+ if((-not $e -or $e.Current.IsOffscreen) -and $id -eq 'NavChat' -and $null -ne (Find 'InboxConversations')){return}
+ if((-not $e -or $e.Current.IsOffscreen) -and $id -eq 'NavOverview'){
+  Wait-For {$null -ne (Find 'LanguageSettingRow')} 'General search destination remains visible';return
+ }
+ if(-not $e -or -not (($e.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)).Current.IsSelected)){throw "Selected page changed unexpectedly: $id"}
+}
+function Assert-SearchAction {
+ $e=Find 'OpenSettingsSearch' $false;$p=$null
+ if($e -and $e.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern,[ref]$p) -and ([Windows.Automation.SelectionItemPattern]$p).Current.IsSelected){throw 'Search action became a selected page.'}
+}
 function Closed {Wait-For {$null -eq (Find 'SettingsSearchPanel')} 'search panel closed';Start-Sleep -Milliseconds 200}
 function Opened {
  [void](Element 'SettingsSearchPanel');$box=Element 'SettingsSearchBox'
@@ -105,26 +128,38 @@ try{
   Wait-For {foreach($w in (Windows)){if($w.Current.Name -eq 'Chat Agent Bridge'){$script:window=$w;return $true}};return $false} 'main window'
   $script:hwnd=[IntPtr]$script:window.Current.NativeWindowHandle
   [void](Element 'OpenSettingsSearch');$settingsHash=(Get-FileHash (Join-Path $data 'settings.json')).Hash
-  foreach($width in @(1160,500)){
-   $name=$prefix+'-'+$width;Resize 1160;Invoke 'NavChat';Resize $width;Closed
+  foreach($mode in @(@{name='expanded';width=1160},@{name='folded';width=1160},@{name='compact';width=900},@{name='minimal';width=500})){
+   $width=$mode.width;$name=$prefix+'-'+$mode.name;Resize 1160
+   if($null -eq (Find 'NavChat')){Invoke 'TogglePaneButton'}
+   Invoke 'NavChat';Resize $width
+   if($mode.name -eq 'folded'){Invoke 'TogglePaneButton';Start-Sleep -Milliseconds 250}
+   if($null -eq (Find 'OpenSettingsSearch')){Invoke 'TogglePaneButton';Start-Sleep -Milliseconds 250}
+   Closed
    $button=Element 'OpenSettingsSearch';Fits $button
    $scale=[SearchPanelInput]::GetDpiForWindow($script:hwnd)/96.0
-   if($button.Current.BoundingRectangle.Width -gt 44*$scale){throw 'Search trigger is not compact.'}
+   $nav=Element 'MainNavigation';$navBounds=$nav.Current.BoundingRectangle;$buttonBounds=$button.Current.BoundingRectangle
+   if($buttonBounds.Top -lt $navBounds.Top -or $buttonBounds.Left-$navBounds.Left -gt 80*$scale){throw 'Search action is not in the sidebar.'}
+   if($mode.name -in @('folded','compact') -and $buttonBounds.Width -gt 80*$scale){throw 'Collapsed search action is not icon-only.'}
+   if($mode.name -eq 'expanded' -and $buttonBounds.Width -lt 120*$scale){throw 'Expanded search action has no room for its label.'}
+   Assert-Selected 'NavChat';Assert-SearchAction
    if($null -ne (Find 'SettingsSearchBox')){throw 'Search input is visible before opening.'}
    Capture ($name+'-closed')
    Invoke 'OpenSettingsSearch';$edit=Opened;Fits (Element 'SettingsSearchPanel');Fits $edit
+   Assert-Selected 'NavChat';Assert-SearchAction
    $expected=if($language -eq 'ja'){'設定を検索'}else{'Search settings'}
    if((Element 'SettingsSearchBox').Current.Name -ne $expected){throw 'Search accessible label is not localized.'}
    Capture ($name+'-open')
    [SearchPanelInput]::Activate($script:hwnd);[SearchPanelInput]::Key(27);Closed
+   Assert-Selected 'NavChat';Assert-SearchAction
    [SearchPanelInput]::Key(70,$true);$edit=Opened;Type-Query $edit;Capture ($name+'-suggestions')
    [SearchPanelInput]::Key(70,$true)
    Wait-For {$edit.Current.HasKeyboardFocus -and ($edit.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).Current.Value -eq 'Language'} 'Ctrl+F retains the open search'
    [SearchPanelInput]::Key(27);Closed
    [SearchPanelInput]::Key(70,$true);$edit=Opened;Type-Query $edit
    [SearchPanelInput]::Key(13);Closed
-   if($width -ge 1000){Wait-For {((Element 'NavOverview').GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)).Current.IsSelected} 'search result navigation'}
+   Assert-Selected 'NavOverview';Assert-SearchAction
    Wait-For {$null -ne (Find 'LanguageSettingRow')} 'search result scrolled into view'
+   Start-Sleep -Milliseconds 400
    Invoke 'OpenSettingsSearch';[void](Opened)
    $panel=(Element 'SettingsSearchPanel').Current.BoundingRectangle;$w=$script:window.Current.BoundingRectangle
    $x=[int]($w.Right-30);$y=[int]($w.Bottom-30)
@@ -132,8 +167,12 @@ try{
    [SearchPanelInput]::Activate($script:hwnd);[SearchPanelInput]::Click($x,$y);Closed
    # Repeated activation uses a single panel and remains dismissible.
    for($i=0;$i -lt 3;$i++){[SearchPanelInput]::Key(70,$true);[void](Opened);[SearchPanelInput]::Key(27);Closed}
+   if($mode.name -eq 'expanded'){
+    [SearchPanelInput]::Key(53,$true);Wait-For {((Find 'NavAgentSettings' $false).GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)).Current.IsSelected} 'Ctrl+5 still opens agent settings'
+    [SearchPanelInput]::Key(49,$true);Wait-For {((Find 'NavOverview' $false).GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)).Current.IsSelected} 'Ctrl+1 still opens General'
+   }
    if((Get-FileHash (Join-Path $data 'settings.json')).Hash -ne $settingsHash){throw 'Search interaction changed agent/chat settings.'}
-   $results.Add(@{case=$name;passed=$true;checks=@('icon only','click open','focus','localized name','bounds','Ctrl+F','Esc with suggestions','result navigation','outside click','repeat open/close','settings unchanged')})
+   $results.Add(@{case=$name;passed=$true;checks=@('sidebar action','expanded label or compact icon','selection preserved','click open','focus','localized name','bounds','Ctrl+F','Esc with suggestions','result navigation','outside click','repeat open/close','settings unchanged')})
    Write-Host "PASS $name"
   }
   Stop-App

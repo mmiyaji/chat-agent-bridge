@@ -15,7 +15,9 @@ public sealed partial class MainPage
     {
         if (_navigationShortcutsAttached) return;
         _navigationShortcutsAttached = true;
-        var items = MainNavigation.MenuItems.OfType<NavigationViewItem>().Append(AboutNavigationItem).Take(9).ToArray();
+        var items = MainNavigation.MenuItems.OfType<NavigationViewItem>()
+            .Where(item => item.Tag is string)
+            .Append(AboutNavigationItem).Take(9).ToArray();
         for (var index = 0; index < items.Length; index++)
         {
             var item = items[index];

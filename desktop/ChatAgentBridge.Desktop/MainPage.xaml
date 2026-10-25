@@ -29,6 +29,7 @@
                         IsSettingsVisible="False"
                         PaneDisplayMode="Auto" OpenPaneLength="240"
                         DisplayModeChanged="MainNavigation_DisplayModeChanged"
+                        ItemInvoked="MainNavigation_ItemInvoked"
                         SelectionChanged="MainNavigation_SelectionChanged"
 
                         AutomationProperties.AutomationId="MainNavigation" x:Uid="MainNavigation">
@@ -37,6 +38,12 @@
                 <Thickness x:Key="NavigationViewItemContentPresenterMargin">4,-1,6,-1</Thickness>
             </NavigationView.Resources>
             <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="OpenSettingsSearch" x:Uid="OpenSettingsSearch"
+                                    SelectsOnInvoked="False"
+                                    Visibility="{x:Bind local:MainPage.SearchTriggerVisibility(ViewModel.IsSettingsLoaded, ViewModel.IsOnboardingActive), Mode=OneWay}"
+                                    AutomationProperties.AutomationId="OpenSettingsSearch">
+                    <NavigationViewItem.Icon><SymbolIcon Symbol="Find" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem  Tag="overview"  AutomationProperties.AutomationId="NavOverview" x:Uid="NavOverview">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Home" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
