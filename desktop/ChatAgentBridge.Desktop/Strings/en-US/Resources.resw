@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
+  <data name="SettingsSearchBox.PlaceholderText" xml:space="preserve"><value>Search settings (Ctrl+F)</value></data>
+  <data name="SettingsSearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Search settings</value></data>
   <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>Open chat settings</value></data>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>Connect without a proxy</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>Turn on for a direct connection to your internal Mattermost server. When off, the system proxy settings are used. This applies to user lookup, post link checks, and sending and receiving messages. Reconnect after changing this setting.</value></data>

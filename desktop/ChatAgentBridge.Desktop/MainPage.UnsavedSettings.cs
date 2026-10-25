@@ -49,10 +49,7 @@ public sealed partial class MainPage
             return;
         }
         CommitSettingsNumberEdit();
-        var leavingAgentDraft = _selectedNavigationTag == "agent" && tag != "agent" &&
-            (_agentProfileDetails?.HasPendingEdits ?? false);
-        if (_hasLoaded && !ViewModel.IsOnboardingActive &&
-            (leavingAgentDraft || (!IsSettingsSurface(tag) && tag != _selectedNavigationTag && ViewModel.HasUnsavedSettings)))
+        if (NeedsUnsavedSettingsDecision(tag))
         {
             // SelectionChanged cannot be cancelled. Restore the selection before
             // changing page visibility, then replay only the approved destination.
@@ -75,6 +72,43 @@ public sealed partial class MainPage
             return;
         }
         ApplyNavigationSelection(sender, args);
+    }
+
+    // Leaving an agent profile draft, or leaving the settings pages with unsaved settings, asks first.
+    private bool NeedsUnsavedSettingsDecision(string tag) => _hasLoaded && !ViewModel.IsOnboardingActive &&
+        ((_selectedNavigationTag == "agent" && tag != "agent" && (_agentProfileDetails?.HasPendingEdits ?? false)) ||
+         (!IsSettingsSurface(tag) && tag != _selectedNavigationTag && ViewModel.HasUnsavedSettings));
+
+    /// <summary>
+    /// Opens a sidebar page and reports whether it is now shown. Unsaved settings are resolved first;
+    /// cancelling that decision keeps the current page and its draft.
+    /// </summary>
+    internal async Task<bool> NavigateToPageAsync(string tag)
+    {
+        if (_selectedNavigationTag == tag) return true;
+        var page = MainNavigation.MenuItems.Concat(MainNavigation.FooterMenuItems).OfType<NavigationViewItem>()
+            .FirstOrDefault(item => item.Tag as string == tag);
+        if (page is null || _settingsNavigationPending || !MainNavigation.IsEnabled) return false;
+        CommitSettingsNumberEdit();
+        if (NeedsUnsavedSettingsDecision(tag))
+        {
+            _settingsNavigationPending = true;
+            MainNavigation.IsEnabled = false;
+            try
+            {
+                if (!await TryResolveUnsavedSettingsAsync()) return false;
+            }
+            finally
+            {
+                MainNavigation.IsEnabled = true;
+                _settingsNavigationPending = false;
+            }
+            _allowNextSettingsNavigation = true;
+        }
+        // SelectionChanged runs synchronously here and applies the page (or replays the approved destination).
+        MainNavigation.SelectedItem = page;
+        _allowNextSettingsNavigation = false;
+        return _selectedNavigationTag == tag;
     }
 
     private void RestoreSettingsNavigation()

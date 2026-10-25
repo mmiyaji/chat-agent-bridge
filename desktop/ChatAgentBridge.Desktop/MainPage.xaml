@@ -165,7 +165,7 @@
                     </StackPanel>
                     <ScrollViewer x:Name="MainContentScroll" Grid.Row="3" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(IsFormSelected), Mode=OneTime}" IsEnabled="{x:Bind local:MainPage.CanUseForm(IsOverviewSelected, ViewModel.IsSettingsLoaded, ViewModel.IsLoading), Mode=OneWay}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="MainContentScroll"  x:Uid="MainContentScroll">
                         <Grid Width="{x:Bind MainContentScroll.ViewportWidth, Mode=OneWay}" MaxWidth="1040" HorizontalAlignment="Left" AutomationProperties.AutomationId="FormContent">
-                            <StackPanel Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsOverviewSelected), Mode=OneTime}">
+                            <StackPanel x:Name="GeneralPagePanel" Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsOverviewSelected), Mode=OneTime}">
                                 <StackPanel Spacing="4">
                                     <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="GeneralPageTitle" x:Uid="GeneralPageTitle" />
                                     <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="GeneralPageDescription" x:Uid="GeneralPageDescription" />
@@ -339,7 +339,7 @@
                                 </Expander>
                             </StackPanel>
 
-                            <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
+                            <StackPanel x:Name="AgentPagePanel" Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="AgentSettingsGuide" localization:LocalizedResourceKey.Key="AgentSettingsGuide" />
                                 <Expander x:Name="AgentBasicSettings" AutomationProperties.AutomationId="AgentBasicSettings" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="AgentBasicAccessible" localization:LocalizedResourceKey.Key="AgentBasicAccessible">
                                     <Expander.Header>
@@ -543,7 +543,7 @@
                                     </StackPanel>
                                 </Expander>
                             </StackPanel>
-                            <StackPanel Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsWorkbenchSelected), Mode=OneTime}">
+                            <StackPanel x:Name="WorkbenchPagePanel" Spacing="12" Visibility="{x:Bind local:MainPage.ToVisibility(IsWorkbenchSelected), Mode=OneTime}">
                                 <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock044" x:Uid="chatAgentBridgeDesktopMainPageTextBlock044" />
                                 <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock045" x:Uid="chatAgentBridgeDesktopMainPageTextBlock045" />
                                 <TextBlock Text="{x:Bind ViewModel.SavedAgentSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WorkbenchAgentSummary" />
@@ -573,7 +573,7 @@
                                 <TextBox  Text="{x:Bind ViewModel.Output, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="160" MaxHeight="400" AutomationProperties.AutomationId="AgentOutput"  x:Uid="AgentOutput" />
                                 <TextBlock Text="{x:Bind ViewModel.UsageSummary, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="LocalUsageSummary" />
                             </StackPanel>
-                            <StackPanel Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
+                            <StackPanel x:Name="ConnectionsPagePanel" Spacing="16" Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="ChatSettingsGuide" localization:LocalizedResourceKey.Key="ChatSettingsGuide" />
                                 <Expander x:Name="ChatApprovalSettingsCard" AutomationProperties.AutomationId="ChatApprovalCard" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="ChatCommonAccessible" localization:LocalizedResourceKey.Key="ChatCommonAccessible">
                                     <Expander.Header>

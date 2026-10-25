@@ -22,6 +22,27 @@
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="ms-appx:///Assets/StoreLogo.png" />
             </TitleBar.IconSource>
+            <!-- Gallery-style search in the title bar: find a setting by name and jump to it (Ctrl+F). -->
+            <TitleBar.Content>
+                <AutoSuggestBox x:Name="SettingsSearchBox" x:Uid="SettingsSearchBox" QueryIcon="Find"
+                                MinWidth="220" MaxWidth="360" VerticalAlignment="Center" UpdateTextOnSelect="False"
+                                TextChanged="SettingsSearchBox_TextChanged" SuggestionChosen="SettingsSearchBox_SuggestionChosen"
+                                QuerySubmitted="SettingsSearchBox_QuerySubmitted" GotFocus="SettingsSearchBox_GotFocus"
+                                KeyboardAcceleratorPlacementMode="Hidden" AutomationProperties.AutomationId="SettingsSearchBox">
+                    <AutoSuggestBox.KeyboardAccelerators>
+                        <KeyboardAccelerator Modifiers="Control" Key="F" Invoked="SettingsSearchAccelerator_Invoked" />
+                    </AutoSuggestBox.KeyboardAccelerators>
+                    <AutoSuggestBox.ItemTemplate>
+                        <DataTemplate x:DataType="local:SettingsSearchEntry">
+                            <StackPanel Padding="0,6" Spacing="2">
+                                <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind Location}" Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </AutoSuggestBox.ItemTemplate>
+                </AutoSuggestBox>
+            </TitleBar.Content>
         </TitleBar>
 
         <!--

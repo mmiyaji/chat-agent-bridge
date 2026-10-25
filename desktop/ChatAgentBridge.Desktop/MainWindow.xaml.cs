@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using System.Runtime.InteropServices;
@@ -41,7 +42,20 @@ public sealed partial class MainWindow : Window
 
         // Navigate the root frame to the main page on startup.
         RootFrame.Navigate(typeof(MainPage));
+        // Search jumps into the main pages, so it stays hidden during setup and while settings load.
+        if (Page is { } page)
+        {
+            page.ViewModel.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName is nameof(page.ViewModel.IsOnboardingActive) or nameof(page.ViewModel.IsSettingsLoaded))
+                    UpdateSettingsSearchVisibility();
+            };
+        }
+        UpdateSettingsSearchVisibility();
     }
+
+    private void UpdateSettingsSearchVisibility() =>
+        SettingsSearchBox.Visibility = Page?.CanSearchSettings == true ? Visibility.Visible : Visibility.Collapsed;
 
     private void UpdateMinimumWindowSize()
     {
@@ -62,6 +76,34 @@ public sealed partial class MainWindow : Window
     }
 
     private void WindowRootXamlRoot_Changed(XamlRoot sender, XamlRootChangedEventArgs args) => UpdateMinimumWindowSize();
+
+    private MainPage? Page => RootFrame.Content as MainPage;
+
+    private void SettingsSearchBox_GotFocus(object sender, RoutedEventArgs args) => Page?.RefreshSettingsSearchIndex();
+
+    private void SettingsSearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
+        sender.ItemsSource = Page?.SearchSettings(sender.Text) ?? [];
+    }
+
+    private void SettingsSearchBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args) { }
+
+    private void SettingsSearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        // Enter without picking a suggestion opens the best match.
+        var entry = args.ChosenSuggestion as SettingsSearchEntry ?? Page?.SearchSettings(args.QueryText).FirstOrDefault();
+        if (entry is null || Page is not { } page) return;
+        sender.Text = "";
+        sender.ItemsSource = null;
+        page.OpenSettingsSearchResult(entry);
+    }
+
+    private void SettingsSearchAccelerator_Invoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (Page?.CanSearchSettings == true) SettingsSearchBox.Focus(FocusState.Keyboard);
+    }
 
     private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
     {
