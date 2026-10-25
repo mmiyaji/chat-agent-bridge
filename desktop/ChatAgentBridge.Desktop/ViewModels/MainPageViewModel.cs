@@ -285,8 +285,9 @@ public partial class MainPageViewModel : ObservableObject
     public partial string SetupDraftNotice { get; set; } = "";
     public bool HasSetupDraftNotice => !string.IsNullOrEmpty(SetupDraftNotice);
 
-    public void SetChatConnectionState(bool connected, bool connecting, bool failed = false)
+    public void SetChatConnectionState(bool connected, bool connecting, bool failed = false, string? target = null)
     {
+        _overviewConnectedTarget = target ?? "";
         _chatConnectionConfirmed = connected;
         if (!connected) ClearWizardConnection();
         _chatConnectionPreparing = connecting;

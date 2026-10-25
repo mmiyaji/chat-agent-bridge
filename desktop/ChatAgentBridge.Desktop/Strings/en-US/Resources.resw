@@ -946,7 +946,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Connection</value>
   </data>
   <data name="OverviewCliLabel.Text" xml:space="preserve">
-    <value>CLI verification</value>
+    <value>Default agent</value>
   </data>
   <data name="OverviewDetailsHeader.Text" xml:space="preserve">
     <value>Setup details and architecture</value>

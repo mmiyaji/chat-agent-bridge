@@ -85,8 +85,8 @@ public sealed partial class MainPage : Page
         };
         InboxPage.ViewModel.PropertyChanged += (_, args) =>
         {
-            if (args.PropertyName is nameof(ChatInboxViewModel.IsConnectionConfirmed) or nameof(ChatInboxViewModel.IsConnected) or nameof(ChatInboxViewModel.HasConnectionError))
-                ViewModel.SetChatConnectionState(InboxPage.ViewModel.IsConnectionConfirmed, InboxPage.ViewModel.IsConnected, InboxPage.ViewModel.HasConnectionError);
+            if (args.PropertyName is nameof(ChatInboxViewModel.IsConnectionConfirmed) or nameof(ChatInboxViewModel.IsConnected) or nameof(ChatInboxViewModel.HasConnectionError) or nameof(ChatInboxViewModel.ConnectionProvider))
+                ViewModel.SetChatConnectionState(InboxPage.ViewModel.IsConnectionConfirmed, InboxPage.ViewModel.IsConnected, InboxPage.ViewModel.HasConnectionError, InboxPage.ViewModel.ConnectionOverviewTarget);
         };
         ViewModel.SettingsSaved += () =>
         {

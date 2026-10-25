@@ -103,6 +103,18 @@ public sealed partial class ChatInboxViewModel
         ChatAgentBridge.Transports.DiscordGatewayTransport => "discord",
         _ => null
     };
+    // Derive from the live transport snapshot, never from an unsaved settings draft.
+    public string ConnectionOverviewTarget
+    {
+        get
+        {
+            var provider = ConnectionProvider;
+            if (provider == "mattermost")
+                return Uri.TryCreate(_connectionSettings?.MattermostServerUrl, UriKind.Absolute, out var server)
+                    && server.Scheme is "http" or "https" ? $"Mattermost · {server.IdnHost}" : "Mattermost";
+            return provider switch { "slack" => "Slack", "discord" => "Discord", _ => "" };
+        }
+    }
     public string ConnectionTone => HasConnectionError ? "error" : IsConnectionConfirmed ? "success" : IsConnected ? "running" : "neutral";
     public string ConnectionLabel => DesktopText.Get(HasConnectionError ? "InboxConnectionErrorLabel" :
         IsConnectionConfirmed ? "InboxConnectionReadyLabel" : IsConnected ? "InboxConnectionWorkingLabel" : "InboxConnectionOfflineLabel");
@@ -147,6 +159,7 @@ public sealed partial class ChatInboxViewModel
     private void NotifyConnectionPresentation()
     {
         OnPropertyChanged(nameof(ConnectionProvider));
+        OnPropertyChanged(nameof(ConnectionOverviewTarget));
         OnPropertyChanged(nameof(ConnectionTone));
         OnPropertyChanged(nameof(ConnectionLabel));
         OnPropertyChanged(nameof(ShowEmptyConversationList));

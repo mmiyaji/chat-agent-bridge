@@ -36,6 +36,10 @@ public partial class MainPageViewModel
     [ObservableProperty] public partial OverviewIconState OverviewAutoConnectIconState { get; set; }
     [ObservableProperty] public partial string OverviewAutoConnectAccessibleName { get; set; } = ViewModelText.Get("OverviewAutoConnectAccessibleName", ViewModelText.Get("OverviewChecking"));
 
+    [ObservableProperty] public partial string OverviewChatTarget { get; set; } = "";
+    [ObservableProperty] public partial string OverviewCliTarget { get; set; } = "";
+    private string _overviewConnectedTarget = "";
+
     /// <summary>Refreshes the concise overview statuses after setup or CLI state changes.</summary>
     public void RefreshOverviewStatus()
     {
@@ -72,7 +76,10 @@ public partial class MainPageViewModel
         OverviewChatStatus = ViewModelText.Get(checking ? "OverviewChecking" : chatError ? "OverviewConnectionError" : _chatConnectionConfirmed ? "OverviewConnected" : _chatConnectionPreparing ? "OverviewConnecting" : "OverviewOffline");
         OverviewChatGlyph = checking ? OverviewPendingGlyph : chatError ? OverviewErrorGlyph : _chatConnectionConfirmed ? OverviewCheckGlyph : _chatConnectionPreparing ? OverviewPendingGlyph : OverviewWarningGlyph;
         OverviewChatIconState = checking ? OverviewIconState.Neutral : chatError ? OverviewIconState.Error : _chatConnectionConfirmed ? OverviewIconState.Ready : _chatConnectionPreparing ? OverviewIconState.Neutral : OverviewIconState.Attention;
-        OverviewChatAccessibleName = ViewModelText.Get("OverviewChatAccessibleName", OverviewChatStatus);
+        OverviewChatTarget = checking ? "" : !string.IsNullOrEmpty(_overviewConnectedTarget)
+            ? _overviewConnectedTarget
+            : string.Join(" / ", new[] { mattermostReady ? "Mattermost" : null, slackReady ? "Slack" : null, discordReady ? "Discord" : null }.Where(name => name is not null));
+        OverviewChatAccessibleName = ViewModelText.Get("OverviewChatAccessibleName", string.Join(" · ", new[] { OverviewChatTarget, OverviewChatStatus }.Where(value => !string.IsNullOrEmpty(value))));
 
         var cliVerified = HasCurrentCliCheck();
         var cliChecking = IsCheckingCli;
@@ -81,7 +88,10 @@ public partial class MainPageViewModel
         OverviewCliStatus = ViewModelText.Get(cliStatusKey);
         OverviewCliGlyph = cliChecking ? OverviewPendingGlyph : cliFailed ? OverviewErrorGlyph : cliVerified ? OverviewCheckGlyph : OverviewWarningGlyph;
         OverviewCliIconState = cliChecking || checking ? OverviewIconState.Neutral : cliFailed ? OverviewIconState.Error : cliVerified ? OverviewIconState.Ready : OverviewIconState.Attention;
-        OverviewCliAccessibleName = ViewModelText.Get("OverviewCliAccessibleName", OverviewCliStatus);
+        OverviewCliTarget = checking || _settings is null || string.IsNullOrWhiteSpace(_settings.AgentExecutable) ? ""
+            : string.IsNullOrWhiteSpace(_settings.AgentModel) || _settings.AgentModel == "default"
+                ? SavedAgentName : $"{SavedAgentName} · {_settings.AgentModel}";
+        OverviewCliAccessibleName = ViewModelText.Get("OverviewCliAccessibleName", string.Join(" · ", new[] { OverviewCliTarget, OverviewCliStatus }.Where(value => !string.IsNullOrEmpty(value))));
 
         var startupChecking = _startupState is null;
         var startupState = startupChecking ? (StartupState?)null : _startupState;

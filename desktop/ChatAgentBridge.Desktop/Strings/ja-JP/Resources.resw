@@ -946,7 +946,7 @@
     <value>接続状態</value>
   </data>
   <data name="OverviewCliLabel.Text" xml:space="preserve">
-    <value>CLI の確認</value>
+    <value>使用するエージェント</value>
   </data>
   <data name="OverviewDetailsHeader.Text" xml:space="preserve">
     <value>セットアップの詳細と構成</value>

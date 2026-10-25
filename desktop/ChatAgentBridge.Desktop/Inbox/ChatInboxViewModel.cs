@@ -734,6 +734,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             Selected = null;
             _transport = transport;
             _connectionSettings = settings;
+            NotifyConnectionPresentation();
             var connection = new CancellationTokenSource();
             _connection = connection;
             SubscribeConnectionEvents(transport, settings, connection);

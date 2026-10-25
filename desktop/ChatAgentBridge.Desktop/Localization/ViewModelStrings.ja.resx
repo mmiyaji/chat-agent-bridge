@@ -604,7 +604,7 @@ AIの操作権限: {8}</value>
     <value>接続状態：{0}。チャットを開く。</value>
   </data>
   <data name="OverviewCliAccessibleName" xml:space="preserve">
-    <value>CLIの確認：{0}。エージェント設定を開いて確認。</value>
+    <value>使用するエージェント：{0}。エージェント設定を開く。</value>
   </data>
   <data name="OverviewStartupEnabled" xml:space="preserve"><value>有効</value></data>
   <data name="OverviewStartupOff" xml:space="preserve"><value>オフ</value></data>
