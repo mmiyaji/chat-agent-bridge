@@ -51,7 +51,7 @@ pwsh -NoProfile -File desktop\demo\take-feature.ps1 -Scenario agent -Record
 ```
 
 - `-Record` を外すとリハーサル（録画なし）です。最後に画面を `final-*.png` に保存します。
-- `take-feature.ps1 -AutoSwitch` は承認モード「自動承認」と「切り替えも自動承認」をオンにし、CAB に承認待ちの操作が表示されないことを前提に進行します。リセットを省略する `-NoReset` と併用する場合は、既存の CAB 設定も自動承認にしてください。
+- `take-feature.ps1 -AutoSwitch` は承認モード「自動承認」と「切り替えも自動承認」をオンにします。プロジェクト切り替えデモは承認操作なしで進みます。エージェント切り替えデモでは切り替え後の最初の依頼に承認が必要です。リセットを省略する `-NoReset` と併用する場合は、既存の CAB 設定も自動承認にしてください。
 - 録画は `desktop/artifacts/demo/demo-<lang|scenario>-raw.mkv` に出力されます。
 - 機能デモ（`take-feature.ps1`）は CAB をダークテーマで起動します。
 
@@ -92,13 +92,15 @@ pwsh -NoProfile -File desktop\demo\take-feature.ps1 -Scenario agent -Record
 3. スレッドで「このプロジェクトの README.md を読んで、使い方を2行で教えて」
    → フォルダーが変わったので「最初だけ確認」でも再承認 → todo-cli についての回答
 
-`-AutoSwitch` 付きでは自動承認が有効になり、依頼と切り替えの承認操作を省略します。
+`-AutoSwitch` 付きでは自動承認が有効になり、初回依頼とフォルダー切り替えの承認操作を省略します。
 
 ### エージェント切り替え（`run-scenario.ps1 -Scenario agent`）
 
 1. 接続 → 「@cab-bot weather.py を読んで、対応している都市を教えて」→ 承認 → agy の回答
 2. スレッドで `!cab agent claude summary` → 承認 → 確認ダイアログで「変更」（会話の要約を引き継いで Claude Code に切り替え）
 3. スレッドで「続けて、weather.py に福岡の予報を追加して（テストの実行は不要です）」→ 承認 → Claude Code の回答
+
+`-AutoSwitch` 付きでは初回依頼とエージェント切り替えは自動承認されますが、切り替え後に新しいエージェントで行う依頼は承認が必要です。
 
 ### 利用実績の詳細（未作成）
 
