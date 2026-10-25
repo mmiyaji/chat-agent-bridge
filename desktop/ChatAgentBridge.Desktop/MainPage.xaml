@@ -40,9 +40,15 @@
                 <NavigationViewItem  Tag="overview"  AutomationProperties.AutomationId="NavOverview" x:Uid="NavOverview">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Home" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <!-- Gallery-style groups: everyday work first, then the settings pages. -->
+                <NavigationViewItemHeader x:Uid="NavGroupWork" AutomationProperties.AutomationId="NavGroupWork" />
                 <NavigationViewItem  Tag="workbench"  AutomationProperties.AutomationId="NavWorkbench" x:Uid="NavWorkbench">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Play" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem Tag="chat" AutomationProperties.AutomationId="NavChat" Icon="Message" x:Uid="NavChat" />
+                <NavigationViewItem  Tag="history" AutomationProperties.AutomationId="NavHistory" Icon="Clock"  x:Uid="NavHistory" />
+                <NavigationViewItemSeparator />
+                <NavigationViewItemHeader x:Uid="NavGroupSettings" AutomationProperties.AutomationId="NavGroupSettings" />
                 <NavigationViewItem Tag="agent" AutomationProperties.AutomationId="NavAgentSettings" x:Uid="NavAgentSettings">
                     <!-- Segoe Fluent glyphs match the other items' size and stroke weight. -->
                     <NavigationViewItem.Icon>
@@ -54,8 +60,6 @@
                         <FontIcon Glyph="&#xE8F2;" AutomationProperties.AccessibilityView="Raw" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Tag="chat" AutomationProperties.AutomationId="NavChat" Icon="Message" x:Uid="NavChat" />
-                <NavigationViewItem  Tag="history" AutomationProperties.AutomationId="NavHistory" Icon="Clock"  x:Uid="NavHistory" />
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>
                 <NavigationViewItem Tag="chat" AutomationProperties.AutomationId="NavChatConnectionStatus"

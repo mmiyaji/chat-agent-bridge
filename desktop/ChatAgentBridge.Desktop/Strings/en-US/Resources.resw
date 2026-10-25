@@ -30,6 +30,12 @@
   <data name="NavChat.Content" xml:space="preserve">
     <value>Chat</value>
   </data>
+  <data name="NavGroupWork.Content" xml:space="preserve">
+    <value>Work</value>
+  </data>
+  <data name="NavGroupSettings.Content" xml:space="preserve">
+    <value>Settings</value>
+  </data>
   <data name="NavHistory.Content" xml:space="preserve">
     <value>History and usage</value>
   </data>
