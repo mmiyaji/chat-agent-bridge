@@ -853,4 +853,5 @@ After: {2}</value></data>
   <data name="TipChatConnectBody" xml:space="preserve"><value>Open Chat and connect to Mattermost, Slack, or Discord to run requests sent from chat on this PC.</value></data>
   <data name="TipOpenChat" xml:space="preserve"><value>Open chat</value></data>
   <data name="TipGotIt" xml:space="preserve"><value>Got it</value></data>
+  <data name="SearchScopeSettings" xml:space="preserve"><value>{0} settings</value></data>
 </root>

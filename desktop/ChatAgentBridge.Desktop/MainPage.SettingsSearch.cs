@@ -3,6 +3,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using ChatAgentBridge_Desktop.Localization;
+using ChatAgentBridge_Desktop.Search;
 
 namespace ChatAgentBridge_Desktop;
 
@@ -17,14 +19,31 @@ public sealed class SettingsSearchEntry
         Scope = scope;
         Target = target;
         Expanders = expanders;
+        Keywords = [AutomationProperties.GetAutomationId(target), pageTag,
+            pageTag == "agent" ? "agent エージェント" : pageTag == "connections" ? "chat チャット" : pageTag];
+    }
+
+    internal SettingsSearchEntry(string title, string location, string pageTag, string scope, string? targetId, IReadOnlyList<string> keywords)
+    {
+        Title = title;
+        Location = location;
+        PageTag = pageTag;
+        Scope = scope;
+        TargetId = targetId;
+        Keywords = keywords;
+        IsCatalog = true;
+        Expanders = [];
     }
 
     public string Title { get; }
     public string Location { get; }
     internal string PageTag { get; }
     internal string? Scope { get; }
-    internal FrameworkElement Target { get; }
+    internal FrameworkElement? Target { get; }
     internal IReadOnlyList<DependencyObject> Expanders { get; }
+    internal string? TargetId { get; }
+    internal bool IsCatalog { get; }
+    internal IReadOnlyList<string> Keywords { get; } = [];
     public override string ToString() => Title;
 }
 
@@ -37,7 +56,8 @@ public sealed partial class MainPage
     private readonly Dictionary<Control, (Brush? Brush, Thickness Thickness, Microsoft.UI.Dispatching.DispatcherQueueTimer Timer)> _searchHighlights =
         new(ReferenceEqualityComparer.Instance);
 
-    public bool CanSearchSettings => ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive;
+    public bool CanSearchSettings => ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive &&
+        _agentScopeNavigation is not null && _connectionScopeNavigation is not null;
 
     /// <summary>Rebuilds the index when the search box gains focus, so visibility and the active provider are current.</summary>
     public void RefreshSettingsSearchIndex() => _settingsSearchIndex = null;
@@ -48,17 +68,13 @@ public sealed partial class MainPage
         if (!CanSearchSettings || query.Length == 0) return [];
         _settingsSearchIndex ??= BuildSettingsSearchIndex();
         return _settingsSearchIndex
-            .Select(entry => (entry, rank: Rank(entry.Title, query)))
+            .Select(entry => (entry, rank: SettingsSearchMatcher.Rank(entry.Title, entry.Location, entry.Keywords, query)))
             .Where(match => match.rank >= 0)
             .OrderBy(match => match.rank)
             .Take(MaxSearchResults)
             .Select(match => match.entry)
             .ToArray();
 
-        // Titles that start with the query come before titles that only contain it.
-        static int Rank(string title, string query) =>
-            title.StartsWith(query, StringComparison.CurrentCultureIgnoreCase) ? 0 :
-            title.Contains(query, StringComparison.CurrentCultureIgnoreCase) ? 1 : -1;
     }
 
     public async void OpenSettingsSearchResult(SettingsSearchEntry entry)
@@ -77,12 +93,39 @@ public sealed partial class MainPage
                 if (agentScope != _agentSettingsScope && !await SelectAgentSettingsScopeAsync(agentScope)) return;
             }
             if (entry.PageTag == "connections" && entry.Scope is { } connectionScope) SetConnectionSettingsScope(connectionScope);
+            if (entry.IsCatalog)
+            {
+                if (entry.TargetId is null)
+                {
+                    // Closing the flyout restores focus to the previous input. Move
+                    // focus out of the shared editor before resetting this tab's scroll.
+                    var navigation = entry.PageTag == "agent" ? _agentScopeNavigation : _connectionScopeNavigation;
+                    navigation?.Focus(FocusState.Programmatic);
+                    MainContentScroll.ChangeView(null, 0, null, true);
+                    var scopeEntry = entry;
+                    DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+                    {
+                        if (_selectedNavigationTag == scopeEntry.PageTag &&
+                            (scopeEntry.PageTag == "agent" ? _agentSettingsScope : _connectionSettingsScope) == scopeEntry.Scope)
+                            MainContentScroll.ChangeView(null, 0, null, true);
+                    });
+                    return;
+                }
+                // The editor is shared by all agents. Resolve its controls only after loading
+                // the requested tab; never retain a control from a different provider.
+                var root = SearchScopeRoot(entry.PageTag, entry.Scope);
+                var found = root is null ? null : FindSearchTarget(root, entry.TargetId, []);
+                if (found is not { } destination) return;
+                entry = new SettingsSearchEntry(entry.Title, entry.Location, entry.PageTag, entry.Scope,
+                    destination.Target, destination.Expanders);
+            }
             foreach (var expander in entry.Expanders)
             {
                 if (expander is SettingsExpander settingsExpander) settingsExpander.IsExpanded = true;
                 else if (expander is Expander plain) plain.IsExpanded = true;
             }
-            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => RevealSearchTarget(entry, attempt: 0));
+            var destinationEntry = entry;
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => RevealSearchTarget(destinationEntry, attempt: 0));
         }
         finally { _openingSearchResult = false; }
     }
@@ -95,6 +138,9 @@ public sealed partial class MainPage
 
     private void RevealSearchTarget(SettingsSearchEntry entry, int attempt)
     {
+        if (entry.Target is null || _selectedNavigationTag != entry.PageTag ||
+            (entry.PageTag == "agent" && entry.Scope != _agentSettingsScope) ||
+            (entry.PageTag == "connections" && entry.Scope != _connectionSettingsScope)) return;
         if (attempt == 0)
             entry.Target.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0.2, AnimationDesired = true });
         // An input takes focus, which draws its own highlight; a card is outlined briefly instead.
@@ -147,7 +193,7 @@ public sealed partial class MainPage
 
     private List<SettingsSearchEntry> BuildSettingsSearchIndex()
     {
-        var entries = new List<SettingsSearchEntry>();
+        var entries = new List<SettingsSearchEntry>(BuildScopeSearchCatalog());
         var seen = new HashSet<(string, string)>();
         // One result per control: a visible label (found at its panel, before the input itself) wins over an accessible name.
         var targets = new HashSet<FrameworkElement>(ReferenceEqualityComparer.Instance);
@@ -161,8 +207,6 @@ public sealed partial class MainPage
             [AboutPage] = ("about", null)
         };
         if (_agentScopeCommonGroup is not null) contexts[_agentScopeCommonGroup] = ("agent", "common");
-        // Provider settings belong to the profile shown in the editor, which may differ from the agent used to run.
-        if (_agentProfileDetails is not null) contexts[_agentProfileDetails] = ("agent", DisplayedAgentProfile());
         if (_connectionScopeCommonGroup is not null) contexts[_connectionScopeCommonGroup] = ("connections", "common");
         if (_connectionScopeMattermostGroup is not null) contexts[_connectionScopeMattermostGroup] = ("connections", "mattermost");
         if (_connectionScopeSlackGroup is not null) contexts[_connectionScopeSlackGroup] = ("connections", "slack");
@@ -175,6 +219,7 @@ public sealed partial class MainPage
         void Walk(object? node, (string Page, string? Scope) context, List<DependencyObject> expanders, int depth)
         {
             if (node is not DependencyObject element || depth > 64) return;
+            if (ReferenceEquals(element, _agentProfileDetails)) return; // Covered for every provider by the catalog.
             if (contexts.TryGetValue(element, out var fixedContext)) context = fixedContext;
             // Pages and scopes are collapsed while another one is shown; anything else that is collapsed is unavailable now.
             else if (element is UIElement { Visibility: Visibility.Collapsed }) return;
@@ -195,9 +240,67 @@ public sealed partial class MainPage
         }
     }
 
-    private string DisplayedAgentProfile() =>
-        _agentSettingsScope != "common" ? _agentSettingsScope :
-        _agentProfileDetails?.CurrentProvider is { Length: > 0 } shown ? shown : ViewModel.AgentProvider;
+    private IEnumerable<SettingsSearchEntry> BuildScopeSearchCatalog()
+    {
+        foreach (var scope in _agentScopeKeys)
+        {
+            var name = ScopeSearchLabel("agent", scope);
+            string[] aliases = [scope, name.Replace(" ", ""), name.Replace(" ", "") + "CLI", "CLI",
+                scope == "antigravity" ? "agy" : scope];
+            yield return Entry(scope == "common" ? name : DesktopText.Get("SearchScopeSettings", name), "agent", scope, null, aliases);
+            if (scope == "common") continue;
+            yield return Field("AgentEditorExecutableLabel.Text", scope, "AgentExecutable", aliases, "executable CLI path 実行ファイル パス");
+            if (scope != "custom") yield return Field("AgentEditorModelLabel.Text", scope, "AgentModel", aliases, "model models モデル");
+            if (scope is "codex" or "claude") yield return Field("AgentEditorReasoningLabel.Text", scope, "ReasoningEffortCandidates", aliases, "reasoning effort 推論 強さ");
+            if (scope is "codex" or "claude" or "antigravity") yield return Field("AgentEditorPermissionLabel.Text", scope, "AgentPermissionMode", aliases, "permissions access 権限 許可");
+            if (scope is "gemini" or "github-copilot" or "antigravity" or "custom") yield return Field("AgentEditorArgumentsLabel.Text", scope, "AgentArguments", aliases, "arguments 引数");
+            if (scope == "codex")
+            {
+                yield return Field("UseAppServer.Header", scope, "UseAppServer", aliases, "app server 承認 質問");
+                yield return Field("AllowAgentNetwork.Header", scope, "AllowAgentNetwork", aliases, "network ネットワーク");
+            }
+        }
+        foreach (var scope in new[] { "common", "mattermost", "slack", "discord" })
+            yield return Entry(scope == "common" ? ScopeSearchLabel("connections", scope) :
+                DesktopText.Get("SearchScopeSettings", ScopeSearchLabel("connections", scope)), "connections", scope, null, [scope]);
+
+        SettingsSearchEntry Entry(string title, string page, string scope, string? target, IReadOnlyList<string> words) =>
+            new(title, LocationText(page, scope), page, scope, target,
+                [page, page == "agent" ? "agent エージェント" : "chat チャット", .. words]);
+        SettingsSearchEntry Field(string resource, string scope, string target, string[] aliases, string words) =>
+            Entry(MrtText.Get(resource), "agent", scope, target, [.. aliases, words]);
+    }
+
+    private string ScopeSearchLabel(string page, string scope)
+    {
+        var navigation = page == "agent" ? _agentScopeNavigation : _connectionScopeNavigation;
+        return navigation?.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(item => item.Tag as string == scope) is { } item
+            ? AutomationProperties.GetName(item) : scope;
+    }
+
+    private DependencyObject? SearchScopeRoot(string page, string? scope) => page switch
+    {
+        "agent" => scope == "common" ? _agentScopeCommonGroup : _agentProfileDetails,
+        "connections" => scope switch
+        {
+            "mattermost" => _connectionScopeMattermostGroup,
+            "slack" => _connectionScopeSlackGroup,
+            "discord" => _connectionScopeDiscordGroup,
+            _ => _connectionScopeCommonGroup
+        },
+        _ => null
+    };
+
+    private static (FrameworkElement Target, IReadOnlyList<DependencyObject> Expanders)? FindSearchTarget(
+        DependencyObject node, string id, IReadOnlyList<DependencyObject> expanders)
+    {
+        if (node is FrameworkElement element && AutomationProperties.GetAutomationId(element) == id)
+            return (element, expanders);
+        var inner = node is Expander or SettingsExpander ? new List<DependencyObject>(expanders) { node } : expanders;
+        foreach (var child in Children(node).OfType<DependencyObject>())
+            if (FindSearchTarget(child, id, inner) is { } found) return found;
+        return null;
+    }
 
     private static IEnumerable<(string Label, Control Input)> LabelledInputs(Panel panel)
     {

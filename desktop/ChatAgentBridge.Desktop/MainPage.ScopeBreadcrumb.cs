@@ -29,6 +29,7 @@ public sealed partial class MainPage
         var scope = scopes?.SelectedItem is NavigationViewItem selected ? AutomationProperties.GetName(selected) : null;
         var show = !isCommonScope && !string.IsNullOrEmpty(page) && !string.IsNullOrEmpty(scope);
         breadcrumb.ItemsSource = show ? new[] { page!, scope! } : null;
+        AutomationProperties.SetName(breadcrumb, show ? $"{page} › {scope}" : string.Empty);
         breadcrumb.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
     }
 }

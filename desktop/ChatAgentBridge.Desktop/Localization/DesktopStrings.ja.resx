@@ -853,4 +853,5 @@
   <data name="TipChatConnectBody" xml:space="preserve"><value>「チャット」を開いて Mattermost・Slack・Discord に接続すると、チャットで送られた依頼をこの PC で実行できます。</value></data>
   <data name="TipOpenChat" xml:space="preserve"><value>チャットを開く</value></data>
   <data name="TipGotIt" xml:space="preserve"><value>OK</value></data>
+  <data name="SearchScopeSettings" xml:space="preserve"><value>{0} の設定</value></data>
 </root>
