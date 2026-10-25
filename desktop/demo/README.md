@@ -11,7 +11,7 @@ Mattermost の資格情報、録画、スクリーンショット、ログ）は
   - E2E セットアップが作る管理用の状態ファイル `desktop/artifacts/mattermost-e2e.json` を使います
 - CAB のデモ用ビルド（ポータブル版）を `desktop/artifacts/demo-app` に出力しておきます
   ```
-  dotnet publish ChatAgentBridge.Desktop -c Release -p:Platform=x64 -r win-x64 --self-contained -p:CABPortable=true -o artifacts\demo-app
+  dotnet publish desktop\ChatAgentBridge.Desktop -c Release -p:Platform=x64 -r win-x64 --self-contained -p:CABPortable=true -o desktop\artifacts\demo-app
   ```
 - AI CLI: Antigravity CLI（agy）。エージェント切り替えデモでは Claude Code CLI も使います（ログイン済みであること）
 - 撮影はメインモニターの作業領域（1920×1032 を想定）で行います。Windows 通知はメインモニターにしか表示されないためです
@@ -30,6 +30,16 @@ pwsh -NoProfile -File desktop\demo\setup-mattermost-demo.ps1
 
 ## 撮影
 
+撮影前に、デスクトップやAIを操作せずシナリオの承認・応答待ち処理を検証できます。
+リポジトリのルートから実行してください。
+
+```powershell
+pwsh -NoProfile -File desktop\demo\test-demo-scenario.ps1
+```
+
+このテストは自動承認・手動承認・タイムアウト時の処理をモックで確認します。
+CLIのログイン状態や、録画が最後まで進むことを検証するものではありません。
+
 撮影中は PC に触れないでください（カーソル移動とクリックを自動で行います）。
 CAB を MSIX 版と同じユーザー環境で動かすため、スクリプトは通常のターミナルから実行します。
 
@@ -41,7 +51,7 @@ pwsh -NoProfile -File desktop\demo\take-feature.ps1 -Scenario agent -Record
 ```
 
 - `-Record` を外すとリハーサル（録画なし）です。最後に画面を `final-*.png` に保存します。
-- `take-feature.ps1 -AutoSwitch` は承認モード「自動承認」と「切り替えも自動承認」をオンにして再生します。
+- `take-feature.ps1 -AutoSwitch` は承認モード「自動承認」と「切り替えも自動承認」をオンにし、CAB に承認待ちの操作が表示されないことを前提に進行します。リセットを省略する `-NoReset` と併用する場合は、既存の CAB 設定も自動承認にしてください。
 - 録画は `desktop/artifacts/demo/demo-<lang|scenario>-raw.mkv` に出力されます。
 - 機能デモ（`take-feature.ps1`）は CAB をダークテーマで起動します。
 
@@ -82,7 +92,7 @@ pwsh -NoProfile -File desktop\demo\take-feature.ps1 -Scenario agent -Record
 3. スレッドで「このプロジェクトの README.md を読んで、使い方を2行で教えて」
    → フォルダーが変わったので「最初だけ確認」でも再承認 → todo-cli についての回答
 
-`-AutoSwitch` 付きでは、2 と 3 の承認なしで切り替わります。
+`-AutoSwitch` 付きでは自動承認が有効になり、依頼と切り替えの承認操作を省略します。
 
 ### エージェント切り替え（`run-scenario.ps1 -Scenario agent`）
 
@@ -133,3 +143,4 @@ ffmpeg -y -ss 1 -to <終了秒> -i <raw.mkv> -c:v libx264 -preset slow -crf 24 -
 | `shot.ps1` | メインモニター作業領域のスクリーンショット |
 | `check-switch-setting.ps1`, `verify-switch-setting.ps1` | 「切り替えも自動承認」設定の実環境確認 |
 | `watch-windows.ps1` | 新しく開いたウィンドウの記録（コンソールが一瞬表示されるかの調査用） |
+| `test-demo-scenario.ps1` | アプリ・ブラウザー・AIを起動しない、承認と応答待ち処理のテスト |

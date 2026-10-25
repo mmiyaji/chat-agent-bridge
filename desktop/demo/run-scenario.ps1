@@ -1,5 +1,5 @@
 # Plays a feature demo in Japanese: "project" switches the conversation's folder, "agent" hands the conversation to Claude Code.
-param([ValidateSet('project', 'agent')][string]$Scenario, [switch]$Record)
+param([ValidateSet('project', 'agent')][string]$Scenario, [switch]$Record, [switch]$AutoSwitch)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'demo-lib.ps1')
 $mm = Get-Content $MattermostState -Raw | ConvertFrom-Json
@@ -45,6 +45,15 @@ function Approve-Pending([string]$Button, [int]$TimeoutSec = 20) {
     Click-CabButtonByName $Button
     $true
 }
+function Complete-ApprovalStep([string]$Step, [string]$Button, [int]$TimeoutSec = 20, [switch]$Automatic) {
+    if ($Automatic) { Mark "$Step approval: automatic"; return }
+    if (-not (Approve-Pending $Button $TimeoutSec)) { throw "Timed out waiting for approval: $Step" }
+    Mark "$Step approved"
+}
+function Require-BotResponse([string]$Step, [int]$Count) {
+    if (-not (Wait-BotDone $Count)) { throw "Timed out waiting for Mattermost response: $Step" }
+    Mark "$Step reply received"
+}
 
 Move-Cursor 1380 600 10
 & (Join-Path $PSScriptRoot 'stage.ps1')
@@ -60,24 +69,24 @@ try {
     $script:since = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     Send-MattermostMessage $ws $steps.Request; Mark 'request posted'
     Select-CabFirstItem 'InboxConversations' 60; Mark 'conversation opened'
-    Mark "approved: $(Approve-Pending '実行')"
+    Complete-ApprovalStep 'initial request' '実行' -Automatic:$AutoSwitch
     Move-Cursor 1380 820 900
-    Mark "reply: $(Wait-BotDone 1)"
+    Require-BotResponse 'initial request' 1
     Start-Sleep 4
 
     # Switch inside the same thread; CAB asks for approval because it changes how the conversation runs.
     Mark (Open-LatestThread $ws)
     Start-Sleep 1
     Send-MattermostMessage $ws $steps.Switch -Box '#reply_textbox'; Mark 'switch posted'
-    Mark "switch approved: $(Approve-Pending '変更')"
+    Complete-ApprovalStep 'switch' '変更' -Automatic:$AutoSwitch
     Move-Cursor 1380 820 900
     Start-Sleep 6
 
     $done = Get-BotDoneCount
     Send-MattermostMessage $ws $steps.FollowUp -Box '#reply_textbox'; Mark 'follow-up posted'
-    Mark "follow-up approved: $(Approve-Pending '実行' 10)"
+    Complete-ApprovalStep 'follow-up request' '実行' 10 -Automatic:$AutoSwitch
     Move-Cursor 1380 820 900
-    Mark "follow-up reply: $(Wait-BotDone ($done + 1))"
+    Require-BotResponse 'follow-up request' ($done + 1)
     Move-ToSelector $ws '#reply_textbox'
     Start-Sleep 6
     Mark 'end'

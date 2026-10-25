@@ -7,7 +7,7 @@ if (-not $NoReset) {
     & (Join-Path $d 'open-browser.ps1') -Lang ja
     & (Join-Path $d 'prep-mattermost-ui.ps1') -Lang ja
 }
-& (Join-Path $d 'run-scenario.ps1') -Scenario $Scenario -Record:$Record
+& (Join-Path $d 'run-scenario.ps1') -Scenario $Scenario -Record:$Record -AutoSwitch:$AutoSwitch
 & (Join-Path $d 'stage.ps1')
 Start-Sleep 2
 & (Join-Path $d 'shot.ps1') "final-$Scenario"
