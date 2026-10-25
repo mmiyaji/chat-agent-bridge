@@ -111,6 +111,14 @@ public partial class App : Application
                 return;
             }
         }
+        // A second window on the same data folder would answer the same chat requests twice.
+        // Hand this launch to the running window before opening leases, settings or connections.
+        if (!await SingleInstanceGate.ClaimOrRedirectAsync(dataDirectory))
+        {
+            PendingRequestNotifications?.Shutdown(preserveRegistration: true);
+            Exit();
+            return;
+        }
         if (DeploymentRuntime.IsPortable)
         {
             try { _portableLease = ChatAgentBridge.Core.Updates.PortableApplicationLease.Open(AppContext.BaseDirectory); }
@@ -155,6 +163,7 @@ public partial class App : Application
         var mainWindow = new MainWindow();
         Window = mainWindow;
         Tray = new(mainWindow, backgroundStore, background);
+        SingleInstanceGate.SetShowWindow(Tray.ShowWindow);
         Window.Closed += (_, _) =>
         {
             _ = Layout.FlushAsync();
