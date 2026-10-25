@@ -45,7 +45,7 @@ $scenarioCases = @(
     @{ Scenario = 'project'; Auto = $false; ExpectedButtons = @('実行', '変更', '実行') },
     @{ Scenario = 'agent'; Auto = $false; ExpectedButtons = @('実行', '変更', '実行') },
     @{ Scenario = 'project'; Auto = $true; ExpectedButtons = @() },
-    @{ Scenario = 'agent'; Auto = $true; ExpectedButtons = @('実行') }
+    @{ Scenario = 'agent'; Auto = $true; ExpectedButtons = @() }
 )
 foreach ($case in $scenarioCases) {
     $script:marks.Clear()
@@ -66,7 +66,7 @@ foreach ($case in $scenarioCases) {
         $expectedMark = if ($case.Auto) { "$step approval: automatic" } else { "$step approved" }
         if ($expectedMark -notin $script:marks) { throw "Missing approval result for $step in $($case.Scenario)." }
     }
-    $followUpRequiresApproval = -not $case.Auto -or $case.Scenario -eq 'agent'
+    $followUpRequiresApproval = -not $case.Auto
     $followUpMark = if ($followUpRequiresApproval) { 'follow-up request approved' } else { 'follow-up request approval: automatic' }
     if ($followUpMark -notin $script:marks) { throw "Missing follow-up approval result for $($case.Scenario), AutoSwitch=$($case.Auto)." }
 }

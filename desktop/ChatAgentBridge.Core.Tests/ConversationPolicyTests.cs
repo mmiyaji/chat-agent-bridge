@@ -59,11 +59,11 @@ public sealed class ConversationPolicyTests
     }
 
     [Fact]
-    public void SwitchCommandsSkipApprovalOnlyWhenOptedInWithAutomaticApproval()
+    public void SwitchCommandsAreEligibleForFirstOrAutomaticApprovalOnlyWhenOptedIn()
     {
         Assert.False(ConversationExecutionPolicy.AutoApprovesSwitchCommands(Settings with { ChatApprovalMode = "auto" }));
         Assert.True(ConversationExecutionPolicy.AutoApprovesSwitchCommands(Settings with { ChatApprovalMode = "auto", AutoApproveSwitchCommands = true }));
-        Assert.False(ConversationExecutionPolicy.AutoApprovesSwitchCommands(Settings with { ChatApprovalMode = "first", AutoApproveSwitchCommands = true }));
+        Assert.True(ConversationExecutionPolicy.AutoApprovesSwitchCommands(Settings with { ChatApprovalMode = "first", AutoApproveSwitchCommands = true }));
         Assert.False(ConversationExecutionPolicy.AutoApprovesSwitchCommands(Settings with { ChatApprovalMode = "always", AutoApproveSwitchCommands = true }));
     }
 

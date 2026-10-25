@@ -8,7 +8,7 @@ public sealed class ConversationAgentService(SessionStore sessions, AgentConnect
     ConversationSummaryStore summaries)
 {
     public async Task SwitchAsync(SessionBinding expected, BridgeSettings defaults, AgentSwitchSelection selection,
-        Func<CancellationToken, Task<bool>> canSwitch, CancellationToken token = default)
+        Func<CancellationToken, Task<bool>> canSwitch, CancellationToken token = default, bool requireSwitchConsent = false)
     {
         if (expected.Key.UserId is null || expected.Key.Origin is null || expected.Key.Provider is not ("slack" or "mattermost" or "discord"))
             throw new ArgumentException("Agent switching requires an owner-scoped chat conversation.", nameof(expected));
@@ -37,7 +37,7 @@ public sealed class ConversationAgentService(SessionStore sessions, AgentConnect
         if (!await canSwitch(token).ConfigureAwait(false)) throw new UnauthorizedAccessException();
         var latest = await connections.FindAsync(selection.Provider, token).ConfigureAwait(false);
         if (profile != latest) throw new InvalidOperationException("The registered CLI connection changed. Try again.");
-        await sessions.SwitchAgentAsync(expected, profile.Provider, summary, token).ConfigureAwait(false);
+        await sessions.SwitchAgentAsync(expected, profile.Provider, summary, token, defaults, profile, requireSwitchConsent).ConfigureAwait(false);
     }
 
     public static string? ProviderOf(SessionBinding binding)

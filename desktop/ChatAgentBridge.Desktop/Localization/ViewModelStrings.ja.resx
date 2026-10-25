@@ -37,7 +37,7 @@
     <value>毎回確認</value>
   </data>
   <data name="ApprovalFirstOnly" xml:space="preserve">
-    <value>最初だけ確認</value>
+    <value>会話ごとに最初の依頼を確認</value>
   </data>
   <data name="AuditRecordSaveFailed" xml:space="preserve">
     <value>監査記録を保存できませんでした。</value>

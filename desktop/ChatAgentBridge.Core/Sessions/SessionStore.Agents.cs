@@ -58,7 +58,7 @@ public sealed partial class SessionStore
     }
 
     public Task SwitchAgentAsync(SessionBinding expected, string provider, string? summary,
-        CancellationToken token = default)
+        CancellationToken token = default, BridgeSettings? defaults = null, AgentConnectionProfile? targetProfile = null, bool requireSwitchConsent = false)
     {
         ValidateBinding(expected);
         if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity)) throw new ArgumentException("Unsupported CLI.");
@@ -66,6 +66,7 @@ public sealed partial class SessionStore
         var protectedSummary = summary is null ? null : _textProtector.Protect(summary);
         return WithSessionLockAsync(expected.Key, async cancellation =>
         {
+            var sourceSettings = defaults is null ? null : await ApplyWorkspaceAsync(expected.Key, defaults, cancellation).ConfigureAwait(false);
             await _gate.WaitAsync(cancellation).ConfigureAwait(false);
             try
             {
@@ -73,6 +74,19 @@ public sealed partial class SessionStore
                 var index = document.Bindings!.FindIndex(item => item.Key == expected.Key);
                 if (index < 0 || document.Bindings[index] != expected)
                     throw new InvalidOperationException("The conversation changed while choosing the next agent. Try again.");
+                var sourceBinding = ExecutionBinding(document, expected.Key);
+                var source = sourceSettings is null ? null : ConversationExecutionPolicy.GetEffectiveSettings(sourceSettings, sourceBinding);
+                var target = defaults is null || targetProfile is null ? null : targetProfile.ApplyTo(defaults) with
+                {
+                    WorkspaceRoot = expected.WorkspaceRoot,
+                    TrustedWorkspaceRoots = string.IsNullOrWhiteSpace(defaults.TrustedWorkspaceRoots)
+                        ? Path.GetFullPath(defaults.WorkspaceRoot) : defaults.TrustedWorkspaceRoots,
+                    ChatApprovalMode = expected.ChatApprovalMode ?? defaults.ChatApprovalMode,
+                    ChatResultMode = expected.ChatResultMode ?? defaults.ChatResultMode
+                };
+                var preserveConsent = source is not null && HasSwitchConsent(document, expected.Key, source, sourceBinding);
+                if (requireSwitchConsent && !preserveConsent) throw new UnauthorizedAccessException("Conversation switch consent changed.");
+                SetSwitchConsent(document, expected.Key, preserveConsent ? target : null);
                 var now = DateTimeOffset.UtcNow;
                 document.ArchivedBindings ??= [];
                 if (!document.ArchivedBindings.Any(item => item.Key == expected.Key && item.SessionId == expected.SessionId))

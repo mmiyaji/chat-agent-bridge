@@ -38,7 +38,7 @@ public sealed partial class ChatInboxViewModel
     }
 
     private async Task ChangeAgentAsync(InboxItem item, AgentChatCommand command,
-        bool approvedByNotification, CancellationToken token)
+        bool approvedByNotification, bool approvedAutomatically, CancellationToken token)
     {
         var changed = false;
         (string Workspace, string SessionLabel)? originalDisplay = null;
@@ -50,6 +50,15 @@ public sealed partial class ChatInboxViewModel
             var key = CreateSessionKey(item);
             var binding = await _sessions.FindAsync(key, token) ?? throw new InvalidOperationException();
             var defaults = await _store.LoadAsync(token);
+            var executionBinding = await _sessions.FindExecutionBindingAsync(key, token);
+            var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, defaults, token), executionBinding);
+            if (approvedAutomatically && await _sessions.RequiresApprovalAsync(key, effective, executionBinding, switchCommand: true, token: token))
+            {
+                NotifyPendingRequest(item);
+                Status = DesktopText.Get("InboxApprovalRequiredAgain");
+                return;
+            }
+            item.ExecutionPolicyFingerprint = ConversationExecutionPolicy.GetFingerprint(key, effective);
             var profile = await new AgentConnectionStore().FindAsync(command.Provider, token) ?? throw new InvalidOperationException();
             var summary = command.IncludeSummary == true ? await new ConversationSummaryStore().FindAsync(key, token) : null;
             if (command.IncludeSummary == true && (summary is null || summary.SessionId != binding.SessionId))
@@ -61,12 +70,13 @@ public sealed partial class ChatInboxViewModel
             previewDisplay = (binding.WorkspaceRoot, previewLabel);
             item.Workspace = previewDisplay.Value.Workspace;
             item.SessionLabel = previewDisplay.Value.SessionLabel;
-            if (!approvedByNotification && (ConfirmAsync is null || !await ConfirmAsync(item, token))) return;
+            if (!approvedByNotification && !approvedAutomatically && (ConfirmAsync is null || !await ConfirmAsync(item, token))) return;
             if (item.State != "承認待ち" || !await CheckAccessAsync(item, token)) return;
             await new ConversationAgentService(_sessions, new AgentConnectionStore(), new ConversationSummaryStore())
                 .SwitchAsync(binding, defaults, new(command.Provider, command.IncludeSummary.Value, profile),
-                    ct => CheckAccessAsync(item, ct), token);
+                    ct => CheckAccessAsync(item, ct), token, requireSwitchConsent: approvedAutomatically);
             changed = true;
+            item.ExecutionPolicyFingerprint = null;
             var invalidated = Requests.Where(other => !ReferenceEquals(other, item) && other.State == "承認待ち" && CreateSessionKey(other) == key).ToArray();
             foreach (var pending in invalidated) pending.State = "エージェント変更・再投稿が必要";
             await FinishProgressBatchAsync(invalidated, ChatProgressState.Cancelled);

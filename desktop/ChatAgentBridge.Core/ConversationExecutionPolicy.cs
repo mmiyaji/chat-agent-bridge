@@ -30,10 +30,11 @@ public static class ConversationExecutionPolicy
 
     /// <summary>
     /// Folder and agent switch commands normally always wait for approval on this PC. The opt-in only applies
-    /// while the conversation runs with automatic approval; trusted-folder and registered-CLI checks still apply.
+    /// with automatic approval or after first-turn consent; callers must also verify exact conversation consent
+    /// through SessionStore.RequiresApprovalAsync. Trusted-folder and registered-CLI checks still apply.
     /// </summary>
     public static bool AutoApprovesSwitchCommands(BridgeSettings effective) =>
-        effective.ChatApprovalMode == "auto" && effective.AutoApproveSwitchCommands;
+        effective.ChatApprovalMode is "auto" or "first" && effective.AutoApproveSwitchCommands;
 
     public static string GetFingerprint(SessionKey key, BridgeSettings settings)
     {

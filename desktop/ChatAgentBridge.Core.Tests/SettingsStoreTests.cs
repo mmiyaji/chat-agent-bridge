@@ -29,16 +29,16 @@ public sealed class SettingsStoreTests : IDisposable
 
     [Theory]
     [InlineData("auto", true)]
-    [InlineData("first", false)]
+    [InlineData("first", true)]
     [InlineData("always", false)]
-    public async Task SwitchCommandAutoApprovalPersistsOnlyWithAutomaticApproval(string approvalMode, bool expected)
+    public async Task SwitchCommandAutoApprovalPersistsWithFirstOrAutomaticApproval(string approvalMode, bool expected)
     {
         var store = new SettingsStore(_directory);
 
         await store.SaveAsync(new BridgeSettings { ChatApprovalMode = approvalMode, AutoApproveSwitchCommands = true });
 
         Assert.Equal(expected, (await store.LoadAsync()).AutoApproveSwitchCommands);
-        // A hand-edited file cannot enable the opt-in without automatic approval either.
+        // Loading a hand-edited file applies the same supported approval modes.
         var path = Path.Combine(_directory, "settings.json");
         var stored = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
         stored["AutoApproveSwitchCommands"] = true;

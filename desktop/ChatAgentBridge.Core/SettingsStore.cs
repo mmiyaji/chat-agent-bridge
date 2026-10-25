@@ -85,7 +85,7 @@ public sealed class SettingsStore
                 TrustedWorkspaceRoots = ExecutionPolicy.NormalizeTrustedRoots(stored.TrustedWorkspaceRoots),
                 ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(stored.ChatApprovalMode),
                 AutoApproveSwitchCommands = stored.AutoApproveSwitchCommands &&
-                    ExecutionPolicy.NormalizeChatApprovalMode(stored.ChatApprovalMode) == "auto",
+                    ExecutionPolicy.NormalizeChatApprovalMode(stored.ChatApprovalMode) is "auto" or "first",
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(stored.ChatResultMode),
                 ChatFollowUpMode = ChatFollowUpPolicy.Normalize(stored.ChatFollowUpMode),
                 SlackAllowedChannelIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedChannelIds ?? ""),
@@ -195,7 +195,7 @@ public sealed class SettingsStore
             AllowAgentNetwork = settings.AllowAgentNetwork,
             TrustedWorkspaceRoots = trustedRoots,
             ChatApprovalMode = approvalMode,
-            AutoApproveSwitchCommands = settings.AutoApproveSwitchCommands && approvalMode == "auto",
+            AutoApproveSwitchCommands = settings.AutoApproveSwitchCommands && approvalMode is "auto" or "first",
             ChatResultMode = resultMode,
             ChatFollowUpMode = followUpMode,
             SlackAllowedChannelIds = slackAllowedChannels,

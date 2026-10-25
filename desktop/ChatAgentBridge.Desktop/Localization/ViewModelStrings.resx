@@ -37,7 +37,7 @@
     <value>Confirm every time</value>
   </data>
   <data name="ApprovalFirstOnly" xml:space="preserve">
-    <value>Confirm the first request only</value>
+    <value>Confirm the first request in each conversation</value>
   </data>
   <data name="AuditRecordSaveFailed" xml:space="preserve">
     <value>The audit record could not be saved.</value>

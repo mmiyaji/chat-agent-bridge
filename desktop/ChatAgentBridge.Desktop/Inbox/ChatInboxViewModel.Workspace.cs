@@ -5,7 +5,7 @@ namespace ChatAgentBridge_Desktop.Inbox;
 
 public sealed partial class ChatInboxViewModel
 {
-    private async Task ChangeWorkspaceAsync(InboxItem item, string path, bool approvedByNotification, CancellationToken token)
+    private async Task ChangeWorkspaceAsync(InboxItem item, string path, bool approvedByNotification, bool approvedAutomatically, CancellationToken token)
     {
         var changed = false;
         (string Workspace, string SessionLabel)? originalDisplay = null;
@@ -15,28 +15,40 @@ public sealed partial class ChatInboxViewModel
             if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path) || !Directory.Exists(path))
                 throw new InvalidOperationException(DesktopText.Get("WorkspacePathInstruction"));
             path = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
-            if (!ExecutionPolicy.IsWorkspaceTrusted(item.Settings, path))
+            var defaults = await _store.LoadAsync(token);
+            if (!ExecutionPolicy.IsWorkspaceTrusted(defaults, path))
                 throw new InvalidOperationException(DesktopText.Get("WorkspaceOutsideTrustedRoots"));
             var key = CreateSessionKey(item);
+            using var operation = _sessions.TryBeginConversationOperation(key)
+                ?? throw new InvalidOperationException(DesktopText.Get("AgentSwitchBusy"));
             var previousWorkspace = await _sessions.FindWorkspaceAsync(key, token);
-            var currentWorkspace = previousWorkspace ?? item.Settings.WorkspaceRoot;
+            var binding = await _sessions.FindExecutionBindingAsync(key, token);
+            var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, defaults, token), binding);
+            if (approvedAutomatically && await _sessions.RequiresApprovalAsync(key, effective, binding, switchCommand: true, token: token))
+            {
+                NotifyPendingRequest(item);
+                Status = DesktopText.Get("InboxApprovalRequiredAgain");
+                return;
+            }
+            item.ExecutionPolicyFingerprint = ConversationExecutionPolicy.GetFingerprint(key, effective);
+            var currentWorkspace = previousWorkspace ?? defaults.WorkspaceRoot;
             originalDisplay = (item.Workspace, item.SessionLabel);
             previewDisplay = (path, DesktopText.Get("WorkspaceChangePrompt", currentWorkspace, path, item.Request.UserId));
             item.Workspace = previewDisplay.Value.Workspace;
             item.SessionLabel = previewDisplay.Value.SessionLabel;
             // A folder change requires a local decision unless it was approved from a notification or the user
             // opted in to automatic switch approval (trusted roots are still enforced above).
-            if (!approvedByNotification && (ConfirmAsync is null || !await ConfirmAsync(item, token))) return;
+            if (!approvedByNotification && !approvedAutomatically && (ConfirmAsync is null || !await ConfirmAsync(item, token))) return;
             if (item.State != "承認待ち" || !await CheckAccessAsync(item, token)) return;
             if (previousWorkspace != await _sessions.FindWorkspaceAsync(key, token))
                 throw new InvalidOperationException(DesktopText.Get("WorkspaceChangedDuringConfirmation"));
-            await _sessions.ChangeWorkspaceAsync(key, path, item.Settings, token);
+            await _sessions.ChangeWorkspaceAsync(key, path, defaults, token, requireSwitchConsent: approvedAutomatically);
             changed = true;
+            item.ExecutionPolicyFingerprint = null;
             var invalidated = Requests.Where(other => !ReferenceEquals(other, item) && other.State == "承認待ち" && CreateSessionKey(other) == key).ToArray();
             foreach (var pending in invalidated)
                 pending.State = "作業先変更・再投稿が必要";
             await FinishProgressBatchAsync(invalidated, ChatAgentBridge.Transports.ChatProgressState.Cancelled);
-            item.ExecutionPolicyFingerprint = null;
             item.State = "フォルダー変更済み";
             await FinishProgressAsync(item, ChatAgentBridge.Transports.ChatProgressState.Completed);
             item.ResultText = "";

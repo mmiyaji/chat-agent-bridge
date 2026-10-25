@@ -84,7 +84,7 @@ try {
 
     $done = Get-BotDoneCount
     Send-MattermostMessage $ws $steps.FollowUp -Box '#reply_textbox'; Mark 'follow-up posted'
-    Complete-ApprovalStep 'follow-up request' '実行' 10 -Automatic:($AutoSwitch -and $Scenario -eq 'project')
+    Complete-ApprovalStep 'follow-up request' '実行' 10 -Automatic:$AutoSwitch
     Move-Cursor 1380 820 900
     Require-BotResponse 'follow-up request' ($done + 1)
     Move-ToSelector $ws '#reply_textbox'

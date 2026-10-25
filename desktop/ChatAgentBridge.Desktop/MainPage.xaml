@@ -121,12 +121,12 @@
                              Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.StatusSeverity), Mode=OneWay}"
                              Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
                              Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
-                    <StackPanel Grid.Row="1" MaxWidth="1040" HorizontalAlignment="Left" Spacing="4" Margin="0,0,0,16"
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Stretch" Spacing="4" Margin="0,0,0,16"
                                 Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
                         <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock013" x:Uid="chatAgentBridgeDesktopMainPageTextBlock013" />
                         <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock014" x:Uid="chatAgentBridgeDesktopMainPageTextBlock014" />
                     </StackPanel>
-                    <StackPanel Grid.Row="1" MaxWidth="1040" HorizontalAlignment="Left" Spacing="4" Margin="0,0,0,16"
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Stretch" Spacing="4" Margin="0,0,0,16"
                                 Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
                         <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock046" x:Uid="chatAgentBridgeDesktopMainPageTextBlock046" />
                         <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock047" x:Uid="chatAgentBridgeDesktopMainPageTextBlock047" />
@@ -593,21 +593,36 @@
                                         <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatApprovalMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ChatApprovalMode" x:Uid="ChatApprovalMode">
                                             <ComboBoxItem  Tag="always"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem006" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem006" /><ComboBoxItem  Tag="first"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem007" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem007" /><ComboBoxItem  Tag="auto"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem008" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem008" />
                                         </ComboBox>
-                                        <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock032" x:Uid="chatAgentBridgeDesktopMainPageTextBlock032" />
+                                        <InfoBar Severity="Informational" IsOpen="True" IsClosable="False" AutomationProperties.AutomationId="ChatApprovalHelpNotice">
+                                            <InfoBar.Content>
+                                                <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock032" x:Uid="chatAgentBridgeDesktopMainPageTextBlock032" />
+                                            </InfoBar.Content>
+                                        </InfoBar>
                                         <ToggleSwitch IsOn="{x:Bind ViewModel.AutoApproveSwitchCommands, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.CanAutoApproveSwitchCommands, Mode=OneWay}"
                                                       Toggled="AutoApproveSwitchCommands_Toggled" AutomationProperties.AutomationId="AutoApproveSwitchCommands" x:Uid="AutoApproveSwitchCommands" />
                                         <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="AutoApproveSwitchCommandsHelp" x:Uid="AutoApproveSwitchCommandsHelp" />
+                                        <InfoBar x:Uid="AutoApproveSwitchWarning" Severity="Warning" IsClosable="False"
+                                                 IsOpen="{x:Bind ViewModel.AutoApproveSwitchCommands, Mode=OneWay}"
+                                                 AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="AutoApproveSwitchWarning" />
                                         <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatResultMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ChatResultMode" x:Uid="ChatResultMode">
                                             <ComboBoxItem  Tag="manual"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem009" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem009" /><ComboBoxItem  Tag="auto"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem010" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem010" /><ComboBoxItem  Tag="none"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageComboBoxItem011" x:Uid="chatAgentBridgeDesktopMainPageComboBoxItem011" />
                                         </ComboBox>
-                                        <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock033" x:Uid="chatAgentBridgeDesktopMainPageTextBlock033" />
+                                        <InfoBar Severity="Informational" IsOpen="True" IsClosable="False" AutomationProperties.AutomationId="ChatResultHelpNotice">
+                                            <InfoBar.Content>
+                                                <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock033" x:Uid="chatAgentBridgeDesktopMainPageTextBlock033" />
+                                            </InfoBar.Content>
+                                        </InfoBar>
                                         <ComboBox SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatFollowUpMode, Mode=TwoWay}"
                                                   HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ChatFollowUpMode" x:Uid="ChatFollowUpMode"
                                                   SelectionChanged="ChatFollowUpMode_SelectionChanged">
                                             <ComboBoxItem Tag="queue" AutomationProperties.AutomationId="ChatFollowUpModeQueue" x:Uid="ChatFollowUpModeQueue" />
                                             <ComboBoxItem Tag="steer" AutomationProperties.AutomationId="ChatFollowUpModeSteer" x:Uid="ChatFollowUpModeSteer" />
                                         </ComboBox>
-                                        <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="ChatFollowUpModeHelp" x:Uid="ChatFollowUpModeHelp" />
+                                        <InfoBar Severity="Informational" IsOpen="True" IsClosable="False" AutomationProperties.AutomationId="ChatFollowUpHelpNotice">
+                                            <InfoBar.Content>
+                                                <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="ChatFollowUpModeHelp" x:Uid="ChatFollowUpModeHelp" />
+                                            </InfoBar.Content>
+                                        </InfoBar>
                                     </StackPanel>
                                 </Expander>
                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="ChatScopeOverview" localization:LocalizedResourceKey.Key="ChatScopeOverview" />

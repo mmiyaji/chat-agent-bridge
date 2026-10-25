@@ -38,7 +38,7 @@ try {
     Confirm-Review 'review-switch-approval'
     "after accept: $(State 'AutoApproveSwitchCommands')"
     Shot 'switch-accepted'
-    # Leaving automatic approval turns the option off again.
+    # First-only approval keeps the opt-in available; the initial conversation still requires approval.
     $combo = Find-Cab 'ChatApprovalMode'
     $combo.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand(); Start-Sleep 1
     (Find-Cab 'chatAgentBridgeDesktopMainPageComboBoxItem007').GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep 1

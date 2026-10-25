@@ -196,7 +196,7 @@
   <data name="InheritAgentEffort" xml:space="preserve"><value>Inherit agent setting (CLI default if the model differs)</value></data>
   <data name="HistoryExecutionPolicy" xml:space="preserve"><value>Conversation policy: approval {0} / results {1} / AI actions {2}</value></data>
   <data name="AskEveryTime" xml:space="preserve"><value>Ask every time</value></data>
-  <data name="AskFirstTime" xml:space="preserve"><value>Ask first time only</value></data>
+  <data name="AskFirstTime" xml:space="preserve"><value>Confirm first request per conversation</value></data>
   <data name="AutoApprove" xml:space="preserve"><value>Automatic approval</value></data>
   <data name="ManualShare" xml:space="preserve"><value>Review and share manually</value></data>
   <data name="AutoShare" xml:space="preserve"><value>Share automatically</value></data>
@@ -740,11 +740,11 @@ Save all pending settings changes together. Reconnect chat to apply saved change
   <data name="SettingsReviewFolders" xml:space="preserve"><value>Trusted workspaces</value></data>
   <data name="SettingsReviewRequestApproval" xml:space="preserve"><value>Chat request approval</value></data>
   <data name="SettingsReviewSwitchApproval" xml:space="preserve"><value>Automatic approval for folder and agent switches</value></data>
-  <data name="SettingsReviewSwitchApprovalWarning" xml:space="preserve"><value>⚠ Allowed users will be able to switch the working folder or AI agent from chat without approval on this PC.</value></data>
-  <data name="SwitchApprovalWarningTitle" xml:space="preserve"><value>Approve switches automatically too?</value></data>
-  <data name="SwitchApprovalWarningBody" xml:space="preserve"><value>When enabled, folder and !cab agent switches sent from chat also run without confirmation on this PC.</value></data>
-  <data name="SwitchApprovalWarningRisk" xml:space="preserve"><value>Allowed users, or anyone who can use their accounts, can start work in another project inside your trusted folders or with another AI agent without confirmation.</value></data>
-  <data name="SwitchApprovalWarningLimits" xml:space="preserve"><value>Switches to folders outside your trusted folders or to unregistered CLIs are still refused. Choosing an approval mode other than automatic turns this setting off.</value></data>
+  <data name="SettingsReviewSwitchApprovalWarning" xml:space="preserve"><value>⚠ Allowed chat users can switch the working folder or AI agent without a separate switch approval. With “Confirm the first request in each conversation,” the new agent's first request also runs without another approval unless its permissions or configuration require it. Trusted folders and registered CLIs still apply.</value></data>
+  <data name="SwitchApprovalWarningTitle" xml:space="preserve"><value>Approve folder and agent switches automatically?</value></data>
+  <data name="SwitchApprovalWarningBody" xml:space="preserve"><value>When enabled, folder and !cab agent switches from chat run without their own approval prompt. With “Confirm the first request in each conversation,” the new agent's first request also runs without another approval unless its permissions or configuration require it.</value></data>
+  <data name="SwitchApprovalWarningRisk" xml:space="preserve"><value>Allowed chat users, or anyone who can use their accounts, can start work in another trusted folder or with another registered AI agent without a separate switch approval.</value></data>
+  <data name="SwitchApprovalWarningLimits" xml:space="preserve"><value>Only configured allowed users can request switches. Folders outside your trusted folders and unregistered CLIs are still refused. Ask every time turns this setting off.</value></data>
   <data name="SwitchApprovalWarningEnable" xml:space="preserve"><value>I understand, enable</value></data>
   <data name="SettingsReviewMattermostUsers" xml:space="preserve"><value>Mattermost allowed users</value></data>
   <data name="SettingsReviewSlackUsers" xml:space="preserve"><value>Slack allowed users</value></data>

@@ -239,11 +239,11 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanAutoApproveSwitchCommands))]
     public partial string ChatApprovalMode { get; set; } = "first";
     [ObservableProperty] public partial bool AutoApproveSwitchCommands { get; set; }
-    // Switch commands can skip approval only together with the automatic approval mode.
-    public bool CanAutoApproveSwitchCommands => ChatApprovalMode == "auto";
+    // First-only approval also permits switches after this conversation has been approved.
+    public bool CanAutoApproveSwitchCommands => ChatApprovalMode is "auto" or "first";
     partial void OnChatApprovalModeChanged(string value)
     {
-        if (value != "auto") AutoApproveSwitchCommands = false;
+        if (value is not ("auto" or "first")) AutoApproveSwitchCommands = false;
     }
     [ObservableProperty] public partial string ChatResultMode { get; set; } = "manual";
     [ObservableProperty] public partial string ChatFollowUpMode { get; set; } = ChatFollowUpPolicy.Queue;
@@ -523,7 +523,7 @@ public partial class MainPageViewModel : ObservableObject
                 AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(AgentPermissionMode),
                 ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode),
                 AutoApproveSwitchCommands = draft.AutoApproveSwitchCommands &&
-                    ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode) == "auto",
+                    ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode) is "auto" or "first",
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(ChatResultMode),
                 ChatFollowUpMode = ChatFollowUpPolicy.Normalize(ChatFollowUpMode),
                 FileAttachmentApprovalMode = FileAttachmentPolicy.NormalizeMode(FileAttachmentApprovalMode),
