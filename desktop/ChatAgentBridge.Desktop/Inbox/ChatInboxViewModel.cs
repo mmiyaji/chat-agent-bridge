@@ -1455,6 +1455,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         _searchDebounce = null;
         FlushConversationRefresh();
         _closing = true;
+        _nameLookupCancellation.Cancel();
         CloseAvatars();
         IsConnectionConfirmed = false;
         RequestExecutionCancellation();
@@ -1468,5 +1469,6 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (_receiveTask is { } receive) await receive;
         if (_conversationRestoreTask is { } restore) await restore;
         await _conversationSaveTask;
+        await _nameLookupTask;
     }
 }
