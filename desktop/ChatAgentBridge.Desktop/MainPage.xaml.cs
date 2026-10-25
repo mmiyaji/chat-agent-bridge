@@ -308,6 +308,7 @@ public sealed partial class MainPage : Page
     private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
         InitializeSidebarResizer();
+        InitializeNavigationShortcuts();
         if (_hasLoaded) return;
         _hasLoaded = true;
         // The Windows startup-task query does not depend on saved settings, so it

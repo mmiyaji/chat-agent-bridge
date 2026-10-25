@@ -420,6 +420,7 @@
   <data name="InboxEmptyFilteredHeading" xml:space="preserve"><value>条件に一致する会話はありません</value></data>
   <data name="InboxEmptyFilteredDescription" xml:space="preserve"><value>検索または状態の絞り込みを変更・解除してください。</value></data>
   <data name="InboxEmptyDetailHeading" xml:space="preserve"><value>会話を選択</value></data>
+  <data name="NavShortcutTooltip" xml:space="preserve"><value>{0}（Ctrl+{1}）</value></data>
   <data name="InboxEmptyDetailDescription" xml:space="preserve"><value>一覧から会話を選ぶと、依頼や応答を確認できます。</value></data>
   <data name="InboxRestoredDescription" xml:space="preserve"><value>以前の依頼は再開されません。続けるには、同じチャットスレッドへ「!cab 依頼内容」を新しく投稿してください。この一覧には依頼本文や結果本文は保存されません。</value></data>
   <data name="InboxPersistenceLoadFailed" xml:space="preserve"><value>会話一覧を復元できませんでした。元のファイルは保持されており、依頼は自動的に再開されませんでした。</value></data>
