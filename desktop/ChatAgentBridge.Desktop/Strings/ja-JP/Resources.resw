@@ -1254,6 +1254,7 @@
   <data name="AgentEditorChecking" xml:space="preserve"><value>CLIを確認中…</value></data>
   <data name="AgentEditorChecked" xml:space="preserve"><value>CLI確認済み</value></data>
   <data name="AgentEditorCheckFailed" xml:space="preserve"><value>CLIの確認に失敗</value></data>
+  <data name="AgentEditorModelChoicesBox.PlaceholderText" xml:space="preserve"><value>CLIを確認するとモデルを選べます</value></data>
   <data name="AgentEditorNotChecked" xml:space="preserve"><value>CLI未確認</value></data>
   <data name="AgentEditorModelChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>CLIから取得したモデル候補</value></data>
   <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>推論の強さ</value></data>

@@ -30,12 +30,17 @@
                 </StackPanel>
                 <Grid ColumnSpacing="8" VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="16" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <FontIcon Glyph="&#xE73E;" Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                              Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.CliCheckSucceeded), Mode=OneWay}" />
+                    <Grid Width="16" Height="16" VerticalAlignment="Center">
+                        <FontIcon Glyph="{x:Bind CheckStatusGlyph, Mode=OneWay}" FontSize="16" Foreground="{x:Bind CheckStatusBrush, Mode=OneWay}"
+                                  Visibility="{x:Bind agentSettings:AgentProfileEditorControl.InverseVisibility(Editor.IsCheckingCli), Mode=OneWay}"
+                                  AutomationProperties.AccessibilityView="Raw" />
+                        <ProgressRing IsActive="{x:Bind Editor.IsCheckingCli, Mode=OneWay}" Width="16" Height="16" MinWidth="16" MinHeight="16"
+                                      AutomationProperties.AccessibilityView="Raw" />
+                    </Grid>
                     <TextBlock Grid.Column="1" Text="{x:Bind CheckStatusLabel, Mode=OneWay}" TextWrapping="Wrap"
                                AutomationProperties.AutomationId="AgentEditorStatus" />
                     <TextBlock Grid.Column="2" MaxWidth="260" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Editor.CliVersion, Mode=OneWay}" Text="{x:Bind Editor.CliVersion, Mode=OneWay}" Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.CliCheckSucceeded), Mode=OneWay}"
@@ -88,12 +93,16 @@
                 </Grid>
 
                 <StackPanel x:Name="CheckCliActions" Orientation="Vertical" Spacing="10" Margin="200,0,0,0">
-                    <Button x:Uid="CheckCli" localization:LocalizedResourceKey.Key="CheckCli" HorizontalAlignment="Left" AutomationProperties.AutomationId="CheckCli"
-                            Style="{StaticResource AccentButtonStyle}" IsEnabled="{x:Bind CanRunCliCheck, Mode=OneWay}" Click="CheckCli_Click" />
-                    <Button AutomationProperties.AutomationId="CancelAgentCliCheck" x:Uid="CancelAgentCliCheck" localization:LocalizedResourceKey.Key="CancelAgentCliCheck"
-                            Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsCheckingCli), Mode=OneWay}"
-                            Command="{x:Bind Editor.CancelCliCheckCommand}" />
-                    <ProgressRing IsActive="{x:Bind Editor.IsCheckingCli, Mode=OneWay}" Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsCheckingCli), Mode=OneWay}" Width="18" Height="18" />
+                    <!-- Cancel and progress sit beside the button, so starting a check does not push the page down. -->
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button x:Uid="CheckCli" localization:LocalizedResourceKey.Key="CheckCli" AutomationProperties.AutomationId="CheckCli"
+                                Style="{StaticResource AccentButtonStyle}" IsEnabled="{x:Bind CanRunCliCheck, Mode=OneWay}" Click="CheckCli_Click" />
+                        <Button AutomationProperties.AutomationId="CancelAgentCliCheck" x:Uid="CancelAgentCliCheck" localization:LocalizedResourceKey.Key="CancelAgentCliCheck"
+                                Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsCheckingCli), Mode=OneWay}"
+                                Command="{x:Bind Editor.CancelCliCheckCommand}" />
+                        <ProgressRing IsActive="{x:Bind Editor.IsCheckingCli, Mode=OneWay}" Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsCheckingCli), Mode=OneWay}"
+                                      Width="18" Height="18" VerticalAlignment="Center" />
+                    </StackPanel>
                     <TextBlock Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsReasoning), Mode=OneWay}" x:Uid="AgentEditorCliCheckHint" localization:LocalizedResourceKey.Key="AgentEditorCliCheckHint"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
                 </StackPanel>
@@ -125,8 +134,9 @@
                 <ComboBox ItemsSource="{x:Bind Editor.ModelCatalog.Models, Mode=OneWay}" DisplayMemberPath="SelectionLabel"
                           SelectedItem="{x:Bind Editor.ModelCatalog.SelectedModel, Mode=TwoWay}"
                           HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ModelCandidates"
-                          localization:LocalizedResourceKey.Key="AgentEditorModelChoices"
-                          Visibility="{x:Bind agentSettings:AgentProfileEditorControl.CountVisibility(Editor.ModelCatalog.Models.Count), Mode=OneWay}" />
+                          localization:LocalizedResourceKey.Key="AgentEditorModelChoices" x:Uid="AgentEditorModelChoicesBox"
+                          IsEnabled="{x:Bind agentSettings:AgentProfileEditorControl.HasModelChoices(Editor.ModelCatalog.Models.Count, Editor.ModelCatalog.IsLoading), Mode=OneWay}"
+                          Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsModelCatalog), Mode=OneWay}" />
                 <TextBlock Text="{x:Bind Editor.ModelCatalog.Status, Mode=OneWay}" TextWrapping="Wrap"
                            Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            AutomationProperties.AutomationId="ModelCatalogStatus"

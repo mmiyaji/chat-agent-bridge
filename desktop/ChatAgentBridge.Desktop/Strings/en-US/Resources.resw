@@ -1254,6 +1254,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentEditorChecking" xml:space="preserve"><value>Checking CLI…</value></data>
   <data name="AgentEditorChecked" xml:space="preserve"><value>CLI verified</value></data>
   <data name="AgentEditorCheckFailed" xml:space="preserve"><value>CLI check failed</value></data>
+  <data name="AgentEditorModelChoicesBox.PlaceholderText" xml:space="preserve"><value>Check the CLI to choose a model</value></data>
   <data name="AgentEditorNotChecked" xml:space="preserve"><value>CLI not checked</value></data>
   <data name="AgentEditorModelChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Available models</value></data>
   <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Reasoning effort</value></data>
