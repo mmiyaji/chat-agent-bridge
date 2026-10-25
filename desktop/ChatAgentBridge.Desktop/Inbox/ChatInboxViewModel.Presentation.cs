@@ -119,6 +119,7 @@ public sealed partial class ChatInboxViewModel
 
         OnPropertyChanged(nameof(ConnectionLabel));
         OnPropertyChanged(nameof(QueueSummary));
+        OnPropertyChanged(nameof(PendingApprovalMessage));
         OnPropertyChanged(nameof(ConversationCountLabel));
         OnPropertyChanged(nameof(SelectedRequestCountLabel));
         OnPropertyChanged(nameof(EmptyListMessage));

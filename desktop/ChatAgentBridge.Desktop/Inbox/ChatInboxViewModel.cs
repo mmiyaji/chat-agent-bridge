@@ -189,6 +189,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public string SelectedRequestCountLabel => DesktopText.Get(SelectedConversation?.Requests.Count == 1 ? "InboxOneRequest" : "InboxRequestCount", SelectedConversation?.Requests.Count ?? 0);
     public bool HasSelectedConversation => SelectedConversation is not null;
     public bool IsSelectedPending => Selected?.State == "承認待ち";
+    public bool HasSelectedResult => Selected is { ResultText.Length: > 0 };
+    public bool ShowPendingApprovalNotice => PendingApprovalCount > 0 && !IsSelectedPending;
+    public string PendingApprovalMessage => DesktopText.Get("InboxPendingApprovalMessage", PendingApprovalCount);
     public bool IsSelectedActiveExecution => IsExecuting && Selected is not null && ReferenceEquals(Selected, _activeItem);
     public string SelectedApprovalPolicyHelp => GetSelectedPolicyHelp("InboxApprovalPolicyHelp", "ChatApprovalMode");
     public string SelectedResultPolicyHelp => GetSelectedPolicyHelp("InboxResultPolicyHelp", "ChatResultMode");
@@ -234,6 +237,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public string EmptyListMessage => DesktopText.Get(Requests.Count == 0 ? "InboxWaitingForRequests" : "InboxNoMatches");
     partial void OnSelectedChanged(InboxItem? value)
     {
+        OnPropertyChanged(nameof(HasSelectedResult));
+        OnPropertyChanged(nameof(ShowPendingApprovalNotice));
         OnPropertyChanged(nameof(IsSelectedPending));
         OnPropertyChanged(nameof(IsSelectedActiveExecution));
         OnPropertyChanged(nameof(SelectedApprovalPolicyHelp));
@@ -294,6 +299,21 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         ApplySearchTextImmediately(string.Empty);
         StateFilter = "all";
+    }
+
+    // Opening a pending request only reveals it; approval always remains explicit.
+    [RelayCommand]
+    private void OpenPendingApproval()
+    {
+        var item = Requests.FirstOrDefault(request => request.State == "承認待ち");
+        if (item is not null) RevealRequest(item);
+    }
+
+    private void NotifyPendingApprovalPresentation()
+    {
+        OnPropertyChanged(nameof(PendingApprovalCount));
+        OnPropertyChanged(nameof(ShowPendingApprovalNotice));
+        OnPropertyChanged(nameof(PendingApprovalMessage));
     }
 
     public void OpenConversation(InboxConversation? conversation)
@@ -599,10 +619,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 {
                     if (args.PropertyName == nameof(InboxItem.State) && item.State != "承認待ち")
                         _ = CompleteRequestActionsAsync(item);
-                    if (args.PropertyName == nameof(InboxItem.State)) OnPropertyChanged(nameof(PendingApprovalCount));
+                    if (args.PropertyName == nameof(InboxItem.State)) NotifyPendingApprovalPresentation();
                     if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.Workspace)) QueueConversationRefresh(item);
                     if (ReferenceEquals(item, Selected))
                     {
+                        if (args.PropertyName == nameof(InboxItem.ResultText)) OnPropertyChanged(nameof(HasSelectedResult));
                         if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.SessionLabel))
                         {
                             OnPropertyChanged(nameof(IsSelectedPending));
@@ -623,7 +644,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 _requestHandlers[item] = handler;
             }
         }
-        OnPropertyChanged(nameof(PendingApprovalCount));
+        NotifyPendingApprovalPresentation();
         QueueConversationRefresh();
     }
 

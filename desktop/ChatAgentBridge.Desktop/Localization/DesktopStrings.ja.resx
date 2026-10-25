@@ -862,4 +862,5 @@
   <data name="TipGotIt" xml:space="preserve"><value>OK</value></data>
   <data name="SearchScopeSettings" xml:space="preserve"><value>{0} の設定</value></data>
   <data name="SearchNoResults" xml:space="preserve"><value>一致する設定がありません</value></data>
+  <data name="InboxPendingApprovalMessage" xml:space="preserve"><value>承認待ちの依頼が {0} 件あります。依頼を開いて内容を確認してください。</value></data>
 </root>

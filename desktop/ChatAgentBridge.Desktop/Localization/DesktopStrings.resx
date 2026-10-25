@@ -862,4 +862,5 @@ After: {2}</value></data>
   <data name="TipGotIt" xml:space="preserve"><value>Got it</value></data>
   <data name="SearchScopeSettings" xml:space="preserve"><value>{0} settings</value></data>
   <data name="SearchNoResults" xml:space="preserve"><value>No matching settings</value></data>
+  <data name="InboxPendingApprovalMessage" xml:space="preserve"><value>Requests awaiting approval: {0}. Open a request to review its details.</value></data>
 </root>

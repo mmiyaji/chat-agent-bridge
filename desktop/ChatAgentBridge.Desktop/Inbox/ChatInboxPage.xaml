@@ -35,6 +35,14 @@
             </StackPanel>
         </StackPanel>
         <StackPanel Grid.Row="1" Spacing="8">
+            <InfoBar IsOpen="{x:Bind ViewModel.ShowPendingApprovalNotice, Mode=OneWay}" IsClosable="False" Severity="Warning"
+                     Message="{x:Bind ViewModel.PendingApprovalMessage, Mode=OneWay}"
+                     AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="InboxPendingApprovalsNotice">
+                <InfoBar.ActionButton>
+                    <Button Command="{x:Bind ViewModel.OpenPendingApprovalCommand}" x:Uid="InboxOpenPendingApproval"
+                            AutomationProperties.AutomationId="InboxOpenPendingApproval" />
+                </InfoBar.ActionButton>
+            </InfoBar>
             <InfoBar x:Name="NotificationActionNotice" IsOpen="False" IsClosable="True" Severity="Warning"
                      Message="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}"
                      AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="NotificationActionNotice" />
@@ -250,34 +258,33 @@
 
                 <Grid Grid.Row="1" Margin="12,0" ColumnSpacing="4" Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRequest), Mode=OneWay}">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                    <CommandBar x:Name="InboxCommandBar" Background="Transparent" DefaultLabelPosition="Right"
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0"
+                                Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.IsSelectedPending), Mode=OneWay}">
+                        <Button Command="{x:Bind ViewModel.ApproveCommand}" Style="{StaticResource AccentButtonStyle}"
+                                x:Uid="InboxApproveAction" AutomationProperties.AutomationId="ApproveChat" />
+                        <Button Command="{x:Bind ViewModel.RejectCommand}" x:Uid="InboxRejectAction"
+                                AutomationProperties.AutomationId="RejectChat" />
+                    </StackPanel>
+                    <CommandBar x:Name="InboxCommandBar" Grid.Row="1" Background="Transparent" DefaultLabelPosition="Right"
+                                Visibility="{x:Bind inbox:ChatInboxPage.HiddenWhen(ViewModel.IsSelectedPending), Mode=OneWay}"
                                 IsDynamicOverflowEnabled="True" AutomationProperties.AutomationId="InboxCommandBar">
-                        <AppBarButton Command="{x:Bind ViewModel.ApproveCommand}"
-                                      Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.IsSelectedPending), Mode=OneWay}"
-                                      AutomationProperties.AutomationId="ApproveChat" x:Uid="InboxApproveBar">
-                            <AppBarButton.Icon><SymbolIcon Symbol="Accept" /></AppBarButton.Icon>
-                        </AppBarButton>
-                        <AppBarButton Command="{x:Bind ViewModel.RejectCommand}"
-                                      Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.IsSelectedPending), Mode=OneWay}"
-                                      AutomationProperties.AutomationId="RejectChat" x:Uid="InboxRejectBar">
-                            <AppBarButton.Icon><SymbolIcon Symbol="Cancel" /></AppBarButton.Icon>
-                        </AppBarButton>
                         <AppBarButton Command="{x:Bind ViewModel.CancelCommand}"
                                       Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.IsSelectedActiveExecution), Mode=OneWay}"
                                       AutomationProperties.AutomationId="CancelChat" x:Uid="InboxStopBar">
                             <AppBarButton.Icon><SymbolIcon Symbol="Stop" /></AppBarButton.Icon>
                         </AppBarButton>
-                        <CommandBar.SecondaryCommands>
-                            <AppBarButton Command="{x:Bind ViewModel.SendResultCommand}" AutomationProperties.AutomationId="SendChatResult" x:Uid="InboxShareBar">
+                            <AppBarButton Command="{x:Bind ViewModel.SendResultCommand}" AutomationProperties.AutomationId="SendChatResult" x:Uid="InboxShareBar"
+                                          Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedResult), Mode=OneWay}">
                                 <AppBarButton.Icon><SymbolIcon Symbol="Send" /></AppBarButton.Icon>
                             </AppBarButton>
+                        <CommandBar.SecondaryCommands>
                             <AppBarButton Command="{x:Bind ViewModel.SendAttachmentsCommand}" AutomationProperties.AutomationId="SendChatAttachments" x:Uid="InboxAttachmentsBar">
                                 <AppBarButton.Icon><SymbolIcon Symbol="Attach" /></AppBarButton.Icon>
                             </AppBarButton>
                         </CommandBar.SecondaryCommands>
                     </CommandBar>
-                    <Button x:Name="InboxApprovalHelpButton" Grid.Column="1" Click="ApprovalHelp_Click"
+                    <Button x:Name="InboxApprovalHelpButton" Grid.Row="1" Grid.Column="1" Click="ApprovalHelp_Click"
                             AutomationProperties.AutomationId="InboxApprovalHelp" x:Uid="InboxApprovalHelpButton">
                         <SymbolIcon Symbol="Help" />
                     </Button>
@@ -291,12 +298,16 @@
                             <TextBlock Text="{x:Bind ViewModel.SelectedAttachmentPolicyHelp, Mode=OneWay}" TextWrapping="Wrap" />
                         </StackPanel>
                     </TeachingTip>
-                    <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{x:Bind ViewModel.SelectedAttachmentStatus, Mode=OneWay}"
+                    <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{x:Bind ViewModel.SelectedAttachmentStatus, Mode=OneWay}"
+                               Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedResult), Mode=OneWay}"
                                TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SelectedAttachmentStatus" />
                 </Grid>
                 <ScrollViewer x:Name="InboxDetailScroll" Grid.Row="2" Margin="12,0,12,12" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                               Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.HasSelectedRequest), Mode=OneWay}">
                     <StackPanel Spacing="12" AutomationProperties.AutomationId="InboxConversationDetail">
+                        <InfoBar IsOpen="{x:Bind ViewModel.IsSelectedPending, Mode=OneWay}"
+                                 IsClosable="False" Severity="Warning" x:Uid="InboxApprovalNotice"
+                                 AutomationProperties.AutomationId="InboxApprovalNotice" />
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <presentation:StatusIcon Tone="{x:Bind ViewModel.Selected.StateTone, Mode=OneWay, FallbackValue='neutral'}" />
                             <TextBlock Text="{x:Bind ViewModel.Selected.StateDisplay, Mode=OneWay, FallbackValue=''}" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" AutomationProperties.AutomationId="InboxSelectedState" />
@@ -321,12 +332,14 @@
                         <executionUi:LiveOutputView ViewModel="{x:Bind ViewModel.SelectedLiveOutput, Mode=OneWay}"
                                                     CancelCommand="{x:Bind ViewModel.CancelCommand, Mode=OneWay}"
                                                     AutomationProperties.AutomationId="ChatLiveOutput" />
+                        <StackPanel Spacing="8" Visibility="{x:Bind inbox:ChatInboxPage.HiddenWhen(ViewModel.IsSelectedPending), Mode=OneWay}">
                         <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="InboxResultLabel" localization:LocalizedResourceKey.Key="InboxResultLabel" />
                         <TextBox Text="{x:Bind ViewModel.SelectedOutput, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
                                  AcceptsReturn="True" MinHeight="120" MaxHeight="240" ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  AutomationProperties.AutomationId="ChatOutput" x:Uid="ChatOutput" />
                         <TextBlock Text="{x:Bind ViewModel.SelectedUsage, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True"
                                    AutomationProperties.AutomationId="ChatUsageSummary" x:Uid="ChatUsageSummary" />
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
                 <ScrollViewer x:Name="InboxRestoredConversationScroll" Grid.Row="2" Margin="12,0,12,12"
