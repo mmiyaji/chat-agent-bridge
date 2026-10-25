@@ -234,7 +234,7 @@ public sealed class AgentRunner : IAgentRunner
         var line = parseEvents ? new StringBuilder(1024) : null;
         var codexParser = parseCodex ? new CodexOutputParser.Accumulator() : null;
         var claudeParser = parseClaude ? new ClaudeOutputParser.Accumulator() : null;
-        var cliParser = structuredProvider is null ? null : new CliSessionOutputParser.Accumulator(structuredProvider);
+        using var cliParser = structuredProvider is null ? null : new CliSessionOutputParser.Accumulator(structuredProvider);
         var progressParser = progress is not null && (parseCodex || parseClaude) ? new AgentRunProgressParser(parseCodex ? AgentProfile.Codex : AgentProfile.Claude) : null;
         var droppingLongLine = false;
         var truncated = false;

@@ -317,13 +317,26 @@ public static class AgentProfile
         {
             var argument = arguments[index];
             if (argument == "--mode") { if (index + 1 < arguments.Count) index++; continue; }
-            if (argument.StartsWith("--mode=", StringComparison.Ordinal) || argument == "--dangerously-skip-permissions") continue;
+            if (argument.StartsWith("--mode=", StringComparison.Ordinal)) continue;
+            if (argument == "--dangerously-skip-permissions")
+            {
+                // Some agy versions accept a boolean value either with '=' or as the next token.
+                // Remove both forms when the bridge owns the permission mode, including false so
+                // full-access can append its canonical, unambiguous flag below.
+                if (index + 1 < arguments.Count && IsBooleanToken(arguments[index + 1])) index++;
+                continue;
+            }
+            const string skipFlagWithValue = "--dangerously-skip-permissions=";
+            if (argument.StartsWith(skipFlagWithValue, StringComparison.Ordinal)) continue;
             result.Add(argument);
         }
         if (permissionMode == "full-access") result.Add("--dangerously-skip-permissions");
         else { result.Add("--mode"); result.Add("accept-edits"); }
         return result;
     }
+
+    private static bool IsBooleanToken(string value)
+        => value.Equals("true", StringComparison.OrdinalIgnoreCase) || value.Equals("false", StringComparison.OrdinalIgnoreCase);
 
     private static IReadOnlyList<string> EnsureFlag(IReadOnlyList<string> arguments, string flag)
         => arguments.Contains(flag, StringComparer.Ordinal) ? arguments : arguments.Append(flag).ToArray();

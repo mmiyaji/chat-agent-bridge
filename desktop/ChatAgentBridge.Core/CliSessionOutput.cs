@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using ChatAgentBridge.Core.Localization;
@@ -18,7 +20,7 @@ public static class CliSessionOutputParser
     public static CliSessionOutput Parse(string output, string provider)
     {
         ArgumentNullException.ThrowIfNull(output);
-        var parser = new Accumulator(provider);
+        using var parser = new Accumulator(provider);
         // Read through the entire stream, including terminal metadata beyond the capture limit.
         var start = 0;
         for (var index = 0; index <= output.Length; index++)
@@ -31,7 +33,7 @@ public static class CliSessionOutputParser
         return parser.Snapshot();
     }
 
-    internal sealed class Accumulator
+    internal sealed class Accumulator : IDisposable
     {
         private readonly string _provider;
         private readonly StringBuilder _message = new();
@@ -39,7 +41,7 @@ public static class CliSessionOutputParser
         private string? _model;
         private string? _deltaMessageId;
         private readonly StringBuilder _stepText = new();
-        private readonly Dictionary<int, string> _stepTexts = [];
+        private readonly Dictionary<int, StepTextFingerprint> _stepTextFingerprints = [];
         private readonly HashSet<int> _announcedSteps = [];
         private readonly Dictionary<int, (long? Input, long? Output, long? Cached)> _stepUsage = [];
         private readonly List<string> _deniedActions = [];
@@ -48,6 +50,7 @@ public static class CliSessionOutputParser
         private bool _failed;
         private bool _invalid;
         private bool _truncated;
+        private bool _disposed;
         private AgentUsage? _usage;
 
         internal Accumulator(string provider)
@@ -57,10 +60,12 @@ public static class CliSessionOutputParser
         }
 
         internal bool Truncated => _truncated;
+        internal int TrackedStepCount => _stepTextFingerprints.Count;
         internal void Invalidate() => _invalid = true;
 
         internal IReadOnlyList<AgentRunProgress> AddLine(string line)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (string.IsNullOrWhiteSpace(line)) return [];
             if (line.Length > MaxLineCharacters) { Invalidate(); return []; }
             try
@@ -78,6 +83,14 @@ public static class CliSessionOutputParser
                 };
             }
             catch (JsonException) { Invalidate(); return []; }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            foreach (var fingerprint in _stepTextFingerprints.Values) fingerprint.Dispose();
+            _stepTextFingerprints.Clear();
+            _disposed = true;
         }
 
         internal CliSessionOutput Snapshot()
@@ -191,12 +204,27 @@ public static class CliSessionOutputParser
                         _stepUsage[index] = usage;
                     var delta = String(step, "text_delta");
                     if (string.IsNullOrEmpty(delta)) return [];
-                    var known = _stepTexts.TryGetValue(index, out var previous);
+                    StepTextFingerprint? fingerprint = null;
+                    var known = index >= 0 && _stepTextFingerprints.TryGetValue(index, out fingerprint);
                     // A terminal update can repeat the whole step text instead of only the new part.
-                    if (state == "DONE" && known && string.Equals(previous, delta, StringComparison.Ordinal)) return [];
-                    if (known || _stepTexts.Count < MaxTrackedSteps) _stepTexts[index] = known ? previous + delta : delta;
-                    if (!known && _stepText.Length > 0 && _stepText.Length < MaxMessageCharacters) _stepText.Append('\n');
-                    _stepText.Append(delta, 0, Math.Min(delta.Length, Math.Max(0, MaxMessageCharacters - _stepText.Length)));
+                    if (state == "DONE" && known && fingerprint!.Matches(delta)) return [];
+                    if (index >= 0)
+                    {
+                        if (known) fingerprint!.Append(delta);
+                        else if (_stepTextFingerprints.Count < MaxTrackedSteps)
+                        {
+                            fingerprint = new StepTextFingerprint();
+                            fingerprint.Append(delta);
+                            _stepTextFingerprints.Add(index, fingerprint);
+                        }
+                    }
+                    // Without a usable index, treat updates as continuation chunks. This avoids
+                    // making every chunk a new line or conflating unrelated unindexed steps.
+                    if (index >= 0 && !known && _stepText.Length > 0 && _stepText.Length < MaxMessageCharacters)
+                        _stepText.Append('\n');
+                    var appendLength = Math.Min(delta.Length, Math.Max(0, MaxMessageCharacters - _stepText.Length));
+                    if (appendLength > 0) _stepText.Append(delta, 0, appendLength);
+                    if (appendLength < delta.Length) _truncated = true;
                     _streamedText = true;
                     return AgentRunProgressParser.Split("stdout", delta);
                 case "tool":
@@ -223,6 +251,30 @@ public static class CliSessionOutputParser
             try { foreach (var count in counts) if (count is { } value) total = checked((total ?? 0) + value); }
             catch (OverflowException) { return null; }
             return total;
+        }
+
+        /// <summary>Tracks a step's emitted text without retaining its contents.</summary>
+        private sealed class StepTextFingerprint : IDisposable
+        {
+            private readonly IncrementalHash _hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            private long _characterLength;
+
+            internal void Append(string text)
+            {
+                // Hash raw UTF-16 code units so chunks split between surrogate halves still
+                // fingerprint identically to the complete string under ordinal comparison.
+                _hash.AppendData(MemoryMarshal.AsBytes(text.AsSpan()));
+                _characterLength += text.Length;
+            }
+
+            internal bool Matches(string text)
+            {
+                return text.Length == _characterLength &&
+                    CryptographicOperations.FixedTimeEquals(
+                        _hash.GetCurrentHash(), SHA256.HashData(MemoryMarshal.AsBytes(text.AsSpan())));
+            }
+
+            public void Dispose() => _hash.Dispose();
         }
 
         /// <summary>Returns a short printable label for a tool or action name, or null when there is none.</summary>

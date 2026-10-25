@@ -1,5 +1,4 @@
 using CommunityToolkit.WinUI.Controls;
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -9,7 +8,7 @@ namespace ChatAgentBridge_Desktop.Appearance;
 
 /// <summary>
 /// Adds a drag handle on the right edge of a NavigationView's open pane. The handle edits
-/// OpenPaneLength, so the pane keeps its own layout, and reports the width once dragging pauses.
+/// OpenPaneLength, so the pane keeps its own layout, and reports each change immediately.
 /// It is shown only while the pane is expanded beside the content, not in compact, minimal or top modes,
 /// and its grip only appears when the edge is hovered. A collapsible pane also folds to its compact
 /// icon strip when dragged past its minimum, and unfolds when dragged back out.
@@ -17,7 +16,6 @@ namespace ChatAgentBridge_Desktop.Appearance;
 internal static class NavigationPaneResizer
 {
     private const double HandleWidth = 12;
-    private static readonly TimeSpan CommitDelay = TimeSpan.FromMilliseconds(300);
 
     public static SizerBase Attach(NavigationView navigation, Panel host, double minimum, double maximum,
         double? initialWidth, Action<double> committed, string automationId, string accessibleName, bool collapsible = false)
@@ -56,11 +54,6 @@ internal static class NavigationPaneResizer
         ToolTipService.SetToolTip(sizer, accessibleName);
         host.Children.Add(sizer);
 
-        var commitTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
-        commitTimer.Interval = CommitDelay;
-        commitTimer.IsRepeating = false;
-        commitTimer.Tick += (_, _) => committed(navigation.OpenPaneLength);
-
         // A folded pane keeps its handle on the compact strip's edge so it can be dragged back out.
         void Position() => offset.X = (navigation.IsPaneOpen ? navigation.OpenPaneLength : navigation.CompactPaneLength) - HandleWidth / 2;
         void UpdateVisibility()
@@ -78,8 +71,9 @@ internal static class NavigationPaneResizer
         navigation.RegisterPropertyChangedCallback(NavigationView.OpenPaneLengthProperty, (_, _) =>
         {
             Position();
-            commitTimer.Stop();
-            commitTimer.Start();
+            // AppLayout batches disk writes. Keep its in-memory snapshot current
+            // so exiting directly after a drag can flush the final width.
+            committed(navigation.OpenPaneLength);
         });
         navigation.RegisterPropertyChangedCallback(NavigationView.PaneDisplayModeProperty, (_, _) => UpdateVisibility());
         navigation.RegisterPropertyChangedCallback(NavigationView.IsPaneOpenProperty, (_, _) => { Position(); UpdateVisibility(); });
