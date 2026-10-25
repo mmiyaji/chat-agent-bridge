@@ -192,6 +192,27 @@ public sealed partial class MainPage : Page
         }
     }
 
+    private bool _switchApprovalDialogOpen;
+
+    private async void AutoApproveSwitchCommands_Toggled(object sender, RoutedEventArgs e)
+    {
+        // Warn only when the user turns it on; loading, discarding, and reverting stay silent.
+        if (sender is not ToggleSwitch { IsOn: true } || _switchApprovalDialogOpen ||
+            ViewModel.IsApplyingSettings || XamlRoot is null) return;
+        _switchApprovalDialogOpen = true;
+        _settingsPromptOpen = true;
+        try
+        {
+            if (!await SwitchApprovalWarningDialog.ShowAsync(XamlRoot)) ViewModel.RevertAutoApproveSwitchCommands();
+        }
+        finally
+        {
+            _settingsPromptOpen = false;
+            _switchApprovalDialogOpen = false;
+            ScheduleSettingsAutoSave();
+        }
+    }
+
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
 
     public static Visibility SearchTriggerVisibility(bool isSettingsLoaded, bool isOnboardingActive) =>

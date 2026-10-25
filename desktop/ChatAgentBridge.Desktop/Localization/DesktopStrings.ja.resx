@@ -739,6 +739,13 @@
   <data name="SettingsReviewNetwork" xml:space="preserve"><value>ネットワークアクセス</value></data>
   <data name="SettingsReviewFolders" xml:space="preserve"><value>信頼する作業フォルダー</value></data>
   <data name="SettingsReviewRequestApproval" xml:space="preserve"><value>チャット依頼の承認</value></data>
+  <data name="SettingsReviewSwitchApproval" xml:space="preserve"><value>フォルダー・エージェント切り替えの自動承認</value></data>
+  <data name="SettingsReviewSwitchApprovalWarning" xml:space="preserve"><value>⚠ 許可されたユーザーがチャットから作業フォルダーやAIエージェントを、このPCの承認なしで切り替えられるようになります。</value></data>
+  <data name="SwitchApprovalWarningTitle" xml:space="preserve"><value>切り替えも自動承認しますか？</value></data>
+  <data name="SwitchApprovalWarningBody" xml:space="preserve"><value>有効にすると、チャットから届いた folder や !cab agent による切り替えも、このPCで確認せずに実行します。</value></data>
+  <data name="SwitchApprovalWarningRisk" xml:space="preserve"><value>許可されたユーザーやそのアカウントを使える人が、信頼済みフォルダー内の別のプロジェクトや別のAIエージェントで、確認なしに作業を始められます。</value></data>
+  <data name="SwitchApprovalWarningLimits" xml:space="preserve"><value>信頼済みフォルダー以外への切り替えと、未登録のCLIへの切り替えは引き続き拒否されます。承認モードを自動承認以外にすると、この設定はオフになります。</value></data>
+  <data name="SwitchApprovalWarningEnable" xml:space="preserve"><value>理解して有効にする</value></data>
   <data name="SettingsReviewMattermostUsers" xml:space="preserve"><value>Mattermostの許可ユーザー</value></data>
   <data name="SettingsReviewSlackUsers" xml:space="preserve"><value>Slackの許可ユーザー</value></data>
   <data name="SettingsReviewSlackChannels" xml:space="preserve"><value>Slackの許可チャンネル</value></data>

@@ -26,6 +26,7 @@ public sealed class SettingsDraftChangesTests
         nameof(BridgeSettings.DiscordAllowedThreadIds), nameof(BridgeSettings.DiscordAllowDirectMessages),
         nameof(BridgeSettings.SlackAllowedUserIds), nameof(BridgeSettings.ShareApprovalsInChat),
         nameof(BridgeSettings.ShareAgentQuestionsInChat), nameof(BridgeSettings.ChatApprovalMode),
+        nameof(BridgeSettings.AutoApproveSwitchCommands),
         nameof(BridgeSettings.ChatResultMode), nameof(BridgeSettings.ChatFollowUpMode), nameof(BridgeSettings.SlackAllowedChannelIds),
         nameof(BridgeSettings.SlackAllowedThreadIds), nameof(BridgeSettings.MattermostAllowedThreadIds),
         nameof(BridgeSettings.FileAttachmentApprovalMode), nameof(BridgeSettings.FileAttachmentMaxSizeMb),

@@ -271,6 +271,12 @@
   <data name="chatAgentBridgeDesktopMainPageTextBlock032.Text" xml:space="preserve">
     <value>最初だけ確認は、同じ会話の以降の依頼を自動承認します。自動承認では会話から届いた依頼を確認画面なしで実行します。</value>
   </data>
+  <data name="AutoApproveSwitchCommands.Header" xml:space="preserve">
+    <value>フォルダー・エージェントの切り替えも自動承認する（フルアクセス）</value>
+  </data>
+  <data name="AutoApproveSwitchCommandsHelp.Text" xml:space="preserve">
+    <value>承認モードが自動承認のときだけ選べます。有効にすると、チャットの folder や !cab agent による切り替えもこのPCの承認なしで実行します。信頼済みフォルダーと登録済みCLIの制限は引き続き適用されます。初期状態はオフです。</value>
+  </data>
   <data name="ChatResultMode.Header" xml:space="preserve">
     <value>実行結果の共有</value>
   </data>

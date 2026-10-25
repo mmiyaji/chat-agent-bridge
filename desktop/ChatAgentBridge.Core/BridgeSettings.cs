@@ -35,6 +35,8 @@ public sealed record BridgeSettings
     public bool AllowAgentNetwork { get; init; }
     public string TrustedWorkspaceRoots { get; init; } = "";
     public string ChatApprovalMode { get; init; } = "first";
+    // Takes effect only with the automatic approval mode; see ConversationExecutionPolicy.AutoApprovesSwitchCommands.
+    public bool AutoApproveSwitchCommands { get; init; }
     public string ChatResultMode { get; init; } = "manual";
     public string ChatFollowUpMode { get; init; } = ChatFollowUpPolicy.Queue;
     public string SlackAllowedChannelIds { get; init; } = "";

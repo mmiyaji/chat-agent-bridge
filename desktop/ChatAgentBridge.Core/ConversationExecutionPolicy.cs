@@ -28,6 +28,13 @@ public static class ConversationExecutionPolicy
             _ => throw new ArgumentException("Unknown chat approval mode.")
         };
 
+    /// <summary>
+    /// Folder and agent switch commands normally always wait for approval on this PC. The opt-in only applies
+    /// while the conversation runs with automatic approval; trusted-folder and registered-CLI checks still apply.
+    /// </summary>
+    public static bool AutoApprovesSwitchCommands(BridgeSettings effective) =>
+        effective.ChatApprovalMode == "auto" && effective.AutoApproveSwitchCommands;
+
     public static string GetFingerprint(SessionKey key, BridgeSettings settings)
     {
         // Credentials never leave this calculation. Only an irreversible digest is persisted.
