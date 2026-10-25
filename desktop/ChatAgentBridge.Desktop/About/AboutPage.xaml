@@ -19,33 +19,20 @@
         <ScrollViewer x:Name="AboutScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="AboutScroll">
             <StackPanel Spacing="8" AutomationProperties.AutomationId="AboutContent">
-                <settings:SettingsCard AutomationProperties.AutomationId="AboutProductCard">
-                    <settings:SettingsCard.Header>
-                        <TextBlock x:Name="ProductValue" Style="{StaticResource SubtitleTextBlockStyle}"
-                                   TextWrapping="Wrap" AutomationProperties.AutomationId="AboutProduct" />
-                    </settings:SettingsCard.Header>
-                    <settings:SettingsCard.HeaderIcon>
-                        <BitmapIcon UriSource="ms-appx:///Assets/Square150x150Logo.scale-200.png" ShowAsMonochrome="False" />
-                    </settings:SettingsCard.HeaderIcon>
-                    <settings:SettingsCard.Description>
-                        <StackPanel Spacing="4">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock x:Uid="AboutVersionCaption" Foreground="{ThemeResource TextFillColorSecondaryBrush}" localization:LocalizedResourceKey.Key="AboutVersionCaption" />
-                                <TextBlock x:Name="VersionValue" TextWrapping="Wrap"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           AutomationProperties.AutomationId="AboutVersion" />
-                            </StackPanel>
-                            <TextBlock x:Uid="AboutProviderValue" TextWrapping="Wrap"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       AutomationProperties.AutomationId="AboutProvider" localization:LocalizedResourceKey.Key="AboutProviderValue" />
-                        </StackPanel>
-                    </settings:SettingsCard.Description>
-                </settings:SettingsCard>
-
-                <settings:SettingsExpander x:Uid="AboutTechnicalDetails" AutomationProperties.AutomationId="AboutTechnicalDetails">
+                <!-- Like WinUI Gallery: name, author and version on the header; build details fold beneath. -->
+                <settings:SettingsExpander x:Name="AppDetailsExpander" AutomationProperties.AutomationId="AboutTechnicalDetails">
+                    <settings:SettingsExpander.Header>
+                        <TextBlock x:Name="ProductValue" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutProduct" />
+                    </settings:SettingsExpander.Header>
+                    <settings:SettingsExpander.Description>
+                        <TextBlock x:Uid="AboutProviderValue" TextWrapping="Wrap"
+                                   AutomationProperties.AutomationId="AboutProvider" localization:LocalizedResourceKey.Key="AboutProviderValue" />
+                    </settings:SettingsExpander.Description>
                     <settings:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xE943;" />
+                        <BitmapIcon UriSource="ms-appx:///Assets/Square150x150Logo.scale-200.png" ShowAsMonochrome="False" />
                     </settings:SettingsExpander.HeaderIcon>
+                    <TextBlock x:Name="VersionValue" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               AutomationProperties.AutomationId="AboutVersion" />
                     <settings:SettingsExpander.Items>
                         <settings:SettingsCard x:Uid="AboutBuildTimestampLabel" AutomationProperties.AutomationId="AboutBuildTimestampRow" localization:LocalizedResourceKey.Key="AboutBuildTimestampLabel">
                             <TextBlock x:Name="BuildTimestampValue" TextWrapping="Wrap" AutomationProperties.AutomationId="AboutBuildTimestamp" />

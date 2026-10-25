@@ -49,6 +49,8 @@ public sealed partial class AboutPage : Page
 
         ProductValue.Text = DesktopText.Get("AboutProductName");
         VersionValue.Text = version;
+        // The header is a text block, so name the expander for screen readers: product and version.
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(AppDetailsExpander, $"{ProductValue.Text} {version}");
         BuildTimestampValue.Text = GetBuildTimestampText();
         PackageValue.Text = packageName;
         StoreStatus.Text = _isStorePackage ? DesktopText.Get("AboutStoreReady") : DesktopText.Get("AboutStoreDevelopment");
