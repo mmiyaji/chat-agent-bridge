@@ -66,6 +66,8 @@ public sealed partial class MainPage
                 QueueAgentScopeSelection(scope);
         };
         var page = new StackPanel { Spacing = 16, Margin = new Thickness(16) };
+        _agentScopeBreadcrumb = CreateScopeBreadcrumb("AgentScopeBreadcrumb", () => QueueAgentScopeSelection("common"));
+        page.Children.Add(_agentScopeBreadcrumb);
         page.Children.Add(_agentScopeCommonGroup);
         page.Children.Add(_agentProfileDetails);
         _agentScopeNavigation.Content = page;
@@ -129,6 +131,7 @@ public sealed partial class MainPage
         _agentScopeCommonHeading!.Text = DesktopText.Get("AgentScopeCommon");
         _agentScopeCommonHelp!.Text = DesktopText.Get("AgentScopeCommonHelp");
         _agentProfileDetails?.RefreshLocalizedText();
+        UpdateScopeBreadcrumb(_agentScopeBreadcrumb, "agent", _agentScopeNavigation, _agentSettingsScope == "common");
     }
 
     private void ApplyAgentScopeSelection()
@@ -139,6 +142,7 @@ public sealed partial class MainPage
             _agentScopeNavigation.SelectedItem = _agentScopeNavigation.MenuItems[index];
         if (_agentScopeCommonGroup is not null) _agentScopeCommonGroup.Visibility = ToVisibility(_agentSettingsScope == "common");
         if (_agentProfileDetails is not null) _agentProfileDetails.Visibility = ToHiddenVisibility(_agentSettingsScope == "common");
+        UpdateScopeBreadcrumb(_agentScopeBreadcrumb, "agent", _agentScopeNavigation, _agentSettingsScope == "common");
         _syncingAgentScope = false;
     }
 
