@@ -869,14 +869,15 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             CancelCommand.NotifyCanExecuteChanged();
             var token = _execution.Token;
             if (!await CheckAccessAsync(item, token)) return;
+            // Automatic approval reaches switch commands only when the user opted in; it skips the dialog like a notification approval.
             if (WorkspaceChatCommand.TryParse(item.Prompt, out var requestedWorkspace))
             {
-                await ChangeWorkspaceAsync(item, requestedWorkspace, approvedByNotification, token);
+                await ChangeWorkspaceAsync(item, requestedWorkspace, approvedByNotification || approvedAutomatically, token);
                 return;
             }
             if (AgentChatCommand.TryParse(item.Prompt, out var switchCommand))
             {
-                await ChangeAgentAsync(item, switchCommand, approvedByNotification, token);
+                await ChangeAgentAsync(item, switchCommand, approvedByNotification || approvedAutomatically, token);
                 return;
             }
             var key = CreateSessionKey(item);
@@ -1351,17 +1352,15 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (_closing || !IsConnectionConfirmed || IsExecuting) break;
                 if (item.State != "承認待ち" || _automaticallyAttempted.Contains(item)) continue;
                 if (!await CheckAccessAsync(item, _connection?.Token ?? CancellationToken.None)) continue;
-                if (WorkspaceChatCommand.TryParse(item.Prompt, out _) || AgentChatCommand.TryParse(item.Prompt, out _))
-                {
-                    NotifyPendingRequest(item);
-                    continue;
-                }
+                var switchesConversation = WorkspaceChatCommand.TryParse(item.Prompt, out _) || AgentChatCommand.TryParse(item.Prompt, out _);
                 var key = CreateSessionKey(item);
                 var binding = await _sessions.FindExecutionBindingAsync(key);
                 var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, item.Settings), binding);
                 item.Workspace = effective.WorkspaceRoot;
-                if (ConversationExecutionPolicy.RequiresApproval(key, effective, binding) ||
-                    (await _sessions.FindAgentSelectionAsync(key))?.RequiresApproval == true)
+                if (switchesConversation
+                        ? !ConversationExecutionPolicy.AutoApprovesSwitchCommands(effective)
+                        : ConversationExecutionPolicy.RequiresApproval(key, effective, binding) ||
+                          (await _sessions.FindAgentSelectionAsync(key))?.RequiresApproval == true)
                 {
                     NotifyPendingRequest(item);
                     continue;

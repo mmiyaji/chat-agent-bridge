@@ -142,6 +142,7 @@ public partial class MainPageViewModel
         AllowAgentNetwork = settings.AllowAgentNetwork;
         TrustedWorkspaceRoots = settings.TrustedWorkspaceRoots;
         ChatApprovalMode = settings.ChatApprovalMode;
+        AutoApproveSwitchCommands = settings.AutoApproveSwitchCommands;
         ChatResultMode = settings.ChatResultMode;
         ChatFollowUpMode = settings.ChatFollowUpMode;
         FileAttachmentApprovalMode = settings.FileAttachmentApprovalMode;

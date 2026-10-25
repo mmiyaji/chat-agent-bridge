@@ -271,6 +271,12 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="chatAgentBridgeDesktopMainPageTextBlock032.Text" xml:space="preserve">
     <value>First-request approval allows later requests in the same conversation to run automatically. Automatic approval runs allowed chat requests without a confirmation dialog.</value>
   </data>
+  <data name="AutoApproveSwitchCommands.Header" xml:space="preserve">
+    <value>Also approve folder and agent switches automatically (full access)</value>
+  </data>
+  <data name="AutoApproveSwitchCommandsHelp.Text" xml:space="preserve">
+    <value>Available only with automatic approval. When enabled, folder and !cab agent switches from chat also run without approval on this PC. Trusted folders and registered CLIs still limit what can be selected. Off by default.</value>
+  </data>
   <data name="ChatResultMode.Header" xml:space="preserve">
     <value>Sharing execution results</value>
   </data>

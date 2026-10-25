@@ -19,7 +19,7 @@ public sealed class SettingsSensitiveChangesTests
                      nameof(BridgeSettings.MattermostAllowedUserIds), nameof(BridgeSettings.SlackAllowedUserIds),
                      nameof(BridgeSettings.DiscordAllowedUserIds), nameof(BridgeSettings.DiscordAllowedGuildIds),
                      nameof(BridgeSettings.DiscordAllowedChannelIds), nameof(BridgeSettings.DiscordAllowedThreadIds),
-                     nameof(BridgeSettings.DiscordAllowDirectMessages) })
+                     nameof(BridgeSettings.DiscordAllowDirectMessages), nameof(BridgeSettings.AutoApproveSwitchCommands) })
             yield return [name, nameof(SettingsSensitiveChanges.ChatAccess)];
         foreach (var name in new[] { nameof(BridgeSettings.ChatResultMode), nameof(BridgeSettings.ShareApprovalsInChat),
                      nameof(BridgeSettings.ShareAgentQuestionsInChat), nameof(BridgeSettings.ChatFollowUpMode) })

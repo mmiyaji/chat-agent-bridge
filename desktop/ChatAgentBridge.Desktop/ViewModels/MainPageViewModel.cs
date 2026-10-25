@@ -96,7 +96,7 @@ public partial class MainPageViewModel : ObservableObject
                 nameof(MattermostServerUrl) or nameof(MattermostBypassProxy) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
                 nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(DiscordBotToken) or nameof(DiscordAllowedUserIds) or nameof(DiscordAllowedGuildIds) or nameof(DiscordAllowedChannelIds) or nameof(DiscordAllowedThreadIds) or nameof(DiscordAllowDirectMessages) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(PostConnectionNotice) or
                 nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or nameof(ChatApprovalMode) or
-                nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
+                nameof(AutoApproveSwitchCommands) or nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
                 nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
                 RefreshSetupStepper();
             if (e.PropertyName is nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or
@@ -236,7 +236,15 @@ public partial class MainPageViewModel : ObservableObject
     }
     [ObservableProperty] public partial bool AllowAgentNetwork { get; set; }
     [ObservableProperty] public partial string TrustedWorkspaceRoots { get; set; } = string.Empty;
-    [ObservableProperty] public partial string ChatApprovalMode { get; set; } = "first";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanAutoApproveSwitchCommands))]
+    public partial string ChatApprovalMode { get; set; } = "first";
+    [ObservableProperty] public partial bool AutoApproveSwitchCommands { get; set; }
+    // Switch commands can skip approval only together with the automatic approval mode.
+    public bool CanAutoApproveSwitchCommands => ChatApprovalMode == "auto";
+    partial void OnChatApprovalModeChanged(string value)
+    {
+        if (value != "auto") AutoApproveSwitchCommands = false;
+    }
     [ObservableProperty] public partial string ChatResultMode { get; set; } = "manual";
     [ObservableProperty] public partial string ChatFollowUpMode { get; set; } = ChatFollowUpPolicy.Queue;
     [ObservableProperty] public partial string FileAttachmentApprovalMode { get; set; } = "always";
@@ -365,6 +373,7 @@ public partial class MainPageViewModel : ObservableObject
             AllowAgentNetwork = _settings.AllowAgentNetwork;
             TrustedWorkspaceRoots = _settings.TrustedWorkspaceRoots;
             ChatApprovalMode = _settings.ChatApprovalMode;
+            AutoApproveSwitchCommands = _settings.AutoApproveSwitchCommands;
             ChatResultMode = _settings.ChatResultMode;
             ChatFollowUpMode = _settings.ChatFollowUpMode;
             FileAttachmentApprovalMode = _settings.FileAttachmentApprovalMode;
@@ -513,6 +522,8 @@ public partial class MainPageViewModel : ObservableObject
                 TrustedWorkspaceRoots = ExecutionPolicy.NormalizeTrustedRoots(TrustedWorkspaceRoots),
                 AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(AgentPermissionMode),
                 ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode),
+                AutoApproveSwitchCommands = draft.AutoApproveSwitchCommands &&
+                    ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode) == "auto",
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(ChatResultMode),
                 ChatFollowUpMode = ChatFollowUpPolicy.Normalize(ChatFollowUpMode),
                 FileAttachmentApprovalMode = FileAttachmentPolicy.NormalizeMode(FileAttachmentApprovalMode),
@@ -570,6 +581,7 @@ public partial class MainPageViewModel : ObservableObject
             if (TrustedWorkspaceRoots == draft.TrustedWorkspaceRoots) TrustedWorkspaceRoots = snapshot.TrustedWorkspaceRoots;
             if (AgentPermissionMode == draft.AgentPermissionMode) AgentPermissionMode = snapshot.AgentPermissionMode;
             if (ChatApprovalMode == draft.ChatApprovalMode) ChatApprovalMode = snapshot.ChatApprovalMode;
+            if (AutoApproveSwitchCommands == draft.AutoApproveSwitchCommands) AutoApproveSwitchCommands = snapshot.AutoApproveSwitchCommands;
             if (ChatResultMode == draft.ChatResultMode) ChatResultMode = snapshot.ChatResultMode;
             if (ChatFollowUpMode == draft.ChatFollowUpMode) ChatFollowUpMode = snapshot.ChatFollowUpMode;
             if (FileAttachmentApprovalMode == draft.FileAttachmentApprovalMode) FileAttachmentApprovalMode = snapshot.FileAttachmentApprovalMode;
@@ -934,6 +946,7 @@ public partial class MainPageViewModel : ObservableObject
         AllowAgentNetwork = AllowAgentNetwork,
         TrustedWorkspaceRoots = TrustedWorkspaceRoots,
         ChatApprovalMode = ChatApprovalMode,
+        AutoApproveSwitchCommands = AutoApproveSwitchCommands,
         ChatResultMode = ChatResultMode,
         ChatFollowUpMode = ChatFollowUpMode,
         FileAttachmentApprovalMode = FileAttachmentApprovalMode,
@@ -972,6 +985,7 @@ public partial class MainPageViewModel : ObservableObject
     }
     public bool IsApplyingSettings => _initializingSettings || _restoringSettingsDraft || IsLoading || !IsSettingsLoaded;
     public void RevertFollowUpToQueue() => ChatFollowUpMode = ChatFollowUpPolicy.Queue;
+    public void RevertAutoApproveSwitchCommands() => AutoApproveSwitchCommands = false;
     private static string ChatApprovalLabel(string value) => value switch
     { "first" => ViewModelText.Get("ApprovalFirstOnly"), "auto" => ViewModelText.Get("ApprovalAutomatic"), _ => ViewModelText.Get("ApprovalEveryTime") };
     private static string ResultLabel(string value) => value switch

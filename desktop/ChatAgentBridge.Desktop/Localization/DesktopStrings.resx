@@ -739,6 +739,13 @@ Save all pending settings changes together. Reconnect chat to apply saved change
   <data name="SettingsReviewNetwork" xml:space="preserve"><value>Network access</value></data>
   <data name="SettingsReviewFolders" xml:space="preserve"><value>Trusted workspaces</value></data>
   <data name="SettingsReviewRequestApproval" xml:space="preserve"><value>Chat request approval</value></data>
+  <data name="SettingsReviewSwitchApproval" xml:space="preserve"><value>Automatic approval for folder and agent switches</value></data>
+  <data name="SettingsReviewSwitchApprovalWarning" xml:space="preserve"><value>⚠ Allowed users will be able to switch the working folder or AI agent from chat without approval on this PC.</value></data>
+  <data name="SwitchApprovalWarningTitle" xml:space="preserve"><value>Approve switches automatically too?</value></data>
+  <data name="SwitchApprovalWarningBody" xml:space="preserve"><value>When enabled, folder and !cab agent switches sent from chat also run without confirmation on this PC.</value></data>
+  <data name="SwitchApprovalWarningRisk" xml:space="preserve"><value>Allowed users, or anyone who can use their accounts, can start work in another project inside your trusted folders or with another AI agent without confirmation.</value></data>
+  <data name="SwitchApprovalWarningLimits" xml:space="preserve"><value>Switches to folders outside your trusted folders or to unregistered CLIs are still refused. Choosing an approval mode other than automatic turns this setting off.</value></data>
+  <data name="SwitchApprovalWarningEnable" xml:space="preserve"><value>I understand, enable</value></data>
   <data name="SettingsReviewMattermostUsers" xml:space="preserve"><value>Mattermost allowed users</value></data>
   <data name="SettingsReviewSlackUsers" xml:space="preserve"><value>Slack allowed users</value></data>
   <data name="SettingsReviewSlackChannels" xml:space="preserve"><value>Slack allowed channels</value></data>
