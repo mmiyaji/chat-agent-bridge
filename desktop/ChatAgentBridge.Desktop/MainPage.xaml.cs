@@ -30,6 +30,8 @@ public sealed partial class MainPage : Page
     public bool IsHistorySelected { get; private set; }
     public bool IsAboutSelected { get; private set; }
     public bool IsFormSelected => !IsChatSelected && !IsHistorySelected && !IsAboutSelected;
+    public bool IsScrollableFormSelected => IsOverviewSelected || IsWorkbenchSelected;
+    public bool IsScopedSettingsSelected => IsAgentSelected || IsConnectionsSelected;
     public static bool CanUseForm(bool isGeneralSelected, bool isSettingsLoaded, bool isLoading) => !isLoading && (isGeneralSelected || isSettingsLoaded);
 
     public MainPage()
@@ -43,11 +45,14 @@ public sealed partial class MainPage : Page
         InitializeLanguageRestart();
         InitializePortableUpdateBadge();
         InitializePortableUpdateRecoveryProbe();
+        InitializePendingBadge();
         UpdateNavigationContentOffset();
         _wizard = new Onboarding.OnboardingWizard(ViewModel, InboxPage.ViewModel, ReloadProcessEnvironment);
         WizardHost.Content = _wizard;
         ViewModel.PropertyChanged += (_, args) =>
         {
+            if (args.PropertyName is nameof(ViewModel.IsSettingsLoaded) or nameof(ViewModel.IsLoading))
+                UpdateSettingsNavigationEnabledState();
             // PasswordBox cannot use a two-way x:Bind. Reflect rejected edits back
             // into its editor as well as the view model, without persisting them.
             if (args.PropertyName == nameof(ViewModel.MattermostToken))
@@ -80,8 +85,8 @@ public sealed partial class MainPage : Page
         };
         InboxPage.ViewModel.PropertyChanged += (_, args) =>
         {
-            if (args.PropertyName is nameof(ChatInboxViewModel.IsConnectionConfirmed) or nameof(ChatInboxViewModel.IsConnected) or nameof(ChatInboxViewModel.HasConnectionError))
-                ViewModel.SetChatConnectionState(InboxPage.ViewModel.IsConnectionConfirmed, InboxPage.ViewModel.IsConnected, InboxPage.ViewModel.HasConnectionError);
+            if (args.PropertyName is nameof(ChatInboxViewModel.IsConnectionConfirmed) or nameof(ChatInboxViewModel.IsConnected) or nameof(ChatInboxViewModel.HasConnectionError) or nameof(ChatInboxViewModel.ConnectionProvider))
+                ViewModel.SetChatConnectionState(InboxPage.ViewModel.IsConnectionConfirmed, InboxPage.ViewModel.IsConnected, InboxPage.ViewModel.HasConnectionError, InboxPage.ViewModel.ConnectionOverviewTarget);
         };
         ViewModel.SettingsSaved += () =>
         {
@@ -104,7 +109,9 @@ public sealed partial class MainPage : Page
         HistoryPage.AgentSettingsRequested += () => OpenAgentSettings_Click(this, new RoutedEventArgs());
         InboxPage.ConnectionSettingsRequested += () => OpenConnections_Click(this, new RoutedEventArgs());
         ViewModel.OnboardingNavigateRequested += _ => _wizard.ResetScroll();
-        MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
+        // Search is a command row, so keep General as the initial selected page.
+        MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>()
+            .First(item => item.Tag as string == "overview");
     }
 
     private void RefreshLanguage(System.Globalization.CultureInfo culture)
@@ -189,7 +196,31 @@ public sealed partial class MainPage : Page
         }
     }
 
+    private bool _switchApprovalDialogOpen;
+
+    private async void AutoApproveSwitchCommands_Toggled(object sender, RoutedEventArgs e)
+    {
+        // Warn only when the user turns it on; loading, discarding, and reverting stay silent.
+        if (sender is not ToggleSwitch { IsOn: true } || _switchApprovalDialogOpen ||
+            ViewModel.IsApplyingSettings || XamlRoot is null) return;
+        _switchApprovalDialogOpen = true;
+        _settingsPromptOpen = true;
+        try
+        {
+            if (!await SwitchApprovalWarningDialog.ShowAsync(XamlRoot)) ViewModel.RevertAutoApproveSwitchCommands();
+        }
+        finally
+        {
+            _settingsPromptOpen = false;
+            _switchApprovalDialogOpen = false;
+            ScheduleSettingsAutoSave();
+        }
+    }
+
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+
+    public static Visibility SearchTriggerVisibility(bool isSettingsLoaded, bool isOnboardingActive) =>
+        isSettingsLoaded && !isOnboardingActive ? Visibility.Visible : Visibility.Collapsed;
 
     internal async Task ShutdownAsync()
     {
@@ -307,6 +338,7 @@ public sealed partial class MainPage : Page
     private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
         InitializeSidebarResizer();
+        InitializeNavigationShortcuts();
         if (_hasLoaded) return;
         _hasLoaded = true;
         // The Windows startup-task query does not depend on saved settings, so it
@@ -334,6 +366,7 @@ public sealed partial class MainPage : Page
             else if (startupProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
             else if (startupProvider == "discord") await InboxPage.ViewModel.ConnectDiscordCommand.ExecuteAsync(null);
         }
+        InitializeFeatureTips();
     }
 
     private async void ReloadSettings_Click(object sender, RoutedEventArgs e)
@@ -379,6 +412,7 @@ public sealed partial class MainPage : Page
         if (!IsAgentSelected) ViewModel.CancelModelCatalogLookup();
         ViewModel.IsStatusOpen = false;
         if (pageChanged) Bindings.Update();
+        if (pageChanged && _hasLoaded) PlayPageEntrance();
         if (pageChanged && _hasLoaded)
         {
             var generation = ++_scrollResetGeneration;
@@ -390,6 +424,9 @@ public sealed partial class MainPage : Page
                     MainNavigation.UpdateLayout();
                     MainContentScroll.UpdateLayout();
                     MainContentScroll.ChangeView(0, 0, null, true);
+                    var scroll = ScrollViewerForPage(tag);
+                    scroll?.UpdateLayout();
+                    scroll?.ChangeView(0, 0, null, true);
                 });
             }
         }

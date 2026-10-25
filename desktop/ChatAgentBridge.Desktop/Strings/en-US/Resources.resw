@@ -1,5 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
+  <data name="OpenSettingsSearch.Content" xml:space="preserve"><value>Search settings</value></data>
+  <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Search settings</value></data>
+  <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Search settings (Ctrl+F)</value></data>
+  <data name="SettingsSearchBox.PlaceholderText" xml:space="preserve"><value>Search settings (Ctrl+F)</value></data>
+  <data name="SettingsSearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Search settings</value></data>
   <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>Open chat settings</value></data>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>Connect without a proxy</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>Turn on for a direct connection to your internal Mattermost server. When off, the system proxy settings are used. This applies to user lookup, post link checks, and sending and receiving messages. Reconnect after changing this setting.</value></data>
@@ -29,6 +34,12 @@
   </data>
   <data name="NavChat.Content" xml:space="preserve">
     <value>Chat</value>
+  </data>
+  <data name="NavGroupWork.Content" xml:space="preserve">
+    <value>Work</value>
+  </data>
+  <data name="NavGroupSettings.Content" xml:space="preserve">
+    <value>Settings</value>
   </data>
   <data name="NavHistory.Content" xml:space="preserve">
     <value>History and usage</value>
@@ -174,7 +185,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>1 Check allowed accounts, channels, and threads</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock021.Text" xml:space="preserve">
-    <value>2 Approve requests: every time, first request only, or automatically</value>
+    <value>2 Approve requests: every time, once per conversation, or automatically</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock022.Text" xml:space="preserve">
     <value>3 Check trusted folders and AI tool permissions</value>
@@ -252,14 +263,24 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Ask every time</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageComboBoxItem007.Content" xml:space="preserve">
-    <value>Ask for the first request only</value>
+    <value>Confirm the first request in each conversation</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageComboBoxItem008.Content" xml:space="preserve">
     <value>Approve automatically</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock032.Text" xml:space="preserve">
-    <value>First-request approval allows later requests in the same conversation to run automatically. Automatic approval runs allowed chat requests without a confirmation dialog.</value>
+    <value>Confirm one request when each conversation starts. Later requests run automatically, unless changed permissions or agent settings require approval again. Automatic approval skips the initial confirmation.</value>
   </data>
+  <data name="AutoApproveSwitchCommands.Header" xml:space="preserve">
+    <value>Approve folder and agent switches automatically</value>
+  </data>
+  <data name="AutoApproveSwitchCommands.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="AutoApproveSwitchCommands.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="AutoApproveSwitchCommandsHelp.Text" xml:space="preserve">
+    <value>When enabled, switches and the new agent's first request can run without another approval after the conversation's first request is approved; permission or configuration changes may still prompt. Unavailable with Ask every time.</value>
+  </data>
+  <data name="AutoApproveSwitchWarning.Title" xml:space="preserve"><value>Switch approval limits</value></data>
+  <data name="AutoApproveSwitchWarning.Message" xml:space="preserve"><value>Only allowed chat users can request switches. Targets remain limited to trusted folders and registered CLIs.</value></data>
   <data name="ChatResultMode.Header" xml:space="preserve">
     <value>Sharing execution results</value>
   </data>
@@ -273,7 +294,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Do not share</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock033.Text" xml:space="preserve">
-    <value>Automatic sharing posts successful results to the original thread, where anyone with access can read them. Choosing Do not share also disables manual sharing of result text.</value>
+    <value>Automatic sharing posts successful results to the original thread, visible to everyone who can view it. Do not share also disables manual sharing of result text.</value>
   </data>
   <data name="ChatFollowUpMode.Header" xml:space="preserve">
     <value>Messages received during execution</value>
@@ -285,7 +306,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Add to the running request</value>
   </data>
   <data name="ChatFollowUpModeHelp.Text" xml:space="preserve">
-    <value>Available with Codex App Server and Claude Code. Additional instructions from the same user and thread are delivered when the agent can accept them. Unsupported connections and per-request approval queue messages.</value>
+    <value>With Codex App Server and Claude Code, new instructions from the same user and thread can be added to a running request. Other connections, or ask-every-time approval, queue them instead.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock034.Text" xml:space="preserve">
     <value>Allowed chat accounts and conversations</value>
@@ -484,7 +505,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Share nonsecret agent questions in chat</value>
   </data>
   <data name="ShareAgentQuestionsInChatHelp.Text" xml:space="preserve">
-    <value>When enabled, nonsecret questions and answer choices from Codex App Server are posted in this thread, where every participant can see them. Questions the app server marks as secret are answered on this PC and are never posted. This applies only to Codex App Server. Off by default. Save and reconnect for this setting to take effect.</value>
+    <value>When enabled, nonsecret questions and choices from Codex App Server are posted in this thread for all participants to see. Secret questions stay on this PC. Codex App Server only; off by default. Save and reconnect to apply.</value>
   </data>
   <data name="PostConnectionNotice.Header" xml:space="preserve">
     <value>Post notices when connecting or disconnecting</value>
@@ -775,13 +796,13 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Ask every time (recommended)</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem002.Content" xml:space="preserve">
-    <value>Ask for the first request only</value>
+    <value>Confirm the first request in each conversation</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem003.Content" xml:space="preserve">
     <value>Approve automatically</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock022.Text" xml:space="preserve">
-    <value>First-request approval allows later requests in the same conversation to run automatically. Automatic approval runs allowed chat requests without a confirmation dialog.</value>
+    <value>Confirm one request when each conversation starts. Later requests run automatically, unless changed permissions or agent settings require approval again. Automatic approval skips the initial confirmation.</value>
   </data>
   <data name="WizardChatResultMode.Header" xml:space="preserve">
     <value>Sharing execution results</value>
@@ -922,7 +943,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Connection</value>
   </data>
   <data name="OverviewCliLabel.Text" xml:space="preserve">
-    <value>CLI verification</value>
+    <value>Default agent</value>
   </data>
   <data name="OverviewDetailsHeader.Text" xml:space="preserve">
     <value>Setup details and architecture</value>
@@ -1043,7 +1064,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="FileAttachmentMaxCount.Header" xml:space="preserve"><value>Maximum file count</value></data>
   <data name="FileAttachmentMaxTotalSizeMb.Header" xml:space="preserve"><value>Maximum total size per send (MiB)</value></data>
   <data name="InboxSendAttachments.Content" xml:space="preserve"><value>Review and send files</value></data>
-  <data name="LiveOutputTitle.Text" xml:space="preserve"><value>Live execution output</value></data>
+  <data name="LiveOutputTitle.Text" xml:space="preserve"><value>Execution log</value></data>
   <data name="LiveOutputPrivacyHelp.Text" xml:space="preserve"><value>Shown on this PC only. Live output is not saved to the conversation or shared automatically.</value></data>
   <data name="LiveOutputPausedHelp.Text" xml:space="preserve"><value>Following is paused. The execution continues, and new output appears when you resume following.</value></data>
   <data name="LiveOutputWaitingHelp.Text" xml:space="preserve"><value>Waiting for output…</value></data>
@@ -1243,6 +1264,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentEditorChecking" xml:space="preserve"><value>Checking CLI…</value></data>
   <data name="AgentEditorChecked" xml:space="preserve"><value>CLI verified</value></data>
   <data name="AgentEditorCheckFailed" xml:space="preserve"><value>CLI check failed</value></data>
+  <data name="AgentEditorModelChoicesBox.PlaceholderText" xml:space="preserve"><value>Check the CLI to choose a model</value></data>
   <data name="AgentEditorNotChecked" xml:space="preserve"><value>CLI not checked</value></data>
   <data name="AgentEditorModelChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Available models</value></data>
   <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Reasoning effort</value></data>
@@ -1305,4 +1327,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="GeneralNotificationDiagnostics.Header" xml:space="preserve"><value>Diagnostic details</value></data>
   <data name="GeneralSavedAgentEdit.Content" xml:space="preserve"><value>Agent settings</value></data>
   <data name="GeneralSavedWorkspaceEdit.Content" xml:space="preserve"><value>Change folder</value></data>
+  <data name="InboxApproveAction.Content" xml:space="preserve"><value>Approve and run</value></data>
+  <data name="InboxRejectAction.Content" xml:space="preserve"><value>Reject</value></data>
+  <data name="InboxApprovalNotice.Title" xml:space="preserve"><value>Waiting for your approval</value></data>
+  <data name="InboxApprovalNotice.Message" xml:space="preserve"><value>Review the request, then approve or reject it.</value></data>
+  <data name="InboxOpenPendingApproval.Content" xml:space="preserve"><value>Review pending request</value></data>
+  <data name="OverviewCliTile.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Shows the CLI check for the default agent. Successful checks are reused; executable updates or changes to launch arguments, launch mode, working folder or trusted folders require another check. Sign-in and model availability are checked when used.</value></data>
 </root>

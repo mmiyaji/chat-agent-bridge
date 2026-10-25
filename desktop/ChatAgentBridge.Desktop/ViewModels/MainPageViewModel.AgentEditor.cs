@@ -64,23 +64,6 @@ public partial class MainPageViewModel
             IsStatusOpen = false;
             IsSettingsLoaded = true;
 
-            var providerCache = new CliVerificationStore(Path.Combine(_settingsStore.DirectoryPath,
-                "agent-cli-cache", provider));
-            var scopedCached = await providerCache.LoadAsync(editorBaseline);
-            if (scopedCached is null)
-            {
-                var rootCached = await new CliVerificationStore(_settingsStore.DirectoryPath).LoadAsync(editorBaseline);
-                if (rootCached is not null && rootCached.ConnectionSignature ==
-                    CreateConnectionSignature(editorBaseline, rootCached.Probe.Version, rootCached.Probe.Executable))
-                {
-                    try { await providerCache.SaveAsync(editorBaseline, rootCached); }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
-                    {
-                        CliCheckSummary = ViewModelText.Get("CliVerificationSaveFailed");
-                    }
-                }
-            }
-            _cliVerificationStore = providerCache;
             await LoadAgentConnectionsAsync();
             await RestoreCliVerificationAsync();
             PopulateGlobalEfforts();
@@ -142,6 +125,7 @@ public partial class MainPageViewModel
         AllowAgentNetwork = settings.AllowAgentNetwork;
         TrustedWorkspaceRoots = settings.TrustedWorkspaceRoots;
         ChatApprovalMode = settings.ChatApprovalMode;
+        AutoApproveSwitchCommands = settings.AutoApproveSwitchCommands;
         ChatResultMode = settings.ChatResultMode;
         ChatFollowUpMode = settings.ChatFollowUpMode;
         FileAttachmentApprovalMode = settings.FileAttachmentApprovalMode;
@@ -317,18 +301,59 @@ public partial class MainPageViewModel
         AllowAgentNetwork = source.AllowAgentNetwork
     };
 
+    /// <summary>Refreshes diagnostics only when this editor still describes the active configuration.</summary>
+    public async Task SynchronizeAgentEditorCliVerificationAsync(MainPageViewModel editor)
+    {
+        if (_isAgentProfileEditor || _closing || !IsSettingsLoaded || IsLoading || IsCheckingCli ||
+            !editor._isAgentProfileEditor || editor.IsLoading || editor.IsCheckingCli || !editor.IsSettingsLoaded) return;
+        var active = CreateSettingsSnapshot();
+        var source = editor.CreateSettingsSnapshot();
+        var signature = CurrentCliSignature();
+        var connectionSignature = CurrentConnectionSignature();
+        var editorGeneration = editor._cliCheckGeneration;
+        var editorSignature = editor.CurrentCliSignature();
+        var editorConnectionSignature = editor.CurrentConnectionSignature();
+        try
+        {
+            // Cache context checks the resolved executable, arguments, mode, workspace and trust;
+            // the connection signature also prevents model/permission drafts from affecting the overview.
+            if ((signature != editorSignature && !CliVerificationStore.HasSameContext(active, source)) ||
+                CreateConnectionSignature(active, editor.CliVersion, editor.CliExecutablePath) != editor.CurrentConnectionSignature()) return;
+            var cached = await LoadCliVerificationAsync(active);
+            if (_closing || IsCheckingCli || signature != CurrentCliSignature() || connectionSignature != CurrentConnectionSignature() ||
+                editor.IsCheckingCli || editorGeneration != editor._cliCheckGeneration || editorSignature != editor.CurrentCliSignature() ||
+                editorConnectionSignature != editor.CurrentConnectionSignature()) return;
+            if (cached is not null && editor.HasCurrentCliCheck() && cached.CheckedAtUtc == editor._cliCheckedAt &&
+                cached.Probe.Version == editor.CliVersion && cached.Probe.Executable == editor.CliExecutablePath)
+                ApplyCliVerification(cached, signature, restored: false);
+            else
+            {
+                CancelCliCheck();
+                InvalidateModelCatalog();
+                CliVersion = ViewModelText.Get("NotChecked");
+                CliExecutablePath = "";
+                CliCheckFailed = editor.CliCheckFailed;
+                CliCheckSummary = editor.CliCheckSummary;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            // Optional diagnostic synchronization cannot activate a profile or change its permissions.
+        }
+    }
+
     private async Task SaveActivatedCliVerificationAsync(MainPageViewModel editor, BridgeSettings applied)
     {
         try
         {
             var sourceSettings = editor.CreateSettingsSnapshot();
-            var cached = await editor._cliVerificationStore.LoadAsync(sourceSettings);
+            var cached = await editor.LoadCliVerificationAsync(sourceSettings);
             if (cached is null || cached.ConnectionSignature != editor.CurrentConnectionSignature()) return;
             var transferred = cached with
             {
                 ConnectionSignature = CreateConnectionSignature(applied, cached.Probe.Version, cached.Probe.Executable)
             };
-            await _cliVerificationStore.SaveAsync(applied, transferred);
+            await ProviderCliVerificationStore(applied).SaveAsync(applied, transferred);
             CliVersion = cached.Probe.Version;
             CliExecutablePath = cached.Probe.Executable;
             await RestoreCliVerificationAsync();

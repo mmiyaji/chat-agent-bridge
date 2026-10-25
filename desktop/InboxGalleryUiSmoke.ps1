@@ -222,7 +222,8 @@ function Set-Value([string]$AutomationId, [string]$Value) {
 function Get-OwnedAppWindows {
     $appHwnd = [IntPtr]$script:window.Current.NativeWindowHandle
     $roots = [Windows.Automation.AutomationElement]::RootElement.FindAll(
-        [Windows.Automation.TreeScope]::Children, [Windows.Automation.Condition]::TrueCondition)
+        [Windows.Automation.TreeScope]::Children,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty, $script:app.Id))
     foreach ($root in $roots) {
         $hwnd = [IntPtr]$root.Current.NativeWindowHandle
         if ($hwnd -eq [IntPtr]::Zero) { continue }
@@ -515,10 +516,36 @@ function Run-Scenario([string]$Language, [string]$Theme) {
     $pendingThread = 'gallery-live-pending-' + [guid]::NewGuid().ToString('N')
     Send-Request ('gallery-pending-' + [guid]::NewGuid().ToString('N')) $pendingThread 'GALLERY_PENDING_SEARCH_TARGET LIVE_STEER_STEER_1'
     Wait-InboxState $pendingThread 'pending'
+    Wait-Element 'InboxPendingApprovalsNotice' | Out-Null
+    Capture-Window "$Language-$Theme-03a-pending-notice.png"
+    Invoke-Element (Wait-Element 'InboxOpenPendingApproval') 'reveal pending request without running it'
+    Wait-Element 'InboxApprovalNotice' | Out-Null
+    Assert (@(Read-Observations | Where-Object method -eq 'turn/start').Count -eq 0) 'Opening pending approvals started the agent.'
     Select-LiveRequest 'GALLERY_PENDING_SEARCH_TARGET'
     Assert ((Wait-Element 'ApproveChat').Current.IsEnabled) 'Approve is disabled for a live pending request.'
+    Assert ((Wait-Element 'ApproveChat').Current.ControlType -eq [Windows.Automation.ControlType]::Button) 'Approve is not a standalone button.'
     Assert ((Wait-Element 'RejectChat').Current.IsEnabled) 'Reject is disabled for a live pending request.'
     Assert-CommandUnavailable 'CancelChat' 'Pending request'
+    foreach($width in @(1040,820,500)) {
+        Resize-App $width 600
+        if($width -eq 500){
+            $prompt=Find-Element $script:window 'InboxSelectedPrompt'
+            $prompt.SetFocus()
+            Start-Sleep -Milliseconds 200
+            $scroll=Wait-Element 'InboxDetailScroll'
+            Assert ($scroll.Current.BoundingRectangle.Height -ge 100) 'Pinned approval controls leave too little room to review the request.'
+            $promptBounds=(Wait-Element 'InboxSelectedPrompt').Current.BoundingRectangle
+            Assert ($promptBounds.Top -ge $scroll.Current.BoundingRectangle.Top -and $promptBounds.Bottom -le $scroll.Current.BoundingRectangle.Bottom+1) 'Request text cannot be fully viewed while approval actions remain pinned.'
+        }
+        foreach($id in @('ApproveChat','RejectChat')) {
+            $bounds=(Wait-Element $id).Current.BoundingRectangle
+            $windowBounds=$script:window.Current.BoundingRectangle
+            Assert ($bounds.Width -gt 0 -and $bounds.Left -ge $windowBounds.Left -and $bounds.Right -le $windowBounds.Right -and $bounds.Top -ge $windowBounds.Top -and $bounds.Bottom -le $windowBounds.Bottom) "Approval action clipped at width $width : $id"
+        }
+        Capture-Window "$Language-$Theme-03b-pending-$width.png"
+    }
+    Resize-App 1160 800
+    Add-Check "$script:scenarioName visible pending notice and approval actions at 1040/820/500" 'PASS' 'Reviewing a pending request clears filters, opens details, and never executes it.'
 
     if ($RestoredConversationCount -ge 100) {
         Search-Input 'GALLERY_PENDING_SEARCH_TARGET'
@@ -624,6 +651,8 @@ function Run-Scenario([string]$Language, [string]$Theme) {
         $attachmentStatus = Find-Element $script:window 'SelectedAttachmentStatus'
         $null -ne $attachmentStatus -and -not [string]::IsNullOrWhiteSpace($attachmentStatus.Current.Name)
     } 'synthetic output attachment candidate discovery' 15
+    $directShare = Find-Element $script:window 'SendChatResult'
+    Assert ($directShare -and -not $directShare.Current.IsOffscreen -and $directShare.Current.BoundingRectangle.Width -gt 0) 'Result sharing is hidden in the overflow menu.'
     $resultButton = Ensure-Command 'SendChatResult'
     $attachmentButton = Ensure-Command 'SendChatAttachments'
     Assert ($resultButton.Current.IsEnabled) 'Result sharing route is disabled for a completed request with a result.'

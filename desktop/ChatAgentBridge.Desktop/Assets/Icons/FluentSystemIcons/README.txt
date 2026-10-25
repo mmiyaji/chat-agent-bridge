@@ -29,6 +29,10 @@ Their full 20 px source boxes are scaled by NavigationView's own icon Viewbox.
 Number Symbol and People Community 20 regular are generic symbols used for
 Slack and Discord settings rows. They are not service logos.
 
+Arrow Clockwise 20 regular is used for the model catalog refresh recommendation.
+It is sourced from the Fluent System Icons repository under the MIT license:
+https://github.com/microsoft/fluentui-system-icons/blob/82ecf7cbdb43684403c7125efa160be04a33dca5/assets/Arrow%20Clockwise/SVG/ic_fluent_arrow_clockwise_20_regular.svg
+
 The Antigravity CLI settings row uses SettingsScopeIcon_arch in the same XAML file.
 It is a simple original arch outline written for this project, not a Fluent icon
 and not a product logo.

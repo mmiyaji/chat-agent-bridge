@@ -5,6 +5,10 @@
   <data name="ShowNamedToken" xml:space="preserve"><value>Show token: {0}</value></data>
   <data name="HideNamedToken" xml:space="preserve"><value>Hide token: {0}</value></data>
   <data name="ModelCatalogRestored" xml:space="preserve"><value>Restored {0} saved model options. Fetch models to refresh.</value></data>
+  <data name="ModelCatalogFetchedAt" xml:space="preserve"><value>Model list fetched: {0}</value></data>
+  <data name="ModelCatalogFetchedAtUnknown" xml:space="preserve"><value>Model list fetch date unknown</value></data>
+  <data name="ModelCatalogRefreshRecommended" xml:space="preserve"><value>The model list is at least 7 days old or its fetch date is unknown. Refresh recommended.</value></data>
+  <data name="ModelCatalogSaveFailed" xml:space="preserve"><value>The model list was retrieved, but its cache could not be saved.</value></data>
   <data name="HistoryFilters" xml:space="preserve"><value>Filters</value></data>
   <data name="ArchitectureOpenHint" xml:space="preserve"><value>Click to enlarge</value></data>
   <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>Open architecture diagram</value></data>
@@ -81,6 +85,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="ApprovalPending" xml:space="preserve"><value>Awaiting approval</value></data>
+  <data name="NavChatPendingBadge" xml:space="preserve"><value>{0} awaiting approval</value></data>
   <data name="ApprovalRunning" xml:space="preserve"><value>Running</value></data>
   <data name="ApprovalCompleted" xml:space="preserve"><value>Completed</value></data>
   <data name="ApprovalFailed" xml:space="preserve"><value>Failed ({0})</value></data>
@@ -195,7 +200,7 @@
   <data name="InheritAgentEffort" xml:space="preserve"><value>Inherit agent setting (CLI default if the model differs)</value></data>
   <data name="HistoryExecutionPolicy" xml:space="preserve"><value>Conversation policy: approval {0} / results {1} / AI actions {2}</value></data>
   <data name="AskEveryTime" xml:space="preserve"><value>Ask every time</value></data>
-  <data name="AskFirstTime" xml:space="preserve"><value>Ask first time only</value></data>
+  <data name="AskFirstTime" xml:space="preserve"><value>Confirm first request per conversation</value></data>
   <data name="AutoApprove" xml:space="preserve"><value>Automatic approval</value></data>
   <data name="ManualShare" xml:space="preserve"><value>Review and share manually</value></data>
   <data name="AutoShare" xml:space="preserve"><value>Share automatically</value></data>
@@ -419,6 +424,7 @@
   <data name="InboxEmptyFilteredHeading" xml:space="preserve"><value>No matching conversations</value></data>
   <data name="InboxEmptyFilteredDescription" xml:space="preserve"><value>Change or clear the search or state filter to see conversations.</value></data>
   <data name="InboxEmptyDetailHeading" xml:space="preserve"><value>Select a conversation</value></data>
+  <data name="NavShortcutTooltip" xml:space="preserve"><value>{0} (Ctrl+{1})</value></data>
   <data name="InboxEmptyDetailDescription" xml:space="preserve"><value>Choose a conversation from the list to review its requests and responses.</value></data>
   <data name="InboxRestoredDescription" xml:space="preserve"><value>Previous requests are not resumed. To continue, post a new !cab request in the same chat thread. Request and result bodies are not saved in this list.</value></data>
   <data name="InboxPersistenceLoadFailed" xml:space="preserve"><value>The conversation list could not be restored. The original file was kept, and no requests were resumed automatically.</value></data>
@@ -737,6 +743,13 @@ Save all pending settings changes together. Reconnect chat to apply saved change
   <data name="SettingsReviewNetwork" xml:space="preserve"><value>Network access</value></data>
   <data name="SettingsReviewFolders" xml:space="preserve"><value>Trusted workspaces</value></data>
   <data name="SettingsReviewRequestApproval" xml:space="preserve"><value>Chat request approval</value></data>
+  <data name="SettingsReviewSwitchApproval" xml:space="preserve"><value>Automatic approval for folder and agent switches</value></data>
+  <data name="SettingsReviewSwitchApprovalWarning" xml:space="preserve"><value>⚠ Allowed chat users can switch the working folder or AI agent without a separate switch approval. With “Confirm the first request in each conversation,” the new agent's first request also runs without another approval unless its permissions or configuration require it. Trusted folders and registered CLIs still apply.</value></data>
+  <data name="SwitchApprovalWarningTitle" xml:space="preserve"><value>Approve folder and agent switches automatically?</value></data>
+  <data name="SwitchApprovalWarningBody" xml:space="preserve"><value>When enabled, folder and !cab agent switches from chat run without their own approval prompt. With “Confirm the first request in each conversation,” the new agent's first request also runs without another approval unless its permissions or configuration require it.</value></data>
+  <data name="SwitchApprovalWarningRisk" xml:space="preserve"><value>Allowed chat users, or anyone who can use their accounts, can start work in another trusted folder or with another registered AI agent without a separate switch approval.</value></data>
+  <data name="SwitchApprovalWarningLimits" xml:space="preserve"><value>Only configured allowed users can request switches. Folders outside your trusted folders and unregistered CLIs are still refused. Ask every time turns this setting off.</value></data>
+  <data name="SwitchApprovalWarningEnable" xml:space="preserve"><value>I understand, enable</value></data>
   <data name="SettingsReviewMattermostUsers" xml:space="preserve"><value>Mattermost allowed users</value></data>
   <data name="SettingsReviewSlackUsers" xml:space="preserve"><value>Slack allowed users</value></data>
   <data name="SettingsReviewSlackChannels" xml:space="preserve"><value>Slack allowed channels</value></data>
@@ -847,4 +860,11 @@ After: {2}</value></data>
   <data name="PaneSizerSidebar" xml:space="preserve"><value>Resize the sidebar</value></data>
   <data name="PaneSizerSettings" xml:space="preserve"><value>Resize the settings menu</value></data>
   <data name="PaneSizerHelp" xml:space="preserve"><value>Drag or use the arrow keys to change the width.</value></data>
+  <data name="TipChatConnectTitle" xml:space="preserve"><value>Take requests from chat</value></data>
+  <data name="TipChatConnectBody" xml:space="preserve"><value>Open Chat and connect to Mattermost, Slack, or Discord to run requests sent from chat on this PC.</value></data>
+  <data name="TipOpenChat" xml:space="preserve"><value>Open chat</value></data>
+  <data name="TipGotIt" xml:space="preserve"><value>Got it</value></data>
+  <data name="SearchScopeSettings" xml:space="preserve"><value>{0} settings</value></data>
+  <data name="SearchNoResults" xml:space="preserve"><value>No matching settings</value></data>
+  <data name="InboxPendingApprovalMessage" xml:space="preserve"><value>Requests awaiting approval: {0}. Open a request to review its details.</value></data>
 </root>

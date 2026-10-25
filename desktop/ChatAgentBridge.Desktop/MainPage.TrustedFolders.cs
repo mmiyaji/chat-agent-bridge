@@ -16,10 +16,12 @@ public sealed partial class MainPage
             ++_scrollResetGeneration;
             AgentCommonSettings.IsExpanded = true;
             MainNavigation.UpdateLayout();
-            MainContentScroll.UpdateLayout();
-            var target = TrustedWorkspaceCard.TransformToVisual((UIElement)MainContentScroll.Content)
-                .TransformPoint(new Windows.Foundation.Point(0, 0));
-            MainContentScroll.ChangeView(null, target.Y, null, true);
+            _agentSettingsScroll?.UpdateLayout();
+            TrustedWorkspaceCard.StartBringIntoView(new BringIntoViewOptions
+            {
+                VerticalAlignmentRatio = 0,
+                AnimationDesired = false
+            });
         });
     }
 

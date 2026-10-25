@@ -30,18 +30,19 @@ public partial class MainPageViewModel
         DeferOnboardingCommand.NotifyCanExecuteChanged();
     }
     private string CurrentCliSignature() => $"{AgentProvider}\n{AgentExecutable}\n{AgentArguments}\n{WorkspaceRoot}\n{UseAppServer}\n{TrustedWorkspaceRoots}";
-    private bool HasCurrentCliCheck() => CliCheckSucceeded && _checkedCliSignature == CurrentCliSignature() &&
+    private bool HasCurrentCliCheck() => CliCheckSucceeded && _checkedCliSignature == CurrentCliSignature();
+    private bool HasCurrentCliAndModelCheck() => HasCurrentCliCheck() &&
         (!SupportsReasoning || string.IsNullOrWhiteSpace(AgentModel) || ModelCatalog.Models.Any(model => string.Equals(model.Id, AgentModel.Trim(), StringComparison.Ordinal)));
 
     private string CurrentConnectionSignature() => CreateConnectionSignature(CreateSettingsSnapshot(), CliVersion, CliExecutablePath);
 
     private static string CreateConnectionSignature(BridgeSettings settings, string cliVersion, string cliExecutablePath) =>
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n",
-            settings.AgentProvider, settings.AgentExecutable, settings.AgentArguments,
+            settings.AgentProvider, cliExecutablePath, settings.AgentArguments,
             settings.AgentMode == "app-server", settings.AgentModel?.Trim() ?? "", settings.AgentReasoningEffort ?? "",
             settings.AgentPermissionMode, settings.AllowAgentNetwork, cliVersion, cliExecutablePath))));
 
-    private bool CanRegisterAgentConnection() => HasCurrentCliCheck() &&
+    private bool CanRegisterAgentConnection() => HasCurrentCliAndModelCheck() &&
         SupportsModel &&
         _checkedConnectionSignature == CurrentConnectionSignature() && !IsLoading && !IsRunning;
 
@@ -120,12 +121,13 @@ public partial class MainPageViewModel
                 _checkedCliSignature = signature;
                 _checkedConnectionSignature = CurrentConnectionSignature();
                 _cliCheckedAt = DateTimeOffset.UtcNow;
-                CliCheckSucceeded = true;
                 CliCheckSummary = ViewModelText.Get("BasicCliCheckSucceeded");
-                await SaveCliVerificationAsync(settings, result, generation, cancellation.Token);
                 // Antigravity can list models without a turn. This is best effort: a failed lookup never fails the CLI check.
                 if (IsAntigravityProvider && generation == _cliCheckGeneration && signature == CurrentCliSignature())
                     await ModelCatalog.FetchModelsCommand.ExecuteAsync(null);
+                if (generation != _cliCheckGeneration || cancellation.IsCancellationRequested || signature != CurrentCliSignature()) return;
+                CliCheckSucceeded = true;
+                await SaveCliVerificationAsync(settings, result, generation, cancellation.Token);
                 return;
             }
             CliCheckSummary = ViewModelText.Get("CliStartedFetchingModels");

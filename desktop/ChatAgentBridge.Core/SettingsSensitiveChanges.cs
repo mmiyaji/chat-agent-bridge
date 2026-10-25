@@ -29,11 +29,11 @@ public readonly record struct SettingsSensitiveChanges(
             (saved.ChatApprovalMode, saved.SlackAllowedChannelIds, saved.SlackAllowedThreadIds,
                 saved.MattermostAllowedThreadIds, saved.MattermostAllowedUserIds, saved.SlackAllowedUserIds,
                 saved.DiscordAllowedUserIds, saved.DiscordAllowedGuildIds, saved.DiscordAllowedChannelIds,
-                saved.DiscordAllowedThreadIds, saved.DiscordAllowDirectMessages) !=
+                saved.DiscordAllowedThreadIds, saved.DiscordAllowDirectMessages, saved.AutoApproveSwitchCommands) !=
                 (draft.ChatApprovalMode, draft.SlackAllowedChannelIds, draft.SlackAllowedThreadIds,
                 draft.MattermostAllowedThreadIds, draft.MattermostAllowedUserIds, draft.SlackAllowedUserIds,
                 draft.DiscordAllowedUserIds, draft.DiscordAllowedGuildIds, draft.DiscordAllowedChannelIds,
-                draft.DiscordAllowedThreadIds, draft.DiscordAllowDirectMessages),
+                draft.DiscordAllowedThreadIds, draft.DiscordAllowDirectMessages, draft.AutoApproveSwitchCommands),
             (saved.ChatResultMode, saved.ShareApprovalsInChat, saved.ShareAgentQuestionsInChat) !=
                 (draft.ChatResultMode, draft.ShareApprovalsInChat, draft.ShareAgentQuestionsInChat) ||
             saved.ChatFollowUpMode != draft.ChatFollowUpMode,

@@ -146,6 +146,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public ExecutionUi.LiveOutputViewModel SelectedLiveOutput => Selected?.LiveOutput ?? _emptyLiveOutput;
 
     public ObservableCollection<InboxItem> Requests { get; } = [];
+    /// <summary>Requests waiting for a decision on this PC; the sidebar shows the count on the Chat item.</summary>
+    public int PendingApprovalCount => Requests.Count(item => item.State == "承認待ち");
     public ObservableCollection<InboxConversation> Conversations { get; } = [];
     public event Action<InboxItem>? RequestReceived;
     public event Action? ConnectionEnded;
@@ -187,6 +189,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public string SelectedRequestCountLabel => DesktopText.Get(SelectedConversation?.Requests.Count == 1 ? "InboxOneRequest" : "InboxRequestCount", SelectedConversation?.Requests.Count ?? 0);
     public bool HasSelectedConversation => SelectedConversation is not null;
     public bool IsSelectedPending => Selected?.State == "承認待ち";
+    public bool HasSelectedResult => Selected is { ResultText.Length: > 0 };
+    public bool ShowPendingApprovalNotice => PendingApprovalCount > 0 && !IsSelectedPending;
+    public string PendingApprovalMessage => DesktopText.Get("InboxPendingApprovalMessage", PendingApprovalCount);
     public bool IsSelectedActiveExecution => IsExecuting && Selected is not null && ReferenceEquals(Selected, _activeItem);
     public string SelectedApprovalPolicyHelp => GetSelectedPolicyHelp("InboxApprovalPolicyHelp", "ChatApprovalMode");
     public string SelectedResultPolicyHelp => GetSelectedPolicyHelp("InboxResultPolicyHelp", "ChatResultMode");
@@ -232,6 +237,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public string EmptyListMessage => DesktopText.Get(Requests.Count == 0 ? "InboxWaitingForRequests" : "InboxNoMatches");
     partial void OnSelectedChanged(InboxItem? value)
     {
+        OnPropertyChanged(nameof(HasSelectedResult));
+        OnPropertyChanged(nameof(ShowPendingApprovalNotice));
         OnPropertyChanged(nameof(IsSelectedPending));
         OnPropertyChanged(nameof(IsSelectedActiveExecution));
         OnPropertyChanged(nameof(SelectedApprovalPolicyHelp));
@@ -292,6 +299,21 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         ApplySearchTextImmediately(string.Empty);
         StateFilter = "all";
+    }
+
+    // Opening a pending request only reveals it; approval always remains explicit.
+    [RelayCommand]
+    private void OpenPendingApproval()
+    {
+        var item = Requests.FirstOrDefault(request => request.State == "承認待ち");
+        if (item is not null) RevealRequest(item);
+    }
+
+    private void NotifyPendingApprovalPresentation()
+    {
+        OnPropertyChanged(nameof(PendingApprovalCount));
+        OnPropertyChanged(nameof(ShowPendingApprovalNotice));
+        OnPropertyChanged(nameof(PendingApprovalMessage));
     }
 
     public void OpenConversation(InboxConversation? conversation)
@@ -597,9 +619,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 {
                     if (args.PropertyName == nameof(InboxItem.State) && item.State != "承認待ち")
                         _ = CompleteRequestActionsAsync(item);
+                    if (args.PropertyName == nameof(InboxItem.State)) NotifyPendingApprovalPresentation();
                     if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.Workspace)) QueueConversationRefresh(item);
                     if (ReferenceEquals(item, Selected))
                     {
+                        if (args.PropertyName == nameof(InboxItem.ResultText)) OnPropertyChanged(nameof(HasSelectedResult));
                         if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.SessionLabel))
                         {
                             OnPropertyChanged(nameof(IsSelectedPending));
@@ -620,6 +644,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 _requestHandlers[item] = handler;
             }
         }
+        NotifyPendingApprovalPresentation();
         QueueConversationRefresh();
     }
 
@@ -709,6 +734,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             Selected = null;
             _transport = transport;
             _connectionSettings = settings;
+            NotifyConnectionPresentation();
             var connection = new CancellationTokenSource();
             _connection = connection;
             SubscribeConnectionEvents(transport, settings, connection);
@@ -865,28 +891,28 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             CancelCommand.NotifyCanExecuteChanged();
             var token = _execution.Token;
             if (!await CheckAccessAsync(item, token)) return;
+            // Automatic approval reaches switch commands only when the user opted in; it skips the dialog like a notification approval.
             if (WorkspaceChatCommand.TryParse(item.Prompt, out var requestedWorkspace))
             {
-                await ChangeWorkspaceAsync(item, requestedWorkspace, approvedByNotification, token);
+                await ChangeWorkspaceAsync(item, requestedWorkspace, approvedByNotification, approvedAutomatically, token);
                 return;
             }
             if (AgentChatCommand.TryParse(item.Prompt, out var switchCommand))
             {
-                await ChangeAgentAsync(item, switchCommand, approvedByNotification, token);
+                await ChangeAgentAsync(item, switchCommand, approvedByNotification, approvedAutomatically, token);
                 return;
             }
             var key = CreateSessionKey(item);
             using var conversationOperation = _sessions.TryBeginConversationOperation(key)
                 ?? throw new InvalidOperationException(DesktopText.Get("AgentSwitchBusy"));
             var binding = await _sessions.FindExecutionBindingAsync(key, token);
-            var workspaceSettings = await _sessions.ApplyWorkspaceAsync(key, item.Settings, token);
+            var workspaceSettings = await _sessions.ApplyWorkspaceAsync(key, await _store.LoadAsync(token), token);
             var effectiveSettings = ConversationExecutionPolicy.GetEffectiveSettings(workspaceSettings, binding);
             item.EffectiveSettings = effectiveSettings;
             item.Workspace = effectiveSettings.WorkspaceRoot;
             if (!ExecutionPolicy.IsWorkspaceTrusted(effectiveSettings, effectiveSettings.WorkspaceRoot))
                 throw new InvalidOperationException(DesktopText.Get("WorkspaceOutsideTrustedRootsShort"));
-            if (approvedAutomatically && (ConversationExecutionPolicy.RequiresApproval(key, effectiveSettings, binding) ||
-                (await _sessions.FindAgentSelectionAsync(key, token))?.RequiresApproval == true))
+            if (approvedAutomatically && await _sessions.RequiresApprovalAsync(key, effectiveSettings, binding, token: token))
             {
                 NotifyPendingRequest(item);
                 Status = DesktopText.Get("InboxApprovalRequiredAgain");
@@ -1277,6 +1303,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var binding = await _sessions.FindExecutionBindingAsync(key, token);
             var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, settings, token), binding);
             allowed = fingerprint == ConversationExecutionPolicy.GetFingerprint(key, effective);
+            if (allowed && ReferenceEquals(_automaticallyApprovedItem, item))
+                allowed = !await _sessions.RequiresApprovalAsync(key, effective, binding,
+                    switchCommand: WorkspaceChatCommand.TryParse(item.Prompt, out _) || AgentChatCommand.TryParse(item.Prompt, out _), token: token);
         }
         if (allowed) return true;
         App.DispatcherQueue.TryEnqueue(() =>
@@ -1347,17 +1376,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (_closing || !IsConnectionConfirmed || IsExecuting) break;
                 if (item.State != "承認待ち" || _automaticallyAttempted.Contains(item)) continue;
                 if (!await CheckAccessAsync(item, _connection?.Token ?? CancellationToken.None)) continue;
-                if (WorkspaceChatCommand.TryParse(item.Prompt, out _) || AgentChatCommand.TryParse(item.Prompt, out _))
-                {
-                    NotifyPendingRequest(item);
-                    continue;
-                }
+                var switchesConversation = WorkspaceChatCommand.TryParse(item.Prompt, out _) || AgentChatCommand.TryParse(item.Prompt, out _);
                 var key = CreateSessionKey(item);
                 var binding = await _sessions.FindExecutionBindingAsync(key);
-                var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, item.Settings), binding);
+                var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, await _store.LoadAsync()), binding);
                 item.Workspace = effective.WorkspaceRoot;
-                if (ConversationExecutionPolicy.RequiresApproval(key, effective, binding) ||
-                    (await _sessions.FindAgentSelectionAsync(key))?.RequiresApproval == true)
+                if (await _sessions.RequiresApprovalAsync(key, effective, binding, switchCommand: switchesConversation))
                 {
                     NotifyPendingRequest(item);
                     continue;
@@ -1451,6 +1475,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         _searchDebounce = null;
         FlushConversationRefresh();
         _closing = true;
+        _nameLookupCancellation.Cancel();
         CloseAvatars();
         IsConnectionConfirmed = false;
         RequestExecutionCancellation();
@@ -1464,5 +1489,6 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (_receiveTask is { } receive) await receive;
         if (_conversationRestoreTask is { } restore) await restore;
         await _conversationSaveTask;
+        await _nameLookupTask;
     }
 }

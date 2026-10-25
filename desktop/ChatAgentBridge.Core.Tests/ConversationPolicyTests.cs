@@ -59,6 +59,32 @@ public sealed class ConversationPolicyTests
     }
 
     [Fact]
+    public void SwitchCommandsAreEligibleForFirstOrAutomaticApprovalOnlyWhenOptedIn()
+    {
+        Assert.False(ConversationExecutionPolicy.AutoApprovesSwitchCommands(Settings with { ChatApprovalMode = "auto" }));
+        Assert.True(ConversationExecutionPolicy.AutoApprovesSwitchCommands(Settings with { ChatApprovalMode = "auto", AutoApproveSwitchCommands = true }));
+        Assert.True(ConversationExecutionPolicy.AutoApprovesSwitchCommands(Settings with { ChatApprovalMode = "first", AutoApproveSwitchCommands = true }));
+        Assert.False(ConversationExecutionPolicy.AutoApprovesSwitchCommands(Settings with { ChatApprovalMode = "always", AutoApproveSwitchCommands = true }));
+    }
+
+    [Fact]
+    public void SwitchCommandAutoApprovalDoesNotChangeTheFirstApprovalFingerprint()
+    {
+        // Existing first-approval consents must survive the new setting's default.
+        Assert.Equal(ConversationExecutionPolicy.GetFingerprint(Owner, Settings),
+            ConversationExecutionPolicy.GetFingerprint(Owner, Settings with { AutoApproveSwitchCommands = true }));
+    }
+
+    [Fact]
+    public void SwitchCommandAutoApprovalIsASensitiveChatAccessChange()
+    {
+        var changes = SettingsSensitiveChanges.Compare(Settings with { ChatApprovalMode = "auto" },
+            Settings with { ChatApprovalMode = "auto", AutoApproveSwitchCommands = true });
+        Assert.True(changes.ChatAccess);
+        Assert.True(SettingsDraftChanges.Compare(Settings, Settings with { AutoApproveSwitchCommands = true }).Chat);
+    }
+
+    [Fact]
     public void AgentQuestionSharingPreservesLegacyFingerprintWhenOffAndUsesNewScopeWhenOn()
     {
         var settings = Settings with

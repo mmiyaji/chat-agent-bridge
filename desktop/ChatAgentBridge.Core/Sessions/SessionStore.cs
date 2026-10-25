@@ -65,7 +65,7 @@ public sealed partial class SessionStore
     }
 
     public Task ChangeWorkspaceAsync(SessionKey key, string workspace, BridgeSettings settings,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool requireSwitchConsent = false)
     {
         ValidateKey(key);
         ArgumentNullException.ThrowIfNull(settings);
@@ -76,10 +76,19 @@ public sealed partial class SessionStore
             throw new ArgumentException("Workspace is outside the trusted workspace roots.", nameof(workspace));
         return WithSessionLockAsync(key, async token =>
         {
+            var sourceSettings = await ApplyWorkspaceAsync(key, settings, token).ConfigureAwait(false);
             await _gate.WaitAsync(token).ConfigureAwait(false);
             try
             {
                 var document = await ReadAsync(token).ConfigureAwait(false);
+                var binding = ExecutionBinding(document, key);
+                var source = ConversationExecutionPolicy.GetEffectiveSettings(sourceSettings, binding);
+                var targetRoots = string.IsNullOrWhiteSpace(settings.TrustedWorkspaceRoots)
+                    ? Path.GetFullPath(settings.WorkspaceRoot) : settings.TrustedWorkspaceRoots;
+                var target = settings with { WorkspaceRoot = fullWorkspace, TrustedWorkspaceRoots = targetRoots };
+                var preserveConsent = HasSwitchConsent(document, key, source, binding);
+                if (requireSwitchConsent && !preserveConsent) throw new UnauthorizedAccessException("Conversation switch consent changed.");
+                SetSwitchConsent(document, key, preserveConsent ? target : null);
                 await ClearConversationNotesAsync(key, token).ConfigureAwait(false);
                 var workspaces = document.Workspaces!;
                 var index = workspaces.FindIndex(item => item.Key == key);
@@ -180,6 +189,7 @@ public sealed partial class SessionStore
                 var removed = bindings.RemoveAll(item => item.Key == key);
                 removed += document.Agents?.RemoveAll(item => item.Key == key) ?? 0;
                 removed += document.ArchivedBindings?.RemoveAll(item => item.Key == key) ?? 0;
+                removed += document.SwitchConsents?.RemoveAll(item => item.Key == key) ?? 0;
                 if (removed > 0)
                     await WriteAsync(document, token).ConfigureAwait(false);
             }
@@ -226,6 +236,8 @@ public sealed partial class SessionStore
                     throw new ArgumentException("Reasoning effort overrides are unavailable for this CLI.", nameof(effort));
                 if (expected is not null && current != expected)
                     throw new InvalidOperationException("The conversation changed while selecting a model. Try again.");
+                if (current.Model != model || (!preserveReasoningEffort && current.ReasoningEffort != effort))
+                    document.SwitchConsents?.RemoveAll(item => item.Key == key);
                 bindings[index] = current with
                 {
                     Model = model,
@@ -258,6 +270,7 @@ public sealed partial class SessionStore
                 var bindings = document.Bindings!;
                 var index = bindings.FindIndex(item => item.Key == key);
                 if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
+                document.SwitchConsents?.RemoveAll(item => item.Key == key);
                 bindings[index] = bindings[index] with
                 {
                     ChatApprovalMode = approval,
@@ -320,7 +333,8 @@ public sealed partial class SessionStore
         Bindings = source.Bindings is null ? null : [.. source.Bindings],
         Workspaces = source.Workspaces is null ? null : [.. source.Workspaces],
         Agents = source.Agents is null ? null : [.. source.Agents],
-        ArchivedBindings = source.ArchivedBindings is null ? null : [.. source.ArchivedBindings]
+        ArchivedBindings = source.ArchivedBindings is null ? null : [.. source.ArchivedBindings],
+        SwitchConsents = source.SwitchConsents is null ? null : [.. source.SwitchConsents]
     };
 
     private async Task<StoredSessions> LoadAsync(CancellationToken cancellationToken)
@@ -344,6 +358,7 @@ public sealed partial class SessionStore
             }
             document.Workspaces ??= [];
             ValidateAgentDocument(document);
+            ValidateSwitchConsents(document);
             var workspaceKeys = new HashSet<SessionKey>();
             foreach (var workspace in document.Workspaces)
             {
@@ -393,6 +408,7 @@ public sealed partial class SessionStore
             .OrderBy(item => item.UpdatedAt).Take(bindings.Count - MaxBindings)
             .Select(item => item.Key).ToHashSet();
         bindings.RemoveAll(item => dropped.Contains(item.Key));
+        document.SwitchConsents?.RemoveAll(item => dropped.Contains(item.Key));
     }
 
     private static void ValidateBinding(SessionBinding? binding)
@@ -475,6 +491,7 @@ public sealed partial class SessionStore
         public List<WorkspaceOverride>? Workspaces { get; set; }
         public List<ConversationAgentSelection>? Agents { get; set; }
         public List<SessionBinding>? ArchivedBindings { get; set; }
+        public List<SwitchConsent>? SwitchConsents { get; set; }
     }
 
     private sealed record WorkspaceOverride(SessionKey Key, string WorkspaceRoot);

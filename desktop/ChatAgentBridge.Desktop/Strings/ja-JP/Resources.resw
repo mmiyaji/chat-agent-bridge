@@ -1,5 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
+  <data name="OpenSettingsSearch.Content" xml:space="preserve"><value>設定を検索</value></data>
+  <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>設定を検索</value></data>
+  <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>設定を検索（Ctrl+F）</value></data>
+  <data name="SettingsSearchBox.PlaceholderText" xml:space="preserve"><value>設定を検索（Ctrl+F）</value></data>
+  <data name="SettingsSearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>設定を検索</value></data>
   <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>チャット設定を開く</value></data>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>プロキシを使わず直接接続</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>社内のMattermostへ直接接続する場合にオンにします。オフはシステムのプロキシ設定を使用します。ユーザー検索・投稿リンクの確認・メッセージ送受信すべてに適用します。変更後は再接続してください。</value></data>
@@ -29,6 +34,12 @@
   </data>
   <data name="NavChat.Content" xml:space="preserve">
     <value>チャット</value>
+  </data>
+  <data name="NavGroupWork.Content" xml:space="preserve">
+    <value>作業</value>
+  </data>
+  <data name="NavGroupSettings.Content" xml:space="preserve">
+    <value>設定</value>
   </data>
   <data name="NavHistory.Content" xml:space="preserve">
     <value>履歴と利用状況</value>
@@ -174,7 +185,7 @@
     <value>1  アカウント・チャンネル・スレッドの許可</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock021.Text" xml:space="preserve">
-    <value>2  会話の承認方法（毎回 / 最初だけ / 自動）</value>
+    <value>2  会話の承認方法（毎回 / 会話ごとに最初の依頼 / 自動）</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock022.Text" xml:space="preserve">
     <value>3  信頼する作業フォルダーとAIの操作許可</value>
@@ -252,14 +263,24 @@
     <value>毎回確認</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageComboBoxItem007.Content" xml:space="preserve">
-    <value>最初だけ確認</value>
+    <value>会話ごとに最初の依頼を確認</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageComboBoxItem008.Content" xml:space="preserve">
     <value>自動承認</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock032.Text" xml:space="preserve">
-    <value>最初だけ確認は、同じ会話の以降の依頼を自動承認します。自動承認では会話から届いた依頼を確認画面なしで実行します。</value>
+    <value>会話の最初の依頼で一度確認します。以降の依頼は自動で実行しますが、権限やエージェント設定の変更により再確認が必要になる場合があります。「自動承認」では最初の確認も省略します。</value>
   </data>
+  <data name="AutoApproveSwitchCommands.Header" xml:space="preserve">
+    <value>フォルダー・エージェントの切り替えも自動承認する</value>
+  </data>
+  <data name="AutoApproveSwitchCommands.OnContent" xml:space="preserve"><value>オン</value></data>
+  <data name="AutoApproveSwitchCommands.OffContent" xml:space="preserve"><value>オフ</value></data>
+  <data name="AutoApproveSwitchCommandsHelp.Text" xml:space="preserve">
+    <value>有効にすると、会話の最初の依頼を承認した後、切り替えと切り替え後の依頼を追加確認なしで実行します。権限や設定の変更時は再確認が必要な場合があります。「毎回確認」では利用できません。</value>
+  </data>
+  <data name="AutoApproveSwitchWarning.Title" xml:space="preserve"><value>切り替え承認の制限</value></data>
+  <data name="AutoApproveSwitchWarning.Message" xml:space="preserve"><value>切り替えを依頼できるのは許可されたチャットユーザーのみです。切り替え先は信頼済みフォルダーと登録済みCLIに限られます。</value></data>
   <data name="ChatResultMode.Header" xml:space="preserve">
     <value>実行結果の共有</value>
   </data>
@@ -273,7 +294,7 @@
     <value>共有しない</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock033.Text" xml:space="preserve">
-    <value>自動共有は成功時の結果本文を元のスレッドへ返信します。スレッドの閲覧者全員に公開されます。「共有しない」では本文の手動送信も無効です。</value>
+    <value>自動共有では成功した結果を元のスレッドに投稿し、閲覧できる全員に公開します。「共有しない」では結果本文の手動共有も無効です。</value>
   </data>
   <data name="ChatFollowUpMode.Header" xml:space="preserve">
     <value>実行中に届いたメッセージ</value>
@@ -285,7 +306,7 @@
     <value>実行中の依頼へ追加</value>
   </data>
   <data name="ChatFollowUpModeHelp.Text" xml:space="preserve">
-    <value>Codex App ServerとClaude Codeで利用できます。同じユーザー・スレッドの追加指示を、AIが受け取れるタイミングで反映します。未対応の接続方式や毎回承認では順番に実行します。</value>
+    <value>Codex App ServerとClaude Codeでは、同じユーザー・スレッドからの追加指示を実行中の依頼に反映できます。それ以外の接続方式や「毎回確認」では、メッセージを順番に実行します。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock034.Text" xml:space="preserve">
     <value>チャットのアカウント・会話範囲</value>
@@ -484,7 +505,7 @@
     <value>機密ではないAIの質問をチャットに共有</value>
   </data>
   <data name="ShareAgentQuestionsInChatHelp.Text" xml:space="preserve">
-    <value>有効にすると、Codex App Serverからの機密ではない質問と回答の選択肢をこのスレッドに投稿します。スレッドの参加者全員が見られます。App Serverが秘密として指定した質問はこのPCで回答し、投稿しません。この設定はCodex App Serverでのみ有効です。初期状態はオフです。変更内容を確認した後、再接続してください。</value>
+    <value>有効にすると、Codex App Serverからの機密ではない質問と選択肢をスレッドに投稿し、参加者全員が見られるようにします。秘密の質問はこのPC内にとどまります。Codex App Serverのみで有効です。初期状態はオフです。保存後に再接続してください。</value>
   </data>
   <data name="PostConnectionNotice.Header" xml:space="preserve">
     <value>接続・切断時に案内を投稿する</value>
@@ -775,13 +796,13 @@
     <value>毎回確認（おすすめ）</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem002.Content" xml:space="preserve">
-    <value>最初だけ確認</value>
+    <value>会話ごとに最初の依頼を確認</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem003.Content" xml:space="preserve">
     <value>自動承認</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock022.Text" xml:space="preserve">
-    <value>最初だけ確認では、同じ会話の2回目以降の依頼を自動承認します。自動承認では、会話から届いた依頼を確認画面なしで実行します。</value>
+    <value>会話の最初の依頼で一度確認します。以降の依頼は自動で実行しますが、権限やエージェント設定の変更により再確認が必要になる場合があります。「自動承認」では最初の確認も省略します。</value>
   </data>
   <data name="WizardChatResultMode.Header" xml:space="preserve">
     <value>実行結果の共有</value>
@@ -922,7 +943,7 @@
     <value>接続状態</value>
   </data>
   <data name="OverviewCliLabel.Text" xml:space="preserve">
-    <value>CLI の確認</value>
+    <value>使用するエージェント</value>
   </data>
   <data name="OverviewDetailsHeader.Text" xml:space="preserve">
     <value>セットアップの詳細と構成</value>
@@ -1043,7 +1064,7 @@
   <data name="FileAttachmentMaxCount.Header" xml:space="preserve"><value>最大ファイル数</value></data>
   <data name="FileAttachmentMaxTotalSizeMb.Header" xml:space="preserve"><value>1回の送信の最大合計サイズ（MiB）</value></data>
   <data name="InboxSendAttachments.Content" xml:space="preserve"><value>ファイルを確認して送信</value></data>
-  <data name="LiveOutputTitle.Text" xml:space="preserve"><value>実行中の出力</value></data>
+  <data name="LiveOutputTitle.Text" xml:space="preserve"><value>実行ログ</value></data>
   <data name="LiveOutputPrivacyHelp.Text" xml:space="preserve"><value>このPCだけに表示されます。実行中の出力は会話に保存されず、自動共有もされません。</value></data>
   <data name="LiveOutputPausedHelp.Text" xml:space="preserve"><value>追従を一時停止しています。実行は続き、追従を再開すると新しい出力が表示されます。</value></data>
   <data name="LiveOutputWaitingHelp.Text" xml:space="preserve"><value>出力を待っています…</value></data>
@@ -1243,6 +1264,7 @@
   <data name="AgentEditorChecking" xml:space="preserve"><value>CLIを確認中…</value></data>
   <data name="AgentEditorChecked" xml:space="preserve"><value>CLI確認済み</value></data>
   <data name="AgentEditorCheckFailed" xml:space="preserve"><value>CLIの確認に失敗</value></data>
+  <data name="AgentEditorModelChoicesBox.PlaceholderText" xml:space="preserve"><value>CLIを確認するとモデルを選べます</value></data>
   <data name="AgentEditorNotChecked" xml:space="preserve"><value>CLI未確認</value></data>
   <data name="AgentEditorModelChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>CLIから取得したモデル候補</value></data>
   <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>推論の強さ</value></data>
@@ -1305,4 +1327,10 @@
   <data name="GeneralNotificationDiagnostics.Header" xml:space="preserve"><value>診断情報</value></data>
   <data name="GeneralSavedAgentEdit.Content" xml:space="preserve"><value>エージェント設定</value></data>
   <data name="GeneralSavedWorkspaceEdit.Content" xml:space="preserve"><value>作業先を変更</value></data>
+  <data name="InboxApproveAction.Content" xml:space="preserve"><value>承認して実行</value></data>
+  <data name="InboxRejectAction.Content" xml:space="preserve"><value>拒否</value></data>
+  <data name="InboxApprovalNotice.Title" xml:space="preserve"><value>承認を待っています</value></data>
+  <data name="InboxApprovalNotice.Message" xml:space="preserve"><value>依頼内容を確認し、承認または拒否を選んでください。</value></data>
+  <data name="InboxOpenPendingApproval.Content" xml:space="preserve"><value>承認待ちを確認</value></data>
+  <data name="OverviewCliTile.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>既定エージェントのCLI確認結果です。成功した結果を引き継ぎますが、実行ファイルの更新、起動引数・実行方式・作業フォルダー・信頼フォルダーの変更後は再確認が必要です。ログイン状態やモデルの利用可否は実行時に確認します。</value></data>
 </root>

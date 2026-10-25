@@ -226,6 +226,7 @@ PCでも実行中の出力を確認し、依頼を中断できます。
 
 - [利用規約](docs/terms.ja.md) / [プライバシーポリシー](docs/privacy-policy.ja.md)
 - [Windowsアプリの詳細ガイド・開発手順](desktop/README.ja.md)
+- [ポータブル版のリリース手順](RELEASE.md)
 - [ポータブル版の案内](desktop/distribution/README.portable.ja.txt)
 - [不具合報告・機能の提案](https://github.com/mmiyaji/chat-agent-bridge/issues)
 - [サードパーティーのライセンス](desktop/THIRD-PARTY-NOTICES.txt)（アプリの「情報」からも閲覧可能）

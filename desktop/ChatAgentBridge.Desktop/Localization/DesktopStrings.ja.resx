@@ -5,6 +5,10 @@
   <data name="ShowNamedToken" xml:space="preserve"><value>トークンを表示: {0}</value></data>
   <data name="HideNamedToken" xml:space="preserve"><value>トークンを隠す: {0}</value></data>
   <data name="ModelCatalogRestored" xml:space="preserve"><value>保存済みのモデル候補{0}件を復元しました。一覧を更新するには再取得してください。</value></data>
+  <data name="ModelCatalogFetchedAt" xml:space="preserve"><value>モデル一覧の取得日時: {0}</value></data>
+  <data name="ModelCatalogFetchedAtUnknown" xml:space="preserve"><value>モデル一覧の取得日時は不明です</value></data>
+  <data name="ModelCatalogRefreshRecommended" xml:space="preserve"><value>モデル取得から7日以上経過しているか、取得日時が不明です。再取得をおすすめします。</value></data>
+  <data name="ModelCatalogSaveFailed" xml:space="preserve"><value>モデル一覧は取得できましたが、キャッシュを保存できませんでした。</value></data>
   <data name="HistoryFilters" xml:space="preserve"><value>絞り込み</value></data>
   <data name="ArchitectureOpenHint" xml:space="preserve"><value>クリックして拡大</value></data>
   <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>アーキテクチャ図を開く</value></data>
@@ -81,6 +85,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="ApprovalPending" xml:space="preserve"><value>承認待ち</value></data>
+  <data name="NavChatPendingBadge" xml:space="preserve"><value>承認待ち {0} 件</value></data>
   <data name="ApprovalRunning" xml:space="preserve"><value>実行中</value></data>
   <data name="ApprovalCompleted" xml:space="preserve"><value>完了</value></data>
   <data name="ApprovalFailed" xml:space="preserve"><value>失敗 ({0})</value></data>
@@ -195,7 +200,7 @@
   <data name="InheritAgentEffort" xml:space="preserve"><value>エージェント設定を継承（モデルが異なる場合はCLIの既定値）</value></data>
   <data name="HistoryExecutionPolicy" xml:space="preserve"><value>会話ポリシー: 承認 {0} / 結果 {1} / AI操作 {2}</value></data>
   <data name="AskEveryTime" xml:space="preserve"><value>毎回確認</value></data>
-  <data name="AskFirstTime" xml:space="preserve"><value>最初だけ確認</value></data>
+  <data name="AskFirstTime" xml:space="preserve"><value>会話ごとに最初の依頼を確認</value></data>
   <data name="AutoApprove" xml:space="preserve"><value>自動承認</value></data>
   <data name="ManualShare" xml:space="preserve"><value>手動で確認して共有</value></data>
   <data name="AutoShare" xml:space="preserve"><value>自動共有</value></data>
@@ -419,6 +424,7 @@
   <data name="InboxEmptyFilteredHeading" xml:space="preserve"><value>条件に一致する会話はありません</value></data>
   <data name="InboxEmptyFilteredDescription" xml:space="preserve"><value>検索または状態の絞り込みを変更・解除してください。</value></data>
   <data name="InboxEmptyDetailHeading" xml:space="preserve"><value>会話を選択</value></data>
+  <data name="NavShortcutTooltip" xml:space="preserve"><value>{0}（Ctrl+{1}）</value></data>
   <data name="InboxEmptyDetailDescription" xml:space="preserve"><value>一覧から会話を選ぶと、依頼や応答を確認できます。</value></data>
   <data name="InboxRestoredDescription" xml:space="preserve"><value>以前の依頼は再開されません。続けるには、同じチャットスレッドへ「!cab 依頼内容」を新しく投稿してください。この一覧には依頼本文や結果本文は保存されません。</value></data>
   <data name="InboxPersistenceLoadFailed" xml:space="preserve"><value>会話一覧を復元できませんでした。元のファイルは保持されており、依頼は自動的に再開されませんでした。</value></data>
@@ -737,6 +743,13 @@
   <data name="SettingsReviewNetwork" xml:space="preserve"><value>ネットワークアクセス</value></data>
   <data name="SettingsReviewFolders" xml:space="preserve"><value>信頼する作業フォルダー</value></data>
   <data name="SettingsReviewRequestApproval" xml:space="preserve"><value>チャット依頼の承認</value></data>
+  <data name="SettingsReviewSwitchApproval" xml:space="preserve"><value>フォルダー・エージェント切り替えの自動承認</value></data>
+  <data name="SettingsReviewSwitchApprovalWarning" xml:space="preserve"><value>⚠ 許可されたチャットユーザーは、切り替え自体の承認なしで作業フォルダーやAIエージェントを切り替えられます。「会話ごとに最初の依頼を確認」では、権限や設定の再確認が必要な場合を除き、切り替え後のエージェントの最初の依頼も追加確認なしで実行します。信頼済みフォルダーと登録済みCLIの制限は引き続き適用されます。</value></data>
+  <data name="SwitchApprovalWarningTitle" xml:space="preserve"><value>フォルダー・エージェントの切り替えを自動承認しますか？</value></data>
+  <data name="SwitchApprovalWarningBody" xml:space="preserve"><value>有効にすると、folder や !cab agent の切り替え自体をこのPCで承認せずに実行します。「会話ごとに最初の依頼を確認」では、権限や設定の再確認が必要な場合を除き、切り替え後のエージェントの最初の依頼も追加承認なしで実行します。</value></data>
+  <data name="SwitchApprovalWarningRisk" xml:space="preserve"><value>許可されたチャットユーザーや、そのアカウントを使える人は、別の信頼済みフォルダーや登録済みの別のAIエージェントで追加承認なしに作業を開始できます。</value></data>
+  <data name="SwitchApprovalWarningLimits" xml:space="preserve"><value>切り替えを依頼できるのは設定済みの許可ユーザーのみです。信頼済みフォルダー以外や未登録CLIへの切り替えは引き続き拒否されます。「毎回確認」を選ぶとこの設定はオフになります。</value></data>
+  <data name="SwitchApprovalWarningEnable" xml:space="preserve"><value>理解して有効にする</value></data>
   <data name="SettingsReviewMattermostUsers" xml:space="preserve"><value>Mattermostの許可ユーザー</value></data>
   <data name="SettingsReviewSlackUsers" xml:space="preserve"><value>Slackの許可ユーザー</value></data>
   <data name="SettingsReviewSlackChannels" xml:space="preserve"><value>Slackの許可チャンネル</value></data>
@@ -847,4 +860,11 @@
   <data name="PaneSizerSidebar" xml:space="preserve"><value>サイドバーの幅を変更</value></data>
   <data name="PaneSizerSettings" xml:space="preserve"><value>設定メニューの幅を変更</value></data>
   <data name="PaneSizerHelp" xml:space="preserve"><value>ドラッグするか、矢印キーを使って幅を変更します。</value></data>
+  <data name="TipChatConnectTitle" xml:space="preserve"><value>チャットから依頼を受け付ける</value></data>
+  <data name="TipChatConnectBody" xml:space="preserve"><value>「チャット」を開いて Mattermost・Slack・Discord に接続すると、チャットで送られた依頼をこの PC で実行できます。</value></data>
+  <data name="TipOpenChat" xml:space="preserve"><value>チャットを開く</value></data>
+  <data name="TipGotIt" xml:space="preserve"><value>OK</value></data>
+  <data name="SearchScopeSettings" xml:space="preserve"><value>{0} の設定</value></data>
+  <data name="SearchNoResults" xml:space="preserve"><value>一致する設定がありません</value></data>
+  <data name="InboxPendingApprovalMessage" xml:space="preserve"><value>承認待ちの依頼が {0} 件あります。依頼を開いて内容を確認してください。</value></data>
 </root>

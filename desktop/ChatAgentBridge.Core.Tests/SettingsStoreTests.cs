@@ -28,6 +28,25 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Theory]
+    [InlineData("auto", true)]
+    [InlineData("first", true)]
+    [InlineData("always", false)]
+    public async Task SwitchCommandAutoApprovalPersistsWithFirstOrAutomaticApproval(string approvalMode, bool expected)
+    {
+        var store = new SettingsStore(_directory);
+
+        await store.SaveAsync(new BridgeSettings { ChatApprovalMode = approvalMode, AutoApproveSwitchCommands = true });
+
+        Assert.Equal(expected, (await store.LoadAsync()).AutoApproveSwitchCommands);
+        // Loading a hand-edited file applies the same supported approval modes.
+        var path = Path.Combine(_directory, "settings.json");
+        var stored = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
+        stored["AutoApproveSwitchCommands"] = true;
+        await File.WriteAllTextAsync(path, stored.ToJsonString());
+        Assert.Equal(expected, (await store.LoadAsync()).AutoApproveSwitchCommands);
+    }
+
+    [Theory]
     [InlineData(AgentProfile.Gemini, "AgentReasoningEffort", "high")]
     [InlineData(AgentProfile.GitHubCopilot, "AgentReasoningEffort", "high")]
     [InlineData(AgentProfile.Gemini, "AgentPermissionMode", "workspace-write")]

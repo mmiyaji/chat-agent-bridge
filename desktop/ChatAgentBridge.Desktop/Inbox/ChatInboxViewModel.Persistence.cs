@@ -240,6 +240,7 @@ public sealed partial class ChatInboxViewModel
                     conversation.RefreshPresentation();
                 }
                 snapshots = snapshots.Select(item => WithCachedNames(item, names.GetValueOrDefault(item.Key))).ToArray();
+                StartConversationNameLookup();
                 if (_lastSavedConversationSnapshots is null || !snapshots.SequenceEqual(_lastSavedConversationSnapshots))
                 {
                     await Task.Run(() => new InboxConversationStore(_store.DirectoryPath).SaveAsync(snapshots));
@@ -268,6 +269,7 @@ public sealed partial class ChatInboxViewModel
         _conversationPersistencePaused = true;
         _conversationSaveCooldown?.Cancel();
         await _conversationSaveTask;
+        await StopConversationNameLookupAsync();
     }
 
     internal async Task ReloadConversationsAsync()
@@ -288,7 +290,11 @@ public sealed partial class ChatInboxViewModel
         await EnsureConversationsRestoredAsync();
     }
 
-    internal void ResumeConversationPersistence() => _conversationPersistencePaused = false;
+    internal void ResumeConversationPersistence()
+    {
+        ResetConversationNameLookup();
+        _conversationPersistencePaused = false;
+    }
 
     // Call after execution and connection tasks have settled so their terminal-state writes are included.
     internal Task FlushConversationPersistenceAsync()

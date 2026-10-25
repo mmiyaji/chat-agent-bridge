@@ -20,6 +20,8 @@ public sealed partial class ChatInboxPage : Page
     private const double MinimumConversationListWidth = ChatAgentBridge.Core.Appearance.LayoutPreferences.MinInboxListWidth;
     private const double MinimumConversationDetailWidth = 360;
     private const double ConversationSplitterWidth = 12;
+    // Keep the list and detail together while both minimum pane widths still fit.
+    private const double SideBySideMinimumWidth = 700;
     private bool _isResizingConversationList;
 
     public ChatInboxPage()
@@ -142,7 +144,7 @@ public sealed partial class ChatInboxPage : Page
     {
         ConnectionActions.Orientation = e.NewSize.Width >= 680
             ? Orientation.Horizontal : Orientation.Vertical;
-        ViewModel.IsWideLayout = e.NewSize.Width >= 840;
+        ViewModel.IsWideLayout = e.NewSize.Width >= SideBySideMinimumWidth;
         if (ViewModel.IsWideLayout)
         {
             Microsoft.UI.Xaml.Controls.Grid.SetColumn(DetailPane, 2);

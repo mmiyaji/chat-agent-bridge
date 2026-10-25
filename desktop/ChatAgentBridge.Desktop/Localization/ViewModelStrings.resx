@@ -37,7 +37,7 @@
     <value>Confirm every time</value>
   </data>
   <data name="ApprovalFirstOnly" xml:space="preserve">
-    <value>Confirm the first request only</value>
+    <value>Confirm the first request in each conversation</value>
   </data>
   <data name="AuditRecordSaveFailed" xml:space="preserve">
     <value>The audit record could not be saved.</value>
@@ -604,7 +604,7 @@ Internal user ID: {2}</value></data>
     <value>Connection: {0}. Open chat.</value>
   </data>
   <data name="OverviewCliAccessibleName" xml:space="preserve">
-    <value>CLI verification: {0}. Open agent settings to check.</value>
+    <value>Default agent: {0}. Open agent settings.</value>
   </data>
   <data name="OverviewStartupEnabled" xml:space="preserve"><value>Ready</value></data>
   <data name="OverviewStartupOff" xml:space="preserve"><value>Off</value></data>

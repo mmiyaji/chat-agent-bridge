@@ -42,6 +42,9 @@ public sealed partial class MainPage
         Add("Network", saved.AllowAgentNetwork, draft.AllowAgentNetwork);
         Add("Folders", saved.TrustedWorkspaceRoots, draft.TrustedWorkspaceRoots);
         Add("RequestApproval", Approval(saved.ChatApprovalMode), Approval(draft.ChatApprovalMode));
+        Add("SwitchApproval", saved.AutoApproveSwitchCommands, draft.AutoApproveSwitchCommands);
+        if (draft.AutoApproveSwitchCommands && !saved.AutoApproveSwitchCommands)
+            details.Add(DesktopText.Get("SettingsReviewSwitchApprovalWarning"));
         Add("MattermostUsers", saved.MattermostAllowedUserIds, draft.MattermostAllowedUserIds);
         Add("SlackUsers", saved.SlackAllowedUserIds, draft.SlackAllowedUserIds);
         Add("SlackChannels", saved.SlackAllowedChannelIds, draft.SlackAllowedChannelIds);

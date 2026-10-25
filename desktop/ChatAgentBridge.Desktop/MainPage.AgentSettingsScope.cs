@@ -8,9 +8,12 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
+    // The same available-width threshold as the chat and history split panes.
+    private const double SettingsScopeNavigationBreakpoint = 700;
     private readonly string[] _agentScopeKeys = ["common", "codex", "claude", "gemini", "github-copilot", "antigravity", "custom"];
     private AgentProfileEditorControl? _agentProfileDetails;
     private NavigationView? _agentScopeNavigation;
+    private ScrollViewer? _agentSettingsScroll;
     private StackPanel? _agentScopeCommonGroup;
     private TextBlock? _agentScopeCommonHeading;
     private TextBlock? _agentScopeCommonHelp;
@@ -23,7 +26,7 @@ public sealed partial class MainPage
 
     private void InitializeAgentSettingsScope()
     {
-        if (AgentBasicSettings.Parent is not StackPanel original ||
+        if (AgentBasicSettings.Parent is not Panel original ||
             AgentBasicSettings.Content is not StackPanel basic || basic.Children.FirstOrDefault() is not StackPanel workspace) return;
         original.Children.Clear();
         basic.Children.Remove(workspace);
@@ -44,6 +47,8 @@ public sealed partial class MainPage
 
         _agentScopeNavigation = new NavigationView
         {
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            VerticalContentAlignment = VerticalAlignment.Stretch,
             PaneDisplayMode = NavigationViewPaneDisplayMode.Left,
             IsPaneOpen = true,
             OpenPaneLength = 200,
@@ -66,30 +71,33 @@ public sealed partial class MainPage
                 QueueAgentScopeSelection(scope);
         };
         var page = new StackPanel { Spacing = 16, Margin = new Thickness(16) };
+        _agentScopeBreadcrumb = CreateScopeBreadcrumb("AgentScopeBreadcrumb", () => QueueAgentScopeSelection("common"));
+        page.Children.Add(_agentScopeBreadcrumb);
         page.Children.Add(_agentScopeCommonGroup);
         page.Children.Add(_agentProfileDetails);
-        _agentScopeNavigation.Content = page;
+        _agentSettingsScroll = CreateSettingsDetailScroll(page, "AgentSettingsScroll");
+        _agentScopeNavigation.Content = _agentSettingsScroll;
         var shell = new Grid();
         shell.Children.Add(_agentScopeNavigation);
         AttachSettingsNavigationResizer(_agentScopeNavigation, shell, "AgentScopeSizer");
         original.Children.Add(shell);
-        original.Spacing = 0;
         _agentScopeNavigation.SizeChanged += (_, args) => UpdateAgentScopeLayout(args.NewSize.Width);
         Loaded += (_, _) => RefreshAgentScopeLabels();
         ApplyAgentScopeSelection();
         RefreshAgentScopeLabels();
         UpdateAgentScopeLayout(_agentScopeNavigation.ActualWidth);
+        UpdateSettingsNavigationEnabledState();
     }
 
     private void UpdateAgentScopeLayout(double width)
     {
         if (_agentScopeNavigation is null || width <= 0) return;
-        var mode = width >= 850
+        var mode = width >= SettingsScopeNavigationBreakpoint
             ? NavigationViewPaneDisplayMode.Left
             : NavigationViewPaneDisplayMode.Top;
         if (_agentScopeNavigation.PaneDisplayMode == mode) return;
         _agentScopeNavigation.PaneDisplayMode = mode;
-        _agentScopeNavigation.IsPaneOpen = width >= 850;
+        _agentScopeNavigation.IsPaneOpen = width >= SettingsScopeNavigationBreakpoint;
     }
 
     private void QueueAgentScopeSelection(string scope)
@@ -129,6 +137,7 @@ public sealed partial class MainPage
         _agentScopeCommonHeading!.Text = DesktopText.Get("AgentScopeCommon");
         _agentScopeCommonHelp!.Text = DesktopText.Get("AgentScopeCommonHelp");
         _agentProfileDetails?.RefreshLocalizedText();
+        UpdateScopeBreadcrumb(_agentScopeBreadcrumb, "agent", _agentScopeNavigation, _agentSettingsScope == "common");
     }
 
     private void ApplyAgentScopeSelection()
@@ -139,6 +148,7 @@ public sealed partial class MainPage
             _agentScopeNavigation.SelectedItem = _agentScopeNavigation.MenuItems[index];
         if (_agentScopeCommonGroup is not null) _agentScopeCommonGroup.Visibility = ToVisibility(_agentSettingsScope == "common");
         if (_agentProfileDetails is not null) _agentProfileDetails.Visibility = ToHiddenVisibility(_agentSettingsScope == "common");
+        UpdateScopeBreadcrumb(_agentScopeBreadcrumb, "agent", _agentScopeNavigation, _agentSettingsScope == "common");
         _syncingAgentScope = false;
     }
 
@@ -152,7 +162,7 @@ public sealed partial class MainPage
             if (scope != "common" && !await _agentProfileDetails.SelectProviderAsync(scope)) return false;
             _agentSettingsScope = scope;
             _agentScopeInitialized = true;
-            MainContentScroll.ChangeView(null, 0, null, true);
+            _agentSettingsScroll?.ChangeView(null, 0, null, true);
             return true;
         }
         finally

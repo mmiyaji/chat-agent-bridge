@@ -87,7 +87,7 @@ function Open-LatestConversation {
 }
 $previousModelListEnv=$env:CAB_LIVE_STEERING_MODEL_LIST
 $env:CAB_LIVE_STEERING_MODEL_LIST='1'
-function Top { $p=(Wait-Element 'MainContentScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern); if($p.Current.VerticallyScrollable){$p.SetScrollPercent(-1,0)};Start-Sleep -Milliseconds 150 }
+function Top { $pane=@('AgentSettingsScroll','ConnectionSettingsScroll','MainContentScroll') | ForEach-Object { Find-Element $script:window $_ } | Where-Object { $_ -and -not $_.Current.IsOffscreen } | Select-Object -First 1; if(-not $pane){throw 'No active settings scroll pane found'}; $p=$pane.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern); if($p.Current.VerticallyScrollable){$p.SetScrollPercent(-1,0)};Start-Sleep -Milliseconds 150 }
 function Value($id,$value){$e=Wait-Element $id;$pattern=$null;if($e.TryGetCurrentPattern([Windows.Automation.ValuePattern]::Pattern,[ref]$pattern)){([Windows.Automation.ValuePattern]$pattern).SetValue($value)}else{$inner=$e.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Edit));($inner.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).SetValue($value)}}
 function Choose-Scope($id){
  Top

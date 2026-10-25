@@ -99,7 +99,7 @@ function Wait-Element([string]$AutomationId, [int]$Seconds = $TimeoutSeconds) {
 function Reveal-Element([string]$AutomationId) {
     $target = Find-Element $script:activeWindow $AutomationId
     if (-not $target -or -not $target.Current.IsOffscreen) { return }
-    $scroll = Find-Element $script:activeWindow 'MainContentScroll'
+    $scroll = @('AgentSettingsScroll','ConnectionSettingsScroll','MainContentScroll') | ForEach-Object { Find-Element $script:activeWindow $_ } | Where-Object { $_ -and -not $_.Current.IsOffscreen } | Select-Object -First 1
     if (-not $scroll) { $scroll = Find-Element $script:activeWindow 'AboutScroll' }
     if (-not $scroll) { $scroll = Find-Element $script:activeWindow 'WizardScroll' }
     if (-not $scroll) { return }

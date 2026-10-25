@@ -3,7 +3,8 @@
 param(
     [Parameter(Mandatory)][string]$AppDirectory,
     [ValidateSet('both', 'en', 'ja')][string]$Language = 'both',
-    [ValidateSet('both', 'light', 'dark')][string]$Theme = 'both'
+    [ValidateSet('both', 'light', 'dark')][string]$Theme = 'both',
+    [switch]$OverviewOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -170,11 +171,14 @@ function Start-Case([string]$Locale, [string]$ColorTheme) {
         AgentExecutable = 'codex-smoke-placeholder.exe'; AgentArguments = ''; AgentModel = 'gpt-smoke-model'
         AgentReasoningEffort = 'high'; AgentPermissionMode = 'inherit'; TrustedWorkspaceRoots = $workspace
         RequireApproval = $true; AllowAgentNetwork = $false; AutoConnectProvider = 'none'
+        MattermostServerUrl = 'http://127.0.0.1:1'; MattermostChannelId = 'fixture-channel'; MattermostAllowedUserIds = 'fixture-user'
+        MattermostToken = $(if ($OverviewOnly) { ('dpapi:' + [Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes('fixture-not-a-real-token'), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))) } else { '' })
     }
     Save-Json (Join-Path $script:data 'onboarding.json') @{ schemaVersion = 3; step = 4; status = 'completed' }
     $policy = [regex]::Match((Get-Content -LiteralPath (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/OnboardingConsentStore.cs') -Raw), 'CurrentPolicyVersion\s*=\s*"([^"]+)"').Groups[1].Value
     Assert (-not [string]::IsNullOrWhiteSpace($policy)) 'Could not read current onboarding consent policy version.'
     Save-Json (Join-Path $script:data 'consent.json') @{ PolicyVersion = $policy; AcceptedAtUtc = [DateTimeOffset]::UtcNow.ToString('o') }
+    Save-Json (Join-Path $script:data 'tips.json') @{ Seen = @('chat-connect') }
     Save-Json (Join-Path $script:data 'language.json') @{ Language = $Locale }
     Save-Json (Join-Path $script:data 'appearance.json') @{ Theme = $ColorTheme }
     Save-Json (Join-Path $script:data 'portable-update.json') @{ SchemaVersion = 1; AutomaticChecksEnabled = $false; IncludePrereleases = $false; LastAttemptUtc = $null; AvailableRelease = $null }
@@ -253,7 +257,28 @@ try {
                 Assert ((Element 'StartOnboarding') -and (Element 'SetupReloadSettings')) 'Setup reload and onboarding actions are missing.'
                 Assert ((Element 'OverviewTerms') -and (Element 'OverviewPrivacy')) 'Terms and privacy links are missing.'
                 Pass "$locale/$colorTheme General overview, expanded setup details, actions, and legal links"
+                Assert ((Wait-Element 'OverviewCliLabel').Current.Name -eq $(if ($locale -eq 'ja') { '使用するエージェント' } else { 'Default agent' })) 'Default agent heading is incorrect.'
+                Assert ((Wait-Element 'OverviewCliTarget').Current.Name -eq 'Codex · gpt-smoke-model') 'Overview must show the saved default agent and explicit model.'
+                Assert ((Wait-Element 'OverviewCliTile').Current.Name.Contains('Codex · gpt-smoke-model')) 'Accessible tile name must include the target.'
+                Pass "$locale/$colorTheme compact overview agent identity and accessible name"
                 Capture 'general-overview.png'
+                if ($OverviewOnly) {
+                    Assert ((Wait-Element 'OverviewChatTarget').Current.Name -eq 'Mattermost') 'Configured chat service is missing from the overview.'
+                    Assert ((Wait-Element 'OverviewChatTile').Current.Name.Contains('Mattermost')) 'Accessible chat tile name must include its target.'
+                    $hwnd = [IntPtr]$script:window.Current.NativeWindowHandle
+                    $scale = [GeneralSettingsSmokeNative]::GetDpiForWindow($hwnd) / 96.0
+                    [void][GeneralSettingsSmokeNative]::SetWindowPos($hwnd, [IntPtr]::Zero, 30, 30, [int](500 * $scale), [int](700 * $scale), 0x0014)
+                    Start-Sleep -Milliseconds 500
+                    Scroll-To 'OverviewCliTile' | Out-Null
+                    $bounds = $script:window.Current.BoundingRectangle
+                    $target = Wait-Element 'OverviewCliTarget'
+                    $rect = $target.Current.BoundingRectangle
+                    Assert (-not $target.Current.IsOffscreen -and $rect.Left -ge $bounds.Left -and $rect.Right -le $bounds.Right) 'Overview agent target exceeds narrow window.'
+                    Capture 'overview-target-narrow.png'
+                    Pass "$locale/$colorTheme overview target fits 500px window"
+                    continue
+                }
+
                 Scroll-To 'OverviewTerms' | Out-Null
                 Capture 'setup-actions.png'
                 Invoke-Element 'OverviewTerms'
@@ -333,6 +358,12 @@ try {
                 Start-Sleep -Milliseconds 250
                 $windowRect = $script:window.Current.BoundingRectangle
                 Assert ($windowRect.Width -ge (490 * $scale) -and $windowRect.Height -ge (590 * $scale)) 'Window did not retain approximately 500 x 600 DIPs.'
+                Scroll-To 'OverviewCliTile' | Out-Null
+                $target = Wait-Element 'OverviewCliTarget'
+                $targetBounds = $target.Current.BoundingRectangle
+                Assert (-not $target.Current.IsOffscreen -and $targetBounds.Left -ge $windowRect.Left -and $targetBounds.Right -le $windowRect.Right) 'Agent target exceeds the narrow window.'
+                Capture 'overview-target-narrow.png'
+                Pass "$locale/$colorTheme compact overview target fits narrow window"
                 $closeCombo = Scroll-To 'CloseBehaviorComboBox'
                 $comboRect = $closeCombo.Current.BoundingRectangle
                 Assert ($comboRect.Left -ge $windowRect.Left -and $comboRect.Right -le $windowRect.Right) 'Close behavior control bounds exceed the narrow window.'

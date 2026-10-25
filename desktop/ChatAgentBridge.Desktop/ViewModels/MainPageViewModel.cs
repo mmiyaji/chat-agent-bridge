@@ -1,6 +1,7 @@
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.AppServer;
+using ChatAgentBridge_Desktop.AgentSettings;
 using ChatAgentBridge_Desktop.ModelSelection;
 using ChatAgentBridge_Desktop.Localization;
 using System.Collections.ObjectModel;
@@ -44,7 +45,7 @@ public partial class MainPageViewModel : ObservableObject
     {
         _isAgentProfileEditor = isAgentProfileEditor;
         ReasoningEffortCandidates.Add(ReasoningEffortChoice.Default);
-        ModelCatalog = new ModelCatalogViewModel(CreateSettingsSnapshot, ApplyCatalogModelSelection);
+        ModelCatalog = new ModelCatalogViewModel(CreateSettingsSnapshot, ApplyCatalogModelSelection, SaveFetchedModelsAsync);
         SaveSettingsCommand.PropertyChanged += (_, _) =>
         {
             SaveGeneralSettingsCommand.NotifyCanExecuteChanged();
@@ -95,7 +96,7 @@ public partial class MainPageViewModel : ObservableObject
                 nameof(MattermostServerUrl) or nameof(MattermostBypassProxy) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
                 nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(DiscordBotToken) or nameof(DiscordAllowedUserIds) or nameof(DiscordAllowedGuildIds) or nameof(DiscordAllowedChannelIds) or nameof(DiscordAllowedThreadIds) or nameof(DiscordAllowDirectMessages) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(PostConnectionNotice) or
                 nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or nameof(ChatApprovalMode) or
-                nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
+                nameof(AutoApproveSwitchCommands) or nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
                 nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
                 RefreshSetupStepper();
             if (e.PropertyName is nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or
@@ -147,12 +148,11 @@ public partial class MainPageViewModel : ObservableObject
     public bool IsCodexProvider => AgentProvider == "codex";
     public bool IsCustomProvider => AgentProvider == "custom";
     public bool IsAntigravityProvider => AgentProvider == "antigravity";
-    public bool IsBasicProvider => AgentProvider is "gemini" or "github-copilot" or "antigravity" or "custom";
-    public bool IsArgumentsEditable => IsBasicProvider;
-    public bool SupportsModel => AgentProvider is "codex" or "claude" or "gemini" or "github-copilot" or "antigravity";
-    public bool SupportsReasoning => AgentProvider is "codex" or "claude";
-    // Antigravity lists models with `agy models` on request, but has no per-model effort levels.
-    public bool SupportsModelCatalog => SupportsReasoning || IsAntigravityProvider;
+    public bool IsBasicProvider => AgentEditorCapabilities.IsBasic(AgentProvider);
+    public bool IsArgumentsEditable => AgentEditorCapabilities.IsArgumentsEditable(AgentProvider);
+    public bool SupportsModel => AgentEditorCapabilities.SupportsModel(AgentProvider);
+    public bool SupportsReasoning => AgentEditorCapabilities.SupportsReasoning(AgentProvider);
+    public bool SupportsModelCatalog => AgentEditorCapabilities.SupportsModelCatalog(AgentProvider);
     public string AgentProviderDisplayName => AgentProvider switch
     {
         "codex" => "Codex", "claude" => "Claude Code", "gemini" => "Gemini CLI",
@@ -236,7 +236,15 @@ public partial class MainPageViewModel : ObservableObject
     }
     [ObservableProperty] public partial bool AllowAgentNetwork { get; set; }
     [ObservableProperty] public partial string TrustedWorkspaceRoots { get; set; } = string.Empty;
-    [ObservableProperty] public partial string ChatApprovalMode { get; set; } = "first";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanAutoApproveSwitchCommands))]
+    public partial string ChatApprovalMode { get; set; } = "first";
+    [ObservableProperty] public partial bool AutoApproveSwitchCommands { get; set; }
+    // First-only approval also permits switches after this conversation has been approved.
+    public bool CanAutoApproveSwitchCommands => ChatApprovalMode is "auto" or "first";
+    partial void OnChatApprovalModeChanged(string value)
+    {
+        if (value is not ("auto" or "first")) AutoApproveSwitchCommands = false;
+    }
     [ObservableProperty] public partial string ChatResultMode { get; set; } = "manual";
     [ObservableProperty] public partial string ChatFollowUpMode { get; set; } = ChatFollowUpPolicy.Queue;
     [ObservableProperty] public partial string FileAttachmentApprovalMode { get; set; } = "always";
@@ -247,8 +255,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string SlackAllowedThreadIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostAllowedThreadIds { get; set; } = string.Empty;
     public bool CanConfigureAgentNetwork => IsCodexProvider && AgentPermissionMode is "workspace-write" or "ask";
-    // Antigravity maps workspace-write and full-access onto its own flags; the other basic CLIs manage permissions themselves.
-    public bool CanConfigureAgentPermission => !IsBasicProvider || IsAntigravityProvider;
+    public bool CanConfigureAgentPermission => AgentEditorCapabilities.CanConfigurePermission(AgentProvider);
     public bool CanSelectReadOnlyPermission => !IsAntigravityProvider;
     public string AgentPermissionStatus => IsAntigravityProvider ? ViewModelText.Get("AntigravityPermissionHelp")
         : IsBasicProvider ? ViewModelText.Get("BasicPermissionManagedByCli")
@@ -278,8 +285,9 @@ public partial class MainPageViewModel : ObservableObject
     public partial string SetupDraftNotice { get; set; } = "";
     public bool HasSetupDraftNotice => !string.IsNullOrEmpty(SetupDraftNotice);
 
-    public void SetChatConnectionState(bool connected, bool connecting, bool failed = false)
+    public void SetChatConnectionState(bool connected, bool connecting, bool failed = false, string? target = null)
     {
+        _overviewConnectedTarget = target ?? "";
         _chatConnectionConfirmed = connected;
         if (!connected) ClearWizardConnection();
         _chatConnectionPreparing = connecting;
@@ -366,6 +374,7 @@ public partial class MainPageViewModel : ObservableObject
             AllowAgentNetwork = _settings.AllowAgentNetwork;
             TrustedWorkspaceRoots = _settings.TrustedWorkspaceRoots;
             ChatApprovalMode = _settings.ChatApprovalMode;
+            AutoApproveSwitchCommands = _settings.AutoApproveSwitchCommands;
             ChatResultMode = _settings.ChatResultMode;
             ChatFollowUpMode = _settings.ChatFollowUpMode;
             FileAttachmentApprovalMode = _settings.FileAttachmentApprovalMode;
@@ -514,6 +523,8 @@ public partial class MainPageViewModel : ObservableObject
                 TrustedWorkspaceRoots = ExecutionPolicy.NormalizeTrustedRoots(TrustedWorkspaceRoots),
                 AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(AgentPermissionMode),
                 ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode),
+                AutoApproveSwitchCommands = draft.AutoApproveSwitchCommands &&
+                    ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode) is "auto" or "first",
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(ChatResultMode),
                 ChatFollowUpMode = ChatFollowUpPolicy.Normalize(ChatFollowUpMode),
                 FileAttachmentApprovalMode = FileAttachmentPolicy.NormalizeMode(FileAttachmentApprovalMode),
@@ -571,6 +582,7 @@ public partial class MainPageViewModel : ObservableObject
             if (TrustedWorkspaceRoots == draft.TrustedWorkspaceRoots) TrustedWorkspaceRoots = snapshot.TrustedWorkspaceRoots;
             if (AgentPermissionMode == draft.AgentPermissionMode) AgentPermissionMode = snapshot.AgentPermissionMode;
             if (ChatApprovalMode == draft.ChatApprovalMode) ChatApprovalMode = snapshot.ChatApprovalMode;
+            if (AutoApproveSwitchCommands == draft.AutoApproveSwitchCommands) AutoApproveSwitchCommands = snapshot.AutoApproveSwitchCommands;
             if (ChatResultMode == draft.ChatResultMode) ChatResultMode = snapshot.ChatResultMode;
             if (ChatFollowUpMode == draft.ChatFollowUpMode) ChatFollowUpMode = snapshot.ChatFollowUpMode;
             if (FileAttachmentApprovalMode == draft.FileAttachmentApprovalMode) FileAttachmentApprovalMode = snapshot.FileAttachmentApprovalMode;
@@ -935,6 +947,7 @@ public partial class MainPageViewModel : ObservableObject
         AllowAgentNetwork = AllowAgentNetwork,
         TrustedWorkspaceRoots = TrustedWorkspaceRoots,
         ChatApprovalMode = ChatApprovalMode,
+        AutoApproveSwitchCommands = AutoApproveSwitchCommands,
         ChatResultMode = ChatResultMode,
         ChatFollowUpMode = ChatFollowUpMode,
         FileAttachmentApprovalMode = FileAttachmentApprovalMode,
@@ -973,6 +986,7 @@ public partial class MainPageViewModel : ObservableObject
     }
     public bool IsApplyingSettings => _initializingSettings || _restoringSettingsDraft || IsLoading || !IsSettingsLoaded;
     public void RevertFollowUpToQueue() => ChatFollowUpMode = ChatFollowUpPolicy.Queue;
+    public void RevertAutoApproveSwitchCommands() => AutoApproveSwitchCommands = false;
     private static string ChatApprovalLabel(string value) => value switch
     { "first" => ViewModelText.Get("ApprovalFirstOnly"), "auto" => ViewModelText.Get("ApprovalAutomatic"), _ => ViewModelText.Get("ApprovalEveryTime") };
     private static string ResultLabel(string value) => value switch
