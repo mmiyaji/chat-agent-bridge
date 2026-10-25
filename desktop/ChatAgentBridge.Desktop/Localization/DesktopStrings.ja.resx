@@ -81,6 +81,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="ApprovalPending" xml:space="preserve"><value>承認待ち</value></data>
+  <data name="NavChatPendingBadge" xml:space="preserve"><value>承認待ち {0} 件</value></data>
   <data name="ApprovalRunning" xml:space="preserve"><value>実行中</value></data>
   <data name="ApprovalCompleted" xml:space="preserve"><value>完了</value></data>
   <data name="ApprovalFailed" xml:space="preserve"><value>失敗 ({0})</value></data>

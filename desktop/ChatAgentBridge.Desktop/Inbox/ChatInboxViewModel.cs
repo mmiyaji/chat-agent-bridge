@@ -146,6 +146,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public ExecutionUi.LiveOutputViewModel SelectedLiveOutput => Selected?.LiveOutput ?? _emptyLiveOutput;
 
     public ObservableCollection<InboxItem> Requests { get; } = [];
+    /// <summary>Requests waiting for a decision on this PC; the sidebar shows the count on the Chat item.</summary>
+    public int PendingApprovalCount => Requests.Count(item => item.State == "承認待ち");
     public ObservableCollection<InboxConversation> Conversations { get; } = [];
     public event Action<InboxItem>? RequestReceived;
     public event Action? ConnectionEnded;
@@ -597,6 +599,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 {
                     if (args.PropertyName == nameof(InboxItem.State) && item.State != "承認待ち")
                         _ = CompleteRequestActionsAsync(item);
+                    if (args.PropertyName == nameof(InboxItem.State)) OnPropertyChanged(nameof(PendingApprovalCount));
                     if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.Workspace)) QueueConversationRefresh(item);
                     if (ReferenceEquals(item, Selected))
                     {
@@ -620,6 +623,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 _requestHandlers[item] = handler;
             }
         }
+        OnPropertyChanged(nameof(PendingApprovalCount));
         QueueConversationRefresh();
     }
 

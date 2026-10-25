@@ -43,6 +43,7 @@ public sealed partial class MainPage : Page
         InitializeLanguageRestart();
         InitializePortableUpdateBadge();
         InitializePortableUpdateRecoveryProbe();
+        InitializePendingBadge();
         UpdateNavigationContentOffset();
         _wizard = new Onboarding.OnboardingWizard(ViewModel, InboxPage.ViewModel, ReloadProcessEnvironment);
         WizardHost.Content = _wizard;
