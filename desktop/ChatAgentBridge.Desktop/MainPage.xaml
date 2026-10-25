@@ -17,6 +17,7 @@
     xmlns:deployment="using:ChatAgentBridge_Desktop.Deployment"
     xmlns:diagrams="using:ChatAgentBridge_Desktop.Diagrams"
     xmlns:maintenance="using:ChatAgentBridge_Desktop.Maintenance"
+    xmlns:modelSelection="using:ChatAgentBridge_Desktop.ModelSelection"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Page.Resources>
@@ -471,6 +472,7 @@
                                             <Button  Command="{x:Bind ViewModel.ModelCatalog.CancelFetchCommand}" HorizontalAlignment="Left" AutomationProperties.AutomationId="CancelFetchModels"  x:Uid="CancelFetchModels" />
                                             <ComboBox  ItemsSource="{x:Bind ViewModel.ModelCatalog.Models, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.ModelCatalog.SelectedModel, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsModelCatalog, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ModelCandidates"   x:Uid="ModelCandidates" />
                                             <TextBlock Text="{x:Bind ViewModel.ModelCatalog.Status, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ModelCatalogStatus" />
+                                            <modelSelection:ModelCatalogMetadataControl x:Name="LegacyModelCatalogMetadata" Catalog="{x:Bind ViewModel.ModelCatalog, Mode=OneWay}" />
                                             <TextBlock  TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock038" x:Uid="chatAgentBridgeDesktopMainPageTextBlock038" />
                                         </StackPanel>
                                     </StackPanel>

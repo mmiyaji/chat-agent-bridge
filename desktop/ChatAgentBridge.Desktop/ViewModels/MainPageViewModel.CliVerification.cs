@@ -1,5 +1,6 @@
 using ChatAgentBridge.Core;
 using ChatAgentBridge_Desktop.Localization;
+using ChatAgentBridge_Desktop.ModelSelection;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ChatAgentBridge_Desktop.ViewModels;
@@ -38,7 +39,7 @@ public partial class MainPageViewModel
 
     private void ApplyCliVerification(CachedCliVerification cached, string signature, bool restored)
     {
-        if (SupportsModelCatalog) ModelCatalog.RestoreVerifiedModels(cached.Models, AgentModel);
+        if (SupportsModelCatalog) ModelCatalog.RestoreVerifiedModels(cached.Models, AgentModel, cached.ModelsFetchedAtUtc);
         else InvalidateModelCatalog();
         PopulateGlobalEfforts();
         CliVersion = cached.Probe.Version;
@@ -60,12 +61,38 @@ public partial class MainPageViewModel
         try
         {
             await ProviderCliVerificationStore(settings).SaveAsync(settings,
-                new CachedCliVerification(probe, ModelCatalog.Models.ToArray(), checkedAt, _checkedConnectionSignature ?? ""), cancellationToken);
+                new CachedCliVerification(probe, ModelCatalog.Models.ToArray(), checkedAt, _checkedConnectionSignature ?? "", ModelCatalog.FetchedAtUtc), cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
             if (generation == _cliCheckGeneration)
                 CliCheckSummary += " " + ViewModelText.Get("CliVerificationSaveFailed");
+        }
+    }
+
+    private async Task SaveFetchedModelsAsync(BridgeSettings settings, IReadOnlyList<ModelOption> models,
+        DateTimeOffset fetchedAtUtc, CancellationToken cancellationToken)
+    {
+        // A model-only lookup may refresh a diagnostic cache but cannot manufacture a CLI check.
+        if (_closing || IsCheckingCli || !HasCurrentCliCheck() || _cliCheckedAt is not { } checkedAt ||
+            _checkedConnectionSignature is not { } connectionSignature) return;
+        var generation = _cliCheckGeneration;
+        var signature = CurrentCliSignature();
+        try
+        {
+            if (!CliVerificationStore.HasSameContext(settings, CreateSettingsSnapshot())) return;
+            var store = ProviderCliVerificationStore(settings);
+            if (await store.UpdateModelsAsync(settings, checkedAt, connectionSignature, models, fetchedAtUtc, cancellationToken)) return;
+            if (_closing || IsCheckingCli || generation != _cliCheckGeneration || signature != CurrentCliSignature()) return;
+            // Legacy diagnostic caches can be refreshed in place without inventing a new verification.
+            await new CliVerificationStore(_settingsStore.DirectoryPath)
+                .UpdateModelsAsync(settings, checkedAt, connectionSignature, models, fetchedAtUtc, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            // Keep the retrieved candidates and distinguish a cache-write failure from discovery failure.
+            throw new ModelCatalogPersistenceException(ex);
         }
     }
 

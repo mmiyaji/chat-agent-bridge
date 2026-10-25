@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 namespace ChatAgentBridge.Core;
 
 public sealed record CachedCliVerification(CliProbeResult Probe, IReadOnlyList<ModelOption> Models,
-    DateTimeOffset CheckedAtUtc, string ConnectionSignature);
+    DateTimeOffset CheckedAtUtc, string ConnectionSignature, DateTimeOffset? ModelsFetchedAtUtc = null);
 
 /// <summary>Stores successful, non-authoritative CLI diagnostics for reuse by the settings UI.</summary>
 public sealed class CliVerificationStore
@@ -43,6 +43,13 @@ public sealed class CliVerificationStore
 
     public async Task SaveAsync(BridgeSettings settings, CachedCliVerification verification, CancellationToken cancellationToken = default)
     {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try { await SaveCoreAsync(settings, verification, cancellationToken).ConfigureAwait(false); }
+        finally { _gate.Release(); }
+    }
+
+    private async Task SaveCoreAsync(BridgeSettings settings, CachedCliVerification verification, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(verification);
         if ((AgentProfile.ResolveProvider(settings) != AgentProfile.Custom && !verification.Probe.ProviderRecognized) ||
@@ -63,37 +70,51 @@ public sealed class CliVerificationStore
             Probe = verification.Probe,
             Models = verification.Models.ToArray(),
             CheckedAtUtc = verification.CheckedAtUtc.ToUniversalTime(),
+            ModelsFetchedAtUtc = ModelCatalogFreshness.ValidFetchedAt(verification.ModelsFetchedAtUtc, DateTimeOffset.UtcNow),
             ConnectionSignature = verification.ConnectionSignature,
             ContextFingerprint = contextFingerprint,
             Stamps = GetStamps(launch)
         };
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(document, JsonOptions);
-        if (bytes.Length > MaxFileBytes) throw new ArgumentException("The verification cache exceeds its size limit.", nameof(verification));
+        await WriteDocumentAsync(document, cancellationToken).ConfigureAwait(false);
+    }
 
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+    private async Task WriteDocumentAsync(CacheDocument document, CancellationToken cancellationToken)
+    {
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(document, JsonOptions);
+        if (bytes.Length > MaxFileBytes) throw new ArgumentException("The verification cache exceeds its size limit.", nameof(document));
+
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+        var temp = _path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            var temp = _path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-            try
+            await using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, useAsync: true))
             {
-                await using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, useAsync: true))
-                {
-                    await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
-                    await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-                }
-                cancellationToken.ThrowIfCancellationRequested();
-                File.Move(temp, _path, overwrite: true);
+                await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
-            finally { try { if (File.Exists(temp)) File.Delete(temp); } catch (IOException) { } }
+            cancellationToken.ThrowIfCancellationRequested();
+            File.Move(temp, _path, overwrite: true);
         }
-        finally { _gate.Release(); }
+        finally { try { if (File.Exists(temp)) File.Delete(temp); } catch (IOException) { } }
     }
 
     public async Task<CachedCliVerification?> LoadAsync(BridgeSettings settings, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try { return await LoadCoreAsync(settings, cancellationToken).ConfigureAwait(false); }
+        finally { _gate.Release(); }
+    }
+
+    private async Task<CachedCliVerification?> LoadCoreAsync(BridgeSettings settings, CancellationToken cancellationToken)
+    {
+        var doc = await LoadValidatedDocumentAsync(settings, cancellationToken).ConfigureAwait(false);
+        return doc is null ? null : new CachedCliVerification(doc.Probe!, doc.Models!, doc.CheckedAtUtc, doc.ConnectionSignature!,
+            ModelCatalogFreshness.ValidFetchedAt(doc.ModelsFetchedAtUtc, DateTimeOffset.UtcNow));
+    }
+
+    private async Task<CacheDocument?> LoadValidatedDocumentAsync(BridgeSettings settings, CancellationToken cancellationToken)
+    {
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -122,12 +143,41 @@ public sealed class CliVerificationStore
             if (!StampsMatch(doc.Stamps, currentStamps)) return null;
             if (!PathEquals(doc.Probe.Executable, launch.Executable)) return null;
             ValidateModels(doc.Models);
-            return new CachedCliVerification(doc.Probe, doc.Models, doc.CheckedAtUtc, doc.ConnectionSignature!);
+            return doc;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException or
                                       NotSupportedException or System.Security.SecurityException or FormatException or OverflowException)
         { return null; }
+    }
+
+    /// <summary>Updates only models on the same still-valid CLI diagnostic, without creating a verification.</summary>
+    public async Task<bool> UpdateModelsAsync(BridgeSettings settings, DateTimeOffset expectedCheckedAtUtc,
+        string expectedConnectionSignature, IReadOnlyList<ModelOption> models, DateTimeOffset fetchedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(models);
+        if (models.Count > MaxModels)
+            throw new ArgumentException("The model catalog exceeds the cache limit.", nameof(models));
+        var updatedModels = models.ToArray();
+        ValidateModels(updatedModels);
+        if (ModelCatalogFreshness.ValidFetchedAt(fetchedAtUtc, DateTimeOffset.UtcNow) is not { } fetchedAt)
+            throw new ArgumentException("The model retrieval timestamp is invalid.", nameof(fetchedAtUtc));
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var cached = await LoadValidatedDocumentAsync(settings, cancellationToken).ConfigureAwait(false);
+            if (cached is null || cached.CheckedAtUtc != expectedCheckedAtUtc ||
+                cached.ConnectionSignature != expectedConnectionSignature ||
+                ModelCatalogFreshness.ValidFetchedAt(cached.ModelsFetchedAtUtc, DateTimeOffset.UtcNow) > fetchedAt) return false;
+            // Preserve the original probe, context and executable stamps. A binary replaced
+            // after validation must remain a cache miss rather than acquire fresh CLI consent.
+            cached.Models = updatedModels;
+            cached.ModelsFetchedAtUtc = fetchedAt;
+            await WriteDocumentAsync(cached, cancellationToken).ConfigureAwait(false);
+            return true;
+        }
         finally { _gate.Release(); }
     }
 
@@ -205,6 +255,7 @@ public sealed class CliVerificationStore
         public CliProbeResult? Probe { get; set; }
         public ModelOption[]? Models { get; set; }
         public DateTimeOffset CheckedAtUtc { get; set; }
+        public DateTimeOffset? ModelsFetchedAtUtc { get; set; }
         public string? ConnectionSignature { get; set; }
         public string? ContextFingerprint { get; set; }
         public FileStamp[]? Stamps { get; set; }

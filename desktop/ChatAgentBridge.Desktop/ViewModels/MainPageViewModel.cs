@@ -45,7 +45,7 @@ public partial class MainPageViewModel : ObservableObject
     {
         _isAgentProfileEditor = isAgentProfileEditor;
         ReasoningEffortCandidates.Add(ReasoningEffortChoice.Default);
-        ModelCatalog = new ModelCatalogViewModel(CreateSettingsSnapshot, ApplyCatalogModelSelection);
+        ModelCatalog = new ModelCatalogViewModel(CreateSettingsSnapshot, ApplyCatalogModelSelection, SaveFetchedModelsAsync);
         SaveSettingsCommand.PropertyChanged += (_, _) =>
         {
             SaveGeneralSettingsCommand.NotifyCanExecuteChanged();

@@ -395,6 +395,8 @@ public sealed partial class HistoryPage : Page
         };
         var catalogStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Text = catalog.Status };
         AutomationProperties.SetAutomationId(catalogStatus, "SessionModelCatalogStatus");
+        var catalogMetadata = new ModelCatalogMetadataControl { Catalog = catalog };
+        AutomationProperties.SetAutomationId(catalogMetadata, "SessionModelCatalogMetadata");
         var progress = new ProgressRing { IsActive = catalog.IsLoading, Width = 20, Height = 20, HorizontalAlignment = HorizontalAlignment.Left };
         catalog.PropertyChanged += (_, args) =>
         {
@@ -509,6 +511,7 @@ public sealed partial class HistoryPage : Page
                         progress,
                         candidates,
                         catalogStatus,
+                        catalogMetadata,
                         effortCandidates,
                         effortStatus,
                         new TextBlock { Text = DesktopText.Get("ReasoningEffortOptionsInfo"), TextWrapping = TextWrapping.Wrap, Visibility = supportsEffort ? Visibility.Visible : Visibility.Collapsed },

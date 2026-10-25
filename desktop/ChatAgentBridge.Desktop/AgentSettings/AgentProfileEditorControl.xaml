@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:agentSettings="using:ChatAgentBridge_Desktop.AgentSettings"
+    xmlns:modelSelection="using:ChatAgentBridge_Desktop.ModelSelection"
     xmlns:localization="using:ChatAgentBridge_Desktop.Localization"
     mc:Ignorable="d">
     <Grid x:Name="EditorLayout" HorizontalAlignment="Stretch" RowSpacing="0" SizeChanged="EditorLayout_SizeChanged">
@@ -140,6 +141,8 @@
                 <TextBlock Text="{x:Bind Editor.ModelCatalog.Status, Mode=OneWay}" TextWrapping="Wrap"
                            Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            AutomationProperties.AutomationId="ModelCatalogStatus"
+                           Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsModelCatalog), Mode=OneWay}" />
+                <modelSelection:ModelCatalogMetadataControl x:Name="ModelCatalogMetadata" Catalog="{x:Bind Editor.ModelCatalog, Mode=OneWay}"
                            Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsModelCatalog), Mode=OneWay}" />
                 <TextBlock Text="{x:Bind Editor.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsBasicProvider), Mode=OneWay}" />

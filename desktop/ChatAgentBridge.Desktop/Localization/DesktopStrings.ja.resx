@@ -5,6 +5,10 @@
   <data name="ShowNamedToken" xml:space="preserve"><value>トークンを表示: {0}</value></data>
   <data name="HideNamedToken" xml:space="preserve"><value>トークンを隠す: {0}</value></data>
   <data name="ModelCatalogRestored" xml:space="preserve"><value>保存済みのモデル候補{0}件を復元しました。一覧を更新するには再取得してください。</value></data>
+  <data name="ModelCatalogFetchedAt" xml:space="preserve"><value>モデル一覧の取得日時: {0}</value></data>
+  <data name="ModelCatalogFetchedAtUnknown" xml:space="preserve"><value>モデル一覧の取得日時は不明です</value></data>
+  <data name="ModelCatalogRefreshRecommended" xml:space="preserve"><value>モデル取得から7日以上経過しているか、取得日時が不明です。再取得をおすすめします。</value></data>
+  <data name="ModelCatalogSaveFailed" xml:space="preserve"><value>モデル一覧は取得できましたが、キャッシュを保存できませんでした。</value></data>
   <data name="HistoryFilters" xml:space="preserve"><value>絞り込み</value></data>
   <data name="ArchitectureOpenHint" xml:space="preserve"><value>クリックして拡大</value></data>
   <data name="ArchitectureOpenAccessibleName" xml:space="preserve"><value>アーキテクチャ図を開く</value></data>
