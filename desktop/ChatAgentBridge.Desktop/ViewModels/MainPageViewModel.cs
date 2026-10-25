@@ -1,6 +1,7 @@
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.AppServer;
+using ChatAgentBridge_Desktop.AgentSettings;
 using ChatAgentBridge_Desktop.ModelSelection;
 using ChatAgentBridge_Desktop.Localization;
 using System.Collections.ObjectModel;
@@ -147,12 +148,11 @@ public partial class MainPageViewModel : ObservableObject
     public bool IsCodexProvider => AgentProvider == "codex";
     public bool IsCustomProvider => AgentProvider == "custom";
     public bool IsAntigravityProvider => AgentProvider == "antigravity";
-    public bool IsBasicProvider => AgentProvider is "gemini" or "github-copilot" or "antigravity" or "custom";
-    public bool IsArgumentsEditable => IsBasicProvider;
-    public bool SupportsModel => AgentProvider is "codex" or "claude" or "gemini" or "github-copilot" or "antigravity";
-    public bool SupportsReasoning => AgentProvider is "codex" or "claude";
-    // Antigravity lists models with `agy models` on request, but has no per-model effort levels.
-    public bool SupportsModelCatalog => SupportsReasoning || IsAntigravityProvider;
+    public bool IsBasicProvider => AgentEditorCapabilities.IsBasic(AgentProvider);
+    public bool IsArgumentsEditable => AgentEditorCapabilities.IsArgumentsEditable(AgentProvider);
+    public bool SupportsModel => AgentEditorCapabilities.SupportsModel(AgentProvider);
+    public bool SupportsReasoning => AgentEditorCapabilities.SupportsReasoning(AgentProvider);
+    public bool SupportsModelCatalog => AgentEditorCapabilities.SupportsModelCatalog(AgentProvider);
     public string AgentProviderDisplayName => AgentProvider switch
     {
         "codex" => "Codex", "claude" => "Claude Code", "gemini" => "Gemini CLI",
@@ -247,8 +247,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string SlackAllowedThreadIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostAllowedThreadIds { get; set; } = string.Empty;
     public bool CanConfigureAgentNetwork => IsCodexProvider && AgentPermissionMode is "workspace-write" or "ask";
-    // Antigravity maps workspace-write and full-access onto its own flags; the other basic CLIs manage permissions themselves.
-    public bool CanConfigureAgentPermission => !IsBasicProvider || IsAntigravityProvider;
+    public bool CanConfigureAgentPermission => AgentEditorCapabilities.CanConfigurePermission(AgentProvider);
     public bool CanSelectReadOnlyPermission => !IsAntigravityProvider;
     public string AgentPermissionStatus => IsAntigravityProvider ? ViewModelText.Get("AntigravityPermissionHelp")
         : IsBasicProvider ? ViewModelText.Get("BasicPermissionManagedByCli")

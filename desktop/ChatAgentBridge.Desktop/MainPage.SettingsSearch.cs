@@ -19,7 +19,8 @@ public sealed class SettingsSearchEntry
         Scope = scope;
         Target = target;
         Expanders = expanders;
-        Keywords = [AutomationProperties.GetAutomationId(target), pageTag,
+        // Generated ids such as chatAgentBridgeDesktopMainPageTextBlock049 say nothing about the setting.
+        Keywords = [SettingsSearchMatcher.IsGeneratedId(AutomationProperties.GetAutomationId(target)) ? "" : AutomationProperties.GetAutomationId(target), pageTag,
             pageTag == "agent" ? "agent エージェント" : pageTag == "connections" ? "chat チャット" : pageTag];
     }
 
@@ -35,6 +36,10 @@ public sealed class SettingsSearchEntry
         Expanders = [];
     }
 
+    internal static SettingsSearchEntry NoResults(string message) =>
+        new(message, "", "", "", (string?)null, Array.Empty<string>()) { IsNoResults = true };
+
+    public bool IsNoResults { get; private init; }
     public string Title { get; }
     public string Location { get; }
     internal string PageTag { get; }
@@ -185,6 +190,8 @@ public sealed partial class MainPage
 
     private static Control? FirstInput(DependencyObject root)
     {
+        // A read-only box shows results (live output, paths); it is not a setting to jump to.
+        if (root is TextBox { IsReadOnly: true }) return null;
         if (root is TextBox or PasswordBox or ComboBox or ToggleSwitch or NumberBox) return (Control)root;
         foreach (var child in Children(root))
             if (child is DependencyObject node && node is not UIElement { Visibility: Visibility.Collapsed } && FirstInput(node) is { } input) return input;
@@ -249,16 +256,9 @@ public sealed partial class MainPage
                 scope == "antigravity" ? "agy" : scope];
             yield return Entry(scope == "common" ? name : DesktopText.Get("SearchScopeSettings", name), "agent", scope, null, aliases);
             if (scope == "common") continue;
-            yield return Field("AgentEditorExecutableLabel.Text", scope, "AgentExecutable", aliases, "executable CLI path 実行ファイル パス");
-            if (scope != "custom") yield return Field("AgentEditorModelLabel.Text", scope, "AgentModel", aliases, "model models モデル");
-            if (scope is "codex" or "claude") yield return Field("AgentEditorReasoningLabel.Text", scope, "ReasoningEffortCandidates", aliases, "reasoning effort 推論 強さ");
-            if (scope is "codex" or "claude" or "antigravity") yield return Field("AgentEditorPermissionLabel.Text", scope, "AgentPermissionMode", aliases, "permissions access 権限 許可");
-            if (scope is "gemini" or "github-copilot" or "antigravity" or "custom") yield return Field("AgentEditorArgumentsLabel.Text", scope, "AgentArguments", aliases, "arguments 引数");
-            if (scope == "codex")
-            {
-                yield return Field("UseAppServer.Header", scope, "UseAppServer", aliases, "app server 承認 質問");
-                yield return Field("AllowAgentNetwork.Header", scope, "AllowAgentNetwork", aliases, "network ネットワーク");
-            }
+            // The same rules the editor uses decide which fields exist for this CLI.
+            foreach (var field in AgentSettings.AgentEditorCapabilities.SearchableFields(scope))
+                yield return Field(field.LabelResource, scope, field.AutomationId, aliases, field.Keywords);
         }
         foreach (var scope in new[] { "common", "mattermost", "slack", "discord" })
             yield return Entry(scope == "common" ? ScopeSearchLabel("connections", scope) :
@@ -308,6 +308,8 @@ public sealed partial class MainPage
         for (var index = 0; index < children.Count; index++)
         {
             if (children[index] is not TextBlock { Visibility: Visibility.Visible } label || LabelText(label.Text) is not { } text) continue;
+            // Small caption text is help or status ("Waiting for output…"), not the name of the input below it.
+            if (ReferenceEquals(label.Style, Application.Current.Resources["CaptionTextBlockStyle"])) continue;
             // The next visible element that is not more text must hold the input this label names.
             var next = children.Skip(index + 1).FirstOrDefault(child => child.Visibility == Visibility.Visible && child is not TextBlock);
             if (next is not null && FirstInput(next) is { } input) yield return (text, input);

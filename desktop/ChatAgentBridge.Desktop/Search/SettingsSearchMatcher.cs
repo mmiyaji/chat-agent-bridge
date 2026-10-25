@@ -57,6 +57,10 @@ public static class SettingsSearchMatcher
         return 3;
     }
 
+    /// <summary>True for ids the XAML generator numbered, such as chatAgentBridgeDesktopMainPageTextBlock049.</summary>
+    public static bool IsGeneratedId(string? id) =>
+        !string.IsNullOrEmpty(id) && System.Text.RegularExpressions.Regex.IsMatch(id, @"^[a-z][A-Za-z]*\d{2,}$");
+
     private static string Normalize(string? value)
     {
         var trimmed = (value ?? string.Empty).Trim();

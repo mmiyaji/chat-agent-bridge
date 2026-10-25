@@ -142,7 +142,11 @@ public sealed partial class MainWindow : Window
     private void SettingsSearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
         if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
-        sender.ItemsSource = Page?.SearchSettings(sender.Text) ?? [];
+        var results = Page?.SearchSettings(sender.Text) ?? [];
+        // A typed query with no match shows a note instead of silently closing the list.
+        sender.ItemsSource = results.Count == 0 && sender.Text.Trim().Length > 0
+            ? new[] { SettingsSearchEntry.NoResults(Localization.DesktopText.Get("SearchNoResults")) }
+            : results;
     }
 
     private void SettingsSearchBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args) { }
@@ -151,7 +155,8 @@ public sealed partial class MainWindow : Window
     {
         // Enter without picking a suggestion opens the best match.
         var entry = args.ChosenSuggestion as SettingsSearchEntry ?? Page?.SearchSettings(args.QueryText).FirstOrDefault();
-        if (entry is null || Page is not { } page) return;
+        // The no-results note is not a destination; leave the panel open.
+        if (entry is null || entry.IsNoResults || Page is not { } page) return;
         _settingsSearchResultSelected = true;
         _restoreSearchTriggerFocusOnClose = false;
         SettingsSearchFlyout.Hide();
