@@ -36,6 +36,13 @@ public sealed partial class MainPage
         _chatConnectTipShown = true;
         try { if (await _featureTips.HasSeenAsync(ChatConnectTip)) return; }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return; }
+        // A restored update prompt waits for open popups. Resolve its local state
+        // before showing a non-blocking tip, so the tip cannot hold that prompt open.
+        if (Deployment.DeploymentRuntime.IsPortable)
+        {
+            await App.PortableUpdates.InitializeAsync();
+            if (App.PortableUpdates.IsDownloaded) return;
+        }
         if (InboxPage.ViewModel.IsConnected || Content is not Panel root) return;
 
         var chat = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "chat");
