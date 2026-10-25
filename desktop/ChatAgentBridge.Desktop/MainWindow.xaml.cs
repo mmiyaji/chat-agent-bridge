@@ -4,6 +4,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using System.Runtime.InteropServices;
 using Windows.Graphics;
+using Windows.System;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -19,6 +20,10 @@ public sealed partial class MainWindow : Window
 {
     private const int MinimumWidthDip = 500;
     private const int MinimumHeightDip = 600;
+    private const double SettingsSearchPanelMaximumWidth = 480;
+    private const double SettingsSearchPanelHorizontalMargin = 64;
+    private bool _restoreSearchTriggerFocusOnClose;
+    private bool _settingsSearchResultSelected;
 
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hWnd);
@@ -37,6 +42,9 @@ public sealed partial class MainWindow : Window
         UpdateMinimumWindowSize();
         AppWindow.Resize(new SizeInt32((int)(1160 * scale), (int)(800 * scale)));
         WindowRoot.Loaded += WindowRoot_Loaded;
+        WindowRoot.SizeChanged += WindowRoot_SizeChanged;
+        SettingsSearchBox.AddHandler(UIElement.KeyDownEvent,
+            new Microsoft.UI.Xaml.Input.KeyEventHandler(SettingsSearchBox_KeyDown), true);
         Activated += MainWindow_Activated;
         Closed += MainWindow_Closed;
 
@@ -54,8 +62,16 @@ public sealed partial class MainWindow : Window
         UpdateSettingsSearchVisibility();
     }
 
-    private void UpdateSettingsSearchVisibility() =>
-        SettingsSearchBox.Visibility = Page?.CanSearchSettings == true ? Visibility.Visible : Visibility.Collapsed;
+    private void UpdateSettingsSearchVisibility()
+    {
+        var canSearch = Page?.CanSearchSettings == true;
+        OpenSettingsSearch.Visibility = canSearch ? Visibility.Visible : Visibility.Collapsed;
+        if (!canSearch && SettingsSearchFlyout.IsOpen)
+        {
+            _restoreSearchTriggerFocusOnClose = false;
+            SettingsSearchFlyout.Hide();
+        }
+    }
 
     private void UpdateMinimumWindowSize()
     {
@@ -77,9 +93,51 @@ public sealed partial class MainWindow : Window
 
     private void WindowRootXamlRoot_Changed(XamlRoot sender, XamlRootChangedEventArgs args) => UpdateMinimumWindowSize();
 
+    private void WindowRoot_SizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        if (!SettingsSearchFlyout.IsOpen) return;
+        _restoreSearchTriggerFocusOnClose = SettingsSearchBox.FocusState != FocusState.Unfocused;
+        SettingsSearchFlyout.Hide();
+    }
+
     private MainPage? Page => RootFrame.Content as MainPage;
 
-    private void SettingsSearchBox_GotFocus(object sender, RoutedEventArgs args) => Page?.RefreshSettingsSearchIndex();
+    private void SettingsSearchFlyout_Opening(object sender, object args)
+    {
+        ClearSettingsSearchQuery();
+        SettingsSearchPanel.Width = Math.Min(SettingsSearchPanelMaximumWidth,
+            Math.Max(220, WindowRoot.ActualWidth - SettingsSearchPanelHorizontalMargin));
+        Page?.RefreshSettingsSearchIndex();
+    }
+
+    private void SettingsSearchFlyout_Opened(object sender, object args)
+    {
+        SettingsSearchBox.Focus(FocusState.Programmatic);
+    }
+
+    private void SettingsSearchFlyout_Closed(object sender, object args)
+    {
+        ClearSettingsSearchQuery();
+        if (_restoreSearchTriggerFocusOnClose && !_settingsSearchResultSelected && Page?.CanSearchSettings == true)
+            OpenSettingsSearch.Focus(FocusState.Keyboard);
+        _restoreSearchTriggerFocusOnClose = false;
+        _settingsSearchResultSelected = false;
+    }
+
+    private void ClearSettingsSearchQuery()
+    {
+        SettingsSearchBox.Text = string.Empty;
+        SettingsSearchBox.ItemsSource = null;
+        SettingsSearchBox.IsSuggestionListOpen = false;
+    }
+
+    private void SettingsSearchBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs args)
+    {
+        if (args.Key != VirtualKey.Escape || !SettingsSearchFlyout.IsOpen) return;
+        _restoreSearchTriggerFocusOnClose = true;
+        SettingsSearchFlyout.Hide();
+        args.Handled = true;
+    }
 
     private void SettingsSearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
@@ -89,20 +147,38 @@ public sealed partial class MainWindow : Window
 
     private void SettingsSearchBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args) { }
 
+    private void OpenSettingsSearch_Click(object sender, RoutedEventArgs args) => ShowSettingsSearch();
+
     private void SettingsSearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
         // Enter without picking a suggestion opens the best match.
         var entry = args.ChosenSuggestion as SettingsSearchEntry ?? Page?.SearchSettings(args.QueryText).FirstOrDefault();
         if (entry is null || Page is not { } page) return;
-        sender.Text = "";
-        sender.ItemsSource = null;
+        _settingsSearchResultSelected = true;
+        _restoreSearchTriggerFocusOnClose = false;
+        SettingsSearchFlyout.Hide();
+        ClearSettingsSearchQuery();
         page.OpenSettingsSearchResult(entry);
     }
 
     private void SettingsSearchAccelerator_Invoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
-        if (Page?.CanSearchSettings == true) SettingsSearchBox.Focus(FocusState.Keyboard);
+        ShowSettingsSearch();
+    }
+
+    private void ShowSettingsSearch()
+    {
+        if (Page?.CanSearchSettings != true) return;
+        if (!SettingsSearchFlyout.IsOpen)
+        {
+            ClearSettingsSearchQuery();
+            SettingsSearchFlyout.ShowAt(AppTitleBar);
+        }
+        else
+        {
+            SettingsSearchBox.Focus(FocusState.Keyboard);
+        }
     }
 
     private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
@@ -114,6 +190,7 @@ public sealed partial class MainWindow : Window
     private void MainWindow_Closed(object sender, WindowEventArgs args)
     {
         WindowRoot.Loaded -= WindowRoot_Loaded;
+        WindowRoot.SizeChanged -= WindowRoot_SizeChanged;
         if (WindowRoot.XamlRoot is { } root) root.Changed -= WindowRootXamlRoot_Changed;
         App.Appearance.Dispose();
         if (RootFrame.Content is MainPage page) page.ViewModel.CancelForWindowClose();

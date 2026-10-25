@@ -22,26 +22,42 @@
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="ms-appx:///Assets/StoreLogo.png" />
             </TitleBar.IconSource>
-            <!-- Gallery-style search in the title bar: find a setting by name and jump to it (Ctrl+F). -->
+            <!-- Keep the title bar quiet; the search box appears only when requested. -->
             <TitleBar.Content>
-                <AutoSuggestBox x:Name="SettingsSearchBox" x:Uid="SettingsSearchBox" QueryIcon="Find"
-                                MinWidth="220" MaxWidth="360" VerticalAlignment="Center" UpdateTextOnSelect="False"
-                                TextChanged="SettingsSearchBox_TextChanged" SuggestionChosen="SettingsSearchBox_SuggestionChosen"
-                                QuerySubmitted="SettingsSearchBox_QuerySubmitted" GotFocus="SettingsSearchBox_GotFocus"
-                                KeyboardAcceleratorPlacementMode="Hidden" AutomationProperties.AutomationId="SettingsSearchBox">
-                    <AutoSuggestBox.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control" Key="F" Invoked="SettingsSearchAccelerator_Invoked" />
-                    </AutoSuggestBox.KeyboardAccelerators>
-                    <AutoSuggestBox.ItemTemplate>
-                        <DataTemplate x:DataType="local:SettingsSearchEntry">
-                            <StackPanel Padding="0,6" Spacing="2">
-                                <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{x:Bind Location}" Style="{StaticResource CaptionTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </AutoSuggestBox.ItemTemplate>
-                </AutoSuggestBox>
+                <Button x:Name="OpenSettingsSearch" x:Uid="OpenSettingsSearch" Width="40" Height="40"
+                        VerticalAlignment="Center" Padding="0" Click="OpenSettingsSearch_Click" AutomationProperties.AutomationId="OpenSettingsSearch">
+                    <SymbolIcon Symbol="Find" />
+                    <FlyoutBase.AttachedFlyout>
+                        <Flyout x:Name="SettingsSearchFlyout" Placement="Bottom"
+                                Opening="SettingsSearchFlyout_Opening" Opened="SettingsSearchFlyout_Opened" Closed="SettingsSearchFlyout_Closed">
+                            <Flyout.FlyoutPresenterStyle>
+                                <Style TargetType="FlyoutPresenter">
+                                    <Setter Property="MinWidth" Value="0" />
+                                    <Setter Property="MaxWidth" Value="560" />
+                                    <Setter Property="Padding" Value="16" />
+                                    <Setter Property="AutomationProperties.AutomationId" Value="SettingsSearchPanel" />
+                                </Style>
+                            </Flyout.FlyoutPresenterStyle>
+                            <Grid x:Name="SettingsSearchPanel" MaxWidth="480">
+                                <AutoSuggestBox x:Name="SettingsSearchBox" x:Uid="SettingsSearchBox" QueryIcon="Find"
+                                                HorizontalAlignment="Stretch" UpdateTextOnSelect="False"
+                                                TextChanged="SettingsSearchBox_TextChanged" SuggestionChosen="SettingsSearchBox_SuggestionChosen"
+                                                QuerySubmitted="SettingsSearchBox_QuerySubmitted"
+                                                AutomationProperties.AutomationId="SettingsSearchBox">
+                                    <AutoSuggestBox.ItemTemplate>
+                                        <DataTemplate x:DataType="local:SettingsSearchEntry">
+                                            <StackPanel Padding="0,6" Spacing="2">
+                                                <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{x:Bind Location}" Style="{StaticResource CaptionTextBlockStyle}"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </AutoSuggestBox.ItemTemplate>
+                                </AutoSuggestBox>
+                            </Grid>
+                        </Flyout>
+                    </FlyoutBase.AttachedFlyout>
+                </Button>
             </TitleBar.Content>
         </TitleBar>
 
@@ -51,5 +67,9 @@
             navigation events and the Loaded lifecycle.
         -->
         <Frame x:Name="RootFrame" Grid.Row="1" />
+
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Modifiers="Control" Key="F" Invoked="SettingsSearchAccelerator_Invoked" />
+        </Grid.KeyboardAccelerators>
     </Grid>
 </Window>
