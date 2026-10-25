@@ -27,7 +27,7 @@
         <NavigationView x:Name="MainNavigation" Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsOnboardingActive), Mode=OneWay}"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
-                        PaneDisplayMode="Auto" OpenPaneLength="240"
+                        PaneDisplayMode="Auto" OpenPaneLength="220"
                         DisplayModeChanged="MainNavigation_DisplayModeChanged"
                         ItemInvoked="MainNavigation_ItemInvoked"
                         SelectionChanged="MainNavigation_SelectionChanged"

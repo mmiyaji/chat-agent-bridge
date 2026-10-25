@@ -17,6 +17,7 @@ public sealed partial class HistoryPage : Page
     private const double MinimumSessionListWidth = 280;
     private const double MinimumSessionDetailWidth = 320;
     private const double SessionSplitterWidth = 12;
+    private const double SideBySideMinimumWidth = 700;
     private bool _showDetailOnNarrow;
     private bool _isResizingSessionList;
     private double _preferredSessionListWidth = DefaultSessionListWidth;
@@ -145,7 +146,7 @@ public sealed partial class HistoryPage : Page
 
     private void Page_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        ViewModel.IsNarrow = e.NewSize.Width < 800;
+        ViewModel.IsNarrow = e.NewSize.Width < SideBySideMinimumWidth;
         UpdateResponsiveLayout();
     }
 
