@@ -356,6 +356,8 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
             await Editor.CheckCliCommand.ExecuteAsync(null);
             if (Editor.CliCheckSucceeded)
                 await Editor.CommitAgentEditorCheckAsync();
+            if (_shared is not null)
+                await _shared.SynchronizeAgentEditorCliVerificationAsync(Editor);
         }
         catch
         {

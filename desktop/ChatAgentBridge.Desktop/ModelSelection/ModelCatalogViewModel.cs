@@ -15,6 +15,7 @@ public sealed partial class ModelCatalogViewModel : ObservableObject, IDisposabl
     private readonly Action<ModelOption>? _selectionApplied;
     private long _generation;
     private bool _disposed;
+    private bool _restoringVerifiedModels;
 
     public ObservableCollection<ModelOption> Models { get; } = [];
 
@@ -38,7 +39,7 @@ public sealed partial class ModelCatalogViewModel : ObservableObject, IDisposabl
         _selectionApplied = selectionApplied;
         PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(SelectedModel) && SelectedModel is { } selected)
+            if (!_restoringVerifiedModels && e.PropertyName == nameof(SelectedModel) && SelectedModel is { } selected)
                 _selectionApplied?.Invoke(selected);
         };
     }
@@ -48,10 +49,16 @@ public sealed partial class ModelCatalogViewModel : ObservableObject, IDisposabl
     /// <summary>Restores diagnostic candidates without launching the CLI.</summary>
     public void RestoreVerifiedModels(IReadOnlyList<ModelOption> models, string? selectedModel)
     {
-        Invalidate();
-        foreach (var model in models) Models.Add(model);
-        SelectedModel = Models.FirstOrDefault(model => string.Equals(model.Id, selectedModel?.Trim(), StringComparison.Ordinal));
-        Status = DesktopText.Get("ModelCatalogRestored", Models.Count);
+        _restoringVerifiedModels = true;
+        try
+        {
+            Invalidate();
+            foreach (var model in models) Models.Add(model);
+            // Restoring diagnostic choices must not apply a model edit to settings.
+            SelectedModel = Models.FirstOrDefault(model => string.Equals(model.Id, selectedModel?.Trim(), StringComparison.Ordinal));
+            Status = DesktopText.Get("ModelCatalogRestored", Models.Count);
+        }
+        finally { _restoringVerifiedModels = false; }
     }
 
     public void CancelLookup()

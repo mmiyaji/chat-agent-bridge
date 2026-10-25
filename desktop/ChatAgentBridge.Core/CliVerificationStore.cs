@@ -11,7 +11,7 @@ public sealed record CachedCliVerification(CliProbeResult Probe, IReadOnlyList<M
 /// <summary>Stores successful, non-authoritative CLI diagnostics for reuse by the settings UI.</summary>
 public sealed class CliVerificationStore
 {
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
     private const int MaxFileBytes = 1_048_576;
     private const int MaxModels = 2_000;
     private readonly string _path;
@@ -26,6 +26,21 @@ public sealed class CliVerificationStore
         _gate = Gates.GetOrAdd(_path, static _ => new SemaphoreSlim(1, 1));
     }
 
+    /// <summary>Uses the same diagnostic cache for the overview and the isolated provider editor.</summary>
+    public static CliVerificationStore ForProvider(string directory, string provider)
+    {
+        var normalized = provider?.Trim().ToLowerInvariant();
+        if (normalized is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or
+            AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Custom))
+            throw new ArgumentException("Only supported agent providers can be cached.", nameof(provider));
+        return new CliVerificationStore(Path.Combine(directory, "agent-cli-cache", normalized));
+    }
+
+    /// <summary>Compares the validated executable, workspace and trust context without starting either CLI.</summary>
+    public static bool HasSameContext(BridgeSettings left, BridgeSettings right) =>
+        CreateContextFingerprint(left, CliProbeService.ResolveLaunch(left)) ==
+        CreateContextFingerprint(right, CliProbeService.ResolveLaunch(right));
+
     public async Task SaveAsync(BridgeSettings settings, CachedCliVerification verification, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -36,7 +51,7 @@ public sealed class CliVerificationStore
         if (verification.Models is null || verification.Models.Count > MaxModels)
             throw new ArgumentException("The model catalog exceeds the cache limit.", nameof(verification));
         var launch = CliProbeService.ResolveLaunch(settings);
-        var contextFingerprint = CreateContextFingerprint(settings);
+        var contextFingerprint = CreateContextFingerprint(settings, launch);
         if (!IsValidSignature(verification.ConnectionSignature))
             throw new ArgumentException("The connection signature must be a SHA-256 hex digest.", nameof(verification));
         if (verification.CheckedAtUtc > DateTimeOffset.UtcNow.AddMinutes(5) || verification.CheckedAtUtc == default)
@@ -93,14 +108,16 @@ public sealed class CliVerificationStore
             var bytes = new byte[(int)length];
             await stream.ReadExactlyAsync(bytes, cancellationToken).ConfigureAwait(false);
             var doc = JsonSerializer.Deserialize<CacheDocument>(bytes, JsonOptions);
-            if (doc is null || doc.SchemaVersion != SchemaVersion || doc.Probe is null || doc.Models is null ||
+            if (doc is null || doc.SchemaVersion is not (1 or SchemaVersion) || doc.Probe is null || doc.Models is null ||
                 doc.Models.Length > MaxModels || (AgentProfile.ResolveProvider(settings) != AgentProfile.Custom && !doc.Probe.ProviderRecognized) || string.IsNullOrWhiteSpace(doc.Probe.Version) ||
                 doc.CheckedAtUtc == default || doc.CheckedAtUtc > DateTimeOffset.UtcNow.AddMinutes(5) ||
                 !IsValidSignature(doc.ConnectionSignature)) return null;
-            var contextFingerprint = CreateContextFingerprint(settings);
+            var launch = CliProbeService.ResolveLaunch(settings); // rechecks existence and trust without launching the CLI
+            var contextFingerprint = doc.SchemaVersion == 1
+                ? CreateContextFingerprint(settings)
+                : CreateContextFingerprint(settings, launch);
             if (string.IsNullOrWhiteSpace(doc.ContextFingerprint) || !IsValidSignature(doc.ContextFingerprint) ||
                 !CryptographicOperations.FixedTimeEquals(Convert.FromHexString(contextFingerprint), Convert.FromHexString(doc.ContextFingerprint))) return null;
-            var launch = CliProbeService.ResolveLaunch(settings); // rechecks current existence and trust, without launching the CLI
             var currentStamps = GetStamps(launch);
             if (!StampsMatch(doc.Stamps, currentStamps)) return null;
             if (!PathEquals(doc.Probe.Executable, launch.Executable)) return null;
@@ -122,13 +139,23 @@ public sealed class CliVerificationStore
     }
 
     /// <summary>Builds a private cache-context digest from settings that determine the probe result.</summary>
-    internal static string CreateContextFingerprint(BridgeSettings settings)
+    internal static string CreateContextFingerprint(BridgeSettings settings) => CreateContextFingerprint(settings, null);
+
+    private static string CreateContextFingerprint(BridgeSettings settings, CliProbeLaunch? launch)
     {
         ArgumentNullException.ThrowIfNull(settings);
         var provider = AgentProfile.ResolveProvider(settings);
         var workspace = string.IsNullOrWhiteSpace(settings.WorkspaceRoot) ? "" : Path.GetFullPath(settings.WorkspaceRoot);
-        var values = new[] { provider, AgentProfile.ResolveEffectiveExecutable(settings), settings.AgentArguments ?? "", workspace,
+        // A checked command name and its resolved absolute executable identify the same CLI.
+        // Keep the v1 projection above for strict reads of existing caches.
+        var values = new[] { provider, launch?.Executable ?? AgentProfile.ResolveEffectiveExecutable(settings), settings.AgentArguments ?? "", workspace,
             settings.AgentMode ?? "", ExecutionPolicy.NormalizeTrustedRoots(settings.TrustedWorkspaceRoots) };
+        if (launch is not null)
+        {
+            var entry = string.IsNullOrWhiteSpace(launch.NodeEntryPoint) ? "" : Path.IsPathFullyQualified(launch.NodeEntryPoint)
+                ? launch.NodeEntryPoint : Path.GetFullPath(launch.NodeEntryPoint, launch.Workspace);
+            values = [.. values, entry];
+        }
         var canonical = string.Join("\n", values.Select(value => value.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":" + value));
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
     }

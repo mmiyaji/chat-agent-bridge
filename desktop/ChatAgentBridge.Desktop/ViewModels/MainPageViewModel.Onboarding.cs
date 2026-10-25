@@ -133,7 +133,7 @@ public partial class MainPageViewModel
                 return;
             }
         }
-        if (OnboardingStep == 2 && !HasCurrentCliCheck()) { SetStatus(ViewModelText.Get("CheckCliAndModel"), CliCheckSucceeded ? ViewModelText.Get("SelectedModelUnavailable") : ViewModelText.Get("RunCliCheckDetails"), "Warning"); RequestFieldFocus(OnboardingFieldChecks.CliStep(false)); return; }
+        if (OnboardingStep == 2 && !HasCurrentCliAndModelCheck()) { SetStatus(ViewModelText.Get("CheckCliAndModel"), CliCheckSucceeded ? ViewModelText.Get("SelectedModelUnavailable") : ViewModelText.Get("RunCliCheckDetails"), "Warning"); RequestFieldFocus(OnboardingFieldChecks.CliStep(false)); return; }
         if (OnboardingStep == 3 && !HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("CheckConnectionDetails"), ViewModelText.Get(IsWizardSlack ? "SlackConnectionFields" : IsWizardMattermost ? "MattermostConnectionFields" : "DiscordConnectionFields"), "Warning"); RequestFieldFocus(MissingChatFields()); return; }
         await SaveSettingsAsync();
         if (!_lastSaveSucceeded) return;
@@ -156,7 +156,7 @@ public partial class MainPageViewModel
     private string SkippedWizardItems()
     {
         var items = new List<string>();
-        if (!HasCurrentCliCheck()) items.Add(ViewModelText.Get("WizardSkippedCli"));
+        if (!HasCurrentCliAndModelCheck()) items.Add(ViewModelText.Get("WizardSkippedCli"));
         if (!HasChosenChatConfiguration()) items.Add(ViewModelText.Get("WizardSkippedChat"));
         return string.Join(ViewModelText.Get("WizardSkippedSeparator"), items);
     }
@@ -180,7 +180,7 @@ public partial class MainPageViewModel
     });
     public async Task<bool> SaveWizardConnectionSettingsAsync()
     {
-        if (!_hasCurrentConsent || !HasAcceptedTerms || !HasAcceptedPrivacy || !HasCurrentCliCheck() || !HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("ReviewSettings"), ViewModelText.Get("ReviewSettingsDetails"), "Warning"); return false; }
+        if (!_hasCurrentConsent || !HasAcceptedTerms || !HasAcceptedPrivacy || !HasCurrentCliAndModelCheck() || !HasChosenChatConfiguration()) { SetStatus(ViewModelText.Get("ReviewSettings"), ViewModelText.Get("ReviewSettingsDetails"), "Warning"); return false; }
         await SaveSettingsAsync();
         return _lastSaveSucceeded;
     }

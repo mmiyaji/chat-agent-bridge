@@ -1335,4 +1335,5 @@
   <data name="InboxApprovalNotice.Title" xml:space="preserve"><value>承認を待っています</value></data>
   <data name="InboxApprovalNotice.Message" xml:space="preserve"><value>依頼内容を確認し、承認または拒否を選んでください。</value></data>
   <data name="InboxOpenPendingApproval.Content" xml:space="preserve"><value>承認待ちを確認</value></data>
+  <data name="OverviewCliTile.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>既定エージェントのCLI確認結果です。成功した結果を引き継ぎますが、実行ファイルの更新、起動引数・実行方式・作業フォルダー・信頼フォルダーの変更後は再確認が必要です。ログイン状態やモデルの利用可否は実行時に確認します。</value></data>
 </root>

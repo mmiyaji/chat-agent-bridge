@@ -41,6 +41,86 @@ public sealed class CliVerificationStoreTests
 
         Assert.Null(await store.LoadAsync(fixture.Settings with { AgentArguments = "different secret-token args" }));
         Assert.Null(await store.LoadAsync(fixture.Settings with { TrustedWorkspaceRoots = "" }));
+        Assert.Null(await store.LoadAsync(fixture.Settings with { AgentMode = "app-server" }));
+    }
+
+    [Fact]
+    public async Task ProviderCacheIsSharedAcrossInstancesAndDoesNotOverwriteAnotherProvider()
+    {
+        using var fixture = new Fixture();
+        var custom = CliVerificationStore.ForProvider(fixture.CacheDirectory, AgentProfile.Custom);
+        await custom.SaveAsync(fixture.Settings, fixture.Verification());
+        var antigravitySettings = fixture.Settings with { AgentProvider = AgentProfile.Antigravity, AgentArguments = AgentProfile.DefaultAntigravityArguments };
+        var antigravityVerification = fixture.Verification() with
+        {
+            Probe = new CliProbeResult(fixture.Executable, "Antigravity 1.2.3", true),
+            Models = []
+        };
+        await CliVerificationStore.ForProvider(fixture.CacheDirectory, AgentProfile.Antigravity)
+            .SaveAsync(antigravitySettings, antigravityVerification);
+
+        Assert.NotNull(await CliVerificationStore.ForProvider(fixture.CacheDirectory, AgentProfile.Custom).LoadAsync(fixture.Settings));
+        var loaded = await CliVerificationStore.ForProvider(fixture.CacheDirectory, AgentProfile.Antigravity).LoadAsync(antigravitySettings);
+        Assert.Equal(antigravityVerification.Probe, loaded!.Probe);
+        Assert.Empty(loaded.Models); // CLI success does not require a reasoning/model catalog.
+        Assert.Null(await new CliVerificationStore(fixture.CacheDirectory).LoadAsync(fixture.Settings));
+    }
+
+    [Theory]
+    [InlineData("../outside")]
+    [InlineData("custom/../../outside")]
+    [InlineData("")]
+    public void ProviderCacheRejectsInvalidProviderDirectories(string provider)
+    {
+        using var fixture = new Fixture();
+        Assert.Throws<ArgumentException>(() => CliVerificationStore.ForProvider(fixture.CacheDirectory, provider));
+    }
+
+    [Fact]
+    public async Task ResolvedExecutableSpellingDoesNotInvalidateDiagnosticsOrModels()
+    {
+        using var fixture = new Fixture();
+        var relative = fixture.Settings with { AgentExecutable = Path.Combine("..", Path.GetFileName(fixture.Executable)) };
+        var store = new CliVerificationStore(fixture.CacheDirectory);
+        await store.SaveAsync(relative, fixture.Verification());
+
+        Assert.True(CliVerificationStore.HasSameContext(relative, fixture.Settings));
+        var loaded = await store.LoadAsync(fixture.Settings);
+        Assert.NotNull(loaded);
+        Assert.Single(loaded.Models);
+        Assert.False(CliVerificationStore.HasSameContext(relative, fixture.Settings with { AgentArguments = "--other" }));
+    }
+
+    [Fact]
+    public async Task LegacyCacheStillRestoresOnlyInItsOriginalContext()
+    {
+        using var fixture = new Fixture();
+        var store = new CliVerificationStore(fixture.CacheDirectory);
+        await store.SaveAsync(fixture.Settings, fixture.Verification());
+        var document = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(fixture.CachePath))!;
+        document["SchemaVersion"] = 1;
+        document["ContextFingerprint"] = CliVerificationStore.CreateContextFingerprint(fixture.Settings);
+        await File.WriteAllTextAsync(fixture.CachePath, document.ToJsonString());
+
+        Assert.NotNull(await store.LoadAsync(fixture.Settings));
+        Assert.Null(await store.LoadAsync(fixture.Settings with { AgentArguments = "--changed" }));
+    }
+
+    [Fact]
+    public async Task ModelOrPermissionSelectionDoesNotEraseCliDiagnostics()
+    {
+        using var fixture = new Fixture();
+        var store = new CliVerificationStore(fixture.CacheDirectory);
+        await store.SaveAsync(fixture.Settings, fixture.Verification());
+
+        var loaded = await store.LoadAsync(fixture.Settings with
+        {
+            AgentModel = "different-model", AgentReasoningEffort = "low", AgentPermissionMode = "workspace-write", AllowAgentNetwork = true
+        });
+
+        Assert.NotNull(loaded);
+        Assert.Equal(fixture.Verification().ConnectionSignature, loaded.ConnectionSignature);
+        Assert.Single(loaded.Models);
     }
 
     [Fact]

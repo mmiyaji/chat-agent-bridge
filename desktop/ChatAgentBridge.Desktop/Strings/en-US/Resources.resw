@@ -1335,4 +1335,5 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="InboxApprovalNotice.Title" xml:space="preserve"><value>Waiting for your approval</value></data>
   <data name="InboxApprovalNotice.Message" xml:space="preserve"><value>Review the request, then approve or reject it.</value></data>
   <data name="InboxOpenPendingApproval.Content" xml:space="preserve"><value>Review pending request</value></data>
+  <data name="OverviewCliTile.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Shows the CLI check for the default agent. Successful checks are reused; executable updates or changes to launch arguments, launch mode, working folder or trusted folders require another check. Sign-in and model availability are checked when used.</value></data>
 </root>
