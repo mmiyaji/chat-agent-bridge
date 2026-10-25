@@ -40,12 +40,16 @@ public sealed partial class MainPage
             // escaping the closing quote when the directory is a drive root.
             var directory = ViewModel.SettingsLocation.TrimEnd('\\', '/');
             if (directory.EndsWith(':')) directory += "\\.";
+            // The relaunched process must own the data folder rather than hand itself back to this one.
+            Deployment.SingleInstanceGate.Release();
             _ = AppInstance.Restart($"--data-dir \"{directory}\"");
             // A successful restart does not return.
+            Deployment.SingleInstanceGate.Reclaim();
             ShowLanguageRestartFailure("LanguageRestartFailed");
         }
         catch (Exception)
         {
+            Deployment.SingleInstanceGate.Reclaim();
             ShowLanguageRestartFailure("LanguageRestartFailed");
         }
         finally
