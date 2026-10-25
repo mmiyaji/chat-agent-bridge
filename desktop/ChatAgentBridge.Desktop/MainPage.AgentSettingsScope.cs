@@ -8,6 +8,8 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
+    // The same available-width threshold as the chat and history split panes.
+    private const double SettingsScopeNavigationBreakpoint = 700;
     private readonly string[] _agentScopeKeys = ["common", "codex", "claude", "gemini", "github-copilot", "antigravity", "custom"];
     private AgentProfileEditorControl? _agentProfileDetails;
     private NavigationView? _agentScopeNavigation;
@@ -86,12 +88,12 @@ public sealed partial class MainPage
     private void UpdateAgentScopeLayout(double width)
     {
         if (_agentScopeNavigation is null || width <= 0) return;
-        var mode = width >= 850
+        var mode = width >= SettingsScopeNavigationBreakpoint
             ? NavigationViewPaneDisplayMode.Left
             : NavigationViewPaneDisplayMode.Top;
         if (_agentScopeNavigation.PaneDisplayMode == mode) return;
         _agentScopeNavigation.PaneDisplayMode = mode;
-        _agentScopeNavigation.IsPaneOpen = width >= 850;
+        _agentScopeNavigation.IsPaneOpen = width >= SettingsScopeNavigationBreakpoint;
     }
 
     private void QueueAgentScopeSelection(string scope)

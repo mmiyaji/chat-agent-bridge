@@ -7,7 +7,6 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
-    private const double ConnectionScopeNavigationBreakpoint = 850;
     private NavigationView? _connectionScopeNavigation;
     private TextBlock? _connectionScopeHeading;
     private TextBlock? _connectionScopeDescription;
@@ -134,7 +133,7 @@ public sealed partial class MainPage
     private void UpdateConnectionScopeNavigation(double availableWidth)
     {
         if (_connectionScopeNavigation is null || availableWidth <= 0) return;
-        var showNavigation = availableWidth >= ConnectionScopeNavigationBreakpoint;
+        var showNavigation = availableWidth >= SettingsScopeNavigationBreakpoint;
         var mode = showNavigation
             ? NavigationViewPaneDisplayMode.Left
             : NavigationViewPaneDisplayMode.Top;

@@ -1,7 +1,8 @@
 # Exercises deferred page/tab/field search routes using an Antigravity default.
 # No CLI, chat connection, token lookup, or AI execution is performed.
 param([Parameter(Mandatory)][string]$AppDirectory,
-      [ValidateSet('en','ja')][string[]]$Languages=@('en','ja'))
+      [ValidateSet('en','ja')][string[]]$Languages=@('en','ja'),
+      [ValidateRange(500,1800)][int[]]$Widths=@(1160,500))
 $ErrorActionPreference='Stop'
 $source=Get-Content (Join-Path $PSScriptRoot 'SettingsSearchPanelUiSmoke.ps1') -Raw
 $begin=$source.IndexOf("`$ErrorActionPreference='Stop'")
@@ -10,6 +11,13 @@ if($begin -lt 0 -or -not $body.Success){throw 'Could not load search UI fixture 
 $fixtureRoot=$PSScriptRoot
 $helpers=$source.Substring($begin,$body.Index-$begin).Replace("'settings-search-panel-'","'settings-search-scopes-'").Replace('$PSScriptRoot','$fixtureRoot')
 . ([scriptblock]::Create($helpers))
+function Element($id){
+ # Keep the exact UIA element that satisfied the wait. A second popup lookup
+ # can momentarily return null while WinUI is arranging the flyout.
+ $script:foundElement=$null
+ Wait-For {$script:foundElement=Find $id;$null -ne $script:foundElement} "visible $id"
+ return $script:foundElement
+}
 function Start-Profile($data){
  $start=[Diagnostics.ProcessStartInfo]::new($exe);$start.UseShellExecute=$false;$start.WorkingDirectory=$appRoot
  $start.ArgumentList.Add('--data-dir');$start.ArgumentList.Add($data);[void]$start.Environment.Remove('CAB_WINUI_DATA_DIR')
@@ -79,10 +87,16 @@ try{
   Json (Join-Path $data 'portable-update.json') @{SchemaVersion=1;AutomaticChecksEnabled=$false;IncludePrereleases=$false}
   Json (Join-Path $data 'pricing-auto.json') @{schemaVersion=1;autoUpdateEnabled=$false;catalogJson=(Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/Pricing/model-prices.json') -Raw)}
   $hash=(Get-FileHash (Join-Path $data 'settings.json')).Hash;Start-Profile $data
-  foreach($width in @(1160,500)){
+  foreach($width in $Widths){
    Resize $width;$name=$prefix+'-'+$width
    # The first search starts on General, before any agent or chat tab was visited.
-   Search-Route 'Codex' 'AgentScopeCodex';Capture ($name+'-codex-tab')
+   Search-Route 'Codex' 'AgentScopeCodex'
+   if($width -eq 1040){
+    $common=(Element 'AgentScopeCommon').Current.BoundingRectangle
+    $codex=(Element 'AgentScopeCodex').Current.BoundingRectangle
+    if([Math]::Abs($common.Left-$codex.Left) -gt 8 -or $codex.Top-$common.Top -lt 24){throw 'Agent settings should keep vertical sidebar navigation at width 1040.'}
+   }
+   Capture ($name+'-codex-tab')
    Search-Route 'Codex model' 'AgentScopeCodex' 'AgentModel';Capture ($name+'-codex-model')
    Search-Route 'Codex reasoning' 'AgentScopeCodex' 'ReasoningEffortCandidates'
    Search-Route 'agent common' 'AgentScopeCommon'
@@ -99,6 +113,11 @@ try{
    if(($details.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)).Current.ExpandCollapseState -ne [Windows.Automation.ExpandCollapseState]::Expanded){throw 'Agent advanced settings did not expand.'}
    Capture ($name+'-advanced-field')
    Search-Route 'Slack' 'ConnectionScopeSlack'
+   if($width -eq 1040){
+    $common=(Element 'ConnectionScopeCommon').Current.BoundingRectangle
+    $slack=(Element 'ConnectionScopeSlack').Current.BoundingRectangle
+    if([Math]::Abs($common.Left-$slack.Left) -gt 8 -or $slack.Top-$common.Top -lt 24){throw 'Chat settings should keep vertical sidebar navigation at width 1040.'}
+   }
    Search-Route 'Slack token' 'ConnectionScopeSlack' 'SlackBotToken'
    Search-Route 'Discord' 'ConnectionScopeDiscord'
    Search-Route 'Discord user' 'ConnectionScopeDiscord' 'DiscordAllowedUserIds';Capture ($name+'-discord-field')
