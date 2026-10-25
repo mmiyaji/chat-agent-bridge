@@ -30,6 +30,8 @@ public sealed partial class MainPage : Page
     public bool IsHistorySelected { get; private set; }
     public bool IsAboutSelected { get; private set; }
     public bool IsFormSelected => !IsChatSelected && !IsHistorySelected && !IsAboutSelected;
+    public bool IsScrollableFormSelected => IsOverviewSelected || IsWorkbenchSelected;
+    public bool IsScopedSettingsSelected => IsAgentSelected || IsConnectionsSelected;
     public static bool CanUseForm(bool isGeneralSelected, bool isSettingsLoaded, bool isLoading) => !isLoading && (isGeneralSelected || isSettingsLoaded);
 
     public MainPage()
@@ -49,6 +51,8 @@ public sealed partial class MainPage : Page
         WizardHost.Content = _wizard;
         ViewModel.PropertyChanged += (_, args) =>
         {
+            if (args.PropertyName is nameof(ViewModel.IsSettingsLoaded) or nameof(ViewModel.IsLoading))
+                UpdateSettingsNavigationEnabledState();
             // PasswordBox cannot use a two-way x:Bind. Reflect rejected edits back
             // into its editor as well as the view model, without persisting them.
             if (args.PropertyName == nameof(ViewModel.MattermostToken))
@@ -420,6 +424,9 @@ public sealed partial class MainPage : Page
                     MainNavigation.UpdateLayout();
                     MainContentScroll.UpdateLayout();
                     MainContentScroll.ChangeView(0, 0, null, true);
+                    var scroll = ScrollViewerForPage(tag);
+                    scroll?.UpdateLayout();
+                    scroll?.ChangeView(0, 0, null, true);
                 });
             }
         }

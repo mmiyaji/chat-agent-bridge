@@ -1,11 +1,43 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 
 namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
+    private void UpdateSettingsNavigationEnabledState()
+    {
+        var enabled = CanUseForm(false, ViewModel.IsSettingsLoaded, ViewModel.IsLoading);
+        if (_agentScopeNavigation is not null) _agentScopeNavigation.IsEnabled = enabled;
+        if (_connectionScopeNavigation is not null) _connectionScopeNavigation.IsEnabled = enabled;
+    }
+
+    // The NavigationView owns the bounded menu pane (including its own overflow
+    // scrolling); this viewer owns only the settings details in either pane mode.
+    private static ScrollViewer CreateSettingsDetailScroll(UIElement content, string automationId)
+    {
+        var scroll = new ScrollViewer
+        {
+            Content = content,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            HorizontalScrollMode = ScrollMode.Disabled,
+            IsVerticalScrollChainingEnabled = false
+        };
+        AutomationProperties.SetAutomationId(scroll, automationId);
+        return scroll;
+    }
+
+    private ScrollViewer? ScrollViewerForPage(string? tag) => tag switch
+    {
+        "agent" => _agentSettingsScroll,
+        "connections" => _connectionSettingsScroll,
+        _ => MainContentScroll
+    };
+
     private void OpenStartupSettings_Click(object sender, RoutedEventArgs e) => OpenAutomaticSettings(false);
     private void OpenAutoConnectSettings_Click(object sender, RoutedEventArgs e) => OpenAutomaticSettings(true);
 

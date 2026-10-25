@@ -185,7 +185,7 @@ function Assert-Toggle([bool]$Expected, [bool]$Enabled) {
     return $toggle
 }
 function Assert-InViewport([string]$AutomationId) {
-    $scroll = Wait-Element $script:activeWindow 'MainContentScroll'
+    $scroll = Wait-Element $script:activeWindow 'ConnectionSettingsScroll'
     $element = Wait-Element $script:activeWindow $AutomationId
     $bounds = $element.Current.BoundingRectangle; $viewport = $scroll.Current.BoundingRectangle; $window = $script:activeWindow.Current.BoundingRectangle
     $left = [Math]::Max($viewport.Left, $window.Left); $top = [Math]::Max($viewport.Top, $window.Top)
@@ -196,9 +196,9 @@ function Assert-InViewport([string]$AutomationId) {
     return $element
 }
 function Scroll-IntoViewport([string]$AutomationId) {
-    $scroll = Wait-Element $script:activeWindow 'MainContentScroll'
+    $scroll = Wait-Element $script:activeWindow 'ConnectionSettingsScroll'
     $pattern = $null
-    if (-not $scroll.TryGetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern, [ref]$pattern)) { throw 'MainContentScroll has no ScrollPattern.' }
+    if (-not $scroll.TryGetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern, [ref]$pattern)) { throw 'ConnectionSettingsScroll has no ScrollPattern.' }
     for ($i = 0; $i -lt 12; $i++) {
         $element = Wait-Element $script:activeWindow $AutomationId
         $bounds = $element.Current.BoundingRectangle; $viewport = $scroll.Current.BoundingRectangle

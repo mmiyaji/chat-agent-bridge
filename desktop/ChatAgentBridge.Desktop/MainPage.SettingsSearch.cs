@@ -106,13 +106,13 @@ public sealed partial class MainPage
                     // focus out of the shared editor before resetting this tab's scroll.
                     var navigation = entry.PageTag == "agent" ? _agentScopeNavigation : _connectionScopeNavigation;
                     navigation?.Focus(FocusState.Programmatic);
-                    MainContentScroll.ChangeView(null, 0, null, true);
+                    ScrollViewerForPage(entry.PageTag)?.ChangeView(null, 0, null, true);
                     var scopeEntry = entry;
                     DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
                     {
                         if (_selectedNavigationTag == scopeEntry.PageTag &&
                             (scopeEntry.PageTag == "agent" ? _agentSettingsScope : _connectionSettingsScope) == scopeEntry.Scope)
-                            MainContentScroll.ChangeView(null, 0, null, true);
+                            ScrollViewerForPage(scopeEntry.PageTag)?.ChangeView(null, 0, null, true);
                     });
                     return;
                 }

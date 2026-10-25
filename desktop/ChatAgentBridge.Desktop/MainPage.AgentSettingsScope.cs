@@ -13,6 +13,7 @@ public sealed partial class MainPage
     private readonly string[] _agentScopeKeys = ["common", "codex", "claude", "gemini", "github-copilot", "antigravity", "custom"];
     private AgentProfileEditorControl? _agentProfileDetails;
     private NavigationView? _agentScopeNavigation;
+    private ScrollViewer? _agentSettingsScroll;
     private StackPanel? _agentScopeCommonGroup;
     private TextBlock? _agentScopeCommonHeading;
     private TextBlock? _agentScopeCommonHelp;
@@ -25,7 +26,7 @@ public sealed partial class MainPage
 
     private void InitializeAgentSettingsScope()
     {
-        if (AgentBasicSettings.Parent is not StackPanel original ||
+        if (AgentBasicSettings.Parent is not Panel original ||
             AgentBasicSettings.Content is not StackPanel basic || basic.Children.FirstOrDefault() is not StackPanel workspace) return;
         original.Children.Clear();
         basic.Children.Remove(workspace);
@@ -46,6 +47,8 @@ public sealed partial class MainPage
 
         _agentScopeNavigation = new NavigationView
         {
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            VerticalContentAlignment = VerticalAlignment.Stretch,
             PaneDisplayMode = NavigationViewPaneDisplayMode.Left,
             IsPaneOpen = true,
             OpenPaneLength = 200,
@@ -72,17 +75,18 @@ public sealed partial class MainPage
         page.Children.Add(_agentScopeBreadcrumb);
         page.Children.Add(_agentScopeCommonGroup);
         page.Children.Add(_agentProfileDetails);
-        _agentScopeNavigation.Content = page;
+        _agentSettingsScroll = CreateSettingsDetailScroll(page, "AgentSettingsScroll");
+        _agentScopeNavigation.Content = _agentSettingsScroll;
         var shell = new Grid();
         shell.Children.Add(_agentScopeNavigation);
         AttachSettingsNavigationResizer(_agentScopeNavigation, shell, "AgentScopeSizer");
         original.Children.Add(shell);
-        original.Spacing = 0;
         _agentScopeNavigation.SizeChanged += (_, args) => UpdateAgentScopeLayout(args.NewSize.Width);
         Loaded += (_, _) => RefreshAgentScopeLabels();
         ApplyAgentScopeSelection();
         RefreshAgentScopeLabels();
         UpdateAgentScopeLayout(_agentScopeNavigation.ActualWidth);
+        UpdateSettingsNavigationEnabledState();
     }
 
     private void UpdateAgentScopeLayout(double width)
@@ -158,7 +162,7 @@ public sealed partial class MainPage
             if (scope != "common" && !await _agentProfileDetails.SelectProviderAsync(scope)) return false;
             _agentSettingsScope = scope;
             _agentScopeInitialized = true;
-            MainContentScroll.ChangeView(null, 0, null, true);
+            _agentSettingsScroll?.ChangeView(null, 0, null, true);
             return true;
         }
         finally

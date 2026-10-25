@@ -45,7 +45,7 @@ function Search-Route([string]$query,[string]$scopeId,[string]$fieldId=''){
  if($fieldId){Wait-For {Focus-Within $fieldId} "focused field for $query";Fits (Element $fieldId)}
  else{
   Wait-For {
-   $scroll=Find 'MainContentScroll'
+   $scroll=Find ($(if($scopeId.StartsWith('AgentScope')){'AgentSettingsScroll'}else{'ConnectionSettingsScroll'}))
    $scroll -and ($scroll.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)).Current.VerticalScrollPercent -le 0.1
   } "tab starts at the top for $query"
  }

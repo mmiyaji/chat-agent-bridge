@@ -105,9 +105,10 @@ function Select-Element([string]$Id) {
 }
 function Scroll-ToElement([string]$Id) {
     $target = Wait-Element $Id
-    $container = Wait-Element 'MainContentScroll'
+    $container = @('AgentSettingsScroll','ConnectionSettingsScroll','MainContentScroll') | ForEach-Object { Find-Element $script:window $_ } | Where-Object { $_ -and -not $_.Current.IsOffscreen } | Select-Object -First 1
+    if (-not $container) { throw 'No active form scroll pane was found.' }
     $pattern = $null
-    if (-not $container.TryGetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern, [ref]$pattern)) { throw 'MainContentScroll lacks ScrollPattern.' }
+    if (-not $container.TryGetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern, [ref]$pattern)) { throw 'Active form pane lacks ScrollPattern.' }
     $scroll = [Windows.Automation.ScrollPattern]$pattern
     for ($index = 0; $index -lt 12; $index++) {
         if (-not $target.Current.IsOffscreen) { return $target }

@@ -21,7 +21,7 @@ public sealed partial class MainPage
             ++_scrollResetGeneration;
             AgentBasicSettings.IsExpanded = true;
             MainNavigation.UpdateLayout();
-            MainContentScroll.UpdateLayout();
+            _agentSettingsScroll?.UpdateLayout();
             WorkspaceRootInput.StartBringIntoView();
         });
     }

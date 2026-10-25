@@ -8,6 +8,7 @@ namespace ChatAgentBridge_Desktop;
 public sealed partial class MainPage
 {
     private NavigationView? _connectionScopeNavigation;
+    private ScrollViewer? _connectionSettingsScroll;
     private TextBlock? _connectionScopeHeading;
     private TextBlock? _connectionScopeDescription;
     private StackPanel? _connectionScopeCommonGroup;
@@ -22,7 +23,7 @@ public sealed partial class MainPage
     /// <summary>Builds the local connection-settings navigation while retaining the XAML-owned controls.</summary>
     private void InitializeConnectionSettingsScope()
     {
-        var originalContent = MattermostSettingsCard.Parent as StackPanel;
+        var originalContent = MattermostSettingsCard.Parent as Panel;
         if (originalContent is null) return;
 
         var guide = FindLocalizedElement<TextBlock>(originalContent, "ChatSettingsGuide");
@@ -57,7 +58,6 @@ public sealed partial class MainPage
         // Detach the original panel's remaining elements so no XAML control is
         // recreated; all named fields and event handlers continue to point at
         // the original instances.
-        originalContent.Spacing = 0;
         foreach (var element in originalChildren)
         {
             if (ReferenceEquals(element, guide) || ReferenceEquals(element, overview) ||
@@ -72,6 +72,8 @@ public sealed partial class MainPage
 
         _connectionScopeNavigation = new NavigationView
         {
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            VerticalContentAlignment = VerticalAlignment.Stretch,
             PaneDisplayMode = NavigationViewPaneDisplayMode.Left,
             IsPaneOpen = true,
             OpenPaneLength = 200,
@@ -110,13 +112,15 @@ public sealed partial class MainPage
         page.Children.Add(_connectionScopeMattermostGroup);
         page.Children.Add(_connectionScopeSlackGroup);
         page.Children.Add(_connectionScopeDiscordGroup);
-        _connectionScopeNavigation.Content = page;
+        _connectionSettingsScroll = CreateSettingsDetailScroll(page, "ConnectionSettingsScroll");
+        _connectionScopeNavigation.Content = _connectionSettingsScroll;
         originalContent.Children.Add(shell);
 
         _connectionScopeNavigation.SizeChanged += (_, args) => UpdateConnectionScopeNavigation(args.NewSize.Width);
         SetConnectionSettingsScope("common");
         RefreshConnectionScopeLabels(System.Globalization.CultureInfo.CurrentUICulture);
         UpdateConnectionScopeNavigation(_connectionScopeNavigation.ActualWidth);
+        UpdateSettingsNavigationEnabledState();
     }
 
     private static T? FindLocalizedElement<T>(Panel panel, string key) where T : FrameworkElement =>
@@ -146,7 +150,9 @@ public sealed partial class MainPage
     {
         if (_connectionScopeHeading is null || _connectionScopeCommonGroup is null ||
             _connectionScopeMattermostGroup is null || _connectionScopeSlackGroup is null || _connectionScopeDiscordGroup is null) return;
-        _connectionSettingsScope = scope is "mattermost" or "slack" or "discord" ? scope : "common";
+        var nextScope = scope is "mattermost" or "slack" or "discord" ? scope : "common";
+        var scopeChanged = _connectionSettingsScope != nextScope;
+        _connectionSettingsScope = nextScope;
         var isCommon = _connectionSettingsScope == "common";
         _connectionScopeHeading.Text = _connectionSettingsScope switch
         {
@@ -173,6 +179,7 @@ public sealed partial class MainPage
         }
         _syncingConnectionScopeSelection = false;
         UpdateScopeBreadcrumb(_connectionScopeBreadcrumb, "connections", _connectionScopeNavigation, isCommon);
+        if (scopeChanged) _connectionSettingsScroll?.ChangeView(null, 0, null, true);
     }
 
     private void RefreshConnectionScopeLabels(System.Globalization.CultureInfo culture)

@@ -268,7 +268,7 @@ function Assert-VisibleInsideViewport([string]$AutomationId, [Windows.Automation
 }
 
 function Scroll-ToVisible([Windows.Automation.AutomationElement]$Target) {
-    $scroll = Wait-Element $script:activeWindow 'MainContentScroll'
+    $scroll = Wait-Element $script:activeWindow 'ConnectionSettingsScroll'
     $pattern = [Windows.Automation.ScrollPattern]$scroll.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
     $viewport = $scroll.Current.BoundingRectangle
     $window = $script:activeWindow.Current.BoundingRectangle
@@ -325,7 +325,7 @@ function Run-Scenario([string]$Language, [string]$Theme) {
 
     $combo = Wait-Element $script:activeWindow 'ChatFollowUpMode'
     Scroll-ToVisible $combo
-    $scroll = Wait-Element $script:activeWindow 'MainContentScroll'
+    $scroll = Wait-Element $script:activeWindow 'ConnectionSettingsScroll'
     $help = Assert-VisibleInsideViewport 'ChatFollowUpModeHelp' $scroll $script:activeWindow
     $combo = Assert-VisibleInsideViewport 'ChatFollowUpMode' $scroll $script:activeWindow
     if ($combo.Current.Name -notlike '*Messages received during execution*' -and
