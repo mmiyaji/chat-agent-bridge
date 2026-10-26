@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="AdvancedHeader" xml:space="preserve"><value>詳細設定</value></data>
+  <data name="AdvancedDescription" xml:space="preserve"><value>ローカルの記録とログファイルの保持期間を設定します。</value></data>
+  <data name="StatisticsHeading" xml:space="preserve"><value>統計</value></data>
+  <data name="StatisticsDays" xml:space="preserve"><value>統計の保持期間（日）</value></data>
+  <data name="AuditHeading" xml:space="preserve"><value>監査ログ</value></data>
+  <data name="AuditDays" xml:space="preserve"><value>監査ログの保持期間（日）</value></data>
+  <data name="AuditSegmentSize" xml:space="preserve"><value>セグメントの最大サイズ（MiB）</value></data>
+  <data name="AuditMaxSegments" xml:space="preserve"><value>セグメントの最大数</value></data>
+  <data name="HistoryHeading" xml:space="preserve"><value>実行履歴</value></data>
+  <data name="HistoryDays" xml:space="preserve"><value>履歴の保持期間（日）</value></data>
+  <data name="HistoryMaxRecords" xml:space="preserve"><value>履歴レコードの最大数</value></data>
+  <data name="ConversationDays" xml:space="preserve"><value>会話の保持期間（日）</value></data>
+  <data name="DiagnosticsHeading" xml:space="preserve"><value>通知の診断ログ</value></data>
+  <data name="DiagnosticsDays" xml:space="preserve"><value>診断ログの保持期間（日）</value></data>
+  <data name="DiagnosticsFileSize" xml:space="preserve"><value>診断ファイルの最大サイズ（KiB）</value></data>
+  <data name="DiagnosticsMaxFiles" xml:space="preserve"><value>診断ファイルの最大数</value></data>
+  <data name="Explanation" xml:space="preserve"><value>統計は詳細履歴や監査記録とは別に保持されます。サイズや件数の上限により、日数の上限より前に古いデータが削除される場合があります。設定を適用すると、上限より古いデータは削除されます。現在のリクエストや実行を再起動または削除することはありません。</value></data>
+  <data name="DefaultsButton" xml:space="preserve"><value>既定値に戻す</value></data>
+  <data name="ApplyButton" xml:space="preserve"><value>適用</value></data>
+  <data name="LoadFailed" xml:space="preserve"><value>保存済みの保持設定を読み込めませんでした。既定値を表示しています。変更を適用するには確認が必要です。</value></data>
+  <data name="DefaultsNotice" xml:space="preserve"><value>既定値を表示しました。保存するには［適用］を選択してください。</value></data>
+  <data name="WholeNumberError" xml:space="preserve"><value>各設定には整数を入力してください。</value></data>
+  <data name="RangeError" xml:space="preserve"><value>許容範囲外の値があります。</value></data>
+  <data name="ConfirmTitle" xml:space="preserve"><value>保持上限を引き下げますか？</value></data>
+  <data name="ConfirmMessage" xml:space="preserve"><value>保持期間や容量の上限を引き下げると、保存済みの古いデータが完全に削除される場合があります。新しい上限より古いデータは設定の適用時に削除されることがあります。現在のリクエストや実行は再起動または削除されません。</value></data>
+  <data name="ConfirmApply" xml:space="preserve"><value>上限を適用</value></data>
+  <data name="Cancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="Applied" xml:space="preserve"><value>保持設定を適用しました。</value></data>
+  <data name="ApplyFailed" xml:space="preserve"><value>保持設定を適用できませんでした。現在の入力値は画面に残っています。</value></data>
+  <data name="ApplyUnavailable" xml:space="preserve"><value>現在、保持設定を適用できません。</value></data>
+  <data name="SavedCleanupPending" xml:space="preserve"><value>設定は保存しましたが、一部のログを整理できませんでした。整理は自動で再試行します。</value></data>
+</root>

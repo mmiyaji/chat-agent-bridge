@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="AdvancedHeader" xml:space="preserve"><value>Advanced settings</value></data>
+  <data name="AdvancedDescription" xml:space="preserve"><value>Configure how long local records and log files are kept.</value></data>
+  <data name="StatisticsHeading" xml:space="preserve"><value>Statistics</value></data>
+  <data name="StatisticsDays" xml:space="preserve"><value>Statistics retention (days)</value></data>
+  <data name="AuditHeading" xml:space="preserve"><value>Audit log</value></data>
+  <data name="AuditDays" xml:space="preserve"><value>Audit retention (days)</value></data>
+  <data name="AuditSegmentSize" xml:space="preserve"><value>Maximum segment size (MiB)</value></data>
+  <data name="AuditMaxSegments" xml:space="preserve"><value>Maximum segment count</value></data>
+  <data name="HistoryHeading" xml:space="preserve"><value>Execution history</value></data>
+  <data name="HistoryDays" xml:space="preserve"><value>History retention (days)</value></data>
+  <data name="HistoryMaxRecords" xml:space="preserve"><value>Maximum history records</value></data>
+  <data name="ConversationDays" xml:space="preserve"><value>Conversation retention (days)</value></data>
+  <data name="DiagnosticsHeading" xml:space="preserve"><value>Notification diagnostic logs</value></data>
+  <data name="DiagnosticsDays" xml:space="preserve"><value>Diagnostic retention (days)</value></data>
+  <data name="DiagnosticsFileSize" xml:space="preserve"><value>Maximum diagnostic file size (KiB)</value></data>
+  <data name="DiagnosticsMaxFiles" xml:space="preserve"><value>Maximum diagnostic file count</value></data>
+  <data name="Explanation" xml:space="preserve"><value>Statistics are retained separately from detailed history and audit records. Size and count limits can prune older data before its day limit. Data older than a configured limit is removed when you apply changes. Applying settings does not restart or delete current requests or executions.</value></data>
+  <data name="DefaultsButton" xml:space="preserve"><value>Restore defaults</value></data>
+  <data name="ApplyButton" xml:space="preserve"><value>Apply</value></data>
+  <data name="LoadFailed" xml:space="preserve"><value>Could not load the saved retention settings. Defaults are shown; applying changes requires confirmation.</value></data>
+  <data name="DefaultsNotice" xml:space="preserve"><value>Default values are shown. Select Apply to save them.</value></data>
+  <data name="WholeNumberError" xml:space="preserve"><value>Enter a whole number for each setting.</value></data>
+  <data name="RangeError" xml:space="preserve"><value>One or more values are outside the allowed range.</value></data>
+  <data name="ConfirmTitle" xml:space="preserve"><value>Apply lower retention limits?</value></data>
+  <data name="ConfirmMessage" xml:space="preserve"><value>Lower retention or capacity limits can permanently remove older stored data. Data older than the new limits may be deleted when these settings are applied. Current requests and executions will continue without restart or deletion.</value></data>
+  <data name="ConfirmApply" xml:space="preserve"><value>Apply limits</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Applied" xml:space="preserve"><value>Retention settings applied.</value></data>
+  <data name="ApplyFailed" xml:space="preserve"><value>Could not apply retention settings. Your current values remain on screen.</value></data>
+  <data name="ApplyUnavailable" xml:space="preserve"><value>Retention settings cannot be applied right now.</value></data>
+  <data name="SavedCleanupPending" xml:space="preserve"><value>Settings were saved, but some logs could not be cleaned up. Cleanup will be retried automatically.</value></data>
+</root>

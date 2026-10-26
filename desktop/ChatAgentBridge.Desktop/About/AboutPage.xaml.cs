@@ -21,6 +21,7 @@ public sealed partial class AboutPage : Page
     public AboutPage()
     {
         InitializeComponent();
+        LogRetentionSettingsControl.ApplyRequested = ApplyLogRetentionAsync;
         string version;
         string packageName;
         if (DeploymentRuntime.IsPortable)

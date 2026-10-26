@@ -118,6 +118,7 @@ pairs = [
     ("ChatAgentBridge.Desktop/Localization/ViewModelStrings.resx", "ChatAgentBridge.Desktop/Localization/ViewModelStrings.ja.resx"),
     ("ChatAgentBridge.Desktop/Diagnostics/DiagnosticsStrings.resx", "ChatAgentBridge.Desktop/Diagnostics/DiagnosticsStrings.ja.resx"),
     ("ChatAgentBridge.Desktop/Maintenance/MaintenanceStrings.resx", "ChatAgentBridge.Desktop/Maintenance/MaintenanceStrings.ja.resx"),
+    ("ChatAgentBridge.Desktop/Maintenance/LogRetentionStrings.resx", "ChatAgentBridge.Desktop/Maintenance/LogRetentionStrings.ja.resx"),
 ]
 catalogs = []
 check_resource_key_scanner()
