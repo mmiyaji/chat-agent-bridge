@@ -279,10 +279,8 @@ function Test-Scenario([string]$Language, [string]$Theme, [int]$Width, [string]$
             if ($advancedPattern.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Expanded) { $expanded = $true; break }
         }
         if (-not $expanded) { throw 'Advanced settings did not expand.' }
-        [void](Scroll-TargetIntoView 'LogManagementExpander')
-        $logPattern = Get-ExpanderPattern 'LogManagementExpander'
-        Assert-Equal ([Windows.Automation.ExpandCollapseState]::Expanded) $logPattern.Current.ExpandCollapseState 'Log management should be open when Advanced settings is opened.'
-        $logElement = Element 'LogManagementExpander'
+        [void](Scroll-TargetIntoView 'LogManagementHeading')
+        $logElement = Element 'LogManagementHeading'
         $logName = $logElement.Current.Name
         if ($logName -notmatch 'Log management|ログ管理') { throw "Log management heading is missing or incorrectly localized: '$logName'." }
         Scroll-AboutToEnd
@@ -301,9 +299,7 @@ function Test-Scenario([string]$Language, [string]$Theme, [int]$Width, [string]$
             $advancedPattern.Expand()
             Start-Sleep -Milliseconds 250
             Assert-Equal ([Windows.Automation.ExpandCollapseState]::Expanded) $advancedPattern.Current.ExpandCollapseState 'Advanced settings did not reopen.'
-            [void](Scroll-TargetIntoView 'LogManagementExpander')
-            $logPattern = Get-ExpanderPattern 'LogManagementExpander'
-            Assert-Equal ([Windows.Automation.ExpandCollapseState]::Expanded) $logPattern.Current.ExpandCollapseState 'Log management did not remain open after reopening Advanced settings.'
+            [void](Scroll-TargetIntoView 'LogManagementHeading')
             [void](Scroll-TargetIntoView 'LogRetentionApplyButton')
             Assert-InWindow 'LogRetentionApplyButton'
             Screenshot '04-reopened'
@@ -417,9 +413,7 @@ function Test-Scenario([string]$Language, [string]$Theme, [int]$Width, [string]$
         $restartExpander.Expand()
         Start-Sleep -Milliseconds 250
         Assert-Equal ([Windows.Automation.ExpandCollapseState]::Expanded) $restartExpander.Current.ExpandCollapseState 'Advanced settings did not reopen after restart.'
-        [void](Scroll-TargetIntoView 'LogManagementExpander')
-        $restartLog = Get-ExpanderPattern 'LogManagementExpander'
-        Assert-Equal ([Windows.Automation.ExpandCollapseState]::Expanded) $restartLog.Current.ExpandCollapseState 'Log management did not open after restart.'
+        [void](Scroll-TargetIntoView 'LogManagementHeading')
         Assert-Equal 1 (Read-Number 'LogRetentionAuditDays') 'Audit retention did not reload after restart.'
         Assert-Equal 1 (Read-Number 'LogRetentionHistoryDays') 'History retention did not reload after restart.'
         $restartedStats = Get-Content -LiteralPath $statsPath -Raw | ConvertFrom-Json

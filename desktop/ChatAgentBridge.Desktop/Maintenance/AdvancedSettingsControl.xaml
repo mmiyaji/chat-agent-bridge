@@ -3,22 +3,30 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:maintenance="using:ChatAgentBridge_Desktop.Maintenance"
+    xmlns:settings="using:CommunityToolkit.WinUI.Controls"
     AutomationProperties.AutomationId="AdvancedSettingsControl">
-    <Expander x:Name="AdvancedExpander" IsExpanded="False"
-              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-              AutomationProperties.AutomationId="AdvancedSettingsExpander">
-        <Expander.Header>
-            <StackPanel Spacing="4">
-                <TextBlock x:Name="AdvancedHeading" Style="{StaticResource BodyStrongTextBlockStyle}"
-                           AutomationProperties.AutomationId="AdvancedSettingsHeading" />
-                <TextBlock x:Name="AdvancedDescription" TextWrapping="Wrap"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           AutomationProperties.AutomationId="AdvancedSettingsDescription" />
-            </StackPanel>
-        </Expander.Header>
-        <StackPanel Spacing="8" HorizontalAlignment="Stretch">
-            <!-- Future advanced sections belong here as sibling content controls. -->
-            <maintenance:LogRetentionControl x:Name="LogManagementControl" />
-        </StackPanel>
-    </Expander>
+    <settings:SettingsExpander x:Name="AdvancedExpander" IsExpanded="False"
+                               HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                               AutomationProperties.AutomationId="AdvancedSettingsExpander">
+        <settings:SettingsExpander.Header>
+            <TextBlock x:Name="AdvancedHeading" Style="{StaticResource BodyTextBlockStyle}"
+                       AutomationProperties.AutomationId="AdvancedSettingsHeading" />
+        </settings:SettingsExpander.Header>
+        <settings:SettingsExpander.Description>
+            <TextBlock x:Name="AdvancedDescription" TextWrapping="Wrap"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       AutomationProperties.AutomationId="AdvancedSettingsDescription" />
+        </settings:SettingsExpander.Description>
+        <settings:SettingsExpander.HeaderIcon>
+            <FontIcon Glyph="&#xE713;" />
+        </settings:SettingsExpander.HeaderIcon>
+        <settings:SettingsExpander.Items>
+            <settings:SettingsCard ContentAlignment="Vertical" HorizontalContentAlignment="Stretch">
+                <StackPanel Spacing="24" HorizontalAlignment="Stretch">
+                    <!-- Keep future advanced sections as siblings of LogRetentionControl in this container. -->
+                    <maintenance:LogRetentionControl x:Name="LogManagementControl" />
+                </StackPanel>
+            </settings:SettingsCard>
+        </settings:SettingsExpander.Items>
+    </settings:SettingsExpander>
 </UserControl>

@@ -42,8 +42,8 @@ public sealed partial class LogRetentionControl : UserControl
 
     private void Localize()
     {
-        LogManagementExpander.Header = Text("LogManagementHeader");
-        LogManagementExpander.Description = Text("LogManagementDescription");
+        LogManagementHeading.Text = Text("LogManagementHeader");
+        LogManagementDescription.Text = Text("LogManagementDescription");
         StatisticsHeading.Text = Text("StatisticsHeading");
         StatisticsDaysLabel.Text = Text("StatisticsDays");
         AuditHeading.Text = Text("AuditHeading");
@@ -58,7 +58,7 @@ public sealed partial class LogRetentionControl : UserControl
         DiagnosticsDaysLabel.Text = Text("DiagnosticsDays");
         DiagnosticsFileSizeLabel.Text = Text("DiagnosticsFileSize");
         DiagnosticsMaxFilesLabel.Text = Text("DiagnosticsMaxFiles");
-        Explanation.Text = Text("Explanation");
+        ExplanationBar.Message = Text("Explanation");
         DefaultsButton.Content = Text("DefaultsButton");
         ApplyButton.Content = Text("ApplyButton");
         AutomationProperties.SetName(StatisticsDays, Text("StatisticsDays"));

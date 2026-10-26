@@ -4,77 +4,79 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:settings="using:CommunityToolkit.WinUI.Controls"
     AutomationProperties.AutomationId="LogRetentionControl">
-    <StackPanel Spacing="8">
-        <settings:SettingsExpander x:Name="LogManagementExpander" IsExpanded="True"
-                                   AutomationProperties.AutomationId="LogManagementExpander">
-            <settings:SettingsExpander.Items>
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionStatisticsGroup">
-                    <settings:SettingsCard.Header><TextBlock x:Name="StatisticsHeading" Style="{StaticResource BodyStrongTextBlockStyle}" /></settings:SettingsCard.Header>
-                </settings:SettingsCard>
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionStatisticsDaysRow">
-                    <settings:SettingsCard.Header><TextBlock x:Name="StatisticsDaysLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
-                    <NumberBox x:Name="StatisticsDays" Width="112" Minimum="30" Maximum="3660" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionStatisticsDays" />
-                </settings:SettingsCard>
+    <StackPanel Spacing="24">
+        <StackPanel Spacing="4">
+            <TextBlock x:Name="LogManagementHeading" Style="{StaticResource BodyStrongTextBlockStyle}"
+                       AutomationProperties.AutomationId="LogManagementHeading" />
+            <TextBlock x:Name="LogManagementDescription" TextWrapping="Wrap"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       AutomationProperties.AutomationId="LogManagementDescription" />
+        </StackPanel>
 
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionAuditGroup">
-                    <settings:SettingsCard.Header><TextBlock x:Name="AuditHeading" Style="{StaticResource BodyStrongTextBlockStyle}" /></settings:SettingsCard.Header>
-                </settings:SettingsCard>
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionAuditDaysRow">
-                    <settings:SettingsCard.Header><TextBlock x:Name="AuditDaysLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
-                    <NumberBox x:Name="AuditDays" Width="112" Minimum="1" Maximum="3650" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionAuditDays" />
-                </settings:SettingsCard>
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionAuditSegmentSizeRow">
-                    <settings:SettingsCard.Header><TextBlock x:Name="AuditSegmentSizeLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
-                    <NumberBox x:Name="AuditSegmentSize" Width="112" Minimum="1" Maximum="16" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionAuditSegmentSizeMb" />
-                </settings:SettingsCard>
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionAuditMaxSegmentsRow">
-                    <settings:SettingsCard.Header><TextBlock x:Name="AuditMaxSegmentsLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
-                    <NumberBox x:Name="AuditMaxSegments" Width="112" Minimum="2" Maximum="64" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionAuditMaxSegments" />
-                </settings:SettingsCard>
+        <StackPanel Spacing="8">
+            <TextBlock x:Name="StatisticsHeading" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <settings:SettingsCard AutomationProperties.AutomationId="RetentionStatisticsDaysRow">
+                <settings:SettingsCard.Header><TextBlock x:Name="StatisticsDaysLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+                <NumberBox x:Name="StatisticsDays" Width="112" Minimum="30" Maximum="3660" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionStatisticsDays" />
+            </settings:SettingsCard>
+        </StackPanel>
 
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionHistoryGroup">
-                    <settings:SettingsCard.Header><TextBlock x:Name="HistoryHeading" Style="{StaticResource BodyStrongTextBlockStyle}" /></settings:SettingsCard.Header>
-                </settings:SettingsCard>
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionHistoryDaysRow">
-                    <settings:SettingsCard.Header><TextBlock x:Name="HistoryDaysLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
-                    <NumberBox x:Name="HistoryDays" Width="112" Minimum="1" Maximum="365" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionHistoryDays" />
-                </settings:SettingsCard>
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionHistoryMaxRecordsRow">
-                    <settings:SettingsCard.Header><TextBlock x:Name="HistoryMaxRecordsLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
-                    <NumberBox x:Name="HistoryMaxRecords" Width="112" Minimum="50" Maximum="500" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionHistoryMaxRecords" />
-                </settings:SettingsCard>
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionConversationDaysRow">
-                    <settings:SettingsCard.Header><TextBlock x:Name="ConversationDaysLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
-                    <NumberBox x:Name="ConversationDays" Width="112" Minimum="1" Maximum="365" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionConversationDays" />
-                </settings:SettingsCard>
+        <StackPanel Spacing="8">
+            <TextBlock x:Name="AuditHeading" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <settings:SettingsCard AutomationProperties.AutomationId="RetentionAuditDaysRow">
+                <settings:SettingsCard.Header><TextBlock x:Name="AuditDaysLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+                <NumberBox x:Name="AuditDays" Width="112" Minimum="1" Maximum="3650" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionAuditDays" />
+            </settings:SettingsCard>
+            <settings:SettingsCard AutomationProperties.AutomationId="RetentionAuditSegmentSizeRow">
+                <settings:SettingsCard.Header><TextBlock x:Name="AuditSegmentSizeLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+                <NumberBox x:Name="AuditSegmentSize" Width="112" Minimum="1" Maximum="16" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionAuditSegmentSizeMb" />
+            </settings:SettingsCard>
+            <settings:SettingsCard AutomationProperties.AutomationId="RetentionAuditMaxSegmentsRow">
+                <settings:SettingsCard.Header><TextBlock x:Name="AuditMaxSegmentsLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+                <NumberBox x:Name="AuditMaxSegments" Width="112" Minimum="2" Maximum="64" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionAuditMaxSegments" />
+            </settings:SettingsCard>
+        </StackPanel>
 
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionDiagnosticsGroup">
-                    <settings:SettingsCard.Header><TextBlock x:Name="DiagnosticsHeading" Style="{StaticResource BodyStrongTextBlockStyle}" /></settings:SettingsCard.Header>
-                </settings:SettingsCard>
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionDiagnosticsDaysRow">
-                    <settings:SettingsCard.Header><TextBlock x:Name="DiagnosticsDaysLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
-                    <NumberBox x:Name="DiagnosticsDays" Width="112" Minimum="1" Maximum="90" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionDiagnosticsDays" />
-                </settings:SettingsCard>
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionDiagnosticsFileSizeRow">
-                    <settings:SettingsCard.Header><TextBlock x:Name="DiagnosticsFileSizeLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
-                    <NumberBox x:Name="DiagnosticsFileSize" Width="112" Minimum="64" Maximum="1024" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionDiagnosticsFileKiB" />
-                </settings:SettingsCard>
-                <settings:SettingsCard AutomationProperties.AutomationId="RetentionDiagnosticsMaxFilesRow">
-                    <settings:SettingsCard.Header><TextBlock x:Name="DiagnosticsMaxFilesLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
-                    <NumberBox x:Name="DiagnosticsMaxFiles" Width="112" Minimum="1" Maximum="8" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionDiagnosticsMaxFiles" />
-                </settings:SettingsCard>
-                <!-- SettingsExpander applies SettingsCard container styles to each item. -->
-                <settings:SettingsCard ContentAlignment="Vertical" HorizontalContentAlignment="Stretch">
-                  <StackPanel Spacing="12" HorizontalAlignment="Stretch">
-                    <TextBlock x:Name="Explanation" Margin="16,0" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="LogRetentionExplanation" />
-                    <InfoBar x:Name="StatusBar" IsOpen="False" IsClosable="True" AutomationProperties.AutomationId="LogRetentionStatus" />
-                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                        <Button x:Name="DefaultsButton" Click="Defaults_Click" AutomationProperties.AutomationId="LogRetentionDefaultsButton" />
-                        <Button x:Name="ApplyButton" Click="Apply_Click" AutomationProperties.AutomationId="LogRetentionApplyButton" />
-                    </StackPanel>
-                  </StackPanel>
-                </settings:SettingsCard>
-            </settings:SettingsExpander.Items>
-        </settings:SettingsExpander>
+        <StackPanel Spacing="8">
+            <TextBlock x:Name="HistoryHeading" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <settings:SettingsCard AutomationProperties.AutomationId="RetentionHistoryDaysRow">
+                <settings:SettingsCard.Header><TextBlock x:Name="HistoryDaysLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+                <NumberBox x:Name="HistoryDays" Width="112" Minimum="1" Maximum="365" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionHistoryDays" />
+            </settings:SettingsCard>
+            <settings:SettingsCard AutomationProperties.AutomationId="RetentionHistoryMaxRecordsRow">
+                <settings:SettingsCard.Header><TextBlock x:Name="HistoryMaxRecordsLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+                <NumberBox x:Name="HistoryMaxRecords" Width="112" Minimum="50" Maximum="500" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionHistoryMaxRecords" />
+            </settings:SettingsCard>
+            <settings:SettingsCard AutomationProperties.AutomationId="RetentionConversationDaysRow">
+                <settings:SettingsCard.Header><TextBlock x:Name="ConversationDaysLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+                <NumberBox x:Name="ConversationDays" Width="112" Minimum="1" Maximum="365" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionConversationDays" />
+            </settings:SettingsCard>
+        </StackPanel>
+
+        <StackPanel Spacing="8">
+            <TextBlock x:Name="DiagnosticsHeading" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <settings:SettingsCard AutomationProperties.AutomationId="RetentionDiagnosticsDaysRow">
+                <settings:SettingsCard.Header><TextBlock x:Name="DiagnosticsDaysLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+                <NumberBox x:Name="DiagnosticsDays" Width="112" Minimum="1" Maximum="90" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionDiagnosticsDays" />
+            </settings:SettingsCard>
+            <settings:SettingsCard AutomationProperties.AutomationId="RetentionDiagnosticsFileSizeRow">
+                <settings:SettingsCard.Header><TextBlock x:Name="DiagnosticsFileSizeLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+                <NumberBox x:Name="DiagnosticsFileSize" Width="112" Minimum="64" Maximum="1024" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionDiagnosticsFileKiB" />
+            </settings:SettingsCard>
+            <settings:SettingsCard AutomationProperties.AutomationId="RetentionDiagnosticsMaxFilesRow">
+                <settings:SettingsCard.Header><TextBlock x:Name="DiagnosticsMaxFilesLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+                <NumberBox x:Name="DiagnosticsMaxFiles" Width="112" Minimum="1" Maximum="8" SmallChange="1" SpinButtonPlacementMode="Compact" AutomationProperties.AutomationId="LogRetentionDiagnosticsMaxFiles" />
+            </settings:SettingsCard>
+        </StackPanel>
+
+        <StackPanel Spacing="12">
+            <InfoBar x:Name="ExplanationBar" IsOpen="True" IsClosable="False"
+                     Severity="Informational" AutomationProperties.AutomationId="LogRetentionExplanation" />
+            <InfoBar x:Name="StatusBar" IsOpen="False" IsClosable="True" AutomationProperties.AutomationId="LogRetentionStatus" />
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button x:Name="DefaultsButton" Click="Defaults_Click" AutomationProperties.AutomationId="LogRetentionDefaultsButton" />
+                <Button x:Name="ApplyButton" Click="Apply_Click" AutomationProperties.AutomationId="LogRetentionApplyButton" />
+            </StackPanel>
+        </StackPanel>
     </StackPanel>
 </UserControl>

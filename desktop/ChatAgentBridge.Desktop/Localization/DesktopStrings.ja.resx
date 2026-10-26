@@ -878,5 +878,6 @@
   <data name="MigrationChecking" xml:space="preserve"><value>保存データを確認しています…</value></data>
   <data name="MigrationFailedTitle" xml:space="preserve"><value>データを更新できませんでした</value></data>
   <data name="AdvancedSettingsHeader" xml:space="preserve"><value>詳細設定</value></data>
-  <data name="AdvancedSettingsDescription" xml:space="preserve"><value>アプリの詳細設定をまとめています。</value></data>
+  <data name="AdvancedSettingsDescription" xml:space="preserve"><value>アプリの動作や、記録を保持する期間を調整します。</value></data>
+  <data name="DiagnosticsAndSettingsHeading" xml:space="preserve"><value>診断と設定</value></data>
 </root>

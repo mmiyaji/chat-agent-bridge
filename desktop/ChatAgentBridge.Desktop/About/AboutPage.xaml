@@ -97,6 +97,8 @@
                     <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="Library" /></settings:SettingsCard.HeaderIcon>
                 </settings:SettingsCard>
 
+                <TextBlock x:Name="DiagnosticsAndSettingsHeading" Style="{StaticResource SettingsSectionHeaderStyle}"
+                           AutomationProperties.AutomationId="DiagnosticsAndSettingsHeading" />
                 <settings:SettingsExpander x:Uid="AboutDiagnostics" localization:LocalizedResourceKey.Key="AboutDiagnostics"
                                            AutomationProperties.AutomationId="AboutDiagnostics">
                     <settings:SettingsExpander.HeaderIcon><SymbolIcon Symbol="Help" /></settings:SettingsExpander.HeaderIcon>

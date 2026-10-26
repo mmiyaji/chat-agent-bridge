@@ -55,6 +55,7 @@ public sealed partial class AboutPage : Page
         BuildTimestampValue.Text = GetBuildTimestampText();
         PackageValue.Text = packageName;
         StoreStatus.Text = _isStorePackage ? DesktopText.Get("AboutStoreReady") : DesktopText.Get("AboutStoreDevelopment");
+        DiagnosticsAndSettingsHeading.Text = DesktopText.Get("DiagnosticsAndSettingsHeading");
         StorePageButton.IsEnabled = _isStorePackage;
         CheckUpdatesButton.IsEnabled = _isStorePackage;
         StoreUpdateCard.Visibility = DeploymentRuntime.IsPortable ? Visibility.Collapsed : Visibility.Visible;

@@ -878,5 +878,6 @@ After: {2}</value></data>
   <data name="MigrationChecking" xml:space="preserve"><value>Checking saved data…</value></data>
   <data name="MigrationFailedTitle" xml:space="preserve"><value>Unable to update local data</value></data>
   <data name="AdvancedSettingsHeader" xml:space="preserve"><value>Advanced settings</value></data>
-  <data name="AdvancedSettingsDescription" xml:space="preserve"><value>More advanced application settings are grouped here.</value></data>
+  <data name="AdvancedSettingsDescription" xml:space="preserve"><value>Adjust how the application behaves, including how long its records are kept.</value></data>
+  <data name="DiagnosticsAndSettingsHeading" xml:space="preserve"><value>Diagnostics and settings</value></data>
 </root>
