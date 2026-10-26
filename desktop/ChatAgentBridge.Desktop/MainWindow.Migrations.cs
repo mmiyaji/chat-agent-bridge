@@ -26,12 +26,11 @@ public sealed partial class MainWindow
         StartupMigrationRetry.IsEnabled = false;
         StartupMigrationError.IsOpen = false;
         StartupMigrationRing.IsActive = true;
-        StartupMigrationRing.Visibility = Visibility.Visible;
-        StartupMigrationProgress.Visibility = Visibility.Visible;
-        StartupMigrationDescription.Visibility = Visibility.Visible;
-        StartupMigrationTitle.Text = DesktopText.Get("MigrationTitle");
+        StartupMigrationLoading.Visibility = Visibility.Visible;
+        StartupMigrationTitle.Visibility = Visibility.Collapsed;
+        StartupMigrationActions.Visibility = Visibility.Collapsed;
         StartupMigrationProgress.Text = DesktopText.Get("MigrationChecking");
-        StartupMigrationDescription.Text = DesktopText.Get("MigrationDescription");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(StartupMigrationRing, StartupMigrationProgress.Text);
         StartupMigrationExit.Content = DesktopText.Get("MigrationExit");
         StartupMigrationRetry.Content = DesktopText.Get("MigrationRetry");
         try
@@ -40,7 +39,7 @@ public sealed partial class MainWindow
             {
                 if (_startupLifetime.IsCancellationRequested || RootFrame.Content is MainPage) return;
                 StartupMigrationShell.Visibility = Visibility.Visible;
-                StartupMigrationProgress.Text = DesktopText.Get("MigrationProgress", value.Index, value.Total);
+                StartupMigrationProgress.Text = DesktopText.Get("MigrationTitle");
                 Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(StartupMigrationRing, StartupMigrationProgress.Text);
             });
             var migration = new DataMigrationCoordinator(new SettingsStore().DirectoryPath, ApplicationDataMigrations.Create());
@@ -71,9 +70,9 @@ public sealed partial class MainWindow
         {
             StartupMigrationShell.Visibility = Visibility.Visible;
             StartupMigrationRing.IsActive = false;
-            StartupMigrationRing.Visibility = Visibility.Collapsed;
-            StartupMigrationProgress.Visibility = Visibility.Collapsed;
-            StartupMigrationDescription.Visibility = Visibility.Collapsed;
+            StartupMigrationLoading.Visibility = Visibility.Collapsed;
+            StartupMigrationTitle.Visibility = Visibility.Visible;
+            StartupMigrationActions.Visibility = Visibility.Visible;
             StartupMigrationTitle.Text = DesktopText.Get("MigrationFailedTitle");
             StartupMigrationError.Message = DesktopText.Get("MigrationFailed");
             StartupMigrationError.IsOpen = true;
