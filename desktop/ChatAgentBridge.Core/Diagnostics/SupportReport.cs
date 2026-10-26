@@ -1,3 +1,4 @@
+using ChatAgentBridge.Core;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -29,9 +30,12 @@ public sealed record SupportReport
     public string ErrorType { get; }
     public string HResult { get; }
     public IReadOnlyList<string> Status { get; }
+    public IReadOnlyList<StorageOperationDiagnostic> StorageOperations { get; }
+    public IReadOnlyList<SettingsNavigationDiagnostic> SettingsNavigation { get; }
 
     private SupportReport(string build, string windowsVersion, string runtimeVersion, string architecture,
-        string provider, string cliVersion, IEnumerable<string> status, string errorType, string hResult)
+        string provider, string cliVersion, IEnumerable<string> status, string errorType, string hResult,
+        IEnumerable<StorageOperationDiagnostic> storageOperations, IEnumerable<SettingsNavigationDiagnostic> settingsNavigation)
     {
         Product = "Chat Agent Bridge";
         Build = SafeBuild.IsMatch(build) ? build : "unknown";
@@ -43,14 +47,24 @@ public sealed record SupportReport
         ErrorType = errorType is "none" or "diagnostic_unavailable" ? errorType : "none";
         HResult = Regex.IsMatch(hResult, @"^0x[0-9A-Fa-f]{8}$", RegexOptions.CultureInvariant) ? hResult : "";
         Status = status.Where(AllowedStatuses.Contains).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+        // Revalidate at the export boundary; the diagnostic record is also publicly constructible.
+        StorageOperations = storageOperations.Take(64).Where(item => item is not null &&
+            item.Operation is "read" or "write" or "probe" &&
+            item.Outcome is "success" or "failure" or "cancelled" &&
+            item.ElapsedMilliseconds >= 0 && item.RetryCount is >= 0 and <= 2)
+            .Select(item => item with { RecordedAtUtc = item.RecordedAtUtc.ToUniversalTime() }).ToArray();
+        SettingsNavigation = settingsNavigation.Take(32).Where(item => item is not null &&
+            item.Page is "agent_settings" or "chat_settings" && item.ElapsedMilliseconds >= 0)
+            .Select(item => item with { RecordedAtUtc = item.RecordedAtUtc.ToUniversalTime() }).ToArray();
     }
 
     public static SupportReport Create(string? build, string? windowsVersion, string? runtimeVersion,
         string? architecture, string? provider, string? cliVersion, IEnumerable<string>? status,
-        string? errorType = null, string? hResult = null) =>
+        string? errorType = null, string? hResult = null, IEnumerable<StorageOperationDiagnostic>? storageOperations = null,
+        IEnumerable<SettingsNavigationDiagnostic>? settingsNavigation = null) =>
         new(build ?? "unknown", windowsVersion ?? "unknown", runtimeVersion ?? "unknown",
             architecture ?? "Unknown", provider ?? "Unknown", cliVersion ?? "unknown",
-            status ?? [], errorType ?? "none", hResult ?? "");
+            status ?? [], errorType ?? "none", hResult ?? "", storageOperations ?? [], settingsNavigation ?? []);
 
     public string ToJson() => JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
 

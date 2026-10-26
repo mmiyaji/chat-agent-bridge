@@ -125,7 +125,10 @@ public sealed partial class MainPage
             _connectionScopeDispatchScheduled = false;
             if (_pendingConnectionScope is not { } next) return;
             _pendingConnectionScope = null;
-            SetConnectionSettingsScope(next);
+            var timing = System.Diagnostics.Stopwatch.StartNew();
+            var succeeded = false;
+            try { SetConnectionSettingsScope(next); succeeded = true; }
+            finally { ChatAgentBridge.Core.Diagnostics.SettingsNavigationDiagnostics.Record("chat_settings", timing.ElapsedMilliseconds, succeeded); }
         })) _connectionScopeDispatchScheduled = false;
     }
 

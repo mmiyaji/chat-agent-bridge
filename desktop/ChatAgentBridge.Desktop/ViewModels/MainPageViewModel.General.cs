@@ -19,12 +19,16 @@ public partial class MainPageViewModel
         {
             // Read persisted settings so this action cannot commit drafts from other tabs
             // or overwrite settings changed by chat operations since this page loaded.
-            var baseline = await _settingsStore.LoadAsync();
-            var snapshot = baseline with { AutoConnectProvider = provider };
-            await _settingsStore.SaveAsync(snapshot);
+            var (snapshot, workspaceExists) = await Task.Run(async () =>
+            {
+                var baseline = await _settingsStore.LoadAsync();
+                var updated = baseline with { AutoConnectProvider = provider };
+                await _settingsStore.SaveAsync(updated);
+                return (updated, Directory.Exists(updated.WorkspaceRoot));
+            });
             _settings = snapshot;
             _hasSavedSettings = true;
-            _savedWorkspaceExists = Directory.Exists(snapshot.WorkspaceRoot);
+            _savedWorkspaceExists = workspaceExists;
             UpdateSavedAgentSummary();
             saved = true;
             SetStatus(ViewModelText.Get("GeneralSettingsSaved"), ViewModelText.Get("GeneralSettingsSavedDetails"), "Success");

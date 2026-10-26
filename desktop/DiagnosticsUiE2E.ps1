@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory)][string]$ArtifactRoot,
     [switch]$ExerciseTestNotification,
+    [switch]$SupportOnly,
     [string[]]$OnlyScenario = @()
 )
 $ErrorActionPreference = 'Stop'
@@ -291,12 +292,22 @@ try {
                 $previewElement = Element 'DiagnosticsExportPreviewText'
                 $previewText = $previewElement.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
                 if (-not $previewText.Contains('WindowsVersion') -or -not $previewText.Contains('CliVersion')) { throw "Support preview omitted safe fields (characters=$($previewText.Length), nameLength=$($previewElement.Current.Name.Length), type=$($previewElement.Current.ControlType.ProgrammaticName))." }
+                $supportReport = $previewText | ConvertFrom-Json
+                if (@($supportReport.StorageOperations).Count -lt 1) { throw 'Support preview omitted storage diagnostics.' }
+                if ($null -eq $supportReport.SettingsNavigation) { throw 'Support preview omitted navigation diagnostics.' }
+                foreach ($operation in $supportReport.StorageOperations) {
+                    if ($operation.Operation -notin @('read','write','probe') -or $operation.Outcome -notin @('success','failure','cancelled')) { throw 'Support preview contains an unexpected diagnostic category.' }
+                }
                 foreach ($forbidden in @('WorkspaceRoot','AgentArguments','SlackBotToken','MattermostToken','xoxb-','Bearer ','Prompt','EnvironmentVariable','user path')) {
                     if ($previewText.Contains($forbidden, [StringComparison]::OrdinalIgnoreCase)) { throw 'Support preview contains a forbidden field marker.' }
                 }
-                Navigate 'CloseButton'
+                $previewDialog = Element 'DiagnosticsExportPreview'
+                $previewClose = $previewDialog.FindFirst([Windows.Automation.TreeScope]::Descendants,
+                    [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,'CloseButton'))
+                $previewClose.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
                 UI @('wait-for','DiagnosticsExportPreview','--gone','-t','5000') | Out-Null
                 Record-Pass "support preview cancel ($scenario)"
+                if ($SupportOnly) { continue }
 
                 if ($ExerciseTestNotification -and $scenario -eq 'en-light') {
                     Navigate 'DiagnosticsTestNotificationButton'

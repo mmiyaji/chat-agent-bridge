@@ -50,6 +50,11 @@ public sealed class StorageOperationRunner
                     }
                     retries++;
                 }
+                catch (OperationCanceledException canceled)
+                {
+                    StorageOperationDiagnostics.Record(operation, timer.ElapsedMilliseconds, retries, "cancelled", canceled.HResult);
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     StorageOperationDiagnostics.Record(operation, timer.ElapsedMilliseconds, retries, "failure", ex.HResult);

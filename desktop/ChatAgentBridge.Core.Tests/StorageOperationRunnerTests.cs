@@ -80,7 +80,6 @@ public sealed class StorageOperationRunnerTests
     public async Task DispatchesBlockingActionToWorkerWithoutBlockingCaller()
     {
         var runner = new StorageOperationRunner();
-        var callerThread = Environment.CurrentManagedThreadId;
         var entered = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var operation = runner.RunAsync("probe", _ =>
@@ -90,9 +89,27 @@ public sealed class StorageOperationRunnerTests
             return Task.CompletedTask;
         });
 
-        var workerThread = await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
-        Assert.NotEqual(callerThread, workerThread);
-        release.TrySetResult();
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.False(operation.IsCompleted);
+        }
+        finally { release.TrySetResult(); }
         await operation;
+    }
+
+    [Fact]
+    public async Task CancellationDoesNotRetryOrLeaveTheSerialGateHeld()
+    {
+        var runner = new StorageOperationRunner();
+        var calls = 0;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runner.RunAsync("probe", _ =>
+        {
+            calls++;
+            throw new OperationCanceledException();
+        }));
+        Assert.Equal(1, calls);
+        await runner.RunAsync("probe", _ => Task.CompletedTask);
+        Assert.Contains(StorageOperationDiagnostics.Snapshot(), item => item.Operation == "probe" && item.Outcome == "cancelled");
     }
 }

@@ -68,7 +68,9 @@ public partial class MainPageViewModel
         try
         {
             var progress = await _onboardingProgressStore.LoadAsync();
-            if (!OnboardingProgressStore.ShouldStart(File.Exists(Path.Combine(_settingsStore.DirectoryPath, "settings.json")), progress)) return;
+            var settingsPath = Path.Combine(_settingsStore.DirectoryPath, "settings.json");
+            var hasSavedSettings = await Task.Run(() => File.Exists(settingsPath));
+            if (!OnboardingProgressStore.ShouldStart(hasSavedSettings, progress)) return;
             _hasCurrentConsent = OnboardingConsentStore.IsCurrent(await _onboardingConsentStore.LoadAsync());
             HasAcceptedTerms = HasAcceptedPrivacy = _hasCurrentConsent;
             OnboardingStep = !_hasCurrentConsent ? 0 : progress?.Step > 1 ? 2 : progress?.Step ?? 0;
@@ -119,16 +121,27 @@ public partial class MainPageViewModel
         if (OnboardingStep == 1)
         {
             var providerSelected = AgentProvider is "codex" or "claude" or "gemini" or "github-copilot" or "antigravity" or "custom";
-            var workspaceUsable = Path.IsPathFullyQualified(WorkspaceRoot) && Directory.Exists(WorkspaceRoot);
+            var workspacePath = WorkspaceRoot;
+            var workspaceUsable = Path.IsPathFullyQualified(workspacePath) && await Task.Run(() => Directory.Exists(workspacePath));
+            if (!string.Equals(workspacePath, WorkspaceRoot, StringComparison.Ordinal)) return;
             var missingAgent = OnboardingFieldChecks.AgentStep(providerSelected, AgentExecutable, workspaceUsable);
             if (missingAgent.Contains(WizardField.AgentProvider) || missingAgent.Contains(WizardField.AgentExecutable)) { SetStatus(ViewModelText.Get("SelectAgent"), ViewModelText.Get("SelectAgentDetails"), "Warning"); RequestFieldFocus(missingAgent); return; }
             if (!workspaceUsable) { SetStatus(ViewModelText.Get("CheckWorkspace"), ViewModelText.Get("CheckWorkspaceDetails"), "Warning"); RequestFieldFocus(missingAgent); return; }
-            if (!ExecutionPolicy.IsWorkspaceTrusted(CreateSettingsSnapshot(), WorkspaceRoot))
+            var trustSnapshot = CreateSettingsSnapshot();
+            var cliSignature = CurrentCliSignature();
+            var workspaceTrusted = await Task.Run(() => ExecutionPolicy.IsWorkspaceTrusted(trustSnapshot, workspacePath));
+            if (_closing || !string.Equals(cliSignature, CurrentCliSignature(), StringComparison.Ordinal) ||
+                !string.Equals(workspacePath, WorkspaceRoot, StringComparison.Ordinal) ||
+                !string.Equals(trustSnapshot.TrustedWorkspaceRoots, TrustedWorkspaceRoots, StringComparison.Ordinal)) return;
+            if (!workspaceTrusted)
             {
-                var trust = CliProbeService.DescribeUntrustedWorkspace(WorkspaceRoot);
+                var trust = await Task.Run(() => CliProbeService.DescribeUntrustedWorkspace(workspacePath));
+                if (_closing || !string.Equals(cliSignature, CurrentCliSignature(), StringComparison.Ordinal) ||
+                    !string.Equals(workspacePath, WorkspaceRoot, StringComparison.Ordinal) ||
+                    !string.Equals(trustSnapshot.TrustedWorkspaceRoots, TrustedWorkspaceRoots, StringComparison.Ordinal)) return;
                 CliCheckFailed = true;
                 CliCheckSummary = trust.Message;
-                SetCliTrustRecovery(trust, CurrentCliSignature());
+                SetCliTrustRecovery(trust, cliSignature);
                 RequestFieldFocus([WizardField.WorkspaceRoot]);
                 return;
             }

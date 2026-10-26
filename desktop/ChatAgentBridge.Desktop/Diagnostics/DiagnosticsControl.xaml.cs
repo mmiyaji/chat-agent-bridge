@@ -88,7 +88,7 @@ public sealed partial class DiagnosticsControl : UserControl
             var settings = await store.LoadAsync();
             _savedProvider = SafeProvider(settings.AgentProvider);
             _savedChatProviders = GetSavedChatProviders(settings);
-            var verification = await new CliVerificationStore(store.DirectoryPath).LoadAsync(settings);
+            var verification = await Task.Run(() => new CliVerificationStore(store.DirectoryPath).LoadAsync(settings));
             _verifiedCliVersion = verification is null ? null : SafeCliVersion(verification.Probe.Version);
             _diagnosticsUnavailable = false;
             SummaryStatus.Text = Text("DiagnosticsReady");
@@ -260,6 +260,7 @@ public sealed partial class DiagnosticsControl : UserControl
         // SupportReport has a fixed allowlist and serializes no source settings, paths, tokens, or raw errors.
         return SupportReport.Create(build, Environment.OSVersion.Version.ToString(), Environment.Version.ToString(),
             RuntimeInformation.OSArchitecture.ToString(), _savedProvider,
-            _verifiedCliVersion is null ? "unknown" : SafeCliVersion(_verifiedCliVersion), statuses, _diagnosticsUnavailable ? "diagnostic_unavailable" : "none");
+            _verifiedCliVersion is null ? "unknown" : SafeCliVersion(_verifiedCliVersion), statuses, _diagnosticsUnavailable ? "diagnostic_unavailable" : "none",
+            storageOperations: StorageOperationDiagnostics.Snapshot(), settingsNavigation: SettingsNavigationDiagnostics.Snapshot());
     }
 }

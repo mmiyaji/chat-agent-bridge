@@ -45,7 +45,7 @@ internal static class CliTrustDialog
                 }
             };
             AutomationProperties.SetAutomationId(dialog, "CliTrustDialog");
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary && viewModel.TryApplyCliTrustRecovery(recovery) && recheck)
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary && await viewModel.TryApplyCliTrustRecoveryAsync(recovery) && recheck)
                 await viewModel.CheckCliCommand.ExecuteAsync(null);
         }
         finally { _isOpen = false; }

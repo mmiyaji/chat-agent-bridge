@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][string]$AppDirectory)
+param([Parameter(Mandatory)][string]$AppDirectory,[switch]$WizardTrustOnly)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
 $payload=[IO.Path]::GetFullPath($AppDirectory)
@@ -108,6 +108,11 @@ try{
   UI @('wait-for','WizardWorkspaceRoot','--value',$real,'-t','5000')|Out-Null
   Assert ((Value 'WizardWorkspaceRoot') -eq $real) 'Trust consent did not select the actual workspace'
   Assert ((Get-Content (Join-Path $data 'settings.json') -Raw) -eq $beforeTrust) 'Trust recovery unexpectedly saved all settings'
+  if($WizardTrustOnly){
+   $results.Add(@{locale=$locale;passed=$true;checks=@('wizard trust review','cancel preserves settings','target replaced during consent rejected','actual workspace recovery with explicit consent')})
+   Stop-TestApp
+   continue
+  }
   UI @('invoke','OnboardingNext')|Out-Null
   UI @('wait-for','CheckCli','-t','10000')|Out-Null
   UI @('invoke','CheckCli')|Out-Null

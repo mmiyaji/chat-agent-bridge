@@ -38,7 +38,7 @@ public sealed partial class MainPage
         {
             var picker = new FolderPicker(App.Window.AppWindow.Id);
             var folder = await picker.PickSingleFolderAsync();
-            if (folder is not null) ViewModel.TryAddTrustedFolder(folder.Path);
+            if (folder is not null) await ViewModel.TryAddTrustedFolderAsync(folder.Path);
         }
         catch (Exception)
         {
@@ -50,9 +50,17 @@ public sealed partial class MainPage
         }
     }
 
-    private void AddCurrentWorkspaceTrustedFolder_Click(object sender, RoutedEventArgs e)
+    private async void AddCurrentWorkspaceTrustedFolder_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel.IsPickingTrustedFolder) return;
-        ViewModel.TryAddTrustedFolder(ViewModel.WorkspaceRoot);
+        ViewModel.IsPickingTrustedFolder = true;
+        try
+        {
+            await ViewModel.TryAddTrustedFolderAsync(ViewModel.WorkspaceRoot);
+        }
+        finally
+        {
+            ViewModel.IsPickingTrustedFolder = false;
+        }
     }
 }

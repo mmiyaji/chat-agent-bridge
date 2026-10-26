@@ -157,6 +157,8 @@ public sealed partial class MainPage
     {
         if (_changingAgentScope || _agentProfileDetails is null || !_agentScopeKeys.Contains(scope)) return false;
         _changingAgentScope = true;
+        var timing = System.Diagnostics.Stopwatch.StartNew();
+        var succeeded = false;
         try
         {
             if (!await ViewModel.SavePendingSettingsAsync() || !await _agentProfileDetails.TryFlushAsync()) return false;
@@ -184,10 +186,12 @@ public sealed partial class MainPage
             _agentSettingsScope = scope;
             _agentScopeInitialized = true;
             _agentSettingsScroll?.ChangeView(null, 0, null, true);
+            succeeded = true;
             return true;
         }
         finally
         {
+            ChatAgentBridge.Core.Diagnostics.SettingsNavigationDiagnostics.Record("agent_settings", timing.ElapsedMilliseconds, succeeded);
             if (_pendingAgentScope is null) ApplyAgentScopeSelection();
             _changingAgentScope = false;
         }

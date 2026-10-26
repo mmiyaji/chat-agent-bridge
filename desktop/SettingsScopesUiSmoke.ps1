@@ -344,6 +344,40 @@ try {
    Capture "profile-storage-recovered-$($io.name)-$Language-$Theme"
    Add-Pass "Profile storage read failure is visible, preserves settings/chat, and recovers: $($io.name)"
   }
+  Select-Element 'NavWorkbench'
+  Value 'Prompt' 'LIVE_STEER_QUEUE_1'
+  $probeWorkspace=[IO.Path]::GetFullPath((Get-Content $settingsPath -Raw|ConvertFrom-Json).WorkspaceRoot)
+  $unavailableWorkspace=$probeWorkspace+'.temporarily-unavailable'
+  $allowedPrefix=[IO.Path]::GetFullPath($script:data)+[IO.Path]::DirectorySeparatorChar
+  Assert ($probeWorkspace.StartsWith($allowedPrefix,[StringComparison]::OrdinalIgnoreCase) -and $unavailableWorkspace.StartsWith($allowedPrefix,[StringComparison]::OrdinalIgnoreCase)) 'Workspace fault must stay inside isolated test data.'
+  Assert (-not [IO.Directory]::Exists($unavailableWorkspace)) 'Workspace fault destination already exists.'
+  $beforeManualObservations=@(Read-Observations).Count
+  [IO.Directory]::Move($probeWorkspace,$unavailableWorkspace)
+  try {
+   Invoke-Element (Wait-Element 'RunAgent') 'reject manual run while workspace is unavailable'
+   Wait-For {$errorBar=Find-Element $script:window 'ManualWorkspaceError';$errorBar -and -not $errorBar.Current.IsOffscreen} 'manual workspace error is visible'
+   Wait-For {(Wait-Element 'RunAgent').Current.IsEnabled} 'manual action recovers from validation failure'
+   Assert (@(Read-Observations).Count -eq $beforeManualObservations) 'Unavailable workspace launched the test CLI.'
+   Capture "manual-workspace-unavailable-$Language-$Theme"
+  } finally {[IO.Directory]::Move($unavailableWorkspace,$probeWorkspace)}
+  # Return to the fixture's original, marked workspace before a positive offline run.
+  Select-Element 'NavAgentSettings'
+  Choose-Scope 'AgentScopeCommon'
+  Value 'WorkspaceRoot' $savedWorkspace
+  (Wait-Element 'BrowseWorkspace').SetFocus()
+  Wait-For {
+   $confirmation=Find-Element $script:window 'SensitiveSettingsConfirmation'
+   if($confirmation){Invoke-Element (Find-Element $confirmation 'PrimaryButton') 'confirm restored isolated workspace'}
+   (Get-Content $settingsPath -Raw|ConvertFrom-Json).WorkspaceRoot -eq $savedWorkspace
+  } 'restored workspace saved'
+  Select-Element 'NavWorkbench'
+  Value 'Prompt' 'LIVE_STEER_QUEUE_1'
+  Set-Content -LiteralPath $script:gate 'release' -Encoding utf8
+  Invoke-Element (Wait-Element 'RunAgent') 'run offline fixture after workspace recovery'
+  Wait-For {@((Get-Content (Join-Path $script:data 'history.json') -Raw|ConvertFrom-Json).Records|Where-Object {$_.Source -eq 'local' -and $_.Status -eq 'completed'}).Count -gt 0} 'manual offline execution completed'
+  Wait-For {$errorBar=Find-Element $script:window 'ManualWorkspaceError';$null -eq $errorBar -or $errorBar.Current.IsOffscreen} 'manual validation warning clears after recovery'
+  Assert ((Results).connections -eq 1) 'Manual validation or recovery disconnected chat.'
+  Add-Pass 'Manual validation rejects an unavailable workspace without launching CLI, then runs the offline fixture after recovery'
  }
  if($StressCycles -gt 0){
   $beforeStress=(Get-FileHash $settingsPath).Hash

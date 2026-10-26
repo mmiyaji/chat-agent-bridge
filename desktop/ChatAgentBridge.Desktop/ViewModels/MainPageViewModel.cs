@@ -329,7 +329,8 @@ public partial class MainPageViewModel : ObservableObject
         IsStatusOpen = true;
         try
         {
-            _settings = await _settingsStore.LoadAsync();
+            var settingsStore = _settingsStore;
+            _settings = await Task.Run(() => settingsStore.LoadAsync());
             OnPropertyChanged(nameof(PersistedSettings));
             // Probing a missing or network workspace path can block; keep it off the UI thread.
             var settingsFilePath = Path.Combine(_settingsStore.DirectoryPath, "settings.json");
@@ -520,7 +521,7 @@ public partial class MainPageViewModel : ObservableObject
                 SlackAllowedChannelIds = ChatAccessPolicy.NormalizeScopes(SlackAllowedChannelIds),
                 SlackAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(SlackAllowedThreadIds),
                 MattermostAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(MattermostAllowedThreadIds),
-                TrustedWorkspaceRoots = ExecutionPolicy.NormalizeTrustedRoots(TrustedWorkspaceRoots),
+                TrustedWorkspaceRoots = draft.TrustedWorkspaceRoots,
                 AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(AgentPermissionMode),
                 ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(ChatApprovalMode),
                 AutoApproveSwitchCommands = draft.AutoApproveSwitchCommands &&
@@ -532,13 +533,23 @@ public partial class MainPageViewModel : ObservableObject
                 FileAttachmentMaxCount = ToAttachmentLimit(FileAttachmentMaxCount),
                 FileAttachmentMaxTotalSizeMb = ToAttachmentLimit(FileAttachmentMaxTotalSizeMb)
             };
+            snapshot = snapshot with
+            {
+                TrustedWorkspaceRoots = await Task.Run(() => ExecutionPolicy.NormalizeTrustedRoots(draft.TrustedWorkspaceRoots))
+            };
             if (!_isAgentProfileEditor)
             {
                 FileAttachmentPolicy.Validate(snapshot);
-                if (string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot) ||
-                    !Path.IsPathFullyQualified(snapshot.WorkspaceRoot) || !Directory.Exists(snapshot.WorkspaceRoot))
+                if (string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot) || !Path.IsPathFullyQualified(snapshot.WorkspaceRoot))
                     throw new InvalidOperationException(ViewModelText.Get("WorkspaceMustBeExistingAbsolutePath"));
-                if (!ExecutionPolicy.IsWorkspaceTrusted(snapshot, snapshot.WorkspaceRoot))
+                var workspaceValidation = await Task.Run(() =>
+                {
+                    var exists = Directory.Exists(snapshot.WorkspaceRoot);
+                    return (Exists: exists, Trusted: exists && ExecutionPolicy.IsWorkspaceTrusted(snapshot, snapshot.WorkspaceRoot));
+                });
+                if (!workspaceValidation.Exists)
+                    throw new InvalidOperationException(ViewModelText.Get("WorkspaceMustBeExistingAbsolutePath"));
+                if (!workspaceValidation.Trusted)
                     throw new InvalidOperationException(ViewModelText.Get("WorkspaceOutsideTrustedRoots"));
                 if (snapshot.AgentProvider == AgentProfile.Codex && AgentProfile.ResolveProvider(snapshot) == AgentProfile.Custom &&
                     (snapshot.AgentPermissionMode != "inherit" ||
@@ -589,7 +600,11 @@ public partial class MainPageViewModel : ObservableObject
             if (FileAttachmentMaxSizeMb.Equals(attachmentSize)) FileAttachmentMaxSizeMb = snapshot.FileAttachmentMaxSizeMb;
             if (FileAttachmentMaxCount.Equals(attachmentCount)) FileAttachmentMaxCount = snapshot.FileAttachmentMaxCount;
             if (FileAttachmentMaxTotalSizeMb.Equals(attachmentTotal)) FileAttachmentMaxTotalSizeMb = snapshot.FileAttachmentMaxTotalSizeMb;
-            if (!_isAgentProfileEditor) _savedWorkspaceExists = Directory.Exists(_settings.WorkspaceRoot);
+            if (!_isAgentProfileEditor)
+            {
+                var savedWorkspaceRoot = _settings.WorkspaceRoot;
+                _savedWorkspaceExists = await Task.Run(() => Directory.Exists(savedWorkspaceRoot));
+            }
             UpdateSavedAgentSummary();
             RefreshSetupStepper();
             SetStatus(ViewModelText.Get("SettingsSaved"), ViewModelText.Get("SettingsSavedReconnect"), "Success");
@@ -621,10 +636,14 @@ public partial class MainPageViewModel : ObservableObject
             return;
         }
 
-        if (!ValidateManualWorkspace(settingsSnapshot)) return;
-
         IsRunning = true;
         IsCancellationPending = false;
+        var cliSignature = CurrentCliSignature();
+        if (!await ValidateManualWorkspaceAsync(settingsSnapshot, cliSignature))
+        {
+            IsRunning = false;
+            return;
+        }
         if (settingsSnapshot.RequireApproval)
         {
             if (ConfirmExecutionAsync is null)
@@ -652,7 +671,7 @@ public partial class MainPageViewModel : ObservableObject
 
         if (_closing) { IsRunning = false; return; }
         // The directory may have been moved or replaced while confirmation was open.
-        if (!ValidateManualWorkspace(settingsSnapshot)) { IsRunning = false; return; }
+        if (!await ValidateManualWorkspaceAsync(settingsSnapshot, cliSignature)) { IsRunning = false; return; }
         var execution = new ExecutionRecord
         {
             Id = Guid.NewGuid(),
@@ -998,7 +1017,7 @@ public partial class MainPageViewModel : ObservableObject
         SavedAgentSummary = string.IsNullOrWhiteSpace(AgentExecutable)
             ? ViewModelText.Get("AgentNotConfigured")
             : ViewModelText.Get("SavedAgentSummary", AgentExecutable, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, AgentReasoningEffort ?? ViewModelText.Get("DefaultCliValue"), ViewModelText.Get(UseAppServer ? "InteractiveExecution" : "RunToCompletion"));
-        if (_settings is not null) ValidateManualWorkspace(_settings);
+        QueueManualWorkspaceValidation();
     }
 
     private void ApplyCatalogModelSelection(ModelOption option)
