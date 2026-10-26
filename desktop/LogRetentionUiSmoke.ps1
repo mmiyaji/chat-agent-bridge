@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory)][string]$ArtifactRoot,
-    [string[]]$OnlyScenario = @()
+    [string[]]$OnlyScenario = @(),
+    [switch]$LayoutOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -146,12 +147,16 @@ function Wait-Dialog([bool]$Present, [int]$Seconds = 8) {
     } while ([DateTime]::UtcNow -lt $deadline)
     throw "Reduction dialog present=$Present was not observed."
 }
-function Expander-Header($Expander) {
-    $buttonCondition = [Windows.Automation.PropertyCondition]::new(
-        [Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Button)
-    $header = $Expander.FindFirst([Windows.Automation.TreeScope]::Children, $buttonCondition)
-    if (-not $header) { throw 'SettingsExpander header button was not exposed to UI Automation.' }
-    $header
+function Get-ExpanderPattern([string]$Id) {
+    $expander = Wait-Element $Id
+    try { return $expander.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern) }
+    catch {
+        $buttonCondition = [Windows.Automation.PropertyCondition]::new(
+            [Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Button)
+        $header = $expander.FindFirst([Windows.Automation.TreeScope]::Children, $buttonCondition)
+        if (-not $header) { throw "Expander '$Id' exposes no ExpandCollapse pattern or header button." }
+        return $header.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+    }
 }
 function Count-Elements([string]$Id) {
     $condition = [Windows.Automation.PropertyCondition]::new(
@@ -253,29 +258,59 @@ function Test-Scenario([string]$Language, [string]$Theme, [int]$Width, [string]$
         Invoke-Element 'NavAbout'
         Set-WindowDips $Width
         Scroll-AboutToEnd
-        $expander = Scroll-TargetIntoView 'LogRetentionAdvancedExpander'
-        $header = Expander-Header $expander
-        $expandPattern = $header.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
-        Assert-Equal ([Windows.Automation.ExpandCollapseState]::Collapsed) $expandPattern.Current.ExpandCollapseState 'Advanced settings should start collapsed.'
+        [void](Scroll-TargetIntoView 'AdvancedSettingsExpander')
+        $advancedPattern = Get-ExpanderPattern 'AdvancedSettingsExpander'
+        Assert-Equal ([Windows.Automation.ExpandCollapseState]::Collapsed) $advancedPattern.Current.ExpandCollapseState 'Advanced settings should start collapsed.'
+        $advancedElement = Wait-Element 'AdvancedSettingsHeading'
+        $advancedName = $advancedElement.Current.Name
+        if ($advancedName -notmatch 'Advanced settings|詳細設定') { throw "Advanced settings heading is missing or incorrectly localized: '$advancedName'." }
         Screenshot '01-collapsed'
 
         $script:currentStep = 'collapsed controls and default values'
         $applyWhenCollapsed = Element 'LogRetentionApplyButton'
         if ($applyWhenCollapsed -and -not $applyWhenCollapsed.Current.IsOffscreen) { throw 'Apply button is visible before expanding Advanced settings.' }
-        $script:currentStep = 'expand and check narrow layout'
-        $expandPattern.Expand()
+        $script:currentStep = 'expand shared advanced settings and inspect log section'
+        $advancedPattern.Expand()
         Start-Sleep -Milliseconds 200
         Screenshot '02-expand-requested'
         $expanded = $false
         for ($attempt = 0; $attempt -lt 20; $attempt++) {
             Start-Sleep -Milliseconds 100
-            if ($expandPattern.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Expanded) { $expanded = $true; break }
+            if ($advancedPattern.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Expanded) { $expanded = $true; break }
         }
         if (-not $expanded) { throw 'Advanced settings did not expand.' }
+        [void](Scroll-TargetIntoView 'LogManagementExpander')
+        $logPattern = Get-ExpanderPattern 'LogManagementExpander'
+        Assert-Equal ([Windows.Automation.ExpandCollapseState]::Expanded) $logPattern.Current.ExpandCollapseState 'Log management should be open when Advanced settings is opened.'
+        $logElement = Element 'LogManagementExpander'
+        $logName = $logElement.Current.Name
+        if ($logName -notmatch 'Log management|ログ管理') { throw "Log management heading is missing or incorrectly localized: '$logName'." }
         Scroll-AboutToEnd
         Screenshot '03-after-scroll'
         [void](Scroll-TargetIntoView 'LogRetentionApplyButton')
         Screenshot '02-expanded'
+        foreach ($id in @('LogRetentionAuditDays','LogRetentionApplyButton')) { Assert-InWindow $id }
+
+        if ($LayoutOnly) {
+            $script:currentStep = 'collapse and reopen shared advanced settings'
+            $advancedPattern.Collapse()
+            Start-Sleep -Milliseconds 250
+            Assert-Equal ([Windows.Automation.ExpandCollapseState]::Collapsed) $advancedPattern.Current.ExpandCollapseState 'Advanced settings did not collapse.'
+            $hiddenApply = Element 'LogRetentionApplyButton'
+            if ($hiddenApply -and -not $hiddenApply.Current.IsOffscreen) { throw 'Log actions remained visible after collapsing Advanced settings.' }
+            $advancedPattern.Expand()
+            Start-Sleep -Milliseconds 250
+            Assert-Equal ([Windows.Automation.ExpandCollapseState]::Expanded) $advancedPattern.Current.ExpandCollapseState 'Advanced settings did not reopen.'
+            [void](Scroll-TargetIntoView 'LogManagementExpander')
+            $logPattern = Get-ExpanderPattern 'LogManagementExpander'
+            Assert-Equal ([Windows.Automation.ExpandCollapseState]::Expanded) $logPattern.Current.ExpandCollapseState 'Log management did not remain open after reopening Advanced settings.'
+            [void](Scroll-TargetIntoView 'LogRetentionApplyButton')
+            Assert-InWindow 'LogRetentionApplyButton'
+            Screenshot '04-reopened'
+            Record-Pass "$currentScenario advanced hierarchy, default collapsed state, log section, and narrow layout"
+            return
+        }
+
         Scroll-AboutToStart
         Assert-Equal 1825 (Read-Number 'LogRetentionStatisticsDays') 'Statistics retention default is incorrect.'
         Assert-Equal 365 (Read-Number 'LogRetentionAuditDays') 'Audit retention default is incorrect.'
@@ -376,12 +411,15 @@ function Test-Scenario([string]$Language, [string]$Theme, [int]$Width, [string]$
         Start-TestApp $dataDirectory
         Invoke-Element 'NavAbout'
         Set-WindowDips $Width
-        [void](Scroll-TargetIntoView 'LogRetentionAdvancedExpander')
-        $restartHeader = Expander-Header (Element 'LogRetentionAdvancedExpander')
-        $restartExpander = $restartHeader.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+        [void](Scroll-TargetIntoView 'AdvancedSettingsExpander')
+        $restartExpander = Get-ExpanderPattern 'AdvancedSettingsExpander'
         if ($restartExpander.Current.ExpandCollapseState -ne [Windows.Automation.ExpandCollapseState]::Collapsed) { $restartExpander.Collapse() }
         $restartExpander.Expand()
         Start-Sleep -Milliseconds 250
+        Assert-Equal ([Windows.Automation.ExpandCollapseState]::Expanded) $restartExpander.Current.ExpandCollapseState 'Advanced settings did not reopen after restart.'
+        [void](Scroll-TargetIntoView 'LogManagementExpander')
+        $restartLog = Get-ExpanderPattern 'LogManagementExpander'
+        Assert-Equal ([Windows.Automation.ExpandCollapseState]::Expanded) $restartLog.Current.ExpandCollapseState 'Log management did not open after restart.'
         Assert-Equal 1 (Read-Number 'LogRetentionAuditDays') 'Audit retention did not reload after restart.'
         Assert-Equal 1 (Read-Number 'LogRetentionHistoryDays') 'History retention did not reload after restart.'
         $restartedStats = Get-Content -LiteralPath $statsPath -Raw | ConvertFrom-Json

@@ -4,8 +4,8 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
-  <data name="AdvancedHeader" xml:space="preserve"><value>詳細設定</value></data>
-  <data name="AdvancedDescription" xml:space="preserve"><value>ローカルの記録とログファイルの保持期間を設定します。</value></data>
+  <data name="LogManagementHeader" xml:space="preserve"><value>ログ管理</value></data>
+  <data name="LogManagementDescription" xml:space="preserve"><value>ローカルの記録とログファイルの保持期間を設定します。</value></data>
   <data name="StatisticsHeading" xml:space="preserve"><value>統計</value></data>
   <data name="StatisticsDays" xml:space="preserve"><value>統計の保持期間（日）</value></data>
   <data name="AuditHeading" xml:space="preserve"><value>監査ログ</value></data>

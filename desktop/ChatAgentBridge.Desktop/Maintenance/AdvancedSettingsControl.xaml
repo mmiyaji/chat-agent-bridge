@@ -1,0 +1,24 @@
+<UserControl
+    x:Class="ChatAgentBridge_Desktop.Maintenance.AdvancedSettingsControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:maintenance="using:ChatAgentBridge_Desktop.Maintenance"
+    AutomationProperties.AutomationId="AdvancedSettingsControl">
+    <Expander x:Name="AdvancedExpander" IsExpanded="False"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+              AutomationProperties.AutomationId="AdvancedSettingsExpander">
+        <Expander.Header>
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="AdvancedHeading" Style="{StaticResource BodyStrongTextBlockStyle}"
+                           AutomationProperties.AutomationId="AdvancedSettingsHeading" />
+                <TextBlock x:Name="AdvancedDescription" TextWrapping="Wrap"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           AutomationProperties.AutomationId="AdvancedSettingsDescription" />
+            </StackPanel>
+        </Expander.Header>
+        <StackPanel Spacing="8" HorizontalAlignment="Stretch">
+            <!-- Future advanced sections belong here as sibling content controls. -->
+            <maintenance:LogRetentionControl x:Name="LogManagementControl" />
+        </StackPanel>
+    </Expander>
+</UserControl>

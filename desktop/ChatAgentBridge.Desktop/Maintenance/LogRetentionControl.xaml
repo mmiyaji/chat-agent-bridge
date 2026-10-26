@@ -5,8 +5,8 @@
     xmlns:settings="using:CommunityToolkit.WinUI.Controls"
     AutomationProperties.AutomationId="LogRetentionControl">
     <StackPanel Spacing="8">
-        <settings:SettingsExpander x:Name="AdvancedExpander" IsExpanded="False"
-                                   AutomationProperties.AutomationId="LogRetentionAdvancedExpander">
+        <settings:SettingsExpander x:Name="LogManagementExpander" IsExpanded="True"
+                                   AutomationProperties.AutomationId="LogManagementExpander">
             <settings:SettingsExpander.Items>
                 <settings:SettingsCard AutomationProperties.AutomationId="RetentionStatisticsGroup">
                     <settings:SettingsCard.Header><TextBlock x:Name="StatisticsHeading" Style="{StaticResource BodyStrongTextBlockStyle}" /></settings:SettingsCard.Header>

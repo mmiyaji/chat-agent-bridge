@@ -42,8 +42,8 @@ public sealed partial class LogRetentionControl : UserControl
 
     private void Localize()
     {
-        AdvancedExpander.Header = Text("AdvancedHeader");
-        AdvancedExpander.Description = Text("AdvancedDescription");
+        LogManagementExpander.Header = Text("LogManagementHeader");
+        LogManagementExpander.Description = Text("LogManagementDescription");
         StatisticsHeading.Text = Text("StatisticsHeading");
         StatisticsDaysLabel.Text = Text("StatisticsDays");
         AuditHeading.Text = Text("AuditHeading");

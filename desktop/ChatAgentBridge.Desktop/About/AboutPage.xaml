@@ -106,7 +106,7 @@
                         </settings:SettingsCard>
                     </settings:SettingsExpander.Items>
                 </settings:SettingsExpander>
-                <maintenance:LogRetentionControl x:Name="LogRetentionSettingsControl" />
+                <maintenance:AdvancedSettingsControl x:Name="AdvancedSettings" />
                 <Button x:Uid="AboutExit" HorizontalAlignment="Left" Margin="0,8,0,0"
                         AutomationProperties.AutomationId="AboutExit" Click="Exit_Click">
                             <Button.Resources><ResourceDictionary Source="ms-appx:///ImpactActionResources.xaml" /></Button.Resources>

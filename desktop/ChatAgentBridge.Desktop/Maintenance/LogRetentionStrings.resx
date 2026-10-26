@@ -4,8 +4,8 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
-  <data name="AdvancedHeader" xml:space="preserve"><value>Advanced settings</value></data>
-  <data name="AdvancedDescription" xml:space="preserve"><value>Configure how long local records and log files are kept.</value></data>
+  <data name="LogManagementHeader" xml:space="preserve"><value>Log management</value></data>
+  <data name="LogManagementDescription" xml:space="preserve"><value>Configure how long local records and log files are kept.</value></data>
   <data name="StatisticsHeading" xml:space="preserve"><value>Statistics</value></data>
   <data name="StatisticsDays" xml:space="preserve"><value>Statistics retention (days)</value></data>
   <data name="AuditHeading" xml:space="preserve"><value>Audit log</value></data>
