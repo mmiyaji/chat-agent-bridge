@@ -58,7 +58,6 @@ public sealed partial class ActivityStatisticsStore
             if (active is not null) document.Active.Remove(active);
             AddFinalized(document, record);
         }
-        Prune(document);
         return true;
     }
 

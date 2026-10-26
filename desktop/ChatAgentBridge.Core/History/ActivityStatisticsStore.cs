@@ -18,12 +18,16 @@ public sealed partial class ActivityStatisticsStore
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
     private readonly string _path;
     private readonly string _journalPath;
+    private readonly LogRetentionPreferencesStore _retentionStore;
+    private readonly TimeProvider _timeProvider;
 
-    public ActivityStatisticsStore(string? directory = null)
+    public ActivityStatisticsStore(string? directory = null, TimeProvider? timeProvider = null)
     {
         var dataDirectory = directory ?? new SettingsStore().DirectoryPath;
         _path = Path.Combine(Path.GetFullPath(dataDirectory), "activity-statistics.json");
         _journalPath = Path.Combine(Path.GetFullPath(dataDirectory), "activity-statistics.journal.jsonl");
+        _timeProvider = timeProvider ?? TimeProvider.System;
+        _retentionStore = new LogRetentionPreferencesStore(dataDirectory, _timeProvider);
     }
 
     public async Task MigrateAsync(IReadOnlyList<ExecutionRecord> retainedHistory, CancellationToken cancellationToken = default)
@@ -46,7 +50,8 @@ public sealed partial class ActivityStatisticsStore
             migrated.MigrationCompleted = true;
             migrated.MigratedFromAvailableRetainedHistory = retainedHistory.Count > 0;
             migrated.TimeZoneId = TimeZoneInfo.Local.Id;
-            Prune(migrated);
+            var retention = await _retentionStore.LoadAsync(cancellationToken).ConfigureAwait(false);
+            Prune(migrated, retention.StatisticsRetentionDays);
             await WriteAsync(migrated, cancellationToken).ConfigureAwait(false);
             MigratedPaths[_path] = 0;
         }
@@ -67,7 +72,11 @@ public sealed partial class ActivityStatisticsStore
             var document = await ReadDocumentAsync(cancellationToken).ConfigureAwait(false);
             if (ApplyRecord(document, record))
             {
-                if (!File.Exists(_path)) await WriteAsync(document, cancellationToken).ConfigureAwait(false);
+                var dayCountBeforeRetention = document.Days.Count;
+                var retention = await _retentionStore.LoadAsync(cancellationToken).ConfigureAwait(false);
+                Prune(document, retention.StatisticsRetentionDays);
+                if (document.Days.Count != dayCountBeforeRetention) await WriteSnapshotAsync(document, cancellationToken).ConfigureAwait(false);
+                else if (!File.Exists(_path)) await WriteAsync(document, cancellationToken).ConfigureAwait(false);
                 else await AppendRecordAsync(document, record, cancellationToken).ConfigureAwait(false);
             }
             committed = true;
@@ -125,6 +134,10 @@ public sealed partial class ActivityStatisticsStore
         try
         {
             var doc = await ReadDocumentAsync(cancellationToken).ConfigureAwait(false);
+            var retention = await _retentionStore.LoadAsync(cancellationToken).ConfigureAwait(false);
+            var before = doc.Days.Count;
+            Prune(doc, retention.StatisticsRetentionDays);
+            if (doc.Days.Count != before) await WriteSnapshotAsync(doc, cancellationToken).ConfigureAwait(false);
             var start = endDay.AddDays(1 - dayCount);
             var days = Enumerable.Range(0, dayCount).Select(i => new StatisticsDay { Date = start.AddDays(i) }).ToArray();
             var byDate = days.ToDictionary(day => day.Date);
@@ -184,6 +197,22 @@ public sealed partial class ActivityStatisticsStore
             var usage = BuildUsageSummary(days, start, endDay, scope, pricing);
             return new ActivityStatisticsSnapshot(activity, usage, doc.MigratedFromAvailableRetainedHistory,
                 doc.TimeZoneId ?? TimeZoneInfo.Local.Id);
+        }
+        finally { gate.Release(); }
+    }
+
+    public async Task ApplyRetentionAsync(CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_path) && !File.Exists(_journalPath)) return;
+        var gate = HistoryFileStore.LockFor(_path);
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var document = await ReadDocumentAsync(cancellationToken).ConfigureAwait(false);
+            var retention = await _retentionStore.LoadAsync(cancellationToken).ConfigureAwait(false);
+            var before = document.Days.Count;
+            Prune(document, retention.StatisticsRetentionDays);
+            if (document.Days.Count != before) await WriteSnapshotAsync(document, cancellationToken).ConfigureAwait(false);
         }
         finally { gate.Release(); }
     }
@@ -333,9 +362,10 @@ public sealed partial class ActivityStatisticsStore
         return OtherModelsKey;
     }
 
-    private static void Prune(StatisticsDocument document)
+    private void Prune(StatisticsDocument document, int retentionDays = MaxDays)
     {
-        document.Days = document.Days.OrderByDescending(day => day.Date).Take(MaxDays).OrderBy(day => day.Date).ToList();
+        var cutoff = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(_timeProvider.GetUtcNow(), TimeZoneInfo.Local).DateTime).AddDays(1 - retentionDays);
+        document.Days = document.Days.Where(day => day.Date >= cutoff).OrderBy(day => day.Date).Take(MaxDays).ToList();
         document.TimeZoneId ??= TimeZoneInfo.Local.Id;
     }
 

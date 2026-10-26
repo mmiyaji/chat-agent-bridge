@@ -96,6 +96,31 @@ public sealed class InboxConversationStoreTests
     }
 
     [Fact]
+    public async Task RetentionPrioritizesOldActiveRowsAndMaintenanceKeepsTheirPersistedState()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            await new ChatAgentBridge.Core.LogRetentionPreferencesStore(directory).SaveAsync(
+                new ChatAgentBridge.Core.LogRetentionPreferences { ConversationRetentionDays = 1 });
+            var oldActive = Snapshot(thread: "old-active", state: "running", updatedAt: DateTimeOffset.UtcNow.AddDays(-365));
+            var recentClosed = Enumerable.Range(0, 500)
+                .Select(index => Snapshot(thread: $"recent-{index}", state: "completed", updatedAt: DateTimeOffset.UtcNow.AddMinutes(-index)))
+                .ToArray();
+            var store = new InboxConversationStore(directory);
+            await store.SaveAsync([oldActive, .. recentClosed]);
+            await store.ApplyRetentionAsync();
+
+            var restored = await store.ListAsync();
+            Assert.Contains(restored, row => row.Key.ThreadId == "old-active" && row.State == "interrupted");
+            Assert.Equal(500, restored.Count);
+            var json = await File.ReadAllTextAsync(Path.Combine(directory, "chat-conversations.json"));
+            Assert.Contains("\"State\": \"running\"", json);
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
     public async Task SaveAsync_RejectsOversizedAndInvalidCountsWithoutChangingGoodFile()
     {
         var directory = NewDirectory();

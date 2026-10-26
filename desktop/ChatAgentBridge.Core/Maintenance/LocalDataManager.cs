@@ -77,9 +77,14 @@ public sealed class LocalDataManager(string directory)
             return ConversationFiles
                 .Select(name => Checked(Path.Combine(_directory, name)))
                 .Concat(ConversationTemporaryFiles()).ToArray();
+        if (kind == LocalDataKind.ExecutionHistory)
+            return new[] { "history.json", "audit.json" }.Select(name => Checked(Path.Combine(_directory, name)))
+                .Concat(Directory.Exists(_directory)
+                    ? Directory.EnumerateFiles(_directory, "audit-*", SearchOption.TopDirectoryOnly)
+                        .Where(path => History.AuditStore.OwnedFileName.IsMatch(Path.GetFileName(path))).Select(Checked)
+                    : []).ToArray();
         string[] names = kind switch
         {
-            LocalDataKind.ExecutionHistory => ["history.json", "audit.json"],
             LocalDataKind.UsageStatistics => ["activity-statistics.json", "activity-statistics.journal.jsonl"],
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
@@ -103,7 +108,14 @@ public sealed class LocalDataManager(string directory)
             throw new InvalidDataException("Data path escaped its directory.");
         // Inspect ancestors too: a data directory under a junction must not become an erasure target.
         for (var item = new FileInfo(full) as FileSystemInfo; item is not null; item = Directory.GetParent(item.FullName))
-            if (Path.Exists(item.FullName) && (File.GetAttributes(item.FullName) & FileAttributes.ReparsePoint) != 0)
-                throw new InvalidDataException("Linked data locations cannot be managed here.");
+        {
+            try
+            {
+                if ((File.GetAttributes(item.FullName) & FileAttributes.ReparsePoint) != 0)
+                    throw new InvalidDataException("Linked data locations cannot be managed here.");
+            }
+            catch (FileNotFoundException) { }
+            catch (DirectoryNotFoundException) { }
+        }
     }
 }

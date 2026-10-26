@@ -29,11 +29,13 @@ public sealed class InboxConversationStore
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow
     };
     private readonly string _filePath;
+    private readonly LogRetentionPreferencesStore _retentionStore;
 
     public InboxConversationStore(string? directory = null)
     {
         DirectoryPath = Path.GetFullPath(directory ?? new SettingsStore().DirectoryPath);
         _filePath = Path.Combine(DirectoryPath, "chat-conversations.json");
+        _retentionStore = new LogRetentionPreferencesStore(DirectoryPath);
     }
 
     public string DirectoryPath { get; }
@@ -72,6 +74,15 @@ public sealed class InboxConversationStore
     public async Task SaveAsync(IReadOnlyList<InboxConversationSnapshot> snapshots,
         CancellationToken cancellationToken = default)
     {
+        var gate = HistoryFileStore.LockFor(_filePath);
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try { await SaveCoreAsync(snapshots, cancellationToken).ConfigureAwait(false); }
+        finally { gate.Release(); }
+    }
+
+    private async Task SaveCoreAsync(IReadOnlyList<InboxConversationSnapshot> snapshots,
+        CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(snapshots);
         cancellationToken.ThrowIfCancellationRequested();
         var entries = snapshots.ToArray();
@@ -83,10 +94,17 @@ public sealed class InboxConversationStore
                 throw new ArgumentException("Inbox conversation snapshots contain duplicate keys.", nameof(snapshots));
         }
 
+        var preferences = await _retentionStore.LoadAsync(cancellationToken).ConfigureAwait(false);
+        var cutoff = DateTimeOffset.UtcNow.AddDays(-preferences.ConversationRetentionDays);
+        var active = entries.Where(item => item.State is "pending" or "running")
+            .OrderByDescending(item => item.UpdatedAt).Take(MaxEntries).ToList();
+        var completed = entries.Where(item => item.State is not ("pending" or "running"))
+            .OrderByDescending(item => item.UpdatedAt).Take(Math.Max(0, MaxEntries - active.Count));
         var document = new StoredDocument
         {
             SchemaVersion = CurrentSchemaVersion,
-            Entries = entries.OrderByDescending(item => item.UpdatedAt).Take(MaxEntries).ToList()
+            Entries = active.Concat(completed.Where(item => item.UpdatedAt.ToUniversalTime() >= cutoff))
+                .OrderByDescending(item => item.UpdatedAt).ToList()
         };
         var bytes = JsonSerializer.SerializeToUtf8Bytes(document, JsonOptions);
         if (bytes.Length > MaxDocumentBytes)
@@ -111,6 +129,14 @@ public sealed class InboxConversationStore
 
     /// <summary>Loads metadata and marks previously pending or running rows interrupted.</summary>
     public async Task<IReadOnlyList<InboxConversationSnapshot>> ListAsync(CancellationToken cancellationToken = default)
+    {
+        var gate = HistoryFileStore.LockFor(_filePath);
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try { return await ReadCoreAsync(normalizeActive: true, cancellationToken).ConfigureAwait(false) ?? Array.Empty<InboxConversationSnapshot>(); }
+        finally { gate.Release(); }
+    }
+
+    private async Task<IReadOnlyList<InboxConversationSnapshot>?> ReadCoreAsync(bool normalizeActive, CancellationToken cancellationToken)
     {
         if (!File.Exists(_filePath)) return Array.Empty<InboxConversationSnapshot>();
         try
@@ -141,12 +167,28 @@ public sealed class InboxConversationStore
                     throw new InvalidDataException("Inbox conversation store contains duplicate keys.");
             }
 
-            return document.Entries.Select(snapshot => snapshot.State is "pending" or "running"
+            var preferences = await _retentionStore.LoadAsync(cancellationToken).ConfigureAwait(false);
+            var cutoff = DateTimeOffset.UtcNow.AddDays(-preferences.ConversationRetentionDays);
+            return document.Entries.Where(snapshot => snapshot.UpdatedAt.ToUniversalTime() >= cutoff || snapshot.State is "pending" or "running")
+                .Select(snapshot => normalizeActive && (snapshot.State is "pending" or "running")
                 ? snapshot with { State = "interrupted" }
                 : snapshot).OrderByDescending(snapshot => snapshot.UpdatedAt).ToArray();
         }
         catch (JsonException ex) { throw new InvalidDataException("Inbox conversation store contains invalid or unsupported JSON.", ex); }
         catch (ArgumentException ex) { throw new InvalidDataException("Inbox conversation store contains invalid metadata.", ex); }
+    }
+
+    public async Task ApplyRetentionAsync(CancellationToken cancellationToken = default)
+    {
+        var gate = HistoryFileStore.LockFor(_filePath);
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var entries = await ReadCoreAsync(normalizeActive: false, cancellationToken).ConfigureAwait(false);
+            if (entries is null || !File.Exists(_filePath)) return;
+            await SaveCoreAsync(entries, cancellationToken).ConfigureAwait(false);
+        }
+        finally { gate.Release(); }
     }
 
     private static void ValidateSnapshot(InboxConversationSnapshot? snapshot)

@@ -109,13 +109,10 @@ public sealed class HistoryTests
         await store.AppendAsync(first);
         Assert.Single(await store.ListAsync());
 
-        var path = Path.Combine(directory.Path, "audit.json");
+        var path = Assert.Single(Directory.GetFiles(directory.Path, "audit-segment-*.jsonl"));
         var external = new AuditEvent(DateTimeOffset.UtcNow.AddMinutes(-1), "failed", null, "slack", "C-external-channel", "T1");
-        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new
-        {
-            SchemaVersion = 1,
-            Records = new[] { first, external, external with { Timestamp = external.Timestamp.AddSeconds(1) } }
-        }));
+        await File.WriteAllTextAsync(path, string.Join("\n", new[] { first, external, external with { Timestamp = external.Timestamp.AddSeconds(1) } }
+            .Select(record => JsonSerializer.Serialize(record))) + "\n");
         Assert.Equal(3, (await store.ListAsync()).Count);
 
         // An append after the external edit must build on the edited file, not on the stale parse.
@@ -124,7 +121,7 @@ public sealed class HistoryTests
 
         File.Delete(path);
         Assert.Empty(await store.ListAsync());
-        await File.WriteAllTextAsync(path, "{");
+        await File.WriteAllTextAsync(path, "{\n");
         await Assert.ThrowsAsync<InvalidDataException>(() => store.ListAsync());
     }
 

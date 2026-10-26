@@ -6,13 +6,17 @@ public sealed class ExecutionHistoryStore
         { "running", "completed", "failed", "cancelled", "interrupted" };
     private readonly string _filePath;
     private readonly ActivityStatisticsStore _statisticsStore;
+    private readonly LogRetentionPreferencesStore _retentionStore;
+    private readonly TimeProvider _timeProvider;
 
-    public ExecutionHistoryStore(string? directory = null)
+    public ExecutionHistoryStore(string? directory = null, TimeProvider? timeProvider = null)
     {
         var dataDirectory = directory ?? new SettingsStore().DirectoryPath;
         var fullDirectory = Path.GetFullPath(dataDirectory);
         _filePath = Path.Combine(fullDirectory, "history.json");
-        _statisticsStore = new ActivityStatisticsStore(fullDirectory);
+        _timeProvider = timeProvider ?? TimeProvider.System;
+        _statisticsStore = new ActivityStatisticsStore(fullDirectory, _timeProvider);
+        _retentionStore = new LogRetentionPreferencesStore(fullDirectory, _timeProvider);
     }
 
     public async Task RecordAsync(ExecutionRecord record, CancellationToken cancellationToken = default)
@@ -30,7 +34,8 @@ public sealed class ExecutionHistoryStore
             await _statisticsStore.RecordAsync(record, cancellationToken).ConfigureAwait(false);
             records.RemoveAll(existing => existing.Id == record.Id);
             records.Add(record);
-            records = records.OrderBy(item => item.StartedAt).TakeLast(HistoryFileStore.MaxRecords).ToList();
+            var preferences = await _retentionStore.LoadAsync(cancellationToken).ConfigureAwait(false);
+            records = Prune(records, preferences, _timeProvider.GetUtcNow(), record.Status == "running" ? record.Id : null);
             await HistoryFileStore.WriteAtomicAsync(_filePath, new HistoryDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = records }, cancellationToken).ConfigureAwait(false);
             HistoryFileStore.SetLive(record);
         }
@@ -51,17 +56,54 @@ public sealed class ExecutionHistoryStore
         try
         {
             var file = await ReadFileAsync(cancellationToken).ConfigureAwait(false);
+            // Migrate all surviving source rows before applying history retention so
+            // long lived aggregates retain the full pre-pruning history.
             await _statisticsStore.MigrateAsync(file.Records!, cancellationToken).ConfigureAwait(false);
+            var preferences = await _retentionStore.LoadAsync(cancellationToken).ConfigureAwait(false);
+            var retained = Prune(file.Records!, preferences, _timeProvider.GetUtcNow());
+            if (retained.Count != file.Records!.Count)
+                await HistoryFileStore.WriteAtomicAsync(_filePath, new HistoryDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = retained }, cancellationToken).ConfigureAwait(false);
             var liveIds = file.Records!.Where(record => record.Status == "running" && HistoryFileStore.IsLive(record.Id))
                 .Select(record => record.Id).ToHashSet();
             await _statisticsStore.ReconcileStaleActivesAsync(liveIds, cancellationToken).ConfigureAwait(false);
-            return file.Records!.OrderByDescending(item => item.StartedAt)
+            return retained.OrderByDescending(item => item.StartedAt)
                 .Select(item => item.Status == "running" && !HistoryFileStore.IsLive(item.Id)
                     ? item with { Status = "interrupted" }
                     : item)
                 .ToArray();
         }
         finally { gate.Release(); }
+    }
+
+    public async Task ApplyRetentionAsync(CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(_filePath)) return;
+        var gate = HistoryFileStore.LockFor(_filePath);
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var file = await ReadFileAsync(cancellationToken).ConfigureAwait(false);
+            await _statisticsStore.MigrateAsync(file.Records!, cancellationToken).ConfigureAwait(false);
+            var preferences = await _retentionStore.LoadAsync(cancellationToken).ConfigureAwait(false);
+            var retained = Prune(file.Records!, preferences, _timeProvider.GetUtcNow());
+            if (retained.Count != file.Records!.Count)
+                await HistoryFileStore.WriteAtomicAsync(_filePath, new HistoryDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = retained }, cancellationToken).ConfigureAwait(false);
+        }
+        finally { gate.Release(); }
+    }
+
+    private static List<ExecutionRecord> Prune(IEnumerable<ExecutionRecord> source, LogRetentionPreferences preferences,
+        DateTimeOffset now, Guid? incomingLiveId = null)
+    {
+        var cutoff = now.ToUniversalTime().AddDays(-preferences.HistoryRetentionDays);
+        bool IsLive(ExecutionRecord record) => record.Status == "running" &&
+            (record.Id == incomingLiveId || HistoryFileStore.IsLive(record.Id));
+        var records = source.Where(record => IsLive(record) || record.StartedAt.ToUniversalTime() >= cutoff)
+            .OrderBy(item => item.StartedAt).ToList();
+        var live = records.Where(IsLive).Take(HistoryFileStore.MaxRecords).ToList();
+        var slotLimit = Math.Min(HistoryFileStore.MaxRecords, Math.Max(preferences.HistoryMaxRecords, live.Count));
+        var other = records.Where(record => !IsLive(record)).TakeLast(Math.Max(0, slotLimit - live.Count));
+        return live.Concat(other).OrderBy(item => item.StartedAt).ToList();
     }
 
     // Callers hold the per-path lock and must not mutate the returned document; it is the cached parse of the file.
