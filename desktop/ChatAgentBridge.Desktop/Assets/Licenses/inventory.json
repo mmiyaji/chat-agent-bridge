@@ -35,7 +35,7 @@
         "System.Security.Cryptography.ProtectedData/10.0.13"
       ],
       "runtimePackIdentities": [
-        "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.13",
+        "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14",
         "runtimepack.Microsoft.Windows.SDK.NET.Ref/10.0.26100.57"
       ],
       "referenceIdentities": [
@@ -51,27 +51,39 @@
         "System.Security.Cryptography.ProtectedData/10.0.13"
       ],
       "runtimePackIdentities": [
-        "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.13"
+        "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14"
       ],
       "referenceIdentities": []
     }
   ],
   "runtimePack": {
-    "identity": "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.13",
+    "identity": "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14",
     "name": "Microsoft.NETCore.App.Runtime",
-    "version": "10.0.13",
+    "version": "10.0.14",
     "rid": "win-x64",
     "licenseFile": "LICENSE-DotNetRuntime.txt",
-    "source": "NuGet runtime pack Microsoft.NETCore.App.Runtime.win-x64/10.0.13",
+    "source": "NuGet runtime pack Microsoft.NETCore.App.Runtime.win-x64/10.0.14",
+    "packageEvidence": [
+      {
+        "identity": "Microsoft.NETCore.App.Runtime.win-x64/10.0.14",
+        "nupkgBytes": 39979900,
+        "nugetContentSha512": "mLWGagTP5n7nMfJQI2XpXRYgvPcnyYvAc8ZiDfum8ShM0UcrPDyfW4Lqo45UtlCHCucERUHQuMTI6ybVweCN9A=="
+      },
+      {
+        "identity": "Microsoft.NETCore.App.Runtime.win-arm64/10.0.14",
+        "nupkgBytes": 39820230,
+        "nugetContentSha512": "VX6JXS+AXtCL8brqXN5qvXmOzrlHOraG5T8dpdn3O1IL2knDcR1XwDNWZc2lLWuyg3u1Muu4zme2C5VnLOBoMQ=="
+      }
+    ],
     "includedBy": "self-contained desktop application and updater",
     "identities": [
-      "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.13",
-      "runtimepack.Microsoft.NETCore.App.Runtime.win-arm64/10.0.13"
+      "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14",
+      "runtimepack.Microsoft.NETCore.App.Runtime.win-arm64/10.0.14"
     ]
   },
   "publishedLibraries": [
     {
-      "identity": "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.13",
+      "identity": "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14",
       "type": "runtimepack",
       "noticeFile": "LICENSE-DotNetRuntime.txt"
     },
@@ -89,7 +101,7 @@
       "noticeFile": "LICENSE-WebView2.txt"
     },
     {
-      "identity": "runtimepack.Microsoft.NETCore.App.Runtime.win-arm64/10.0.13",
+      "identity": "runtimepack.Microsoft.NETCore.App.Runtime.win-arm64/10.0.14",
       "type": "runtimepack",
       "noticeFile": "LICENSE-DotNetRuntime.txt"
     }
@@ -487,10 +499,11 @@
   ],
   "aggregateNotice": {
     "file": "desktop/THIRD-PARTY-NOTICES.txt",
-    "sha256": "7986092a5a556f496125237edf8de2c32d34651ab1a2f4d4fbc664894a05e251",
+    "sha256": "a32b7255217d4e0e4f6ac256aef5a1691414463e6a273296dec3efdc01ede017",
     "bytes": 499267
   },
   "auditNotes": [
+    "The .NET 10.0.14 x64 and ARM64 NuGet runtime packs were retrieved and inspected; their bundled THIRD-PARTY-NOTICES.TXT files have identical text, matching the reviewed runtime notice already catalogued.",
     "Desktop publish evidence was captured from win-x64; win-arm64 is explicitly allowed for the same reviewed package versions, runtime version, and notice documents. The release pipeline should run the validator for both RIDs.",
     "The pinned Fluent System Icons NOTICE lists replace, avocado, and yargs third-party assets. They are absent from the shipped Arrow Circle Up SVG, Arrow Download SVG, ten regular UI SVGs and U+E0A2 one-glyph font subset; the icon README and pinned MIT license are applicable.",
     "The legacy SEA package made by scripts/build-exe.mjs is outside this Windows portable payload. That script emits its own THIRD-PARTY-NOTICES.txt containing the Node.js LICENSE and ws LICENSE; the current .NET portable package does not include node.exe."

@@ -6635,7 +6635,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ==============================================================================
 .NET runtime and managed libraries
-Components: .NET 10.0.13 self-contained runtime; System.Security.Cryptography.ProtectedData 10.0.13; includes runtime and package third-party notices
+Components: .NET 10.0.14 self-contained runtime; System.Security.Cryptography.ProtectedData 10.0.13; includes runtime and package third-party notices
 ==============================================================================
 
 The MIT License (MIT)

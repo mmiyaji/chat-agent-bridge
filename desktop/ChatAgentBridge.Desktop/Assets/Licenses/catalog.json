@@ -16,7 +16,7 @@
   },
   {
     "name": ".NET runtime and managed libraries",
-    "components": ".NET 10.0.13 self-contained runtime; System.Security.Cryptography.ProtectedData 10.0.13; includes runtime and package third-party notices",
+    "components": ".NET 10.0.14 self-contained runtime; System.Security.Cryptography.ProtectedData 10.0.13; includes runtime and package third-party notices",
     "file": "LICENSE-DotNetRuntime.txt"
   },
   {
