@@ -34,3 +34,18 @@ UI Automationの呼び出しにタイムアウトを設け、ウィンドウの�
 加えて、既存の `SettingsScopesUiSmoke.ps1` でループバックのテスト用Mattermostへ接続し、サイズ変更を含む120回の設定タブ切り替え後も接続と設定を保持できることを確認しました。検索経由の設定移動も日本語・ライト／ダーク・幅500で成功しました。
 
 今回報告されたクラッシュは再現できておらず、原因は未特定です。この結果は、描画ドライバーの問題、別PC、別の保存データ、実際のCLI実行中の問題まで否定するものではありません。
+
+## 内部タブに絞った追加試験
+
+エージェント設定・チャット設定の内部タブで発生したという補足を受け、ループバック接続中に追加で990回切り替えました。
+
+- 日本語・ダーク：770回。各タブの選択直後に幅を変更。
+- 英語・ライト：220回。内部タブ選択とサイズ変更の間の待機時間をなくして実行。
+
+全エージェント、共通設定、Mattermost・Slack・Discordを対象とし、幅500／800／1000／1440で内部ナビゲーションの縦・上部タブ切り替えも重ねました。いずれもプロセスが終了せず、接続と保存済み設定を保持しました。クラッシュは引き続き未再現です。
+
+```powershell
+pwsh -NoProfile -File desktop/SettingsScopesUiSmoke.ps1 -AppDirectory desktop/artifacts/demo-app -TestAgentPath desktop/artifacts/cli-verification-test-agent/ChatAgentBridge.TestAgent.exe -Language en -Theme light -StressCycles 20 -StressSelectionDelayMs 0 -ResizeDuringSelection
+```
+
+この試験のCLIはオフラインのテスト用実行ファイルです。実際のCLIやチャットの認証情報を設定する必要はありません。

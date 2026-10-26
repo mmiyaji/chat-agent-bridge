@@ -5,7 +5,9 @@ param(
  [ValidateSet('light','dark')][string]$Theme='light',
  [string]$AppDirectory=(Join-Path $PSScriptRoot 'artifacts/settings-scope-local'),
  [string]$TestAgentPath=(Join-Path $PSScriptRoot 'artifacts/settings-scope-test-agent/ChatAgentBridge.TestAgent.exe'),
- [ValidateRange(0,200)][int]$StressCycles=0
+ [ValidateRange(0,200)][int]$StressCycles=0,
+ [ValidateRange(0,500)][int]$StressSelectionDelayMs=90,
+ [switch]$ResizeDuringSelection
 )
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
@@ -65,11 +67,11 @@ function Click-Actual($id) {
  [ImpactInput]::mouse_event(4,0,0,0,[UIntPtr]::Zero)
  Start-Sleep -Milliseconds 200
 }
-function Resize-Test($width, [int]$height = 0) {
+function Resize-Test($width, [int]$height = 0, [int]$settleMs = 300) {
  $scale=[ConnectionSmokeNative]::GetDpiForWindow($script:app.MainWindowHandle)/96.0
  if($height -eq 0){$height=if($width -ge 1000){1024}else{840}}
  [void][ConnectionSmokeNative]::SetWindowPos($script:app.MainWindowHandle,[IntPtr]::Zero,20,20,[int]($width*$scale),[int]($height*$scale),0x0010)
- Start-Sleep -Milliseconds 300
+ if($settleMs -gt 0){Start-Sleep -Milliseconds $settleMs}
 }
 function Assert-InboxSelection {
  $item=Wait-Element 'NavChat'
@@ -196,10 +198,10 @@ try {
  Assert ($null -ne (Wait-Element 'WorkspaceRoot')) 'Common workspace missing.'
  Capture "agent-common-$Language-$Theme"
  Select-Element 'NavConnections'
- foreach($scope in @('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeCommon')){Choose-Scope $scope;Capture "$scope-$Language-$Theme"}
+ foreach($scope in @('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeDiscord','ConnectionScopeCommon')){Choose-Scope $scope;Capture "$scope-$Language-$Theme"}
  Assert ((Results).connections -eq 1 -and (Results).totalConnections -eq 1) 'Browsing connection settings changed the live connection.'
  Assert ((Get-Content $settingsPath -Raw|ConvertFrom-Json).AutoConnectProvider -eq 'mattermost') 'Browsing Slack changed the configured provider.'
- Add-Pass 'Shared, Mattermost and Slack settings switch without changing connection or provider'
+ Add-Pass 'Shared, Mattermost, Slack and Discord settings switch without changing connection or provider'
  Select-Element 'NavAgentSettings'
  Choose-Scope 'AgentScopeCodex'
  Resize-Test 1240
@@ -239,7 +241,7 @@ try {
  Click-Actual 'NavConnections'
  Top
  Capture "connection-narrow-$Language-$Theme"
- foreach($id in @('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeCommon')){
+ foreach($id in @('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeDiscord','ConnectionScopeCommon')){
    Choose-CompactScope 'ConnectionScopeList' $id
  }
  Assert ((Results).connections -eq 1 -and (Results).totalConnections -eq 1) 'Compact scope browsing reconnected chat.'
@@ -323,12 +325,15 @@ try {
    Resize-Test (@(500,1000,1440)[$cycle % 3])
    foreach($page in @('agent','connections')){
     $navId=if($page -eq 'agent'){'NavAgentSettings'}else{'NavConnections'}
-    if($null -eq (Find-Element $script:window $navId)){Click-Actual 'TogglePaneButton'}
+    # Let the outer navigation finish its responsive mode change before finding its menu.
+    # Internal scope selections below still run without a settling delay.
+    Start-Sleep -Milliseconds 100
+    if($null -eq (Find-Element $script:window $navId)){Invoke-Element (Wait-Element 'TogglePaneButton') 'open main navigation'}
     Select-Element $navId
     Start-Sleep -Milliseconds 120
     Top
     $scopeNav=if($page -eq 'agent'){'AgentScopeList'}else{'ConnectionScopeList'}
-    $choices=if($page -eq 'agent'){@('AgentScopeCodex','AgentScopeClaude','AgentScopeGemini','AgentScopeCopilot','AgentScopeAntigravity','AgentScopeCustom','AgentScopeCommon')}else{@('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeCommon')}
+    $choices=if($page -eq 'agent'){@('AgentScopeCodex','AgentScopeClaude','AgentScopeGemini','AgentScopeCopilot','AgentScopeAntigravity','AgentScopeCustom','AgentScopeCommon')}else{@('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeDiscord','ConnectionScopeCommon')}
     $choices=@($choices|Sort-Object {$random.Next()})
     foreach($id in $choices){
      if($script:app.HasExited){throw "App exited during stress cycle $cycle / $id"}
@@ -339,7 +344,8 @@ try {
       $target=Wait-ProcessElement $id
      }
      Invoke-Element $target ('stress '+$id)
-     Start-Sleep -Milliseconds 90
+     if($ResizeDuringSelection){Resize-Test (@(800,1000,500,1440)[$switches % 4]) 0 0}
+     if($StressSelectionDelayMs -gt 0){Start-Sleep -Milliseconds $StressSelectionDelayMs}
      Wait-For {
       $selectedScope=Find-Element $script:window $id
       $null -ne $selectedScope -and
