@@ -71,10 +71,9 @@ public partial class MainPageViewModel
         if (notifyEdited) SettingsDraftEdited?.Invoke();
     }
 
-    private async Task<bool> ConfirmSensitiveDraftAsync(BridgeSettings baseline, BridgeSettings snapshot)
+    private async Task<bool> ConfirmSensitiveDraftAsync(BridgeSettings baseline, BridgeSettings snapshot, Action rollback)
     {
         if (IsOnboardingActive || !SettingsSensitiveChanges.Compare(baseline, snapshot).HasChanges) return true;
-        var rollback = CaptureSettingsDraftRollback(baseline);
         var accepted = false;
         IsSensitiveConfirmationPending = true;
         try

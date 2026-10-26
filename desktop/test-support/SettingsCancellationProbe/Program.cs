@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
+using System.Collections.Concurrent;
 
 // Exercise the shipped ViewModel without starting WinUI, a CLI, or a chat connection.
 if (args.Length != 2) throw new ArgumentException("Usage: SettingsCancellationProbe <published-app-directory> <new-test-data-directory>");
@@ -50,7 +51,9 @@ async Task<(object Vm, string Data, string Baseline, byte[] Disk)> Prepare(strin
     }), settingsType)!;
     var store = Activator.CreateInstance(storeType, data)!;
     await (Task)storeType.GetMethod("SaveAsync")!.Invoke(store, [baseline, CancellationToken.None])!;
-    var vm = Activator.CreateInstance(vmType)!;
+    var vmCtor = vmType.GetConstructors(Methods).Single();
+    var vmArgs = vmCtor.GetParameters().Select(parameter => parameter.HasDefaultValue ? parameter.DefaultValue : parameter.ParameterType.IsValueType ? Activator.CreateInstance(parameter.ParameterType) : null).ToArray();
+    var vm = vmCtor.Invoke(vmArgs);
     await (Task)Call(vm, "LoadAsync")!;
     Set(vm, "IsOnboardingActive", false);
     Assert((bool)Get(vm, "IsSettingsLoaded")!, "Fixture settings did not load");
@@ -169,6 +172,44 @@ foreach (var culture in new[] { "en", "ja" })
         Assert((double)Get(fixture.Vm, "FileAttachmentMaxCount")! == 2.5d, "Later raw number edit was lost");
         Assert(File.ReadAllBytes(Path.Combine(fixture.Data, "settings.json")).SequenceEqual(fixture.Disk), "Pending edits were persisted");
     });
+    await Run(culture + "-preserve-picker-and-raw-number-during-prevalidation", async () =>
+    {
+        var fixture = await Prepare(culture + "-prevalidation-picker");
+        var originalContext = SynchronizationContext.Current;
+        var context = new QueuedSynchronizationContext();
+        Task<bool> pending;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(context);
+            Set(fixture.Vm, "AgentPermissionMode", "full-access"); // Draft A requires confirmation.
+            var confirmed = false;
+            Confirm(fixture.Vm, () => { confirmed = true; return Task.FromResult(false); });
+            pending = Save(fixture.Vm); // Its first continuation follows background normalization/validation.
+            Assert(context.WaitUntilPosted(TimeSpan.FromSeconds(10)), "Prevalidation continuation was not posted");
+            Assert(!confirmed, "Confirmation ran before the held prevalidation continuation was pumped");
+
+            // A delayed picker callback and user edit land after draft A was captured but before confirmation.
+            var workspaceB = Path.Combine(fixture.Data, "picker-workspace-b");
+            Directory.CreateDirectory(workspaceB);
+            Set(fixture.Vm, "WorkspaceRoot", workspaceB);
+            Set(fixture.Vm, "FileAttachmentMaxCount", 2.5d);
+
+            // Confirmation is reached only after pumping the captured continuation.
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+            while (!pending.IsCompleted && DateTime.UtcNow < deadline)
+                context.PumpOne(TimeSpan.FromMilliseconds(100));
+            Assert(pending.IsCompleted, "Save did not finish within 10 seconds");
+            Assert(!pending.GetAwaiter().GetResult(), "Cancel unexpectedly succeeded");
+            Assert(confirmed, "Sensitive confirmation was not reached");
+        }
+        finally { SynchronizationContext.SetSynchronizationContext(originalContext); }
+
+        Assert((string)Get(fixture.Vm, "AgentPermissionMode")! == "inherit", "Rejected sensitive draft A was not rolled back");
+        Assert((string)Get(fixture.Vm, "WorkspaceRoot")! == Path.Combine(fixture.Data, "picker-workspace-b"), "Later picker workspace B was lost");
+        Assert((double)Get(fixture.Vm, "FileAttachmentMaxCount")! == 2.5d, "Later raw fractional number edit was lost");
+        Assert(File.ReadAllBytes(Path.Combine(fixture.Data, "settings.json")).SequenceEqual(fixture.Disk), "Canceled prevalidation draft was written");
+        Assert((bool)Get(fixture.Vm, "HasUnsavedSettings")!, "Later edits should remain dirty after draft A is canceled");
+    });
     await Run(culture + "-confirm-only-later-sensitive-edit", async () =>
     {
         var fixture = await Prepare(culture + "-later-sensitive");
@@ -186,3 +227,28 @@ foreach (var culture in new[] { "en", "ja" })
 await File.WriteAllTextAsync(Path.Combine(root, "results.json"), JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true }));
 Console.WriteLine($"{results.Count - failures}/{results.Count} passed; no CLI or chat processes started.");
 return failures == 0 ? 0 : 1;
+
+// Holds captured async continuations until the test has applied edits made by a pending picker.
+sealed class QueuedSynchronizationContext : SynchronizationContext
+{
+    private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> _queue = new();
+    private (SendOrPostCallback Callback, object? State)? _held;
+    public override void Post(SendOrPostCallback callback, object? state) => _queue.Add((callback, state));
+    public bool WaitUntilPosted(TimeSpan timeout)
+    {
+        if (_held is not null) return true;
+        if (!_queue.TryTake(out var work, timeout)) return false;
+        _held = work;
+        return true;
+    }
+    public bool PumpOne(TimeSpan timeout)
+    {
+        if (_held is not { } work)
+        {
+            if (!_queue.TryTake(out work, timeout)) return false;
+        }
+        _held = null;
+        work.Callback(work.State);
+        return true;
+    }
+}

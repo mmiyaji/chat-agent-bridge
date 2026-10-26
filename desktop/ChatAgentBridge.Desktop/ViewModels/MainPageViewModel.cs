@@ -505,7 +505,11 @@ public partial class MainPageViewModel : ObservableObject
         var saved = false;
         try
         {
+            // Keep the submitted values and their cancellation rollback in the
+            // same UI turn, before validation can yield to a pending picker.
+            var baseline = _settings!;
             var draft = CreateSettingsSnapshot();
+            var rollback = CaptureSettingsDraftRollback(baseline);
             var attachmentSize = FileAttachmentMaxSizeMb;
             var attachmentCount = FileAttachmentMaxCount;
             var attachmentTotal = FileAttachmentMaxTotalSizeMb;
@@ -561,7 +565,7 @@ public partial class MainPageViewModel : ObservableObject
             {
                 throw new InvalidOperationException("The selected provider changed while this profile was being edited.");
             }
-            if (!await ConfirmSensitiveDraftAsync(_settings!, snapshot)) return;
+            if (!await ConfirmSensitiveDraftAsync(baseline, snapshot, rollback)) return;
             if (_isAgentProfileEditor)
             {
                 var agentDraft = new AgentSettingsDraft(_agentEditorProvider!, snapshot.AgentExecutable,
