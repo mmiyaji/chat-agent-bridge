@@ -1,5 +1,7 @@
 <!-- Original Fluent System Icons paths, MIT; see Assets/Icons/FluentSystemIcons/README.txt. -->
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:ChatAgentBridge_Desktop.AgentSettings">
+    <!-- Include the programmatically created scope control in XAML type metadata. -->
+    <Style TargetType="local:SettingsScopeNavigationItem" />
     <DataTemplate x:Key="SettingsScopeIcon_apps">
         <Viewbox Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center">
             <Canvas Width="20" Height="20">

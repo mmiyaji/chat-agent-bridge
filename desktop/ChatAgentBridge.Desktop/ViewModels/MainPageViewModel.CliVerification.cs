@@ -10,9 +10,10 @@ public partial class MainPageViewModel
     private CliVerificationStore ProviderCliVerificationStore(BridgeSettings settings) =>
         CliVerificationStore.ForProvider(_settingsStore.DirectoryPath, AgentProfile.ResolveProvider(settings));
 
-    private async Task<CachedCliVerification?> LoadCliVerificationAsync(BridgeSettings settings) =>
-        await ProviderCliVerificationStore(settings).LoadAsync(settings) ??
-        await new CliVerificationStore(_settingsStore.DirectoryPath).LoadAsync(settings);
+    private Task<CachedCliVerification?> LoadCliVerificationAsync(BridgeSettings settings) =>
+        Task.Run(async () =>
+            await ProviderCliVerificationStore(settings).LoadAsync(settings).ConfigureAwait(false) ??
+            await new CliVerificationStore(_settingsStore.DirectoryPath).LoadAsync(settings).ConfigureAwait(false));
     [ObservableProperty] public partial bool IsCliCheckRestored { get; set; }
 
     private async Task RestoreCliVerificationAsync()

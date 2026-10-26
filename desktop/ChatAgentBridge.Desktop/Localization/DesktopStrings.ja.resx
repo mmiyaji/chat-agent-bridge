@@ -867,4 +867,6 @@
   <data name="SearchScopeSettings" xml:space="preserve"><value>{0} の設定</value></data>
   <data name="SearchNoResults" xml:space="preserve"><value>一致する設定がありません</value></data>
   <data name="InboxPendingApprovalMessage" xml:space="preserve"><value>承認待ちの依頼が {0} 件あります。依頼を開いて内容を確認してください。</value></data>
+  <data name="AgentScopeReadFailedTitle" xml:space="preserve"><value>エージェント設定を読み込めませんでした</value></data>
+  <data name="AgentScopeReadFailedDetails" xml:space="preserve"><value>設定の保存先にアクセスできることを確認してから、もう一度タブを選んでください。</value></data>
 </root>

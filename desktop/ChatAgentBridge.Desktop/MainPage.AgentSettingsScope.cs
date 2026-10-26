@@ -23,6 +23,7 @@ public sealed partial class MainPage
     private bool _agentScopeInitialized;
     private string? _pendingAgentScope;
     private bool _agentScopeDispatchScheduled;
+    private (string Title, string Message)? _agentScopeLoadNotice;
 
     private void InitializeAgentSettingsScope()
     {
@@ -61,7 +62,7 @@ public sealed partial class MainPage
         for (var i = 0; i < _agentScopeKeys.Length; i++)
         {
             var key = _agentScopeKeys[i];
-            var item = new NavigationViewItem { Tag = key };
+            var item = new SettingsScopeNavigationItem(_agentScopeNavigation, () => QueueAgentScopeSelection(key)) { Tag = key, Content = key };
             AutomationProperties.SetAutomationId(item, "AgentScope" + (key switch { "common" => "Common", "codex" => "Codex", "claude" => "Claude", "gemini" => "Gemini", "github-copilot" => "Copilot", "antigravity" => "Antigravity", _ => "Custom" }));
             _agentScopeNavigation.MenuItems.Add(item);
         }
@@ -159,7 +160,27 @@ public sealed partial class MainPage
         try
         {
             if (!await ViewModel.SavePendingSettingsAsync() || !await _agentProfileDetails.TryFlushAsync()) return false;
-            if (scope != "common" && !await _agentProfileDetails.SelectProviderAsync(scope)) return false;
+            if (scope != "common" && !await _agentProfileDetails.SelectProviderAsync(scope))
+            {
+                var editor = _agentProfileDetails.Editor;
+                if (!editor.IsSettingsLoaded && editor.IsStatusOpen && editor.StatusSeverity == "Error")
+                {
+                    var title = DesktopText.Get("AgentScopeReadFailedTitle");
+                    var message = DesktopText.Get("AgentScopeReadFailedDetails");
+                    _agentScopeLoadNotice = (title, message);
+                    ViewModel.StatusTitle = title;
+                    ViewModel.StatusMessage = message;
+                    ViewModel.StatusSeverity = "Error";
+                    ViewModel.IsStatusOpen = true;
+                }
+                return false;
+            }
+            if (_agentScopeLoadNotice is { } notice)
+            {
+                if (ViewModel.StatusTitle == notice.Title && ViewModel.StatusMessage == notice.Message)
+                    ViewModel.IsStatusOpen = false;
+                _agentScopeLoadNotice = null;
+            }
             _agentSettingsScope = scope;
             _agentScopeInitialized = true;
             _agentSettingsScroll?.ChangeView(null, 0, null, true);

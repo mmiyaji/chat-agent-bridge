@@ -7,7 +7,8 @@ param(
  [string]$TestAgentPath=(Join-Path $PSScriptRoot 'artifacts/settings-scope-test-agent/ChatAgentBridge.TestAgent.exe'),
  [ValidateRange(0,200)][int]$StressCycles=0,
  [ValidateRange(0,500)][int]$StressSelectionDelayMs=90,
- [switch]$ResizeDuringSelection
+ [switch]$ResizeDuringSelection,
+ [switch]$DataAccessFaults
 )
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
@@ -237,8 +238,8 @@ try {
  $e=Scroll-ToElement 'AgentExecutable';Point-At $e
  $e=Scroll-ToElement 'UseAgentProfile';Point-At $e
  Capture "agent-narrow-bottom-$Language-$Theme"
- if($null -eq (Find-Element $script:window 'NavConnections')){Click-Actual 'TogglePaneButton'}
- Click-Actual 'NavConnections'
+ if($null -eq (Find-Element $script:window 'NavConnections')){Invoke-Element (Wait-Element 'TogglePaneButton') 'open main navigation at minimum width'}
+ Invoke-Element (Wait-Element 'NavConnections') 'open chat settings at minimum width'
  Top
  Capture "connection-narrow-$Language-$Theme"
  foreach($id in @('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeDiscord','ConnectionScopeCommon')){
@@ -317,6 +318,33 @@ try {
  Assert ((Results).connections -eq 1) 'Shared workspace edit disconnected chat.'
  Capture "changed-workspace-$Language-$Theme"
  Add-Pass 'Shared workspace changes invalidate old CLI verification without dropping chat connection'
+ if($DataAccessFaults){
+  $ioSettingsHash=(Get-FileHash $settingsPath).Hash
+  $draftPath=Join-Path $script:data 'agent-settings-drafts.json'
+  $ioCases=@(
+   @{previous='AgentScopeCodex';target='AgentScopeClaude';field='AgentModel';value='ui-claude-draft';name='existing-profile'},
+   @{previous='AgentScopeCommon';target='AgentScopeGemini';field='AgentExecutable';value='gemini';name='common-to-profile'})
+  foreach($io in $ioCases){
+   Choose-Scope $io.previous
+   $blockedRead=[IO.File]::Open($draftPath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::None)
+   try {
+    Invoke-Element (Wait-Element $io.target) 'switch tab while profile storage is inaccessible'
+    Wait-For {((Wait-Element $io.previous).GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)).Current.IsSelected} 'failed load retains last selected scope'
+    Start-Sleep -Milliseconds 500
+    Assert (-not $script:app.HasExited -and $script:app.Responding) 'Profile read failure stopped the app.'
+    Capture "profile-storage-unavailable-$($io.name)-$Language-$Theme"
+    $notice=Find-Element $script:window 'ExecutionStatus'
+    Assert ($notice -and -not $notice.Current.IsOffscreen) 'Profile storage read failure is silent: no visible error explains the rejected tab switch.'
+   } finally {$blockedRead.Dispose()}
+   Choose-Scope $io.target
+   Wait-For {((Wait-Element $io.field).GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).Current.Value -eq $io.value} 'profile tab recovers after storage access returns'
+   Wait-For {$notice=Find-Element $script:window 'ExecutionStatus';$null -eq $notice -or $notice.Current.IsOffscreen} 'load error clears after a successful retry'
+   Assert ((Get-FileHash $settingsPath).Hash -eq $ioSettingsHash) 'Storage failure or recovery changed active settings.'
+   Assert ((Results).connections -eq 1) 'Storage failure disconnected the current chat.'
+   Capture "profile-storage-recovered-$($io.name)-$Language-$Theme"
+   Add-Pass "Profile storage read failure is visible, preserves settings/chat, and recovers: $($io.name)"
+  }
+ }
  if($StressCycles -gt 0){
   $beforeStress=(Get-FileHash $settingsPath).Hash
   $random=[Random]::new(20261023)
@@ -348,6 +376,10 @@ try {
      if($StressSelectionDelayMs -gt 0){Start-Sleep -Milliseconds $StressSelectionDelayMs}
      Wait-For {
       $selectedScope=Find-Element $script:window $id
+      # A selected Top overflow item can live in a closed popup, outside the
+      # window subtree. Keep checking its existing peer instead of assuming
+      # that every selected scope must be a visible primary item.
+      if($null -eq $selectedScope){$selectedScope=$target}
       $null -ne $selectedScope -and
       $selectedScope.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected
      } ('stress scope selected: '+$id)

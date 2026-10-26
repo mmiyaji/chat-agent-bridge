@@ -43,7 +43,7 @@ public partial class MainPageViewModel
     {
         try
         {
-            var profiles = await _agentConnectionStore.ListAsync();
+            var profiles = await Task.Run(() => _agentConnectionStore.ListAsync());
             _registeredCodexConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Codex);
             _registeredClaudeConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Claude);
             _registeredGeminiConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Gemini);

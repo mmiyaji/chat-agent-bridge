@@ -867,4 +867,6 @@ After: {2}</value></data>
   <data name="SearchScopeSettings" xml:space="preserve"><value>{0} settings</value></data>
   <data name="SearchNoResults" xml:space="preserve"><value>No matching settings</value></data>
   <data name="InboxPendingApprovalMessage" xml:space="preserve"><value>Requests awaiting approval: {0}. Open a request to review its details.</value></data>
+  <data name="AgentScopeReadFailedTitle" xml:space="preserve"><value>Could not load agent settings</value></data>
+  <data name="AgentScopeReadFailedDetails" xml:space="preserve"><value>Check that the settings location is accessible, then select the tab again.</value></data>
 </root>

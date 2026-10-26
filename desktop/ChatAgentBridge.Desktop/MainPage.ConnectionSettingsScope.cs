@@ -1,4 +1,5 @@
 using ChatAgentBridge_Desktop.Localization;
+using ChatAgentBridge_Desktop.AgentSettings;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -90,16 +91,7 @@ public sealed partial class MainPage
         _connectionScopeNavigation.SelectionChanged += (_, args) =>
         {
             if (_syncingConnectionScopeSelection || args.SelectedItemContainer is not NavigationViewItem item) return;
-            _pendingConnectionScope = item.Tag as string ?? "common";
-            if (_connectionScopeDispatchScheduled) return;
-            _connectionScopeDispatchScheduled = true;
-            if (!DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
-            {
-                _connectionScopeDispatchScheduled = false;
-                if (_pendingConnectionScope is not { } next) return;
-                _pendingConnectionScope = null;
-                SetConnectionSettingsScope(next);
-            })) _connectionScopeDispatchScheduled = false;
+            QueueConnectionScopeSelection(item.Tag as string ?? "common");
         };
         shell.Children.Add(_connectionScopeNavigation);
         AttachSettingsNavigationResizer(_connectionScopeNavigation, shell, "ConnectionScopeSizer");
@@ -123,12 +115,26 @@ public sealed partial class MainPage
         UpdateSettingsNavigationEnabledState();
     }
 
+    private void QueueConnectionScopeSelection(string scope)
+    {
+        _pendingConnectionScope = scope;
+        if (_connectionScopeDispatchScheduled) return;
+        _connectionScopeDispatchScheduled = true;
+        if (!DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            _connectionScopeDispatchScheduled = false;
+            if (_pendingConnectionScope is not { } next) return;
+            _pendingConnectionScope = null;
+            SetConnectionSettingsScope(next);
+        })) _connectionScopeDispatchScheduled = false;
+    }
+
     private static T? FindLocalizedElement<T>(Panel panel, string key) where T : FrameworkElement =>
         panel.Children.OfType<T>().FirstOrDefault(element => LocalizedResourceKey.GetKey(element) == key);
 
-    private static void AddConnectionScopeItem(NavigationView navigation, string key, string label, string automationId)
+    private void AddConnectionScopeItem(NavigationView navigation, string key, string label, string automationId)
     {
-        var item = new NavigationViewItem { Content = ScopeNavigationLabel(key, label), Tag = key };
+        var item = new SettingsScopeNavigationItem(navigation, () => QueueConnectionScopeSelection(key)) { Content = ScopeNavigationLabel(key, label), Tag = key };
         AutomationProperties.SetAutomationId(item, automationId);
         AutomationProperties.SetName(item, label);
         navigation.MenuItems.Add(item);

@@ -30,13 +30,15 @@ public partial class MainPageViewModel
         IsStatusOpen = true;
         try
         {
-            _agentSettingsDraftStore ??= new AgentSettingsDraftStore(_settingsStore.DirectoryPath);
-            var draft = (await _agentSettingsDraftStore.ListAsync()).FirstOrDefault(item => item.Provider == provider);
+            var draftStore = _agentSettingsDraftStore ??= new AgentSettingsDraftStore(_settingsStore.DirectoryPath);
+            // Async file APIs can still probe/open a virtual drive synchronously.
+            // Keep that initial I/O off the UI thread as well as the actual read.
+            var draft = (await Task.Run(() => draftStore.ListAsync())).FirstOrDefault(item => item.Provider == provider);
             // Custom CLIs have editable drafts but are intentionally excluded
             // from the verified profiles used for chat-side agent switching.
             var registered = provider == AgentProfile.Custom
                 ? null
-                : await _agentConnectionStore.FindAsync(provider);
+                : await Task.Run(() => _agentConnectionStore.FindAsync(provider));
             BridgeSettings editorBaseline;
             if (draft is not null)
                 editorBaseline = draft.ApplyTo(shared);

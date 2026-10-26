@@ -556,12 +556,12 @@ public partial class MainPageViewModel : ObservableObject
                 var agentDraft = new AgentSettingsDraft(_agentEditorProvider!, snapshot.AgentExecutable,
                     snapshot.AgentArguments, snapshot.AgentMode, snapshot.AgentModel,
                     snapshot.AgentReasoningEffort, snapshot.AgentPermissionMode, snapshot.AllowAgentNetwork);
-                await (_agentSettingsDraftStore ??= new AgentSettingsDraftStore(_settingsStore.DirectoryPath))
-                    .SaveAsync(agentDraft);
+                var draftStore = _agentSettingsDraftStore ??= new AgentSettingsDraftStore(_settingsStore.DirectoryPath);
+                await Task.Run(() => draftStore.SaveAsync(agentDraft));
             }
             else
             {
-                await _settingsStore.SaveAsync(snapshot);
+                await Task.Run(() => _settingsStore.SaveAsync(snapshot));
             }
             _settings = snapshot;
             OnPropertyChanged(nameof(PersistedSettings));
