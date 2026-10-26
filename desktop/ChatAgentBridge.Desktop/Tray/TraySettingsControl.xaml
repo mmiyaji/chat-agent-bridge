@@ -26,7 +26,17 @@
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                     <Button x:Name="MoveToTrayButton" x:Uid="MoveToTrayButton" Click="MoveToTrayButton_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="MoveToTrayButton" />
-                    <Button Grid.Column="1" x:Name="ExitCompletelyButton" x:Uid="ExitCompletelyButton" Click="ExitCompletelyButton_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ExitCompletelyButton" />
+                    <Button Grid.Column="1" x:Name="ExitCompletelyButton" x:Uid="ExitCompletelyButton" Click="ExitCompletelyButton_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ExitCompletelyButton">
+                        <Button.Resources><ResourceDictionary Source="ms-appx:///ExitActionResources.xaml" /></Button.Resources>
+                        <Button.ContentTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE7E8;" AutomationProperties.AccessibilityView="Raw" />
+                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </Button.ContentTemplate>
+                    </Button>
                 </Grid>
                 <TextBlock x:Uid="TrayExitDescription" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="TrayExitDescription" />
             </StackPanel>

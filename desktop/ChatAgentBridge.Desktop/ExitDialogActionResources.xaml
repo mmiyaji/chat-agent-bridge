@@ -1,0 +1,44 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FFB42339" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FFA62C3F" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FF9C2F42" />
+            <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#FFB42339" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#FFA62C3F" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#FF9C2F42" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="AccentButtonBackground" Color="#FFBA2E47" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#FFC1475C" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#FFC64D61" />
+            <SolidColorBrush x:Key="AccentButtonForeground" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="#FFBA2E47" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="#FFC1475C" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="#FFC64D61" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="HighContrast">
+            <SolidColorBrush x:Key="AccentButtonBackground" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundDisabled" Color="{ThemeResource SystemColorButtonFaceColor}" />
+            <SolidColorBrush x:Key="AccentButtonForeground" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="AccentButtonForegroundDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPointerOver" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushPressed" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="AccentButtonBorderBrushDisabled" Color="{ThemeResource SystemColorGrayTextColor}" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+    <!-- The primary uses AccentButtonStyle; the caller scopes this palette to that button only. -->
+    <Style x:Key="ExitDialogPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}" />
+</ResourceDictionary>

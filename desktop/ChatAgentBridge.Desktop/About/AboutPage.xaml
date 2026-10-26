@@ -111,8 +111,16 @@
                 <maintenance:AdvancedSettingsControl x:Name="AdvancedSettings" />
                 <Button x:Uid="AboutExit" HorizontalAlignment="Left" Margin="0,8,0,0"
                         AutomationProperties.AutomationId="AboutExit" Click="Exit_Click">
-                            <Button.Resources><ResourceDictionary Source="ms-appx:///ImpactActionResources.xaml" /></Button.Resources>
-                        </Button>
+                    <Button.Resources><ResourceDictionary Source="ms-appx:///ExitActionResources.xaml" /></Button.Resources>
+                    <Button.ContentTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE7E8;" AutomationProperties.AccessibilityView="Raw" />
+                                <TextBlock Text="{Binding}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </Button.ContentTemplate>
+                </Button>
             </StackPanel>
         </ScrollViewer>
     </Grid>
