@@ -44,6 +44,9 @@ public partial class App : Application
     public static bool IsNotificationOnlyLaunch { get; private set; }
     private readonly CancellationTokenSource _pricingLifetime = new();
     private readonly CancellationTokenSource _portableUpdateLifetime = new();
+    private Task? _pricingTask;
+    private Task? _logRetentionTask;
+    private bool _windowServicesClosed;
     private FileStream? _portableLease;
 
     /// <summary>Applies a persisted language preference to this process and future MRT lookups.</summary>
@@ -166,6 +169,7 @@ public partial class App : Application
         SingleInstanceGate.SetShowWindow(Tray.ShowWindow);
         Window.Closed += (_, _) =>
         {
+            _windowServicesClosed = true;
             // Normal exits await this in TrayService before closing the window.
             // Keep a best-effort fallback for an OS session-ending close.
             _ = Layout.FlushAsync();
@@ -175,12 +179,15 @@ public partial class App : Application
             _portableUpdateLifetime.Dispose();
             _portableLease?.Dispose();
             PendingRequestNotifications.Shutdown();
-            _pricingLifetime.Cancel();
+            _ = Startup.BackgroundTaskShutdown.StopAsync(_pricingTask, _pricingLifetime);
+            _ = Startup.BackgroundTaskShutdown.StopAsync(_logRetentionTask, _logRetentionLifetime);
         };
         Window.Activate();
+        if (_windowServicesClosed) return;
         // Recovery uses only app-owned records and exclusive leases; it can run
         // alongside another window without touching active incoming attachments.
         _ = RecoverIncomingAttachmentsAsync(dataDirectory);
+        _logRetentionTask = RunLogRetentionAsync(dataDirectory);
         if (!IsNotificationOnlyLaunch) PendingRequestNotifications.ProcessStartupActivation();
         if (DeploymentRuntime.IsPortable && updateReadyEvent is not null &&
             updateReadyEvent.StartsWith(@"Local\ChatAgentBridge.Update.", StringComparison.Ordinal) &&
@@ -190,7 +197,7 @@ public partial class App : Application
             try { using var ready = EventWaitHandle.OpenExisting(updateReadyEvent); ready.Set(); }
             catch (WaitHandleCannotBeOpenedException) { }
         }
-        _ = RunPricingUpdatesAsync(_pricingLifetime.Token);
+        _pricingTask = RunPricingUpdatesAsync(_pricingLifetime.Token);
         _ = RunPortableUpdateChecksAsync();
     }
 
@@ -198,8 +205,10 @@ public partial class App : Application
     {
         try
         {
+            if (Window is MainWindow window) await window.StartupReady;
             await Task.Run(() => ChatAgentBridge.Core.IncomingAttachmentRecovery.RecoverAbandoned(dataDirectory));
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or ArgumentException or
             NotSupportedException or System.Security.SecurityException)
         {
@@ -231,7 +240,11 @@ public partial class App : Application
 
     private async Task RunPortableUpdateChecksAsync()
     {
-        try { await PortableUpdates.RunAutomaticChecksAsync(_portableUpdateLifetime.Token); }
+        try
+        {
+            if (Window is MainWindow window) await window.StartupReady.WaitAsync(_portableUpdateLifetime.Token);
+            await PortableUpdates.RunAutomaticChecksAsync(_portableUpdateLifetime.Token);
+        }
         catch (OperationCanceledException) when (_portableUpdateLifetime.IsCancellationRequested) { }
         catch (Exception error) { System.Diagnostics.Debug.WriteLine($"Automatic portable update check: {error.GetType().Name}"); }
     }
@@ -243,6 +256,7 @@ public partial class App : Application
         using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
         try
         {
+            if (Window is MainWindow window) await window.StartupReady.WaitAsync(cancellationToken);
             // Loads cached/manual prices off the startup path; Changed notifies open views.
             await Pricing.InitializeAsync(cancellationToken).ConfigureAwait(false);
             do
@@ -251,11 +265,10 @@ public partial class App : Application
             }
             while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false));
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested || Window is MainWindow startup && startup.StartupReady.IsCanceled) { }
         finally
         {
             Pricing.Dispose();
-            _pricingLifetime.Dispose();
         }
     }
 }

@@ -869,4 +869,12 @@
   <data name="InboxPendingApprovalMessage" xml:space="preserve"><value>承認待ちの依頼が {0} 件あります。依頼を開いて内容を確認してください。</value></data>
   <data name="AgentScopeReadFailedTitle" xml:space="preserve"><value>エージェント設定を読み込めませんでした</value></data>
   <data name="AgentScopeReadFailedDetails" xml:space="preserve"><value>設定の保存先にアクセスできることを確認してから、もう一度タブを選んでください。</value></data>
+  <data name="MigrationTitle" xml:space="preserve"><value>データを更新しています</value></data>
+  <data name="MigrationDescription" xml:space="preserve"><value>更新と確認が完了してからチャットへの接続・依頼の受信を始めます。このままお待ちください。</value></data>
+  <data name="MigrationProgress" xml:space="preserve"><value>データを更新中 [{0}/{1}]</value></data>
+  <data name="MigrationFailed" xml:space="preserve"><value>データを保護するため起動を停止しました。保存先にアクセスできることを確認し、再試行してください。移行中のデータは復旧のため保持します。</value></data>
+  <data name="MigrationExit" xml:space="preserve"><value>終了</value></data>
+  <data name="MigrationRetry" xml:space="preserve"><value>再試行</value></data>
+  <data name="MigrationChecking" xml:space="preserve"><value>保存データを確認しています…</value></data>
+  <data name="MigrationFailedTitle" xml:space="preserve"><value>データを更新できませんでした</value></data>
 </root>

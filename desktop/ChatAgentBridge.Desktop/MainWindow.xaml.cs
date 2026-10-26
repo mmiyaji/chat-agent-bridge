@@ -48,18 +48,8 @@ public sealed partial class MainWindow : Window
         Activated += MainWindow_Activated;
         Closed += MainWindow_Closed;
 
-        // Navigate the root frame to the main page on startup.
-        RootFrame.Navigate(typeof(MainPage));
-        // Search jumps into the main pages, so it stays hidden during setup and while settings load.
-        if (Page is { } page)
-        {
-            page.SettingsSearchRequested += (_, _) => ShowSettingsSearch();
-            page.ViewModel.PropertyChanged += (_, args) =>
-            {
-                if (args.PropertyName is nameof(page.ViewModel.IsOnboardingActive) or nameof(page.ViewModel.IsSettingsLoaded))
-                    UpdateSettingsSearchVisibility();
-            };
-        }
+        // Construct data-consuming pages only after registered schema migrations succeed.
+        WindowRoot.Loaded += StartupRoot_Loaded;
         UpdateSettingsSearchVisibility();
     }
 
@@ -192,6 +182,7 @@ public sealed partial class MainWindow : Window
 
     private void MainWindow_Closed(object sender, WindowEventArgs args)
     {
+        CancelStartupMigration();
         WindowRoot.Loaded -= WindowRoot_Loaded;
         WindowRoot.SizeChanged -= WindowRoot_SizeChanged;
         if (WindowRoot.XamlRoot is { } root) root.Changed -= WindowRootXamlRoot_Changed;
@@ -200,8 +191,12 @@ public sealed partial class MainWindow : Window
         ChatAgentBridge.Core.AppServer.CodexAppServerRunner.ShutdownSharedProcesses();
     }
 
-    internal Task ShutdownAsync() => RootFrame.Content is MainPage page
-        ? page.ShutdownAsync() : Task.CompletedTask;
+    internal async Task ShutdownAsync()
+    {
+        CancelStartupMigration();
+        if (_startupInitializationTask is { } startup) await startup;
+        if (RootFrame.Content is MainPage page) await page.ShutdownAsync();
+    }
 
     internal Task<bool> TryResolveUnsavedSettingsAsync() => RootFrame.Content is MainPage page
         ? page.TryResolveUnsavedSettingsAsync() : Task.FromResult(true);

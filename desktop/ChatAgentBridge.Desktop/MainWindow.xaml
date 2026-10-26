@@ -61,6 +61,23 @@
             navigation events and the Loaded lifecycle.
         -->
         <Frame x:Name="RootFrame" Grid.Row="1" />
+        <Border x:Name="StartupMigrationShell" Grid.Row="1" Visibility="Collapsed" Padding="32"
+                Background="{ThemeResource LayerFillColorDefaultBrush}" AutomationProperties.AutomationId="StartupMigrationShell">
+            <StackPanel MaxWidth="560" Spacing="16" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock x:Name="StartupMigrationTitle" Style="{StaticResource TitleTextBlockStyle}" TextWrapping="Wrap" />
+                <ProgressRing x:Name="StartupMigrationRing" IsActive="True" Width="40" Height="40" HorizontalAlignment="Left" />
+                <TextBlock x:Name="StartupMigrationProgress" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"
+                           AutomationProperties.AutomationId="StartupMigrationProgress" />
+                <TextBlock x:Name="StartupMigrationDescription" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <InfoBar x:Name="StartupMigrationError" Severity="Error" IsOpen="False" IsClosable="False"
+                         AutomationProperties.AutomationId="StartupMigrationError" />
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button x:Name="StartupMigrationExit" Click="StartupMigrationExit_Click" AutomationProperties.AutomationId="StartupMigrationExit" />
+                    <Button x:Name="StartupMigrationRetry" Click="StartupMigrationRetry_Click" Visibility="Collapsed"
+                            Style="{StaticResource AccentButtonStyle}" AutomationProperties.AutomationId="StartupMigrationRetry" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
 
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Modifiers="Control" Key="F" Invoked="SettingsSearchAccelerator_Invoked" />

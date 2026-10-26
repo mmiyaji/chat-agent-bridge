@@ -869,4 +869,12 @@ After: {2}</value></data>
   <data name="InboxPendingApprovalMessage" xml:space="preserve"><value>Requests awaiting approval: {0}. Open a request to review its details.</value></data>
   <data name="AgentScopeReadFailedTitle" xml:space="preserve"><value>Could not load agent settings</value></data>
   <data name="AgentScopeReadFailedDetails" xml:space="preserve"><value>Check that the settings location is accessible, then select the tab again.</value></data>
+  <data name="MigrationTitle" xml:space="preserve"><value>Updating local data</value></data>
+  <data name="MigrationDescription" xml:space="preserve"><value>Chat connections and requests will start after the update has been checked. Please keep this window open.</value></data>
+  <data name="MigrationProgress" xml:space="preserve"><value>Updating data [{0}/{1}]</value></data>
+  <data name="MigrationFailed" xml:space="preserve"><value>Startup has been paused to protect your data. Check that the data location is accessible, then retry. Existing migration data will be preserved for recovery.</value></data>
+  <data name="MigrationExit" xml:space="preserve"><value>Exit</value></data>
+  <data name="MigrationRetry" xml:space="preserve"><value>Retry</value></data>
+  <data name="MigrationChecking" xml:space="preserve"><value>Checking saved data…</value></data>
+  <data name="MigrationFailedTitle" xml:space="preserve"><value>Unable to update local data</value></data>
 </root>
