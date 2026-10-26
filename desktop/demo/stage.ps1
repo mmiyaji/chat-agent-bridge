@@ -28,8 +28,9 @@ $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 if (-not $backdrops) { Start-Process pwsh -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', "`"$root\backdrop.ps1`"" -WindowStyle Hidden; Start-Sleep 3 }
 $bd = [St]::FindWindow($null, 'CAB demo backdrop')
 # Topmost in this order keeps other apps hidden behind the backdrop; system notifications still appear above.
-$split = 880
+# Without the Mattermost window (CAB-only demos such as History), CAB takes the whole work area.
+$split = if ($chrome) { 880 } else { 0 }
 [St]::SetWindowPos($bd, [IntPtr]-1, 0, 0, 0, 0, 0x0013) | Out-Null
-[St]::SetWindowPos($chrome.MainWindowHandle, [IntPtr]-1, $wa.X, $wa.Y, $split, $wa.Height, 0x0050) | Out-Null
+if ($chrome) { [St]::SetWindowPos($chrome.MainWindowHandle, [IntPtr]-1, $wa.X, $wa.Y, $split, $wa.Height, 0x0050) | Out-Null }
 [St]::SetWindowPos($cab.MainWindowHandle, [IntPtr]-1, $wa.X + $split, $wa.Y, $wa.Width - $split, $wa.Height, 0x0050) | Out-Null
 'staged'

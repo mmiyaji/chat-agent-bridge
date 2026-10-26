@@ -19,6 +19,11 @@ Mattermost の資格情報、録画、スクリーンショット、ログ）は
 ツールの場所は自動で探します。見つからない場合は環境変数で指定します:
 `CAB_DEMO_APP`、`CAB_DEMO_AGY`、`CAB_DEMO_CLAUDE`、`CAB_DEMO_FFMPEG`、`CAB_DEMO_CHROME`（`demo-env.ps1`）。
 
+公開する動画では、画面に出るパスからユーザー名や作業場所が分からないようにします。次の環境変数を撮影前に設定してください。
+
+- `CAB_DEMO_SAMPLES`: サンプルプロジェクトの置き場所（例: `C:\demo`）。依頼文・確認ダイアログ・チャットに出るパスが短くなります。
+- `CAB_DEMO_TOOLS`: CLI の公開用の場所（例: `C:\demo\tools`）。各 CLI のフォルダーへのジャンクションを作り、確認ダイアログの「エージェント」「CLI」の表示が `C:\demo\tools\agy\agy.exe` のようになります。
+
 ## 初回の準備
 
 ```
@@ -48,6 +53,7 @@ pwsh -NoProfile -File desktop\demo\take.ps1 -Lang ja -Record
 pwsh -NoProfile -File desktop\demo\take.ps1 -Lang en -Record
 pwsh -NoProfile -File desktop\demo\take-feature.ps1 -Scenario project -Record
 pwsh -NoProfile -File desktop\demo\take-feature.ps1 -Scenario agent -Record
+pwsh -NoProfile -File desktop\demo\take-activity.ps1 -Record
 ```
 
 - `-Record` を外すとリハーサル（録画なし）です。最後に画面を `final-*.png` に保存します。
@@ -58,7 +64,7 @@ pwsh -NoProfile -File desktop\demo\take-feature.ps1 -Scenario agent -Record
 ### 1本の流れ
 
 1. `reset-demo.ps1` — デモ用 CAB を終了し、`#ai-requests` の投稿を削除し、CAB のデータとサンプルプロジェクトを作り直して起動
-   - `setup-cab-demo.ps1` のオプション: `-Lang ja|en`、`-Theme light|dark`、`-AutoSwitch`
+   - `setup-cab-demo.ps1` のオプション: `-Lang ja|en`、`-Theme light|dark`、`-AutoSwitch`、`-SeedActivity`（履歴と利用状況のデモ用に、生成したサンプル会話と約1か月分の実行記録・操作記録を `SeedActivity.cs` で書き込む）
    - サンプルプロジェクト: `weather-cli`（言語別）と `todo-cli`（日本語）。どちらも信頼済みフォルダー
    - 切り替え先の CLI として agy と Claude Code（見つかった場合）を登録
    - 同意画面を出さないため、同意済みのポリシー版を書き込みます。アプリの同意ポリシーを更新したら `setup-cab-demo.ps1` の版も更新してください
@@ -102,10 +108,15 @@ pwsh -NoProfile -File desktop\demo\take-feature.ps1 -Scenario agent -Record
 
 `-AutoSwitch` 付きでは初回依頼・エージェント切り替え・切り替え後の依頼を自動承認します。「最初だけ確認」で切り替えの自動承認を有効にした場合は、会話開始時の承認が必要です。
 
-### 利用実績の詳細（未作成）
+### 履歴と利用状況（`run-activity.ps1`、`take-activity.ps1`）
 
-複数のエージェント・プロジェクトで数回実行して実績を貯めたうえで、
-「履歴と利用状況」ページを順に見せる予定です（会話一覧 → 実行記録 → 利用量 → 監査ログ、ダークテーマ）。
+CAB だけを作業領域いっぱいに表示します（Mattermost は閉じます）。ダークテーマ・日本語です。
+会話・実行・利用量は `SeedActivity.cs` が生成したサンプルデータで、実際の利用実績や測定値ではありません。
+
+1. 「履歴と利用状況」を開き、保存済みの会話を3件順に選ぶ（Claude Code、Codex、agy）
+2. 「利用状況」タブ: 利用カレンダーで実行回数が最も多い日を選び、「この日の実行履歴を見る」で実行一覧へ
+3. 「利用状況」に戻り、トークン・キャッシュ・推定コスト、モデル別の合計、曜日ごとの傾向までスクロール
+4. 「操作記録」タブで承認・開始・結果送信の記録を見せる
 
 ## 後処理
 
@@ -128,6 +139,8 @@ ffmpeg -y -ss 1 -to <終了秒> -i <raw.mkv> -c:v libx264 -preset slow -crf 24 -
 | 承認ボタンが見つからない | 開いている会話の詳細が前の依頼のまま | 依頼一覧（`ChatRequests`）から承認待ちを選ぶ |
 | `folder` のパスが崩れる | Mattermost の Markdown が `\.` をエスケープとして扱う | パスはスラッシュ区切りで送る |
 | agy の返信に「RunCommand を拒否」 | ヘッドレスの agy は「編集を自動許可」でコマンドを実行しない | 依頼文で「テストの実行は不要」と書く |
+| 動画にユーザー名入りのパスが映る | サンプルや CLI を既定の場所（ユーザープロファイル配下など）に置いた | `CAB_DEMO_SAMPLES` / `CAB_DEMO_TOOLS` で短い公開用の場所を使う |
+| 利用量が「未報告」になる | キャッシュを含まない入力（Claude）は、読み込みと書き込みの両方の報告が必要 | `SeedActivity.cs` で `CacheWriteInputTokens` も書き込む |
 | Chrome の通知許可の吹き出し | サイトの通知許可要求 | `--deny-permission-prompts` |
 | キー入力が別のアプリに入る | 前面ウィンドウの取り違え | Mattermost は CDP で入力し、CAB は UI Automation とカーソル下の確認付きクリックで操作 |
 
@@ -136,7 +149,9 @@ ffmpeg -y -ss 1 -to <終了秒> -i <raw.mkv> -c:v libx264 -preset slow -crf 24 -
 | スクリプト | 役割 |
 |---|---|
 | `take.ps1` / `take-feature.ps1` | 1本分（リセット → ブラウザー → シナリオ → 最終画面）をまとめて実行 |
-| `run-demo.ps1` / `run-scenario.ps1` | シナリオの再生と録画 |
+| `take-activity.ps1` | 履歴と利用状況のデモ（サンプルデータを書き込んでから再生・録画） |
+| `run-demo.ps1` / `run-scenario.ps1` / `run-activity.ps1` | シナリオの再生と録画 |
+| `SeedActivity.cs` | 履歴と利用状況のデモ用サンプルデータの生成（`dotnet run SeedActivity.cs`） |
 | `reset-demo.ps1`, `setup-cab-demo.ps1`, `launch-cab.ps1` | CAB のデータとサンプルの作り直し、起動 |
 | `setup-mattermost-demo.ps1`, `open-browser.ps1`, `prep-mattermost-ui.ps1` | Mattermost の準備とログイン |
 | `stage.ps1`, `backdrop.ps1` | 画面の配置とマスク |

@@ -1,10 +1,10 @@
 # Prepares an isolated CAB data folder and a small sample project for the demo video.
-param([ValidateSet('ja', 'en')][string]$Lang = 'ja', [ValidateSet('light', 'dark')][string]$Theme = 'light', [switch]$AutoSwitch)
+param([ValidateSet('ja', 'en')][string]$Lang = 'ja', [ValidateSet('light', 'dark')][string]$Theme = 'light', [switch]$AutoSwitch, [switch]$SeedActivity)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Security
 . (Join-Path $PSScriptRoot 'demo-env.ps1')
 if (-not $AgyExe) { throw 'Antigravity CLI (agy) was not found. Set CAB_DEMO_AGY.' }
-$data = $CabData; $ws = Join-Path $DemoData 'weather-cli'; $todo = Join-Path $DemoData 'todo-cli'
+$data = $CabData; $ws = Join-Path $SampleRoot 'weather-cli'; $todo = Join-Path $SampleRoot 'todo-cli'
 foreach ($d in $data, $ws, $todo) { if (Test-Path $d) { Remove-Item $d -Recurse -Force }; New-Item -ItemType Directory $d | Out-Null }
 $mm = Get-Content $MattermostState -Raw | ConvertFrom-Json
 $token = $mm.'cab-bot'.token
@@ -187,4 +187,9 @@ def main(args):
 if __name__ == "__main__":
     main(sys.argv[1:])
 '@
+if ($SeedActivity) {
+    # Sample conversations and a month of generated usage for the History and usage demo (not real measurements).
+    dotnet run (Join-Path $PSScriptRoot 'SeedActivity.cs') -- $data $MattermostState $Lang $ws $todo
+    if ($LASTEXITCODE -ne 0) { throw 'Seeding sample activity failed.' }
+}
 "cab demo data ready: $data ($Lang)"

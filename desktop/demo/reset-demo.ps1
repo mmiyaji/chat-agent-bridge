@@ -1,5 +1,5 @@
 # Returns the demo to a clean state: stops the demo CAB, clears #ai-requests, shows replies inline, recreates CAB data and relaunches.
-param([ValidateSet('ja', 'en')][string]$Lang = 'ja', [ValidateSet('light', 'dark')][string]$Theme = 'light', [switch]$AutoSwitch)
+param([ValidateSet('ja', 'en')][string]$Lang = 'ja', [ValidateSet('light', 'dark')][string]$Theme = 'light', [switch]$AutoSwitch, [switch]$SeedActivity)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 . (Join-Path $root 'demo-env.ps1')
@@ -21,5 +21,5 @@ foreach ($p in $posts.posts.PSObject.Properties.Value) {
     }
 }
 "deleted posts: $deleted"
-& (Join-Path $root 'setup-cab-demo.ps1') -Lang $Lang -Theme $Theme -AutoSwitch:$AutoSwitch
+& (Join-Path $root 'setup-cab-demo.ps1') -Lang $Lang -Theme $Theme -AutoSwitch:$AutoSwitch -SeedActivity:$SeedActivity
 & (Join-Path $root 'launch-cab.ps1')
