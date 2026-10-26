@@ -880,4 +880,11 @@
   <data name="AdvancedSettingsHeader" xml:space="preserve"><value>詳細設定</value></data>
   <data name="AdvancedSettingsDescription" xml:space="preserve"><value>アプリの動作や、記録を保持する期間を調整します。</value></data>
   <data name="DiagnosticsAndSettingsHeading" xml:space="preserve"><value>診断と設定</value></data>
+  <data name="InboxReconnectLabel" xml:space="preserve"><value>再接続</value></data>
+  <data name="InboxReconnectHint" xml:space="preserve"><value>保存済みの最新設定で、{0}につなぎ直します。</value></data>
+  <data name="InboxReconnectInitialHint" xml:space="preserve"><value>チャットに一度接続すると、同じサービスへつなぎ直せます。</value></data>
+  <data name="InboxReconnectBusyHint" xml:space="preserve"><value>実行中の依頼が完了、または中断してから再接続できます。</value></data>
+  <data name="InboxReconnectConfirmTitle" xml:space="preserve"><value>チャットに再接続しますか？</value></data>
+  <data name="InboxReconnectConfirmBody" xml:space="preserve"><value>現在の依頼は、この画面から操作できなくなります。未送信の結果・添付は先に共有し、未実行の依頼は再接続後にチャットから再投稿してください。会話履歴は残ります。</value></data>
+  <data name="InboxDisconnectFailed" xml:space="preserve"><value>切断処理を完了できませんでした。通信状態を確認し、もう一度お試しください。</value></data>
 </root>

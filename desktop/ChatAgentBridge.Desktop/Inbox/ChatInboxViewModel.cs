@@ -158,7 +158,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasProgressNotice))]
     public partial string ProgressNotice { get; set; } = "";
     public bool HasProgressNotice => !string.IsNullOrWhiteSpace(ProgressNotice);
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(ConnectDiscordCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand)), NotifyCanExecuteChangedFor(nameof(ConnectSlackCommand)), NotifyCanExecuteChangedFor(nameof(ConnectDiscordCommand)), NotifyCanExecuteChangedFor(nameof(DisconnectCommand)), NotifyCanExecuteChangedFor(nameof(ReconnectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsConnected { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsConnectionConfirmed { get; set; }
@@ -167,6 +167,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public partial bool IsExecuting { get; set; }
     partial void OnIsExecutingChanged(bool value)
     {
+        ReconnectCommand.NotifyCanExecuteChanged();
+        ConnectMattermostCommand.NotifyCanExecuteChanged();
+        ConnectSlackCommand.NotifyCanExecuteChanged();
+        ConnectDiscordCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(ReconnectHint));
         OnPropertyChanged(nameof(IsSelectedActiveExecution));
         SendAttachmentsCommand.NotifyCanExecuteChanged();
         NotifyActiveRequestProperties();
@@ -580,8 +585,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? ServerApprovalHandler { get; set; }
     public Func<AppServerInput, CancellationToken, Task<IReadOnlyDictionary<string, string[]>?>>? ServerInputHandler { get; set; }
 
-    public ChatInboxViewModel()
+    public ChatInboxViewModel() : this(null) { }
+
+    internal ChatInboxViewModel(Func<string, Task<IChatTransport>>? transportFactory)
     {
+        _connectionTransportFactory = transportFactory ?? CreateConnectionTransportAsync;
         _runner = new SessionAgentRunner(_sessions);
         _serverRunner = new AppServerSessionRunner(_sessions);
         Requests.CollectionChanged += Requests_CollectionChanged;
@@ -648,21 +656,23 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         QueueConversationRefresh();
     }
 
-    private bool CanConnect() => !_closing && !IsConnected && !IsExecuting;
-    private bool CanApprove() => !_closing && !IsExecuting && IsConnectionConfirmed && Selected is { State: "承認待ち" } item && ReferenceEquals(item.Transport, _transport);
+    private bool CanConnect() => !_closing && !IsConnected && !IsExecuting && !IsConnectionActionInProgress;
+    private bool CanApprove() => !_closing && !IsExecuting && !IsConnectionActionInProgress && IsConnectionConfirmed && Selected is { State: "承認待ち" } item && ReferenceEquals(item.Transport, _transport);
 
     [RelayCommand(CanExecute = nameof(CanConnect))]
-    private Task ConnectMattermostAsync() => ConnectAsync(new MattermostWebSocketTransport());
+    private Task ConnectMattermostAsync() => ConnectProviderAsync("mattermost");
 
     [RelayCommand(CanExecute = nameof(CanConnect))]
-    private Task ConnectSlackAsync() => ConnectAsync(new SlackSocketModeTransport());
+    private Task ConnectSlackAsync() => ConnectProviderAsync("slack");
 
     [RelayCommand(CanExecute = nameof(CanConnect))]
-    private async Task ConnectDiscordAsync()
+    private Task ConnectDiscordAsync() => ConnectProviderAsync("discord");
+
+    private async Task<IChatTransport> CreateConnectionTransportAsync(string provider)
     {
 #if CAB_DISCORD_FIXTURE
         var endpoint = Environment.GetEnvironmentVariable("CAB_DISCORD_FIXTURE_URL");
-        if (!string.IsNullOrWhiteSpace(endpoint))
+        if (provider == "discord" && !string.IsNullOrWhiteSpace(endpoint))
         {
             var parent = Directory.GetParent(_store.DirectoryPath);
             var settings = await _store.LoadAsync();
@@ -670,11 +680,16 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 !File.Exists(Path.Combine(_store.DirectoryPath, ".cab-discord-fixture")) ||
                 settings.DiscordBotToken != "offline-discord-fixture")
                 throw new InvalidOperationException("Isolated Discord fixture profile is missing.");
-            await ConnectAsync(DiscordGatewayTransport.CreateLoopbackFixture(new Uri(endpoint), _sessions));
-            return;
+            return DiscordGatewayTransport.CreateLoopbackFixture(new Uri(endpoint), _sessions);
         }
 #endif
-        await ConnectAsync(new DiscordGatewayTransport());
+        return provider switch
+        {
+            "mattermost" => new MattermostWebSocketTransport(),
+            "slack" => new SlackSocketModeTransport(),
+            "discord" => new DiscordGatewayTransport(),
+            _ => throw new ArgumentException("Unsupported chat provider.", nameof(provider))
+        };
     }
 
     private async Task ConnectAsync(IChatTransport transport)
@@ -851,8 +866,24 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         }
     }
 
-    [RelayCommand(CanExecute = nameof(IsConnected))]
+    [RelayCommand(CanExecute = nameof(CanDisconnect))]
     private async Task DisconnectAsync()
+    {
+        if (!CanDisconnect()) return;
+        IsConnectionActionInProgress = true;
+        try { await DisconnectCoreAsync(); }
+        catch (Exception)
+        {
+            if (!_closing)
+            {
+                HasConnectionError = true;
+                Status = DesktopText.Get("InboxDisconnectFailed");
+            }
+        }
+        finally { IsConnectionActionInProgress = false; }
+    }
+
+    private async Task DisconnectTransportAsync()
     {
         var connection = _connection;
         var receive = _receiveTask;
@@ -1108,7 +1139,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             TraceUnavailableNotification(item);
             return Notifications.PendingNotificationActionResult.Unavailable;
         }
-        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+        if (IsExecuting || IsConnectionActionInProgress || ApproveCommand.IsRunning || RejectCommand.IsRunning)
         {
             App.PendingRequestNotifications?.TraceDecision("command_busy");
             return Notifications.PendingNotificationActionResult.Busy;
@@ -1121,7 +1152,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             App.PendingRequestNotifications?.TraceDecision("selection_or_state_changed");
             return Notifications.PendingNotificationActionResult.Unavailable;
         }
-        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+        if (IsExecuting || IsConnectionActionInProgress || ApproveCommand.IsRunning || RejectCommand.IsRunning)
             return Notifications.PendingNotificationActionResult.Busy;
         _notificationApprovedItem = item;
         try { await ApproveCommand.ExecuteAsync(null); }
@@ -1140,12 +1171,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             TraceUnavailableNotification(item);
             return Notifications.PendingNotificationActionResult.Unavailable;
         }
-        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+        if (IsExecuting || IsConnectionActionInProgress || ApproveCommand.IsRunning || RejectCommand.IsRunning)
             return Notifications.PendingNotificationActionResult.Busy;
         RevealRequest(item);
         if (!IsAvailable() || !ReferenceEquals(Selected, item))
             return Notifications.PendingNotificationActionResult.Unavailable;
-        if (IsExecuting || ApproveCommand.IsRunning || RejectCommand.IsRunning)
+        if (IsExecuting || IsConnectionActionInProgress || ApproveCommand.IsRunning || RejectCommand.IsRunning)
             return Notifications.PendingNotificationActionResult.Busy;
         await RejectCommand.ExecuteAsync(null);
         return item.State != "承認待ち" ? Notifications.PendingNotificationActionResult.Completed
@@ -1160,7 +1191,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         App.PendingRequestNotifications?.TraceDecision(reason);
     }
 
-    private bool CanSendResult() => !_closing && !IsExecuting && IsConnectionConfirmed && Selected is { ResultText.Length: > 0, AllowsResultSharing: true } item && ReferenceEquals(item.Transport, _transport);
+    private bool CanSendResult() => !_closing && !IsExecuting && !IsConnectionActionInProgress && IsConnectionConfirmed && Selected is { ResultText.Length: > 0, AllowsResultSharing: true } item && ReferenceEquals(item.Transport, _transport);
 
     [RelayCommand(CanExecute = nameof(CanSendResult))]
     private async Task SendResultAsync()
@@ -1270,7 +1301,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 // Old credentials or a different server/channel must never remain a green,
                 // apparently usable connection after the settings have been saved.
                 IsConnectionConfirmed = false;
-                await DisconnectAsync();
+                await DisconnectCoreAsync();
                 HasConnectionError = true;
                 Status = DesktopText.Get("InboxConnectionSettingsChanged");
             }
@@ -1363,17 +1394,17 @@ public sealed partial class ChatInboxViewModel : ObservableObject
 
     private async Task ProcessPendingPoliciesAsync()
     {
-        if (_processingPolicies || IsExecuting || !IsConnectionConfirmed || _closing) return;
+        if (_processingPolicies || IsExecuting || IsConnectionActionInProgress || !IsConnectionConfirmed || _closing) return;
         _processingPolicies = true;
         try
         {
             await Task.Yield();
-            if (IsExecuting || !IsConnectionConfirmed || _closing) return;
+            if (IsExecuting || IsConnectionActionInProgress || !IsConnectionConfirmed || _closing) return;
             // New requests can arrive while an earlier execution awaits the CLI.
             // Take snapshots and serialize all automatic execution through the same command.
             foreach (var item in Requests.ToArray())
             {
-                if (_closing || !IsConnectionConfirmed || IsExecuting) break;
+                if (_closing || !IsConnectionConfirmed || IsExecuting || IsConnectionActionInProgress) break;
                 if (item.State != "承認待ち" || _automaticallyAttempted.Contains(item)) continue;
                 if (!await CheckAccessAsync(item, _connection?.Token ?? CancellationToken.None)) continue;
                 var switchesConversation = WorkspaceChatCommand.TryParse(item.Prompt, out _) || AgentChatCommand.TryParse(item.Prompt, out _);
@@ -1386,6 +1417,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     NotifyPendingRequest(item);
                     continue;
                 }
+                if (IsConnectionActionInProgress) break;
                 _automaticallyAttempted.Add(item);
                 if (_notifiedRequests.Remove(item))
                 {
@@ -1394,6 +1426,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     item.State = "自動実行を準備";
                     item.State = "承認待ち";
                 }
+                if (IsConnectionActionInProgress) { _automaticallyAttempted.Remove(item); break; }
                 if (!Requests.Contains(item) || !ReferenceEquals(item.Transport, _transport)) continue;
                 RevealRequest(item);
                 _automaticallyApprovedItem = item;
@@ -1415,7 +1448,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         finally
         {
             _processingPolicies = false;
-            if (!_closing && !IsExecuting && IsConnectionConfirmed && Requests.Any(item => item.State == "承認待ち" &&
+            if (!_closing && !IsExecuting && !IsConnectionActionInProgress && IsConnectionConfirmed && Requests.Any(item => item.State == "承認待ち" &&
                 !_notifiedRequests.Contains(item) && !_automaticallyAttempted.Contains(item)))
             {
                 await Task.Yield();
@@ -1475,6 +1508,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         _searchDebounce = null;
         FlushConversationRefresh();
         _closing = true;
+        _connectionActionsLifetime.Cancel();
         _nameLookupCancellation.Cancel();
         CloseAvatars();
         IsConnectionConfirmed = false;
@@ -1486,6 +1520,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
 
     internal async Task WaitForConnectionShutdownAsync()
     {
+        foreach (var command in new[] { ConnectMattermostCommand, ConnectSlackCommand, ConnectDiscordCommand, ReconnectCommand, DisconnectCommand })
+            if (command.ExecutionTask is { } action) await action;
         if (_receiveTask is { } receive) await receive;
         if (_conversationRestoreTask is { } restore) await restore;
         await _conversationSaveTask;

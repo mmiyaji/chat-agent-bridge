@@ -880,4 +880,11 @@ After: {2}</value></data>
   <data name="AdvancedSettingsHeader" xml:space="preserve"><value>Advanced settings</value></data>
   <data name="AdvancedSettingsDescription" xml:space="preserve"><value>Adjust how the application behaves, including how long its records are kept.</value></data>
   <data name="DiagnosticsAndSettingsHeading" xml:space="preserve"><value>Diagnostics and settings</value></data>
+  <data name="InboxReconnectLabel" xml:space="preserve"><value>Reconnect</value></data>
+  <data name="InboxReconnectHint" xml:space="preserve"><value>Reconnect to {0} using the latest saved settings.</value></data>
+  <data name="InboxReconnectInitialHint" xml:space="preserve"><value>Connect to a chat service first to enable reconnecting.</value></data>
+  <data name="InboxReconnectBusyHint" xml:space="preserve"><value>Wait for the current request to finish, or stop it, before reconnecting.</value></data>
+  <data name="InboxReconnectConfirmTitle" xml:space="preserve"><value>Reconnect to chat?</value></data>
+  <data name="InboxReconnectConfirmBody" xml:space="preserve"><value>Actions on current requests will no longer be available. Share any unsent results or files first, and send unexecuted requests again from chat after reconnecting. Conversation history will be kept.</value></data>
+  <data name="InboxDisconnectFailed" xml:space="preserve"><value>The disconnect operation could not finish. Check the connection and try again.</value></data>
 </root>

@@ -105,9 +105,9 @@ async Task<Fixture> Prepare(string name, string operation)
 Task Invoke(Fixture fixture, string operation)
 {
     if (operation == "workspace")
-        return (Task)Call(fixture.Vm, "ChangeWorkspaceAsync", fixture.Item, fixture.Proposed, false, CancellationToken.None)!;
+        return (Task)Call(fixture.Vm, "ChangeWorkspaceAsync", fixture.Item, fixture.Proposed, false, false, CancellationToken.None)!;
     var command = Model(commandType, new { Provider = "claude", IncludeSummary = false, IsValid = true });
-    return (Task)Call(fixture.Vm, "ChangeAgentAsync", fixture.Item, command, false, CancellationToken.None)!;
+    return (Task)Call(fixture.Vm, "ChangeAgentAsync", fixture.Item, command, false, false, CancellationToken.None)!;
 }
 void OriginalDisplay(Fixture fixture)
 {

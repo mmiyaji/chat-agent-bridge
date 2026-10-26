@@ -55,7 +55,7 @@ public sealed partial class ChatInboxViewModel
         catch (Exception) { item.AttachmentStatus = DesktopText.Get("AttachmentsFailed"); }
     }
 
-    private bool CanSendAttachments() => !IsExecuting && IsConnectionConfirmed && !_closing &&
+    private bool CanSendAttachments() => !IsExecuting && !IsConnectionActionInProgress && IsConnectionConfirmed && !_closing &&
         Selected is { AttachmentCandidates.Count: > 0, AllowsResultSharing: true } item &&
         item.Transport is IChatFileTransport && ReferenceEquals(item.Transport, _transport);
 

@@ -42,6 +42,7 @@ public sealed partial class ChatInboxPage : Page
         BodyGrid.SizeChanged += (_, _) => ApplyConversationColumnWidths();
         ViewModel.ConfirmAsync = ConfirmAsync;
         ViewModel.ConfirmReplyAsync = ConfirmReplyAsync;
+        ViewModel.ConfirmReconnectAsync = ConfirmReconnectAsync;
         ViewModel.ConfirmAttachmentsAsync = ConfirmAttachmentsAsync;
         var serverDialogs = new AppServerUi.AppServerDialogs(() => XamlRoot);
         ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
@@ -142,7 +143,7 @@ public sealed partial class ChatInboxPage : Page
 
     private void Page_SizeChanged(object sender, Microsoft.UI.Xaml.SizeChangedEventArgs e)
     {
-        ConnectionActions.Orientation = e.NewSize.Width >= 680
+        ConnectionActions.Orientation = e.NewSize.Width >= 860
             ? Orientation.Horizontal : Orientation.Vertical;
         ViewModel.IsWideLayout = e.NewSize.Width >= SideBySideMinimumWidth;
         if (ViewModel.IsWideLayout)
@@ -266,7 +267,7 @@ public sealed partial class ChatInboxPage : Page
     public static Visibility AvatarVisibility(string? path) => string.IsNullOrEmpty(path) ? Visibility.Collapsed : Visibility.Visible;
 
     public static Visibility ConnectCommandsVisibility(bool wide, bool connected) =>
-        wide || !connected ? Visibility.Visible : Visibility.Collapsed;
+        !connected ? Visibility.Visible : Visibility.Collapsed;
 
     private void ConversationPersonPicture_Loaded(object sender, RoutedEventArgs e)
     {
