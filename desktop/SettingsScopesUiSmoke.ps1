@@ -273,7 +273,8 @@ try {
  Select-Element 'NavAbout'
  $about=(Wait-Element 'AboutScroll').GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
  $about.SetScrollPercent(-1,100)
- Click-Actual 'AboutExit'
+ # UIA bounds can lag a scrolled About layout; invoke the named action rather than clicking stale coordinates.
+ Invoke-Element (Wait-Element 'AboutExit') 'request exit for persistence test'
  $close=Wait-Element 'WindowCloseConfirmation'
  Invoke-Element (Find-Element $close 'PrimaryButton') 'exit isolated app for persistence test'
  Assert ($script:app.WaitForExit(10000)) 'Isolated app did not exit.'
