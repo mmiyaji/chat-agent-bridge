@@ -11,6 +11,9 @@ public sealed class SettingsStore
     private const string ProtectedPrefix = "dpapi:";
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly string _filePath;
+    private readonly StorageOperationRunner _operations = new();
+    // Guards against a disappearing backing store within this instance's lifetime; persistence is not journaled across process restarts.
+    private bool _settingsPreviouslyPersisted;
 
     public SettingsStore(string? directory = null)
     {
@@ -24,21 +27,35 @@ public sealed class SettingsStore
     public string DirectoryPath { get; }
 
     public async Task<BridgeSettings> LoadAsync(CancellationToken cancellationToken = default)
+        => await _operations.RunAsync("read", LoadCoreAsync, cancellationToken).ConfigureAwait(false);
+
+    private async Task<BridgeSettings> LoadCoreAsync(CancellationToken cancellationToken)
     {
-        if (!File.Exists(_filePath))
+        try
         {
-            // Suggest the user's known Documents folder only for a new installation.
-            // Never replace a saved workspace or create/trust another directory implicitly.
+            await using var stream = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var result = await ReadSettingsAsync(stream, cancellationToken).ConfigureAwait(false);
+            _settingsPreviouslyPersisted = true;
+            return result;
+        }
+        catch (Exception ex) when ((ex is FileNotFoundException or DirectoryNotFoundException) &&
+            !_settingsPreviouslyPersisted && IsDataVolumeAvailable())
+        {
+            // A missing file under an available volume is a first run, even when the app folder
+            // has not been created yet. Missing/unavailable volumes and vanished saved files fail closed.
             var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             return new BridgeSettings
             {
                 WorkspaceRoot = Path.IsPathFullyQualified(documents) && Directory.Exists(documents) ? documents : ""
             };
         }
+    }
+
+    private async Task<BridgeSettings> ReadSettingsAsync(Stream stream, CancellationToken cancellationToken)
+    {
         try
         {
-            await using var stream = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
-                4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
             var stored = await JsonSerializer.DeserializeAsync<StoredSettings>(stream, JsonOptions, cancellationToken)
                 .ConfigureAwait(false);
             if (stored is null) throw new InvalidDataException("Settings file is empty or invalid.");
@@ -113,7 +130,28 @@ public sealed class SettingsStore
         catch (ArgumentException ex) { throw new InvalidDataException("Settings contain an invalid provider or model value.", ex); }
     }
 
+    private bool IsDataVolumeAvailable()
+    {
+        var current = Path.GetDirectoryName(_filePath);
+        while (!string.IsNullOrEmpty(current))
+        {
+            try
+            {
+                var attributes = File.GetAttributes(current);
+                return (attributes & FileAttributes.Directory) != 0;
+            }
+            catch (DirectoryNotFoundException) { current = Directory.GetParent(current)?.FullName; }
+            catch (FileNotFoundException) { current = Directory.GetParent(current)?.FullName; }
+            catch (UnauthorizedAccessException) { return false; }
+            catch (IOException) { return false; }
+        }
+        return false;
+    }
+
     public async Task SaveAsync(BridgeSettings settings, CancellationToken cancellationToken = default)
+        => await _operations.RunAsync("write", token => SaveCoreAsync(settings, token), cancellationToken).ConfigureAwait(false);
+
+    private async Task SaveCoreAsync(BridgeSettings settings, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(settings);
         if (settings.WorkspaceRoot is null || settings.WorkspaceRoot.Length > 0 &&
@@ -216,6 +254,7 @@ public sealed class SettingsStore
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             await AtomicFile.ReplaceAsync(tempPath, _filePath, cancellationToken).ConfigureAwait(false);
+            _settingsPreviouslyPersisted = true;
         }
         finally { if (File.Exists(tempPath)) File.Delete(tempPath); }
     }

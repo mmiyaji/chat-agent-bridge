@@ -69,6 +69,85 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task LoadAsync_MissingSettingsOnAvailableVolumeIsFirstRun()
+    {
+        var store = new SettingsStore(Path.Combine(_directory, "not-created-yet"));
+
+        var settings = await store.LoadAsync();
+
+        Assert.NotNull(settings);
+        Assert.False(Directory.Exists(store.DirectoryPath));
+    }
+
+    [Fact]
+    public async Task LoadAsync_InvalidSettingsNeverBecomeDefaultsAndDeletedSavedFileFailsClosed()
+    {
+        Directory.CreateDirectory(_directory);
+        var store = new SettingsStore(_directory);
+        await File.WriteAllTextAsync(Path.Combine(_directory, "settings.json"), "{");
+        await Assert.ThrowsAsync<InvalidDataException>(() => store.LoadAsync());
+
+        await store.SaveAsync(new BridgeSettings { WorkspaceRoot = Path.GetFullPath(Path.GetTempPath()) });
+        Assert.NotNull(await store.LoadAsync());
+        File.Delete(Path.Combine(_directory, "settings.json"));
+        await Assert.ThrowsAnyAsync<IOException>(() => store.LoadAsync());
+    }
+
+    [Fact]
+    public async Task LoadAsync_RecoversWhenWindowsReadLockIsReleasedWithinRetryWindow()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var store = new SettingsStore(_directory);
+        await store.SaveAsync(new BridgeSettings { WorkspaceRoot = Path.GetFullPath(Path.GetTempPath()) });
+        var lockStream = new FileStream(Path.Combine(_directory, "settings.json"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        try
+        {
+            var release = Task.Run(async () =>
+            {
+                await Task.Delay(20);
+                lockStream.Dispose();
+            });
+            var loaded = await store.LoadAsync();
+            await release;
+            Assert.Equal(Path.GetFullPath(Path.GetTempPath()), loaded.WorkspaceRoot);
+        }
+        finally { lockStream.Dispose(); }
+    }
+
+    [Fact]
+    public async Task SaveAsync_LongWindowsReadLockFailsAfterBoundedRetriesWithoutChangingSavedBytes()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var store = new SettingsStore(_directory);
+        await store.SaveAsync(new BridgeSettings { WorkspaceRoot = Path.GetFullPath(Path.GetTempPath()) });
+        var path = Path.Combine(_directory, "settings.json");
+        var before = await File.ReadAllBytesAsync(path);
+        using (var lockStream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            var error = await Record.ExceptionAsync(() => store.SaveAsync(new BridgeSettings { WorkspaceRoot = Path.GetFullPath(Environment.CurrentDirectory) }));
+            Assert.True(error is IOException or UnauthorizedAccessException, $"Unexpected exception type: {error?.GetType().Name}");
+        }
+        Assert.Equal(before, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task LoadAsync_ExistingFileInDataPathAndMissingVolumeDoNotBecomeDefaults()
+    {
+        Directory.CreateDirectory(_directory);
+        var dataPath = Path.Combine(_directory, "data-file");
+        await File.WriteAllTextAsync(dataPath, "not a directory");
+        await Assert.ThrowsAnyAsync<IOException>(() => new SettingsStore(dataPath).LoadAsync());
+
+        if (!OperatingSystem.IsWindows()) return;
+        var usedRoots = new HashSet<string>(Directory.GetLogicalDrives(), StringComparer.OrdinalIgnoreCase);
+        var missingRoot = Enumerable.Range('C', 'Z' - 'C' + 1)
+            .Select(value => $"{(char)value}:\\")
+            .FirstOrDefault(root => !usedRoots.Contains(root) && !Directory.Exists(root));
+        if (missingRoot is null) return;
+        await Assert.ThrowsAnyAsync<IOException>(() => new SettingsStore(Path.Combine(missingRoot, "ChatAgentBridge" )).LoadAsync());
+    }
+
+    [Fact]
     public async Task SaveAsync_AcceptsAbsoluteAndEmptyWorkspaceRoots()
     {
         var store = new SettingsStore(_directory);
