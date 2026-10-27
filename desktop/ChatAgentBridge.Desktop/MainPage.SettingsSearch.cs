@@ -274,8 +274,9 @@ public sealed partial class MainPage
     private string ScopeSearchLabel(string page, string scope)
     {
         var navigation = page == "agent" ? _agentScopeNavigation : _connectionScopeNavigation;
+        // Use the visible label: accessible names can carry the current/default marker.
         return navigation?.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(item => item.Tag as string == scope) is { } item
-            ? AutomationProperties.GetName(item) : scope;
+            ? GetScopeLabel(item.Content as Grid) : scope;
     }
 
     private DependencyObject? SearchScopeRoot(string page, string? scope) => page switch
@@ -372,6 +373,6 @@ public sealed partial class MainPage
             .FirstOrDefault(item => item.Tag as string == pageTag)?.Content as string ?? pageTag;
         var scopes = pageTag switch { "agent" => _agentScopeNavigation, "connections" => _connectionScopeNavigation, _ => null };
         var scopeItem = scopes?.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(item => item.Tag as string == scope);
-        return scopeItem is null ? page : $"{page} › {AutomationProperties.GetName(scopeItem)}";
+        return scopeItem is null ? page : $"{page} › {GetScopeLabel(scopeItem.Content as Grid)}";
     }
 }
