@@ -12,7 +12,8 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="WindowRoot">
+    <!-- Keep the global shortcut active without generating a tooltip over the entire window. -->
+    <Grid x:Name="WindowRoot" KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
