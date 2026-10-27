@@ -1072,7 +1072,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="LiveOutputFollow.Content" xml:space="preserve"><value>Follow output</value></data>
   <data name="LiveOutputClear.Content" xml:space="preserve"><value>Clear display</value></data>
   <data name="LiveOutputCancel.Content" xml:space="preserve"><value>Cancel this request</value></data>
-  <data name="LiveOutputCancel.ToolTipService.ToolTip" xml:space="preserve"><value>Stopping may not undo changes the agent already made to files.</value></data>
+  <data name="LiveOutputCancel.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Stopping may not undo changes the agent already made to files.</value></data>
   <data name="LiveOutputCancellationPending.Text" xml:space="preserve"><value>Cancellation requested. Waiting for the process to stop. File changes already made will not be rolled back.</value></data>
   <data name="InboxActiveRequestBannerButton.AutomationProperties.HelpText" xml:space="preserve"><value>Open this exact running request to review or stop it.</value></data>
   <data name="PricingSettingsHeader.Text" xml:space="preserve"><value>API pricing</value></data>
@@ -1332,5 +1332,5 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="InboxApprovalNotice.Title" xml:space="preserve"><value>Waiting for your approval</value></data>
   <data name="InboxApprovalNotice.Message" xml:space="preserve"><value>Review the request, then approve or reject it.</value></data>
   <data name="InboxOpenPendingApproval.Content" xml:space="preserve"><value>Review pending request</value></data>
-  <data name="OverviewCliTile.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Shows the CLI check for the default agent. Successful checks are reused; executable updates or changes to launch arguments, launch mode, working folder or trusted folders require another check. Sign-in and model availability are checked when used.</value></data>
+  <data name="OverviewCliTile.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Check the CLI and model in agent settings</value></data>
 </root>

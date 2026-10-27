@@ -1072,7 +1072,7 @@
   <data name="LiveOutputFollow.Content" xml:space="preserve"><value>出力を追従</value></data>
   <data name="LiveOutputClear.Content" xml:space="preserve"><value>表示を消去</value></data>
   <data name="LiveOutputCancel.Content" xml:space="preserve"><value>この依頼を中断</value></data>
-  <data name="LiveOutputCancel.ToolTipService.ToolTip" xml:space="preserve"><value>停止しても、エージェントがすでに行ったファイル変更は元に戻りません。</value></data>
+  <data name="LiveOutputCancel.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>停止しても、エージェントがすでに行ったファイル変更は元に戻りません。</value></data>
   <data name="LiveOutputCancellationPending.Text" xml:space="preserve"><value>中断を要求しました。プロセスの停止を待っています。すでに行われたファイル変更は元に戻りません。</value></data>
   <data name="InboxActiveRequestBannerButton.AutomationProperties.HelpText" xml:space="preserve"><value>実行中のこの依頼を開き、確認または停止します。</value></data>
   <data name="PricingSettingsHeader.Text" xml:space="preserve"><value>API料金</value></data>
@@ -1332,5 +1332,5 @@
   <data name="InboxApprovalNotice.Title" xml:space="preserve"><value>承認を待っています</value></data>
   <data name="InboxApprovalNotice.Message" xml:space="preserve"><value>依頼内容を確認し、承認または拒否を選んでください。</value></data>
   <data name="InboxOpenPendingApproval.Content" xml:space="preserve"><value>承認待ちを確認</value></data>
-  <data name="OverviewCliTile.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>既定エージェントのCLI確認結果です。成功した結果を引き継ぎますが、実行ファイルの更新、起動引数・実行方式・作業フォルダー・信頼フォルダーの変更後は再確認が必要です。ログイン状態やモデルの利用可否は実行時に確認します。</value></data>
+  <data name="OverviewCliTile.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>エージェント設定でCLIとモデルを確認</value></data>
 </root>

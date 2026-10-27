@@ -46,6 +46,10 @@
                     <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="{ThemeResource SystemColorButtonTextColor}" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
+            <!-- Keep supplemental hover text readable on narrow windows; retain the native template and theme. -->
+            <Style TargetType="ToolTip">
+                <Setter Property="MaxWidth" Value="360" />
+            </Style>
             <Style x:Key="SettingsScopeTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource SubtitleTextBlockStyle}">
                 <Setter Property="TextWrapping" Value="Wrap" />
             </Style>

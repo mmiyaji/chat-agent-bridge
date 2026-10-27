@@ -152,7 +152,7 @@
                           IsItemClickEnabled="True" ItemClick="Conversation_ItemClick" SelectionChanged="Conversation_SelectionChanged" KeyDown="Conversation_KeyDown" AutomationProperties.AutomationId="InboxConversations">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="inbox:InboxConversation">
-                            <Grid Padding="8,12" RowSpacing="8" ToolTipService.ToolTip="{x:Bind ListTooltip, Mode=OneWay}">
+                            <Grid Padding="8,12" RowSpacing="8">
                                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                                 <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
@@ -167,12 +167,12 @@
                                                    IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
                                     </Grid>
                                     <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                        <TextBlock Text="{x:Bind ListTitle, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{x:Bind ListTitle, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListTitle, Mode=OneWay}" />
                                         <TextBlock Text="{x:Bind TitleLocation, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"
-                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind TitleLocation, Mode=OneWay}" />
                                     </StackPanel>
                                     <TextBlock Grid.Column="2" Text="{x:Bind ActivityCompact, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" ToolTipService.ToolTip="{x:Bind Activity, Mode=OneWay}" />
                                 </Grid>
                                 <TextBlock Grid.Row="1" Text="{x:Bind LatestPrompt, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1"
                                            Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(HasSeveralRequests), Mode=OneWay}" />

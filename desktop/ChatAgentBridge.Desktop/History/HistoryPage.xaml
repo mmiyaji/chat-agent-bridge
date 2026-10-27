@@ -110,7 +110,7 @@
                                           AutomationProperties.Name="{x:Bind ViewModel.ConversationsTabTitle, Mode=OneWay}">
                                     <ListView.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SessionHistoryRow">
-                                            <Grid Margin="8" RowSpacing="4" ToolTipService.ToolTip="{x:Bind ListTooltip}">
+                                            <Grid Margin="8" RowSpacing="4">
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
@@ -131,13 +131,13 @@
                                                                TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListConversation}" />
                                                 </Grid>
                                                 <TextBlock Grid.Row="2" Text="{x:Bind ListContext}" Style="{StaticResource CaptionTextBlockStyle}"
-                                                           TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Workspace}" />
+                                                           TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListContext}" />
                                                 <Grid Grid.Row="3" ColumnSpacing="6">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                                     <presentation:StatusIcon Tone="{x:Bind StatusTone}" Width="24" Height="24"
                                                                              VerticalAlignment="Center" IsHitTestVisible="False"
                                                                              AutomationProperties.AccessibilityView="Raw" />
-                                                    <TextBlock Grid.Column="1" Text="{x:Bind ListActivity}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListTooltip}" />
+                                                    <TextBlock Grid.Column="1" Text="{x:Bind ListActivity}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListActivity}" />
                                                 </Grid>
                                             </Grid>
                                         </DataTemplate>
