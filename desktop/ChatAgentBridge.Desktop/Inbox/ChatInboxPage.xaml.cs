@@ -64,11 +64,20 @@ public sealed partial class ChatInboxPage : Page
             ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
         App.PendingRequestNotifications.ActionCompleted += () => NotificationActionNotice.IsOpen = false;
         ViewModel.NotificationStatus = App.PendingRequestNotifications.Status;
+        // A closed InfoBar still takes the panel's spacing; collapse it so no gap is left under the buttons.
+        foreach (var notice in InboxNotices.Children.OfType<InfoBar>())
+        {
+            SyncNoticeVisibility(notice);
+            notice.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, (sender, _) => SyncNoticeVisibility((InfoBar)sender));
+        }
         ViewModel.SearchSuggestions.CollectionChanged += SearchSuggestions_CollectionChanged;
         ViewModel.SearchApplied += () => DispatcherQueue.TryEnqueue(RefreshSuggestionPopup);
         Loaded += Page_Loaded;
         Unloaded += Page_Unloaded;
     }
+
+    private static void SyncNoticeVisibility(InfoBar notice) =>
+        notice.Visibility = notice.IsOpen ? Visibility.Visible : Visibility.Collapsed;
 
     private void Page_Unloaded(object sender, RoutedEventArgs e)
     {

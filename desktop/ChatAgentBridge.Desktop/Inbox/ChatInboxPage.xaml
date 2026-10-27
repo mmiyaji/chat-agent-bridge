@@ -10,6 +10,10 @@
     SizeChanged="Page_SizeChanged"
     AutomationProperties.AutomationId="ChatScroll">
     <Grid RowSpacing="12">
+        <!-- Slides the content below into place when a notice opens or closes. -->
+        <Grid.ChildrenTransitions>
+            <TransitionCollection><RepositionThemeTransition IsStaggeringEnabled="False" /></TransitionCollection>
+        </Grid.ChildrenTransitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -46,7 +50,10 @@
               </StackPanel>
             </StackPanel>
         </StackPanel>
-        <StackPanel Grid.Row="1" Spacing="8">
+        <StackPanel x:Name="InboxNotices" Grid.Row="1" Spacing="8">
+            <StackPanel.ChildrenTransitions>
+                <TransitionCollection><RepositionThemeTransition IsStaggeringEnabled="False" /></TransitionCollection>
+            </StackPanel.ChildrenTransitions>
             <InfoBar IsOpen="{x:Bind ViewModel.ShowPendingApprovalNotice, Mode=OneWay}" IsClosable="False" Severity="Warning"
                      Message="{x:Bind ViewModel.PendingApprovalMessage, Mode=OneWay}"
                      AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="InboxPendingApprovalsNotice">
