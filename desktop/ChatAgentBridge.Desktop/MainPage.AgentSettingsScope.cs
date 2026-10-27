@@ -51,6 +51,9 @@ public sealed partial class MainPage
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             VerticalContentAlignment = VerticalAlignment.Stretch,
             PaneDisplayMode = NavigationViewPaneDisplayMode.Left,
+            // Match the app's manual Left/Top breakpoint, including native item-template states.
+            ExpandedModeThresholdWidth = SettingsScopeNavigationBreakpoint,
+            CompactModeThresholdWidth = 0,
             IsPaneOpen = true,
             OpenPaneLength = 200,
             IsPaneToggleButtonVisible = false,
@@ -58,6 +61,7 @@ public sealed partial class MainPage
             IsSettingsVisible = false
         };
         AutomationProperties.SetAutomationId(_agentScopeNavigation, "AgentScopeList");
+        _agentScopeNavigation.RegisterPropertyChangedCallback(NavigationView.OpenPaneLengthProperty, (_, _) => RefreshAgentScopeMarker());
         AutomationProperties.SetName(_agentScopeNavigation, DesktopText.Get("AgentScopePicker"));
         for (var i = 0; i < _agentScopeKeys.Length; i++)
         {
@@ -99,6 +103,7 @@ public sealed partial class MainPage
         if (_agentScopeNavigation.PaneDisplayMode == mode) return;
         _agentScopeNavigation.PaneDisplayMode = mode;
         _agentScopeNavigation.IsPaneOpen = width >= SettingsScopeNavigationBreakpoint;
+        RefreshAgentScopeMarker();
     }
 
     private void QueueAgentScopeSelection(string scope)
@@ -139,6 +144,29 @@ public sealed partial class MainPage
         _agentScopeCommonHelp!.Text = DesktopText.Get("AgentScopeCommonHelp");
         _agentProfileDetails?.RefreshLocalizedText();
         UpdateScopeBreadcrumb(_agentScopeBreadcrumb, "agent", _agentScopeNavigation, _agentSettingsScope == "common");
+        RefreshAgentScopeMarker();
+    }
+
+    private void RefreshAgentScopeMarker()
+    {
+        var provider = ViewModel.PersistedSettings?.AgentProvider;
+        foreach (var key in _agentScopeKeys)
+        {
+            var isCurrent = key != "common" && provider == key;
+            var providerName = key switch
+            {
+                "codex" => "Codex",
+                "claude" => "Claude Code",
+                "gemini" => "Gemini CLI",
+                "github-copilot" => "GitHub Copilot",
+                "antigravity" => "Antigravity CLI",
+                "custom" => DesktopText.Get("AgentScopeCustom"),
+                _ => string.Empty
+            };
+            SetScopeNavigationMarker(_agentScopeNavigation, key, isCurrent,
+                DesktopText.Get("CurrentAgentMarkerTooltip", providerName),
+                DesktopText.Get("CurrentAgentMarkerName"));
+        }
     }
 
     private void ApplyAgentScopeSelection()

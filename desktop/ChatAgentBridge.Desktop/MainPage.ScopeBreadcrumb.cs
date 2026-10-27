@@ -26,7 +26,8 @@ public sealed partial class MainPage
     {
         if (breadcrumb is null) return;
         var page = MainNavigation.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(item => item.Tag as string == pageTag)?.Content as string;
-        var scope = scopes?.SelectedItem is NavigationViewItem selected ? AutomationProperties.GetName(selected) : null;
+        // Navigation accessibility names can include current/default state; the breadcrumb is only a location.
+        var scope = scopes?.SelectedItem is NavigationViewItem selected ? GetScopeLabel(selected.Content as Grid) : null;
         var show = !isCommonScope && !string.IsNullOrEmpty(page) && !string.IsNullOrEmpty(scope);
         breadcrumb.ItemsSource = show ? new[] { page!, scope! } : null;
         AutomationProperties.SetName(breadcrumb, show ? $"{page} › {scope}" : string.Empty);

@@ -76,6 +76,8 @@ public sealed partial class MainPage
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             VerticalContentAlignment = VerticalAlignment.Stretch,
             PaneDisplayMode = NavigationViewPaneDisplayMode.Left,
+            ExpandedModeThresholdWidth = SettingsScopeNavigationBreakpoint,
+            CompactModeThresholdWidth = 0,
             IsPaneOpen = true,
             OpenPaneLength = 200,
             IsPaneToggleButtonVisible = false,
@@ -83,6 +85,7 @@ public sealed partial class MainPage
             IsSettingsVisible = false
         };
         AutomationProperties.SetAutomationId(_connectionScopeNavigation, "ConnectionScopeList");
+        _connectionScopeNavigation.RegisterPropertyChangedCallback(NavigationView.OpenPaneLengthProperty, (_, _) => RefreshConnectionScopeMarker());
         AutomationProperties.SetName(_connectionScopeNavigation, DesktopText.Get("AgentScopePicker"));
         AddConnectionScopeItem(_connectionScopeNavigation, "common", DesktopText.Get("AgentScopeCommon"), "ConnectionScopeCommon");
         AddConnectionScopeItem(_connectionScopeNavigation, "mattermost", MrtText.Get("MattermostSectionTitle.Text"), "ConnectionScopeMattermost");
@@ -153,6 +156,7 @@ public sealed partial class MainPage
         if (_connectionScopeNavigation.PaneDisplayMode == mode) return;
         _connectionScopeNavigation.PaneDisplayMode = mode;
         _connectionScopeNavigation.IsPaneOpen = showNavigation;
+        RefreshConnectionScopeMarker();
     }
 
     private void SetConnectionSettingsScope(string scope)
@@ -213,6 +217,23 @@ public sealed partial class MainPage
         AutomationProperties.SetName(_connectionScopeNavigation, DesktopText.Get("AgentScopePicker"));
         if (_connectionScopeDescription is not null) _connectionScopeDescription.Text = DesktopText.Get("ConnectionScopeCommonHelp");
         SetConnectionSettingsScope(_connectionSettingsScope);
+        RefreshConnectionScopeMarker();
+    }
+
+    private void RefreshConnectionScopeMarker()
+    {
+        var inbox = InboxPage.ViewModel;
+        var provider = inbox.IsConnectionConfirmed && inbox.IsConnected && !inbox.HasConnectionError
+            ? inbox.ConnectionProvider
+            : null;
+        foreach (var key in new[] { "common", "mattermost", "slack", "discord" })
+        {
+            var isCurrent = key != "common" && provider == key;
+            var providerName = key switch { "mattermost" => "Mattermost", "slack" => "Slack", "discord" => "Discord", _ => string.Empty };
+            SetScopeNavigationMarker(_connectionScopeNavigation, key, isCurrent,
+                DesktopText.Get("CurrentConnectionMarkerTooltip", providerName),
+                DesktopText.Get("CurrentConnectionMarkerName"));
+        }
     }
 
 }

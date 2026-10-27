@@ -53,6 +53,7 @@ public sealed partial class MainPage : Page
         {
             if (args.PropertyName is nameof(ViewModel.IsSettingsLoaded) or nameof(ViewModel.IsLoading))
                 UpdateSettingsNavigationEnabledState();
+            if (args.PropertyName == nameof(ViewModel.PersistedSettings)) RefreshAgentScopeMarker();
             // PasswordBox cannot use a two-way x:Bind. Reflect rejected edits back
             // into its editor as well as the view model, without persisting them.
             if (args.PropertyName == nameof(ViewModel.MattermostToken))
@@ -86,7 +87,10 @@ public sealed partial class MainPage : Page
         InboxPage.ViewModel.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName is nameof(ChatInboxViewModel.IsConnectionConfirmed) or nameof(ChatInboxViewModel.IsConnected) or nameof(ChatInboxViewModel.HasConnectionError) or nameof(ChatInboxViewModel.ConnectionProvider))
+            {
                 ViewModel.SetChatConnectionState(InboxPage.ViewModel.IsConnectionConfirmed, InboxPage.ViewModel.IsConnected, InboxPage.ViewModel.HasConnectionError, InboxPage.ViewModel.ConnectionOverviewTarget);
+                RefreshConnectionScopeMarker();
+            }
         };
         ViewModel.SettingsSaved += () =>
         {
