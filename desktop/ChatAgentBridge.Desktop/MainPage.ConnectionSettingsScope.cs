@@ -11,6 +11,11 @@ public sealed partial class MainPage
     private NavigationView? _connectionScopeNavigation;
     private ScrollViewer? _connectionSettingsScroll;
     private TextBlock? _connectionScopeHeading;
+    private StackPanel? _connectionScopeHeader;
+    private Border? _connectionScopeConnectedBadge;
+    private Grid? _connectionScopeStatusRow;
+    private FontIcon? _connectionScopeStatusIcon;
+    private TextBlock? _connectionScopeStatusText;
     private TextBlock? _connectionScopeDescription;
     private StackPanel? _connectionScopeCommonGroup;
     private StackPanel? _connectionScopeMattermostGroup;
@@ -39,6 +44,40 @@ public sealed partial class MainPage
             Margin = new Thickness(0, 0, 0, 4)
         };
         AutomationProperties.SetAutomationId(_connectionScopeHeading, "ConnectionScopeHeading");
+
+        _connectionScopeConnectedBadge = new Border
+        {
+            Style = (Style)Application.Current.Resources["ConnectionScopeBadgeStyle"],
+            Visibility = Visibility.Collapsed,
+            Child = new TextBlock
+            {
+                Text = DesktopText.Get("ConnectionScopeConnectedBadge"),
+                Style = (Style)Application.Current.Resources["ConnectionScopeBadgeTextStyle"]
+            }
+        };
+        AutomationProperties.SetAutomationId(_connectionScopeConnectedBadge, "ConnectionScopeConnectedBadge");
+        AutomationProperties.SetAccessibilityView(_connectionScopeConnectedBadge, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+
+        _connectionScopeStatusIcon = new FontIcon();
+        AutomationProperties.SetAccessibilityView(_connectionScopeStatusIcon, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+        _connectionScopeStatusText = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        Grid.SetColumn(_connectionScopeStatusText, 1);
+        _connectionScopeStatusRow = new Grid { ColumnSpacing = 8, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
+        _connectionScopeStatusRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+        _connectionScopeStatusRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        _connectionScopeStatusRow.Children.Add(_connectionScopeStatusIcon);
+        _connectionScopeStatusRow.Children.Add(_connectionScopeStatusText);
+        AutomationProperties.SetAutomationId(_connectionScopeStatusRow, "ConnectionScopeStatus");
+
+        var headingRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
+        _connectionScopeHeading.VerticalAlignment = VerticalAlignment.Center;
+        _connectionScopeHeading.Margin = new Thickness(0);
+        headingRow.Children.Add(_connectionScopeHeading);
+        headingRow.Children.Add(_connectionScopeConnectedBadge);
+        _connectionScopeHeader = new StackPanel { Spacing = 8, Margin = new Thickness(0, 0, 0, 14) };
+        _connectionScopeHeader.Children.Add(headingRow);
+        _connectionScopeHeader.Children.Add(_connectionScopeStatusRow);
+        AutomationProperties.SetAutomationId(_connectionScopeHeader, "ConnectionScopeHeader");
 
         _connectionScopeCommonGroup = new StackPanel { Spacing = 16 };
         _connectionScopeDescription = new TextBlock { Text = DesktopText.Get("ConnectionScopeCommonHelp"), TextWrapping = TextWrapping.Wrap };
@@ -102,7 +141,7 @@ public sealed partial class MainPage
         var page = new StackPanel { Spacing = 12, Margin = new Thickness(16) };
         _connectionScopeBreadcrumb = CreateScopeBreadcrumb("ConnectionScopeBreadcrumb", () => SetConnectionSettingsScope("common"));
         page.Children.Add(_connectionScopeBreadcrumb);
-        page.Children.Add(_connectionScopeHeading);
+        page.Children.Add(_connectionScopeHeader);
         page.Children.Add(_connectionScopeCommonGroup);
         page.Children.Add(_connectionScopeMattermostGroup);
         page.Children.Add(_connectionScopeSlackGroup);
@@ -174,7 +213,7 @@ public sealed partial class MainPage
             "discord" => MrtText.Get("DiscordSectionTitle.Text"),
             _ => DesktopText.Get("AgentScopeCommon")
         };
-        _connectionScopeHeading.Visibility = isCommon ? Visibility.Visible : Visibility.Collapsed;
+        RefreshConnectionScopeHeader();
         _connectionScopeCommonGroup.Visibility = isCommon ? Visibility.Visible : Visibility.Collapsed;
         _connectionScopeMattermostGroup.Visibility = _connectionSettingsScope == "mattermost" ? Visibility.Visible : Visibility.Collapsed;
         _connectionScopeSlackGroup.Visibility = _connectionSettingsScope == "slack" ? Visibility.Visible : Visibility.Collapsed;
@@ -234,6 +273,42 @@ public sealed partial class MainPage
                 DesktopText.Get("CurrentConnectionMarkerTooltip", providerName),
                 DesktopText.Get("CurrentConnectionMarkerName"));
         }
+        RefreshConnectionScopeHeader();
+    }
+
+    /// <summary>Shows the selected service's connection state under its title, matching the agent header.</summary>
+    private void RefreshConnectionScopeHeader()
+    {
+        if (_connectionScopeHeader is null || _connectionScopeHeading is null || _connectionScopeConnectedBadge is null ||
+            _connectionScopeStatusRow is null || _connectionScopeStatusIcon is null || _connectionScopeStatusText is null) return;
+        var isCommon = _connectionSettingsScope == "common";
+        _connectionScopeHeader.Visibility = Visibility.Visible;
+        _connectionScopeConnectedBadge.Visibility = Visibility.Collapsed;
+        _connectionScopeStatusRow.Visibility = isCommon ? Visibility.Collapsed : Visibility.Visible;
+        if (isCommon)
+        {
+            AutomationProperties.SetName(_connectionScopeHeader, _connectionScopeHeading.Text);
+            return;
+        }
+
+        var inbox = InboxPage.ViewModel;
+        var isLive = inbox.IsConnectionConfirmed && inbox.IsConnected && !inbox.HasConnectionError &&
+            inbox.ConnectionProvider == _connectionSettingsScope;
+        var hasError = !isLive && inbox.ConnectionProvider == _connectionSettingsScope && inbox.HasConnectionError;
+        var (glyph, styleKey, statusKey) = isLive
+            ? ("\uE930", "ConnectionStatusConnectedIconStyle", "ConnectionStatusConnected")
+            : hasError
+                ? ("\uE783", "ConnectionStatusErrorIconStyle", "ConnectionStatusError")
+                : ("\uE946", "ConnectionStatusNeutralIconStyle", "ConnectionStatusDisconnected");
+        var status = DesktopText.Get(statusKey);
+        if (ViewModel.PersistedSettings?.AutoConnectProvider == _connectionSettingsScope)
+            status += " · " + DesktopText.Get("ConnectionStatusAutoConnect");
+
+        _connectionScopeConnectedBadge.Visibility = isLive ? Visibility.Visible : Visibility.Collapsed;
+        _connectionScopeStatusIcon.Glyph = glyph;
+        _connectionScopeStatusIcon.Style = (Style)Application.Current.Resources[styleKey];
+        _connectionScopeStatusText.Text = status;
+        AutomationProperties.SetName(_connectionScopeHeader, $"{_connectionScopeHeading.Text}, {status}");
     }
 
 }

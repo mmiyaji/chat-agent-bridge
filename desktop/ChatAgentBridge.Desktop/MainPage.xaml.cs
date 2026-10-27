@@ -53,7 +53,11 @@ public sealed partial class MainPage : Page
         {
             if (args.PropertyName is nameof(ViewModel.IsSettingsLoaded) or nameof(ViewModel.IsLoading))
                 UpdateSettingsNavigationEnabledState();
-            if (args.PropertyName == nameof(ViewModel.PersistedSettings)) RefreshAgentScopeMarker();
+            if (args.PropertyName == nameof(ViewModel.PersistedSettings))
+            {
+                RefreshAgentScopeMarker();
+                RefreshConnectionScopeHeader();
+            }
             // PasswordBox cannot use a two-way x:Bind. Reflect rejected edits back
             // into its editor as well as the view model, without persisting them.
             if (args.PropertyName == nameof(ViewModel.MattermostToken))

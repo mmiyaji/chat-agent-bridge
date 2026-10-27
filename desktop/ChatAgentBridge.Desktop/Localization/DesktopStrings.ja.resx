@@ -830,6 +830,11 @@
   <data name="CurrentAgentMarkerName" xml:space="preserve"><value>既定のエージェント</value></data>
   <data name="CurrentConnectionMarkerTooltip" xml:space="preserve"><value>接続中: {0}</value></data>
   <data name="CurrentConnectionMarkerName" xml:space="preserve"><value>接続中のサービス</value></data>
+  <data name="ConnectionScopeConnectedBadge" xml:space="preserve"><value>接続中</value></data>
+  <data name="ConnectionStatusConnected" xml:space="preserve"><value>接続中</value></data>
+  <data name="ConnectionStatusError" xml:space="preserve"><value>接続エラー</value></data>
+  <data name="ConnectionStatusDisconnected" xml:space="preserve"><value>未接続</value></data>
+  <data name="ConnectionStatusAutoConnect" xml:space="preserve"><value>アプリ起動時に自動接続</value></data>
   <data name="IncomingFilesSummary" xml:space="preserve"><value>受信添付: {0}個（{1}）。依頼の承認後、対応ファイルをAIへ渡します。最大5個、1個10MB、合計20MB。PNG/JPEG/WebP画像、UTF-8のTXT/LOG/MD/CSV/JSONに対応します。一時コピーは実行後に削除するため、後の依頼で必要な場合は再添付してください。添付付きの追加指示は別の実行として順番に処理します。</value></data>
   <data name="IncomingFileNamePending" xml:space="preserve"><value>ファイル名は承認後に確認</value></data>
   <data name="IncomingFilesInvalid" xml:space="preserve"><value>添付を受け付けられません。対応形式のファイルを5個以内で依頼に添付してください。</value></data>

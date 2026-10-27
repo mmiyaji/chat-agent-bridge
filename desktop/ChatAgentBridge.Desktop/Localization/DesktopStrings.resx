@@ -830,6 +830,11 @@ After: {2}</value></data>
   <data name="CurrentAgentMarkerName" xml:space="preserve"><value>default agent</value></data>
   <data name="CurrentConnectionMarkerTooltip" xml:space="preserve"><value>Connected: {0}</value></data>
   <data name="CurrentConnectionMarkerName" xml:space="preserve"><value>connected service</value></data>
+  <data name="ConnectionScopeConnectedBadge" xml:space="preserve"><value>Connected</value></data>
+  <data name="ConnectionStatusConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="ConnectionStatusError" xml:space="preserve"><value>Connection error</value></data>
+  <data name="ConnectionStatusDisconnected" xml:space="preserve"><value>Not connected</value></data>
+  <data name="ConnectionStatusAutoConnect" xml:space="preserve"><value>Connects when the app starts</value></data>
   <data name="IncomingFilesSummary" xml:space="preserve"><value>Attached files: {0} ({1}). After request approval, supported files are passed to the agent. Up to 5 files, 10 MB each, 20 MB total. PNG/JPEG/WebP images and UTF-8 TXT/LOG/MD/CSV/JSON files only. Temporary copies are deleted after execution; attach them again if a later request needs them. File-bearing follow-ups wait for a separate run.</value></data>
   <data name="IncomingFileNamePending" xml:space="preserve"><value>name checked after approval</value></data>
   <data name="IncomingFilesInvalid" xml:space="preserve"><value>The attached files cannot be accepted. Send no more than 5 supported files with your request.</value></data>

@@ -9,6 +9,30 @@
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
+    <Style x:Key="ConnectionScopeBadgeStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource AccentFillColorDefaultBrush}" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="10,3" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="ConnectionScopeBadgeTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+    </Style>
+    <Style x:Key="ConnectionStatusConnectedIconStyle" TargetType="FontIcon">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{ThemeResource SystemFillColorSuccessBrush}" />
+    </Style>
+    <Style x:Key="ConnectionStatusErrorIconStyle" TargetType="FontIcon">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{ThemeResource SystemFillColorCriticalBrush}" />
+    </Style>
+    <Style x:Key="ConnectionStatusNeutralIconStyle" TargetType="FontIcon">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
     <DataTemplate x:Key="SettingsScopeIcon_apps">
         <Viewbox Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center">
             <Canvas Width="20" Height="20">
