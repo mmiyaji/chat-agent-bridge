@@ -426,7 +426,7 @@
   <data name="InboxEmptyDetailHeading" xml:space="preserve"><value>会話を選択</value></data>
   <data name="NavShortcutTooltip" xml:space="preserve"><value>{0}（Ctrl+{1}）</value></data>
   <data name="InboxEmptyDetailDescription" xml:space="preserve"><value>一覧から会話を選ぶと、依頼や応答を確認できます。</value></data>
-  <data name="InboxRestoredDescription" xml:space="preserve"><value>以前の依頼は再開されません。続けるには、同じチャットスレッドへ「!cab 依頼内容」を新しく投稿してください。この一覧には依頼本文や結果本文は保存されません。</value></data>
+  <data name="InboxRestoredDescription" xml:space="preserve"><value>チャットへ再接続すると、保存済みの会話は同じユーザーが同じスレッドに返信して続けられます。終了前の承認待ち・実行中の依頼は自動再実行しません。会話の開始記録がない場合のみ「!cab 依頼内容」で開始してください。</value></data>
   <data name="InboxPersistenceLoadFailed" xml:space="preserve"><value>会話一覧を復元できませんでした。元のファイルは保持されており、依頼は自動的に再開されませんでした。</value></data>
   <data name="InboxPersistenceSaveFailed" xml:space="preserve"><value>会話一覧を保存できませんでした。次回起動時に復元されない可能性があります。</value></data>
   <data name="InboxPersistenceSomeRowsRejected" xml:space="preserve"><value>会話情報が不正なため、{0}件を保存できませんでした。他の会話は保存しました。作業フォルダーなどの設定を確認してください。</value></data>
