@@ -229,10 +229,16 @@ public sealed class ChatProgressReporterTests
         private readonly object _sync = new();
         private int _heartbeatCalls;
 
-        public List<string> Posts { get; } = [];
-        public List<(ChatProgressMessage Message, string Text)> Updates { get; } = [];
-        public List<ChatProgressMessage> CompletedProgress { get; } = [];
-        public List<string> LifecycleOrder { get; } = [];
+        private readonly List<string> _posts = [];
+        private readonly List<(ChatProgressMessage Message, string Text)> _updates = [];
+        private readonly List<ChatProgressMessage> _completedProgress = [];
+        private readonly List<string> _lifecycleOrder = [];
+
+        // Assertions can run while the heartbeat is writing; enumerate stable snapshots.
+        public IReadOnlyList<string> Posts { get { lock (_sync) return _posts.ToArray(); } }
+        public IReadOnlyList<(ChatProgressMessage Message, string Text)> Updates { get { lock (_sync) return _updates.ToArray(); } }
+        public IReadOnlyList<ChatProgressMessage> CompletedProgress { get { lock (_sync) return _completedProgress.ToArray(); } }
+        public IReadOnlyList<string> LifecycleOrder { get { lock (_sync) return _lifecycleOrder.ToArray(); } }
         public ChatProgressMessage? PostedMessage { get; private set; }
         public bool FailPost { get; init; }
         public bool FailTerminalUpdate { get; init; }
@@ -246,7 +252,7 @@ public sealed class ChatProgressReporterTests
 
         public Task<ChatProgressMessage> PostProgressAsync(ChatRequest request, string text, CancellationToken cancellationToken)
         {
-            lock (_sync) Posts.Add(text);
+            lock (_sync) _posts.Add(text);
             if (FailPost) throw new InvalidOperationException("test post failure");
             PostedMessage = new ChatProgressMessage(request.Provider, request.ChannelId, request.ThreadId,
                 request.UserId, "progress-post", this, 1);
@@ -257,7 +263,7 @@ public sealed class ChatProgressReporterTests
         {
             if (text is "Completed" or "FollowUpApplied" or "FollowUpUncertain")
             {
-                lock (_sync) LifecycleOrder.Add("terminal-update");
+                lock (_sync) _lifecycleOrder.Add("terminal-update");
                 if (FailTerminalUpdate) throw new InvalidOperationException("terminal update failed");
             }
             var isHeartbeat = (text is "Running" or "FollowUpPending") && Interlocked.Increment(ref _heartbeatCalls) > 1;
@@ -271,15 +277,15 @@ public sealed class ChatProgressReporterTests
                     throw;
                 }
             }
-            lock (_sync) Updates.Add((message, text));
+            lock (_sync) _updates.Add((message, text));
         }
 
         public void CompleteProgress(ChatProgressMessage message)
         {
             lock (_sync)
             {
-                CompletedProgress.Add(message);
-                LifecycleOrder.Add("complete");
+                _completedProgress.Add(message);
+                _lifecycleOrder.Add("complete");
             }
         }
 
@@ -290,7 +296,7 @@ public sealed class ChatProgressReporterTests
             {
                 lock (_sync)
                 {
-                    if (Updates.Count >= count) return;
+                    if (_updates.Count >= count) return;
                 }
                 await Task.Delay(5, timeout.Token);
             }
