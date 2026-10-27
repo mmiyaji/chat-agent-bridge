@@ -682,23 +682,7 @@ public sealed class AntigravityCliTests : IDisposable
         return executable;
     }
 
-    public void Dispose()
-    {
-        // Windows can briefly retain the copied CLI image after its process exits and then refuses to delete it
-        // with an access-denied error. Retry this fixture's own directory; a leftover temp folder is not a test failure.
-        for (var attempt = 0; attempt < 20; attempt++)
-        {
-            try
-            {
-                if (Directory.Exists(_directory)) Directory.Delete(_directory, true);
-                return;
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                Thread.Sleep(100);
-            }
-        }
-    }
+    public void Dispose() => TestDirectories.DeleteWithRetry(_directory);
 
     private sealed class RecordingRunner(Func<BridgeSettings, AgentRunResult> run) : IAgentRunner
     {

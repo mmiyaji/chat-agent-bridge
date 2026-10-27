@@ -380,7 +380,7 @@ public sealed class CliProbeServiceTests
             throw new DirectoryNotFoundException("Could not find the built TestAgent fixture.");
         }
 
-        public void Dispose() => Directory.Delete(_directory, recursive: true);
+        public void Dispose() => TestDirectories.DeleteWithRetry(_directory);
     }
 
     private static string? FindNodeExecutable()

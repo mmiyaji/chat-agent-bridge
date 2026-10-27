@@ -260,7 +260,7 @@ public sealed class CoreTests
             Assert.Equal("final answer after cap", result.Codex.FinalMessage);
             Assert.True(result.Codex.TurnFailed);
         }
-        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+        finally { TestDirectories.DeleteWithRetry(path); }
     }
 
     [Fact]
