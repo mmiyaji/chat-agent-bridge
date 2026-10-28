@@ -76,3 +76,6 @@ finally {
 }
 
 Write-Output 'Store packaging executable configuration checks passed.'
+# The rejected native MSBuild invocations above intentionally return nonzero.
+# GitHub Actions propagates LASTEXITCODE after a successful script invocation.
+$global:LASTEXITCODE = 0
