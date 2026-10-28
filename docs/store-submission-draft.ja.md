@@ -20,13 +20,17 @@
 - 対象デバイスはWindowsデスクトップのみ。将来のデバイスファミリーへの自動提供はオフ。
 - 公開オプション：「[今すぐ公開]を選択するまで、この提出物を公開しない」を選択・保存。
 
+## 年齢区分・審査説明の登録
+
+- 年齢区分の全質問に回答し、プレビューを確認。公開元の方針としてヌード・報道価値を逸脱する実際の露骨な暴力の公開は許可しないと回答。自動内容判別やチャットモデレートがあるとは申告していない。保存済みのグローバルIARCは12+、ESRBはTeen。IARC規約への同意・成人である本人宣言・保存は本人が完了し、保存済みレーティング画面を確認。
+- 追加のテスト情報：審査用説明を保存し、再読込後も本文が残ることを確認。資格情報は登録していない。
+- 申請概要で「送信して認定を受ける」ボタンが有効になったことを確認。ボタンは押していない。
+
 ## 未完了の項目
 
-- 年齢区分は回答を下書き保存。ユーザー投稿のヌード・露骨な暴力の扱いについて、投稿内容を検出・モデレートする機能がない点を踏まえた最終確認が必要。
-- 追加のテスト情報の登録。ページを開いた時点で再サインインが必要になったため未保存。
 - Store経由のインストール・更新・通知ボタン・CLI実行の実機検証、認定・審査への提出。
 
-## 審査担当者向けの説明案（未登録）
+## 保存済みの審査担当者向け説明
 
 Chat Agent Bridge is a native Windows desktop utility that connects a user's installed AI agent CLI to Slack, Mattermost or Discord. It requires runFullTrust to launch the CLI selected by the user and to read and write within user-selected working folders. It runs as the current Windows user and does not request administrator elevation.
 
@@ -34,4 +38,6 @@ No account or CLI is required to open the app. On first launch, review the intro
 
 Requests are restricted by allowed-user and conversation settings. The default request mode requires approval when starting a conversation. Sharing result text and uploading generated files require confirmation by default. The Store build uses Store updates rather than replacing installed files through the portable ZIP updater. Optional portable notification-package setup is hidden in the Store build. The app does not install agent CLIs or silently elevate their permissions.
 
-The product is an unofficial alternative for environments where the AI provider's official remote-control feature cannot be used. AI subscriptions and service charges are separate. Before final submission, confirm whether dedicated review credentials or further testing instructions are needed; do not provide a normal user's bot token or AI login.
+The publisher does not permit using this app to publish nudity or gratuitous graphic real-world violence. This is a usage policy, not an automatic content-filter guarantee: the app does not contain a content classifier or chat moderation service. Allowed-user restrictions and approval controls are provided.
+
+The product is an unofficial alternative for environments where the AI provider's official remote-control feature cannot be used. AI subscriptions and service charges are separate. The app does not require a Chat Agent Bridge account. Contact mail@ruhenheim.org if additional test access is required. Existing users' bot tokens and AI logins are not supplied.
