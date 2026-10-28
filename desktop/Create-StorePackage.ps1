@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateNotNullOrEmpty()][string]$PackageName = 'org.ruhenheim.ChatAgentBridge',
+    [ValidateNotNullOrEmpty()][string]$PackageName = 'mmiyaji.ChatAgentBridge',
     [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Publisher,
     [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$PublisherDisplayName,
     [Parameter(Mandatory)][ValidatePattern('^\d+\.\d+\.\d+\.\d+$')][string]$PackageVersion,
@@ -10,7 +10,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$expectedPackageName = 'org.ruhenheim.ChatAgentBridge'
+$expectedPackageName = 'mmiyaji.ChatAgentBridge'
 if ($PackageName -cne $expectedPackageName) {
     throw "PackageName must be '$expectedPackageName'. Confirm this name is assigned to this app in Partner Center before building."
 }
@@ -44,6 +44,7 @@ try {
     $identity.SetAttribute('Name', $PackageName)
     $identity.SetAttribute('Publisher', $Publisher)
     $identity.SetAttribute('Version', $PackageVersion)
+    $document.Package.Properties.DisplayName = 'Chat Agent Bridge'
     $document.Package.Properties.PublisherDisplayName = $PublisherDisplayName
     $document.Save($manifest)
 
@@ -51,6 +52,7 @@ try {
     if ($generated.Package.Identity.Name -cne $expectedPackageName -or
         $generated.Package.Identity.Publisher -cne $Publisher -or
         $generated.Package.Identity.Version -cne $PackageVersion -or
+        $generated.Package.Properties.DisplayName -cne 'Chat Agent Bridge' -or
         $generated.Package.Properties.PublisherDisplayName -cne $PublisherDisplayName) {
         throw 'Generated Store manifest identity validation failed.'
     }
@@ -109,6 +111,7 @@ try {
                         $packagedManifest.Package.Identity.Publisher -cne $Publisher -or
                         $packagedManifest.Package.Identity.Version -cne $PackageVersion -or
                         $packagedManifest.Package.Identity.ProcessorArchitecture -cne $Architecture.ToLowerInvariant() -or
+                        $packagedManifest.Package.Properties.DisplayName -cne 'Chat Agent Bridge' -or
                         $packagedManifest.Package.Properties.PublisherDisplayName -cne $PublisherDisplayName) {
                         throw "Packaged MSIX identity does not match supplied Store identity/version: '$($upload.Name)'."
                     }

@@ -10,7 +10,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$packageName = 'ChatAgentBridge.Portable'
+$packageName = 'mmiyaji.ChatAgentBridge'
 $publisher = 'CN=mmiyaji'
 $applicationId = 'App'
 $packageVersion = '1.0.0.0'

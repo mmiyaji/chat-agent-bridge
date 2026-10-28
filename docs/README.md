@@ -24,6 +24,7 @@
 
 - [ポータブル版のリリース手順](../RELEASE.md) — 公開手順の正本
 - [Microsoft Store公開の準備・パッケージ名の方針](store-preparation.ja.md)
+- [Store初回申請の下書きと未完了項目](store-submission-draft.ja.md)
 - [公開済みバージョンと変更履歴](https://github.com/mmiyaji/chat-agent-bridge/releases)
 - [preview.8の補足記録](releases/0.1.0-preview.8.md) — 当該版の記録であり、最新の変更履歴ではありません
 

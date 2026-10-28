@@ -13,7 +13,7 @@ namespace ChatAgentBridge.Core.Deployment;
 /// <remarks>Windows deployment verifies payload binding, certificate time validity, timestamps and trust policy.</remarks>
 public sealed class PortableIdentityBundle
 {
-    public const string PackageName = "ChatAgentBridge.Portable";
+    public const string PackageName = "mmiyaji.ChatAgentBridge";
     public const string Publisher = "CN=mmiyaji";
     public const string ApplicationId = "App";
     public const string PackageVersion = "1.0.0.0";

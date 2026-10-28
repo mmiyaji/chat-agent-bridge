@@ -52,7 +52,7 @@ function Assert-PortableExecutableIdentity {
         $ns.AddNamespace('asm', 'urn:schemas-microsoft-com:asm.v1')
         $ns.AddNamespace('msix', 'urn:schemas-microsoft-com:msix.v1')
         $identities = $document.SelectNodes('/asm:assembly/msix:msix', $ns)
-        if ($identities.Count -ne 1 -or $identities[0].GetAttribute('packageName') -cne 'ChatAgentBridge.Portable' -or
+        if ($identities.Count -ne 1 -or $identities[0].GetAttribute('packageName') -cne 'mmiyaji.ChatAgentBridge' -or
             $identities[0].GetAttribute('publisher') -cne 'CN=mmiyaji' -or $identities[0].GetAttribute('applicationId') -cne 'App') {
             throw 'Identity-enabled layouts must already be published with -p:CABPortable=true -p:CABPortableIdentity=true; the executable identity metadata is missing or mismatched.'
         }

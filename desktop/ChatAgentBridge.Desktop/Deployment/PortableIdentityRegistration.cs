@@ -16,6 +16,9 @@ public sealed record PortableIdentityRegistrationInfo(bool Active, string? Regis
 /// <summary>Current-user, signed external-location packages. Never changes machine trust or Developer Mode.</summary>
 public static class PortableIdentityRegistration
 {
+    private const string PreviousPackageName = "ChatAgentBridge.Portable";
+    private const string PreviousPublisher = "CN=mmiyaji";
+
     public static Task<PortableIdentityRegistrationInfo> InspectAsync(string installDirectory, PortableIdentityBundle bundle) =>
         Task.Run(() =>
         {
@@ -43,6 +46,7 @@ public static class PortableIdentityRegistration
         using var guard = AcquireRegistrationGuard();
         var verified = PortableIdentityBundle.LoadValidated(installDirectory);
         EnsureUnchanged(bundle, verified);
+        EnsureNoPreviousIdentityRegistration();
         var old = FindOwnPackage();
         var oldLocation = old is null ? null : ExternalPath(old);
         if (oldLocation is not null && SamePath(oldLocation, installDirectory)) return;
@@ -164,6 +168,17 @@ public static class PortableIdentityRegistration
         var matches = new PackageManager().FindPackagesForUser("").Where(IsOwn).ToArray();
         if (matches.Length > 1) throw new InvalidDataException("Multiple portable notification registrations were found.");
         return matches.SingleOrDefault();
+    }
+
+    private static void EnsureNoPreviousIdentityRegistration()
+    {
+        if (new PackageManager().FindPackagesForUser("").Any(package =>
+                package.Id.Name == PreviousPackageName && package.Id.Publisher == PreviousPublisher))
+        {
+            throw new InvalidOperationException(
+                "A portable notification identity using the previous package name 'ChatAgentBridge.Portable' is already registered. " +
+                "It was not changed or removed. Unregister that previous identity explicitly before setting up the new 'mmiyaji.ChatAgentBridge' identity.");
+        }
     }
 
     private static bool IsOwn(Package package) => package.Id.Name == PortableIdentityBundle.PackageName &&

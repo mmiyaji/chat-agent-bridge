@@ -7,7 +7,7 @@
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap uap10 desktop com rescap">
-  <Identity Name="ChatAgentBridge.Portable" Publisher="CN=mmiyaji" Version="1.0.0.0" ProcessorArchitecture="neutral" />
+  <Identity Name="mmiyaji.ChatAgentBridge" Publisher="CN=mmiyaji" Version="1.0.0.0" ProcessorArchitecture="neutral" />
   <Properties>
     <DisplayName>Chat Agent Bridge</DisplayName>
     <PublisherDisplayName>Chat Agent Bridge</PublisherDisplayName>

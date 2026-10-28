@@ -12,7 +12,9 @@ To create a signed identity bundle during archive creation, provide a code-signi
 .\desktop\Create-PortableArchive.ps1 -IdentityCertificateThumbprint '<thumbprint>'
 ```
 
-The identity bundle has a fixed package version `1.0.0.0`, independent of the app's release version. Keep the package name, publisher, application ID, and version stable across updates. A future identity version requires an explicit migration; unsupported versions must be rejected. `-IdentityCertificateThumbprint` signs and includes the identity bundle. `-ExistingLayout` is for a layout that was already published with the identity fusion manifest and contains the matching EXE; it does not convert a legacy executable. For a fresh build, omitting the thumbprint keeps the ordinary legacy path. An existing layout must already contain a valid identity bundle to preserve one.
+The identity bundle uses package name `mmiyaji.ChatAgentBridge`, publisher `CN=mmiyaji`, application ID `App`, and fixed package version `1.0.0.0`, independent of the app's release version. Keep these identity values stable across updates. A future identity version requires an explicit migration; unsupported versions must be rejected. `-IdentityCertificateThumbprint` signs and includes the identity bundle. `-ExistingLayout` is for a layout that was already published with the identity fusion manifest and contains the matching EXE; it does not convert a legacy executable. For a fresh build, omitting the thumbprint keeps the ordinary legacy path. An existing layout must already contain a valid identity bundle to preserve one.
+
+Earlier local/pre-release builds used the package name `ChatAgentBridge.Portable`. The app does not silently migrate or remove that registration. Setup refuses to register the new identity while a matching previous registration (`CN=mmiyaji`) exists; remove that previous registration explicitly after verifying its location and closing its app process, then retry setup. Its certificate trust is left untouched.
 
 The lower-level builder also accepts an optional timestamp URL. It makes no timestamp request unless `-TimestampUrl` is supplied:
 

@@ -8,7 +8,7 @@ param(
 # DEBUG ONLY: exercises existing Developer Mode registration, not production signed deployment.
 # Never changes Developer Mode, certificate trust, or another installation's registration/processes.
 $ErrorActionPreference = 'Stop'
-$packageName = 'ChatAgentBridge.Portable'
+$packageName = 'mmiyaji.ChatAgentBridge'
 $archive = (Resolve-Path -LiteralPath $ArchivePath).Path
 $workRoot = [IO.Path]::GetFullPath($WorkingDirectory)
 $artifactRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
@@ -19,6 +19,9 @@ if (-not $archive.StartsWith($artifactRoot + [IO.Path]::DirectorySeparatorChar, 
 $developerMode = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock').AllowDevelopmentWithoutDevLicense
 if ($developerMode -ne 1) { throw 'Developer Mode is not already enabled. This debug-only test will not enable it.' }
 if (@(Get-AppxPackage -Name $packageName).Count -ne 0) { throw 'A portable identity registration already exists; refusing to replace it.' }
+if (@(Get-AppxPackage -Name 'ChatAgentBridge.Portable' | Where-Object Publisher -eq 'CN=mmiyaji').Count -ne 0) {
+    throw 'A registration using the previous portable identity name exists; refusing to create a second identity.'
+}
 $principal = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
 if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Run this test without elevation.' }
 $testRoot = Join-Path $workRoot ('portable-identity-smoke-' + [guid]::NewGuid().ToString('N'))

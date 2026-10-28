@@ -99,7 +99,8 @@ public sealed class PortableIdentityBundleTests
     }
 
     [Theory]
-    [InlineData("ChatAgentBridge.Portable", "Other.Portable")]
+    [InlineData("mmiyaji.ChatAgentBridge", "Other.Portable")]
+    [InlineData("mmiyaji.ChatAgentBridge", "ChatAgentBridge.Portable")]
     [InlineData("CN=mmiyaji", "CN=Other")]
     [InlineData("1.0.0.0", "1.0.0.1")]
     [InlineData("ProcessorArchitecture=\"neutral\"", "ProcessorArchitecture=\"x64\"")]
@@ -109,7 +110,7 @@ public sealed class PortableIdentityBundleTests
     [InlineData("<u10:AllowExternalContent>true", "<u10:AllowExternalContent>false")]
     [InlineData("unvirtualizedResources", "broadFileSystemAccess")]
     [InlineData("win32App", "packagedClassicApp")]
-    [InlineData("Name=\"ChatAgentBridge.Portable\"", "Name=\"ChatAgentBridge.Portable\" ResourceId=\"other\"")]
+    [InlineData("Name=\"mmiyaji.ChatAgentBridge\"", "Name=\"mmiyaji.ChatAgentBridge\" ResourceId=\"other\"")]
     [InlineData("Executable=\"ChatAgentBridge.Desktop.exe\" u10:TrustLevel", "Executable=\"ChatAgentBridge.Desktop.exe\" EntryPoint=\"Other.Entry\" u10:TrustLevel")]
     public void RejectsReSignedPackageWithUnexpectedIdentityOrActivation(string before, string after)
     {
@@ -234,7 +235,7 @@ public sealed class PortableIdentityBundleTests
               xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
               xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
               xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
-              <Identity Name="ChatAgentBridge.Portable" Publisher="CN=mmiyaji" Version="1.0.0.0" ProcessorArchitecture="neutral"/>
+              <Identity Name="mmiyaji.ChatAgentBridge" Publisher="CN=mmiyaji" Version="1.0.0.0" ProcessorArchitecture="neutral"/>
               <Properties><DisplayName>Bridge</DisplayName><u10:AllowExternalContent>true</u10:AllowExternalContent></Properties>
               <Resources><Resource Language="en-US"/></Resources>
               <Dependencies><TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0"/></Dependencies>
