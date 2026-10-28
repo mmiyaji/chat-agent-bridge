@@ -1,0 +1,35 @@
+# Archived validation and implementation records
+
+These documents are historical snapshots of investigations, implementation work, and validation runs. Their results describe the code and environment at the time recorded; they are evidence, not current operating instructions. For current setup, operation, and retention guidance, use the [documentation index](../../README.md).
+
+## Validation snapshots
+
+- [about-validation.ja.md](about-validation.ja.md)
+- [appearance-validation.ja.md](appearance-validation.ja.md)
+- [architecture-viewer-validation.ja.md](architecture-viewer-validation.ja.md)
+- [automatic-portable-update-validation.ja.md](automatic-portable-update-validation.ja.md)
+- [chat-progress-validation.ja.md](chat-progress-validation.ja.md)
+- [cli-diagnostics-validation.ja.md](cli-diagnostics-validation.ja.md)
+- [connection-lifecycle-review.ja.md](connection-lifecycle-review.ja.md)
+- [conversation-browser-validation.ja.md](conversation-browser-validation.ja.md)
+- [design-qa.md](design-qa.md)
+- [dialog-button-consistency-validation.ja.md](dialog-button-consistency-validation.ja.md)
+- [discord-validation.md](discord-validation.md)
+- [gallery-ui-validation.ja.md](gallery-ui-validation.ja.md)
+- [general-settings-validation.ja.md](general-settings-validation.ja.md)
+- [inbox-gallery-ui-validation.ja.md](inbox-gallery-ui-validation.ja.md)
+- [localization-validation.ja.md](localization-validation.ja.md)
+- [mattermost-bot-dm-validation.ja.md](mattermost-bot-dm-validation.ja.md)
+- [mattermost-continuation-validation.ja.md](mattermost-continuation-validation.ja.md)
+- [mattermost-direct-connection-validation.ja.md](mattermost-direct-connection-validation.ja.md)
+- [mattermost-history-names-validation.ja.md](mattermost-history-names-validation.ja.md)
+- [minimum-window-size-validation.ja.md](minimum-window-size-validation.ja.md)
+- [onboarding-wizard-validation.ja.md](onboarding-wizard-validation.ja.md)
+- [release-readiness-plan.ja.md](release-readiness-plan.ja.md)
+- [remote-operations-validation.ja.md](remote-operations-validation.ja.md)
+- [slack-history-names-validation.ja.md](slack-history-names-validation.ja.md)
+- [storage-io-resilience.ja.md](storage-io-resilience.ja.md)
+- [ui-monkey-improvements.ja.md](ui-monkey-improvements.ja.md)
+- [window-close-confirmation-validation.ja.md](window-close-confirmation-validation.ja.md)
+- [windows-portable-validation.ja.md](windows-portable-validation.ja.md)
+- [windows-preview-release-validation.ja.md](windows-preview-release-validation.ja.md)

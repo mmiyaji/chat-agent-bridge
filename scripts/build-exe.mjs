@@ -32,7 +32,7 @@ await fs.copyFile(process.execPath, exe);
 await inject(exe, "NODE_SEA_BLOB", await fs.readFile(blob), { sentinelFuse: "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2" });
 const hash = createHash("sha256").update(await fs.readFile(exe)).digest("hex");
 await fs.writeFile(path.join(output, "SHA256SUMS.txt"), `${hash}  ChatAgentBridge.exe\n`);
-await fs.copyFile(path.join(root, "docs/executable.ja.md"), path.join(output, "README.ja.md"));
+await fs.copyFile(path.join(root, "docs/archive/legacy/executable.ja.md"), path.join(output, "README.ja.md"));
 await fs.writeFile(path.join(output, "build-info.json"), JSON.stringify({ version: pkg.version, node: process.version, platform: process.platform, arch: process.arch, builtAt: new Date().toISOString(), sha256: hash }, null, 2));
 await fs.writeFile(path.join(output, "THIRD-PARTY-NOTICES.txt"),
   "This executable includes the Node.js runtime and the ws library.\n\n--- Node.js licenses ---\n" +

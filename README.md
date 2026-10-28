@@ -59,6 +59,10 @@ This is the diagram shown in the app's setup guide and General page. It uses Cod
 | History and usage | Conversation management, execution and operation history, an activity calendar, and token, cache and estimated-cost charts |
 | Startup and appearance | Setup wizard, startup and auto-connect, system tray mode, English/Japanese and light/dark appearance |
 
+## Documentation
+
+[Documentation index](docs/README.md) — user guides, developer references, release notes, legal notices and archived records.
+
 ## Installation and setup
 
 Portable builds are available for Windows. Install and authenticate your chosen CLI and prepare the chat bot separately.
