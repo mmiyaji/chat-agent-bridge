@@ -1,0 +1,54 @@
+name: Store package (build only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Store package version: major.minor.build.0 (major >= 1)'
+        required: true
+        type: string
+      publisher:
+        description: 'Exact Package/Identity/Publisher from Partner Center'
+        required: true
+        type: string
+      publisher_display_name:
+        description: 'Exact PublisherDisplayName from Partner Center'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x64, ARM64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+      - name: Validate Store build guards
+        shell: pwsh
+        run: ./desktop/Test-StorePackageConfiguration.ps1
+      - name: Build and inspect unsigned Store upload package
+        shell: pwsh
+        env:
+          STORE_VERSION: ${{ inputs.version }}
+          STORE_PUBLISHER: ${{ inputs.publisher }}
+          STORE_PUBLISHER_DISPLAY_NAME: ${{ inputs.publisher_display_name }}
+          STORE_ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          ./desktop/Create-StorePackage.ps1 -PackageVersion $env:STORE_VERSION -Publisher $env:STORE_PUBLISHER -PublisherDisplayName $env:STORE_PUBLISHER_DISPLAY_NAME -Architecture $env:STORE_ARCHITECTURE -OutputDirectory (Join-Path $env:RUNNER_TEMP 'store-packages')
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: store-package-${{ matrix.architecture }}
+          path: ${{ runner.temp }}/store-packages/**/*.msixupload
+          if-no-files-found: error
+          retention-days: 7

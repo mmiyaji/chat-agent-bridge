@@ -121,6 +121,7 @@ git push origin $release.Tag
 
 手順2でローカル作成した ZIP を自動アップロードするのではなく、タグのコードから Actions が再ビルドします。
 MSIX / Microsoft Store への公開はこのワークフローに含みません。
+Store版の識別子・MSIXビルドは [Microsoft Store公開の準備](docs/store-preparation.ja.md) を参照してください。
 
 ## 5. 公開結果を確認する
 
