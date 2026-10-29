@@ -30,7 +30,7 @@
   <data name="ChatControlStatusEmpty" xml:space="preserve"><value>No live requests from you in this thread. Connection: {0}.</value></data>
   <data name="ChatControlStatusApproval" xml:space="preserve"><value>Waiting for approval</value></data>
   <data name="ChatControlStatusQueued" xml:space="preserve"><value>Queued</value></data>
-  <data name="ChatControlStatusRow" xml:space="preserve"><value>• {0} · {1} · model {2} · {3}</value></data>
+  <data name="ChatControlStatusRow" xml:space="preserve"><value>• {0} · {1} · model {2} · {3} · permission {4}</value></data>
   <data name="ChatControlStatusMore" xml:space="preserve"><value>…and {0} more</value></data>
   <data name="ChatControlAgentCodex" xml:space="preserve"><value>Codex</value></data>
   <data name="ChatControlAgentClaude" xml:space="preserve"><value>Claude Code</value></data>
@@ -72,8 +72,20 @@
   <data name="InboxReconnecting" xml:space="preserve"><value>Connection lost. Retrying automatically (attempt {0}, in {1}s). New requests will wait until the connection returns.</value></data>
   <data name="InboxReconnected" xml:space="preserve"><value>Reconnected. Waiting for requests from allowed users. Requests sent while disconnected must be reposted.</value></data>
   <data name="ProgressReceived" xml:space="preserve"><value>📥 Request received. Waiting for approval on the PC or for execution to start.</value></data>
-  <data name="ProgressRunning" xml:space="preserve"><value>⏳ The AI agent is running. Elapsed {0}. This post updates about every 30 seconds while running.</value></data>
+  <data name="ProgressRunning" xml:space="preserve"><value>⏳ The AI agent is running. Elapsed {0}.</value></data>
   <data name="ProgressReactionCancelHint" xml:space="preserve"><value>To stop, click 🛑 below (requester only). If it is missing, reply `!cab stop` in this thread.</value></data>
+  <data name="ProgressDetails" xml:space="preserve"><value>🤖 {0} · model {1} · permission {2}</value></data>
+  <data name="ProgressActivityCount" xml:space="preserve"><value>Actions so far: {0}</value></data>
+  <data name="ProgressUsage" xml:space="preserve"><value>📊 Tokens in {0} / out {1}</value></data>
+  <data name="ProgressUsageCost" xml:space="preserve"><value> · est. cost {0}</value></data>
+  <data name="ProgressFollowUpSteerHint" xml:space="preserve"><value>A reply in this thread is passed to the running work as an extra instruction.</value></data>
+  <data name="ProgressFollowUpQueueHint" xml:space="preserve"><value>A reply in this thread is processed in order after the current run finishes.</value></data>
+  <data name="PermissionSourceProjectLocal" xml:space="preserve"><value>{0} local project settings</value></data>
+  <data name="PermissionSourceProject" xml:space="preserve"><value>{0} project settings</value></data>
+  <data name="PermissionSourceUser" xml:space="preserve"><value>{0} settings</value></data>
+  <data name="PermissionInheritResolved" xml:space="preserve"><value>Inherit → {0}: {1}</value></data>
+  <data name="PermissionUnattendedNote" xml:space="preserve"><value> (runs without asking)</value></data>
+  <data name="PermissionUnattendedMarker" xml:space="preserve"><value>⚠ {0}</value></data>
   <data name="ProgressCompleted" xml:space="preserve"><value>✅ Completed. Elapsed {0}.</value></data>
   <data name="ProgressFailed" xml:space="preserve"><value>❌ Execution or recording failed. Elapsed {0}. Check the details on the PC.</value></data>
   <data name="ProgressCancelled" xml:space="preserve"><value>⏹ Execution stopped. Elapsed {0}.</value></data>
@@ -500,7 +512,25 @@
   <data name="ChatInputTextReply" xml:space="preserve"><value>Reply: !cab answer {0} {1} your answer</value></data>
   <data name="ChatInputOptionReply" xml:space="preserve"><value>Reply with an option number: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>For another answer: !cab answer {0} {1} other your answer</value></data>
-  <data name="ChatControlHelp" xml:space="preserve"><value>Commands for this account and thread:&#10;&gt; !cab &lt;request&gt; — send a request to the agent&#10;&gt; !cab command / !cab commands / !cab help — show this list&#10;&gt; !cab agent — list registered CLI connections and summary/fresh switch commands&#10;&gt; !cab model / !cab model list / !cab model MODEL_ID / !cab model default — view or change your conversation model&#10;&gt; !cab status — list live requests in this thread with status, effective agent, model and workspace&#10;&gt; !cab stop — stop your active request and cancel your queued requests&#10;&gt; !cab folder &quot;C:\path&quot; — request a workspace change; the folder must be trusted and needs approval on this PC&#10;&gt; !cab approve CODE / !cab reject CODE — decide an approval when sharing approvals in chat is enabled (codes expire after 5 minutes; otherwise decide on this PC)&#10;&gt; !cab answer CODE question-number option-number — answer an app-server question with an option number&#10;&gt; !cab answer CODE question-number your answer — give a free-text answer&#10;&gt; !cab answer CODE question-number other your answer — give another answer when that question allows it&#10;&gt; Answers can be shared only when app-server question sharing is enabled; questions AppServer marks secret stay on this PC. Answer codes expire after 5 minutes.&#10;Start a new conversation with a new post (thread); reply in the same thread to continue it. Commands and replies apply only to requests from you in this provider, channel, thread and server origin. Status lists at most 10 live requests and never includes requests from another requester.</value></data>
+  <data name="ChatControlHelp" xml:space="preserve"><value>Commands for this account and thread:&#10;&gt; !cab &lt;request&gt; — send a request to the agent&#10;&gt; !cab command / !cab commands / !cab help — show this list&#10;&gt; !cab agent — list registered CLI connections and summary/fresh switch commands&#10;&gt; !cab model / !cab model list / !cab model MODEL_ID / !cab model default — view or change your conversation model&#10;&gt; !cab status — list live requests in this thread with status, effective agent, model and workspace&#10;&gt; !cab stop — stop your active request and cancel your queued requests&#10;&gt; !cab folder &quot;C:\path&quot; — request a workspace change; the folder must be trusted and needs approval on this PC&#10;&gt; !cab worktree NAME — request a git worktree for this conversation (needs approval on this PC)&#10;&gt; !cab remember TEXT / !cab memory / !cab forget NUMBER|all — save, list or remove channel notes that are added to every request in this channel&#10;&gt; !cab usage — show token usage and estimated cost for this thread and for you today&#10;&gt; !cab approve CODE / !cab reject CODE — decide an approval when sharing approvals in chat is enabled (codes expire after 5 minutes; otherwise decide on this PC)&#10;&gt; !cab answer CODE question-number option-number — answer an app-server question with an option number&#10;&gt; !cab answer CODE question-number your answer — give a free-text answer&#10;&gt; !cab answer CODE question-number other your answer — give another answer when that question allows it&#10;&gt; Answers can be shared only when app-server question sharing is enabled; questions AppServer marks secret stay on this PC. Answer codes expire after 5 minutes.&#10;Start a new conversation with a new post (thread); reply in the same thread to continue it. Commands and replies apply only to requests from you in this provider, channel, thread and server origin. Status lists at most 10 live requests and never includes requests from another requester.</value></data>
+  <data name="MattermostInboxApprovalWaiting" xml:space="preserve"><value>This request is waiting for your approval. The requester can approve with ✅ or reject with ❌ on this post.</value></data>
+  <data name="WorktreeNameInstruction" xml:space="preserve"><value>Use !cab worktree NAME, where NAME is 1-40 characters of letters, digits, dot, underscore or hyphen and does not start with a dot or hyphen.</value></data>
+  <data name="WorktreeChangedOutput" xml:space="preserve"><value>Switched the workspace to the git worktree {0} (branch {1}). The next request will start a new AI conversation.</value></data>
+  <data name="WorktreeChangedChatReply" xml:space="preserve"><value>Chat Agent Bridge: Switched this conversation to the git worktree {0} (branch {1}). The next request will start a new AI conversation.</value></data>
+  <data name="ChatMemorySaved" xml:space="preserve"><value>Saved a note for this channel ({0}/{1}).</value></data>
+  <data name="ChatMemoryTooLong" xml:space="preserve"><value>That note is too long. Keep it within {0} characters.</value></data>
+  <data name="ChatMemoryFull" xml:space="preserve"><value>This channel already has {0} notes. Remove one with !cab forget NUMBER first.</value></data>
+  <data name="ChatMemoryRememberUsage" xml:space="preserve"><value>Usage: !cab remember TEXT</value></data>
+  <data name="ChatMemoryEmpty" xml:space="preserve"><value>No notes are saved for this channel. Add one with !cab remember TEXT.</value></data>
+  <data name="ChatMemoryHeader" xml:space="preserve"><value>Channel notes ({0}/{1}):</value></data>
+  <data name="ChatMemoryItem" xml:space="preserve"><value>{0}. {1}</value></data>
+  <data name="ChatMemoryForgot" xml:space="preserve"><value>Removed note {0}.</value></data>
+  <data name="ChatMemoryForgotAll" xml:space="preserve"><value>Removed all {0} notes for this channel.</value></data>
+  <data name="ChatMemoryNoSuchNote" xml:space="preserve"><value>There is no note {0}. List the notes with !cab memory.</value></data>
+  <data name="ChatMemoryForgetUsage" xml:space="preserve"><value>Usage: !cab forget NUMBER or !cab forget all</value></data>
+  <data name="ChatUsageReply" xml:space="preserve"><value>This thread: {0}&#10;Today, all your threads: {1}</value></data>
+  <data name="ChatUsageLine" xml:space="preserve"><value>{0} runs · input {1} · output {2} · est. cost {3}</value></data>
+  <data name="ChatUsageUnknown" xml:space="preserve"><value>unknown</value></data>
   <data name="HistoryWorkspaceFilterLabel" xml:space="preserve"><value>Workspace</value></data>
   <data name="HistoryWorkspaceAll" xml:space="preserve"><value>All workspaces</value></data>
   <data name="HistorySortLabel" xml:space="preserve"><value>Sort</value></data>

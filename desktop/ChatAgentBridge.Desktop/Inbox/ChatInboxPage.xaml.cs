@@ -347,7 +347,7 @@ public sealed partial class ChatInboxPage : Page
 
     private async Task<bool> ConfirmAsync(InboxItem item, CancellationToken cancellationToken)
     {
-        var changesWorkspace = ChatAgentBridge.Core.WorkspaceChatCommand.TryParse(item.Prompt, out _);
+        var changesWorkspace = ChatAgentBridge.Core.WorkspaceChatCommand.IsWorkspaceCommand(item.Prompt);
         var changesAgent = ChatAgentBridge.Core.AgentChatCommand.TryParse(item.Prompt, out _);
         var executionSettings = item.EffectiveSettings ?? item.Settings;
         var dialog = new ContentDialog

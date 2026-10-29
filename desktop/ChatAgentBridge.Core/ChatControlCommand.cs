@@ -11,6 +11,10 @@ public enum ChatControlCommandKind
     Stop,
     Model,
     Answer,
+    Remember,
+    Memory,
+    Forget,
+    Usage,
     ReservedInvalid
 }
 
@@ -20,7 +24,8 @@ public sealed record ChatControlCommand(
     string? Code = null,
     int? QuestionNumber = null,
     string? Answer = null,
-    string? ModelArgument = null)
+    string? ModelArgument = null,
+    string? TextArgument = null)
 {
     private static readonly Regex AnswerPattern = new(
         @"^answer\s+(?<code>[0-9a-f]{12})\s+(?<number>[1-9][0-9]{0,2})\s+(?<answer>\S[\s\S]*)$",
@@ -42,6 +47,14 @@ public sealed record ChatControlCommand(
         var command = commandEnd < 0 ? value : value[..commandEnd];
         if (command.Equals("model", StringComparison.OrdinalIgnoreCase))
             return new(ChatControlCommandKind.Model, ModelArgument: commandEnd < 0 ? "" : value[commandEnd..].Trim());
+        if (command.Equals("remember", StringComparison.OrdinalIgnoreCase))
+            return new(ChatControlCommandKind.Remember, TextArgument: commandEnd < 0 ? "" : value[commandEnd..].Trim());
+        if (command.Equals("forget", StringComparison.OrdinalIgnoreCase))
+            return new(ChatControlCommandKind.Forget, TextArgument: commandEnd < 0 ? "" : value[commandEnd..].Trim());
+        if (command.Equals("memory", StringComparison.OrdinalIgnoreCase) && commandEnd < 0)
+            return new(ChatControlCommandKind.Memory);
+        if (command.Equals("usage", StringComparison.OrdinalIgnoreCase) && commandEnd < 0)
+            return new(ChatControlCommandKind.Usage);
         if ((command.Equals("help", StringComparison.OrdinalIgnoreCase) ||
              command.Equals("command", StringComparison.OrdinalIgnoreCase) ||
              command.Equals("commands", StringComparison.OrdinalIgnoreCase)) && commandEnd < 0)

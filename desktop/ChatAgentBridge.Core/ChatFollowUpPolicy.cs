@@ -7,7 +7,7 @@ public static class ChatFollowUpPolicy
 {
     // Configuration commands keep their own confirmation path, even during an active turn.
     public static bool IsConfigurationCommand(string prompt) =>
-        WorkspaceChatCommand.TryParse(prompt, out _) || AgentChatCommand.TryParse(prompt, out _);
+        WorkspaceChatCommand.IsWorkspaceCommand(prompt) || AgentChatCommand.TryParse(prompt, out _);
 
     public const string Queue = "queue";
     public const string Steer = "steer";

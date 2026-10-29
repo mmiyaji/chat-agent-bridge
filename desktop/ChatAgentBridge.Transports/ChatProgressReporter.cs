@@ -26,6 +26,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     private static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan LifecycleWaitLimit = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan DefaultRequestUpdateInterval = TimeSpan.FromSeconds(3);
 
     private readonly IChatProgressTransport? _transport;
     private readonly IChatProgressLifecycleTransport? _lifecycleTransport;
@@ -35,6 +36,8 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     private readonly Action<Exception>? _onFailure;
     private readonly TimeSpan _interval;
     private readonly TimeSpan _timeout;
+    private readonly TimeSpan _requestUpdateInterval;
+    private readonly object _requestGate = new();
     private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private readonly SemaphoreSlim _providerGate = new(1, 1);
     private readonly Stopwatch _elapsed = new();
@@ -48,6 +51,10 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     private bool _disposed;
     private bool _progressCompleted;
     private ChatProgressState _heartbeatState = ChatProgressState.Running;
+    private Task? _requestTask;
+    private bool _updateRequested;
+    private long _lastEditTimestamp;
+    private bool _hasEdited;
 
     public ChatProgressReporter(
         IChatTransport transport,
@@ -56,7 +63,8 @@ public sealed class ChatProgressReporter : IAsyncDisposable
         Func<CancellationToken, Task<bool>> canPublish,
         Action<Exception>? onFailure = null,
         TimeSpan? interval = null,
-        TimeSpan? timeout = null)
+        TimeSpan? timeout = null,
+        TimeSpan? requestUpdateInterval = null)
     {
         ArgumentNullException.ThrowIfNull(transport);
         _transport = transport as IChatProgressTransport;
@@ -67,6 +75,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
         _onFailure = onFailure;
         _interval = interval ?? DefaultInterval;
         _timeout = timeout ?? DefaultTimeout;
+        _requestUpdateInterval = requestUpdateInterval ?? DefaultRequestUpdateInterval;
         if (_interval <= TimeSpan.Zero)
             throw new ArgumentOutOfRangeException(nameof(interval));
         if (_timeout <= TimeSpan.Zero)
@@ -138,6 +147,50 @@ public sealed class ChatProgressReporter : IAsyncDisposable
         {
             _lifecycleGate.Release();
         }
+    }
+
+    /// <summary>
+    /// Asks for an out-of-band edit of the live progress message (for example after new activity). Edits are coalesced
+    /// and spaced at least the request interval after the previous edit; the call never blocks and is a no-op unless
+    /// the reporter is started and not finished.
+    /// </summary>
+    public void RequestUpdate()
+    {
+        if (_transport is null || !_started || _terminal || _disposed || _message is null) return;
+        lock (_requestGate)
+        {
+            if (_terminal || _disposed) return;
+            _updateRequested = true;
+            if (_requestTask is { IsCompleted: false }) return;
+            _requestTask = Task.Run(() => RequestLoopAsync(_heartbeatStop.Token));
+        }
+    }
+
+    private async Task RequestLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (true)
+            {
+                if (_hasEdited)
+                {
+                    var wait = _requestUpdateInterval - Stopwatch.GetElapsedTime(_lastEditTimestamp);
+                    if (wait > TimeSpan.Zero) await Task.Delay(wait, cancellationToken).ConfigureAwait(false);
+                }
+                lock (_requestGate)
+                {
+                    if (!_updateRequested) { _requestTask = null; return; }
+                    _updateRequested = false;
+                }
+                var message = _message;
+                if (message is null || _terminal || _disposed) return;
+                var text = Format(_heartbeatState);
+                if (text is not null)
+                    await TryUpdateAsync(message, text, cancellationToken, allowTerminal: false).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (Exception ex) { ReportFailure(ex); }
     }
 
     public async Task FinishAsync(ChatProgressState terminal, CancellationToken cancellationToken = default)
@@ -237,6 +290,8 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             await _transport.UpdateProgressAsync(_request, message, text, token).ConfigureAwait(false);
             return true;
         }, callerToken).ConfigureAwait(false);
+        _lastEditTimestamp = Stopwatch.GetTimestamp();
+        _hasEdited = true;
     }
 
     private async Task<T?> InvokeProviderAsync<T>(Func<CancellationToken, Task<T>> invoke, CancellationToken callerToken)
@@ -365,13 +420,16 @@ public sealed class ChatProgressReporter : IAsyncDisposable
 
     private async Task DrainHeartbeatAsync()
     {
-        var heartbeat = _heartbeatTask;
-        if (heartbeat is null)
-            return;
-        try { await heartbeat.WaitAsync(LifecycleWaitLimit).ConfigureAwait(false); }
-        catch (OperationCanceledException) { }
-        catch (TimeoutException ex) { ReportFailure(ex); }
-        catch (Exception ex) { ReportFailure(ex); }
+        Task? requests;
+        lock (_requestGate) { _updateRequested = false; requests = _requestTask; }
+        foreach (var task in new[] { _heartbeatTask, requests })
+        {
+            if (task is null) continue;
+            try { await task.WaitAsync(LifecycleWaitLimit).ConfigureAwait(false); }
+            catch (OperationCanceledException) { }
+            catch (TimeoutException ex) { ReportFailure(ex); }
+            catch (Exception ex) { ReportFailure(ex); }
+        }
         _heartbeatTask = null;
     }
 
