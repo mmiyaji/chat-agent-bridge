@@ -130,7 +130,11 @@ public sealed class PendingRequestNotificationService
         {
             _diagnostics?.Write("notification.register_begin");
             _manager.NotificationInvoked += OnNotificationInvoked;
-            _manager.Register();
+            // Unpackaged runs must pass the name and icon together; Register() alone shows the exe name and a generic icon.
+            if (UnpackagedNotificationIdentity.FindIconUri() is { } iconUri)
+                _manager.Register(UnpackagedNotificationIdentity.DisplayName, iconUri);
+            else
+                _manager.Register();
             _registered = true;
             _diagnostics?.Write("notification.registered");
 
