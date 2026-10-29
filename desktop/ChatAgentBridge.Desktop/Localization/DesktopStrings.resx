@@ -74,6 +74,14 @@
   <data name="ProgressReceived" xml:space="preserve"><value>📥 Request received. Waiting for approval on the PC or for execution to start.</value></data>
   <data name="ProgressRunning" xml:space="preserve"><value>⏳ The AI agent is running. Elapsed {0}.</value></data>
   <data name="ProgressReactionCancelHint" xml:space="preserve"><value>To stop, click 🛑 below (requester only). If it is missing, reply `!cab stop` in this thread.</value></data>
+  <data name="ProgressReceivedShort" xml:space="preserve"><value>📥 Received · waiting to start</value></data>
+  <data name="ProgressRunningShort" xml:space="preserve"><value>⏳ Running {0}</value></data>
+  <data name="ProgressCompletedShort" xml:space="preserve"><value>✅ Done {0}</value></data>
+  <data name="ProgressFailedShort" xml:space="preserve"><value>❌ Failed {0} · see the PC</value></data>
+  <data name="ProgressCancelledShort" xml:space="preserve"><value>⏹ Stopped {0}</value></data>
+  <data name="ProgressActivityCountShort" xml:space="preserve"><value>{0} actions</value></data>
+  <data name="ProgressUsageShort" xml:space="preserve"><value>📊 in {0} · out {1}</value></data>
+  <data name="ProgressPermissionLine" xml:space="preserve"><value>Permission: {0}</value></data>
   <data name="ProgressDetails" xml:space="preserve"><value>🤖 {0} · model {1} · permission {2}</value></data>
   <data name="ProgressActivityCount" xml:space="preserve"><value>Actions so far: {0}</value></data>
   <data name="ProgressUsage" xml:space="preserve"><value>📊 Tokens in {0} / out {1}</value></data>

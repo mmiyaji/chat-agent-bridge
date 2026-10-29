@@ -1015,7 +1015,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (needsLogin)
                 output = DesktopText.Get("InboxClaudeLoginInstructions") + Environment.NewLine + Environment.NewLine + output;
             item.Usage = UsageUi.UsageSummaryFormatter.Format(result.Usage, result.Metrics);
-            item.ProgressUsage = FormatProgressUsage(result.Usage);
+            item.ProgressUsage = FormatProgressUsage(result.Usage, ChatProgressDetail.Normalize(item.Settings.ChatProgressDetail) != ChatProgressDetail.Detailed);
             if (result.HasOutputTruncated) output += Environment.NewLine + DesktopText.Get("InboxOutputTruncated");
             item.FullOutput = BoundOutput(output);
             // Keep the reply preview and displayed output bounded for the 100-item inbox cap.

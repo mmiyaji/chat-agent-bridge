@@ -631,6 +631,17 @@
                                                 <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="ChatFollowUpModeHelp" x:Uid="ChatFollowUpModeHelp" />
                                             </InfoBar.Content>
                                         </InfoBar>
+                                        <ComboBox SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatProgressDetail, Mode=TwoWay}"
+                                                  HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ChatProgressDetail" x:Uid="ChatProgressDetail">
+                                            <ComboBoxItem Tag="minimal" AutomationProperties.AutomationId="ChatProgressDetailMinimal" x:Uid="ChatProgressDetailMinimal" />
+                                            <ComboBoxItem Tag="standard" AutomationProperties.AutomationId="ChatProgressDetailStandard" x:Uid="ChatProgressDetailStandard" />
+                                            <ComboBoxItem Tag="detailed" AutomationProperties.AutomationId="ChatProgressDetailDetailed" x:Uid="ChatProgressDetailDetailed" />
+                                        </ComboBox>
+                                        <InfoBar Severity="Informational" IsOpen="True" IsClosable="False" AutomationProperties.AutomationId="ChatProgressDetailHelpNotice">
+                                            <InfoBar.Content>
+                                                <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="ChatProgressDetailHelp" x:Uid="ChatProgressDetailHelp" />
+                                            </InfoBar.Content>
+                                        </InfoBar>
                                     </StackPanel>
                                 </Expander>
                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="ChatScopeOverview" localization:LocalizedResourceKey.Key="ChatScopeOverview" />

@@ -37,7 +37,7 @@ public readonly record struct SettingsDraftChanges(bool Agent, bool Chat, bool G
         settings.DiscordBotToken, settings.DiscordAllowedUserIds, settings.DiscordAllowedGuildIds,
         settings.DiscordAllowedChannelIds, settings.DiscordAllowedThreadIds, settings.DiscordAllowDirectMessages,
         settings.ShareApprovalsInChat, settings.ShareAgentQuestionsInChat, settings.ChatApprovalMode,
-        settings.ChatResultMode, settings.ChatFollowUpMode, settings.SlackAllowedChannelIds, settings.SlackAllowedThreadIds,
+        settings.ChatResultMode, settings.ChatFollowUpMode, settings.ChatProgressDetail, settings.SlackAllowedChannelIds, settings.SlackAllowedThreadIds,
         settings.MattermostAllowedThreadIds, settings.FileAttachmentApprovalMode, settings.AutoApproveSwitchCommands);
 
     private static string? OptionalText(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

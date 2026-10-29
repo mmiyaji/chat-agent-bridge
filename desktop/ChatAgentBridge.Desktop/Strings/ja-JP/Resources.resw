@@ -1333,4 +1333,19 @@
   <data name="InboxApprovalNotice.Message" xml:space="preserve"><value>依頼内容を確認し、承認または拒否を選んでください。</value></data>
   <data name="InboxOpenPendingApproval.Content" xml:space="preserve"><value>承認待ちを確認</value></data>
   <data name="OverviewCliTile.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>エージェント設定でCLIとモデルを確認</value></data>
+  <data name="ChatProgressDetail.Header" xml:space="preserve">
+    <value>経過メッセージの詳しさ</value>
+  </data>
+  <data name="ChatProgressDetailMinimal.Content" xml:space="preserve">
+    <value>最小（1行）</value>
+  </data>
+  <data name="ChatProgressDetailStandard.Content" xml:space="preserve">
+    <value>標準（既定）</value>
+  </data>
+  <data name="ChatProgressDetailDetailed.Content" xml:space="preserve">
+    <value>詳細</value>
+  </data>
+  <data name="ChatProgressDetailHelp.Text" xml:space="preserve">
+    <value>最小は状態だけを表示します。標準は操作の件数と使用量も出し、終了すると1行に畳みます。詳細はエージェント、直近の操作、返信のヒントも表示します。</value>
+  </data>
 </root>

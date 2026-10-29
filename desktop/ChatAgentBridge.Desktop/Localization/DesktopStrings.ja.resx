@@ -74,6 +74,14 @@
   <data name="ProgressReceived" xml:space="preserve"><value>📥 依頼を受け付けました。PC側の承認または実行開始を待っています。</value></data>
   <data name="ProgressRunning" xml:space="preserve"><value>⏳ AIエージェントが実行中です。経過 {0}。</value></data>
   <data name="ProgressReactionCancelHint" xml:space="preserve"><value>中断するには、下の🛑を押してください（依頼者本人のみ）。表示されない場合は、このスレッドに `!cab stop` と返信できます。</value></data>
+  <data name="ProgressReceivedShort" xml:space="preserve"><value>📥 受付済み・開始待ち</value></data>
+  <data name="ProgressRunningShort" xml:space="preserve"><value>⏳ 実行中 {0}</value></data>
+  <data name="ProgressCompletedShort" xml:space="preserve"><value>✅ 完了 {0}</value></data>
+  <data name="ProgressFailedShort" xml:space="preserve"><value>❌ 失敗 {0} · PC側で確認</value></data>
+  <data name="ProgressCancelledShort" xml:space="preserve"><value>⏹ 停止 {0}</value></data>
+  <data name="ProgressActivityCountShort" xml:space="preserve"><value>操作{0}件</value></data>
+  <data name="ProgressUsageShort" xml:space="preserve"><value>📊 入力{0} · 出力{1}</value></data>
+  <data name="ProgressPermissionLine" xml:space="preserve"><value>権限: {0}</value></data>
   <data name="ProgressDetails" xml:space="preserve"><value>🤖 {0} · モデル {1} · 権限 {2}</value></data>
   <data name="ProgressActivityCount" xml:space="preserve"><value>操作 {0}件</value></data>
   <data name="ProgressUsage" xml:space="preserve"><value>📊 トークン 入力 {0} / 出力 {1}</value></data>

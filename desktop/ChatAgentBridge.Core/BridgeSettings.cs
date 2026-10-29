@@ -39,6 +39,7 @@ public sealed record BridgeSettings
     public bool AutoApproveSwitchCommands { get; init; }
     public string ChatResultMode { get; init; } = "manual";
     public string ChatFollowUpMode { get; init; } = ChatFollowUpPolicy.Queue;
+    public string ChatProgressDetail { get; init; } = Core.ChatProgressDetail.Standard;
     public string SlackAllowedChannelIds { get; init; } = "";
     public string SlackAllowedThreadIds { get; init; } = "";
     public string MattermostAllowedThreadIds { get; init; } = "";

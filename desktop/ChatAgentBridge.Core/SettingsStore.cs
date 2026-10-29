@@ -105,6 +105,7 @@ public sealed class SettingsStore
                     ExecutionPolicy.NormalizeChatApprovalMode(stored.ChatApprovalMode) is "auto" or "first",
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(stored.ChatResultMode),
                 ChatFollowUpMode = ChatFollowUpPolicy.Normalize(stored.ChatFollowUpMode),
+                ChatProgressDetail = Core.ChatProgressDetail.Normalize(stored.ChatProgressDetail),
                 SlackAllowedChannelIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedChannelIds ?? ""),
                 SlackAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedThreadIds ?? ""),
                 MattermostAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.MattermostAllowedThreadIds ?? ""),
@@ -236,6 +237,7 @@ public sealed class SettingsStore
             AutoApproveSwitchCommands = settings.AutoApproveSwitchCommands && approvalMode is "auto" or "first",
             ChatResultMode = resultMode,
             ChatFollowUpMode = followUpMode,
+            ChatProgressDetail = Core.ChatProgressDetail.Normalize(settings.ChatProgressDetail),
             SlackAllowedChannelIds = slackAllowedChannels,
             SlackAllowedThreadIds = slackAllowedThreads,
             MattermostAllowedThreadIds = mattermostAllowedThreads,
@@ -330,6 +332,7 @@ public sealed class SettingsStore
         public bool AutoApproveSwitchCommands { get; set; }
         public string? ChatResultMode { get; set; }
         public string? ChatFollowUpMode { get; set; }
+        public string? ChatProgressDetail { get; set; }
         public string? SlackAllowedChannelIds { get; set; }
         public string? SlackAllowedThreadIds { get; set; }
         public string? MattermostAllowedThreadIds { get; set; }
