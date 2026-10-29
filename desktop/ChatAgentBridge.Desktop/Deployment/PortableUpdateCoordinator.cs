@@ -273,8 +273,25 @@ public sealed class PortableUpdateCoordinator : IDisposable
     {
         if (_available is not { } release || _staged is not { } staged || _workDirectory is null || !TryBegin()) return;
         Process? helper = null;
+        var loadingWindow = App.Window as MainWindow;
         try
         {
+            loadingWindow?.SetPortableUpdateLoading(true);
+#if CAB_PORTABLE_UPDATE_TEST
+            var loadingGate = Environment.GetEnvironmentVariable("CAB_PORTABLE_UPDATE_LOADING_TEST_DIRECTORY");
+            if (!string.IsNullOrWhiteSpace(loadingGate))
+            {
+                if (!Path.IsPathFullyQualified(loadingGate)) throw new InvalidDataException("Test gate directory must be absolute.");
+                var continueFile = Path.Combine(loadingGate, "continue");
+                var loadingDeadline = DateTimeOffset.UtcNow.AddSeconds(60);
+                while (!File.Exists(continueFile))
+                {
+                    _operation!.Token.ThrowIfCancellationRequested();
+                    if (DateTimeOffset.UtcNow >= loadingDeadline) throw new TimeoutException("Update loading test gate timed out.");
+                    await Task.Delay(100, _operation.Token);
+                }
+            }
+#endif
             var restored = await PortableUpdateStageStore.LoadAsync(_workDirectory, _installDirectory, _dataDirectory,
                 _currentVersion, Architecture(), IncludePrereleases, release, _operation!.Token)
                 ?? throw new InvalidDataException("The staged update is no longer available.");
@@ -318,20 +335,38 @@ public sealed class PortableUpdateCoordinator : IDisposable
             _operation.Token.ThrowIfCancellationRequested();
             if (helper.HasExited) throw new IOException("Update helper exited before restart.");
             _committing = true;
-            await App.Tray.ExitAsync();
+            try { await App.Tray.ExitForPortableUpdateAsync(); }
+            catch
+            {
+                _committing = false;
+                throw;
+            }
         }
         catch (OperationCanceledException) { ShowCancellationOrTimeout(); }
         catch (Exception error) { ShowError(error); }
         finally
         {
-            if (!_committing && helper is { HasExited: false })
+            try
             {
-                try { helper.Kill(entireProcessTree: true); await helper.WaitForExitAsync(); }
-                catch (InvalidOperationException) { }
+                if (!_committing && helper is { HasExited: false })
+                {
+                    try { helper.Kill(entireProcessTree: true); await helper.WaitForExitAsync(); }
+                    catch (InvalidOperationException) { }
+                }
+                if (!_committing && App.Window is MainWindow window) await window.CancelPortableUpdatePreparationAsync();
             }
-            if (!_committing && App.Window is MainWindow window) await window.CancelPortableUpdatePreparationAsync();
-            helper?.Dispose();
-            EndOperation();
+            finally
+            {
+                try { helper?.Dispose(); }
+                finally
+                {
+                    try { EndOperation(); }
+                    finally
+                    {
+                        if (!_committing) loadingWindow?.SetPortableUpdateLoading(false);
+                    }
+                }
+            }
         }
     }
 

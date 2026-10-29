@@ -81,6 +81,25 @@
             </StackPanel>
         </Border>
 
+        <Border x:Name="PortableUpdateLoadingShell" Grid.RowSpan="2"
+                Visibility="Collapsed" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                IsHitTestVisible="True" AutomationProperties.AutomationId="PortableUpdateLoadingShell">
+            <Grid HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560"
+                  Padding="24" ColumnSpacing="12" AutomationProperties.LiveSetting="Polite">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ProgressRing x:Name="PortableUpdateLoadingRing" x:Uid="PortableUpdateLoadingRing" Width="32" Height="32"
+                              VerticalAlignment="Center" IsTabStop="True"
+                              AutomationProperties.AutomationId="PortableUpdateLoadingRing" />
+                <TextBlock x:Name="PortableUpdateLoadingText" Grid.Column="1" x:Uid="PortableUpdateLoadingText"
+                           Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap"
+                           VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite"
+                           AutomationProperties.AutomationId="PortableUpdateLoadingText" />
+            </Grid>
+        </Border>
+
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Modifiers="Control" Key="F" Invoked="SettingsSearchAccelerator_Invoked" />
         </Grid.KeyboardAccelerators>

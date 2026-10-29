@@ -24,6 +24,8 @@ public sealed partial class MainWindow : Window
     private const double SettingsSearchPanelHorizontalMargin = 64;
     private bool _restoreSearchTriggerFocusOnClose;
     private bool _settingsSearchResultSelected;
+    private bool _portableUpdateLoading;
+    private FrameworkElement? _portableUpdatePreviousFocus;
 
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hWnd);
@@ -157,11 +159,13 @@ public sealed partial class MainWindow : Window
     private void SettingsSearchAccelerator_Invoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
+        if (_portableUpdateLoading) return;
         ShowSettingsSearch();
     }
 
     private void ShowSettingsSearch()
     {
+        if (_portableUpdateLoading) return;
         if (Page?.CanSearchSettings != true) return;
         if (!SettingsSearchFlyout.IsOpen)
         {
@@ -202,6 +206,35 @@ public sealed partial class MainWindow : Window
         ? page.TryResolveUnsavedSettingsAsync() : Task.FromResult(true);
 
     internal bool CanRestartForUpdate => RootFrame.Content is MainPage page && page.CanRestartForPortableUpdate;
+    internal bool IsPortableUpdateLoading => _portableUpdateLoading;
+    internal void SetPortableUpdateLoading(bool isLoading)
+    {
+        _portableUpdateLoading = isLoading;
+        if (isLoading)
+        {
+            _portableUpdatePreviousFocus = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(WindowRoot.XamlRoot) as FrameworkElement;
+            if (SettingsSearchFlyout.IsOpen)
+            {
+                _restoreSearchTriggerFocusOnClose = false;
+                SettingsSearchFlyout.Hide();
+            }
+            PortableUpdateLoadingRing.IsActive = true;
+            PortableUpdateLoadingShell.Visibility = Visibility.Visible;
+            RootFrame.IsEnabled = false;
+            PortableUpdateLoadingRing.Focus(FocusState.Programmatic);
+        }
+        else
+        {
+            PortableUpdateLoadingShell.Visibility = Visibility.Collapsed;
+            PortableUpdateLoadingRing.IsActive = false;
+            RootFrame.IsEnabled = true;
+            if (_portableUpdatePreviousFocus is Control { IsEnabled: true, IsLoaded: true, Visibility: Visibility.Visible } previous)
+                previous.Focus(FocusState.Programmatic);
+            else
+                RootFrame.Focus(FocusState.Programmatic);
+            _portableUpdatePreviousFocus = null;
+        }
+    }
     internal Task ReloadAfterDataMaintenanceAsync() => RootFrame.Content is MainPage page
         ? page.ReloadAfterDataMaintenanceAsync() : Task.CompletedTask;
     internal Task<bool> PrepareForDataMaintenanceAsync() => RootFrame.Content is MainPage page

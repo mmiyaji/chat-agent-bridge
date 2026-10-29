@@ -55,6 +55,7 @@ public sealed class TrayService : IDisposable
 
     public void HideWindow()
     {
+        if (_window.IsPortableUpdateLoading) return;
         // A failed shell registration must never strand an invisible application.
         if (IsAvailable) _window.AppWindow.Hide();
     }
@@ -79,6 +80,7 @@ public sealed class TrayService : IDisposable
     {
         if (_allowClose || _native.SessionEnding) return;
         args.Cancel = true;
+        if (_window.IsPortableUpdateLoading) return;
         switch (CloseBehavior)
         {
             case WindowCloseBehavior.MoveToSystemTray when IsAvailable:
@@ -97,7 +99,7 @@ public sealed class TrayService : IDisposable
     // title bar is configured to hide the window immediately.
     public async Task ShowCloseConfirmationAsync()
     {
-        if (_closeConfirmationOpen || _disposed || _exitTask is not null)
+        if (_window.IsPortableUpdateLoading || _closeConfirmationOpen || _disposed || _exitTask is not null)
             return;
 
         _closeConfirmationOpen = true;
@@ -213,9 +215,32 @@ public sealed class TrayService : IDisposable
         }
     }
 
-    public Task ExitAsync() => _exitTask ??= ExitCoreAsync();
+    public Task ExitAsync()
+    {
+        if (_window.IsPortableUpdateLoading) return Task.CompletedTask;
+        return _exitTask ??= ExitCoreAsync();
+    }
 
-    private async Task ExitCoreAsync()
+    internal async Task ExitForPortableUpdateAsync()
+    {
+        if (_exitTask is not null)
+        {
+            await _exitTask;
+            if (!_allowClose) throw new InvalidOperationException("The update restart was canceled because settings could not be saved.");
+            return;
+        }
+
+        try
+        {
+            await (_exitTask = ExitCoreAsync(throwIfVetoed: true));
+        }
+        finally
+        {
+            if (!_allowClose) _exitTask = null;
+        }
+    }
+
+    private async Task ExitCoreAsync(bool throwIfVetoed = false)
     {
         // Publish the task before callbacks or a second close can re-enter.
         await Task.Yield();
@@ -224,6 +249,7 @@ public sealed class TrayService : IDisposable
             // A cancelled or failed save must not arm the shutdown path. A later
             // explicit exit can retry; hiding in the tray retains the draft.
             _exitTask = null;
+            if (throwIfVetoed) throw new InvalidOperationException("The update restart was canceled because settings could not be saved.");
             return;
         }
         try

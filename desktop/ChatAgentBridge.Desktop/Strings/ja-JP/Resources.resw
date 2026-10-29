@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <root>
+  <data name="PortableUpdateLoadingText.Text" xml:space="preserve"><value>更新を適用して再起動しています…</value></data>
+  <data name="PortableUpdateLoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>更新の進行状況</value></data>
   <data name="OpenSettingsSearch.Content" xml:space="preserve"><value>設定を検索</value></data>
   <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>設定を検索</value></data>
   <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>設定を検索（Ctrl+F）</value></data>
