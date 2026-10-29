@@ -310,8 +310,16 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [RelayCommand]
     private void OpenPendingApproval()
     {
-        var item = Requests.FirstOrDefault(request => request.State == "承認待ち");
-        if (item is not null) RevealRequest(item);
+        if (NewestPendingApproval() is { } item) RevealRequest(item);
+    }
+
+    private InboxItem? NewestPendingApproval() =>
+        Requests.Where(request => request.State == "承認待ち").MaxBy(request => request.ReceivedAt);
+
+    /// <summary>On opening the tab, shows the newest request waiting for approval unless the user already picked a conversation.</summary>
+    public void RevealNewestPendingIfIdle()
+    {
+        if (SelectedConversation is null && NewestPendingApproval() is { } item) RevealRequest(item);
     }
 
     private void NotifyPendingApprovalPresentation()
