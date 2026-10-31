@@ -88,6 +88,14 @@ function AssertInlinePreview {
  Assert ([Math]::Abs($combo.Bottom-$button.Bottom) -le 4*$scale) "Preview alignment delta: $([Math]::Abs($combo.Bottom-$button.Bottom)); combo=$combo button=$button scale=$scale"
  Assert ($button.Left -ge $combo.Right+4*$scale) 'Preview button overlaps the selection field.'
 }
+function AssertOverviewCardHeights {
+ foreach($pair in @(@('OverviewAgentTile','OverviewConnectionTile'),@('OverviewChatTile','OverviewCliTile'),@('OverviewStartupTile','OverviewAutoConnectTile'))) {
+  $left=(Element $pair[0]).Current.BoundingRectangle
+  $right=(Element $pair[1]).Current.BoundingRectangle
+  Assert ([Math]::Abs($left.Height-$right.Height) -le 1) "Overview card heights differ: $($pair -join ', ')"
+  Assert ([Math]::Abs($left.Top-$right.Top) -le 1) 'Overview card row tops differ.'
+ }
+}
 function AssertUpdateBadge([bool]$Expanded) {
  Wait { Visible 'NavAboutUpdateBadge' } 'cached update badge'
  $badge=(Element 'NavAboutUpdateBadge').Current.BoundingRectangle
@@ -118,6 +126,7 @@ try {
   $start.ArgumentList.Add('--data-dir');$start.ArgumentList.Add($data)
   $app=[Diagnostics.Process]::Start($start)
   Element 'NavConnections' | Out-Null; Size 1160
+  AssertOverviewCardHeights; Capture "$scenario-overview-cards"
   AssertUpdateBadge $true; Capture "$scenario-badge-expanded"
   Invoke 'TogglePaneButton'; Start-Sleep -Milliseconds 300
   AssertUpdateBadge $false; Capture "$scenario-badge-compact"
@@ -127,7 +136,14 @@ try {
   ScrollTo 'ChatProgressDetailHelpNotice'; ScrollTo 'ProgressPreviewButton'; Start-Sleep -Milliseconds 200
   AssertInlinePreview; Capture "$scenario-settings-inline"
   if($LayoutOnly) {
+   Invoke 'NavOverview'; Size 500; AssertOverviewCardHeights; Capture "$scenario-overview-cards-narrow"
+   Size 1160; Invoke 'NavConnections'; if(Visible 'ConnectionScopeCommon') { Invoke 'ConnectionScopeCommon' }
    Size 500; ScrollTo 'ChatProgressDetailHelpNotice'; ScrollTo 'ProgressPreviewButton'; AssertInlinePreview; Capture "$scenario-settings-inline-narrow"
+   [PreviewSmokeNative]::SetForegroundWindow($app.MainWindowHandle) | Out-Null
+   Invoke 'ProgressPreviewButton'; Wait { Visible 'ProgressPreviewDismiss' } 'preview X button'
+   $dismiss=Element 'ProgressPreviewDismiss'; Assert (-not [string]::IsNullOrWhiteSpace($dismiss.Current.Name)) 'Preview X has no accessible name.'
+   Capture "$scenario-preview-close-x"; Invoke 'ProgressPreviewDismiss'; Wait { -not (Visible 'ProgressPreviewDismiss') } 'X closes preview'
+   Invoke 'ProgressPreviewButton'; Wait { Visible 'ProgressPreviewClose' } 'footer close button'; Invoke 'ProgressPreviewClose'; Wait { -not (Visible 'ProgressPreviewDismiss') } 'footer closes preview'
    Size 1160; Invoke 'NavAbout'; Invoke 'AboutExit'; Element 'WindowCloseConfirmation' | Out-Null; Invoke 'PrimaryButton'
    Assert ($app.WaitForExit(15000)) 'App did not exit normally.'; $app=$null
    $checks.Add(@{name=$scenario;passed=$true;layoutOnly=$true}); Write-Output "PASS $scenario inline action, narrow layout, update badge expanded/compact"; continue

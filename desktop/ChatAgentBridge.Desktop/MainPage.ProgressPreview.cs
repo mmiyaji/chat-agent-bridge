@@ -12,6 +12,7 @@ public sealed partial class MainPage
     private string _progressPreviewStage = "received";
     private void ProgressPreviewFlyout_Opening(object? sender, object e)
     {
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(ProgressPreviewDismissButton, MrtText.Get("ProgressPreviewClose.Content"));
         _progressPreviewTimer.Stop();
         ProgressPreviewLevel.SelectedValue = NormalizePreviewLevel(ViewModel.ChatProgressDetail);
         ProgressPreviewStage("received");
