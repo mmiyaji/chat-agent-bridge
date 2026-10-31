@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][string]$AppDirectory)
+param([Parameter(Mandatory)][string]$AppDirectory, [switch]$MigrationFixture)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes,System.Windows.Forms,System.Drawing
 Add-Type @'
@@ -101,7 +101,7 @@ function StartScenario([string]$Name,[string]$Language,[string]$Theme,[bool]$Onb
   Json (Join-Path $data 'language.json') @{Language=$Language}
   Json (Join-Path $data 'appearance.json') @{Theme=$Theme}
   # Production binaries must ignore a leftover or externally created fixture file.
-  Json (Join-Path $data 'startup-fixture.json') @{mode='page-error';timeoutSeconds=1}
+  Json (Join-Path $data 'startup-fixture.json') @{mode=$(if($MigrationFixture){'migration-slow'}else{'page-error'});timeoutSeconds=1}
   Json (Join-Path $data 'tips.json') @{Seen=@('chat-connect')}
   $candidate=@{version='9.9.9';tag='v9.9.9';assetName='ChatAgentBridge.Portable-9.9.9-win-x64.zip';downloadUri='https://github.com/mmiyaji/chat-agent-bridge/releases/download/v9.9.9/ChatAgentBridge.Portable-9.9.9-win-x64.zip';sha256=('a'*64);size=1234;releasePage='https://github.com/mmiyaji/chat-agent-bridge/releases/tag/v9.9.9'}
   Json (Join-Path $data 'portable-update.json') @{schemaVersion=1;automaticChecksEnabled=$false;includePrereleases=$false;availableRelease=$candidate}
@@ -122,10 +122,17 @@ function StartScenario([string]$Name,[string]$Language,[string]$Theme,[bool]$Onb
   Start-Sleep -Milliseconds 25
  }
  Assert $pixelSeen 'Centered startup icon was not observed.'
+ if($MigrationFixture) {
+  $migrationText=if($Language -eq 'ja'){'データを更新しています'}else{'Updating local data'}
+  Wait { $m=Find 'StartupSplashMessage'; $m -and -not $m.Current.IsOffscreen -and $m.Current.Name -eq $migrationText } 'migration text in shared splash'
+  Assert (-not (Visible 'StartupMigrationProgress')) 'Legacy migration loader appeared above the splash.'
+  Assert (-not (Visible 'StartupMigrationError')) 'Migration error overlay appeared during a healthy migration.'
+  Capture "$Name-migration-shared-splash"
+ }
  $message=Find 'StartupSplashMessage'
  if($message -and -not $message.Current.IsOffscreen) { $uiSeen=$true; $splashMessage=$message.Current.Name }
  if($uiSeen) {
-  $expected=if($Language -eq 'ja'){'設定と会話を読み込んでいます'}else{'Loading settings and conversations'}
+  $expected=if($MigrationFixture){$migrationText}elseif($Language -eq 'ja'){'設定と会話を読み込んでいます'}else{'Loading settings and conversations'}
   Assert ($splashMessage -eq $expected) "Unexpected localized splash message: '$splashMessage' (expected '$expected')."
  }
  $target=if($Onboarding){'OnboardingTitle'}else{'NavOverview'}

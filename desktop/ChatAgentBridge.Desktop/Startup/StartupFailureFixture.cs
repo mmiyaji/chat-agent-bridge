@@ -1,6 +1,7 @@
 #if CAB_STARTUP_FIXTURE
 using System.Text.Json;
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.Migrations;
 
 namespace ChatAgentBridge_Desktop.Startup;
 
@@ -32,7 +33,14 @@ internal static class StartupFailureFixture
         _ => Task.CompletedTask
     };
 
-    internal static Task BeforeMigrationAsync() => Mode == "migration-hang"
-        ? Task.Delay(System.Threading.Timeout.Infinite) : Task.CompletedTask;
+    internal static async Task BeforeMigrationAsync(IProgress<MigrationProgress> progress)
+    {
+        if (Mode == "migration-hang") await Task.Delay(System.Threading.Timeout.Infinite);
+        if (Mode == "migration-slow")
+        {
+            progress.Report(new MigrationProgress("isolated-slow-migration", 1, 1, MigrationPhase.Running));
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+    }
 }
 #endif

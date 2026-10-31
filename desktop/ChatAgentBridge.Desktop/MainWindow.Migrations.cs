@@ -41,12 +41,9 @@ public sealed partial class MainWindow
         var creatingPage = false;
         StartupMigrationRetry.IsEnabled = false;
         StartupMigrationError.IsOpen = false;
-        StartupMigrationRing.IsActive = true;
-        StartupMigrationLoading.Visibility = Visibility.Visible;
         StartupMigrationTitle.Visibility = Visibility.Collapsed;
         StartupMigrationActions.Visibility = Visibility.Collapsed;
-        StartupMigrationProgress.Text = DesktopText.Get("MigrationChecking");
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(StartupMigrationRing, StartupMigrationProgress.Text);
+        StartupSplashMessage.Text = DesktopText.Get("StartupLoading");
         StartupMigrationExit.Content = DesktopText.Get("MigrationExit");
         StartupMigrationRetry.Content = DesktopText.Get("MigrationRetry");
         try
@@ -56,23 +53,16 @@ public sealed partial class MainWindow
             var progress = new Progress<MigrationProgress>(value =>
             {
                 if (token.IsCancellationRequested || _startupAttemptFailed || RootFrame.Content is MainPage) return;
-                StartupMigrationShell.Visibility = Visibility.Visible;
-                StartupMigrationProgress.Text = DesktopText.Get("MigrationTitle");
-                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(StartupMigrationRing, StartupMigrationProgress.Text);
+                StartupSplashMessage.Text = DesktopText.Get("MigrationTitle");
             });
             var migration = new DataMigrationCoordinator(new SettingsStore().DirectoryPath, ApplicationDataMigrations.Create());
 #if CAB_STARTUP_FIXTURE
-            await Startup.StartupFailureFixture.BeforeMigrationAsync().WaitAsync(token);
+            await Startup.StartupFailureFixture.BeforeMigrationAsync(progress).WaitAsync(token);
 #endif
             var running = migration.RunAsync(progress, token);
-            // Fast checks never flash an overlay. Slow preflight/validation still has feedback.
-            if (await Task.WhenAny(running, Task.Delay(200, token)) != running &&
-                !token.IsCancellationRequested)
-                StartupMigrationShell.Visibility = Visibility.Visible;
             await running.WaitAsync(token);
             token.ThrowIfCancellationRequested();
-            StartupMigrationShell.Visibility = Visibility.Collapsed;
-            StartupMigrationRing.IsActive = false;
+            StartupSplashMessage.Text = DesktopText.Get("StartupLoading");
             creatingPage = true;
             if (!RootFrame.Navigate(typeof(MainPage))) throw new InvalidOperationException("Main page navigation failed.");
             if (Page is { } page)
@@ -118,8 +108,6 @@ public sealed partial class MainWindow
         RootFrame.Visibility = Visibility.Collapsed;
         RootFrame.IsEnabled = false;
         StartupMigrationShell.Visibility = Visibility.Visible;
-        StartupMigrationRing.IsActive = false;
-        StartupMigrationLoading.Visibility = Visibility.Collapsed;
         StartupMigrationTitle.Visibility = Visibility.Visible;
         StartupMigrationActions.Visibility = Visibility.Visible;
         StartupMigrationTitle.Text = DesktopText.Get(title);
