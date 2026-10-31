@@ -8,7 +8,7 @@ using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Transports;
 
-public sealed partial class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatProgressLifecycleTransport, IChatFileTransport, IChatIncomingFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatConnectionNotifications, IChatLiveAccessSettings
+public sealed partial class MattermostWebSocketTransport : IChatTransport, IChatProgressTransport, IChatProgressLifecycleTransport, IChatFileTransport, IChatIncomingFileTransport, IChatConnectionEvents, IChatReconnectionEvents, IChatConnectionNotifications, IChatLiveAccessSettings, IChatActionTransport
 {
     public event Action? Connected;
     public event Action<ChatReconnectionStatus>? ReconnectionStatusChanged;
@@ -70,6 +70,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
             _fileUploadConnected = false;
             Interlocked.Increment(ref _fileUploadConnectionGeneration);
             await ClearLiveProgressPostsAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+            await ClearPendingActionsAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
             ObjectDisposedException.ThrowIf(_disposed, this);
             _reconnectAttempt = 0;
             ArgumentNullException.ThrowIfNull(onRequest);
@@ -196,6 +197,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
             if (!ChatConnectionPolicy.Matches("mattermost", currentSettings, settings)) continue;
             if (eventName.GetString() == "reaction_added")
             {
+                _ = ProcessActionReactionAsync(envelope, currentSettings);
                 await ProcessStopReactionAsync(envelope, currentSettings, onRequest, cancellationToken).ConfigureAwait(false);
                 continue;
             }
@@ -438,6 +440,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
             _fileUploadConnected = false;
             Interlocked.Increment(ref _fileUploadConnectionGeneration);
             await ClearLiveProgressPostsAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+            await ClearPendingActionsAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
             _http?.Dispose();
             if (_fileUploadHttp is not null && !ReferenceEquals(_fileUploadHttp, _http)) _fileUploadHttp.Dispose();
         }

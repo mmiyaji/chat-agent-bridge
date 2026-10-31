@@ -130,6 +130,7 @@ public partial class MainPageViewModel
         AutoApproveSwitchCommands = settings.AutoApproveSwitchCommands;
         ChatResultMode = settings.ChatResultMode;
         ChatFollowUpMode = settings.ChatFollowUpMode;
+        ChatProgressDetail = settings.ChatProgressDetail;
         FileAttachmentApprovalMode = settings.FileAttachmentApprovalMode;
         FileAttachmentMaxSizeMb = settings.FileAttachmentMaxSizeMb;
         FileAttachmentMaxCount = settings.FileAttachmentMaxCount;

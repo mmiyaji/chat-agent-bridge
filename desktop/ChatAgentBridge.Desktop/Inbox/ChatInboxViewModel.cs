@@ -310,8 +310,16 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [RelayCommand]
     private void OpenPendingApproval()
     {
-        var item = Requests.FirstOrDefault(request => request.State == "承認待ち");
-        if (item is not null) RevealRequest(item);
+        if (NewestPendingApproval() is { } item) RevealRequest(item);
+    }
+
+    private InboxItem? NewestPendingApproval() =>
+        Requests.Where(request => request.State == "承認待ち").MaxBy(request => request.ReceivedAt);
+
+    /// <summary>On opening the tab, shows the newest request waiting for approval unless the user already picked a conversation.</summary>
+    public void RevealNewestPendingIfIdle()
+    {
+        if (SelectedConversation is null && NewestPendingApproval() is { } item) RevealRequest(item);
     }
 
     private void NotifyPendingApprovalPresentation()
@@ -923,6 +931,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var token = _execution.Token;
             if (!await CheckAccessAsync(item, token)) return;
             // Automatic approval reaches switch commands only when the user opted in; it skips the dialog like a notification approval.
+            if (WorkspaceChatCommand.TryParseWorktree(item.Prompt, out var requestedWorktree))
+            {
+                await ChangeWorkspaceAsync(item, "", approvedByNotification, approvedAutomatically, token, requestedWorktree);
+                return;
+            }
             if (WorkspaceChatCommand.TryParse(item.Prompt, out var requestedWorkspace))
             {
                 await ChangeWorkspaceAsync(item, requestedWorkspace, approvedByNotification, approvedAutomatically, token);
@@ -956,7 +969,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.SessionLabel = binding is null ? DesktopText.Get("InboxNewConversation") : DesktopText.Get("InboxContinueSession", binding.SessionId);
             item.SessionLabel += DesktopText.Get("InboxSessionModel", requestedModel ?? DesktopText.Get("CliDefault"), requestedEffort ?? DesktopText.Get("CliDefault"));
             item.SessionLabel += DesktopText.Get("InboxConversationOwner", item.Request.UserId);
-            item.SessionLabel += DesktopText.Get("InboxSessionPolicy", ApprovalLabel(effectiveSettings.ChatApprovalMode), ResultLabel(effectiveSettings.ChatResultMode), PermissionLabel(effectiveSettings.AgentPermissionMode));
+            item.SessionLabel += DesktopText.Get("InboxSessionPolicy", ApprovalLabel(effectiveSettings.ChatApprovalMode), ResultLabel(effectiveSettings.ChatResultMode), PermissionDisplay(effectiveSettings));
             if (!approvedByNotification && !approvedAutomatically && (ConfirmAsync is null || !await ConfirmAsync(item, token))) return;
             if (item.State != "承認待ち" || token.IsCancellationRequested) return;
             if (!await CheckAccessAsync(item, token)) return;
@@ -982,7 +995,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (!await CheckAccessAsync(item, token)) return;
             var agentPrompt = FileAttachmentAgentPrompt.Build(incomingFiles?.BuildPrompt(item.Request.Text) ?? item.Request.Text,
                 item.AttachmentSettingsAtStart ?? effectiveSettings, attachmentBefore is not null);
-            var progress = item.LiveOutput.Begin();
+            agentPrompt = await WithChannelMemoryAsync(item, agentPrompt, token);
+            var progress = TapActivity(item, item.LiveOutput.Begin());
             NotifyActiveRequestProperties();
             AgentRunResult result;
             try
@@ -1009,6 +1023,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (needsLogin)
                 output = DesktopText.Get("InboxClaudeLoginInstructions") + Environment.NewLine + Environment.NewLine + output;
             item.Usage = UsageUi.UsageSummaryFormatter.Format(result.Usage, result.Metrics);
+            item.ProgressUsage = FormatProgressUsage(result.Usage, ChatProgressDetail.Normalize(item.Settings.ChatProgressDetail) != ChatProgressDetail.Detailed);
             if (result.HasOutputTruncated) output += Environment.NewLine + DesktopText.Get("InboxOutputTruncated");
             item.FullOutput = BoundOutput(output);
             // Keep the reply preview and displayed output bounded for the 100-item inbox cap.
@@ -1336,7 +1351,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             allowed = fingerprint == ConversationExecutionPolicy.GetFingerprint(key, effective);
             if (allowed && ReferenceEquals(_automaticallyApprovedItem, item))
                 allowed = !await _sessions.RequiresApprovalAsync(key, effective, binding,
-                    switchCommand: WorkspaceChatCommand.TryParse(item.Prompt, out _) || AgentChatCommand.TryParse(item.Prompt, out _), token: token);
+                    switchCommand: WorkspaceChatCommand.IsWorkspaceCommand(item.Prompt) || AgentChatCommand.TryParse(item.Prompt, out _), token: token);
         }
         if (allowed) return true;
         App.DispatcherQueue.TryEnqueue(() =>
@@ -1407,7 +1422,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 if (_closing || !IsConnectionConfirmed || IsExecuting || IsConnectionActionInProgress) break;
                 if (item.State != "承認待ち" || _automaticallyAttempted.Contains(item)) continue;
                 if (!await CheckAccessAsync(item, _connection?.Token ?? CancellationToken.None)) continue;
-                var switchesConversation = WorkspaceChatCommand.TryParse(item.Prompt, out _) || AgentChatCommand.TryParse(item.Prompt, out _);
+                var switchesConversation = WorkspaceChatCommand.IsWorkspaceCommand(item.Prompt) || AgentChatCommand.TryParse(item.Prompt, out _);
                 var key = CreateSessionKey(item);
                 var binding = await _sessions.FindExecutionBindingAsync(key);
                 var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, await _store.LoadAsync()), binding);

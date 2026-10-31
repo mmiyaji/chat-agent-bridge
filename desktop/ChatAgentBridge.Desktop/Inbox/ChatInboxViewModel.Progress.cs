@@ -1,7 +1,51 @@
+using System.Globalization;
+using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.Localization;
 using ChatAgentBridge.Transports;
 using ChatAgentBridge_Desktop.Localization;
 
 namespace ChatAgentBridge_Desktop.Inbox;
+
+public sealed partial class InboxItem
+{
+    private const int MaxRecentActivity = 4;
+    private readonly object _activityGate = new();
+    private readonly List<string> _recentActivity = new();
+    private int _activityCount;
+
+    // Set before the terminal progress edit; both stay null when the run produced nothing to report.
+    internal string? ProgressUsage { get; set; }
+    internal string? ProgressPermissionText { get; set; }
+    // Whether this post carries the one-time reply/stop hints; decided on the first render so later edits keep them.
+    internal bool? ProgressHints { get; set; }
+
+    internal void ResetActivity()
+    {
+        lock (_activityGate) { _recentActivity.Clear(); _activityCount = 0; }
+    }
+
+    internal void AddActivity(string line)
+    {
+        lock (_activityGate)
+        {
+            // Claude reports a tool by name when it starts and again with its input; keep only the detailed line.
+            if (_recentActivity.Count > 0 && _recentActivity[^1] is var last &&
+                (line == last || line.StartsWith(last + ":", StringComparison.Ordinal)))
+            {
+                _recentActivity[^1] = line;
+                return;
+            }
+            _activityCount++;
+            if (_recentActivity.Count == MaxRecentActivity) _recentActivity.RemoveAt(0);
+            _recentActivity.Add(line);
+        }
+    }
+
+    internal (int Count, string[] Recent) SnapshotActivity()
+    {
+        lock (_activityGate) return (_activityCount, _recentActivity.ToArray());
+    }
+}
 
 public sealed partial class ChatInboxViewModel
 {
@@ -9,7 +53,7 @@ public sealed partial class ChatInboxViewModel
     {
         if (item.Transport is not IChatProgressTransport) return;
         item.Progress = new ChatProgressReporter(item.Transport, item.Request,
-            (state, elapsed) => FormatProgress(state, elapsed, item.Transport is MattermostWebSocketTransport),
+            (state, elapsed) => FormatProgress(item, state, elapsed, item.Transport is MattermostWebSocketTransport),
             token => CanPublishProgressAsync(item, token),
             _ => App.DispatcherQueue.TryEnqueue(() => ProgressNotice = DesktopText.Get("ProgressNoticeFailed")));
         item.ReceiptNotification = item.Progress.ReceiveAsync();
@@ -22,8 +66,22 @@ public sealed partial class ChatInboxViewModel
         return HasAccess(current, item.Request, item.Settings);
     }
 
-    private static string FormatProgress(ChatProgressState state, TimeSpan elapsed, bool reactionCancellation)
+    private readonly HashSet<string> _hintedRequesters = new(StringComparer.Ordinal);
+
+    // Reply and stop hints only teach something the first time; after that they are noise in a daily-use channel.
+    private bool ShowProgressHints(InboxItem item)
     {
+        lock (_hintedRequesters)
+        {
+            if (item.ProgressHints is { } known) return known;
+            if (_hintedRequesters.Count >= 500) _hintedRequesters.Clear();
+            return (item.ProgressHints = _hintedRequesters.Add($"{item.Request.Provider}|{item.Request.UserId}")).Value;
+        }
+    }
+
+    private string FormatProgress(InboxItem item, ChatProgressState state, TimeSpan elapsed, bool reactionCancellation)
+    {
+        var level = ChatProgressDetail.Normalize(item.Settings.ChatProgressDetail);
         var key = state switch
         {
             ChatProgressState.Received => "ProgressReceived",
@@ -38,12 +96,151 @@ public sealed partial class ChatInboxViewModel
             ChatProgressState.FollowUpUncertain => "ProgressFollowUpUncertain",
             _ => "ProgressReceived"
         };
+        var runLifecycle = state is ChatProgressState.Received or ChatProgressState.Running
+            or ChatProgressState.Completed or ChatProgressState.Failed or ChatProgressState.Cancelled;
+        // Only the run lifecycle has a short form; rejections, disconnects and follow-up outcomes stay explicit.
+        if (level != ChatProgressDetail.Detailed && runLifecycle) key += "Short";
         var seconds = Math.Max(0, (long)elapsed.TotalSeconds);
         var duration = $"{seconds / 60:00}:{seconds % 60:00}";
-        var text = DesktopText.Get(key, duration);
-        return reactionCancellation && state is ChatProgressState.Received or ChatProgressState.Running
-            ? text + Environment.NewLine + DesktopText.Get("ProgressReactionCancelHint")
-            : text;
+        var headline = DesktopText.Get(key, duration);
+        if (level == ChatProgressDetail.Minimal || !runLifecycle && level != ChatProgressDetail.Detailed) return headline;
+
+        var (count, recent) = item.SnapshotActivity();
+        var terminal = state is ChatProgressState.Completed or ChatProgressState.Failed or ChatProgressState.Cancelled;
+        var effective = item.EffectiveSettings;
+        var lines = new List<string>();
+
+        if (level == ChatProgressDetail.Standard)
+        {
+            // One line that is rewritten in place; a finished request keeps only what the run produced.
+            var parts = new List<string> { headline };
+            if (count > 0) parts.Add(DesktopText.Get("ProgressActivityCountShort", count));
+            if (state is ChatProgressState.Completed or ChatProgressState.Failed && !string.IsNullOrEmpty(item.ProgressUsage))
+                parts.Add(item.ProgressUsage);
+            lines.Add(string.Join(" · ", parts));
+            // The permission is only worth a line when the agent runs without asking.
+            if (state == ChatProgressState.Running && effective is not null &&
+                PermissionDescribe(effective) is { Unattended: true } warning)
+                lines.Add(DesktopText.Get("ProgressPermissionLine", warning.Text));
+        }
+        else
+        {
+            lines.Add(headline);
+            if (effective is not null && runLifecycle && state != ChatProgressState.Received)
+            {
+                lines.Add(DesktopText.Get("ProgressDetails", CleanStatusField(AgentDisplayName(effective), 60),
+                    CleanStatusField(effective.AgentModel ?? DesktopText.Get("CliDefault"), 100),
+                    item.ProgressPermissionText ??= PermissionDisplay(effective)));
+                // Recent tool and command lines are only echoed where results are already shared in chat.
+                if (state == ChatProgressState.Running && count > 0 && effective.ChatResultMode == "auto")
+                    lines.AddRange(recent.Select(line => "• " + line));
+                else if (count > 0)
+                    lines.Add(DesktopText.Get("ProgressActivityCount", count));
+                if (state is ChatProgressState.Completed or ChatProgressState.Failed && !string.IsNullOrEmpty(item.ProgressUsage))
+                    lines.Add(item.ProgressUsage);
+            }
+        }
+
+        if (!terminal && (level == ChatProgressDetail.Detailed || ShowProgressHints(item)))
+        {
+            if (state == ChatProgressState.Running && effective is not null)
+            {
+                var scope = CreateSessionKey(item);
+                lines.Add(DesktopText.Get(ChatFollowUpPolicy.CanSteer(item.Settings, effective, scope, scope)
+                    ? "ProgressFollowUpSteerHint" : "ProgressFollowUpQueueHint"));
+            }
+            if (reactionCancellation && state is ChatProgressState.Received or ChatProgressState.Running)
+                lines.Add(DesktopText.Get("ProgressReactionCancelHint"));
+        }
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    /// <summary>Describes the permission an agent run really gets, resolving "inherit" against the provider's own settings.</summary>
+    private static string PermissionDisplay(BridgeSettings settings) => PermissionDescribe(settings).Text;
+
+    private static (string Text, bool Unattended) PermissionDescribe(BridgeSettings settings)
+    {
+        EffectivePermissionInfo info;
+        try { info = EffectivePermission.Resolve(settings); }
+        catch (Exception) { return (PermissionLabel(settings.AgentPermissionMode), false); }
+        var text = PermissionLabel(info.ConfiguredMode);
+        if (info is { ConfiguredMode: "inherit", NativeMode: { } native })
+        {
+            var agent = CleanStatusField(AgentDisplayName(settings), 60);
+            var source = info.Source switch
+            {
+                PermissionSource.ProjectLocalSettings => DesktopText.Get("PermissionSourceProjectLocal", agent),
+                PermissionSource.ProjectSettings => DesktopText.Get("PermissionSourceProject", agent),
+                PermissionSource.UserSettings => DesktopText.Get("PermissionSourceUser", agent),
+                _ => DesktopText.Get("CliDefault")
+            };
+            text = DesktopText.Get("PermissionInheritResolved", source, CleanStatusField(native, 64));
+            if (info.Unattended) text += DesktopText.Get("PermissionUnattendedNote");
+        }
+        return (info.Unattended ? DesktopText.Get("PermissionUnattendedMarker", text) : text, info.Unattended);
+    }
+
+    private static string? FormatProgressUsage(AgentUsage? usage, bool compact = false)
+    {
+        // Thread totals would be cumulative, not what this chat request used.
+        if (usage is null || usage.Scope is not ("turn" or "last-request") ||
+            usage.TotalInputTokens is null && usage.OutputTokens is null) return null;
+        static string Count(long? value) => value is long count ? count.ToString("N0", CultureInfo.CurrentCulture) : CoreText.Get("NotReported");
+        var text = DesktopText.Get(compact ? "ProgressUsageShort" : "ProgressUsage", Count(usage.TotalInputTokens), Count(usage.OutputTokens));
+        return AgentCostEstimator.Estimate(usage) is { } cost
+            ? text + DesktopText.Get("ProgressUsageCost", FormatProgressCost(cost)) : text;
+    }
+
+    private static string FormatProgressCost(AgentCostEstimate estimate)
+    {
+        static string Usd(decimal amount) => amount == 0 ? "$0" : Math.Abs(amount) < 0.000001m ? "<$0.000001"
+            : "$" + amount.ToString("0.######", CultureInfo.InvariantCulture);
+        var minimum = Usd(estimate.MinUsd);
+        var maximum = Usd(estimate.MaxUsd);
+        if (estimate.MinUsd == estimate.MaxUsd) return minimum;
+        if (minimum == maximum) return minimum == "<$0.000001" ? minimum : "≈" + maximum;
+        return DesktopText.Get("UsageCostRange", minimum, maximum);
+    }
+
+    private static IProgress<AgentRunProgress> TapActivity(InboxItem item, IProgress<AgentRunProgress> inner)
+    {
+        item.ResetActivity();
+        return new ActivityTap(item, inner);
+    }
+
+    private sealed class ActivityTap(InboxItem item, IProgress<AgentRunProgress> inner) : IProgress<AgentRunProgress>
+    {
+        public void Report(AgentRunProgress value)
+        {
+            inner.Report(value);
+            try
+            {
+                if (value is not { Stream: "activity", Text: { Length: > 0 } text }) return;
+                var line = text.Split('\n').Select(part => part.Trim()).FirstOrDefault(part => part.Length > 0);
+                if (line is null || !IsToolOrCommandActivity(line)) return;
+                item.AddActivity(CleanStatusField(line, 120));
+                item.Progress?.RequestUpdate();
+            }
+            catch (Exception) { /* Chat progress must never disturb the agent run. */ }
+        }
+    }
+
+    /// <summary>Keeps only "Using tool" and "Running command" lines, not assistant prose or tool output.</summary>
+    private static bool IsToolOrCommandActivity(string line)
+    {
+        const string marker = "\u0001";
+        foreach (var key in new[] { "ProgressUsingTool", "ProgressRunningCommand" })
+        {
+            var template = CoreText.Get(key, marker);
+            var at = template.IndexOf(marker, StringComparison.Ordinal);
+            if (at < 0) continue;
+            var prefix = template[..at];
+            var suffix = template[(at + 1)..];
+            if (line.StartsWith(prefix, StringComparison.Ordinal) &&
+                (suffix.Length == 0 || line.IndexOf(suffix, prefix.Length, StringComparison.Ordinal) >= 0))
+                return true;
+        }
+        return line == CoreText.Get("ProgressUsingGenericTool");
     }
 
     private static async Task StartProgressAsync(InboxItem item)

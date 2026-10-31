@@ -30,7 +30,7 @@
   <data name="ChatControlStatusEmpty" xml:space="preserve"><value>このスレッドに自分の実行中・待機中の依頼はありません。接続: {0}。</value></data>
   <data name="ChatControlStatusApproval" xml:space="preserve"><value>承認待ち</value></data>
   <data name="ChatControlStatusQueued" xml:space="preserve"><value>自動実行待ち</value></data>
-  <data name="ChatControlStatusRow" xml:space="preserve"><value>• {0} · {1} · モデル {2} · {3}</value></data>
+  <data name="ChatControlStatusRow" xml:space="preserve"><value>• {0} · {1} · モデル {2} · {3} · 権限 {4}</value></data>
   <data name="ChatControlStatusMore" xml:space="preserve"><value>ほか{0}件</value></data>
   <data name="ChatControlAgentCodex" xml:space="preserve"><value>Codex</value></data>
   <data name="ChatControlAgentClaude" xml:space="preserve"><value>Claude Code</value></data>
@@ -72,8 +72,28 @@
   <data name="InboxReconnecting" xml:space="preserve"><value>接続が切れました。自動で再接続します（{0}回目、{1}秒後）。接続が戻るまで新しい実行を待機します。</value></data>
   <data name="InboxReconnected" xml:space="preserve"><value>再接続しました。許可ユーザーの依頼を待っています。切断中に送った依頼は再投稿してください。</value></data>
   <data name="ProgressReceived" xml:space="preserve"><value>📥 依頼を受け付けました。PC側の承認または実行開始を待っています。</value></data>
-  <data name="ProgressRunning" xml:space="preserve"><value>⏳ AIエージェントが実行中です。経過 {0}。実行中は約30秒ごとにこの投稿を更新します。</value></data>
+  <data name="ProgressRunning" xml:space="preserve"><value>⏳ AIエージェントが実行中です。経過 {0}。</value></data>
   <data name="ProgressReactionCancelHint" xml:space="preserve"><value>中断するには、下の🛑を押してください（依頼者本人のみ）。表示されない場合は、このスレッドに `!cab stop` と返信できます。</value></data>
+  <data name="ProgressReceivedShort" xml:space="preserve"><value>📥 受付済み・開始待ち</value></data>
+  <data name="ProgressRunningShort" xml:space="preserve"><value>⏳ 実行中 {0}</value></data>
+  <data name="ProgressCompletedShort" xml:space="preserve"><value>✅ 完了 {0}</value></data>
+  <data name="ProgressFailedShort" xml:space="preserve"><value>❌ 失敗 {0} · PC側で確認</value></data>
+  <data name="ProgressCancelledShort" xml:space="preserve"><value>⏹ 停止 {0}</value></data>
+  <data name="ProgressActivityCountShort" xml:space="preserve"><value>操作{0}件</value></data>
+  <data name="ProgressUsageShort" xml:space="preserve"><value>📊 入力{0} · 出力{1}</value></data>
+  <data name="ProgressPermissionLine" xml:space="preserve"><value>権限: {0}</value></data>
+  <data name="ProgressDetails" xml:space="preserve"><value>🤖 {0} · モデル {1} · 権限 {2}</value></data>
+  <data name="ProgressActivityCount" xml:space="preserve"><value>操作 {0}件</value></data>
+  <data name="ProgressUsage" xml:space="preserve"><value>📊 トークン 入力 {0} / 出力 {1}</value></data>
+  <data name="ProgressUsageCost" xml:space="preserve"><value>・推定費用 {0}</value></data>
+  <data name="ProgressFollowUpSteerHint" xml:space="preserve"><value>返信すると実行中の作業に追加指示として渡します</value></data>
+  <data name="ProgressFollowUpQueueHint" xml:space="preserve"><value>返信は今の実行が終わった後に順番に処理します</value></data>
+  <data name="PermissionSourceProjectLocal" xml:space="preserve"><value>{0}ローカルプロジェクト設定</value></data>
+  <data name="PermissionSourceProject" xml:space="preserve"><value>{0}プロジェクト設定</value></data>
+  <data name="PermissionSourceUser" xml:space="preserve"><value>{0}設定</value></data>
+  <data name="PermissionInheritResolved" xml:space="preserve"><value>継承 → {0}: {1}</value></data>
+  <data name="PermissionUnattendedNote" xml:space="preserve"><value>（確認なしで実行）</value></data>
+  <data name="PermissionUnattendedMarker" xml:space="preserve"><value>⚠ {0}</value></data>
   <data name="ProgressCompleted" xml:space="preserve"><value>✅ 完了しました。経過 {0}。</value></data>
   <data name="ProgressFailed" xml:space="preserve"><value>❌ 実行または記録に失敗しました。経過 {0}。詳細はPC側で確認してください。</value></data>
   <data name="ProgressCancelled" xml:space="preserve"><value>⏹ 実行を停止しました。経過 {0}。</value></data>
@@ -500,7 +520,25 @@
   <data name="ChatInputTextReply" xml:space="preserve"><value>回答: !cab answer {0} {1} 回答内容</value></data>
   <data name="ChatInputOptionReply" xml:space="preserve"><value>選択肢の番号で回答: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>別の回答: !cab answer {0} {1} other 回答内容</value></data>
-  <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:&#10;&gt; !cab &lt;依頼&gt; — エージェントに依頼する&#10;&gt; !cab command / !cab commands / !cab help — この一覧を表示する&#10;&gt; !cab agent — 登録済みCLI接続と要約あり／なしの切り替え方法を表示&#10;&gt; !cab model / !cab model list / !cab model モデルID / !cab model default — この会話のモデル確認・候補取得・変更・既定に戻す&#10;&gt; !cab status — このスレッドにある自分の実行中・承認待ち・待機中の依頼を、状態・実効エージェント・モデル・作業先とともに表示する&#10;&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す&#10;&gt; !cab folder &quot;C:\path&quot; — 作業先変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要&#10;&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）&#10;&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する&#10;&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する&#10;&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する&#10;&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効&#10;新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このプロバイダー、チャンネル、スレッド、サーバー接続元にある自分の依頼だけに適用されます。状態表示は最大10件で、他の依頼者の依頼は表示しません。</value></data>
+  <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:&#10;&gt; !cab &lt;依頼&gt; — エージェントに依頼する&#10;&gt; !cab command / !cab commands / !cab help — この一覧を表示する&#10;&gt; !cab agent — 登録済みCLI接続と要約あり／なしの切り替え方法を表示&#10;&gt; !cab model / !cab model list / !cab model モデルID / !cab model default — この会話のモデル確認・候補取得・変更・既定に戻す&#10;&gt; !cab status — このスレッドにある自分の実行中・承認待ち・待機中の依頼を、状態・実効エージェント・モデル・作業先とともに表示する&#10;&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す&#10;&gt; !cab folder &quot;C:\path&quot; — 作業先変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要&#10;&gt; !cab worktree 名前 — この会話用のgit worktreeを申請する（このPCでの承認が必要）&#10;&gt; !cab remember 内容 / !cab memory / !cab forget 番号|all — このチャンネルの全依頼に付加するメモの保存・一覧・削除&#10;&gt; !cab usage — このスレッドと本日の自分の利用トークン数と推定コストを表示&#10;&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）&#10;&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する&#10;&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する&#10;&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する&#10;&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効&#10;新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このプロバイダー、チャンネル、スレッド、サーバー接続元にある自分の依頼だけに適用されます。状態表示は最大10件で、他の依頼者の依頼は表示しません。</value></data>
+  <data name="MattermostInboxApprovalWaiting" xml:space="preserve"><value>この依頼は承認待ちです。依頼した本人が ✅ で承認、❌ で拒否できます。</value></data>
+  <data name="WorktreeNameInstruction" xml:space="preserve"><value>!cab worktree 名前 の形式で指定してください。名前は英数字・ドット・アンダースコア・ハイフンの1〜40文字で、先頭にドットとハイフンは使えません。</value></data>
+  <data name="WorktreeChangedOutput" xml:space="preserve"><value>作業先をgit worktree {0}（ブランチ {1}）に切り替えました。次の依頼は新しいAI会話として開始します。</value></data>
+  <data name="WorktreeChangedChatReply" xml:space="preserve"><value>Chat Agent Bridge: この会話の作業先をgit worktree {0}（ブランチ {1}）に切り替えました。次の依頼は新しいAI会話として開始します。</value></data>
+  <data name="ChatMemorySaved" xml:space="preserve"><value>このチャンネルのメモを保存しました（{0}/{1}件）。</value></data>
+  <data name="ChatMemoryTooLong" xml:space="preserve"><value>メモが長すぎます。{0}文字以内にしてください。</value></data>
+  <data name="ChatMemoryFull" xml:space="preserve"><value>このチャンネルのメモは既に{0}件あります。先に !cab forget 番号 で削除してください。</value></data>
+  <data name="ChatMemoryRememberUsage" xml:space="preserve"><value>使い方: !cab remember 内容</value></data>
+  <data name="ChatMemoryEmpty" xml:space="preserve"><value>このチャンネルに保存されたメモはありません。!cab remember 内容 で追加できます。</value></data>
+  <data name="ChatMemoryHeader" xml:space="preserve"><value>チャンネルのメモ（{0}/{1}件）:</value></data>
+  <data name="ChatMemoryItem" xml:space="preserve"><value>{0}. {1}</value></data>
+  <data name="ChatMemoryForgot" xml:space="preserve"><value>メモ {0} を削除しました。</value></data>
+  <data name="ChatMemoryForgotAll" xml:space="preserve"><value>このチャンネルのメモ{0}件をすべて削除しました。</value></data>
+  <data name="ChatMemoryNoSuchNote" xml:space="preserve"><value>メモ {0} はありません。!cab memory で一覧を確認してください。</value></data>
+  <data name="ChatMemoryForgetUsage" xml:space="preserve"><value>使い方: !cab forget 番号 または !cab forget all</value></data>
+  <data name="ChatUsageReply" xml:space="preserve"><value>このスレッド: {0}&#10;本日・自分の全スレッド: {1}</value></data>
+  <data name="ChatUsageLine" xml:space="preserve"><value>{0}回の実行 · 入力 {1} · 出力 {2} · 推定コスト {3}</value></data>
+  <data name="ChatUsageUnknown" xml:space="preserve"><value>不明</value></data>
   <data name="HistoryWorkspaceFilterLabel" xml:space="preserve"><value>作業フォルダー</value></data>
   <data name="HistoryWorkspaceAll" xml:space="preserve"><value>すべての作業フォルダー</value></data>
   <data name="HistorySortLabel" xml:space="preserve"><value>並び順</value></data>

@@ -148,6 +148,8 @@ Actions are tied to the requester and the conversation (channel, thread and user
 - **Continuing**: after the first request, replies in the same thread become follow-up requests. No mention or `!cab` is needed.
 - **After restarting the app**: the Chat conversation list is restored, but requests that were awaiting approval or running appear as interrupted and are never resumed automatically. To continue, start a new request in the same thread (mention in Slack; mention or `!cab` in Mattermost and Discord).
 - **Stopping**: only the original requester can use the reaction or button. Stopping does not undo file changes already made.
+- **Approving with reactions (Mattermost)**: when sharing approvals in chat is on, the bot adds ✅ and ❌ to its approval post. Only the requester can use them; the post then shows `→ ✅` or `→ ❌`. Otherwise approve on the PC.
+- **Progress message detail**: Chat settings → "Progress message detail" chooses Minimal (status only), Standard (default; one line that collapses to a summary with operation count and usage when the request ends) or Detailed (agent, model, permission, recent operations and reply hints). In Standard, the permission is shown only when the agent runs without asking, and the reply/stop hints appear once per requester per app session.
 
 | Command | Purpose |
 | --- | --- |
@@ -156,8 +158,11 @@ Actions are tied to the requester and the conversation (channel, thread and user
 | `!cab model` | View the current model and how to change it |
 | `!cab agent` | List registered agents and switching options |
 | `!cab folder "C:\Projects\MyApp"` | Request a working-folder change |
+| `!cab worktree NAME` | Request a git worktree (`.cab/worktrees/NAME`, branch `cab/NAME`) for this conversation; approved on the PC |
+| `!cab remember TEXT` / `!cab memory` / `!cab forget NUMBER\|all` | Save, list or remove notes for this channel (up to 20 notes of 500 characters). Notes are added to every request in the channel, for everyone allowed to use it |
+| `!cab usage` | Token usage and estimated cost for this thread and for you today |
 
-`!cab status` lists running, approval-waiting and queued requests for your current thread, including agent, model and working folder. It does not expose requests from other users or threads. The reply is visible to people who can read that thread.
+`!cab status` lists running, approval-waiting and queued requests for your current thread, including agent, model, permission and working folder. When the permission is "inherit", it shows what the CLI's own settings resolve to, and marks modes that run without asking with ⚠. It does not expose requests from other users or threads. The reply is visible to people who can read that thread.
 
 You can also inspect live output and stop a request on the PC.
 

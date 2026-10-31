@@ -1335,4 +1335,19 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="InboxApprovalNotice.Message" xml:space="preserve"><value>Review the request, then approve or reject it.</value></data>
   <data name="InboxOpenPendingApproval.Content" xml:space="preserve"><value>Review pending request</value></data>
   <data name="OverviewCliTile.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Check the CLI and model in agent settings</value></data>
+  <data name="ChatProgressDetail.Header" xml:space="preserve">
+    <value>Progress message detail</value>
+  </data>
+  <data name="ChatProgressDetailMinimal.Content" xml:space="preserve">
+    <value>Minimal (one line)</value>
+  </data>
+  <data name="ChatProgressDetailStandard.Content" xml:space="preserve">
+    <value>Standard (default)</value>
+  </data>
+  <data name="ChatProgressDetailDetailed.Content" xml:space="preserve">
+    <value>Detailed</value>
+  </data>
+  <data name="ChatProgressDetailHelp.Text" xml:space="preserve">
+    <value>Minimal shows only the status. Standard also shows the operation count and usage, then collapses to one line when the request ends. Detailed also shows the agent, recent operations and reply hints.</value>
+  </data>
 </root>

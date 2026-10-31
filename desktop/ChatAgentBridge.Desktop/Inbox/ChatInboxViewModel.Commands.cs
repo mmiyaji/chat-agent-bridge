@@ -12,20 +12,22 @@ public sealed partial class ChatInboxViewModel
         var command = ChatControlCommand.Parse(request.Text);
         if (request.CancellationTargetMessageId is not null && command.Kind != ChatControlCommandKind.Stop) return true;
         if (command.Kind is ChatControlCommandKind.Answer or ChatControlCommandKind.ReservedInvalid) return true;
-        if (command.Kind is not (ChatControlCommandKind.Help or ChatControlCommandKind.Status or ChatControlCommandKind.Stop or ChatControlCommandKind.Model)) return false;
+        if (command.Kind is not (ChatControlCommandKind.Help or ChatControlCommandKind.Status or ChatControlCommandKind.Stop or ChatControlCommandKind.Model or
+            ChatControlCommandKind.Remember or ChatControlCommandKind.Memory or ChatControlCommandKind.Forget or ChatControlCommandKind.Usage)) return false;
         var completion = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!App.DispatcherQueue.TryEnqueue(() =>
             completion.TrySetResult(command.Kind == ChatControlCommandKind.Model
                 ? HandleChatModelOnUiAsync(transport, received, request, command.ModelArgument ?? "", token)
-                : HandleChatControlOnUiAsync(transport, received, request, command.Kind, token))))
+                : HandleChatControlOnUiAsync(transport, received, request, command, token))))
             return true;
         await await completion.Task;
         return true;
     }
 
     private async Task HandleChatControlOnUiAsync(IChatTransport transport, BridgeSettings received,
-        ChatRequest request, ChatControlCommandKind kind, CancellationToken token)
+        ChatRequest request, ChatControlCommand command, CancellationToken token)
     {
+        var kind = command.Kind;
         try
         {
             var current = await _store.LoadAsync(token);
@@ -34,6 +36,17 @@ public sealed partial class ChatInboxViewModel
             if (kind == ChatControlCommandKind.Help)
             {
                 await ReplyToControlAsync(transport, received, request, DesktopText.Get("ChatControlHelp"), token);
+                return;
+            }
+            if (kind is ChatControlCommandKind.Remember or ChatControlCommandKind.Memory or ChatControlCommandKind.Forget)
+            {
+                await ReplyToControlAsync(transport, received, request,
+                    await BuildChannelMemoryReplyAsync(request, received, command, token), token);
+                return;
+            }
+            if (kind == ChatControlCommandKind.Usage)
+            {
+                await ReplyToControlAsync(transport, received, request, await BuildChatUsageReplyAsync(request, token), token);
                 return;
             }
             var scope = CreateControlScope(request, received);
@@ -104,24 +117,25 @@ public sealed partial class ChatInboxViewModel
                         ? DesktopText.Get("ChatControlStatusApproval")
                         : DesktopText.Get("ChatControlStatusQueued");
             var effective = await GetEffectiveStatusSettingsAsync(item, token);
-            var agent = AgentProfile.ResolveProvider(effective) switch
-            {
-                AgentProfile.Codex => DesktopText.Get("ChatControlAgentCodex"),
-                AgentProfile.Claude => DesktopText.Get("ChatControlAgentClaude"),
-                AgentProfile.Gemini => DesktopText.Get("ChatControlAgentGemini"),
-                AgentProfile.GitHubCopilot => DesktopText.Get("ChatControlAgentCopilot"),
-                AgentProfile.Antigravity => DesktopText.Get("ChatControlAgentAntigravity"),
-                _ => DesktopText.Get("ChatControlAgentCustom", Path.GetFileName(effective.AgentExecutable))
-            };
+            var agent = CleanStatusField(AgentDisplayName(effective), 60);
             var model = CleanStatusField(effective.AgentModel ?? DesktopText.Get("CliDefault"), 100);
-            agent = CleanStatusField(agent, 60);
             var workspace = CleanStatusField(effective.WorkspaceRoot, 140);
-            rows.Add(DesktopText.Get("ChatControlStatusRow", state, agent, model, workspace));
+            rows.Add(DesktopText.Get("ChatControlStatusRow", state, agent, model, workspace, PermissionDisplay(effective)));
         }
         return ChatControlStatusFormatter.Format(
             DesktopText.Get("ChatControlStatusHeader", live.Length, connection), rows, live.Length,
             remaining => DesktopText.Get("ChatControlStatusMore", remaining));
     }
+
+    private static string AgentDisplayName(BridgeSettings settings) => AgentProfile.ResolveProvider(settings) switch
+    {
+        AgentProfile.Codex => DesktopText.Get("ChatControlAgentCodex"),
+        AgentProfile.Claude => DesktopText.Get("ChatControlAgentClaude"),
+        AgentProfile.Gemini => DesktopText.Get("ChatControlAgentGemini"),
+        AgentProfile.GitHubCopilot => DesktopText.Get("ChatControlAgentCopilot"),
+        AgentProfile.Antigravity => DesktopText.Get("ChatControlAgentAntigravity"),
+        _ => DesktopText.Get("ChatControlAgentCustom", Path.GetFileName(settings.AgentExecutable))
+    };
 
     private static string CleanStatusField(string value, int maxLength)
     {

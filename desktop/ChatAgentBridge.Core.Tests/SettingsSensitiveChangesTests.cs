@@ -33,7 +33,8 @@ public sealed class SettingsSensitiveChangesTests
             yield return [name, nameof(SettingsSensitiveChanges.ConnectionIdentity)];
         foreach (var name in new[] { nameof(BridgeSettings.WorkspaceRoot), nameof(BridgeSettings.AgentModel),
                      nameof(BridgeSettings.AgentReasoningEffort), nameof(BridgeSettings.AutoConnectProvider),
-                     nameof(BridgeSettings.MattermostBypassProxy), nameof(BridgeSettings.PostConnectionNotice) })
+                     nameof(BridgeSettings.MattermostBypassProxy), nameof(BridgeSettings.PostConnectionNotice),
+                     nameof(BridgeSettings.ChatProgressDetail) })
             yield return [name, ""];
     }
 

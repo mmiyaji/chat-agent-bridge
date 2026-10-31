@@ -72,6 +72,28 @@ public sealed class ChatControlCommandTests
         Assert.Equal(ChatControlCommandKind.None, ChatControlCommand.Parse(text).Kind);
     }
 
+    [Theory]
+    [InlineData("!cab remember use tabs", ChatControlCommandKind.Remember, "use tabs")]
+    [InlineData("remember", ChatControlCommandKind.Remember, "")]
+    [InlineData("!cab forget 2", ChatControlCommandKind.Forget, "2")]
+    [InlineData("FORGET all", ChatControlCommandKind.Forget, "all")]
+    [InlineData("!cab memory", ChatControlCommandKind.Memory, null)]
+    [InlineData("!cab usage", ChatControlCommandKind.Usage, null)]
+    public void ParsesMemoryAndUsageCommands(string text, ChatControlCommandKind kind, string? argument)
+    {
+        var command = ChatControlCommand.Parse(text);
+        Assert.Equal(kind, command.Kind);
+        Assert.Equal(argument, command.TextArgument);
+    }
+
+    [Theory]
+    [InlineData("memory leak in parser")]
+    [InlineData("usage of this API?")]
+    public void ExtraWordsAfterMemoryOrUsageStayOrdinary(string text)
+    {
+        Assert.Equal(ChatControlCommandKind.None, ChatControlCommand.Parse(text).Kind);
+    }
+
     [Fact]
     public void MalformedAnswerPrefixIsReservedForTheInputBroker()
     {

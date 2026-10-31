@@ -27,6 +27,48 @@ public sealed class ChatProgressReporterTests
         Assert.DoesNotContain(transport.Updates.SkipWhile(update => update.Text != "Completed"), update => update.Text == "Running");
     }
 
+    [Fact]
+    public async Task RequestUpdateCoalescesBurstsAndRespectsMinimumInterval()
+    {
+        var transport = new FakeProgressTransport();
+        await using var reporter = new ChatProgressReporter(transport, Request, (state, _) => state.ToString(),
+            _ => Task.FromResult(true), null, TimeSpan.FromHours(1), TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(300));
+        await reporter.ReceiveAsync();
+        await reporter.StartAsync();
+        Assert.Single(transport.Updates);
+
+        for (var i = 0; i < 20; i++) reporter.RequestUpdate();
+        await Task.Delay(100);
+        Assert.Single(transport.Updates);
+
+        await transport.WaitForUpdatesAsync(2);
+        await Task.Delay(500);
+        Assert.Equal(2, transport.Updates.Count);
+        Assert.All(transport.Updates, update => Assert.Equal("Running", update.Text));
+    }
+
+    [Fact]
+    public async Task RequestUpdateIsNoOpBeforeStartAndAfterFinish()
+    {
+        var transport = new FakeProgressTransport();
+        await using var reporter = new ChatProgressReporter(transport, Request, (state, _) => state.ToString(),
+            _ => Task.FromResult(true), null, TimeSpan.FromHours(1), TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(20));
+        await reporter.ReceiveAsync();
+        reporter.RequestUpdate();
+        await Task.Delay(100);
+        Assert.Empty(transport.Updates);
+
+        await reporter.StartAsync();
+        reporter.RequestUpdate();
+        await reporter.FinishAsync(ChatProgressState.Completed);
+        var count = transport.Updates.Count;
+        reporter.RequestUpdate();
+        await Task.Delay(150);
+
+        Assert.Equal(count, transport.Updates.Count);
+        Assert.Equal("Completed", transport.Updates[^1].Text);
+    }
+
     [Theory]
     [InlineData(ChatProgressState.FollowUpApplied)]
     [InlineData(ChatProgressState.FollowUpUncertain)]

@@ -147,6 +147,7 @@ public partial class MainPageViewModel
         Track(() => AutoApproveSwitchCommands, value => AutoApproveSwitchCommands = value, baseline.AutoApproveSwitchCommands);
         Track(() => ChatResultMode, value => ChatResultMode = value, baseline.ChatResultMode);
         Track(() => ChatFollowUpMode, value => ChatFollowUpMode = value, baseline.ChatFollowUpMode);
+        Track(() => ChatProgressDetail, value => ChatProgressDetail = value, baseline.ChatProgressDetail);
         Track(() => SlackAllowedChannelIds, value => SlackAllowedChannelIds = value, baseline.SlackAllowedChannelIds);
         Track(() => SlackAllowedThreadIds, value => SlackAllowedThreadIds = value, baseline.SlackAllowedThreadIds);
         Track(() => MattermostAllowedThreadIds, value => MattermostAllowedThreadIds = value, baseline.MattermostAllowedThreadIds);
@@ -186,7 +187,7 @@ public partial class MainPageViewModel
         nameof(DiscordBotToken) or nameof(DiscordAllowedUserIds) or nameof(DiscordAllowedGuildIds) or
         nameof(DiscordAllowedChannelIds) or nameof(DiscordAllowedThreadIds) or nameof(DiscordAllowDirectMessages) or
         nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(ChatApprovalMode) or
-        nameof(AutoApproveSwitchCommands) or nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or
+        nameof(AutoApproveSwitchCommands) or nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(ChatProgressDetail) or nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or
         nameof(MattermostAllowedThreadIds) or nameof(FileAttachmentApprovalMode) or
         nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb);
 }

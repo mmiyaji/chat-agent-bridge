@@ -73,6 +73,11 @@ public sealed partial class ChatInboxPage : Page
         ViewModel.SearchSuggestions.CollectionChanged += SearchSuggestions_CollectionChanged;
         ViewModel.SearchApplied += () => DispatcherQueue.TryEnqueue(RefreshSuggestionPopup);
         Loaded += Page_Loaded;
+        // The page stays alive and is only hidden, so Loaded fires once; show the newest pending request each time the tab is shown.
+        RegisterPropertyChangedCallback(VisibilityProperty, (_, _) =>
+        {
+            if (Visibility == Visibility.Visible && IsLoaded) ViewModel.RevealNewestPendingIfIdle();
+        });
         Unloaded += Page_Unloaded;
     }
 
@@ -128,6 +133,7 @@ public sealed partial class ChatInboxPage : Page
         }
 
         await ViewModel.EnsureConversationsRestoredAsync();
+        ViewModel.RevealNewestPendingIfIdle();
     }
 
     private Task OpenInboxAsync(InboxItem item)
@@ -347,7 +353,7 @@ public sealed partial class ChatInboxPage : Page
 
     private async Task<bool> ConfirmAsync(InboxItem item, CancellationToken cancellationToken)
     {
-        var changesWorkspace = ChatAgentBridge.Core.WorkspaceChatCommand.TryParse(item.Prompt, out _);
+        var changesWorkspace = ChatAgentBridge.Core.WorkspaceChatCommand.IsWorkspaceCommand(item.Prompt);
         var changesAgent = ChatAgentBridge.Core.AgentChatCommand.TryParse(item.Prompt, out _);
         var executionSettings = item.EffectiveSettings ?? item.Settings;
         var dialog = new ContentDialog

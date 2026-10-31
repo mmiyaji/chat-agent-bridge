@@ -24,7 +24,8 @@ public sealed partial class ChatInboxViewModel
             var token = _connection?.Token ?? CancellationToken.None;
             var settings = await _store.LoadAsync(token);
             if (!CanUseRequestActions(item, settings)) return;
-            pendingLease = await actions.PostActionsAsync(item.Request, DesktopText.Get("DiscordInboxApprovalWaiting"),
+            pendingLease = await actions.PostActionsAsync(item.Request, DesktopText.Get(item.Transport is MattermostWebSocketTransport
+                    ? "MattermostInboxApprovalWaiting" : "DiscordInboxApprovalWaiting"),
                 ChatActionKind.RequestApproval, (decision, ct) => HandleRequestActionAsync(item, decision, ct), token);
             if (CanUseRequestActions(item, await _store.LoadAsync(token)))
             {
