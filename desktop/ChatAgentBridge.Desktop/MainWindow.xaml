@@ -64,7 +64,7 @@
         <Frame x:Name="RootFrame" Grid.Row="1" Opacity="0" IsHitTestVisible="False" IsEnabled="False" AutomationProperties.AutomationId="RootFrame" />
         <Border x:Name="StartupSplashShell" Grid.Row="1" Padding="24"
                 Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" AutomationProperties.AutomationId="StartupSplashShell">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="0">
+            <StackPanel x:Name="StartupSplashContent" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="0">
                 <Grid Width="112" Height="112" HorizontalAlignment="Center">
                     <Ellipse Stroke="{ThemeResource ControlStrokeColorDefaultBrush}" StrokeThickness="2" />
                     <Ellipse x:Name="StartupSplashRing" Width="112" Height="112" Stroke="{ThemeResource AccentFillColorDefaultBrush}"
@@ -72,7 +72,7 @@
                              AutomationProperties.AccessibilityView="Raw">
                         <Ellipse.RenderTransform><RotateTransform x:Name="StartupSplashRotation" /></Ellipse.RenderTransform>
                     </Ellipse>
-                    <Image Source="ms-appx:///Assets/Square44x44Logo.scale-200.png" Width="64" Height="64"
+                    <Image x:Name="StartupSplashIcon" Width="64" Height="64"
                            AutomationProperties.AccessibilityView="Raw" />
                 </Grid>
                 <TextBlock Text="Chat Agent Bridge" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,24,0,0"

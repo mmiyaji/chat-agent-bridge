@@ -113,7 +113,9 @@ function StartScenario([string]$Name,[string]$Language,[string]$Theme,[bool]$Onb
  $firstFrameDeadline=[DateTime]::UtcNow.AddSeconds(15)
  while([DateTime]::UtcNow -lt $firstFrameDeadline -and -not $app.HasExited) {
   if(SplashBlueVisible) {
-   $pixelSeen=$true; Capture "$Name-startup-splash"; $screenshotSaved=$true; break
+   $pixelSeen=$true; Capture "$Name-startup-splash"; $screenshotSaved=$true
+   if($Name -eq 'ja-light') { for($frame=0;$frame -lt 24;$frame++) { Capture ('transition-'+$frame.ToString('D2')); Start-Sleep -Milliseconds 25 } }
+   break
   }
   Start-Sleep -Milliseconds 25
  }

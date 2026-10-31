@@ -89,6 +89,7 @@ public sealed partial class MainWindow
     {
         _startupLifetime.Cancel();
         _startupRingAnimation.Stop();
+        _startupFadeAnimation.Stop();
         _startupReady.TrySetCanceled();
     }
 
