@@ -942,4 +942,9 @@
   <data name="InboxReconnectConfirmBody" xml:space="preserve"><value>現在の依頼は、この画面から操作できなくなります。未送信の結果・添付は先に共有し、未実行の依頼は再接続後にチャットから再投稿してください。会話履歴は残ります。</value></data>
   <data name="InboxDisconnectFailed" xml:space="preserve"><value>切断処理を完了できませんでした。通信状態を確認し、もう一度お試しください。</value></data>
   <data name="StartupLoading" xml:space="preserve"><value>設定と会話を読み込んでいます</value></data>
+  <data name="StartupFailedTitle" xml:space="preserve"><value>アプリを初期化できませんでした</value></data>
+  <data name="StartupFailed" xml:space="preserve"><value>起動を停止しました。「再試行」でアプリを再起動してやり直せます。保存済みのデータは保持されます。</value></data>
+  <data name="StartupTimeoutTitle" xml:space="preserve"><value>起動に時間がかかっています</value></data>
+  <data name="StartupTimeout" xml:space="preserve"><value>初期化が時間内に完了しませんでした。アプリとデータの保存先にアクセスできることを確認してください。「再試行」でアプリを再起動するか、「終了」を選べます。保存済みのデータは保持されます。</value></data>
+  <data name="StartupRestartFailed" xml:space="preserve"><value>再起動できませんでした。一度終了し、アプリを起動し直してください。</value></data>
 </root>

@@ -166,6 +166,7 @@ public sealed partial class MainWindow : Window
 
     private void ShowSettingsSearch()
     {
+        if (!CanStartChatAfterStartup) return;
         if (_portableUpdateLoading) return;
         if (Page?.CanSearchSettings != true) return;
         if (!SettingsSearchFlyout.IsOpen)

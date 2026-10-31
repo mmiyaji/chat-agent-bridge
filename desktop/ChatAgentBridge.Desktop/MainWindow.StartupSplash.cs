@@ -40,20 +40,33 @@ public sealed partial class MainWindow
     private async Task CompleteStartupSplashAsync(MainPage page)
     {
         // Readiness excludes network connections and other background services.
-        await page.InitialContentReady.WaitAsync(_startupLifetime.Token);
+        await page.InitialContentReady.WaitAsync(StartupAttemptToken);
         var remaining = StartupSplashMinimumDuration - _startupSplashClock.Elapsed;
         if (remaining > TimeSpan.Zero)
-            await Task.Delay(remaining, _startupLifetime.Token);
-        _startupLifetime.Token.ThrowIfCancellationRequested();
+            await Task.Delay(remaining, StartupAttemptToken);
+        StartupAttemptToken.ThrowIfCancellationRequested();
         await FadeOutStartupSplashAsync();
         HideStartupSplash();
+    }
+
+    private void PrepareStartupSplashAttempt()
+    {
+        _startupSplashClock.Reset();
+        StartupSplashShell.Opacity = 1;
+        StartupSplashShell.Visibility = Visibility.Visible;
+        StartupMigrationShell.Visibility = Visibility.Collapsed;
+        RootFrame.Opacity = 0;
+        RootFrame.IsHitTestVisible = false;
+        RootFrame.IsEnabled = false;
+        if (_startupRingAnimation.Children.Count > 0 && new UISettings().AnimationsEnabled)
+            _startupRingAnimation.Begin();
     }
 
     private async Task ShowStartupSplashFrameAsync()
     {
         if (_startupSplashClock.IsRunning) return;
         if (_startupIconTask is { } iconTask)
-            await iconTask.WaitAsync(_startupLifetime.Token);
+            await iconTask.WaitAsync(StartupAttemptToken);
         // Reveal the entire group only after decoding the bundled icon, avoiding
         // a ring/title followed by a separate, late image pop-in.
         StartupSplashContent.Opacity = 1;
@@ -64,7 +77,7 @@ public sealed partial class MainWindow
         {
             // Loaded precedes the first paint. Yield until the splash can actually
             // be presented before constructing the much larger main-page tree.
-            await rendered.Task.WaitAsync(_startupLifetime.Token);
+            await rendered.Task.WaitAsync(StartupAttemptToken);
             _startupSplashClock.Restart();
             await Task.Yield();
         }
@@ -118,7 +131,7 @@ public sealed partial class MainWindow
         try
         {
             _startupFadeAnimation.Begin();
-            await completed.Task.WaitAsync(_startupLifetime.Token);
+            await completed.Task.WaitAsync(StartupAttemptToken);
         }
         finally
         {

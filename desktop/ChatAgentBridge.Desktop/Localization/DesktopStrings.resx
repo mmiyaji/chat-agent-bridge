@@ -942,4 +942,9 @@ After: {2}</value></data>
   <data name="InboxReconnectConfirmBody" xml:space="preserve"><value>Actions on current requests will no longer be available. Share any unsent results or files first, and send unexecuted requests again from chat after reconnecting. Conversation history will be kept.</value></data>
   <data name="InboxDisconnectFailed" xml:space="preserve"><value>The disconnect operation could not finish. Check the connection and try again.</value></data>
   <data name="StartupLoading" xml:space="preserve"><value>Loading settings and conversations</value></data>
+  <data name="StartupFailedTitle" xml:space="preserve"><value>The app could not be initialized</value></data>
+  <data name="StartupFailed" xml:space="preserve"><value>Startup was stopped. Choose Retry to restart the app and try again. Your saved data is kept.</value></data>
+  <data name="StartupTimeoutTitle" xml:space="preserve"><value>Startup is taking too long</value></data>
+  <data name="StartupTimeout" xml:space="preserve"><value>Initialization did not finish in time. Check that the app and data folders are accessible. Choose Retry to restart the app, or Exit. Your saved data is kept.</value></data>
+  <data name="StartupRestartFailed" xml:space="preserve"><value>The app could not restart. Exit and launch the app again.</value></data>
 </root>

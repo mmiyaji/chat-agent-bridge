@@ -347,37 +347,64 @@ public sealed partial class MainPage : Page
 
     private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
-        InitializeSidebarResizer();
-        InitializeNavigationShortcuts();
         if (_hasLoaded) return;
         _hasLoaded = true;
-        // The Windows startup-task query does not depend on saved settings, so it
-        // overlaps with the settings load. Onboarding needs the loaded settings.
-        var startupRefresh = ViewModel.RefreshStartupAsync();
-        await ViewModel.LoadAsync();
-        InitializeAgentSettingsScope();
-        InitializeConnectionSettingsScope();
-        if (IsAgentSelected) await EnsureAgentSettingsScopeAsync();
-        var startupProvider = ViewModel.AutoConnectProvider;
-        MattermostTokenBox.Password = ViewModel.MattermostToken;
-        SlackBotTokenBox.Password = ViewModel.SlackBotToken;
-        SlackAppTokenBox.Password = ViewModel.SlackAppToken;
-        DiscordBotTokenBox.Password = ViewModel.DiscordBotToken;
-        await ViewModel.InitializeOnboardingAsync();
-        await startupRefresh;
-        ViewModel.RefreshOverviewStatus();
-        _initialContentReady.TrySetResult();
-        if (!App.IsNotificationOnlyLaunch && ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive && !ViewModel.IsLoading &&
-            !ViewModel.HasUnsavedSettings && !ViewModel.IsSensitiveConfirmationPending &&
-            ViewModel.AutoConnectProvider == startupProvider)
+        try
         {
-            if (startupProvider is "mattermost" or "slack" or "discord")
-                MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "chat");
-            if (startupProvider == "mattermost") await InboxPage.ViewModel.ConnectMattermostCommand.ExecuteAsync(null);
-            else if (startupProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
-            else if (startupProvider == "discord") await InboxPage.ViewModel.ConnectDiscordCommand.ExecuteAsync(null);
+            InitializeSidebarResizer();
+            InitializeNavigationShortcuts();
+            // The Windows startup-task query does not depend on saved settings, so it
+            // overlaps with the settings load. Onboarding needs the loaded settings.
+#if CAB_STARTUP_FIXTURE
+            await Startup.StartupFailureFixture.BeforePageAsync();
+#endif
+            var startupRefresh = ViewModel.RefreshStartupAsync();
+            await ViewModel.LoadAsync();
+            InitializeAgentSettingsScope();
+            InitializeConnectionSettingsScope();
+            if (IsAgentSelected) await EnsureAgentSettingsScopeAsync();
+            var startupProvider = ViewModel.AutoConnectProvider;
+            MattermostTokenBox.Password = ViewModel.MattermostToken;
+            SlackBotTokenBox.Password = ViewModel.SlackBotToken;
+            SlackAppTokenBox.Password = ViewModel.SlackAppToken;
+            DiscordBotTokenBox.Password = ViewModel.DiscordBotToken;
+            await ViewModel.InitializeOnboardingAsync();
+            await startupRefresh;
+            ViewModel.RefreshOverviewStatus();
+            _initialContentReady.TrySetResult();
+            // A timed-out initializer may finish later. It must never start chat services.
+            if (App.Window is MainWindow window)
+            {
+                await window.StartupReady;
+                if (!window.CanStartChatAfterStartup) return;
+            }
+            if (!App.IsNotificationOnlyLaunch && ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive && !ViewModel.IsLoading &&
+                !ViewModel.HasUnsavedSettings && !ViewModel.IsSensitiveConfirmationPending &&
+                ViewModel.AutoConnectProvider == startupProvider)
+            {
+                if (startupProvider is "mattermost" or "slack" or "discord")
+                    MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "chat");
+                if (startupProvider == "mattermost") await InboxPage.ViewModel.ConnectMattermostCommand.ExecuteAsync(null);
+                else if (startupProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
+                else if (startupProvider == "discord") await InboxPage.ViewModel.ConnectDiscordCommand.ExecuteAsync(null);
+            }
+            InitializeFeatureTips();
+
         }
-        InitializeFeatureTips();
+        catch (OperationCanceledException)
+        {
+            _initialContentReady.TrySetCanceled();
+        }
+        catch (Exception ex)
+        {
+            if (!_initialContentReady.TrySetException(ex))
+            {
+                ViewModel.StatusTitle = DesktopText.Get("StartupFailedTitle");
+                ViewModel.StatusMessage = DesktopText.Get("StartupFailed");
+                ViewModel.StatusSeverity = "Error";
+                ViewModel.IsStatusOpen = true;
+            }
+        }
     }
 
     private async void ReloadSettings_Click(object sender, RoutedEventArgs e)

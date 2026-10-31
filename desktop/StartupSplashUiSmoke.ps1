@@ -100,6 +100,8 @@ function StartScenario([string]$Name,[string]$Language,[string]$Theme,[bool]$Onb
   if(-not $Onboarding){Json (Join-Path $data 'onboarding.json') @{schemaVersion=3;step=4;status='completed'}}
   Json (Join-Path $data 'language.json') @{Language=$Language}
   Json (Join-Path $data 'appearance.json') @{Theme=$Theme}
+  # Production binaries must ignore a leftover or externally created fixture file.
+  Json (Join-Path $data 'startup-fixture.json') @{mode='page-error';timeoutSeconds=1}
   Json (Join-Path $data 'tips.json') @{Seen=@('chat-connect')}
   $candidate=@{version='9.9.9';tag='v9.9.9';assetName='ChatAgentBridge.Portable-9.9.9-win-x64.zip';downloadUri='https://github.com/mmiyaji/chat-agent-bridge/releases/download/v9.9.9/ChatAgentBridge.Portable-9.9.9-win-x64.zip';sha256=('a'*64);size=1234;releasePage='https://github.com/mmiyaji/chat-agent-bridge/releases/tag/v9.9.9'}
   Json (Join-Path $data 'portable-update.json') @{schemaVersion=1;automaticChecksEnabled=$false;includePrereleases=$false;availableRelease=$candidate}
