@@ -116,25 +116,40 @@ function Select-CabPendingRequest([int]$TimeoutSec = 20) {
     $true
 }
 
-# Selects the first item of a CAB list (for example the newest conversation) with a visible cursor move.
-function Select-CabFirstItem([string]$ListId, [int]$TimeoutSec = 30) {
+# Selects an item of a CAB list (the first by default, e.g. the newest conversation) with a visible cursor move.
+function Select-CabFirstItem([string]$ListId, [int]$TimeoutSec = 30, [int]$Index = 0) {
     $list = Find-Cab $ListId $TimeoutSec
     $c = New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ListItem)
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
-    while (-not ($item = $list.FindFirst('Descendants', $c)) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 300 }
-    if (-not $item) { throw "No item in $ListId." }
+    $item = $null
+    while (-not $item -and (Get-Date) -lt $deadline) {
+        $item = @($list.FindAll('Descendants', $c))[$Index]
+        if (-not $item) { Start-Sleep -Milliseconds 300 }
+    }
+    if (-not $item) { throw "No item $Index in $ListId." }
     $r = $item.Current.BoundingRectangle
     Move-Cursor ($r.X + [Math]::Min($r.Width / 2, 200)) ($r.Y + $r.Height / 2)
     Start-Sleep -Milliseconds 350
     Click-CabUnderCursor
 }
-# Left-clicks at the cursor only when the window under it belongs to the demo CAB process.
-function Click-CabUnderCursor {
+# Throws unless the window under the cursor belongs to the demo CAB process, so no input reaches another app.
+function Assert-CursorOverCab {
     $p = New-Object D1+P; [D1]::GetCursorPos([ref]$p) | Out-Null
     $top = [D1]::GetAncestor([D1]::WindowFromPoint($p), 2)
     $procId = 0; [D1]::GetWindowThreadProcessId($top, [ref]$procId) | Out-Null
-    if ($procId -ne (Get-CabProcess).Id) { throw 'The window under the cursor is not the demo CAB; click skipped.' }
+    if ($procId -ne (Get-CabProcess).Id) { throw 'The window under the cursor is not the demo CAB; input skipped.' }
+}
+# Left-clicks at the cursor only when the window under it belongs to the demo CAB process.
+function Click-CabUnderCursor {
+    Assert-CursorOverCab
     [D1]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 60; [D1]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
+}
+# Scrolls the CAB page with the mouse wheel (positive notches scroll down), a notch at a time so it reads on camera.
+function Scroll-Cab([int]$Notches, [double]$X, [double]$Y, [int]$StepMs = 140) {
+    Move-Cursor $X $Y 500
+    Assert-CursorOverCab
+    $delta = if ($Notches -gt 0) { [uint32]([BitConverter]::ToUInt32([BitConverter]::GetBytes([int]-120), 0)) } else { [uint32]120 }
+    for ($i = 0; $i -lt [Math]::Abs($Notches); $i++) { [D1]::mouse_event(0x0800, 0, 0, $delta, [UIntPtr]::Zero); Start-Sleep -Milliseconds $StepMs }
 }
 
 # Mattermost page helpers (page coordinates are converted to screen coordinates at 100% DPI).

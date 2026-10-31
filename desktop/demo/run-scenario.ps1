@@ -10,7 +10,7 @@ function Mark([string]$Text) { $line = "{0:HH:mm:ss.fff} $Text" -f (Get-Date); $
 Set-Content $log ''
 
 # Forward slashes: Mattermost markdown treats "\." as an escape and drops the backslash.
-$todo = (Join-Path $DemoData 'todo-cli').Replace('\', '/')
+$todo = (Join-Path $SampleRoot 'todo-cli').Replace('\', '/')
 $steps = @{
     project = @{
         Request = '@cab-bot README.md を読んで、このプロジェクトの概要を2行で教えて'
