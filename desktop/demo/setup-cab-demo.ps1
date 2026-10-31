@@ -3,9 +3,15 @@ param([ValidateSet('ja', 'en')][string]$Lang = 'ja', [ValidateSet('light', 'dark
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Security
 . (Join-Path $PSScriptRoot 'demo-env.ps1')
+. (Join-Path $PSScriptRoot 'demo-cleanup-guard.ps1')
 if (-not $AgyExe) { throw 'Antigravity CLI (agy) was not found. Set CAB_DEMO_AGY.' }
-$data = $CabData; $ws = Join-Path $SampleRoot 'weather-cli'; $todo = Join-Path $SampleRoot 'todo-cli'
-foreach ($d in $data, $ws, $todo) { if (Test-Path $d) { Remove-Item $d -Recurse -Force }; New-Item -ItemType Directory $d | Out-Null }
+$data = Resolve-CabDemoPath $CabData
+$ws = Resolve-CabDemoPath (Join-Path $SampleRoot 'weather-cli')
+$todo = Resolve-CabDemoPath (Join-Path $SampleRoot 'todo-cli')
+$data = Reset-CabDemoDirectory $data $DemoData
+$legacySamples = Join-Path $DemoData 'samples'
+$ws = Reset-CabDemoDirectory $ws $legacySamples
+$todo = Reset-CabDemoDirectory $todo $legacySamples
 $mm = Get-Content $MattermostState -Raw | ConvertFrom-Json
 $token = $mm.'cab-bot'.token
 $protected = 'dpapi:' + [Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect(

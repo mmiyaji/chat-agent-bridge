@@ -119,11 +119,13 @@ function Select-CabPendingRequest([int]$TimeoutSec = 20) {
 # Selects an item of a CAB list (the first by default, e.g. the newest conversation) with a visible cursor move.
 function Select-CabFirstItem([string]$ListId, [int]$TimeoutSec = 30, [int]$Index = 0) {
     $list = Find-Cab $ListId $TimeoutSec
+    if ($Index -lt 0) { throw "Item index must be non-negative in $ListId." }
     $c = New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ListItem)
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
     $item = $null
     while (-not $item -and (Get-Date) -lt $deadline) {
-        $item = @($list.FindAll('Descendants', $c))[$Index]
+        $items = $list.FindAll('Descendants', $c)
+        if ($items.Count -gt $Index) { $item = $items[$Index] }
         if (-not $item) { Start-Sleep -Milliseconds 300 }
     }
     if (-not $item) { throw "No item $Index in $ListId." }
