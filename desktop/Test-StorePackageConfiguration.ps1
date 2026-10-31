@@ -63,6 +63,32 @@ try {
     & dotnet @baseArgs *> $null
     if ($LASTEXITCODE -ne 0) { throw 'Valid Store identity failed the MSBuild guard.' }
 
+    $storeProperties = & dotnet msbuild $projectPath '-getProperty:WindowsAppSDKSelfContained,SelfContained,WindowsAppSdkDeploymentManagerInitialize' `
+        '-p:CABStore=true' '-p:Platform=x64' 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0) { throw "Could not evaluate Store deployment properties: $storeProperties" }
+    $storeEvaluated = $storeProperties | ConvertFrom-Json
+    if ($storeEvaluated.Properties.WindowsAppSDKSelfContained -cne 'false' -or
+        $storeEvaluated.Properties.SelfContained -cne 'true' -or
+        $storeEvaluated.Properties.WindowsAppSdkDeploymentManagerInitialize -cne 'true') {
+        throw "Store deployment properties are incorrect: $storeProperties"
+    }
+
+    $portableProperties = & dotnet msbuild $projectPath '-getProperty:WindowsAppSDKSelfContained,SelfContained,WindowsAppSdkDeploymentManagerInitialize' `
+        '-p:CABPortable=true' '-p:Platform=x64' 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0) { throw "Could not evaluate portable deployment properties: $portableProperties" }
+    $portableEvaluated = $portableProperties | ConvertFrom-Json
+    if ($portableEvaluated.Properties.WindowsAppSDKSelfContained -cne 'true' -or
+        $portableEvaluated.Properties.SelfContained -cne 'true') {
+        throw "Portable deployment properties changed unexpectedly: $portableProperties"
+    }
+
+    & dotnet @baseArgs '-p:WindowsAppSDKSelfContained=true' *> $null
+    if ($LASTEXITCODE -eq 0) { throw 'MSBuild guard accepted a Store build overridden to Windows App SDK self-contained.' }
+    & dotnet @baseArgs '-p:SelfContained=false' *> $null
+    if ($LASTEXITCODE -eq 0) { throw 'MSBuild guard accepted a Store build overridden to framework-dependent .NET.' }
+    & dotnet @baseArgs '-p:WindowsAppSdkDeploymentManagerInitialize=false' *> $null
+    if ($LASTEXITCODE -eq 0) { throw 'MSBuild guard accepted a Store build with deployment manager initialization disabled.' }
+
     foreach ($portableSwitch in @('CABPortable', 'CABPortableIdentity', 'CABPortableUpdateTest', 'CABDiscordFixture')) {
         & dotnet @baseArgs "-p:$portableSwitch=true" *> $null
         if ($LASTEXITCODE -eq 0) { throw "MSBuild guard accepted incompatible switch $portableSwitch." }

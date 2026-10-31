@@ -47,6 +47,24 @@ Publisherはドメイン名から作らず、この製品に割り当てられ�
 
 ARM64は `-Architecture ARM64` を指定します。PackageVersionはStore形式の `major.minor.build.0` で、majorは1以上、最初の3項目は65535以下です（例: `1.2.3.0`）。値のルールは[Microsoftのパッケージバージョン説明](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/package-version-numbering)を参照してください。提出パッケージは `desktop/artifacts/store/<version>/<architecture>/<build-id>` に分離して作成します。署名を無効にしてStoreアップロード形式を生成し、開発用証明書の作成・インストール・信頼変更は行いません。ビルド後、MSIX内のIdentity・CPU・権限・自己完結.NETランタイムを検査します。Partner Centerへアップロードする前にマニフェストのIdentityを確認してください。`-ValidateOnly` は同じ必須入力で一時マニフェストとIdentity変換だけを検証し、ビルドしません。CIは設定ガードと既存の開発用Identityを実行検証します。Storeへの提出・公開はこのビルドやCIでは行いません。
 
+## Store版のランタイムと利用条件
+
+Store版はWindows App SDKを共有し、.NETランタイムはアプリに同梱します。ポータブル版は両方を同梱する従来の構成を維持します。
+
+- パッケージのOS下限はWindows 10 1809（build 17763）。推奨はサポート期間内のWindows 11です。下限の宣言は、すべての旧OSでの実機検証やMicrosoftのサポート継続を保証するものではありません。
+- x64 / ARM64を用意し、Storeが端末に合うパッケージを選択します。利用者が.NET SDKや.NETランタイムを別途導入する必要はありません。
+- ビルドされたMSIXの`PackageDependency`が、必要なWindows App Runtimeの名前・最低バージョン・発行元を宣言します。同じCPUで要件を満たす共有パッケージがあれば使用し、なければStore経由で取得します。Windows 11であっても、必要なランタイムが初めから入っているとは限りません。
+- Windows App SDK 2.5.1での検証では、依存先は`Microsoft.WindowsAppRuntime.2`、最低バージョンは`2.5.1.0`です。1.8系だけでは条件を満たしません。SDK更新時は、生成されたMSIXの依存宣言を再確認します。
+- 初回導入・不足する依存関係の更新にはStoreへの接続が必要です。必要な依存関係が登録済みなら、共有化自体は毎回のオンライン接続を要求しません。AIやチャットサービスの接続要件は別です。
+- 組織のポリシーでStoreやMSIX依存パッケージの導入が制限されている環境では、管理者による配布・許可が必要になる場合があります。アプリがその制限を回避することはありません。
+- 本体だけをサイドロードしても依存関係はそろいません。Store外の検証では対応する依存パッケージも別途配置する必要があります。
+
+共有フレームワークの更新はStoreが管理します。.NETは同梱するため、その更新はアプリの再ビルド・配布で取り込みます。パッケージ本体は小さくなりますが、ランタイム未導入PCの初回ダウンロード全体が同じ量だけ減るとは限りません。
+
+共有版の検証用`1.0.1.0`では、x64 / ARM64のビルドとMSIX内容検査が成功しました。圧縮済みパッケージはそれぞれ約65.7MB / 62.3MB、展開後は約179.1MB / 201.3MBです。Windows App Runtimeの依存宣言、ネイティブWinUIランタイムの非同梱、.NETランタイムの同梱、OS下限の維持を確認しています。Storeへのアップロード・インストール・旧版からの更新の実機試験は、この検証には含みません。
+
+参考: [共有ランタイム版のMSIX配布](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/deploy-packaged-apps)、[.NET 10の対応OS](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)。
+
 ## GitHub Actionsでビルドする
 
 Actionsの **Store package (build only)** を手動実行し、Store用バージョン `1.0.0.0`、Publisher、PublisherDisplayNameを指定します。パッケージ名の既定値は `mmiyaji.ChatAgentBridge` です。

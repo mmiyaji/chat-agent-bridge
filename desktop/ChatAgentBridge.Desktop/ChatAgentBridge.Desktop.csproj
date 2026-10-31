@@ -45,7 +45,8 @@
   <PropertyGroup Condition="'$(CABStore)' == 'true'">
     <WindowsPackageType>MSIX</WindowsPackageType>
     <SelfContained>true</SelfContained>
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <WindowsAppSdkDeploymentManagerInitialize>true</WindowsAppSdkDeploymentManagerInitialize>
     <EnableWinAppRunSupport>false</EnableWinAppRunSupport>
     <OutputPath>bin\$(Platform)\$(Configuration)\store\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\store\</IntermediateOutputPath>
@@ -56,6 +57,12 @@
   </ItemGroup>
 
   <Target Name="ValidateCabStoreBuild" BeforeTargets="PrepareForBuild" Condition="'$(CABStore)' == 'true'">
+    <Error Condition="'$(WindowsAppSDKSelfContained)' != 'false'"
+           Text="CABStore requires the shared Windows App SDK framework; WindowsAppSDKSelfContained must be false." />
+    <Error Condition="'$(SelfContained)' != 'true'"
+           Text="CABStore requires self-contained .NET deployment; SelfContained must be true." />
+    <Error Condition="'$(WindowsAppSdkDeploymentManagerInitialize)' != 'true'"
+           Text="CABStore requires WindowsAppSdkDeploymentManagerInitialize=true for framework-dependent deployment." />
     <Error Condition="'$(CABPortable)' == 'true' or '$(CABPortableIdentity)' == 'true' or '$(CABPortableUpdateTest)' == 'true' or '$(CABDiscordFixture)' == 'true'"
            Text="CABStore cannot be combined with portable, portable identity/update-test, or fixture build switches." />
     <Error Condition="'$(CABStoreManifest)' == '' or !Exists('$(CABStoreManifest)')"

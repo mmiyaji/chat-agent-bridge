@@ -119,6 +119,18 @@ try {
                     if ($capabilities.Count -ne 1 -or $capabilities[0] -cne 'runFullTrust') {
                         throw "Store MSIX has unexpected capabilities: $($capabilities -join ', ')."
                     }
+                    $frameworkDependencies = @($packagedManifest.SelectNodes("//*[local-name()='PackageDependency']") | Where-Object {
+                        $_.GetAttribute('Name') -match '^Microsoft\.WindowsAppRuntime\.'
+                    })
+                    if ($frameworkDependencies.Count -ne 1) {
+                        throw "Store MSIX must declare exactly one Microsoft.WindowsAppRuntime framework PackageDependency: '$($upload.Name)'."
+                    }
+                    $frameworkDependency = $frameworkDependencies[0]
+                    $minimumRuntimeVersion = [version]::new()
+                    if ($frameworkDependency.GetAttribute('Publisher') -cne 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US' -or
+                        -not [version]::TryParse($frameworkDependency.GetAttribute('MinVersion'), [ref]$minimumRuntimeVersion)) {
+                        throw "Store MSIX Windows App Runtime dependency has an unexpected Publisher or invalid MinVersion: '$($upload.Name)'."
+                    }
                     $forbiddenEntries = @($payload.Entries | Where-Object {
                         $_.FullName -match '(^|/)(ChatAgentBridge\.(Updater|TestAgent)(\.|/)|Data/|test-support/|fixture/)'
                     })
@@ -128,8 +140,11 @@ try {
                     if ($null -eq $payload.GetEntry('ChatAgentBridge.Desktop.exe') -or
                         $null -eq $payload.GetEntry('hostfxr.dll') -or
                         $null -eq $payload.GetEntry('coreclr.dll') -or
-                        $null -eq $payload.GetEntry('Microsoft.ui.xaml.dll')) {
-                        throw "Store MSIX is missing the desktop executable or self-contained .NET runtime: '$($upload.Name)'."
+                        $null -eq $payload.GetEntry('hostpolicy.dll')) {
+                        throw "Store MSIX is missing the desktop executable or required self-contained .NET runtime: '$($upload.Name)'."
+                    }
+                    if ($null -ne ($payload.Entries | Where-Object { $_.FullName -match '(^|/)Microsoft\.ui\.xaml\.dll$' } | Select-Object -First 1)) {
+                        throw "Store MSIX contains Microsoft.ui.xaml.dll; Windows App SDK must use the shared framework: '$($upload.Name)'."
                     }
                 }
                 finally { $payload.Dispose() }
