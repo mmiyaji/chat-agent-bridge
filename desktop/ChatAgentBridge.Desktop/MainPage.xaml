@@ -86,7 +86,7 @@
                     <NavigationViewItem.InfoBadge>
                         <InfoBadge x:Name="AboutUpdateBadge" Visibility="Collapsed" Style="{StaticResource AttentionDotInfoBadgeStyle}"
                                    Background="{ThemeResource UpdateBadgeBackgroundBrush}" Foreground="{ThemeResource UpdateBadgeForegroundBrush}"
-                                   Width="24" Height="24" MinWidth="24" MinHeight="24" MaxHeight="24" Padding="2"
+                                   Width="24" Height="24" MinWidth="24" MinHeight="24" MaxHeight="24" Padding="2" Margin="0,0,4,0"
                                    AutomationProperties.AccessibilityView="Control" AutomationProperties.AutomationId="NavAboutUpdateBadge">
                             <!-- Each template instance owns its geometry when NavigationView changes pane mode. -->
                             <InfoBadge.Template>
@@ -631,56 +631,62 @@
                                                 <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="ChatFollowUpModeHelp" x:Uid="ChatFollowUpModeHelp" />
                                             </InfoBar.Content>
                                         </InfoBar>
-                                        <ComboBox SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatProgressDetail, Mode=TwoWay}"
-                                                  HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ChatProgressDetail" x:Uid="ChatProgressDetail">
-                                            <ComboBoxItem Tag="minimal" AutomationProperties.AutomationId="ChatProgressDetailMinimal" x:Uid="ChatProgressDetailMinimal" />
-                                            <ComboBoxItem Tag="standard" AutomationProperties.AutomationId="ChatProgressDetailStandard" x:Uid="ChatProgressDetailStandard" />
-                                            <ComboBoxItem Tag="detailed" AutomationProperties.AutomationId="ChatProgressDetailDetailed" x:Uid="ChatProgressDetailDetailed" />
-                                        </ComboBox>
-                                        <Button x:Name="ProgressPreviewButton" Content="Preview" HorizontalAlignment="Left" Unloaded="ProgressPreviewAnchor_Unloaded"
-                                                AutomationProperties.AutomationId="ProgressPreviewButton" x:Uid="ProgressPreviewButton">
-                                            <Button.Flyout>
-                                                <Flyout x:Name="ProgressPreviewFlyout" Opening="ProgressPreviewFlyout_Opening" Opened="ProgressPreviewFlyout_Opened" Closed="ProgressPreviewFlyout_Closed">
-                                                    <Flyout.FlyoutPresenterStyle>
-                                                        <Style TargetType="FlyoutPresenter">
-                                                            <Setter Property="MinWidth" Value="0" />
-                                                            <Setter Property="MaxWidth" Value="480" />
-                                                            <Setter Property="Padding" Value="16" />
-                                                            <Setter Property="AutomationProperties.AutomationId" Value="ProgressPreviewPopup" />
-                                                        </Style>
-                                                    </Flyout.FlyoutPresenterStyle>
-                                                    <Grid x:Name="ProgressPreviewRoot" MaxWidth="440">
-                                                        <ScrollViewer x:Name="ProgressPreviewScrollViewer" MaxHeight="620" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                                            <StackPanel Spacing="12" Padding="4">
-                                                                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="ProgressPreviewTitle" />
-                                                                <ComboBox x:Name="ProgressPreviewLevel" SelectedValuePath="Tag" SelectionChanged="ProgressPreviewLevel_SelectionChanged"
-                                                                          AutomationProperties.AutomationId="ProgressPreviewLevel" x:Uid="ProgressPreviewLevel">
-                                                                    <ComboBoxItem Tag="minimal" AutomationProperties.AutomationId="ProgressPreviewMinimal" x:Uid="ChatProgressDetailMinimal" />
-                                                                    <ComboBoxItem Tag="standard" AutomationProperties.AutomationId="ProgressPreviewStandard" x:Uid="ChatProgressDetailStandard" />
-                                                                    <ComboBoxItem Tag="detailed" AutomationProperties.AutomationId="ProgressPreviewDetailed" x:Uid="ChatProgressDetailDetailed" />
-                                                                </ComboBox>
-                                                                <TextBlock x:Name="ProgressPreviewStatus" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="ProgressPreviewStatus" x:Uid="ProgressPreviewStatus" />
-                                                                <Border MinHeight="144" Padding="12" CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                                                    <TextBlock x:Name="ProgressPreviewMessage" VerticalAlignment="Center" TextWrapping="Wrap" IsTextSelectionEnabled="True"
-                                                                               AutomationProperties.AutomationId="ProgressPreviewMessage" />
-                                                                </Border>
-                                                                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
-                                                                    <Button Click="ProgressPreviewStage_Click" Tag="received" AutomationProperties.AutomationId="ProgressPreviewReceived" x:Uid="ProgressPreviewReceived" />
-                                                                    <Button Click="ProgressPreviewStage_Click" Tag="running" AutomationProperties.AutomationId="ProgressPreviewRunning" x:Uid="ProgressPreviewRunning" />
-                                                                    <Button Click="ProgressPreviewStage_Click" Tag="completed" AutomationProperties.AutomationId="ProgressPreviewCompleted" x:Uid="ProgressPreviewCompleted" />
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatProgressDetail, Mode=TwoWay}"
+                                                      HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ChatProgressDetail" x:Uid="ChatProgressDetail">
+                                                <ComboBoxItem Tag="minimal" AutomationProperties.AutomationId="ChatProgressDetailMinimal" x:Uid="ChatProgressDetailMinimal" />
+                                                <ComboBoxItem Tag="standard" AutomationProperties.AutomationId="ChatProgressDetailStandard" x:Uid="ChatProgressDetailStandard" />
+                                                <ComboBoxItem Tag="detailed" AutomationProperties.AutomationId="ChatProgressDetailDetailed" x:Uid="ChatProgressDetailDetailed" />
+                                            </ComboBox>
+                                            <Button x:Name="ProgressPreviewButton" Grid.Column="1" Content="Preview" VerticalAlignment="Bottom" Unloaded="ProgressPreviewAnchor_Unloaded"
+                                                    AutomationProperties.AutomationId="ProgressPreviewButton" x:Uid="ProgressPreviewButton">
+                                                <Button.Flyout>
+                                                    <Flyout x:Name="ProgressPreviewFlyout" Opening="ProgressPreviewFlyout_Opening" Opened="ProgressPreviewFlyout_Opened" Closed="ProgressPreviewFlyout_Closed">
+                                                        <Flyout.FlyoutPresenterStyle>
+                                                            <Style TargetType="FlyoutPresenter">
+                                                                <Setter Property="MinWidth" Value="0" />
+                                                                <Setter Property="MaxWidth" Value="480" />
+                                                                <Setter Property="Padding" Value="16" />
+                                                                <Setter Property="AutomationProperties.AutomationId" Value="ProgressPreviewPopup" />
+                                                            </Style>
+                                                        </Flyout.FlyoutPresenterStyle>
+                                                        <Grid x:Name="ProgressPreviewRoot" MaxWidth="440">
+                                                            <ScrollViewer x:Name="ProgressPreviewScrollViewer" MaxHeight="620" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                                                <StackPanel Spacing="12" Padding="4">
+                                                                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="ProgressPreviewTitle" />
+                                                                    <ComboBox x:Name="ProgressPreviewLevel" SelectedValuePath="Tag" SelectionChanged="ProgressPreviewLevel_SelectionChanged"
+                                                                              AutomationProperties.AutomationId="ProgressPreviewLevel" x:Uid="ProgressPreviewLevel">
+                                                                        <ComboBoxItem Tag="minimal" AutomationProperties.AutomationId="ProgressPreviewMinimal" x:Uid="ChatProgressDetailMinimal" />
+                                                                        <ComboBoxItem Tag="standard" AutomationProperties.AutomationId="ProgressPreviewStandard" x:Uid="ChatProgressDetailStandard" />
+                                                                        <ComboBoxItem Tag="detailed" AutomationProperties.AutomationId="ProgressPreviewDetailed" x:Uid="ChatProgressDetailDetailed" />
+                                                                    </ComboBox>
+                                                                    <TextBlock x:Name="ProgressPreviewStatus" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="ProgressPreviewStatus" x:Uid="ProgressPreviewStatus" />
+                                                                    <Border MinHeight="144" Padding="12" CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                                                        <TextBlock x:Name="ProgressPreviewMessage" VerticalAlignment="Center" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                                                                   AutomationProperties.AutomationId="ProgressPreviewMessage" />
+                                                                    </Border>
+                                                                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
+                                                                        <Button Click="ProgressPreviewStage_Click" Tag="received" AutomationProperties.AutomationId="ProgressPreviewReceived" x:Uid="ProgressPreviewReceived" />
+                                                                        <Button Click="ProgressPreviewStage_Click" Tag="running" AutomationProperties.AutomationId="ProgressPreviewRunning" x:Uid="ProgressPreviewRunning" />
+                                                                        <Button Click="ProgressPreviewStage_Click" Tag="completed" AutomationProperties.AutomationId="ProgressPreviewCompleted" x:Uid="ProgressPreviewCompleted" />
+                                                                    </StackPanel>
+                                                                    <Grid>
+                                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                                        <Button Grid.Column="0" HorizontalAlignment="Left" Click="ProgressPreviewPlay_Click" AutomationProperties.AutomationId="ProgressPreviewPlay" x:Uid="ProgressPreviewPlay" />
+                                                                        <Button Grid.Column="1" HorizontalAlignment="Right" Click="ProgressPreviewClose_Click" AutomationProperties.AutomationId="ProgressPreviewClose" x:Uid="ProgressPreviewClose" />
+                                                                    </Grid>
+                                                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" x:Uid="ProgressPreviewDisclaimer" />
                                                                 </StackPanel>
-                                                                <Grid>
-                                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                                                    <Button Grid.Column="0" HorizontalAlignment="Left" Click="ProgressPreviewPlay_Click" AutomationProperties.AutomationId="ProgressPreviewPlay" x:Uid="ProgressPreviewPlay" />
-                                                                    <Button Grid.Column="1" HorizontalAlignment="Right" Click="ProgressPreviewClose_Click" AutomationProperties.AutomationId="ProgressPreviewClose" x:Uid="ProgressPreviewClose" />
-                                                                </Grid>
-                                                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" x:Uid="ProgressPreviewDisclaimer" />
-                                                            </StackPanel>
-                                                        </ScrollViewer>
-                                                    </Grid>
-                                                </Flyout>
-                                            </Button.Flyout>
-                                        </Button>
+                                                            </ScrollViewer>
+                                                        </Grid>
+                                                    </Flyout>
+                                                </Button.Flyout>
+                                            </Button>
+                                        </Grid>
                                         <InfoBar Severity="Informational" IsOpen="True" IsClosable="False" AutomationProperties.AutomationId="ChatProgressDetailHelpNotice">
                                             <InfoBar.Content>
                                                 <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="ChatProgressDetailHelp" x:Uid="ChatProgressDetailHelp" />

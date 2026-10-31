@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][string]$AppDirectory)
+param([Parameter(Mandatory)][string]$AppDirectory, [switch]$LayoutOnly)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes,System.Windows.Forms
 Add-Type @'
@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 public static class PreviewSmokeNative {
  [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr h);
+ [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
  [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h,IntPtr after,int x,int y,int w,int height,uint flags);
 }
 '@
@@ -63,6 +64,8 @@ function ScrollTo([string]$Id) {
  Wait { Visible $Id } "$Id scrolls into view"
 }
 function SelectLevel([string]$Level) {
+ [PreviewSmokeNative]::SetForegroundWindow($app.MainWindowHandle) | Out-Null
+ if(-not (Visible 'ProgressPreviewLevel')) { Invoke 'ProgressPreviewButton'; Wait { Visible 'ProgressPreviewLevel' } 'preview after focus change' }
  $combo=Element 'ProgressPreviewLevel'
  $expand=$combo.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
  $expand.Expand(); Invoke ('ProgressPreview'+$Level)
@@ -75,6 +78,23 @@ function AssertNoHorizontalScroll {
   $pattern=$scroll.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
   Assert (-not $pattern.Current.HorizontallyScrollable) 'Preview has unwanted horizontal scrolling.'
  }
+}
+function AssertInlinePreview {
+ $scroll=Element 'ConnectionSettingsScroll'; $pattern=$scroll.GetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern)
+ if($pattern.Current.VerticallyScrollable) { $pattern.Scroll([Windows.Automation.ScrollAmount]::NoAmount,[Windows.Automation.ScrollAmount]::LargeIncrement); Start-Sleep -Milliseconds 250 }
+ $combo=(Element 'ChatProgressDetail').Current.BoundingRectangle
+ $button=(Element 'ProgressPreviewButton').Current.BoundingRectangle
+ $scale=[PreviewSmokeNative]::GetDpiForWindow($app.MainWindowHandle)/96.0
+ Assert ([Math]::Abs($combo.Bottom-$button.Bottom) -le 4*$scale) "Preview alignment delta: $([Math]::Abs($combo.Bottom-$button.Bottom)); combo=$combo button=$button scale=$scale"
+ Assert ($button.Left -ge $combo.Right+4*$scale) 'Preview button overlaps the selection field.'
+}
+function AssertUpdateBadge([bool]$Expanded) {
+ Wait { Visible 'NavAboutUpdateBadge' } 'cached update badge'
+ $badge=(Element 'NavAboutUpdateBadge').Current.BoundingRectangle
+ $item=(Element 'NavAbout').Current.BoundingRectangle
+ $scale=[PreviewSmokeNative]::GetDpiForWindow($app.MainWindowHandle)/96.0
+ Assert ($badge.Width -ge 23*$scale -and $badge.Height -ge 23*$scale) 'Update icon is clipped or shrunken.'
+ if($Expanded) { Assert ($item.Right-$badge.Right -ge 4*$scale-0.5) 'Update icon has no right spacing.' }
 }
 function Size([int]$Width) {
  $app.Refresh(); $scale=[PreviewSmokeNative]::GetDpiForWindow($app.MainWindowHandle)/96.0
@@ -90,14 +110,28 @@ try {
   Json (Join-Path $data 'tips.json') @{Seen=@('chat-connect')}
   Json (Join-Path $data 'language.json') @{Language=$language}
   Json (Join-Path $data 'appearance.json') @{Theme=$theme}
-  Json (Join-Path $data 'portable-update.json') @{schemaVersion=1;automaticChecksEnabled=$false;includePrereleases=$false}
+  $candidate=@{version='9.9.9';tag='v9.9.9';assetName='ChatAgentBridge.Portable-9.9.9-win-x64.zip';downloadUri='https://github.com/mmiyaji/chat-agent-bridge/releases/download/v9.9.9/ChatAgentBridge.Portable-9.9.9-win-x64.zip';sha256=('a'*64);size=1234;releasePage='https://github.com/mmiyaji/chat-agent-bridge/releases/tag/v9.9.9'}
+  # Cached synthetic candidate only; checks are disabled and no update is downloaded.
+  Json (Join-Path $data 'portable-update.json') @{schemaVersion=1;automaticChecksEnabled=$false;includePrereleases=$false;availableRelease=$candidate}
   Json (Join-Path $data 'pricing-auto.json') @{schemaVersion=1;autoUpdateEnabled=$false;catalogJson=(Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/Pricing/model-prices.json') -Raw)}
   $start=[Diagnostics.ProcessStartInfo]::new((Join-Path $install 'ChatAgentBridge.Desktop.exe')); $start.UseShellExecute=$false
   $start.ArgumentList.Add('--data-dir');$start.ArgumentList.Add($data)
   $app=[Diagnostics.Process]::Start($start)
-  Element 'NavConnections' | Out-Null; Size 1160; Invoke 'NavConnections'
+  Element 'NavConnections' | Out-Null; Size 1160
+  AssertUpdateBadge $true; Capture "$scenario-badge-expanded"
+  Invoke 'TogglePaneButton'; Start-Sleep -Milliseconds 300
+  AssertUpdateBadge $false; Capture "$scenario-badge-compact"
+  Invoke 'TogglePaneButton'; Start-Sleep -Milliseconds 300
+  Invoke 'NavConnections'
   if(Visible 'ConnectionScopeCommon') { Invoke 'ConnectionScopeCommon' }
-  ScrollTo 'ProgressPreviewButton'
+  ScrollTo 'ChatProgressDetailHelpNotice'; ScrollTo 'ProgressPreviewButton'; Start-Sleep -Milliseconds 200
+  AssertInlinePreview; Capture "$scenario-settings-inline"
+  if($LayoutOnly) {
+   Size 500; ScrollTo 'ChatProgressDetailHelpNotice'; ScrollTo 'ProgressPreviewButton'; AssertInlinePreview; Capture "$scenario-settings-inline-narrow"
+   Size 1160; Invoke 'NavAbout'; Invoke 'AboutExit'; Element 'WindowCloseConfirmation' | Out-Null; Invoke 'PrimaryButton'
+   Assert ($app.WaitForExit(15000)) 'App did not exit normally.'; $app=$null
+   $checks.Add(@{name=$scenario;passed=$true;layoutOnly=$true}); Write-Output "PASS $scenario inline action, narrow layout, update badge expanded/compact"; continue
+  }
   $realSelection=(Element 'ChatProgressDetail').GetCurrentPattern([Windows.Automation.SelectionPattern]::Pattern).Current.GetSelection()[0].Current.Name
   Invoke 'ProgressPreviewButton'
   Wait { Visible 'ProgressPreviewMessage' } 'preview popup'
@@ -124,9 +158,9 @@ try {
   Wait { (Element 'ProgressPreviewMessage').Current.Name -eq $samples['Detailed-Completed'] } 'playback reaches completion' 12
   Start-Sleep -Milliseconds 2500
   Assert ((Element 'ProgressPreviewMessage').Current.Name -eq $samples['Detailed-Completed']) 'Playback loops after completion.'
-  (Element 'ProgressPreviewPlay').SetFocus();[Windows.Forms.SendKeys]::SendWait('{ESC}')
+  [PreviewSmokeNative]::SetForegroundWindow($app.MainWindowHandle) | Out-Null; (Element 'ProgressPreviewPlay').SetFocus();[Windows.Forms.SendKeys]::SendWait('{ESC}')
   Wait { -not (Visible 'ProgressPreviewMessage') } 'Esc closes preview'
-  Size 500; ScrollTo 'ProgressPreviewButton'; Invoke 'ProgressPreviewButton'
+  Size 500; ScrollTo 'ChatProgressDetailHelpNotice'; ScrollTo 'ProgressPreviewButton'; Start-Sleep -Milliseconds 200; AssertInlinePreview; Capture "$scenario-settings-inline-narrow"; Invoke 'ProgressPreviewButton'
   Wait { Visible 'ProgressPreviewMessage' } 'narrow preview'
   SelectLevel 'Detailed'; Invoke 'ProgressPreviewRunning'; AssertNoHorizontalScroll; Capture "$scenario-narrow"
   $app.Refresh(); $window=[Windows.Automation.AutomationElement]::FromHandle($app.MainWindowHandle).Current.BoundingRectangle
@@ -134,7 +168,7 @@ try {
    $item=Element $id; $rect=$item.Current.BoundingRectangle
    Assert (-not $item.Current.IsOffscreen -and $rect.Left -ge $window.Left -and $rect.Right -le $window.Right) "Narrow preview clips $id"
   }
-  (Element 'ProgressPreviewPlay').SetFocus(); [Windows.Forms.SendKeys]::SendWait('{ESC}')
+  [PreviewSmokeNative]::SetForegroundWindow($app.MainWindowHandle) | Out-Null; (Element 'ProgressPreviewPlay').SetFocus(); [Windows.Forms.SendKeys]::SendWait('{ESC}')
   Wait { -not (Visible 'ProgressPreviewMessage') } 'narrow preview dismissal'
   Size 1160; Invoke 'NavAbout'; Invoke 'AboutExit'; Element 'WindowCloseConfirmation' | Out-Null; Invoke 'PrimaryButton'
   Assert ($app.WaitForExit(15000)) 'App did not exit normally.'; $app=$null
