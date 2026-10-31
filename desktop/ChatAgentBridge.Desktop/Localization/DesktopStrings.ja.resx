@@ -86,6 +86,13 @@
   <data name="ProgressActivityCount" xml:space="preserve"><value>操作 {0}件</value></data>
   <data name="ProgressUsage" xml:space="preserve"><value>📊 トークン 入力 {0} / 出力 {1}</value></data>
   <data name="ProgressUsageCost" xml:space="preserve"><value>・推定費用 {0}</value></data>
+  <data name="ProgressPreviewAgent" xml:space="preserve"><value>サンプルエージェント</value></data>
+  <data name="ProgressPreviewModel" xml:space="preserve"><value>サンプルモデル</value></data>
+  <data name="ProgressPreviewPermission" xml:space="preserve"><value>操作前に確認</value></data>
+  <data name="ProgressPreviewActivity" xml:space="preserve"><value>サンプルの作業領域を検索中</value></data>
+  <data name="ProgressPreviewReceivedStatus" xml:space="preserve"><value>状態：受付済み</value></data>
+  <data name="ProgressPreviewRunningStatus" xml:space="preserve"><value>状態：実行中</value></data>
+  <data name="ProgressPreviewCompletedStatus" xml:space="preserve"><value>状態：完了</value></data>
   <data name="ProgressFollowUpSteerHint" xml:space="preserve"><value>返信すると実行中の作業に追加指示として渡します</value></data>
   <data name="ProgressFollowUpQueueHint" xml:space="preserve"><value>返信は今の実行が終わった後に順番に処理します</value></data>
   <data name="PermissionSourceProjectLocal" xml:space="preserve"><value>{0}ローカルプロジェクト設定</value></data>

@@ -1350,4 +1350,21 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ChatProgressDetailHelp.Text" xml:space="preserve">
     <value>Minimal shows only the status. Standard also shows the operation count and usage, then collapses to one line when the request ends. Detailed also shows the agent, recent operations and reply hints.</value>
   </data>
+  <data name="ProgressPreviewButton.Content" xml:space="preserve"><value>Preview</value></data>
+  <data name="ProgressPreviewButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Preview progress message</value></data>
+  <data name="ProgressPreviewTitle.Text" xml:space="preserve"><value>Progress message preview</value></data>
+  <data name="ProgressPreviewLevel.Header" xml:space="preserve"><value>Detail level</value></data>
+  <data name="ProgressPreviewStatus.Text" xml:space="preserve"><value>Received</value></data>
+  <data name="ProgressPreviewReceived.Content" xml:space="preserve"><value>Received</value></data>
+  <data name="ProgressPreviewRunning.Content" xml:space="preserve"><value>Running</value></data>
+  <data name="ProgressPreviewCompleted.Content" xml:space="preserve"><value>Completed</value></data>
+  <data name="ProgressPreviewPlay.Content" xml:space="preserve"><value>Replay</value></data>
+  <data name="ProgressPreviewClose.Content" xml:space="preserve"><value>Close</value></data>
+  <data name="ProgressPreviewReceivedStatus" xml:space="preserve"><value>Stage: received</value></data>
+  <data name="ProgressPreviewRunningStatus" xml:space="preserve"><value>Stage: running</value></data>
+  <data name="ProgressPreviewCompletedStatus" xml:space="preserve"><value>Stage: completed</value></data>
+  <data name="ProgressPreviewAgent" xml:space="preserve"><value>Example agent</value></data>
+  <data name="ProgressPreviewPermission" xml:space="preserve"><value>ask before actions</value></data>
+  <data name="ProgressPreviewActivity" xml:space="preserve"><value>Searching the example workspace</value></data>
+  <data name="ProgressPreviewDisclaimer.Text" xml:space="preserve"><value>This is an example only. It will not be sent to a chat.</value></data>
 </root>

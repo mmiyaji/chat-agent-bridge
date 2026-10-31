@@ -1350,4 +1350,21 @@
   <data name="ChatProgressDetailHelp.Text" xml:space="preserve">
     <value>最小は状態だけを表示します。標準は操作の件数と使用量も出し、終了すると1行に畳みます。詳細はエージェント、直近の操作、返信のヒントも表示します。</value>
   </data>
+  <data name="ProgressPreviewButton.Content" xml:space="preserve"><value>表示例</value></data>
+  <data name="ProgressPreviewButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>経過メッセージの表示例</value></data>
+  <data name="ProgressPreviewTitle.Text" xml:space="preserve"><value>経過メッセージの表示例</value></data>
+  <data name="ProgressPreviewLevel.Header" xml:space="preserve"><value>詳しさ</value></data>
+  <data name="ProgressPreviewStatus.Text" xml:space="preserve"><value>受付済み</value></data>
+  <data name="ProgressPreviewReceived.Content" xml:space="preserve"><value>受付</value></data>
+  <data name="ProgressPreviewRunning.Content" xml:space="preserve"><value>実行中</value></data>
+  <data name="ProgressPreviewCompleted.Content" xml:space="preserve"><value>完了</value></data>
+  <data name="ProgressPreviewPlay.Content" xml:space="preserve"><value>もう一度再生</value></data>
+  <data name="ProgressPreviewClose.Content" xml:space="preserve"><value>閉じる</value></data>
+  <data name="ProgressPreviewReceivedStatus" xml:space="preserve"><value>状態：受付済み</value></data>
+  <data name="ProgressPreviewRunningStatus" xml:space="preserve"><value>状態：実行中</value></data>
+  <data name="ProgressPreviewCompletedStatus" xml:space="preserve"><value>状態：完了</value></data>
+  <data name="ProgressPreviewAgent" xml:space="preserve"><value>サンプルエージェント</value></data>
+  <data name="ProgressPreviewPermission" xml:space="preserve"><value>操作前に確認</value></data>
+  <data name="ProgressPreviewActivity" xml:space="preserve"><value>サンプルの作業領域を検索中</value></data>
+  <data name="ProgressPreviewDisclaimer.Text" xml:space="preserve"><value>表示例です。チャットには送信されません。</value></data>
 </root>

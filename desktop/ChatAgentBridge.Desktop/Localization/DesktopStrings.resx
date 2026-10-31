@@ -86,6 +86,13 @@
   <data name="ProgressActivityCount" xml:space="preserve"><value>Actions so far: {0}</value></data>
   <data name="ProgressUsage" xml:space="preserve"><value>📊 Tokens in {0} / out {1}</value></data>
   <data name="ProgressUsageCost" xml:space="preserve"><value> · est. cost {0}</value></data>
+  <data name="ProgressPreviewAgent" xml:space="preserve"><value>Example agent</value></data>
+  <data name="ProgressPreviewModel" xml:space="preserve"><value>example model</value></data>
+  <data name="ProgressPreviewPermission" xml:space="preserve"><value>ask before actions</value></data>
+  <data name="ProgressPreviewActivity" xml:space="preserve"><value>Searching the example workspace</value></data>
+  <data name="ProgressPreviewReceivedStatus" xml:space="preserve"><value>Stage: received</value></data>
+  <data name="ProgressPreviewRunningStatus" xml:space="preserve"><value>Stage: running</value></data>
+  <data name="ProgressPreviewCompletedStatus" xml:space="preserve"><value>Stage: completed</value></data>
   <data name="ProgressFollowUpSteerHint" xml:space="preserve"><value>A reply in this thread is passed to the running work as an extra instruction.</value></data>
   <data name="ProgressFollowUpQueueHint" xml:space="preserve"><value>A reply in this thread is processed in order after the current run finishes.</value></data>
   <data name="PermissionSourceProjectLocal" xml:space="preserve"><value>{0} local project settings</value></data>
