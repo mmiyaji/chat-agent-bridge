@@ -61,7 +61,27 @@
             MainPage.xaml rather than here so you can use Page features such as
             navigation events and the Loaded lifecycle.
         -->
-        <Frame x:Name="RootFrame" Grid.Row="1" />
+        <Frame x:Name="RootFrame" Grid.Row="1" Opacity="0" IsHitTestVisible="False" IsEnabled="False" AutomationProperties.AutomationId="RootFrame" />
+        <Border x:Name="StartupSplashShell" Grid.Row="1" Padding="24"
+                Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" AutomationProperties.AutomationId="StartupSplashShell">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="0">
+                <Grid Width="112" Height="112" HorizontalAlignment="Center">
+                    <Ellipse Stroke="{ThemeResource ControlStrokeColorDefaultBrush}" StrokeThickness="2" />
+                    <Ellipse x:Name="StartupSplashRing" Width="112" Height="112" Stroke="{ThemeResource AccentFillColorDefaultBrush}"
+                             StrokeThickness="2" StrokeDashArray="50,150" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5"
+                             AutomationProperties.AccessibilityView="Raw">
+                        <Ellipse.RenderTransform><RotateTransform x:Name="StartupSplashRotation" /></Ellipse.RenderTransform>
+                    </Ellipse>
+                    <Image Source="ms-appx:///Assets/Square44x44Logo.scale-200.png" Width="64" Height="64"
+                           AutomationProperties.AccessibilityView="Raw" />
+                </Grid>
+                <TextBlock Text="Chat Agent Bridge" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,24,0,0"
+                           TextAlignment="Center" TextWrapping="Wrap" />
+                <TextBlock x:Name="StartupSplashMessage" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.LiveSetting="Polite"
+                           AutomationProperties.AutomationId="StartupSplashMessage" />
+            </StackPanel>
+        </Border>
         <Border x:Name="StartupMigrationShell" Grid.Row="1" Visibility="Collapsed" Padding="32"
                 Background="{ThemeResource LayerFillColorDefaultBrush}" AutomationProperties.AutomationId="StartupMigrationShell">
             <StackPanel MaxWidth="560" Spacing="16" HorizontalAlignment="Center" VerticalAlignment="Center">

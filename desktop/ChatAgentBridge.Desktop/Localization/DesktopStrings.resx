@@ -941,4 +941,5 @@ After: {2}</value></data>
   <data name="InboxReconnectConfirmTitle" xml:space="preserve"><value>Reconnect to chat?</value></data>
   <data name="InboxReconnectConfirmBody" xml:space="preserve"><value>Actions on current requests will no longer be available. Share any unsent results or files first, and send unexecuted requests again from chat after reconnecting. Conversation history will be kept.</value></data>
   <data name="InboxDisconnectFailed" xml:space="preserve"><value>The disconnect operation could not finish. Check the connection and try again.</value></data>
+  <data name="StartupLoading" xml:space="preserve"><value>Loading settings and conversations</value></data>
 </root>

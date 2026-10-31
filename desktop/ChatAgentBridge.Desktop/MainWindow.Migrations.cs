@@ -35,6 +35,7 @@ public sealed partial class MainWindow
         StartupMigrationRetry.Content = DesktopText.Get("MigrationRetry");
         try
         {
+            await ShowStartupSplashFrameAsync();
             var progress = new Progress<MigrationProgress>(value =>
             {
                 if (_startupLifetime.IsCancellationRequested || RootFrame.Content is MainPage) return;
@@ -61,6 +62,7 @@ public sealed partial class MainWindow
                     if (args.PropertyName is nameof(page.ViewModel.IsOnboardingActive) or nameof(page.ViewModel.IsSettingsLoaded))
                         UpdateSettingsSearchVisibility();
                 };
+                await CompleteStartupSplashAsync(page);
             }
             UpdateSettingsSearchVisibility();
             _startupReady.TrySetResult();
@@ -68,6 +70,7 @@ public sealed partial class MainWindow
         catch (OperationCanceledException) when (_startupLifetime.IsCancellationRequested) { }
         catch (Exception)
         {
+            HideStartupSplash();
             StartupMigrationShell.Visibility = Visibility.Visible;
             StartupMigrationRing.IsActive = false;
             StartupMigrationLoading.Visibility = Visibility.Collapsed;
@@ -85,6 +88,7 @@ public sealed partial class MainWindow
     private void CancelStartupMigration()
     {
         _startupLifetime.Cancel();
+        _startupRingAnimation.Stop();
         _startupReady.TrySetCanceled();
     }
 

@@ -11,6 +11,8 @@ namespace ChatAgentBridge_Desktop;
 public sealed partial class MainPage : Page
 {
     private bool _hasLoaded;
+    private readonly TaskCompletionSource _initialContentReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    internal Task InitialContentReady => _initialContentReady.Task;
     private string? _selectedNavigationTag;
     private int _scrollResetGeneration;
     private int _languageRefreshGeneration;
@@ -364,6 +366,7 @@ public sealed partial class MainPage : Page
         await ViewModel.InitializeOnboardingAsync();
         await startupRefresh;
         ViewModel.RefreshOverviewStatus();
+        _initialContentReady.TrySetResult();
         if (!App.IsNotificationOnlyLaunch && ViewModel.IsSettingsLoaded && !ViewModel.IsOnboardingActive && !ViewModel.IsLoading &&
             !ViewModel.HasUnsavedSettings && !ViewModel.IsSensitiveConfirmationPending &&
             ViewModel.AutoConnectProvider == startupProvider)

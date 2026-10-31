@@ -37,6 +37,7 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         App.Appearance.Attach(this, WindowRoot);
+        InitializeStartupSplash();
 
         AppWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
         var hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);

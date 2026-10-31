@@ -941,4 +941,5 @@
   <data name="InboxReconnectConfirmTitle" xml:space="preserve"><value>チャットに再接続しますか？</value></data>
   <data name="InboxReconnectConfirmBody" xml:space="preserve"><value>現在の依頼は、この画面から操作できなくなります。未送信の結果・添付は先に共有し、未実行の依頼は再接続後にチャットから再投稿してください。会話履歴は残ります。</value></data>
   <data name="InboxDisconnectFailed" xml:space="preserve"><value>切断処理を完了できませんでした。通信状態を確認し、もう一度お試しください。</value></data>
+  <data name="StartupLoading" xml:space="preserve"><value>設定と会話を読み込んでいます</value></data>
 </root>
