@@ -13,6 +13,7 @@
 ## 開発・検証
 
 - [WinUI版の技術資料・開発手順](../desktop/README.ja.md)
+- [テスト・検証ガイド](testing.ja.md) — 変更別の確認方法、UIスクリプトの分類、リリース前の確認
 - [CI/CDの運用](ci-cd.ja.md)
 - [更新時のデータ移行](data-migrations.ja.md)
 - [添付の一時ファイルと起動時の回収](incoming-attachment-recovery.md)

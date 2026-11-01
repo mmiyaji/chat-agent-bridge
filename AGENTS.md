@@ -27,15 +27,16 @@ dotnet test desktop/ChatAgentBridge.Transports.Tests/ChatAgentBridge.Transports.
 ```
 
 CI の全体は `.github/workflows/ci.yml` を参照してください。
+変更箇所に応じた検証の選び方とリリース前確認は [`docs/testing.ja.md`](docs/testing.ja.md) を参照してください。
 
 ## 変更時のルール
 
-- 変更範囲に応じて上記のテストを通してから報告する。
-- UI を変えたときは、対応する `desktop/*UiE2E.ps1` / `*UiSmoke.ps1` で確認する（実機環境が必要なものがある）。
+- 変更範囲に応じて、実行可能な関連チェックを選ぶ。小さな変更に重いテスト一式を常に実行する必要はない。実行しなかった重要なチェックと理由は報告する。
+- UI を変えたときは、影響範囲に合う `desktop/*UiE2E.ps1` / `*UiSmoke.ps1` を選び、実行可能な環境なら確認する。UI テストは時間や環境の負荷を考慮して適宜判断し、実施できない場合は理由を報告する。リリース前には必要な UI 検証を実施する。
 - UI 文字列を変えたら日英の文言を揃え、`CheckLocalization.py` を通す。
 - 利用者向けの挙動を変えたら `README.md` / `README.ja.md` / `desktop/README.ja.md` を実装に合わせて更新する。
 - 作業用の一時ファイルは `.artifacts/` に置く。`.env`、接続トークン、`data/` はコミットしない。
-- main への直接コミットはしない。作業はブランチで行い（既存の命名は `codex/`・`claude/` など）、ブランチ作成は事前に提案する。
+- main への直接コミットはしない。作業ブランチは変更の種類を表す一般的な prefix と短い kebab-case の説明で命名する（例：`feature/add-kiro-cli`、`fix/session-resume`、`docs/update-testing-guide`、`refactor/agent-adapters`、`test/ui-smoke-coverage`、`chore/update-dependencies`、`release/v1.2.0`）。エージェント名の prefix は使わない。
 - 区切りのよいところで適宜コミットする。メッセージの prefix は add / update / fix / refactor。
 - push・マージ・リリースは利用者の許可を得てから行う。「リリースしてください」の指示には push の許可を含むものとする。
 
