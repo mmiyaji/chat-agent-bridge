@@ -1,127 +1,130 @@
-# Slack Setup
+# Slack setup / Slackの設定
 
-## Supported modes
+Chat Agent BridgeのWindowsアプリをSlackへ接続する手順です。
 
-The Slack adapter supports:
+## Slackアプリを準備する
 
-- HTTP mode via `POST /slack/events`
-- Socket Mode via an outbound WebSocket connection to Slack
+BridgeはSocket Modeで、PCからSlackへ接続します。公開URLやポート開放は不要です。
 
-Use Socket Mode when the bridge runs on a local workstation and you do not want to expose a public webhook URL.
+1. [Slack API](https://api.slack.com/apps)で **Create New App → From scratch** を選び、利用するワークスペースにアプリを作成します。
+2. **Socket Mode** を有効にし、`connections:write` を持つアプリレベルトークン（`xapp-` で始まる値）を作成します。
+3. **Event Subscriptions** を有効にし、**Subscribe to bot events** に次のイベントを追加します。
 
-## Required app capabilities
+   | イベント | 用途 |
+   | --- | --- |
+   | `app_mention` | メンションで依頼を開始する（必須） |
+   | `message.channels` | 公開チャンネルのスレッドで会話を続ける |
+   | `message.groups` | 非公開チャンネルで使う場合 |
+   | `message.im` / `message.mpim` | DM・グループDMのスレッドで返信を受け取る場合（任意） |
 
-Recommended bot events:
+4. **OAuth & Permissions** の **Bot Token Scopes** に、必要な権限を追加します。
 
-- `app_mention`
-- `message.channels`
-- `message.groups` if you use private channels
-- `message.im` if you use direct messages
-- `message.mpim` if you use group direct messages
+   | 権限 | 用途 | 必要な場合 |
+   | --- | --- | --- |
+   | `app_mentions:read` | メンションの受信 | 必須 |
+   | `chat:write` | 進捗・結果の投稿と更新 | 必須 |
+   | `channels:history` / `groups:history` / `im:history` / `mpim:history` | スレッドでの返信の受信、投稿リンクからの会話の確認 | 使う会話の種類に応じて |
+   | `users:read` | 許可ユーザーの検索、履歴でのユーザー名表示 | 推奨 |
+   | `channels:read` / `groups:read` / `im:read` / `mpim:read` | 履歴でのチャンネル名表示、投稿リンクからの会話の確認 | 推奨（使う会話の種類に応じて） |
+   | `files:read` | 依頼に添付したファイルの受信 | ファイル受信を使う場合 |
+   | `files:write` | 生成ファイルのスレッドへの送信 | ファイル送信を使う場合 |
 
-Required bot scopes:
+5. **Install to Workspace** でアプリをインストールし、Botトークン（`xoxb-` で始まる値）を控えます。
+6. 依頼に使うチャンネルで `/invite @アプリ名` を実行し、Botを招待します。
 
-- `app_mentions:read`
-- `chat:write`
+権限を後から追加した場合は、**アプリをワークスペースへ再インストール**してから、Bridgeで接続し直してください。トークンはパスワードに相当するため、チャットやスクリーンショットで共有しないでください。
 
-For names in the WinUI desktop app's history and lookup controls:
+## Bridgeで設定する
 
-- `users:read`: usernames and display names.
-- `channels:read`: public channel names.
-- `groups:read`: names of private channels the app has joined.
-- `im:read` / `mpim:read`: direct-message / group direct-message metadata, when used.
+1. **チャット設定 → Slack** に、BotトークンとアプリレベルトークンをBridgeへ入力します。
+2. **Slackの許可ユーザーを検索** に依頼を送る本人のユーザー名（例: `@alice`）かメンバーIDを入力し、結果を確認して「このユーザーを追加」を選びます。許可リストにはメンバーIDが保存されます。
+3. 必要に応じて **Slackの投稿リンクから会話を指定** で、依頼を受け付けるチャンネル・スレッドを限定します。メッセージのリンクを貼り付けると、ワークスペース・チャンネル・スレッドを確認してから追加できます。
+4. 保存して **チャット** からSlackに接続します。
 
-Choose the read scopes for the conversation types you use. A `C`-prefixed channel ID can also identify a private channel; use the scope requested by Slack's `missing_scope` response instead of inferring privacy from the ID prefix. After changing bot scopes in **OAuth & Permissions**, reinstall the app to the intended workspace. A message-history scope alone does not grant access to channel metadata. See [Slack's Conversations API permissions](https://docs.slack.dev/apis/web-api/using-the-conversations-api/).
+## 依頼と操作
 
-Workspace names come from `auth.test`, which requires no additional scope. Name lookups use metadata APIs and do not require the app to read message text. The desktop app caches successful names for 24 hours; a failed lookup may remain cached for 5 minutes after a permission change. Existing IDs and allowlists continue to control execution; display names do not grant access.
+- **開始**：Botを招待したチャンネルで `@アプリ名 依頼内容` と投稿します。
+- **続き**：同じユーザーが同じスレッドへ返信すると、メンションなしで会話を続けます。他のユーザーの返信は、あなたの会話として扱いません。
+- **状態確認・中断**：同じスレッドで `!cab status` / `!cab stop` を投稿します。
+- **承認**：依頼の開始はPCで承認します。Codex App Serverでチャットへの承認共有を有効にすると、CLIの操作を `!cab approve <コード>` / `!cab reject <コード>` で承認できます。
 
-For Socket Mode:
+履歴に表示するワークスペース名は `auth.test` から取得し、追加の権限は不要です。ユーザー名・チャンネル名の取得はメタデータAPIだけを使い、投稿本文は読みません。取得に成功した名前は24時間、失敗は権限変更後も最大5分間キャッシュされます。表示名は実行の許可に影響しません。許可はユーザーIDで判定します。
 
-- app-level token with `connections:write`
+## トラブルシューティング
 
-## Environment variables
+| 症状 | 確認すること |
+| --- | --- |
+| メンションしても反応しない | Socket Modeが有効か。`app_mention` イベントと `app_mentions:read` があるか。Botをチャンネルに招待したか。投稿者が許可ユーザーか |
+| スレッドの返信で続かない | 使う会話の種類の `message.*` イベントと `*:history` 権限があるか。最初の依頼と同じユーザーが返信しているか |
+| 名前が表示されない | `users:read` と、会話の種類に応じた `*:read` 権限があるか。権限追加後に再インストールしたか |
+| 添付を受け取れない・送れない | 受信は `files:read`、送信は `files:write` が必要。追加後に再インストールしたか |
+| `missing_scope` エラー | エラーに示された権限を追加して再インストール。チャンネルIDの先頭（`C` など）から公開・非公開を推測せず、Slackが要求する権限に従ってください |
 
-### HTTP mode
+---
 
-```powershell
-$env:CAB_CHAT_PROVIDER="slack"
-$env:CAB_SLACK_MODE="http"
-$env:SLACK_BOT_TOKEN="xoxb-..."
-$env:SLACK_SIGNING_SECRET="..."
-```
+## English
 
-### Socket Mode
+This guide connects the Chat Agent Bridge Windows app to Slack.
 
-```powershell
-$env:CAB_CHAT_PROVIDER="slack"
-$env:CAB_SLACK_MODE="socket"
-$env:SLACK_BOT_TOKEN="xoxb-..."
-$env:SLACK_APP_TOKEN="xapp-..."
-```
+### Prepare the Slack app
 
-## HTTP mode setup
+Bridge connects out to Slack with Socket Mode. No public URL or open port is needed.
 
-The bridge exposes:
+1. In [Slack API](https://api.slack.com/apps), choose **Create New App → From scratch** and create the app in your workspace.
+2. Enable **Socket Mode** and create an app-level token (starting with `xapp-`) with `connections:write`.
+3. Enable **Event Subscriptions** and add these under **Subscribe to bot events**:
 
-- `POST /slack/events`
-- `GET /healthz`
+   | Event | Purpose |
+   | --- | --- |
+   | `app_mention` | Start requests with a mention (required) |
+   | `message.channels` | Continue conversations in public-channel threads |
+   | `message.groups` | Use private channels |
+   | `message.im` / `message.mpim` | Receive thread replies in direct messages or group direct messages (optional) |
 
-If the bridge runs locally, place a tunnel or reverse proxy in front of it and configure Slack to call:
+4. Add these under **OAuth & Permissions → Bot Token Scopes**:
 
-- Event Subscriptions: `https://<public-host>/slack/events`
-- Interactivity: `https://<public-host>/slack/events`
+   | Scope | Purpose | When needed |
+   | --- | --- | --- |
+   | `app_mentions:read` | Receive mentions | Required |
+   | `chat:write` | Post and update progress and results | Required |
+   | `channels:history` / `groups:history` / `im:history` / `mpim:history` | Receive thread replies and check conversations from message links | For the conversation types you use |
+   | `users:read` | Look up allowed users and show user names in history | Recommended |
+   | `channels:read` / `groups:read` / `im:read` / `mpim:read` | Show channel names in history and check conversations from message links | Recommended (for the conversation types you use) |
+   | `files:read` | Receive files attached to requests | When receiving files |
+   | `files:write` | Send generated files to the thread | When sending files |
 
-## Socket Mode setup
+5. Choose **Install to Workspace** and copy the bot token (starting with `xoxb-`).
+6. Run `/invite @your-app` in each channel you use for requests.
 
-1. Enable Socket Mode in the Slack app.
-2. Create an app-level token with `connections:write`.
-3. Set `CAB_SLACK_MODE=socket`.
-4. Set `SLACK_APP_TOKEN` and `SLACK_BOT_TOKEN`.
-5. Start the bridge.
+After adding scopes later, **reinstall the app to the workspace**, then reconnect in Bridge. Tokens are equivalent to passwords; do not share them in chat or screenshots.
 
-Socket Mode does not require a public HTTP endpoint for Slack ingress.
+### Configure Bridge
 
-## Expected behavior
+1. In **Chat settings → Slack**, enter the bot token and the app-level token.
+2. Under the Slack allowed-user lookup, enter the requester's user name (for example `@alice`) or member ID, check the result and choose to add the user. The allowlist stores member IDs.
+3. Optionally, restrict requests to specific channels or threads by pasting a Slack message link into the conversation lookup. Bridge shows the workspace, channel and thread before you add it.
+4. Save, then connect to Slack from **Chat**.
 
-- A new bridge interaction starts from `@Chat Agent Bridge ...`
-- Once a thread is bound, plain thread replies are accepted
-- Approval prompts can be resolved by:
-  - replying `approve` or `reject`
-  - clicking the Slack action button
+### Requests and operations
 
-## Bridge commands commonly used from Slack
+- **Start**: post `@your-app your request` in a channel the bot has joined.
+- **Continue**: replies from the same user in the same thread continue the conversation without a mention. Replies from other users are not treated as part of your conversation.
+- **Status and stop**: post `!cab status` / `!cab stop` in the same thread.
+- **Approvals**: approve the request to start on the PC. With Codex App Server and sharing approvals in chat enabled, approve CLI operations with `!cab approve <code>` / `!cab reject <code>`.
 
-- `@Chat Agent Bridge help`
-- `@Chat Agent Bridge status`
-- `@Chat Agent Bridge history [count]`
-- `@Chat Agent Bridge cancel`
-- `@Chat Agent Bridge sessions`
-- `@Chat Agent Bridge approvals`
-- `@Chat Agent Bridge failures [count]`
-- `@Chat Agent Bridge repos`
-- `@Chat Agent Bridge repo <alias>`
-- `@Chat Agent Bridge cwd <path>`
-- `@Chat Agent Bridge agent <codex|claude|cursor|gemini>`
-- `@Chat Agent Bridge attach <session-id>`
-- `@Chat Agent Bridge attach-last`
-- `@Chat Agent Bridge detach`
-- `@Chat Agent Bridge new <codex|claude|cursor|gemini> <allow|manual>`
-- `@Chat Agent Bridge restart`
-- `@Chat Agent Bridge restart rebuild`
-- `@Chat Agent Bridge reject`
+Workspace names in history come from `auth.test`, which needs no extra scope. User and channel names use metadata APIs only and never read message text. Successful names are cached for 24 hours; a failed lookup may stay cached for up to 5 minutes after a permission change. Display names never grant access; access is decided by user ID.
 
-`cwd` accepts either an absolute path or a path relative to the current working directory, but the destination must remain under `CAB_ALLOWED_DIRS`.
+### Troubleshooting
 
-## Notes for Codex hooks
+| Symptom | What to check |
+| --- | --- |
+| No response to a mention | Socket Mode is enabled, the `app_mention` event and `app_mentions:read` are configured, the bot was invited to the channel and the poster is an allowed user |
+| Thread replies do not continue | The `message.*` events and `*:history` scopes for that conversation type are configured, and the reply comes from the original requester |
+| Names are not shown | `users:read` and the `*:read` scopes for the conversation type are configured, and the app was reinstalled afterwards |
+| Files cannot be received or sent | Receiving needs `files:read` and sending needs `files:write`; reinstall after adding them |
+| `missing_scope` errors | Add the scope named in the error and reinstall. Do not infer public or private channels from the ID prefix (such as `C`); follow the scope Slack requests |
 
-The bridge launches Codex with:
+### References
 
-- `CHAT_AGENT_BRIDGE=1`
-- `CHAT_AGENT_BRIDGE_SESSION_ID`
-- `CHAT_AGENT_BRIDGE_AGENT`
-- `CHAT_AGENT_BRIDGE_CHAT_PROVIDER`
-- `CHAT_AGENT_BRIDGE_CHAT_CHANNEL_ID`
-- `CHAT_AGENT_BRIDGE_CHAT_THREAD_ID`
-- `CHAT_AGENT_BRIDGE_WORKDIR`
-
-If you already have a Codex hook that posts its own Slack notifications, use `CHAT_AGENT_BRIDGE=1` to skip duplicate notifications for bridge-driven executions.
+- [Socket Mode](https://api.slack.com/apis/socket-mode)
+- [Using the Conversations API](https://docs.slack.dev/apis/web-api/using-the-conversations-api/)

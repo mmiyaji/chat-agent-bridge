@@ -2,24 +2,48 @@
 
 **English** · [日本語](README.ja.md) · [Download](https://github.com/mmiyaji/chat-agent-bridge/releases)
 
+[![Latest release](https://img.shields.io/github/v/release/mmiyaji/chat-agent-bridge?include_prereleases&label=release)](https://github.com/mmiyaji/chat-agent-bridge/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
+> **Development preview.** This is an unofficial app for personal workflows, and its behavior and screens may change without notice. It is not an official OpenAI, Anthropic, Google, GitHub, Slack, Mattermost or Discord app.
+
 Chat Agent Bridge is a Windows app that accepts requests from Slack, Mattermost or Discord and runs AI agents on your PC. You can send requests from a phone or another computer, review results and add instructions in the same thread.
 
 It is intended for devices where you cannot use the Codex or Claude Code desktop app. Bridge starts a command-line agent (CLI) installed on your Windows PC and runs the request in the working folder you selected.
 
 > Prefer the agent provider's official remote-control features when they are available to you. Chat Agent Bridge is developed as an alternative for environments where those official features cannot be used.
 
+## Using it safely
+
+A chat post causes the CLI on your PC to read and write files and run commands. Follow these guidelines:
+
+- **Allow only yourself.** An allowed user can send requests that use your PC, your CLI sign-in and your AI service quota. Posts from users who are not allowed are ignored.
+- **Limit the working folders.** Register only folders the agent may touch as trusted working folders. Avoid your home folder or an entire drive.
+- **Use automatic approval and sharing with care.** Automatic approval runs requests without confirmation on the PC. Automatic sharing makes results visible to everyone who can read the thread. Defaults require approval for the first request in a conversation and manual result sharing.
+- **Narrow the channels and threads.** If needed, restrict which channels and threads can send requests.
+- **Do not share your connection tokens.** Tokens are encrypted per Windows user, but do not hand the `Data` folder to anyone else.
+
 ## System overview and request flow
 
 ![Requests travel from Slack, Mattermost or Discord on another device to Chat Agent Bridge and a CLI on the Windows PC; results return to chat](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)
 
-This is the diagram shown in the app's setup guide and General page. It uses Codex and Claude Code as examples. Gemini CLI and GitHub Copilot CLI use the same arrangement. Discord also uses this flow with the PC maintaining an outbound Gateway connection; no public callback URL is needed.
+This is the diagram shown in the app's setup guide and General page. It uses Codex and Claude Code as examples. Gemini CLI and GitHub Copilot CLI use the same arrangement.
 
 1. **Post from another device** in Slack, Mattermost or Discord. That device does not need an agent CLI installed.
-2. **Bridge on the Windows PC** receives the post and checks allowed users and conversation approval settings. Requests that need approval wait for a decision on the PC.
+2. **Bridge on the Windows PC** receives the post and checks allowed users and conversation approval settings. Requests that need approval wait for a decision.
 3. **The selected CLI** runs the request in the configured working folder. It connects to AI services according to its own settings and performs file operations or commands.
-4. **Share the result in the original thread.** By default, you review it on the PC before sending it; automatic replies are also available. Replies from the same user in that thread continue the conversation on supported CLIs.
+4. **Share the result in the original thread.** By default, you review it on the PC before sending it; automatic replies are also available. Replies from the same user in that thread continue the conversation (see [Chat operations](#chat-operations)).
 
-Keep the Windows PC running with Bridge connected to chat. It can run in the system tray, but cannot process requests while the PC is asleep or signed out.
+## Requirements
+
+| Item | Details |
+| --- | --- |
+| OS | Windows 10 (version 1809 or later) or Windows 11 |
+| CPU | x64 / ARM64 (a separate ZIP for each) |
+| Additional installs | None (no administrator rights or separate .NET runtime required) |
+| CLI | Codex, Claude Code, Gemini CLI, GitHub Copilot CLI or another CLI (install and sign in yourself) |
+| Chat | Slack (Socket Mode), Mattermost (bot token), Discord (Gateway) |
+| Network | The PC connects out to the chat service; no public URL or open port is needed |
 
 ## Main features
 
@@ -37,13 +61,16 @@ Keep the Windows PC running with Bridge connected to chat. It can run in the sys
 
 ## Installation and setup
 
-Portable builds are available for Windows. The app does not require administrator rights or a separate .NET runtime installation. Install and authenticate your chosen CLI and prepare the chat bot separately.
+Portable builds are available for Windows. Install and authenticate your chosen CLI and prepare the chat bot separately.
 
 1. Download the **x64 / ARM64** ZIP for your PC from [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases).
 2. Extract the entire folder to a writable location and run `ChatAgentBridge.Desktop.exe`.
 3. Install the CLI and sign in through it. Select the CLI and working folder in the setup guide, then run the CLI check.
-4. In **Chat settings**, configure connection details and allowed users. Slack requires an app with the necessary permissions; Mattermost requires a bot token. Discord requires a bot token, allowed user and server IDs, and Message Content Intent; see the [Discord setup guide](docs/discord-setup.md).
-5. Connect from **Chat**, then mention the bot to send a request. In Mattermost, you can also start with `!cab <your request>`.
+4. Prepare a bot on the chat service, then configure connection details and allowed users in **Chat settings**.
+   - Slack: [Slack setup guide](docs/slack-setup.md) (Socket Mode app, events and scopes)
+   - Mattermost: [Mattermost setup guide](docs/mattermost-setup.md) (bot token and conversation channel ID)
+   - Discord: [Discord setup guide](docs/discord-setup.md) (bot token, allowed server IDs and Message Content Intent)
+5. Connect from **Chat** and post a request. How to start depends on the service (see [Chat operations](#chat-operations)).
 6. Approve the first request on the PC. After execution, review and share the result. Reply in the same thread to continue.
 
 Defaults require approval for the first request in a conversation, manual result sharing and approval for every attachment. The CLI check identifies the CLI and version. Check authentication and available quota through the CLI itself.
@@ -62,7 +89,7 @@ Change a conversation's agent or model from its details on the PC or from chat. 
 
 Codex App Server and Claude Code also support adding instructions to running requests. This applies to posts from the same user in the same thread. Other connections and per-request approval settings queue messages.
 
-See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるcli) for version and authentication requirements. Some Gemini live-service checks remain incomplete because of authentication-environment restrictions.
+See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるcli) for version and authentication requirements.
 
 <details>
 <summary>Agent settings screenshot</summary>
@@ -79,15 +106,43 @@ See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるc
 - **Access restrictions** specify who and which conversations can send requests. Register folders where requests may start as trusted working folders. Changing the folder from chat requires a location within that scope and approval on the PC.
 - **Result sharing** can be manual, automatic or disabled. Sent content is visible to everyone who can access the destination chat or thread.
 - **Generated file attachments** require approval each time by default. You can instead require approval only for the first attachment in a thread, allow automatic attachments or prohibit attachments. Set per-file size, total size and file count limits.
-- **Files attached to incoming requests** are downloaded after request approval and placed in the trusted working folder for that run. Supported files are PNG/JPEG/WebP images and UTF-8 TXT/LOG/MD/CSV/JSON, limited to 5 files, 10 MB per file and 20 MB total. The agent receives local file paths; image inspection requires a CLI with image-reading tools. Temporary copies are deleted after the run, so reattach them if needed in a later request. File-bearing follow-ups wait for a separate run. Slack requires the bot's `files:read` permission and reauthorization after adding it. These incoming limits are separate from generated-file upload settings.
+- **Sharing approvals in chat** can be enabled only when using Codex App Server. When enabled, the original requester can approve from chat (see the table below). It is off by default, and approvals happen on the PC.
+
+| Service | Approving the request to start | Approving CLI operations (commands, file changes) |
+| --- | --- | --- |
+| Slack / Mattermost | On the PC | `!cab approve <code>` / `!cab reject <code>` |
+| Discord | Approve and Reject buttons | Approve and Reject buttons |
+
+### Files attached to requests
+
+Files attached to a request are downloaded after the request is approved and passed to the agent. These limits are separate from the generated-file upload settings.
+
+| Item | Details |
+| --- | --- |
+| Supported files | PNG / JPEG / WebP images, UTF-8 TXT / LOG / MD / CSV / JSON |
+| Limits | Up to 5 files, 10 MB per file, 20 MB total |
+| Location | Saved temporarily in the trusted working folder; the agent receives the local paths |
+| Retention | Deleted after the run; reattach files needed by a later request |
+| Follow-ups | Follow-ups with files wait for a separate run |
+| Images | Inspecting images requires a CLI with image-reading tools |
+| Slack scope | The bot needs `files:read`; reauthorize the app after adding the scope |
 
 ![Request approvals, result sharing, additional instructions and file attachment settings](docs/assets/screenshots/chat-settings-en.png)
 
-## Chat commands
+## Chat operations
 
-After starting a request, reply in the same thread. Actions are scoped to the requester and conversation.
+Actions are tied to the requester and the conversation (channel, thread and user). Posts from other users in the same thread are not treated as part of your conversation.
 
-The Chat conversation list is restored after a restart. It stores display names, chat identities, working folders, last activity and status, without request or result bodies. Requests that were awaiting approval or running appear as interrupted and are never resumed automatically. Post a new `!cab` request in the same thread to continue.
+| Action | Slack | Mattermost | Discord |
+| --- | --- | --- | --- |
+| Start a request | Mention the bot | Mention the bot, or `!cab <request>` | Mention the bot, or `!cab <request>` |
+| Continue | Reply in the same thread | Reply in the same thread | Reply in the same thread |
+| Check status | `!cab status` | `!cab status` | `!cab status` |
+| Stop | `!cab stop` | `!cab stop`, or the 🛑 reaction on the progress post | `!cab stop`, or the Stop button on the progress post |
+
+- **Continuing**: after the first request, replies in the same thread become follow-up requests. No mention or `!cab` is needed.
+- **After restarting the app**: the Chat conversation list is restored, but requests that were awaiting approval or running appear as interrupted and are never resumed automatically. To continue, start a new request in the same thread (mention in Slack; mention or `!cab` in Mattermost and Discord).
+- **Stopping**: only the original requester can use the reaction or button. Stopping does not undo file changes already made.
 
 | Command | Purpose |
 | --- | --- |
@@ -97,9 +152,9 @@ The Chat conversation list is restored after a restart. It stores display names,
 | `!cab agent` | List registered agents and switching options |
 | `!cab folder "C:\Projects\MyApp"` | Request a working-folder change |
 
-On the PC, you can inspect live output and stop a request. In Mattermost, the requester can also click the 🛑 reaction on the bot's progress post to cancel it. Discord shows a Stop button on progress posts. Request approval buttons are available when sharing approvals in chat is enabled; only the original requester can use them. Stopping does not undo file changes already made.
-
 `!cab status` lists running, approval-waiting and queued requests for your current thread, including agent, model and working folder. It does not expose requests from other users or threads. The reply is visible to people who can read that thread.
+
+You can also inspect live output and stop a request on the PC.
 
 ## History and usage
 
@@ -109,6 +164,19 @@ Find saved conversations by name or working folder and change their model or age
 
 Usage is shown by day and model. Token and cache figures use CLI-reported values; missing values remain unknown. Estimated costs use public pricing and are reference values, not bills or subscription quotas. Price tables can update automatically, with manual overrides taking priority over downloaded prices.
 
+## Stored data
+
+Settings and history are stored in the `Data` folder next to the app.
+
+| Stored | Not stored |
+| --- | --- |
+| Connection settings (tokens encrypted with DPAPI for your Windows user) | Request bodies |
+| Conversation list display data (display names, chat identities, working folders, last activity, status) | Result bodies |
+| Execution and operation history (times, statuses, conversation identifiers; up to 500 entries) | CLI credentials (each CLI manages its own) |
+| Daily and per-model usage totals | |
+
+Delete stored data by type from data management on the **General** page. Encrypted tokens can only be decrypted by the same Windows user, so moving to another PC requires reconfiguring chat tokens and CLI sign-in. See the [Privacy Policy](docs/privacy-policy.en.md) for details.
+
 ## Appearance, startup and updates
 
 The app uses Japanese when the Windows language preference is Japanese and English otherwise. You can override the language in the app. Choose light, dark or system appearance.
@@ -117,18 +185,46 @@ The app uses Japanese when the Windows language preference is Japanese and Engli
 
 ![Current status, startup, auto-connect and system tray settings](docs/assets/screenshots/general-en.png)
 
-Portable builds can check for and apply updates from **About**. Settings and history are stored in the adjacent `Data` folder and retained during updates. For manual updates, close the app and keep `Data`. Moving to another PC requires reconfiguring chat tokens and CLI authentication.
+Portable builds can check for and apply updates from **About**. The `Data` folder is retained during updates. For manual updates, close the app and replace the files while keeping `Data`.
 
-Screenshots show the development build on a Windows PC on October 24, 2026, using dedicated demo settings and sample usage records. They contain no real conversations or credentials. This README shows light mode; the Japanese version shows dark mode. Released versions may differ.
+Screenshots show a development build using dedicated demo settings and sample usage records. They contain no real conversations or credentials. Released versions may differ.
+
+## Uninstalling
+
+1. On the **General** page, turn off starting the app at Windows sign-in. Startup is registered in your Windows user settings, so turn it off before deleting the folder.
+2. Exit the app, including from the system tray.
+3. Delete the extracted folder. `Data` contains encrypted connection tokens and history; delete it too unless you need it.
+4. If needed, revoke the bot tokens in Slack, Mattermost or Discord.
+
+## Known limitations
+
+- Windows only; macOS and Linux are not supported.
+- Requests cannot be processed while the PC is asleep, signed out or the app is closed. Keep the PC running with Bridge connected to chat (it keeps working in the system tray).
+- Requests interrupted by an app restart are not resumed automatically.
+- Other CLIs do not continue conversations; each request runs independently.
+- Some Gemini CLI live-service checks remain incomplete because of authentication-environment restrictions.
+- Estimated costs are reference values and may not match actual bills.
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| The bot does not respond | Whether **Chat** is connected, the poster is an allowed user, the channel or thread is within the allowed scope, and the request was started correctly ([Chat operations](#chat-operations)) |
+| No response in Discord | Whether **Message Content Intent** is enabled in the Developer Portal, the allowed server ID is correct, and the bot can view and send messages in the channel |
+| Slack attachments are not received | Whether the bot has `files:read`, and whether you reauthorized the app after adding it |
+| The CLI is not found | Run the **CLI check** in the setup guide or agent settings. Right after installing or updating a CLI, use "Reload environment variables" |
+| Claude Code reports "Not logged in" | Start Claude Code in a terminal as this Windows user, complete `/login`, then post the request again |
+| A request stays awaiting approval | Starting a request requires approval on the PC by default. Approve it in **Chat** on the PC or from the Windows notification |
+| Results do not reach the thread | Results are shared manually by default. Review them on the PC and use "Send results to thread" |
+
+## License
+
+Released under the [MIT License](LICENSE). Check the terms and contracts of the chat and AI services you use separately.
 
 ## Project and documentation
-
-This is an unofficial development preview for personal workflows, not an official OpenAI, Anthropic, Google, GitHub, Slack, Mattermost or Discord app. Check the settings and terms of the chat and AI services you use.
 
 - [Terms of Use](docs/terms.en.md) / [Privacy Policy](docs/privacy-policy.en.md)
 - [Windows app guide and development instructions (Japanese)](desktop/README.ja.md)
 - [Portable edition guide](desktop/distribution/README.portable.en.txt)
 - [Report a bug or suggest a feature](https://github.com/mmiyaji/chat-agent-bridge/issues)
 - [Third-party notices](desktop/THIRD-PARTY-NOTICES.txt), also available in the app's About page
-
-Documentation for the earlier TypeScript implementation remains in the [installation guide](docs/install.md) and [architecture guide](docs/architecture.md). Those instructions differ from the current Windows app.
