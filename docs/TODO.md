@@ -12,6 +12,8 @@
 
 ## 保留
 
-- [ ] `worktree-agent-*`（5件、未マージ、各 2〜3 コミット）の中身を確認し、残すか削除するか決める
 - [x] main にマージ済みで変更のない worktree とそのブランチを削除する（`cab-gallery`、`cab-resizable`、`cab-single-instance`、`agent-acdfab…`）
-- [ ] 変更が残っている worktree（`D:/git/cab-chat-controls`、`cab-chat-reactions`）の変更を確認し、コミットか破棄かを決める
+- [x] `claude/startup-stall-timeout` の移行タイムアウト修正を main に取り込み、ブランチと worktree を削除する。`cab-chat-reactions` の未コミット変更（main より古い版）は破棄した
+- [ ] `worktree-agent-a3b85f5f220f27144` の固有コミット `d8b881c`（NDJSON 行の一度だけパース）を取り込むか決める。main と `NodeCliPackageResolver.cs` で競合する
+- [ ] main（origin/main より未 push のコミットあり）を push する（利用者の許可が必要）
+- [ ] 削除した `worktree-agent-*`（`a39cc156579a1c9a3`、`a51c28e6a4b859eb7`、`a8fbd9ede9f9f6d31`、`ac36c612001513f42`）は内容が main に入っている。必要なら commit ハッシュ（`9fbad64`、`a9bb292`、`dd2bd90`、`c15b3e8`）からブランチを再作成できる
