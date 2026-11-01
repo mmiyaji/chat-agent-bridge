@@ -6,6 +6,7 @@ release/
 data/
 .npm-cache/
 .test-dist/
+.artifacts/
 .tmp-*
 nodecheck-sandbox.js
 playwright-report/
