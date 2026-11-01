@@ -7,7 +7,7 @@
 - [x] 未コミットだった docs 整理（`docs/legacy/` への移動、README 更新、`LICENSE` 追加）をコミットする
 - [x] ルートの別プロジェクト（ghiaccio-vault）のメモを削除する
 - [x] `.artifacts/` を `.gitignore` に追加する
-- [ ] `codex/inbox-gallery-ui` の作業を区切りまで進め、main への取り込みを判断する（main より 120 コミット遅れている）
+- [x] `codex/inbox-gallery-ui` を main に取り込み、ブランチを削除する（docs は main の構成を優先）
 - [ ] Kiro CLI に対応する（WinUI 版でエージェント CLI として選べるようにする）
 
 ## 保留
