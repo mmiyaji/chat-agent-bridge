@@ -6,7 +6,7 @@
 
 - [ ] 未コミットの docs 整理（`docs/legacy/` への移動、README 更新、`LICENSE` 追加）を確認し、コミットの要否を決める
 - [ ] ルートの `handoff-ghiaccio-vault-duplicate-fingerprint.md` は別プロジェクト（ghiaccio-vault）のメモなので、移動・削除を決める
-- [ ] `.artifacts/` を `.gitignore` に追加するか決める
+- [x] `.artifacts/` を `.gitignore` に追加する
 - [ ] `codex/inbox-gallery-ui` の作業を区切りまで進め、main への取り込みを判断する
 - [ ] Kiro CLI に対応する（WinUI 版でエージェント CLI として選べるようにする）
 
