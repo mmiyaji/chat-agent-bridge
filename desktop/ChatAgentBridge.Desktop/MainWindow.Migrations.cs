@@ -39,6 +39,7 @@ public sealed partial class MainWindow
         attempt.CancelAfter(timeout);
         var token = attempt.Token;
         var creatingPage = false;
+        var migrationDone = false;
         StartupMigrationRetry.IsEnabled = false;
         StartupMigrationError.IsOpen = false;
         StartupMigrationTitle.Visibility = Visibility.Collapsed;
@@ -52,6 +53,12 @@ public sealed partial class MainWindow
             await ShowStartupSplashFrameAsync();
             var progress = new Progress<MigrationProgress>(value =>
             {
+                // A slow migration is fine while it keeps reporting; only silence counts as a stall.
+                if (!migrationDone)
+                {
+                    try { attempt.CancelAfter(timeout); }
+                    catch (ObjectDisposedException) { }
+                }
                 if (token.IsCancellationRequested || _startupAttemptFailed || RootFrame.Content is MainPage) return;
                 StartupSplashMessage.Text = DesktopText.Get("MigrationTitle");
             });
@@ -62,6 +69,9 @@ public sealed partial class MainWindow
             var running = migration.RunAsync(progress, token);
             await running.WaitAsync(token);
             token.ThrowIfCancellationRequested();
+            // Building the page gets its own fixed budget, independent of how long the migration took.
+            migrationDone = true;
+            attempt.CancelAfter(timeout);
             StartupSplashMessage.Text = DesktopText.Get("StartupLoading");
             creatingPage = true;
             if (!RootFrame.Navigate(typeof(MainPage))) throw new InvalidOperationException("Main page navigation failed.");
