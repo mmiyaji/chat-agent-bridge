@@ -25,9 +25,9 @@ CodexやClaude Codeのデスクトップアプリを使えない端末からの�
 
 ## システム構成と依頼の流れ
 
-![別の端末のSlack・Mattermost・Discordから、Windows PC上のChat Agent Bridgeを経由してCLIを実行し、結果を受け取る構成](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.svg)
+![スマートフォンやブラウザーから専用Botへメンションし、ローカルPCのChat Agent BridgeがCLIに依頼を渡して結果を同じスレッドへ返す流れ](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.svg)
 
-アプリの初期設定ガイドと全般画面に掲載している構成図です。図ではCodexとClaude Codeを例にしています。Gemini CLI・GitHub Copilot CLI・Antigravity CLIも同じ構成で利用できます。
+アプリの初回起動時のウィザードと全般画面に掲載している構成図です。依頼者はスマートフォンやブラウザーから自分のチャットアカウントで専用Botにメンションします。Botには専用アカウントの利用を推奨します。Bridgeは許可ユーザーを確認して、PC上のCLIへ依頼を渡します。Codex CLIとClaude Code CLIは例示で、アプリには同梱されません。利用するCLIは別途インストールと認証が必要です。ほかにGemini CLI・GitHub Copilot CLI・Antigravity CLIも利用できます。
 
 1. **別の端末**からSlack・Mattermost・Discordに投稿します。操作する端末にAIエージェントのCLIを入れる必要はありません。
 2. **Windows PC上のBridge**が投稿を受け取り、許可ユーザーや会話の承認設定を確認します。承認が必要な依頼は、承認するまで実行を待ちます。
@@ -197,7 +197,11 @@ PCでも実行中の出力を確認し、依頼を中断できます。
 
 ポータブル版は**情報**から更新を確認・適用できます。`Data`は更新後も引き継ぎます。手動で更新する場合は、アプリを終了してから`Data`を残して入れ替えてください。
 
-画面写真は開発版のもので、撮影専用の設定とサンプル利用履歴を使っています。実際の会話や認証情報は含めていません。公開版とは画面が異なる場合があります。
+画面写真は2026年11月2日に開発版から撮影しました。撮影専用の設定と
+サンプル利用履歴を使い、実際の会話や認証情報は含めていません。利用統計には
+過去28稼働日のサンプル70件が集計されています。詳細履歴には既定の30日保持
+期間内にある52件が表示され、期間を過ぎた明細の集計値は統計に残ります。
+いずれも動作例で、性能の実測値ではありません。公開版とは画面が異なる場合があります。
 
 ## アンインストール
 

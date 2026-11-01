@@ -1,65 +1,111 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="500" viewBox="0 0 1080 500" role="img" aria-labelledby="title desc">
-  <title id="title">チャットからローカルPCのAIエージェントへ依頼する流れ</title>
-  <desc id="desc">別端末のSlack、Mattermost、またはDiscordを窓口に、起動中のローカルPCにあるChat Agent BridgeがCodex CLIまたはClaude Code CLIを設定済みプロジェクトで実行し、結果を同じチャットへ返します。</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">システム構成と依頼の流れ</title>
+  <desc id="desc">依頼者はスマートフォンやブラウザーから自分のチャットアカウントで専用Botへメンションします。ローカルPCのChat Agent Bridgeが許可ユーザーを確認し、別途インストールしたCodex CLIまたはClaude Code CLIへ依頼を渡します。CLIはPCに設定された認証でAIエージェントを実行し、Botが結果を同じスレッドへ返します。</desc>
   <defs>
-    <marker id="arrowBlue" markerWidth="6" markerHeight="6" refX="10" refY="6" viewBox="0 0 12 12" orient="auto"><path d="M1 1 L11 6 L1 11 Z" fill="#2864A5"/></marker>
-    <marker id="arrowSlate" markerWidth="6" markerHeight="6" refX="10" refY="6" viewBox="0 0 12 12" orient="auto"><path d="M1 1 L11 6 L1 11 Z" fill="#526579"/></marker>
+    <marker id="arrowBlue" markerWidth="12" markerHeight="12" refX="12" refY="6" viewBox="0 0 12 12" orient="auto"><path d="M0 0 L12 6 L0 12 Z" fill="#2864A5"/></marker>
+    <marker id="arrowSlate" markerWidth="12" markerHeight="12" refX="12" refY="6" viewBox="0 0 12 12" orient="auto"><path d="M0 0 L12 6 L0 12 Z" fill="#526579"/></marker>
   </defs>
-  <rect width="1080" height="500" rx="18" fill="#FFFFFF"/>
+  <rect width="1280" height="720" fill="#202833"/>
+  <text x="38" y="61" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="34" font-weight="700" fill="#FFFFFF">システム構成と依頼の流れ</text>
+  <rect x="24" y="88" width="1232" height="608" rx="20" fill="#FFFFFF"/>
 
-  <!-- Remote endpoint -->
-  <text x="32" y="42" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="27" font-weight="700" fill="#23364A">別の端末</text>
-  <rect x="32" y="62" width="235" height="340" rx="16" fill="#F5F8FB" stroke="#CAD5E0" stroke-width="2"/>
-  <rect x="51" y="91" width="81" height="139" rx="13" fill="#FFFFFF" stroke="#8293A5" stroke-width="3"/>
-  <line x1="76" y1="108" x2="107" y2="108" stroke="#CAD5E0" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="91" cy="211" r="5" fill="#8293A5"/>
-  <rect x="151" y="99" width="97" height="64" rx="8" fill="#FFFFFF" stroke="#8293A5" stroke-width="3"/>
-  <line x1="198" y1="164" x2="198" y2="179" stroke="#8293A5" stroke-width="3"/>
-  <line x1="176" y1="180" x2="220" y2="180" stroke="#8293A5" stroke-width="3" stroke-linecap="round"/>
-  <text x="51" y="267" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="24" font-weight="700" fill="#23364A">スマートフォン /</text>
-  <text x="51" y="305" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="24" font-weight="700" fill="#23364A">ブラウザー</text>
-  <text x="51" y="347" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" fill="#526579">チャットへ依頼</text>
+  <!-- Four-step flow -->
+  <g fill="#F8FAFC" stroke="#D7E0E9" stroke-width="2">
+    <rect x="44" y="116" width="266" height="460" rx="16"/>
+    <rect x="336" y="116" width="286" height="460" rx="16"/>
+    <rect x="648" y="116" width="286" height="460" rx="16"/>
+    <rect x="960" y="116" width="276" height="460" rx="16"/>
+  </g>
 
-  <!-- Chat intermediary -->
-  <rect x="296" y="136" width="211" height="248" rx="16" fill="#EEF5FC" stroke="#A9C4DF" stroke-width="2"/>
-  <path d="M333 174 h64 a13 13 0 0 1 13 13 v25 a13 13 0 0 1-13 13 h-22 l-15 14 v-14 h-27 a13 13 0 0 1-13-13 v-25 a13 13 0 0 1 13-13z" fill="#FFFFFF" stroke="#2864A5" stroke-width="3"/>
-  <path d="M386 226 h57 a12 12 0 0 1 12 12 v20 a12 12 0 0 1-12 12 h-20 l-13 12 v-12 h-24 a12 12 0 0 1-12-12 v-20 a12 12 0 0 1 12-12z" fill="#DDEAF6" stroke="#2864A5" stroke-width="3"/>
-  <text x="317" y="302" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="20" font-weight="700" fill="#23364A">Slack /</text>
-  <text x="317" y="334" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="20" font-weight="700" fill="#23364A">Mattermost /</text>
-  <text x="317" y="366" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="20" font-weight="700" fill="#23364A">Discord</text>
-  <text x="328" y="424" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="24" fill="#526579">チャットが仲介</text>
+  <!-- Step headings -->
+  <g fill="#173B6C"><circle cx="78" cy="153" r="23"/><circle cx="370" cy="153" r="23"/><circle cx="682" cy="153" r="23"/><circle cx="994" cy="153" r="23"/></g>
+  <g font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF"><text x="71" y="161" font-size="24">1</text><text x="363" y="161" font-size="24">2</text><text x="675" y="161" font-size="24">3</text><text x="987" y="161" font-size="24">4</text></g>
+  <g font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="27" font-weight="700" fill="#23364A"><text x="112" y="162" font-size="27">依頼者</text><text x="404" y="162" font-size="27">チャット</text><text x="716" y="162" font-size="27">ローカルPC</text><text x="1028" y="162" font-size="27">結果</text></g>
 
-  <!-- Request and result travel between chat and bridge -->
-  <path d="M269 181 H292" fill="none" stroke="#2864A5" stroke-width="4" marker-end="url(#arrowBlue)"/>
-  <path d="M296 282 H273" fill="none" stroke="#526579" stroke-width="4" marker-end="url(#arrowSlate)"/>
-  <path d="M509 181 H555" fill="none" stroke="#2864A5" stroke-width="4" marker-end="url(#arrowBlue)"/>
-  <path d="M555 282 H511" fill="none" stroke="#526579" stroke-width="4" marker-end="url(#arrowSlate)"/>
-  <text x="516" y="154" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="20" font-weight="700" fill="#2864A5">依頼</text>
-  <text x="516" y="319" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="20" font-weight="700" fill="#526579">結果</text>
+  <!-- Requester with phone and browser -->
+  <g fill="#FFFFFF" stroke="#8293A5" stroke-width="4">
+    <rect x="80" y="216" width="70" height="126" rx="13"/>
+    <rect x="172" y="232" width="102" height="68" rx="8"/>
+  </g>
+  <path d="M102 231 H128 M212 301 V315 M190 316 H234" fill="none" stroke="#8293A5" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="115" cy="326" r="4" fill="#8293A5"/>
+  <circle cx="187" cy="246" r="3" fill="#C6D1DC"/><circle cx="198" cy="246" r="3" fill="#C6D1DC"/><circle cx="209" cy="246" r="3" fill="#C6D1DC"/>
+  <text x="72" y="382" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#23364A">スマートフォン /</text>
+  <text x="72" y="414" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#23364A">ブラウザーから依頼</text>
+  <rect x="64" y="449" width="226" height="58" rx="10" fill="#E9EEF3"/>
+  <text x="77" y="485" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="17" font-weight="700" fill="#23364A">自分のチャットアカウント</text>
 
-  <!-- Local PC and components -->
-  <rect x="566" y="34" width="482" height="414" rx="20" fill="#F7F9FB" stroke="#8293A5" stroke-width="3"/>
-  <rect x="583" y="49" width="448" height="49" rx="10" fill="#E9EEF3"/>
-  <text x="601" y="82" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="28" font-weight="700" fill="#23364A">ローカルPC（アプリ起動中）</text>
-  <rect x="593" y="120" width="205" height="146" rx="12" fill="#EAF3FB" stroke="#A9C4DF" stroke-width="2"/>
-  <rect x="612" y="140" width="35" height="31" rx="5" fill="#2864A5"/>
-  <path d="M620 149 h19 M620 156 h14 M620 163 h10" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
-  <text x="657" y="157" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" font-weight="700" fill="#23364A">Chat Agent</text>
-  <text x="657" y="196" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" font-weight="700" fill="#23364A">Bridge</text>
-  <text x="610" y="240" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="22" fill="#526579">PCで依頼を確認</text>
+  <!-- Chat service and dedicated bot -->
+  <rect x="352" y="190" width="254" height="353" rx="14" fill="#FFFFFF" stroke="#CAD5E0" stroke-width="2"/>
+  <g font-family="Segoe UI, Noto Sans JP, sans-serif" fill="#23364A">
+    <text x="370" y="231" font-size="18" font-weight="700">Slack / Mattermost /</text><text x="370" y="258" font-size="18" font-weight="700">Discord</text>
+  </g>
+  <circle cx="479" cy="337" r="44" fill="#EAF3FB"/>
+  <g transform="translate(455 309)">
+    <circle cx="24" cy="22" r="22" fill="#DDEAF6"/>
+    <rect x="11" y="14" width="26" height="19" rx="6" fill="#FFFFFF" stroke="#2864A5" stroke-width="2"/>
+    <circle cx="19" cy="23" r="2" fill="#2864A5"/><circle cx="29" cy="23" r="2" fill="#2864A5"/>
+    <path d="M24 14 V8 M21 8 H27 M16 36 L12 41 M32 36 L36 41" fill="none" stroke="#2864A5" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <text x="371" y="405" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="18" font-weight="700" fill="#23364A">専用Botアカウント</text>
+  <text x="371" y="433" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="15" fill="#526579">Slack / Mattermost / Discord</text>
+  <rect x="369" y="452" width="220" height="65" rx="10" fill="#E9EEF3"/>
+  <text x="384" y="479" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="15" fill="#526579">依頼・結果の送受信を中継</text>
+  <text x="384" y="503" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="14" fill="#526579">専用アカウントを推奨</text>
 
-  <path d="M801 191 H815" fill="none" stroke="#2864A5" stroke-width="3" marker-end="url(#arrowBlue)"/>
-  <rect x="819" y="120" width="207" height="146" rx="12" fill="#FFFFFF" stroke="#AEBBC8" stroke-width="2"/>
-  <text x="837" y="154" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="23" font-weight="700" fill="#23364A">AIエージェント</text>
-  <rect x="837" y="173" width="169" height="36" rx="7" fill="#EEF5FC"/>
-  <text x="845" y="199" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="24" fill="#23364A">Codex CLI</text>
-  <rect x="837" y="218" width="169" height="36" rx="7" fill="#EEF5FC"/>
-  <text x="845" y="244" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="21" fill="#23364A">Claude Code CLI</text>
+  <!-- Local PC, Bridge, CLI, and project -->
+  <rect x="664" y="190" width="254" height="353" rx="14" fill="#FFFFFF" stroke="#CAD5E0" stroke-width="2"/>
+  <rect x="682" y="211" width="218" height="97" rx="11" fill="#EAF3FB" stroke="#A9C4DF" stroke-width="2"/>
+  <rect x="696" y="232" width="36" height="34" rx="5" fill="#2864A5"/>
+  <path d="M703 241 H725 M703 249 H721 M703 257 H717" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+  <text x="742" y="247" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="18" font-weight="700" fill="#23364A">Chat Agent</text>
+  <text x="742" y="275" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="18" font-weight="700" fill="#23364A">Bridge</text>
+  <text x="697" y="296" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="14" fill="#526579">許可ユーザーを確認</text>
+  <path d="M791 312 V326" stroke="#2864A5" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <rect x="682" y="333" width="218" height="115" rx="11" fill="#FFFFFF" stroke="#AEBBC8" stroke-width="2"/>
+  <rect x="694" y="345" width="194" height="29" rx="6" fill="#EAF3FB"/>
+  <text x="700" y="366" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="16" font-weight="700" fill="#23364A">AIエージェント CLI の例</text>
+  <text x="700" y="397" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="16" fill="#23364A">Codex CLI</text>
+  <text x="700" y="422" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="16" fill="#23364A">Claude Code CLI</text>
+  <text x="700" y="442" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="12" fill="#526579">アプリに同梱されず、別途インストール</text>
+  <path d="M791 451 V464" stroke="#2864A5" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <rect x="682" y="470" width="218" height="55" rx="10" fill="#F2F4F7"/>
+  <path d="M695 483 H713 L721 491 H736 V515 H695 Z" fill="#DDEAF6" stroke="#526579" stroke-width="2" stroke-linejoin="round"/>
+  <text x="744" y="494" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="14" font-weight="700" fill="#23364A">設定済みプロジェクト</text>
+  <text x="744" y="515" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="13" fill="#526579">PCの認証でAIを実行</text>
 
-  <path d="M924 269 V287" fill="none" stroke="#2864A5" stroke-width="3" marker-end="url(#arrowBlue)"/>
-  <rect x="593" y="291" width="433" height="92" rx="12" fill="#FFFFFF" stroke="#AEBBC8" stroke-width="2"/>
-  <path d="M617 317 h29 l10 11 h35 v34 h-74z" fill="#DDEAF6" stroke="#526579" stroke-width="2" stroke-linejoin="round"/>
-  <text x="706" y="329" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="25" font-weight="700" fill="#23364A">設定済みプロジェクト</text>
-  <text x="706" y="363" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="23" fill="#526579">ローカルの作業フォルダー</text>
-  <text x="593" y="421" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="19" fill="#526579">AIモデルとの接続は各CLIの設定に従います</text>
+  <!-- Conversation example in the result step -->
+  <rect x="978" y="190" width="240" height="353" rx="14" fill="#FFFFFF" stroke="#CAD5E0" stroke-width="2"/>
+  <rect x="978" y="190" width="240" height="39" rx="14" fill="#E9EEF3"/>
+  <circle cx="997" cy="210" r="5" fill="#AEBBC8"/><circle cx="1015" cy="210" r="5" fill="#AEBBC8"/><circle cx="1033" cy="210" r="5" fill="#AEBBC8"/>
+  <circle cx="1000" cy="261" r="19" fill="#DDEAF6"/><circle cx="1000" cy="255" r="6" fill="#2864A5"/><path d="M989 273 Q1000 261 1011 273" fill="#2864A5"/>
+  <rect x="1028" y="239" width="174" height="73" rx="10" fill="#EAF3FB"/>
+  <text x="1040" y="263" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="15" font-weight="700" fill="#2864A5">@BridgeBot</text>
+  <text x="1040" y="286" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="14" fill="#526579">この作業をお願いします</text>
+  <circle cx="1000" cy="365" r="19" fill="#DDEAF6"/><rect x="989" y="357" width="22" height="16" rx="5" fill="#FFFFFF" stroke="#2864A5" stroke-width="2"/><circle cx="996" cy="365" r="1.5" fill="#2864A5"/><circle cx="1004" cy="365" r="1.5" fill="#2864A5"/>
+  <rect x="1028" y="336" width="174" height="103" rx="10" fill="#F2F4F7"/>
+  <text x="1040" y="360" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="15" font-weight="700" fill="#23364A">BridgeBot</text>
+  <text x="1040" y="385" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="14" fill="#526579">作業が完了しました。</text>
+  <text x="1040" y="409" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="14" fill="#526579">結果を共有します。</text>
+  <rect x="992" y="462" width="212" height="49" rx="9" fill="#EAF3FB"/>
+  <text x="1005" y="492" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="15" font-weight="700" fill="#23364A">同じスレッドへ返信</text>
+
+  <!-- Flow arrows -->
+  <path d="M312 326 H330" fill="none" stroke="#2864A5" stroke-width="5" marker-end="url(#arrowBlue)"/>
+  <path d="M624 326 H642" fill="none" stroke="#2864A5" stroke-width="5" marker-end="url(#arrowBlue)"/>
+  <path d="M936 326 H954" fill="none" stroke="#2864A5" stroke-width="5" marker-end="url(#arrowBlue)"/>
+
+  <!-- Role notes -->
+  <rect x="44" y="611" width="1192" height="66" rx="12" fill="#EEF2F6"/>
+  <g transform="translate(67 626)">
+    <circle cx="26" cy="18" r="19" fill="#DDEAF6"/>
+    <rect x="15" y="12" width="22" height="16" rx="5" fill="#FFFFFF" stroke="#2864A5" stroke-width="2"/>
+    <circle cx="22" cy="20" r="1.8" fill="#2864A5"/><circle cx="30" cy="20" r="1.8" fill="#2864A5"/>
+  </g>
+  <text x="122" y="651" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="19" font-weight="700" fill="#23364A">Bot：専用アカウントの利用を推奨。チャットの依頼・結果を中継</text>
+  <line x1="662" y1="625" x2="662" y2="663" stroke="#AEBBC8" stroke-width="2"/>
+  <rect x="690" y="632" width="36" height="30" rx="5" fill="#23364A"/>
+  <path d="M700 641 L708 647 L700 653 M712 653 H718" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="741" y="646" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="16" font-weight="700" fill="#23364A">CLI：Codex CLI / Claude Code CLI（別途インストール）</text>
+  <text x="741" y="668" font-family="Segoe UI, Noto Sans JP, sans-serif" font-size="15" fill="#526579">PCに設定した認証でAIエージェントを実行</text>
 </svg>

@@ -25,9 +25,9 @@ A chat post causes the CLI on your PC to read and write files and run commands. 
 
 ## System overview and request flow
 
-![Requests travel from Slack, Mattermost or Discord on another device to Chat Agent Bridge and a CLI on the Windows PC; results return to chat](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)
+![A requester mentions a dedicated Bot from a phone or browser; Chat Agent Bridge passes the request to a CLI on the local PC and the result returns in the same thread](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)
 
-This is the diagram shown in the app's setup guide and General page. It uses Codex and Claude Code as examples. Gemini CLI, GitHub Copilot CLI and Antigravity CLI use the same arrangement.
+This diagram appears in the app's first-run wizard and General page. The requester mentions a dedicated Bot from their own chat account using a phone or browser. We recommend using a dedicated Bot account. Bridge checks allowed users and passes the request to a CLI on the PC. Codex CLI and Claude Code CLI are examples; they are not bundled and must be installed and authenticated separately. Gemini CLI, GitHub Copilot CLI and Antigravity CLI are also supported.
 
 1. **Post from another device** in Slack, Mattermost or Discord. That device does not need an agent CLI installed.
 2. **Bridge on the Windows PC** receives the post and checks allowed users and conversation approval settings. Requests that need approval wait for a decision.
@@ -197,7 +197,11 @@ The app uses Japanese when the Windows language preference is Japanese and Engli
 
 Portable builds can check for and apply updates from **About**. The `Data` folder is retained during updates. For manual updates, close the app and replace the files while keeping `Data`.
 
-Screenshots show a development build using dedicated demo settings and sample usage records. They contain no real conversations or credentials. Released versions may differ.
+Screenshots were captured from the development build on 2026-11-02 with isolated
+demo settings. They contain no real conversations or credentials. The usage
+summary retains 70 sample runs across 28 active days while detailed history
+shows 52 records still within its default 30-day retention period. These values
+are examples, not performance results. Released versions may differ.
 
 ## Uninstalling
 

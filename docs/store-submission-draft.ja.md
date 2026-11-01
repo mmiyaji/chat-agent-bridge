@@ -15,7 +15,8 @@
 - プライバシーポリシー：GitHubの現行英語文書。サポートはGitHub Issues。
 - Windowsユーザー単位で暗号化された設定を含むため、OneDriveへの自動バックアップの宣言はオフ。
 - Store掲載情報：日本語・英語。各言語の説明、短い説明、主要機能4件、実機スクリーンショット4枚、開発元・権利表記を保存。「完了」を確認。
-- 画像は `docs/assets/screenshots` の実機キャプチャを使用。履歴・統計には説明用サンプルデータの注記を付与。
+- Partner Centerには2026-10-24撮影の旧画像を保存。ローカルのREADME画像は2026-11-02に現行UIで更新したため、Partner Centerの下書きは再アップロードするまで旧画像のまま。履歴・統計には説明用サンプルデータの注記を付与。
+- 既存の「システム構成と依頼の流れ」図を、スマートフォン／ブラウザーからのBotメンション、Bot専用アカウントの推奨、CLIの別途インストールが分かるよう日英で更新（[編集元SVGとプレビュー](assets/overview/README.md)）。初回起動時のウィザードとREADMEで使用。Partner Centerには未アップロード。
 - パッケージ：x64・ARM64をアップロードし、両方の `Validated` とパッケージ項目の「完了」を確認。
 - 対象デバイスはWindowsデスクトップのみ。将来のデバイスファミリーへの自動提供はオフ。
 - 公開オプション：「[今すぐ公開]を選択するまで、この提出物を公開しない」を選択・保存。
@@ -41,3 +42,29 @@ Requests are restricted by allowed-user and conversation settings. The default r
 The publisher does not permit using this app to publish nudity or gratuitous graphic real-world violence. This is a usage policy, not an automatic content-filter guarantee: the app does not contain a content classifier or chat moderation service. Allowed-user restrictions and approval controls are provided.
 
 The product is an unofficial alternative for environments where the AI provider's official remote-control feature cannot be used. AI subscriptions and service charges are separate. The app does not require a Chat Agent Bridge account. Contact mail@ruhenheim.org if additional test access is required. Existing users' bot tokens and AI logins are not supplied.
+
+## Store掲載説明への追加案（未登録）
+
+### 日本語
+
+**システム構成とアカウントの役割**
+
+依頼者は自分のSlack・Mattermost・Discordアカウントから依頼します。Bridgeはチャットサービスが示す投稿者IDを許可リストと照合し、設定された会話の承認を確認します。
+
+エージェント用Botアカウントはチャットとの接続とメッセージ送受信に使います。依頼の受信、進捗・承認・結果の投稿を行いますが、AIサービスにはログインせず、CLIの認証情報も持ちません。BotトークンはWindowsユーザー単位で暗号化して保存します。
+
+BridgeはWindows PC上で選択されたCLIを、指定された信頼する作業フォルダー内で起動します。CLIは自身に設定されたAIサービスのアカウントで通信します。許可ユーザーからの依頼は、PC側のCLI権限とAIサービスの利用枠を使います。依頼の開始承認と、CLIが個々の操作を行う権限は別々に設定します。
+
+実行結果は元のスレッドへ戻ります。既定ではPCで内容を確認してからBotが投稿します。
+
+### English
+
+**System and account roles**
+
+The requester sends a message from their own Slack, Mattermost or Discord account. Bridge checks the sender ID supplied by the chat service against its allowlist and applies the configured conversation approval policy.
+
+The dedicated agent bot account connects Bridge to chat and carries messages. It receives requests and posts progress, approval prompts and results, but it does not sign in to an AI service or hold CLI credentials. The bot token is encrypted for the current Windows user.
+
+Bridge launches the selected CLI on the Windows PC in a configured trusted workspace. The CLI connects with the AI service account configured in that CLI. Requests from allowed users use the PC's configured CLI permissions and AI service quota. Approval to start a request and the CLI's permission to perform individual actions are separate controls.
+
+Results return to the original thread. By default, they are reviewed on the PC before the bot posts them.
