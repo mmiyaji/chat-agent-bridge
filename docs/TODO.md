@@ -13,5 +13,5 @@
 ## 保留
 
 - [ ] `worktree-agent-*`（5件、未マージ、各 2〜3 コミット）の中身を確認し、残すか削除するか決める
-- [ ] main にマージ済みで作業ツリーに変更がない worktree を削除する（`D:/git/cab-gallery`、`cab-resizable`、`cab-single-instance`、`.claude/worktrees/agent-acdfab…`、ブランチは `codex/gallery-design`、`codex/resizable-panes`、`codex/about-expander`、`codex/antigravity-cli`）
+- [x] main にマージ済みで変更のない worktree とそのブランチを削除する（`cab-gallery`、`cab-resizable`、`cab-single-instance`、`agent-acdfab…`）
 - [ ] 変更が残っている worktree（`D:/git/cab-chat-controls`、`cab-chat-reactions`）の変更を確認し、コミットか破棄かを決める
