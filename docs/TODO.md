@@ -8,6 +8,7 @@
 - [ ] ルートの `handoff-ghiaccio-vault-duplicate-fingerprint.md` は別プロジェクト（ghiaccio-vault）のメモなので、移動・削除を決める
 - [ ] `.artifacts/` を `.gitignore` に追加するか決める
 - [ ] `codex/inbox-gallery-ui` の作業を区切りまで進め、main への取り込みを判断する
+- [ ] Kiro CLI に対応する（WinUI 版でエージェント CLI として選べるようにする）
 
 ## 保留
 
