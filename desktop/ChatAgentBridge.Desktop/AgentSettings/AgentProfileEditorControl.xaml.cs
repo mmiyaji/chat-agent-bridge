@@ -21,6 +21,7 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
     private bool _isShuttingDown;
     private bool _isFlushing;
     private bool _isPickingExecutable;
+    private bool _isDetectingExecutable;
     private bool _isActivatingProfile;
     private bool _sharedContextMismatch;
     private bool _showDraftSaveError;
@@ -45,11 +46,12 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
     // The model list keeps its place while the check refreshes it; it is only disabled until choices arrive.
     public static bool HasModelChoices(int count, bool loading) => count > 0 && !loading;
     public string CurrentProvider => _currentProvider;
-    public bool CanChangeSelection => _isConfigured && !_isBusy && !_isShuttingDown && !Editor.IsCheckingCli &&
+    public bool CanChangeSelection => _isConfigured && !_isDetectingExecutable && !_isBusy && !_isShuttingDown && !Editor.IsCheckingCli &&
                                       !Editor.IsLoading && !Editor.ModelCatalog.IsLoading;
-    public bool CanRunCliCheck => _isConfigured && !_isShuttingDown && !_isPickingExecutable && !_isActivatingProfile &&
+    public bool CanRunCliCheck => _isConfigured && !_isDetectingExecutable && !_isShuttingDown && !_isPickingExecutable && !_isActivatingProfile &&
                                   !_sharedContextMismatch && !Editor.IsCheckingCli && (!Editor.IsLoading || _isFlushing) && !Editor.IsRunning &&
                                   !Editor.ModelCatalog.IsLoading && (!_isBusy || _isFlushing);
+    public bool CanDetectCliExecutable => CanChangeSelection && !Editor.IsCustomProvider;
     public bool CanUseAgentProfile => CanChangeSelection && Editor.HasVerifiedAgentEditor &&
                                       !_sharedContextMismatch && (HasUnappliedChanges || !IsActiveProvider);
     public bool IsActiveProvider => _shared?.PersistedSettings is { } saved &&
@@ -123,6 +125,7 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
         SetBusy(true);
         try
         {
+            ExecutableDetectionNotice.IsOpen = false;
             await Editor.LoadAgentEditorAsync(settings, provider);
             if (!Editor.IsSettingsLoaded) return false;
             _currentProvider = Editor.AgentProvider;
@@ -347,6 +350,7 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
     private async void CheckCli_Click(object sender, RoutedEventArgs e)
     {
         if (!CanRunCliCheck) return;
+        ExecutableDetectionNotice.IsOpen = false;
         if (_flushTask is { IsCompleted: false } pendingFlush && !await pendingFlush) return;
         if (Editor.HasUnsavedSettings && !await TryFlushAsync()) return;
         if (!CanRunCliCheck) return;
@@ -368,6 +372,47 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
             SetBusy(false);
             NotifyStateChanged();
         }
+    }
+
+    private async void DetectCliExecutable_Click(object sender, RoutedEventArgs e)
+    {
+        if (!CanDetectCliExecutable) return;
+        if (_flushTask is { IsCompleted: false } pendingFlush && !await pendingFlush) return;
+        if (!CanDetectCliExecutable) return;
+        // Reuse the existing guarded refresh, including discovery-cache invalidation.
+        _reloadProcessEnvironment?.Invoke();
+        if (_shared?.StatusTitle == ViewModelText.Get("EnvironmentReloadedTitle"))
+            _shared.IsStatusOpen = false;
+        Editor.OnProcessEnvironmentReloaded();
+        var provider = Editor.AgentProvider;
+        _isDetectingExecutable = true;
+        SetBusy(true);
+        ExecutableDetectionNotice.IsOpen = false;
+        try
+        {
+            var detected = await Task.Run(() => CliExecutableDiscovery.Find(provider));
+            if (_isShuttingDown || Editor.AgentProvider != provider) return;
+            if (detected is null)
+            {
+                ExecutableDetectionNotice.Message = DesktopText.Get("CliDetectionNotFound");
+                ExecutableDetectionNotice.Severity = InfoBarSeverity.Warning;
+            }
+            else
+            {
+                Editor.AgentExecutable = detected.Executable;
+                if (!await TryFlushAsync()) return;
+                ExecutableDetectionNotice.Message = DesktopText.Get("CliDetectionSucceeded");
+                ExecutableDetectionNotice.Severity = InfoBarSeverity.Success;
+            }
+            ExecutableDetectionNotice.IsOpen = true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            ExecutableDetectionNotice.Message = DesktopText.Get("CliDetectionFailed");
+            ExecutableDetectionNotice.Severity = InfoBarSeverity.Error;
+            ExecutableDetectionNotice.IsOpen = true;
+        }
+        finally { _isDetectingExecutable = false; SetBusy(false); NotifyStateChanged(); }
     }
 
     private async void BrowseAgentExecutable_Click(object sender, RoutedEventArgs e)
@@ -452,6 +497,7 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
 
     private void Editor_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(MainPageViewModel.AgentExecutable)) ExecutableDetectionNotice.IsOpen = false;
         if (e.PropertyName is nameof(MainPageViewModel.AgentExecutable) or nameof(MainPageViewModel.AgentArguments) or
             nameof(MainPageViewModel.AgentModel) or nameof(MainPageViewModel.AgentReasoningEffort) or
             nameof(MainPageViewModel.AgentPermissionMode) or nameof(MainPageViewModel.AllowAgentNetwork) or nameof(MainPageViewModel.UseAppServer))
@@ -545,6 +591,7 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
         OnPropertyChanged(nameof(CheckStatusBrush));
         OnPropertyChanged(nameof(HasPendingEdits));
         OnPropertyChanged(nameof(CanChangeSelection));
+        OnPropertyChanged(nameof(CanDetectCliExecutable));
         OnPropertyChanged(nameof(CanRunCliCheck));
         OnPropertyChanged(nameof(CanUseAgentProfile));
         OnPropertyChanged(nameof(IsActiveProvider));

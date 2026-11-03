@@ -250,3 +250,5 @@ Qwen CodeはWindowsの公式スタンドアロン版とnpm版に対応します�
 設定画面ではエージェント・チャットサービスごとに異なるアウトラインアイコンを表示します。Gemini CLIには「移行推奨」を表示し、新規設定にはAntigravity CLIを推奨します。Gemini CLIの企業契約・APIキー利用は継続対象です。[Googleの移行案内](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/)。
 
 WindowsのQwen公式スタンドアロン版は、`qwen`、公式の`qwen.cmd`、または同梱の`node.exe`を指定できます。CABが配置を検証し、Qwen本体のJavaScriptファイルを自動で解決します。
+
+エージェント設定の「自動検出」で選択中のCLIをPATHから探し、「CLIをチェック」で起動を確認できます。Qwenの登録時は、内部のNode.jsパスではなく入力した`qwen`を保存します。

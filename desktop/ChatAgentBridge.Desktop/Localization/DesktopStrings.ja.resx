@@ -968,4 +968,7 @@
   <data name="ChatScheduleItem" xml:space="preserve"><value>{0}. [{1}] {2} · 次回 {3} · {4}</value></data>
   <data name="ChatScheduleFull" xml:space="preserve"><value>予約が既に {0} 件あります。先に1件削除してください。</value></data>
   <data name="ChatScheduleFullTotal" xml:space="preserve"><value>このアプリの予約件数の上限に達しています。</value></data>
+  <data name="CliDetectionSucceeded" xml:space="preserve"><value>CLIを検出しました。「CLIをチェック」で起動とバージョンを確認してください。</value></data>
+  <data name="CliDetectionNotFound" xml:space="preserve"><value>選択中のCLIがPATHに見つかりませんでした。CLIを導入するか、「参照」で実行ファイルを選択してください。</value></data>
+  <data name="CliDetectionFailed" xml:space="preserve"><value>CLIを検出できませんでした。インストールとPATHを確認するか、「参照」で実行ファイルを選択してください。</value></data>
 </root>

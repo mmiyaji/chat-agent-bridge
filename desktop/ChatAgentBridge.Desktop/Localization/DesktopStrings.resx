@@ -968,4 +968,7 @@ After: {2}</value></data>
   <data name="ChatScheduleItem" xml:space="preserve"><value>{0}. [{1}] {2} · next {3} · {4}</value></data>
   <data name="ChatScheduleFull" xml:space="preserve"><value>You already have {0} schedules. Remove one first.</value></data>
   <data name="ChatScheduleFullTotal" xml:space="preserve"><value>This app has reached its schedule limit.</value></data>
+  <data name="CliDetectionSucceeded" xml:space="preserve"><value>CLI found. Select Check CLI to verify startup and version.</value></data>
+  <data name="CliDetectionNotFound" xml:space="preserve"><value>The selected CLI was not found on PATH. Install it or choose its executable with Browse.</value></data>
+  <data name="CliDetectionFailed" xml:space="preserve"><value>Could not detect the CLI. Check its installation and PATH, or choose its executable with Browse.</value></data>
 </root>

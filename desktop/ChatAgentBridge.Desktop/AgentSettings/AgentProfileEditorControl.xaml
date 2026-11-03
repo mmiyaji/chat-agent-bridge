@@ -115,6 +115,9 @@
                 <StackPanel x:Name="CheckCliActions" Orientation="Vertical" Spacing="10" Margin="200,0,0,0">
                     <!-- Cancel and progress sit beside the button, so starting a check does not push the page down. -->
                     <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button x:Uid="DetectCliExecutable" localization:LocalizedResourceKey.Key="DetectCliExecutable"
+                                AutomationProperties.AutomationId="DetectCliExecutable" IsEnabled="{x:Bind CanDetectCliExecutable, Mode=OneWay}"
+                                Click="DetectCliExecutable_Click" />
                         <Button x:Uid="CheckCli" localization:LocalizedResourceKey.Key="CheckCli" AutomationProperties.AutomationId="CheckCli"
                                 Style="{StaticResource AccentButtonStyle}" IsEnabled="{x:Bind CanRunCliCheck, Mode=OneWay}" Click="CheckCli_Click" />
                         <Button AutomationProperties.AutomationId="CancelAgentCliCheck" x:Uid="CancelAgentCliCheck" localization:LocalizedResourceKey.Key="CancelAgentCliCheck"
@@ -123,6 +126,8 @@
                         <ProgressRing IsActive="{x:Bind Editor.IsCheckingCli, Mode=OneWay}" Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsCheckingCli), Mode=OneWay}"
                                       Width="18" Height="18" VerticalAlignment="Center" />
                     </StackPanel>
+                    <InfoBar x:Name="ExecutableDetectionNotice" IsOpen="False" IsClosable="True"
+                             AutomationProperties.AutomationId="ExecutableDetectionNotice" />
                     <TextBlock Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsReasoning), Mode=OneWay}" x:Uid="AgentEditorCliCheckHint" localization:LocalizedResourceKey.Key="AgentEditorCliCheckHint"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
                 </StackPanel>

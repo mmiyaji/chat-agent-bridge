@@ -250,3 +250,5 @@ Qwen Code supports both the official Windows standalone installer and npm instal
 Provider settings use distinct monochrome outline icons. Gemini CLI is marked Legacy; Antigravity CLI is recommended for new setups. Enterprise and API-key Gemini CLI access remain supported. See [Google’s transition announcement](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/).
 
 For the Windows Qwen standalone installation, select `qwen`, the official `qwen.cmd`, or its bundled `node.exe`; CAB validates the installation and resolves its CLI entrypoint automatically.
+
+Use Detect CLI in Agent settings to find the selected agent on PATH, then Check CLI to verify it. Qwen registrations preserve the configured `qwen` launcher instead of the internal Node.js path.

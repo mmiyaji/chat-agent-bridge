@@ -123,7 +123,8 @@ public partial class MainPageViewModel
         if (!CanRegisterAgentConnection() || _cliCheckedAt is not { } checkedAt) return null;
         var candidate = new AgentConnectionProfile(
             AgentProvider,
-            CliExecutablePath,
+            // Preserve npm-backed CLI launchers; node.exe is an internal implementation detail.
+            AgentProvider is AgentProfile.Qwen or AgentProfile.Gemini or AgentProfile.GitHubCopilot ? AgentExecutable.Trim() : CliExecutablePath,
             AgentProvider == AgentProfile.Codex ? (UseAppServer ? "app-server" : AgentProfile.DefaultCodexArguments)
                 : AgentProvider == AgentProfile.Claude ? "" : AgentArguments,
             AgentProvider == AgentProfile.Codex && UseAppServer ? "app-server" : "exec",
