@@ -124,6 +124,7 @@ Claude Codeでは、途中メッセージを受け取る実行に `--include-par
 | Codex / Claude Code | 対応 | CLIから取得 | バージョンとモデル候補 |
 | Gemini CLI / GitHub Copilot CLI | 対応（ユーザー・スレッドごとの会話IDで再開） | アプリでモデル名を指定。推論はCLI側の設定 | バージョン・CLIの識別 |
 | Antigravity CLI（`agy`） | 対応（ユーザー・スレッドごとの会話IDを `--conversation` で再開） | `agy models` から取得、またはモデル名を指定。推論はCLI側の設定 | バージョン（`agy --version`）・CLIの識別 |
+| Kiro CLI（`kiro-cli`、Windows 11） | ユーザー・スレッドごとのIDを `--resume-id` で再開（実サービス未検証） | CLIからモデル候補を取得、または直接指定。推論・権限はCLI側の設定 | バージョン・CLIの識別 |
 | その他のCLI | 未対応（毎回独立した実行） | CLI設定・起動引数で指定 | バージョンのみ |
 
 Gemini CLIは `--output-format stream-json`、GitHub Copilot CLIは `--output-format json` に対応する版が必要です。会話IDと完了イベントを確認できない出力は失敗として扱い、別のユーザーや直前のCLI会話に接続しません。モデル名はエージェント設定・初期設定・会話のモデル変更画面、または対象スレッドの `!cab model <モデル名>` から指定します。空欄または `!cab model default` はCLI／アプリの既定値に戻します。この版ではGemini・Copilotの候補取得は未対応です。CLI自身で利用可能なモデル名を確認してください。Antigravity CLIは、エージェント設定の「CLIモデル候補を取得」（CLIチェック後にも自動で試行）で `agy models` の一覧から選べます。
@@ -441,3 +442,5 @@ CLIのログインはSlackのログインとは別です。Claude Codeで「Not 
 自動起動の切り替え中と完了直後はスイッチを一時的に無効にし、連打を受け付けません。全般画面での状態取得も同じ排他制御を使います。切り替えが拒否された場合でも、Windowsが返した状態へ表示を戻してから次の操作を受け付けます。
 
 信頼する作業フォルダーは、「エージェント設定」の「フォルダーを選んで追加」または「現在の作業フォルダーを追加」で下書きへ追加し、「設定を保存」で適用します。手入力は1行に1フォルダーで、行を削除すれば一覧から外せます。親フォルダーを信頼すれば、その下の子・孫フォルダーも対象です。たとえば C:\Projects を登録すると C:\Projects\App1 も対象になり、C:\Projects-other は対象になりません。一覧が空なら、現在の作業フォルダーとその配下を信頼します。外部を指すリンク先は信頼範囲に含めません。この設定は実行を開始できる場所の制限で、CLIのファイルアクセス全体をOSで隔離する設定ではありません。
+
+Kiro CLIは `chat --v2 --no-interactive --output-format stream-json` に標準入力で依頼を渡します。Windows 11用のネイティブCLIを導入し、PC側で `KIRO_API_KEY` を設定してください。`--trust-all-tools` は自動付与しません。CLI側の確認が必要な操作は拒否される場合があります。実行中の追記は順番に処理します。実際の認証・出力形式との互換性・チャット実行は、Kiro導入環境での追加確認が必要です。[Kiro公式仕様](https://kiro.dev/docs/cli/headless/)

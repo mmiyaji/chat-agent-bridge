@@ -363,7 +363,7 @@
     <value>CLIが提示したモデル候補</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock038.Text" xml:space="preserve">
-    <value>Codex・Claude Code・Antigravity CLIの候補はCLIの報告値です。Gemini CLI・GitHub Copilot CLIではモデル名を直接入力してください。契約上の利用可否は実行時に確認されます。</value>
+    <value>Codex・Claude Code・Antigravity CLI・Kiro CLIの候補はCLIの報告値です。Gemini CLI・GitHub Copilot CLIではモデル名を直接入力してください。契約上の利用可否は実行時に確認されます。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock039.Text" xml:space="preserve">
     <value>エージェントがファイルを読み書きするプロジェクトのフォルダーです。Slackでは !cab folder に続けて絶対パスを指定すると、信頼フォルダー内の変更を依頼できます。PCでの承認が必要です。</value>
@@ -1052,7 +1052,7 @@
   <data name="AddSlackThreadButton.Content" xml:space="preserve"><value>この会話を追加</value></data>
   <data name="HistoryCompactFilters.Header" xml:space="preserve"><value>絞り込み</value></data>
   <data name="AgentConnectionRegistrationTitle.Text" xml:space="preserve"><value>このCLI接続を登録</value></data>
-  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>CLIチェックに成功した後、Codex・Claude Code・Gemini CLI・GitHub Copilot CLI・Antigravity CLIを登録できます。ローカルの実行ファイルとエージェント設定を保存し、会話ごとの切り替えに使います。ログイン情報はコピーしません。登録後は、成功した会話の短い抜粋を引き継ぎ用にこのPCで暗号化して保存します。</value></data>
+  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>CLIチェックに成功した後、Codex・Claude Code・Gemini CLI・GitHub Copilot CLI・Antigravity CLI・Kiro CLIを登録できます。ローカルの実行ファイルとエージェント設定を保存し、会話ごとの切り替えに使います。ログイン情報はコピーしません。登録後は、成功した会話の短い抜粋を引き継ぎ用にこのPCで暗号化して保存します。</value></data>
   <data name="RegisterAgentConnection.Content" xml:space="preserve"><value>このCLI接続を登録</value></data>
   <data name="RegisteredConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>登録済みCLI接続</value></data>
   <data name="LoadRegisteredCodexConnection.Content" xml:space="preserve"><value>保存したCodexを読み込む</value></data>
@@ -1190,7 +1190,7 @@
   <data name="AgentAdvancedSectionTitle.Text" xml:space="preserve"><value>選択中の CLI：詳細設定</value></data>
   <data name="AgentAdvancedSectionHelp.Text" xml:space="preserve"><value>実行ファイルの場所、引数、環境変数の再読み込み</value></data>
   <data name="AgentRegistrationsTitle.Text" xml:space="preserve"><value>保存済みの CLI 登録</value></data>
-  <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Codex・Claude Code・Gemini CLI・GitHub Copilot CLI・Antigravity CLIの接続設定を登録・呼び出し</value></data>
+  <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Codex・Claude Code・Gemini CLI・GitHub Copilot CLI・Antigravity CLI・Kiro CLIの接続設定を登録・呼び出し</value></data>
   <data name="AgentExecutionExplanationTitle.Text" xml:space="preserve"><value>実行承認のしくみ</value></data>
   <data name="AgentExecutionExplanationHelp.Text" xml:space="preserve"><value>承認の流れと現在の実行ポリシーを確認</value></data>
   <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>使うサービスの設定を開いてください。承認や添付の設定は、各チャットサービスに共通です。</value></data>
@@ -1370,4 +1370,5 @@
   <data name="ProgressPreviewPermission" xml:space="preserve"><value>操作前に確認</value></data>
   <data name="ProgressPreviewActivity" xml:space="preserve"><value>サンプルの作業領域を検索中</value></data>
   <data name="ProgressPreviewDisclaimer.Text" xml:space="preserve"><value>表示例です。チャットには送信されません。</value></data>
+  <data name="LoadRegisteredKiroConnection.Content" xml:space="preserve"><value>登録済みKiro CLIを呼び出す</value></data>
 </root>

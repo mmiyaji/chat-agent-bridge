@@ -79,6 +79,7 @@ public static class CliSessionOutputParser
                 {
                     AgentProfile.Gemini => Gemini(root),
                     AgentProfile.Antigravity => Antigravity(root),
+                    AgentProfile.Kiro => Kiro(root),
                     _ => Copilot(root)
                 };
             }
@@ -105,6 +106,47 @@ public static class CliSessionOutputParser
             }
             return new(_provider, invalid ? null : _sessionId, message,
                 _hasResult, _failed || invalid || !_hasResult, _usage, _deniedActions.Count == 0 ? null : _deniedActions.ToArray());
+        }
+
+        // Kiro headless emits ACP-style sessionUpdate records and a final runFinished record.
+        // Never derive an id from its directory-wide session list: another user's run may be there.
+        private IReadOnlyList<AgentRunProgress> Kiro(JsonElement root)
+        {
+            var type = String(root, "type");
+            var data = Property(root, "data");
+            if (type == "metadata") return []; // Credits are not token counts or USD.
+            if (_hasResult) { Invalidate(); return []; }
+            if (String(data, "sessionId") is { } sessionId) Bind(sessionId);
+            switch (type)
+            {
+                case "runStarted": return Activity("ProgressWorking");
+                case "sessionUpdate":
+                    var update = Property(data, "update");
+                    switch (String(update, "sessionUpdate"))
+                    {
+                        case "agent_message_chunk":
+                            return Message(String(Property(update, "content"), "text"), true);
+                        case "tool_call": return Activity("ProgressUsingGenericTool");
+                        case "tool_call_update": return Activity("ProgressCommandFinished");
+                    }
+                    break;
+                case "error":
+                case "runError":
+                case "runInterrupted":
+                    _failed = true;
+                    return Activity("ProgressTurnFailed");
+                case "runFinished":
+                    _hasResult = true;
+                    _failed |= String(data, "stopReason") is "cancelled" or "refusal" or "error" or "max_turn_requests";
+                    if (Property(data, "error").ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined)) _failed = true;
+                    if (String(data, "finalText") is { Length: > 0 } text)
+                    {
+                        _message.Clear();
+                        Append(text);
+                    }
+                    return Activity(_failed ? "ProgressTurnFailed" : "ProgressFinished");
+            }
+            return [];
         }
 
         private IReadOnlyList<AgentRunProgress> Gemini(JsonElement root)

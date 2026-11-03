@@ -25,7 +25,9 @@ if (args is ["--version"])
         return;
     }
     var fixtureVersion = Environment.GetEnvironmentVariable("CAB_TEST_AGENT_VERSION");
-    var version = fixtureVersion ?? (exeName.Equals("codex", StringComparison.OrdinalIgnoreCase)
+    var version = fixtureVersion ?? (exeName.Equals("kiro-cli", StringComparison.OrdinalIgnoreCase)
+        ? "Kiro CLI 2.33 (offline fixture)"
+        : exeName.Equals("codex", StringComparison.OrdinalIgnoreCase)
         ? "codex-cli 1.2.3 (offline fixture)"
         : exeName.Equals("claude", StringComparison.OrdinalIgnoreCase)
             ? "Claude Code 1.2.3 (offline fixture)"
@@ -55,6 +57,25 @@ if (isAntigravityFixture && args is ["models"])
 
 // Synthetic structured CLI fixtures. Selected only by the bridge's provider output format;
 // these never read credentials, execute tools, or contact a provider.
+if (Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "").Equals("kiro-cli", StringComparison.OrdinalIgnoreCase))
+{
+    if (args is ["chat", "--list-models", "--format", "json"])
+    {
+        await WriteAsync(new { default_model = "fixture-kiro-fast", models = new[] { new { id = "fixture-kiro-fast", displayName = "Fixture Kiro Fast" }, new { id = "fixture-kiro-deep", displayName = "Fixture Kiro Deep" } } });
+        return;
+    }
+    var resume = Array.IndexOf(args, "--resume-id");
+    var session = resume >= 0 ? args[resume + 1] : Guid.NewGuid().ToString("D");
+    var modelIndex = Array.IndexOf(args, "--model");
+    var model = modelIndex >= 0 ? args[modelIndex + 1] : "fixture-kiro-fast";
+    var kiroFixturePrompt = await Console.In.ReadToEndAsync();
+    var reply = $"kiro-e2e: {(resume >= 0 ? "resumed" : "new")}; model={model}; prompt={kiroFixturePrompt}";
+    await WriteAsync(new { type = "runStarted", data = new { sessionId = session } });
+    await WriteAsync(new { type = "sessionUpdate", data = new { sessionId = session, update = new { sessionUpdate = "agent_message_chunk", content = new { type = "text", text = reply } } } });
+    await WriteAsync(new { type = "runFinished", data = new { finalText = reply, stopReason = "end_turn" } });
+    await WriteAsync(new { type = "metadata", data = new { meteringUsage = new[] { new { value = 0.1, unit = "credit" } } } });
+    return;
+}
 var structuredFormatIndex = Array.IndexOf(args, "--output-format");
 if (!args.Contains("--print") && structuredFormatIndex >= 0 && structuredFormatIndex + 1 < args.Length &&
     args[structuredFormatIndex + 1] is "stream-json" or "json")

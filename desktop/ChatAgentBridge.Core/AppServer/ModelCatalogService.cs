@@ -48,8 +48,8 @@ public sealed class ModelCatalogService
         catch (ArgumentException ex) { throw new ModelCatalogException(ex.Message, ex); }
         if (provider == AgentProfile.Claude)
             return await GetClaudeModelsAsync(settings, cancellationToken).ConfigureAwait(false);
-        if (provider == AgentProfile.Antigravity)
-            return await GetAntigravityModelsAsync(settings, cancellationToken).ConfigureAwait(false);
+        if (provider is AgentProfile.Antigravity or AgentProfile.Kiro)
+            return await GetNativeModelsAsync(settings, provider, cancellationToken).ConfigureAwait(false);
         if (provider != AgentProfile.Codex)
             throw new ModelCatalogException("Model discovery is available only for supported agent providers.");
         if (string.IsNullOrWhiteSpace(settings.WorkspaceRoot))
@@ -252,14 +252,13 @@ public sealed class ModelCatalogService
     }
 
     /// <summary>Runs `agy models`, which lists "id&lt;TAB&gt;label" rows without starting a model turn.</summary>
-    private async Task<IReadOnlyList<ModelOption>> GetAntigravityModelsAsync(BridgeSettings settings, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<ModelOption>> GetNativeModelsAsync(BridgeSettings settings, string provider, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(settings.WorkspaceRoot))
-            throw new ModelCatalogException("A workspace directory is required to discover Antigravity CLI models.");
+            throw new ModelCatalogException("A workspace directory is required to discover native agent CLI models.");
         var workspace = Path.GetFullPath(settings.WorkspaceRoot);
         if (!Directory.Exists(workspace)) throw new ModelCatalogException("The configured workspace directory does not exist.");
-        var executable = string.IsNullOrWhiteSpace(settings.AgentExecutable) || IsCodexExecutable(settings.AgentExecutable)
-            ? "agy" : settings.AgentExecutable;
+        var executable = AgentProfile.ResolveEffectiveExecutable(settings);
 
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(_timeout);
@@ -279,9 +278,10 @@ public sealed class ModelCatalogService
                 StandardErrorEncoding = new UTF8Encoding(false),
                 CreateNoWindow = true
             };
-            startInfo.ArgumentList.Add("models");
+            foreach (var argument in provider == AgentProfile.Kiro ? new[] { "chat", "--list-models", "--format", "json" } : new[] { "models" })
+                startInfo.ArgumentList.Add(argument);
             process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
-            if (!process.Start()) throw new ModelCatalogException("Antigravity CLI did not start.");
+            if (!process.Start()) throw new ModelCatalogException("native agent CLI did not start.");
             killOnCancellation = deadline.Token.Register(static state => Kill((Process?)state), process);
             process.StandardInput.Close();
             // stderr carries the "Fetching available models..." banner and any account diagnostics; discard it.
@@ -291,13 +291,13 @@ public sealed class ModelCatalogService
             try { await stderrDrain.WaitAsync(TimeSpan.FromMilliseconds(500)).ConfigureAwait(false); }
             catch (TimeoutException) { }
             if (process.ExitCode != 0)
-                throw new ModelCatalogException("Could not retrieve the Antigravity CLI model catalog. Check the CLI and its sign-in status.");
-            return ParseAntigravityModels(output);
+                throw new ModelCatalogException("Could not retrieve the native agent CLI model catalog. Check the CLI and its sign-in status.");
+            return provider == AgentProfile.Kiro ? ParseKiroModels(output) : ParseAntigravityModels(output);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && deadline.IsCancellationRequested)
         {
             Kill(process);
-            throw new TimeoutException($"Antigravity CLI model discovery exceeded its {_timeout.TotalSeconds:0}-second time limit.");
+            throw new TimeoutException($"native agent CLI model discovery exceeded its {_timeout.TotalSeconds:0}-second time limit.");
         }
         catch (OperationCanceledException) { Kill(process); throw; }
         catch (ModelCatalogException) { Kill(process); throw; }
@@ -305,7 +305,7 @@ public sealed class ModelCatalogService
         {
             Kill(process);
             // Never return stderr; it may include account details.
-            throw new ModelCatalogException("Could not retrieve the Antigravity CLI model catalog. Check the CLI and its sign-in status.");
+            throw new ModelCatalogException("Could not retrieve the native agent CLI model catalog. Check the CLI and its sign-in status.");
         }
         finally
         {
@@ -319,6 +319,44 @@ public sealed class ModelCatalogService
                 process.Dispose();
             }
         }
+    }
+
+    internal static IReadOnlyList<ModelOption> ParseKiroModels(string output)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(output, new JsonDocumentOptions { MaxDepth = 32 });
+            var root = document.RootElement;
+            string? defaultId = null;
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                if (root.TryGetProperty("default_model", out var selected) && selected.ValueKind == JsonValueKind.String) defaultId = selected.GetString();
+                if (!root.TryGetProperty("models", out root)) throw new JsonException();
+            }
+            if (root.ValueKind != JsonValueKind.Array) throw new JsonException();
+            var result = new List<ModelOption>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in root.EnumerateArray())
+            {
+                string? id = entry.ValueKind == JsonValueKind.String ? entry.GetString() : null;
+                string? label = null;
+                if (entry.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var key in new[] { "id", "modelId", "model_id", "name" })
+                        if (entry.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String) { id = value.GetString(); break; }
+                    foreach (var key in new[] { "displayName", "display_name", "name" })
+                        if (entry.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String) { label = value.GetString(); break; }
+                }
+                try { id = AgentProfile.NormalizeModel(id); } catch (ArgumentException) { continue; }
+                if (id is null || id.Any(char.IsWhiteSpace) || !seen.Add(id)) continue;
+                label = string.IsNullOrWhiteSpace(label) || label.Length > 256 || label.Any(char.IsControl) ? id : label;
+                result.Add(new ModelOption(id, label, "", id == defaultId));
+                if (result.Count >= MaxModels) break;
+            }
+            if (result.Count == 0) throw new JsonException();
+            return result;
+        }
+        catch (JsonException) { throw new ModelCatalogException("Kiro CLI returned an unsupported or empty model catalog."); }
     }
 
     /// <summary>Parses `id&lt;TAB&gt;label` rows. Rows without a tab or with an unusable id (for example banner text) are ignored.</summary>
@@ -351,7 +389,7 @@ public sealed class ModelCatalogService
         int read;
         while ((read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false)) > 0)
         {
-            if (builder.Length + read > limit) throw new ModelCatalogException("Antigravity CLI returned an oversized model catalog response.");
+            if (builder.Length + read > limit) throw new ModelCatalogException("native agent CLI returned an oversized model catalog response.");
             builder.Append(buffer, 0, read);
         }
         return builder.ToString();

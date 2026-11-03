@@ -8,6 +8,8 @@ public static class AgentProfile
     public const string Gemini = "gemini";
     public const string GitHubCopilot = "github-copilot";
     public const string Antigravity = "antigravity";
+    public const string Kiro = "kiro";
+    public const string DefaultKiroArguments = "chat --v2 --no-interactive --output-format stream-json";
     public const string Custom = "custom";
     public const string DefaultCodexArguments = "exec --json -";
     public const string DefaultGeminiArguments = "--output-format stream-json";
@@ -18,8 +20,8 @@ public static class AgentProfile
     {
         ArgumentNullException.ThrowIfNull(settings);
         var provider = string.IsNullOrWhiteSpace(settings.AgentProvider) ? Codex : settings.AgentProvider.Trim().ToLowerInvariant();
-        if (provider is not (Codex or Claude or Gemini or GitHubCopilot or Antigravity or Custom))
-            throw new ArgumentException("Agent provider must be codex, claude, gemini, github-copilot, antigravity, or custom.", nameof(settings));
+        if (provider is not (Codex or Claude or Gemini or GitHubCopilot or Antigravity or Kiro or Custom))
+            throw new ArgumentException("Agent provider must be codex, claude, gemini, github-copilot, antigravity, kiro, or custom.", nameof(settings));
 
         // Directly-created legacy settings often use an arbitrary executable with the old default provider.
         // Treat those as custom so their executable and arguments remain exactly as configured.
@@ -67,7 +69,7 @@ public static class AgentProfile
             {
                 if (!Guid.TryParseExact(sessionId, "D", out var id))
                     throw new ArgumentException("The authorized CLI session id must be a UUID.", nameof(settings));
-                basicArguments = basicArguments.Concat(new[] { provider == Antigravity ? "--conversation" : "--resume", id.ToString("D") }).ToArray();
+                basicArguments = basicArguments.Concat(new[] { provider == Antigravity ? "--conversation" : provider == Kiro ? "--resume-id" : "--resume", id.ToString("D") }).ToArray();
             }
             if (provider == Antigravity && permissionMode != "inherit")
                 basicArguments = SetAntigravityPermission(basicArguments, permissionMode);
@@ -122,10 +124,10 @@ public static class AgentProfile
     public static string ResolveEffectiveExecutable(BridgeSettings settings)
         => EffectiveExecutable(settings, ResolveProvider(settings));
 
-    public static bool IsBasicCliProvider(string provider) => provider is Gemini or GitHubCopilot or Antigravity;
+    public static bool IsBasicCliProvider(string provider) => provider is Gemini or GitHubCopilot or Antigravity or Kiro;
 
     /// <summary>Providers whose CLI can list selectable models without an AI turn.</summary>
-    public static bool HasModelCatalog(string provider) => provider is Codex or Claude or Antigravity;
+    public static bool HasModelCatalog(string provider) => provider is Codex or Claude or Antigravity or Kiro;
 
     /// <summary>Basic providers distribute as npm packages, except Antigravity which ships a native executable.</summary>
     internal static bool UsesNpmShim(string provider) => provider is Gemini or GitHubCopilot;
@@ -159,10 +161,17 @@ public static class AgentProfile
                 argument.StartsWith("-i", StringComparison.Ordinal) && !argument.StartsWith("--", StringComparison.Ordinal))
                 throw new ArgumentException("CLI session and prompt selection must be managed by the bridge; remove configured resume, continue, session, and prompt options.", nameof(settings));
         }
+        if (provider == Kiro)
+        {
+            // Do not permit directory-wide resume, cloud execution, or a second prompt.
+            var canonical = AgentArgumentParser.Parse(DefaultKiroArguments);
+            if (!arguments.SequenceEqual(canonical, StringComparer.Ordinal))
+                throw new ArgumentException("Kiro CLI arguments are managed by the bridge; use the canonical headless arguments.", nameof(settings));
+        }
         if (provider == GitHubCopilot)
             arguments = EnsureFlag(arguments.Where(value => value is not ("--silent" or "-s") &&
                 !value.StartsWith("--silent=", StringComparison.Ordinal)).ToArray(), "--no-ask-user");
-        arguments = SetOption(arguments, "--output-format", provider == Gemini ? "-o" : "--output-format", provider is Gemini or Antigravity ? "stream-json" : "json");
+        arguments = SetOption(arguments, "--output-format", provider == Gemini ? "-o" : "--output-format", provider is Gemini or Antigravity or Kiro ? "stream-json" : "json");
         if (NormalizeModel(settings.AgentModel) is { } model)
             arguments = SetOption(arguments, "--model", "-m", model);
         return arguments;
@@ -294,6 +303,7 @@ public static class AgentProfile
         if (provider == Gemini && IsCodexExecutable(executable)) return "gemini";
         if (provider == GitHubCopilot && IsCodexExecutable(executable)) return "copilot";
         if (provider == Antigravity && IsCodexExecutable(executable)) return "agy";
+        if (provider == Kiro && IsCodexExecutable(executable)) return "kiro-cli";
         return executable;
     }
 
@@ -304,6 +314,7 @@ public static class AgentProfile
             {
                 Gemini => DefaultGeminiArguments,
                 Antigravity => DefaultAntigravityArguments,
+                Kiro => DefaultKiroArguments,
                 _ => DefaultGitHubCopilotArguments
             });
         return AgentArgumentParser.Parse(arguments);

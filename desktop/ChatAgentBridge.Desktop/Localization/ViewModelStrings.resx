@@ -721,4 +721,5 @@ Conversation ID (first message): {2}</value></data>
   <data name="OverviewAutoConnectDiscordReady" xml:space="preserve"><value>On: Discord</value></data>
   <data name="OverviewAutoConnectNeedsDiscord" xml:space="preserve"><value>Set up Discord bot and access</value></data>
   <data name="DiscordConnectionFields" xml:space="preserve"><value>Enter a bot token and allowed user IDs, plus at least one allowed server ID unless direct messages are enabled.</value></data>
+  <data name="KiroProviderHelp" xml:space="preserve"><value>Use the native Kiro CLI on Windows 11. Configure KIRO_API_KEY on this PC for headless runs. Fetch models and continue conversations in the same thread. Tool permissions and reasoning effort follow CLI settings. Actions requiring CLI confirmation are denied in headless mode.</value></data>
 </root>

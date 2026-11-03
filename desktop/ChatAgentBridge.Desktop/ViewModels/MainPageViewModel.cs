@@ -156,9 +156,9 @@ public partial class MainPageViewModel : ObservableObject
     public string AgentProviderDisplayName => AgentProvider switch
     {
         "codex" => "Codex", "claude" => "Claude Code", "gemini" => "Gemini CLI",
-        "github-copilot" => "GitHub Copilot CLI", "antigravity" => "Antigravity CLI", _ => ViewModelText.Get("CustomCliName")
+        "github-copilot" => "GitHub Copilot CLI", "antigravity" => "Antigravity CLI", "kiro" => "Kiro CLI", _ => ViewModelText.Get("CustomCliName")
     };
-    public string BasicProviderHelp => ViewModelText.Get(IsCustomProvider ? "BasicProviderHelp" : IsAntigravityProvider ? "AntigravityProviderHelp" : "SessionCliProviderHelp");
+    public string BasicProviderHelp => ViewModelText.Get(IsCustomProvider ? "BasicProviderHelp" : IsAntigravityProvider ? "AntigravityProviderHelp" : AgentProvider == "kiro" ? "KiroProviderHelp" : "SessionCliProviderHelp");
     public bool CanFetchModelCandidates => SupportsModelCatalog && IsSettingsLoaded && !IsRunning && !_closing;
     [ObservableProperty] public partial string AgentModel { get; set; } = "";
     partial void OnAgentModelChanged(string value)
@@ -431,12 +431,12 @@ public partial class MainPageViewModel : ObservableObject
         if (IsBasicProvider) SetAgentPermissionMode("inherit", adjusted: false);
         AgentModel = "";
         AgentReasoningEffort = null;
-        AgentExecutable = value switch { "claude" => "claude", "codex" => "codex", "gemini" => "gemini", "github-copilot" => "copilot", "antigravity" => "agy", _ => "" };
+        AgentExecutable = value switch { "claude" => "claude", "codex" => "codex", "gemini" => "gemini", "github-copilot" => "copilot", "antigravity" => "agy", "kiro" => "kiro-cli", _ => "" };
         AgentArguments = value switch
         {
             "claude" => "--print --output-format stream-json --verbose", "codex" => "exec --json -",
             "gemini" => AgentProfile.DefaultGeminiArguments, "github-copilot" => AgentProfile.DefaultGitHubCopilotArguments,
-            "antigravity" => AgentProfile.DefaultAntigravityArguments, _ => ""
+            "antigravity" => AgentProfile.DefaultAntigravityArguments, "kiro" => AgentProfile.DefaultKiroArguments, _ => ""
         };
     }
 

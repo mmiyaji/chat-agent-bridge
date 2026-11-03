@@ -144,7 +144,7 @@ public sealed class SessionAgentRunner
         SessionBinding? existing, string provider, IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken)
     {
         if (settings.AgentMode != "exec")
-            throw new InvalidOperationException("Gemini CLI, GitHub Copilot, and Antigravity CLI sessions require exec mode.");
+            throw new InvalidOperationException("Structured CLI sessions require exec mode.");
         if (AgentProfile.NormalizeReasoningEffort(settings.AgentReasoningEffort) is not null)
             throw new ArgumentException("Reasoning effort overrides are unavailable for this CLI.", nameof(settings));
         // Canonical launch arguments include custom Node entrypoints and configured flags. Model

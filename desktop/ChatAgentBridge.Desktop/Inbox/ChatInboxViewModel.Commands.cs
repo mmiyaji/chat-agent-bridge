@@ -141,6 +141,7 @@ public sealed partial class ChatInboxViewModel
         AgentProfile.Gemini => DesktopText.Get("ChatControlAgentGemini"),
         AgentProfile.GitHubCopilot => DesktopText.Get("ChatControlAgentCopilot"),
         AgentProfile.Antigravity => DesktopText.Get("ChatControlAgentAntigravity"),
+        AgentProfile.Kiro => "Kiro CLI",
         _ => DesktopText.Get("ChatControlAgentCustom", Path.GetFileName(settings.AgentExecutable))
     };
 

@@ -17,6 +17,7 @@ public sealed partial class MainPage
             "gemini" => "sparkle",
             "github-copilot" => "bot",
             "antigravity" => "arch",
+            "kiro" => "window_console",
             "mattermost" => "chat",
             "slack" => "number_symbol",
             "discord" => "people_community",

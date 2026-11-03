@@ -23,7 +23,7 @@ internal static class StructuredCliDiagnostics
                  Has(diagnostic, "please set an auth method") ||
                  Has(diagnostic, "invalid credentials") || Has(diagnostic, "no credentials") ||
                  Has(diagnostic, "credentials not found") || Has(diagnostic, "could not load credentials") ||
-                 Has(diagnostic, "credential error"))
+                 Has(diagnostic, "credential error") || Has(diagnostic, "KIRO_API_KEY"))
             key = "CliAuthenticationRequired";
         else if (Has(diagnostic, "not running in a trusted directory") ||
                  Has(diagnostic, "untrusted directory") || Has(diagnostic, "untrusted workspace") ||

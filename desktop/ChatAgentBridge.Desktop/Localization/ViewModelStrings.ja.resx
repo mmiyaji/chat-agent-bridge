@@ -721,4 +721,5 @@ AIの操作権限: {8}</value>
   <data name="OverviewAutoConnectDiscordReady" xml:space="preserve"><value>オン：Discord</value></data>
   <data name="OverviewAutoConnectNeedsDiscord" xml:space="preserve"><value>Discord Botとアクセス設定が必要</value></data>
   <data name="DiscordConnectionFields" xml:space="preserve"><value>Botトークンと許可するユーザーIDを入力してください。ダイレクトメッセージを有効にしない場合は、許可するサーバーIDも1つ以上必要です。</value></data>
+  <data name="KiroProviderHelp" xml:space="preserve"><value>Kiro CLIはWindows 11のネイティブ版を使用します。非対話実行用のKIRO_API_KEYをPC側で設定してください。モデル候補を取得し、同じスレッドの会話を継続します。操作権限と推論の強さはCLIの設定に従います。CLI側の確認が必要な操作は非対話実行では拒否されます。</value></data>
 </root>

@@ -204,7 +204,7 @@ public sealed class AgentConnectionStore
         var normalized = provider?.Trim().ToLowerInvariant();
         return normalized switch
         {
-            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity => normalized,
+            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro => normalized,
             _ => throw new ArgumentException("Only supported CLI profiles can be registered.", nameof(provider))
         };
     }

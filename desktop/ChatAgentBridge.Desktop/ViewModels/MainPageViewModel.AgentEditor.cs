@@ -152,6 +152,7 @@ public partial class MainPageViewModel
             AgentProfile.Gemini => "gemini",
             AgentProfile.GitHubCopilot => "copilot",
             AgentProfile.Antigravity => "agy",
+            AgentProfile.Kiro => "kiro-cli",
             _ => ""
         },
         AgentArguments = provider switch
@@ -161,6 +162,7 @@ public partial class MainPageViewModel
             AgentProfile.Gemini => AgentProfile.DefaultGeminiArguments,
             AgentProfile.GitHubCopilot => AgentProfile.DefaultGitHubCopilotArguments,
             AgentProfile.Antigravity => AgentProfile.DefaultAntigravityArguments,
+            AgentProfile.Kiro => AgentProfile.DefaultKiroArguments,
             _ => ""
         },
         AgentMode = "exec",
@@ -175,7 +177,7 @@ public partial class MainPageViewModel
         var normalized = provider?.Trim().ToLowerInvariant();
         return normalized switch
         {
-            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Custom => normalized,
+            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Custom => normalized,
             _ => throw new ArgumentException("Only supported agent providers can be edited.", nameof(provider))
         };
     }
@@ -207,6 +209,7 @@ public partial class MainPageViewModel
             AgentProfile.Gemini => _registeredGeminiConnection,
             AgentProfile.GitHubCopilot => _registeredCopilotConnection,
             AgentProfile.Antigravity => _registeredAntigravityConnection,
+            AgentProfile.Kiro => _registeredKiroConnection,
             _ => null
         };
         return profile == checkedProfile ? profile : null;

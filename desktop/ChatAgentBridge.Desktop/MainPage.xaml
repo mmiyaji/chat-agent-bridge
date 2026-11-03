@@ -404,6 +404,7 @@
                                             <ComboBoxItem Content="Gemini CLI" Tag="gemini" AutomationProperties.AutomationId="ProviderOptionGemini" />
                                             <ComboBoxItem Content="GitHub Copilot CLI" Tag="github-copilot" AutomationProperties.AutomationId="ProviderOptionCopilot" />
                                             <ComboBoxItem Content="Antigravity CLI" Tag="antigravity" AutomationProperties.AutomationId="ProviderOptionAntigravity" />
+                                            <ComboBoxItem Content="Kiro CLI" Tag="kiro" AutomationProperties.AutomationId="ProviderOptionKiro" />
                                             <ComboBoxItem  Tag="custom" AutomationProperties.AutomationId="ProviderOptionCustom"  x:Uid="ProviderOptionCustom" />
                                         </ComboBox>
                                         <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="BasicProviderHelp" />
@@ -555,6 +556,7 @@
                                                     <Button Command="{x:Bind ViewModel.LoadRegisteredGeminiConnectionCommand}" IsEnabled="{x:Bind ViewModel.HasRegisteredGeminiConnection, Mode=OneWay}" AutomationProperties.AutomationId="LoadRegisteredGeminiConnection" x:Uid="LoadRegisteredGeminiConnection" />
                                                     <Button Command="{x:Bind ViewModel.LoadRegisteredCopilotConnectionCommand}" IsEnabled="{x:Bind ViewModel.HasRegisteredCopilotConnection, Mode=OneWay}" AutomationProperties.AutomationId="LoadRegisteredCopilotConnection" x:Uid="LoadRegisteredCopilotConnection" />
                                                     <Button Command="{x:Bind ViewModel.LoadRegisteredAntigravityConnectionCommand}" IsEnabled="{x:Bind ViewModel.HasRegisteredAntigravityConnection, Mode=OneWay}" AutomationProperties.AutomationId="LoadRegisteredAntigravityConnection" x:Uid="LoadRegisteredAntigravityConnection" />
+                                                    <Button Command="{x:Bind ViewModel.LoadRegisteredKiroConnectionCommand}" IsEnabled="{x:Bind ViewModel.HasRegisteredKiroConnection, Mode=OneWay}" AutomationProperties.AutomationId="LoadRegisteredKiroConnection" x:Uid="LoadRegisteredKiroConnection" />
                                                 </StackPanel>
                                                 <TextBlock Text="{x:Bind ViewModel.ConnectionRegistrationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ConnectionRegistrationStatus" />
                                             </StackPanel>

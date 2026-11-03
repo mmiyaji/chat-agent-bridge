@@ -16,7 +16,7 @@ public sealed record AgentChatCommand(string? Provider, bool? IncludeSummary, bo
         var provider = parts[1].ToLowerInvariant();
         if (provider == "copilot") provider = AgentProfile.GitHubCopilot;
         if (provider == "agy") provider = AgentProfile.Antigravity;
-        if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity))
+        if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro))
         {
             // !cab also starts ordinary requests: "!cab agent のログを調べて".
             // Reserve unknown targets only when the text has explicit switch syntax

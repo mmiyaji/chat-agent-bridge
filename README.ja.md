@@ -88,6 +88,7 @@ Windows向けのポータブル版を配布しています。利用するCLIの�
 | Codex / Claude Code | 対応 | CLIから取得したモデル候補と、対応する推論の強さを選択 |
 | Gemini CLI / GitHub Copilot CLI | 対応 | モデル名を入力。推論設定はCLI側で管理 |
 | Antigravity CLI（`agy`） | 対応 | `agy models` からモデル候補を取得、またはモデル名を入力。推論設定はCLI側で管理。ヘッドレス実行では、権限モードを「フォルダー内の編集を自動許可」「フルアクセス」にするか、`settings.json` に許可ルールを追加しない限り、編集とコマンドは自動的に拒否されます |
+| Kiro CLI（`kiro-cli`、Windows 11） | 実装済み・実サービス未検証 | CLIからモデル候補を取得、またはモデルIDを指定。`KIRO_API_KEY` が必要。権限・推論設定はCLI側で管理し、クレジットはトークン料金に換算しません |
 | その他のCLI | 毎回独立した実行 | CLIの設定・起動引数で指定 |
 
 会話ごとのエージェント・モデルは、PCの会話詳細またはチャットから変更できます。エージェントを切り替える場合は、アプリで事前に確認・登録したCLIを使い、会話の引き継ぎメモを渡すか選びます。
@@ -239,3 +240,5 @@ PCでも実行中の出力を確認し、依頼を中断できます。
 - [ポータブル版の案内](desktop/distribution/README.portable.ja.txt)
 - [不具合報告・機能の提案](https://github.com/mmiyaji/chat-agent-bridge/issues)
 - [サードパーティーのライセンス](desktop/THIRD-PARTY-NOTICES.txt)（アプリの「情報」からも閲覧可能）
+
+Kiro CLIは `chat --v2 --no-interactive --output-format stream-json` に標準入力で依頼を渡します。Windows 11用のネイティブCLIを導入し、PC側で `KIRO_API_KEY` を設定してください。`--trust-all-tools` は自動付与しません。CLI側の確認が必要な操作は拒否される場合があります。実行中の追記は順番に処理します。実際の認証・出力形式との互換性・チャット実行は、Kiro導入環境での追加確認が必要です。[Kiro公式仕様](https://kiro.dev/docs/cli/headless/)

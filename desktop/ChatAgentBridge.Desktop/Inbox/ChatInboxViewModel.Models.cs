@@ -24,7 +24,7 @@ public sealed partial class ChatInboxViewModel
             var binding = await _sessions.FindExecutionBindingAsync(scope, token);
             var workspaceSettings = await _sessions.ApplyWorkspaceAsync(scope, current, token);
             var effective = ConversationExecutionPolicy.GetEffectiveSettings(workspaceSettings, binding);
-            if (AgentProfile.ResolveProvider(effective) is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity))
+            if (AgentProfile.ResolveProvider(effective) is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro))
             {
                 await ReplyToControlAsync(transport, received, request, DesktopText.Get("ChatModelUnsupported"), token);
                 return;
