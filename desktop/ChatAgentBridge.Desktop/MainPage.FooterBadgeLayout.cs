@@ -93,8 +93,12 @@ public sealed partial class MainPage
         // The 8px dot + 12px right gap has the same center as the 24px update
         // icon + 4px gap, while leaving room for the translated state label.
         badge.Margin = compact ? new Thickness(0) : new Thickness(0, 0, isUpdate ? 4 : 12, 0);
-        badge.RenderTransform = null;
-        if (!compact || badge.Visibility != Visibility.Visible || !badge.IsLoaded || !icon.IsLoaded) return;
+        if (!compact)
+        {
+            badge.RenderTransform = null;
+            return;
+        }
+        if (badge.Visibility != Visibility.Visible || !badge.IsLoaded || !icon.IsLoaded) return;
         // Measure after WinUI applies its compact state. RenderTransform is independent
         // of native visual-state setters, unlike changing the badge presenter's alignment.
         MainNavigation.UpdateLayout();
@@ -102,10 +106,16 @@ public sealed partial class MainPage
         var badgeBounds = badge.TransformToVisual(MainNavigation).TransformBounds(new Rect(0, 0, badge.ActualWidth, badge.ActualHeight));
         var centerX = isUpdate ? iconBounds.X + iconBounds.Width / 2 : iconBounds.Right + 2;
         var centerY = isUpdate ? iconBounds.Y + iconBounds.Height / 2 : iconBounds.Bottom + 2;
+        // TransformToVisual includes the existing correction. Removing it before
+        // measuring can read the previous frame's transform and alternate positions.
+        var correction = badge.RenderTransform as TranslateTransform;
+        var deltaX = centerX - (badgeBounds.X + badgeBounds.Width / 2);
+        var deltaY = centerY - (badgeBounds.Y + badgeBounds.Height / 2);
+        if (Math.Abs(deltaX) < 0.01 && Math.Abs(deltaY) < 0.01) return;
         badge.RenderTransform = new TranslateTransform
         {
-            X = centerX - (badgeBounds.X + badgeBounds.Width / 2),
-            Y = centerY - (badgeBounds.Y + badgeBounds.Height / 2)
+            X = (correction?.X ?? 0) + deltaX,
+            Y = (correction?.Y ?? 0) + deltaY
         };
     }
 }
