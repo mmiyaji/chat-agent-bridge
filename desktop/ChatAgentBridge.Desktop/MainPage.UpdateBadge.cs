@@ -21,8 +21,11 @@ public sealed partial class MainPage
         QueueFooterBadgeLayout();
     }
 
-    private void UpdateBadge_Unloaded(object sender, RoutedEventArgs args) =>
+    private void UpdateBadge_Unloaded(object sender, RoutedEventArgs args)
+    {
         App.PortableUpdates.Changed -= PortableUpdates_Changed;
+        CancelFooterBadgeFrame();
+    }
 
     private void PortableUpdates_Changed(object? sender, EventArgs args)
     {

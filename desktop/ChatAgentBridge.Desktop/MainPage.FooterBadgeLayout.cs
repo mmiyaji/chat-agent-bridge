@@ -11,6 +11,7 @@ public sealed partial class MainPage
     private bool _footerBadgeLayoutQueued;
     private bool _footerPaneTransition;
     private bool _footerBadgesNeedReveal;
+    private bool _footerBadgeFramePending;
 
     private void MainNavigation_PaneTransitionStarting(NavigationView sender, object args)
     {
@@ -23,6 +24,26 @@ public sealed partial class MainPage
             visual.StopAnimation("Opacity");
             visual.Opacity = 0;
         }
+        // Reposition on the first laid-out frame, not after the entire pane animation.
+        if (!_footerBadgeFramePending)
+        {
+            _footerBadgeFramePending = true;
+            CompositionTarget.Rendering += FooterBadgeFrameReady;
+        }
+    }
+
+    private void FooterBadgeFrameReady(object? sender, object args)
+    {
+        CancelFooterBadgeFrame();
+        _footerPaneTransition = false;
+        UpdateFooterBadgeLayout();
+    }
+
+    private void CancelFooterBadgeFrame()
+    {
+        if (!_footerBadgeFramePending) return;
+        CompositionTarget.Rendering -= FooterBadgeFrameReady;
+        _footerBadgeFramePending = false;
     }
 
     private void RevealFooterBadge(InfoBadge badge)
@@ -34,14 +55,14 @@ public sealed partial class MainPage
         var fade = visual.Compositor.CreateScalarKeyFrameAnimation();
         fade.InsertKeyFrame(0, 0);
         fade.InsertKeyFrame(1, 1);
-        fade.Duration = TimeSpan.FromMilliseconds(100);
+        fade.Duration = TimeSpan.FromMilliseconds(80);
         visual.StartAnimation("Opacity", fade);
     }
 
     private void QueueFooterBadgeLayout()
     {
         if (_footerBadgeLayoutQueued) return;
-        _footerBadgeLayoutQueued = DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        _footerBadgeLayoutQueued = DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
         {
             _footerBadgeLayoutQueued = false;
             UpdateFooterBadgeLayout();
