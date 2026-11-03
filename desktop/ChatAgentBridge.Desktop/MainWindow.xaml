@@ -115,6 +115,19 @@
             </Grid>
         </Border>
 
+        <Border x:Name="ShutdownLoadingShell" Grid.RowSpan="2" Visibility="Collapsed"
+                Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                AutomationProperties.AutomationId="ShutdownLoadingShell">
+            <StackPanel Orientation="Horizontal" Spacing="12" Padding="24"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ProgressRing x:Name="ShutdownLoadingRing" x:Uid="ShutdownLoadingRing" Width="32" Height="32"
+                              IsActive="False" IsTabStop="True" AutomationProperties.AutomationId="ShutdownLoadingRing" />
+                <TextBlock x:Uid="ShutdownLoadingText" VerticalAlignment="Center" TextWrapping="Wrap"
+                           Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.LiveSetting="Polite"
+                           AutomationProperties.AutomationId="ShutdownLoadingText" />
+            </StackPanel>
+        </Border>
+
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Modifiers="Control" Key="F" Invoked="SettingsSearchAccelerator_Invoked" />
         </Grid.KeyboardAccelerators>

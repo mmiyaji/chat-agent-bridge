@@ -160,14 +160,14 @@ public sealed partial class MainWindow : Window
     private void SettingsSearchAccelerator_Invoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
-        if (_portableUpdateLoading) return;
+        if (_portableUpdateLoading || ShutdownLoadingShell.Visibility == Visibility.Visible) return;
         ShowSettingsSearch();
     }
 
     private void ShowSettingsSearch()
     {
         if (!CanStartChatAfterStartup) return;
-        if (_portableUpdateLoading) return;
+        if (_portableUpdateLoading || ShutdownLoadingShell.Visibility == Visibility.Visible) return;
         if (Page?.CanSearchSettings != true) return;
         if (!SettingsSearchFlyout.IsOpen)
         {
@@ -202,6 +202,18 @@ public sealed partial class MainWindow : Window
         CancelStartupMigration();
         if (_startupInitializationTask is { } startup) await startup;
         if (RootFrame.Content is MainPage page) await page.ShutdownAsync();
+    }
+
+    internal void ShowShutdownLoading()
+    {
+        // Keep the update's more specific restart status when it already owns the window.
+        if (_portableUpdateLoading) return;
+        _restoreSearchTriggerFocusOnClose = false;
+        if (SettingsSearchFlyout.IsOpen) SettingsSearchFlyout.Hide();
+        RootFrame.IsEnabled = false;
+        ShutdownLoadingShell.Visibility = Visibility.Visible;
+        ShutdownLoadingRing.IsActive = true;
+        ShutdownLoadingRing.Focus(FocusState.Programmatic);
     }
 
     internal Task<bool> TryResolveUnsavedSettingsAsync() => RootFrame.Content is MainPage page

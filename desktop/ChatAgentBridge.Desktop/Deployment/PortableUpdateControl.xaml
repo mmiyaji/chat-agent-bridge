@@ -38,7 +38,7 @@
                         </settings:SettingsCard>
                         <HyperlinkButton x:Name="ReleaseNotesLink" x:Uid="PortableUpdateReleaseNotes"
                                          AutomationProperties.AutomationId="PortableUpdateReleaseNotes" HorizontalAlignment="Left" />
-                        <settings:SettingsExpander x:Uid="PortableUpdatePreferences" IsExpanded="False"
+                        <settings:SettingsExpander x:Name="UpdatePreferencesExpander" x:Uid="PortableUpdatePreferences" IsExpanded="False"
                                                    AutomationProperties.AutomationId="PortableUpdatePreferences">
                             <settings:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xE713;" /></settings:SettingsExpander.HeaderIcon>
                             <settings:SettingsExpander.Items>
@@ -62,6 +62,15 @@
                                     <settings:SettingsCard.Description>
                                         <TextBlock x:Uid="PortableUpdatePrereleasesHelp" TextWrapping="Wrap"
                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </settings:SettingsCard.Description>
+                                </settings:SettingsCard>
+                                <settings:SettingsCard x:Uid="PortableUpdateCacheCleanupRow" AutomationProperties.AutomationId="PortableUpdateCacheCleanupRow">
+                                    <settings:SettingsCard.Description>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock x:Uid="PortableUpdateCacheCleanupHelp" TextWrapping="Wrap" />
+                                            <TextBlock x:Name="CacheUsage" TextWrapping="Wrap" Visibility="Collapsed"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="PortableUpdateCacheUsage" />
+                                        </StackPanel>
                                     </settings:SettingsCard.Description>
                                 </settings:SettingsCard>
                             </settings:SettingsExpander.Items>

@@ -254,12 +254,20 @@ public sealed class TrayService : IDisposable
         }
         try
         {
-            if (_window.Content is UIElement content) content.IsHitTestVisible = false;
+            _window.ShowShutdownLoading();
+            // A dispatcher yield can complete before a rendered frame. Give the
+            // compositor a frame, then keep the status readable during fast shutdowns.
+            await Task.Delay(50);
+            var minimumDisplay = Task.Delay(450);
             App.PendingRequestNotifications.ClearAll();
             // Cancellation kills CLI process trees and stops reconnects immediately.
             // Allow a bounded grace period for history writes and transport disposal.
-            await Task.WhenAll(_window.ShutdownAsync(), DrainPreferenceSaveAsync(), App.Layout.FlushAsync())
-                .WaitAsync(TimeSpan.FromSeconds(5));
+            try
+            {
+                await Task.WhenAll(_window.ShutdownAsync(), DrainPreferenceSaveAsync(), App.Layout.FlushAsync())
+                    .WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            finally { await minimumDisplay; }
         }
         catch (Exception ex)
         {

@@ -319,8 +319,17 @@ public sealed partial class MainPage : Page
             automationId, DesktopText.Get("PaneSizerSettings"));
     }
 
-    private void MainNavigation_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args) =>
+    private void MainNavigation_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
+    {
         UpdateNavigationContentOffset();
+        QueueFooterBadgeLayout();
+    }
+
+    private void MainNavigation_PaneStateChanged(NavigationView sender, object args)
+    {
+        _footerPaneTransition = false;
+        QueueFooterBadgeLayout();
+    }
 
     private void UpdateNavigationContentOffset()
     {

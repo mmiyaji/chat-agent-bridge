@@ -16,6 +16,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
 #endif
     private readonly string _dataDirectory;
     private readonly string _workRoot;
+    private readonly string _cleanupRoot;
     private readonly PortableUpdatePreferencesStore _preferencesStore;
     private readonly SemaphoreSlim _preferencesGate = new(1, 1);
     private readonly CancellationTokenSource _lifetimeCancellation = new();
@@ -37,6 +38,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
     private bool _committing;
     private bool _restoredStage;
     private bool _disposed;
+    private Task? _cleanupTask;
 
     public bool IsSupported => DeploymentRuntime.IsPortable && _hasLifetimeLease && !_disposed;
     public bool IsBusy { get; private set; }
@@ -67,8 +69,11 @@ public sealed class PortableUpdateCoordinator : IDisposable
 #if CAB_PORTABLE_UPDATE_TEST
         _testHttpClient = PortableUpdateTestFeed.CreateClient();
         _client = new PortableReleaseClient(_testHttpClient);
+        // UI update fixtures must never clean the user's real shared update cache.
+        _cleanupRoot = Path.Combine(Environment.GetEnvironmentVariable("CAB_PORTABLE_UPDATE_TEST_DIRECTORY")!, "cleanup-cache");
 #else
         _client = new PortableReleaseClient();
+        _cleanupRoot = Path.GetDirectoryName(_workRoot)!;
 #endif
         _currentVersion = ReadCurrentVersion();
         _includePrereleases = _currentVersion.Contains('-');
@@ -120,6 +125,35 @@ public sealed class PortableUpdateCoordinator : IDisposable
         }
         finally { _preferencesGate.Release(); }
         Notify();
+        if (IsSupported) _cleanupTask = CleanCacheSafelyAsync();
+    }
+
+    private async Task CleanCacheSafelyAsync()
+    {
+        try
+        {
+            await PortableUpdateCacheCleanup.RunAsync(_cleanupRoot, DateTimeOffset.UtcNow, _workDirectory, _lifetimeCancellation.Token);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or JsonException)
+        { Debug.WriteLine($"Update cache cleanup: {error.GetType().Name}"); }
+    }
+
+    public Task<long?> GetCacheBytesAsync() => PortableUpdateCacheCleanup.GetCacheBytesAsync(_cleanupRoot, _lifetimeCancellation.Token);
+
+    public async Task<PortableUpdateCacheCleanupResult> CleanCacheAsync()
+    {
+        await InitializeAsync();
+        if (!TryBegin()) return new(0, 0, 0);
+        var cleanupToken = _operation!.Token;
+        Notify();
+        try
+        {
+            if (_cleanupTask is { } startupCleanup) await startupCleanup;
+            return await PortableUpdateCacheCleanup.RunAsync(_cleanupRoot, DateTimeOffset.UtcNow,
+                _workDirectory, cleanupToken);
+        }
+        finally { EndOperation(); }
     }
 
     public async Task SetAutomaticChecksEnabledAsync(bool enabled)
@@ -248,6 +282,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
             Directory.CreateDirectory(_workRoot);
             PortableUpdatePaths.EnsureNoReparsePoints(_workRoot);
             Directory.CreateDirectory(_workDirectory);
+            using var workLease = PortableUpdateCacheCleanup.AcquireWorkLease(_workDirectory);
             var zip = Path.Combine(_workDirectory, "update.zip");
             var progress = new Progress<double>(value =>
             {
@@ -491,7 +526,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
                 var retired = _workDirectory;
                 _ = Task.Run(() =>
                 {
-                    try { PortableUpdateStageStore.DeleteOwnedWorkDirectory(_installDirectory, _dataDirectory, retired); }
+                    try { PortableUpdateCacheCleanup.DiscardOwnedPayload(_installDirectory, _dataDirectory, retired); }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException) { }
                 });
             }
@@ -517,7 +552,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
                 PortableUpdatePaths.EnsureNoReparsePoints(directory);
                 if (PortableUpdateStageStore.IsCompleted(directory))
                 {
-                    PortableUpdateStageStore.DeleteOwnedWorkDirectory(_installDirectory, _dataDirectory, directory);
+                    // Keep logs/result records; background cleanup reclaims only payload files.
                     continue;
                 }
                 if (_available is null) continue;
@@ -532,8 +567,9 @@ public sealed class PortableUpdateCoordinator : IDisposable
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or JsonException or ArgumentException or NotSupportedException or OperationCanceledException or FormatException or InvalidOperationException)
             {
-                try { PortableUpdateStageStore.DeleteOwnedWorkDirectory(_installDirectory, _dataDirectory, directory); }
-                catch (Exception cleanupError) when (cleanupError is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException or NotSupportedException) { }
+                // Unknown recovery states must not be destroyed just because restoration
+                // validation failed. The conservative background cleaner handles old payloads.
+                Debug.WriteLine($"Update stage restore: {error.GetType().Name}");
             }
         }
     }

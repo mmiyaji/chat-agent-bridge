@@ -47,6 +47,8 @@ This is the diagram shown in the app's setup guide and General page. It uses Cod
 
 ## Main features
 
+The sidebar shows the connected chat service and its status. Select it to open Chat; when the sidebar is collapsed, the service icon and status marker remain visible.
+
 | Feature | Description |
 | --- | --- |
 | Chat requests | Slack, Mattermost and Discord requests with thread-based conversation continuation |
@@ -194,11 +196,11 @@ Delete stored data by type from data management on the **General** page. Encrypt
 
 The app uses Japanese when the Windows language preference is Japanese and English otherwise. You can override the language in the app. Choose light, dark or system appearance.
 
-**General** contains Windows sign-in startup, app auto-connect and system tray preferences. You can also choose whether closing the window moves it to the tray or exits the app.
+**General** contains Windows sign-in startup, app auto-connect and system tray preferences. You can also choose whether closing the window moves it to the tray or exits the app. While closing, the app shows a progress indicator as it disconnects and saves pending data.
 
 ![Current status, startup, auto-connect and system tray settings](docs/assets/screenshots/general-en.png)
 
-Portable builds can check for and apply updates from **About**. The `Data` folder is retained during updates. For manual updates, close the app and replace the files while keeping `Data`.
+Portable builds can check for and apply updates from **About**. The `Data` folder is retained during updates. Completed update downloads and temporary binary payloads are cleaned up automatically; update logs are retained. Information → Update settings shows storage usage. Manual cleanup is under Information → Advanced settings → Maintenance. For manual updates, close the app and replace the files while keeping `Data`.
 
 Screenshots show a development build using dedicated demo settings and sample usage records. They contain no real conversations or credentials. Released versions may differ.
 

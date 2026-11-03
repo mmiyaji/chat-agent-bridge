@@ -13,10 +13,16 @@ public sealed partial class PortableUpdateControl : UserControl
     private bool _savingPreference;
     private bool _dialogOpen;
     private bool _downloadRequested;
+    private bool _readingCacheUsage;
 
     public PortableUpdateControl()
     {
         InitializeComponent();
+        UpdatePreferencesExpander.RegisterPropertyChangedCallback(
+            CommunityToolkit.WinUI.Controls.SettingsExpander.IsExpandedProperty, (_, _) =>
+            {
+                if (UpdatePreferencesExpander.IsExpanded) _ = RefreshCacheUsageAsync();
+            });
         Visibility = DeploymentRuntime.IsPortable ? Visibility.Visible : Visibility.Collapsed;
         Loaded += Control_Loaded;
         Unloaded += Control_Unloaded;
@@ -97,6 +103,25 @@ public sealed partial class PortableUpdateControl : UserControl
         var downloading = updates.IsDownloading;
         DownloadProgressBar.Visibility = downloading ? Visibility.Visible : Visibility.Collapsed;
         DownloadProgressBar.Value = Math.Clamp(updates.DownloadProgress, 0, 100);
+        // Maintenance cleanup completes through the same coordinator event. Refresh
+        // the read-only usage only when its section is open and no operation is busy.
+        if (UpdatePreferencesExpander.IsExpanded && !updates.IsBusy) _ = RefreshCacheUsageAsync();
+    }
+
+    private async Task RefreshCacheUsageAsync()
+    {
+        if (_readingCacheUsage) return;
+        _readingCacheUsage = true;
+        try
+        {
+            var bytes = await App.PortableUpdates.GetCacheBytesAsync();
+            CacheUsage.Text = bytes is { } value ? DesktopText.Get("PortableUpdateCacheUsage", value / (1024d * 1024d)) : DesktopText.Get("PortableUpdateCacheUsageUnavailable");
+            CacheUsage.Visibility = Visibility.Visible;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or ObjectDisposedException)
+        { CacheUsage.Text = DesktopText.Get("PortableUpdateCacheUsageUnavailable"); }
+        finally { _readingCacheUsage = false; }
     }
 
     private async void IncludePrereleases_Changed(object sender, RoutedEventArgs e)

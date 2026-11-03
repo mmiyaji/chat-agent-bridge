@@ -67,6 +67,9 @@ public sealed class PortableUpdateStageStore
             !SameRelease(record.Release, expectedRelease))
             throw new InvalidDataException("Portable update state does not match the current release candidate.");
 
+        using var workLease = PortableUpdateCacheCleanup.AcquireWorkLease(workDirectory);
+        await Task.Run(() => PortableUpdateCacheCleanup.CleanStaleScratchPayload(
+            installDirectory, dataDirectory, workDirectory, DateTimeOffset.UtcNow, cancellationToken), cancellationToken).ConfigureAwait(false);
         var archivePath = Path.Combine(workDirectory, ArchiveFileName);
         PortableUpdatePaths.EnsureNoReparsePoints(archivePath);
         if (!File.Exists(archivePath) || !string.Equals(await PortableUpdatePaths.HashAsync(archivePath, cancellationToken).ConfigureAwait(false), record.ArchiveSha256, StringComparison.OrdinalIgnoreCase))

@@ -1,26 +1,47 @@
 using ChatAgentBridge_Desktop.Localization;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 
 namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
-    public static string ConnectionNavigationCompactLabel(string? provider, string tone) =>
-        $"{ConnectionProviderLabel(provider)} · {DesktopText.Get(tone switch
+    // Tone also refreshes this label when the nullable provider is cleared.
+    public static string ConnectionNavigationServiceLabel(string? provider, string tone) => ConnectionProviderLabel(provider);
+
+    public static string ConnectionNavigationStateLabel(string tone) =>
+        DesktopText.Get(tone switch
         {
             "success" => "SidebarConnectionConnected",
             "running" => "SidebarConnectionConnecting",
             "error" => "SidebarConnectionError",
             _ => "SidebarConnectionDisconnected"
-        })}";
+        });
 
-    public static Style ConnectionNavigationStyle(string tone) => (Style)Application.Current.Resources[tone switch
+    public static Style ConnectionNavigationBadgeStyle(string tone) => (Style)Application.Current.Resources[tone switch
     {
-        "success" => "OverviewReadyIconStyle",
-        "running" => "OverviewAttentionIconStyle",
-        "error" => "OverviewErrorIconStyle",
-        _ => "OverviewNeutralIconStyle"
+        "success" => "ConnectionNavigationReadyBadgeStyle",
+        "running" => "ConnectionNavigationWorkingBadgeStyle",
+        "error" => "ConnectionNavigationErrorBadgeStyle",
+        _ => "ConnectionNavigationNeutralBadgeStyle"
     }];
+
+    // Fresh vector geometry preserves theme foregrounds without bitmap resampling.
+    // The tone also triggers refresh: compiled function
+    // bindings skip a nullable provider's transition to null on disconnection.
+    public static IconElement ConnectionNavigationIcon(string? provider, string tone)
+    {
+        IconElement icon = provider switch
+        {
+            "mattermost" or "slack" or "discord" =>
+                (IconElement)((DataTemplate)Application.Current.Resources["ConnectionProviderIcon_" + provider]).LoadContent(),
+            _ => new SymbolIcon(Symbol.Message)
+        };
+        AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
+        return icon;
+    }
 
     public static string ConnectionNavigationLabel(string? provider, string connectionLabel) =>
         $"{ConnectionProviderLabel(provider)} · {connectionLabel}";
@@ -35,14 +56,6 @@ public sealed partial class MainPage
             ? $"{providerLabel} · {connectionLabel}"
             : $"{providerLabel} · {connectionLabel}\n{runtimeStatus}";
     }
-
-    public static string ConnectionNavigationGlyph(string tone) => tone switch
-    {
-        "success" => "\uE73E", // Check mark
-        "running" => "\uE895", // Sync / connecting
-        "error" => "\uE783",   // Warning
-        _ => "\uE711"          // Disconnected
-    };
 
     private static string ConnectionProviderLabel(string? provider) => ProviderName(provider ?? string.Empty);
 

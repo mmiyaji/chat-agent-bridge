@@ -18,10 +18,14 @@ public sealed partial class MainPage
         App.PortableUpdates.Changed -= PortableUpdates_Changed;
         App.PortableUpdates.Changed += PortableUpdates_Changed;
         RefreshPortableUpdateBadge();
+        QueueFooterBadgeLayout();
     }
 
-    private void UpdateBadge_Unloaded(object sender, RoutedEventArgs args) =>
+    private void UpdateBadge_Unloaded(object sender, RoutedEventArgs args)
+    {
         App.PortableUpdates.Changed -= PortableUpdates_Changed;
+        CancelFooterBadgeFrame();
+    }
 
     private void PortableUpdates_Changed(object? sender, EventArgs args)
     {
@@ -35,6 +39,7 @@ public sealed partial class MainPage
         var updates = App.PortableUpdates;
         var available = updates.IsSupported && !string.IsNullOrWhiteSpace(updates.AvailableVersion);
         AboutUpdateBadge.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
+        QueueFooterBadgeLayout();
         var label = available
             ? DesktopText.Get("PortableUpdateNavigationAvailable", updates.AvailableVersion)
             : MrtText.Get("NavAbout.Content");

@@ -30,6 +30,8 @@
                         IsSettingsVisible="False"
                         PaneDisplayMode="Auto" OpenPaneLength="220"
                         DisplayModeChanged="MainNavigation_DisplayModeChanged"
+                        PaneOpened="MainNavigation_PaneStateChanged" PaneClosed="MainNavigation_PaneStateChanged"
+                        PaneOpening="MainNavigation_PaneTransitionStarting" PaneClosing="MainNavigation_PaneTransitionStarting"
                         ItemInvoked="MainNavigation_ItemInvoked"
                         SelectionChanged="MainNavigation_SelectionChanged"
 
@@ -70,19 +72,32 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>
-                <NavigationViewItem Tag="chat" AutomationProperties.AutomationId="NavChatConnectionStatus"
+                <NavigationViewItem x:Name="NavChatConnectionStatus" Tag="chat" AutomationProperties.AutomationId="NavChatConnectionStatus"
                                     AutomationProperties.LiveSetting="Polite"
-                                    Content="{x:Bind local:MainPage.ConnectionNavigationCompactLabel(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
+                                    Icon="{x:Bind local:MainPage.ConnectionNavigationIcon(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
+                                    HorizontalContentAlignment="Stretch"
                                     AutomationProperties.Name="{x:Bind local:MainPage.ConnectionNavigationLabel(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionLabel), Mode=OneWay}"
                                     ToolTipService.ToolTip="{x:Bind local:MainPage.ConnectionNavigationTooltip(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionLabel, InboxPage.ViewModel.Status), Mode=OneWay}">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="{x:Bind local:MainPage.ConnectionNavigationGlyph(InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
-                                  FontSize="16" Style="{x:Bind local:MainPage.ConnectionNavigationStyle(InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
-                                  AutomationProperties.AccessibilityView="Raw" />
-                    </NavigationViewItem.Icon>
+                    <NavigationViewItem.Content>
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{x:Bind local:MainPage.ConnectionNavigationServiceLabel(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{x:Bind local:MainPage.ConnectionNavigationStateLabel(InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
+                                       Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        </Grid>
+                    </NavigationViewItem.Content>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge x:Name="ConnectionStatusBadge" AutomationProperties.AccessibilityView="Raw"
+                                   Style="{x:Bind local:MainPage.ConnectionNavigationBadgeStyle(InboxPage.ViewModel.ConnectionTone), Mode=OneWay}" />
+                    </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="AboutNavigationItem" Tag="about" AutomationProperties.AutomationId="NavAbout" x:Uid="NavAbout">
-                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;" /></NavigationViewItem.Icon>
+                    <NavigationViewItem.Icon><FontIcon x:Name="AboutNavigationIcon" Glyph="&#xE946;" /></NavigationViewItem.Icon>
                     <NavigationViewItem.InfoBadge>
                         <InfoBadge x:Name="AboutUpdateBadge" Visibility="Collapsed" Style="{StaticResource AttentionDotInfoBadgeStyle}"
                                    Background="{ThemeResource UpdateBadgeBackgroundBrush}" Foreground="{ThemeResource UpdateBadgeForegroundBrush}"
