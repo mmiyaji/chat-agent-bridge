@@ -17,6 +17,8 @@ public sealed record ChatSchedule
     public string? Origin { get; init; }
     public string ChannelId { get; init; } = "";
     public string ThreadId { get; init; } = "";
+    /// <summary>The Discord guild that owned the channel; null elsewhere. Needed to re-check access when it fires.</summary>
+    public string? GuildId { get; init; }
     public string UserId { get; init; } = "";
     public string Prompt { get; init; } = "";
     public ChatScheduleKind Kind { get; init; }

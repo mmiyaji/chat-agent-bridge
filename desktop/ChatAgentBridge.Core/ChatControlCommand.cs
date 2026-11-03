@@ -15,6 +15,7 @@ public enum ChatControlCommandKind
     Memory,
     Forget,
     Usage,
+    Schedule,
     ReservedInvalid
 }
 
@@ -51,6 +52,8 @@ public sealed record ChatControlCommand(
             return new(ChatControlCommandKind.Remember, TextArgument: commandEnd < 0 ? "" : value[commandEnd..].Trim());
         if (command.Equals("forget", StringComparison.OrdinalIgnoreCase))
             return new(ChatControlCommandKind.Forget, TextArgument: commandEnd < 0 ? "" : value[commandEnd..].Trim());
+        if (command.Equals("schedule", StringComparison.OrdinalIgnoreCase))
+            return new(ChatControlCommandKind.Schedule, TextArgument: commandEnd < 0 ? "" : value[commandEnd..].Trim());
         if (command.Equals("memory", StringComparison.OrdinalIgnoreCase) && commandEnd < 0)
             return new(ChatControlCommandKind.Memory);
         if (command.Equals("usage", StringComparison.OrdinalIgnoreCase) && commandEnd < 0)

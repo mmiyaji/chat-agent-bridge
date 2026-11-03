@@ -13,7 +13,8 @@ public sealed partial class ChatInboxViewModel
         if (request.CancellationTargetMessageId is not null && command.Kind != ChatControlCommandKind.Stop) return true;
         if (command.Kind is ChatControlCommandKind.Answer or ChatControlCommandKind.ReservedInvalid) return true;
         if (command.Kind is not (ChatControlCommandKind.Help or ChatControlCommandKind.Status or ChatControlCommandKind.Stop or ChatControlCommandKind.Model or
-            ChatControlCommandKind.Remember or ChatControlCommandKind.Memory or ChatControlCommandKind.Forget or ChatControlCommandKind.Usage)) return false;
+            ChatControlCommandKind.Remember or ChatControlCommandKind.Memory or ChatControlCommandKind.Forget or ChatControlCommandKind.Usage or
+            ChatControlCommandKind.Schedule)) return false;
         var completion = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!App.DispatcherQueue.TryEnqueue(() =>
             completion.TrySetResult(command.Kind == ChatControlCommandKind.Model
@@ -42,6 +43,12 @@ public sealed partial class ChatInboxViewModel
             {
                 await ReplyToControlAsync(transport, received, request,
                     await BuildChannelMemoryReplyAsync(request, received, command, token), token);
+                return;
+            }
+            if (kind == ChatControlCommandKind.Schedule)
+            {
+                await ReplyToControlAsync(transport, received, request,
+                    await BuildChatScheduleReplyAsync(request, received, command, token), token);
                 return;
             }
             if (kind == ChatControlCommandKind.Usage)

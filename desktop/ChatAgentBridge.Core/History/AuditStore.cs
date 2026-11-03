@@ -17,7 +17,8 @@ public sealed class AuditStore
     {
         "received", "approved", "rejected", "started", "completed", "failed", "cancelled", "reply_sent",
         "reply_failed", "detached", "workspace_changed", "model_changed", "agent_changed",
-        "attachment_approved", "attachment_sent", "attachment_failed", "follow_up_applied", "follow_up_uncertain"
+        "attachment_approved", "attachment_sent", "attachment_failed", "follow_up_applied", "follow_up_uncertain",
+        "schedule_created", "schedule_removed", "schedule_fired", "schedule_skipped"
     };
     private const int MaxEntryBytes = 16 * 1024;
     private const int MaxSegmentBytes = 16 * 1024 * 1024;
