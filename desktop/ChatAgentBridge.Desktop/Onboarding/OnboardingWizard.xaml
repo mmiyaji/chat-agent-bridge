@@ -47,7 +47,7 @@
                         <ComboBoxItem Content="Antigravity CLI" Tag="antigravity" />
                         <ComboBoxItem Content="Kiro CLI" Tag="kiro" />
                         <ComboBoxItem Content="Qwen Code" Tag="qwen" />
-                        <ComboBoxItem Content="Kimi CLI" Tag="kimi" />
+                        <ComboBoxItem Content="Kimi Code CLI" Tag="kimi" />
                         <ComboBoxItem Tag="custom" AutomationProperties.AutomationId="WizardCustomCli" x:Uid="WizardCustomCli" />
                     </ComboBox>
                     <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" AutomationProperties.AutomationId="WizardBasicProviderHelp" />

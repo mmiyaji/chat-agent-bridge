@@ -68,7 +68,7 @@ public partial class MainPageViewModel
             {
                 AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code",
                 AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI",
-                AgentProfile.Antigravity => "Antigravity CLI", AgentProfile.Kiro => "Kiro CLI", AgentProfile.Qwen => "Qwen Code", AgentProfile.Kimi => "Kimi CLI", _ => profile.Provider
+                AgentProfile.Antigravity => "Antigravity CLI", AgentProfile.Kiro => "Kiro CLI", AgentProfile.Qwen => "Qwen Code", AgentProfile.Kimi => "Kimi Code CLI", _ => profile.Provider
             }).ToArray();
             RegisteredConnectionSummary = names.Length == 0
                 ? ViewModelText.Get("NoRegisteredConnections")

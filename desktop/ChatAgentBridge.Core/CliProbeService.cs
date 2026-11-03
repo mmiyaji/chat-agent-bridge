@@ -45,14 +45,20 @@ public sealed class CliProbeService
         var recognized = launch.NodePackageName is not null
             ? ProviderMatchesPackage(provider, launch.NodePackageName)
             : RecognizesProvider(provider, version);
-        if (!recognized && AgentProfile.IsBasicCliProvider(provider))
+        if ((!recognized || provider == AgentProfile.Kimi) && AgentProfile.IsBasicCliProvider(provider))
         {
             // Gemini, Antigravity (agy), and some Copilot versions print only a semver for --version. Help is
             // non-interactive and gives us a provider identity without starting a model turn.
             var (helpOutput, helpError, helpExitCode) = await RunCommandAsync(executable, workspace,
                 nodePrefix.Append("--help"), cancellationToken).ConfigureAwait(false);
             // Go-based CLIs such as agy write their usage to stderr even on success.
-            recognized = helpExitCode == 0 && RecognizesProvider(provider, Sanitize(helpOutput + Environment.NewLine + helpError));
+            var help = helpOutput + Environment.NewLine + helpError;
+            recognized = helpExitCode == 0 && RecognizesProvider(provider, help);
+            if (provider == AgentProfile.Kimi)
+                recognized &= help.Contains("kimi-code", StringComparison.OrdinalIgnoreCase) &&
+                    help.Contains("--prompt", StringComparison.Ordinal) &&
+                    help.Contains("--output-format", StringComparison.Ordinal) &&
+                    !help.Contains("--print", StringComparison.Ordinal);
         }
         if ((provider is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi) && !recognized)
             throw new InvalidOperationException(CoreText.Get("CliProviderMismatch", provider));

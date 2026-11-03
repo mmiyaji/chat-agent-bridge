@@ -126,7 +126,7 @@ Claude Codeでは、途中メッセージを受け取る実行に `--include-par
 | Antigravity CLI（`agy`） | 対応（ユーザー・スレッドごとの会話IDを `--conversation` で再開） | `agy models` から取得、またはモデル名を指定。推論はCLI側の設定 | バージョン（`agy --version`）・CLIの識別 |
 | Kiro CLI（`kiro-cli`、Windows 11） | ユーザー・スレッドごとのIDを `--resume-id` で再開（実サービス未検証） | CLIからモデル候補を取得、または直接指定。推論・権限はCLI側の設定 | バージョン・CLIの識別 |
 | Qwen Code（`qwen`） | ユーザー・スレッドごとのIDを `--resume` で再開（実サービス未検証） | モデルIDを直接入力。推論・権限はCLI側の設定 | バージョン・CLIの識別 |
-| Kimi CLI（`kimi`） | ブリッジが生成・保存したIDを `--session` で指定（実サービス未検証） | モデル名または設定済み別名を直接入力。フルアクセスの明示が必要 | バージョン・CLIの識別 |
+| Kimi Code CLI（`kimi`） | CLIが返したIDを保存し `--session` で継続（実サービス未検証） | モデル名または設定済み別名を直接入力。フルアクセスの明示が必要 | バージョン・CLIの識別 |
 | その他のCLI | 未対応（毎回独立した実行） | CLI設定・起動引数で指定 | バージョンのみ |
 
 Gemini CLIは `--output-format stream-json`、GitHub Copilot CLIは `--output-format json` に対応する版が必要です。会話IDと完了イベントを確認できない出力は失敗として扱い、別のユーザーや直前のCLI会話に接続しません。モデル名はエージェント設定・初期設定・会話のモデル変更画面、または対象スレッドの `!cab model <モデル名>` から指定します。空欄または `!cab model default` はCLI／アプリの既定値に戻します。この版ではGemini・Copilotの候補取得は未対応です。CLI自身で利用可能なモデル名を確認してください。Antigravity CLIは、エージェント設定の「CLIモデル候補を取得」（CLIチェック後にも自動で試行）で `agy models` の一覧から選べます。
@@ -447,4 +447,6 @@ CLIのログインはSlackのログインとは別です。Claude Codeで「Not 
 
 Kiro CLIは `chat --v2 --no-interactive --output-format stream-json` に標準入力で依頼を渡します。Windows 11用のネイティブCLIを導入し、PC側で `KIRO_API_KEY` を設定してください。`--trust-all-tools` は自動付与しません。CLI側の確認が必要な操作は拒否される場合があります。実行中の追記は順番に処理します。実際の認証・出力形式との互換性・チャット実行は、Kiro導入環境での追加確認が必要です。[Kiro公式仕様](https://kiro.dev/docs/cli/headless/)
 
-Qwen Codeは非対話のstream-json出力を使います。Windowsのnpm版は、導入済み `@qwen-code/qwen-code` のパッケージ情報からNodeエントリーポイントを解決し、コマンドスクリプトを実行しません。Kimiは `--print --output-format stream-json` とブリッジが生成・保存したセッションUUIDを使います。Kimiの非対話実行はツール操作を自動承認するため、明示的にフルアクセスを選ぶまでは実行を拒否します。PCでCLI確認後、`!cab agent qwen summary` / `fresh`、`!cab agent kimi summary` / `fresh` で切り替えできます。モデル一覧取得と実行中への直接追記は未対応で、追加依頼は順番に処理します。実際の認証・チャットサービス経由の動作は未検証です。[Qwen公式仕様](https://qwenlm.github.io/qwen-code-docs/en/users/features/headless/)、[Kimi公式仕様](https://moonshotai.github.io/kimi-cli/en/customization/print-mode.html)。
+Qwen Codeは非対話のstream-json出力を使います。Windowsのnpm版と公式スタンドアロン版は、検証済みのパッケージ情報からエントリーポイントを解決し、コマンドスクリプトを実行しません。スタンドアロン版は同梱のNodeランタイムを使います。Kimiは新しい `kimi-code` CLI（確認済みバージョン: 2.4.1）が対象で、旧 `kimi-cli` は非対応です。ブリッジは `--output-format stream-json --prompt <text>` を使い、プロンプトを独立したプロセス引数として渡します。新規会話には `--session` を付けず、出力の `meta.session.resume_hint` からUUIDを保存し、継続時に `--session session_<UUID>` を指定します。Kimiの非対話実行はツール操作を自動承認するため、明示的にフルアクセスを選ぶまでは実行を拒否します。PCでCLI確認後、`!cab agent qwen summary` / `fresh`、`!cab agent kimi summary` / `fresh` で切り替えできます。モデル一覧取得と実行中への直接追記は未対応で、追加依頼は順番に処理します。実サービスの推論はブロック中です。Kimiは契約の利用権不足でHTTP 403、QwenはOpenAI認証・`qwen3.6-plus` の組み合わせでAPIキー制限によるHTTP 403を返しました。認証済みの応答成功、会話継続、モデル切り替え、チャットサービス経由の返信は未検証です。[Qwen公式仕様](https://qwenlm.github.io/qwen-code-docs/en/users/features/headless/)、[Kimi公式仕様](https://moonshotai.github.io/kimi-code/en/reference/kimi-command)。
+
+Kimi Code CLIのWindows連携は `--prompt` に依頼を渡すため、依頼本文（引き継ぎ要約を含む）は12,000 UTF-16文字までです。上限を超えた場合は実行前にエラーを表示し、本文を切り捨てません。

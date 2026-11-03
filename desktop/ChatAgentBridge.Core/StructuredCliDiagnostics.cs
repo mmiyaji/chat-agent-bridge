@@ -15,7 +15,8 @@ internal static class StructuredCliDiagnostics
         // Startup messages can contain several failures. Prefer the account blocker over
         // secondary workspace warnings; no matched value is ever inserted into the response.
         string? key = null;
-        if (Has(diagnostic, "UNSUPPORTED_CLIENT") || Has(diagnostic, "IneligibleTierError"))
+        if (Has(diagnostic, "UNSUPPORTED_CLIENT") || Has(diagnostic, "IneligibleTierError") ||
+            Has(diagnostic, "subscription does not have access") || Has(diagnostic, "API-Key restrictions"))
             key = "CliAccountUnsupported";
         else if (Has(diagnostic, "UNAUTHENTICATED") || Has(diagnostic, "authentication failed") ||
                  Has(diagnostic, "not authenticated") || Has(diagnostic, "not logged in") ||

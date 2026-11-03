@@ -131,7 +131,7 @@ public sealed partial class MainPage
     private void RefreshAgentScopeLabels()
     {
         if (_agentScopeNavigation is null) return;
-        string[] labels = [DesktopText.Get("AgentScopeCommon"), "Codex", "Claude Code", "Gemini CLI", "GitHub Copilot", "Antigravity CLI", "Kiro CLI", "Qwen Code", "Kimi CLI", DesktopText.Get("AgentScopeCustom")];
+        string[] labels = [DesktopText.Get("AgentScopeCommon"), "Codex", "Claude Code", "Gemini CLI", "GitHub Copilot", "Antigravity CLI", "Kiro CLI", "Qwen Code", "Kimi Code CLI", DesktopText.Get("AgentScopeCustom")];
         string[] iconKeys = ["common", "codex", "claude", "gemini", "github-copilot", "antigravity", "kiro", "qwen", "kimi", "custom"];
         for (var i = 0; i < labels.Length; i++)
         {
@@ -159,7 +159,7 @@ public sealed partial class MainPage
                 "claude" => "Claude Code",
                 "gemini" => "Gemini CLI",
                 "github-copilot" => "GitHub Copilot",
-                "antigravity" => "Antigravity CLI", "kiro" => "Kiro CLI", "qwen" => "Qwen Code", "kimi" => "Kimi CLI",
+                "antigravity" => "Antigravity CLI", "kiro" => "Kiro CLI", "qwen" => "Qwen Code", "kimi" => "Kimi Code CLI",
                 "custom" => DesktopText.Get("AgentScopeCustom"),
                 _ => string.Empty
             };

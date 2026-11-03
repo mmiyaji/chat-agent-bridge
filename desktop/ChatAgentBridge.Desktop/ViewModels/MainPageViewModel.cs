@@ -156,7 +156,7 @@ public partial class MainPageViewModel : ObservableObject
     public string AgentProviderDisplayName => AgentProvider switch
     {
         "codex" => "Codex", "claude" => "Claude Code", "gemini" => "Gemini CLI",
-        "github-copilot" => "GitHub Copilot CLI", "antigravity" => "Antigravity CLI", "kiro" => "Kiro CLI", "qwen" => "Qwen Code", "kimi" => "Kimi CLI", _ => ViewModelText.Get("CustomCliName")
+        "github-copilot" => "GitHub Copilot CLI", "antigravity" => "Antigravity CLI", "kiro" => "Kiro CLI", "qwen" => "Qwen Code", "kimi" => "Kimi Code CLI", _ => ViewModelText.Get("CustomCliName")
     };
     public string BasicProviderHelp => ViewModelText.Get(IsCustomProvider ? "BasicProviderHelp" : IsAntigravityProvider ? "AntigravityProviderHelp" : AgentProvider == "kiro" ? "KiroProviderHelp" : AgentProvider == "qwen" ? "QwenProviderHelp" : AgentProvider == "kimi" ? "KimiProviderHelp" : "SessionCliProviderHelp");
     public bool CanFetchModelCandidates => SupportsModelCatalog && IsSettingsLoaded && !IsRunning && !_closing;

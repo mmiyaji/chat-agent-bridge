@@ -48,6 +48,7 @@ public static class CliSessionOutputParser
         private readonly List<string> _deniedActions = [];
         private bool _streamedText;
         private bool _kimiFinalAssistant;
+        private bool _kimiSessionHint;
         private bool _hasResult;
         private bool _failed;
         private bool _invalid;
@@ -101,10 +102,9 @@ public static class CliSessionOutputParser
 
         internal void Complete()
         {
-            // Kimi print has no session/terminal event. The bridge chose --session itself;
-            // require a final non-tool Assistant message and clean JSONL EOF, then the runner
-            // additionally requires exit code 0. Never infer success from tool output alone.
-            if (_provider == AgentProfile.Kimi) _hasResult = _kimiFinalAssistant && !_invalid;
+            // Kimi Code finishes with a session.resume_hint meta record. Require that
+            // id and a final non-tool reply, clean EOF, and (in the runner) exit code 0.
+            if (_provider == AgentProfile.Kimi) _hasResult = _kimiFinalAssistant && _kimiSessionHint && !_invalid;
         }
 
         internal CliSessionOutput Snapshot()
@@ -153,8 +153,22 @@ public static class CliSessionOutputParser
 
         private IReadOnlyList<AgentRunProgress> Kimi(JsonElement root)
         {
+            if (_kimiSessionHint) { Invalidate(); return []; }
             switch (String(root, "role"))
             {
+                case "meta":
+                    switch (String(root, "type"))
+                    {
+                        case "system.version": return [];
+                        case "turn.step.retrying": return Activity("ProgressWorking");
+                        case "session.resume_hint":
+                            var session = String(root, "session_id");
+                            if (session is null || !session.StartsWith("session_", StringComparison.Ordinal))
+                                Invalidate();
+                            else { Bind(session[8..]); _kimiSessionHint = true; }
+                            return [];
+                        default: Invalidate(); return [];
+                    }
                 case "assistant":
                     var tools = Property(root, "tool_calls");
                     _kimiFinalAssistant = tools.ValueKind != JsonValueKind.Array || tools.GetArrayLength() == 0;

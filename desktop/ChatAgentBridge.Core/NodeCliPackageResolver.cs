@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace ChatAgentBridge.Core;
 
-/// <summary>Resolves known npm CLI command shims to their Node entrypoints without executing shim text.</summary>
+/// <summary>Resolves known npm and Qwen standalone CLI shims without executing shim text.</summary>
 public static class NodeCliPackageResolver
 {
     public sealed record Resolution(string Executable, string EntryPoint, string PackageName);
@@ -35,6 +35,12 @@ public static class NodeCliPackageResolver
         var packageDirectory = packageName.Split('/').Aggregate(
             Path.Combine(binDirectory, "node_modules"), Path.Combine);
         var packageJsonPath = Path.Combine(packageDirectory, "package.json");
+        // Only try the official standalone layout when no npm package occupies this location.
+        if (provider == AgentProfile.Qwen && !Directory.Exists(packageDirectory))
+        {
+            var standalone = ResolveQwenStandalone(shim);
+            if (standalone is not null) return standalone;
+        }
         if (!File.Exists(packageJsonPath)) throw MissingPackage(shim, provider, packageName);
 
         string entryPoint;
@@ -67,6 +73,44 @@ public static class NodeCliPackageResolver
         if (node is null)
             throw new InvalidOperationException($"'{shim}' is a Windows npm command shim for {packageName}, and node.exe was not found. Install Node.js or set the executable to its full path.");
         return new Resolution(node, entryPoint, packageName);
+    }
+
+    private static Resolution? ResolveQwenStandalone(string shim)
+    {
+        var bin = Path.GetDirectoryName(shim)!;
+        if (!Path.GetFileName(bin).Equals("bin", StringComparison.OrdinalIgnoreCase)) return null;
+        var parent = Path.GetDirectoryName(bin)!;
+        // Installer wrapper: <base>/bin/qwen.cmd. Archive command: <base>/qwen-code/bin/qwen.cmd.
+        var root = File.Exists(Path.Combine(parent, "manifest.json"))
+            ? parent : Path.Combine(parent, "qwen-code");
+        var files = new[] { shim, Path.Combine(root, "manifest.json"), Path.Combine(root, "package.json"),
+            Path.Combine(root, "lib", "package.json"), Path.Combine(root, "lib", "cli-entry.js"),
+            Path.Combine(root, "node", "node.exe"), Path.Combine(root, "bin", "qwen.cmd") };
+        if (files.Any(path => !File.Exists(path) || HasReparsePoint(path))) return null;
+        try
+        {
+            using var manifest = JsonDocument.Parse(File.ReadAllText(files[1]));
+            using var package = JsonDocument.Parse(File.ReadAllText(files[2]));
+            using var library = JsonDocument.Parse(File.ReadAllText(files[3]));
+            static bool HasString(JsonElement element, string key, string value) =>
+                element.TryGetProperty(key, out var property) && property.ValueKind == JsonValueKind.String && property.GetString() == value;
+            if (!HasString(manifest.RootElement, "name", "@qwen-code/qwen-code") ||
+                !HasString(manifest.RootElement, "runtime", "node") ||
+                !(HasString(manifest.RootElement, "target", "win-x64") || HasString(manifest.RootElement, "target", "win-arm64")) ||
+                !HasString(package.RootElement, "name", "@qwen-code/qwen-code") ||
+                !HasString(library.RootElement, "name", "@qwen-code/qwen-code") ||
+                !library.RootElement.TryGetProperty("bin", out var commands) || commands.ValueKind != JsonValueKind.Object ||
+                !HasString(commands, "qwen", "cli-entry.js")) return null;
+            return new Resolution(files[5], files[4], "@qwen-code/qwen-code");
+        }
+        catch (JsonException) { return null; }
+    }
+
+    private static bool HasReparsePoint(string path)
+    {
+        for (var current = Path.GetFullPath(path); current is not null; current = Path.GetDirectoryName(current))
+            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) return true;
+        return false;
     }
 
     private static string? FindShim(string executable, string provider)

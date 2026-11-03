@@ -13,7 +13,7 @@ public static class AgentProfile
     public const string Qwen = "qwen";
     public const string Kimi = "kimi";
     public const string DefaultQwenArguments = "--output-format stream-json";
-    public const string DefaultKimiArguments = "--print --output-format stream-json";
+    public const string DefaultKimiArguments = "--output-format stream-json";
     public const string Kiro = "kiro";
     public const string DefaultKiroArguments = "chat --v2 --no-interactive --output-format stream-json";
     public const string Custom = "custom";
@@ -75,10 +75,8 @@ public static class AgentProfile
             {
                 if (!Guid.TryParseExact(sessionId, "D", out var id))
                     throw new ArgumentException("The authorized CLI session id must be a UUID.", nameof(settings));
-                basicArguments = basicArguments.Concat(new[] { provider == Antigravity ? "--conversation" : provider == Kiro ? "--resume-id" : provider == Kimi ? "--session" : "--resume", id.ToString("D") }).ToArray();
+                basicArguments = basicArguments.Concat(new[] { provider == Antigravity ? "--conversation" : provider == Kiro ? "--resume-id" : provider == Kimi ? "--session" : "--resume", provider == Kimi ? "session_" + id.ToString("D") : id.ToString("D") }).ToArray();
             }
-            if (provider == Kimi && settings.AuthorizedCliSessionId is null)
-                basicArguments = basicArguments.Concat(new[] { "--session", Guid.NewGuid().ToString("D") }).ToArray();
             if (provider == Kimi && permissionMode != "full-access")
                 throw new ArgumentException(CoreText.Get("KimiFullAccessRequired"), nameof(settings));
             if (provider == Antigravity && permissionMode != "inherit")
@@ -325,6 +323,9 @@ public static class AgentProfile
 
     private static IReadOnlyList<string> GetConfiguredCliArguments(string? arguments, string provider)
     {
+        // Normalize only the exact draft default from the unreleased legacy adapter.
+        if (provider == Kimi && arguments == "--print --output-format stream-json")
+            return AgentArgumentParser.Parse(DefaultKimiArguments);
         if (string.IsNullOrWhiteSpace(arguments) || arguments == DefaultCodexArguments)
             return AgentArgumentParser.Parse(provider switch
             {

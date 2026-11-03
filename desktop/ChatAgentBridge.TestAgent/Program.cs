@@ -28,7 +28,9 @@ if (args is ["--version"])
     var version = fixtureVersion ?? (exeName.Equals("qwen", StringComparison.OrdinalIgnoreCase)
         ? "Qwen Code 0.15 (offline fixture)"
         : exeName.Equals("kimi", StringComparison.OrdinalIgnoreCase)
-        ? "kimi, version 1.0 (offline fixture)"
+        ? "Kimi Code CLI 2.4.1 (offline fixture)"
+        : exeName.Equals("kimi-legacy", StringComparison.OrdinalIgnoreCase)
+        ? "Kimi CLI 1.51 (offline legacy fixture)"
         : exeName.Equals("kiro-cli", StringComparison.OrdinalIgnoreCase)
         ? "Kiro CLI 2.33 (offline fixture)"
         : exeName.Equals("codex", StringComparison.OrdinalIgnoreCase)
@@ -39,6 +41,18 @@ if (args is ["--version"])
                 ? "1.2.3"
                 : "ChatAgentBridge.TestAgent 1.2.3 (offline fixture)");
     await Console.Out.WriteLineAsync(version);
+    return;
+}
+
+if (Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "").Equals("kimi", StringComparison.OrdinalIgnoreCase) && args is ["--help"])
+{
+    await Console.Out.WriteLineAsync("Usage: kimi [options]\n--prompt <prompt> --output-format stream-json\nDocumentation: https://moonshotai.github.io/kimi-code/");
+    return;
+}
+
+if (Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "").Equals("kimi-legacy", StringComparison.OrdinalIgnoreCase) && args is ["--help"])
+{
+    await Console.Out.WriteLineAsync("Usage: kimi --print --output-format stream-json https://moonshotai.github.io/kimi-cli/");
     return;
 }
 
@@ -68,7 +82,8 @@ if (structuredFixtureName is "qwen" or "kimi")
     var fixtureId = selector >= 0 ? args[selector + 1] : Guid.NewGuid().ToString("D");
     var modelArg = Array.IndexOf(args, "--model");
     var selectedModel = modelArg >= 0 ? args[modelArg + 1] : "fixture-default";
-    var inputText = await Console.In.ReadToEndAsync();
+    var promptValue = args.FirstOrDefault(value => value.StartsWith("--prompt=", StringComparison.Ordinal));
+    var inputText = structuredFixtureName == "kimi" && promptValue is not null ? promptValue[9..] : await Console.In.ReadToEndAsync();
     var fixtureText = $"{structuredFixtureName}-e2e; session={fixtureId}; model={selectedModel}; prompt={inputText}";
     if (structuredFixtureName == "qwen")
     {
@@ -79,6 +94,7 @@ if (structuredFixtureName is "qwen" or "kimi")
     else
     {
         await WriteAsync(new { role = "assistant", content = new object[] { new { type = "think", think = "private-reasoning" }, new { type = "text", text = fixtureText } } });
+        await WriteAsync(new { role = "meta", type = "session.resume_hint", session_id = fixtureId.StartsWith("session_", StringComparison.Ordinal) ? fixtureId : "session_" + fixtureId });
         if (inputText == "fixture-fail") Environment.ExitCode = 1;
     }
     return;

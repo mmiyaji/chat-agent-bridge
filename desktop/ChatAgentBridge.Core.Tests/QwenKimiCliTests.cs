@@ -13,16 +13,15 @@ public sealed class QwenKimiCliTests : IDisposable
         AgentPermissionMode = provider == AgentProfile.Kimi ? "full-access" : "inherit" };
 
     [Fact]
-    public void KimiRequiresExplicitFullAccessAndAssignsAFreshUuid()
+    public void KimiRequiresExplicitFullAccessAndLetsCliCreateNewSession()
     {
         Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(Settings("kimi") with { AgentPermissionMode = "inherit" }));
         var first = AgentProfile.BuildInvocation(Settings("kimi"));
-        var second = AgentProfile.BuildInvocation(Settings("kimi"));
-        var firstId = first.Arguments.Last();
-        Assert.True(Guid.TryParseExact(firstId, "D", out _));
-        Assert.NotEqual(firstId, second.Arguments.Last());
-        Assert.Equal(new[] { "--session", firstId }, first.Arguments.TakeLast(2));
+        Assert.DoesNotContain("--session", first.Arguments);
         Assert.DoesNotContain("--continue", first.Arguments);
+        Assert.DoesNotContain("--print", first.Arguments);
+        var draft = Settings("kimi") with { AgentArguments = "--print --output-format stream-json" };
+        Assert.Equal(first.Arguments, AgentProfile.BuildInvocation(draft).Arguments);
     }
 
     [Theory]
@@ -32,7 +31,7 @@ public sealed class QwenKimiCliTests : IDisposable
     {
         var invocation = AgentProfile.BuildInvocation(Settings(provider) with { AgentModel = "model-x", AuthorizedCliSessionId = Id });
         Assert.Contains("--model", invocation.Arguments);
-        Assert.Equal(new[] { selector, Id }, invocation.Arguments.TakeLast(2));
+        Assert.Equal(new[] { selector, provider == "kimi" ? "session_" + Id : Id }, invocation.Arguments.TakeLast(2));
         Assert.DoesNotContain("--yolo", invocation.Arguments);
         Assert.False(AgentProfile.HasModelCatalog(provider));
     }
@@ -63,15 +62,23 @@ public sealed class QwenKimiCliTests : IDisposable
     }
 
     [Fact]
-    public void KimiUsesOnlyBridgeAssignedSessionAndExcludesThinkingAndTools()
+    public void KimiRequiresNativeSessionHintAndExcludesThinkingAndTools()
     {
         var output = """{"role":"assistant","content":[{"type":"think","think":"private"},{"type":"text","text":"done"}]}""";
         Assert.True(CliSessionOutputParser.Parse(output, "kimi").TurnFailed);
-        var parsed = CliSessionOutputParser.Parse(output, "kimi", Id);
+        var hint = "{\"role\":\"meta\",\"type\":\"session.resume_hint\",\"session_id\":\"session_" + Id + "\"}";
+        Assert.True(CliSessionOutputParser.Parse(output, "kimi", Id).TurnFailed);
+        var parsed = CliSessionOutputParser.Parse(output + "\n" + hint, "kimi", Id);
         Assert.False(parsed.TurnFailed);
         Assert.Equal(Id, parsed.SessionId);
         Assert.Equal("done", parsed.FinalMessage);
         Assert.Null(parsed.Usage);
+        Assert.False(CliSessionOutputParser.Parse("{\"role\":\"meta\",\"type\":\"system.version\",\"version\":\"2.4.1\"}\n" + output + "\n" + hint, "kimi").TurnFailed);
+        Assert.True(CliSessionOutputParser.Parse(hint, "kimi").TurnFailed);
+        Assert.True(CliSessionOutputParser.Parse(output + "\n" + hint.Replace(Id, "22222222-2222-4333-8444-555555555555"), "kimi", Id).TurnFailed);
+        Assert.True(CliSessionOutputParser.Parse(output + "\n" + hint.Replace("session_", ""), "kimi").TurnFailed);
+        Assert.True(CliSessionOutputParser.Parse(output + "\n" + hint + "\n" + output, "kimi").TurnFailed);
+        Assert.True(CliSessionOutputParser.Parse(output + "\n{\"role\":\"meta\",\"type\":\"unknown\"}\n" + hint, "kimi").TurnFailed);
         Assert.True(CliSessionOutputParser.Parse(output + "\n{broken", "kimi", Id).TurnFailed);
         Assert.True(CliSessionOutputParser.Parse("""{"role":"tool","content":"secret output"}""", "kimi", Id).TurnFailed);
         Assert.True(CliSessionOutputParser.Parse("""{"role":"assistant","content":"running","tool_calls":[{"function":{"name":"Shell","arguments":"secret"}}]}""", "kimi", Id).TurnFailed);
@@ -137,12 +144,14 @@ public sealed class QwenKimiCliTests : IDisposable
         var store = new SessionStore(_directory);
         var runner = new SessionAgentRunner(store, new AgentRunner());
         var key = new SessionKey("slack", "channel", "thread", "owner", "slack");
-        var first = await runner.RunAsync(key, settings, "hello 日本語");
+        var prompt = "--auto hello 日本語\n--model injected \"quoted\" & echo data";
+        var first = await runner.RunAsync(key, settings, prompt);
         Assert.True(first.Success, first.Error);
         Assert.DoesNotContain("private-reasoning", first.Output);
-        Assert.Contains("hello 日本語", first.Output);
+        Assert.Contains(prompt, first.Output);
         Assert.Equal(provider, ConversationAgentService.ProviderOf((await store.FindAsync(key))!));
-        var second = await runner.RunAsync(key, settings with { AgentModel = "deep" }, "follow-up");
+        await store.UpdateModelAsync(key, "deep");
+        var second = await runner.RunAsync(key, settings, "follow-up");
         Assert.True(second.Success, second.Error);
         Assert.Equal(first.CliSession!.SessionId, second.CliSession!.SessionId);
         Assert.Contains("model=deep", second.Output);
@@ -151,8 +160,14 @@ public sealed class QwenKimiCliTests : IDisposable
         Assert.NotEqual(first.CliSession.SessionId, other.CliSession!.SessionId);
         if (provider == "kimi")
         {
+            var legacy = Path.Combine(_directory, "kimi-legacy.exe");
+            File.Copy(executable, legacy);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => new CliProbeService().CheckAsync(settings with { AgentExecutable = legacy }));
             var failed = await new AgentRunner().RunAsync(settings, "fixture-fail");
             Assert.False(failed.Success);
+            var tooLong = await new AgentRunner().RunAsync(settings, new string('x', 12_001));
+            Assert.False(tooLong.Success);
+            Assert.Equal(-1, tooLong.ExitCode);
         }
     }
 

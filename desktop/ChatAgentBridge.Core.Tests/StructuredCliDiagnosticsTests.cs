@@ -8,6 +8,8 @@ public sealed class StructuredCliDiagnosticsTests
     [Theory]
     [InlineData("IneligibleTierError", "CliAccountUnsupported")]
     [InlineData("UNSUPPORTED_CLIENT", "CliAccountUnsupported")]
+    [InlineData("Your current subscription does not have access to Kimi Code", "CliAccountUnsupported")]
+    [InlineData("Access denied by API-Key restrictions", "CliAccountUnsupported")]
     [InlineData("UNAUTHENTICATED", "CliAuthenticationRequired")]
     [InlineData("Authentication failed", "CliAuthenticationRequired")]
     [InlineData("Invalid credentials", "CliAuthenticationRequired")]

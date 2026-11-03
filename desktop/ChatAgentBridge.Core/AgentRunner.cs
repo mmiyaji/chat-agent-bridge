@@ -116,6 +116,17 @@ public sealed class AgentRunner : IAgentRunner
         };
         if (nodePackage is not null) start.ArgumentList.Add(nodePackage.EntryPoint);
         foreach (var argument in invocation.Arguments) start.ArgumentList.Add(argument);
+        // Kimi Code accepts prompts only through --prompt; ArgumentList keeps user text
+        // as a single value without shell expansion. Never log the resulting command line.
+        if (invocation.Provider == AgentProfile.Kimi)
+        {
+            // Windows limits the complete command line to 32K UTF-16 characters.
+            // Reserve space for executable paths and worst-case quoting; never truncate a request.
+            if (OperatingSystem.IsWindows() && prompt.Length > 12_000)
+                return new AgentRunResult(false, -1, "", CoreText.Get("KimiPromptTooLong"));
+            // The = form also prevents leading dashes in a request becoming CLI options.
+            start.ArgumentList.Add("--prompt=" + prompt);
+        }
 
         using var process = new Process { StartInfo = start, EnableRaisingEvents = true };
         var processStartTimer = Stopwatch.StartNew();
@@ -146,18 +157,18 @@ public sealed class AgentRunner : IAgentRunner
             catch (System.ComponentModel.Win32Exception) { }
         });
 
-        // BuildInvocation always appends Kimi's bridge-owned --session UUID as its last argument.
         var structuredCli = AgentProfile.IsBasicCliProvider(invocation.Provider);
         var stdout = ReadBoundedAsync(process.StandardOutput, MaxCapturedCharacters,
             invocation.Provider == AgentProfile.Codex, invocation.Provider == AgentProfile.Claude, progress,
             structuredCli ? invocation.Provider : null,
-            invocation.Provider == AgentProfile.Kimi ? invocation.Arguments.Last() : null);
+            invocation.Provider == AgentProfile.Kimi ? settings.AuthorizedCliSessionId : null);
         var stderr = ReadBoundedTextAsync(process.StandardError, MaxCapturedCharacters, structuredCli ? null : progress);
         try
         {
             try
             {
-                await process.StandardInput.WriteAsync(prompt.AsMemory(), cancellationToken).ConfigureAwait(false);
+                if (invocation.Provider != AgentProfile.Kimi)
+                    await process.StandardInput.WriteAsync(prompt.AsMemory(), cancellationToken).ConfigureAwait(false);
                 await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (IOException ex)

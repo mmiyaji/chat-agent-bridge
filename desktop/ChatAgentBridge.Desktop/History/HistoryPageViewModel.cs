@@ -198,7 +198,7 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
                 return provider switch
                 {
                     AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code",
-                    AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI", AgentProfile.Antigravity => "Antigravity CLI", AgentProfile.Kiro => "Kiro CLI", AgentProfile.Qwen => "Qwen Code", AgentProfile.Kimi => "Kimi CLI", _ => provider
+                    AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI", AgentProfile.Antigravity => "Antigravity CLI", AgentProfile.Kiro => "Kiro CLI", AgentProfile.Qwen => "Qwen Code", AgentProfile.Kimi => "Kimi Code CLI", _ => provider
                 };
             var leaf = Path.GetFileName(Binding.AgentExecutable.Trim().Trim('"'));
             var name = Path.GetFileNameWithoutExtension(leaf);
