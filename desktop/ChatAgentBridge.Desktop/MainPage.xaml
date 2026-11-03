@@ -72,14 +72,14 @@
             <NavigationView.FooterMenuItems>
                 <NavigationViewItem Tag="chat" AutomationProperties.AutomationId="NavChatConnectionStatus"
                                     AutomationProperties.LiveSetting="Polite"
+                                    Icon="{x:Bind local:MainPage.ConnectionNavigationIcon(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
                                     Content="{x:Bind local:MainPage.ConnectionNavigationCompactLabel(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
                                     AutomationProperties.Name="{x:Bind local:MainPage.ConnectionNavigationLabel(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionLabel), Mode=OneWay}"
                                     ToolTipService.ToolTip="{x:Bind local:MainPage.ConnectionNavigationTooltip(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionLabel, InboxPage.ViewModel.Status), Mode=OneWay}">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="{x:Bind local:MainPage.ConnectionNavigationGlyph(InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
-                                  FontSize="16" Style="{x:Bind local:MainPage.ConnectionNavigationStyle(InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
-                                  AutomationProperties.AccessibilityView="Raw" />
-                    </NavigationViewItem.Icon>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge AutomationProperties.AccessibilityView="Raw"
+                                   Style="{x:Bind local:MainPage.ConnectionNavigationBadgeStyle(InboxPage.ViewModel.ConnectionTone), Mode=OneWay}" />
+                    </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="AboutNavigationItem" Tag="about" AutomationProperties.AutomationId="NavAbout" x:Uid="NavAbout">
                     <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;" /></NavigationViewItem.Icon>

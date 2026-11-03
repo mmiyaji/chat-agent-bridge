@@ -47,6 +47,8 @@ This is the diagram shown in the app's setup guide and General page. It uses Cod
 
 ## Main features
 
+The sidebar shows the connected chat service and its status. Select it to open Chat; when the sidebar is collapsed, the service icon and status marker remain visible.
+
 | Feature | Description |
 | --- | --- |
 | Chat requests | Slack, Mattermost and Discord requests with thread-based conversation continuation |
