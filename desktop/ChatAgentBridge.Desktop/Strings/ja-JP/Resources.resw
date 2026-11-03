@@ -1367,4 +1367,5 @@
   <data name="ProgressPreviewPermission" xml:space="preserve"><value>操作前に確認</value></data>
   <data name="ProgressPreviewActivity" xml:space="preserve"><value>サンプルの作業領域を検索中</value></data>
   <data name="ProgressPreviewDisclaimer.Text" xml:space="preserve"><value>表示例です。チャットには送信されません。</value></data>
+  <data name="WizardRequiredFieldsHint.Text" xml:space="preserve"><value>* は、この手順を設定する場合の必須項目です。</value></data>
 </root>

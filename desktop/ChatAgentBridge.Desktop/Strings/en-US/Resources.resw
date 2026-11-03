@@ -1367,4 +1367,5 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ProgressPreviewPermission" xml:space="preserve"><value>ask before actions</value></data>
   <data name="ProgressPreviewActivity" xml:space="preserve"><value>Searching the example workspace</value></data>
   <data name="ProgressPreviewDisclaimer.Text" xml:space="preserve"><value>This is an example only. It will not be sent to a chat.</value></data>
+  <data name="WizardRequiredFieldsHint.Text" xml:space="preserve"><value>* marks fields required when configuring this step.</value></data>
 </root>

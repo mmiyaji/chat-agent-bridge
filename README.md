@@ -25,6 +25,10 @@ A chat post causes the CLI on your PC to read and write files and run commands. 
 
 ## System overview and request flow
 
+The first-run wizard shows the terms and privacy policy links and consent checkboxes before the diagram. Click the diagram to enlarge it.
+
+Required wizard fields are marked with an asterisk (*). These fields are required when configuring that step, even if the step can be skipped.
+
 ![A requester mentions a dedicated Bot from a phone or browser; Chat Agent Bridge passes the request to a CLI on the local PC and the result returns in the same thread](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)
 
 This diagram appears in the app's first-run wizard and General page. The requester mentions a dedicated Bot from their own chat account using a phone or browser. We recommend using a dedicated Bot account. Bridge checks allowed users and passes the request to a CLI on the PC. Codex CLI and Claude Code CLI are examples; they are not bundled and must be installed and authenticated separately. Gemini CLI, GitHub Copilot CLI and Antigravity CLI are also supported.
