@@ -25,6 +25,7 @@
                     <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
                             CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,2" VerticalAlignment="Center"
                             Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsPreviewProvider), Mode=OneWay}"
+                            x:Uid="AgentPreviewBadge" localization:LocalizedResourceKey.Key="AgentPreviewBadge"
                             AutomationProperties.AutomationId="AgentPreviewBadge">
                         <TextBlock x:Uid="AgentProfilePreview" localization:LocalizedResourceKey.Key="AgentProfilePreview"
                                    Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -32,6 +33,7 @@
                     <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
                             CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,2" VerticalAlignment="Center"
                             Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsLegacyProvider), Mode=OneWay}"
+                            x:Uid="AgentLegacyBadge" localization:LocalizedResourceKey.Key="AgentLegacyBadge"
                             AutomationProperties.AutomationId="AgentLegacyBadge">
                         <TextBlock x:Uid="AgentProfileLegacy" localization:LocalizedResourceKey.Key="AgentProfileLegacy"
                                    Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />

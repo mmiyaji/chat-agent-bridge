@@ -1377,4 +1377,6 @@
   <data name="AgentProfileLegacy.Text" xml:space="preserve"><value>移行推奨</value></data>
   <data name="GeminiLegacyOption.Content" xml:space="preserve"><value>Gemini CLI（移行推奨）</value></data>
   <data name="GeminiMigrationNotice.Message" xml:space="preserve"><value>新しく設定する場合はAntigravity CLIを推奨します。GoogleはGemini CLIの個人アカウント向け提供を終了しています。企業契約・APIキーでの利用は継続対象です。</value></data>
+  <data name="AgentPreviewBadge.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>このエージェントとの連携は、動作検証が十分に完了していません。</value></data>
+  <data name="AgentLegacyBadge.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>新しく設定する場合はAntigravity CLIへの移行を推奨します。Gemini CLIの企業契約・APIキーでの利用は継続対象です。</value></data>
 </root>
