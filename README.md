@@ -196,7 +196,7 @@ Delete stored data by type from data management on the **General** page. Encrypt
 
 The app uses Japanese when the Windows language preference is Japanese and English otherwise. You can override the language in the app. Choose light, dark or system appearance.
 
-**General** contains Windows sign-in startup, app auto-connect and system tray preferences. You can also choose whether closing the window moves it to the tray or exits the app.
+**General** contains Windows sign-in startup, app auto-connect and system tray preferences. You can also choose whether closing the window moves it to the tray or exits the app. While closing, the app shows a progress indicator as it disconnects and saves pending data.
 
 ![Current status, startup, auto-connect and system tray settings](docs/assets/screenshots/general-en.png)
 

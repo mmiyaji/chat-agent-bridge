@@ -1381,4 +1381,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentLegacyBadge.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>For new setups, use Antigravity CLI. Enterprise licenses and API-key access to Gemini CLI remain supported.</value></data>
   <data name="DetectCliExecutable.Content" xml:space="preserve"><value>Detect CLI</value></data>
   <data name="DetectCliExecutable.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Find the selected CLI on PATH. This does not run the AI agent.</value></data>
+  <data name="ShutdownLoadingText.Text" xml:space="preserve"><value>Closing…</value></data>
+  <data name="ShutdownLoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Application shutdown progress</value></data>
 </root>

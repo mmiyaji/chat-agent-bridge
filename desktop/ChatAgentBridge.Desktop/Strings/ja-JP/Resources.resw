@@ -1381,4 +1381,6 @@
   <data name="AgentLegacyBadge.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>新しく設定する場合はAntigravity CLIへの移行を推奨します。Gemini CLIの企業契約・APIキーでの利用は継続対象です。</value></data>
   <data name="DetectCliExecutable.Content" xml:space="preserve"><value>自動検出</value></data>
   <data name="DetectCliExecutable.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>PATHから選択中のCLIを探します。AIエージェントは実行しません。</value></data>
+  <data name="ShutdownLoadingText.Text" xml:space="preserve"><value>終了しています…</value></data>
+  <data name="ShutdownLoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>アプリの終了処理</value></data>
 </root>

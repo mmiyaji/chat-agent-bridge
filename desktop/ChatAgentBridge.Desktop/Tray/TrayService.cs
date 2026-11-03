@@ -254,7 +254,9 @@ public sealed class TrayService : IDisposable
         }
         try
         {
-            if (_window.Content is UIElement content) content.IsHitTestVisible = false;
+            _window.ShowShutdownLoading();
+            // Yield before starting cleanup so the busy state can be presented.
+            await Task.Yield();
             App.PendingRequestNotifications.ClearAll();
             // Cancellation kills CLI process trees and stops reconnects immediately.
             // Allow a bounded grace period for history writes and transport disposal.
