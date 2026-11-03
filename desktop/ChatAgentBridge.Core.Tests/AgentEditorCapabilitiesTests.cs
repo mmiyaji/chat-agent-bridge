@@ -8,7 +8,7 @@ namespace ChatAgentBridge.Core.Tests;
 public sealed class AgentEditorCapabilitiesTests
 {
     private static readonly string[] Providers =
-        [AgentProfile.Codex, AgentProfile.Claude, AgentProfile.Gemini, AgentProfile.GitHubCopilot, AgentProfile.Antigravity, AgentProfile.Custom];
+        [AgentProfile.Codex, AgentProfile.Claude, AgentProfile.Gemini, AgentProfile.GitHubCopilot, AgentProfile.Antigravity, AgentProfile.Kiro, AgentProfile.Qwen, AgentProfile.Kimi, AgentProfile.Custom];
 
     [Fact]
     public void ModelCatalogRuleMatchesAgentProfile()
@@ -30,6 +30,9 @@ public sealed class AgentEditorCapabilitiesTests
     [InlineData("gemini", "AgentExecutable,AgentModel,AgentArguments")]
     [InlineData("github-copilot", "AgentExecutable,AgentModel,AgentArguments")]
     [InlineData("antigravity", "AgentExecutable,AgentModel,AgentPermissionMode,AgentArguments")]
+    [InlineData("kiro", "AgentExecutable,AgentModel")]
+    [InlineData("qwen", "AgentExecutable,AgentModel")]
+    [InlineData("kimi", "AgentExecutable,AgentModel,AgentPermissionMode")]
     [InlineData("custom", "AgentExecutable,AgentArguments")]
     public void SearchableFieldsFollowWhatTheEditorShows(string provider, string expected)
         => Assert.Equal(expected.Split(','), AgentEditorCapabilities.SearchableFields(provider).Select(field => field.AutomationId));

@@ -18,6 +18,8 @@ public sealed partial class MainPage
             "github-copilot" => "bot",
             "antigravity" => "arch",
             "kiro" => "window_console",
+            "qwen" => "code",
+            "kimi" => "bot",
             "mattermost" => "chat",
             "slack" => "number_symbol",
             "discord" => "people_community",

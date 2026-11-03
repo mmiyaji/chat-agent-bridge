@@ -120,7 +120,7 @@ public partial class MainPageViewModel
         if (!_hasCurrentConsent || !HasAcceptedTerms || !HasAcceptedPrivacy) { SetStatus(ViewModelText.Get("ReviewConsent"), ViewModelText.Get("ReviewConsentDetails"), "Warning"); return; }
         if (OnboardingStep == 1)
         {
-            var providerSelected = AgentProvider is "codex" or "claude" or "gemini" or "github-copilot" or "antigravity" or "kiro" or "custom";
+            var providerSelected = AgentProvider is "codex" or "claude" or "gemini" or "github-copilot" or "antigravity" or "kiro" or "qwen" or "kimi" or "custom";
             var workspacePath = WorkspaceRoot;
             var workspaceUsable = Path.IsPathFullyQualified(workspacePath) && await Task.Run(() => Directory.Exists(workspacePath));
             if (!string.Equals(workspacePath, WorkspaceRoot, StringComparison.Ordinal)) return;

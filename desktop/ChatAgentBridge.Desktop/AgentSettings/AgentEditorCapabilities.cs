@@ -12,14 +12,14 @@ public sealed record AgentEditorField(string LabelResource, string AutomationId,
 public static class AgentEditorCapabilities
 {
     public static bool IsBasic(string provider) => AgentProfile.IsBasicCliProvider(provider) || provider == AgentProfile.Custom;
-    public static bool IsArgumentsEditable(string provider) => IsBasic(provider) && provider != AgentProfile.Kiro;
+    public static bool IsArgumentsEditable(string provider) => IsBasic(provider) && provider is not (AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi);
     public static bool SupportsModel(string provider) => provider is AgentProfile.Codex or AgentProfile.Claude or
-        AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro;
+        AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi;
     public static bool SupportsReasoning(string provider) => provider is AgentProfile.Codex or AgentProfile.Claude;
     // Antigravity lists models with `agy models` on request, but has no per-model effort levels.
     public static bool SupportsModelCatalog(string provider) => SupportsReasoning(provider) || provider is AgentProfile.Antigravity or AgentProfile.Kiro;
     // Antigravity maps workspace-write and full-access onto its own flags; the other basic CLIs manage permissions themselves.
-    public static bool CanConfigurePermission(string provider) => !IsBasic(provider) || provider == AgentProfile.Antigravity;
+    public static bool CanConfigurePermission(string provider) => !IsBasic(provider) || provider is AgentProfile.Antigravity or AgentProfile.Kimi;
     // App Server mode and the tool network switch are Codex options.
     public static bool HasCodexOptions(string provider) => provider == AgentProfile.Codex;
 

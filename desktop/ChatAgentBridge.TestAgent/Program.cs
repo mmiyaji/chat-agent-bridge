@@ -25,7 +25,11 @@ if (args is ["--version"])
         return;
     }
     var fixtureVersion = Environment.GetEnvironmentVariable("CAB_TEST_AGENT_VERSION");
-    var version = fixtureVersion ?? (exeName.Equals("kiro-cli", StringComparison.OrdinalIgnoreCase)
+    var version = fixtureVersion ?? (exeName.Equals("qwen", StringComparison.OrdinalIgnoreCase)
+        ? "Qwen Code 0.15 (offline fixture)"
+        : exeName.Equals("kimi", StringComparison.OrdinalIgnoreCase)
+        ? "kimi, version 1.0 (offline fixture)"
+        : exeName.Equals("kiro-cli", StringComparison.OrdinalIgnoreCase)
         ? "Kiro CLI 2.33 (offline fixture)"
         : exeName.Equals("codex", StringComparison.OrdinalIgnoreCase)
         ? "codex-cli 1.2.3 (offline fixture)"
@@ -57,6 +61,28 @@ if (isAntigravityFixture && args is ["models"])
 
 // Synthetic structured CLI fixtures. Selected only by the bridge's provider output format;
 // these never read credentials, execute tools, or contact a provider.
+var structuredFixtureName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "").ToLowerInvariant();
+if (structuredFixtureName is "qwen" or "kimi")
+{
+    var selector = Array.IndexOf(args, structuredFixtureName == "kimi" ? "--session" : "--resume");
+    var fixtureId = selector >= 0 ? args[selector + 1] : Guid.NewGuid().ToString("D");
+    var modelArg = Array.IndexOf(args, "--model");
+    var selectedModel = modelArg >= 0 ? args[modelArg + 1] : "fixture-default";
+    var inputText = await Console.In.ReadToEndAsync();
+    var fixtureText = $"{structuredFixtureName}-e2e; session={fixtureId}; model={selectedModel}; prompt={inputText}";
+    if (structuredFixtureName == "qwen")
+    {
+        await WriteAsync(new { type = "system", subtype = "session_start", session_id = fixtureId, model = selectedModel });
+        await WriteAsync(new { type = "assistant", session_id = fixtureId, message = new { content = new[] { new { type = "text", text = fixtureText } } } });
+        await WriteAsync(new { type = "result", subtype = "success", session_id = fixtureId, is_error = false, result = fixtureText });
+    }
+    else
+    {
+        await WriteAsync(new { role = "assistant", content = new object[] { new { type = "think", think = "private-reasoning" }, new { type = "text", text = fixtureText } } });
+        if (inputText == "fixture-fail") Environment.ExitCode = 1;
+    }
+    return;
+}
 if (Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "").Equals("kiro-cli", StringComparison.OrdinalIgnoreCase))
 {
     if (args is ["chat", "--list-models", "--format", "json"])

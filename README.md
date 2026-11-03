@@ -89,6 +89,8 @@ The working folder and trusted locations are shared settings. Configure the exec
 | Gemini CLI / GitHub Copilot CLI | Supported | Enter a model name; reasoning settings remain CLI-managed |
 | Antigravity CLI (`agy`) | Supported | Fetch the model list from `agy models` or enter a model name; reasoning stays CLI-managed. Headless mode auto-denies edits and commands unless the permission mode is workspace write or full access, or `settings.json` has allow rules |
 | Kiro CLI (`kiro-cli`, Windows 11) | Implemented; live-service verification pending | Fetch models from the CLI or enter a model ID. Headless runs require `KIRO_API_KEY`; permissions and reasoning remain CLI-managed. Credits are not shown as token costs |
+| Qwen Code (`qwen`) | Implemented; live-service verification pending | Enter a model ID. CLI-managed authentication, reasoning and tool permissions; no automatic YOLO flag |
+| Kimi CLI (`kimi`) | Implemented; live-service verification pending | Enter a model name or configured alias. Requires explicit Full access because headless mode auto-approves tools; no token-cost estimates from unreported usage |
 | Other CLI | Independent execution for each request | Configure the CLI or its launch arguments |
 
 Change a conversation's agent or model from its details on the PC or from chat. Agent switching uses CLIs checked and registered in the app. You choose whether to pass conversation notes to the new agent.
@@ -242,3 +244,5 @@ Released under the [MIT License](LICENSE). Check the terms and contracts of the 
 - [Third-party notices](desktop/THIRD-PARTY-NOTICES.txt), also available in the app's About page
 
 Kiro CLI uses `chat --v2 --no-interactive --output-format stream-json` with the prompt on stdin. Install the native CLI and configure `KIRO_API_KEY` on the PC. The bridge never adds `--trust-all-tools`; tool calls requiring confirmation may be denied. Mid-run instructions are queued. Live authentication, event compatibility and chat execution still require validation with your Kiro installation. See [Kiro headless documentation](https://kiro.dev/docs/cli/headless/).
+
+Qwen Code uses headless stream-JSON output; on Windows, npm shims are resolved from the installed `@qwen-code/qwen-code` package metadata without executing a command script. Kimi uses `--print --output-format stream-json` and a bridge-assigned session UUID. Kimi print mode automatically approves tools, so the bridge blocks runs until Full access is explicitly selected. Both accept `!cab agent qwen summary|fresh` / `!cab agent kimi summary|fresh` after checking and registering the CLI on the PC. Model discovery and in-flight steering are not implemented; follow-ups are queued. Actual CLI authentication and chat-service behavior remain unverified. [Qwen headless](https://qwenlm.github.io/qwen-code-docs/en/users/features/headless/), [Kimi print mode](https://moonshotai.github.io/kimi-cli/en/customization/print-mode.html).

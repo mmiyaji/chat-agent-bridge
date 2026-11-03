@@ -64,7 +64,7 @@ public sealed class SettingsStore
             if (stored.AgentMode is not (null or "exec" or "app-server"))
                 throw new InvalidDataException("Settings contain an unsupported agent mode.");
             var provider = stored.AgentProvider ?? InferLegacyProvider(stored.AgentExecutable ?? "codex");
-            if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Custom))
+            if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Custom))
                 throw new InvalidDataException("Settings contain an unsupported agent provider.");
             var autoConnect = stored.AutoConnectProvider ?? "none";
             if (autoConnect is not ("none" or "mattermost" or "slack" or "discord"))

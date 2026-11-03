@@ -1,3 +1,5 @@
+using ChatAgentBridge.Core.Localization;
+
 namespace ChatAgentBridge.Core;
 
 /// <summary>Builds shell-free CLI invocations from provider and model settings.</summary>
@@ -8,6 +10,10 @@ public static class AgentProfile
     public const string Gemini = "gemini";
     public const string GitHubCopilot = "github-copilot";
     public const string Antigravity = "antigravity";
+    public const string Qwen = "qwen";
+    public const string Kimi = "kimi";
+    public const string DefaultQwenArguments = "--output-format stream-json";
+    public const string DefaultKimiArguments = "--print --output-format stream-json";
     public const string Kiro = "kiro";
     public const string DefaultKiroArguments = "chat --v2 --no-interactive --output-format stream-json";
     public const string Custom = "custom";
@@ -20,8 +26,8 @@ public static class AgentProfile
     {
         ArgumentNullException.ThrowIfNull(settings);
         var provider = string.IsNullOrWhiteSpace(settings.AgentProvider) ? Codex : settings.AgentProvider.Trim().ToLowerInvariant();
-        if (provider is not (Codex or Claude or Gemini or GitHubCopilot or Antigravity or Kiro or Custom))
-            throw new ArgumentException("Agent provider must be codex, claude, gemini, github-copilot, antigravity, kiro, or custom.", nameof(settings));
+        if (provider is not (Codex or Claude or Gemini or GitHubCopilot or Antigravity or Kiro or Qwen or Kimi or Custom))
+            throw new ArgumentException("Agent provider must be codex, claude, gemini, github-copilot, antigravity, kiro, qwen, kimi, or custom.", nameof(settings));
 
         // Directly-created legacy settings often use an arbitrary executable with the old default provider.
         // Treat those as custom so their executable and arguments remain exactly as configured.
@@ -69,8 +75,12 @@ public static class AgentProfile
             {
                 if (!Guid.TryParseExact(sessionId, "D", out var id))
                     throw new ArgumentException("The authorized CLI session id must be a UUID.", nameof(settings));
-                basicArguments = basicArguments.Concat(new[] { provider == Antigravity ? "--conversation" : provider == Kiro ? "--resume-id" : "--resume", id.ToString("D") }).ToArray();
+                basicArguments = basicArguments.Concat(new[] { provider == Antigravity ? "--conversation" : provider == Kiro ? "--resume-id" : provider == Kimi ? "--session" : "--resume", id.ToString("D") }).ToArray();
             }
+            if (provider == Kimi && settings.AuthorizedCliSessionId is null)
+                basicArguments = basicArguments.Concat(new[] { "--session", Guid.NewGuid().ToString("D") }).ToArray();
+            if (provider == Kimi && permissionMode != "full-access")
+                throw new ArgumentException(CoreText.Get("KimiFullAccessRequired"), nameof(settings));
             if (provider == Antigravity && permissionMode != "inherit")
                 basicArguments = SetAntigravityPermission(basicArguments, permissionMode);
             return new AgentInvocation(EffectiveExecutable(settings, provider), basicArguments, model, provider);
@@ -124,21 +134,22 @@ public static class AgentProfile
     public static string ResolveEffectiveExecutable(BridgeSettings settings)
         => EffectiveExecutable(settings, ResolveProvider(settings));
 
-    public static bool IsBasicCliProvider(string provider) => provider is Gemini or GitHubCopilot or Antigravity or Kiro;
+    public static bool IsBasicCliProvider(string provider) => provider is Gemini or GitHubCopilot or Antigravity or Kiro or Qwen or Kimi;
 
     /// <summary>Providers whose CLI can list selectable models without an AI turn.</summary>
     public static bool HasModelCatalog(string provider) => provider is Codex or Claude or Antigravity or Kiro;
 
     /// <summary>Basic providers distribute as npm packages, except Antigravity which ships a native executable.</summary>
-    internal static bool UsesNpmShim(string provider) => provider is Gemini or GitHubCopilot;
+    internal static bool UsesNpmShim(string provider) => provider is Gemini or GitHubCopilot or Qwen;
 
     /// <summary>Gemini and Copilot manage permissions themselves; Antigravity maps two modes onto its CLI flags.</summary>
     public static bool SupportsPermissionMode(string provider, string permissionMode)
-        => permissionMode == "inherit" || provider == Antigravity && permissionMode is "workspace-write" or "full-access";
+        => permissionMode == "inherit" || provider == Kimi && permissionMode == "full-access" || provider == Antigravity && permissionMode is "workspace-write" or "full-access";
 
     internal static string UnsupportedPermissionModeMessage(string provider) => provider == Antigravity
         ? "Antigravity CLI supports the inherit, workspace-write, and full-access permission modes; read-only and ask are unavailable."
-        : "Gemini CLI and GitHub Copilot CLI use their own permission settings; select inherit.";
+        : provider == Kimi ? CoreText.Get("KimiFullAccessRequired")
+        : "This CLI profile uses its own permission settings; select inherit.";
 
     /// <summary>Canonical provider arguments before the session runner adds its authorized resume id.</summary>
     internal static IReadOnlyList<string> GetStructuredCliArguments(BridgeSettings settings, string provider)
@@ -161,17 +172,17 @@ public static class AgentProfile
                 argument.StartsWith("-i", StringComparison.Ordinal) && !argument.StartsWith("--", StringComparison.Ordinal))
                 throw new ArgumentException("CLI session and prompt selection must be managed by the bridge; remove configured resume, continue, session, and prompt options.", nameof(settings));
         }
-        if (provider == Kiro)
+        if (provider is Kiro or Qwen or Kimi)
         {
             // Do not permit directory-wide resume, cloud execution, or a second prompt.
-            var canonical = AgentArgumentParser.Parse(DefaultKiroArguments);
+            var canonical = AgentArgumentParser.Parse(provider switch { Qwen => DefaultQwenArguments, Kimi => DefaultKimiArguments, _ => DefaultKiroArguments });
             if (!arguments.SequenceEqual(canonical, StringComparer.Ordinal))
-                throw new ArgumentException("Kiro CLI arguments are managed by the bridge; use the canonical headless arguments.", nameof(settings));
+                throw new ArgumentException("CLI arguments are managed by the bridge; use the canonical headless arguments.", nameof(settings));
         }
         if (provider == GitHubCopilot)
             arguments = EnsureFlag(arguments.Where(value => value is not ("--silent" or "-s") &&
                 !value.StartsWith("--silent=", StringComparison.Ordinal)).ToArray(), "--no-ask-user");
-        arguments = SetOption(arguments, "--output-format", provider == Gemini ? "-o" : "--output-format", provider is Gemini or Antigravity or Kiro ? "stream-json" : "json");
+        arguments = SetOption(arguments, "--output-format", provider == Gemini ? "-o" : "--output-format", provider is Gemini or Antigravity or Kiro or Qwen or Kimi ? "stream-json" : "json");
         if (NormalizeModel(settings.AgentModel) is { } model)
             arguments = SetOption(arguments, "--model", "-m", model);
         return arguments;
@@ -180,7 +191,7 @@ public static class AgentProfile
     internal static string? FindWindowsNpmShim(string executable, string provider)
     {
         if (!OperatingSystem.IsWindows() || !UsesNpmShim(provider)) return null;
-        var command = provider == Gemini ? "gemini" : "copilot";
+        var command = provider switch { Gemini => "gemini", Qwen => "qwen", _ => "copilot" };
         var leaf = Path.GetFileName(executable.Trim().Trim('"'));
         if (Path.GetFileNameWithoutExtension(leaf).Equals(command, StringComparison.OrdinalIgnoreCase) &&
             Path.GetExtension(leaf) is ".cmd" or ".bat" or ".ps1")
@@ -198,10 +209,13 @@ public static class AgentProfile
 
     internal static string WindowsNpmShimGuidance(string shim, string provider)
     {
-        var cliName = provider == Gemini ? "Gemini CLI" : "GitHub Copilot CLI";
-        var entryPointHint = provider == Gemini
-            ? "For a global npm install, its entrypoint is commonly node_modules/@google/gemini-cli/dist/index.js."
-            : "Use the JavaScript entrypoint inside node_modules/@github/copilot for your installed version.";
+        var cliName = provider switch { Gemini => "Gemini CLI", Qwen => "Qwen Code", _ => "GitHub Copilot CLI" };
+        var entryPointHint = provider switch
+        {
+            Gemini => "For a global npm install, its entrypoint is commonly node_modules/@google/gemini-cli/dist/index.js.",
+            Qwen => "Use the JavaScript entrypoint inside node_modules/@qwen-code/qwen-code for your installed version.",
+            _ => "Use the JavaScript entrypoint inside node_modules/@github/copilot for your installed version."
+        };
         return $"'{shim}' is a Windows npm command shim. The bridge does not launch command scripts. Set the executable to node.exe and the arguments to the installed {cliName} JavaScript entrypoint. {entryPointHint}";
     }
 
@@ -304,6 +318,8 @@ public static class AgentProfile
         if (provider == GitHubCopilot && IsCodexExecutable(executable)) return "copilot";
         if (provider == Antigravity && IsCodexExecutable(executable)) return "agy";
         if (provider == Kiro && IsCodexExecutable(executable)) return "kiro-cli";
+        if (provider == Qwen && IsCodexExecutable(executable)) return "qwen";
+        if (provider == Kimi && IsCodexExecutable(executable)) return "kimi";
         return executable;
     }
 
@@ -315,6 +331,8 @@ public static class AgentProfile
                 Gemini => DefaultGeminiArguments,
                 Antigravity => DefaultAntigravityArguments,
                 Kiro => DefaultKiroArguments,
+                Qwen => DefaultQwenArguments,
+                Kimi => DefaultKimiArguments,
                 _ => DefaultGitHubCopilotArguments
             });
         return AgentArgumentParser.Parse(arguments);

@@ -30,7 +30,7 @@ public static class NodeCliPackageResolver
 
         var (packageName, command) = provider == AgentProfile.Gemini
             ? ("@google/gemini-cli", "gemini")
-            : ("@github/copilot", "copilot");
+            : provider == AgentProfile.Qwen ? ("@qwen-code/qwen-code", "qwen") : ("@github/copilot", "copilot");
         var binDirectory = Path.GetDirectoryName(shim)!;
         var packageDirectory = packageName.Split('/').Aggregate(
             Path.Combine(binDirectory, "node_modules"), Path.Combine);
@@ -71,7 +71,7 @@ public static class NodeCliPackageResolver
 
     private static string? FindShim(string executable, string provider)
     {
-        var command = provider == AgentProfile.Gemini ? "gemini" : "copilot";
+        var command = provider switch { AgentProfile.Gemini => "gemini", AgentProfile.Qwen => "qwen", _ => "copilot" };
         var leaf = Path.GetFileName(executable.Trim().Trim('"'));
         var extension = Path.GetExtension(leaf);
         if (extension.Equals(".cmd", StringComparison.OrdinalIgnoreCase))
@@ -110,7 +110,7 @@ public static class NodeCliPackageResolver
 
     private static InvalidOperationException MissingPackage(string shim, string provider, string packageName)
     {
-        var label = provider == AgentProfile.Gemini ? "Gemini CLI" : "GitHub Copilot CLI";
+        var label = provider switch { AgentProfile.Gemini => "Gemini CLI", AgentProfile.Qwen => "Qwen Code", _ => "GitHub Copilot CLI" };
         return new InvalidOperationException($"'{shim}' is a Windows npm command shim, but the expected {label} package '{packageName}' and JavaScript entrypoint could not be resolved beside it. Install the official npm package globally or set the executable to node.exe and arguments to the installed CLI entrypoint. The bridge will not launch .cmd files.");
     }
 }

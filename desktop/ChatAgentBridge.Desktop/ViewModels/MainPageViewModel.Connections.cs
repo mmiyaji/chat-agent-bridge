@@ -14,6 +14,8 @@ public partial class MainPageViewModel
     private AgentConnectionProfile? _registeredCopilotConnection;
     private AgentConnectionProfile? _registeredAntigravityConnection;
     private AgentConnectionProfile? _registeredKiroConnection;
+    private AgentConnectionProfile? _registeredQwenConnection;
+    private AgentConnectionProfile? _registeredKimiConnection;
 
     [ObservableProperty] public partial string RegisteredConnectionSummary { get; set; } = ViewModelText.Get("NoRegisteredConnections");
     [ObservableProperty] public partial string ConnectionRegistrationStatus { get; set; } = "";
@@ -24,6 +26,8 @@ public partial class MainPageViewModel
     public bool HasRegisteredCopilotConnection => _registeredCopilotConnection is not null;
     public bool HasRegisteredAntigravityConnection => _registeredAntigravityConnection is not null;
     public bool HasRegisteredKiroConnection => _registeredKiroConnection is not null;
+    public bool HasRegisteredQwenConnection => _registeredQwenConnection is not null;
+    public bool HasRegisteredKimiConnection => _registeredKimiConnection is not null;
 
     private void RefreshConnectionCommands()
     {
@@ -34,12 +38,16 @@ public partial class MainPageViewModel
         LoadRegisteredCopilotConnectionCommand.NotifyCanExecuteChanged();
         LoadRegisteredAntigravityConnectionCommand.NotifyCanExecuteChanged();
         LoadRegisteredKiroConnectionCommand.NotifyCanExecuteChanged();
+        LoadRegisteredQwenConnectionCommand.NotifyCanExecuteChanged();
+        LoadRegisteredKimiConnectionCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(HasRegisteredCodexConnection));
         OnPropertyChanged(nameof(HasRegisteredClaudeConnection));
         OnPropertyChanged(nameof(HasRegisteredGeminiConnection));
         OnPropertyChanged(nameof(HasRegisteredCopilotConnection));
         OnPropertyChanged(nameof(HasRegisteredAntigravityConnection));
         OnPropertyChanged(nameof(HasRegisteredKiroConnection));
+        OnPropertyChanged(nameof(HasRegisteredQwenConnection));
+        OnPropertyChanged(nameof(HasRegisteredKimiConnection));
         OnPropertyChanged(nameof(HasVerifiedAgentEditor));
     }
 
@@ -54,11 +62,13 @@ public partial class MainPageViewModel
             _registeredCopilotConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.GitHubCopilot);
             _registeredAntigravityConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Antigravity);
             _registeredKiroConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Kiro);
+            _registeredQwenConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Qwen);
+            _registeredKimiConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Kimi);
             var names = profiles.Select(profile => profile.Provider switch
             {
                 AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code",
                 AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI",
-                AgentProfile.Antigravity => "Antigravity CLI", AgentProfile.Kiro => "Kiro CLI", _ => profile.Provider
+                AgentProfile.Antigravity => "Antigravity CLI", AgentProfile.Kiro => "Kiro CLI", AgentProfile.Qwen => "Qwen Code", AgentProfile.Kimi => "Kimi CLI", _ => profile.Provider
             }).ToArray();
             RegisteredConnectionSummary = names.Length == 0
                 ? ViewModelText.Get("NoRegisteredConnections")
@@ -74,6 +84,8 @@ public partial class MainPageViewModel
             _registeredCopilotConnection = null;
             _registeredAntigravityConnection = null;
             _registeredKiroConnection = null;
+            _registeredQwenConnection = null;
+            _registeredKimiConnection = null;
             RegisteredConnectionSummary = ViewModelText.Get("RegisteredConnectionsUnavailable", ex.Message);
             RefreshConnectionCommands();
         }
@@ -158,6 +170,12 @@ public partial class MainPageViewModel
 
     [RelayCommand(CanExecute = nameof(HasRegisteredKiroConnection))]
     private void LoadRegisteredKiroConnection() => ApplyRegisteredConnection(_registeredKiroConnection);
+
+    [RelayCommand(CanExecute = nameof(HasRegisteredQwenConnection))]
+    private void LoadRegisteredQwenConnection() => ApplyRegisteredConnection(_registeredQwenConnection);
+
+    [RelayCommand(CanExecute = nameof(HasRegisteredKimiConnection))]
+    private void LoadRegisteredKimiConnection() => ApplyRegisteredConnection(_registeredKimiConnection);
 
     private void ApplyRegisteredConnection(AgentConnectionProfile? profile)
     {

@@ -102,4 +102,5 @@
   <data name="ApprovalRiskGitWrite" xml:space="preserve"><value>gitの履歴やブランチの変更</value></data>
   <data name="ApprovalRiskTruncated" xml:space="preserve"><value>コマンドが長いため、すべては確認できていません</value></data>
   <data name="ApprovalRiskCodeOnly" xml:space="preserve"><value>危険度が高いため承認ボタンは出しません。下のコードを返信するか、PCで判断してください。</value></data>
+  <data name="KimiFullAccessRequired" xml:space="preserve"><value>Kimi CLIの非対話モードはツール操作を自動承認します。実行する場合は、エージェント設定で明示的に「フルアクセス」を選択してください。</value></data>
 </root>

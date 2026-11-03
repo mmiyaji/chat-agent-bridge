@@ -168,7 +168,7 @@
                         <ComboBoxItem x:Uid="PermissionInherit" Tag="inherit" localization:LocalizedResourceKey.Key="PermissionInherit" />
                         <ComboBoxItem x:Uid="PermissionReadOnly" Tag="read-only" localization:LocalizedResourceKey.Key="PermissionReadOnly"
                                       Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.CanSelectReadOnlyPermission), Mode=OneWay}" />
-                        <ComboBoxItem x:Uid="PermissionWorkspaceWrite" Tag="workspace-write" localization:LocalizedResourceKey.Key="PermissionWorkspaceWrite" />
+                        <ComboBoxItem Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.CanSelectWorkspaceWritePermission), Mode=OneWay}" x:Uid="PermissionWorkspaceWrite" Tag="workspace-write" localization:LocalizedResourceKey.Key="PermissionWorkspaceWrite" />
                         <ComboBoxItem x:Uid="PermissionAsk" Tag="ask" localization:LocalizedResourceKey.Key="PermissionAsk"
                                       Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.UseAppServer), Mode=OneWay}" />
                         <ComboBoxItem x:Uid="PermissionFullAccess" Tag="full-access" localization:LocalizedResourceKey.Key="PermissionFullAccess" />

@@ -31,7 +31,7 @@ public sealed class CliVerificationStore
     {
         var normalized = provider?.Trim().ToLowerInvariant();
         if (normalized is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or
-            AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Custom))
+            AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Custom))
             throw new ArgumentException("Only supported agent providers can be cached.", nameof(provider));
         return new CliVerificationStore(Path.Combine(directory, "agent-cli-cache", normalized));
     }

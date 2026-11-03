@@ -153,6 +153,8 @@ public partial class MainPageViewModel
             AgentProfile.GitHubCopilot => "copilot",
             AgentProfile.Antigravity => "agy",
             AgentProfile.Kiro => "kiro-cli",
+            AgentProfile.Qwen => "qwen",
+            AgentProfile.Kimi => "kimi",
             _ => ""
         },
         AgentArguments = provider switch
@@ -163,6 +165,8 @@ public partial class MainPageViewModel
             AgentProfile.GitHubCopilot => AgentProfile.DefaultGitHubCopilotArguments,
             AgentProfile.Antigravity => AgentProfile.DefaultAntigravityArguments,
             AgentProfile.Kiro => AgentProfile.DefaultKiroArguments,
+            AgentProfile.Qwen => AgentProfile.DefaultQwenArguments,
+            AgentProfile.Kimi => AgentProfile.DefaultKimiArguments,
             _ => ""
         },
         AgentMode = "exec",
@@ -177,7 +181,7 @@ public partial class MainPageViewModel
         var normalized = provider?.Trim().ToLowerInvariant();
         return normalized switch
         {
-            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Custom => normalized,
+            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Custom => normalized,
             _ => throw new ArgumentException("Only supported agent providers can be edited.", nameof(provider))
         };
     }
@@ -210,6 +214,8 @@ public partial class MainPageViewModel
             AgentProfile.GitHubCopilot => _registeredCopilotConnection,
             AgentProfile.Antigravity => _registeredAntigravityConnection,
             AgentProfile.Kiro => _registeredKiroConnection,
+            AgentProfile.Qwen => _registeredQwenConnection,
+            AgentProfile.Kimi => _registeredKimiConnection,
             _ => null
         };
         return profile == checkedProfile ? profile : null;

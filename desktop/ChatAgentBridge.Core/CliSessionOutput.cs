@@ -17,10 +17,10 @@ public static class CliSessionOutputParser
     private const int MaxDeniedActions = 8;
     private const int MaxTrackedSteps = 4096;
 
-    public static CliSessionOutput Parse(string output, string provider)
+    public static CliSessionOutput Parse(string output, string provider, string? authorizedSessionId = null)
     {
         ArgumentNullException.ThrowIfNull(output);
-        using var parser = new Accumulator(provider);
+        using var parser = new Accumulator(provider, authorizedSessionId);
         // Read through the entire stream, including terminal metadata beyond the capture limit.
         var start = 0;
         for (var index = 0; index <= output.Length; index++)
@@ -30,6 +30,7 @@ public static class CliSessionOutputParser
             else parser.AddLine(output.Substring(start, index - start));
             start = index + 1;
         }
+        parser.Complete();
         return parser.Snapshot();
     }
 
@@ -46,6 +47,7 @@ public static class CliSessionOutputParser
         private readonly Dictionary<int, (long? Input, long? Output, long? Cached)> _stepUsage = [];
         private readonly List<string> _deniedActions = [];
         private bool _streamedText;
+        private bool _kimiFinalAssistant;
         private bool _hasResult;
         private bool _failed;
         private bool _invalid;
@@ -53,10 +55,11 @@ public static class CliSessionOutputParser
         private bool _disposed;
         private AgentUsage? _usage;
 
-        internal Accumulator(string provider)
+        internal Accumulator(string provider, string? authorizedSessionId = null)
         {
             if (!AgentProfile.IsBasicCliProvider(provider)) throw new ArgumentException("Unsupported structured CLI provider.", nameof(provider));
             _provider = provider;
+            if (provider == AgentProfile.Kimi && authorizedSessionId is not null) Bind(authorizedSessionId);
         }
 
         internal bool Truncated => _truncated;
@@ -72,6 +75,7 @@ public static class CliSessionOutputParser
             {
                 using var document = JsonDocument.Parse(line, new JsonDocumentOptions { MaxDepth = 32 });
                 var root = document.RootElement;
+                if (_provider == AgentProfile.Kimi && root.ValueKind == JsonValueKind.Object) return Kimi(root);
                 // Antigravity names its event discriminator "event"; the other CLIs use "type".
                 if (root.ValueKind != JsonValueKind.Object || String(root, _provider == AgentProfile.Antigravity ? "event" : "type") is null)
                 { Invalidate(); return []; }
@@ -80,6 +84,7 @@ public static class CliSessionOutputParser
                     AgentProfile.Gemini => Gemini(root),
                     AgentProfile.Antigravity => Antigravity(root),
                     AgentProfile.Kiro => Kiro(root),
+                    AgentProfile.Qwen => Qwen(root),
                     _ => Copilot(root)
                 };
             }
@@ -94,6 +99,14 @@ public static class CliSessionOutputParser
             _disposed = true;
         }
 
+        internal void Complete()
+        {
+            // Kimi print has no session/terminal event. The bridge chose --session itself;
+            // require a final non-tool Assistant message and clean JSONL EOF, then the runner
+            // additionally requires exit code 0. Never infer success from tool output alone.
+            if (_provider == AgentProfile.Kimi) _hasResult = _kimiFinalAssistant && !_invalid;
+        }
+
         internal CliSessionOutput Snapshot()
         {
             var invalid = _invalid || _sessionId is null;
@@ -106,6 +119,73 @@ public static class CliSessionOutputParser
             }
             return new(_provider, invalid ? null : _sessionId, message,
                 _hasResult, _failed || invalid || !_hasResult, _usage, _deniedActions.Count == 0 ? null : _deniedActions.ToArray());
+        }
+
+        private IReadOnlyList<AgentRunProgress> Qwen(JsonElement root)
+        {
+            if (_hasResult) { Invalidate(); return []; }
+            // Subagent messages must not rebind or complete the parent conversation.
+            if (Property(root, "parent_tool_use_id").ValueKind == JsonValueKind.String) return [];
+            if (String(root, "session_id") is { } id) Bind(id);
+            switch (String(root, "type"))
+            {
+                case "system" when String(root, "subtype") is "session_start" or "init":
+                    _model = String(root, "model");
+                    return Activity("ProgressWorking");
+                case "assistant":
+                    return Message(TextContent(Property(Property(root, "message"), "content")), false);
+                case "result":
+                    _hasResult = true;
+                    _failed |= String(root, "subtype") != "success" || Property(root, "is_error").ValueKind == JsonValueKind.True;
+                    if (String(root, "result") is { } text) { _message.Clear(); Append(text); }
+                    var usage = Property(root, "usage");
+                    var input = Counter(usage, "input_tokens");
+                    var output = Counter(usage, "output_tokens");
+                    var cached = Counter(usage, "cache_read_input_tokens");
+                    if (input is not null || output is not null || cached is not null)
+                        _usage = new AgentUsage { InputTokens = input, OutputTokens = output, CachedInputTokens = cached,
+                            Scope = "turn", Source = "qwen.stream-json", Model = _model };
+                    return Activity(_failed ? "ProgressTurnFailed" : "ProgressFinished");
+                case "error": _failed = true; return Activity("ProgressTurnFailed");
+            }
+            return [];
+        }
+
+        private IReadOnlyList<AgentRunProgress> Kimi(JsonElement root)
+        {
+            switch (String(root, "role"))
+            {
+                case "assistant":
+                    var tools = Property(root, "tool_calls");
+                    _kimiFinalAssistant = tools.ValueKind != JsonValueKind.Array || tools.GetArrayLength() == 0;
+                    var text = TextContent(Property(root, "content"));
+                    _kimiFinalAssistant &= !string.IsNullOrWhiteSpace(text);
+                    return Message(text, false);
+                case "tool":
+                    _kimiFinalAssistant = false;
+                    return Activity("ProgressCommandFinished");
+                default:
+                    if (String(root, "category") is not null && String(root, "source_kind") is not null &&
+                        String(root, "title") is not null && String(root, "body") is not null)
+                        return []; // System notification; never a reply or proof of completion.
+                    // Never expose reasoning, tools, plans or notification payloads as results.
+                    Invalidate();
+                    return [];
+            }
+        }
+
+        private static string? TextContent(JsonElement content)
+        {
+            if (content.ValueKind == JsonValueKind.String) return content.GetString();
+            if (content.ValueKind != JsonValueKind.Array) return null;
+            var text = new StringBuilder();
+            foreach (var part in content.EnumerateArray())
+                if (String(part, "type") == "text" && String(part, "text") is { } value)
+                {
+                    var length = Math.Min(value.Length, MaxMessageCharacters - text.Length);
+                    if (length > 0) text.Append(value, 0, length);
+                }
+            return text.ToString();
         }
 
         // Kiro headless emits ACP-style sessionUpdate records and a final runFinished record.

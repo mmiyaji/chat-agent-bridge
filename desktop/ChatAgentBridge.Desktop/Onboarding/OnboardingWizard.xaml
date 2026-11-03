@@ -46,6 +46,8 @@
                         <ComboBoxItem Content="GitHub Copilot CLI" Tag="github-copilot" />
                         <ComboBoxItem Content="Antigravity CLI" Tag="antigravity" />
                         <ComboBoxItem Content="Kiro CLI" Tag="kiro" />
+                        <ComboBoxItem Content="Qwen Code" Tag="qwen" />
+                        <ComboBoxItem Content="Kimi CLI" Tag="kimi" />
                         <ComboBoxItem Tag="custom" AutomationProperties.AutomationId="WizardCustomCli" x:Uid="WizardCustomCli" />
                     </ComboBox>
                     <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" AutomationProperties.AutomationId="WizardBasicProviderHelp" />
@@ -204,7 +206,7 @@
                     <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentPermissionMode, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.CanConfigureAgentPermission, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentPermissionMode" x:Uid="WizardAgentPermissionMode">
                         <ComboBoxItem  Tag="inherit"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem007" x:Uid="onboardingOnboardingWizardComboBoxItem007" />
                         <ComboBoxItem  Tag="read-only" IsEnabled="{x:Bind ViewModel.CanSelectReadOnlyPermission, Mode=OneWay}"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem008" x:Uid="onboardingOnboardingWizardComboBoxItem008" />
-                        <ComboBoxItem  Tag="workspace-write"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem009" x:Uid="onboardingOnboardingWizardComboBoxItem009" />
+                        <ComboBoxItem  Tag="workspace-write" IsEnabled="{x:Bind ViewModel.CanSelectWorkspaceWritePermission, Mode=OneWay}" AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem009" x:Uid="onboardingOnboardingWizardComboBoxItem009" />
                         <ComboBoxItem  Tag="full-access"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem010" x:Uid="onboardingOnboardingWizardComboBoxItem010" />
                         <ComboBoxItem  Tag="ask" IsEnabled="{x:Bind local:OnboardingWizard.SupportsOperationApproval(ViewModel.IsCodexProvider, ViewModel.UseAppServer), Mode=OneWay}"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem011" x:Uid="onboardingOnboardingWizardComboBoxItem011" />
                     </ComboBox>

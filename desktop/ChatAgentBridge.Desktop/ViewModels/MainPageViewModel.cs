@@ -143,7 +143,7 @@ public partial class MainPageViewModel : ObservableObject
     partial void OnAgentExecutableChanged(string value) => InvalidateModelCatalog();
     [ObservableProperty] public partial string AgentArguments { get; set; } = "exec --json -";
     partial void OnAgentArgumentsChanged(string value) => InvalidateModelCatalog();
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(IsBasicProvider)), NotifyPropertyChangedFor(nameof(IsArgumentsEditable)), NotifyPropertyChangedFor(nameof(BasicProviderHelp)), NotifyPropertyChangedFor(nameof(AgentProviderDisplayName)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(SupportsReasoning)), NotifyPropertyChangedFor(nameof(SupportsModelCatalog)), NotifyPropertyChangedFor(nameof(IsAntigravityProvider)), NotifyPropertyChangedFor(nameof(CanSelectReadOnlyPermission)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat)), NotifyPropertyChangedFor(nameof(CanConfigureAgentPermission)), NotifyPropertyChangedFor(nameof(AgentPermissionStatus))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(IsBasicProvider)), NotifyPropertyChangedFor(nameof(IsArgumentsEditable)), NotifyPropertyChangedFor(nameof(BasicProviderHelp)), NotifyPropertyChangedFor(nameof(AgentProviderDisplayName)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(SupportsReasoning)), NotifyPropertyChangedFor(nameof(SupportsModelCatalog)), NotifyPropertyChangedFor(nameof(IsAntigravityProvider)), NotifyPropertyChangedFor(nameof(CanSelectReadOnlyPermission)), NotifyPropertyChangedFor(nameof(CanSelectWorkspaceWritePermission)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat)), NotifyPropertyChangedFor(nameof(CanConfigureAgentPermission)), NotifyPropertyChangedFor(nameof(AgentPermissionStatus))]
     public partial string AgentProvider { get; set; } = "codex";
     public bool IsCodexProvider => AgentProvider == "codex";
     public bool IsCustomProvider => AgentProvider == "custom";
@@ -156,9 +156,9 @@ public partial class MainPageViewModel : ObservableObject
     public string AgentProviderDisplayName => AgentProvider switch
     {
         "codex" => "Codex", "claude" => "Claude Code", "gemini" => "Gemini CLI",
-        "github-copilot" => "GitHub Copilot CLI", "antigravity" => "Antigravity CLI", "kiro" => "Kiro CLI", _ => ViewModelText.Get("CustomCliName")
+        "github-copilot" => "GitHub Copilot CLI", "antigravity" => "Antigravity CLI", "kiro" => "Kiro CLI", "qwen" => "Qwen Code", "kimi" => "Kimi CLI", _ => ViewModelText.Get("CustomCliName")
     };
-    public string BasicProviderHelp => ViewModelText.Get(IsCustomProvider ? "BasicProviderHelp" : IsAntigravityProvider ? "AntigravityProviderHelp" : AgentProvider == "kiro" ? "KiroProviderHelp" : "SessionCliProviderHelp");
+    public string BasicProviderHelp => ViewModelText.Get(IsCustomProvider ? "BasicProviderHelp" : IsAntigravityProvider ? "AntigravityProviderHelp" : AgentProvider == "kiro" ? "KiroProviderHelp" : AgentProvider == "qwen" ? "QwenProviderHelp" : AgentProvider == "kimi" ? "KimiProviderHelp" : "SessionCliProviderHelp");
     public bool CanFetchModelCandidates => SupportsModelCatalog && IsSettingsLoaded && !IsRunning && !_closing;
     [ObservableProperty] public partial string AgentModel { get; set; } = "";
     partial void OnAgentModelChanged(string value)
@@ -257,8 +257,9 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string MattermostAllowedThreadIds { get; set; } = string.Empty;
     public bool CanConfigureAgentNetwork => IsCodexProvider && AgentPermissionMode is "workspace-write" or "ask";
     public bool CanConfigureAgentPermission => AgentEditorCapabilities.CanConfigurePermission(AgentProvider);
-    public bool CanSelectReadOnlyPermission => !IsAntigravityProvider;
-    public string AgentPermissionStatus => IsAntigravityProvider ? ViewModelText.Get("AntigravityPermissionHelp")
+    public bool CanSelectReadOnlyPermission => !IsAntigravityProvider && AgentProvider != "kimi";
+    public bool CanSelectWorkspaceWritePermission => AgentProvider != "kimi";
+    public string AgentPermissionStatus => AgentProvider == "kimi" ? ViewModelText.Get("KimiPermissionHelp") : IsAntigravityProvider ? ViewModelText.Get("AntigravityPermissionHelp")
         : IsBasicProvider ? ViewModelText.Get("BasicPermissionManagedByCli")
         : _agentPermissionModeAdjusted ? ViewModelText.Get("AskPermissionChangedToReadOnly") : string.Empty;
     private string NetworkPolicyLabel => !IsCodexProvider ? ViewModelText.Get("NetworkManagedByCli")
@@ -431,12 +432,12 @@ public partial class MainPageViewModel : ObservableObject
         if (IsBasicProvider) SetAgentPermissionMode("inherit", adjusted: false);
         AgentModel = "";
         AgentReasoningEffort = null;
-        AgentExecutable = value switch { "claude" => "claude", "codex" => "codex", "gemini" => "gemini", "github-copilot" => "copilot", "antigravity" => "agy", "kiro" => "kiro-cli", _ => "" };
+        AgentExecutable = value switch { "claude" => "claude", "codex" => "codex", "gemini" => "gemini", "github-copilot" => "copilot", "antigravity" => "agy", "kiro" => "kiro-cli", "qwen" => "qwen", "kimi" => "kimi", _ => "" };
         AgentArguments = value switch
         {
             "claude" => "--print --output-format stream-json --verbose", "codex" => "exec --json -",
             "gemini" => AgentProfile.DefaultGeminiArguments, "github-copilot" => AgentProfile.DefaultGitHubCopilotArguments,
-            "antigravity" => AgentProfile.DefaultAntigravityArguments, "kiro" => AgentProfile.DefaultKiroArguments, _ => ""
+            "antigravity" => AgentProfile.DefaultAntigravityArguments, "kiro" => AgentProfile.DefaultKiroArguments, "qwen" => AgentProfile.DefaultQwenArguments, "kimi" => AgentProfile.DefaultKimiArguments, _ => ""
         };
     }
 

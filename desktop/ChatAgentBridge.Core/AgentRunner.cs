@@ -146,10 +146,12 @@ public sealed class AgentRunner : IAgentRunner
             catch (System.ComponentModel.Win32Exception) { }
         });
 
+        // BuildInvocation always appends Kimi's bridge-owned --session UUID as its last argument.
         var structuredCli = AgentProfile.IsBasicCliProvider(invocation.Provider);
         var stdout = ReadBoundedAsync(process.StandardOutput, MaxCapturedCharacters,
             invocation.Provider == AgentProfile.Codex, invocation.Provider == AgentProfile.Claude, progress,
-            structuredCli ? invocation.Provider : null);
+            structuredCli ? invocation.Provider : null,
+            invocation.Provider == AgentProfile.Kimi ? invocation.Arguments.Last() : null);
         var stderr = ReadBoundedTextAsync(process.StandardError, MaxCapturedCharacters, structuredCli ? null : progress);
         try
         {
@@ -226,7 +228,7 @@ public sealed class AgentRunner : IAgentRunner
 
     private static async Task<(string Output, CodexOutput? Codex, ClaudeOutput? Claude, CliSessionOutput? CliSession, bool Truncated)> ReadBoundedAsync(
         StreamReader reader, int limit, bool parseCodex, bool parseClaude, IProgress<AgentRunProgress>? progress,
-        string? structuredProvider = null)
+        string? structuredProvider = null, string? authorizedSessionId = null)
     {
         var builder = new StringBuilder(Math.Min(limit, 16_384));
         var buffer = new char[8192];
@@ -234,7 +236,7 @@ public sealed class AgentRunner : IAgentRunner
         var line = parseEvents ? new StringBuilder(1024) : null;
         var codexParser = parseCodex ? new CodexOutputParser.Accumulator() : null;
         var claudeParser = parseClaude ? new ClaudeOutputParser.Accumulator() : null;
-        using var cliParser = structuredProvider is null ? null : new CliSessionOutputParser.Accumulator(structuredProvider);
+        using var cliParser = structuredProvider is null ? null : new CliSessionOutputParser.Accumulator(structuredProvider, authorizedSessionId);
         var progressParser = progress is not null && (parseCodex || parseClaude) ? new AgentRunProgressParser(parseCodex ? AgentProfile.Codex : AgentProfile.Claude) : null;
         var droppingLongLine = false;
         var truncated = false;
@@ -285,6 +287,7 @@ public sealed class AgentRunner : IAgentRunner
                 foreach (var update in cliParser.AddLine(tail)) SafeReport(progress, update);
             else ProcessEventLine(tail, codexParser, claudeParser, progressParser, progress);
         }
+        cliParser?.Complete();
         var cliSession = cliParser?.Snapshot();
         return (cliSession?.FinalMessage ?? builder.ToString(), codexParser?.Snapshot(), claudeParser?.Snapshot(), cliSession,
             truncated || cliParser?.Truncated == true);

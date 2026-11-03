@@ -54,7 +54,7 @@ public sealed class CliProbeService
             // Go-based CLIs such as agy write their usage to stderr even on success.
             recognized = helpExitCode == 0 && RecognizesProvider(provider, Sanitize(helpOutput + Environment.NewLine + helpError));
         }
-        if ((provider is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro) && !recognized)
+        if ((provider is AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi) && !recognized)
             throw new InvalidOperationException(CoreText.Get("CliProviderMismatch", provider));
         return new CliProbeResult(executable, version, recognized);
     }
@@ -124,6 +124,8 @@ public sealed class CliProbeService
         AgentProfile.Gemini => Regex.IsMatch(output, @"\bgemini(?:\s+cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         AgentProfile.GitHubCopilot => Regex.IsMatch(output, @"\bgithub\s+copilot(?:\s+cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         // agy prints a bare semver for --version; its help starts with "Usage of agy" (agy.exe on Windows).
+        AgentProfile.Qwen => Regex.IsMatch(output, @"\bqwen(?:[ -]code)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+        AgentProfile.Kimi => Regex.IsMatch(output, @"\bkimi(?:[ -](?:code|cli))?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         AgentProfile.Kiro => Regex.IsMatch(output, @"\bkiro(?:-cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         AgentProfile.Antigravity => Regex.IsMatch(output, @"\b(?:agy(?:\.exe)?|antigravity)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         _ => false
@@ -200,6 +202,7 @@ public sealed class CliProbeService
     private static bool ProviderMatchesPackage(string provider, string packageName) => provider switch
     {
         AgentProfile.Gemini => packageName == "@google/gemini-cli",
+        AgentProfile.Qwen => packageName == "@qwen-code/qwen-code",
         AgentProfile.GitHubCopilot => packageName == "@github/copilot",
         _ => false
     };

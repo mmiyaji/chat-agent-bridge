@@ -102,4 +102,5 @@
   <data name="ApprovalRiskGitWrite" xml:space="preserve"><value>changes git history or branches</value></data>
   <data name="ApprovalRiskTruncated" xml:space="preserve"><value>the command is long and was not fully checked</value></data>
   <data name="ApprovalRiskCodeOnly" xml:space="preserve"><value>This is high risk, so there are no approval buttons. Reply with the code below, or decide on the PC.</value></data>
+  <data name="KimiFullAccessRequired" xml:space="preserve"><value>Kimi CLI headless mode automatically approves tool calls. Explicitly select Full access in Agent settings before executing this CLI.</value></data>
 </root>

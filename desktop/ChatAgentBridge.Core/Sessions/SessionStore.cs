@@ -431,7 +431,7 @@ public sealed partial class SessionStore
             (binding.FirstApprovalFingerprint.Length != 64 || binding.FirstApprovalFingerprint.Any(c => !Uri.IsHexDigit(c))))
             throw new ArgumentException("Session approval fingerprint must be a 64-character hexadecimal SHA-256 value.");
         _ = NormalizeDisplayName(binding.DisplayName);
-        if (binding.NextAgentProvider is not (null or AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro))
+        if (binding.NextAgentProvider is not (null or AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi))
             throw new ArgumentException("Unsupported pending agent provider.");
     }
 
@@ -449,7 +449,7 @@ public sealed partial class SessionStore
     {
         if (key is null) throw new ArgumentException("Session key is required.");
         ValidateIdentifier(key.Provider, "provider");
-        if (key.Provider is not ("slack" or "mattermost" or "discord" or AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Custom))
+        if (key.Provider is not ("slack" or "mattermost" or "discord" or AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Custom))
             throw new ArgumentException("Session provider is unsupported.");
         ValidateIdentifier(key.ChannelId, "channel id");
         ValidateIdentifier(key.ThreadId, "thread id");
