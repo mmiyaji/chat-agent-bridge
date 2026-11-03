@@ -1165,7 +1165,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PortableUpdateAutomaticHelp.Text" xml:space="preserve"><value>Checks at startup and periodically while the app is running, including in the tray. Downloads and restarts require your action.</value></data>
   <data name="PortableUpdatePrereleasesHelp.Text" xml:space="preserve"><value>Include preview versions when checking for updates.</value></data>
   <data name="PortableUpdatePreferences.Header" xml:space="preserve"><value>Update settings</value></data>
-  <data name="PortableUpdatePreferences.Description" xml:space="preserve"><value>Automatic checks and preview releases</value></data>
+  <data name="PortableUpdatePreferences.Description" xml:space="preserve"><value>Automatic checks, previews, and temporary files</value></data>
   <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>Release notes (GitHub)</value></data>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLI check failed</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Start this app when signing in to Windows</value></data>
@@ -1383,4 +1383,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="DetectCliExecutable.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Find the selected CLI on PATH. This does not run the AI agent.</value></data>
   <data name="ShutdownLoadingText.Text" xml:space="preserve"><value>Closing…</value></data>
   <data name="ShutdownLoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Application shutdown progress</value></data>
+  <data name="PortableUpdateCacheCleanupRow.Header" xml:space="preserve"><value>Temporary update files</value></data>
+  <data name="PortableUpdateCacheCleanupHelp.Text" xml:space="preserve"><value>Unused update files are cleaned automatically. Logs, pending updates, and backups needed for recovery are kept.</value></data>
+  <data name="PortableUpdateCleanCache.Content" xml:space="preserve"><value>Clean up now</value></data>
 </root>

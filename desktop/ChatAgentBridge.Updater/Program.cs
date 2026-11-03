@@ -14,11 +14,13 @@ if (OperatingSystem.IsWindows() && args.Length == 4 && args[0] == "--configure-i
 if (!OperatingSystem.IsWindows() || args.Length != 4 || args[0] != "--apply" || args[2] != "--nonce") return 2;
 PortableUpdatePlan? plan = null;
 var parentHasExited = false;
+using var workLeaseScope = new WorkLeaseScope();
 var starter = new WindowsApplicationStarter();
 try
 {
     plan = await PortableUpdatePlan.ReadAsync(args[1]);
     if (plan.Nonce != args[3]) throw new InvalidDataException("Update nonce does not match.");
+    workLeaseScope.Lease = PortableUpdateCacheCleanup.AcquireWorkLease(plan.WorkDirectory);
     await PortableUpdateApplier.ValidateStagingAsync(plan);
     var probe = Path.Combine(plan.InstallDirectory, ".cab-probe-" + plan.Nonce);
     using (File.Create(probe)) { }
@@ -59,29 +61,7 @@ catch (Exception error)
 
 static void CleanVerifiedPayload(PortableUpdatePlan plan)
 {
-    // Remove only this plan's downloaded payload. Keep the backup and result for recovery.
-    try
-    {
-        foreach (var relative in plan.Files.Keys)
-        {
-            var path = PortableUpdatePaths.Resolve(plan.StagingDirectory, relative);
-            if (File.Exists(path)) File.Delete(path);
-        }
-        var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var relative in plan.Files.Keys)
-            for (var folder = Path.GetDirectoryName(PortableUpdatePaths.Resolve(plan.StagingDirectory, relative));
-                 folder is not null && PortableUpdatePaths.IsWithin(plan.StagingDirectory, folder) && folder != plan.StagingDirectory;
-                 folder = Path.GetDirectoryName(folder)) folders.Add(folder);
-        foreach (var folder in folders.OrderByDescending(path => path.Length))
-        {
-            PortableUpdatePaths.EnsureNoReparsePoints(folder);
-            if (!Directory.EnumerateFileSystemEntries(folder).Any()) Directory.Delete(folder);
-        }
-        if (!Directory.EnumerateFileSystemEntries(plan.StagingDirectory).Any()) Directory.Delete(plan.StagingDirectory);
-        var zip = Path.Combine(plan.WorkDirectory, "update.zip");
-        PortableUpdatePaths.EnsureNoReparsePoints(zip);
-        if (File.Exists(zip)) File.Delete(zip);
-    }
+    try { PortableUpdateCacheCleanup.CleanSuccessfulPayload(plan); }
     catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException) { }
 }
 
@@ -140,4 +120,10 @@ static class Native
 {
     [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
     public static extern int MessageBoxW(nint owner, string text, string title, uint type);
+}
+
+sealed class WorkLeaseScope : IDisposable
+{
+    public FileStream? Lease { get; set; }
+    public void Dispose() => Lease?.Dispose();
 }

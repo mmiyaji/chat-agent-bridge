@@ -971,4 +971,10 @@ After: {2}</value></data>
   <data name="CliDetectionSucceeded" xml:space="preserve"><value>CLI found. Select Check CLI to verify startup and version.</value></data>
   <data name="CliDetectionNotFound" xml:space="preserve"><value>The selected CLI was not found on PATH. Install it or choose its executable with Browse.</value></data>
   <data name="CliDetectionFailed" xml:space="preserve"><value>Could not detect the CLI. Check its installation and PATH, or choose its executable with Browse.</value></data>
+  <data name="PortableUpdateCacheCleaning" xml:space="preserve"><value>Cleaning temporary update files…</value></data>
+  <data name="PortableUpdateCacheCleaned" xml:space="preserve"><value>Removed {0:F1} MB. Logs and required update data have been kept.</value></data>
+  <data name="PortableUpdateCacheCleanupCanceled" xml:space="preserve"><value>Cleanup canceled. Remaining files will be retried later.</value></data>
+  <data name="PortableUpdateCacheCleanupFailed" xml:space="preserve"><value>Cleanup could not finish. Files in use will be retried later.</value></data>
+  <data name="PortableUpdateCacheUsage" xml:space="preserve"><value>Update files and records: {0:F1} MB</value></data>
+  <data name="PortableUpdateCacheUsageUnavailable" xml:space="preserve"><value>Storage usage could not be read.</value></data>
 </root>

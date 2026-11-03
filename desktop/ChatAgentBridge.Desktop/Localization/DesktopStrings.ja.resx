@@ -971,4 +971,10 @@
   <data name="CliDetectionSucceeded" xml:space="preserve"><value>CLIを検出しました。「CLIをチェック」で起動とバージョンを確認してください。</value></data>
   <data name="CliDetectionNotFound" xml:space="preserve"><value>選択中のCLIがPATHに見つかりませんでした。CLIを導入するか、「参照」で実行ファイルを選択してください。</value></data>
   <data name="CliDetectionFailed" xml:space="preserve"><value>CLIを検出できませんでした。インストールとPATHを確認するか、「参照」で実行ファイルを選択してください。</value></data>
+  <data name="PortableUpdateCacheCleaning" xml:space="preserve"><value>更新用の一時ファイルを整理しています…</value></data>
+  <data name="PortableUpdateCacheCleaned" xml:space="preserve"><value>{0:F1} MBを削除しました。ログと必要な更新データは保持しています。</value></data>
+  <data name="PortableUpdateCacheCleanupCanceled" xml:space="preserve"><value>整理を中断しました。残りは次回に再試行します。</value></data>
+  <data name="PortableUpdateCacheCleanupFailed" xml:space="preserve"><value>整理できませんでした。使用中のファイルは後で再試行します。</value></data>
+  <data name="PortableUpdateCacheUsage" xml:space="preserve"><value>更新用ファイルと記録: {0:F1} MB</value></data>
+  <data name="PortableUpdateCacheUsageUnavailable" xml:space="preserve"><value>使用容量を取得できませんでした。</value></data>
 </root>
