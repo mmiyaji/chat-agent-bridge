@@ -1374,4 +1374,7 @@
   <data name="LoadRegisteredQwenConnection.Content" xml:space="preserve"><value>登録済みQwen Codeを呼び出す</value></data>
   <data name="LoadRegisteredKimiConnection.Content" xml:space="preserve"><value>登録済みKimi Code CLIを呼び出す</value></data>
   <data name="AgentProfilePreview.Text" xml:space="preserve"><value>Preview</value></data>
+  <data name="AgentProfileLegacy.Text" xml:space="preserve"><value>移行推奨</value></data>
+  <data name="GeminiLegacyOption.Content" xml:space="preserve"><value>Gemini CLI（移行推奨）</value></data>
+  <data name="GeminiMigrationNotice.Message" xml:space="preserve"><value>新しく設定する場合はAntigravity CLIを推奨します。GoogleはGemini CLIの個人アカウント向け提供を終了しています。企業契約・APIキーでの利用は継続対象です。</value></data>
 </root>

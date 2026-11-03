@@ -452,3 +452,5 @@ Qwen Codeは非対話のstream-json出力を使います。Windowsのnpm版と�
 Kimi Code CLIのWindows連携は `--prompt` に依頼を渡すため、依頼本文（引き継ぎ要約を含む）は12,000 UTF-16文字までです。上限を超えた場合は実行前にエラーを表示し、本文を切り捨てません。
 
 Qwen CodeとKimi Code CLIには、実サービス検証が完了するまで設定見出しと選択肢にPreviewを表示します。
+
+設定画面ではエージェント・チャットサービスごとに異なるアウトラインアイコンを表示します。Gemini CLIには「移行推奨」を表示し、新規設定にはAntigravity CLIを推奨します。Gemini CLIの企業契約・APIキー利用は継続対象です。[Googleの移行案内](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/)。

@@ -1374,4 +1374,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="LoadRegisteredQwenConnection.Content" xml:space="preserve"><value>Load registered Qwen Code</value></data>
   <data name="LoadRegisteredKimiConnection.Content" xml:space="preserve"><value>Load registered Kimi Code CLI</value></data>
   <data name="AgentProfilePreview.Text" xml:space="preserve"><value>Preview</value></data>
+  <data name="AgentProfileLegacy.Text" xml:space="preserve"><value>Legacy</value></data>
+  <data name="GeminiLegacyOption.Content" xml:space="preserve"><value>Gemini CLI (Legacy)</value></data>
+  <data name="GeminiMigrationNotice.Message" xml:space="preserve"><value>For new setups, use Antigravity CLI. Google has ended individual-account access to Gemini CLI; enterprise licenses and API-key access remain supported.</value></data>
 </root>

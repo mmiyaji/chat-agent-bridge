@@ -42,7 +42,7 @@
                     <ComboBox x:Name="AgentProviderCombo"  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.AgentProvider, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardAgentProvider" x:Uid="WizardAgentProvider">
                         <ComboBoxItem Content="Codex" Tag="codex" />
                         <ComboBoxItem Content="Claude Code" Tag="claude" />
-                        <ComboBoxItem Content="Gemini CLI" Tag="gemini" />
+                        <ComboBoxItem x:Uid="GeminiLegacyOption" Content="Gemini CLI" Tag="gemini" />
                         <ComboBoxItem Content="GitHub Copilot CLI" Tag="github-copilot" />
                         <ComboBoxItem Content="Antigravity CLI" Tag="antigravity" />
                         <ComboBoxItem Content="Kiro CLI" Tag="kiro" />

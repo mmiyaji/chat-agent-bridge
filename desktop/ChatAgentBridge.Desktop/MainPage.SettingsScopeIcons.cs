@@ -12,17 +12,17 @@ public sealed partial class MainPage
         var slug = key switch
         {
             "common" => "folder",
-            "codex" => "window_console",
-            "claude" => "code",
-            "gemini" => "sparkle",
-            "github-copilot" => "bot",
-            "antigravity" => "arch",
-            "kiro" => "window_console",
-            "qwen" => "code",
-            "kimi" => "bot",
-            "mattermost" => "chat",
-            "slack" => "number_symbol",
-            "discord" => "people_community",
+            "codex" => "provider_codex",
+            "claude" => "provider_claude",
+            "gemini" => "provider_gemini",
+            "github-copilot" => "provider_copilot",
+            "antigravity" => "provider_antigravity",
+            "kiro" => "provider_kiro",
+            "qwen" => "provider_qwen",
+            "kimi" => "provider_kimi",
+            "mattermost" => "provider_mattermost",
+            "slack" => "provider_slack",
+            "discord" => "provider_discord",
             _ => "apps"
         };
         // Scale the original geometry into its own box. A glyph with a smaller

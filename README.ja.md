@@ -246,3 +246,5 @@ PCでも実行中の出力を確認し、依頼を中断できます。
 Kiro CLIは `chat --v2 --no-interactive --output-format stream-json` に標準入力で依頼を渡します。Windows 11用のネイティブCLIを導入し、PC側で `KIRO_API_KEY` を設定してください。`--trust-all-tools` は自動付与しません。CLI側の確認が必要な操作は拒否される場合があります。実行中の追記は順番に処理します。実際の認証・出力形式との互換性・チャット実行は、Kiro導入環境での追加確認が必要です。[Kiro公式仕様](https://kiro.dev/docs/cli/headless/)
 
 Qwen CodeはWindowsの公式スタンドアロン版とnpm版に対応します。Kimiは現在のKimi Code CLI（`kimi-code`）が対象で、保守終了した旧Python版は対象外です。Kimiの非対話実行はツール操作を自動承認するため、利用する場合はフルアクセスを明示的に選択してください。モデルは直接入力で指定します。実サービスでの検証は保留中です。[Qwenの導入方法](https://github.com/QwenLM/qwen-code/blob/main/scripts/installation/INSTALLATION_GUIDE.md)、[Kimiのコマンド仕様](https://moonshotai.github.io/kimi-code/en/reference/kimi-command)。
+
+設定画面ではエージェント・チャットサービスごとに異なるアウトラインアイコンを表示します。Gemini CLIには「移行推奨」を表示し、新規設定にはAntigravity CLIを推奨します。Gemini CLIの企業契約・APIキー利用は継続対象です。[Googleの移行案内](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/)。

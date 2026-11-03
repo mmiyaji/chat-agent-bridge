@@ -29,6 +29,13 @@
                         <TextBlock x:Uid="AgentProfilePreview" localization:LocalizedResourceKey.Key="AgentProfilePreview"
                                    Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </Border>
+                    <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                            CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,2" VerticalAlignment="Center"
+                            Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsLegacyProvider), Mode=OneWay}"
+                            AutomationProperties.AutomationId="AgentLegacyBadge">
+                        <TextBlock x:Uid="AgentProfileLegacy" localization:LocalizedResourceKey.Key="AgentProfileLegacy"
+                                   Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </Border>
                     <Border Background="{ThemeResource AccentFillColorDefaultBrush}" CornerRadius="10"
                         Padding="10,3" VerticalAlignment="Center"
                         Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(IsActiveProvider), Mode=OneWay}">
@@ -36,6 +43,9 @@
                                    Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                     </Border>
                 </StackPanel>
+                <InfoBar IsOpen="{x:Bind Editor.IsLegacyProvider, Mode=OneWay}" IsClosable="False" Severity="Informational"
+                         x:Uid="GeminiMigrationNotice" localization:LocalizedResourceKey.Key="GeminiMigrationNotice"
+                         AutomationProperties.AutomationId="GeminiMigrationNotice" />
                 <Grid ColumnSpacing="8" VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="16" />
