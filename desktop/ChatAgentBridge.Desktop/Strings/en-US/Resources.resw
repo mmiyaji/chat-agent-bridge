@@ -530,6 +530,9 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentSettingsFromHistory.Content" xml:space="preserve">
     <value>Open agent settings</value>
   </data>
+  <data name="ExportAuditHistory.Content" xml:space="preserve">
+    <value>Export audit log</value>
+  </data>
   <data name="RefreshHistory.Content" xml:space="preserve">
     <value>Refresh</value>
   </data>

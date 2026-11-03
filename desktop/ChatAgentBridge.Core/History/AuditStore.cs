@@ -116,6 +116,27 @@ public sealed class AuditStore
         finally { gate.Release(); }
     }
 
+    /// <summary>Streams every retained event, oldest segment first, without loading the whole history into memory.</summary>
+    public async Task ReadAllAsync(Func<AuditEvent, Task> sink, CancellationToken cancellationToken = default)
+    {
+        var gate = HistoryFileStore.LockFor(_filePath);
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            EnsureSafe(_directory);
+            var policy = await new LogRetentionPreferencesStore(_directory).LoadAsync(cancellationToken).ConfigureAwait(false);
+            var state = await GetStateAsync(policy, false, cancellationToken, checkInventory: true).ConfigureAwait(false);
+            var paths = state.Segments.Select(segment => segment.Path).ToArray();
+            for (var index = 0; index < paths.Length; index++)
+            {
+                var (_, records, _) = await ReadSegmentAsync(paths[index], index == paths.Length - 1, cancellationToken).ConfigureAwait(false);
+                foreach (var record in records.OrderBy(record => record.Timestamp)) await sink(record).ConfigureAwait(false);
+            }
+        }
+        catch { States.TryRemove(_filePath, out _); throw; }
+        finally { gate.Release(); }
+    }
+
     /// <summary>Reloads the saved policy and removes closed segments outside its age/count bounds.</summary>
     public async Task ApplyRetentionAsync(CancellationToken cancellationToken = default)
     {

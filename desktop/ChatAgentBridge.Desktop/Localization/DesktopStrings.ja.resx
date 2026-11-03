@@ -947,4 +947,16 @@
   <data name="StartupTimeoutTitle" xml:space="preserve"><value>起動に時間がかかっています</value></data>
   <data name="StartupTimeout" xml:space="preserve"><value>初期化が時間内に完了しませんでした。アプリとデータの保存先にアクセスできることを確認してください。「再試行」でアプリを再起動するか、「終了」を選べます。保存済みのデータは保持されます。</value></data>
   <data name="StartupRestartFailed" xml:space="preserve"><value>再起動できませんでした。一度終了し、アプリを起動し直してください。</value></data>
+  <data name="AuditExportCsv" xml:space="preserve">
+    <value>CSV（表計算）</value>
+  </data>
+  <data name="AuditExportJsonl" xml:space="preserve">
+    <value>JSON Lines</value>
+  </data>
+  <data name="AuditExportSaved" xml:space="preserve">
+    <value>監査ログ {0} 件を出力しました。</value>
+  </data>
+  <data name="AuditExportFailed" xml:space="preserve">
+    <value>監査ログを出力できませんでした。</value>
+  </data>
 </root>
