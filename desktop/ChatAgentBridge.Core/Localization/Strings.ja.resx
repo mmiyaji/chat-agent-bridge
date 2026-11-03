@@ -5,6 +5,24 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="TrustedWorkspaceRequired" xml:space="preserve"><value>作業フォルダーは存在し、信頼済みの作業フォルダー内にある必要があります。</value></data>
+  <data name="ModelCatalogUnsupportedProvider" xml:space="preserve"><value>モデルの取得は対応するエージェントでのみ利用できます。</value></data>
+  <data name="ModelCatalogProviderInvalid" xml:space="preserve"><value>設定されたエージェントプロバイダーが無効です。</value></data>
+  <data name="ModelCatalogWorkspaceRequired" xml:space="preserve"><value>{0}のモデルを取得するには作業フォルダーが必要です。</value></data>
+  <data name="ModelCatalogWorkspaceMissing" xml:space="preserve"><value>設定された作業フォルダーが見つかりません。</value></data>
+  <data name="ModelCatalogExecutableRequired" xml:space="preserve"><value>モデルを取得するには{0}の実行ファイルが必要です。</value></data>
+  <data name="ModelCatalogLimitExceeded" xml:space="preserve"><value>{0}がカタログの上限を超えるモデルを返しました。</value></data>
+  <data name="ModelCatalogRepeatedCursor" xml:space="preserve"><value>{0}がモデルカタログのカーソルを繰り返し返しました。</value></data>
+  <data name="ModelCatalogPageLimit" xml:space="preserve"><value>{0}のモデルカタログが{1}ページの上限を超えました。</value></data>
+  <data name="ModelCatalogTimeout" xml:space="preserve"><value>{0}のモデル取得が制限時間{1}秒を超えました。</value></data>
+  <data name="ModelCatalogRetrieveFailed" xml:space="preserve"><value>{0}のモデルカタログを取得できませんでした。CLIとサインイン状態を確認してください。</value></data>
+  <data name="ModelCatalogStartFailed" xml:space="preserve"><value>{0} CLIを開始できませんでした。</value></data>
+  <data name="ModelCatalogClosed" xml:space="preserve"><value>{0} CLIがモデルカタログを返す前に終了しました。</value></data>
+  <data name="ModelCatalogOversized" xml:space="preserve"><value>{0}が大きすぎるモデルカタログ応答を返しました。</value></data>
+  <data name="ModelCatalogInitializeFailed" xml:space="preserve"><value>{0}でモデル取得を初期化できませんでした。CLIとサインイン状態を確認してください。</value></data>
+  <data name="ModelCatalogMismatched" xml:space="preserve"><value>{0}が一致しないモデルカタログ応答を返しました。</value></data>
+  <data name="ModelCatalogInvalid" xml:space="preserve"><value>{0}が無効なモデルカタログ応答を返しました。</value></data>
+  <data name="ModelCatalogUnsupportedOrEmpty" xml:space="preserve"><value>{0}が未対応または空のモデルカタログを返しました。</value></data>
+  <data name="ModelCatalogPageTooLarge" xml:space="preserve"><value>{0}が要求したページサイズを超えるモデルを返しました。</value></data>
   <data name="WorkspaceRequired" xml:space="preserve"><value>CLIを確認する前に作業フォルダーを選択してください。</value></data>
   <data name="WorkspacePathMustBeAbsolute" xml:space="preserve"><value>作業フォルダーのパス「{0}」は絶対パスである必要があります。完全なパスで作業フォルダーを選択してください。</value></data>
   <data name="WorkspacePathInvalid" xml:space="preserve"><value>作業フォルダーのパス「{0}」は無効です。有効なフォルダーのパスを選択してください。</value></data>
@@ -102,8 +120,19 @@
   <data name="ApprovalRiskGitWrite" xml:space="preserve"><value>gitの履歴やブランチの変更</value></data>
   <data name="ApprovalRiskTruncated" xml:space="preserve"><value>コマンドが長いため、すべては確認できていません</value></data>
   <data name="ApprovalRiskCodeOnly" xml:space="preserve"><value>危険度が高いため承認ボタンは出しません。下のコードを返信するか、PCで判断してください。</value></data>
-  <data name="KimiFullAccessRequired" xml:space="preserve"><value>Kimi Code CLIの非対話モードはツール操作を自動承認します。実行する場合は、エージェント設定で明示的に「フルアクセス」を選択してください。</value></data>
+  <data name="KimiFullAccessRequired" xml:space="preserve"><value>Kimi ACPの「継承」モードでは、ツール操作ごとに承認が必要です。「フルアクセス」はKimiが明示的なフルアクセスモードを提示した場合のみ選択できます。Kimiの権限機能を使い、OSレベルのサンドボックスは提供しません。</value></data>
+  <data name="BridgeManagedArgumentsRecovery" xml:space="preserve"><value>保存されたコマンドライン引数はこのプロバイダーでは使用できません。別のプロバイダーに切り替えて戻し、管理対象の引数を初期化してから、もう一度保存してください。</value></data>
   <data name="KimiPromptTooLong" xml:space="preserve"><value>Windows版Kimi Code CLIに渡せる依頼文の長さを超えています。依頼文を短くするか、引き継ぎ要約なしで新しい会話を開始してください。</value></data>
   <data name="QwenLauncherRequired" xml:space="preserve"><value>Qwen Codeの実行ファイルにはqwen、または公式のqwen.cmdを指定してください。公式スタンドアロン版の同梱node.exeも使用できます。一般的なnode.exeだけではQwen Codeを起動できません。</value></data>
   <data name="CliNodeEntrypointRequired" xml:space="preserve"><value>Node.js単体はAIのCLIではありません。CLI本体の実行ファイルを選ぶか、起動引数の先頭にCLIのJavaScriptファイルを指定してください。コード実行・モジュール読み込み用のNodeオプションはCLI確認では実行しません。</value></data>
+  <data name="KimiAcpSessionInvalid" xml:space="preserve"><value>保存されたKimiの会話IDが無効です。会話を切り離して開始し直してください。</value></data>
+  <data name="KimiAcpStartFailed" xml:space="preserve"><value>Kimi Code CLIを起動できません。実行ファイルの設定を確認してください。</value></data>
+  <data name="KimiAcpIdentityInvalid" xml:space="preserve"><value>この実行ファイルは対応するKimi Code CLIのACP情報を返しませんでした。</value></data>
+  <data name="KimiAcpLoadUnsupported" xml:space="preserve"><value>このKimi Code CLIでは保存された会話を復元できません。CLIを更新するか、会話を切り離してください。</value></data>
+  <data name="KimiAcpSessionMismatch" xml:space="preserve"><value>Kimi Code CLIが無効または別の会話IDを返したため、実行を停止しました。</value></data>
+  <data name="KimiAcpModesMissing" xml:space="preserve"><value>Kimi Code CLIが対応する権限モードを返しませんでした。CLIを更新して再確認してください。</value></data>
+  <data name="KimiAcpModeUnsupported" xml:space="preserve"><value>Kimi Code CLIが選択した権限モードに対応していないため、実行を停止しました。</value></data>
+  <data name="KimiAcpIncomplete" xml:space="preserve"><value>Kimi Code CLIの依頼が完了しませんでした。会話の紐付けは変更していません。</value></data>
+  <data name="KimiAcpTimeout" xml:space="preserve"><value>Kimi Code CLIの応答が制限時間内に得られませんでした。再試行してください。</value></data>
+  <data name="KimiAcpProtocolFailed" xml:space="preserve"><value>Kimi Code CLIとの通信に失敗したか、操作が拒否されました。CLIのバージョン・ログイン・承認設定を確認してください。</value></data>
 </root>

@@ -61,7 +61,7 @@ public sealed class ConversationAgentService(SessionStore sessions, AgentConnect
         AgentProfile.Antigravity => "antigravity-stream-json-v1",
         AgentProfile.Kiro => "kiro-stream-json-v1",
         AgentProfile.Qwen => "qwen-stream-json-v1",
-        AgentProfile.Kimi => "kimi-code-jsonl-v2",
+        AgentProfile.Kimi => "kimi-acp-v1",
         _ => throw new ArgumentException("Unsupported structured CLI provider.", nameof(provider))
     };
 }

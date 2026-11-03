@@ -1008,7 +1008,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                         new AppServerRunOptions(ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct), InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct), Progress: progress,
                             ActiveTurnChanged: turn => SetActiveTurn(item, turn)), _execution.Token)
                     : await _runner.RunAsync(key, effectiveSettings, agentPrompt, _execution.Token, progress,
-                        turn => SetActiveTurn(item, turn));
+                        turn => SetActiveTurn(item, turn), options: new AppServerRunOptions(
+                            ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct),
+                            InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct)));
             }
             finally
             {

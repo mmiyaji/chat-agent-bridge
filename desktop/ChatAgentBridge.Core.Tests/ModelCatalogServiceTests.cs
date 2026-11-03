@@ -1,6 +1,8 @@
 using System.Text.Json;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.AppServer;
+using ChatAgentBridge.Core.Localization;
+using System.Globalization;
 
 namespace ChatAgentBridge.Core.Tests;
 
@@ -10,6 +12,26 @@ public sealed class ModelCatalogProcessCollection;
 [Collection("ModelCatalogProcess")]
 public sealed class ModelCatalogServiceTests
 {
+    [Theory]
+    [InlineData("ja-JP")]
+    [InlineData("en-US")]
+    public async Task CatalogErrorsUseLocalizedResourcesWithoutLeakingCliDiagnostics(string culture)
+    {
+        var previous = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(culture);
+            using var workspace = new TemporaryWorkspace();
+            var process = new FakeProcess(new FakeClient((_, _, _) =>
+                throw new IOException("api_key=PRIVATE_DIAGNOSTIC_SENTINEL")));
+            var service = new ModelCatalogService(new FakeFactory(process));
+            var error = await Assert.ThrowsAsync<ModelCatalogException>(() => service.GetModelsAsync(Settings(workspace.Path)));
+            Assert.Equal(CoreText.Get("ModelCatalogRetrieveFailed", "Codex"), error.Message);
+            Assert.DoesNotContain("PRIVATE_DIAGNOSTIC_SENTINEL", error.ToString());
+        }
+        finally { CultureInfo.CurrentUICulture = previous; }
+    }
+
     [Fact]
     public async Task CodexCatalogPaginatesFiltersHiddenAndNeverStartsAThreadOrTurn()
     {
@@ -64,7 +86,7 @@ public sealed class ModelCatalogServiceTests
 
         var error = await Assert.ThrowsAsync<ModelCatalogException>(() => service.GetModelsAsync(Settings(workspace.Path)));
 
-        Assert.Contains("repeated", error.Message);
+        Assert.Equal(CoreText.Get("ModelCatalogRepeatedCursor", "Codex"), error.Message);
         Assert.True(process.Killed);
         Assert.True(process.Disposed);
     }
@@ -96,7 +118,7 @@ public sealed class ModelCatalogServiceTests
 
         var error = await Assert.ThrowsAsync<ModelCatalogException>(() => service.GetModelsAsync(Settings(workspace.Path)));
 
-        Assert.Contains("invalid model catalog", error.Message);
+        Assert.Equal(CoreText.Get("ModelCatalogInvalid", "Codex"), error.Message);
         Assert.True(process.Killed);
         Assert.True(process.Disposed);
     }
@@ -160,7 +182,7 @@ public sealed class ModelCatalogServiceTests
 
         var error = await Assert.ThrowsAsync<TimeoutException>(() => service.GetModelsAsync(Settings(workspace.Path)));
 
-        Assert.Contains("time limit", error.Message);
+        Assert.Equal(CoreText.Get("ModelCatalogTimeout", "Codex", 0.05), error.Message);
         Assert.True(process.Killed);
         Assert.True(process.Disposed);
     }

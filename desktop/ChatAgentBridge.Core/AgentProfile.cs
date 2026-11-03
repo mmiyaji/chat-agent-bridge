@@ -13,7 +13,7 @@ public static class AgentProfile
     public const string Qwen = "qwen";
     public const string Kimi = "kimi";
     public const string DefaultQwenArguments = "--output-format stream-json";
-    public const string DefaultKimiArguments = "--output-format stream-json";
+    public const string DefaultKimiArguments = "acp";
     public const string Kiro = "kiro";
     public const string DefaultKiroArguments = "chat --v2 --no-interactive --output-format stream-json";
     public const string Custom = "custom";
@@ -26,7 +26,7 @@ public static class AgentProfile
     {
         ArgumentNullException.ThrowIfNull(settings);
         var provider = string.IsNullOrWhiteSpace(settings.AgentProvider) ? Codex : settings.AgentProvider.Trim().ToLowerInvariant();
-        if (provider is not (Codex or Claude or Gemini or GitHubCopilot or Antigravity or Kiro or Qwen or Kimi or Custom))
+        if (!IsSupportedProvider(provider))
             throw new ArgumentException("Agent provider must be codex, claude, gemini, github-copilot, antigravity, kiro, qwen, kimi, or custom.", nameof(settings));
 
         // Directly-created legacy settings often use an arbitrary executable with the old default provider.
@@ -75,10 +75,9 @@ public static class AgentProfile
             {
                 if (!Guid.TryParseExact(sessionId, "D", out var id))
                     throw new ArgumentException("The authorized CLI session id must be a UUID.", nameof(settings));
-                basicArguments = basicArguments.Concat(new[] { provider == Antigravity ? "--conversation" : provider == Kiro ? "--resume-id" : provider == Kimi ? "--session" : "--resume", provider == Kimi ? "session_" + id.ToString("D") : id.ToString("D") }).ToArray();
+                if (provider != Kimi)
+                    basicArguments = basicArguments.Concat(new[] { provider == Antigravity ? "--conversation" : provider == Kiro ? "--resume-id" : "--resume", id.ToString("D") }).ToArray();
             }
-            if (provider == Kimi && permissionMode != "full-access")
-                throw new ArgumentException(CoreText.Get("KimiFullAccessRequired"), nameof(settings));
             if (provider == Antigravity && permissionMode != "inherit")
                 basicArguments = SetAntigravityPermission(basicArguments, permissionMode);
             return new AgentInvocation(EffectiveExecutable(settings, provider), basicArguments, model, provider);
@@ -132,13 +131,52 @@ public static class AgentProfile
     public static string ResolveEffectiveExecutable(BridgeSettings settings)
         => EffectiveExecutable(settings, ResolveProvider(settings));
 
-    public static bool IsBasicCliProvider(string provider) => provider is Gemini or GitHubCopilot or Antigravity or Kiro or Qwen or Kimi;
+    private sealed record ProviderDefinition(string Id, string DefaultArguments, bool BasicCli, bool ModelCatalog, bool NpmShim);
+    private static readonly ProviderDefinition[] Providers =
+    [
+        new(Codex, DefaultCodexArguments, false, true, false), new(Claude, "", false, true, false),
+        new(Gemini, DefaultGeminiArguments, true, false, true), new(GitHubCopilot, DefaultGitHubCopilotArguments, true, false, true),
+        new(Antigravity, DefaultAntigravityArguments, true, true, false), new(Kiro, DefaultKiroArguments, true, true, false),
+        new(Qwen, DefaultQwenArguments, true, false, true), new(Kimi, DefaultKimiArguments, true, false, false), new(Custom, "", false, false, false)
+    ];
+    public static IReadOnlyList<string> SupportedProviders => Providers.Select(provider => provider.Id).ToArray();
+    private static ProviderDefinition? Definition(string provider) => Providers.FirstOrDefault(item => item.Id == provider);
+    public static bool IsSupportedProvider(string? provider) => provider is not null && Definition(provider) is not null;
+    public static bool IsSupportedCliProvider(string? provider) => IsSupportedProvider(provider) && provider != Custom;
+    public static string DefaultArguments(string provider) => Definition(provider)?.DefaultArguments ?? throw new ArgumentException("Unsupported provider.", nameof(provider));
+    public static string NormalizeStoredArguments(string provider, string? arguments)
+    {
+        // These fields are not editable: restore the adapter-owned command on load,
+        // including legacy defaults and malformed persisted arguments. Save remains strict.
+        return provider is Kiro or Qwen or Kimi ? DefaultArguments(provider) : arguments?.Trim() ?? "";
+    }
+    internal static string ValidateManagedArguments(string provider, string? arguments)
+    {
+        var value = arguments?.Trim() ?? "";
+        if (provider == Kimi && (value is "--print --output-format stream-json" or "--output-format stream-json"))
+            value = DefaultKimiArguments;
+        if (provider is Kiro or Qwen or Kimi)
+        {
+            var canonical = DefaultArguments(provider);
+            if (string.IsNullOrWhiteSpace(value)) return canonical;
+            IReadOnlyList<string> parsed;
+            try { parsed = AgentArgumentParser.Parse(value); }
+            catch (FormatException ex)
+            { throw new ArgumentException(CoreText.Get("BridgeManagedArgumentsRecovery"), nameof(arguments), ex); }
+            if (!parsed.SequenceEqual(AgentArgumentParser.Parse(canonical), StringComparer.Ordinal))
+                throw new ArgumentException(ChatAgentBridge.Core.Localization.CoreText.Get("BridgeManagedArgumentsRecovery"), nameof(arguments));
+            return canonical;
+        }
+        return value;
+    }
+    public static bool IsBasicCliProvider(string provider) => Definition(provider)?.BasicCli == true;
+
 
     /// <summary>Providers whose CLI can list selectable models without an AI turn.</summary>
-    public static bool HasModelCatalog(string provider) => provider is Codex or Claude or Antigravity or Kiro;
+    public static bool HasModelCatalog(string provider) => Definition(provider)?.ModelCatalog == true;
 
     /// <summary>Basic providers distribute as npm packages, except Antigravity which ships a native executable.</summary>
-    internal static bool UsesNpmShim(string provider) => provider is Gemini or GitHubCopilot or Qwen;
+    internal static bool UsesNpmShim(string provider) => Definition(provider)?.NpmShim == true;
 
     /// <summary>Gemini and Copilot manage permissions themselves; Antigravity maps two modes onto its CLI flags.</summary>
     public static bool SupportsPermissionMode(string provider, string permissionMode)
@@ -173,10 +211,11 @@ public static class AgentProfile
         if (provider is Kiro or Qwen or Kimi)
         {
             // Do not permit directory-wide resume, cloud execution, or a second prompt.
-            var canonical = AgentArgumentParser.Parse(provider switch { Qwen => DefaultQwenArguments, Kimi => DefaultKimiArguments, _ => DefaultKiroArguments });
+            var canonical = AgentArgumentParser.Parse(DefaultArguments(provider));
             if (!arguments.SequenceEqual(canonical, StringComparer.Ordinal))
-                throw new ArgumentException("CLI arguments are managed by the bridge; use the canonical headless arguments.", nameof(settings));
+                throw new ArgumentException(CoreText.Get("BridgeManagedArgumentsRecovery"), nameof(settings));
         }
+        if (provider == Kimi) return arguments;
         if (provider == GitHubCopilot)
             arguments = EnsureFlag(arguments.Where(value => value is not ("--silent" or "-s") &&
                 !value.StartsWith("--silent=", StringComparison.Ordinal)).ToArray(), "--no-ask-user");
@@ -324,18 +363,10 @@ public static class AgentProfile
     private static IReadOnlyList<string> GetConfiguredCliArguments(string? arguments, string provider)
     {
         // Normalize only the exact draft default from the unreleased legacy adapter.
-        if (provider == Kimi && arguments == "--print --output-format stream-json")
+        if (provider == Kimi && (arguments is "--print --output-format stream-json" or "--output-format stream-json"))
             return AgentArgumentParser.Parse(DefaultKimiArguments);
         if (string.IsNullOrWhiteSpace(arguments) || arguments == DefaultCodexArguments)
-            return AgentArgumentParser.Parse(provider switch
-            {
-                Gemini => DefaultGeminiArguments,
-                Antigravity => DefaultAntigravityArguments,
-                Kiro => DefaultKiroArguments,
-                Qwen => DefaultQwenArguments,
-                Kimi => DefaultKimiArguments,
-                _ => DefaultGitHubCopilotArguments
-            });
+            return AgentArgumentParser.Parse(DefaultArguments(provider));
         return AgentArgumentParser.Parse(arguments);
     }
 

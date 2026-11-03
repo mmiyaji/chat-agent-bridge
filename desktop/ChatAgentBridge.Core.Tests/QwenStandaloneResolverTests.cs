@@ -1,4 +1,5 @@
 using ChatAgentBridge.Core;
+using System.Diagnostics;
 
 
 namespace ChatAgentBridge.Core.Tests;
@@ -6,7 +7,12 @@ namespace ChatAgentBridge.Core.Tests;
 public sealed class QwenStandaloneResolverTests : IDisposable
 {
     private readonly string root = Path.Combine(Path.GetTempPath(), "qwen-resolver-" + Guid.NewGuid().ToString("N"));
-    public void Dispose() { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    public void Dispose()
+    {
+        foreach (var junction in new[] { Path.Combine(root, "redirected"), Path.Combine(root, "qwen-code", "lib") })
+            if (Directory.Exists(junction)) try { Directory.Delete(junction, false); } catch { }
+        if (Directory.Exists(root)) Directory.Delete(root, true);
+    }
     private string Write(string relative, string content = "")
     {
         var path = Path.Combine(root, relative);
@@ -33,6 +39,26 @@ public sealed class QwenStandaloneResolverTests : IDisposable
         var result = NodeCliPackageResolver.Resolve(Setup(inner), AgentProfile.Qwen);
         Assert.Equal(Path.GetFullPath(Path.Combine(root, "qwen-code/node/node.exe")), result!.Executable);
         Assert.Equal(Path.GetFullPath(Path.Combine(root, "qwen-code/lib/cli-entry.js")), result.EntryPoint);
+    }
+    [Fact]
+    public void ResolvesInstallBeneathParentJunction()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var real = Path.Combine(root, "real");
+        Directory.CreateDirectory(real);
+        var inner = Path.Combine(real, "qwen-code");
+        Directory.CreateDirectory(inner);
+        Write("real/qwen-code/manifest.json", "{\"name\":\"@qwen-code/qwen-code\",\"runtime\":\"node\",\"target\":\"win-x64\"}");
+        Write("real/qwen-code/package.json", "{\"name\":\"@qwen-code/qwen-code\",\"bin\":{\"qwen\":\"scripts/cli-entry.js\"}}");
+        Write("real/qwen-code/lib/package.json", "{\"name\":\"@qwen-code/qwen-code\",\"bin\":{\"qwen\":\"cli-entry.js\"}}");
+        Write("real/qwen-code/lib/cli-entry.js"); Write("real/qwen-code/node/node.exe"); Write("real/qwen-code/bin/qwen.cmd");
+        var junction = Path.Combine(root, "redirected");
+        using (var process = Process.Start(new ProcessStartInfo("cmd.exe", $"/c mklink /J \"{junction}\" \"{real}\"") { UseShellExecute = false, CreateNoWindow = true })!)
+            process.WaitForExit();
+        Assert.True(Directory.Exists(junction));
+        var result = NodeCliPackageResolver.Resolve(Path.Combine(junction, "qwen-code/bin/qwen.cmd"), AgentProfile.Qwen);
+        Assert.NotNull(result);
+        Assert.EndsWith(Path.Combine("qwen-code", "node", "node.exe"), result!.Executable, StringComparison.OrdinalIgnoreCase);
     }
     [Fact]
     public void ResolvesExplicitBundledNodeWithoutExecutingIt()
@@ -73,6 +99,22 @@ public sealed class QwenStandaloneResolverTests : IDisposable
         if (failure == "runtime") File.Delete(Path.Combine(root, "qwen-code/node/node.exe"));
         if (failure == "traversal") Write("qwen-code/lib/package.json", "{\"name\":\"@qwen-code/qwen-code\",\"bin\":{\"qwen\":\"../../outside.js\"}}");
         if (failure == "npm") Write("bin/node_modules/@qwen-code/qwen-code/package.json", "{}");
+        Assert.Throws<InvalidOperationException>(() => NodeCliPackageResolver.Resolve(shim, AgentProfile.Qwen));
+    }
+    [Fact]
+    public void RejectsPackageInternalDirectoryLinkEscape()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var shim = Setup(true);
+        var escaped = Path.Combine(root, "outside");
+        Directory.CreateDirectory(escaped);
+        File.WriteAllText(Path.Combine(escaped, "payload"), "x");
+        File.WriteAllText(Path.Combine(escaped, "package.json"), "{\"name\":\"@qwen-code/qwen-code\",\"bin\":{\"qwen\":\"cli-entry.js\"}}");
+        File.WriteAllText(Path.Combine(escaped, "cli-entry.js"), "x");
+        Directory.Delete(Path.Combine(root, "qwen-code", "lib"), true);
+        var junction = Path.Combine(root, "qwen-code", "lib");
+        using (var process = Process.Start(new ProcessStartInfo("cmd.exe", $"/c mklink /J \"{junction}\" \"{escaped}\"") { UseShellExecute = false, CreateNoWindow = true })!)
+            process.WaitForExit();
         Assert.Throws<InvalidOperationException>(() => NodeCliPackageResolver.Resolve(shim, AgentProfile.Qwen));
     }
 }

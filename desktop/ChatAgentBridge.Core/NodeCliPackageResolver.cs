@@ -99,7 +99,9 @@ public static class NodeCliPackageResolver
         var files = new[] { shim, Path.Combine(root, "manifest.json"), Path.Combine(root, "package.json"),
             Path.Combine(root, "lib", "package.json"), Path.Combine(root, "lib", "cli-entry.js"),
             Path.Combine(root, "node", "node.exe"), Path.Combine(root, "bin", "qwen.cmd") };
-        if (files.Any(path => !File.Exists(path) || HasReparsePoint(path))) return null;
+        if (files.Any(path => !File.Exists(path))) return null;
+        if (HasPackageReparsePoint(files[0], Path.GetDirectoryName(files[0])!) ||
+            files.Skip(1).Any(path => HasPackageReparsePoint(path, root))) return null;
         try
         {
             using var manifest = JsonDocument.Parse(File.ReadAllText(files[1]));
@@ -119,10 +121,17 @@ public static class NodeCliPackageResolver
         catch (JsonException) { return null; }
     }
 
-    private static bool HasReparsePoint(string path)
+    // Parent directories may be junctions (for example an install beneath a redirected
+    // user profile). Links inside the standalone package are rejected so package files
+    // cannot escape the validated install tree.
+    private static bool HasPackageReparsePoint(string path, string packageRoot)
     {
-        for (var current = Path.GetFullPath(path); current is not null; current = Path.GetDirectoryName(current))
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(packageRoot));
+        var fullPath = Path.GetFullPath(path);
+        if (!fullPath.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) return true;
+        for (var current = fullPath; current is not null && !current.Equals(root, StringComparison.OrdinalIgnoreCase); current = Path.GetDirectoryName(current))
             if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) return true;
+        if ((File.GetAttributes(root) & FileAttributes.ReparsePoint) != 0) return true;
         return false;
     }
 

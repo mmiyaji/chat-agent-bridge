@@ -5,6 +5,24 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="TrustedWorkspaceRequired" xml:space="preserve"><value>The workspace must exist and be inside a trusted workspace root.</value></data>
+  <data name="ModelCatalogUnsupportedProvider" xml:space="preserve"><value>Model discovery is available only for supported agent providers.</value></data>
+  <data name="ModelCatalogProviderInvalid" xml:space="preserve"><value>The configured agent provider is invalid.</value></data>
+  <data name="ModelCatalogWorkspaceRequired" xml:space="preserve"><value>A workspace directory is required to discover {0} models.</value></data>
+  <data name="ModelCatalogWorkspaceMissing" xml:space="preserve"><value>The configured workspace directory does not exist.</value></data>
+  <data name="ModelCatalogExecutableRequired" xml:space="preserve"><value>A {0} executable is required to discover models.</value></data>
+  <data name="ModelCatalogLimitExceeded" xml:space="preserve"><value>{0} returned more models than the catalog limit.</value></data>
+  <data name="ModelCatalogRepeatedCursor" xml:space="preserve"><value>{0} returned a repeated model catalog cursor.</value></data>
+  <data name="ModelCatalogPageLimit" xml:space="preserve"><value>{0} model catalog exceeded the {1}-page limit.</value></data>
+  <data name="ModelCatalogTimeout" xml:space="preserve"><value>{0} model discovery exceeded its {1}-second time limit.</value></data>
+  <data name="ModelCatalogRetrieveFailed" xml:space="preserve"><value>Could not retrieve the {0} model catalog. Check the CLI and its sign-in status.</value></data>
+  <data name="ModelCatalogStartFailed" xml:space="preserve"><value>{0} CLI did not start.</value></data>
+  <data name="ModelCatalogClosed" xml:space="preserve"><value>{0} CLI closed before returning its model catalog.</value></data>
+  <data name="ModelCatalogOversized" xml:space="preserve"><value>{0} returned an oversized model catalog response.</value></data>
+  <data name="ModelCatalogInitializeFailed" xml:space="preserve"><value>{0} could not initialize model discovery. Check the CLI and its sign-in status.</value></data>
+  <data name="ModelCatalogMismatched" xml:space="preserve"><value>{0} returned a mismatched model catalog response.</value></data>
+  <data name="ModelCatalogInvalid" xml:space="preserve"><value>{0} returned an invalid model catalog response.</value></data>
+  <data name="ModelCatalogUnsupportedOrEmpty" xml:space="preserve"><value>{0} returned an unsupported or empty model catalog.</value></data>
+  <data name="ModelCatalogPageTooLarge" xml:space="preserve"><value>{0} returned more models than the requested page size.</value></data>
   <data name="WorkspaceRequired" xml:space="preserve"><value>Choose a workspace folder before checking the CLI.</value></data>
   <data name="WorkspacePathMustBeAbsolute" xml:space="preserve"><value>Workspace path '{0}' must be an absolute path. Choose a workspace using its full path.</value></data>
   <data name="WorkspacePathInvalid" xml:space="preserve"><value>Workspace path '{0}' is invalid. Choose a valid workspace folder path.</value></data>
@@ -102,8 +120,19 @@
   <data name="ApprovalRiskGitWrite" xml:space="preserve"><value>changes git history or branches</value></data>
   <data name="ApprovalRiskTruncated" xml:space="preserve"><value>the command is long and was not fully checked</value></data>
   <data name="ApprovalRiskCodeOnly" xml:space="preserve"><value>This is high risk, so there are no approval buttons. Reply with the code below, or decide on the PC.</value></data>
-  <data name="KimiFullAccessRequired" xml:space="preserve"><value>Kimi Code CLI headless mode automatically approves tool calls. Explicitly select Full access in Agent settings before executing this CLI.</value></data>
+  <data name="KimiFullAccessRequired" xml:space="preserve"><value>Kimi ACP inherit mode requires approval for every tool call. Full access is available only when Kimi advertises an explicit full-access mode; it uses Kimi's permission controls and does not provide an operating-system sandbox.</value></data>
+  <data name="BridgeManagedArgumentsRecovery" xml:space="preserve"><value>Saved command-line arguments are not supported for this provider. Switch to another provider and back to reset its bridge-managed arguments, then save the profile again.</value></data>
   <data name="KimiPromptTooLong" xml:space="preserve"><value>The request is too long for Kimi Code CLI on Windows. Shorten the message or start a new conversation without a handoff summary.</value></data>
   <data name="QwenLauncherRequired" xml:space="preserve"><value>Select qwen or the official qwen.cmd launcher for Qwen Code. Its official standalone installation also supports the bundled node.exe. A general Node.js executable alone cannot start Qwen Code.</value></data>
   <data name="CliNodeEntrypointRequired" xml:space="preserve"><value>Node.js alone is not an AI CLI. Select the CLI launcher or specify its JavaScript entrypoint before the CLI arguments. Code-evaluation or module-loading Node options are not run during CLI checks.</value></data>
+  <data name="KimiAcpSessionInvalid" xml:space="preserve"><value>The authorized Kimi session id is invalid.</value></data>
+  <data name="KimiAcpStartFailed" xml:space="preserve"><value>Kimi Code CLI could not start. Check the executable setting.</value></data>
+  <data name="KimiAcpIdentityInvalid" xml:space="preserve"><value>This executable did not return a supported Kimi Code CLI ACP identity.</value></data>
+  <data name="KimiAcpLoadUnsupported" xml:space="preserve"><value>This Kimi Code CLI cannot restore the authorized session. Update the CLI or detach this conversation.</value></data>
+  <data name="KimiAcpSessionMismatch" xml:space="preserve"><value>Kimi Code CLI returned an invalid or different session. Execution was stopped.</value></data>
+  <data name="KimiAcpModesMissing" xml:space="preserve"><value>Kimi Code CLI did not provide supported permission modes. Update the CLI and check again.</value></data>
+  <data name="KimiAcpModeUnsupported" xml:space="preserve"><value>Kimi Code CLI does not support the selected permission mode. Execution was stopped.</value></data>
+  <data name="KimiAcpIncomplete" xml:space="preserve"><value>Kimi Code CLI did not complete the turn. The conversation binding was not changed.</value></data>
+  <data name="KimiAcpTimeout" xml:space="preserve"><value>Kimi Code CLI did not respond within the time limit. Try again.</value></data>
+  <data name="KimiAcpProtocolFailed" xml:space="preserve"><value>Communication with Kimi Code CLI failed or an operation was declined. Check the CLI version, sign-in, and approval settings.</value></data>
 </root>

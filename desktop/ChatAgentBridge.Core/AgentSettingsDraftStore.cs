@@ -19,7 +19,7 @@ public sealed record AgentSettingsDraft(
     public static AgentSettingsDraft FromSettings(BridgeSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        return AgentSettingsDraftStore.NormalizeAndValidate(new AgentSettingsDraft(
+        return AgentSettingsDraftStore.NormalizeForEditor(new AgentSettingsDraft(
             AgentProfile.ResolveProvider(settings), settings.AgentExecutable, settings.AgentArguments,
             settings.AgentMode, settings.AgentModel, settings.AgentReasoningEffort,
             settings.AgentPermissionMode, settings.AllowAgentNetwork));
@@ -122,6 +122,12 @@ public sealed class AgentSettingsDraftStore
         }
         catch (ArgumentException ex) { throw new ArgumentException("The model or reasoning effort is invalid.", nameof(draft), ex); }
 
+        if (provider is AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi)
+        {
+            try { arguments = AgentProfile.ValidateManagedArguments(provider, arguments); }
+            catch (ArgumentException ex) { throw new ArgumentException(ex.Message, nameof(draft), ex); }
+        }
+
         return draft with
         {
             Provider = provider,
@@ -132,6 +138,14 @@ public sealed class AgentSettingsDraftStore
             ReasoningEffort = effort,
             PermissionMode = permissionMode
         };
+    }
+
+    internal static AgentSettingsDraft NormalizeForEditor(AgentSettingsDraft draft)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+        var provider = draft.Provider?.Trim().ToLowerInvariant() ?? "";
+        var arguments = AgentProfile.NormalizeStoredArguments(provider, draft.Arguments);
+        return NormalizeAndValidate(draft with { Arguments = arguments });
     }
 
     private async Task<IReadOnlyList<AgentSettingsDraft>> LoadCoreAsync(CancellationToken cancellationToken)
@@ -149,7 +163,7 @@ public sealed class AgentSettingsDraftStore
             if (stored.Drafts is null) throw new InvalidDataException("Agent settings drafts file has no draft list.");
             if (stored.Drafts.Any(draft => draft is null))
                 throw new InvalidDataException("Agent settings drafts file contains a null draft.");
-            var drafts = stored.Drafts.Select(NormalizeAndValidate).ToArray();
+            var drafts = stored.Drafts.Select(NormalizeForEditor).ToArray();
             if (drafts.GroupBy(draft => draft.Provider, StringComparer.Ordinal).Any(group => group.Count() > 1))
                 throw new InvalidDataException("Agent settings drafts file contains more than one draft for a provider.");
             return drafts;
@@ -161,11 +175,7 @@ public sealed class AgentSettingsDraftStore
     private static string NormalizeProvider(string? provider)
     {
         var normalized = provider?.Trim().ToLowerInvariant();
-        return normalized switch
-        {
-            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Custom => normalized,
-            _ => throw new ArgumentException("Only supported agent providers can have settings drafts.", nameof(provider))
-        };
+        return AgentProfile.IsSupportedProvider(normalized) ? normalized! : throw new ArgumentException("Only supported agent providers can have settings drafts.", nameof(provider));
     }
 
     private static string NormalizeEditableText(string? value, int maxLength, string parameterName, bool allowArgumentWhitespace = false)

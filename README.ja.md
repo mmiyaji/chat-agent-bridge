@@ -90,7 +90,7 @@ Windows向けのポータブル版を配布しています。利用するCLIの�
 | Antigravity CLI（`agy`） | 対応 | `agy models` からモデル候補を取得、またはモデル名を入力。推論設定はCLI側で管理。ヘッドレス実行では、権限モードを「フォルダー内の編集を自動許可」「フルアクセス」にするか、`settings.json` に許可ルールを追加しない限り、編集とコマンドは自動的に拒否されます |
 | Kiro CLI（`kiro-cli`、Windows 11） | 実装済み・実サービス未検証 | CLIからモデル候補を取得、またはモデルIDを指定。`KIRO_API_KEY` が必要。権限・推論設定はCLI側で管理し、クレジットはトークン料金に換算しません |
 | Qwen Code（`qwen`） | Preview・実サービス未検証 | モデルIDを直接入力。認証・推論・操作権限はCLI側の設定。YOLOフラグを自動付与しません |
-| Kimi Code CLI（`kimi`） | Preview・実サービス未検証 | モデル名または設定済み別名を直接入力。非対話実行はツールを自動承認するため、実行にはフルアクセスの明示的な選択が必要です |
+| Kimi Code CLI（`kimi`） | Preview・実サービス未検証 | モデル名または設定済み別名を直接入力。「継承」ではツール操作の承認を求めます。「フルアクセス」はKimiがそのモードを提示した場合のみ選択できます。OSレベルのサンドボックスは提供しません |
 | その他のCLI | 毎回独立した実行 | CLIの設定・起動引数で指定 |
 
 会話ごとのエージェント・モデルは、PCの会話詳細またはチャットから変更できます。エージェントを切り替える場合は、アプリで事前に確認・登録したCLIを使い、会話の引き継ぎメモを渡すか選びます。
@@ -245,7 +245,7 @@ PCでも実行中の出力を確認し、依頼を中断できます。
 
 Kiro CLIは `chat --v2 --no-interactive --output-format stream-json` に標準入力で依頼を渡します。Windows 11用のネイティブCLIを導入し、PC側で `KIRO_API_KEY` を設定してください。`--trust-all-tools` は自動付与しません。CLI側の確認が必要な操作は拒否される場合があります。実行中の追記は順番に処理します。実際の認証・出力形式との互換性・チャット実行は、Kiro導入環境での追加確認が必要です。[Kiro公式仕様](https://kiro.dev/docs/cli/headless/)
 
-Qwen CodeはWindowsの公式スタンドアロン版とnpm版に対応します。Kimiは現在のKimi Code CLI（`kimi-code`）が対象で、保守終了した旧Python版は対象外です。Kimiの非対話実行はツール操作を自動承認するため、利用する場合はフルアクセスを明示的に選択してください。モデルは直接入力で指定します。実サービスでの検証は保留中です。[Qwenの導入方法](https://github.com/QwenLM/qwen-code/blob/main/scripts/installation/INSTALLATION_GUIDE.md)、[Kimiのコマンド仕様](https://moonshotai.github.io/kimi-code/en/reference/kimi-command)。
+Qwen CodeはWindowsの公式スタンドアロン版とnpm版に対応します。KimiはAgent Client Protocol（ACP）モードを使い、「継承」ではツール操作の承認を求めます。「フルアクセス」はKimiが明示的なモードを提示した場合のみ選択できます。権限はKimiが適用し、OSレベルのサンドボックスは提供しません。モデルは直接入力で指定します。実サービスでの検証は保留中です。[Qwenの導入方法](https://github.com/QwenLM/qwen-code/blob/main/scripts/installation/INSTALLATION_GUIDE.md)、[Kimi ACPドキュメント](https://moonshotai.github.io/kimi-code/en/reference/kimi-acp.html)。
 
 設定画面ではエージェント・チャットサービスごとに異なるアウトラインアイコンを表示します。Gemini CLIには「移行推奨」を表示し、新規設定にはAntigravity CLIを推奨します。Gemini CLIの企業契約・APIキー利用は継続対象です。[Googleの移行案内](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/)。
 

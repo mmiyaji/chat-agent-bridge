@@ -132,8 +132,14 @@ public sealed class AgentConnectionStore
         else
         {
             if (mode != "exec") throw new ArgumentException("This CLI supports exec mode only.", nameof(profile));
+            if ((provider is AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi) && string.IsNullOrWhiteSpace(arguments))
+                arguments = AgentProfile.DefaultArguments(provider);
             // Validate canonical output settings and reject configured selectors for another session.
-            _ = AgentProfile.GetStructuredCliArguments(new BridgeSettings { AgentArguments = arguments }, provider);
+            if (provider == AgentProfile.Kimi && (arguments == "--print --output-format stream-json" || arguments == "--output-format stream-json"))
+                arguments = AgentProfile.DefaultKimiArguments;
+            try { _ = AgentProfile.GetStructuredCliArguments(new BridgeSettings { AgentArguments = arguments }, provider); }
+            catch (ArgumentException ex) when (provider is AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi)
+            { throw new ArgumentException(ChatAgentBridge.Core.Localization.CoreText.Get("BridgeManagedArgumentsRecovery"), nameof(profile), ex); }
         }
 
         string permissionMode;
@@ -202,11 +208,8 @@ public sealed class AgentConnectionStore
     private static string NormalizeProvider(string? provider)
     {
         var normalized = provider?.Trim().ToLowerInvariant();
-        return normalized switch
-        {
-            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi => normalized,
-            _ => throw new ArgumentException("Only supported CLI profiles can be registered.", nameof(provider))
-        };
+        return AgentProfile.IsSupportedProvider(normalized) && normalized != AgentProfile.Custom
+            ? normalized! : throw new ArgumentException("Only supported CLI profiles can be registered.", nameof(provider));
     }
 
     private sealed class StoredConnections

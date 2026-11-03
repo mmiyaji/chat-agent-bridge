@@ -1,4 +1,5 @@
 using ChatAgentBridge.Core;
+using System.Text.Json.Nodes;
 
 namespace ChatAgentBridge.Core.Tests;
 
@@ -35,6 +36,50 @@ public sealed class AgentSettingsDraftStoreTests
             await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(Draft("other", "cli", "", "exec")));
             await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(Draft("custom", "cli\nsecret", "", "exec")));
             Assert.False(File.Exists(Path.Combine(directory, "agent-settings-drafts.json")));
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task KimiDraft_normalizes_legacy_arguments_and_rejects_unsupported_saved_arguments()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var store = new AgentSettingsDraftStore(directory);
+            await store.SaveAsync(Draft("kimi", "kimi", "--print --output-format stream-json", "exec"));
+            Assert.Equal("acp", (await store.ListAsync()).Single().Arguments);
+            var error = await Assert.ThrowsAsync<ArgumentException>(() =>
+                store.SaveAsync(Draft("kimi", "kimi", "--dangerous-unknown", "exec")));
+            Assert.True(error.Message.Contains("provider", StringComparison.OrdinalIgnoreCase) || error.Message.Contains("プロバイダー", StringComparison.Ordinal));
+        }
+        finally { DeleteDirectory(directory); }
+    }
+
+    [Fact]
+    public async Task Load_repairs_immutable_arguments_per_provider_and_keeps_other_drafts_available()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var store = new AgentSettingsDraftStore(directory);
+            await store.SaveAsync(Draft("codex", "codex", "exec --json -", "exec"));
+            await store.SaveAsync(Draft("kiro", "kiro-cli", AgentProfile.DefaultKiroArguments, "exec"));
+            await store.SaveAsync(Draft("qwen", "qwen", AgentProfile.DefaultQwenArguments, "exec"));
+            await store.SaveAsync(Draft("kimi", "kimi", AgentProfile.DefaultKimiArguments, "exec"));
+            var path = Path.Combine(directory, "agent-settings-drafts.json");
+            var json = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
+            foreach (var draft in json["Drafts"]!.AsArray().Where(item => item!["Provider"]!.GetValue<string>() is "kiro" or "qwen" or "kimi"))
+                draft!["Arguments"] = "--removed-option";
+            await File.WriteAllTextAsync(path, json.ToJsonString());
+
+            var loaded = await store.ListAsync();
+
+            Assert.Equal(4, loaded.Count);
+            Assert.Equal("exec --json -", loaded.Single(item => item.Provider == "codex").Arguments);
+            Assert.Equal(AgentProfile.DefaultKiroArguments, loaded.Single(item => item.Provider == "kiro").Arguments);
+            Assert.Equal(AgentProfile.DefaultQwenArguments, loaded.Single(item => item.Provider == "qwen").Arguments);
+            Assert.Equal(AgentProfile.DefaultKimiArguments, loaded.Single(item => item.Provider == "kimi").Arguments);
         }
         finally { DeleteDirectory(directory); }
     }

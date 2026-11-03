@@ -1,4 +1,5 @@
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.AppServer;
 using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Core.Tests;
@@ -13,12 +14,12 @@ public sealed class QwenKimiCliTests : IDisposable
         AgentPermissionMode = provider == AgentProfile.Kimi ? "full-access" : "inherit" };
 
     [Fact]
-    public void KimiRequiresExplicitFullAccessAndLetsCliCreateNewSession()
+    public void KimiUsesAcpAndSupportsInheritAndFullAccess()
     {
-        Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(Settings("kimi") with { AgentPermissionMode = "inherit" }));
+        var inherited = AgentProfile.BuildInvocation(Settings("kimi") with { AgentPermissionMode = "inherit" });
+        Assert.Equal(new[] { "acp" }, inherited.Arguments);
         var first = AgentProfile.BuildInvocation(Settings("kimi"));
-        Assert.DoesNotContain("--session", first.Arguments);
-        Assert.DoesNotContain("--continue", first.Arguments);
+        Assert.Equal(new[] { "acp" }, first.Arguments);
         Assert.DoesNotContain("--print", first.Arguments);
         var draft = Settings("kimi") with { AgentArguments = "--print --output-format stream-json" };
         Assert.Equal(first.Arguments, AgentProfile.BuildInvocation(draft).Arguments);
@@ -30,10 +31,149 @@ public sealed class QwenKimiCliTests : IDisposable
     public void ModelAndAuthorizedSessionAreSeparateArguments(string provider, string selector)
     {
         var invocation = AgentProfile.BuildInvocation(Settings(provider) with { AgentModel = "model-x", AuthorizedCliSessionId = Id });
-        Assert.Contains("--model", invocation.Arguments);
-        Assert.Equal(new[] { selector, provider == "kimi" ? "session_" + Id : Id }, invocation.Arguments.TakeLast(2));
+        if (provider == "kimi") Assert.DoesNotContain("--model", invocation.Arguments);
+        else Assert.Contains("--model", invocation.Arguments);
+        if (provider == "kimi") Assert.Equal(new[] { "acp" }, invocation.Arguments);
+        else Assert.Equal(new[] { selector, Id }, invocation.Arguments.TakeLast(2));
         Assert.DoesNotContain("--yolo", invocation.Arguments);
         Assert.False(AgentProfile.HasModelCatalog(provider));
+    }
+
+    [Fact]
+    public async Task KimiAcpPermissionRequestsRequireHandlerAndHonorDecision()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+#if DEBUG
+        const string configuration = "Debug";
+#else
+        const string configuration = "Release";
+#endif
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (root is not null && !Directory.Exists(Path.Combine(root.FullName, "ChatAgentBridge.TestAgent"))) root = root.Parent;
+        Assert.NotNull(root);
+        var source = Path.Combine(root.FullName, "ChatAgentBridge.TestAgent", "bin", configuration, "net10.0");
+        Directory.CreateDirectory(_directory);
+        foreach (var suffix in new[] { ".dll", ".deps.json", ".runtimeconfig.json" })
+            File.Copy(Path.Combine(source, "ChatAgentBridge.TestAgent" + suffix), Path.Combine(_directory, "ChatAgentBridge.TestAgent" + suffix), true);
+        var executable = Path.Combine(_directory, "kimi.exe");
+        File.Copy(Path.Combine(source, "ChatAgentBridge.TestAgent.exe"), executable, true);
+        var settings = Settings("kimi") with { AgentExecutable = executable, AgentPermissionMode = "inherit" };
+        var runner = new AgentRunner();
+        var noHandler = await runner.RunAsync(settings, "fixture-permission");
+        Assert.False(noHandler.Success);
+        var approved = await runner.RunWithOptionsAsync(settings, "fixture-permission", new AppServerRunOptions(
+            ApprovalHandler: (approval, _) => Task.FromResult(approval.Method == "session/request_permission" ? AppServerDecision.Accept : AppServerDecision.Decline)));
+        Assert.True(approved.Success, approved.Error);
+        Assert.Contains("kimi-acp", approved.Output);
+        Assert.Contains("mode=default", approved.Output);
+        var declined = await runner.RunWithOptionsAsync(settings, "fixture-permission", new AppServerRunOptions(
+            ApprovalHandler: (_, _) => Task.FromResult(AppServerDecision.Decline)));
+        Assert.False(declined.Success);
+    }
+
+    [Fact]
+    public async Task KimiAcpRejectsForeignEventsAndIncompleteOrOversizedTurnsButIgnoresUnknownNotifications()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+#if DEBUG
+        const string configuration = "Debug";
+#else
+        const string configuration = "Release";
+#endif
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (root is not null && !Directory.Exists(Path.Combine(root.FullName, "ChatAgentBridge.TestAgent"))) root = root.Parent;
+        Assert.NotNull(root);
+        var source = Path.Combine(root.FullName, "ChatAgentBridge.TestAgent", "bin", configuration, "net10.0");
+        Directory.CreateDirectory(_directory);
+        foreach (var suffix in new[] { ".dll", ".deps.json", ".runtimeconfig.json" })
+            File.Copy(Path.Combine(source, "ChatAgentBridge.TestAgent" + suffix), Path.Combine(_directory, "ChatAgentBridge.TestAgent" + suffix), true);
+        var executable = Path.Combine(_directory, "kimi.exe");
+        File.Copy(Path.Combine(source, "ChatAgentBridge.TestAgent.exe"), executable, true);
+        var settings = Settings("kimi") with { AgentExecutable = executable, AgentPermissionMode = "inherit" };
+        var runner = new AgentRunner();
+
+        var unknown = await runner.RunAsync(settings, "__CAB_SCENARIO_UNKNOWN_NOTIFICATION__");
+        Assert.True(unknown.Success, unknown.Error);
+        var wrongUpdate = await runner.RunAsync(settings, "__CAB_SCENARIO_WRONG_UPDATE__");
+        Assert.False(wrongUpdate.Success);
+        Assert.DoesNotContain("wrong session leak", wrongUpdate.Output);
+        var wrongPermission = await runner.RunAsync(settings with { AgentPermissionMode = "full-access" }, "__CAB_SCENARIO_WRONG_PERMISSION__");
+        Assert.False(wrongPermission.Success);
+        var missingStop = await runner.RunAsync(settings, "__CAB_SCENARIO_MISSING_STOP__");
+        Assert.False(missingStop.Success);
+        var oversized = await runner.RunAsync(settings, "__CAB_SCENARIO_OVERSIZED_TEXT__");
+        Assert.False(oversized.Success);
+        Assert.True(oversized.Output.Length <= 1_000_000);
+        var longStderr = await runner.RunAsync(settings, "__CAB_SCENARIO_LONG_STDERR__");
+        Assert.True(longStderr.Success, longStderr.Error);
+        Assert.DoesNotContain(new string('e', 256), longStderr.Error);
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runner.RunAsync(settings, "__CAB_SCENARIO_CANCEL__", cancellation.Token));
+    }
+
+    [Fact]
+    public async Task KimiAcpDispatchesReverseRequestWhoseIdCollidesWithPromptRequest()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+#if DEBUG
+        const string configuration = "Debug";
+#else
+        const string configuration = "Release";
+#endif
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (root is not null && !Directory.Exists(Path.Combine(root.FullName, "ChatAgentBridge.TestAgent"))) root = root.Parent;
+        Assert.NotNull(root);
+        var source = Path.Combine(root.FullName, "ChatAgentBridge.TestAgent", "bin", configuration, "net10.0");
+        Directory.CreateDirectory(_directory);
+        foreach (var suffix in new[] { ".dll", ".deps.json", ".runtimeconfig.json" })
+            File.Copy(Path.Combine(source, "ChatAgentBridge.TestAgent" + suffix), Path.Combine(_directory, "ChatAgentBridge.TestAgent" + suffix), true);
+        var executable = Path.Combine(_directory, "kimi.exe");
+        File.Copy(Path.Combine(source, "ChatAgentBridge.TestAgent.exe"), executable, true);
+        var settings = Settings("kimi") with { AgentExecutable = executable, AgentPermissionMode = "inherit" };
+        var result = await new AgentRunner().RunWithOptionsAsync(settings, "__CAB_SCENARIO_ID_COLLISION__",
+            new AppServerRunOptions(ApprovalHandler: (_, _) => Task.FromResult(AppServerDecision.Accept)));
+        Assert.True(result.Success, result.Error);
+        Assert.Contains("kimi-acp", result.Output);
+    }
+
+    [Fact]
+    public async Task KimiAcpEnforcesRequestedModeAndValidInitializeIdentity()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+#if DEBUG
+        const string configuration = "Debug";
+#else
+        const string configuration = "Release";
+#endif
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (root is not null && !Directory.Exists(Path.Combine(root.FullName, "ChatAgentBridge.TestAgent"))) root = root.Parent;
+        Assert.NotNull(root);
+        var source = Path.Combine(root.FullName, "ChatAgentBridge.TestAgent", "bin", configuration, "net10.0");
+        Directory.CreateDirectory(_directory);
+        foreach (var suffix in new[] { ".dll", ".deps.json", ".runtimeconfig.json" })
+            File.Copy(Path.Combine(source, "ChatAgentBridge.TestAgent" + suffix), Path.Combine(_directory, "ChatAgentBridge.TestAgent" + suffix), true);
+        var runner = new AgentRunner();
+        foreach (var fixture in new[] { "kimi-no-yolo", "kimi-badidentity", "kimi-noprotocol" })
+        {
+            var executable = Path.Combine(_directory, fixture + ".exe");
+            File.Copy(Path.Combine(source, "ChatAgentBridge.TestAgent.exe"), executable, true);
+            var permission = fixture == "kimi-no-yolo" ? "full-access" : "inherit";
+            var result = await runner.RunAsync(Settings("kimi") with { AgentExecutable = executable, AgentPermissionMode = permission }, "mode probe");
+            Assert.False(result.Success);
+            Assert.Empty(result.Output);
+        }
+    }
+
+    [Fact]
+    public async Task LegacyKimiCliJsonlSessionBindingCannotBeResumedAsAcp()
+    {
+        Directory.CreateDirectory(_directory);
+        var store = new SessionStore(_directory);
+        var key = new SessionKey("slack", "channel", "thread", "owner", "slack");
+        var legacy = new SessionBinding(key, _directory, "kimi", "kimi-code-jsonl-v2:legacy", Id, DateTimeOffset.UtcNow);
+        await store.SaveAsync(legacy);
+        var settings = Settings("kimi") with { AgentExecutable = "kimi", AgentPermissionMode = "inherit" };
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new SessionAgentRunner(store).RunAsync(key, settings, "must not resume"));
     }
 
     [Theory]
@@ -150,24 +290,26 @@ public sealed class QwenKimiCliTests : IDisposable
         Assert.DoesNotContain("private-reasoning", first.Output);
         Assert.Contains(prompt, first.Output);
         Assert.Equal(provider, ConversationAgentService.ProviderOf((await store.FindAsync(key))!));
+        if (provider == "kimi") Assert.StartsWith("kimi-acp-v1:", (await store.FindAsync(key))!.AgentArguments, StringComparison.Ordinal);
         await store.UpdateModelAsync(key, "deep");
         var second = await runner.RunAsync(key, settings, "follow-up");
         Assert.True(second.Success, second.Error);
         Assert.Equal(first.CliSession!.SessionId, second.CliSession!.SessionId);
         Assert.Contains("model=deep", second.Output);
+        if (provider == "kimi") Assert.Contains("mode=yolo", second.Output);
         var other = await runner.RunAsync(key with { UserId = "other" }, settings, "separate");
         Assert.True(other.Success, other.Error);
         Assert.NotEqual(first.CliSession.SessionId, other.CliSession!.SessionId);
         if (provider == "kimi")
         {
-            var legacy = Path.Combine(_directory, "kimi-legacy.exe");
-            File.Copy(executable, legacy);
-            await Assert.ThrowsAsync<InvalidOperationException>(() => new CliProbeService().CheckAsync(settings with { AgentExecutable = legacy }));
             var failed = await new AgentRunner().RunAsync(settings, "fixture-fail");
-            Assert.False(failed.Success);
-            var tooLong = await new AgentRunner().RunAsync(settings, new string('x', 12_001));
-            Assert.False(tooLong.Success);
-            Assert.Equal(-1, tooLong.ExitCode);
+            Assert.True(failed.Success, failed.Error);
+            var longPromptText = "MEMORY_SENTINEL_84eb " + new string('x', 12_001);
+            var longPrompt = await new AgentRunner().RunAsync(settings, longPromptText);
+            Assert.True(longPrompt.Success, longPrompt.Error);
+            Assert.Contains("MEMORY_SENTINEL_84eb", longPrompt.Output);
+            Assert.DoesNotContain("MEMORY_SENTINEL_84eb", string.Join(" ", AgentProfile.BuildInvocation(settings).Arguments));
+            Assert.DoesNotContain("load replay must not escape", second.Output);
         }
     }
 

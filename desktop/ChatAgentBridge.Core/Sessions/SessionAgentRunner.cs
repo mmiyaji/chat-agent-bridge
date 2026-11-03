@@ -20,17 +20,17 @@ public sealed class SessionAgentRunner
 
     public Task<AgentRunResult> RunAsync(SessionKey key, BridgeSettings settings, string prompt,
         CancellationToken cancellationToken = default, IProgress<AgentRunProgress>? progress = null,
-        Action<IActiveAgentTurn?>? activeTurnChanged = null)
+        Action<IActiveAgentTurn?>? activeTurnChanged = null, AppServerRunOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(prompt);
         return _store.WithSessionLockAsync(key,
-            token => RunLockedAsync(key, settings, prompt, progress, activeTurnChanged, token), cancellationToken);
+            token => RunLockedAsync(key, settings, prompt, progress ?? options?.Progress, activeTurnChanged ?? options?.ActiveTurnChanged, options, token), cancellationToken);
     }
 
     private async Task<AgentRunResult> RunLockedAsync(SessionKey key, BridgeSettings settings, string prompt,
-        IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged, CancellationToken cancellationToken)
+        IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged, AppServerRunOptions? options, CancellationToken cancellationToken)
     {
         settings = await _store.ApplyWorkspaceAsync(key, settings, cancellationToken).ConfigureAwait(false);
         var existing = await _store.FindExecutionBindingAsync(key, cancellationToken).ConfigureAwait(false);
@@ -39,7 +39,7 @@ public sealed class SessionAgentRunner
             settings = settings with { AgentPermissionMode = existing.AgentPermissionMode };
         var provider = AgentProfile.ResolveProvider(settings);
         if (AgentProfile.IsBasicCliProvider(provider))
-            return await RunStructuredCliAsync(key, settings, prompt, existing, provider, progress, cancellationToken).ConfigureAwait(false);
+            return await RunStructuredCliAsync(key, settings, prompt, existing, provider, progress, options, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<string> arguments;
         try { arguments = provider == AgentProfile.Claude ? Array.Empty<string>() : AgentArgumentParser.Parse(settings.AgentArguments); }
         catch (FormatException ex)
@@ -53,7 +53,8 @@ public sealed class SessionAgentRunner
         {
             if (existing is not null)
                 throw new InvalidOperationException("This chat thread has a saved agent session. Restore the saved provider settings or detach the saved session before changing agent arguments.");
-            return await _runner.RunAsync(settings, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false);
+            return options is null ? await _runner.RunAsync(settings, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false)
+            : await _runner.RunWithOptionsAsync(settings, prompt, options with { Progress = progress, ActiveTurnChanged = activeTurnChanged }, cancellationToken).ConfigureAwait(false);
         }
 
         var workspace = NormalizeWorkspace(settings.WorkspaceRoot);
@@ -141,7 +142,7 @@ public sealed class SessionAgentRunner
     }
 
     private async Task<AgentRunResult> RunStructuredCliAsync(SessionKey key, BridgeSettings settings, string prompt,
-        SessionBinding? existing, string provider, IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken)
+        SessionBinding? existing, string provider, IProgress<AgentRunProgress>? progress, AppServerRunOptions? options, CancellationToken cancellationToken)
     {
         if (settings.AgentMode != "exec")
             throw new InvalidOperationException("Structured CLI sessions require exec mode.");
@@ -179,7 +180,8 @@ public sealed class SessionAgentRunner
             AuthorizedCliSessionId = existing is null ? null : Guid.Parse(existing.SessionId).ToString("D")
         };
         _ = AgentProfile.BuildInvocation(effective);
-        var result = await _runner.RunAsync(effective, prompt, progress, cancellationToken).ConfigureAwait(false);
+        var result = options is null ? await _runner.RunAsync(effective, prompt, progress, cancellationToken).ConfigureAwait(false)
+            : await _runner.RunWithOptionsAsync(effective, prompt, options with { Progress = progress }, cancellationToken).ConfigureAwait(false);
         var output = result.CliSession ?? CliSessionOutputParser.Parse(result.Output, provider);
         result = result with { CliSession = output, Output = output.FinalMessage ?? "", Usage = result.Usage ?? output.Usage };
         if (output.Provider != provider || !Guid.TryParse(output.SessionId, out var sessionId))

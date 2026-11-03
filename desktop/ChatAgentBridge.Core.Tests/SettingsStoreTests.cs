@@ -28,6 +28,30 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Theory]
+    [InlineData("--unsupported")]
+    [InlineData("\"unterminated")]
+    public async Task BridgeManagedArgumentsAreStrictOnSaveAndRepairedOnLoad(string invalidArguments)
+    {
+        var store = new SettingsStore(_directory);
+        var settings = new BridgeSettings
+        {
+            AgentProvider = AgentProfile.Qwen,
+            AgentExecutable = "qwen",
+            AgentArguments = AgentProfile.DefaultQwenArguments
+        };
+        await Assert.ThrowsAsync<ArgumentException>(() => store.SaveAsync(settings with { AgentArguments = invalidArguments }));
+
+        await store.SaveAsync(settings);
+        var path = Path.Combine(_directory, "settings.json");
+        var stored = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
+        stored["AgentArguments"] = invalidArguments;
+        await File.WriteAllTextAsync(path, stored.ToJsonString());
+
+        var loaded = await store.LoadAsync();
+        Assert.Equal(AgentProfile.DefaultQwenArguments, loaded.AgentArguments);
+    }
+
+    [Theory]
     [InlineData("auto", true)]
     [InlineData("first", true)]
     [InlineData("always", false)]

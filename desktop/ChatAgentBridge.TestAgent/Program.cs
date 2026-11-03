@@ -76,6 +76,101 @@ if (isAntigravityFixture && args is ["models"])
 // Synthetic structured CLI fixtures. Selected only by the bridge's provider output format;
 // these never read credentials, execute tools, or contact a provider.
 var structuredFixtureName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "").ToLowerInvariant();
+if (structuredFixtureName.StartsWith("kimi", StringComparison.Ordinal) && args is ["acp"])
+{
+    string? sessionId = null;
+    var model = "fixture-default";
+    var mode = "yolo"; // Deliberately non-default: the bridge must set the configured mode on every session.
+    while (await Console.In.ReadLineAsync() is { } line)
+    {
+        using var request = JsonDocument.Parse(line);
+        var root = request.RootElement;
+        var id = root.GetProperty("id").GetInt32();
+        var method = root.GetProperty("method").GetString();
+        var parameters = root.TryGetProperty("params", out var p) ? p : default;
+        object result = new { };
+        switch (method)
+        {
+            case "initialize":
+                result = new { protocolVersion = structuredFixtureName.Contains("noprotocol", StringComparison.Ordinal) ? (int?)null : 1,
+                    agentInfo = new { name = structuredFixtureName.Contains("badidentity", StringComparison.Ordinal) ? "Other Agent" : "Kimi Code CLI", version = "2.4.1 fixture" },
+                    agentCapabilities = new { loadSession = true, sessionCapabilities = new { resume = new { } } } };
+                break;
+            case "session/new":
+                sessionId = "session_" + Guid.NewGuid().ToString("D");
+                result = new { sessionId, modes = FixtureModes(structuredFixtureName) };
+                break;
+            case "session/load":
+                sessionId = parameters.GetProperty("sessionId").GetString();
+                await WriteAsync(new { jsonrpc = "2.0", method = "session/update", @params = new { sessionId, update = new { sessionUpdate = "agent_message_chunk", content = new { type = "text", text = "load replay must not escape" } } } });
+                result = new { modes = FixtureModes(structuredFixtureName) };
+                break;
+            case "session/set_mode":
+            case "session/set_model":
+                if (method == "session/set_model") model = parameters.GetProperty("modelId").GetString() ?? model;
+                else mode = parameters.GetProperty("modeId").GetString() ?? mode;
+                result = new { };
+                break;
+            case "session/prompt":
+                var promptText = parameters.GetProperty("prompt")[0].GetProperty("text").GetString() ?? "";
+                var fixtureId = sessionId ?? throw new InvalidOperationException("ACP session was not initialized.");
+                var answer = $"kimi-acp; model={model}; mode={mode}; prompt={promptText}";
+                if (promptText.Contains("__CAB_SCENARIO_UNKNOWN_NOTIFICATION__", StringComparison.Ordinal))
+                    await WriteAsync(new { jsonrpc = "2.0", method = "future/harmless_notification", @params = new { ignored = true } });
+                if (promptText.Contains("__CAB_SCENARIO_WRONG_UPDATE__", StringComparison.Ordinal))
+                    await WriteAsync(new { jsonrpc = "2.0", method = "session/update", @params = new { sessionId = "session_" + Guid.NewGuid().ToString("D"), update = new { sessionUpdate = "agent_message_chunk", content = new { type = "text", text = "wrong session leak" } } } });
+                if (promptText.Contains("__CAB_SCENARIO_WRONG_PERMISSION__", StringComparison.Ordinal))
+                {
+                    await WriteAsync(new { jsonrpc = "2.0", id, method = "session/request_permission", @params = new { sessionId = "session_" + Guid.NewGuid().ToString("D"),
+                        toolCall = new { toolCallId = "tool-foreign", title = "Foreign session request", rawInput = new { command = "fixture" } },
+                        options = new[] { new { optionId = "approve_once", name = "Approve once", kind = "allow_once" } } } });
+                }
+                if (promptText.Contains("__CAB_SCENARIO_PERMISSION__", StringComparison.Ordinal) || promptText == "fixture-permission")
+                {
+                    var permissionId = promptText.Contains("__CAB_SCENARIO_ID_COLLISION__", StringComparison.Ordinal) ? id : 9001;
+                    await WriteAsync(new { jsonrpc = "2.0", id = permissionId, method = "session/request_permission", @params = new { sessionId = fixtureId,
+                        toolCall = new { toolCallId = "tool-1", title = "Run fixture tool", rawInput = new { command = "fixture" } },
+                        options = new[] { new { optionId = "approve_once", name = "Approve once", kind = "allow_once" }, new { optionId = "reject", name = "Reject", kind = "reject_once" } } } });
+                    var permissionLine = await Console.In.ReadLineAsync() ?? throw new InvalidOperationException("Missing permission response.");
+                    using var permission = JsonDocument.Parse(permissionLine);
+                    if (permission.RootElement.GetProperty("result").GetProperty("outcome").GetProperty("outcome").GetString() != "selected")
+                    {
+                        await WriteAsync(new { jsonrpc = "2.0", id, result = new { stopReason = "cancelled" } });
+                        break;
+                    }
+                }
+                if (promptText.Contains("__CAB_SCENARIO_MISSING_STOP__", StringComparison.Ordinal))
+                {
+                    await WriteAsync(new { jsonrpc = "2.0", id, result = new { } });
+                    continue;
+                }
+                if (promptText.Contains("__CAB_SCENARIO_OVERSIZED_TEXT__", StringComparison.Ordinal))
+                {
+                    await WriteAsync(new { jsonrpc = "2.0", method = "session/update", @params = new { sessionId = fixtureId, update = new { sessionUpdate = "agent_message_chunk", content = new { type = "text", text = new string('x', 1_000_100) } } } });
+                    await WriteAsync(new { jsonrpc = "2.0", id, result = new { stopReason = "end_turn" } });
+                    continue;
+                }
+                if (promptText.Contains("__CAB_SCENARIO_LONG_STDERR__", StringComparison.Ordinal))
+                    await Console.Error.WriteLineAsync(new string('e', 1_000_100));
+                if (promptText.Contains("__CAB_SCENARIO_CANCEL__", StringComparison.Ordinal))
+                    await Task.Delay(Timeout.InfiniteTimeSpan);
+                await WriteAsync(new { jsonrpc = "2.0", method = "session/update", @params = new { sessionId = fixtureId, update = new { sessionUpdate = "agent_message_chunk", content = new { type = "text", text = answer } } } });
+                await WriteAsync(new { jsonrpc = "2.0", id, result = new { stopReason = "end_turn" } });
+                continue;
+            default:
+                await WriteAsync(new { jsonrpc = "2.0", id, error = new { code = -32601, message = "unknown fixture method" } });
+                continue;
+        }
+        await WriteAsync(new { jsonrpc = "2.0", id, result });
+    }
+    return;
+}
+if (structuredFixtureName.StartsWith("kimi", StringComparison.Ordinal))
+{
+    await Console.Error.WriteLineAsync("Kimi ACP fixture accepts only the acp subcommand; prompt data belongs on stdio.");
+    Environment.ExitCode = 64;
+    return;
+}
 if (structuredFixtureName is "qwen" or "kimi")
 {
     var selector = Array.IndexOf(args, structuredFixtureName == "kimi" ? "--session" : "--resume");
@@ -561,4 +656,12 @@ static async Task WriteAsync(object value)
 {
     await Console.Out.WriteLineAsync(JsonSerializer.Serialize(value));
     await Console.Out.FlushAsync();
+}
+
+static object FixtureModes(string fixtureName)
+{
+    var modes = fixtureName.Contains("no-yolo", StringComparison.Ordinal)
+        ? new object[] { new { id = "default", name = "Default" } }
+        : new object[] { new { id = "default", name = "Default" }, new { id = "yolo", name = "YOLO" } };
+    return new { availableModes = modes };
 }

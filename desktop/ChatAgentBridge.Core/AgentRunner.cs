@@ -28,6 +28,10 @@ public interface IAgentRunner
         IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged,
         CancellationToken cancellationToken = default)
         => RunAsync(settings, prompt, progress, cancellationToken);
+
+    Task<AgentRunResult> RunWithOptionsAsync(BridgeSettings settings, string prompt, AppServerRunOptions options,
+        CancellationToken cancellationToken = default)
+        => RunAsync(settings, prompt, options.Progress, options.ActiveTurnChanged, cancellationToken);
 }
 
 public sealed class AgentRunner : IAgentRunner
@@ -45,6 +49,15 @@ public sealed class AgentRunner : IAgentRunner
     public async Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
         IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged,
         CancellationToken cancellationToken = default)
+        => await RunCoreAsync(settings, prompt, progress, activeTurnChanged, null, cancellationToken).ConfigureAwait(false);
+
+    public async Task<AgentRunResult> RunWithOptionsAsync(BridgeSettings settings, string prompt, AppServerRunOptions options,
+        CancellationToken cancellationToken = default)
+        => await RunCoreAsync(settings, prompt, options?.Progress, options?.ActiveTurnChanged, options, cancellationToken).ConfigureAwait(false);
+
+    private async Task<AgentRunResult> RunCoreAsync(BridgeSettings settings, string prompt,
+        IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged,
+        AppServerRunOptions? options, CancellationToken cancellationToken)
     {
         var totalTimer = Stopwatch.StartNew();
         ArgumentNullException.ThrowIfNull(settings);
@@ -64,6 +77,12 @@ public sealed class AgentRunner : IAgentRunner
         var queueTimer = Stopwatch.StartNew();
         using var workspaceLease = await AgentWorkspaceGate.AcquireAsync(workspace, cancellationToken).ConfigureAwait(false);
         var queueMilliseconds = queueTimer.Elapsed.TotalMilliseconds;
+        if (AgentProfile.ResolveProvider(settings) == AgentProfile.Kimi)
+        {
+            var kimi = await KimiAcpRunner.RunAsync(settings, workspace, prompt, options, progress, cancellationToken).ConfigureAwait(false);
+            return kimi with { Metrics = (kimi.Metrics ?? new AgentExecutionMetrics()) with
+                { QueueMilliseconds = queueMilliseconds, TotalMilliseconds = totalTimer.Elapsed.TotalMilliseconds } };
+        }
         var result = await RunLockedAsync(settings, workspace, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false);
         return result with
         {
@@ -116,17 +135,6 @@ public sealed class AgentRunner : IAgentRunner
         };
         if (nodePackage is not null) start.ArgumentList.Add(nodePackage.EntryPoint);
         foreach (var argument in invocation.Arguments) start.ArgumentList.Add(argument);
-        // Kimi Code accepts prompts only through --prompt; ArgumentList keeps user text
-        // as a single value without shell expansion. Never log the resulting command line.
-        if (invocation.Provider == AgentProfile.Kimi)
-        {
-            // Windows limits the complete command line to 32K UTF-16 characters.
-            // Reserve space for executable paths and worst-case quoting; never truncate a request.
-            if (OperatingSystem.IsWindows() && prompt.Length > 12_000)
-                return new AgentRunResult(false, -1, "", CoreText.Get("KimiPromptTooLong"));
-            // The = form also prevents leading dashes in a request becoming CLI options.
-            start.ArgumentList.Add("--prompt=" + prompt);
-        }
 
         using var process = new Process { StartInfo = start, EnableRaisingEvents = true };
         var processStartTimer = Stopwatch.StartNew();
@@ -161,14 +169,13 @@ public sealed class AgentRunner : IAgentRunner
         var stdout = ReadBoundedAsync(process.StandardOutput, MaxCapturedCharacters,
             invocation.Provider == AgentProfile.Codex, invocation.Provider == AgentProfile.Claude, progress,
             structuredCli ? invocation.Provider : null,
-            invocation.Provider == AgentProfile.Kimi ? settings.AuthorizedCliSessionId : null);
+            null);
         var stderr = ReadBoundedTextAsync(process.StandardError, MaxCapturedCharacters, structuredCli ? null : progress);
         try
         {
             try
             {
-                if (invocation.Provider != AgentProfile.Kimi)
-                    await process.StandardInput.WriteAsync(prompt.AsMemory(), cancellationToken).ConfigureAwait(false);
+                await process.StandardInput.WriteAsync(prompt.AsMemory(), cancellationToken).ConfigureAwait(false);
                 await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (IOException ex)

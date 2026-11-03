@@ -723,6 +723,6 @@ AIの操作権限: {8}</value>
   <data name="DiscordConnectionFields" xml:space="preserve"><value>Botトークンと許可するユーザーIDを入力してください。ダイレクトメッセージを有効にしない場合は、許可するサーバーIDも1つ以上必要です。</value></data>
   <data name="KiroProviderHelp" xml:space="preserve"><value>Kiro CLIはWindows 11のネイティブ版を使用します。非対話実行用のKIRO_API_KEYをPC側で設定してください。モデル候補を取得し、同じスレッドの会話を継続します。操作権限と推論の強さはCLIの設定に従います。CLI側の確認が必要な操作は非対話実行では拒否されます。</value></data>
   <data name="QwenProviderHelp" xml:space="preserve"><value>Qwen Codeは同じチャットスレッドの会話を継続します。モデル名を入力し、認証・推論・操作権限はCLI側で設定してください。モデル候補の取得は未対応です。</value></data>
-  <data name="KimiProviderHelp" xml:space="preserve"><value>Kimi Code CLIは同じチャットスレッドの会話を継続します。モデル名またはCLIで設定した別名を入力できます。モデル候補の取得は未対応です。非対話実行ではツール操作が自動承認されるため、実行にはフルアクセスの明示的な選択が必要です。</value></data>
-  <data name="KimiPermissionHelp" xml:space="preserve"><value>Kimiの非対話実行はツール操作を自動承認します。「CLIの既定値」のままでは実行しません。影響を理解した上で「フルアクセス」を選択してください。</value></data>
+  <data name="KimiProviderHelp" xml:space="preserve"><value>Kimi Code CLIは同じチャットスレッドの会話を継続します。モデル名またはCLIで設定した別名を入力できます。モデル候補の取得は未対応です。</value></data>
+  <data name="KimiPermissionHelp" xml:space="preserve"><value>「CLIの既定値を使う」では、承認が必要なツール操作をCABで確認します。「フルアクセス」ではこの確認を省略し、Kimi側の対応が必要です。これらの権限設定は、OSレベルのサンドボックスを提供しません。</value></data>
 </root>

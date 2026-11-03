@@ -742,7 +742,9 @@ public partial class MainPageViewModel : ObservableObject
                         result = run.Result;
                         sessionId = run.SessionId;
                     }
-                    else result = await _agentRunner.RunAsync(settingsSnapshot, promptSnapshot, progress, runCancellation.Token);
+                    else result = await _agentRunner.RunWithOptionsAsync(settingsSnapshot, promptSnapshot,
+                        new AppServerRunOptions(ApprovalHandler: ServerApprovalHandler, InputHandler: ServerInputHandler, Progress: progress),
+                        runCancellation.Token);
                 }
                 finally { LiveOutput.Finish(); }
                 exitCode = result.ExitCode;

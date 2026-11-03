@@ -64,7 +64,7 @@ public sealed class SettingsStore
             if (stored.AgentMode is not (null or "exec" or "app-server"))
                 throw new InvalidDataException("Settings contain an unsupported agent mode.");
             var provider = stored.AgentProvider ?? InferLegacyProvider(stored.AgentExecutable ?? "codex");
-            if (provider is not (AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Custom))
+            if (!AgentProfile.IsSupportedProvider(provider))
                 throw new InvalidDataException("Settings contain an unsupported agent provider.");
             var autoConnect = stored.AutoConnectProvider ?? "none";
             if (autoConnect is not ("none" or "mattermost" or "slack" or "discord"))
@@ -73,7 +73,7 @@ public sealed class SettingsStore
             {
                 WorkspaceRoot = stored.WorkspaceRoot ?? "",
                 AgentExecutable = stored.AgentExecutable ?? "codex",
-                AgentArguments = stored.AgentArguments ?? "exec --json -",
+                AgentArguments = AgentProfile.NormalizeStoredArguments(provider, stored.AgentArguments ?? "exec --json -"),
                 AgentMode = stored.AgentMode ?? "exec",
                 AgentProvider = provider,
                 AgentModel = AgentProfile.NormalizeModel(stored.AgentModel),
@@ -162,6 +162,7 @@ public sealed class SettingsStore
         if (settings.AgentMode is not ("exec" or "app-server"))
             throw new ArgumentException("Agent mode must be exec or app-server.", nameof(settings));
         var provider = AgentProfile.ResolveProvider(settings);
+        var agentArguments = AgentProfile.ValidateManagedArguments(provider, settings.AgentArguments);
         if (settings.AutoConnectProvider is not ("none" or "mattermost" or "slack" or "discord"))
             throw new ArgumentException("Auto-connect provider must be none, mattermost, slack, or discord.", nameof(settings));
         var model = AgentProfile.NormalizeModel(settings.AgentModel);
@@ -206,7 +207,7 @@ public sealed class SettingsStore
             SchemaVersion = CurrentSchemaVersion,
             WorkspaceRoot = settings.WorkspaceRoot,
             AgentExecutable = settings.AgentExecutable,
-            AgentArguments = settings.AgentArguments,
+            AgentArguments = agentArguments,
             AgentMode = settings.AgentMode,
             AgentProvider = provider,
             AgentModel = model,

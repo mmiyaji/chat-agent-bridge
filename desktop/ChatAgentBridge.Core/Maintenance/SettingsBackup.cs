@@ -67,13 +67,8 @@ public sealed record SettingsBackup
         Validate();
         var arguments = Provider switch
         {
-            AgentProfile.Codex => Mode == "app-server" ? "app-server" : AgentProfile.DefaultCodexArguments,
-            AgentProfile.Gemini => AgentProfile.DefaultGeminiArguments,
-            AgentProfile.GitHubCopilot => AgentProfile.DefaultGitHubCopilotArguments,
-            AgentProfile.Antigravity => AgentProfile.DefaultAntigravityArguments,
-            AgentProfile.Kiro => AgentProfile.DefaultKiroArguments,
-            AgentProfile.Qwen => AgentProfile.DefaultQwenArguments,
-            AgentProfile.Kimi => AgentProfile.DefaultKimiArguments,
+            AgentProfile.Codex => Mode == "app-server" ? "app-server" : AgentProfile.DefaultArguments(Provider),
+            AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi => AgentProfile.DefaultArguments(Provider),
             _ => ""
         };
         return new BridgeSettings
