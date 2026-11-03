@@ -25,6 +25,7 @@
                 <StackPanel Spacing="24" HorizontalAlignment="Stretch">
                     <!-- Keep future advanced sections as siblings of LogRetentionControl in this container. -->
                     <maintenance:LogRetentionControl x:Name="LogManagementControl" />
+                    <maintenance:UpdateCacheMaintenanceControl x:Name="UpdateCacheMaintenance" />
                 </StackPanel>
             </settings:SettingsCard>
         </settings:SettingsExpander.Items>

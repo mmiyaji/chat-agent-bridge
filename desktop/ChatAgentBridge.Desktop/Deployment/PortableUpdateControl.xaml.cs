@@ -13,7 +13,6 @@ public sealed partial class PortableUpdateControl : UserControl
     private bool _savingPreference;
     private bool _dialogOpen;
     private bool _downloadRequested;
-    private bool _cleaningCache;
     private bool _readingCacheUsage;
 
     public PortableUpdateControl()
@@ -89,7 +88,6 @@ public sealed partial class PortableUpdateControl : UserControl
         UpdateNoticeAction.IsEnabled = updates.IsSupported && !_dialogOpen && !_downloadRequested;
         StatusText.Visibility = showUpdateNotice ? Visibility.Collapsed : Visibility.Visible;
 
-        CleanCacheButton.IsEnabled = updates.IsSupported && !updates.IsBusy && !_cleaningCache && !_dialogOpen && !_downloadRequested;
         CheckUpdatesButton.IsEnabled = updates.IsSupported && !updates.IsBusy && !_savingPreference && !_dialogOpen && !_downloadRequested;
         ReleaseNotesLink.NavigateUri = updates.AvailableReleasePage ?? new Uri("https://github.com/mmiyaji/chat-agent-bridge/releases");
         AutomationProperties.SetHelpText(ReleaseNotesLink, ReleaseNotesLink.NavigateUri.AbsoluteUri);
@@ -105,6 +103,9 @@ public sealed partial class PortableUpdateControl : UserControl
         var downloading = updates.IsDownloading;
         DownloadProgressBar.Visibility = downloading ? Visibility.Visible : Visibility.Collapsed;
         DownloadProgressBar.Value = Math.Clamp(updates.DownloadProgress, 0, 100);
+        // Maintenance cleanup completes through the same coordinator event. Refresh
+        // the read-only usage only when its section is open and no operation is busy.
+        if (UpdatePreferencesExpander.IsExpanded && !updates.IsBusy) _ = RefreshCacheUsageAsync();
     }
 
     private async Task RefreshCacheUsageAsync()
@@ -121,25 +122,6 @@ public sealed partial class PortableUpdateControl : UserControl
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or ObjectDisposedException)
         { CacheUsage.Text = DesktopText.Get("PortableUpdateCacheUsageUnavailable"); }
         finally { _readingCacheUsage = false; }
-    }
-
-    private async void CleanCache_Click(object sender, RoutedEventArgs e)
-    {
-        if (_cleaningCache || App.PortableUpdates.IsBusy) return;
-        _cleaningCache = true;
-        CacheCleanupStatus.Visibility = Visibility.Visible;
-        CacheCleanupStatus.Text = DesktopText.Get("PortableUpdateCacheCleaning");
-        RefreshState();
-        try
-        {
-            var result = await App.PortableUpdates.CleanCacheAsync();
-            CacheCleanupStatus.Text = DesktopText.Get("PortableUpdateCacheCleaned", result.RemovedBytes / (1024d * 1024d));
-            await RefreshCacheUsageAsync();
-        }
-        catch (OperationCanceledException) { CacheCleanupStatus.Text = DesktopText.Get("PortableUpdateCacheCleanupCanceled"); }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
-        { CacheCleanupStatus.Text = DesktopText.Get("PortableUpdateCacheCleanupFailed"); }
-        finally { _cleaningCache = false; RefreshState(); }
     }
 
     private async void IncludePrereleases_Changed(object sender, RoutedEventArgs e)

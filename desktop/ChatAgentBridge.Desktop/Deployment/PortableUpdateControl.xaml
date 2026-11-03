@@ -70,12 +70,8 @@
                                             <TextBlock x:Uid="PortableUpdateCacheCleanupHelp" TextWrapping="Wrap" />
                                             <TextBlock x:Name="CacheUsage" TextWrapping="Wrap" Visibility="Collapsed"
                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="PortableUpdateCacheUsage" />
-                                            <TextBlock x:Name="CacheCleanupStatus" TextWrapping="Wrap" Visibility="Collapsed"
-                                                       AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="PortableUpdateCacheCleanupStatus" />
                                         </StackPanel>
                                     </settings:SettingsCard.Description>
-                                    <Button x:Name="CleanCacheButton" x:Uid="PortableUpdateCleanCache" Click="CleanCache_Click"
-                                            AutomationProperties.AutomationId="PortableUpdateCleanCache" />
                                 </settings:SettingsCard>
                             </settings:SettingsExpander.Items>
                         </settings:SettingsExpander>
