@@ -17,7 +17,8 @@ public sealed class AuditStore
     {
         "received", "approved", "rejected", "started", "completed", "failed", "cancelled", "reply_sent",
         "reply_failed", "detached", "workspace_changed", "model_changed", "agent_changed",
-        "attachment_approved", "attachment_sent", "attachment_failed", "follow_up_applied", "follow_up_uncertain"
+        "attachment_approved", "attachment_sent", "attachment_failed", "follow_up_applied", "follow_up_uncertain",
+        "schedule_created", "schedule_removed", "schedule_fired", "schedule_skipped"
     };
     private const int MaxEntryBytes = 16 * 1024;
     private const int MaxSegmentBytes = 16 * 1024 * 1024;
@@ -111,6 +112,27 @@ public sealed class AuditStore
             var policy = await new LogRetentionPreferencesStore(_directory).LoadAsync(cancellationToken).ConfigureAwait(false);
             var state = await GetStateAsync(policy, false, cancellationToken, checkInventory: true).ConfigureAwait(false);
             return state.Recent.ToArray();
+        }
+        catch { States.TryRemove(_filePath, out _); throw; }
+        finally { gate.Release(); }
+    }
+
+    /// <summary>Streams every retained event, oldest segment first, without loading the whole history into memory.</summary>
+    public async Task ReadAllAsync(Func<AuditEvent, Task> sink, CancellationToken cancellationToken = default)
+    {
+        var gate = HistoryFileStore.LockFor(_filePath);
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            EnsureSafe(_directory);
+            var policy = await new LogRetentionPreferencesStore(_directory).LoadAsync(cancellationToken).ConfigureAwait(false);
+            var state = await GetStateAsync(policy, false, cancellationToken, checkInventory: true).ConfigureAwait(false);
+            var paths = state.Segments.Select(segment => segment.Path).ToArray();
+            for (var index = 0; index < paths.Length; index++)
+            {
+                var (_, records, _) = await ReadSegmentAsync(paths[index], index == paths.Length - 1, cancellationToken).ConfigureAwait(false);
+                foreach (var record in records.OrderBy(record => record.Timestamp)) await sink(record).ConfigureAwait(false);
+            }
         }
         catch { States.TryRemove(_filePath, out _); throw; }
         finally { gate.Release(); }

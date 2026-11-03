@@ -88,4 +88,18 @@
   <data name="DiscordActionBusy" xml:space="preserve"><value>承認を処理中です。しばらくしてから再度お試しください。</value></data>
   <data name="DiscordActionUnavailable" xml:space="preserve"><value>この承認は利用できなくなりました。</value></data>
   <data name="DiscordActionClosed" xml:space="preserve"><value>この承認は終了しました。現在の状態は進捗メッセージまたは PC で確認してください。</value></data>
+  <data name="ApprovalRiskHigh" xml:space="preserve"><value>⚠️ 危険度が高い操作です:</value></data>
+  <data name="ApprovalRiskElevated" xml:space="preserve"><value>内容をよく確認してください:</value></data>
+  <data name="ApprovalRiskRecursiveDelete" xml:space="preserve"><value>再帰的な削除またはディスクの初期化</value></data>
+  <data name="ApprovalRiskForcePush" xml:space="preserve"><value>強制プッシュまたはハードリセット</value></data>
+  <data name="ApprovalRiskPipeToShell" xml:space="preserve"><value>コードをダウンロードして実行</value></data>
+  <data name="ApprovalRiskElevation" xml:space="preserve"><value>管理者権限での実行</value></data>
+  <data name="ApprovalRiskSystemChange" xml:space="preserve"><value>システムまたはレジストリの変更</value></data>
+  <data name="ApprovalRiskDatabaseDrop" xml:space="preserve"><value>データベースのデータ削除</value></data>
+  <data name="ApprovalRiskNetworkTransfer" xml:space="preserve"><value>ネットワーク通信</value></data>
+  <data name="ApprovalRiskPackageInstall" xml:space="preserve"><value>パッケージのインストール</value></data>
+  <data name="ApprovalRiskDelete" xml:space="preserve"><value>ファイルの削除</value></data>
+  <data name="ApprovalRiskGitWrite" xml:space="preserve"><value>gitの履歴やブランチの変更</value></data>
+  <data name="ApprovalRiskTruncated" xml:space="preserve"><value>コマンドが長いため、すべては確認できていません</value></data>
+  <data name="ApprovalRiskCodeOnly" xml:space="preserve"><value>危険度が高いため承認ボタンは出しません。下のコードを返信するか、PCで判断してください。</value></data>
 </root>

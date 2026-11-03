@@ -79,6 +79,9 @@ public sealed class ChatControlCommandTests
     [InlineData("FORGET all", ChatControlCommandKind.Forget, "all")]
     [InlineData("!cab memory", ChatControlCommandKind.Memory, null)]
     [InlineData("!cab usage", ChatControlCommandKind.Usage, null)]
+    [InlineData("!cab schedule list", ChatControlCommandKind.Schedule, "list")]
+    [InlineData("!cab schedule add daily 09:00 run tests", ChatControlCommandKind.Schedule, "add daily 09:00 run tests")]
+    [InlineData("schedule", ChatControlCommandKind.Schedule, "")]
     public void ParsesMemoryAndUsageCommands(string text, ChatControlCommandKind kind, string? argument)
     {
         var command = ChatControlCommand.Parse(text);

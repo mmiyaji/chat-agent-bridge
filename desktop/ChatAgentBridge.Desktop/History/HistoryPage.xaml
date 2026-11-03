@@ -29,6 +29,7 @@
             </StackPanel>
             <StackPanel x:Name="HistoryHeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button x:Name="HistoryAgentSettingsButton" Click="AgentSettingsRequested_Click" AutomationProperties.AutomationId="AgentSettingsFromHistory" x:Uid="AgentSettingsFromHistory" />
+                <Button x:Name="ExportAuditButton" Click="ExportAudit_Click" AutomationProperties.AutomationId="ExportAuditHistory" x:Uid="ExportAuditHistory" />
                 <Button Command="{x:Bind ViewModel.RefreshCommand}" AutomationProperties.AutomationId="RefreshHistory" x:Uid="RefreshHistory" />
             </StackPanel>
         </Grid>

@@ -68,6 +68,44 @@ public sealed partial class HistoryPage : Page
 
     private void AgentSettingsRequested_Click(object sender, RoutedEventArgs e) => AgentSettingsRequested?.Invoke();
 
+    private bool _exportingAudit;
+
+    private async void ExportAudit_Click(object sender, RoutedEventArgs e)
+    {
+        if (_exportingAudit) return;
+        _exportingAudit = true;
+        ExportAuditButton.IsEnabled = false;
+        try
+        {
+            var picker = new Windows.Storage.Pickers.FileSavePicker { SuggestedFileName = $"chat-agent-bridge-audit-{DateTime.Now:yyyyMMdd}" };
+            picker.FileTypeChoices.Add(DesktopText.Get("AuditExportCsv"), new List<string> { ".csv" });
+            picker.FileTypeChoices.Add(DesktopText.Get("AuditExportJsonl"), new List<string> { ".jsonl" });
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, App.WindowHandle);
+            var file = await picker.PickSaveFileAsync();
+            if (file is null) return;
+            var format = string.Equals(file.FileType, ".jsonl", StringComparison.OrdinalIgnoreCase)
+                ? ChatAgentBridge.Core.History.AuditExportFormat.Jsonl : ChatAgentBridge.Core.History.AuditExportFormat.Csv;
+            int count;
+            await using (var stream = await file.OpenStreamForWriteAsync())
+            {
+                stream.SetLength(0);
+                // A BOM lets Excel read the CSV as UTF-8.
+                await using var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(format == ChatAgentBridge.Core.History.AuditExportFormat.Csv));
+                count = await ChatAgentBridge.Core.History.AuditExporter.ExportAsync(new ChatAgentBridge.Core.History.AuditStore(), writer, format);
+            }
+            ViewModel.Status = DesktopText.Get("AuditExportSaved", count);
+        }
+        catch (Exception)
+        {
+            ViewModel.Status = DesktopText.Get("AuditExportFailed");
+        }
+        finally
+        {
+            _exportingAudit = false;
+            ExportAuditButton.IsEnabled = true;
+        }
+    }
+
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);

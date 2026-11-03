@@ -530,6 +530,9 @@
   <data name="AgentSettingsFromHistory.Content" xml:space="preserve">
     <value>エージェント設定を開く</value>
   </data>
+  <data name="ExportAuditHistory.Content" xml:space="preserve">
+    <value>監査ログを出力</value>
+  </data>
   <data name="RefreshHistory.Content" xml:space="preserve">
     <value>更新</value>
   </data>

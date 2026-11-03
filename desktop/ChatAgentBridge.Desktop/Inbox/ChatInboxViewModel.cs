@@ -756,6 +756,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             _automaticallyAttempted.Clear();
             Selected = null;
             _transport = transport;
+            App.DispatcherQueue.TryEnqueue(StartScheduleTimer);
             _connectionSettings = settings;
             NotifyConnectionPresentation();
             var connection = new CancellationTokenSource();

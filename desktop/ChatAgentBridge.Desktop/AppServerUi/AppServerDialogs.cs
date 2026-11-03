@@ -23,7 +23,14 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
             await OnUiAsync(() =>
             {
                 App.PendingRequestNotifications.TryNotifyPendingRequest(Notifications.PendingNotificationKind.AiApproval,
-                    () => { quickDecision.TrySetResult(AppServerDecision.Accept); return Task.CompletedTask; },
+                    // A high-risk command is never approved from the toast; the button just brings the details forward.
+                    () =>
+                    {
+                        if (ChatAgentBridge.Core.AppServer.ApprovalRisk.Assess(approval).Level == ChatAgentBridge.Core.AppServer.ApprovalRiskLevel.High)
+                            App.Tray.ShowWindow();
+                        else quickDecision.TrySetResult(AppServerDecision.Accept);
+                        return Task.CompletedTask;
+                    },
                     () => { quickDecision.TrySetResult(AppServerDecision.Decline); return Task.CompletedTask; },
                     () => { App.Tray.ShowWindow(); return Task.CompletedTask; }, out token);
             });
@@ -149,6 +156,19 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
             Text = DesktopText.Get("AppServerApprovalPrompt"),
             TextWrapping = TextWrapping.Wrap
         });
+
+        var risk = ChatAgentBridge.Core.AppServer.ApprovalRisk.Assess(approval);
+        if (risk.Level != ChatAgentBridge.Core.AppServer.ApprovalRiskLevel.Normal)
+        {
+            var high = risk.Level == ChatAgentBridge.Core.AppServer.ApprovalRiskLevel.High;
+            body.Children.Add(new TextBlock
+            {
+                Text = ChatAgentBridge.Core.AppServer.ApprovalRisk.Describe(risk),
+                TextWrapping = TextWrapping.Wrap,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[high ? "SystemFillColorCriticalBrush" : "SystemFillColorCautionBrush"]
+            });
+        }
 
         var details = new StackPanel { Spacing = 8 };
         AddDetail(details, DesktopText.Get("Method"), approval.Method);
