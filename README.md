@@ -89,8 +89,8 @@ The working folder and trusted locations are shared settings. Configure the exec
 | Gemini CLI / GitHub Copilot CLI | Supported | Enter a model name; reasoning settings remain CLI-managed |
 | Antigravity CLI (`agy`) | Supported | Fetch the model list from `agy models` or enter a model name; reasoning stays CLI-managed. Headless mode auto-denies edits and commands unless the permission mode is workspace write or full access, or `settings.json` has allow rules |
 | Kiro CLI (`kiro-cli`, Windows 11) | Implemented; live-service verification pending | Fetch models from the CLI or enter a model ID. Headless runs require `KIRO_API_KEY`; permissions and reasoning remain CLI-managed. Credits are not shown as token costs |
-| Qwen Code (`qwen`) | Implemented; live-service verification pending | Enter a model ID. CLI-managed authentication, reasoning and tool permissions; no automatic YOLO flag |
-| Kimi Code CLI (`kimi`) | Implemented; live-service verification pending | Enter a model name or configured alias. Requires explicit Full access because headless mode auto-approves tools; no token-cost estimates from unreported usage |
+| Qwen Code (`qwen`) | Preview; live-service verification pending | Enter a model ID. CLI-managed authentication, reasoning and tool permissions; no automatic YOLO flag |
+| Kimi Code CLI (`kimi`) | Preview; live-service verification pending | Enter a model name or configured alias. Requires explicit Full access because headless mode auto-approves tools; no token-cost estimates from unreported usage |
 | Other CLI | Independent execution for each request | Configure the CLI or its launch arguments |
 
 Change a conversation's agent or model from its details on the PC or from chat. Agent switching uses CLIs checked and registered in the app. You choose whether to pass conversation notes to the new agent.

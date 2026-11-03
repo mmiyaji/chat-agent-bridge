@@ -1373,4 +1373,5 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="LoadRegisteredKiroConnection.Content" xml:space="preserve"><value>Load registered Kiro CLI</value></data>
   <data name="LoadRegisteredQwenConnection.Content" xml:space="preserve"><value>Load registered Qwen Code</value></data>
   <data name="LoadRegisteredKimiConnection.Content" xml:space="preserve"><value>Load registered Kimi Code CLI</value></data>
+  <data name="AgentProfilePreview.Text" xml:space="preserve"><value>Preview</value></data>
 </root>

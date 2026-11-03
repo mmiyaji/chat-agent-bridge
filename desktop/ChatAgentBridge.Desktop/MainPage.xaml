@@ -405,8 +405,8 @@
                                             <ComboBoxItem Content="GitHub Copilot CLI" Tag="github-copilot" AutomationProperties.AutomationId="ProviderOptionCopilot" />
                                             <ComboBoxItem Content="Antigravity CLI" Tag="antigravity" AutomationProperties.AutomationId="ProviderOptionAntigravity" />
                                             <ComboBoxItem Content="Kiro CLI" Tag="kiro" AutomationProperties.AutomationId="ProviderOptionKiro" />
-                                            <ComboBoxItem Content="Qwen Code" Tag="qwen" AutomationProperties.AutomationId="ProviderOptionQwen" />
-                                            <ComboBoxItem Content="Kimi Code CLI" Tag="kimi" AutomationProperties.AutomationId="ProviderOptionKimi" />
+                                            <ComboBoxItem Content="Qwen Code (Preview)" Tag="qwen" AutomationProperties.AutomationId="ProviderOptionQwen" />
+                                            <ComboBoxItem Content="Kimi Code CLI (Preview)" Tag="kimi" AutomationProperties.AutomationId="ProviderOptionKimi" />
                                             <ComboBoxItem  Tag="custom" AutomationProperties.AutomationId="ProviderOptionCustom"  x:Uid="ProviderOptionCustom" />
                                         </ComboBox>
                                         <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="BasicProviderHelp" />

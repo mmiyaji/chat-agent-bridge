@@ -1373,4 +1373,5 @@
   <data name="LoadRegisteredKiroConnection.Content" xml:space="preserve"><value>登録済みKiro CLIを呼び出す</value></data>
   <data name="LoadRegisteredQwenConnection.Content" xml:space="preserve"><value>登録済みQwen Codeを呼び出す</value></data>
   <data name="LoadRegisteredKimiConnection.Content" xml:space="preserve"><value>登録済みKimi Code CLIを呼び出す</value></data>
+  <data name="AgentProfilePreview.Text" xml:space="preserve"><value>Preview</value></data>
 </root>

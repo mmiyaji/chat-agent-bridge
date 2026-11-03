@@ -22,6 +22,13 @@
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <TextBlock Text="{x:Bind Editor.AgentProviderDisplayName, Mode=OneWay}"
                                Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" />
+                    <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                            CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,2" VerticalAlignment="Center"
+                            Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsPreviewProvider), Mode=OneWay}"
+                            AutomationProperties.AutomationId="AgentPreviewBadge">
+                        <TextBlock x:Uid="AgentProfilePreview" localization:LocalizedResourceKey.Key="AgentProfilePreview"
+                                   Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </Border>
                     <Border Background="{ThemeResource AccentFillColorDefaultBrush}" CornerRadius="10"
                         Padding="10,3" VerticalAlignment="Center"
                         Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(IsActiveProvider), Mode=OneWay}">
