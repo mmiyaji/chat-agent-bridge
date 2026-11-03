@@ -71,7 +71,7 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>
-                <NavigationViewItem Tag="chat" AutomationProperties.AutomationId="NavChatConnectionStatus"
+                <NavigationViewItem x:Name="NavChatConnectionStatus" Tag="chat" AutomationProperties.AutomationId="NavChatConnectionStatus"
                                     AutomationProperties.LiveSetting="Polite"
                                     Icon="{x:Bind local:MainPage.ConnectionNavigationIcon(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"
                                     Content="{x:Bind local:MainPage.ConnectionNavigationCompactLabel(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionTone), Mode=OneWay}"

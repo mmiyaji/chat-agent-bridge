@@ -1,42 +1,53 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Windows.Foundation;
 
 namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
-    private void QueueFooterBadgeLayout() => DispatcherQueue.TryEnqueue(UpdateFooterBadgeLayout);
+    private bool _footerBadgeLayoutQueued;
+
+    private void QueueFooterBadgeLayout()
+    {
+        if (_footerBadgeLayoutQueued) return;
+        _footerBadgeLayoutQueued = DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            _footerBadgeLayoutQueued = false;
+            UpdateFooterBadgeLayout();
+        });
+    }
 
     private void UpdateFooterBadgeLayout()
     {
         if (MainNavigation is null || AboutUpdateBadge is null || ConnectionStatusBadge is null) return;
         var compact = !MainNavigation.IsPaneOpen;
-        // Native compact navigation moves InfoBadge to the upper right. These two
-        // footer badges need distinct placements instead of overlapping their icons.
-        var updatePositioned = ConfigureFooterBadge(AboutUpdateBadge, compact, isUpdate: true);
-        AboutNavigationIcon.Opacity = compact && updatePositioned && AboutUpdateBadge.Visibility == Visibility.Visible ? 0 : 1;
-        ConfigureFooterBadge(ConnectionStatusBadge, compact, isUpdate: false);
+        var hasUpdate = AboutUpdateBadge.Visibility == Visibility.Visible;
+        AboutNavigationIcon.Opacity = compact && hasUpdate ? 0 : 1;
+        PositionFooterBadge(AboutUpdateBadge, AboutNavigationIcon, compact, isUpdate: true);
+        if (NavChatConnectionStatus.Icon is { } serviceIcon)
+            PositionFooterBadge(ConnectionStatusBadge, serviceIcon, compact, isUpdate: false);
     }
 
-    private static bool ConfigureFooterBadge(InfoBadge badge, bool compact, bool isUpdate)
+    private void PositionFooterBadge(InfoBadge badge, IconElement icon, bool compact, bool isUpdate)
     {
         var size = compact && !isUpdate ? 8 : 24;
         badge.Width = badge.Height = badge.MinWidth = badge.MinHeight = size;
         badge.Margin = compact ? new Thickness(0) : new Thickness(0, 0, 4, 0);
-        // Adjust the native presenter rather than copying NavigationViewItem's template.
-        // If a future WinUI template renames it, the default badge remains functional.
-        for (DependencyObject? parent = VisualTreeHelper.GetParent(badge); parent is not null;
-             parent = VisualTreeHelper.GetParent(parent))
+        badge.RenderTransform = null;
+        if (!compact || badge.Visibility != Visibility.Visible || !badge.IsLoaded || !icon.IsLoaded) return;
+        // Measure after WinUI applies its compact state. RenderTransform is independent
+        // of native visual-state setters, unlike changing the badge presenter's alignment.
+        MainNavigation.UpdateLayout();
+        var iconBounds = icon.TransformToVisual(MainNavigation).TransformBounds(new Rect(0, 0, icon.ActualWidth, icon.ActualHeight));
+        var badgeBounds = badge.TransformToVisual(MainNavigation).TransformBounds(new Rect(0, 0, badge.ActualWidth, badge.ActualHeight));
+        var centerX = isUpdate ? iconBounds.X + iconBounds.Width / 2 : iconBounds.Right + 2;
+        var centerY = isUpdate ? iconBounds.Y + iconBounds.Height / 2 : iconBounds.Bottom + 2;
+        badge.RenderTransform = new TranslateTransform
         {
-            if (parent is not ContentPresenter { Name: "InfoBadgePresenter" } presenter) continue;
-            presenter.HorizontalAlignment = compact
-                ? (isUpdate ? HorizontalAlignment.Center : HorizontalAlignment.Right)
-                : HorizontalAlignment.Stretch;
-            presenter.VerticalAlignment = compact && !isUpdate ? VerticalAlignment.Bottom : VerticalAlignment.Center;
-            presenter.Margin = compact && !isUpdate ? new Thickness(0, 0, 4, 2) : new Thickness(0);
-            return true;
-        }
-        return false;
+            X = centerX - (badgeBounds.X + badgeBounds.Width / 2),
+            Y = centerY - (badgeBounds.Y + badgeBounds.Height / 2)
+        };
     }
 }
