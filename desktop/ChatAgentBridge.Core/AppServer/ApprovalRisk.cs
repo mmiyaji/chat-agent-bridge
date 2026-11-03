@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace ChatAgentBridge.Core.AppServer;
 
-public enum ApprovalRiskLevel { Normal, Elevated, High }
+public enum ApprovalRiskLevel { Normal, High }
 
 /// <summary>Why an approval deserves a closer look. <see cref="ReasonKeys"/> are Core resource names.</summary>
 public sealed record ApprovalRiskAssessment(ApprovalRiskLevel Level, IReadOnlyList<string> ReasonKeys)
@@ -36,14 +36,6 @@ public static class ApprovalRisk
             Rule(@"\b(reg\s+(add|delete)|Set-ItemProperty\s+[^|;]*HK(LM|CU)|New-ItemProperty\s+[^|;]*HK(LM|CU)|schtasks\s+/create|sc\s+(config|create|delete)|netsh\s|shutdown|diskpart)\b")),
         ("ApprovalRiskDatabaseDrop", ApprovalRiskLevel.High,
             Rule(@"\bdrop\s+(table|database|schema)\b|\btruncate\s+table\b|\bdelete\s+from\s+\w+\s*(;|$)")),
-        ("ApprovalRiskNetworkTransfer", ApprovalRiskLevel.Elevated,
-            Rule(@"\b(curl|wget|iwr|irm|Invoke-WebRequest|Invoke-RestMethod|scp|rsync|ftp|nc|ncat)\b")),
-        ("ApprovalRiskPackageInstall", ApprovalRiskLevel.Elevated,
-            Rule(@"\b(npm|pnpm|yarn)\s+(install|i|add)\b|\bpip3?\s+install\b|\bwinget\s+install\b|\bchoco\s+install\b|\bapt(-get)?\s+install\b|\bbrew\s+install\b|\bdotnet\s+tool\s+install\b|\bgem\s+install\b|\bcargo\s+install\b")),
-        ("ApprovalRiskDelete", ApprovalRiskLevel.Elevated,
-            Rule(@"(^|[\s;&|])(rm|del|erase|Remove-Item|rmdir|rd)\s")),
-        ("ApprovalRiskGitWrite", ApprovalRiskLevel.Elevated,
-            Rule(@"\bgit\s+(commit|merge|rebase|checkout|reset|clean|branch\s+-[dD]|tag\s+-d)\b")),
     ];
 
     public static ApprovalRiskAssessment Assess(AppServerApproval approval)
@@ -67,12 +59,6 @@ public static class ApprovalRisk
             reasons.Add(key);
             if (ruleLevel > level) level = ruleLevel;
         }
-        // A truncated command may hide anything past the cut, so the approver should know it was not fully inspected.
-        if (command.Length > MaximumInspected)
-        {
-            reasons.Add("ApprovalRiskTruncated");
-            if (level < ApprovalRiskLevel.Elevated) level = ApprovalRiskLevel.Elevated;
-        }
         return reasons.Count == 0 ? ApprovalRiskAssessment.Normal : new(level, reasons);
     }
 
@@ -81,7 +67,7 @@ public static class ApprovalRisk
     {
         ArgumentNullException.ThrowIfNull(assessment);
         if (assessment.Level == ApprovalRiskLevel.Normal) return "";
-        var headline = Localization.CoreText.Get(assessment.Level == ApprovalRiskLevel.High ? "ApprovalRiskHigh" : "ApprovalRiskElevated");
+        var headline = Localization.CoreText.Get("ApprovalRiskHigh");
         return headline + " " + string.Join(" / ", assessment.ReasonKeys.Select(key => Localization.CoreText.Get(key)));
     }
 }

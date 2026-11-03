@@ -89,17 +89,11 @@
   <data name="DiscordActionUnavailable" xml:space="preserve"><value>This approval is no longer available.</value></data>
   <data name="DiscordActionClosed" xml:space="preserve"><value>This approval is closed. Check the progress message or PC for the current status.</value></data>
   <data name="ApprovalRiskHigh" xml:space="preserve"><value>⚠️ High risk:</value></data>
-  <data name="ApprovalRiskElevated" xml:space="preserve"><value>Check carefully:</value></data>
   <data name="ApprovalRiskRecursiveDelete" xml:space="preserve"><value>recursive delete or disk format</value></data>
   <data name="ApprovalRiskForcePush" xml:space="preserve"><value>force push or hard reset</value></data>
   <data name="ApprovalRiskPipeToShell" xml:space="preserve"><value>downloads and runs code</value></data>
   <data name="ApprovalRiskElevation" xml:space="preserve"><value>elevated privileges</value></data>
   <data name="ApprovalRiskSystemChange" xml:space="preserve"><value>system or registry change</value></data>
   <data name="ApprovalRiskDatabaseDrop" xml:space="preserve"><value>drops database data</value></data>
-  <data name="ApprovalRiskNetworkTransfer" xml:space="preserve"><value>network transfer</value></data>
-  <data name="ApprovalRiskPackageInstall" xml:space="preserve"><value>installs packages</value></data>
-  <data name="ApprovalRiskDelete" xml:space="preserve"><value>deletes files</value></data>
-  <data name="ApprovalRiskGitWrite" xml:space="preserve"><value>changes git history or branches</value></data>
-  <data name="ApprovalRiskTruncated" xml:space="preserve"><value>the command is long and was not fully checked</value></data>
-  <data name="ApprovalRiskCodeOnly" xml:space="preserve"><value>This is high risk, so there are no approval buttons. Reply with the code below, or decide on the PC.</value></data>
+  <data name="ApprovalRiskApprovalReminder" xml:space="preserve"><value>Review the command before approving. The usual approval controls still apply.</value></data>
 </root>

@@ -112,6 +112,7 @@ See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるc
 **Chat settings** contains approval and sharing rules common to all chat services, along with each service's connection details and allowed users.
 
 - **Request approval** can be required every time, only for the first request, or handled automatically. This approval starts the request; the CLI's permission to perform individual operations is configured separately.
+- Codex App Server approvals show an informational warning for a small set of clearly destructive command patterns. The warning does not change the available approval controls or replace the CLI's permission safeguards.
 - **Access restrictions** specify who and which conversations can send requests. Register folders where requests may start as trusted working folders. Changing the folder from chat requires a location within that scope and approval on the PC.
 - **Result sharing** can be manual, automatic or disabled. Sent content is visible to everyone who can access the destination chat or thread.
 - **Generated file attachments** require approval each time by default. You can instead require approval only for the first attachment in a thread, allow automatic attachments or prohibit attachments. Set per-file size, total size and file count limits.

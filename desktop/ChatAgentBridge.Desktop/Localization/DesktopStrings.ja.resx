@@ -182,6 +182,7 @@
   <data name="NotificationChatRequestBody" xml:space="preserve"><value>応答待ちのチャット依頼があります。</value></data>
   <data name="NotificationAiApprovalTitle" xml:space="preserve"><value>AI 操作の承認</value></data>
   <data name="NotificationAiApprovalBody" xml:space="preserve"><value>承認すると保存済みの PC 設定で実行します。</value></data>
+  <data name="NotificationAiApprovalHighRiskBody" xml:space="preserve"><value>危険性の高いコマンドです。承認前に内容を確認してください。承認方法は通常どおりです。</value></data>
   <data name="ApproveAndRun" xml:space="preserve"><value>承認して実行</value></data>
   <data name="NotificationDispatchFailed" xml:space="preserve"><value>Windows 通知の操作を UI スレッドへ渡せませんでした。</value></data>
   <data name="NotificationExpiredOpenApp" xml:space="preserve"><value>この通知は現在利用できません。アプリで依頼と接続の状態を確認してください。</value></data>

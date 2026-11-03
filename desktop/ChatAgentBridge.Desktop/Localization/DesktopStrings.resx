@@ -182,6 +182,7 @@
   <data name="NotificationChatRequestBody" xml:space="preserve"><value>A chat request is waiting for a response.</value></data>
   <data name="NotificationAiApprovalTitle" xml:space="preserve"><value>AI action approval</value></data>
   <data name="NotificationAiApprovalBody" xml:space="preserve"><value>Approval runs the action using the saved PC settings.</value></data>
+  <data name="NotificationAiApprovalHighRiskBody" xml:space="preserve"><value>High-risk command. Review the details before approving; the usual approval options still apply.</value></data>
   <data name="ApproveAndRun" xml:space="preserve"><value>Approve and run</value></data>
   <data name="NotificationDispatchFailed" xml:space="preserve"><value>Could not dispatch the Windows notification action to the UI thread.</value></data>
   <data name="NotificationExpiredOpenApp" xml:space="preserve"><value>This notification is no longer valid. Check the current request and connection in the app.</value></data>
