@@ -25,6 +25,19 @@ public static class NodeCliPackageResolver
 
     private static Resolution? ResolveUncached(string configuredExecutable, string provider)
     {
+        var explicitPath = configuredExecutable.Trim().Trim('"');
+        if (provider == AgentProfile.Qwen && Path.IsPathFullyQualified(explicitPath) &&
+            Path.GetFileName(explicitPath).Equals("node.exe", StringComparison.OrdinalIgnoreCase))
+        {
+            var explicitNode = Path.GetFullPath(explicitPath);
+            var nodeDirectory = Path.GetDirectoryName(explicitNode)!;
+            if (!Path.GetFileName(nodeDirectory).Equals("node", StringComparison.OrdinalIgnoreCase)) return null;
+            var root = Path.GetDirectoryName(nodeDirectory);
+            if (root is null) return null;
+            var standalone = ResolveQwenStandalone(Path.Combine(root, "bin", "qwen.cmd"));
+            return standalone is not null && standalone.Executable.Equals(explicitNode, StringComparison.OrdinalIgnoreCase)
+                ? standalone : null;
+        }
         var shim = FindShim(configuredExecutable, provider);
         if (shim is null) return null;
 

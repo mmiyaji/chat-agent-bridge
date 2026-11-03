@@ -235,11 +235,11 @@ public static class AgentProfile
             if (new[] { ".js", ".mjs", ".cjs" }.Contains(Path.GetExtension(configured[index]), StringComparer.OrdinalIgnoreCase))
             { scriptIndex = index; break; }
             if (!safeNodeOptions.Contains(configured[index]))
-                throw new InvalidOperationException("A Node CLI version check requires a JavaScript entrypoint in AgentArguments. Only --no-warnings, --no-deprecation, --trace-warnings, --preserve-symlinks, and --enable-source-maps may precede the entrypoint.");
+                throw new InvalidOperationException(CoreText.Get(provider == Qwen ? "QwenLauncherRequired" : "CliNodeEntrypointRequired"));
         }
         if (scriptIndex >= 0) return configured.Take(scriptIndex + 1).ToArray();
         if (configured.Count == 0) return Array.Empty<string>();
-        throw new InvalidOperationException("A Node CLI version check requires a JavaScript entrypoint in AgentArguments; arbitrary Node code or task flags are not run during a version check.");
+        throw new InvalidOperationException(CoreText.Get(provider == Qwen ? "QwenLauncherRequired" : "CliNodeEntrypointRequired"));
     }
 
     internal static IReadOnlyList<string> BuildClaudeArguments(string? model, string? sessionId = null, string? effort = null, string permissionMode = "inherit")

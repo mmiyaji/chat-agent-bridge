@@ -454,3 +454,5 @@ Kimi Code CLIのWindows連携は `--prompt` に依頼を渡すため、依頼本
 Qwen CodeとKimi Code CLIには、実サービス検証が完了するまで設定見出しと選択肢にPreviewを表示します。
 
 設定画面ではエージェント・チャットサービスごとに異なるアウトラインアイコンを表示します。Gemini CLIには「移行推奨」を表示し、新規設定にはAntigravity CLIを推奨します。Gemini CLIの企業契約・APIキー利用は継続対象です。[Googleの移行案内](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/)。
+
+WindowsのQwen公式スタンドアロン版は、`qwen`、公式の`qwen.cmd`、または同梱の`node.exe`を指定できます。CABが配置を検証し、Qwen本体のJavaScriptファイルを自動で解決します。

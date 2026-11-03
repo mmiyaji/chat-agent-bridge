@@ -104,4 +104,6 @@
   <data name="ApprovalRiskCodeOnly" xml:space="preserve"><value>危険度が高いため承認ボタンは出しません。下のコードを返信するか、PCで判断してください。</value></data>
   <data name="KimiFullAccessRequired" xml:space="preserve"><value>Kimi Code CLIの非対話モードはツール操作を自動承認します。実行する場合は、エージェント設定で明示的に「フルアクセス」を選択してください。</value></data>
   <data name="KimiPromptTooLong" xml:space="preserve"><value>Windows版Kimi Code CLIに渡せる依頼文の長さを超えています。依頼文を短くするか、引き継ぎ要約なしで新しい会話を開始してください。</value></data>
+  <data name="QwenLauncherRequired" xml:space="preserve"><value>Qwen Codeの実行ファイルにはqwen、または公式のqwen.cmdを指定してください。公式スタンドアロン版の同梱node.exeも使用できます。一般的なnode.exeだけではQwen Codeを起動できません。</value></data>
+  <data name="CliNodeEntrypointRequired" xml:space="preserve"><value>Node.js単体はAIのCLIではありません。CLI本体の実行ファイルを選ぶか、起動引数の先頭にCLIのJavaScriptファイルを指定してください。コード実行・モジュール読み込み用のNodeオプションはCLI確認では実行しません。</value></data>
 </root>

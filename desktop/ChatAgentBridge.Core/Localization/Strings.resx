@@ -104,4 +104,6 @@
   <data name="ApprovalRiskCodeOnly" xml:space="preserve"><value>This is high risk, so there are no approval buttons. Reply with the code below, or decide on the PC.</value></data>
   <data name="KimiFullAccessRequired" xml:space="preserve"><value>Kimi Code CLI headless mode automatically approves tool calls. Explicitly select Full access in Agent settings before executing this CLI.</value></data>
   <data name="KimiPromptTooLong" xml:space="preserve"><value>The request is too long for Kimi Code CLI on Windows. Shorten the message or start a new conversation without a handoff summary.</value></data>
+  <data name="QwenLauncherRequired" xml:space="preserve"><value>Select qwen or the official qwen.cmd launcher for Qwen Code. Its official standalone installation also supports the bundled node.exe. A general Node.js executable alone cannot start Qwen Code.</value></data>
+  <data name="CliNodeEntrypointRequired" xml:space="preserve"><value>Node.js alone is not an AI CLI. Select the CLI launcher or specify its JavaScript entrypoint before the CLI arguments. Code-evaluation or module-loading Node options are not run during CLI checks.</value></data>
 </root>

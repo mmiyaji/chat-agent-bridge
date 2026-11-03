@@ -34,6 +34,32 @@ public sealed class QwenStandaloneResolverTests : IDisposable
         Assert.Equal(Path.GetFullPath(Path.Combine(root, "qwen-code/node/node.exe")), result!.Executable);
         Assert.Equal(Path.GetFullPath(Path.Combine(root, "qwen-code/lib/cli-entry.js")), result.EntryPoint);
     }
+    [Fact]
+    public void ResolvesExplicitBundledNodeWithoutExecutingIt()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        Setup(true);
+        var node = Path.GetFullPath(Path.Combine(root, "qwen-code/node/node.exe"));
+        var result = NodeCliPackageResolver.Resolve(node, AgentProfile.Qwen);
+        Assert.Equal(node, result!.Executable);
+        Assert.Equal(Path.GetFullPath(Path.Combine(root, "qwen-code/lib/cli-entry.js")), result.EntryPoint);
+    }
+    [Theory]
+    [InlineData("missing-library")]
+    [InlineData("malformed-metadata")]
+    [InlineData("unrelated-node")]
+    [InlineData("bare-node")]
+    public void DoesNotRecognizeUnvalidatedOrImplicitNode(string failure)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        Setup(true);
+        var node = Path.GetFullPath(Path.Combine(root, "qwen-code/node/node.exe"));
+        if (failure == "missing-library") File.Delete(Path.Combine(root, "qwen-code/lib/cli-entry.js"));
+        if (failure == "malformed-metadata") Write("qwen-code/manifest.json", "{}");
+        if (failure == "unrelated-node") node = Write("unrelated/node.exe");
+        if (failure == "bare-node") node = "node.exe";
+        Assert.Null(NodeCliPackageResolver.Resolve(node, AgentProfile.Qwen));
+    }
     [Theory]
     [InlineData("name")]
     [InlineData("runtime")]

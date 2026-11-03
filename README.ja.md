@@ -248,3 +248,5 @@ Kiro CLIは `chat --v2 --no-interactive --output-format stream-json` に標準�
 Qwen CodeはWindowsの公式スタンドアロン版とnpm版に対応します。Kimiは現在のKimi Code CLI（`kimi-code`）が対象で、保守終了した旧Python版は対象外です。Kimiの非対話実行はツール操作を自動承認するため、利用する場合はフルアクセスを明示的に選択してください。モデルは直接入力で指定します。実サービスでの検証は保留中です。[Qwenの導入方法](https://github.com/QwenLM/qwen-code/blob/main/scripts/installation/INSTALLATION_GUIDE.md)、[Kimiのコマンド仕様](https://moonshotai.github.io/kimi-code/en/reference/kimi-command)。
 
 設定画面ではエージェント・チャットサービスごとに異なるアウトラインアイコンを表示します。Gemini CLIには「移行推奨」を表示し、新規設定にはAntigravity CLIを推奨します。Gemini CLIの企業契約・APIキー利用は継続対象です。[Googleの移行案内](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/)。
+
+WindowsのQwen公式スタンドアロン版は、`qwen`、公式の`qwen.cmd`、または同梱の`node.exe`を指定できます。CABが配置を検証し、Qwen本体のJavaScriptファイルを自動で解決します。
