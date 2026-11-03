@@ -30,6 +30,7 @@
                         IsSettingsVisible="False"
                         PaneDisplayMode="Auto" OpenPaneLength="220"
                         DisplayModeChanged="MainNavigation_DisplayModeChanged"
+                        PaneOpened="MainNavigation_PaneStateChanged" PaneClosed="MainNavigation_PaneStateChanged"
                         ItemInvoked="MainNavigation_ItemInvoked"
                         SelectionChanged="MainNavigation_SelectionChanged"
 
@@ -77,12 +78,12 @@
                                     AutomationProperties.Name="{x:Bind local:MainPage.ConnectionNavigationLabel(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionLabel), Mode=OneWay}"
                                     ToolTipService.ToolTip="{x:Bind local:MainPage.ConnectionNavigationTooltip(InboxPage.ViewModel.ConnectionProvider, InboxPage.ViewModel.ConnectionLabel, InboxPage.ViewModel.Status), Mode=OneWay}">
                     <NavigationViewItem.InfoBadge>
-                        <InfoBadge AutomationProperties.AccessibilityView="Raw"
+                        <InfoBadge x:Name="ConnectionStatusBadge" AutomationProperties.AccessibilityView="Raw"
                                    Style="{x:Bind local:MainPage.ConnectionNavigationBadgeStyle(InboxPage.ViewModel.ConnectionTone), Mode=OneWay}" />
                     </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
                 <NavigationViewItem x:Name="AboutNavigationItem" Tag="about" AutomationProperties.AutomationId="NavAbout" x:Uid="NavAbout">
-                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE946;" /></NavigationViewItem.Icon>
+                    <NavigationViewItem.Icon><FontIcon x:Name="AboutNavigationIcon" Glyph="&#xE946;" /></NavigationViewItem.Icon>
                     <NavigationViewItem.InfoBadge>
                         <InfoBadge x:Name="AboutUpdateBadge" Visibility="Collapsed" Style="{StaticResource AttentionDotInfoBadgeStyle}"
                                    Background="{ThemeResource UpdateBadgeBackgroundBrush}" Foreground="{ThemeResource UpdateBadgeForegroundBrush}"
