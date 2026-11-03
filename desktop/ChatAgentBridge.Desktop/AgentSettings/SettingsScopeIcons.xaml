@@ -215,7 +215,7 @@
     <DataTemplate x:Key="SettingsScopeIcon_provider_slack">
         <Viewbox Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center">
             <Canvas Width="24" Height="24">
-                <Path Data="M8.544 4.128 V19.872 M15.456 4.128 V19.872 M4.128 8.544 H19.872 M4.128 15.456 H19.872" Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="3.456" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
+                <Path Data="M8.544 4.128 V19.872 M15.456 4.128 V19.872 M4.128 8.544 H19.872 M4.128 15.456 H19.872" Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="1.8" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
                     <Path.RenderTransform><RotateTransform Angle="-18" CenterX="12" CenterY="12" /></Path.RenderTransform>
                 </Path>
             </Canvas>
