@@ -83,10 +83,10 @@ function Convert-TextToOutline([System.Xml.XmlElement]$TextElement) {
 
 function Get-ArrowPath([System.Xml.XmlElement]$PathElement) {
     $d = $PathElement.GetAttribute('d')
-    $strokeWidth = [double]::Parse($PathElement.GetAttribute('stroke-width'), [Globalization.CultureInfo]::InvariantCulture)
-    # SVG's default markerUnits is strokeWidth; the marker's 12x12 viewBox is
-    # mapped into its 6x6 viewport, then scaled by the line's stroke width.
-    $scale = $strokeWidth / 2
+    # Keep the arrowhead compact and place its tip exactly at the line endpoint.
+    # Scaling by stroke width made short arrows overflow their available gaps.
+    $headLength = 12
+    $halfWidth = 6
     if ($d -match '^M\s*([\d.]+)\s+([\d.]+)\s+H\s*([\d.]+)$') {
         $x1 = [double]::Parse($Matches[1], [Globalization.CultureInfo]::InvariantCulture)
         $y = [double]::Parse($Matches[2], [Globalization.CultureInfo]::InvariantCulture)
@@ -94,9 +94,10 @@ function Get-ArrowPath([System.Xml.XmlElement]$PathElement) {
         $endX = $x2
         $endY = $y
         $direction = if ($x2 -gt $x1) { 1 } else { -1 }
-        $tipX = $endX + ($direction * $scale)
-        $baseX = $endX - ($direction * 9 * $scale)
-        $halfHeight = 5 * $scale
+        $tipX = $endX
+        $baseX = $endX - ($direction * $headLength)
+        $halfHeight = $halfWidth
+        $PathElement.SetAttribute('d', "M$(Format-SvgNumber $x1) $(Format-SvgNumber $y) H$(Format-SvgNumber $baseX)")
         return "M$(Format-SvgNumber $tipX) $(Format-SvgNumber $endY) L$(Format-SvgNumber $baseX) $(Format-SvgNumber ($endY - $halfHeight)) L$(Format-SvgNumber $baseX) $(Format-SvgNumber ($endY + $halfHeight)) Z"
     }
     if ($d -match '^M\s*([\d.]+)\s+([\d.]+)\s+V\s*([\d.]+)$') {
@@ -104,9 +105,9 @@ function Get-ArrowPath([System.Xml.XmlElement]$PathElement) {
         $y1 = [double]::Parse($Matches[2], [Globalization.CultureInfo]::InvariantCulture)
         $y2 = [double]::Parse($Matches[3], [Globalization.CultureInfo]::InvariantCulture)
         $direction = if ($y2 -gt $y1) { 1 } else { -1 }
-        $tipY = $y2 + ($direction * $scale)
-        $baseY = $y2 - ($direction * 9 * $scale)
-        $halfWidth = 5 * $scale
+        $tipY = $y2
+        $baseY = $y2 - ($direction * $headLength)
+        $PathElement.SetAttribute('d', "M$(Format-SvgNumber $x) $(Format-SvgNumber $y1) V$(Format-SvgNumber $baseY)")
         return "M$(Format-SvgNumber $x) $(Format-SvgNumber $tipY) L$(Format-SvgNumber ($x - $halfWidth)) $(Format-SvgNumber $baseY) L$(Format-SvgNumber ($x + $halfWidth)) $(Format-SvgNumber $baseY) Z"
     }
     throw "Arrow path is not a supported horizontal or vertical segment: $d"
