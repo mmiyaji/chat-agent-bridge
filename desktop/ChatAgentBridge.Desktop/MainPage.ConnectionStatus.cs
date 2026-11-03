@@ -25,20 +25,15 @@ public sealed partial class MainPage
         _ => "ConnectionNavigationNeutralBadgeStyle"
     }];
 
-    // BitmapIcon tints the outline's alpha mask with the native foreground brush,
-    // including contrast themes. The tone also triggers refresh: compiled function
+    // Fresh vector geometry preserves theme foregrounds without bitmap resampling.
+    // The tone also triggers refresh: compiled function
     // bindings skip a nullable provider's transition to null on disconnection.
     public static IconElement ConnectionNavigationIcon(string? provider, string tone)
     {
         IconElement icon = provider switch
         {
-            "mattermost" or "slack" or "discord" => new BitmapIcon
-            {
-                UriSource = new Uri($"ms-appx:///Assets/Icons/Providers/{provider}.png"),
-                ShowAsMonochrome = true,
-                Width = 20,
-                Height = 20
-            },
+            "mattermost" or "slack" or "discord" =>
+                (IconElement)((DataTemplate)Application.Current.Resources["ConnectionProviderIcon_" + provider]).LoadContent(),
             _ => new SymbolIcon(Symbol.Message)
         };
         AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
