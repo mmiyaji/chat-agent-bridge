@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Hosting;
 using Windows.Foundation;
 
 namespace ChatAgentBridge_Desktop;
@@ -8,6 +9,34 @@ namespace ChatAgentBridge_Desktop;
 public sealed partial class MainPage
 {
     private bool _footerBadgeLayoutQueued;
+    private bool _footerPaneTransition;
+    private bool _footerBadgesNeedReveal;
+
+    private void MainNavigation_PaneTransitionStarting(NavigationView sender, object args)
+    {
+        _footerPaneTransition = true;
+        _footerBadgesNeedReveal = true;
+        foreach (var badge in new[] { AboutUpdateBadge, ConnectionStatusBadge })
+        {
+            if (badge is null) continue;
+            var visual = ElementCompositionPreview.GetElementVisual(badge);
+            visual.StopAnimation("Opacity");
+            visual.Opacity = 0;
+        }
+    }
+
+    private void RevealFooterBadge(InfoBadge badge)
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(badge);
+        visual.StopAnimation("Opacity");
+        visual.Opacity = 1;
+        if (!_uiSettings.AnimationsEnabled) return;
+        var fade = visual.Compositor.CreateScalarKeyFrameAnimation();
+        fade.InsertKeyFrame(0, 0);
+        fade.InsertKeyFrame(1, 1);
+        fade.Duration = TimeSpan.FromMilliseconds(100);
+        visual.StartAnimation("Opacity", fade);
+    }
 
     private void QueueFooterBadgeLayout()
     {
@@ -21,13 +50,19 @@ public sealed partial class MainPage
 
     private void UpdateFooterBadgeLayout()
     {
-        if (MainNavigation is null || AboutUpdateBadge is null || ConnectionStatusBadge is null) return;
+        if (_footerPaneTransition || MainNavigation is null || AboutUpdateBadge is null || ConnectionStatusBadge is null) return;
         var compact = !MainNavigation.IsPaneOpen;
         var hasUpdate = AboutUpdateBadge.Visibility == Visibility.Visible;
         AboutNavigationIcon.Opacity = compact && hasUpdate ? 0 : 1;
         PositionFooterBadge(AboutUpdateBadge, AboutNavigationIcon, compact, isUpdate: true);
         if (NavChatConnectionStatus.Icon is { } serviceIcon)
             PositionFooterBadge(ConnectionStatusBadge, serviceIcon, compact, isUpdate: false);
+        if (_footerBadgesNeedReveal)
+        {
+            _footerBadgesNeedReveal = false;
+            RevealFooterBadge(AboutUpdateBadge);
+            RevealFooterBadge(ConnectionStatusBadge);
+        }
     }
 
     private void PositionFooterBadge(InfoBadge badge, IconElement icon, bool compact, bool isUpdate)

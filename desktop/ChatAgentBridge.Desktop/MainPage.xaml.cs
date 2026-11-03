@@ -325,7 +325,11 @@ public sealed partial class MainPage : Page
         QueueFooterBadgeLayout();
     }
 
-    private void MainNavigation_PaneStateChanged(NavigationView sender, object args) => QueueFooterBadgeLayout();
+    private void MainNavigation_PaneStateChanged(NavigationView sender, object args)
+    {
+        _footerPaneTransition = false;
+        QueueFooterBadgeLayout();
+    }
 
     private void UpdateNavigationContentOffset()
     {
