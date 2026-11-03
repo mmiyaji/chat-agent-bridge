@@ -8,14 +8,17 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
-    public static string ConnectionNavigationCompactLabel(string? provider, string tone) =>
-        $"{ConnectionProviderLabel(provider)} · {DesktopText.Get(tone switch
+    // Tone also refreshes this label when the nullable provider is cleared.
+    public static string ConnectionNavigationServiceLabel(string? provider, string tone) => ConnectionProviderLabel(provider);
+
+    public static string ConnectionNavigationStateLabel(string tone) =>
+        DesktopText.Get(tone switch
         {
             "success" => "SidebarConnectionConnected",
             "running" => "SidebarConnectionConnecting",
             "error" => "SidebarConnectionError",
             _ => "SidebarConnectionDisconnected"
-        })}";
+        });
 
     public static Style ConnectionNavigationBadgeStyle(string tone) => (Style)Application.Current.Resources[tone switch
     {

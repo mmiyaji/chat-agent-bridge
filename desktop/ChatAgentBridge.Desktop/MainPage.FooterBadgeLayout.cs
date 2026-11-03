@@ -67,9 +67,11 @@ public sealed partial class MainPage
 
     private void PositionFooterBadge(InfoBadge badge, IconElement icon, bool compact, bool isUpdate)
     {
-        var size = compact && !isUpdate ? 8 : 24;
-        badge.Width = badge.Height = badge.MinWidth = badge.MinHeight = size;
-        badge.Margin = compact ? new Thickness(0) : new Thickness(0, 0, 4, 0);
+        badge.Width = badge.MinWidth = isUpdate ? 24 : 8;
+        badge.Height = badge.MinHeight = compact && !isUpdate ? 8 : 24;
+        // The 8px dot + 12px right gap has the same center as the 24px update
+        // icon + 4px gap, while leaving room for the translated state label.
+        badge.Margin = compact ? new Thickness(0) : new Thickness(0, 0, isUpdate ? 4 : 12, 0);
         badge.RenderTransform = null;
         if (!compact || badge.Visibility != Visibility.Visible || !badge.IsLoaded || !icon.IsLoaded) return;
         // Measure after WinUI applies its compact state. RenderTransform is independent
