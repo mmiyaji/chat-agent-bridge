@@ -49,6 +49,10 @@ public static class ApprovalRisk
     public static ApprovalRiskAssessment Assess(AppServerApproval approval)
     {
         ArgumentNullException.ThrowIfNull(approval);
+        // ACP permission requests with no usable command are opaque. Make that uncertainty visible
+        // instead of presenting an empty command as an ordinary low-risk approval.
+        if (approval.Method == "session/request_permission" && string.IsNullOrWhiteSpace(approval.Command))
+            return new(ApprovalRiskLevel.Elevated, ["ApprovalRiskUnknownTool"]);
         return Assess(approval.Command);
     }
 

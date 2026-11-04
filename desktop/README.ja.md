@@ -130,7 +130,7 @@ Claude Codeでは、途中メッセージを受け取る実行に `--include-par
 | Antigravity CLI（`agy`） | 対応（ユーザー・スレッドごとの会話IDを `--conversation` で再開） | `agy models` から取得、またはモデル名を指定。推論はCLI側の設定 | バージョン（`agy --version`）・CLIの識別 |
 | Kiro CLI（`kiro-cli`、Windows 11） | ユーザー・スレッドごとのIDを `--resume-id` で再開（実サービス未検証） | CLIからモデル候補を取得、または直接指定。推論・権限はCLI側の設定 | バージョン・CLIの識別 |
 | Qwen Code（`qwen`） | ユーザー・スレッドごとのIDを `--resume` で再開（実サービス未検証） | モデルIDを直接入力。推論・権限はCLI側の設定 | バージョン・CLIの識別 |
-| Kimi Code CLI（`kimi`） | ACPセッションIDを保存して継続（実サービス未検証） | モデル名または設定済み別名を直接入力。「継承」はツール操作の承認を要求、「フルアクセス」はKimiが提示した場合のみ | バージョン・CLIの識別 |
+| Kimi Code CLI（`kimi`） | ACPセッションIDを保存して継続（実サービス未検証） | モデル名または設定済み別名を直接入力。「継承」はツール操作の承認を要求、「フルアクセス」はKimiが受け付けた場合のみ | バージョン・CLIの識別 |
 | Muse Code（`muse`） | Preview。`muse exec --session-id` でCABの会話を継続（実サービス未検証） | モデル名を直接指定。モデル一覧と推論設定の選択には未対応。権限はMuse Code側で管理 | バージョン・CLIの識別 |
 | その他のCLI | 未対応（毎回独立した実行） | CLI設定・起動引数で指定 | バージョンのみ |
 
@@ -460,10 +460,16 @@ Kimi ACPでは依頼文をプロトコル経由で渡します。
 
 Qwen CodeとKimi Code CLIには、実サービス検証が完了するまで設定見出しと選択肢にPreviewを表示します。
 
-Muse CodeはPreviewです。Muse PreviewへのアクセスとCLI自身での `muse login` が必要です。CABは `muse exec --json` で依頼を実行し、Muse CLIは標準入力から依頼を受け取らないため、依頼文を一時ファイル経由で渡します。会話の継続にはMuseのセッションIDを使います。モデル名は手動指定のみで、モデル一覧取得・推論設定・実行中の依頼への追記は未対応です。権限は「継承」のみで、Muse Code自身の承認・サンドボックス設定が適用されます。承認待ちの操作はヘッドレス実行で止まることがあるため、Muse Code側で利用前に設定を確認してください。CABは既存の依頼承認・結果共有・添付設定を変更しません。実装は公式CLIヘルプとローカルのecho／fixtureで確認しましたが、実サービスへの認証・課金を伴う実行は行っていません。Previewの利用資格や認証が利用料金を求める場合、今回の検証では購入せず実サービス確認を保留します。詳細は[Muse CLI検証メモ](../docs/muse-cli-validation.ja.md)を参照してください。[Muse Codeの自動実行](https://dev.meta.ai/docs/muse-code/extending)、[設定](https://dev.meta.ai/docs/muse-code/configuration)、[権限と安全性](https://dev.meta.ai/docs/muse-code/permissions)。
+Muse Codeへの対応はCAB側のPreviewです。利用にはMuse Codeの契約・認証と、CLI自身での `muse login` が必要です。CABは `muse exec --json` で依頼を実行し、Muse CLIは標準入力から依頼を受け取らないため、依頼文を一時ファイル経由で渡します。会話の継続にはMuseのセッションIDを使います。モデル名は手動指定のみで、モデル一覧取得・推論設定・実行中の依頼への追記は未対応です。権限は「継承」のみで、Muse Code自身の承認・サンドボックス設定が適用されます。承認待ちの操作はヘッドレス実行で止まることがあるため、Muse Code側で利用前に設定を確認してください。CABは既存の依頼承認・結果共有・添付設定を変更しません。実装は公式CLIヘルプとローカルのecho／fixtureで確認しましたが、実サービスへの認証・課金を伴う実行は行っていません。契約・認証で利用料金が必要な場合、今回の検証では購入せず実サービス確認を保留します。詳細は[Muse CLI検証メモ](../docs/muse-cli-validation.ja.md)を参照してください。[Muse Codeの自動実行](https://dev.meta.ai/docs/muse-code/extending)、[設定](https://dev.meta.ai/docs/muse-code/configuration)、[権限と安全性](https://dev.meta.ai/docs/muse-code/permissions)。
 
 設定画面ではエージェント・チャットサービスごとに異なるアウトラインアイコンを表示します。Gemini CLIには「移行推奨」を表示し、新規設定にはAntigravity CLIを推奨します。Gemini CLIの企業契約・APIキー利用は継続対象です。[Googleの移行案内](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/)。
 
 WindowsのQwen公式スタンドアロン版は、`qwen`、公式の`qwen.cmd`、または同梱の`node.exe`を指定できます。CABが配置を検証し、Qwen本体のJavaScriptファイルを自動で解決します。
 
 エージェント設定の「自動検出」で選択中のCLIをPATHから探し、「CLIをチェック」で起動を確認できます。Qwenの登録時は、内部のNode.jsパスではなく入力した`qwen`を保存します。
+
+### Muse・Kimiの実行と承認
+
+Museの依頼文は作業フォルダー外のユーザー専用一時ファイルに保存し、終了・失敗・キャンセル後に削除します。異常終了で残った入力は起動時と次回Muse実行時に整理し、実行中のleaseを持つファイルは削除しません。リンクを含む作業先は実体パスで一時入力領域と重ならないことを確認します。
+
+Kimiの承認画面には取得できた実行コマンドを渡して危険度を判定します。内容を判定できないツール操作は注意を表示します。承認待ちの時間は実行時間制限から除外します。会話再開時にモード一覧が省略されても、設定したモードを明示的に要求し、CLIが受け付けない場合は依頼を実行しません。

@@ -185,8 +185,8 @@ public partial class App : Application
         Window.Activate();
         if (_windowServicesClosed) return;
         // Recovery uses only app-owned records and exclusive leases; it can run
-        // alongside another window without touching active incoming attachments.
-        _ = RecoverIncomingAttachmentsAsync(dataDirectory);
+        // alongside another window without touching active attachments or Muse prompts.
+        _ = RecoverAbandonedInputsAsync(dataDirectory);
         _logRetentionTask = RunLogRetentionAsync(dataDirectory);
         if (!IsNotificationOnlyLaunch) PendingRequestNotifications.ProcessStartupActivation();
         if (DeploymentRuntime.IsPortable && updateReadyEvent is not null &&
@@ -201,12 +201,16 @@ public partial class App : Application
         _ = RunPortableUpdateChecksAsync();
     }
 
-    private static async Task RecoverIncomingAttachmentsAsync(string dataDirectory)
+    private static async Task RecoverAbandonedInputsAsync(string dataDirectory)
     {
         try
         {
             if (Window is MainWindow window) await window.StartupReady;
-            await Task.Run(() => ChatAgentBridge.Core.IncomingAttachmentRecovery.RecoverAbandoned(dataDirectory));
+            await Task.Run(() =>
+            {
+                ChatAgentBridge.Core.MusePromptRecovery.CleanupAbandoned();
+                ChatAgentBridge.Core.IncomingAttachmentRecovery.RecoverAbandoned(dataDirectory);
+            });
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or ArgumentException or

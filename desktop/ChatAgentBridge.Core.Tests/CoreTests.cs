@@ -327,7 +327,8 @@ public sealed class CoreTests
         {
             cancellation.Cancel();
             try { await run; } catch (OperationCanceledException) { }
-            if (Directory.Exists(path)) Directory.Delete(path, recursive: true);
+            // Windows may retain the worker's current directory briefly after it exits.
+            TestDirectories.DeleteWithRetry(path);
         }
     }
 

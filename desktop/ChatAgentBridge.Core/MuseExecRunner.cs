@@ -2,7 +2,9 @@ using System.Diagnostics;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 using ChatAgentBridge.Core.AppServer;
 using ChatAgentBridge.Core.Localization;
 
@@ -12,18 +14,23 @@ internal static class MuseExecRunner
 {
     private const int MaxStderrCharacters = 64 * 1024;
 
+    internal static void CleanupAbandonedPrompts()
+    {
+        if (OperatingSystem.IsWindows()) MusePromptFile.CleanupAbandoned();
+    }
+
     internal static async Task<AgentRunResult> RunAsync(BridgeSettings settings, string workspace, string prompt,
         IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken)
     {
         AgentInvocation invocation;
         try { invocation = AgentProfile.BuildInvocation(settings); }
         catch (Exception ex) when (ex is ArgumentException or FormatException)
-        { return Failure("MuseRunFailed"); }
+        { return Failure("MuseConfigurationInvalid"); }
 
         var sessionId = settings.AuthorizedCliSessionId;
         if (sessionId is null) sessionId = Guid.CreateVersion7().ToString("D");
         if (!Guid.TryParseExact(sessionId, "D", out var parsedId))
-            return Failure("MuseRunFailed");
+            return Failure("MuseConfigurationInvalid");
         sessionId = parsedId.ToString("D");
 
         MusePromptFile? promptFile = null;
@@ -40,9 +47,12 @@ internal static class MuseExecRunner
             { return Failure("MusePromptIsolationUnsafe"); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or System.Security.SecurityException)
             { return Failure("MusePromptStoreUnavailable"); }
+            string resolvedExecutable;
+            try { resolvedExecutable = MuseExecutableResolver.Resolve(invocation.Executable); }
+            catch (InvalidOperationException) { return Failure("MuseExecutableInvalid"); }
             var start = new ProcessStartInfo
             {
-                FileName = MuseExecutableResolver.Resolve(invocation.Executable),
+                FileName = resolvedExecutable,
                 WorkingDirectory = workspace,
                 UseShellExecute = false,
                 RedirectStandardInput = true,
@@ -85,7 +95,7 @@ internal static class MuseExecRunner
             await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
             var parsed = parser.Complete(process.ExitCode == 0);
             var success = process.ExitCode == 0 && parsed.HasResult && !parsed.TurnFailed;
-            var error = success ? "" : parsed.FailureGuidance ?? CoreText.Get("MuseRunFailed");
+            var error = success ? "" : parsed.FailureGuidance ?? CoreText.Get(parser.SessionMismatch ? "MuseSessionMismatch" : "MuseRunFailed");
             if (success && parsed.FinalMessage is { Length: > 0 } finalMessage)
                 foreach (var update in AgentRunProgressParser.Split("stdout", finalMessage)) SafeReport(progress, update);
             return new AgentRunResult(success, success ? 0 : process.ExitCode == 0 ? -1 : process.ExitCode,
@@ -101,7 +111,22 @@ internal static class MuseExecRunner
             if (process is not null) await TerminateAndDrainAsync(process, stdoutTask, stderrTask).ConfigureAwait(false);
             throw;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode is 2 or 3)
+        {
+            if (process is not null) await TerminateAndDrainAsync(process, stdoutTask, stderrTask).ConfigureAwait(false);
+            return Failure("MuseExecutableNotFound");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            if (process is not null) await TerminateAndDrainAsync(process, stdoutTask, stderrTask).ConfigureAwait(false);
+            return Failure("MuseAccessDenied");
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 5)
+        {
+            if (process is not null) await TerminateAndDrainAsync(process, stdoutTask, stderrTask).ConfigureAwait(false);
+            return Failure("MuseAccessDenied");
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
         {
             if (process is not null) await TerminateAndDrainAsync(process, stdoutTask, stderrTask).ConfigureAwait(false);
             return Failure("MuseRunFailed");
@@ -195,13 +220,25 @@ internal static class MuseExecRunner
         internal static void EnsureOutsideWorkspace(string workspace)
         {
             if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("Muse prompt files require Windows path isolation.");
-            var fullWorkspace = NormalizePath(workspace);
-            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            if (string.IsNullOrWhiteSpace(localAppData)) throw new MusePromptIsolationException();
-            var privateRoot = NormalizePath(System.IO.Path.Combine(localAppData, PrivateRootName));
-            if (IsSameOrDescendant(fullWorkspace, privateRoot) || IsSameOrDescendant(privateRoot, fullWorkspace))
-                throw new MusePromptIsolationException();
-            if (HasReparsePointInPath(fullWorkspace)) throw new MusePromptIsolationException();
+            try
+            {
+                var fullWorkspace = ResolvePhysicalDirectoryPath(workspace) ?? throw new MusePromptIsolationException();
+                var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                if (string.IsNullOrWhiteSpace(localAppData)) throw new MusePromptIsolationException();
+                var privateRootPath = NormalizePath(System.IO.Path.Combine(localAppData, PrivateRootName));
+                if (HasReparsePointInPath(privateRootPath)) throw new MusePromptIsolationException();
+                var privateRoot = Directory.Exists(privateRootPath)
+                    ? ResolvePhysicalDirectoryPath(privateRootPath)
+                    : ResolvePhysicalDirectoryPath(localAppData) is { } physicalLocalAppData
+                        ? NormalizePath(System.IO.Path.Combine(physicalLocalAppData, PrivateRootName))
+                        : null;
+                if (privateRoot is null) throw new MusePromptIsolationException();
+                if (IsSameOrDescendant(fullWorkspace, privateRoot) || IsSameOrDescendant(privateRoot, fullWorkspace))
+                    throw new MusePromptIsolationException();
+            }
+            catch (MusePromptIsolationException) { throw; }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or System.Security.SecurityException)
+            { throw new MusePromptIsolationException(); }
         }
 
         internal static MusePromptFile Create(string prompt)
@@ -298,6 +335,21 @@ internal static class MuseExecRunner
         }
 
         [SupportedOSPlatform("windows")]
+        internal static void CleanupAbandoned()
+        {
+            if (!OperatingSystem.IsWindows()) return;
+            try
+            {
+                var root = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                if (string.IsNullOrWhiteSpace(root)) return;
+                var parent = System.IO.Path.Combine(root, PrivateRootName);
+                if (!Directory.Exists(parent) || HasReparsePointInPath(parent) || !IsOwnedByCurrentUser(parent)) return;
+                CleanupOrphans(parent);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { }
+        }
+
+        [SupportedOSPlatform("windows")]
         private static void CleanupOrphans(string parent)
         {
             var candidates = Directory.EnumerateDirectories(parent, "run-*", SearchOption.TopDirectoryOnly)
@@ -337,10 +389,51 @@ internal static class MuseExecRunner
 
         private static string NormalizePath(string path)
         {
+            if (path.StartsWith("\\\\?\\UNC\\", StringComparison.OrdinalIgnoreCase))
+                path = "\\\\" + path[8..];
+            else if (path.StartsWith("\\\\?\\", StringComparison.OrdinalIgnoreCase))
+            {
+                if (path.Length < 7 || !char.IsAsciiLetter(path[4]) || path[5] != ':' || path[6] != '\\')
+                    throw new IOException("Muse prompt path could not be normalized safely.");
+                path = path[4..];
+            }
             var fullPath = System.IO.Path.GetFullPath(path);
             var root = System.IO.Path.GetPathRoot(fullPath)!;
             return fullPath.Length == root.Length ? fullPath : System.IO.Path.TrimEndingDirectorySeparator(fullPath);
         }
+
+        private static string? ResolvePhysicalDirectoryPath(string path)
+        {
+            if (!OperatingSystem.IsWindows()) return null;
+            var full = System.IO.Path.GetFullPath(path);
+            if (!Directory.Exists(full)) return null;
+            using var handle = CreateDirectoryHandle(full);
+            if (handle.IsInvalid) return null;
+            var buffer = new StringBuilder(512);
+            var length = GetFinalPathNameByHandle(handle, buffer, (uint)buffer.Capacity, 0);
+            if (length == 0) return null;
+            if (length >= buffer.Capacity)
+            {
+                buffer = new StringBuilder(checked((int)length + 1));
+                length = GetFinalPathNameByHandle(handle, buffer, (uint)buffer.Capacity, 0);
+                if (length == 0 || length >= buffer.Capacity) return null;
+            }
+            return NormalizePath(buffer.ToString());
+        }
+
+        [SupportedOSPlatform("windows")]
+        private static SafeFileHandle CreateDirectoryHandle(string path)
+            => CreateFile(path, 0, FileShare.Read | FileShare.Write | FileShare.Delete, IntPtr.Zero,
+                FileMode.Open, BackupSemantics, IntPtr.Zero);
+
+        private const uint BackupSemantics = 0x02000000;
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CreateFileW")]
+        private static extern SafeFileHandle CreateFile(string fileName, uint desiredAccess, FileShare shareMode,
+            IntPtr securityAttributes, FileMode creationDisposition, uint flagsAndAttributes, IntPtr templateFile);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint GetFinalPathNameByHandle(SafeFileHandle file, StringBuilder path, uint pathLength, uint flags);
 
         private static bool IsSameOrDescendant(string candidate, string ancestor)
         {

@@ -50,6 +50,14 @@
   <data name="MusePromptIsolationUnsafe" xml:space="preserve"><value>Muse Codeの入力を作業フォルダー外へ安全に隔離できません。プロジェクトなど、範囲を絞った作業先を選んでください。</value></data>
   <data name="MuseApprovalUnavailable" xml:space="preserve"><value>Muse Codeが承認を要求しましたが、この非対話実行では応答できません。承認は行っていません。</value></data>
   <data name="MuseRunFailed" xml:space="preserve"><value>Muse Codeから有効な完了結果が返されませんでした。CLIのインストール、ログイン状態、このアカウントでの利用可否を確認してください。</value></data>
+  <data name="MuseConfigurationInvalid" xml:space="preserve"><value>Muse Codeの設定が無効です。設定画面で実行ファイルと引数を確認してください。</value></data>
+  <data name="MuseExecutableInvalid" xml:space="preserve"><value>Museのインストールを特定できませんでした。Muse Codeを修復または再インストールしてから、再試行してください。</value></data>
+  <data name="MuseExecutableNotFound" xml:space="preserve"><value>Museの実行ファイルが見つかりません。Muse Codeをインストールするか、実行ファイルのパスを修正してください。</value></data>
+  <data name="MuseAccessDenied" xml:space="preserve"><value>WindowsがMuse Codeまたは非公開プロンプトファイルへのアクセスを拒否しました。インストール先とフォルダーのアクセス許可を確認してください。</value></data>
+  <data name="MuseSessionMismatch" xml:space="preserve"><value>Museから指定したセッションの結果が返されませんでした。保存済みの会話は変更されていません。</value></data>
+  <data name="MuseProtocolInvalid" xml:space="preserve"><value>Museから無効または未対応のセッションデータが返されました。Muse Codeを更新または修復してから、再試行してください。</value></data>
+  <data name="MuseResultMissing" xml:space="preserve"><value>Museは完了したセッション結果を返さずに終了しました。保存済みの会話は変更されていません。</value></data>
+  <data name="ApprovalRiskUnknownTool" xml:space="preserve"><value>このツール操作の危険度は判定できません。詳細を確認してから承認してください。</value></data>
   <data name="MuseLauncherInvalid" xml:space="preserve"><value>指定されたMuseランチャー '{0}' の情報が無効です。Muse Codeを修復または再インストールしてから、再試行してください。</value></data>
   <data name="ApprovalPermissionLine" xml:space="preserve"><value>承認: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>拒否: !cab reject {0}</value></data>

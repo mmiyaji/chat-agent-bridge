@@ -50,6 +50,14 @@
   <data name="MusePromptIsolationUnsafe" xml:space="preserve"><value>Muse Code cannot keep its prompt outside this workspace safely. Choose a narrower project folder.</value></data>
   <data name="MuseApprovalUnavailable" xml:space="preserve"><value>Muse Code requested an approval that cannot be answered in this headless run. No approval was granted.</value></data>
   <data name="MuseRunFailed" xml:space="preserve"><value>Muse Code did not complete a valid session turn. Check that the CLI is installed, signed in, and available for this account.</value></data>
+  <data name="MuseConfigurationInvalid" xml:space="preserve"><value>Muse Code settings are invalid. Check the executable and arguments in Settings.</value></data>
+  <data name="MuseExecutableInvalid" xml:space="preserve"><value>The Muse installation could not be resolved. Repair or reinstall Muse Code, then try again.</value></data>
+  <data name="MuseExecutableNotFound" xml:space="preserve"><value>The Muse executable could not be found. Install Muse Code or correct its executable path.</value></data>
+  <data name="MuseAccessDenied" xml:space="preserve"><value>Windows denied access to Muse Code or its private prompt files. Check the installation and folder permissions.</value></data>
+  <data name="MuseSessionMismatch" xml:space="preserve"><value>Muse did not return a result for the requested session. The saved conversation was left unchanged.</value></data>
+  <data name="MuseProtocolInvalid" xml:space="preserve"><value>Muse returned invalid or unsupported session data. Update or repair Muse Code, then try again.</value></data>
+  <data name="MuseResultMissing" xml:space="preserve"><value>Muse exited without a completed session result. The saved conversation was left unchanged.</value></data>
+  <data name="ApprovalRiskUnknownTool" xml:space="preserve"><value>The tool operation could not be classified. Review its details before approving.</value></data>
   <data name="MuseLauncherInvalid" xml:space="preserve"><value>The Muse launcher metadata is invalid for '{0}'. Repair or reinstall Muse Code, then try again.</value></data>
   <data name="ApprovalPermissionLine" xml:space="preserve"><value>Approve: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>Reject: !cab reject {0}</value></data>

@@ -92,9 +92,11 @@ The working folder and trusted locations are shared settings. Configure the exec
 | Antigravity CLI (`agy`) | Supported | Fetch the model list from `agy models` or enter a model name; reasoning stays CLI-managed. Headless mode auto-denies edits and commands unless the permission mode is workspace write or full access, or `settings.json` has allow rules |
 | Kiro CLI (`kiro-cli`, Windows 11) | Implemented; live-service verification pending | Fetch models from the CLI or enter a model ID. Headless runs require `KIRO_API_KEY`; permissions and reasoning remain CLI-managed. Credits are not shown as token costs |
 | Qwen Code (`qwen`) | Preview; live-service verification pending | Enter a model ID. CLI-managed authentication, reasoning and tool permissions; no automatic YOLO flag |
-| Kimi Code CLI (`kimi`) | Preview; live-service verification pending | Enter a model name or configured alias. Inherit mode requests approval for tool calls; Full access is available only when Kimi advertises that mode. Kimi enforces its permissions; no OS sandbox is provided |
+| Kimi Code CLI (`kimi`) | Preview; live-service verification pending | Enter a model name or configured alias. Inherit mode requests approval for tool calls; Full access is used only when Kimi accepts that mode. Kimi enforces its permissions; no OS sandbox is provided |
 | Muse Code (`muse`) | Preview; live-service verification pending | Enter a model name manually. Muse Code manages permissions; reasoning selection and model discovery are not available |
 | Other CLI | Independent execution for each request | Configure the CLI or its launch arguments |
+
+Muse passes requests through private temporary files, which are removed after execution; abandoned files are checked at app startup. Kimi approval dialogs show command risk when the command is available and warn when the operation cannot be classified. Waiting for approval does not consume Kimi’s execution timeout.
 
 Change a conversation's agent or model from its details on the PC or from chat. Agent switching uses CLIs checked and registered in the app. You choose whether to pass conversation notes to the new agent.
 

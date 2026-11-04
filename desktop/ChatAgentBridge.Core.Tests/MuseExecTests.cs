@@ -65,6 +65,7 @@ public sealed class MuseExecTests : IDisposable
         var foreign = new MuseOutputParser(Id);
         Assert.True(foreign.AddLine(Event("session", "019e0000-0000-7000-8000-000000000999", "run.terminal.completed", new { kind = "run_terminal", terminal = "completed", text = "foreign" })));
         Assert.False(foreign.Complete(processSucceeded: true).HasResult);
+        Assert.True(foreign.SessionMismatch);
 
         var malformed = new MuseOutputParser(Id);
         Assert.False(malformed.AddLine("{broken"));
@@ -84,6 +85,25 @@ public sealed class MuseExecTests : IDisposable
         Assert.True(parser.ApprovalPending);
         Assert.False(parser.Complete(processSucceeded: true).HasResult);
         Assert.Contains("承認", parser.Complete(processSucceeded: true).FailureGuidance);
+
+        var unrelated = new MuseOutputParser(Id);
+        Assert.True(unrelated.AddLine(Event("session", Id, "approval_wait.effect.completed", new { kind = "approval_wait", state = "approved" })));
+        Assert.False(unrelated.ApprovalPending);
+        var autoApproved = new MuseOutputParser(Id);
+        Assert.True(autoApproved.AddLine(Event("session", Id, "tool_approval.effect.started", new { kind = "tool_approval", state = "auto_approved" })));
+        Assert.False(autoApproved.ApprovalPending);
+    }
+
+    [Fact]
+    public void ParserFlagsSessionMismatchWithoutRetainingForeignSessionId()
+    {
+        var parser = new MuseOutputParser(Id);
+        Assert.True(parser.AddLine(Event("session", "019e0000-0000-7000-8000-000000000999", "run.terminal.completed", new { kind = "run_terminal", terminal = "completed", text = "foreign" })));
+        var result = parser.Complete(processSucceeded: true);
+        Assert.True(parser.SessionMismatch);
+        Assert.False(result.HasResult);
+        Assert.Null(result.SessionId);
+        Assert.Null(result.FinalMessage);
     }
 
     [Fact]
@@ -153,14 +173,35 @@ public sealed class MuseExecTests : IDisposable
         var runner = new AgentRunner();
         var promptDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CAB-MusePrompts");
         var before = Directory.Exists(promptDirectory) ? Directory.GetDirectories(promptDirectory, "run-*").ToHashSet(StringComparer.OrdinalIgnoreCase) : [];
-        foreach (var prompt in new[] { "__CAB_MUSE_FAIL__", "__CAB_MUSE_INVALID_JSON__", "__CAB_MUSE_FOREIGN_ONLY__", "__CAB_MUSE_APPROVAL__", "__CAB_MUSE_USAGE_INVALID__", "__CAB_MUSE_MISSING_TERMINAL__", "__CAB_MUSE_NONZERO__" })
+        foreach (var prompt in new[] { "__CAB_MUSE_FAIL__", "__CAB_MUSE_INVALID_JSON__", "__CAB_MUSE_FOREIGN_ONLY__", "__CAB_MUSE_APPROVAL__", "__CAB_MUSE_USAGE_INVALID__", "__CAB_MUSE_MISSING_TERMINAL__", "__CAB_MUSE_NONZERO__", "__CAB_MUSE_STDERR_SECRET__" })
         {
             var result = await runner.RunAsync(settings, prompt);
             Assert.False(result.Success);
             Assert.NotNull(result.CliSession);
             Assert.True(result.CliSession!.TurnFailed);
             Assert.DoesNotContain(prompt, result.Error);
+            Assert.DoesNotContain("private credential", result.Error, StringComparison.OrdinalIgnoreCase);
+            if (prompt is "__CAB_MUSE_INVALID_JSON__" or "__CAB_MUSE_USAGE_INVALID__")
+                Assert.Equal(CoreText.Get("MuseProtocolInvalid"), result.Error);
+            if (prompt == "__CAB_MUSE_MISSING_TERMINAL__")
+                Assert.Equal(CoreText.Get("MuseResultMissing"), result.Error);
+            if (prompt == "__CAB_MUSE_FOREIGN_ONLY__")
+                Assert.Equal(CoreText.Get("MuseSessionMismatch"), result.Error);
         }
+        var failedStore = new SessionStore(_root);
+        var failedKey = new SessionKey("slack", "channel", "failed-thread", "owner", "slack");
+        var failedSession = await new SessionAgentRunner(failedStore, runner).RunAsync(failedKey, settings, "__CAB_MUSE_NONZERO__");
+        Assert.False(failedSession.Success);
+        Assert.Null(await failedStore.FindAsync(failedKey));
+        var retainedKey = new SessionKey("slack", "channel", "retained-thread", "owner", "slack");
+        var sessionRunner = new SessionAgentRunner(failedStore, runner);
+        var initial = await sessionRunner.RunAsync(retainedKey, settings, "initial success");
+        Assert.True(initial.Success, initial.Error);
+        var saved = await failedStore.FindAsync(retainedKey);
+        Assert.NotNull(saved);
+        var failedResume = await sessionRunner.RunAsync(retainedKey, settings, "__CAB_MUSE_NONZERO__");
+        Assert.False(failedResume.Success);
+        Assert.Equal(saved.SessionId, (await failedStore.FindAsync(retainedKey))?.SessionId);
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runner.RunAsync(settings, "__CAB_MUSE_CANCEL__", cts.Token));
         var after = Directory.Exists(promptDirectory) ? Directory.GetDirectories(promptDirectory, "run-*").ToHashSet(StringComparer.OrdinalIgnoreCase) : [];
@@ -196,6 +237,124 @@ public sealed class MuseExecTests : IDisposable
             ? Directory.GetDirectories(privatePromptRoot, "run-*").ToHashSet(StringComparer.OrdinalIgnoreCase)
             : [];
         Assert.Empty(after.Except(before));
+    }
+
+    [Fact]
+    public async Task RunnerResolvesJunctionTargetForPromptIsolation()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        Directory.CreateDirectory(_root);
+        var realWorkspace = Directory.CreateDirectory(Path.Combine(_root, "real-workspace")).FullName;
+        var alias = Path.Combine(_root, "workspace-alias");
+        Assert.True(CreateJunction(alias, realWorkspace), "Could not create the Windows test junction.");
+        PrepareFixture();
+        var settings = Settings(null) with
+        {
+            WorkspaceRoot = alias,
+            TrustedWorkspaceRoots = _root,
+            AgentExecutable = Path.Combine(_fixture, "muse-fixture.exe")
+        };
+        var privateWorkspaceParentAlias = Path.Combine(_root, "private-parent-alias");
+        var privateRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CAB-MusePrompts");
+        var privateWorkspaceTarget = Path.Combine(privateRoot, "workspace-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var result = await new AgentRunner().RunAsync(settings, "junction workspace");
+            Assert.True(result.Success, result.Error);
+
+            Directory.CreateDirectory(privateRoot);
+            Directory.CreateDirectory(privateWorkspaceTarget);
+            Assert.True(CreateJunction(privateWorkspaceParentAlias, privateRoot), "Could not create the private root parent test junction.");
+            var privateWorkspace = Path.Combine(privateWorkspaceParentAlias, Path.GetFileName(privateWorkspaceTarget));
+            var blocked = await MuseExecRunner.RunAsync(settings with { WorkspaceRoot = privateWorkspace }, privateWorkspace,
+                "must stay private", progress: null, CancellationToken.None);
+            Assert.False(blocked.Success);
+            Assert.Equal(CoreText.Get("MusePromptIsolationUnsafe"), blocked.Error);
+            Assert.Null(blocked.CliSession?.SessionId);
+
+            var unresolved = Path.Combine(_root, "missing-workspace");
+            var unresolvedResult = await MuseExecRunner.RunAsync(settings with { WorkspaceRoot = unresolved }, unresolved,
+                "must fail closed", progress: null, CancellationToken.None);
+            Assert.False(unresolvedResult.Success);
+            Assert.Equal(CoreText.Get("MusePromptIsolationUnsafe"), unresolvedResult.Error);
+        }
+        finally
+        {
+            if (Directory.Exists(privateWorkspaceParentAlias)) Directory.Delete(privateWorkspaceParentAlias, recursive: false);
+            TestDirectories.DeleteWithRetry(privateWorkspaceTarget);
+            if (Directory.Exists(alias)) Directory.Delete(alias, recursive: false);
+        }
+    }
+
+    [Fact]
+    public void StartupPromptRecoveryRemovesOrphansAndPreservesActiveLease()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CAB-MusePrompts");
+        Directory.CreateDirectory(root);
+        var orphan = Path.Combine(root, "run-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(orphan);
+        File.WriteAllText(Path.Combine(orphan, ".lease"), "");
+        File.WriteAllText(Path.Combine(orphan, "prompt.txt"), "stale private prompt");
+        var active = Path.Combine(root, "run-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(active);
+        var leasePath = Path.Combine(active, ".lease");
+        File.WriteAllText(Path.Combine(active, "prompt.txt"), "active prompt");
+        using var activeLease = new FileStream(leasePath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+
+        MusePromptRecovery.CleanupAbandoned();
+
+        Assert.False(Directory.Exists(orphan));
+        Assert.True(File.Exists(leasePath));
+        Assert.True(File.Exists(Path.Combine(active, "prompt.txt")));
+        activeLease.Dispose();
+        TestDirectories.DeleteWithRetry(active);
+    }
+
+    private static bool CreateJunction(string link, string target)
+    {
+        using var process = new System.Diagnostics.Process();
+        process.StartInfo = new System.Diagnostics.ProcessStartInfo("cmd.exe")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardError = true
+        };
+        process.StartInfo.ArgumentList.Add("/c");
+        process.StartInfo.ArgumentList.Add("mklink");
+        process.StartInfo.ArgumentList.Add("/J");
+        process.StartInfo.ArgumentList.Add(link);
+        process.StartInfo.ArgumentList.Add(target);
+        process.Start();
+        process.WaitForExit();
+        return process.ExitCode == 0;
+    }
+
+    [Fact]
+    public async Task RunnerDistinguishesMissingExecutableInvalidConfigurationAndBrokenLauncher()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        Directory.CreateDirectory(_root);
+        var runner = new AgentRunner();
+        var missing = await runner.RunAsync(Settings(null) with
+        { AgentExecutable = Path.Combine(_root, "missing-muse.exe") }, "private request");
+        Assert.Equal(CoreText.Get("MuseExecutableNotFound"), missing.Error);
+
+        var invalid = await runner.RunAsync(Settings(null) with
+        { AgentArguments = "exec --json --yolo" }, "private request");
+        Assert.Equal(CoreText.Get("MuseConfigurationInvalid"), invalid.Error);
+
+        var launcher = Path.Combine(_root, "muse.cmd");
+        await File.WriteAllTextAsync(launcher, "@exit /b 99");
+        var broken = await runner.RunAsync(Settings(null) with
+        { AgentExecutable = launcher }, "private request");
+        Assert.Equal(CoreText.Get("MuseExecutableInvalid"), broken.Error);
+        foreach (var result in new[] { missing, invalid, broken })
+        {
+            Assert.False(result.Success);
+            Assert.Null(result.CliSession?.SessionId);
+            Assert.DoesNotContain("private request", result.Error);
+        }
     }
 
     private BridgeSettings Settings(string? model) => new()

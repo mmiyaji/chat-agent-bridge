@@ -14,6 +14,10 @@ internal static class KimiAcpRunner
 
     public static async Task<AgentRunResult> RunAsync(BridgeSettings settings, string workspace, string prompt,
         AppServerRunOptions? options, IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken)
+        => await RunAsync(settings, workspace, prompt, options, progress, cancellationToken, TurnTimeout).ConfigureAwait(false);
+
+    internal static async Task<AgentRunResult> RunAsync(BridgeSettings settings, string workspace, string prompt,
+        AppServerRunOptions? options, IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken, TimeSpan turnTimeout)
     {
         try { _ = AgentProfile.BuildInvocation(settings); }
         catch (Exception ex) when (ex is ArgumentException or FormatException) { return Failed(ex.Message); }
@@ -33,7 +37,8 @@ internal static class KimiAcpRunner
         var startMilliseconds = sw.Elapsed.TotalMilliseconds;
         var stderrDrain = DrainErrorAsync(process.StandardError);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TurnTimeout);
+        timeout.CancelAfter(turnTimeout);
+        var budgetClock = Stopwatch.StartNew();
         using var registration = timeout.Token.Register(() => { try { process.Kill(true); } catch { } });
         var rpc = new Rpc(process.StandardInput, process.StandardOutput);
         try
@@ -54,17 +59,27 @@ internal static class KimiAcpRunner
             var sid = authorized is null ? session.GetProperty("sessionId").GetString() : "session_" + authorized.ToLowerInvariant();
             if (!TrySessionId(sid, out var id) || authorized is not null && !string.Equals(id, authorized, StringComparison.OrdinalIgnoreCase))
                 return Failed(CoreText.Get("KimiAcpSessionMismatch"));
-            if (!session.TryGetProperty("modes", out var sessionModes) || !sessionModes.TryGetProperty("availableModes", out var available) || available.ValueKind != JsonValueKind.Array)
-                return Failed(CoreText.Get("KimiAcpModesMissing"), id);
+            var requestedMode = settings.AgentPermissionMode == "full-access" ? "yolo" : "default";
             string? selectedMode = null;
-            foreach (var mode in available.EnumerateArray())
-                if (mode.TryGetProperty("id", out var mid) && mid.ValueKind == JsonValueKind.String &&
-                    mid.GetString() == (settings.AgentPermissionMode == "full-access" ? "yolo" : "default")) selectedMode = mid.GetString();
+            if (session.TryGetProperty("modes", out var sessionModes) && sessionModes.ValueKind == JsonValueKind.Object && sessionModes.TryGetProperty("availableModes", out var available) && available.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var mode in available.EnumerateArray())
+                    if (mode.ValueKind == JsonValueKind.Object && mode.TryGetProperty("id", out var mid) && mid.ValueKind == JsonValueKind.String && mid.GetString() == requestedMode) selectedMode = mid.GetString();
+            }
+            // session/load implementations may omit the mode catalog. Explicitly request the configured
+            // mode and let the server reject it; never assume a resumed session's mode.
+            else if (authorized is not null && (!session.TryGetProperty("modes", out sessionModes) || sessionModes.ValueKind == JsonValueKind.Null)) selectedMode = requestedMode;
+            else return Failed(CoreText.Get("KimiAcpModesMissing"), id);
             if (selectedMode is null) return Failed(CoreText.Get("KimiAcpModeUnsupported"), id);
             await rpc.RequestAsync("session/set_mode", new { sessionId = sid, modeId = selectedMode }, timeout.Token).ConfigureAwait(false);
             if (AgentProfile.NormalizeModel(settings.AgentModel) is { } model)
                 await rpc.RequestAsync("session/set_model", new { sessionId = sid, modelId = model }, timeout.Token).ConfigureAwait(false);
-            rpc.BeginPrompt(sid!, id, progress, options?.ApprovalHandler, settings.AgentPermissionMode == "full-access");
+            rpc.BeginPrompt(sid!, id, progress, options?.ApprovalHandler, settings.AgentPermissionMode == "full-access", () =>
+            {
+                budgetClock.Start();
+                var remaining = turnTimeout - budgetClock.Elapsed;
+                timeout.CancelAfter(remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero);
+            }, () => { budgetClock.Stop(); timeout.CancelAfter(Timeout.InfiniteTimeSpan); });
             var result = await rpc.RequestAsync("session/prompt", new { sessionId = sid, prompt = new object[] { new { type = "text", text = prompt } } }, timeout.Token).ConfigureAwait(false);
             if (!result.TryGetProperty("stopReason", out var reason) || reason.ValueKind != JsonValueKind.String || reason.GetString() != "end_turn")
                 return Failed(CoreText.Get("KimiAcpIncomplete"), id);
@@ -148,13 +163,14 @@ internal static class KimiAcpRunner
         private IProgress<AgentRunProgress>? _progress;
         private Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? _approval;
         private bool _fullAccess;
+        private Action? _resumeBudget, _pauseBudget;
         private string? _sessionUuid;
         private readonly StringBuilder _text = new();
         private readonly char[] _buffer = new char[4096];
         private int _position, _count;
         public string Text => _text.ToString();
-        public void BeginPrompt(string session, string uuid, IProgress<AgentRunProgress>? progress, Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? approval, bool fullAccess)
-        { _session = session; _sessionUuid = uuid; _progress = progress; _approval = approval; _fullAccess = fullAccess; }
+        public void BeginPrompt(string session, string uuid, IProgress<AgentRunProgress>? progress, Func<AppServerApproval, CancellationToken, Task<AppServerDecision>>? approval, bool fullAccess, Action resumeBudget, Action pauseBudget)
+        { _session = session; _sessionUuid = uuid; _progress = progress; _approval = approval; _fullAccess = fullAccess; _resumeBudget = resumeBudget; _pauseBudget = pauseBudget; }
         public async Task<JsonElement> RequestAsync(string method, object parameters, CancellationToken token)
         {
             var id = Interlocked.Increment(ref _id);
@@ -205,10 +221,12 @@ internal static class KimiAcpRunner
                         var tool = ps.TryGetProperty("toolCall", out var call) ? call : default;
                         var title = tool.ValueKind == JsonValueKind.Object && tool.TryGetProperty("title", out var titleProp) ? titleProp.GetString() ?? "Tool permission" : "Tool permission";
                         if (title.Length > 512) title = title[..512] + "…";
-                        var raw = tool.ValueKind == JsonValueKind.Object && tool.TryGetProperty("rawInput", out var rawInput) ? rawInput.GetRawText() : null;
-                        if (raw?.Length > 4096) raw = raw[..4096] + "…";
+                        var raw = tool.ValueKind == JsonValueKind.Object && tool.TryGetProperty("rawInput", out var rawInput) ? rawInput : default;
+                        var command = ExtractCommand(raw);
+                        var rawText = raw.ValueKind == JsonValueKind.Undefined ? null : raw.GetRawText();
+                        if (rawText?.Length > 4096) rawText = rawText[..4096] + "…";
                         var decision = _fullAccess ? AppServerDecision.Accept : _approval is null ? AppServerDecision.Decline :
-                            await _approval(new AppServerApproval(methodName, _sessionUuid!, "", tool.TryGetProperty("toolCallId", out var tcid) ? tcid.GetString() ?? "" : "", title + (raw is null ? "" : Environment.NewLine + raw), null, null), token).ConfigureAwait(false);
+                            await GetApprovalAsync(new AppServerApproval(methodName, _sessionUuid!, "", tool.ValueKind == JsonValueKind.Object && tool.TryGetProperty("toolCallId", out var tcid) ? tcid.GetString() ?? "" : "", title + (rawText is null ? "" : Environment.NewLine + rawText), command, null), token).ConfigureAwait(false);
                         var selected = false;
                         string? optionId = null;
                         if (decision == AppServerDecision.Accept && ps.TryGetProperty("options", out var choices) && choices.ValueKind == JsonValueKind.Array)
@@ -222,6 +240,23 @@ internal static class KimiAcpRunner
                     continue;
                 }
             }
+        }
+        private async Task<AppServerDecision> GetApprovalAsync(AppServerApproval approval, CancellationToken token)
+        {
+            _pauseBudget?.Invoke();
+            try { return await _approval!(approval, token).WaitAsync(token).ConfigureAwait(false); }
+            finally { _resumeBudget?.Invoke(); }
+        }
+        private static string? ExtractCommand(JsonElement raw)
+        {
+            if (raw.ValueKind != JsonValueKind.Object) return null;
+            foreach (var key in new[] { "command", "cmd", "script" })
+                if (raw.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String)
+                {
+                    var text = value.GetString();
+                    if (!string.IsNullOrWhiteSpace(text)) return text;
+                }
+            return null;
         }
         private async Task WriteAsync<T>(T message, CancellationToken token)
         { var json = JsonSerializer.Serialize(message); if (json.Length > MaxLine) throw new InvalidDataException("ACP request exceeded the limit."); await input.WriteLineAsync(json.AsMemory(), token).ConfigureAwait(false); await input.FlushAsync(token).ConfigureAwait(false); }

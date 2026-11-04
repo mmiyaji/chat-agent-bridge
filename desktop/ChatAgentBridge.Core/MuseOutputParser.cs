@@ -19,6 +19,7 @@ public sealed class MuseOutputParser
     private bool _invalid;
     private bool _approvalPending;
     private bool _usageSeen;
+    private bool _sessionMismatch;
     private int _events;
     private long? _input;
     private long? _cached;
@@ -31,6 +32,7 @@ public sealed class MuseOutputParser
     }
 
     public bool ApprovalPending => _approvalPending;
+    public bool SessionMismatch => _sessionMismatch && _sessionId is null;
     public bool IsInvalid => _invalid;
     public void RejectInput() => _invalid = true;
 
@@ -51,8 +53,13 @@ public sealed class MuseOutputParser
             var streamKind = String(stream, "kind");
             if (streamKind == "session" && streamId is not null)
             {
-                if (!string.Equals(streamId, _expectedSessionId, StringComparison.OrdinalIgnoreCase)) return true;
+                if (!string.Equals(streamId, _expectedSessionId, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (_sessionId is null) _sessionMismatch = true;
+                    return true;
+                }
                 _sessionId ??= _expectedSessionId;
+                _sessionMismatch = false;
             }
             else if (streamKind != "exec.usage" || !string.Equals(streamId, _expectedSessionId, StringComparison.OrdinalIgnoreCase)) return true;
 
@@ -62,10 +69,7 @@ public sealed class MuseOutputParser
             if (payload.ValueKind != JsonValueKind.Object) return Invalidate();
 
             var isRootSession = streamKind == "session" && string.Equals(streamId, _expectedSessionId, StringComparison.OrdinalIgnoreCase);
-            if (isRootSession && payloadType.Contains("approval", StringComparison.OrdinalIgnoreCase) &&
-                (payloadType.Contains("pending", StringComparison.OrdinalIgnoreCase) ||
-                 payloadType.Contains("request", StringComparison.OrdinalIgnoreCase) ||
-                 payloadType.Contains("started", StringComparison.OrdinalIgnoreCase)))
+            if (isRootSession && payloadType == "approval_wait.effect.started" && String(payload, "kind") == "approval_wait")
                 _approvalPending = true;
             if (isRootSession && payloadType == "run.terminal.completed")
             {
@@ -108,7 +112,9 @@ public sealed class MuseOutputParser
         return new CliSessionOutput(AgentProfile.Muse, _sessionId, hasResult ? _finalMessage : null,
             hasResult, !hasResult, usage)
         {
-            FailureGuidance = _approvalPending ? CoreText.Get("MuseApprovalUnavailable") : null
+            FailureGuidance = _approvalPending ? CoreText.Get("MuseApprovalUnavailable")
+                : _invalid ? CoreText.Get("MuseProtocolInvalid")
+                : processSucceeded && !_terminalSeen && !SessionMismatch ? CoreText.Get("MuseResultMissing") : null
         };
     }
 

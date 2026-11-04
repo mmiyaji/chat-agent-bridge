@@ -125,7 +125,10 @@ if (structuredFixtureName == "muse-fixture")
         await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("session", "run.terminal." + terminal,
             new { kind = "run_terminal", terminal, text = "muse-fixture:" + model + ":" + promptText, reason = (string?)null })));
     }
-    if (!promptText.Contains("__CAB_MUSE_NONZERO__", StringComparison.Ordinal)) return;
+    if (promptText.Contains("__CAB_MUSE_STDERR_SECRET__", StringComparison.Ordinal))
+        await Console.Error.WriteLineAsync("private credential prompt payload: do not surface");
+    if (!promptText.Contains("__CAB_MUSE_NONZERO__", StringComparison.Ordinal) &&
+        !promptText.Contains("__CAB_MUSE_STDERR_SECRET__", StringComparison.Ordinal)) return;
     Environment.ExitCode = 9;
     return;
 }
@@ -156,12 +159,22 @@ if (structuredFixtureName.StartsWith("kimi", StringComparison.Ordinal) && args i
             case "session/load":
                 sessionId = parameters.GetProperty("sessionId").GetString();
                 await WriteAsync(new { jsonrpc = "2.0", method = "session/update", @params = new { sessionId, update = new { sessionUpdate = "agent_message_chunk", content = new { type = "text", text = "load replay must not escape" } } } });
-                result = new { modes = FixtureModes(structuredFixtureName) };
+                result = structuredFixtureName.Contains("load-nomodes", StringComparison.Ordinal)
+                    ? new Dictionary<string, object?> { ["sessionId"] = sessionId }
+                    : new { sessionId, modes = (object?)FixtureModes(structuredFixtureName) };
                 break;
             case "session/set_mode":
             case "session/set_model":
                 if (method == "session/set_model") model = parameters.GetProperty("modelId").GetString() ?? model;
-                else mode = parameters.GetProperty("modeId").GetString() ?? mode;
+                else
+                {
+                    mode = parameters.GetProperty("modeId").GetString() ?? mode;
+                    if (structuredFixtureName.Contains("reject-mode", StringComparison.Ordinal))
+                    {
+                        await WriteAsync(new { jsonrpc = "2.0", id, error = new { code = -32602, message = "Unsupported requested mode" } });
+                        continue;
+                    }
+                }
                 result = new { };
                 break;
             case "session/prompt":
@@ -196,6 +209,22 @@ if (structuredFixtureName.StartsWith("kimi", StringComparison.Ordinal) && args i
                         await WriteAsync(new { jsonrpc = "2.0", id, result = new { stopReason = "cancelled" } });
                         break;
                     }
+                }
+                if (promptText.Contains("__CAB_SCENARIO_HANG_AFTER_APPROVAL__", StringComparison.Ordinal))
+                {
+                    if (promptText.Contains("__CAB_SCENARIO_PRE_APPROVAL_DELAY__", StringComparison.Ordinal))
+                        await Task.Delay(800);
+                    await File.WriteAllTextAsync(Path.Combine(Environment.CurrentDirectory, "kimi-hang.pid"), Environment.ProcessId.ToString());
+                    await WriteAsync(new { jsonrpc = "2.0", id = 9101, method = "session/request_permission", @params = new { sessionId = fixtureId,
+                        toolCall = new { toolCallId = "tool-hang", title = "Run fixture tool", rawInput = new { command = "rm -rf /tmp/example" } },
+                        options = new[] { new { optionId = "approve_once", name = "Approve once", kind = "allow_once" } } } });
+                    var permissionLine = await Console.In.ReadLineAsync() ?? throw new InvalidOperationException("Missing permission response.");
+                    using var permission = JsonDocument.Parse(permissionLine);
+                    if (permission.RootElement.GetProperty("result").GetProperty("outcome").GetProperty("outcome").GetString() == "selected" &&
+                        promptText.Contains("__CAB_SCENARIO_FINISH_AFTER_APPROVAL_DELAY__", StringComparison.Ordinal))
+                        await Task.Delay(promptText.Contains("__CAB_SCENARIO_PRE_APPROVAL_DELAY__", StringComparison.Ordinal) ? 1400 : 0);
+                    else if (permission.RootElement.GetProperty("result").GetProperty("outcome").GetProperty("outcome").GetString() == "selected")
+                        await Task.Delay(Timeout.InfiniteTimeSpan);
                 }
                 if (promptText.Contains("__CAB_SCENARIO_MISSING_STOP__", StringComparison.Ordinal))
                 {
