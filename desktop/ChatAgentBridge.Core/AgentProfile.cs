@@ -16,6 +16,8 @@ public static class AgentProfile
     public const string DefaultKimiArguments = "acp";
     public const string Kiro = "kiro";
     public const string DefaultKiroArguments = "chat --v2 --no-interactive --output-format stream-json";
+    public const string Muse = "muse";
+    public const string DefaultMuseArguments = "exec --json";
     public const string Custom = "custom";
     public const string DefaultCodexArguments = "exec --json -";
     public const string DefaultGeminiArguments = "--output-format stream-json";
@@ -27,7 +29,7 @@ public static class AgentProfile
         ArgumentNullException.ThrowIfNull(settings);
         var provider = string.IsNullOrWhiteSpace(settings.AgentProvider) ? Codex : settings.AgentProvider.Trim().ToLowerInvariant();
         if (!IsSupportedProvider(provider))
-            throw new ArgumentException("Agent provider must be codex, claude, gemini, github-copilot, antigravity, kiro, qwen, kimi, or custom.", nameof(settings));
+            throw new ArgumentException("Agent provider must be codex, claude, gemini, github-copilot, antigravity, kiro, qwen, kimi, muse, or custom.", nameof(settings));
 
         // Directly-created legacy settings often use an arbitrary executable with the old default provider.
         // Treat those as custom so their executable and arguments remain exactly as configured.
@@ -76,7 +78,7 @@ public static class AgentProfile
                 if (!Guid.TryParseExact(sessionId, "D", out var id))
                     throw new ArgumentException("The authorized CLI session id must be a UUID.", nameof(settings));
                 if (provider != Kimi)
-                    basicArguments = basicArguments.Concat(new[] { provider == Antigravity ? "--conversation" : provider == Kiro ? "--resume-id" : "--resume", id.ToString("D") }).ToArray();
+                    basicArguments = basicArguments.Concat(new[] { provider == Antigravity ? "--conversation" : provider == Kiro ? "--resume-id" : provider == Muse ? "--session-id" : "--resume", id.ToString("D") }).ToArray();
             }
             if (provider == Antigravity && permissionMode != "inherit")
                 basicArguments = SetAntigravityPermission(basicArguments, permissionMode);
@@ -137,7 +139,8 @@ public static class AgentProfile
         new(Codex, DefaultCodexArguments, false, true, false), new(Claude, "", false, true, false),
         new(Gemini, DefaultGeminiArguments, true, false, true), new(GitHubCopilot, DefaultGitHubCopilotArguments, true, false, true),
         new(Antigravity, DefaultAntigravityArguments, true, true, false), new(Kiro, DefaultKiroArguments, true, true, false),
-        new(Qwen, DefaultQwenArguments, true, false, true), new(Kimi, DefaultKimiArguments, true, false, false), new(Custom, "", false, false, false)
+        new(Qwen, DefaultQwenArguments, true, false, true), new(Kimi, DefaultKimiArguments, true, false, false),
+        new(Muse, DefaultMuseArguments, true, false, false), new(Custom, "", false, false, false)
     ];
     public static IReadOnlyList<string> SupportedProviders => Providers.Select(provider => provider.Id).ToArray();
     private static ProviderDefinition? Definition(string provider) => Providers.FirstOrDefault(item => item.Id == provider);
@@ -148,14 +151,14 @@ public static class AgentProfile
     {
         // These fields are not editable: restore the adapter-owned command on load,
         // including legacy defaults and malformed persisted arguments. Save remains strict.
-        return provider is Kiro or Qwen or Kimi ? DefaultArguments(provider) : arguments?.Trim() ?? "";
+        return provider is Kiro or Qwen or Kimi or Muse ? DefaultArguments(provider) : arguments?.Trim() ?? "";
     }
     internal static string ValidateManagedArguments(string provider, string? arguments)
     {
         var value = arguments?.Trim() ?? "";
         if (provider == Kimi && (value is "--print --output-format stream-json" or "--output-format stream-json"))
             value = DefaultKimiArguments;
-        if (provider is Kiro or Qwen or Kimi)
+        if (provider is Kiro or Qwen or Kimi or Muse)
         {
             var canonical = DefaultArguments(provider);
             if (string.IsNullOrWhiteSpace(value)) return canonical;
@@ -208,7 +211,7 @@ public static class AgentProfile
                 argument.StartsWith("-i", StringComparison.Ordinal) && !argument.StartsWith("--", StringComparison.Ordinal))
                 throw new ArgumentException("CLI session and prompt selection must be managed by the bridge; remove configured resume, continue, session, and prompt options.", nameof(settings));
         }
-        if (provider is Kiro or Qwen or Kimi)
+        if (provider is Kiro or Qwen or Kimi or Muse)
         {
             // Do not permit directory-wide resume, cloud execution, or a second prompt.
             var canonical = AgentArgumentParser.Parse(DefaultArguments(provider));
@@ -219,7 +222,8 @@ public static class AgentProfile
         if (provider == GitHubCopilot)
             arguments = EnsureFlag(arguments.Where(value => value is not ("--silent" or "-s") &&
                 !value.StartsWith("--silent=", StringComparison.Ordinal)).ToArray(), "--no-ask-user");
-        arguments = SetOption(arguments, "--output-format", provider == Gemini ? "-o" : "--output-format", provider is Gemini or Antigravity or Kiro or Qwen or Kimi ? "stream-json" : "json");
+        if (provider != Muse)
+            arguments = SetOption(arguments, "--output-format", provider == Gemini ? "-o" : "--output-format", provider is Gemini or Antigravity or Kiro or Qwen or Kimi ? "stream-json" : "json");
         if (NormalizeModel(settings.AgentModel) is { } model)
             arguments = SetOption(arguments, "--model", "-m", model);
         return arguments;
@@ -356,6 +360,7 @@ public static class AgentProfile
         if (provider == Antigravity && IsCodexExecutable(executable)) return "agy";
         if (provider == Kiro && IsCodexExecutable(executable)) return "kiro-cli";
         if (provider == Qwen && IsCodexExecutable(executable)) return "qwen";
+        if (provider == Muse && IsCodexExecutable(executable)) return "muse";
         if (provider == Kimi && IsCodexExecutable(executable)) return "kimi";
         return executable;
     }

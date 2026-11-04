@@ -99,12 +99,12 @@ public partial class MainPageViewModel
         AgentProvider = settings.AgentProvider;
         _initializingSettings = true;
         AgentModel = settings.AgentModel ?? "";
-        AgentReasoningEffort = settings.AgentReasoningEffort;
+        AgentReasoningEffort = settings.AgentProvider == AgentProfile.Muse ? null : settings.AgentReasoningEffort;
         _effortModel = NormalizeModel(AgentModel);
         _unsupportedSavedEffort = false;
         _hasCatalogForCurrentModel = false;
         SelectedReasoningEffort = null;
-        ModelEffortStatus = settings.AgentReasoningEffort is { Length: > 0 } savedEffort
+        ModelEffortStatus = AgentReasoningEffort is { Length: > 0 } savedEffort
             ? ViewModelText.Get("SavedEffortPending", savedEffort)
             : ViewModelText.Get("UseDefaultCliValue");
         _initializingSettings = false;
@@ -123,7 +123,7 @@ public partial class MainPageViewModel
         ShareApprovalsInChat = settings.ShareApprovalsInChat;
         ShareAgentQuestionsInChat = settings.ShareAgentQuestionsInChat;
         RequireApproval = settings.RequireApproval;
-        AgentPermissionMode = settings.AgentPermissionMode;
+        AgentPermissionMode = settings.AgentProvider == AgentProfile.Muse ? "inherit" : settings.AgentPermissionMode;
         AllowAgentNetwork = settings.AllowAgentNetwork;
         TrustedWorkspaceRoots = settings.TrustedWorkspaceRoots;
         ChatApprovalMode = settings.ChatApprovalMode;
@@ -155,6 +155,7 @@ public partial class MainPageViewModel
             AgentProfile.Kiro => "kiro-cli",
             AgentProfile.Qwen => "qwen",
             AgentProfile.Kimi => "kimi",
+            AgentProfile.Muse => "muse",
             _ => ""
         },
         AgentArguments = provider switch
@@ -167,6 +168,7 @@ public partial class MainPageViewModel
             AgentProfile.Kiro => AgentProfile.DefaultKiroArguments,
             AgentProfile.Qwen => AgentProfile.DefaultQwenArguments,
             AgentProfile.Kimi => AgentProfile.DefaultKimiArguments,
+            AgentProfile.Muse => AgentProfile.DefaultMuseArguments,
             _ => ""
         },
         AgentMode = "exec",
@@ -181,7 +183,7 @@ public partial class MainPageViewModel
         var normalized = provider?.Trim().ToLowerInvariant();
         return normalized switch
         {
-            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Custom => normalized,
+            AgentProfile.Codex or AgentProfile.Claude or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Muse or AgentProfile.Custom => normalized,
             _ => throw new ArgumentException("Only supported agent providers can be edited.", nameof(provider))
         };
     }
@@ -216,6 +218,7 @@ public partial class MainPageViewModel
             AgentProfile.Kiro => _registeredKiroConnection,
             AgentProfile.Qwen => _registeredQwenConnection,
             AgentProfile.Kimi => _registeredKimiConnection,
+            AgentProfile.Muse => _registeredMuseConnection,
             _ => null
         };
         return profile == checkedProfile ? profile : null;

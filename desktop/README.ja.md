@@ -121,7 +121,7 @@ Claude Codeでは、途中メッセージを受け取る実行に `--include-par
 
 ## 利用できるCLI
 
-初期設定とエージェント設定では、Codex、Claude Code、Gemini CLI、GitHub Copilot CLI、Antigravity CLI、その他のCLIを選べます。各CLIを事前にインストールし、必要なログインをCLI自身で完了してください。
+初期設定とエージェント設定では、Codex、Claude Code、Gemini CLI、GitHub Copilot CLI、Antigravity CLI、Muse Code Preview、その他のCLIを選べます。各CLIを事前にインストールし、必要なログインをCLI自身で完了してください。
 
 | CLI | 会話の自動継続 | モデル・推論候補 | CLIチェック |
 | --- | --- | --- | --- |
@@ -131,11 +131,12 @@ Claude Codeでは、途中メッセージを受け取る実行に `--include-par
 | Kiro CLI（`kiro-cli`、Windows 11） | ユーザー・スレッドごとのIDを `--resume-id` で再開（実サービス未検証） | CLIからモデル候補を取得、または直接指定。推論・権限はCLI側の設定 | バージョン・CLIの識別 |
 | Qwen Code（`qwen`） | ユーザー・スレッドごとのIDを `--resume` で再開（実サービス未検証） | モデルIDを直接入力。推論・権限はCLI側の設定 | バージョン・CLIの識別 |
 | Kimi Code CLI（`kimi`） | ACPセッションIDを保存して継続（実サービス未検証） | モデル名または設定済み別名を直接入力。「継承」はツール操作の承認を要求、「フルアクセス」はKimiが提示した場合のみ | バージョン・CLIの識別 |
+| Muse Code（`muse`） | Preview。`muse exec --session-id` でCABの会話を継続（実サービス未検証） | モデル名を直接指定。モデル一覧と推論設定の選択には未対応。権限はMuse Code側で管理 | バージョン・CLIの識別 |
 | その他のCLI | 未対応（毎回独立した実行） | CLI設定・起動引数で指定 | バージョンのみ |
 
 Gemini CLIは `--output-format stream-json`、GitHub Copilot CLIは `--output-format json` に対応する版が必要です。会話IDと完了イベントを確認できない出力は失敗として扱い、別のユーザーや直前のCLI会話に接続しません。モデル名はエージェント設定・初期設定・会話のモデル変更画面、または対象スレッドの `!cab model <モデル名>` から指定します。空欄または `!cab model default` はCLI／アプリの既定値に戻します。この版ではGemini・Copilotの候補取得は未対応です。CLI自身で利用可能なモデル名を確認してください。Antigravity CLIは、エージェント設定の「CLIモデル候補を取得」（CLIチェック後にも自動で試行）で `agy models` の一覧から選べます。
 
-5種類のCLIを確認・登録すると、PCの会話詳細や `!cab agent <codex|claude|gemini|github-copilot|antigravity> <summary|fresh>` で切り替えられます（`agy` は `antigravity` の別名です）。`summary` は会話メモを参考情報として引き継ぎ、`fresh` はメモを渡しません。新しいCLIの会話は別の会話IDで開始し、実行権限や依頼承認を会話メモから変更しません。
+対応するCLIを確認・登録すると、PCの会話詳細や `!cab agent <codex|claude|gemini|github-copilot|antigravity|muse> <summary|fresh>` で切り替えられます（`agy` は `antigravity` の別名です）。`summary` は会話メモを参考情報として引き継ぎ、`fresh` はメモを渡しません。新しいCLIの会話は別の会話IDで開始し、実行権限や依頼承認を会話メモから変更しません。
 
 Antigravity CLI（`agy`、ネイティブ実行ファイル）は、依頼を標準入力に渡して `--output-format stream-json` で1回分を実行し、会話の再開には `--conversation <会話ID>` を使います。`--conversation`・`--continue`・`-c`・`--print`・`-p`・`--prompt`・`-i`・`--prompt-interactive`・`--input-format`・`--remote-control`・`--project`・`--new-project` はアプリが管理するため、起動引数に指定するとエラーになります。操作権限は「CLIの既定値を使う」（フラグなし。agyの `settings.json` の許可ルールに従う）、「フォルダー内の編集を自動許可」（`--mode accept-edits`）、「フルアクセス」（`--dangerously-skip-permissions`）から選べ、読み取り専用と操作ごとの確認は使えません。ヘッドレス実行では確認画面を出せないため、権限モードを「フォルダー内の編集を自動許可」または「フルアクセス」にするか、agyの `settings.json` に許可ルールを追加しない限り、ファイル編集やコマンド実行は自動的に拒否されます（実行自体は成功扱いです）。拒否された操作があった場合は、返信の末尾にその旨と対処方法を追記します。推論の強さ（`--effort`）はアプリから指定できません。
 
@@ -458,6 +459,8 @@ Qwen Codeは非対話のstream-json出力を使います。Windowsのnpm版と�
 Kimi ACPでは依頼文をプロトコル経由で渡します。
 
 Qwen CodeとKimi Code CLIには、実サービス検証が完了するまで設定見出しと選択肢にPreviewを表示します。
+
+Muse CodeはPreviewです。Muse PreviewへのアクセスとCLI自身での `muse login` が必要です。CABは `muse exec --json` で依頼を実行し、Muse CLIは標準入力から依頼を受け取らないため、依頼文を一時ファイル経由で渡します。会話の継続にはMuseのセッションIDを使います。モデル名は手動指定のみで、モデル一覧取得・推論設定・実行中の依頼への追記は未対応です。権限は「継承」のみで、Muse Code自身の承認・サンドボックス設定が適用されます。承認待ちの操作はヘッドレス実行で止まることがあるため、Muse Code側で利用前に設定を確認してください。CABは既存の依頼承認・結果共有・添付設定を変更しません。実装は公式CLIヘルプとローカルのecho／fixtureで確認しましたが、実サービスへの認証・課金を伴う実行は行っていません。Previewの利用資格や認証が利用料金を求める場合、今回の検証では購入せず実サービス確認を保留します。詳細は[Muse CLI検証メモ](../docs/muse-cli-validation.ja.md)を参照してください。[Muse Codeの自動実行](https://dev.meta.ai/docs/muse-code/extending)、[設定](https://dev.meta.ai/docs/muse-code/configuration)、[権限と安全性](https://dev.meta.ai/docs/muse-code/permissions)。
 
 設定画面ではエージェント・チャットサービスごとに異なるアウトラインアイコンを表示します。Gemini CLIには「移行推奨」を表示し、新規設定にはAntigravity CLIを推奨します。Gemini CLIの企業契約・APIキー利用は継続対象です。[Googleの移行案内](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/)。
 

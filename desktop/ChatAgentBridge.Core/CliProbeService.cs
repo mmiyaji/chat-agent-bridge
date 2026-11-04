@@ -80,6 +80,7 @@ public sealed class CliProbeService
         if (!Path.IsPathFullyQualified(probeExecutable) &&
             (probeExecutable.Contains(Path.DirectorySeparatorChar) || probeExecutable.Contains(Path.AltDirectorySeparatorChar)))
             probeExecutable = Path.GetFullPath(probeExecutable, workspace);
+        if (provider == AgentProfile.Muse) probeExecutable = MuseExecutableResolver.Resolve(probeExecutable);
         var nodePackage = NodeCliPackageResolver.Resolve(probeExecutable, provider);
         if (nodePackage is null)
         {
@@ -137,6 +138,8 @@ public sealed class CliProbeService
         AgentProfile.Qwen => Regex.IsMatch(output, @"\bqwen(?:[ -]code)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         AgentProfile.Kimi => Regex.IsMatch(output, @"\bkimi(?:[ -](?:code|cli))?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         AgentProfile.Kiro => Regex.IsMatch(output, @"\bkiro(?:-cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+        // Keep identity recognition tied to Muse's branded name or its standalone command token.
+        AgentProfile.Muse => Regex.IsMatch(output, @"^\s*(?:Muse\s+Code\b|muse(?:\.exe)?(?:\s+(?:v?\d|version\b)|$))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Multiline),
         AgentProfile.Antigravity => Regex.IsMatch(output, @"\b(?:agy(?:\.exe)?|antigravity)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         _ => false
     };

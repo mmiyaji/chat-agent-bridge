@@ -211,6 +211,13 @@
             </Canvas>
         </Viewbox>
     </DataTemplate>
+    <DataTemplate x:Key="SettingsScopeIcon_provider_muse">
+        <Viewbox Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center">
+            <Canvas Width="24" Height="24">
+                <Path Data="M2 12 C4.5 6 8.5 4 12 12 C15.5 20 19.5 18 22 12 C19.5 6 15.5 4 12 12 C8.5 20 4.5 18 2 12" Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+            </Canvas>
+        </Viewbox>
+    </DataTemplate>
     <!-- Rounded legacy-style hash: match the selected mock with an 18-degree tilt. -->
     <DataTemplate x:Key="SettingsScopeIcon_provider_slack">
         <Viewbox Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center">

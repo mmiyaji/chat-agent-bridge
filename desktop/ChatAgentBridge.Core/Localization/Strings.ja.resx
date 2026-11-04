@@ -46,6 +46,11 @@
   <data name="CliDiagnosticsHidden" xml:space="preserve"><value>CLIが標準エラーに診断情報を出力しました。</value></data>
   <data name="CliAntigravityActionsDenied" xml:space="preserve"><value>注意: Antigravity CLIはヘッドレスモードで許可を確認できないため、次の操作を自動的に拒否しました: {0}。エージェント設定で操作権限を、作業フォルダーへの書き込みを許可するモードか「フルアクセス」に変更するか、agyのsettings.jsonに許可ルールを追加してください。</value></data>
   <data name="CliStructuredResultInvalid" xml:space="preserve"><value>CLIから正常終了の結果と有効なセッションUUIDが返されませんでした。インストール済みのCLIが設定された構造化出力形式に対応しているか確認してください。</value></data>
+  <data name="MusePromptStoreUnavailable" xml:space="preserve"><value>Muse Code用の非公開プロンプトファイルを安全に作成できませんでした。</value></data>
+  <data name="MusePromptIsolationUnsafe" xml:space="preserve"><value>Muse Codeの入力を作業フォルダー外へ安全に隔離できません。プロジェクトなど、範囲を絞った作業先を選んでください。</value></data>
+  <data name="MuseApprovalUnavailable" xml:space="preserve"><value>Muse Codeが承認を要求しましたが、この非対話実行では応答できません。承認は行っていません。</value></data>
+  <data name="MuseRunFailed" xml:space="preserve"><value>Muse Codeから有効な完了結果が返されませんでした。CLIのインストール、ログイン状態、このアカウントでの利用可否を確認してください。</value></data>
+  <data name="MuseLauncherInvalid" xml:space="preserve"><value>指定されたMuseランチャー '{0}' の情報が無効です。Muse Codeを修復または再インストールしてから、再試行してください。</value></data>
   <data name="ApprovalPermissionLine" xml:space="preserve"><value>承認: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>拒否: !cab reject {0}</value></data>
   <data name="ApprovalRequestTitle" xml:space="preserve"><value>Codex が操作の承認を求めています。</value></data>

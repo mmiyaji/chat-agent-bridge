@@ -46,6 +46,11 @@
   <data name="CliDiagnosticsHidden" xml:space="preserve"><value>The CLI wrote diagnostics to standard error.</value></data>
   <data name="CliAntigravityActionsDenied" xml:space="preserve"><value>Note: Antigravity CLI automatically denied these actions because headless mode cannot ask for permission: {0}. In Agent Settings, set the tool permission mode to Workspace write or Full access, or add allow rules to agy's settings.json.</value></data>
   <data name="CliStructuredResultInvalid" xml:space="preserve"><value>The CLI did not report a valid successful result and session UUID. Check that the installed CLI supports the configured structured output format.</value></data>
+  <data name="MusePromptStoreUnavailable" xml:space="preserve"><value>Muse Code could not create a private prompt file for this run.</value></data>
+  <data name="MusePromptIsolationUnsafe" xml:space="preserve"><value>Muse Code cannot keep its prompt outside this workspace safely. Choose a narrower project folder.</value></data>
+  <data name="MuseApprovalUnavailable" xml:space="preserve"><value>Muse Code requested an approval that cannot be answered in this headless run. No approval was granted.</value></data>
+  <data name="MuseRunFailed" xml:space="preserve"><value>Muse Code did not complete a valid session turn. Check that the CLI is installed, signed in, and available for this account.</value></data>
+  <data name="MuseLauncherInvalid" xml:space="preserve"><value>The Muse launcher metadata is invalid for '{0}'. Repair or reinstall Muse Code, then try again.</value></data>
   <data name="ApprovalPermissionLine" xml:space="preserve"><value>Approve: !cab approve {0}</value></data>
   <data name="ApprovalRejectLine" xml:space="preserve"><value>Reject: !cab reject {0}</value></data>
   <data name="ApprovalRequestTitle" xml:space="preserve"><value>Codex is requesting approval to perform an action.</value></data>

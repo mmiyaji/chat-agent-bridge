@@ -424,6 +424,8 @@
                                             <ComboBoxItem Content="Kiro CLI" Tag="kiro" AutomationProperties.AutomationId="ProviderOptionKiro" />
                                             <ComboBoxItem Content="Qwen Code (Preview)" Tag="qwen" AutomationProperties.AutomationId="ProviderOptionQwen" />
                                             <ComboBoxItem Content="Kimi Code CLI (Preview)" Tag="kimi" AutomationProperties.AutomationId="ProviderOptionKimi" />
+                                            <ComboBoxItem Tag="muse" AutomationProperties.AutomationId="ProviderOptionMuse" x:Uid="MuseProviderOption" />
+
                                             <ComboBoxItem  Tag="custom" AutomationProperties.AutomationId="ProviderOptionCustom"  x:Uid="ProviderOptionCustom" />
                                         </ComboBox>
                                         <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="BasicProviderHelp" />
@@ -580,6 +582,7 @@
                                                     <Button Command="{x:Bind ViewModel.LoadRegisteredKiroConnectionCommand}" IsEnabled="{x:Bind ViewModel.HasRegisteredKiroConnection, Mode=OneWay}" AutomationProperties.AutomationId="LoadRegisteredKiroConnection" x:Uid="LoadRegisteredKiroConnection" />
                                                     <Button Command="{x:Bind ViewModel.LoadRegisteredQwenConnectionCommand}" IsEnabled="{x:Bind ViewModel.HasRegisteredQwenConnection, Mode=OneWay}" AutomationProperties.AutomationId="LoadRegisteredQwenConnection" x:Uid="LoadRegisteredQwenConnection" />
                                                     <Button Command="{x:Bind ViewModel.LoadRegisteredKimiConnectionCommand}" IsEnabled="{x:Bind ViewModel.HasRegisteredKimiConnection, Mode=OneWay}" AutomationProperties.AutomationId="LoadRegisteredKimiConnection" x:Uid="LoadRegisteredKimiConnection" />
+                                                    <Button Command="{x:Bind ViewModel.LoadRegisteredMuseConnectionCommand}" IsEnabled="{x:Bind ViewModel.HasRegisteredMuseConnection, Mode=OneWay}" AutomationProperties.AutomationId="LoadRegisteredMuseConnection" x:Uid="LoadRegisteredMuseConnection" />
                                                 </StackPanel>
                                                 <TextBlock Text="{x:Bind ViewModel.ConnectionRegistrationStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="ConnectionRegistrationStatus" />
                                             </StackPanel>

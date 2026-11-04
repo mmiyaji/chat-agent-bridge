@@ -13,6 +13,7 @@ public sealed class AgentChatCommandTests
     [InlineData("!cab agent gemini summary", "gemini", true)]
     [InlineData("!cab agent github-copilot fresh", "github-copilot", false)]
     [InlineData("!cab agent COPILOT SUMMARY", "github-copilot", true)]
+    [InlineData("!cab agent muse", "muse", null)]
     public void ParsesSupportedAgentSwitchCommands(string text, string? provider, bool? includeSummary)
     {
         Assert.True(AgentChatCommand.TryParse(text, out var command));

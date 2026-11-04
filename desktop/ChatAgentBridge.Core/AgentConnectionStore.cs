@@ -132,13 +132,13 @@ public sealed class AgentConnectionStore
         else
         {
             if (mode != "exec") throw new ArgumentException("This CLI supports exec mode only.", nameof(profile));
-            if ((provider is AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi) && string.IsNullOrWhiteSpace(arguments))
+            if ((provider is AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Muse) && string.IsNullOrWhiteSpace(arguments))
                 arguments = AgentProfile.DefaultArguments(provider);
             // Validate canonical output settings and reject configured selectors for another session.
             if (provider == AgentProfile.Kimi && (arguments == "--print --output-format stream-json" || arguments == "--output-format stream-json"))
                 arguments = AgentProfile.DefaultKimiArguments;
             try { _ = AgentProfile.GetStructuredCliArguments(new BridgeSettings { AgentArguments = arguments }, provider); }
-            catch (ArgumentException ex) when (provider is AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi)
+            catch (ArgumentException ex) when (provider is AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Muse)
             { throw new ArgumentException(ChatAgentBridge.Core.Localization.CoreText.Get("BridgeManagedArgumentsRecovery"), nameof(profile), ex); }
         }
 

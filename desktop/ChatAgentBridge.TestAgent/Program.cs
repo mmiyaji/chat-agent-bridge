@@ -76,6 +76,59 @@ if (isAntigravityFixture && args is ["models"])
 // Synthetic structured CLI fixtures. Selected only by the bridge's provider output format;
 // these never read credentials, execute tools, or contact a provider.
 var structuredFixtureName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "").ToLowerInvariant();
+if (structuredFixtureName == "muse-fixture")
+{
+    string? sessionId = null;
+    string? promptPath = null;
+    string? model = null;
+    for (var index = 0; index < args.Length; index++)
+    {
+        if (args[index] == "--session-id" && index + 1 < args.Length) sessionId = args[++index];
+        else if (args[index] == "--prompt-file" && index + 1 < args.Length) promptPath = args[++index];
+        else if (args[index] == "--model" && index + 1 < args.Length) model = args[++index];
+    }
+    if (sessionId is null || promptPath is null || !File.Exists(promptPath)) { Environment.ExitCode = 2; return; }
+    var promptText = await File.ReadAllTextAsync(promptPath);
+    if (args.Any(argument => argument.Contains(promptText, StringComparison.Ordinal))) { Environment.ExitCode = 3; return; }
+    if (promptText.Contains("__CAB_MUSE_HOLD__", StringComparison.Ordinal)) await Task.Delay(700);
+    if (promptText.Contains("__CAB_MUSE_CANCEL__", StringComparison.Ordinal)) await Task.Delay(Timeout.InfiniteTimeSpan);
+    if (promptText.Contains("__CAB_MUSE_INVALID_JSON__", StringComparison.Ordinal))
+    { await Console.Out.WriteLineAsync("{broken json"); return; }
+    var envelopeId = promptText.Contains("__CAB_MUSE_FOREIGN_ONLY__", StringComparison.Ordinal)
+        ? "019e0000-0000-7000-8000-000000000999" : sessionId;
+    object Envelope(string kind, string type, object payload) => new
+    {
+        schema_version = 1, id = Guid.CreateVersion7().ToString("D"),
+        stream = new { kind, id = envelopeId }, sequence = 1, record_type = "event", durability = "durable",
+        payload_type = type, payload_schema_version = 1, payload
+    };
+    if (promptText.Contains("__CAB_MUSE_APPROVAL__", StringComparison.Ordinal))
+        await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("session", "approval_wait.effect.started", new { kind = "approval_wait" })));
+    if (promptText.Contains("__CAB_MUSE_USAGE_INVALID__", StringComparison.Ordinal))
+        await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("exec.usage", "run.usage", new { kind = "run_usage", models = new[] { new { input_tokens = -1, cached_tokens = 0, output_tokens = 0 } } })));
+    else if (!promptText.Contains("__CAB_MUSE_NO_USAGE__", StringComparison.Ordinal))
+        await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("exec.usage", "run.usage", new { kind = "run_usage", models = new[] { new { model, input_tokens = 11, cached_tokens = 3, output_tokens = 7 } } })));
+    if (promptText.Contains("__CAB_MUSE_FAIL__", StringComparison.Ordinal))
+    {
+        await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("session", "run.terminal.failed", new { kind = "run_terminal", terminal = "failed", reason = "fixture" })));
+        Environment.ExitCode = 1;
+        return;
+    }
+    if (promptText.Contains("__CAB_MUSE_FOREIGN_ONLY__", StringComparison.Ordinal))
+    {
+        await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("session", "run.terminal.completed", new { kind = "run_terminal", terminal = "completed", text = "foreign" })));
+        return;
+    }
+    if (!promptText.Contains("__CAB_MUSE_MISSING_TERMINAL__", StringComparison.Ordinal))
+    {
+        var terminal = promptText.Contains("__CAB_MUSE_TERMINAL_FAILED__", StringComparison.Ordinal) ? "failed" : "completed";
+        await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("session", "run.terminal." + terminal,
+            new { kind = "run_terminal", terminal, text = "muse-fixture:" + model + ":" + promptText, reason = (string?)null })));
+    }
+    if (!promptText.Contains("__CAB_MUSE_NONZERO__", StringComparison.Ordinal)) return;
+    Environment.ExitCode = 9;
+    return;
+}
 if (structuredFixtureName.StartsWith("kimi", StringComparison.Ordinal) && args is ["acp"])
 {
     string? sessionId = null;

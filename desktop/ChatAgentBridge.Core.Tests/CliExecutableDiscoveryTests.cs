@@ -1,3 +1,5 @@
+using ChatAgentBridge.Core;
+
 namespace ChatAgentBridge.Core.Tests;
 
 public sealed class CliExecutableDiscoveryTests : IDisposable
@@ -20,11 +22,12 @@ public sealed class CliExecutableDiscoveryTests : IDisposable
     [InlineData("kiro", "kiro-cli")]
     [InlineData("qwen", "qwen")]
     [InlineData("kimi", "kimi")]
+    [InlineData("muse", "muse")]
     public void ReturnsCommandTokenAndNativePath(string provider, string command)
     {
         var executable = Write(command + ".exe");
         var result = CliExecutableDiscovery.Find(provider, root);
-        Assert.Equal(command, result!.Executable);
+        Assert.Equal(provider == AgentProfile.Muse ? executable : command, result!.Executable);
         Assert.Equal(executable, result.DiscoveredPath);
     }
     [Fact]

@@ -27,7 +27,7 @@ CodexやClaude Codeのデスクトップアプリを使えない端末からの�
 
 ![別の端末のSlack・Mattermost・Discordから、Windows PC上のChat Agent Bridgeを経由してCLIを実行し、結果を受け取る構成](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.svg)
 
-アプリの初期設定ガイドと全般画面に掲載している構成図です。図ではCodexとClaude Codeを例にしています。Gemini CLI・GitHub Copilot CLI・Antigravity CLIも同じ構成で利用できます。
+アプリの初期設定ガイドと全般画面に掲載している構成図です。図ではCodexとClaude Codeを例にしています。Gemini CLI・GitHub Copilot CLI・Antigravity CLI・Muse Code Previewも同じ構成で利用できます。
 
 1. **別の端末**からSlack・Mattermost・Discordに投稿します。操作する端末にAIエージェントのCLIを入れる必要はありません。
 2. **Windows PC上のBridge**が投稿を受け取り、許可ユーザーや会話の承認設定を確認します。承認が必要な依頼は、承認するまで実行を待ちます。
@@ -41,7 +41,7 @@ CodexやClaude Codeのデスクトップアプリを使えない端末からの�
 | OS | Windows 10（バージョン1809以降）またはWindows 11 |
 | CPU | x64 / ARM64（それぞれ専用のZIPを配布） |
 | 追加の導入物 | 不要（管理者権限・.NETランタイムの別途導入は不要） |
-| CLI | Codex・Claude Code・Gemini CLI・GitHub Copilot CLI・Antigravity CLI、または任意のCLI（各自でインストール・ログイン） |
+| CLI | Codex・Claude Code・Gemini CLI・GitHub Copilot CLI・Antigravity CLI・Muse Code Preview、または任意のCLI（各自でインストール・ログイン） |
 | チャット | Slack（Socket Mode）・Mattermost（Botトークン）・Discord（Gateway） |
 | ネットワーク | PCからチャットサービスへ接続するだけで、外部に公開する受け口（公開URL・ポート開放）は不要 |
 
@@ -93,6 +93,7 @@ Windows向けのポータブル版を配布しています。利用するCLIの�
 | Kiro CLI（`kiro-cli`、Windows 11） | 実装済み・実サービス未検証 | CLIからモデル候補を取得、またはモデルIDを指定。`KIRO_API_KEY` が必要。権限・推論設定はCLI側で管理し、クレジットはトークン料金に換算しません |
 | Qwen Code（`qwen`） | Preview・実サービス未検証 | モデルIDを直接入力。認証・推論・操作権限はCLI側の設定。YOLOフラグを自動付与しません |
 | Kimi Code CLI（`kimi`） | Preview・実サービス未検証 | モデル名または設定済み別名を直接入力。「継承」ではツール操作の承認を求めます。「フルアクセス」はKimiがそのモードを提示した場合のみ選択できます。OSレベルのサンドボックスは提供しません |
+| Muse Code（`muse`） | Preview・実サービス未検証 | モデル名を直接入力。権限はMuse Code側で管理し、推論設定とモデル一覧取得には未対応 |
 | その他のCLI | 毎回独立した実行 | CLIの設定・起動引数で指定 |
 
 会話ごとのエージェント・モデルは、PCの会話詳細またはチャットから変更できます。エージェントを切り替える場合は、アプリで事前に確認・登録したCLIを使い、会話の引き継ぎメモを渡すか選びます。

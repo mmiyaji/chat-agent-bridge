@@ -122,7 +122,7 @@ public sealed class AgentSettingsDraftStore
         }
         catch (ArgumentException ex) { throw new ArgumentException("The model or reasoning effort is invalid.", nameof(draft), ex); }
 
-        if (provider is AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi)
+        if (provider is AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Muse)
         {
             try { arguments = AgentProfile.ValidateManagedArguments(provider, arguments); }
             catch (ArgumentException ex) { throw new ArgumentException(ex.Message, nameof(draft), ex); }

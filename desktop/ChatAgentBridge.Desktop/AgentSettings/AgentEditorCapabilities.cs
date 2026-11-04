@@ -12,9 +12,9 @@ public sealed record AgentEditorField(string LabelResource, string AutomationId,
 public static class AgentEditorCapabilities
 {
     public static bool IsBasic(string provider) => AgentProfile.IsBasicCliProvider(provider) || provider == AgentProfile.Custom;
-    public static bool IsArgumentsEditable(string provider) => IsBasic(provider) && provider is not (AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi);
+    public static bool IsArgumentsEditable(string provider) => IsBasic(provider) && provider is not (AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Muse);
     public static bool SupportsModel(string provider) => provider is AgentProfile.Codex or AgentProfile.Claude or
-        AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi;
+        AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Antigravity or AgentProfile.Kiro or AgentProfile.Qwen or AgentProfile.Kimi or AgentProfile.Muse;
     public static bool SupportsReasoning(string provider) => provider is AgentProfile.Codex or AgentProfile.Claude;
     // Antigravity lists models with `agy models` on request, but has no per-model effort levels.
     public static bool SupportsModelCatalog(string provider) => SupportsReasoning(provider) || provider is AgentProfile.Antigravity or AgentProfile.Kiro;

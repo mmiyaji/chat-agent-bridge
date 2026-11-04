@@ -723,6 +723,7 @@ AIの操作権限: {8}</value>
   <data name="DiscordConnectionFields" xml:space="preserve"><value>Botトークンと許可するユーザーIDを入力してください。ダイレクトメッセージを有効にしない場合は、許可するサーバーIDも1つ以上必要です。</value></data>
   <data name="KiroProviderHelp" xml:space="preserve"><value>Kiro CLIはWindows 11のネイティブ版を使用します。非対話実行用のKIRO_API_KEYをPC側で設定してください。モデル候補を取得し、同じスレッドの会話を継続します。操作権限と推論の強さはCLIの設定に従います。CLI側の確認が必要な操作は非対話実行では拒否されます。</value></data>
   <data name="QwenProviderHelp" xml:space="preserve"><value>Qwen Codeは同じチャットスレッドの会話を継続します。モデル名を入力し、認証・推論・操作権限はCLI側で設定してください。モデル候補の取得は未対応です。</value></data>
+  <data name="MuseProviderHelp" xml:space="preserve"><value>Muse Code CLIのモデルと権限設定はCLI側に従います。モデル名を直接入力してください。モデル候補の取得には未対応です。承認とサンドボックスはMuse CLIの設定に従い、CABがすべての権限を自動付与することはありません。</value></data>
   <data name="KimiProviderHelp" xml:space="preserve"><value>Kimi Code CLIは同じチャットスレッドの会話を継続します。モデル名またはCLIで設定した別名を入力できます。モデル候補の取得は未対応です。</value></data>
   <data name="KimiPermissionHelp" xml:space="preserve"><value>「CLIの既定値を使う」では、承認が必要なツール操作をCABで確認します。「フルアクセス」ではこの確認を省略し、Kimi側の対応が必要です。これらの権限設定は、OSレベルのサンドボックスを提供しません。</value></data>
   <data name="CodexWorkspaceRejected" xml:space="preserve"><value>Codexが作業フォルダー「{0}」を拒否しました。「エージェント設定」→「共通設定」で作業フォルダーを確認し、必要に応じてCLIを更新してください。CABで信頼確認した作業先はGit管理外でも利用できます。</value></data>

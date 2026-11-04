@@ -37,6 +37,11 @@ The Antigravity CLI settings row uses SettingsScopeIcon_arch in the same XAML fi
 It is a simple original arch outline written for this project, not a Fluent icon
 and not a product logo.
 
+The Muse Code CLI settings row uses an original, monochrome infinity outline
+inspired by the broad infinity motif in the Muse Code product site's favicon.
+It is drawn for this project; no favicon pixels or official Muse logo artwork
+are included. It is an identification cue, not an official logo or endorsement.
+
 ic_fluent_number_symbol_20_regular.svg
 Source: https://github.com/microsoft/fluentui-system-icons/blob/4c94ad5f4081168c0d45bdc368f230ecb757cd09/assets/Number%20Symbol/SVG/ic_fluent_number_symbol_20_regular.svg
 SHA-256: 0d2575799ba5febfa729d916112ac2ed7ad55a1ec9fa7fdbcc4c8775df67f86f

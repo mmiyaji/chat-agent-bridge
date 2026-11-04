@@ -146,7 +146,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(IsCodexProvider)), NotifyPropertyChangedFor(nameof(IsPreviewProvider)), NotifyPropertyChangedFor(nameof(IsLegacyProvider)), NotifyPropertyChangedFor(nameof(IsCustomProvider)), NotifyPropertyChangedFor(nameof(IsBasicProvider)), NotifyPropertyChangedFor(nameof(IsArgumentsEditable)), NotifyPropertyChangedFor(nameof(BasicProviderHelp)), NotifyPropertyChangedFor(nameof(AgentProviderDisplayName)), NotifyPropertyChangedFor(nameof(SupportsModel)), NotifyPropertyChangedFor(nameof(SupportsReasoning)), NotifyPropertyChangedFor(nameof(SupportsModelCatalog)), NotifyPropertyChangedFor(nameof(IsAntigravityProvider)), NotifyPropertyChangedFor(nameof(CanSelectReadOnlyPermission)), NotifyPropertyChangedFor(nameof(CanSelectWorkspaceWritePermission)), NotifyPropertyChangedFor(nameof(CanFetchModelCandidates)), NotifyPropertyChangedFor(nameof(CanShareApprovalsInChat)), NotifyPropertyChangedFor(nameof(CanConfigureAgentPermission)), NotifyPropertyChangedFor(nameof(AgentPermissionStatus))]
     public partial string AgentProvider { get; set; } = "codex";
     public bool IsLegacyProvider => AgentProvider == "gemini";
-    public bool IsPreviewProvider => AgentProvider is "qwen" or "kimi";
+    public bool IsPreviewProvider => AgentProvider is "qwen" or "kimi" or "muse";
     public bool IsCodexProvider => AgentProvider == "codex";
     public bool IsCustomProvider => AgentProvider == "custom";
     public bool IsAntigravityProvider => AgentProvider == "antigravity";
@@ -158,9 +158,9 @@ public partial class MainPageViewModel : ObservableObject
     public string AgentProviderDisplayName => AgentProvider switch
     {
         "codex" => "Codex", "claude" => "Claude Code", "gemini" => "Gemini CLI",
-        "github-copilot" => "GitHub Copilot CLI", "antigravity" => "Antigravity CLI", "kiro" => "Kiro CLI", "qwen" => "Qwen Code", "kimi" => "Kimi Code CLI", _ => ViewModelText.Get("CustomCliName")
+        "github-copilot" => "GitHub Copilot CLI", "antigravity" => "Antigravity CLI", "kiro" => "Kiro CLI", "qwen" => "Qwen Code", "kimi" => "Kimi Code CLI", "muse" => "Muse Code CLI", _ => ViewModelText.Get("CustomCliName")
     };
-    public string BasicProviderHelp => ViewModelText.Get(IsCustomProvider ? "BasicProviderHelp" : IsAntigravityProvider ? "AntigravityProviderHelp" : AgentProvider == "kiro" ? "KiroProviderHelp" : AgentProvider == "qwen" ? "QwenProviderHelp" : AgentProvider == "kimi" ? "KimiProviderHelp" : "SessionCliProviderHelp");
+    public string BasicProviderHelp => ViewModelText.Get(IsCustomProvider ? "BasicProviderHelp" : IsAntigravityProvider ? "AntigravityProviderHelp" : AgentProvider == "kiro" ? "KiroProviderHelp" : AgentProvider == "qwen" ? "QwenProviderHelp" : AgentProvider == "kimi" ? "KimiProviderHelp" : AgentProvider == "muse" ? "MuseProviderHelp" : "SessionCliProviderHelp");
     public bool CanFetchModelCandidates => SupportsModelCatalog && IsSettingsLoaded && !IsRunning && !_closing;
     [ObservableProperty] public partial string AgentModel { get; set; } = "";
     partial void OnAgentModelChanged(string value)
@@ -346,12 +346,12 @@ public partial class MainPageViewModel : ObservableObject
             AgentProvider = _settings.AgentProvider;
             _initializingSettings = true;
             AgentModel = _settings.AgentModel ?? "";
-            AgentReasoningEffort = _settings.AgentReasoningEffort;
+            AgentReasoningEffort = _settings.AgentProvider == AgentProfile.Muse ? null : _settings.AgentReasoningEffort;
             _effortModel = NormalizeModel(AgentModel);
             _unsupportedSavedEffort = false;
             _hasCatalogForCurrentModel = false;
             SelectedReasoningEffort = null;
-            ModelEffortStatus = _settings.AgentReasoningEffort is { Length: > 0 } savedEffort
+            ModelEffortStatus = AgentReasoningEffort is { Length: > 0 } savedEffort
                 ? ViewModelText.Get("SavedEffortPending", savedEffort)
                 : ViewModelText.Get("UseDefaultCliValue");
             _initializingSettings = false;
@@ -375,7 +375,7 @@ public partial class MainPageViewModel : ObservableObject
             ShareApprovalsInChat = _settings.ShareApprovalsInChat;
             ShareAgentQuestionsInChat = _settings.ShareAgentQuestionsInChat;
             RequireApproval = _settings.RequireApproval;
-            AgentPermissionMode = _settings.AgentPermissionMode;
+            AgentPermissionMode = _settings.AgentProvider == AgentProfile.Muse ? "inherit" : _settings.AgentPermissionMode;
             AllowAgentNetwork = _settings.AllowAgentNetwork;
             TrustedWorkspaceRoots = _settings.TrustedWorkspaceRoots;
             ChatApprovalMode = _settings.ChatApprovalMode;
@@ -434,12 +434,12 @@ public partial class MainPageViewModel : ObservableObject
         if (IsBasicProvider) SetAgentPermissionMode("inherit", adjusted: false);
         AgentModel = "";
         AgentReasoningEffort = null;
-        AgentExecutable = value switch { "claude" => "claude", "codex" => "codex", "gemini" => "gemini", "github-copilot" => "copilot", "antigravity" => "agy", "kiro" => "kiro-cli", "qwen" => "qwen", "kimi" => "kimi", _ => "" };
+        AgentExecutable = value switch { "claude" => "claude", "codex" => "codex", "gemini" => "gemini", "github-copilot" => "copilot", "antigravity" => "agy", "kiro" => "kiro-cli", "qwen" => "qwen", "kimi" => "kimi", "muse" => "muse", _ => "" };
         AgentArguments = value switch
         {
             "claude" => "--print --output-format stream-json --verbose", "codex" => "exec --json -",
             "gemini" => AgentProfile.DefaultGeminiArguments, "github-copilot" => AgentProfile.DefaultGitHubCopilotArguments,
-            "antigravity" => AgentProfile.DefaultAntigravityArguments, "kiro" => AgentProfile.DefaultKiroArguments, "qwen" => AgentProfile.DefaultQwenArguments, "kimi" => AgentProfile.DefaultKimiArguments, _ => ""
+            "antigravity" => AgentProfile.DefaultAntigravityArguments, "kiro" => AgentProfile.DefaultKiroArguments, "qwen" => AgentProfile.DefaultQwenArguments, "kimi" => AgentProfile.DefaultKimiArguments, "muse" => AgentProfile.DefaultMuseArguments, _ => ""
         };
     }
 
@@ -964,7 +964,7 @@ public partial class MainPageViewModel : ObservableObject
         AgentArguments = AgentArguments.Trim(),
         AgentProvider = AgentProvider,
         AgentModel = string.IsNullOrWhiteSpace(AgentModel) ? null : AgentModel.Trim(),
-        AgentReasoningEffort = AgentReasoningEffort,
+        AgentReasoningEffort = AgentProvider == AgentProfile.Muse ? null : AgentReasoningEffort,
         AutoConnectProvider = AutoConnectProvider,
         AgentMode = UseAppServer ? "app-server" : "exec",
         MattermostServerUrl = MattermostServerUrl.Trim(),
@@ -985,7 +985,7 @@ public partial class MainPageViewModel : ObservableObject
         ShareApprovalsInChat = ShareApprovalsInChat,
         ShareAgentQuestionsInChat = ShareAgentQuestionsInChat,
         RequireApproval = RequireApproval,
-        AgentPermissionMode = AgentPermissionMode,
+        AgentPermissionMode = AgentProvider == AgentProfile.Muse ? "inherit" : AgentPermissionMode,
         AllowAgentNetwork = AllowAgentNetwork,
         TrustedWorkspaceRoots = TrustedWorkspaceRoots,
         ChatApprovalMode = ChatApprovalMode,

@@ -17,6 +17,7 @@ public static class CliExecutableDiscovery
             AgentProfile.Kiro => "kiro-cli",
             AgentProfile.Qwen => "qwen",
             AgentProfile.Kimi => "kimi",
+            AgentProfile.Muse => "muse",
             _ => null
         };
         if (command is null) return null;
@@ -30,10 +31,20 @@ public static class CliExecutableDiscovery
                 if (!Path.IsPathFullyQualified(directory)) continue;
                 directory = Path.GetFullPath(directory);
                 var native = Path.Combine(directory, command + ".exe");
-                if (File.Exists(native)) return new Detection(command, native);
+                if (File.Exists(native))
+                    return provider == AgentProfile.Muse ? new Detection(native, native) : new Detection(command, native);
                 if (!OperatingSystem.IsWindows()) continue;
                 var shim = Path.Combine(directory, command + ".cmd");
                 if (!File.Exists(shim)) continue;
+                if (provider == AgentProfile.Muse)
+                {
+                    try
+                    {
+                        var resolved = MuseExecutableResolver.Resolve(shim);
+                        return new Detection(resolved, resolved);
+                    }
+                    catch (InvalidOperationException) { return null; }
+                }
                 selectedSupportedShim = AgentProfile.UsesNpmShim(provider) || provider == AgentProfile.Codex;
                 if (AgentProfile.UsesNpmShim(provider))
                 {
@@ -58,6 +69,16 @@ public static class CliExecutableDiscovery
                 // matching shim shadows later installations even though it cannot be run.
                 if (selectedSupportedShim) return null;
             }
+        }
+        if (provider == AgentProfile.Muse)
+        {
+            try
+            {
+                var fallback = MuseExecutableResolver.ResolveDefaultInstall();
+                if (!string.Equals(fallback, command, StringComparison.OrdinalIgnoreCase))
+                    return new Detection(fallback, fallback);
+            }
+            catch (InvalidOperationException) { return null; }
         }
         return null;
     }

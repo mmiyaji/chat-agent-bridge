@@ -83,6 +83,12 @@ public sealed class AgentRunner : IAgentRunner
             return kimi with { Metrics = (kimi.Metrics ?? new AgentExecutionMetrics()) with
                 { QueueMilliseconds = queueMilliseconds, TotalMilliseconds = totalTimer.Elapsed.TotalMilliseconds } };
         }
+        if (AgentProfile.ResolveProvider(settings) == AgentProfile.Muse)
+        {
+            var muse = await MuseExecRunner.RunAsync(settings, workspace, prompt, progress, cancellationToken).ConfigureAwait(false);
+            return muse with { Metrics = (muse.Metrics ?? new AgentExecutionMetrics()) with
+                { QueueMilliseconds = queueMilliseconds, TotalMilliseconds = totalTimer.Elapsed.TotalMilliseconds } };
+        }
         var result = await RunLockedAsync(settings, workspace, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false);
         return result with
         {

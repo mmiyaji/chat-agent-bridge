@@ -1,9 +1,68 @@
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Core.Tests;
 
 public sealed class AgentProfileTests
 {
+    [Fact]
+    public void MuseIsRegisteredWithCanonicalArgumentsAndOnlyManualModels()
+    {
+        var invocation = AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = AgentProfile.Muse, AgentModel = "model-x" });
+        Assert.Equal("muse", invocation.Executable);
+        Assert.Equal(AgentProfile.Muse, invocation.Provider);
+        Assert.Equal(new[] { "exec", "--json", "--model", "model-x" }, invocation.Arguments);
+        Assert.True(AgentProfile.IsBasicCliProvider(AgentProfile.Muse));
+        Assert.False(AgentProfile.HasModelCatalog(AgentProfile.Muse));
+        Assert.False(AgentProfile.SupportsPermissionMode(AgentProfile.Muse, "full-access"));
+        Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = AgentProfile.Muse, AgentReasoningEffort = "high" }));
+        Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = AgentProfile.Muse, AgentPermissionMode = "full-access" }));
+    }
+
+    [Theory]
+    [InlineData("exec --json --resume latest")]
+    [InlineData("exec --json --session-id 11111111-2222-4333-8444-555555555555")]
+    [InlineData("exec --json --prompt-file prompt.txt")]
+    [InlineData("exec --json --cwd C:\\other")]
+    [InlineData("exec --json --yolo")]
+    [InlineData("exec --json --disable-approval")]
+    [InlineData("exec --json --disable-sandbox")]
+    public void MuseArgumentsAreBridgeManaged(string arguments)
+        => Assert.Throws<ArgumentException>(() => AgentProfile.BuildInvocation(new BridgeSettings { AgentProvider = AgentProfile.Muse, AgentArguments = arguments }));
+
+    [Fact]
+    public void MuseAuthorizedSessionUsesOfficialSessionIdSelector()
+    {
+        var invocation = AgentProfile.BuildInvocation(new BridgeSettings
+        {
+            AgentProvider = AgentProfile.Muse,
+            AuthorizedCliSessionId = "11111111-2222-4333-8444-555555555555"
+        });
+        Assert.Equal(new[] { "exec", "--json", "--session-id", "11111111-2222-4333-8444-555555555555" }, invocation.Arguments);
+    }
+
+    [Theory]
+    [InlineData("Muse Code 1.2.3", true)]
+    [InlineData("muse 1.2.3", true)]
+    [InlineData("muse.exe 1.2.3", true)]
+    [InlineData("A note about Muse Code", false)]
+    [InlineData("Muse Corporation 1.2.3", false)]
+    public void MuseProbeUsesOnlyStrongCliIdentity(string output, bool expected)
+        => Assert.Equal(expected, CliProbeService.RecognizesProvider(AgentProfile.Muse, output));
+
+    [Fact]
+    public void MuseSessionMarkerIdentifiesTheProviderFromABinding()
+    {
+        var marker = ConversationAgentService.CliSessionMarker(AgentProfile.Muse);
+        var binding = new SessionBinding(
+            new SessionKey("slack", "channel", "thread", "user", "slack"),
+            "C:\\workspace", "muse", marker + ":" + new string('a', 64),
+            "11111111-2222-4333-8444-555555555555", DateTimeOffset.UtcNow);
+
+        Assert.Equal("muse-jsonl-v1", marker);
+        Assert.Equal(AgentProfile.Muse, ConversationAgentService.ProviderOf(binding));
+    }
+
     [Fact]
     public void DefaultCodexProfileAddsModelAsAnArgumentWithoutShellInterpolation()
     {

@@ -10,7 +10,7 @@ public sealed partial class MainPage
 {
     // The same available-width threshold as the chat and history split panes.
     private const double SettingsScopeNavigationBreakpoint = 700;
-    private readonly string[] _agentScopeKeys = ["common", "codex", "claude", "gemini", "github-copilot", "antigravity", "kiro", "qwen", "kimi", "custom"];
+    private readonly string[] _agentScopeKeys = ["common", "codex", "claude", "gemini", "github-copilot", "antigravity", "kiro", "qwen", "kimi", "muse", "custom"];
     private AgentProfileEditorControl? _agentProfileDetails;
     private NavigationView? _agentScopeNavigation;
     private ScrollViewer? _agentSettingsScroll;
@@ -67,7 +67,7 @@ public sealed partial class MainPage
         {
             var key = _agentScopeKeys[i];
             var item = new SettingsScopeNavigationItem(_agentScopeNavigation, () => QueueAgentScopeSelection(key)) { Tag = key, Content = key };
-            AutomationProperties.SetAutomationId(item, "AgentScope" + (key switch { "common" => "Common", "codex" => "Codex", "claude" => "Claude", "gemini" => "Gemini", "github-copilot" => "Copilot", "antigravity" => "Antigravity", "kiro" => "Kiro", "qwen" => "Qwen", "kimi" => "Kimi", _ => "Custom" }));
+            AutomationProperties.SetAutomationId(item, "AgentScope" + (key switch { "common" => "Common", "codex" => "Codex", "claude" => "Claude", "gemini" => "Gemini", "github-copilot" => "Copilot", "antigravity" => "Antigravity", "kiro" => "Kiro", "qwen" => "Qwen", "kimi" => "Kimi", "muse" => "Muse", _ => "Custom" }));
             _agentScopeNavigation.MenuItems.Add(item);
         }
         _agentScopeNavigation.SelectionChanged += (_, args) =>
@@ -131,8 +131,8 @@ public sealed partial class MainPage
     private void RefreshAgentScopeLabels()
     {
         if (_agentScopeNavigation is null) return;
-        string[] labels = [DesktopText.Get("AgentScopeCommon"), "Codex", "Claude Code", "Gemini CLI", "GitHub Copilot", "Antigravity CLI", "Kiro CLI", "Qwen Code", "Kimi Code CLI", DesktopText.Get("AgentScopeCustom")];
-        string[] iconKeys = ["common", "codex", "claude", "gemini", "github-copilot", "antigravity", "kiro", "qwen", "kimi", "custom"];
+        string[] labels = [DesktopText.Get("AgentScopeCommon"), "Codex", "Claude Code", "Gemini CLI", "GitHub Copilot", "Antigravity CLI", "Kiro CLI", "Qwen Code", "Kimi Code CLI", DesktopText.Get("MuseCliName"), DesktopText.Get("AgentScopeCustom")];
+        string[] iconKeys = ["common", "codex", "claude", "gemini", "github-copilot", "antigravity", "kiro", "qwen", "kimi", "muse", "custom"];
         for (var i = 0; i < labels.Length; i++)
         {
             var item = (NavigationViewItem)_agentScopeNavigation.MenuItems[i];
@@ -159,7 +159,7 @@ public sealed partial class MainPage
                 "claude" => "Claude Code",
                 "gemini" => "Gemini CLI",
                 "github-copilot" => "GitHub Copilot",
-                "antigravity" => "Antigravity CLI", "kiro" => "Kiro CLI", "qwen" => "Qwen Code", "kimi" => "Kimi Code CLI",
+                "antigravity" => "Antigravity CLI", "kiro" => "Kiro CLI", "qwen" => "Qwen Code", "kimi" => "Kimi Code CLI", "muse" => DesktopText.Get("MuseCliName"),
                 "custom" => DesktopText.Get("AgentScopeCustom"),
                 _ => string.Empty
             };

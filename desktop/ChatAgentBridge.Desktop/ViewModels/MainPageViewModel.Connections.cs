@@ -16,6 +16,7 @@ public partial class MainPageViewModel
     private AgentConnectionProfile? _registeredKiroConnection;
     private AgentConnectionProfile? _registeredQwenConnection;
     private AgentConnectionProfile? _registeredKimiConnection;
+    private AgentConnectionProfile? _registeredMuseConnection;
 
     [ObservableProperty] public partial string RegisteredConnectionSummary { get; set; } = ViewModelText.Get("NoRegisteredConnections");
     [ObservableProperty] public partial string ConnectionRegistrationStatus { get; set; } = "";
@@ -28,6 +29,7 @@ public partial class MainPageViewModel
     public bool HasRegisteredKiroConnection => _registeredKiroConnection is not null;
     public bool HasRegisteredQwenConnection => _registeredQwenConnection is not null;
     public bool HasRegisteredKimiConnection => _registeredKimiConnection is not null;
+    public bool HasRegisteredMuseConnection => _registeredMuseConnection is not null;
 
     private void RefreshConnectionCommands()
     {
@@ -40,6 +42,7 @@ public partial class MainPageViewModel
         LoadRegisteredKiroConnectionCommand.NotifyCanExecuteChanged();
         LoadRegisteredQwenConnectionCommand.NotifyCanExecuteChanged();
         LoadRegisteredKimiConnectionCommand.NotifyCanExecuteChanged();
+        LoadRegisteredMuseConnectionCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(HasRegisteredCodexConnection));
         OnPropertyChanged(nameof(HasRegisteredClaudeConnection));
         OnPropertyChanged(nameof(HasRegisteredGeminiConnection));
@@ -48,6 +51,7 @@ public partial class MainPageViewModel
         OnPropertyChanged(nameof(HasRegisteredKiroConnection));
         OnPropertyChanged(nameof(HasRegisteredQwenConnection));
         OnPropertyChanged(nameof(HasRegisteredKimiConnection));
+        OnPropertyChanged(nameof(HasRegisteredMuseConnection));
         OnPropertyChanged(nameof(HasVerifiedAgentEditor));
     }
 
@@ -64,11 +68,12 @@ public partial class MainPageViewModel
             _registeredKiroConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Kiro);
             _registeredQwenConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Qwen);
             _registeredKimiConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Kimi);
+            _registeredMuseConnection = profiles.FirstOrDefault(profile => profile.Provider == AgentProfile.Muse);
             var names = profiles.Select(profile => profile.Provider switch
             {
                 AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code",
                 AgentProfile.Gemini => "Gemini CLI", AgentProfile.GitHubCopilot => "GitHub Copilot CLI",
-                AgentProfile.Antigravity => "Antigravity CLI", AgentProfile.Kiro => "Kiro CLI", AgentProfile.Qwen => "Qwen Code", AgentProfile.Kimi => "Kimi Code CLI", _ => profile.Provider
+                AgentProfile.Antigravity => "Antigravity CLI", AgentProfile.Kiro => "Kiro CLI", AgentProfile.Qwen => "Qwen Code", AgentProfile.Kimi => "Kimi Code CLI", AgentProfile.Muse => "Muse Code CLI", _ => profile.Provider
             }).ToArray();
             RegisteredConnectionSummary = names.Length == 0
                 ? ViewModelText.Get("NoRegisteredConnections")
@@ -86,6 +91,7 @@ public partial class MainPageViewModel
             _registeredKiroConnection = null;
             _registeredQwenConnection = null;
             _registeredKimiConnection = null;
+            _registeredMuseConnection = null;
             RegisteredConnectionSummary = ViewModelText.Get("RegisteredConnectionsUnavailable", ex.Message);
             RefreshConnectionCommands();
         }
@@ -124,7 +130,7 @@ public partial class MainPageViewModel
         var candidate = new AgentConnectionProfile(
             AgentProvider,
             // Preserve npm-backed CLI launchers; node.exe is an internal implementation detail.
-            AgentProvider is AgentProfile.Qwen or AgentProfile.Gemini or AgentProfile.GitHubCopilot ? AgentExecutable.Trim() : CliExecutablePath,
+            AgentProvider is AgentProfile.Qwen or AgentProfile.Gemini or AgentProfile.GitHubCopilot or AgentProfile.Muse ? AgentExecutable.Trim() : CliExecutablePath,
             AgentProvider == AgentProfile.Codex ? (UseAppServer ? "app-server" : AgentProfile.DefaultCodexArguments)
                 : AgentProvider == AgentProfile.Claude ? "" : AgentArguments,
             AgentProvider == AgentProfile.Codex && UseAppServer ? "app-server" : "exec",
@@ -178,6 +184,9 @@ public partial class MainPageViewModel
     [RelayCommand(CanExecute = nameof(HasRegisteredKimiConnection))]
     private void LoadRegisteredKimiConnection() => ApplyRegisteredConnection(_registeredKimiConnection);
 
+    [RelayCommand(CanExecute = nameof(HasRegisteredMuseConnection))]
+    private void LoadRegisteredMuseConnection() => ApplyRegisteredConnection(_registeredMuseConnection);
+
     private void ApplyRegisteredConnection(AgentConnectionProfile? profile)
     {
         if (profile is null) return;
@@ -187,8 +196,8 @@ public partial class MainPageViewModel
         AgentArguments = applied.AgentArguments;
         UseAppServer = applied.AgentMode == "app-server";
         AgentModel = applied.AgentModel ?? "";
-        AgentReasoningEffort = applied.AgentReasoningEffort;
-        AgentPermissionMode = applied.AgentPermissionMode;
+        AgentReasoningEffort = applied.AgentProvider == AgentProfile.Muse ? null : applied.AgentReasoningEffort;
+        AgentPermissionMode = applied.AgentProvider == AgentProfile.Muse ? "inherit" : applied.AgentPermissionMode;
         AllowAgentNetwork = applied.AllowAgentNetwork;
         ConnectionRegistrationStatus = ViewModelText.Get("ConnectionLoaded", AgentProviderDisplayName);
         UpdateSavedAgentSummary();

@@ -20,6 +20,7 @@ public sealed partial class MainPage
             "kiro" => "provider_kiro",
             "qwen" => "provider_qwen",
             "kimi" => "provider_kimi",
+            "muse" => "provider_muse",
             "mattermost" => "provider_mattermost",
             "slack" => "provider_slack",
             "discord" => "provider_discord",
