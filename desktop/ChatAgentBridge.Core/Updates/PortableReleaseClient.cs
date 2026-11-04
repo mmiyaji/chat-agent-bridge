@@ -105,7 +105,27 @@ public sealed class PortableReleaseClient : IDisposable
         return best;
     }
 
-    public async Task DownloadAsync(PortableRelease candidate, string destinationZipPath, IProgress<double>? progress, CancellationToken cancellationToken)
+    public async Task DownloadAsync(PortableRelease candidate, string destinationZipPath, IProgress<double>? progress,
+        CancellationToken cancellationToken, bool preservePartialOnCancellation = false)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                await DownloadAttemptAsync(candidate, destinationZipPath, progress, cancellationToken,
+                    preservePartialOnCancellation).ConfigureAwait(false);
+                return;
+            }
+            catch (Exception error) when (attempt < 3 && !cancellationToken.IsCancellationRequested &&
+                error is HttpRequestException or OperationCanceledException)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2 * (attempt + 1)), cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task DownloadAttemptAsync(PortableRelease candidate, string destinationZipPath, IProgress<double>? progress,
+        CancellationToken cancellationToken, bool preservePartialOnCancellation)
     {
         EnsureNoCredentialHeaders();
         ArgumentNullException.ThrowIfNull(candidate);
@@ -114,9 +134,28 @@ public sealed class PortableReleaseClient : IDisposable
         var destination = Path.GetFullPath(destinationZipPath);
         var parent = Path.GetDirectoryName(destination)!;
         Directory.CreateDirectory(parent);
-        var partial = Path.Combine(parent, "." + Path.GetFileName(destination) + ".download-" + Guid.NewGuid().ToString("N"));
+        var partial = Path.Combine(parent, "." + Path.GetFileName(destination) + ".download-" + candidate.Sha256[..32].ToLowerInvariant());
+        var retainPartial = false;
         try
         {
+            PortableUpdatePaths.EnsureNoReparsePoints(partial);
+            var offset = File.Exists(partial) ? new FileInfo(partial).Length : 0;
+            if (offset > candidate.Size) { File.Delete(partial); offset = 0; }
+            if (offset == candidate.Size)
+            {
+                await using var completed = File.OpenRead(partial);
+                var digest = await SHA256.HashDataAsync(completed, cancellationToken).ConfigureAwait(false);
+                if (CryptographicOperations.FixedTimeEquals(digest, Convert.FromHexString(expected)))
+                {
+                    completed.Close();
+                    File.Move(partial, destination, overwrite: true);
+                    progress?.Report(1);
+                    return;
+                }
+                completed.Close();
+                File.Delete(partial);
+                offset = 0;
+            }
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             var idleTimeout = TimeSpan.FromMinutes(5);
             timeout.CancelAfter(idleTimeout);
@@ -125,6 +164,7 @@ public sealed class PortableReleaseClient : IDisposable
             for (var redirects = 0; ; redirects++)
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                if (offset > 0) request.Headers.Range = new RangeHeaderValue(offset, null);
                 response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
                 if (!IsRedirect(response.StatusCode)) break;
                 var location = response.Headers.Location;
@@ -136,17 +176,39 @@ public sealed class PortableReleaseClient : IDisposable
             using (response)
             {
                 if (!response!.IsSuccessStatusCode) throw new HttpRequestException($"Asset download failed with HTTP {(int)response.StatusCode}.");
-                if (response.Content.Headers.ContentLength is long length && length != candidate.Size) throw new InvalidDataException("Downloaded asset size does not match release metadata.");
+                if (response.StatusCode == HttpStatusCode.PartialContent)
+                {
+                    var range = response.Content.Headers.ContentRange;
+                    if (range?.Unit != "bytes" || range.From != offset || range.To != candidate.Size - 1 || range.Length != candidate.Size)
+                        throw new InvalidDataException("Invalid resumed download range.");
+                }
+                else
+                {
+                    if (response.StatusCode != HttpStatusCode.OK) throw new InvalidDataException("Unexpected asset response.");
+                    offset = 0;
+                }
+                if (response.Content.Headers.ContentLength is long length && length != candidate.Size - offset) throw new InvalidDataException("Downloaded asset size does not match release metadata.");
                 await using var input = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
-                await using var output = new FileStream(partial, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                await using var output = new FileStream(partial, offset > 0 ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
                 using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
                 var buffer = ArrayPool<byte>.Shared.Rent(81920);
-                long total = 0;
+                long total = offset;
+                if (offset > 0)
+                {
+                    await using var previous = new FileStream(partial, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 81920, FileOptions.Asynchronous);
+                    var previousBuffer = new byte[81920];
+                    int readPrevious;
+                    while ((readPrevious = await previous.ReadAsync(previousBuffer, timeout.Token).ConfigureAwait(false)) > 0)
+                        hash.AppendData(previousBuffer, 0, readPrevious);
+                    progress?.Report((double)offset / candidate.Size);
+                }
                 try
                 {
                     while (true)
                     {
-                        var read = await input.ReadAsync(buffer.AsMemory(0, buffer.Length), timeout.Token).ConfigureAwait(false);
+                        int read;
+                        try { read = await input.ReadAsync(buffer.AsMemory(0, buffer.Length), timeout.Token).ConfigureAwait(false); }
+                        catch (IOException error) { throw new HttpRequestException("Asset stream interrupted.", error); }
                         if (read == 0) break;
                         timeout.CancelAfter(idleTimeout);
                         total += read;
@@ -164,7 +226,13 @@ public sealed class PortableReleaseClient : IDisposable
             File.Move(partial, destination, overwrite: true);
             progress?.Report(1);
         }
-        finally { try { if (File.Exists(partial)) File.Delete(partial); } catch { } }
+        catch (HttpRequestException) { retainPartial = true; throw; }
+        catch (OperationCanceledException)
+        {
+            retainPartial = !cancellationToken.IsCancellationRequested || preservePartialOnCancellation;
+            throw;
+        }
+        finally { try { if (!retainPartial && File.Exists(partial)) File.Delete(partial); } catch { } }
     }
 
     /// <summary>Checks persisted feed data using the same fixed-origin and metadata rules as live feed results.</summary>

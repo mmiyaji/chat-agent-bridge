@@ -977,4 +977,6 @@ After: {2}</value></data>
   <data name="PortableUpdateCacheCleanupFailed" xml:space="preserve"><value>Cleanup could not finish. Files in use will be retried later.</value></data>
   <data name="PortableUpdateCacheUsage" xml:space="preserve"><value>Update files and records: {0:F1} MB</value></data>
   <data name="PortableUpdateCacheUsageUnavailable" xml:space="preserve"><value>Storage usage could not be read.</value></data>
+  <data name="PortableUpdatePaused" xml:space="preserve"><value>Download paused. Select Resume download to continue.</value></data>
+  <data name="PortableUpdateResume" xml:space="preserve"><value>Resume download</value></data>
 </root>

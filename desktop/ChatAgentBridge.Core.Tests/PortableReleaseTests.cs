@@ -213,6 +213,50 @@ public sealed class PortableReleaseClientTests
         finally { DeleteFile(path); }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ResumesPartialOrRestartsWhenRangeIsIgnored(bool supportsRange)
+    {
+        var path = TempPath();
+        var partial = Path.Combine(Path.GetDirectoryName(path)!, "." + Path.GetFileName(path) + ".download-" + Digest[7..39]);
+        await File.WriteAllBytesAsync(partial, Payload[..5]);
+        var handler = new StubHandler(request =>
+        {
+            Assert.Equal(5, request.Headers.Range!.Ranges.Single().From);
+            var response = new HttpResponseMessage(supportsRange ? HttpStatusCode.PartialContent : HttpStatusCode.OK)
+            { Content = new ByteArrayContent(supportsRange ? Payload[5..] : Payload) };
+            if (supportsRange) response.Content.Headers.ContentRange = new(5, Payload.Length - 1, Payload.Length);
+            return response;
+        });
+        using var client = new PortableReleaseClient(new HttpClient(handler));
+        try
+        {
+            await client.DownloadAsync(Candidate(Digest[7..]), path, null, default);
+            Assert.Equal(Payload, await File.ReadAllBytesAsync(path));
+            Assert.False(File.Exists(partial));
+        }
+        finally { DeleteFile(path); if (File.Exists(partial)) File.Delete(partial); }
+    }
+
+    [Fact]
+    public async Task RetriesTransientDownloadFailure()
+    {
+        var attempts = 0;
+        var handler = new StubHandler(_ => ++attempts == 1
+            ? new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+            : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Payload) });
+        using var client = new PortableReleaseClient(new HttpClient(handler));
+        var path = TempPath();
+        try
+        {
+            await client.DownloadAsync(Candidate(Digest[7..]), path, null, default);
+            Assert.Equal(2, attempts);
+            Assert.Equal(Payload, await File.ReadAllBytesAsync(path));
+        }
+        finally { DeleteFile(path); }
+    }
+
     [Fact]
     public async Task RejectsBadRedirectAndHashAndLeavesNoDestinationOrPartialFile()
     {

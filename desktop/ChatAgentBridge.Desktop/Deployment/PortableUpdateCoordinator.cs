@@ -43,6 +43,8 @@ public sealed class PortableUpdateCoordinator : IDisposable
     public bool IsSupported => DeploymentRuntime.IsPortable && _hasLifetimeLease && !_disposed;
     public bool IsBusy { get; private set; }
     public bool IsDownloading { get; private set; }
+    public bool IsPaused { get; private set; }
+    private bool _pauseRequested;
     public double DownloadProgress { get; private set; }
     public string Status { get; private set; }
     public string? AvailableVersion => _available?.Version;
@@ -107,6 +109,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
                 : null;
             _preferences = _preferences with { LastAttemptUtc = _lastAttemptUtc, AvailableRelease = _available };
             await RestoreStageAsync();
+            if (_staged is null) await RestorePartialDownloadAsync();
             _initialized = true;
             if (preferences is null || _preferences != preferences)
             {
@@ -270,8 +273,10 @@ public sealed class PortableUpdateCoordinator : IDisposable
     public async Task DownloadAsync()
     {
         if (_available is not { } release || !TryBegin()) return;
-        DiscardDownload();
-        _workDirectory = Path.Combine(_workRoot, Guid.NewGuid().ToString("N"));
+        if (!IsPaused) DiscardDownload();
+        IsPaused = false;
+        _pauseRequested = false;
+        _workDirectory ??= Path.Combine(_workRoot, Guid.NewGuid().ToString("N"));
         IsDownloading = true;
         DownloadProgress = 0;
         var totalMiB = release.Size / (1024d * 1024d);
@@ -284,6 +289,9 @@ public sealed class PortableUpdateCoordinator : IDisposable
             PortableUpdatePaths.EnsureNoReparsePoints(_workRoot);
             Directory.CreateDirectory(_workDirectory);
             using var workLease = PortableUpdateCacheCleanup.AcquireWorkLease(_workDirectory);
+            var checkpoint = new DownloadCheckpoint(_installDirectory, _dataDirectory, release.Sha256, release.Size);
+            await File.WriteAllTextAsync(Path.Combine(_workDirectory, "download.json"),
+                JsonSerializer.Serialize(checkpoint), _operation!.Token);
             var zip = Path.Combine(_workDirectory, "update.zip");
             var downloadToken = _operation!.Token;
             var progress = new Progress<double>(value =>
@@ -295,13 +303,28 @@ public sealed class PortableUpdateCoordinator : IDisposable
                 Status = DesktopText.Get("PortableUpdateDownloading", release.Version, percent / 100 * totalMiB, totalMiB);
                 Notify();
             });
-            await _client.DownloadAsync(release, zip, progress, downloadToken);
+            await _client.DownloadAsync(release, zip, progress, downloadToken, preservePartialOnCancellation: true);
             IsDownloading = false;
             Status = DesktopText.Get("PortableUpdateVerifying");
             Notify();
             _staged = await PortableArchiveStager.ExtractAsync(zip, Path.Combine(_workDirectory, "stage"), release, _operation.Token);
             await PortableUpdateStageStore.SaveAsync(_workDirectory, _installDirectory, _dataDirectory, Architecture(), release, _staged, _operation.Token);
             Status = DesktopText.Get("PortableUpdateReady", release.Version);
+        }
+        catch (OperationCanceledException) when (_pauseRequested)
+        {
+            IsPaused = true;
+            Status = DesktopText.Get("PortableUpdatePaused");
+        }
+        catch (HttpRequestException error)
+        {
+            IsPaused = true;
+            ShowError(error);
+        }
+        catch (OperationCanceledException) when (_operation?.IsCancellationRequested != true)
+        {
+            IsPaused = true;
+            ShowCancellationOrTimeout();
         }
         catch (OperationCanceledException) { DiscardDownload(); ShowCancellationOrTimeout(); }
         catch (Exception error) { DiscardDownload(); ShowError(error); }
@@ -409,7 +432,20 @@ public sealed class PortableUpdateCoordinator : IDisposable
         }
     }
 
-    public void Cancel() { if (!_committing) _operation?.Cancel(); }
+    public void Pause()
+    {
+        if (!IsDownloading || _operation is null) return;
+        _pauseRequested = true;
+        _operation.Cancel();
+    }
+
+    public void Cancel()
+    {
+        if (_committing) return;
+        _pauseRequested = false;
+        if (IsPaused) { DiscardDownload(); Status = DesktopText.Get("PortableUpdateCancelled"); Notify(); }
+        else _operation?.Cancel();
+    }
 
     private bool TryBegin()
     {
@@ -521,6 +557,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
 
     private void DiscardDownload()
     {
+        IsPaused = false;
         _staged = null;
         if (_workDirectory is not null && Directory.Exists(_workDirectory))
         {
@@ -539,6 +576,36 @@ public sealed class PortableUpdateCoordinator : IDisposable
             catch (InvalidDataException) { }
         }
         _workDirectory = null;
+    }
+
+    private sealed record DownloadCheckpoint(string InstallDirectory, string DataDirectory, string Sha256, long Size);
+
+    private async Task RestorePartialDownloadAsync()
+    {
+        if (_available is not { } release || !Directory.Exists(_workRoot)) return;
+        foreach (var directory in Directory.EnumerateDirectories(_workRoot).Take(256))
+        {
+            if (!Guid.TryParseExact(Path.GetFileName(directory), "N", out _)) continue;
+            try
+            {
+                PortableUpdatePaths.EnsureNoReparsePoints(directory);
+                var path = Path.Combine(directory, "download.json");
+                PortableUpdatePaths.EnsureNoReparsePoints(path);
+                if (!File.Exists(path) || new FileInfo(path).Length > 16384) continue;
+                var checkpoint = JsonSerializer.Deserialize<DownloadCheckpoint>(await File.ReadAllTextAsync(path));
+                if (checkpoint is null || checkpoint.Sha256 != release.Sha256 || checkpoint.Size != release.Size ||
+                    !string.Equals(checkpoint.InstallDirectory, _installDirectory, StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(checkpoint.DataDirectory, _dataDirectory, StringComparison.OrdinalIgnoreCase)) continue;
+                var partial = Path.Combine(directory, ".update.zip.download-" + release.Sha256[..32].ToLowerInvariant());
+                PortableUpdatePaths.EnsureNoReparsePoints(partial);
+                if (!File.Exists(partial) || new FileInfo(partial).Length > release.Size) continue;
+                _workDirectory = directory;
+                IsPaused = true;
+                Status = DesktopText.Get("PortableUpdatePaused");
+                return;
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidDataException) { }
+        }
     }
 
     private async Task RestoreStageAsync()

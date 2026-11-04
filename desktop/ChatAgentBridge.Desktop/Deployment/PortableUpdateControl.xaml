@@ -83,6 +83,8 @@
                                     Click="DownloadUpdate_Click" HorizontalAlignment="Right" />
                             <Button x:Name="ApplyUpdateButton" x:Uid="PortableApplyUpdate" AutomationProperties.AutomationId="PortableApplyUpdate"
                                     Click="ApplyUpdate_Click" HorizontalAlignment="Right" />
+                            <Button x:Name="PauseUpdateButton" x:Uid="PortablePauseUpdate" AutomationProperties.AutomationId="PortablePauseUpdate"
+                                    Click="PauseUpdate_Click" HorizontalAlignment="Right" Visibility="Collapsed" />
                             <Button x:Name="CancelUpdateButton" x:Uid="PortableCancelUpdate" AutomationProperties.AutomationId="PortableCancelUpdate"
                                     Click="CancelUpdate_Click" HorizontalAlignment="Right" />
                         </StackPanel>

@@ -977,4 +977,6 @@
   <data name="PortableUpdateCacheCleanupFailed" xml:space="preserve"><value>整理できませんでした。使用中のファイルは後で再試行します。</value></data>
   <data name="PortableUpdateCacheUsage" xml:space="preserve"><value>更新用ファイルと記録: {0:F1} MB</value></data>
   <data name="PortableUpdateCacheUsageUnavailable" xml:space="preserve"><value>使用容量を取得できませんでした。</value></data>
+  <data name="PortableUpdatePaused" xml:space="preserve"><value>ダウンロードを一時停止しました。「ダウンロードを再開」で続行できます。</value></data>
+  <data name="PortableUpdateResume" xml:space="preserve"><value>ダウンロードを再開</value></data>
 </root>

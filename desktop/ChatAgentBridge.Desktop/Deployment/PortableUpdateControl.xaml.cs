@@ -97,8 +97,18 @@ public sealed partial class PortableUpdateControl : UserControl
         DownloadUpdateButton.IsEnabled = updates.IsSupported && hasUpdate && !updates.IsDownloaded && !updates.IsBusy && !_dialogOpen && !_downloadRequested;
         ApplyUpdateButton.Visibility = updates.IsDownloaded && !updateReady ? Visibility.Visible : Visibility.Collapsed;
         ApplyUpdateButton.IsEnabled = updates.IsSupported && updates.IsDownloaded && !updates.IsBusy && !_dialogOpen && !_downloadRequested;
-        CancelUpdateButton.Visibility = updates.IsBusy ? Visibility.Visible : Visibility.Collapsed;
-        CancelUpdateButton.IsEnabled = updates.IsBusy;
+        CancelUpdateButton.Visibility = updates.IsBusy || updates.IsPaused ? Visibility.Visible : Visibility.Collapsed;
+        CancelUpdateButton.IsEnabled = updates.IsBusy || updates.IsPaused;
+        PauseUpdateButton.Visibility = updates.IsDownloading ? Visibility.Visible : Visibility.Collapsed;
+        PauseUpdateButton.IsEnabled = updates.IsDownloading;
+
+        if (updates.IsPaused)
+        {
+            DownloadUpdateButton.Visibility = Visibility.Visible;
+            DownloadUpdateButton.Content = DesktopText.Get("PortableUpdateResume");
+            DownloadUpdateButton.IsEnabled = !updates.IsBusy;
+        }
+        else DownloadUpdateButton.Content = DesktopText.Get("PortableUpdateDownloadPrimary");
 
         var downloading = updates.IsDownloading;
         DownloadProgressBar.Visibility = downloading ? Visibility.Visible : Visibility.Collapsed;
@@ -242,6 +252,8 @@ public sealed partial class PortableUpdateControl : UserControl
         if (!root.IsHostVisible) return;
         await ConfirmApplyUpdateAsync(root, downloadCompleted: true);
     }
+
+    private void PauseUpdate_Click(object sender, RoutedEventArgs e) => App.PortableUpdates.Pause();
 
     private void CancelUpdate_Click(object sender, RoutedEventArgs e) => App.PortableUpdates.Cancel();
 }

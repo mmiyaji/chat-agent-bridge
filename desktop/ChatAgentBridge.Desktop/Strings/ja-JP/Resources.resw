@@ -1388,4 +1388,5 @@
   <data name="PortableUpdateCleanCache.Content" xml:space="preserve"><value>今すぐ整理</value></data>
   <data name="UpdateCacheMaintenanceSection.Header" xml:space="preserve"><value>保守</value></data>
   <data name="UpdateCacheMaintenanceSection.Description" xml:space="preserve"><value>通常は操作する必要はありません。</value></data>
+  <data name="PortablePauseUpdate.Content" xml:space="preserve"><value>ダウンロードを一時停止</value></data>
 </root>
