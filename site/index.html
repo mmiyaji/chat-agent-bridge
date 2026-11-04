@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat Agent Bridge</title>
+<meta name="description" content="Slack・Mattermost・Discord に投稿した依頼を、Windows PC 上の AI エージェント（CLI）に渡して実行する常駐アプリ。仕組み、できること、始め方、よくある質問。">
+<link rel="canonical" href="https://chat-agent-bridge.ruhenheim.org/">
+<link rel="alternate" hreflang="ja" href="https://chat-agent-bridge.ruhenheim.org/">
+<link rel="alternate" hreflang="en" href="https://chat-agent-bridge.ruhenheim.org/?lang=en">
+<link rel="alternate" hreflang="x-default" href="https://chat-agent-bridge.ruhenheim.org/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Chat Agent Bridge">
+<meta property="og:description" content="Slack・Mattermost・Discord に投稿した依頼を、Windows PC 上の AI エージェント（CLI）に渡して実行する常駐アプリ。仕組み、できること、始め方、よくある質問。">
+<meta property="og:url" content="https://chat-agent-bridge.ruhenheim.org/">
+<meta property="og:image" content="https://chat-agent-bridge.ruhenheim.org/assets/img/general-ja.png">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="assets/img/icon-256.png">
+<link rel="stylesheet" href="assets/glightbox.min.css">
+<link rel="stylesheet" href="assets/styles.css">
+<script src="assets/theme.js"></script>
+</head>
+<body>
+<a class="skip" href="#top" data-i18n="skip">本文へ移動</a>
+<div class="tools"><a id="lang" class="tool lang" href="?lang=en" hreflang="en" lang="en">EN</a>
+<button id="theme" class="tool theme" type="button" aria-label="表示モードを切り替え">
+<svg class="sun" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="3.6"/><path d="M10 1.8v2M10 16.2v2M1.8 10h2M16.2 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/></svg>
+<svg class="moon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M16.6 12.4A7 7 0 0 1 7.6 3.4a7 7 0 1 0 9 9z"/></svg>
+</button></div>
+<div class="shell"><aside><div class="brand"><img src="assets/img/icon-256.png" alt="" width="20" height="20">Chat Agent Bridge</div>
+<a data-i18n="nav.top" class="on" href="#top">概要</a><div data-i18n="grp.use" class="grp">使い方</div><a data-i18n="nav.how" href="#how">仕組み</a><a data-i18n="nav.features" href="#features">できること</a><a data-i18n="nav.gallery" href="#gallery">画面</a><a data-i18n="nav.start" href="#start">始め方</a>
+<div data-i18n="grp.ref" class="grp">参考</div><a data-i18n="nav.tips" href="#tips">Tips</a><a data-i18n="nav.faq" href="#faq">よくある質問</a></aside>
+<main id="top"><h1>Chat Agent Bridge</h1><p data-i18n="lead" class="sub">Slack・Mattermost・Discord に投稿した依頼を、Windows PC 上の AI エージェント（CLI）に渡して実行する常駐アプリです。結果は同じスレッドに返り、続きもそのスレッドで頼めます。</p><p data-i18n="note" class="dim">開発プレビュー版の非公式アプリです。各 AI サービスやチャットサービスの公式アプリではありません。</p>
+<div class="row"><a data-i18n="dl" class="btn accent" href="https://github.com/mmiyaji/chat-agent-bridge/releases">ポータブル版をダウンロード</a><a class="store" href="https://apps.microsoft.com/detail/9n1lzk25fsgr?mode=direct"><img class="on-light" src="assets/img/ms-store-badge-ja-dark.svg" data-en-src="assets/img/ms-store-badge-en-dark.svg" alt="Microsoft Store から入手" data-en-alt="Get it from Microsoft" width="132" height="36"><img class="on-dark" src="assets/img/ms-store-badge-ja-light.svg" data-en-src="assets/img/ms-store-badge-en-light.svg" alt="Microsoft Store から入手" data-en-alt="Get it from Microsoft" width="132" height="36"></a></div>
+<a href="assets/img/general-ja.png" class="glightbox shot-link" data-gallery="hero" data-description="全般の画面" data-en-href="assets/img/general-en.png" data-en-description="The General page"><img class="shot" src="assets/img/general-ja.png" alt="全般の画面" data-en-src="assets/img/general-en.png" data-en-alt="The General page" loading="lazy" width="1440" height="980"></a>
+<h2 data-i18n="h.how" id="how">仕組み</h2>
+<div class="card"><a href="assets/img/OverviewArchitecture-ja.png" class="glightbox shot diagram-link" data-gallery="how" data-description="依頼者、チャット、ローカル PC、結果の4段階の構成図" data-en-href="assets/img/OverviewArchitecture-en.png" data-en-description="Diagram of the four stages: requester, chat, local PC and result"><img class="shot diagram" src="assets/img/OverviewArchitecture-ja.png" alt="依頼者、チャット、ローカル PC、結果の4段階の構成図" data-en-src="assets/img/OverviewArchitecture-en.png" data-en-alt="Diagram of the four stages: requester, chat, local PC and result" loading="lazy" width="1440" height="980"></a><div class="state">
+<div class="card"><h3><span>01</span><span data-i18n="step1.t">チャットに投稿</span></h3><p data-i18n="step1.d" class="dim">外出先のスマートフォンや別の PC から、Bot へのメンションか <code>!cab</code> で依頼を書きます。操作する側の端末に CLI は要りません。</p></div>
+<div class="card"><h3><span>02</span><span data-i18n="step2.t">PC で受け取って確認</span></h3><p data-i18n="step2.d" class="dim">Windows PC の Chat Agent Bridge が投稿を受け取り、許可ユーザーかどうかと承認設定を確認します。承認が必要な依頼は、PC で承認するまで待ちます。</p></div>
+<div class="card"><h3><span>03</span><span data-i18n="step3.t">CLI が作業フォルダーで実行</span></h3><p data-i18n="step3.d" class="dim">選んだ CLI（Codex、Claude Code など）が、信頼済みの作業フォルダーで依頼を実行します。AI サービスとの通信は各 CLI の設定どおりです。</p></div>
+<div class="card"><h3><span>04</span><span data-i18n="step4.t">結果を同じスレッドへ</span></h3><p data-i18n="step4.d" class="dim">既定では PC で内容を見てから送ります。自動返信にもできます。同じスレッドに返信すると会話が続きます。</p></div>
+</div></div>
+<h2 data-i18n="h.features" id="features">できること</h2>
+<div class="stack">
+<div class="card exp"><div class="head"><div><h3 data-i18n="f1.t">チャットから依頼して、同じスレッドで続ける</h3><p data-i18n="f1.d">Slack、Mattermost、Discord に対応しています。スレッドごとに会話が分かれ、返信がそのまま追加の依頼になります。経過メッセージは「最小・標準・詳細」から選べ、標準では完了時に操作件数と使用量の1行にまとまります。</p></div><a href="assets/img/mattermost-demo-final.png" class="glightbox shot-link" data-gallery="site" data-description="Mattermost のスレッドで依頼と結果をやり取りしている画面" data-en-href="assets/img/mattermost-demo-final.png" data-en-description="A request and its result in a Mattermost thread"><img class="shot" src="assets/img/mattermost-demo-final.png" alt="Mattermost のスレッドで依頼と結果をやり取りしている画面" data-en-src="assets/img/mattermost-demo-final.png" data-en-alt="A request and its result in a Mattermost thread" loading="lazy" width="1440" height="980"></a></div></div>
+<div class="card exp"><div class="head"><div><h3 data-i18n="f2.t">承認と共有は自分で決める</h3><p data-i18n="f2.d">依頼の承認は「毎回・会話の最初だけ・自動」、結果の共有は「手動・自動・共有しない」から選びます。許可ユーザー、受け付けるチャンネルとスレッド、信頼する作業フォルダーもここで絞り込みます。</p></div><a href="assets/img/chat-settings-ja.png" class="glightbox shot-link" data-gallery="site" data-description="チャット設定の画面。承認、共有、追加指示、添付ファイルの設定が並ぶ" data-en-href="assets/img/chat-settings-en.png" data-en-description="Chat settings: approvals, sharing, follow-ups and attachments"><img class="shot" src="assets/img/chat-settings-ja.png" alt="チャット設定の画面。承認、共有、追加指示、添付ファイルの設定が並ぶ" data-en-src="assets/img/chat-settings-en.png" data-en-alt="Chat settings: approvals, sharing, follow-ups and attachments" loading="lazy" width="1440" height="980"></a></div></div>
+<div class="card exp"><div class="head"><div><h3 data-i18n="f3.t">使う CLI とモデルを切り替える</h3><p data-i18n="f3.d">Codex、Claude Code、Gemini CLI、GitHub Copilot CLI、Antigravity CLI に対応し、Kiro CLI・Qwen Code・Kimi Code CLI・Muse Code CLI はプレビュー対応です。会話ごとにエージェントとモデルを変えられ、切り替えるときは引き継ぎメモを渡すか選べます。</p></div><a href="assets/img/agents-ja.png" class="glightbox shot-link" data-gallery="site" data-description="エージェント設定の画面。作業フォルダーと CLI ごとの設定" data-en-href="assets/img/agents-en.png" data-en-description="Agent settings: the work folder and per-CLI settings"><img class="shot" src="assets/img/agents-ja.png" alt="エージェント設定の画面。作業フォルダーと CLI ごとの設定" data-en-src="assets/img/agents-en.png" data-en-alt="Agent settings: the work folder and per-CLI settings" loading="lazy" width="1440" height="980"></a></div></div>
+<div class="card exp"><div class="head"><div><h3 data-i18n="f4.t">履歴と利用量を見返す</h3><p data-i18n="f4.d">会話の一覧、実行と操作の記録、日別の利用カレンダー、トークン数とキャッシュ利用率のグラフを表示します。推定コストは公開料金からの参考値で、依頼本文や結果の本文は保存しません。</p></div><a href="assets/img/history-ja.png" class="glightbox shot-link" data-gallery="site" data-description="履歴と利用状況の画面。日別の利用カレンダー" data-en-href="assets/img/history-en.png" data-en-description="History and usage: the daily usage calendar"><img class="shot" src="assets/img/history-ja.png" alt="履歴と利用状況の画面。日別の利用カレンダー" data-en-src="assets/img/history-en.png" data-en-alt="History and usage: the daily usage calendar" loading="lazy" width="1440" height="980"></a></div></div>
+<div class="card exp"><div class="head"><div><h3 data-i18n="f5.t">常駐と自動接続</h3><p data-i18n="f5.d">Windows へのサインイン時の自動起動、起動後の自動接続、タスクトレイ常駐を設定できます。ポータブル版はアプリ内で更新を確認し、ダウンロードの一時停止・再開もできます。</p></div><a href="assets/img/general-ja.png" class="glightbox shot-link" data-gallery="site" data-description="全般の画面。現在の状態と自動起動・自動接続の設定" data-en-href="assets/img/general-en.png" data-en-description="General: current status and startup and connection settings"><img class="shot" src="assets/img/general-ja.png" alt="全般の画面。現在の状態と自動起動・自動接続の設定" data-en-src="assets/img/general-en.png" data-en-alt="General: current status and startup and connection settings" loading="lazy" width="1440" height="980"></a></div></div>
+</div>
+<h2 data-i18n="h.gallery" id="gallery">画面</h2>
+<div class="gal">
+<figure><a href="assets/img/general-ja.png" class="glightbox shot-link" data-gallery="g" data-description="全般：現在の状態と起動・接続の設定" data-en-href="assets/img/general-en.png" data-en-description="General: status, startup and connection"><img class="shot" src="assets/img/general-ja.png" alt="全般：現在の状態と起動・接続の設定" data-en-src="assets/img/general-en.png" data-en-alt="General: status, startup and connection" loading="lazy" width="1440" height="980"></a><figcaption data-i18n="g1">全般：現在の状態と起動・接続の設定</figcaption></figure>
+<figure><a href="assets/img/chat-settings-ja.png" class="glightbox shot-link" data-gallery="g" data-description="チャット設定：承認・共有・添付ファイル" data-en-href="assets/img/chat-settings-en.png" data-en-description="Chat settings: approvals, sharing, attachments"><img class="shot" src="assets/img/chat-settings-ja.png" alt="チャット設定：承認・共有・添付ファイル" data-en-src="assets/img/chat-settings-en.png" data-en-alt="Chat settings: approvals, sharing, attachments" loading="lazy" width="1440" height="980"></a><figcaption data-i18n="g2">チャット設定：承認・共有・添付ファイル</figcaption></figure>
+<figure><a href="assets/img/agents-ja.png" class="glightbox shot-link" data-gallery="g" data-description="エージェント設定：作業フォルダーと CLI" data-en-href="assets/img/agents-en.png" data-en-description="Agent settings: work folder and CLI"><img class="shot" src="assets/img/agents-ja.png" alt="エージェント設定：作業フォルダーと CLI" data-en-src="assets/img/agents-en.png" data-en-alt="Agent settings: work folder and CLI" loading="lazy" width="1440" height="980"></a><figcaption data-i18n="g3">エージェント設定：作業フォルダーと CLI</figcaption></figure>
+<figure><a href="assets/img/history-ja.png" class="glightbox shot-link" data-gallery="g" data-description="履歴と利用状況：日別カレンダー" data-en-href="assets/img/history-en.png" data-en-description="History and usage: daily calendar"><img class="shot" src="assets/img/history-ja.png" alt="履歴と利用状況：日別カレンダー" data-en-src="assets/img/history-en.png" data-en-alt="History and usage: daily calendar" loading="lazy" width="1440" height="980"></a><figcaption data-i18n="g4">履歴と利用状況：日別カレンダー</figcaption></figure>
+<figure><a href="assets/img/slack-demo-2026-03-31-final.png" class="glightbox shot-link" data-gallery="g" data-description="Slack でのやり取りの例" data-en-href="assets/img/slack-demo-2026-03-31-final.png" data-en-description="An exchange in Slack"><img class="shot" src="assets/img/slack-demo-2026-03-31-final.png" alt="Slack でのやり取りの例" data-en-src="assets/img/slack-demo-2026-03-31-final.png" data-en-alt="An exchange in Slack" loading="lazy" width="1440" height="980"></a><figcaption data-i18n="g5">Slack でのやり取りの例</figcaption></figure>
+<figure><a href="assets/img/mattermost-demo-final.png" class="glightbox shot-link" data-gallery="g" data-description="Mattermost でのやり取りの例" data-en-href="assets/img/mattermost-demo-final.png" data-en-description="An exchange in Mattermost"><img class="shot" src="assets/img/mattermost-demo-final.png" alt="Mattermost でのやり取りの例" data-en-src="assets/img/mattermost-demo-final.png" data-en-alt="An exchange in Mattermost" loading="lazy" width="1440" height="980"></a><figcaption data-i18n="g6">Mattermost でのやり取りの例</figcaption></figure>
+</div>
+<h2 data-i18n="h.start" id="start">始め方</h2>
+<div class="card flush"><table class="req">
+<tr><th data-i18n="r1.k">OS</th><td data-i18n="r1.v">Windows 10（1809 以降）、Windows 11</td></tr>
+<tr><th data-i18n="r2.k">CPU</th><td data-i18n="r2.v">x64 / ARM64（それぞれ専用の ZIP）</td></tr>
+<tr><th data-i18n="r3.k">追加の導入物</th><td data-i18n="r3.v">なし（管理者権限・.NET ランタイム不要）</td></tr>
+<tr><th data-i18n="r4.k">CLI</th><td data-i18n="r4.v">利用する CLI を各自でインストールしてログイン</td></tr>
+<tr><th data-i18n="r5.k">チャット</th><td data-i18n="r5.v">Slack（Socket Mode）、Mattermost（Bot トークン）、Discord（Gateway）</td></tr>
+<tr><th data-i18n="r6.k">ネットワーク</th><td data-i18n="r6.v">PC からチャットサービスへ接続するだけ。公開 URL やポート開放は不要</td></tr>
+</table></div><div class="card gap"><ol class="inst">
+<li><span data-i18n="i1">GitHub Releases から PC に合う x64 / ARM64 の ZIP を取得するか、Microsoft Store から入手します。</span></li>
+<li><span data-i18n="i2">ZIP 版は書き込みできる場所に展開し、<code>ChatAgentBridge.Desktop.exe</code> を起動します。</span></li>
+<li><span data-i18n="i3">使う CLI をインストールしてログインし、初期設定ガイドで CLI と作業フォルダーを選んで CLI チェックを実行します。</span></li>
+<li><span data-i18n="i4">チャットサービス側で Bot を用意し、チャット設定に接続情報と許可ユーザーを入れます。</span></li>
+<li><span data-i18n="i5">チャット画面から接続し、チャットに依頼を投稿します。最初の依頼は PC で承認します。</span></li>
+</ol></div>
+<h2 data-i18n="h.tips" id="tips">Tips</h2>
+<div class="tips">
+<div class="card"><h3 data-i18n="tip1.t"><code>!cab status</code> で今の状態を見る</h3><p data-i18n="tip1.d">そのスレッドで自分が出した依頼の状態を、エージェント・モデル・権限・作業フォルダー付きで返します。確認なしで実行される権限には ⚠ が付きます。</p></div>
+<div class="card"><h3 data-i18n="tip2.t">チャンネルの決まりごとはメモにしておく</h3><p data-i18n="tip2.d"><code>!cab remember 日本語で回答する</code> のように保存すると、そのチャンネルのすべての依頼に付きます。<code>!cab memory</code> で一覧、<code>!cab forget 番号</code> で削除します。</p></div>
+<div class="card"><h3 data-i18n="tip3.t">定期的な依頼は予約する</h3><p data-i18n="tip3.d"><code>!cab schedule add weekdays 09:00 昨日のログを要約して</code> で平日の定時に実行します。アプリが接続中のときだけ動き、通常の承認設定に従います。</p></div>
+<div class="card"><h3 data-i18n="tip4.t">試したいことは worktree で分ける</h3><p data-i18n="tip4.d"><code>!cab worktree 名前</code> で、その会話用の git worktree を作ります（PC で承認）。元の作業ツリーを汚さずに試せます。</p></div>
+<div class="card"><h3 data-i18n="tip5.t">止めたいときはリアクションで</h3><p data-i18n="tip5.d">Mattermost では経過メッセージに 🛑 を付けると止まります。Discord は中断ボタン、どこでも <code>!cab stop</code> が使えます。</p></div>
+<div class="card"><h3 data-i18n="tip6.t">使用量は <code>!cab usage</code></h3><p data-i18n="tip6.d">そのスレッドと、その日の自分の使用トークン数と推定コストを返します。</p></div>
+</div>
+<h2 data-i18n="h.faq" id="faq">よくある質問</h2>
+<details><summary data-i18n="q1">スマートフォンに AI エージェントを入れる必要はありますか？</summary><p data-i18n="a1">いりません。スマートフォンではチャットアプリに投稿するだけで、実行は PC の CLI が行います。</p></details>
+<details><summary data-i18n="q2">PC がスリープしているときはどうなりますか？</summary><p data-i18n="a2">依頼を受け取れません。PC を起動したままにし、アプリとチャット接続を維持してください。トレイ常駐中も動作します。</p></details>
+<details><summary data-i18n="q3">ルーターのポート開放や公開 URL は必要ですか？</summary><p data-i18n="a3">不要です。PC から各チャットサービスに接続して投稿を受け取るので、外部から PC に接続する受け口はありません。</p></details>
+<details><summary data-i18n="q4">利用料はかかりますか？</summary><p data-i18n="a4">アプリは無料です。AI の利用料や利用枠は、各 CLI で契約しているサービスのものがそのまま使われます。</p></details>
+<details><summary data-i18n="q5">ほかの人も依頼できますか？</summary><p data-i18n="a5">許可ユーザーに登録した人だけが依頼できます。許可した人はあなたの PC と CLI の認証を使うことになるため、基本は自分だけにしてください。</p></details>
+<details><summary data-i18n="q6">どんなデータが保存されますか？</summary><p data-i18n="a6">接続設定（トークンは Windows ユーザー単位で暗号化）、会話一覧の表示情報、実行と操作の履歴、利用量の集計です。依頼本文と実行結果の本文は保存しません。</p></details>
+<details><summary data-i18n="q7">公式のリモート操作機能とどう違いますか？</summary><p data-i18n="a7">AI エージェントの提供元が公式のリモート操作を用意している場合は、そちらを推奨します。このアプリは、環境の制約で公式機能を使えない場合の代わりの手段です。</p></details>
+<details><summary data-i18n="q8">更新はどうしますか？</summary><p data-i18n="a8">Store 版は Store から更新されます。ポータブル版はアプリの「情報」から更新を確認して適用できます。<code>Data</code> フォルダーは引き継がれます。</p></details>
+<footer><a data-i18n="link1" href="https://github.com/mmiyaji/chat-agent-bridge">GitHub</a> · <a data-i18n="link2" href="https://github.com/mmiyaji/chat-agent-bridge/releases">リリース一覧</a> · <a data-i18n="link3" href="/privacy">プライバシーポリシー</a> · <a data-i18n="link4" href="/terms">利用規約</a> · <a data-i18n="link5" href="https://github.com/mmiyaji/chat-agent-bridge/blob/main/LICENSE">MIT License</a></footer></main></div>
+<script src="assets/glightbox.min.js"></script>
+<script src="assets/i18n-en.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>
