@@ -21,14 +21,47 @@
     });
     // Keep the language when moving between sections.
     var lang = document.getElementById('lang');
-    var label = document.getElementById('lang-label');
-    if (lang && label) {
-      label.textContent = '日本語'; label.lang = 'ja';
-      lang.hreflang = 'ja'; lang.href = location.pathname + location.hash;
-      lang.setAttribute('aria-label', 'Language: 日本語 (Japanese)');
-    }
   }
   root.classList.remove('en-pending');
+
+  // Language menu: the button shows the current language; the list shows each language in its own name.
+  var current = english ? 'en' : 'ja';
+  var names = { ja: '日本語', en: 'English' };
+  var langButton = document.getElementById('lang');
+  var langLabel = document.getElementById('lang-label');
+  var langList = document.getElementById('lang-list');
+  if (langButton && langLabel && langList) {
+    langLabel.textContent = names[current];
+    langLabel.lang = current;
+    langButton.setAttribute('aria-label', (english ? 'Language: ' : '言語: ') + names[current]);
+    langList.querySelectorAll('a[data-lang]').forEach(function (link) {
+      var code = link.getAttribute('data-lang');
+      link.href = location.pathname + (code === 'ja' ? '' : '?lang=' + code) + location.hash;
+      if (code === current) link.setAttribute('aria-current', 'true');
+    });
+    var links = function () { return Array.prototype.slice.call(langList.querySelectorAll('a')); };
+    var setOpen = function (open, focusFirst) {
+      langList.hidden = !open;
+      langButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open && focusFirst) (langList.querySelector('[aria-current]') || links()[0]).focus();
+    };
+    langButton.addEventListener('click', function () { setOpen(langList.hidden, false); });
+    langButton.addEventListener('keydown', function (event) {
+      if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setOpen(true, true); }
+    });
+    langList.addEventListener('keydown', function (event) {
+      var items = links(), index = items.indexOf(document.activeElement);
+      if (event.key === 'Escape') { setOpen(false); langButton.focus(); }
+      else if (event.key === 'ArrowDown') { event.preventDefault(); items[(index + 1) % items.length].focus(); }
+      else if (event.key === 'ArrowUp') { event.preventDefault(); items[(index - 1 + items.length) % items.length].focus(); }
+    });
+    document.addEventListener('click', function (event) {
+      if (!langList.hidden && !event.target.closest('.langmenu')) setOpen(false);
+    });
+    langList.addEventListener('focusout', function (event) {
+      if (!event.relatedTarget || !event.relatedTarget.closest('.langmenu')) setOpen(false);
+    });
+  }
 
   var button = document.getElementById('theme');
   var labels = english ? ['Switch to light mode', 'Switch to dark mode'] : ['ライトモードに切り替え', 'ダークモードに切り替え'];

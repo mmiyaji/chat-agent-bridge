@@ -19,6 +19,8 @@ Chat Agent Bridge の紹介ページは、リポジトリの `site/` にある�
 日本語が本文で、`?lang=en` を付けると英語で表示します。英語の文言は `site/assets/i18n-en.js` にあり、`index.html` の `data-i18n` と同じキーで対応させます。
 英語用の画像は `data-en-src`（画像）と `data-en-href`（拡大表示のリンク）で指定します。文言を足すときは、両方の言語をそろえてください。`scripts/check-site.mjs` は、英語用の画像が存在するかも確認します。
 
+右上の言語メニューは、ボタンに今の言語を表示し、開くと各言語をその言語の表記で並べます。言語を増やすときは、`index.html` のメニュー項目（`#lang-list`）、`site/assets/site.js` の言語名、その言語の文言ファイルをそろえて追加します。
+
 ページは外部のスクリプト・スタイル・フォントを読み込みません。
 `_headers` の Content-Security-Policy で、同じサイトのファイルだけを許可しています。
 インラインの `<script>` や `onclick` などは CSP で動かないため、処理は `site/assets/*.js` に書きます。

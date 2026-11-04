@@ -50,4 +50,12 @@ footer{margin-top:56px;color:var(--dim);font-size:13px}
 img{max-width:100%;height:auto}
 .flush{padding:4px 0}.gap{margin-top:8px}.state .card p{margin:4px 0 0}
 html.en-pending body{visibility:hidden}
-.tool.lang{display:inline-flex;align-items:center;gap:6px;padding:0 10px}.tool.lang svg{width:16px;height:16px;flex:none}
+.tool.lang{display:inline-flex;align-items:center;gap:6px;padding:0 8px 0 10px}.tool.lang svg{width:16px;height:16px;flex:none}
+.tool.lang svg.chev{width:12px;height:12px;color:var(--dim)}.tool.lang[aria-expanded="true"] svg.chev{transform:rotate(180deg)}
+.langmenu{position:relative}
+.lang-list{position:absolute;right:0;top:calc(100% + 4px);min-width:140px;margin:0;padding:4px;list-style:none;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.lang-list[hidden]{display:none}
+.lang-list a{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:5px;color:var(--fg);text-decoration:none;font-size:14px}
+.lang-list a::before{content:"";width:3px;height:14px;border-radius:2px;background:transparent}
+.lang-list a[aria-current="true"]::before{background:var(--accent)}
+.lang-list a:hover,.lang-list a:focus-visible{background:var(--card2);outline:none}

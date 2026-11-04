@@ -36,7 +36,8 @@ for (const match of html.matchAll(/\s(?:src|href|data-en-src|data-en-href)="([^"
   const reference = match[1];
   // ?lang=en and similar links stay on this page.
   if (/^(https?:|mailto:|#|data:|\?)/.test(reference)) continue;
-  const pathname = decodeURIComponent(reference.split(/[?#]/)[0]);
+  let pathname = decodeURIComponent(reference.split(/[?#]/)[0]);
+  if (pathname === "" || pathname.endsWith("/")) pathname += "index.html";
   if (redirected.has(pathname)) continue;
   const target = path.resolve(root, pathname.replace(/^\/+/, ""));
   if (!target.startsWith(root + path.sep)) errors.push(`index.html: reference escapes site/: ${reference}`);
