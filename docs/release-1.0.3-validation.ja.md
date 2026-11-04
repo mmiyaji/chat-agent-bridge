@@ -24,9 +24,22 @@ Windows 上で 1.0.2 のポータブル版から 1.0.3 へ更新し、アプリ�
 
 ## CI と公開状況
 
-- リリース修正に関するローカル回帰テスト: 20/20 成功（`.artifacts/release-v1.0.3/validation/release-ci-fixes.trx`）。CI run `41867141949` では Core 1596/1596、Transports 295/295（合計1891件、失敗・スキップなし）、デスクトップビルド、ライセンス通知、静的検査が成功。UI smoke は実行待ち。
+- リリース修正に関するローカル回帰テスト: 20/20 成功（`.artifacts/release-v1.0.3/validation/release-ci-fixes.trx`）。CI run `41867141949` では Core 1596/1596、Transports 295/295（合計1891件、失敗・スキップなし）、デスクトップビルド、ライセンス通知、静的検査が成功。UI smoke、両CPUのパッケージ生成、公開成功・失敗経路のモック検証も成功（run 全体が success）。
 - Store パッケージ CI run `41867147425`: x64 / ARM64 の両方成功。
-- GitHub Release とポータブル配布物のアップロード: 未実施。
-- Microsoft Store への提出: 未実施。
+- GitHub Release: [v1.0.3](https://github.com/mmiyaji/chat-agent-bridge/releases/tag/v1.0.3) を 2026-11-05 01:54 JST に公開済み。配信 CI [41869268232](https://github.com/mmiyaji/chat-agent-bridge/actions/runs/41869268232) は検査・UI・両CPUパッケージ・検証・公開・Pages 配信まですべて成功。
+- Microsoft Store: Chrome から Submission 6（`1152921505702315068`）を提出済み。x64 / ARM64 の `1.0.3.0` が検証済みで、提出後に `Update in certification` を確認。審査通過後の自動公開を選択。
 
-パッケージ生成と確認済みの CI ジョブは成功。UI smoke の完了と GitHub / Store への公開操作は引き続き保留する。
+- `main` へ統合・push 済み。タグ `v1.0.3` は検証記録だけを追加した `60352f2c1b52a63929adc116debd69fd52719688` を指す。配信 CI run `41869268232` は成功。ストア提出物とコード差分はなく、GitHub の配布物はタグから改めてビルドした。
+
+## 公開ファイルと更新通知
+
+タグからCIで作成した公開ファイルは、ローカル更新試験用とソースコードが同一で、ビルドコミット情報などが異なるためチェックサムは別になる。
+
+| 公開ZIP | サイズ | SHA-256 |
+| --- | ---: | --- |
+| x64 | 131,200,120 bytes | `a7cb98f6f1c46132dd65d1eaa864187fb9a27844f8ea046fdcda9711e2552b79` |
+| ARM64 | 125,005,104 bytes | `a08288b2cdb1ab4c16e4257f57da6ed04c5ad3f489f67d6501fd65476c0420ee` |
+
+公開後、GitHub APIで非draft・非previewとZIP2件＋チェックサム2件を確認。実際の `updates/stable.json` と `updates/preview.json` を読み、両CPU向けv1.0.3のURL・サイズ・SHA-256がGitHub Releaseの値と一致することを確認した。観測JSONは `.artifacts/release-v1.0.3/evidence` に保存。旧版1.0.2からの適用・再起動試験ではローカル検証用ZIPを使用した。
+
+ストア版は審査提出まで完了している。Microsoftの審査・公開完了は未確認のため、公開済みとは扱わない。提出画面の証跡は `.artifacts/release-v1.0.3/store-submitted.jpg`。
