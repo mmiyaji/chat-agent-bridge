@@ -139,7 +139,7 @@ public sealed class CliProbeService
         AgentProfile.Kimi => Regex.IsMatch(output, @"\bkimi(?:[ -](?:code|cli))?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         AgentProfile.Kiro => Regex.IsMatch(output, @"\bkiro(?:-cli)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         // Keep identity recognition tied to Muse's branded name or its standalone command token.
-        AgentProfile.Muse => Regex.IsMatch(output, @"^\s*(?:Muse\s+Code\b|muse(?:\.exe)?(?:\s+(?:v?\d|version\b)|$))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Multiline),
+        AgentProfile.Muse => Regex.IsMatch(output, @"^\s*(?:Muse\s+Code\b|muse(?:-cli|\.exe)?(?:\s+(?:v?\d|version\b)|$))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Multiline),
         AgentProfile.Antigravity => Regex.IsMatch(output, @"\b(?:agy(?:\.exe)?|antigravity)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
         _ => false
     };

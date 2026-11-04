@@ -11,6 +11,9 @@ public sealed record CliSessionOutput(string Provider, string? SessionId, string
 {
     // Fixed localized guidance only; never retain raw event diagnostics.
     public string? FailureGuidance { get; init; }
+
+    // True only when an exact Muse root event confirms session creation or linkage to a run.
+    internal bool SessionExistenceConfirmed { get; init; }
 }
 
 /// <summary>Parses Gemini and Antigravity stream-json and Copilot CLI JSONL without exposing raw event payloads.</summary>

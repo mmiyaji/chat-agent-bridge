@@ -92,8 +92,6 @@ if (structuredFixtureName == "muse-fixture")
     if (args.Any(argument => argument.Contains(promptText, StringComparison.Ordinal))) { Environment.ExitCode = 3; return; }
     if (promptText.Contains("__CAB_MUSE_HOLD__", StringComparison.Ordinal)) await Task.Delay(700);
     if (promptText.Contains("__CAB_MUSE_CANCEL__", StringComparison.Ordinal)) await Task.Delay(Timeout.InfiniteTimeSpan);
-    if (promptText.Contains("__CAB_MUSE_INVALID_JSON__", StringComparison.Ordinal))
-    { await Console.Out.WriteLineAsync("{broken json"); return; }
     var envelopeId = promptText.Contains("__CAB_MUSE_FOREIGN_ONLY__", StringComparison.Ordinal)
         ? "019e0000-0000-7000-8000-000000000999" : sessionId;
     object Envelope(string kind, string type, object payload) => new
@@ -102,13 +100,22 @@ if (structuredFixtureName == "muse-fixture")
         stream = new { kind, id = envelopeId }, sequence = 1, record_type = "event", durability = "durable",
         payload_type = type, payload_schema_version = 1, payload
     };
+    var confirmsCreation = promptText.Contains("__CAB_MUSE_CONFIRMED_FAIL__", StringComparison.Ordinal) ||
+        promptText.Contains("__CAB_MUSE_CONFIRMED_INVALID_JSON__", StringComparison.Ordinal);
+    if (confirmsCreation)
+        await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("session", "session.run.linked",
+            new { kind = "session_run_linked", run_stream = new { kind = "run", id = Guid.CreateVersion7().ToString("D") } })));
+    if (promptText.Contains("__CAB_MUSE_INVALID_JSON__", StringComparison.Ordinal) ||
+        promptText.Contains("__CAB_MUSE_CONFIRMED_INVALID_JSON__", StringComparison.Ordinal))
+    { await Console.Out.WriteLineAsync("{broken json"); return; }
     if (promptText.Contains("__CAB_MUSE_APPROVAL__", StringComparison.Ordinal))
         await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("session", "approval_wait.effect.started", new { kind = "approval_wait" })));
     if (promptText.Contains("__CAB_MUSE_USAGE_INVALID__", StringComparison.Ordinal))
         await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("exec.usage", "run.usage", new { kind = "run_usage", models = new[] { new { input_tokens = -1, cached_tokens = 0, output_tokens = 0 } } })));
     else if (!promptText.Contains("__CAB_MUSE_NO_USAGE__", StringComparison.Ordinal))
         await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("exec.usage", "run.usage", new { kind = "run_usage", models = new[] { new { model, input_tokens = 11, cached_tokens = 3, output_tokens = 7 } } })));
-    if (promptText.Contains("__CAB_MUSE_FAIL__", StringComparison.Ordinal))
+    if (promptText.Contains("__CAB_MUSE_FAIL__", StringComparison.Ordinal) ||
+        promptText.Contains("__CAB_MUSE_CONFIRMED_FAIL__", StringComparison.Ordinal))
     {
         await Console.Out.WriteLineAsync(JsonSerializer.Serialize(Envelope("session", "run.terminal.failed", new { kind = "run_terminal", terminal = "failed", reason = "fixture" })));
         Environment.ExitCode = 1;

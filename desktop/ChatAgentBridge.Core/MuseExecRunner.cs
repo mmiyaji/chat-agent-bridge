@@ -22,6 +22,7 @@ internal static class MuseExecRunner
     internal static async Task<AgentRunResult> RunAsync(BridgeSettings settings, string workspace, string prompt,
         IProgress<AgentRunProgress>? progress, CancellationToken cancellationToken)
     {
+        MuseOutputParser? parser = null;
         AgentInvocation invocation;
         try { invocation = AgentProfile.BuildInvocation(settings); }
         catch (Exception ex) when (ex is ArgumentException or FormatException)
@@ -33,6 +34,7 @@ internal static class MuseExecRunner
             return Failure("MuseConfigurationInvalid");
         sessionId = parsedId.ToString("D");
 
+        parser = new MuseOutputParser(sessionId);
         MusePromptFile? promptFile = null;
         Process? process = null;
         Task? stdoutTask = null;
@@ -81,7 +83,6 @@ internal static class MuseExecRunner
 
             // Muse exec has no prompt stdin channel. Close it immediately; API-key stdin is never used.
             process.StandardInput.Close();
-            var parser = new MuseOutputParser(sessionId);
             stdoutTask = ReadJsonLinesAsync(process.StandardOutput, parser, process, cancellationToken);
             stderrTask = DrainFixedAsync(process.StandardError);
             try { await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false); }
@@ -142,8 +143,19 @@ internal static class MuseExecRunner
             promptFile?.Dispose();
         }
 
-        AgentRunResult Failure(string messageKey) => new(false, -1, "", CoreText.Get(messageKey))
-        { CliSession = new CliSessionOutput(AgentProfile.Muse, null, null, false, true) };
+        AgentRunResult Failure(string messageKey)
+        {
+            var parsed = parser?.Complete(processSucceeded: false);
+            var confirmed = parsed?.SessionExistenceConfirmed == true;
+            return new AgentRunResult(false, -1, "", CoreText.Get(messageKey))
+            {
+                CliSession = new CliSessionOutput(AgentProfile.Muse,
+                    confirmed ? parsed!.SessionId : null, null, false, true)
+                {
+                    SessionExistenceConfirmed = confirmed
+                }
+            };
+        }
     }
 
     private static async Task ReadJsonLinesAsync(StreamReader reader, MuseOutputParser parser, Process process, CancellationToken token)

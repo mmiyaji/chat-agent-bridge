@@ -96,11 +96,11 @@ The working folder and trusted locations are shared settings. Configure the exec
 | Muse Code (`muse`) | Preview; live-service verification pending | Enter a model name manually. Muse Code manages permissions; reasoning selection and model discovery are not available |
 | Other CLI | Independent execution for each request | Configure the CLI or its launch arguments |
 
-Muse passes requests through private temporary files, which are removed after execution; abandoned files are checked at app startup. Kimi approval dialogs show command risk when the command is available and warn when the operation cannot be classified. Waiting for approval does not consume Kimi’s execution timeout.
+Muse passes requests through private temporary files, which are removed after execution; abandoned files are checked at app startup. Kimi approval dialogs show command risk when the command is available and warn when the operation cannot be classified. Waiting for approval does not consume Kimi’s execution timeout. If Muse confirms that a session was created before a request fails, CAB keeps its ID so the next request can continue it. The failed request does not count as a successful first approval.
 
 Change a conversation's agent or model from its details on the PC or from chat. Agent switching uses CLIs checked and registered in the app. You choose whether to pass conversation notes to the new agent.
 
-Codex App Server and Claude Code also support adding instructions to running requests. This applies to posts from the same user in the same thread. Other connections and per-request approval settings queue messages.
+Codex App Server and Claude Code also support adding instructions to running requests. This applies to posts from the same user in the same thread. Other connections and per-request approval settings queue messages. Muse and Kimi support cancellation; extra instructions are queued rather than injected into a running request.
 
 See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるcli) for version and authentication requirements.
 

@@ -20,6 +20,7 @@ public sealed class MuseOutputParser
     private bool _approvalPending;
     private bool _usageSeen;
     private bool _sessionMismatch;
+    private bool _sessionExistenceConfirmed;
     private int _events;
     private long? _input;
     private long? _cached;
@@ -69,6 +70,11 @@ public sealed class MuseOutputParser
             if (payload.ValueKind != JsonValueKind.Object) return Invalidate();
 
             var isRootSession = streamKind == "session" && string.Equals(streamId, _expectedSessionId, StringComparison.OrdinalIgnoreCase);
+            if (isRootSession && payloadType == "session.started" && String(payload, "kind") == "session_started")
+                _sessionExistenceConfirmed = true;
+            if (isRootSession && payloadType == "session.run.linked" && String(payload, "kind") == "session_run_linked" &&
+                IsRunStream(Property(payload, "run_stream")))
+                _sessionExistenceConfirmed = true;
             if (isRootSession && payloadType == "approval_wait.effect.started" && String(payload, "kind") == "approval_wait")
                 _approvalPending = true;
             if (isRootSession && payloadType == "run.terminal.completed")
@@ -112,6 +118,7 @@ public sealed class MuseOutputParser
         return new CliSessionOutput(AgentProfile.Muse, _sessionId, hasResult ? _finalMessage : null,
             hasResult, !hasResult, usage)
         {
+            SessionExistenceConfirmed = _sessionExistenceConfirmed,
             FailureGuidance = _approvalPending ? CoreText.Get("MuseApprovalUnavailable")
                 : _invalid ? CoreText.Get("MuseProtocolInvalid")
                 : processSucceeded && !_terminalSeen && !SessionMismatch ? CoreText.Get("MuseResultMissing") : null
@@ -164,6 +171,11 @@ public sealed class MuseOutputParser
     }
 
     private static string? Bounded(string? text) => text is null ? null : text[..Math.Min(text.Length, MaxOutputCharacters)];
+    private static bool IsRunStream(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object || String(value, "kind") != "run") return false;
+        return Guid.TryParseExact(String(value, "id"), "D", out _);
+    }
     private bool Invalidate() { _invalid = true; return false; }
     private static JsonElement Property(JsonElement obj, string name) => obj.ValueKind == JsonValueKind.Object && obj.TryGetProperty(name, out var value) ? value : default;
     private static string? String(JsonElement obj, string name) => Property(obj, name) is { ValueKind: JsonValueKind.String } value ? value.GetString() : null;

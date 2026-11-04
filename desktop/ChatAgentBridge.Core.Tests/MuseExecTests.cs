@@ -46,6 +46,48 @@ public sealed class MuseExecTests : IDisposable
         Assert.Equal("muse.exec-jsonl", result.Usage.Source);
     }
 
+    [Fact]
+    public void ParserConfirmsOnlyExactRootSessionEvidence()
+    {
+        var parser = new MuseOutputParser(Id);
+        Assert.True(parser.AddLine(Event("session", Id, "session.started", new { kind = "other" })));
+        Assert.False(parser.Complete(processSucceeded: false).SessionExistenceConfirmed);
+
+        var unrelated = new MuseOutputParser(Id);
+        Assert.True(unrelated.AddLine(Event("session", Id, "run.lifecycle.started", new { kind = "run_started" })));
+        Assert.False(unrelated.Complete(processSucceeded: false).SessionExistenceConfirmed);
+
+        var confirmed = new MuseOutputParser(Id);
+        Assert.True(confirmed.AddLine(Event("session", "019e0000-0000-7000-8000-000000000999", "session.started", new { kind = "session_started" })));
+        Assert.False(confirmed.Complete(processSucceeded: false).SessionExistenceConfirmed);
+        Assert.True(confirmed.SessionMismatch);
+
+        var started = new MuseOutputParser(Id);
+        Assert.True(started.AddLine(Event("session", Id, "session.started", new { kind = "session_started" })));
+        var failed = started.Complete(processSucceeded: false);
+        Assert.True(failed.SessionExistenceConfirmed);
+        Assert.Equal(Id, failed.SessionId);
+        Assert.Null(failed.FinalMessage);
+
+        var linked = new MuseOutputParser(Id);
+        Assert.True(linked.AddLine(Event("session", Id, "session.run.linked", new
+        {
+            kind = "session_run_linked", run_stream = new { kind = "run", id = Guid.CreateVersion7().ToString("D") }
+        })));
+        Assert.True(linked.Complete(processSucceeded: false).SessionExistenceConfirmed);
+
+        foreach (var runStream in new object[]
+        {
+            new { kind = "run", id = "not-a-uuid" }, new { kind = "session", id = Id }, new { kind = "run" }
+        })
+        {
+            var malformedLink = new MuseOutputParser(Id);
+            Assert.True(malformedLink.AddLine(Event("session", Id, "session.run.linked",
+                new { kind = "session_run_linked", run_stream = runStream })));
+            Assert.False(malformedLink.Complete(processSucceeded: false).SessionExistenceConfirmed);
+        }
+    }
+
     [Theory]
     [InlineData("run.terminal.failed", "failed")]
     [InlineData("run.terminal.cancelled", "cancelled")]
@@ -179,6 +221,7 @@ public sealed class MuseExecTests : IDisposable
             Assert.False(result.Success);
             Assert.NotNull(result.CliSession);
             Assert.True(result.CliSession!.TurnFailed);
+            Assert.False(result.CliSession.SessionExistenceConfirmed);
             Assert.DoesNotContain(prompt, result.Error);
             Assert.DoesNotContain("private credential", result.Error, StringComparison.OrdinalIgnoreCase);
             if (prompt is "__CAB_MUSE_INVALID_JSON__" or "__CAB_MUSE_USAGE_INVALID__")
@@ -202,6 +245,43 @@ public sealed class MuseExecTests : IDisposable
         var failedResume = await sessionRunner.RunAsync(retainedKey, settings, "__CAB_MUSE_NONZERO__");
         Assert.False(failedResume.Success);
         Assert.Equal(saved.SessionId, (await failedStore.FindAsync(retainedKey))?.SessionId);
+
+        var recoveredKey = new SessionKey("slack", "channel", "confirmed-failure", "owner", "slack");
+        var recovered = await sessionRunner.RunAsync(recoveredKey, settings, "__CAB_MUSE_CONFIRMED_FAIL__");
+        Assert.False(recovered.Success);
+        Assert.True(recovered.CliSession!.SessionExistenceConfirmed);
+        Assert.InRange(recovered.Metrics!.QueueMilliseconds!.Value, 0, double.MaxValue);
+        Assert.InRange(recovered.Metrics.TotalMilliseconds!.Value, 0, double.MaxValue);
+        var recoveredBinding = await failedStore.FindAsync(recoveredKey);
+        Assert.NotNull(recoveredBinding);
+        Assert.Equal(recovered.CliSession.SessionId, recoveredBinding.SessionId);
+        Assert.Null(await failedStore.FindAsync(recoveredKey with { UserId = "different-owner" }));
+        Assert.Null(recoveredBinding.FirstApprovalFingerprint);
+        Assert.True(ConversationExecutionPolicy.RequiresApproval(recoveredKey,
+            settings with { ChatApprovalMode = "first" }, recoveredBinding));
+        var resumed = await sessionRunner.RunAsync(recoveredKey, settings, "resume after failed first turn");
+        Assert.True(resumed.Success, resumed.Error);
+        Assert.Equal(recoveredBinding.SessionId, resumed.CliSession!.SessionId);
+        Assert.InRange(resumed.Metrics!.QueueMilliseconds!.Value, 0, double.MaxValue);
+        Assert.InRange(resumed.Metrics.TotalMilliseconds!.Value, 0, double.MaxValue);
+
+        var invalidAfterStartKey = new SessionKey("slack", "channel", "confirmed-invalid", "owner", "slack");
+        var invalidAfterStart = await sessionRunner.RunAsync(invalidAfterStartKey, settings, "__CAB_MUSE_CONFIRMED_INVALID_JSON__");
+        Assert.False(invalidAfterStart.Success);
+        Assert.True(invalidAfterStart.CliSession!.SessionExistenceConfirmed);
+        var invalidAfterStartBinding = await failedStore.FindAsync(invalidAfterStartKey);
+        Assert.NotNull(invalidAfterStartBinding);
+        Assert.Equal(invalidAfterStart.CliSession.SessionId, invalidAfterStartBinding.SessionId);
+        Assert.Null(invalidAfterStartBinding.FirstApprovalFingerprint);
+
+        var foreignKey = new SessionKey("slack", "channel", "foreign-session", "owner", "slack");
+        Assert.False((await sessionRunner.RunAsync(foreignKey, settings, "__CAB_MUSE_FOREIGN_ONLY__")).Success);
+        Assert.Null(await failedStore.FindAsync(foreignKey));
+        var noStartKey = new SessionKey("slack", "channel", "no-start", "owner", "slack");
+        var noStart = await sessionRunner.RunAsync(noStartKey, settings, "__CAB_MUSE_NONZERO__");
+        Assert.False(noStart.Success);
+        Assert.False(noStart.CliSession!.SessionExistenceConfirmed);
+        Assert.Null(await failedStore.FindAsync(noStartKey));
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runner.RunAsync(settings, "__CAB_MUSE_CANCEL__", cts.Token));
         var after = Directory.Exists(promptDirectory) ? Directory.GetDirectories(promptDirectory, "run-*").ToHashSet(StringComparer.OrdinalIgnoreCase) : [];

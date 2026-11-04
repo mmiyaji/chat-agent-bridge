@@ -77,19 +77,14 @@ public sealed class AgentRunner : IAgentRunner
         var queueTimer = Stopwatch.StartNew();
         using var workspaceLease = await AgentWorkspaceGate.AcquireAsync(workspace, cancellationToken).ConfigureAwait(false);
         var queueMilliseconds = queueTimer.Elapsed.TotalMilliseconds;
-        if (AgentProfile.ResolveProvider(settings) == AgentProfile.Kimi)
+        var provider = AgentProfile.ResolveProvider(settings);
+        var result = AgentProfile.GetExecutionKind(provider) switch
         {
-            var kimi = await KimiAcpRunner.RunAsync(settings, workspace, prompt, options, progress, cancellationToken).ConfigureAwait(false);
-            return kimi with { Metrics = (kimi.Metrics ?? new AgentExecutionMetrics()) with
-                { QueueMilliseconds = queueMilliseconds, TotalMilliseconds = totalTimer.Elapsed.TotalMilliseconds } };
-        }
-        if (AgentProfile.ResolveProvider(settings) == AgentProfile.Muse)
-        {
-            var muse = await MuseExecRunner.RunAsync(settings, workspace, prompt, progress, cancellationToken).ConfigureAwait(false);
-            return muse with { Metrics = (muse.Metrics ?? new AgentExecutionMetrics()) with
-                { QueueMilliseconds = queueMilliseconds, TotalMilliseconds = totalTimer.Elapsed.TotalMilliseconds } };
-        }
-        var result = await RunLockedAsync(settings, workspace, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false);
+            AgentProfile.ExecutionKind.KimiAcp => await KimiAcpRunner.RunAsync(settings, workspace, prompt, options, progress, cancellationToken).ConfigureAwait(false),
+            AgentProfile.ExecutionKind.MuseExec => await MuseExecRunner.RunAsync(settings, workspace, prompt, progress, cancellationToken).ConfigureAwait(false),
+            AgentProfile.ExecutionKind.Process => await RunLockedAsync(settings, workspace, prompt, progress, activeTurnChanged, cancellationToken).ConfigureAwait(false),
+            _ => throw new InvalidOperationException("The configured execution adapter is not supported.")
+        };
         return result with
         {
             Metrics = (result.Metrics ?? new AgentExecutionMetrics()) with

@@ -43,6 +43,10 @@ public sealed class AgentProfileTests
 
     [Theory]
     [InlineData("Muse Code 1.2.3", true)]
+    [InlineData("Muse 1.4.0", true)]
+    [InlineData("muse-cli 1.4.0", true)]
+    [InlineData("An introductory message\r\nMuse Code 1.4.0", true)]
+    [InlineData("Another CLI supports Muse 1.4.0", false)]
     [InlineData("Muse Code v2.0-beta (nightly build)", true)]
     [InlineData("Muse Code build unknown", true)]
     [InlineData("muse 1.2.3", true)]

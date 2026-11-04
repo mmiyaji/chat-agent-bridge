@@ -190,6 +190,12 @@ public sealed class SessionAgentRunner
             return FailClosed(result, "The CLI returned a different session id while resuming; the saved binding was retained.");
         if (result.Success && (!output.HasResult || output.TurnFailed))
             return FailClosed(result, "The CLI did not report a successful terminal result; the saved binding was retained.");
+        if (!result.Success && existing is null && provider == AgentProfile.Muse && output.SessionExistenceConfirmed)
+        {
+            await _store.SaveAsync(new SessionBinding(key, workspace, executable, marker,
+                sessionId.ToString("D"), DateTimeOffset.UtcNow), CancellationToken.None).ConfigureAwait(false);
+            return result;
+        }
         if (!result.Success) return result;
 
         if (existing is not null)

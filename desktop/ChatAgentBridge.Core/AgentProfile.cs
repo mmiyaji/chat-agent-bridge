@@ -5,6 +5,7 @@ namespace ChatAgentBridge.Core;
 /// <summary>Builds shell-free CLI invocations from provider and model settings.</summary>
 public static class AgentProfile
 {
+    public enum ExecutionKind { Process, KimiAcp, MuseExec }
     public const string Codex = "codex";
     public const string Claude = "claude";
     public const string Gemini = "gemini";
@@ -133,14 +134,15 @@ public static class AgentProfile
     public static string ResolveEffectiveExecutable(BridgeSettings settings)
         => EffectiveExecutable(settings, ResolveProvider(settings));
 
-    private sealed record ProviderDefinition(string Id, string DefaultArguments, bool BasicCli, bool ModelCatalog, bool NpmShim);
+    private sealed record ProviderDefinition(string Id, string DefaultArguments, bool BasicCli, bool ModelCatalog, bool NpmShim,
+        ExecutionKind AdapterKind = ExecutionKind.Process);
     private static readonly ProviderDefinition[] Providers =
     [
         new(Codex, DefaultCodexArguments, false, true, false), new(Claude, "", false, true, false),
         new(Gemini, DefaultGeminiArguments, true, false, true), new(GitHubCopilot, DefaultGitHubCopilotArguments, true, false, true),
         new(Antigravity, DefaultAntigravityArguments, true, true, false), new(Kiro, DefaultKiroArguments, true, true, false),
-        new(Qwen, DefaultQwenArguments, true, false, true), new(Kimi, DefaultKimiArguments, true, false, false),
-        new(Muse, DefaultMuseArguments, true, false, false), new(Custom, "", false, false, false)
+        new(Qwen, DefaultQwenArguments, true, false, true), new(Kimi, DefaultKimiArguments, true, false, false, ExecutionKind.KimiAcp),
+        new(Muse, DefaultMuseArguments, true, false, false, ExecutionKind.MuseExec), new(Custom, "", false, false, false)
     ];
     public static IReadOnlyList<string> SupportedProviders => Providers.Select(provider => provider.Id).ToArray();
     private static ProviderDefinition? Definition(string provider) => Providers.FirstOrDefault(item => item.Id == provider);
@@ -173,6 +175,10 @@ public static class AgentProfile
         return value;
     }
     public static bool IsBasicCliProvider(string provider) => Definition(provider)?.BasicCli == true;
+
+    /// <summary>Execution adapter used by AgentRunner; App Server sessions use a separate runner.</summary>
+    public static ExecutionKind GetExecutionKind(string provider) => Definition(provider)?.AdapterKind
+        ?? throw new ArgumentException("Unsupported provider.", nameof(provider));
 
 
     /// <summary>Providers whose CLI can list selectable models without an AI turn.</summary>
