@@ -139,7 +139,21 @@ internal static class PortableUpdateTestFeed
             var path = ResolveFixtureFile(assetsPath, name);
             if (!File.Exists(path)) return new HttpResponseMessage(HttpStatusCode.NotFound);
             RejectReparsePoint(path);
-            return OpenFileResponse(path, MaxAssetBytes);
+            return OpenFileResponse(path, MaxAssetBytes, request.Headers.Range?.Ranges.SingleOrDefault()?.From ?? 0);
+        }
+
+        private sealed class FixtureStream(string path, bool asset) : FileStream(path, FileMode.Open,
+            FileAccess.Read, FileShare.Read, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan)
+        {
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                if (asset && File.Exists(Path.Combine(Path.GetDirectoryName(Name)!, "slow-download")))
+                {
+                    await Task.Delay(50, cancellationToken);
+                    buffer = buffer[..Math.Min(buffer.Length, 16384)];
+                }
+                return await base.ReadAsync(buffer, cancellationToken);
+            }
         }
 
         private static bool IsPlainHttpsUri(Uri uri) =>
@@ -151,21 +165,23 @@ internal static class PortableUpdateTestFeed
             !tag.Contains("..", StringComparison.Ordinal) &&
             tag.All(character => char.IsAsciiLetterOrDigit(character) || character is '.' or '-' or '+');
 
-        private static HttpResponseMessage OpenFileResponse(string path, long maxBytes)
+        private static HttpResponseMessage OpenFileResponse(string path, long maxBytes, long offset = 0)
         {
-            var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
-                81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var stream = new FixtureStream(path, maxBytes > MaxApiBytes);
             if (stream.Length > maxBytes)
             {
                 stream.Dispose();
                 throw new InvalidDataException($"Portable update test fixture file '{path}' exceeds its size limit.");
             }
 
-            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            if (offset < 0 || offset >= stream.Length) offset = 0;
+            stream.Position = offset;
+            var response = new HttpResponseMessage(offset > 0 ? HttpStatusCode.PartialContent : HttpStatusCode.OK)
             {
                 Content = new StreamContent(stream)
             };
-            response.Content.Headers.ContentLength = stream.Length;
+            response.Content.Headers.ContentLength = stream.Length - offset;
+            if (offset > 0) response.Content.Headers.ContentRange = new(offset, stream.Length - 1, stream.Length);
             return response;
         }
     }
