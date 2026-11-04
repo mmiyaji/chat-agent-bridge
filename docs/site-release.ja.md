@@ -16,6 +16,9 @@ Chat Agent Bridge の紹介ページは、リポジトリの `site/` にある�
 | `scripts/check-site.mjs` | 公開前の検証 |
 | `.github/workflows/cloudflare-pages.yml` | 検証と公開のワークフロー |
 
+日本語が本文で、`?lang=en` を付けると英語で表示します。英語の文言は `site/assets/i18n-en.js` にあり、`index.html` の `data-i18n` と同じキーで対応させます。
+英語用の画像は `data-en-src`（画像）と `data-en-href`（拡大表示のリンク）で指定します。文言を足すときは、両方の言語をそろえてください。`scripts/check-site.mjs` は、英語用の画像が存在するかも確認します。
+
 ページは外部のスクリプト・スタイル・フォントを読み込みません。
 `_headers` の Content-Security-Policy で、同じサイトのファイルだけを許可しています。
 インラインの `<script>` や `onclick` などは CSP で動かないため、処理は `site/assets/*.js` に書きます。
