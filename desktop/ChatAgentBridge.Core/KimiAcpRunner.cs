@@ -73,6 +73,8 @@ internal static class KimiAcpRunner
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         { return Failed(CoreText.Get("KimiAcpTimeout")); }
+        catch (KimiRequestException ex)
+        { cancellationToken.ThrowIfCancellationRequested(); return Failed(ex.Message); }
         catch (Exception ex) when (ex is InvalidDataException or JsonException or InvalidOperationException or IOException or KeyNotFoundException)
         { cancellationToken.ThrowIfCancellationRequested(); return Failed(CoreText.Get("KimiAcpProtocolFailed")); }
         finally { await StopAsync(process, stderrDrain).ConfigureAwait(false); }
@@ -108,6 +110,8 @@ internal static class KimiAcpRunner
         if (value is null || !value.StartsWith("session_", StringComparison.Ordinal) || !Guid.TryParseExact(value[8..], "D", out var guid)) return false;
         id = guid.ToString("D"); return true;
     }
+    private sealed class KimiRequestException(string guidance) : InvalidOperationException(guidance);
+
     private static AgentRunResult Failed(string error, string? id = null) => new(false, -1, "", error) { CliSession = id is null ? null : new CliSessionOutput("kimi", id, null, false, true) };
     private static bool TryIdentity(JsonElement response, out string version)
     {
@@ -163,7 +167,8 @@ internal static class KimiAcpRunner
                     protocol.ValueKind != JsonValueKind.String || protocol.GetString() != "2.0") throw new InvalidDataException("Malformed ACP message.");
                 if (!root.TryGetProperty("method", out _) && root.TryGetProperty("id", out var rid) && rid.ValueKind == JsonValueKind.Number && rid.TryGetInt32(out var responseId) && responseId == id)
                 {
-                    if (root.TryGetProperty("error", out _)) throw new InvalidOperationException("Kimi ACP request failed.");
+                    if (root.TryGetProperty("error", out var failure))
+                        throw new KimiRequestException(StructuredCliDiagnostics.KnownError(failure.GetRawText()) ?? CoreText.Get("KimiAcpProtocolFailed"));
                     if (!root.TryGetProperty("result", out var result) || result.ValueKind != JsonValueKind.Object) throw new InvalidDataException("Malformed ACP result.");
                     return result.Clone();
                 }

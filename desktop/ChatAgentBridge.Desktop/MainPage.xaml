@@ -366,6 +366,8 @@
                                 <TextBlock  Style="{StaticResource TitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock044" x:Uid="chatAgentBridgeDesktopMainPageTextBlock044" />
                                 <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock045" x:Uid="chatAgentBridgeDesktopMainPageTextBlock045" />
                                 <TextBlock Text="{x:Bind ViewModel.SavedAgentSummary, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WorkbenchAgentSummary" />
+                                <TextBlock Text="{x:Bind ViewModel.ManualWorkspaceSummary, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                           Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="ManualWorkspaceSummary" />
                                 <HyperlinkButton  Click="OpenAgentSettings_Click" AutomationProperties.AutomationId="OpenAgentSettings"  x:Uid="OpenAgentSettings" />
                                 <InfoBar x:Uid="ManualWorkspaceError" Severity="Warning" IsClosable="False"
                                          IsOpen="{x:Bind ViewModel.HasManualWorkspaceError, Mode=OneWay}"
@@ -454,7 +456,9 @@
                                         <Border x:Name="TrustedWorkspaceCard" Padding="16" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" AutomationProperties.AutomationId="TrustedWorkspaceCard">
                                             <StackPanel Spacing="8">
                                                 <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock025" x:Uid="chatAgentBridgeDesktopMainPageTextBlock025" />
+                                                <InfoBar IsOpen="True" IsClosable="False" Severity="Informational" AutomationProperties.AutomationId="WorkspaceTrustExplanation">
                                                 <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock026" x:Uid="chatAgentBridgeDesktopMainPageTextBlock026" />
+                                                </InfoBar>
                                                 <TextBox  Text="{x:Bind ViewModel.TrustedWorkspaceRoots, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" MaxHeight="180" AutomationProperties.AutomationId="TrustedWorkspaceRoots"  x:Uid="TrustedWorkspaceRoots" />
                                                 <StackPanel Spacing="8">
                                                     <Button Click="ChooseTrustedFolder_Click" IsEnabled="{x:Bind ViewModel.CanStartTrustedFolderPick, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ChooseTrustedFolder" x:Uid="ChooseTrustedFolder" />

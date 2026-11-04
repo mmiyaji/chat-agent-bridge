@@ -148,7 +148,7 @@
     <value>フォルダーを選択…</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock016.Text" xml:space="preserve">
-    <value>新しい会話にはこの作業フォルダーを使います。既存の会話の作業先は変わりません。</value>
+    <value>AIがファイルを読み書きする作業先です。新しい会話と手動実行で使います。既存の会話の作業先は変わりません。Git管理は必須ではありません。</value>
   </data>
   <data name="AgentProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>使うエージェント</value>
@@ -202,7 +202,7 @@
     <value>信頼する作業フォルダー</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock026.Text" xml:space="preserve">
-    <value>信頼したフォルダーとその配下すべてで実行できます。空欄の場合は現在の作業フォルダーとその配下が信頼されます。絶対パスを1行ずつ入力してください。入力欄を離れ、変更内容を確認すると保存されます。CLIのファイルアクセスをOSから隔離する設定ではありません。</value>
+    <value>AIの作業先として許可する範囲です。登録したフォルダーとその下位フォルダーを指定できます。手動実行の前に、作業フォルダー自身か、その親フォルダーを登録してください。ドライブ全体など広すぎる範囲は避けてください。</value>
   </data>
   <data name="TrustedWorkspaceRoots.Header" xml:space="preserve">
     <value>信頼するフォルダー（絶対パス、1行1つ）</value>

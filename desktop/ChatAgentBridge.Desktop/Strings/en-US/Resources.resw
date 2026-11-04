@@ -148,7 +148,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Select folder...</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock016.Text" xml:space="preserve">
-    <value>New conversations use this workspace. Existing conversations keep their own workspace.</value>
+    <value>Where the AI reads and writes files. Used for manual runs and new conversations; existing conversations keep their working folder. A Git repository is not required.</value>
   </data>
   <data name="AgentProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Agent to use</value>
@@ -202,7 +202,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Trusted working folders</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock026.Text" xml:space="preserve">
-    <value>The agent can run in trusted folders and all their subfolders. A blank list trusts the current workspace and its subfolders. Enter one absolute path per line. This does not isolate CLI file access at the OS level.</value>
+    <value>The permitted scope for AI working folders. A registered folder and its subfolders can be selected. Before a manual run, register the working folder itself or a parent folder. Avoid broad scopes such as an entire drive.</value>
   </data>
   <data name="TrustedWorkspaceRoots.Header" xml:space="preserve">
     <value>Trusted folders (absolute paths, one per line)</value>

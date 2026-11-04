@@ -10,6 +10,19 @@ public sealed class CliSessionOutputTests
     private static string Json(object value) => JsonSerializer.Serialize(value);
 
     [Fact]
+    public void QwenAuthenticationFailureReturnsFixedGuidanceWithoutDiagnosticPayload()
+    {
+        var output = Json(new { type = "system", subtype = "init", session_id = Id }) + "\n" +
+            Json(new { type = "result", subtype = "error_during_execution", session_id = Id, is_error = true,
+                error = new { message = "401 Invalid API key: PRIVATE_DIAGNOSTIC_SENTINEL" } });
+        var result = CliSessionOutputParser.Parse(output, AgentProfile.Qwen);
+        Assert.True(result.TurnFailed);
+        Assert.Equal(ChatAgentBridge.Core.Localization.CoreText.Get("CliAuthenticationRequired"), result.FailureGuidance);
+        Assert.DoesNotContain("PRIVATE_DIAGNOSTIC_SENTINEL", result.FailureGuidance!);
+        Assert.DoesNotContain("PRIVATE_DIAGNOSTIC_SENTINEL", result.FinalMessage ?? "");
+    }
+
+    [Fact]
     public void Gemini_UsesOnlyAssistantTextAndReportedTokenCounters()
     {
         var output = string.Join('\n',

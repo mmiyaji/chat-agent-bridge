@@ -7,7 +7,11 @@ using ChatAgentBridge.Core.Localization;
 namespace ChatAgentBridge.Core;
 
 public sealed record CliSessionOutput(string Provider, string? SessionId, string? FinalMessage,
-    bool HasResult, bool TurnFailed, AgentUsage? Usage = null, IReadOnlyList<string>? DeniedActions = null);
+    bool HasResult, bool TurnFailed, AgentUsage? Usage = null, IReadOnlyList<string>? DeniedActions = null)
+{
+    // Fixed localized guidance only; never retain raw event diagnostics.
+    public string? FailureGuidance { get; init; }
+}
 
 /// <summary>Parses Gemini and Antigravity stream-json and Copilot CLI JSONL without exposing raw event payloads.</summary>
 public static class CliSessionOutputParser
@@ -55,6 +59,7 @@ public static class CliSessionOutputParser
         private bool _truncated;
         private bool _disposed;
         private AgentUsage? _usage;
+        private string? _failureGuidance;
 
         internal Accumulator(string provider, string? authorizedSessionId = null)
         {
@@ -118,7 +123,7 @@ public static class CliSessionOutputParser
                 message = message is null ? note : message.TrimEnd() + "\n\n" + note;
             }
             return new(_provider, invalid ? null : _sessionId, message,
-                _hasResult, _failed || invalid || !_hasResult, _usage, _deniedActions.Count == 0 ? null : _deniedActions.ToArray());
+                _hasResult, _failed || invalid || !_hasResult, _usage, _deniedActions.Count == 0 ? null : _deniedActions.ToArray()) { FailureGuidance = _failureGuidance };
         }
 
         private IReadOnlyList<AgentRunProgress> Qwen(JsonElement root)
@@ -137,6 +142,8 @@ public static class CliSessionOutputParser
                 case "result":
                     _hasResult = true;
                     _failed |= String(root, "subtype") != "success" || Property(root, "is_error").ValueKind == JsonValueKind.True;
+                    if (_failed && Property(root, "error") is { ValueKind: not JsonValueKind.Undefined } failure)
+                        _failureGuidance ??= StructuredCliDiagnostics.KnownError(failure.GetRawText());
                     if (String(root, "result") is { } text) { _message.Clear(); Append(text); }
                     var usage = Property(root, "usage");
                     var input = Counter(usage, "input_tokens");

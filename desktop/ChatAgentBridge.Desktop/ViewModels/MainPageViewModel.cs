@@ -768,7 +768,8 @@ public partial class MainPageViewModel : ObservableObject
                          (result.Output?.Contains("Not inside a trusted directory", StringComparison.OrdinalIgnoreCase) ?? false));
                     SetStatus(ViewModelText.Get("ExecutionFailed"),
                         codexWorkspaceRejected ? ViewModelText.Get("CodexWorkspaceRejected", settingsSnapshot.WorkspaceRoot)
-                            : ViewModelText.Get("ExitCode", result.ExitCode), "Error");
+                            : AgentProfile.IsBasicCliProvider(settingsSnapshot.AgentProvider) && !string.IsNullOrWhiteSpace(result.Error)
+                                ? result.Error : ViewModelText.Get("ExitCode", result.ExitCode), "Error");
                 }
             }
             catch (OperationCanceledException)
@@ -831,7 +832,7 @@ public partial class MainPageViewModel : ObservableObject
     }
 
     private bool CanRun() => !_isAgentProfileEditor && !_closing && IsSettingsLoaded && _settings is not null && !IsLoading && !IsRunning &&
-        !_unsupportedSavedEffort && !HasUnsavedSettings && !IsSensitiveConfirmationPending;
+        !_unsupportedSavedEffort && !HasUnsavedSettings && !IsSensitiveConfirmationPending && !HasManualWorkspaceError;
     private bool CanSaveSettings() => !_closing && IsSettingsLoaded && !IsLoading && !IsRunning &&
         !_savingSettings && _settings is not null && (!_unsupportedSavedEffort || _isAgentProfileEditor);
     private bool CanReloadSettings() => !IsLoading && !IsRunning;

@@ -113,6 +113,11 @@ if (structuredFixtureName.StartsWith("kimi", StringComparison.Ordinal) && args i
                 break;
             case "session/prompt":
                 var promptText = parameters.GetProperty("prompt")[0].GetProperty("text").GetString() ?? "";
+                if (promptText == "fixture-auth-required")
+                {
+                    await WriteAsync(new { jsonrpc = "2.0", id, error = new { code = -32000, message = "Auth required: 403 subscription; PRIVATE_DIAGNOSTIC_SENTINEL" } });
+                    continue;
+                }
                 var fixtureId = sessionId ?? throw new InvalidOperationException("ACP session was not initialized.");
                 var answer = $"kimi-acp; model={model}; mode={mode}; prompt={promptText}";
                 if (promptText.Contains("__CAB_SCENARIO_UNKNOWN_NOTIFICATION__", StringComparison.Ordinal))
@@ -224,6 +229,7 @@ if (!args.Contains("--print") && structuredFormatIndex >= 0 && structuredFormatI
     var resumeIndex = Array.IndexOf(args, isAntigravity ? "--conversation" : "--resume");
     var fixtureSessionId = resumeIndex >= 0 && resumeIndex + 1 < args.Length ? args[resumeIndex + 1] : Guid.NewGuid().ToString("D");
     var fixturePrompt = await Console.In.ReadToEndAsync();
+    CaptureLaunchContract(fixturePrompt, args);
     var fixtureModelIndex = Array.IndexOf(args, "--model");
     var fixtureModel = fixtureModelIndex >= 0 && fixtureModelIndex + 1 < args.Length ? args[fixtureModelIndex + 1] : "fixture-default";
     var fixtureReply = $"{(isAntigravity ? "antigravity" : isGemini ? "gemini" : "copilot")}-e2e: {(resumeIndex >= 0 ? "resumed" : "new")}; model={fixtureModel}; prompt={fixturePrompt}";
@@ -448,6 +454,7 @@ if (args.Contains("--print"))
     var modelIndex = Array.IndexOf(args, "--model");
     var model = modelIndex >= 0 ? args[modelIndex + 1] : "fixture-claude";
     var text = await Console.In.ReadToEndAsync();
+    CaptureLaunchContract(text, args);
     var fixtureCalls = resumeIndex >= 0 ? 2 : 1;
     await WriteAsync(new { type = "system", subtype = "init", session_id = session, model });
     await WriteAsync(new
@@ -466,6 +473,7 @@ if (args is ["exec", ..])
     var modelIndex = Array.IndexOf(args, "--model");
     var model = modelIndex >= 0 ? args[modelIndex + 1] : "fixture-codex";
     var input = await Console.In.ReadToEndAsync();
+    CaptureLaunchContract(input, args);
     await WriteAsync(new { type = "thread.started", thread_id = id });
     await WriteAsync(new { type = "item.completed", item = new { type = "agent_message", text = $"codex-e2e: {(resume >= 0 ? "resumed" : "new")}; prompt={input}" } });
     await WriteAsync(new { type = "turn.completed", model, usage = new { input_tokens = 50, output_tokens = 20, cached_input_tokens = 10 } });
@@ -650,6 +658,18 @@ async Task CompleteAsync(string status, string text)
     });
     await WriteAsync(new { method = "item/completed", @params = new { threadId, turnId, item } });
     await WriteAsync(new { method = "turn/completed", @params = new { threadId, turn = new { id = turnId, status, items = new[] { item } } } });
+}
+
+// Isolated runner contract probe: never reads credentials or writes outside its working folder.
+static void CaptureLaunchContract(string prompt, string[] arguments)
+{
+    if (prompt != "fixture-launch-contract") return;
+    File.WriteAllText(Path.Combine(Environment.CurrentDirectory, "launch-contract.json"), JsonSerializer.Serialize(new
+    {
+        workspace = Environment.CurrentDirectory,
+        arguments,
+        geminiTrust = Environment.GetEnvironmentVariable("GEMINI_CLI_TRUST_WORKSPACE")
+    }));
 }
 
 static async Task WriteAsync(object value)

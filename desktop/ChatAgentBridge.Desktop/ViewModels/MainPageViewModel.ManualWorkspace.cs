@@ -5,7 +5,7 @@ namespace ChatAgentBridge_Desktop.ViewModels;
 
 public partial class MainPageViewModel
 {
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasManualWorkspaceError)), NotifyPropertyChangedFor(nameof(HasManualTrustRecovery))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasManualWorkspaceError)), NotifyPropertyChangedFor(nameof(HasManualTrustRecovery)), NotifyCanExecuteChangedFor(nameof(RunCommand))]
     public partial string ManualWorkspaceError { get; set; } = "";
 
     public bool HasManualWorkspaceError => !string.IsNullOrEmpty(ManualWorkspaceError);
@@ -58,7 +58,7 @@ public partial class MainPageViewModel
         Exception? validationError = null;
         try
         {
-            await Task.Run(() => CliProbeService.ValidateWorkspace(settings));
+            await Task.Run(() => CliProbeService.ValidateWorkspace(settings, requireExplicitTrust: true));
         }
         catch (Exception error) when (error is InvalidOperationException or ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
         {

@@ -103,6 +103,12 @@ public sealed class AgentRunner : IAgentRunner
         try { invocation = AgentProfile.BuildInvocation(settings); }
         catch (Exception ex) when (ex is ArgumentException or FormatException)
         { return new AgentRunResult(false, -1, "", ex.Message); }
+        // RunCoreAsync has already validated CAB's workspace trust before reaching this point.
+        // exec has an additional Git check that interactive Codex does not require. Skip only
+        // that check for managed exec/resume calls; keep sandbox and approval arguments intact.
+        if (invocation.Provider == AgentProfile.Codex && invocation.Arguments.FirstOrDefault() == "exec" &&
+            !invocation.Arguments.Contains("--skip-git-repo-check", StringComparer.Ordinal))
+            invocation = invocation with { Arguments = new[] { "exec", "--skip-git-repo-check" }.Concat(invocation.Arguments.Skip(1)).ToArray() };
         // Partial output is opt-in because older Claude CLI versions may not support this flag.
         if (invocation.Provider == AgentProfile.Claude && progress is not null)
             invocation = invocation with { Arguments = invocation.Arguments.Append("--include-partial-messages").ToArray() };
@@ -133,6 +139,10 @@ public sealed class AgentRunner : IAgentRunner
             StandardErrorEncoding = new UTF8Encoding(false),
             CreateNoWindow = true
         };
+        // Gemini documents this per-process trust handoff for headless hosts. It does not
+        // change tool approval modes or persist trust in the user's global CLI settings.
+        if (invocation.Provider == AgentProfile.Gemini)
+            start.Environment["GEMINI_CLI_TRUST_WORKSPACE"] = "true";
         if (nodePackage is not null) start.ArgumentList.Add(nodePackage.EntryPoint);
         foreach (var argument in invocation.Arguments) start.ArgumentList.Add(argument);
 
@@ -200,7 +210,7 @@ public sealed class AgentRunner : IAgentRunner
         // Structured providers can write prompts, paths and tool payloads to stderr.
         // Return only fixed diagnostic categories, never any raw diagnostic text.
         var validCliResult = cliSession is { HasResult: true, SessionId: not null, TurnFailed: false };
-        if (structuredCli) error = StructuredCliDiagnostics.Error(invocation.Provider, error, process.ExitCode, validCliResult);
+        if (structuredCli) error = cliSession?.FailureGuidance ?? StructuredCliDiagnostics.Error(invocation.Provider, error, process.ExitCode, validCliResult);
         var usage = codex?.Usage ?? claude?.Usage ?? cliSession?.Usage;
         // Antigravity does not name the model in its output; the selected model is the one it ran.
         if (invocation.Provider == AgentProfile.Antigravity && usage is { Model: null } && invocation.Model is not null)

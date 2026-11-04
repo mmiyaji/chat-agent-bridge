@@ -59,6 +59,10 @@ public sealed class QwenKimiCliTests : IDisposable
         File.Copy(Path.Combine(source, "ChatAgentBridge.TestAgent.exe"), executable, true);
         var settings = Settings("kimi") with { AgentExecutable = executable, AgentPermissionMode = "inherit" };
         var runner = new AgentRunner();
+        var unauthenticated = await runner.RunAsync(settings, "fixture-auth-required");
+        Assert.False(unauthenticated.Success);
+        Assert.Equal(ChatAgentBridge.Core.Localization.CoreText.Get("CliAccountUnsupported"), unauthenticated.Error);
+        Assert.DoesNotContain("PRIVATE_DIAGNOSTIC_SENTINEL", unauthenticated.Error);
         var noHandler = await runner.RunAsync(settings, "fixture-permission");
         Assert.False(noHandler.Success);
         var approved = await runner.RunWithOptionsAsync(settings, "fixture-permission", new AppServerRunOptions(

@@ -18,9 +18,11 @@ public partial class MainPageViewModel
     public string SavedExecutable => _settings?.AgentExecutable ?? ViewModelText.Get("NotLoaded");
     public string SavedWorkspace => _settings?.WorkspaceRoot ?? ViewModelText.Get("NotLoaded");
 
+    public string ManualWorkspaceSummary => ViewModelText.Get("ManualWorkspaceSummary", SavedWorkspace);
+
     private void RefreshSavedOverview()
     {
         foreach (var property in new[] { nameof(SavedAgentName), nameof(SavedModel), nameof(SavedReasoning),
-                     nameof(SavedExecutable), nameof(SavedWorkspace) }) OnPropertyChanged(property);
+                     nameof(SavedExecutable), nameof(SavedWorkspace), nameof(ManualWorkspaceSummary) }) OnPropertyChanged(property);
     }
 }
