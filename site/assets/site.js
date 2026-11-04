@@ -19,25 +19,23 @@
       link.href = link.getAttribute('data-en-href');
       link.setAttribute('data-description', link.getAttribute('data-en-description') || '');
     });
-    // Keep the language when moving between sections.
-    var lang = document.getElementById('lang');
   }
   root.classList.remove('en-pending');
 
   // Language menu: the button shows the current language; the list shows each language in its own name.
-  var current = english ? 'en' : 'ja';
+  var currentLang = english ? 'en' : 'ja';
   var names = { ja: '日本語', en: 'English' };
   var langButton = document.getElementById('lang');
   var langLabel = document.getElementById('lang-label');
   var langList = document.getElementById('lang-list');
   if (langButton && langLabel && langList) {
-    langLabel.textContent = names[current];
-    langLabel.lang = current;
-    langButton.setAttribute('aria-label', (english ? 'Language: ' : '言語: ') + names[current]);
+    langLabel.textContent = names[currentLang];
+    langLabel.lang = currentLang;
+    langButton.setAttribute('aria-label', (english ? 'Language: ' : '言語: ') + names[currentLang]);
     langList.querySelectorAll('a[data-lang]').forEach(function (link) {
       var code = link.getAttribute('data-lang');
       link.href = location.pathname + (code === 'ja' ? '' : '?lang=' + code) + location.hash;
-      if (code === current) link.setAttribute('aria-current', 'true');
+      if (code === currentLang) link.setAttribute('aria-current', 'true');
     });
     var links = function () { return Array.prototype.slice.call(langList.querySelectorAll('a')); };
     var setOpen = function (open, focusFirst) {
