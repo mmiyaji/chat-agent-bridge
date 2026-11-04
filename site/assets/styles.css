@@ -50,3 +50,4 @@ footer{margin-top:56px;color:var(--dim);font-size:13px}
 img{max-width:100%;height:auto}
 .flush{padding:4px 0}.gap{margin-top:8px}.state .card p{margin:4px 0 0}
 html.en-pending body{visibility:hidden}
+.tool.lang{display:inline-flex;align-items:center;gap:6px;padding:0 10px}.tool.lang svg{width:16px;height:16px;flex:none}

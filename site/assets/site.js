@@ -21,7 +21,12 @@
     });
     // Keep the language when moving between sections.
     var lang = document.getElementById('lang');
-    if (lang) { lang.textContent = '日本語'; lang.lang = 'ja'; lang.hreflang = 'ja'; lang.href = location.pathname + location.hash; }
+    var label = document.getElementById('lang-label');
+    if (lang && label) {
+      label.textContent = '日本語'; label.lang = 'ja';
+      lang.hreflang = 'ja'; lang.href = location.pathname + location.hash;
+      lang.setAttribute('aria-label', 'Language: 日本語 (Japanese)');
+    }
   }
   root.classList.remove('en-pending');
 
