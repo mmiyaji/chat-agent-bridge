@@ -49,11 +49,11 @@ public sealed class AgentRunner : IAgentRunner
     public async Task<AgentRunResult> RunAsync(BridgeSettings settings, string prompt,
         IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged,
         CancellationToken cancellationToken = default)
-        => await RunCoreAsync(settings, prompt, progress, activeTurnChanged, null, cancellationToken).ConfigureAwait(false);
+        => await Task.Run(() => RunCoreAsync(settings, prompt, progress, activeTurnChanged, null, cancellationToken), cancellationToken).ConfigureAwait(false);
 
     public async Task<AgentRunResult> RunWithOptionsAsync(BridgeSettings settings, string prompt, AppServerRunOptions options,
         CancellationToken cancellationToken = default)
-        => await RunCoreAsync(settings, prompt, options?.Progress, options?.ActiveTurnChanged, options, cancellationToken).ConfigureAwait(false);
+        => await Task.Run(() => RunCoreAsync(settings, prompt, options?.Progress, options?.ActiveTurnChanged, options, cancellationToken), cancellationToken).ConfigureAwait(false);
 
     private async Task<AgentRunResult> RunCoreAsync(BridgeSettings settings, string prompt,
         IProgress<AgentRunProgress>? progress, Action<IActiveAgentTurn?>? activeTurnChanged,
