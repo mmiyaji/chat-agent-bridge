@@ -273,14 +273,15 @@ public sealed class PortableUpdateCoordinator : IDisposable
     public async Task DownloadAsync()
     {
         if (_available is not { } release || !TryBegin()) return;
-        if (!IsPaused) DiscardDownload();
+        var resuming = IsPaused;
+        if (!resuming) DiscardDownload();
         IsPaused = false;
         _pauseRequested = false;
         _workDirectory ??= Path.Combine(_workRoot, Guid.NewGuid().ToString("N"));
         IsDownloading = true;
-        DownloadProgress = 0;
+        if (!resuming) DownloadProgress = 0;
         var totalMiB = release.Size / (1024d * 1024d);
-        Status = DesktopText.Get("PortableUpdateDownloading", release.Version, 0d, totalMiB);
+        Status = DesktopText.Get("PortableUpdateDownloading", release.Version, DownloadProgress / 100 * totalMiB, totalMiB);
         Notify();
         try
         {
@@ -294,27 +295,74 @@ public sealed class PortableUpdateCoordinator : IDisposable
                 JsonSerializer.Serialize(checkpoint), _operation!.Token);
             var zip = Path.Combine(_workDirectory, "update.zip");
             var downloadToken = _operation!.Token;
+            var lastReceived = Stopwatch.GetTimestamp();
+            var retryAttempt = 0;
+            var waiting = false;
+            var reportedPercent = DownloadProgress;
+            using var feedbackCancellation = new CancellationTokenSource();
             var progress = new Progress<double>(value =>
             {
                 if (!IsDownloading || _operation?.Token != downloadToken) return;
                 var percent = Math.Clamp(value * 100, 0, 100);
-                if (percent - DownloadProgress < 1 && percent < 100) return;
+                lastReceived = Stopwatch.GetTimestamp();
                 DownloadProgress = percent;
+                var wasWaiting = waiting;
+                waiting = false;
+                var wasRetrying = retryAttempt > 0;
+                retryAttempt = 0;
+                if (!wasWaiting && !wasRetrying && percent - reportedPercent < 1 && percent < 100) return;
+                reportedPercent = percent;
                 Status = DesktopText.Get("PortableUpdateDownloading", release.Version, percent / 100 * totalMiB, totalMiB);
                 Notify();
             });
-            await _client.DownloadAsync(release, zip, progress, downloadToken, preservePartialOnCancellation: true);
+            var retries = new Progress<int>(attempt =>
+            {
+                if (!IsDownloading || _operation?.Token != downloadToken) return;
+                retryAttempt = attempt;
+                Status = DesktopText.Get("PortableUpdateRetrying", attempt, DownloadProgress / 100 * totalMiB, totalMiB);
+                Notify();
+            });
+            async Task ShowWaitingAsync()
+            {
+                try
+                {
+                    while (true)
+                    {
+                        await Task.Delay(1000, feedbackCancellation.Token);
+                        if (!IsDownloading || _operation?.Token != downloadToken) return;
+                        var seconds = (int)Stopwatch.GetElapsedTime(lastReceived).TotalSeconds;
+                        if (seconds < 5 || retryAttempt > 0) continue;
+                        waiting = true;
+                        Status = DesktopText.Get("PortableUpdateWaiting", seconds, DownloadProgress / 100 * totalMiB, totalMiB);
+                        Notify();
+                    }
+                }
+                catch (OperationCanceledException) when (feedbackCancellation.IsCancellationRequested) { }
+            }
+            var feedback = ShowWaitingAsync();
+            try
+            {
+                await _client.DownloadAsync(release, zip, progress, downloadToken,
+                    preservePartialOnCancellation: true, retryProgress: retries);
+            }
+            finally
+            {
+                feedbackCancellation.Cancel();
+                await feedback;
+            }
             IsDownloading = false;
             Status = DesktopText.Get("PortableUpdateVerifying");
             Notify();
             _staged = await PortableArchiveStager.ExtractAsync(zip, Path.Combine(_workDirectory, "stage"), release, _operation.Token);
+            Status = DesktopText.Get("PortableUpdatePreparing");
+            Notify();
             await PortableUpdateStageStore.SaveAsync(_workDirectory, _installDirectory, _dataDirectory, Architecture(), release, _staged, _operation.Token);
             Status = DesktopText.Get("PortableUpdateReady", release.Version);
         }
         catch (OperationCanceledException) when (_pauseRequested)
         {
             IsPaused = true;
-            Status = DesktopText.Get("PortableUpdatePaused");
+            Status = DesktopText.Get("PortableUpdatePaused", DownloadProgress / 100 * release.Size / (1024d * 1024d), release.Size / (1024d * 1024d));
         }
         catch (HttpRequestException error)
         {
@@ -600,8 +648,9 @@ public sealed class PortableUpdateCoordinator : IDisposable
                 PortableUpdatePaths.EnsureNoReparsePoints(partial);
                 if (!File.Exists(partial) || new FileInfo(partial).Length > release.Size) continue;
                 _workDirectory = directory;
+                DownloadProgress = 100d * new FileInfo(partial).Length / release.Size;
                 IsPaused = true;
-                Status = DesktopText.Get("PortableUpdatePaused");
+                Status = DesktopText.Get("PortableUpdatePaused", DownloadProgress / 100 * release.Size / (1024d * 1024d), release.Size / (1024d * 1024d));
                 return;
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidDataException) { }

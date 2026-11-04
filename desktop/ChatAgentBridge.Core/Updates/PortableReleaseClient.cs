@@ -106,7 +106,7 @@ public sealed class PortableReleaseClient : IDisposable
     }
 
     public async Task DownloadAsync(PortableRelease candidate, string destinationZipPath, IProgress<double>? progress,
-        CancellationToken cancellationToken, bool preservePartialOnCancellation = false)
+        CancellationToken cancellationToken, bool preservePartialOnCancellation = false, IProgress<int>? retryProgress = null)
     {
         for (var attempt = 0; ; attempt++)
         {
@@ -119,6 +119,7 @@ public sealed class PortableReleaseClient : IDisposable
             catch (Exception error) when (attempt < 3 && !cancellationToken.IsCancellationRequested &&
                 error is HttpRequestException or OperationCanceledException)
             {
+                retryProgress?.Report(attempt + 1);
                 await Task.Delay(TimeSpan.FromSeconds(2 * (attempt + 1)), cancellationToken).ConfigureAwait(false);
             }
         }

@@ -243,6 +243,8 @@ public sealed class PortableReleaseClientTests
     public async Task RetriesTransientDownloadFailure()
     {
         var attempts = 0;
+        var reportedRetry = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var retries = new Progress<int>(attempt => reportedRetry.TrySetResult(attempt));
         var handler = new StubHandler(_ => ++attempts == 1
             ? new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
             : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Payload) });
@@ -250,8 +252,9 @@ public sealed class PortableReleaseClientTests
         var path = TempPath();
         try
         {
-            await client.DownloadAsync(Candidate(Digest[7..]), path, null, default);
+            await client.DownloadAsync(Candidate(Digest[7..]), path, null, default, retryProgress: retries);
             Assert.Equal(2, attempts);
+            Assert.Equal(1, await reportedRetry.Task.WaitAsync(TimeSpan.FromSeconds(5)));
             Assert.Equal(Payload, await File.ReadAllBytesAsync(path));
         }
         finally { DeleteFile(path); }
