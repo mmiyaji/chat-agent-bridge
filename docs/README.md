@@ -24,6 +24,7 @@
 ## 配布
 
 - [ポータブル版のリリース手順](../RELEASE.md) — 公開手順の正本
+- [紹介サイトの公開手順](site-release.ja.md) — `site/` の更新と Cloudflare Pages への公開
 - [Microsoft Store公開の準備・パッケージ名の方針](store-preparation.ja.md)
 - [Store初回申請の下書きと未完了項目](store-submission-draft.ja.md)
 - [公開済みバージョンと変更履歴](https://github.com/mmiyaji/chat-agent-bridge/releases)
