@@ -274,7 +274,8 @@ public sealed class PortableUpdateCoordinator : IDisposable
         _workDirectory = Path.Combine(_workRoot, Guid.NewGuid().ToString("N"));
         IsDownloading = true;
         DownloadProgress = 0;
-        Status = DesktopText.Get("PortableUpdateDownloading", release.Version);
+        var totalMiB = release.Size / (1024d * 1024d);
+        Status = DesktopText.Get("PortableUpdateDownloading", release.Version, 0d, totalMiB);
         Notify();
         try
         {
@@ -284,14 +285,17 @@ public sealed class PortableUpdateCoordinator : IDisposable
             Directory.CreateDirectory(_workDirectory);
             using var workLease = PortableUpdateCacheCleanup.AcquireWorkLease(_workDirectory);
             var zip = Path.Combine(_workDirectory, "update.zip");
+            var downloadToken = _operation!.Token;
             var progress = new Progress<double>(value =>
             {
+                if (!IsDownloading || _operation?.Token != downloadToken) return;
                 var percent = Math.Clamp(value * 100, 0, 100);
                 if (percent - DownloadProgress < 1 && percent < 100) return;
                 DownloadProgress = percent;
+                Status = DesktopText.Get("PortableUpdateDownloading", release.Version, percent / 100 * totalMiB, totalMiB);
                 Notify();
             });
-            await _client.DownloadAsync(release, zip, progress, _operation!.Token);
+            await _client.DownloadAsync(release, zip, progress, downloadToken);
             IsDownloading = false;
             Status = DesktopText.Get("PortableUpdateVerifying");
             Notify();

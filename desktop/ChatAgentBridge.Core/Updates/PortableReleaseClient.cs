@@ -118,7 +118,8 @@ public sealed class PortableReleaseClient : IDisposable
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromMinutes(15));
+            var idleTimeout = TimeSpan.FromMinutes(2);
+            timeout.CancelAfter(idleTimeout);
             Uri uri = candidate.DownloadUri;
             HttpResponseMessage? response = null;
             for (var redirects = 0; ; redirects++)
@@ -147,6 +148,7 @@ public sealed class PortableReleaseClient : IDisposable
                     {
                         var read = await input.ReadAsync(buffer.AsMemory(0, buffer.Length), timeout.Token).ConfigureAwait(false);
                         if (read == 0) break;
+                        timeout.CancelAfter(idleTimeout);
                         total += read;
                         if (total > candidate.Size || total > MaxAssetBytes) throw new InvalidDataException("Downloaded asset exceeds its declared size.");
                         hash.AppendData(buffer, 0, read);
@@ -158,6 +160,7 @@ public sealed class PortableReleaseClient : IDisposable
                 await output.FlushAsync(timeout.Token).ConfigureAwait(false);
                 if (total != candidate.Size || !CryptographicOperations.FixedTimeEquals(hash.GetHashAndReset(), Convert.FromHexString(expected))) throw new InvalidDataException("Downloaded asset size or SHA-256 does not match release metadata.");
             }
+            timeout.Token.ThrowIfCancellationRequested();
             File.Move(partial, destination, overwrite: true);
             progress?.Report(1);
         }

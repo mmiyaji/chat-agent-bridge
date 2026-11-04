@@ -695,7 +695,7 @@
   <data name="PortableUpdateChecking" xml:space="preserve"><value>ポータブル版の更新を確認しています…</value></data>
   <data name="PortableUpdateCurrent" xml:space="preserve"><value>対応する新しいポータブル版は見つかりませんでした。</value></data>
   <data name="PortableUpdateAvailable" xml:space="preserve"><value>ポータブル版 {0} が利用できます。</value></data>
-  <data name="PortableUpdateDownloading" xml:space="preserve"><value>ポータブル版 {0} をダウンロードしています…</value></data>
+  <data name="PortableUpdateDownloading" xml:space="preserve"><value>ポータブル版 {0} をダウンロードしています… {1:N1} / {2:N1} MiB</value></data>
   <data name="PortableUpdateReady" xml:space="preserve"><value>バージョン {0} のダウンロードが完了しました。適用できます。</value></data>
   <data name="PortableUpdateFailed" xml:space="preserve"><value>ポータブル版を更新できませんでした: {0}</value></data>
   <data name="PortableUpdateBusyWork" xml:space="preserve"><value>更新を適用する前に、実行中の作業を完了してください。</value></data>

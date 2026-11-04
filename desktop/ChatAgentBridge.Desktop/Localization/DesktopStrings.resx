@@ -695,7 +695,7 @@
   <data name="PortableUpdateChecking" xml:space="preserve"><value>Checking for portable updates…</value></data>
   <data name="PortableUpdateCurrent" xml:space="preserve"><value>No newer compatible portable release is available.</value></data>
   <data name="PortableUpdateAvailable" xml:space="preserve"><value>Portable version {0} is available.</value></data>
-  <data name="PortableUpdateDownloading" xml:space="preserve"><value>Downloading portable version {0}…</value></data>
+  <data name="PortableUpdateDownloading" xml:space="preserve"><value>Downloading portable version {0}… {1:N1} / {2:N1} MiB</value></data>
   <data name="PortableUpdateReady" xml:space="preserve"><value>Version {0} is downloaded and ready to apply.</value></data>
   <data name="PortableUpdateFailed" xml:space="preserve"><value>Could not update the portable app: {0}</value></data>
   <data name="PortableUpdateBusyWork" xml:space="preserve"><value>Finish the active work before applying this update.</value></data>
