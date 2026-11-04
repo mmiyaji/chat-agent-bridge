@@ -101,7 +101,7 @@ public sealed class CliProbeService
     }
 
     /// <summary>Validates and canonicalizes the configured workspace without executing a CLI or changing trust settings.</summary>
-    public static string ValidateWorkspace(BridgeSettings settings, bool requireExplicitTrust = false)
+    public static string ValidateWorkspace(BridgeSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
         var cwd = settings.WorkspaceRoot;
@@ -111,8 +111,7 @@ public sealed class CliProbeService
         try { workspace = Path.GetFullPath(cwd); }
         catch (Exception ex) when (IsInvalidWorkspacePathException(ex)) { throw new InvalidOperationException(CoreText.Get("WorkspacePathInvalid", cwd)); }
         if (!Directory.Exists(workspace)) throw new InvalidOperationException(CoreText.Get("WorkspaceFolderNotFound", workspace));
-        if ((requireExplicitTrust && string.IsNullOrWhiteSpace(settings.TrustedWorkspaceRoots)) ||
-            !ExecutionPolicy.IsWorkspaceTrusted(settings, workspace)) throw DescribeUntrustedWorkspace(workspace);
+        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, workspace)) throw DescribeUntrustedWorkspace(workspace);
         return workspace;
     }
 

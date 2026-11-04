@@ -545,7 +545,9 @@ public partial class MainPageViewModel : ObservableObject
             };
             snapshot = snapshot with
             {
-                TrustedWorkspaceRoots = await Task.Run(() => ExecutionPolicy.NormalizeTrustedRoots(draft.TrustedWorkspaceRoots))
+                TrustedWorkspaceRoots = await Task.Run(() => _isAgentProfileEditor
+                    ? ExecutionPolicy.NormalizeTrustedRoots(draft.TrustedWorkspaceRoots)
+                    : ExecutionPolicy.IncludeConfiguredWorkspace(draft.TrustedWorkspaceRoots, draft.WorkspaceRoot))
             };
             if (!_isAgentProfileEditor)
             {

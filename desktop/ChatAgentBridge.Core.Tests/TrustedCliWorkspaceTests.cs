@@ -99,14 +99,13 @@ public sealed class TrustedCliWorkspaceTests : IDisposable
     }
 
     [Fact]
-    public void ManualRunRequiresExplicitTrustAndAcceptsTrustedParent()
+    public void ManualRunTrustsDefaultWorkspaceAndAcceptsTrustedParent()
     {
         var workspace = Directory.CreateDirectory(Path.Combine(_root, "Documents", "work")).FullName;
         var settings = new BridgeSettings { WorkspaceRoot = workspace };
         Assert.Equal(workspace, CliProbeService.ValidateWorkspace(settings)); // legacy CLI probe contract
-        Assert.Throws<CliWorkspaceTrustException>(() => CliProbeService.ValidateWorkspace(settings, requireExplicitTrust: true));
-        Assert.Equal(workspace, CliProbeService.ValidateWorkspace(settings with { TrustedWorkspaceRoots = Path.GetDirectoryName(workspace)! }, requireExplicitTrust: true));
-        Assert.Throws<CliWorkspaceTrustException>(() => CliProbeService.ValidateWorkspace(settings with { TrustedWorkspaceRoots = Path.Combine(_root, "other") }, requireExplicitTrust: true));
+        Assert.Equal(workspace, CliProbeService.ValidateWorkspace(settings with { TrustedWorkspaceRoots = Path.GetDirectoryName(workspace)! }));
+        Assert.Throws<CliWorkspaceTrustException>(() => CliProbeService.ValidateWorkspace(settings with { TrustedWorkspaceRoots = Path.Combine(_root, "other") }));
     }
 
     public void Dispose() => TestDirectories.DeleteWithRetry(_root);

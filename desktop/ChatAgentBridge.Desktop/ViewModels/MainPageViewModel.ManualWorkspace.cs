@@ -58,7 +58,7 @@ public partial class MainPageViewModel
         Exception? validationError = null;
         try
         {
-            await Task.Run(() => CliProbeService.ValidateWorkspace(settings, requireExplicitTrust: true));
+            await Task.Run(() => CliProbeService.ValidateWorkspace(settings));
         }
         catch (Exception error) when (error is InvalidOperationException or ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
         {

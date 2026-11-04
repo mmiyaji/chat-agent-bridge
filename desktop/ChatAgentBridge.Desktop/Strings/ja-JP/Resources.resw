@@ -202,7 +202,7 @@
     <value>信頼する作業フォルダー</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock026.Text" xml:space="preserve">
-    <value>AIの作業先として許可する範囲です。登録したフォルダーとその下位フォルダーを指定できます。手動実行の前に、作業フォルダー自身か、その親フォルダーを登録してください。ドライブ全体など広すぎる範囲は避けてください。</value>
+    <value>PCで指定した作業フォルダーは、保存時に信頼するフォルダーへ自動登録します。登録した親フォルダーの配下へも作業先を切り替えられます。チャットから指定した範囲外の場所は自動登録されず、切り替えは承認設定に従います。ドライブ全体など広すぎる範囲は避けてください。</value>
   </data>
   <data name="TrustedWorkspaceRoots.Header" xml:space="preserve">
     <value>信頼するフォルダー（絶対パス、1行1つ）</value>

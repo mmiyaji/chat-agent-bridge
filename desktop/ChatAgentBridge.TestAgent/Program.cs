@@ -663,7 +663,8 @@ async Task CompleteAsync(string status, string text)
 // Isolated runner contract probe: never reads credentials or writes outside its working folder.
 static void CaptureLaunchContract(string prompt, string[] arguments)
 {
-    if (prompt != "fixture-launch-contract") return;
+    // Chat runs wrap the original prompt in CAB capability guidance.
+    if (prompt != "fixture-launch-contract" && !prompt.Contains("\nfixture-launch-contract\n", StringComparison.Ordinal)) return;
     File.WriteAllText(Path.Combine(Environment.CurrentDirectory, "launch-contract.json"), JsonSerializer.Serialize(new
     {
         workspace = Environment.CurrentDirectory,

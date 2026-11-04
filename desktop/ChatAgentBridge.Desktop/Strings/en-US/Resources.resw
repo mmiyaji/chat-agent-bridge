@@ -202,7 +202,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Trusted working folders</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock026.Text" xml:space="preserve">
-    <value>The permitted scope for AI working folders. A registered folder and its subfolders can be selected. Before a manual run, register the working folder itself or a parent folder. Avoid broad scopes such as an entire drive.</value>
+    <value>A working folder selected on this PC is added to trusted folders when you save. You can also switch to subfolders of a trusted parent. Locations outside that scope requested from chat are not added automatically, and switching still follows your approval settings. Avoid broad scopes such as an entire drive.</value>
   </data>
   <data name="TrustedWorkspaceRoots.Header" xml:space="preserve">
     <value>Trusted folders (absolute paths, one per line)</value>

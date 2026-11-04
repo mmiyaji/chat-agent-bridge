@@ -110,7 +110,7 @@ See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるc
 
 ## Approvals, access and sharing
 
-Manual runs use the working folder selected in Agent settings, regardless of where CAB is installed. Register that folder or a parent under trusted folders before running. Git is not required. Trusting a working folder does not grant full access; CLI tool permissions and sandbox settings still apply.
+Manual runs use the working folder selected in Agent settings, regardless of where CAB is installed. A folder selected and saved on the PC is trusted by default. Register other parent folders to permit switching conversations to their subfolders. Chat requests cannot automatically add locations outside that scope, and switching follows your approval settings. Git is not required; trusting a folder does not grant full access.
 
 **Chat settings** contains approval and sharing rules common to all chat services, along with each service's connection details and allowed users.
 

@@ -21,6 +21,22 @@ public static class ExecutionPolicy
         return string.Join(Environment.NewLine, normalized);
     }
 
+    /// <summary>Includes a workspace selected on the PC before reviewing and saving settings.
+    /// Never use this to authorize a workspace received from chat.</summary>
+    public static string IncludeConfiguredWorkspace(string? trustedRoots, string? workspace)
+    {
+        var normalized = NormalizeTrustedRoots(trustedRoots);
+        if (string.IsNullOrWhiteSpace(workspace) || !Path.IsPathFullyQualified(workspace) || !Directory.Exists(workspace))
+            return normalized;
+        var fullWorkspace = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspace));
+        // Do not turn an unsafe directory link into a trusted root.
+        if (!IsWorkspaceTrusted(new BridgeSettings { TrustedWorkspaceRoots = fullWorkspace }, fullWorkspace))
+            return normalized;
+        if (IsWorkspaceTrusted(new BridgeSettings { TrustedWorkspaceRoots = normalized }, fullWorkspace))
+            return normalized;
+        return NormalizeTrustedRoots(string.IsNullOrEmpty(normalized) ? fullWorkspace : normalized + Environment.NewLine + fullWorkspace);
+    }
+
     public static bool IsWorkspaceTrusted(BridgeSettings settings, string path)
     {
         ArgumentNullException.ThrowIfNull(settings);
