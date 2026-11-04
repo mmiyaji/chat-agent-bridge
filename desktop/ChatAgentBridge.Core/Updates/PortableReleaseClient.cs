@@ -118,7 +118,7 @@ public sealed class PortableReleaseClient : IDisposable
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            var idleTimeout = TimeSpan.FromMinutes(2);
+            var idleTimeout = TimeSpan.FromMinutes(5);
             timeout.CancelAfter(idleTimeout);
             Uri uri = candidate.DownloadUri;
             HttpResponseMessage? response = null;
