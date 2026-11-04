@@ -725,4 +725,5 @@ AIの操作権限: {8}</value>
   <data name="QwenProviderHelp" xml:space="preserve"><value>Qwen Codeは同じチャットスレッドの会話を継続します。モデル名を入力し、認証・推論・操作権限はCLI側で設定してください。モデル候補の取得は未対応です。</value></data>
   <data name="KimiProviderHelp" xml:space="preserve"><value>Kimi Code CLIは同じチャットスレッドの会話を継続します。モデル名またはCLIで設定した別名を入力できます。モデル候補の取得は未対応です。</value></data>
   <data name="KimiPermissionHelp" xml:space="preserve"><value>「CLIの既定値を使う」では、承認が必要なツール操作をCABで確認します。「フルアクセス」ではこの確認を省略し、Kimi側の対応が必要です。これらの権限設定は、OSレベルのサンドボックスを提供しません。</value></data>
+  <data name="CodexWorkspaceRejected" xml:space="preserve"><value>Codexが作業フォルダー「{0}」を拒否しました。Git管理外、またはCodex側で信頼されていない可能性があります。「エージェント設定」→「共通設定」で、作業先のGitプロジェクトフォルダーを確認してください。アプリの信頼フォルダー設定とは別のチェックです。</value></data>
 </root>

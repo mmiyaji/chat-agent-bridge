@@ -762,7 +762,14 @@ public partial class MainPageViewModel : ObservableObject
                 if (result.Success)
                     SetStatus(ViewModelText.Get("ExecutionCompleted"), ViewModelText.Get("ExitCode", result.ExitCode), "Success");
                 else
-                    SetStatus(ViewModelText.Get("ExecutionFailed"), ViewModelText.Get("ExitCode", result.ExitCode), "Error");
+                {
+                    var codexWorkspaceRejected = settingsSnapshot.AgentProvider == AgentProfile.Codex &&
+                        ((result.Error?.Contains("Not inside a trusted directory", StringComparison.OrdinalIgnoreCase) ?? false) ||
+                         (result.Output?.Contains("Not inside a trusted directory", StringComparison.OrdinalIgnoreCase) ?? false));
+                    SetStatus(ViewModelText.Get("ExecutionFailed"),
+                        codexWorkspaceRejected ? ViewModelText.Get("CodexWorkspaceRejected", settingsSnapshot.WorkspaceRoot)
+                            : ViewModelText.Get("ExitCode", result.ExitCode), "Error");
+                }
             }
             catch (OperationCanceledException)
             {
