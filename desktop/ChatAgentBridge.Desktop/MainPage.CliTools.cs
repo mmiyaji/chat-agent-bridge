@@ -49,15 +49,19 @@ public sealed partial class MainPage
         bool isCatalogLoading, bool isOnboardingBusy, bool isInboxExecuting, bool isSaving) =>
         !isLoading && !isRunning && !isCheckingCli && !isCatalogLoading && !isOnboardingBusy && !isInboxExecuting && !isSaving;
 
-    private void ReloadProcessEnvironment()
+    private async Task ReloadProcessEnvironment()
     {
         if (!CanRefreshProcessEnvironment()) return;
+        ViewModel.IsLoading = true;
         try
         {
-            _environmentRefresher.Refresh();
-            ChatAgentBridge.Core.CodexExecutableResolver.ClearCache();
-            ChatAgentBridge.Core.NodeCliPackageResolver.ClearCache();
-            ChatAgentBridge.Core.AppServer.CodexAppServerRunner.ClearSharedIdleProcesses();
+            await Task.Run(() =>
+            {
+                _environmentRefresher.Refresh();
+                ChatAgentBridge.Core.CodexExecutableResolver.ClearCache();
+                ChatAgentBridge.Core.NodeCliPackageResolver.ClearCache();
+                ChatAgentBridge.Core.AppServer.CodexAppServerRunner.ClearSharedIdleProcesses();
+            });
             ViewModel.OnProcessEnvironmentReloaded();
             ViewModel.StatusTitle = ViewModelText.Get("EnvironmentReloadedTitle");
             ViewModel.StatusMessage = ViewModelText.Get("EnvironmentReloadedMessage");
@@ -71,7 +75,8 @@ public sealed partial class MainPage
             ViewModel.StatusSeverity = "Error";
             ViewModel.IsStatusOpen = true;
         }
+        finally { ViewModel.IsLoading = false; }
     }
 
-    private void ReloadProcessEnvironment_Click(object sender, RoutedEventArgs e) => ReloadProcessEnvironment();
+    private async void ReloadProcessEnvironment_Click(object sender, RoutedEventArgs e) => await ReloadProcessEnvironment();
 }

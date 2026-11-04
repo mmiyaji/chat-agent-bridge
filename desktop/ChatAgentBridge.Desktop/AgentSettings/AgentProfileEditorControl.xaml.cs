@@ -13,7 +13,7 @@ namespace ChatAgentBridge_Desktop.AgentSettings;
 public sealed partial class AgentProfileEditorControl : UserControl, INotifyPropertyChanged
 {
     private MainPageViewModel? _shared;
-    private Action? _reloadProcessEnvironment;
+    private Func<Task>? _reloadProcessEnvironment;
     private DispatcherQueueTimer? _saveTimer;
     private Task<bool>? _flushTask;
     private bool _isBusy;
@@ -46,9 +46,9 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
     // The model list keeps its place while the check refreshes it; it is only disabled until choices arrive.
     public static bool HasModelChoices(int count, bool loading) => count > 0 && !loading;
     public string CurrentProvider => _currentProvider;
-    public bool CanChangeSelection => _isConfigured && !_isDetectingExecutable && !_isBusy && !_isShuttingDown && !Editor.IsCheckingCli &&
+    public bool CanChangeSelection => _isConfigured && _shared?.IsLoading != true && !_isDetectingExecutable && !_isBusy && !_isShuttingDown && !Editor.IsCheckingCli &&
                                       !Editor.IsLoading && !Editor.ModelCatalog.IsLoading;
-    public bool CanRunCliCheck => _isConfigured && !_isDetectingExecutable && !_isShuttingDown && !_isPickingExecutable && !_isActivatingProfile &&
+    public bool CanRunCliCheck => _isConfigured && _shared?.IsLoading != true && !_isDetectingExecutable && !_isShuttingDown && !_isPickingExecutable && !_isActivatingProfile &&
                                   !_sharedContextMismatch && !Editor.IsCheckingCli && (!Editor.IsLoading || _isFlushing) && !Editor.IsRunning &&
                                   !Editor.ModelCatalog.IsLoading && (!_isBusy || _isFlushing);
     public bool CanDetectCliExecutable => CanChangeSelection && !Editor.IsCustomProvider;
@@ -95,7 +95,7 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
     }
 
     public void Configure(MainPageViewModel shared, Func<BridgeSettings, BridgeSettings, Task<bool>> confirm,
-        Action reloadEnvironment)
+        Func<Task> reloadEnvironment)
     {
         ArgumentNullException.ThrowIfNull(shared);
         if (_shared is not null && !ReferenceEquals(_shared, shared))
@@ -379,17 +379,16 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
         if (!CanDetectCliExecutable) return;
         if (_flushTask is { IsCompleted: false } pendingFlush && !await pendingFlush) return;
         if (!CanDetectCliExecutable) return;
-        // Reuse the existing guarded refresh, including discovery-cache invalidation.
-        _reloadProcessEnvironment?.Invoke();
-        if (_shared?.StatusTitle == ViewModelText.Get("EnvironmentReloadedTitle"))
-            _shared.IsStatusOpen = false;
-        Editor.OnProcessEnvironmentReloaded();
         var provider = Editor.AgentProvider;
         _isDetectingExecutable = true;
         SetBusy(true);
         ExecutableDetectionNotice.IsOpen = false;
         try
         {
+            if (_reloadProcessEnvironment is { } reload) await reload();
+            if (_shared?.StatusTitle == ViewModelText.Get("EnvironmentReloadedTitle"))
+                _shared.IsStatusOpen = false;
+            Editor.OnProcessEnvironmentReloaded();
             var detected = await Task.Run(() => CliExecutableDiscovery.Find(provider));
             if (_isShuttingDown || Editor.AgentProvider != provider) return;
             if (detected is null)
@@ -472,12 +471,16 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
     }
 
     private void OpenCommonSettings_Click(object sender, RoutedEventArgs e) => OpenCommonSettings?.Invoke();
-    private void ReloadProcessEnvironment_Click(object sender, RoutedEventArgs e)
+    private async void ReloadProcessEnvironment_Click(object sender, RoutedEventArgs e)
     {
         if (!CanChangeSelection) return;
-        _reloadProcessEnvironment?.Invoke();
-        Editor.OnProcessEnvironmentReloaded();
-        NotifyStateChanged();
+        SetBusy(true);
+        try
+        {
+            if (_reloadProcessEnvironment is { } reload) await reload();
+            Editor.OnProcessEnvironmentReloaded();
+        }
+        finally { SetBusy(false); NotifyStateChanged(); }
     }
     private async void RetryDraftSave_Click(object sender, RoutedEventArgs e) => await TryFlushAsync();
 
