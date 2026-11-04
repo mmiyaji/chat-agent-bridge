@@ -200,7 +200,7 @@ The app uses Japanese when the Windows language preference is Japanese and Engli
 
 ![Current status, startup, auto-connect and system tray settings](docs/assets/screenshots/general-en.png)
 
-Portable builds can check for and apply updates from **About**. The `Data` folder is retained during updates. Completed update downloads and temporary binary payloads are cleaned up automatically; update logs are retained. Information → Update settings shows storage usage. Manual cleanup is under Information → Advanced settings → Maintenance. For manual updates, close the app and replace the files while keeping `Data`.
+Portable builds can check for and apply updates from **About**. Downloads show the received and total size and can be canceled. A download times out after five minutes without receiving data. The `Data` folder is retained during updates. Completed update downloads and temporary binary payloads are cleaned up automatically; update logs are retained. Information → Update settings shows storage usage. Manual cleanup is under Information → Advanced settings → Maintenance. For manual updates, close the app and replace the files while keeping `Data`.
 
 Screenshots show a development build using dedicated demo settings and sample usage records. They contain no real conversations or credentials. Released versions may differ.
 

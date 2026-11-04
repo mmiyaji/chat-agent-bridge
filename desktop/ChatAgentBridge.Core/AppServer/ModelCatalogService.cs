@@ -39,8 +39,10 @@ public sealed class ModelCatalogService
         if (_timeout <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timeout));
     }
 
-    public async Task<IReadOnlyList<ModelOption>> GetModelsAsync(BridgeSettings settings,
-        CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<ModelOption>> GetModelsAsync(BridgeSettings settings, CancellationToken cancellationToken = default)
+        => Task.Run(() => GetModelsCoreAsync(settings, cancellationToken), cancellationToken);
+
+    private async Task<IReadOnlyList<ModelOption>> GetModelsCoreAsync(BridgeSettings settings, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(settings);
         cancellationToken.ThrowIfCancellationRequested();

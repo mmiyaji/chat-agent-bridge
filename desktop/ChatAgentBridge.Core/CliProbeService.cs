@@ -21,7 +21,10 @@ public sealed class CliProbeService
         _timeout = requested > TimeSpan.FromSeconds(10) ? TimeSpan.FromSeconds(10) : requested;
     }
 
-    public async Task<CliProbeResult> CheckAsync(BridgeSettings settings, CancellationToken cancellationToken = default)
+    public Task<CliProbeResult> CheckAsync(BridgeSettings settings, CancellationToken cancellationToken = default)
+        => Task.Run(() => CheckCoreAsync(settings, cancellationToken), cancellationToken);
+
+    private async Task<CliProbeResult> CheckCoreAsync(BridgeSettings settings, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(settings);
         var launch = ResolveLaunch(settings);

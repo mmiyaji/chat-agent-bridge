@@ -13,9 +13,9 @@ public sealed partial class OnboardingWizard : UserControl
 {
     public MainPageViewModel ViewModel { get; }
     public ChatInboxViewModel Inbox { get; }
-    private readonly Action _reloadProcessEnvironment;
+    private readonly Func<Task> _reloadProcessEnvironment;
 
-    public OnboardingWizard(MainPageViewModel viewModel, ChatInboxViewModel inbox, Action reloadProcessEnvironment)
+    public OnboardingWizard(MainPageViewModel viewModel, ChatInboxViewModel inbox, Func<Task> reloadProcessEnvironment)
     {
         ViewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         Inbox = inbox ?? throw new ArgumentNullException(nameof(inbox));
@@ -170,7 +170,7 @@ public sealed partial class OnboardingWizard : UserControl
         bool isCatalogLoading, bool isOnboardingBusy, bool isInboxExecuting, bool isSaving) =>
         MainPage.EnvironmentReloadAllowed(isLoading, isRunning, isCheckingCli, isCatalogLoading, isOnboardingBusy, isInboxExecuting, isSaving);
 
-    private void ReloadProcessEnvironment_Click(object sender, RoutedEventArgs e) => _reloadProcessEnvironment();
+    private async void ReloadProcessEnvironment_Click(object sender, RoutedEventArgs e) => await _reloadProcessEnvironment();
 
     private async void ReviewCliTrust_Click(object sender, RoutedEventArgs e) =>
         await CliTrustDialog.ShowAsync(ViewModel, XamlRoot, recheck: !ViewModel.IsWizardAgentStep);
