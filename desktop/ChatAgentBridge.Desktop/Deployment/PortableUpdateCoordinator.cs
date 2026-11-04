@@ -46,6 +46,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
     public bool IsPaused { get; private set; }
     private bool _pauseRequested;
     public double DownloadProgress { get; private set; }
+    public string DownloadTransferDetails { get; private set; } = "";
     public string Status { get; private set; }
     public string? AvailableVersion => _available?.Version;
     public Uri? AvailableReleasePage => _available?.ReleasePage;
@@ -279,6 +280,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
         _pauseRequested = false;
         _workDirectory ??= Path.Combine(_workRoot, Guid.NewGuid().ToString("N"));
         IsDownloading = true;
+        DownloadTransferDetails = DesktopText.Get("PortableUpdateTransferCalculating");
         if (!resuming) DownloadProgress = 0;
         var totalMiB = release.Size / (1024d * 1024d);
         Status = DesktopText.Get("PortableUpdateDownloading", release.Version, DownloadProgress / 100 * totalMiB, totalMiB);
@@ -299,12 +301,21 @@ public sealed class PortableUpdateCoordinator : IDisposable
             var retryAttempt = 0;
             var waiting = false;
             var reportedPercent = DownloadProgress;
+            double? sampledPercent = null;
+            var sampledAt = Stopwatch.GetTimestamp();
+            double smoothedBytesPerSecond = 0;
             using var feedbackCancellation = new CancellationTokenSource();
             var progress = new Progress<double>(value =>
             {
                 if (!IsDownloading || _operation?.Token != downloadToken) return;
                 var percent = Math.Clamp(value * 100, 0, 100);
                 lastReceived = Stopwatch.GetTimestamp();
+                if (sampledPercent is null || percent < DownloadProgress)
+                {
+                    sampledPercent = percent;
+                    sampledAt = Stopwatch.GetTimestamp();
+                    smoothedBytesPerSecond = 0;
+                }
                 DownloadProgress = percent;
                 var wasWaiting = waiting;
                 waiting = false;
@@ -331,6 +342,27 @@ public sealed class PortableUpdateCoordinator : IDisposable
                         await Task.Delay(1000, feedbackCancellation.Token);
                         if (!IsDownloading || _operation?.Token != downloadToken) return;
                         var seconds = (int)Stopwatch.GetElapsedTime(lastReceived).TotalSeconds;
+                        var sampleSeconds = Stopwatch.GetElapsedTime(sampledAt).TotalSeconds;
+                        if (seconds >= 5 || retryAttempt > 0)
+                        {
+                            DownloadTransferDetails = DesktopText.Get("PortableUpdateTransferCalculating");
+                            sampledPercent = DownloadProgress;
+                            sampledAt = Stopwatch.GetTimestamp();
+                            smoothedBytesPerSecond = 0;
+                        }
+                        else if (sampledPercent is { } previousPercent && sampleSeconds >= 2)
+                        {
+                            var bytesPerSecond = Math.Max(0, DownloadProgress - previousPercent) / 100 * release.Size / sampleSeconds;
+                            smoothedBytesPerSecond = smoothedBytesPerSecond == 0 ? bytesPerSecond
+                                : 0.25 * bytesPerSecond + 0.75 * smoothedBytesPerSecond;
+                            sampledPercent = DownloadProgress;
+                            sampledAt = Stopwatch.GetTimestamp();
+                            DownloadTransferDetails = smoothedBytesPerSecond > 0 && DownloadProgress < 100
+                                ? DesktopText.Get("PortableUpdateTransferEstimate", smoothedBytesPerSecond / 1024,
+                                    Math.Max(1, Math.Ceiling((1 - DownloadProgress / 100) * release.Size / smoothedBytesPerSecond / 60)))
+                                : DesktopText.Get("PortableUpdateTransferCalculating");
+                        }
+                        Notify();
                         if (seconds < 5 || retryAttempt > 0) continue;
                         waiting = true;
                         Status = DesktopText.Get("PortableUpdateWaiting", seconds, DownloadProgress / 100 * totalMiB, totalMiB);

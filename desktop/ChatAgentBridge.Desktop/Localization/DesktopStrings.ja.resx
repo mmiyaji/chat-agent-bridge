@@ -982,4 +982,6 @@
   <data name="PortableUpdateWaiting" xml:space="preserve"><value>通信待ち · 最後の受信から {0} 秒 · {1:N1} / {2:N1} MiB</value></data>
   <data name="PortableUpdateRetrying" xml:space="preserve"><value>接続を再試行しています（{0}/3） · {1:N1} / {2:N1} MiB 受信済み</value></data>
   <data name="PortableUpdatePreparing" xml:space="preserve"><value>更新準備中 · 検証済みの更新情報を保存しています…</value></data>
+  <data name="PortableUpdateTransferCalculating" xml:space="preserve"><value>転送速度・残り時間を計算中…</value></data>
+  <data name="PortableUpdateTransferEstimate" xml:space="preserve"><value>{0:N1} KiB/秒 · 残り約 {1:N0} 分</value></data>
 </root>

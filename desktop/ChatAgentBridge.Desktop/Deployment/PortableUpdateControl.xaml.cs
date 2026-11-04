@@ -113,6 +113,8 @@ public sealed partial class PortableUpdateControl : UserControl
         var downloading = updates.IsDownloading;
         DownloadProgressBar.Visibility = downloading ? Visibility.Visible : Visibility.Collapsed;
         DownloadProgressBar.Value = Math.Clamp(updates.DownloadProgress, 0, 100);
+        DownloadTransferDetailsText.Visibility = downloading ? Visibility.Visible : Visibility.Collapsed;
+        DownloadTransferDetailsText.Text = updates.DownloadTransferDetails;
         // Maintenance cleanup completes through the same coordinator event. Refresh
         // the read-only usage only when its section is open and no operation is busy.
         if (UpdatePreferencesExpander.IsExpanded && !updates.IsBusy) _ = RefreshCacheUsageAsync();

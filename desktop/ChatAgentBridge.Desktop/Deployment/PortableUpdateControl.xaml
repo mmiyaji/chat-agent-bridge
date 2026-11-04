@@ -31,6 +31,9 @@
                                                AutomationProperties.LiveSetting="Polite" />
                                     <ProgressBar x:Name="DownloadProgressBar" Minimum="0" Maximum="100" Value="0"
                                                  Visibility="Collapsed" AutomationProperties.AutomationId="PortableUpdateProgress" />
+                                    <TextBlock x:Name="DownloadTransferDetailsText" TextWrapping="Wrap" FontSize="12"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" Visibility="Collapsed"
+                                               AutomationProperties.AutomationId="PortableUpdateTransferDetails" />
                                 </StackPanel>
                             </settings:SettingsCard.Description>
                             <Button x:Name="CheckUpdatesButton" x:Uid="PortableCheckUpdates" AutomationProperties.AutomationId="PortableCheckUpdates"

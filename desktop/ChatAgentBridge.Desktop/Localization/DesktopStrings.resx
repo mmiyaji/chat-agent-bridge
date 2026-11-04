@@ -982,4 +982,6 @@ After: {2}</value></data>
   <data name="PortableUpdateWaiting" xml:space="preserve"><value>Waiting for data · {0} s since last activity · {1:N1} / {2:N1} MiB</value></data>
   <data name="PortableUpdateRetrying" xml:space="preserve"><value>Retrying connection ({0}/3) · {1:N1} / {2:N1} MiB received</value></data>
   <data name="PortableUpdatePreparing" xml:space="preserve"><value>Preparing update · Saving the verified update…</value></data>
+  <data name="PortableUpdateTransferCalculating" xml:space="preserve"><value>Transfer speed and time remaining are being calculated…</value></data>
+  <data name="PortableUpdateTransferEstimate" xml:space="preserve"><value>{0:N1} KiB/s · About {1:N0} min remaining</value></data>
 </root>
