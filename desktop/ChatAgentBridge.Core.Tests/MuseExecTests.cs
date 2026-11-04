@@ -1,3 +1,6 @@
+using System.Runtime.Versioning;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text.Json;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.Localization;
@@ -126,7 +129,7 @@ public sealed class MuseExecTests : IDisposable
         Assert.True(parser.AddLine(Event("session", Id, "approval_wait.effect.started", new { kind = "approval_wait", command = "private tool payload" })));
         Assert.True(parser.ApprovalPending);
         Assert.False(parser.Complete(processSucceeded: true).HasResult);
-        Assert.Contains("承認", parser.Complete(processSucceeded: true).FailureGuidance);
+        Assert.Equal(CoreText.Get("MuseApprovalUnavailable"), parser.Complete(processSucceeded: true).FailureGuidance);
 
         var unrelated = new MuseOutputParser(Id);
         Assert.True(unrelated.AddLine(Event("session", Id, "approval_wait.effect.completed", new { kind = "approval_wait", state = "approved" })));
@@ -371,13 +374,27 @@ public sealed class MuseExecTests : IDisposable
     {
         if (!OperatingSystem.IsWindows()) return;
         var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CAB-MusePrompts");
-        Directory.CreateDirectory(root);
+        if (!Directory.Exists(root))
+        {
+            using var identity = WindowsIdentity.GetCurrent();
+            var sid = identity.User!;
+            var security = new DirectorySecurity();
+            security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+            security.SetOwner(sid);
+            security.AddAccessRule(new FileSystemAccessRule(sid, FileSystemRights.FullControl,
+                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                PropagationFlags.None, AccessControlType.Allow));
+            new DirectoryInfo(root).Create(security);
+        }
+        Assert.True(IsOwnedByCurrentUser(root), "The prompt recovery fixture requires a current-user-owned private root.");
         var orphan = Path.Combine(root, "run-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(orphan);
+        SetCurrentUserAsOwner(orphan);
         File.WriteAllText(Path.Combine(orphan, ".lease"), "");
         File.WriteAllText(Path.Combine(orphan, "prompt.txt"), "stale private prompt");
         var active = Path.Combine(root, "run-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(active);
+        SetCurrentUserAsOwner(active);
         var leasePath = Path.Combine(active, ".lease");
         File.WriteAllText(Path.Combine(active, "prompt.txt"), "active prompt");
         using var activeLease = new FileStream(leasePath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
@@ -389,6 +406,23 @@ public sealed class MuseExecTests : IDisposable
         Assert.True(File.Exists(Path.Combine(active, "prompt.txt")));
         activeLease.Dispose();
         TestDirectories.DeleteWithRetry(active);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static void SetCurrentUserAsOwner(string path)
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        var security = new DirectoryInfo(path).GetAccessControl();
+        security.SetOwner(identity.User!);
+        new DirectoryInfo(path).SetAccessControl(security);
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static bool IsOwnedByCurrentUser(string path)
+    {
+        using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+        var owner = new DirectoryInfo(path).GetAccessControl().GetOwner(typeof(System.Security.Principal.SecurityIdentifier));
+        return identity.User?.Equals(owner) == true;
     }
 
     private static bool CreateJunction(string link, string target)

@@ -220,7 +220,7 @@ if (structuredFixtureName.StartsWith("kimi", StringComparison.Ordinal) && args i
                 if (promptText.Contains("__CAB_SCENARIO_HANG_AFTER_APPROVAL__", StringComparison.Ordinal))
                 {
                     if (promptText.Contains("__CAB_SCENARIO_PRE_APPROVAL_DELAY__", StringComparison.Ordinal))
-                        await Task.Delay(800);
+                        await Task.Delay(1500);
                     await File.WriteAllTextAsync(Path.Combine(Environment.CurrentDirectory, "kimi-hang.pid"), Environment.ProcessId.ToString());
                     await WriteAsync(new { jsonrpc = "2.0", id = 9101, method = "session/request_permission", @params = new { sessionId = fixtureId,
                         toolCall = new { toolCallId = "tool-hang", title = "Run fixture tool", rawInput = new { command = "rm -rf /tmp/example" } },
@@ -229,7 +229,7 @@ if (structuredFixtureName.StartsWith("kimi", StringComparison.Ordinal) && args i
                     using var permission = JsonDocument.Parse(permissionLine);
                     if (permission.RootElement.GetProperty("result").GetProperty("outcome").GetProperty("outcome").GetString() == "selected" &&
                         promptText.Contains("__CAB_SCENARIO_FINISH_AFTER_APPROVAL_DELAY__", StringComparison.Ordinal))
-                        await Task.Delay(promptText.Contains("__CAB_SCENARIO_PRE_APPROVAL_DELAY__", StringComparison.Ordinal) ? 1400 : 0);
+                        await Task.Delay(promptText.Contains("__CAB_SCENARIO_PRE_APPROVAL_DELAY__", StringComparison.Ordinal) ? 2500 : 0);
                     else if (permission.RootElement.GetProperty("result").GetProperty("outcome").GetProperty("outcome").GetString() == "selected")
                         await Task.Delay(Timeout.InfiniteTimeSpan);
                 }

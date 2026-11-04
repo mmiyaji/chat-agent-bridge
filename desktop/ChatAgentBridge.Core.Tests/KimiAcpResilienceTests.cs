@@ -29,11 +29,11 @@ public sealed class KimiAcpResilienceTests : IDisposable
     {
         if (!OperatingSystem.IsWindows()) return;
         var executable = CopyFixture("kimi");
-        var result = await Run(executable, "__CAB_SCENARIO_HANG_AFTER_APPROVAL____CAB_SCENARIO_FINISH_AFTER_APPROVAL_DELAY__", TimeSpan.FromSeconds(1),
+        var result = await Run(executable, "__CAB_SCENARIO_HANG_AFTER_APPROVAL____CAB_SCENARIO_FINISH_AFTER_APPROVAL_DELAY__", TimeSpan.FromSeconds(3),
             approval: async (request, _) =>
             {
                 Assert.Equal("rm -rf /tmp/example", request.Command);
-                await Task.Delay(TimeSpan.FromMilliseconds(1300));
+                await Task.Delay(TimeSpan.FromMilliseconds(3500));
                 return AppServerDecision.Accept;
             }, fullAccess: false);
         Assert.True(result.Success, result.Error);
@@ -68,10 +68,10 @@ public sealed class KimiAcpResilienceTests : IDisposable
         if (!OperatingSystem.IsWindows()) return;
         var executable = CopyFixture("kimi");
         var approvalHandled = false;
-        var result = await Run(executable, "__CAB_SCENARIO_HANG_AFTER_APPROVAL____CAB_SCENARIO_PRE_APPROVAL_DELAY____CAB_SCENARIO_FINISH_AFTER_APPROVAL_DELAY__", TimeSpan.FromSeconds(2),
+        var result = await Run(executable, "__CAB_SCENARIO_HANG_AFTER_APPROVAL____CAB_SCENARIO_PRE_APPROVAL_DELAY____CAB_SCENARIO_FINISH_AFTER_APPROVAL_DELAY__", TimeSpan.FromSeconds(3),
             approval: async (_, _) =>
             {
-                await Task.Delay(1000);
+                await Task.Delay(1500);
                 approvalHandled = true;
                 return AppServerDecision.Accept;
             }, fullAccess: false);

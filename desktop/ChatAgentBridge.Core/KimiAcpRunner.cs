@@ -89,9 +89,15 @@ internal static class KimiAcpRunner
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         { return Failed(CoreText.Get("KimiAcpTimeout")); }
         catch (KimiRequestException ex)
-        { cancellationToken.ThrowIfCancellationRequested(); return Failed(ex.Message); }
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Failed(timeout.IsCancellationRequested ? CoreText.Get("KimiAcpTimeout") : ex.Message);
+        }
         catch (Exception ex) when (ex is InvalidDataException or JsonException or InvalidOperationException or IOException or KeyNotFoundException)
-        { cancellationToken.ThrowIfCancellationRequested(); return Failed(CoreText.Get("KimiAcpProtocolFailed")); }
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Failed(CoreText.Get(timeout.IsCancellationRequested ? "KimiAcpTimeout" : "KimiAcpProtocolFailed"));
+        }
         finally { await StopAsync(process, stderrDrain).ConfigureAwait(false); }
     }
 
