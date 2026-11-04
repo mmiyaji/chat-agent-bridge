@@ -81,7 +81,7 @@
                         <TextBlock x:Name="PreferenceError" Visibility="Collapsed" TextWrapping="Wrap"
                                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                    AutomationProperties.AutomationId="PortableUpdatePreferenceError" AutomationProperties.LiveSetting="Polite" />
-                        <StackPanel x:Name="UpdateActions" Spacing="8" HorizontalAlignment="Stretch">
+                        <StackPanel x:Name="UpdateActions" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                             <Button x:Name="DownloadUpdateButton" x:Uid="PortableDownloadUpdate" AutomationProperties.AutomationId="PortableDownloadUpdate"
                                     Click="DownloadUpdate_Click" HorizontalAlignment="Right" />
                             <Button x:Name="ApplyUpdateButton" x:Uid="PortableApplyUpdate" AutomationProperties.AutomationId="PortableApplyUpdate"

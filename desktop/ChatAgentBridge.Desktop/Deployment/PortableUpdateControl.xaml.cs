@@ -93,7 +93,7 @@ public sealed partial class PortableUpdateControl : UserControl
         AutomationProperties.SetHelpText(ReleaseNotesLink, ReleaseNotesLink.NavigateUri.AbsoluteUri);
         ToolTipService.SetToolTip(ReleaseNotesLink, ReleaseNotesLink.NavigateUri.AbsoluteUri);
         UpdateActions.Visibility = !showUpdateNotice && (hasUpdate || updates.IsBusy) ? Visibility.Visible : Visibility.Collapsed;
-        DownloadUpdateButton.Visibility = hasUpdate && !updates.IsDownloaded && !updateAvailable ? Visibility.Visible : Visibility.Collapsed;
+        DownloadUpdateButton.Visibility = hasUpdate && !updates.IsDownloaded && !updateAvailable && !updates.IsBusy ? Visibility.Visible : Visibility.Collapsed;
         DownloadUpdateButton.IsEnabled = updates.IsSupported && hasUpdate && !updates.IsDownloaded && !updates.IsBusy && !_dialogOpen && !_downloadRequested;
         ApplyUpdateButton.Visibility = updates.IsDownloaded && !updateReady ? Visibility.Visible : Visibility.Collapsed;
         ApplyUpdateButton.IsEnabled = updates.IsSupported && updates.IsDownloaded && !updates.IsBusy && !_dialogOpen && !_downloadRequested;
