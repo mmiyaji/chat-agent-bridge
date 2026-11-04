@@ -51,7 +51,7 @@
   <data name="MuseApprovalUnavailable" xml:space="preserve"><value>Muse Codeが承認を要求しましたが、この非対話実行では応答できません。承認は行っていません。</value></data>
   <data name="MuseRunFailed" xml:space="preserve"><value>Muse Codeから有効な完了結果が返されませんでした。CLIのインストール、ログイン状態、このアカウントでの利用可否を確認してください。</value></data>
   <data name="MuseConfigurationInvalid" xml:space="preserve"><value>Muse Codeの設定が無効です。設定画面で実行ファイルと引数を確認してください。</value></data>
-  <data name="MuseExecutableInvalid" xml:space="preserve"><value>Museのインストールを特定できませんでした。Muse Codeを修復または再インストールしてから、再試行してください。</value></data>
+  <data name="MuseExecutableInvalid" xml:space="preserve"><value>Museの起動ファイルまたは起動情報が不正です。このWindows PCに対応するMuse Codeを修復または再インストールしてください。</value></data>
   <data name="MuseExecutableNotFound" xml:space="preserve"><value>Museの実行ファイルが見つかりません。Muse Codeをインストールするか、実行ファイルのパスを修正してください。</value></data>
   <data name="MuseAccessDenied" xml:space="preserve"><value>WindowsがMuse Codeまたは非公開プロンプトファイルへのアクセスを拒否しました。インストール先とフォルダーのアクセス許可を確認してください。</value></data>
   <data name="MuseSessionMismatch" xml:space="preserve"><value>Museから指定したセッションの結果が返されませんでした。保存済みの会話は変更されていません。</value></data>

@@ -398,9 +398,7 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
             }
             else
             {
-                // Muse's versioned native launcher is replaced on upgrades. Keep the
-                // stable command token so the Core resolver can select the current install.
-                Editor.AgentExecutable = provider == AgentProfile.Muse ? "muse" : detected.Executable;
+                Editor.AgentExecutable = detected.Executable;
                 if (!await TryFlushAsync()) return;
                 ExecutableDetectionNotice.Message = DesktopText.Get("CliDetectionSucceeded");
                 ExecutableDetectionNotice.Severity = InfoBarSeverity.Success;

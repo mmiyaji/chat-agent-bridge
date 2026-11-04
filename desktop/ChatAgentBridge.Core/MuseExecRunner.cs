@@ -116,6 +116,11 @@ internal static class MuseExecRunner
             if (process is not null) await TerminateAndDrainAsync(process, stdoutTask, stderrTask).ConfigureAwait(false);
             return Failure("MuseExecutableNotFound");
         }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode is 193 or 216)
+        {
+            if (process is not null) await TerminateAndDrainAsync(process, stdoutTask, stderrTask).ConfigureAwait(false);
+            return Failure("MuseExecutableInvalid");
+        }
         catch (UnauthorizedAccessException)
         {
             if (process is not null) await TerminateAndDrainAsync(process, stdoutTask, stderrTask).ConfigureAwait(false);

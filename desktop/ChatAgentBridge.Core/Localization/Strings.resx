@@ -51,7 +51,7 @@
   <data name="MuseApprovalUnavailable" xml:space="preserve"><value>Muse Code requested an approval that cannot be answered in this headless run. No approval was granted.</value></data>
   <data name="MuseRunFailed" xml:space="preserve"><value>Muse Code did not complete a valid session turn. Check that the CLI is installed, signed in, and available for this account.</value></data>
   <data name="MuseConfigurationInvalid" xml:space="preserve"><value>Muse Code settings are invalid. Check the executable and arguments in Settings.</value></data>
-  <data name="MuseExecutableInvalid" xml:space="preserve"><value>The Muse installation could not be resolved. Repair or reinstall Muse Code, then try again.</value></data>
+  <data name="MuseExecutableInvalid" xml:space="preserve"><value>Muse's executable or launcher metadata is invalid. Repair or reinstall a Muse Code version compatible with this Windows PC.</value></data>
   <data name="MuseExecutableNotFound" xml:space="preserve"><value>The Muse executable could not be found. Install Muse Code or correct its executable path.</value></data>
   <data name="MuseAccessDenied" xml:space="preserve"><value>Windows denied access to Muse Code or its private prompt files. Check the installation and folder permissions.</value></data>
   <data name="MuseSessionMismatch" xml:space="preserve"><value>Muse did not return a result for the requested session. The saved conversation was left unchanged.</value></data>

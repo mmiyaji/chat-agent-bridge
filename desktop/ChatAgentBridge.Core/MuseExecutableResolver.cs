@@ -97,8 +97,10 @@ public static class MuseExecutableResolver
     }
 
     internal static string ResolveDefaultInstall()
+        => ResolveDefaultInstall(DefaultInstallRoot());
+
+    internal static string ResolveDefaultInstall(string? root)
     {
-        var root = DefaultInstallRoot();
         return root is not null && Directory.Exists(root) ? ResolveInstallRoot(root) : "muse";
     }
 

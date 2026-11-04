@@ -27,7 +27,7 @@ public sealed class CliExecutableDiscoveryTests : IDisposable
     {
         var executable = Write(command + ".exe");
         var result = CliExecutableDiscovery.Find(provider, root);
-        Assert.Equal(provider == AgentProfile.Muse ? executable : command, result!.Executable);
+        Assert.Equal(command, result!.Executable);
         Assert.Equal(executable, result.DiscoveredPath);
     }
     [Fact]

@@ -140,7 +140,7 @@ public sealed class MuseExecutableResolverTests : IDisposable
         if (!OperatingSystem.IsWindows()) return;
         var native = Install(_root, "1.4.14-R7309.1");
         var detection = CliExecutableDiscovery.Find(AgentProfile.Muse, _root);
-        Assert.Equal(native, detection!.Executable);
+        Assert.Equal("muse", detection!.Executable);
         Assert.Equal(native, detection.DiscoveredPath);
     }
 
@@ -152,8 +152,23 @@ public sealed class MuseExecutableResolverTests : IDisposable
         var native = Path.Combine(_root, "muse.exe");
         File.WriteAllText(native, "native placeholder");
         var detection = CliExecutableDiscovery.Find(AgentProfile.Muse, _root);
-        Assert.Equal(native, detection!.Executable);
+        Assert.Equal("muse", detection!.Executable);
         Assert.Equal(native, detection.DiscoveredPath);
+    }
+
+    [Fact]
+    public void DiscoverySavesStableCommandAndResolvesUpdatedManagedVersion()
+    {
+        var first = Install(_root, "1.4.14-R7309.1");
+        var detection = CliExecutableDiscovery.Find(AgentProfile.Muse, Path.Combine(_root, "no-path-match"), _root);
+        Assert.Equal("muse", detection!.Executable);
+        Assert.Equal(first, detection.DiscoveredPath);
+
+        var updated = "1.4.15-R7310.1";
+        var updatedExecutable = Install(_root, updated);
+        File.Delete(first);
+        var resolvedSavedCommand = MuseExecutableResolver.Resolve(detection.Executable, _root, Path.Combine(_root, "no-path-match"));
+        Assert.Equal(updatedExecutable, resolvedSavedCommand);
     }
 
     private static string Install(string root, string version)

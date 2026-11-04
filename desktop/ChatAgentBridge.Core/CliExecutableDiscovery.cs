@@ -6,6 +6,9 @@ public static class CliExecutableDiscovery
     public sealed record Detection(string Executable, string DiscoveredPath);
 
     public static Detection? Find(string provider, string? searchPath = null)
+        => Find(provider, searchPath, null);
+
+    internal static Detection? Find(string provider, string? searchPath, string? museInstallRoot)
     {
         var command = provider switch
         {
@@ -32,7 +35,7 @@ public static class CliExecutableDiscovery
                 directory = Path.GetFullPath(directory);
                 var native = Path.Combine(directory, command + ".exe");
                 if (File.Exists(native))
-                    return provider == AgentProfile.Muse ? new Detection(native, native) : new Detection(command, native);
+                    return new Detection(command, native);
                 if (!OperatingSystem.IsWindows()) continue;
                 var shim = Path.Combine(directory, command + ".cmd");
                 if (!File.Exists(shim)) continue;
@@ -41,7 +44,7 @@ public static class CliExecutableDiscovery
                     try
                     {
                         var resolved = MuseExecutableResolver.Resolve(shim);
-                        return new Detection(resolved, resolved);
+                        return new Detection(command, resolved);
                     }
                     catch (InvalidOperationException) { return null; }
                 }
@@ -74,9 +77,11 @@ public static class CliExecutableDiscovery
         {
             try
             {
-                var fallback = MuseExecutableResolver.ResolveDefaultInstall();
+                var fallback = museInstallRoot is null
+                    ? MuseExecutableResolver.ResolveDefaultInstall()
+                    : MuseExecutableResolver.ResolveDefaultInstall(museInstallRoot);
                 if (!string.Equals(fallback, command, StringComparison.OrdinalIgnoreCase))
-                    return new Detection(fallback, fallback);
+                    return new Detection(command, fallback);
             }
             catch (InvalidOperationException) { return null; }
         }

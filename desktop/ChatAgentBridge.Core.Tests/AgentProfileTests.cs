@@ -43,6 +43,8 @@ public sealed class AgentProfileTests
 
     [Theory]
     [InlineData("Muse Code 1.2.3", true)]
+    [InlineData("Muse Code v2.0-beta (nightly build)", true)]
+    [InlineData("Muse Code build unknown", true)]
     [InlineData("muse 1.2.3", true)]
     [InlineData("muse.exe 1.2.3", true)]
     [InlineData("A note about Muse Code", false)]

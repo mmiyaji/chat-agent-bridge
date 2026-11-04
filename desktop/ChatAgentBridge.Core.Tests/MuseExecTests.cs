@@ -349,7 +349,12 @@ public sealed class MuseExecTests : IDisposable
         var broken = await runner.RunAsync(Settings(null) with
         { AgentExecutable = launcher }, "private request");
         Assert.Equal(CoreText.Get("MuseExecutableInvalid"), broken.Error);
-        foreach (var result in new[] { missing, invalid, broken })
+        var badImage = Path.Combine(_root, "bad-muse.exe");
+        await File.WriteAllTextAsync(badImage, "This is not a Windows executable.");
+        var invalidImage = await runner.RunAsync(Settings(null) with
+        { AgentExecutable = badImage }, "private request");
+        Assert.Equal(CoreText.Get("MuseExecutableInvalid"), invalidImage.Error);
+        foreach (var result in new[] { missing, invalid, broken, invalidImage })
         {
             Assert.False(result.Success);
             Assert.Null(result.CliSession?.SessionId);
