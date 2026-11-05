@@ -59,3 +59,6 @@ html.en-pending body{visibility:hidden}
 .lang-list a::before{content:"";width:3px;height:14px;border-radius:2px;background:transparent}
 .lang-list a[aria-current="true"]::before{background:var(--accent)}
 .lang-list a:hover,.lang-list a:focus-visible{background:var(--card2);outline:none}
+
+/* Keep horizontal navigation clear of the language and theme controls. */
+@media (max-width:860px){aside{padding-top:52px}}

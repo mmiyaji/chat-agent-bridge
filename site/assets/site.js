@@ -75,5 +75,66 @@
       label();
     });
   }
+  // Sidebar: mark the section being read, and the link just clicked.
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('aside a[href^="#"]'));
+  var sections = navLinks.map(function (link) { return document.getElementById(link.getAttribute('href').slice(1)); })
+    .filter(function (section) { return section; });
+  function markSection(id) {
+    navLinks.forEach(function (link) {
+      var on = link.getAttribute('href') === '#' + id;
+      link.classList.toggle('on', on);
+      if (on) link.setAttribute('aria-current', 'location'); else link.removeAttribute('aria-current');
+    });
+  }
+  function sectionInView() {
+    // At the very bottom the last section may be too short to reach the top of the window.
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) return sections[sections.length - 1].id;
+    var current = sections[0].id;
+    sections.forEach(function (section) { if (section.getBoundingClientRect().top <= 120) current = section.id; });
+    return current;
+  }
+  var pending = false, clicked = null, settle = 0;
+  function finishScroll() {
+    clearTimeout(settle);
+    clicked = null;
+    markSection(sectionInView());
+  }
+  function scheduleSelection() {
+    if (pending) return;
+    pending = true;
+    requestAnimationFrame(function () { pending = false; if (!clicked) markSection(sectionInView()); });
+  }
+  if (sections.length) {
+    window.addEventListener('scroll', function () {
+      // After a click, keep the chosen link while the smooth scroll passes other sections.
+      if (clicked) {
+        clearTimeout(settle);
+        settle = setTimeout(finishScroll, 160);
+        return;
+      }
+      scheduleSelection();
+    }, { passive: true });
+    navLinks.forEach(function (link) {
+      link.addEventListener('click', function (event) {
+        if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        clicked = link.getAttribute('href').slice(1);
+        markSection(clicked);
+        // If the page does not move (already there), release the hold anyway.
+        clearTimeout(settle);
+        settle = setTimeout(finishScroll, 600);
+      });
+    });
+    window.addEventListener('scrollend', finishScroll);
+    window.addEventListener('resize', scheduleSelection);
+    window.addEventListener('load', scheduleSelection);
+    window.addEventListener('hashchange', function () { if (!clicked) scheduleSelection(); });
+    // User scrolling cancels the temporary selection hold from a link click.
+    window.addEventListener('wheel', finishScroll, { passive: true });
+    window.addEventListener('touchstart', finishScroll, { passive: true });
+    window.addEventListener('keydown', function (event) {
+      if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].indexOf(event.key) !== -1) finishScroll();
+    });
+    markSection(location.hash && document.getElementById(location.hash.slice(1)) ? location.hash.slice(1) : sectionInView());
+  }
   if (window.GLightbox) GLightbox({ selector: '.glightbox', touchNavigation: true, loop: true });
 })();
