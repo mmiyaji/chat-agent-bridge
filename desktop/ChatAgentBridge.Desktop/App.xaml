@@ -80,6 +80,9 @@
             <Style x:Key="OverviewErrorIconStyle" TargetType="FontIcon">
                 <Setter Property="Foreground" Value="{ThemeResource OverviewErrorIconBrush}" />
             </Style>
+            <Style x:Key="OverviewReadyDotStyle" TargetType="Ellipse"><Setter Property="Fill" Value="{ThemeResource OverviewReadyIconBrush}" /></Style>
+            <Style x:Key="OverviewErrorDotStyle" TargetType="Ellipse"><Setter Property="Fill" Value="{ThemeResource OverviewErrorIconBrush}" /></Style>
+            <Style x:Key="OverviewNeutralDotStyle" TargetType="Ellipse"><Setter Property="Fill" Value="{ThemeResource ControlStrongFillColorDefaultBrush}" /></Style>
             <Style x:Key="OverviewNeutralIconStyle" TargetType="FontIcon">
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
             </Style>

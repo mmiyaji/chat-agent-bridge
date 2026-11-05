@@ -304,6 +304,16 @@ public sealed partial class MainPage : Page
         try { await Task.WhenAll(tasks); }
         finally { await InboxPage.ViewModel.FlushConversationPersistenceAsync(); }
     }
+    // Status tiles show what they are with a grey icon; the small dot carries the state.
+    // Only "done" and "failed" are coloured, so a fresh setup is not a wall of warnings.
+    // Styles (not brushes) so the colour follows the page's light or dark theme.
+    public static Style OverviewStatusDotStyle(OverviewIconState state) => (Style)Application.Current.Resources[state switch
+    {
+        OverviewIconState.Ready => "OverviewReadyDotStyle",
+        OverviewIconState.Error => "OverviewErrorDotStyle",
+        _ => "OverviewNeutralDotStyle"
+    }];
+
     public static Style OverviewIconStyle(OverviewIconState state) => (Style)Application.Current.Resources[state switch
     {
         OverviewIconState.Ready => "OverviewReadyIconStyle",
