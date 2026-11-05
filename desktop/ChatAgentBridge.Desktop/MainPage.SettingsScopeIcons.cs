@@ -34,16 +34,7 @@ public sealed partial class MainPage
         var slug = ScopeIconSlug(provider);
         if (string.IsNullOrEmpty(provider) || !slug.StartsWith("provider_", StringComparison.Ordinal))
             return new FontIcon { Glyph = fallbackGlyph, FontSize = 18, Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] };
-        // A tile-specific drawing wins when one exists (Codex needs gaps between its strands at this size).
-        var resources = Application.Current.Resources;
-        var tileKey = "OverviewIcon_" + slug;
-        var key = resources.ContainsKey(tileKey) || resources.MergedDictionaries.Any(dictionary => dictionary.ContainsKey(tileKey))
-            ? tileKey : "SettingsScopeIcon_" + slug;
-        var icon = (FrameworkElement)((DataTemplate)Application.Current.Resources[key]).LoadContent();
-        // The icons are drawn on a 24px grid. Scaling them to 20px puts every 1.5px stroke on
-        // fractional pixels, so dense marks (Codex) blur; show them at their native size instead.
-        icon.Width = icon.Height = 24;
-        icon.Margin = new Thickness(-2);
+        var icon = (FrameworkElement)((DataTemplate)Application.Current.Resources["SettingsScopeIcon_" + slug]).LoadContent();
         AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
         return icon;
     }
