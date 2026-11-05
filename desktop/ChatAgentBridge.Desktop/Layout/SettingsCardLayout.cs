@@ -29,11 +29,12 @@ public static class SettingsCardLayout
     {
         var alignment = width < 680 ? ContentAlignment.Vertical : ContentAlignment.Right;
         if (card.ContentAlignment != alignment) card.ContentAlignment = alignment;
-        if (card.Content is Microsoft.UI.Xaml.Controls.RadioButtons choices)
+        if (card.Content is Microsoft.UI.Xaml.Controls.StackPanel row &&
+            row.Children.Count > 0 && row.Children.All(child => child is Microsoft.UI.Xaml.Controls.RadioButton))
         {
-            // One option per row: uniform columns clipped a long localized label ("システムに合わせる")
-            // into its neighbour, and a vertical list reads in order at every width.
-            if (choices.MaxColumns != 1) choices.MaxColumns = 1;
+            // Options sit in one row beside the text; a narrow card stacks them so none is cut off.
+            var orientation = width < 520 ? Microsoft.UI.Xaml.Controls.Orientation.Vertical : Microsoft.UI.Xaml.Controls.Orientation.Horizontal;
+            if (row.Orientation != orientation) row.Orientation = orientation;
         }
     }
 }

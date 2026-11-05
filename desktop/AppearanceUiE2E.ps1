@@ -151,7 +151,7 @@ try {
         $label = (UI @('get-property',$entry.Key,'-p','Name') | ConvertFrom-Json).properties.Name
         Assert ($label -eq $entry.Value) 'The appearance option was not localized into Japanese.'
     }
-    UI @('scroll-into-view','AppTheme') | Out-Null
+    UI @('scroll-into-view','ThemeSystem') | Out-Null
     Capture 'japanese-system.png' | Out-Null
     Select-Theme 'light'
     Resize 720 600

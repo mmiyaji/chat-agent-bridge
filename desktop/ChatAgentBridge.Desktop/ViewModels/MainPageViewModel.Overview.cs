@@ -9,7 +9,8 @@ public enum OverviewIconState { Neutral, Ready, Attention, Error }
 public partial class MainPageViewModel
 {
     private const string OverviewCheckGlyph = "\uE73E";
-    private const string OverviewWarningGlyph = "\uE7BA";
+    // "Not set up yet" is a to-do, not a warning: an empty circle in grey. Only errors are coloured.
+    private const string OverviewWarningGlyph = "\uEA3A";
     private const string OverviewPendingGlyph = "\uE895";
     private const string OverviewErrorGlyph = "\uE783";
     [ObservableProperty] public partial OverviewIconState OverviewAgentIconState { get; set; }

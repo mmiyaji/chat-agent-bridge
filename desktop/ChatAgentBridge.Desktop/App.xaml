@@ -16,10 +16,10 @@
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="UpdateBadgeBackgroundBrush" Color="#3284F5" />
                     <SolidColorBrush x:Key="UpdateBadgeForegroundBrush" Color="White" />
-                    <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="#D5E8D4" />
-                    <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="#A5D6A3" />
-                    <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="#60B570" />
-                    <SolidColorBrush x:Key="ActivityHeatPeakBrush" Color="#267D40" />
+                    <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="{ThemeResource SystemAccentColorLight3}" />
+                    <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="{ThemeResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="{ThemeResource SystemAccentColor}" />
+                    <SolidColorBrush x:Key="ActivityHeatPeakBrush" Color="{ThemeResource SystemAccentColorDark2}" />
                     <SolidColorBrush x:Key="OverviewReadyIconBrush" Color="#5E7B38" />
                     <SolidColorBrush x:Key="OverviewAttentionIconBrush" Color="#8A741F" />
                     <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="#B45B5B" />
@@ -27,10 +27,10 @@
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="UpdateBadgeBackgroundBrush" Color="#3284F5" />
                     <SolidColorBrush x:Key="UpdateBadgeForegroundBrush" Color="White" />
-                    <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="#294734" />
-                    <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="#376C43" />
-                    <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="#4D9D59" />
-                    <SolidColorBrush x:Key="ActivityHeatPeakBrush" Color="#82D587" />
+                    <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="{ThemeResource SystemAccentColorDark3}" />
+                    <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="{ThemeResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="{ThemeResource SystemAccentColorLight1}" />
+                    <SolidColorBrush x:Key="ActivityHeatPeakBrush" Color="{ThemeResource SystemAccentColorLight3}" />
                     <SolidColorBrush x:Key="OverviewReadyIconBrush" Color="#A8C583" />
                     <SolidColorBrush x:Key="OverviewAttentionIconBrush" Color="#D1BD79" />
                     <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="#D99B9B" />
@@ -75,7 +75,7 @@
                 <Setter Property="Foreground" Value="{ThemeResource OverviewReadyIconBrush}" />
             </Style>
             <Style x:Key="OverviewAttentionIconStyle" TargetType="FontIcon">
-                <Setter Property="Foreground" Value="{ThemeResource OverviewAttentionIconBrush}" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
             </Style>
             <Style x:Key="OverviewErrorIconStyle" TargetType="FontIcon">
                 <Setter Property="Foreground" Value="{ThemeResource OverviewErrorIconBrush}" />
