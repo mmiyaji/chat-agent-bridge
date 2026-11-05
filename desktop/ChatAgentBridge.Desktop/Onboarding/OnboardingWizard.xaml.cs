@@ -265,6 +265,7 @@ public sealed partial class OnboardingWizard : UserControl
         try
         {
             if (!await ViewModel.SaveWizardConnectionSettingsAsync()) return;
+            await Inbox.RefreshAccessAsync();
             if (Inbox.IsConnected)
                 await Inbox.DisconnectCommand.ExecuteAsync(null);
             if (provider == "slack")

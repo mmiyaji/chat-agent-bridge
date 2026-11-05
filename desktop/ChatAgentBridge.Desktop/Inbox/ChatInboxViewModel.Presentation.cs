@@ -164,6 +164,8 @@ public sealed partial class ChatInboxViewModel
         OnPropertyChanged(nameof(ConnectionOverviewTarget));
         OnPropertyChanged(nameof(ConnectionTone));
         OnPropertyChanged(nameof(ConnectionLabel));
+        OnPropertyChanged(nameof(ShowConnectionSettingsButton));
+        OnPropertyChanged(nameof(ShowChatSetupNotice));
         OnPropertyChanged(nameof(ShowEmptyConversationList));
         OnPropertyChanged(nameof(EmptyConversationHeading));
         OnPropertyChanged(nameof(EmptyConversationDescription));

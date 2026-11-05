@@ -455,10 +455,16 @@ public sealed partial class MainPage : Page
                 ViewModel.AutoConnectProvider == startupProvider)
             {
                 if (startupProvider is "mattermost" or "slack" or "discord")
+                {
+                    await InboxPage.ViewModel.RefreshAccessAsync();
+                    if (ViewModel.AutoConnectProvider != startupProvider || ViewModel.HasUnsavedSettings ||
+                        ViewModel.IsSensitiveConfirmationPending || ViewModel.IsLoading || !ViewModel.IsSettingsLoaded)
+                        return;
                     MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "chat");
-                if (startupProvider == "mattermost") await InboxPage.ViewModel.ConnectMattermostCommand.ExecuteAsync(null);
-                else if (startupProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
-                else if (startupProvider == "discord") await InboxPage.ViewModel.ConnectDiscordCommand.ExecuteAsync(null);
+                    if (startupProvider == "mattermost") await InboxPage.ViewModel.ConnectMattermostCommand.ExecuteAsync(null);
+                    else if (startupProvider == "slack") await InboxPage.ViewModel.ConnectSlackCommand.ExecuteAsync(null);
+                    else if (startupProvider == "discord") await InboxPage.ViewModel.ConnectDiscordCommand.ExecuteAsync(null);
+                }
             }
             InitializeFeatureTips();
 
