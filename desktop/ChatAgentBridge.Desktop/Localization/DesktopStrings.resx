@@ -264,7 +264,7 @@
   <data name="WorkspaceChangeFailed" xml:space="preserve"><value>Could not change the workspace. Check the destination and trusted folders in the execution result area.</value></data>
   <data name="WorkspaceChangeFailedChatReply" xml:space="preserve"><value>Chat Agent Bridge: Could not change the workspace. On the PC, check the absolute path, that the folder exists, and that it is trusted. The AI was not run.</value></data>
   <data name="InboxSessionPreflight" xml:space="preserve"><value>Checking the session before execution</value></data>
-  <data name="InboxDisconnected" xml:space="preserve"><value>Disconnected. Check chat settings before connecting.</value></data>
+  <data name="InboxDisconnected" xml:space="preserve"><value>Check chat settings, then connect.</value></data>
   <data name="InboxOutputIntro" xml:space="preserve"><value>Execution results appear here. Requests and result sharing follow the conversation's approval and sharing settings.</value></data>
   <data name="UsageAfterExecution" xml:space="preserve"><value>Usage appears after execution.</value></data>
   <data name="InboxPreparingConnection" xml:space="preserve"><value>Preparing connection…</value></data>
@@ -389,9 +389,9 @@
   <data name="AboutOpenLinkFailed" xml:space="preserve"><value>Could not open the link. Check that a browser or mail app is available.</value></data>
   <data name="HistoryProviderAll" xml:space="preserve"><value>All services</value></data>
   <data name="HistoryUnknownOrigin" xml:space="preserve"><value>Unknown connection</value></data>
-  <data name="HistoryConversationsTab" xml:space="preserve"><value>Conversations ({0})</value></data>
-  <data name="HistoryExecutionsTab" xml:space="preserve"><value>Executions ({0})</value></data>
-  <data name="HistoryAuditTab" xml:space="preserve"><value>Audit ({0})</value></data>
+  <data name="HistoryConversationsTab" xml:space="preserve"><value>Conversations</value></data>
+  <data name="HistoryExecutionsTab" xml:space="preserve"><value>Executions</value></data>
+  <data name="HistoryAuditTab" xml:space="preserve"><value>Audit</value></data>
   <data name="HistorySearchLabel" xml:space="preserve"><value>Search saved conversations</value></data>
   <data name="HistorySearchPlaceholder" xml:space="preserve"><value>Name, workspace, user, model, and more</value></data>
   <data name="HistoryProviderLabel" xml:space="preserve"><value>Chat service</value></data>
@@ -488,8 +488,8 @@
   <data name="ActivityTabTitle" xml:space="preserve"><value>Activity</value></data>
   <data name="ActivityUnknownModel" xml:space="preserve"><value>Default / not recorded</value></data>
   <data name="ActivityDailyScale" xml:space="preserve"><value>Peak: {0:N0} runs/day</value></data>
-  <data name="ActivityChatsTabCompact" xml:space="preserve"><value>Chats ({0})</value></data>
-  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>Runs ({0})</value></data>
+  <data name="ActivityChatsTabCompact" xml:space="preserve"><value>Chats</value></data>
+  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>Runs</value></data>
   <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}: outside the selected period</value></data>
   <data name="UsageTokens" xml:space="preserve"><value>Token consumption</value></data>
   <data name="UsageCache" xml:space="preserve"><value>Cache hit rate</value></data>
@@ -750,6 +750,7 @@
   <data name="SidebarConnectionConnecting" xml:space="preserve"><value>Connecting</value></data>
   <data name="SidebarConnectionDisconnected" xml:space="preserve"><value>Disconnected</value></data>
   <data name="SidebarConnectionError" xml:space="preserve"><value>Error</value></data>
+  <data name="SidebarConnectionNone" xml:space="preserve"><value>Chat connection</value></data>
   <data name="InboxQueueSummary" xml:space="preserve"><value>{0} awaiting approval · {1} running</value></data>
   <data name="SettingsDraftAgent" xml:space="preserve"><value>Agent settings</value></data>
   <data name="SettingsDraftChat" xml:space="preserve"><value>Chat settings</value></data>
@@ -916,7 +917,7 @@ After: {2}</value></data>
   <data name="PaneSizerSettings" xml:space="preserve"><value>Resize the settings menu</value></data>
   <data name="PaneSizerHelp" xml:space="preserve"><value>Drag or use the arrow keys to change the width.</value></data>
   <data name="TipChatConnectTitle" xml:space="preserve"><value>Take requests from chat</value></data>
-  <data name="TipChatConnectBody" xml:space="preserve"><value>Open Chat and connect to Mattermost, Slack, or Discord to run requests sent from chat on this PC.</value></data>
+  <data name="TipChatConnectBody" xml:space="preserve"><value>Open Chat and connect to Slack, Mattermost, or Discord to run requests sent from chat on this PC.</value></data>
   <data name="TipOpenChat" xml:space="preserve"><value>Open chat</value></data>
   <data name="TipGotIt" xml:space="preserve"><value>Got it</value></data>
   <data name="SearchScopeSettings" xml:space="preserve"><value>{0} settings</value></data>

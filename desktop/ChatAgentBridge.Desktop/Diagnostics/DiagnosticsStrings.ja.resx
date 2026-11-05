@@ -7,13 +7,13 @@
   <data name="ReleaseAndSystemHeader" xml:space="preserve"><value>リリースとシステム</value></data>
   <data name="ApplicationVersionLabel" xml:space="preserve"><value>アプリのバージョン</value></data>
   <data name="BuildMetadataLabel" xml:space="preserve"><value>ビルド情報</value></data>
-  <data name="WindowsRuntimeLabel" xml:space="preserve"><value>Windows とランタイム</value></data>
+  <data name="WindowsRuntimeLabel" xml:space="preserve"><value>Windowsとランタイム</value></data>
   <data name="ConfigurationStatusHeader" xml:space="preserve"><value>設定の状態</value></data>
-  <data name="SavedCliProviderLabel" xml:space="preserve"><value>保存済み CLI プロバイダー</value></data>
-  <data name="CliVerificationLabel" xml:space="preserve"><value>CLI の検証</value></data>
+  <data name="SavedCliProviderLabel" xml:space="preserve"><value>保存済みCLIプロバイダー</value></data>
+  <data name="CliVerificationLabel" xml:space="preserve"><value>CLIの検証</value></data>
   <data name="ChatConnectionLabel" xml:space="preserve"><value>チャット接続</value></data>
   <data name="UpdaterLabel" xml:space="preserve"><value>アップデーター</value></data>
-  <data name="NotificationsLabel" xml:space="preserve"><value>Windows 通知</value></data>
+  <data name="NotificationsLabel" xml:space="preserve"><value>Windows通知</value></data>
   <data name="RefreshButton" xml:space="preserve"><value>更新</value></data>
   <data name="TestNotificationButton" xml:space="preserve"><value>テスト通知を送信</value></data>
   <data name="ExportButton" xml:space="preserve"><value>サポートレポートをエクスポート</value></data>
@@ -32,12 +32,12 @@
   <data name="NotificationsNotRegistered" xml:space="preserve"><value>登録されていません。</value></data>
   <data name="TestNotificationTitle" xml:space="preserve"><value>テスト通知</value></data>
   <data name="TestNotificationBody" xml:space="preserve"><value>安全な通知テストです。アプリを開いて続行してください。</value></data>
-  <data name="TestNotificationEnqueued" xml:space="preserve"><value>Windows はテスト通知を受け付けました。配信は確認されていません。</value></data>
+  <data name="TestNotificationEnqueued" xml:space="preserve"><value>Windowsはテスト通知を受け付けました。配信は確認されていません。</value></data>
   <data name="TestNotificationUnavailable" xml:space="preserve"><value>テスト通知を登録できませんでした。</value></data>
   <data name="ExportPreviewTitle" xml:space="preserve"><value>サポートレポートのプレビュー</value></data>
   <data name="ExportSave" xml:space="preserve"><value>レポートを保存…</value></data>
   <data name="Cancel" xml:space="preserve"><value>キャンセル</value></data>
-  <data name="JsonFileType" xml:space="preserve"><value>JSON サポートレポート</value></data>
+  <data name="JsonFileType" xml:space="preserve"><value>JSONサポートレポート</value></data>
   <data name="ExportSaved" xml:space="preserve"><value>サポートレポートをローカルに保存しました。</value></data>
   <data name="ExportFailed" xml:space="preserve"><value>サポートレポートを保存できませんでした。</value></data>
   <data name="UpdaterDownloading" xml:space="preserve"><value>更新をダウンロードしています。</value></data>

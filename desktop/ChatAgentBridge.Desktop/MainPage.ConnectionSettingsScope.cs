@@ -127,8 +127,8 @@ public sealed partial class MainPage
         _connectionScopeNavigation.RegisterPropertyChangedCallback(NavigationView.OpenPaneLengthProperty, (_, _) => RefreshConnectionScopeMarker());
         AutomationProperties.SetName(_connectionScopeNavigation, DesktopText.Get("AgentScopePicker"));
         AddConnectionScopeItem(_connectionScopeNavigation, "common", DesktopText.Get("AgentScopeCommon"), "ConnectionScopeCommon");
-        AddConnectionScopeItem(_connectionScopeNavigation, "mattermost", MrtText.Get("MattermostSectionTitle.Text"), "ConnectionScopeMattermost");
         AddConnectionScopeItem(_connectionScopeNavigation, "slack", MrtText.Get("SlackSectionTitle.Text"), "ConnectionScopeSlack");
+        AddConnectionScopeItem(_connectionScopeNavigation, "mattermost", MrtText.Get("MattermostSectionTitle.Text"), "ConnectionScopeMattermost");
         AddConnectionScopeItem(_connectionScopeNavigation, "discord", MrtText.Get("DiscordSectionTitle.Text"), "ConnectionScopeDiscord");
         _connectionScopeNavigation.SelectionChanged += (_, args) =>
         {
@@ -143,8 +143,8 @@ public sealed partial class MainPage
         page.Children.Add(_connectionScopeBreadcrumb);
         page.Children.Add(_connectionScopeHeader);
         page.Children.Add(_connectionScopeCommonGroup);
-        page.Children.Add(_connectionScopeMattermostGroup);
         page.Children.Add(_connectionScopeSlackGroup);
+        page.Children.Add(_connectionScopeMattermostGroup);
         page.Children.Add(_connectionScopeDiscordGroup);
         _connectionSettingsScroll = CreateSettingsDetailScroll(page, "ConnectionSettingsScroll");
         _connectionScopeNavigation.Content = _connectionSettingsScroll;
@@ -226,7 +226,7 @@ public sealed partial class MainPage
         _syncingConnectionScopeSelection = true;
         if (_connectionScopeNavigation is not null)
         {
-            var index = _connectionSettingsScope switch { "mattermost" => 1, "slack" => 2, "discord" => 3, _ => 0 };
+            var index = _connectionSettingsScope switch { "slack" => 1, "mattermost" => 2, "discord" => 3, _ => 0 };
             _connectionScopeNavigation.SelectedItem = _connectionScopeNavigation.MenuItems[index];
         }
         _syncingConnectionScopeSelection = false;
@@ -237,12 +237,12 @@ public sealed partial class MainPage
     private void RefreshConnectionScopeLabels(System.Globalization.CultureInfo culture)
     {
         if (_connectionScopeNavigation is null) return;
-        string[] iconKeys = ["common", "mattermost", "slack", "discord"];
+        string[] iconKeys = ["common", "slack", "mattermost", "discord"];
         var labels = new[]
         {
             DesktopText.Get("AgentScopeCommon"),
-            MrtText.Get("MattermostSectionTitle.Text", culture),
             MrtText.Get("SlackSectionTitle.Text", culture),
+            MrtText.Get("MattermostSectionTitle.Text", culture),
             MrtText.Get("DiscordSectionTitle.Text", culture)
         };
         for (var index = 0; index < labels.Length; index++)

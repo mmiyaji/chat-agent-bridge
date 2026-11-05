@@ -37,7 +37,7 @@
                        Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.HasActivityStatisticsNotice), Mode=OneWay}"
                        AutomationProperties.AutomationId="ActivityStatisticsNotice" />
 
-            <Border Style="{StaticResource ActivityCardStyle}" Padding="16" MaxWidth="460"
+            <Border Padding="16" MaxWidth="460"
                     HorizontalAlignment="Center"
                     Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ShowActivityEmptyState), Mode=OneWay}"
                     AutomationProperties.AutomationId="ActivityEmptyCard">
@@ -47,16 +47,16 @@
                         <SymbolIcon Symbol="Clock" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </Viewbox>
                     <TextBlock Text="{x:Bind ViewModel.ActivityEmptyHeading, Mode=OneWay}"
-                               Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                               Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
                                AutomationProperties.AutomationId="ActivityEmpty" />
                     <TextBlock Text="{x:Bind ViewModel.ActivityEmptyDescription, Mode=OneWay}"
-                               Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                               Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" TextAlignment="Center"
                                AutomationProperties.AutomationId="ActivityEmptyBody" />
                 </StackPanel>
             </Border>
 
             <Grid x:Name="SummaryGrid" ColumnSpacing="8" RowSpacing="8"
-                  Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ActivityStatisticsAvailable), Mode=OneWay}">
+                  Visibility="{x:Bind local:HistoryPage.BoolToVisibility(ViewModel.ShowActivitySummary), Mode=OneWay}">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                 <Border Style="{StaticResource ActivityCardStyle}">

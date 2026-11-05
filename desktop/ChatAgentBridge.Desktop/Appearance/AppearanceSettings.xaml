@@ -11,7 +11,7 @@
             <TextBlock x:Name="ThemeStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="AppThemeStatus" />
         </settings:SettingsCard.Description>
         <RadioButtons x:Name="ThemeChoices" x:Uid="AppTheme" SelectionChanged="ThemeChoices_SelectionChanged"
-                      MaxColumns="3" AutomationProperties.AutomationId="AppTheme">
+                      MaxColumns="1" AutomationProperties.AutomationId="AppTheme">
             <RadioButton x:Uid="ThemeSystem" Tag="system" AutomationProperties.AutomationId="ThemeSystem" />
             <RadioButton x:Uid="ThemeLight" Tag="light" AutomationProperties.AutomationId="ThemeLight" />
             <RadioButton x:Uid="ThemeDark" Tag="dark" AutomationProperties.AutomationId="ThemeDark" />

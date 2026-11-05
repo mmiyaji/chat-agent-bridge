@@ -41,7 +41,7 @@ public partial class MainPageViewModel
     public bool IsWizardSlack => OnboardingChatProvider == "slack";
     public bool IsWizardMattermost => OnboardingChatProvider == "mattermost";
     public bool IsWizardDiscord => OnboardingChatProvider == "discord";
-    public string OnboardingTitle => $"{OnboardingProgress} " + (OnboardingStep switch
+    public string OnboardingTitle => (OnboardingStep switch
     { 0 => ViewModelText.Get("WizardStepIntro"), 1 => ViewModelText.Get("WizardStepAgent"), 2 => ViewModelText.Get("WizardStepCli"), 3 => ViewModelText.Get("WizardStepChat"), _ => ViewModelText.Get("WizardStepSafety") });
     public string OnboardingDescription => OnboardingStep switch
     {
@@ -52,7 +52,7 @@ public partial class MainPageViewModel
         _ => ViewModelText.Get("WizardSafetyDescription")
     };
     public string OnboardingNextLabel => OnboardingStep == 0 ? ViewModelText.Get("ConsentAndContinue") : OnboardingStep == 4 ? ViewModelText.Get("SaveAndFinish") : ViewModelText.Get("SaveAndContinue");
-    public string OnboardingProgress => $"[{Math.Clamp(OnboardingStep, 0, 4) + 1}/5]";
+    public string OnboardingProgress => ViewModelText.Get("WizardStepCounter", Math.Clamp(OnboardingStep, 0, 4) + 1, 5);
     public string WizardSummary => ViewModelText.Get("WizardSummary", AgentProviderDisplayName, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, string.IsNullOrWhiteSpace(AgentReasoningEffort) ? ViewModelText.Get("DefaultCliValue") : AgentReasoningEffort, WorkspaceRoot, IsWizardSlack ? "Slack" : IsWizardMattermost ? "Mattermost" : "Discord", ViewModelText.Get(WizardAutoConnect ? "Enabled" : "Disabled"), ChatApprovalLabel(ChatApprovalMode), ResultLabel(ChatResultMode), PermissionLabel(AgentPermissionMode));
     public event Action<int>? OnboardingNavigateRequested;
     /// <summary>Raised when the user tries to continue with required inputs missing, so the page can highlight and focus them.</summary>

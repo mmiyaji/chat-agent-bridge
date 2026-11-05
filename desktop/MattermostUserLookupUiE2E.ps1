@@ -176,13 +176,13 @@ try{
     Pass 'Localized lookup controls and wrapped account details fit Light/Dark at 500 and 1160 DIP'
     if(-not $LayoutOnly){
         Resize 1160;Go 'NavOverview';Scroll-To 'StartOnboarding';UI @('invoke','StartOnboarding')|Out-Null
-        Wait-Text 'OnboardingTitle' '[1/5]'
+        Wait-Text 'OnboardingStep' '1/5'
         foreach($id in @('WizardAcceptTerms','WizardAcceptPrivacy')){WizardScroll-To $id;UI @('invoke',$id)|Out-Null}
-        UI @('invoke','OnboardingNext')|Out-Null;Wait-Text 'OnboardingTitle' '[2/5]'
-        UI @('invoke','OnboardingNext')|Out-Null;Wait-Text 'OnboardingTitle' '[3/5]'
+        UI @('invoke','OnboardingNext')|Out-Null;Wait-Text 'OnboardingStep' '2/5'
+        UI @('invoke','OnboardingNext')|Out-Null;Wait-Text 'OnboardingStep' '3/5'
         WizardScroll-To 'CheckCli';UI @('invoke','CheckCli')|Out-Null
         UI @('wait-for','CheckCli','-p','IsEnabled','--value','True','-t','15000')|Out-Null
-        UI @('invoke','OnboardingNext')|Out-Null;Wait-Text 'OnboardingTitle' '[4/5]'
+        UI @('invoke','OnboardingNext')|Out-Null;Wait-Text 'OnboardingStep' '4/5'
         WizardScroll-To 'WizardMattermostUsernameLookupInput'
         Set-Text 'WizardMattermostUsernameLookupInput' 'missing'
         WizardScroll-To 'WizardLookupMattermostUserButton';UI @('invoke','WizardLookupMattermostUserButton')|Out-Null

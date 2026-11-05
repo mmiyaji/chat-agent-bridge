@@ -133,12 +133,12 @@ try {
   Invoke 'TogglePaneButton'; Start-Sleep -Milliseconds 300
   Invoke 'NavConnections'
   if(Visible 'ConnectionScopeCommon') { Invoke 'ConnectionScopeCommon' }
-  ScrollTo 'ChatProgressDetailHelpNotice'; ScrollTo 'ProgressPreviewButton'; Start-Sleep -Milliseconds 200
+  ScrollTo 'ChatProgressDetailHelp'; ScrollTo 'ProgressPreviewButton'; Start-Sleep -Milliseconds 200
   AssertInlinePreview; Capture "$scenario-settings-inline"
   if($LayoutOnly) {
    Invoke 'NavOverview'; Size 500; AssertOverviewCardHeights; Capture "$scenario-overview-cards-narrow"
    Size 1160; Invoke 'NavConnections'; if(Visible 'ConnectionScopeCommon') { Invoke 'ConnectionScopeCommon' }
-   Size 500; ScrollTo 'ChatProgressDetailHelpNotice'; ScrollTo 'ProgressPreviewButton'; AssertInlinePreview; Capture "$scenario-settings-inline-narrow"
+   Size 500; ScrollTo 'ChatProgressDetailHelp'; ScrollTo 'ProgressPreviewButton'; AssertInlinePreview; Capture "$scenario-settings-inline-narrow"
    [PreviewSmokeNative]::SetForegroundWindow($app.MainWindowHandle) | Out-Null
    Invoke 'ProgressPreviewButton'; Wait { Visible 'ProgressPreviewDismiss' } 'preview X button'
    $dismiss=Element 'ProgressPreviewDismiss'; Assert (-not [string]::IsNullOrWhiteSpace($dismiss.Current.Name)) 'Preview X has no accessible name.'
@@ -176,7 +176,7 @@ try {
   Assert ((Element 'ProgressPreviewMessage').Current.Name -eq $samples['Detailed-Completed']) 'Playback loops after completion.'
   [PreviewSmokeNative]::SetForegroundWindow($app.MainWindowHandle) | Out-Null; (Element 'ProgressPreviewPlay').SetFocus();[Windows.Forms.SendKeys]::SendWait('{ESC}')
   Wait { -not (Visible 'ProgressPreviewMessage') } 'Esc closes preview'
-  Size 500; ScrollTo 'ChatProgressDetailHelpNotice'; ScrollTo 'ProgressPreviewButton'; Start-Sleep -Milliseconds 200; AssertInlinePreview; Capture "$scenario-settings-inline-narrow"; Invoke 'ProgressPreviewButton'
+  Size 500; ScrollTo 'ChatProgressDetailHelp'; ScrollTo 'ProgressPreviewButton'; Start-Sleep -Milliseconds 200; AssertInlinePreview; Capture "$scenario-settings-inline-narrow"; Invoke 'ProgressPreviewButton'
   Wait { Visible 'ProgressPreviewMessage' } 'narrow preview'
   SelectLevel 'Detailed'; Invoke 'ProgressPreviewRunning'; AssertNoHorizontalScroll; Capture "$scenario-narrow"
   $app.Refresh(); $window=[Windows.Automation.AutomationElement]::FromHandle($app.MainWindowHandle).Current.BoundingRectangle

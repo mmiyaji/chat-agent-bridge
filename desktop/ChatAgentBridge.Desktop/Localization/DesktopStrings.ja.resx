@@ -22,7 +22,7 @@
   <data name="ArchitectureFit" xml:space="preserve"><value>全体表示</value></data>
   <data name="ArchitectureFitName" xml:space="preserve"><value>ウィンドウに合わせる</value></data>
   <data name="ArchitectureActualSize" xml:space="preserve"><value>100%</value></data>
-  <data name="ArchitectureActualSizeName" xml:space="preserve"><value>100 パーセントで表示</value></data>
+  <data name="ArchitectureActualSizeName" xml:space="preserve"><value>100パーセントで表示</value></data>
   <data name="ArchitectureImageName" xml:space="preserve"><value>アーキテクチャ図</value></data>
   <data name="ArchitectureLoadError" xml:space="preserve"><value>アーキテクチャ図を読み込めませんでした。</value></data>
   <data name="ChatControlNoRequests" xml:space="preserve"><value>このスレッドに、あなたの依頼はありません。</value></data>
@@ -50,9 +50,9 @@
   <data name="FollowUpSteerTitle" xml:space="preserve"><value>実行中の依頼へ追加しますか？</value></data>
   <data name="FollowUpSteerExplanation" xml:space="preserve"><value>実行中に同じユーザー・スレッドから届いたメッセージを、実行中のエージェントへそのまま渡します。AIが受け取れるタイミングで反映され、実行の終了間際に送ったメッセージは反映されない場合があります。</value></data>
   <data name="FollowUpSteerTokenNote" xml:space="preserve"><value>追加のたびにAIが追加の処理を行うことがあり、トークン消費が増える場合があります。1回の実行で追加できるのは最大10件です。</value></data>
-  <data name="FollowUpSteerChangesHeader" xml:space="preserve"><value>この機能には次の設定が必要です。同意すると下書きの設定を変更します（保存すると反映されます）：</value></data>
-  <data name="FollowUpSteerChangeAppServer" xml:space="preserve"><value>接続方式：Codex App Server を使う（現在：exec）</value></data>
-  <data name="FollowUpSteerChangeApproval" xml:space="preserve"><value>チャットからの依頼の承認：{0} → {1}</value></data>
+  <data name="FollowUpSteerChangesHeader" xml:space="preserve"><value>この機能には次の設定が必要です。同意すると下書きの設定を変更します（保存すると反映されます）:</value></data>
+  <data name="FollowUpSteerChangeAppServer" xml:space="preserve"><value>接続方式: Codex App Serverを使う（現在: exec）</value></data>
+  <data name="FollowUpSteerChangeApproval" xml:space="preserve"><value>チャットからの依頼の承認: {0} → {1}</value></data>
   <data name="FollowUpSteerNoChanges" xml:space="preserve"><value>ほかに変更が必要な設定はありません。</value></data>
   <data name="FollowUpSteerUnsupported" xml:space="preserve"><value>現在のプロバイダー（{0}）は対応していません。先にCodexまたはClaude Codeを選んでください。</value></data>
   <data name="FollowUpSteerApply" xml:space="preserve"><value>同意して変更</value></data>
@@ -90,9 +90,9 @@
   <data name="ProgressPreviewModel" xml:space="preserve"><value>サンプルモデル</value></data>
   <data name="ProgressPreviewPermission" xml:space="preserve"><value>操作前に確認</value></data>
   <data name="ProgressPreviewActivity" xml:space="preserve"><value>サンプルの作業領域を検索中</value></data>
-  <data name="ProgressPreviewReceivedStatus" xml:space="preserve"><value>状態：受付済み</value></data>
-  <data name="ProgressPreviewRunningStatus" xml:space="preserve"><value>状態：実行中</value></data>
-  <data name="ProgressPreviewCompletedStatus" xml:space="preserve"><value>状態：完了</value></data>
+  <data name="ProgressPreviewReceivedStatus" xml:space="preserve"><value>状態: 受付済み</value></data>
+  <data name="ProgressPreviewRunningStatus" xml:space="preserve"><value>状態: 実行中</value></data>
+  <data name="ProgressPreviewCompletedStatus" xml:space="preserve"><value>状態: 完了</value></data>
   <data name="ProgressFollowUpSteerHint" xml:space="preserve"><value>返信すると実行中の作業に追加指示として渡します</value></data>
   <data name="ProgressFollowUpQueueHint" xml:space="preserve"><value>返信は今の実行が終わった後に順番に処理します</value></data>
   <data name="PermissionSourceProjectLocal" xml:space="preserve"><value>{0}ローカルプロジェクト設定</value></data>
@@ -123,10 +123,10 @@
   <data name="ApprovalPermissionUnavailable" xml:space="preserve"><value>許可設定を確認できず実行不可</value></data>
   <data name="ApprovalPreparing" xml:space="preserve"><value>自動実行を準備</value></data>
   <data name="ApprovalConnectionEnded" xml:space="preserve"><value>接続終了・再受信が必要</value></data>
-  <data name="ApprovalWorkspaceNeedsResubmit" xml:space="preserve"><value>作業先変更・再投稿が必要</value></data>
+  <data name="ApprovalWorkspaceNeedsResubmit" xml:space="preserve"><value>作業フォルダー変更・再投稿が必要</value></data>
   <data name="ApprovalWorkspaceChanged" xml:space="preserve"><value>フォルダー変更済み</value></data>
   <data name="ApprovalWorkspaceChangeFailed" xml:space="preserve"><value>フォルダー変更不可</value></data>
-  <data name="AppServerApprovalPrompt" xml:space="preserve"><value>Codex が次の操作の許可を求めています。内容を確認してください。</value></data>
+  <data name="AppServerApprovalPrompt" xml:space="preserve"><value>Codexが次の操作の許可を求めています。内容を確認してください。</value></data>
   <data name="Method" xml:space="preserve"><value>メソッド</value></data>
   <data name="Thread" xml:space="preserve"><value>スレッド</value></data>
   <data name="Turn" xml:space="preserve"><value>ターン</value></data>
@@ -139,20 +139,20 @@
   <data name="Deny" xml:space="preserve"><value>拒否</value></data>
   <data name="Other" xml:space="preserve"><value>その他</value></data>
   <data name="EnterAnswer" xml:space="preserve"><value>回答を入力</value></data>
-  <data name="AnswerToCodex" xml:space="preserve"><value>Codex への回答</value></data>
+  <data name="AnswerToCodex" xml:space="preserve"><value>Codexへの回答</value></data>
   <data name="Send" xml:space="preserve"><value>送信</value></data>
   <data name="Cancel" xml:space="preserve"><value>キャンセル</value></data>
   <data name="None" xml:space="preserve"><value>(なし)</value></data>
   <data name="InputMetadata" xml:space="preserve"><value>スレッド: {0} | ターン: {1} | 項目: {2}</value></data>
-  <data name="StartupEnabled" xml:space="preserve"><value>Windows へのサインイン時に起動します。</value></data>
-  <data name="StartupDisabled" xml:space="preserve"><value>Windows へのサインイン時に起動しません。</value></data>
+  <data name="StartupEnabled" xml:space="preserve"><value>Windowsへのサインイン時に起動します。</value></data>
+  <data name="StartupDisabled" xml:space="preserve"><value>Windowsへのサインイン時に起動しません。</value></data>
   <data name="StartupDisabledByUser" xml:space="preserve"><value>タスク マネージャーで無効にされています。再度有効にするには、タスク マネージャーの [スタートアップ アプリ] で有効にしてください。</value></data>
-  <data name="StartupDisabledByPolicy" xml:space="preserve"><value>Windows のポリシーにより自動起動が無効です。</value></data>
-  <data name="StartupUnavailable" xml:space="preserve"><value>この環境では Windows の自動起動を利用できません。</value></data>
-  <data name="StartupChangeError" xml:space="preserve"><value>Windows のスタートアップ設定を変更できませんでした。アプリをパッケージ版として起動しているか確認してください。</value></data>
-  <data name="StartupTaskUnavailable" xml:space="preserve"><value>Windows のスタートアップ タスクを利用できません。パッケージ版アプリから設定してください。</value></data>
+  <data name="StartupDisabledByPolicy" xml:space="preserve"><value>Windowsのポリシーにより自動起動が無効です。</value></data>
+  <data name="StartupUnavailable" xml:space="preserve"><value>この環境ではWindowsの自動起動を利用できません。</value></data>
+  <data name="StartupChangeError" xml:space="preserve"><value>Windowsのスタートアップ設定を変更できませんでした。アプリをパッケージ版として起動しているか確認してください。</value></data>
+  <data name="StartupTaskUnavailable" xml:space="preserve"><value>Windowsのスタートアップ タスクを利用できません。パッケージ版アプリから設定してください。</value></data>
   <data name="StartupPortableExecutableUnavailable" xml:space="preserve"><value>ポータブル版の実行ファイルが見つからないため、自動起動を変更しませんでした。</value></data>
-  <data name="StartupPortableCommandTooLong" xml:space="preserve"><value>ポータブル版の自動起動コマンドが Windows の 260 文字制限を超えています。アプリまたはカスタム データ フォルダーのパスを短くしてから、もう一度お試しください。</value></data>
+  <data name="StartupPortableCommandTooLong" xml:space="preserve"><value>ポータブル版の自動起動コマンドがWindowsの260文字制限を超えています。アプリまたはカスタム データ フォルダーのパスを短くしてから、もう一度お試しください。</value></data>
   <data name="StartupStalePortableEntry" xml:space="preserve"><value>ポータブル版のスタートアップ登録先に実行ファイルがありません。自動起動を有効にする前に、レジストリ エディターで古い登録を削除してください。</value></data>
   <data name="StartupOtherPortableInstall" xml:space="preserve"><value>ポータブル版のスタートアップ登録は別のインストール先またはデータ フォルダーを使用しています。そちらのインストールから自動起動を無効にしてから変更してください。</value></data>
   <data name="StartupPortableChangeError" xml:space="preserve"><value>このユーザーのポータブル版自動起動設定を変更できませんでした。</value></data>
@@ -169,29 +169,29 @@
   <data name="Close" xml:space="preserve"><value>閉じる</value></data>
   <data name="PrivacyPolicy" xml:space="preserve"><value>プライバシーポリシー</value></data>
   <data name="TermsOfUse" xml:space="preserve"><value>利用規約</value></data>
-  <data name="NotificationNotInitialized" xml:space="preserve"><value>Windows 通知はまだ初期化されていません。</value></data>
-  <data name="NotificationDisabled" xml:space="preserve"><value>Windows 通知は無効です（{0}）。Windows の通知設定を確認してください。</value></data>
-  <data name="NotificationAvailable" xml:space="preserve"><value>Windows 通知を利用できます。</value></data>
-  <data name="NotificationInitializeFailed" xml:space="preserve"><value>Windows 通知を初期化できませんでした: {0}</value></data>
-  <data name="NotificationShowFailed" xml:space="preserve"><value>Windows 通知を表示できませんでした。Windows の通知設定を確認してください。</value></data>
-  <data name="NotificationPendingShown" xml:space="preserve"><value>承認待ちの Windows 通知を表示しました。有効期限は 5 分です。</value></data>
-  <data name="NotificationShowFailedWithError" xml:space="preserve"><value>Windows 通知を表示できませんでした: {0}</value></data>
-  <data name="NotificationShutdownFailed" xml:space="preserve"><value>Windows 通知の終了処理に失敗しました: {0}</value></data>
-  <data name="NotificationStopped" xml:space="preserve"><value>Windows 通知を停止しました。</value></data>
+  <data name="NotificationNotInitialized" xml:space="preserve"><value>Windows通知はまだ初期化されていません。</value></data>
+  <data name="NotificationDisabled" xml:space="preserve"><value>Windows通知は無効です（{0}）。Windowsの通知設定を確認してください。</value></data>
+  <data name="NotificationAvailable" xml:space="preserve"><value>Windows通知を利用できます。</value></data>
+  <data name="NotificationInitializeFailed" xml:space="preserve"><value>Windows通知を初期化できませんでした: {0}</value></data>
+  <data name="NotificationShowFailed" xml:space="preserve"><value>Windows通知を表示できませんでした。Windowsの通知設定を確認してください。</value></data>
+  <data name="NotificationPendingShown" xml:space="preserve"><value>承認待ちのWindows通知を表示しました。有効期限は5分です。</value></data>
+  <data name="NotificationShowFailedWithError" xml:space="preserve"><value>Windows通知を表示できませんでした: {0}</value></data>
+  <data name="NotificationShutdownFailed" xml:space="preserve"><value>Windows通知の終了処理に失敗しました: {0}</value></data>
+  <data name="NotificationStopped" xml:space="preserve"><value>Windows通知を停止しました。</value></data>
   <data name="NotificationChatRequestTitle" xml:space="preserve"><value>チャット依頼</value></data>
   <data name="NotificationChatRequestBody" xml:space="preserve"><value>応答待ちのチャット依頼があります。</value></data>
-  <data name="NotificationAiApprovalTitle" xml:space="preserve"><value>AI 操作の承認</value></data>
-  <data name="NotificationAiApprovalBody" xml:space="preserve"><value>承認すると保存済みの PC 設定で実行します。</value></data>
+  <data name="NotificationAiApprovalTitle" xml:space="preserve"><value>AI操作の承認</value></data>
+  <data name="NotificationAiApprovalBody" xml:space="preserve"><value>承認すると保存済みのPC設定で実行します。</value></data>
   <data name="ApproveAndRun" xml:space="preserve"><value>承認して実行</value></data>
-  <data name="NotificationDispatchFailed" xml:space="preserve"><value>Windows 通知の操作を UI スレッドへ渡せませんでした。</value></data>
+  <data name="NotificationDispatchFailed" xml:space="preserve"><value>Windows通知の操作をUIスレッドへ渡せませんでした。</value></data>
   <data name="NotificationExpiredOpenApp" xml:space="preserve"><value>この通知は現在利用できません。アプリで依頼と接続の状態を確認してください。</value></data>
   <data name="NotificationActionBusy" xml:space="preserve"><value>別の依頼を処理中のため、承認・拒否は行いませんでした。現在の処理が終わってから、もう一度操作してください。</value></data>
   <data name="NotificationActionRetryInApp" xml:space="preserve"><value>通知の操作を完了できませんでした。アプリで依頼を確認し、もう一度操作してください。</value></data>
   <data name="NotificationActivationFailed" xml:space="preserve"><value>通知からの起動情報を取得できませんでした。アプリで承認待ちの依頼を確認してください。</value></data>
-  <data name="NotificationActionFailed" xml:space="preserve"><value>Windows 通知の操作を完了できませんでした: {0}</value></data>
-  <data name="NotificationExpired" xml:space="preserve"><value>Windows 通知の有効期限が切れました。</value></data>
-  <data name="NotificationCloseFailed" xml:space="preserve"><value>Windows 通知を閉じられませんでした: {0}</value></data>
-  <data name="NotificationCloseDispatchFailed" xml:space="preserve"><value>Windows 通知を閉じる処理を UI スレッドへ渡せませんでした。</value></data>
+  <data name="NotificationActionFailed" xml:space="preserve"><value>Windows通知の操作を完了できませんでした: {0}</value></data>
+  <data name="NotificationExpired" xml:space="preserve"><value>Windows通知の有効期限が切れました。</value></data>
+  <data name="NotificationCloseFailed" xml:space="preserve"><value>Windows通知を閉じられませんでした: {0}</value></data>
+  <data name="NotificationCloseDispatchFailed" xml:space="preserve"><value>Windows通知を閉じる処理をUIスレッドへ渡せませんでした。</value></data>
   <data name="HistoryExecutionRunning" xml:space="preserve"><value>実行中または前回中断</value></data>
   <data name="HistoryExecutionCompleted" xml:space="preserve"><value>完了</value></data>
   <data name="HistoryExecutionFailed" xml:space="preserve"><value>失敗</value></data>
@@ -264,7 +264,7 @@
   <data name="WorkspaceChangeFailed" xml:space="preserve"><value>作業フォルダーを変更できませんでした。実行結果欄で指定先と信頼フォルダーを確認してください。</value></data>
   <data name="WorkspaceChangeFailedChatReply" xml:space="preserve"><value>Chat Agent Bridge: 作業フォルダーを変更できませんでした。絶対パス・フォルダーの存在・信頼範囲をPCで確認してください。AIは実行していません。</value></data>
   <data name="InboxSessionPreflight" xml:space="preserve"><value>実行前にセッションを確認します</value></data>
-  <data name="InboxDisconnected" xml:space="preserve"><value>切断中。チャット設定を確認してから接続してください。</value></data>
+  <data name="InboxDisconnected" xml:space="preserve"><value>チャット設定を確認してから接続してください。</value></data>
   <data name="InboxOutputIntro" xml:space="preserve"><value>実行結果はここに表示されます。依頼の実行と結果共有は、会話の承認・共有設定に従います。</value></data>
   <data name="UsageAfterExecution" xml:space="preserve"><value>利用量は実行後に表示します。</value></data>
   <data name="InboxPreparingConnection" xml:space="preserve"><value>接続準備中…</value></data>
@@ -298,7 +298,7 @@
   <data name="InboxStatusReplyFailed" xml:space="preserve"><value>実行は終了しましたが、チャットへの状態通知に失敗しました。ローカル結果は保持しています。</value></data>
   <data name="InboxExecutionCancelled" xml:space="preserve"><value>実行をキャンセルしました。</value></data>
   <data name="InboxCancelChatNotice" xml:space="preserve"><value>Chat Agent Bridge: PCで実行をキャンセルしました。結果本文は送信していません。</value></data>
-  <data name="InboxExecutionRecordFailed" xml:space="preserve"><value>実行または履歴の記録に失敗しました。作業先を変える場合は !cab folder 絶対パス で変更するか、履歴画面で保存セッションを切り離してから再度依頼してください。ローカル結果も確認してください。</value></data>
+  <data name="InboxExecutionRecordFailed" xml:space="preserve"><value>実行または履歴の記録に失敗しました。作業フォルダーを変える場合は !cab folder 絶対パス で変更するか、履歴画面で保存セッションを切り離してから再度依頼してください。ローカル結果も確認してください。</value></data>
   <data name="InboxRequestRejected" xml:space="preserve"><value>依頼を拒否しました。実行していません。</value></data>
   <data name="InboxRejectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: PCで依頼を拒否しました。実行していません。</value></data>
   <data name="InboxRejectRecordFailed" xml:space="preserve"><value>拒否の記録に失敗しました。依頼は実行していません。</value></data>
@@ -332,7 +332,7 @@
   <data name="Detach" xml:space="preserve"><value>切り離す</value></data>
   <data name="EnterModelName" xml:space="preserve"><value>利用できるモデル名を入力</value></data>
   <data name="NextExecutionModel" xml:space="preserve"><value>会話のモデル</value></data>
-  <data name="ReasoningEffortCliOptions" xml:space="preserve"><value>推論の強さ（CLIの候補）</value></data>
+  <data name="ReasoningEffortCliOptions" xml:space="preserve"><value>推論レベル（CLIの候補）</value></data>
   <data name="HistoryCustomCliUnsupported" xml:space="preserve"><value>このセッションのCLI形式では候補を取得できません。モデル名を直接入力できます。</value></data>
   <data name="FetchCliModels" xml:space="preserve"><value>CLIモデル候補を取得</value></data>
   <data name="CancelFetch" xml:space="preserve"><value>取得をキャンセル</value></data>
@@ -379,19 +379,19 @@
   <data name="AboutBuildTimestamp" xml:space="preserve"><value>{0:g} (UTC{0:zzz})</value></data>
   <data name="AboutBuildTimestampUnknown" xml:space="preserve"><value>不明</value></data>
   <data name="AboutUnpackaged" xml:space="preserve"><value>パッケージなし</value></data>
-  <data name="AboutStoreReady" xml:space="preserve"><value>このインストールは Store 配布版です。更新確認は手動で行い、確認のみでインストールは行いません。更新の確認とインストールには Store をご利用ください。</value></data>
-  <data name="AboutStoreDevelopment" xml:space="preserve"><value>開発プレビューです。Microsoft Store で配布された後に、Store ページと更新確認を利用できます。</value></data>
-  <data name="AboutStoreChecking" xml:space="preserve"><value>Microsoft Store の更新を確認しています…</value></data>
+  <data name="AboutStoreReady" xml:space="preserve"><value>このインストールはStore配布版です。更新確認は手動で行い、確認のみでインストールは行いません。更新の確認とインストールにはStoreをご利用ください。</value></data>
+  <data name="AboutStoreDevelopment" xml:space="preserve"><value>開発プレビューです。Microsoft Storeで配布された後に、Storeページと更新確認を利用できます。</value></data>
+  <data name="AboutStoreChecking" xml:space="preserve"><value>Microsoft Storeの更新を確認しています…</value></data>
   <data name="AboutStoreNoUpdates" xml:space="preserve"><value>現在利用可能な更新はありません。</value></data>
-  <data name="AboutStoreUpdatesAvailable" xml:space="preserve"><value>更新があります。Microsoft Store のページを開いて内容を確認し、インストールしてください。</value></data>
-  <data name="AboutStoreCheckFailed" xml:space="preserve"><value>更新を確認できませんでした。後でもう一度試すか、Microsoft Store のページを開いてください。</value></data>
-  <data name="AboutStoreOpenFailed" xml:space="preserve"><value>Microsoft Store のページを開けませんでした。</value></data>
+  <data name="AboutStoreUpdatesAvailable" xml:space="preserve"><value>更新があります。Microsoft Storeのページを開いて内容を確認し、インストールしてください。</value></data>
+  <data name="AboutStoreCheckFailed" xml:space="preserve"><value>更新を確認できませんでした。後でもう一度試すか、Microsoft Storeのページを開いてください。</value></data>
+  <data name="AboutStoreOpenFailed" xml:space="preserve"><value>Microsoft Storeのページを開けませんでした。</value></data>
   <data name="AboutOpenLinkFailed" xml:space="preserve"><value>リンクを開けませんでした。ブラウザーまたはメールアプリが利用できるか確認してください。</value></data>
   <data name="HistoryProviderAll" xml:space="preserve"><value>すべてのサービス</value></data>
   <data name="HistoryUnknownOrigin" xml:space="preserve"><value>接続先不明</value></data>
-  <data name="HistoryConversationsTab" xml:space="preserve"><value>会話 ({0})</value></data>
-  <data name="HistoryExecutionsTab" xml:space="preserve"><value>実行 ({0})</value></data>
-  <data name="HistoryAuditTab" xml:space="preserve"><value>操作記録 ({0})</value></data>
+  <data name="HistoryConversationsTab" xml:space="preserve"><value>会話</value></data>
+  <data name="HistoryExecutionsTab" xml:space="preserve"><value>実行</value></data>
+  <data name="HistoryAuditTab" xml:space="preserve"><value>操作記録</value></data>
   <data name="HistorySearchLabel" xml:space="preserve"><value>保存済みの会話を検索</value></data>
   <data name="HistorySearchPlaceholder" xml:space="preserve"><value>会話名・作業フォルダー・ユーザー・モデルなど</value></data>
   <data name="HistoryProviderLabel" xml:space="preserve"><value>チャットサービス</value></data>
@@ -401,19 +401,19 @@
   <data name="HistoryEmptySessionListHeading" xml:space="preserve"><value>保存済みの会話はまだありません</value></data>
   <data name="HistoryEmptySessionListDescription" xml:space="preserve"><value>接続済みチャットの依頼を処理すると、保存済みの会話がここに表示されます。</value></data>
   <data name="HistoryEmptySessionMatchesHeading" xml:space="preserve"><value>条件に一致する会話はありません</value></data>
-  <data name="HistoryEmptySessionMatchesDescription" xml:space="preserve"><value>検索、プロバイダー、ワークスペースの絞り込みを変更してください。</value></data>
+  <data name="HistoryEmptySessionMatchesDescription" xml:space="preserve"><value>検索、プロバイダー、作業フォルダーの絞り込みを変更してください。</value></data>
   <data name="HistoryEmptySessionDetailHeading" xml:space="preserve"><value>会話を選択</value></data>
-  <data name="HistoryEmptySessionDetailDescription" xml:space="preserve"><value>保存済みの会話を選ぶと、アクティビティ、ワークスペース、エージェント、モデル、ポリシーを確認できます。</value></data>
+  <data name="HistoryEmptySessionDetailDescription" xml:space="preserve"><value>保存済みの会話を選ぶと、アクティビティ、作業フォルダー、エージェント、モデル、ポリシーを確認できます。</value></data>
   <data name="HistorySelectConversation" xml:space="preserve"><value>会話を選択</value></data>
   <data name="HistorySelectedSessionTitle" xml:space="preserve"><value>{0} · {1}</value></data>
-  <data name="HistorySelectConversationHint" xml:space="preserve"><value>保存済みの会話を選択すると、識別子、ワークスペース、エージェント、モデル、実行ポリシーを確認できます。</value></data>
-  <data name="HistoryChannelIdLabel" xml:space="preserve"><value>チャンネル ID</value></data>
-  <data name="HistoryThreadIdLabel" xml:space="preserve"><value>スレッド ID</value></data>
-  <data name="HistoryUserIdLabel" xml:space="preserve"><value>ユーザー ID</value></data>
+  <data name="HistorySelectConversationHint" xml:space="preserve"><value>保存済みの会話を選択すると、識別子、作業フォルダー、エージェント、モデル、実行ポリシーを確認できます。</value></data>
+  <data name="HistoryChannelIdLabel" xml:space="preserve"><value>チャンネルID</value></data>
+  <data name="HistoryThreadIdLabel" xml:space="preserve"><value>スレッドID</value></data>
+  <data name="HistoryUserIdLabel" xml:space="preserve"><value>ユーザーID</value></data>
   <data name="HistoryOriginLabel" xml:space="preserve"><value>接続先の識別子</value></data>
   <data name="HistoryWorkspacePathLabel" xml:space="preserve"><value>作業フォルダー</value></data>
   <data name="HistoryAgentLabel" xml:space="preserve"><value>エージェント</value></data>
-  <data name="HistorySessionIdLabel" xml:space="preserve"><value>セッション ID</value></data>
+  <data name="HistorySessionIdLabel" xml:space="preserve"><value>セッションID</value></data>
   <data name="HistoryBackToConversations" xml:space="preserve"><value>会話一覧に戻る</value></data>
   <data name="HistoryContinueInOriginalThread" xml:space="preserve"><value>この会話を続けるには、元のチャットスレッドに返信してください。</value></data>
   <data name="HistoryConversationHeading" xml:space="preserve"><value>会話</value></data>
@@ -462,19 +462,19 @@
   <data name="InboxInterrupted" xml:space="preserve"><value>中断</value></data>
   <data name="InboxRestoredIdle" xml:space="preserve"><value>復元済み・待機中</value></data>
   <data name="InboxClearFiltersLabel" xml:space="preserve"><value>絞り込みを解除</value></data>
-  <data name="InboxOneConversation" xml:space="preserve"><value>会話 1 件</value></data>
-  <data name="InboxOneRequest" xml:space="preserve"><value>依頼 1 件</value></data>
+  <data name="InboxOneConversation" xml:space="preserve"><value>会話1件</value></data>
+  <data name="InboxOneRequest" xml:space="preserve"><value>依頼1件</value></data>
   <data name="ChooseExecutable" xml:space="preserve"><value>実行ファイルを選択</value></data>
   <data name="ExecutablePickerFailedTitle" xml:space="preserve"><value>ファイル選択画面を開けませんでした</value></data>
   <data name="ExecutablePickerFailedMessage" xml:space="preserve"><value>ネイティブ実行ファイルを選択して、もう一度お試しください。</value></data>
   <data name="Activity30Days" xml:space="preserve"><value>30日</value></data>
   <data name="Activity365Days" xml:space="preserve"><value>1年</value></data>
   <data name="Activity90Days" xml:space="preserve"><value>90日</value></data>
-  <data name="ActivityDayCount" xml:space="preserve"><value>{0}：{1:N0}回</value></data>
+  <data name="ActivityDayCount" xml:space="preserve"><value>{0}: {1:N0}回</value></data>
   <data name="ActivityDays" xml:space="preserve"><value>{0:N0}日</value></data>
-  <data name="ActivityFilteredExecutions" xml:space="preserve"><value>{0}：保存済みの実行 {1:N0}件</value></data>
+  <data name="ActivityFilteredExecutions" xml:space="preserve"><value>{0}: 保存済みの実行 {1:N0}件</value></data>
   <data name="ActivityNoPeak" xml:space="preserve"><value>まだ記録がありません</value></data>
-  <data name="ActivityOutcomes" xml:space="preserve"><value>この期間：完了 {0:N0}回・失敗 {1:N0}回・中止 {2:N0}回・実行中／中断 {3:N0}回</value></data>
+  <data name="ActivityOutcomes" xml:space="preserve"><value>この期間: 完了 {0:N0}回・失敗 {1:N0}回・中止 {2:N0}回・実行中／中断 {3:N0}回</value></data>
   <data name="ActivityNoRunsHeading" xml:space="preserve"><value>アクティビティはまだありません</value></data>
   <data name="ActivityNoRunsDescription" xml:space="preserve"><value>最初の実行後にアクティビティが表示されます。手動で実行するか、接続済みチャットから依頼してください。</value></data>
   <data name="ActivityNoRunsInPeriodHeading" xml:space="preserve"><value>この期間に実行はありません</value></data>
@@ -488,19 +488,19 @@
   <data name="ActivityTabTitle" xml:space="preserve"><value>利用状況</value></data>
   <data name="ActivityUnknownModel" xml:space="preserve"><value>既定／モデル未記録</value></data>
   <data name="ActivityDailyScale" xml:space="preserve"><value>最大 {0:N0}回／日</value></data>
-  <data name="ActivityChatsTabCompact" xml:space="preserve"><value>会話 ({0})</value></data>
-  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>実行 ({0})</value></data>
-  <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}：選択期間外</value></data>
+  <data name="ActivityChatsTabCompact" xml:space="preserve"><value>会話</value></data>
+  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>実行</value></data>
+  <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}: 選択期間外</value></data>
   <data name="UsageTokens" xml:space="preserve"><value>トークン消費量</value></data>
   <data name="UsageCache" xml:space="preserve"><value>キャッシュヒット率</value></data>
   <data name="UsageCostMetric" xml:space="preserve"><value>推定コスト（API料金換算・USD）</value></data>
   <data name="UsageCostUnknown" xml:space="preserve"><value>未算出</value></data>
-  <data name="UsageCostHeadline" xml:space="preserve"><value>推定コスト（API料金換算・USD）：{0}</value></data>
+  <data name="UsageCostHeadline" xml:space="preserve"><value>推定コスト（API料金換算・USD）: {0}</value></data>
   <data name="UsageCostRange" xml:space="preserve"><value>{0}～{1}</value></data>
   <data name="UsageCostCoverage" xml:space="preserve"><value>{0}/{1}件を推定、未算出 {2}件、範囲表示 {3}件。未算出の実行がある場合、表示額は算定できた分のみの小計です。</value></data>
-  <data name="UsageCostDetails" xml:space="preserve"><value>推定APIコスト：{0}。{1}</value></data>
+  <data name="UsageCostDetails" xml:space="preserve"><value>推定APIコスト: {0}。{1}</value></data>
   <data name="UsageCostBarValue" xml:space="preserve"><value>{0}（算定 {1}/{2}件）</value></data>
-  <data name="UsageCostMethodDate" xml:space="preserve"><value>参照料金の確認日：{0}</value></data>
+  <data name="UsageCostMethodDate" xml:space="preserve"><value>参照料金の確認日: {0}</value></data>
   <data name="UsageCostMethodDetails" xml:space="preserve"><value>記録されたトークン数に、報告モデルの公開標準API料金を掛けて推定します。既知の料金で算定できた実行だけを含み、モデルや必要なトークン数が不明な実行は未算出です。キャッシュ情報が不足する場合は範囲で表示します。日別・モデル別グラフの高さは範囲の上限で計算し、ラベルには範囲を表示します。</value></data>
   <data name="UsageCostLimitations" xml:space="preserve"><value>請求額ではなく参考値です。サブスクリプション料金、ツール、Fastモード、リージョン、税は含みません。キャッシュの有効期間やコンテキストが不明な場合があり、記録されたメインループの利用量にサブエージェントが含まれないことがあります。推定には現在のローカル単価を使用します。料金表を更新しても手動指定は維持されます。料金表の更新ではAIを実行しません。</value></data>
   <data name="UsageOpenAIPricing" xml:space="preserve"><value>OpenAI API料金</value></data>
@@ -510,12 +510,12 @@
   <data name="UsageUnknown" xml:space="preserve"><value>未報告</value></data>
   <data name="UsageNoRuns" xml:space="preserve"><value>実行なし</value></data>
   <data name="UsagePercent" xml:space="preserve"><value>{0}%</value></data>
-  <data name="UsageHeadline" xml:space="preserve"><value>報告済みトークン：{0} ／ キャッシュヒット率：{1}</value></data>
-  <data name="UsageCoverage" xml:space="preserve"><value>報告状況：トークン {0}/{1}件・キャッシュ {2}/{1}件 ／ 集計範囲が異なるため除外：{3}件</value></data>
+  <data name="UsageHeadline" xml:space="preserve"><value>報告済みトークン: {0} ／ キャッシュヒット率: {1}</value></data>
+  <data name="UsageCoverage" xml:space="preserve"><value>報告状況: トークン {0}/{1}件・キャッシュ {2}/{1}件 ／ 集計範囲が異なるため除外: {3}件</value></data>
   <data name="UsageTurnNote" xml:space="preserve"><value>実行単位の報告を集計します。最後のリクエストだけの値や、セッション全体の累積値は混ぜません。</value></data>
   <data name="UsageRequestNote" xml:space="preserve"><value>部分的な利用量です。各実行の最後のリクエストだけを集計し、実行全体の消費量は表しません。</value></data>
   <data name="UsageRecentRange" xml:space="preserve"><value>日別・直近28日（{0} ～ {1}）</value></data>
-  <data name="UsageDetails" xml:space="preserve"><value>入力（キャッシュ込み）：{0} ／ 出力：{1} ／ キャッシュ読み込み：{2} ／ キャッシュ書き込み：{3}</value></data>
+  <data name="UsageDetails" xml:space="preserve"><value>入力（キャッシュ込み）: {0} ／ 出力: {1} ／ キャッシュ読み込み: {2} ／ キャッシュ書き込み: {3}</value></data>
   <data name="UsageDayDetails" xml:space="preserve"><value>{0}
 {1}</value></data>
   <data name="UsageBarLabel" xml:space="preserve"><value>{0}：{1}
@@ -527,11 +527,28 @@
   <data name="ChatInputTextReply" xml:space="preserve"><value>回答: !cab answer {0} {1} 回答内容</value></data>
   <data name="ChatInputOptionReply" xml:space="preserve"><value>選択肢の番号で回答: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>別の回答: !cab answer {0} {1} other 回答内容</value></data>
-  <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:&#10;&gt; !cab &lt;依頼&gt; — エージェントに依頼する&#10;&gt; !cab command / !cab commands / !cab help — この一覧を表示する&#10;&gt; !cab agent — 登録済みCLI接続と要約あり／なしの切り替え方法を表示&#10;&gt; !cab model / !cab model list / !cab model モデルID / !cab model default — この会話のモデル確認・候補取得・変更・既定に戻す&#10;&gt; !cab status — このスレッドにある自分の実行中・承認待ち・待機中の依頼を、状態・実効エージェント・モデル・作業先とともに表示する&#10;&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す&#10;&gt; !cab folder &quot;C:\path&quot; — 作業先変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要&#10;&gt; !cab worktree 名前 — この会話用のgit worktreeを申請する（このPCでの承認が必要）&#10;&gt; !cab remember 内容 / !cab memory / !cab forget 番号|all — このチャンネルの全依頼に付加するメモの保存・一覧・削除&#10;&gt; !cab usage — このスレッドと本日の自分の利用トークン数と推定コストを表示&#10;&gt; !cab schedule add daily 09:00 依頼内容 / !cab schedule list / !cab schedule remove 番号 — このアプリが接続中のあいだ、依頼を定時に実行する&#10;&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）&#10;&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する&#10;&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する&#10;&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する&#10;&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効&#10;新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このプロバイダー、チャンネル、スレッド、サーバー接続元にある自分の依頼だけに適用されます。状態表示は最大10件で、他の依頼者の依頼は表示しません。</value></data>
+  <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:
+&gt; !cab &lt;依頼&gt; — エージェントに依頼する
+&gt; !cab command / !cab commands / !cab help — この一覧を表示する
+&gt; !cab agent — 登録済みCLI接続と要約あり／なしの切り替え方法を表示
+&gt; !cab model / !cab model list / !cab model モデルID / !cab model default — この会話のモデル確認・候補取得・変更・既定に戻す
+&gt; !cab status — このスレッドにある自分の実行中・承認待ち・待機中の依頼を、状態・実効エージェント・モデル・作業フォルダーとともに表示する
+&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す
+&gt; !cab folder "C:\path" — 作業フォルダー変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要
+&gt; !cab worktree 名前 — この会話用のgit worktreeを申請する（このPCでの承認が必要）
+&gt; !cab remember 内容 / !cab memory / !cab forget 番号|all — このチャンネルの全依頼に付加するメモの保存・一覧・削除
+&gt; !cab usage — このスレッドと本日の自分の利用トークン数と推定コストを表示
+&gt; !cab schedule add daily 09:00 依頼内容 / !cab schedule list / !cab schedule remove 番号 — このアプリが接続中のあいだ、依頼を定時に実行する
+&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）
+&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する
+&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する
+&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する
+&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効
+新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このプロバイダー、チャンネル、スレッド、サーバー接続元にある自分の依頼だけに適用されます。状態表示は最大10件で、他の依頼者の依頼は表示しません。</value></data>
   <data name="MattermostInboxApprovalWaiting" xml:space="preserve"><value>この依頼は承認待ちです。依頼した本人が ✅ で承認、❌ で拒否できます。</value></data>
   <data name="WorktreeNameInstruction" xml:space="preserve"><value>!cab worktree 名前 の形式で指定してください。名前は英数字・ドット・アンダースコア・ハイフンの1〜40文字で、先頭にドットとハイフンは使えません。</value></data>
-  <data name="WorktreeChangedOutput" xml:space="preserve"><value>作業先をgit worktree {0}（ブランチ {1}）に切り替えました。次の依頼は新しいAI会話として開始します。</value></data>
-  <data name="WorktreeChangedChatReply" xml:space="preserve"><value>Chat Agent Bridge: この会話の作業先をgit worktree {0}（ブランチ {1}）に切り替えました。次の依頼は新しいAI会話として開始します。</value></data>
+  <data name="WorktreeChangedOutput" xml:space="preserve"><value>作業フォルダーをgit worktree {0}（ブランチ {1}）に切り替えました。次の依頼は新しいAI会話として開始します。</value></data>
+  <data name="WorktreeChangedChatReply" xml:space="preserve"><value>Chat Agent Bridge: この会話の作業フォルダーをgit worktree {0}（ブランチ {1}）に切り替えました。次の依頼は新しいAI会話として開始します。</value></data>
   <data name="ChatMemorySaved" xml:space="preserve"><value>このチャンネルのメモを保存しました（{0}/{1}件）。</value></data>
   <data name="ChatMemoryTooLong" xml:space="preserve"><value>メモが長すぎます。{0}文字以内にしてください。</value></data>
   <data name="ChatMemoryFull" xml:space="preserve"><value>このチャンネルのメモは既に{0}件あります。先に !cab forget 番号 で削除してください。</value></data>
@@ -571,7 +588,11 @@
   <data name="HistoryUserNameUnavailable" xml:space="preserve"><value>ユーザー名未取得</value></data>
   <data name="HistoryChannelNameUnavailable" xml:space="preserve"><value>チャンネル名未取得</value></data>
   <data name="HistoryDirectMessage" xml:space="preserve"><value>ダイレクトメッセージ</value></data>
-  <data name="ChatModelCurrent" xml:space="preserve"><value>現在のモデル: {0}&#10;推論の強さ: {1}&#10;!cab model list — 候補を取得&#10;!cab model モデルID — この会話のモデルを変更&#10;!cab model default — エージェント設定に戻す</value></data>
+  <data name="ChatModelCurrent" xml:space="preserve"><value>現在のモデル: {0}
+推論レベル: {1}
+!cab model list — 候補を取得
+!cab model モデルID — この会話のモデルを変更
+!cab model default — エージェント設定に戻す</value></data>
   <data name="ChatModelList" xml:space="preserve"><value>CLIから取得したモデル候補（5分間キャッシュ）。!cab model モデルID で選択してください:</value></data>
   <data name="ChatModelMoreInPc" xml:space="preserve"><value>すべての候補はPCの「履歴と利用状況」で確認できます。</value></data>
   <data name="ChatModelUnsupported" xml:space="preserve"><value>モデル切り替えはCodex・Claude Code・Gemini CLI・GitHub Copilot CLI・Antigravity CLIで利用できます。</value></data>
@@ -641,7 +662,7 @@
   <data name="LiveOutputClear" xml:space="preserve"><value>表示を消去</value></data>
   <data name="LiveOutputCancellationPending" xml:space="preserve"><value>中断を要求しました。プロセスの停止を待っています。すでに行われたファイル変更は元に戻りません。</value></data>
   <data name="LiveOutputCancel" xml:space="preserve"><value>この依頼を中断</value></data>
-  <data name="InboxActiveRequestBanner" xml:space="preserve"><value>実行中の依頼を表示：{0} — {1}</value></data>
+  <data name="InboxActiveRequestBanner" xml:space="preserve"><value>実行中の依頼を表示: {0} — {1}</value></data>
   <data name="PricingSettingsHeader" xml:space="preserve"><value>API料金</value></data>
   <data name="PricingAutoUpdateHeader" xml:space="preserve"><value>料金情報の自動更新</value></data>
   <data name="PricingAutoUpdateDescription" xml:space="preserve"><value>料金情報を自動で確認し、参照元と確認状況を確認します。</value></data>
@@ -733,15 +754,15 @@
   <data name="ModelCatalogAccessDenied" xml:space="preserve"><value>モデル候補の取得中にアクセスが拒否されました。作業フォルダーとCLI実行ファイルのアクセス権を確認してください。</value></data>
   <data name="CliTrustTitle" xml:space="preserve"><value>この作業フォルダーを信頼しますか？</value></data>
   <data name="CliTrustExplanation" xml:space="preserve"><value>信頼できるフォルダーだけを追加してください。下位フォルダーも信頼対象となり、実行権限の設定に従ってエージェントが作業できます。</value></data>
-  <data name="CliTrustLinkExplanation" xml:space="preserve"><value>現在の作業先はリンクです。リンク自体を追加しても安全確認を通過しません。以下の実フォルダーに作業先を変更し、そのフォルダーを信頼対象に追加します。</value></data>
-  <data name="CliTrustOriginalPath" xml:space="preserve"><value>現在の作業先：{0}</value></data>
-  <data name="CliTrustTargetPath" xml:space="preserve"><value>信頼対象に追加するフォルダー：{0}</value></data>
+  <data name="CliTrustLinkExplanation" xml:space="preserve"><value>現在の作業フォルダーはリンクです。リンク自体を追加しても安全確認を通過しません。以下の実フォルダーに作業フォルダーを変更し、そのフォルダーを信頼対象に追加します。</value></data>
+  <data name="CliTrustOriginalPath" xml:space="preserve"><value>現在の作業フォルダー: {0}</value></data>
+  <data name="CliTrustTargetPath" xml:space="preserve"><value>信頼対象に追加するフォルダー: {0}</value></data>
   <data name="CliTrustSaveHelp" xml:space="preserve"><value>内容を確認して追加すると、CLIを再チェックします。初期設定ガイドでは、完了時に設定が反映されます。</value></data>
   <data name="CliTrustAdd" xml:space="preserve"><value>追加して再チェック</value></data>
   <data name="CliTrustUseTarget" xml:space="preserve"><value>リンク先を信頼して再チェック</value></data>
   <data name="CliTrustWizardSaveHelp" xml:space="preserve"><value>変更を保存するには［保存して次へ］を選択してください。次のページでCLIをチェックできます。</value></data>
   <data name="CliTrustAddOnly" xml:space="preserve"><value>フォルダーを追加</value></data>
-  <data name="CliTrustUseTargetOnly" xml:space="preserve"><value>リンク先を信頼して作業先に設定</value></data>
+  <data name="CliTrustUseTargetOnly" xml:space="preserve"><value>リンク先を信頼して作業フォルダーに設定</value></data>
   <data name="InboxConnectionErrorLabel" xml:space="preserve"><value>接続を確認してください</value></data>
   <data name="InboxConnectionReadyLabel" xml:space="preserve"><value>依頼を受信できます</value></data>
   <data name="InboxConnectionWorkingLabel" xml:space="preserve"><value>接続処理中</value></data>
@@ -750,12 +771,13 @@
   <data name="SidebarConnectionConnecting" xml:space="preserve"><value>接続処理中</value></data>
   <data name="SidebarConnectionDisconnected" xml:space="preserve"><value>未接続</value></data>
   <data name="SidebarConnectionError" xml:space="preserve"><value>接続エラー</value></data>
+  <data name="SidebarConnectionNone" xml:space="preserve"><value>チャット接続</value></data>
   <data name="InboxQueueSummary" xml:space="preserve"><value>承認待ち {0}件 · 実行中 {1}件</value></data>
   <data name="SettingsDraftAgent" xml:space="preserve"><value>エージェント設定</value></data>
   <data name="SettingsDraftChat" xml:space="preserve"><value>チャット設定</value></data>
   <data name="SettingsDraftGeneral" xml:space="preserve"><value>自動接続</value></data>
   <data name="SettingsDraftClean" xml:space="preserve"><value>保存済み（変更なし）</value></data>
-  <data name="SettingsDraftChanged" xml:space="preserve"><value>未保存：{0}</value></data>
+  <data name="SettingsDraftChanged" xml:space="preserve"><value>未保存: {0}</value></data>
   <data name="SettingsDraftSaveHelp" xml:space="preserve"><value>エージェント設定・チャット設定・自動接続の変更をまとめて保存します。チャットへの反映には再接続が必要です。</value></data>
   <data name="SettingsDraftDialogTitle" xml:space="preserve"><value>未保存の変更があります</value></data>
   <data name="SettingsDraftDialogMessage" xml:space="preserve"><value>{0}
@@ -810,10 +832,10 @@
   <data name="SettingsReviewServer" xml:space="preserve"><value>Mattermostの接続先</value></data>
   <data name="SettingsReviewMattermostChannel" xml:space="preserve"><value>Mattermostのチャンネル</value></data>
   <data name="SettingsReviewCredentials" xml:space="preserve"><value>認証トークン</value></data>
-  <data name="SettingsReviewHidden" xml:space="preserve"><value>{0}：変更あり（値は非表示）</value></data>
+  <data name="SettingsReviewHidden" xml:space="preserve"><value>{0}: 変更あり（値は非表示）</value></data>
   <data name="SettingsReviewChange" xml:space="preserve"><value>{0}
-変更前：{1}
-変更後：{2}</value></data>
+変更前: {1}
+変更後: {2}</value></data>
   <data name="SettingsReviewOn" xml:space="preserve"><value>オン</value></data>
   <data name="SettingsReviewOff" xml:space="preserve"><value>オフ</value></data>
   <data name="SettingsReviewEmpty" xml:space="preserve"><value>未設定</value></data>
@@ -826,8 +848,8 @@
   <data name="PortableIdentityPublisher" xml:space="preserve"><value>発行元: {0}</value></data>
   <data name="PortableIdentityFingerprint" xml:space="preserve"><value>証明書の SHA-256: {0}</value></data>
   <data name="PortableIdentityRegisteredLocation" xml:space="preserve"><value>登録先: {0}</value></data>
-  <data name="PortableIdentityRegistered" xml:space="preserve"><value>このフォルダーは Windows に登録されています。</value></data>
-  <data name="PortableIdentityNotRegistered" xml:space="preserve"><value>このフォルダーは Windows に登録されていません。</value></data>
+  <data name="PortableIdentityRegistered" xml:space="preserve"><value>このフォルダーはWindowsに登録されています。</value></data>
+  <data name="PortableIdentityNotRegistered" xml:space="preserve"><value>このフォルダーはWindowsに登録されていません。</value></data>
   <data name="PortableIdentityActive" xml:space="preserve"><value>通知の登録が有効です。</value></data>
   <data name="PortableIdentityInactive" xml:space="preserve"><value>このプロセスでは通知の登録が有効ではありません。</value></data>
   <data name="PortableIdentityRestartHelp" xml:space="preserve"><value>承認待ちの通知が届かない場合のみ使います。追加登録・解除ではアプリが再起動します。設定とアップデーターは引き継がれます。</value></data>
@@ -836,23 +858,23 @@
   <data name="PortableIdentityConfigureAgain" xml:space="preserve"><value>追加登録をやり直して再起動</value></data>
   <data name="PortableIdentityRemove" xml:space="preserve"><value>登録を削除して再起動</value></data>
   <data name="PortableIdentityRefresh" xml:space="preserve"><value>状態を更新</value></data>
-  <data name="PortableIdentityConfigureTitle" xml:space="preserve"><value>Windows 通知を設定しますか？</value></data>
-  <data name="PortableIdentityConfigureRestart" xml:space="preserve"><value>このポータブル版のフォルダーを Windows に登録するため、アプリを終了して再起動します。設定と更新機能はそのままです。</value></data>
-  <data name="PortableIdentityTrustConsent" xml:space="preserve"><value>{0} のこの証明書を信頼します。この Windows ユーザーの「信頼されたユーザー」ストアに追加します。この証明書で署名された他のパッケージも信頼される場合があります。管理者権限は要求しません。</value></data>
+  <data name="PortableIdentityConfigureTitle" xml:space="preserve"><value>Windows通知を設定しますか？</value></data>
+  <data name="PortableIdentityConfigureRestart" xml:space="preserve"><value>このポータブル版のフォルダーをWindowsに登録するため、アプリを終了して再起動します。設定と更新機能はそのままです。</value></data>
+  <data name="PortableIdentityTrustConsent" xml:space="preserve"><value>{0} のこの証明書を信頼します。このWindowsユーザーの「信頼されたユーザー」ストアに追加します。この証明書で署名された他のパッケージも信頼される場合があります。管理者権限は要求しません。</value></data>
   <data name="PortableIdentityRelocationWarning" xml:space="preserve"><value>この通知登録は別のフォルダーに紐付いています: {0}。更新すると、このフォルダーに紐付け先を移します。</value></data>
   <data name="PortableIdentityRelocationConsent" xml:space="preserve"><value>通知登録をこのポータブル版フォルダーに移すことを明示的に許可します。</value></data>
   <data name="PortableIdentityConfigurePrimary" xml:space="preserve"><value>設定して再起動</value></data>
-  <data name="PortableIdentityRemoveTitle" xml:space="preserve"><value>Windows 通知の登録を削除しますか？</value></data>
-  <data name="PortableIdentityRemoveMessage" xml:space="preserve"><value>この Windows ユーザーに対する Chat Agent Bridge の登録だけを削除してから、アプリを終了して再起動します。</value></data>
-  <data name="PortableIdentityRemoveRetained" xml:space="preserve"><value>このユーザーの Windows にある証明書の信頼設定は残ります。設定とポータブル更新機能は変更されません。</value></data>
+  <data name="PortableIdentityRemoveTitle" xml:space="preserve"><value>Windows通知の登録を削除しますか？</value></data>
+  <data name="PortableIdentityRemoveMessage" xml:space="preserve"><value>このWindowsユーザーに対するChat Agent Bridgeの登録だけを削除してから、アプリを終了して再起動します。</value></data>
+  <data name="PortableIdentityRemoveRetained" xml:space="preserve"><value>このユーザーのWindowsにある証明書の信頼設定は残ります。設定とポータブル更新機能は変更されません。</value></data>
   <data name="PortableIdentityRemovePrimary" xml:space="preserve"><value>登録を削除して再起動</value></data>
-  <data name="PortableIdentityUnsupported" xml:space="preserve"><value>Windows 通知 ID には Windows 10 バージョン 2004 以降が必要です。</value></data>
+  <data name="PortableIdentityUnsupported" xml:space="preserve"><value>Windows通知IDにはWindows 10バージョン2004以降が必要です。</value></data>
   <data name="PortableIdentityMissingBundle" xml:space="preserve"><value>署名済みの通知パッケージがこのビルドに含まれていません。</value></data>
   <data name="PortableIdentityInvalidBundle" xml:space="preserve"><value>通知パッケージを検証できませんでした。公式ビルドを再展開してください。</value></data>
-  <data name="PortableIdentityRegisteredRestart" xml:space="preserve"><value>登録しました。Windows 通知を有効にするにはアプリを再起動してください。</value></data>
-  <data name="PortableIdentityOtherLocationStatus" xml:space="preserve"><value>この ID は別のフォルダーに登録されています: {0}</value></data>
-  <data name="PortableIdentityReady" xml:space="preserve"><value>Windows 通知は設定されていません。</value></data>
-  <data name="PortableIdentityTrustRequiredStatus" xml:space="preserve"><value>この Windows ユーザーの通知を有効にするには、発行元の証明書を確認してください。</value></data>
+  <data name="PortableIdentityRegisteredRestart" xml:space="preserve"><value>登録しました。Windows通知を有効にするにはアプリを再起動してください。</value></data>
+  <data name="PortableIdentityOtherLocationStatus" xml:space="preserve"><value>このIDは別のフォルダーに登録されています: {0}</value></data>
+  <data name="PortableIdentityReady" xml:space="preserve"><value>Windows通知は設定されていません。</value></data>
+  <data name="PortableIdentityTrustRequiredStatus" xml:space="preserve"><value>このWindowsユーザーの通知を有効にするには、発行元の証明書を確認してください。</value></data>
   <data name="PortableIdentityChecking" xml:space="preserve"><value>通知パッケージの状態を確認しています…</value></data>
   <data name="PortableIdentityBusyWork" xml:space="preserve"><value>通知の変更前に、実行中の作業、承認、設定変更を完了してください。</value></data>
   <data name="PortableIdentityHelperMissing" xml:space="preserve"><value>ポータブル更新ヘルパーがありません。公式ビルドを再展開してください。</value></data>
@@ -868,7 +890,7 @@
   <data name="ActivityStatisticsMigrationCoverage" xml:space="preserve"><value>集計開始時に残っていた履歴を含みます。それ以前に履歴から削除された記録は復旧できません。</value></data>
   <data name="AgentScopeCommon" xml:space="preserve"><value>共通設定</value></data>
   <data name="MuseCliName" xml:space="preserve"><value>Muse Code CLI</value></data>
-  <data name="AgentScopeCustom" xml:space="preserve"><value>その他の CLI</value></data>
+  <data name="AgentScopeCustom" xml:space="preserve"><value>その他のCLI</value></data>
   <data name="AgentScopePicker" xml:space="preserve"><value>設定する対象</value></data>
   <data name="AgentScopeCommonHelp" xml:space="preserve"><value>作業フォルダー・信頼するフォルダー・PCでの実行確認は、すべてのエージェントに適用されます。</value></data>
   <data name="ConnectionScopeCommonHelp" xml:space="preserve"><value>承認・結果共有・添付の設定は、Slack、Mattermost、Discordに共通です。</value></data>
@@ -916,7 +938,7 @@
   <data name="PaneSizerSettings" xml:space="preserve"><value>設定メニューの幅を変更</value></data>
   <data name="PaneSizerHelp" xml:space="preserve"><value>ドラッグするか、矢印キーを使って幅を変更します。</value></data>
   <data name="TipChatConnectTitle" xml:space="preserve"><value>チャットから依頼を受け付ける</value></data>
-  <data name="TipChatConnectBody" xml:space="preserve"><value>「チャット」を開いて Mattermost・Slack・Discord に接続すると、チャットで送られた依頼をこの PC で実行できます。</value></data>
+  <data name="TipChatConnectBody" xml:space="preserve"><value>「チャット」を開いてSlack、Mattermost、またはDiscordに接続すると、チャットで送られた依頼をこのPCで実行できます。</value></data>
   <data name="TipOpenChat" xml:space="preserve"><value>チャットを開く</value></data>
   <data name="TipGotIt" xml:space="preserve"><value>OK</value></data>
   <data name="SearchScopeSettings" xml:space="preserve"><value>{0} の設定</value></data>
@@ -999,7 +1021,7 @@
   <data name="KeepAwakeStatusWaiting" xml:space="preserve"><value>AC電源の状態を確認できるまで待機中です。電源要求は有効ではありません。</value></data>
   <data name="KeepAwakeStatusError" xml:space="preserve"><value>スリープ抑止を適用できません。設定ファイルまたはWindowsの電源要求を確認してください。</value></data>
   <data name="KeepAwakeSaveError" xml:space="preserve"><value>スリープ抑止の設定を保存できませんでした: {0}</value></data>
-  <data name="KeepAwakeNativeReason" xml:space="preserve"><value>Chat Agent Bridge が依頼を処理しています。</value></data>
+  <data name="KeepAwakeNativeReason" xml:space="preserve"><value>Chat Agent Bridgeが依頼を処理しています。</value></data>
   <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>設定を読み込み中…</value></data>
   <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>PCをスリープさせない条件</value></data>
 </root>

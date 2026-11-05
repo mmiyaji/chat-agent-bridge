@@ -2,7 +2,7 @@
 <root>
   <data name="PortableUpdateLoadingText.Text" xml:space="preserve"><value>Applying update and restarting…</value></data>
   <data name="PortableUpdateLoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Update progress</value></data>
-  <data name="OpenSettingsSearch.Content" xml:space="preserve"><value>Search settings</value></data>
+  <data name="OpenSettingsSearchLabel.Text" xml:space="preserve"><value>Search settings</value></data>
   <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Search settings</value></data>
   <data name="OpenSettingsSearch.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Search settings (Ctrl+F)</value></data>
   <data name="SettingsSearchBox.PlaceholderText" xml:space="preserve"><value>Search settings (Ctrl+F)</value></data>
@@ -123,9 +123,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="chatAgentBridgeDesktopMainPageTextBlock012.Text" xml:space="preserve">
     <value>Settings storage location</value>
   </data>
-  <data name="OpenWorkbench.Content" xml:space="preserve">
-    <value>Run manually</value>
-  </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock013.Text" xml:space="preserve">
     <value>Agent settings</value>
   </data>
@@ -145,7 +142,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Working folder (absolute path)</value>
   </data>
   <data name="BrowseWorkspace.Content" xml:space="preserve">
-    <value>Select folder...</value>
+    <value>Select folder…</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock016.Text" xml:space="preserve">
     <value>Where the AI reads and writes files. Used for manual runs and new conversations; existing conversations keep their working folder. A Git repository is not required.</value>
@@ -208,16 +205,16 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Trusted folders (absolute paths, one per line)</value>
   </data>
   <data name="ChooseTrustedFolder.Content" xml:space="preserve">
-    <value>Choose folder to add</value>
+    <value>Choose folder to add…</value>
   </data>
   <data name="ChooseTrustedFolder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Choose folder to add</value>
+    <value>Choose folder to add…</value>
   </data>
   <data name="AddCurrentWorkspaceTrustedFolder.Content" xml:space="preserve">
-    <value>Add current work folder</value>
+    <value>Add current working folder</value>
   </data>
   <data name="AddCurrentWorkspaceTrustedFolder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Add current work folder</value>
+    <value>Add current working folder</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock027.Text" xml:space="preserve">
     <value>AI tool permissions</value>
@@ -384,7 +381,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Start and connect</value>
   </data>
   <data name="StartupSettingRow.Header" xml:space="preserve">
-    <value>Start this app when you log in to Windows</value>
+    <value>Start this app when you sign in to Windows</value>
   </data>
   <data name="AutoConnectSettingRow.Header" xml:space="preserve">
     <value>Connect automatically when the app starts</value>
@@ -393,13 +390,13 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Do not connect</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock043.Text" xml:space="preserve">
-    <value>Connect to the saved chat the next time the app starts. Requests follow the conversation's approval settings. To keep receiving requests with the window closed, enable system tray mode below.</value>
+    <value>Connects to the saved chat the next time the app starts. To keep receiving requests with the window closed, use the system tray setting below.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock044.Text" xml:space="preserve">
     <value>Run manually</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock045.Text" xml:space="preserve">
-    <value>Request an agent from this PC. The CLI, model, and work folder to be executed can be changed in "Agent Settings".</value>
+    <value>Request an agent from this PC. The CLI, model, and working folder to be executed can be changed in "Agent Settings".</value>
   </data>
   <data name="OpenAgentSettings.Content" xml:space="preserve">
     <value>Open agent settings</value>
@@ -486,10 +483,10 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Slack app token</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock057.Text" xml:space="preserve">
-    <value>Slack user IDs to allow (one person per line)</value>
+    <value>Slack member IDs to allow (one per line)</value>
   </data>
   <data name="SlackAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Slack user IDs to allow (one person per line)</value>
+    <value>Slack member IDs to allow (one per line)</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock058.Text" xml:space="preserve">
     <value>An empty list rejects everyone. Add a user through the search above, or paste an ID from Copy member ID in their Slack profile. This ID field accepts member IDs, not display names or @mentions. Enter one ID per line.</value>
@@ -671,9 +668,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="OnboardingDefer.Content" xml:space="preserve">
     <value>Set up later</value>
   </data>
-  <data name="onboardingOnboardingWizardTextBlock001.Text" xml:space="preserve">
-    <value>AI agent and working folder</value>
-  </data>
   <data name="onboardingOnboardingWizardTextBlock002.Text" xml:space="preserve">
     <value>The initial selection is your Documents folder. Change it to the project you want to work on. Choose an existing folder for the AI agent to work in. Folder changes requested from chat must stay within trusted folders and require approval on this PC.</value>
   </data>
@@ -681,7 +675,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Working folder (absolute path)</value>
   </data>
   <data name="WizardPickWorkspaceFolder.Content" xml:space="preserve">
-    <value>Select folder</value>
+    <value>Select folder…</value>
   </data>
   <data name="WizardAgentProvider.Header" xml:space="preserve">
     <value>AI agent</value>
@@ -697,9 +691,6 @@ Keep this app and your local PC running to stay connected.</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock003.Text" xml:space="preserve">
     <value>A CLI is the command-line version of an AI agent. Install it and sign in from a terminal first; signing in to the desktop app is separate. Enabling Codex tool approvals uses App Server.</value>
-  </data>
-  <data name="onboardingOnboardingWizardTextBlock004.Text" xml:space="preserve">
-    <value>Check CLI and select model</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock005.Text" xml:space="preserve">
     <value>This check does not run an AI task or verify sign-in. Codex and Claude Code can return model candidates. Other integrations check the version only.</value>
@@ -731,9 +722,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="onboardingOnboardingWizardTextBlock008.Text" xml:space="preserve">
     <value>Available models and reasoning efforts depend on your account and CLI. Unspecified values use CLI defaults.</value>
   </data>
-  <data name="onboardingOnboardingWizardTextBlock009.Text" xml:space="preserve">
-    <value>Chat connections and authorized users</value>
-  </data>
   <data name="WizardChatProvider.Header" xml:space="preserve">
     <value>Connection destination</value>
   </data>
@@ -747,13 +735,13 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Slack Bot token</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock012.Text" xml:space="preserve">
-    <value>App token (value starting with xapp-)</value>
+    <value>App token for Socket Mode (value starting with xapp-)</value>
   </data>
   <data name="WizardSlackAppToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Slack App Token</value>
   </data>
   <data name="WizardSlackAllowedUserIds.Header" xml:space="preserve">
-    <value>Allowed Slack member IDs (one per line)</value>
+    <value>Slack member IDs to allow (one per line)</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock013.Text" xml:space="preserve">
     <value>Slack requires both the bot token xoxb- and the app token xapp-. If the authorized user ID is empty, no requests will be accepted from anyone.</value>
@@ -780,16 +768,13 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Mattermost access token</value>
   </data>
   <data name="WizardMattermostAllowedUserIds.Header" xml:space="preserve">
-    <value>Authorized user ID (required, one per line)</value>
+    <value>Internal Mattermost user IDs to allow (one per line)</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock018.Text" xml:space="preserve">
     <value>This list contains internal user IDs. Do not enter usernames directly. A blank list rejects everyone. Review additions to apply the change, then reconnect Mattermost if connected.</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock019.Text" xml:space="preserve">
     <value>Please enter your token only on this screen. Does not output tokens in execution results.</value>
-  </data>
-  <data name="onboardingOnboardingWizardTextBlock020.Text" xml:space="preserve">
-    <value>Approval and execution settings</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock021.Text" xml:space="preserve">
     <value>Select how to approve requests received from chat and share the results after execution.</value>
@@ -880,7 +865,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AboutPackageLabel.Header" xml:space="preserve"><value>Package</value></data>
   <data name="AboutProviderValue.Text" xml:space="preserve"><value>By mmiyaji</value></data>
   <data name="AboutWebsite.Header" xml:space="preserve"><value>Official website</value></data>
-  <data name="AboutWebsite.Description" xml:space="preserve"><value>ruhenheim.org</value></data>
+  <data name="AboutWebsite.Description" xml:space="preserve"><value>chat-agent-bridge.ruhenheim.org</value></data>
   <data name="AboutSupport.Header" xml:space="preserve"><value>Report a bug or suggest a feature</value></data>
   <data name="AboutSupport.Description" xml:space="preserve"><value>GitHub Issues</value></data>
   <data name="AboutStoreHeading.Header" xml:space="preserve"><value>Microsoft Store</value></data>
@@ -897,10 +882,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="InboxRestoredActivityLabel.Text" xml:space="preserve"><value>Last activity</value></data>
   <data name="InboxRestoredWorkspaceLabel.Text" xml:space="preserve"><value>Workspace</value></data>
   <data name="InboxConversationHelp.Text" xml:space="preserve"><value>Search by sender, channel, thread, or message. New activity appears first.</value></data>
-  <data name="InboxSearch.Header" xml:space="preserve"><value>Search</value></data>
   <data name="InboxSearch.PlaceholderText" xml:space="preserve"><value>Search conversations</value></data>
-  <data name="InboxStateFilter.Header" xml:space="preserve"><value>State</value></data>
   <data name="InboxStateFilter.PlaceholderText" xml:space="preserve"><value>Filter by state</value></data>
+  <data name="InboxSearch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Search conversations</value></data>
+  <data name="InboxStateFilter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Filter by state</value></data>
   <data name="InboxFilterAll.Content" xml:space="preserve"><value>All</value></data>
   <data name="InboxFilterPending.Content" xml:space="preserve"><value>Approval pending</value></data>
   <data name="InboxFilterActive.Content" xml:space="preserve"><value>Running</value></data>
@@ -963,7 +948,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="GeneralPageDescription.Text" xml:space="preserve"><value>View current status and configure startup, auto-connect, tray, language, and appearance.</value></data>
   <data name="GeneralAppearanceSectionHeading.Text" xml:space="preserve"><value>Language and appearance</value></data>
   <data name="SaveGeneralSettings.Content" xml:space="preserve"><value>Save auto-connect preference</value></data>
-  <data name="SaveGeneralSettingsHelp.Text" xml:space="preserve"><value>The selected auto-connect service is used the next time the app starts.</value></data>
   <data name="AppThemeCardHeading.Text" xml:space="preserve"><value>Color theme</value></data>
   <data name="ConnectionCredentialsHeading.Text" xml:space="preserve"><value>Chat connection credentials</value></data>
   <data name="ChatPoliciesHeading.Text" xml:space="preserve"><value>Chat approval and access</value></data>
@@ -1143,9 +1127,9 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="CloseToTrayToggle.OffContent" xml:space="preserve"><value>Off</value></data>
   <data name="CloseToTrayToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Keep running in system tray when the window is closed</value></data>
   <data name="TraySettingsDescription.Text" xml:space="preserve"><value>Choose what happens when you close the window. Moving to the tray keeps chat connections running; exiting stops them.</value></data>
-  <data name="MoveToTrayButton.Content" xml:space="preserve"><value>Move to system tray</value></data>
+  <data name="MoveToTrayButton.Content" xml:space="preserve"><value>Move to tray</value></data>
   <data name="TrayExitDescription.Text" xml:space="preserve"><value>Exiting disconnects chats and stops running or waiting requests.</value></data>
-  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>Exit app</value></data>
+  <data name="ExitCompletelyButton.Content" xml:space="preserve"><value>Exit</value></data>
   <data name="TraySaveFailed" xml:space="preserve"><value>Could not save the tray setting. The previous setting has been restored.</value></data>
   <data name="TrayExitFailed" xml:space="preserve"><value>The app could not exit completely. Try again.</value></data>
   <data name="TrayUnavailable" xml:space="preserve"><value>The system tray is unavailable. This window will remain open.</value></data>
@@ -1170,7 +1154,9 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLI check failed</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Start this app when signing in to Windows</value></data>
   <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Chat to connect automatically when the app starts</value></data>
-  <data name="TrayActions.Header" xml:space="preserve"><value>Tray actions and exit</value></data>
+  <data name="TrayMoveLabel.Text" xml:space="preserve"><value>Move to the system tray now</value></data>
+  <data name="TrayMoveDescription.Text" xml:space="preserve"><value>Closes the window and keeps chat connections running in the tray.</value></data>
+  <data name="TrayExitLabel.Text" xml:space="preserve"><value>Exit the app</value></data>
   <data name="CliReviewTrust.Content" xml:space="preserve"><value>Review trusted folder</value></data>
   <data name="WorkspaceTrustError.Title" xml:space="preserve"><value>Review workspace trust</value></data>
   <data name="InboxConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Connection status and details</value></data>
@@ -1200,6 +1186,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="MattermostSectionTitle.Text" xml:space="preserve"><value>Mattermost</value></data>
   <data name="MattermostSectionHelp.Text" xml:space="preserve"><value>Server, tokens, allowed users, and conversation restrictions</value></data>
   <data name="SlackSectionTitle.Text" xml:space="preserve"><value>Slack</value></data>
+  <data name="ChatServiceConnectionTitle.Text" xml:space="preserve"><value>Connection and allowed users</value></data>
   <data name="SlackSectionHelp.Text" xml:space="preserve"><value>Tokens, allowed users, channels, and thread restrictions</value></data>
   <data name="ChatAttachmentsTitle.Text" xml:space="preserve"><value>File attachments</value></data>
   <data name="ChatAttachmentsHelp.Text" xml:space="preserve"><value>Approval and size and count limits for generated files sent to chat</value></data>
@@ -1235,7 +1222,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="LoadRegisteredGeminiConnection.Content" xml:space="preserve"><value>Load registered Gemini CLI</value></data>
   <data name="LoadRegisteredCopilotConnection.Content" xml:space="preserve"><value>Load registered GitHub Copilot CLI</value></data>
   <data name="LoadRegisteredAntigravityConnection.Content" xml:space="preserve"><value>Load registered Antigravity CLI</value></data>
-  <data name="ManualWorkspaceError.Title" xml:space="preserve"><value>Check the work folder before running</value></data>
+  <data name="ManualWorkspaceError.Title" xml:space="preserve"><value>Check the working folder before running</value></data>
   <data name="ManualWorkspaceSettings.Content" xml:space="preserve"><value>Open trusted folder settings</value></data>
   <data name="AboutThirdPartyLicenses.Header" xml:space="preserve"><value>Third-party licenses</value></data>
   <data name="AboutThirdPartyLicenses.Description" xml:space="preserve"><value>Licenses and acknowledgments for included libraries and icons.</value></data>

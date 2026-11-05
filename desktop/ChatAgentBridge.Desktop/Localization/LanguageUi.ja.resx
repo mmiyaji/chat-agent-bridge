@@ -16,7 +16,7 @@
     <value>システムに合わせる</value>
   </data>
   <data name="CurrentLanguage" xml:space="preserve">
-    <value>現在の表示言語：{0}。変更はアプリの再起動後に反映されます。</value>
+    <value>現在の表示言語: {0}。変更はアプリの再起動後に反映されます。</value>
   </data>
   <data name="RestartRequired" xml:space="preserve">
     <value>保存しました。反映するには再起動してください。</value>

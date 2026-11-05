@@ -49,6 +49,8 @@ public sealed partial class AboutPage : Page
         }
 
         ProductValue.Text = DesktopText.Get("AboutProductName");
+        // Match the release names (1.0.3): a zero revision is noise on screen.
+        if (version.EndsWith(".0", StringComparison.Ordinal) && version.Count(c => c == '.') == 3) version = version[..^2];
         VersionValue.Text = version;
         // The header is a text block, so name the expander for screen readers: product and version.
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(AppDetailsExpander, $"{ProductValue.Text} {version}");
@@ -80,7 +82,7 @@ public sealed partial class AboutPage : Page
     private async void OpenLink_Click(object sender, RoutedEventArgs e)
     {
         if (sender is SettingsCard { Tag: string uri } &&
-            uri is "https://ruhenheim.org" or "https://github.com/mmiyaji/chat-agent-bridge/issues")
+            uri is "https://chat-agent-bridge.ruhenheim.org/" or "https://github.com/mmiyaji/chat-agent-bridge/issues")
         {
             try
             {

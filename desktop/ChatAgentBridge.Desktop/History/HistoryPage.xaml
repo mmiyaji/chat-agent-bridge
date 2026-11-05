@@ -147,7 +147,7 @@
                                 <ScrollViewer x:Name="SavedSessionsEmptyScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
                                               Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptySessionList), Mode=OneWay}">
-                                    <Border Style="{StaticResource ActivityCardStyle}" Padding="16" Margin="12" MaxWidth="460"
+                                    <Border Padding="16" Margin="12" MaxWidth="460"
                                             HorizontalAlignment="Stretch" VerticalAlignment="Center"
                                             AutomationProperties.AutomationId="SavedSessionsEmptyCard">
                                     <StackPanel Spacing="12" HorizontalAlignment="Center">
@@ -156,10 +156,10 @@
                                             <SymbolIcon Symbol="People" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                         </Viewbox>
                                         <TextBlock Text="{x:Bind ViewModel.SessionListEmptyHeading, Mode=OneWay}"
-                                                   Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                                   Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
                                                    AutomationProperties.AutomationId="EmptySavedSessions" />
                                         <TextBlock Text="{x:Bind ViewModel.SessionListEmptyDescription, Mode=OneWay}"
-                                                   Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                                   Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" TextAlignment="Center"
                                                    AutomationProperties.AutomationId="SavedSessionsEmptyBody" />
                                         <Button Command="{x:Bind ViewModel.ClearSessionFiltersCommand}"
                                                 Content="{x:Bind ViewModel.ClearSessionFiltersLabel, Mode=OneWay}"
@@ -243,7 +243,7 @@
                                 <ScrollViewer x:Name="SavedSessionDetailEmptyScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
                                               Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptySessionDetail), Mode=OneWay}">
-                                    <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="12" MaxWidth="460"
+                                    <Border Padding="20" Margin="12" MaxWidth="460"
                                             HorizontalAlignment="Stretch" VerticalAlignment="Center"
                                             AutomationProperties.AutomationId="SavedSessionDetailEmptyCard">
                                     <StackPanel Spacing="12" HorizontalAlignment="Center">
@@ -252,10 +252,10 @@
                                             <SymbolIcon Symbol="People" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                         </Viewbox>
                                         <TextBlock Text="{x:Bind ViewModel.SessionDetailEmptyHeading, Mode=OneWay}"
-                                                   Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                                   Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
                                                    AutomationProperties.AutomationId="SavedSessionDetailEmpty" />
                                         <TextBlock Text="{x:Bind ViewModel.SessionDetailEmptyDescription, Mode=OneWay}"
-                                                   Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                                   Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" TextAlignment="Center"
                                                    AutomationProperties.AutomationId="SavedSessionDetailEmptyBody" />
                                     </StackPanel>
                                     </Border>
@@ -333,7 +333,7 @@
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
                                       Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyExecutionHistory), Mode=OneWay}">
-                        <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="12" MaxWidth="460"
+                        <Border Padding="20" Margin="12" MaxWidth="460"
                                 HorizontalAlignment="Stretch" VerticalAlignment="Center"
                                 AutomationProperties.AutomationId="ExecutionHistoryEmptyCard">
                             <StackPanel Spacing="12" HorizontalAlignment="Center">
@@ -341,9 +341,9 @@
                                          AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
                                     <SymbolIcon Symbol="Clock" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                 </Viewbox>
-                                <TextBlock Text="{x:Bind ViewModel.ExecutionEmptyHeading, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}"
+                                <TextBlock Text="{x:Bind ViewModel.ExecutionEmptyHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}"
                                            TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="EmptyExecutionHistory" />
-                                <TextBlock Text="{x:Bind ViewModel.ExecutionEmptyDescription, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}"
+                                <TextBlock Text="{x:Bind ViewModel.ExecutionEmptyDescription, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="ExecutionHistoryEmptyBody" />
                                 <Button Command="{x:Bind ViewModel.ClearExecutionDayFilterCommand}"
                                         Content="{x:Bind ViewModel.ClearExecutionDayFilterLabel, Mode=OneWay}"
@@ -375,7 +375,7 @@
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                                   HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
                                   Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyAuditHistory), Mode=OneWay}">
-                    <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="12" MaxWidth="460"
+                    <Border Padding="20" Margin="12" MaxWidth="460"
                             HorizontalAlignment="Stretch" VerticalAlignment="Center"
                             AutomationProperties.AutomationId="AuditHistoryEmptyCard">
                         <StackPanel Spacing="12" HorizontalAlignment="Center">
@@ -383,9 +383,9 @@
                                      AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
                                 <SymbolIcon Symbol="Document" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </Viewbox>
-                            <TextBlock Text="{x:Bind ViewModel.NoAuditText, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}"
+                            <TextBlock Text="{x:Bind ViewModel.NoAuditText, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}"
                                        TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="EmptyAuditHistory" />
-                            <TextBlock Text="{x:Bind ViewModel.AuditEmptyDescription, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}"
+                            <TextBlock Text="{x:Bind ViewModel.AuditEmptyDescription, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="AuditHistoryEmptyBody" />
                         </StackPanel>
                     </Border>

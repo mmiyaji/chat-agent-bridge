@@ -7,10 +7,11 @@
     <Grid Padding="24" RowSpacing="16" MaxWidth="880" HorizontalAlignment="Stretch"><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <Grid Grid.Row="0" ColumnSpacing="16" VerticalAlignment="Center"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <StackPanel Spacing="4">
+                <TextBlock Text="{x:Bind ViewModel.OnboardingProgress, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="OnboardingStep" />
                 <TextBlock Text="{x:Bind ViewModel.OnboardingTitle, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="OnboardingTitle" />
                 <TextBlock Text="{x:Bind ViewModel.OnboardingDescription, Mode=OneWay}" TextWrapping="Wrap" />
             </StackPanel>
-            <Button Grid.Column="1"  Command="{x:Bind ViewModel.DeferOnboardingCommand}" VerticalAlignment="Top" AutomationProperties.AutomationId="OnboardingDefer"  x:Uid="OnboardingDefer" />
+            <Button Grid.Column="1"  Command="{x:Bind ViewModel.DeferOnboardingCommand}" Visibility="{x:Bind local:OnboardingWizard.HiddenWhen(ViewModel.IsWizardSafetyStep), Mode=OneWay}" VerticalAlignment="Top" AutomationProperties.AutomationId="OnboardingDefer"  x:Uid="OnboardingDefer" />
         </Grid>
 
         <ScrollViewer x:Name="WizardScrollViewer" AutomationProperties.AutomationId="WizardScroll" Grid.Row="1" Padding="0,0,12,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -23,7 +24,6 @@
                 <ContentControl x:Name="IntroHost" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardIntro), Mode=OneWay}" />
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardAgentStep), Mode=OneWay}">
-                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock001" x:Uid="onboardingOnboardingWizardTextBlock001" />
                     <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock002" x:Uid="onboardingOnboardingWizardTextBlock002" />
                     <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                         <TextBox x:Name="WorkspaceRootBox"
@@ -52,25 +52,25 @@
 
                         <ComboBoxItem Tag="custom" AutomationProperties.AutomationId="WizardCustomCli" x:Uid="WizardCustomCli" />
                     </ComboBox>
+                    <TextBlock  TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock003" x:Uid="onboardingOnboardingWizardTextBlock003" />
                     <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" AutomationProperties.AutomationId="WizardBasicProviderHelp" />
-                    <TextBox x:Name="AgentExecutableBox" Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             AutomationProperties.AutomationId="WizardAgentExecutable" x:Uid="WizardAgentExecutable" />
-                    <Button Click="BrowseAgentExecutable_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardBrowseAgentExecutable" x:Uid="WizardBrowseAgentExecutable" />
-                    <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="WizardBrowseAgentExecutableHelp" x:Uid="WizardBrowseAgentExecutableHelp" />
+                    <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <TextBox x:Name="AgentExecutableBox" Text="{x:Bind ViewModel.AgentExecutable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.AutomationId="WizardAgentExecutable" x:Uid="WizardAgentExecutable" />
+                        <Button Grid.Column="1" Click="BrowseAgentExecutable_Click" VerticalAlignment="Bottom" AutomationProperties.AutomationId="WizardBrowseAgentExecutable" x:Uid="WizardBrowseAgentExecutable" />
+                    </Grid>
+                    <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="WizardBrowseAgentExecutableHelp" x:Uid="WizardBrowseAgentExecutableHelp" />
                     <TextBox Text="{x:Bind ViewModel.AgentArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsArgumentsEditable), Mode=OneWay}" TextWrapping="Wrap" AcceptsReturn="False" AutomationProperties.AutomationId="WizardAgentArguments" x:Uid="WizardAgentArguments" />
                     <ToggleSwitch
                                   IsOn="{x:Bind ViewModel.UseAppServer, Mode=TwoWay}"
                                   IsEnabled="{x:Bind ViewModel.IsCodexProvider, Mode=OneWay}"
                                   AutomationProperties.AutomationId="WizardUseAppServer"  x:Uid="WizardUseAppServer" />
-                    <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock003" x:Uid="onboardingOnboardingWizardTextBlock003" />
                 </StackPanel>
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardCliStep), Mode=OneWay}">
-                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock004" x:Uid="onboardingOnboardingWizardTextBlock004" />
-                    <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock005" x:Uid="onboardingOnboardingWizardTextBlock005" />
                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
                         <Button x:Name="CheckCliButton"  Command="{x:Bind ViewModel.CheckCliCommand, Mode=OneWay}" IsEnabled="{x:Bind local:OnboardingWizard.Not(ViewModel.IsCheckingCli), Mode=OneWay}" AutomationProperties.AutomationId="CheckCli"  x:Uid="CheckCli" />
-                        <Button  Command="{x:Bind ViewModel.CancelCliCheckCommand, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" AutomationProperties.AutomationId="CancelCliCheck"  x:Uid="CancelCliCheck" />
+                        <Button  Command="{x:Bind ViewModel.CancelCliCheckCommand, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsCheckingCli), Mode=OneWay}" AutomationProperties.AutomationId="CancelCliCheck"  x:Uid="CancelCliCheck" />
                         <ProgressRing IsActive="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" Width="20" Height="20" VerticalAlignment="Center" />
                     </StackPanel>
                     <InfoBar x:Uid="CliCheckError" Severity="Error" IsClosable="False"
@@ -86,14 +86,18 @@
                     </InfoBar>
                     <StackPanel Spacing="8">
                         <Button Click="ReloadProcessEnvironment_Click" IsEnabled="{x:Bind local:OnboardingWizard.EnvironmentReloadAllowed(ViewModel.IsLoading, ViewModel.IsRunning, ViewModel.IsCheckingCli, ViewModel.ModelCatalog.IsLoading, ViewModel.IsOnboardingBusy, Inbox.IsExecuting, ViewModel.SaveSettingsCommand.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardReloadProcessEnvironment" x:Uid="WizardReloadProcessEnvironment" />
-                        <TextBlock TextWrapping="Wrap" AutomationProperties.AutomationId="WizardReloadProcessEnvironmentHelp" x:Uid="WizardReloadProcessEnvironmentHelp" />
+                        <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="WizardReloadProcessEnvironmentHelp" x:Uid="WizardReloadProcessEnvironmentHelp" />
                     </StackPanel>
                     <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap"
                                Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.ShowCliCheckSummary), Mode=OneWay}" AutomationProperties.AutomationId="CliCheckSummary" />
-                    <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock006" x:Uid="onboardingOnboardingWizardTextBlock006" />
-                    <TextBlock Text="{x:Bind ViewModel.CliVersion, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliVersion" />
-                    <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock007" x:Uid="onboardingOnboardingWizardTextBlock007" />
-                    <TextBlock Text="{x:Bind ViewModel.CliExecutablePath, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliExecutablePath" />
+                    <Grid ColumnSpacing="16" RowSpacing="4">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock006" x:Uid="onboardingOnboardingWizardTextBlock006" />
+                        <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.CliVersion, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliVersion" />
+                        <TextBlock Grid.Row="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock007" x:Uid="onboardingOnboardingWizardTextBlock007" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{x:Bind ViewModel.CliExecutablePath, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="CliExecutablePath" />
+                    </Grid>
                     <TextBlock Text="{x:Bind ViewModel.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" />
                     <StackPanel Spacing="8" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.SupportsModel), Mode=OneWay}">
                         <TextBlock Text="{x:Bind ViewModel.ModelCatalog.Status, Mode=OneWay}" TextWrapping="Wrap" />
@@ -102,12 +106,11 @@
                         <TextBox  MaxLength="256" Text="{x:Bind ViewModel.AgentModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{x:Bind ViewModel.SupportsModel, Mode=OneWay}" AutomationProperties.AutomationId="WizardOptionalModel"  x:Uid="WizardOptionalModel" />
                         <ComboBox  ItemsSource="{x:Bind ViewModel.ReasoningEffortCandidates, Mode=OneWay}" DisplayMemberPath="SelectionLabel" SelectedItem="{x:Bind ViewModel.SelectedReasoningEffort, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.SupportsReasoning, Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardReasoningEffort"  x:Uid="WizardReasoningEffort" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.SupportsReasoning), Mode=OneWay}" />
                         <TextBlock Text="{x:Bind ViewModel.ModelEffortStatus, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.SupportsReasoning), Mode=OneWay}" />
-                        <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock008" x:Uid="onboardingOnboardingWizardTextBlock008" />
+                        <TextBlock  TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock008" x:Uid="onboardingOnboardingWizardTextBlock008" />
                     </StackPanel>
                 </StackPanel>
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardChatStep), Mode=OneWay}">
-                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock009" x:Uid="onboardingOnboardingWizardTextBlock009" />
                     <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.OnboardingChatProvider, Mode=TwoWay}" IsEnabled="{x:Bind local:OnboardingWizard.Not(Inbox.IsExecuting), Mode=OneWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatProvider" x:Uid="WizardChatProvider">
                         <ComboBoxItem Content="Slack" Tag="slack" />
                         <ComboBoxItem Content="Mattermost" Tag="mattermost" />
@@ -191,7 +194,6 @@
                 </StackPanel>
 
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardSafetyStep), Mode=OneWay}">
-                    <TextBlock  Style="{StaticResource SubtitleTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock020" x:Uid="onboardingOnboardingWizardTextBlock020" />
                     <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock021" x:Uid="onboardingOnboardingWizardTextBlock021" />
                     <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatApprovalMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatApprovalMode" x:Uid="WizardChatApprovalMode">
                         <ComboBoxItem  Tag="always"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem001" x:Uid="onboardingOnboardingWizardComboBoxItem001" />
@@ -235,7 +237,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <Grid Grid.Row="2" ColumnSpacing="8" VerticalAlignment="Bottom"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+        <Grid Grid.Row="2" ColumnSpacing="8" VerticalAlignment="Bottom" Padding="0,12,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <Button Grid.Column="0"  Command="{x:Bind ViewModel.PreviousOnboardingCommand}" AutomationProperties.AutomationId="OnboardingPrevious"  x:Uid="OnboardingPrevious" />
             <ProgressRing Grid.Column="2" IsActive="{x:Bind ViewModel.IsOnboardingBusy, Mode=OneWay}" Width="24" Height="24" />
             <Button Grid.Column="1" HorizontalAlignment="Right" Content="{x:Bind ViewModel.OnboardingSkipLabel, Mode=OneWay}" Command="{x:Bind ViewModel.SkipOnboardingStepCommand}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.CanSkipOnboardingStep), Mode=OneWay}" AutomationProperties.AutomationId="OnboardingSkip" />

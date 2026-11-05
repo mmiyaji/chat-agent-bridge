@@ -31,9 +31,9 @@ public static class SettingsCardLayout
         if (card.ContentAlignment != alignment) card.ContentAlignment = alignment;
         if (card.Content is Microsoft.UI.Xaml.Controls.RadioButtons choices)
         {
-            // A single column preserves reading order when the three options cannot fit together.
-            var columns = width < 520 ? 1 : 3;
-            if (choices.MaxColumns != columns) choices.MaxColumns = columns;
+            // One option per row: uniform columns clipped a long localized label ("システムに合わせる")
+            // into its neighbour, and a vertical list reads in order at every width.
+            if (choices.MaxColumns != 1) choices.MaxColumns = 1;
         }
     }
 }

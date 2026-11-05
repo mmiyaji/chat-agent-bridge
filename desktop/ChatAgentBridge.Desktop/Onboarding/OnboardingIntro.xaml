@@ -12,7 +12,7 @@
     <StackPanel x:Name="IntroStackPanel" Spacing="16" HorizontalAlignment="Stretch">
         <localization:LanguageSettings x:Name="IntroLanguageSettings" />
         <TextBlock x:Name="IntroHeading" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock001" />
-        <diagrams:ArchitecturePreview x:Name="ArchitectureImage" AutomationProperties.AutomationId="WizardArchitecture" x:Uid="WizardArchitecture" />
+        <diagrams:ArchitecturePreview x:Name="ArchitectureImage" MaxPreviewHeight="200" AutomationProperties.AutomationId="WizardArchitecture" x:Uid="WizardArchitecture" />
         <TextBlock x:Name="IntroDescription" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock002" />
         <TextBlock x:Name="IntroDataNotice" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock003" />
         <TextBlock x:Name="IntroDisclaimer" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingIntroTextBlock004" />
@@ -23,13 +23,13 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Button x:Name="TermsButton" Grid.Row="0" Grid.Column="0" Click="ShowTerms_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardTerms">
+            <Button x:Name="TermsButton" Grid.Row="0" Grid.Column="0" Click="ShowTerms_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardTerms">
                 <TextBlock x:Name="TermsButtonText" TextWrapping="Wrap" TextAlignment="Center"  x:Uid="onboardingOnboardingIntroTextBlock005" />
             </Button>
-            <Button x:Name="PrivacyButton" Grid.Row="0" Grid.Column="1" Click="ShowPrivacy_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardPrivacy">
+            <Button x:Name="PrivacyButton" Grid.Row="0" Grid.Column="1" Click="ShowPrivacy_Click" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardPrivacy">
                 <TextBlock x:Name="PrivacyButtonText" TextWrapping="Wrap" TextAlignment="Center"  x:Uid="onboardingOnboardingIntroTextBlock006" />
             </Button>
             <Border x:Name="TermsConsentBorder" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Padding="0" CornerRadius="4" BorderThickness="2" BorderBrush="Transparent">

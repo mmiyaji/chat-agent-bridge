@@ -538,11 +538,6 @@ public sealed partial class MainPage : Page
         if (pageChanged) ScheduleDeferredLanguageRefresh();
     }
 
-    private void OpenWorkbench_Click(object sender, RoutedEventArgs e)
-    {
-        MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "workbench");
-    }
-
     private void OpenAgentSettings_Click(object sender, RoutedEventArgs e) =>
         MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "agent");
 

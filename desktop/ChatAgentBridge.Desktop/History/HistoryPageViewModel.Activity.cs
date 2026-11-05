@@ -55,6 +55,8 @@ public sealed partial class HistoryPageViewModel
         _activity.Cancelled, _activity.TotalExecutions - _activity.Completed - _activity.Failed - _activity.Cancelled);
     public bool HasActivity => _activity.TotalExecutions > 0;
     public bool ShowActivityEmptyState => ActivityStatisticsAvailable && !HasActivity;
+    // The summary tiles only repeat "0" while the empty state already explains there is no activity.
+    public bool ShowActivitySummary => ActivityStatisticsAvailable && HasActivity;
     public bool ActivityStatisticsAvailable => IsHistoryLoadSuccessful && !IsBusy && !_activityStatisticsFailed && _activityStatistics is not null;
     public string ActivityStatisticsNotice => _activityStatisticsFailed
         ? DesktopText.Get("ActivityStatisticsUnavailable")
@@ -156,7 +158,7 @@ public sealed partial class HistoryPageViewModel
         foreach (var day in recent) ActivityDaily.Add(new(day.Date, day.Count, maxDay));
         RebuildUsage();
         foreach (var name in new[] { nameof(ActivityRange), nameof(ActivityTotal), nameof(ActivityActiveDays), nameof(ActivityStreak),
-                     nameof(ActivityPeak), nameof(ActivityOutcomes), nameof(HasActivity), nameof(ShowActivityEmptyState),
+                     nameof(ActivityPeak), nameof(ActivityOutcomes), nameof(HasActivity), nameof(ShowActivityEmptyState), nameof(ShowActivitySummary),
                      nameof(ActivityStatisticsAvailable), nameof(ActivityStatisticsNotice), nameof(HasActivityStatisticsNotice),
                      nameof(ActivityEmptyHeading), nameof(ActivityEmptyDescription), nameof(ShowActivityModelEmptyState),
                      nameof(ActivityModelEmptyHeading), nameof(ActivityModelEmptyDescription),

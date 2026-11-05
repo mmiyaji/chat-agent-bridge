@@ -238,7 +238,7 @@
     <value>モデルと推論レベル</value>
   </data>
   <data name="CustomModelSettingsManagedByCli" xml:space="preserve">
-    <value>その他のCLIでは、モデルと推論の強さをCLI自身の設定や起動引数で指定してください。このアプリのモデル入力欄は利用できません。</value>
+    <value>その他のCLIでは、モデルと推論レベルをCLI自身の設定や起動引数で指定してください。このアプリのモデル入力欄は利用できません。</value>
   </data>
   <data name="NetworkManagedByCli" xml:space="preserve">
     <value>CLI側で管理（アプリから制限しません）</value>
@@ -247,13 +247,13 @@
     <value>フルアクセスのため制限なし</value>
   </data>
   <data name="NextConfigureAgentWorkspace" xml:space="preserve">
-    <value>次の操作：エージェントと既存の作業フォルダーを設定します。</value>
+    <value>次の操作: エージェントと既存の作業フォルダーを設定します。</value>
   </data>
   <data name="NextConnectToChat" xml:space="preserve">
-    <value>次の操作：チャットで保存済みの接続先へ接続します。</value>
+    <value>次の操作: チャットで保存済みの接続先へ接続します。</value>
   </data>
   <data name="NextSaveConnection" xml:space="preserve">
-    <value>次の操作：接続情報と許可ユーザーを設定します。</value>
+    <value>次の操作: 接続情報と許可ユーザーを設定します。</value>
   </data>
   <data name="NotAllowed" xml:space="preserve">
     <value>不許可</value>
@@ -370,7 +370,7 @@
     <value>設定を読み込みました</value>
   </data>
   <data name="SettingsLoadedDetails" xml:space="preserve">
-    <value>ワークスペースとエージェントを設定して実行できます。</value>
+    <value>作業フォルダーとエージェントを設定して実行できます。</value>
   </data>
   <data name="SettingsSaveFailed" xml:space="preserve">
     <value>設定を保存できませんでした</value>
@@ -385,25 +385,25 @@
     <value>実行・許可設定は次の投稿から反映されます。サーバー・チャンネル・トークン・プロキシの変更時は接続し直してください。</value>
   </data>
   <data name="SetupAgentReady" xml:space="preserve">
-    <value>完了：保存済み。CLIやログイン状態はここでは確認していません。</value>
+    <value>完了: 保存済み。CLIやログイン状態はここでは確認していません。</value>
   </data>
   <data name="SetupAgentWorkspaceMissing" xml:space="preserve">
-    <value>次のステップ：エージェントと作業フォルダーを設定します。</value>
+    <value>次のステップ: エージェントと作業フォルダーを設定します。</value>
   </data>
   <data name="SetupAllowedUsersMissing" xml:space="preserve">
-    <value>次のステップ：接続先ごとに許可するユーザーIDを1行1人で設定します。空欄では全員を拒否します。</value>
+    <value>次のステップ: 接続先ごとに許可するユーザーIDを1行に1つ設定します。空欄では全員を拒否します。</value>
   </data>
   <data name="SetupDiscordGuildIdsMissing" xml:space="preserve">
-    <value>次のステップ：許可するDiscordサーバーIDを1つ以上入力するか、ダイレクトメッセージを明示的に有効にします。</value>
+    <value>次のステップ: 許可するDiscordサーバーIDを1つ以上入力するか、ダイレクトメッセージを明示的に有効にします。</value>
   </data>
   <data name="SetupChatAfterStepOne" xml:space="preserve">
-    <value>未設定：ステップ1の後に接続情報を設定します。</value>
+    <value>未設定: ステップ1の後に接続情報を設定します。</value>
   </data>
   <data name="SetupChatConfigMissing" xml:space="preserve">
-    <value>次のステップ：Slack、Mattermost、またはDiscordの接続情報と許可ユーザーを設定します。</value>
+    <value>次のステップ: Slack、Mattermost、またはDiscordの接続情報と許可ユーザーを設定します。</value>
   </data>
   <data name="SetupChatConfigSaved" xml:space="preserve">
-    <value>完了：接続情報と許可するユーザーIDを保存済み。</value>
+    <value>完了: 接続情報と許可するユーザーIDを保存済み。</value>
   </data>
   <data name="SetupCompleteReadyForChat" xml:space="preserve">
     <value>セットアップ完了。別の端末からチャットで依頼できます。</value>
@@ -412,22 +412,22 @@
     <value>{0} / 3 完了</value>
   </data>
   <data name="SetupConnectAfterSaving" xml:space="preserve">
-    <value>未設定：接続情報を保存した後に接続します。</value>
+    <value>未設定: 接続情報を保存した後に接続します。</value>
   </data>
   <data name="SetupConnectSavedDestination" xml:space="preserve">
-    <value>次のステップ：保存済みの接続先へ接続します。</value>
+    <value>次のステップ: 保存済みの接続先へ接続します。</value>
   </data>
   <data name="SetupConnecting" xml:space="preserve">
-    <value>接続中：接続先の応答を待っています。</value>
+    <value>接続中: 接続先の応答を待っています。</value>
   </data>
   <data name="SetupExecutableMissing" xml:space="preserve">
-    <value>次のステップ：エージェントの実行ファイルを設定します。</value>
+    <value>次のステップ: エージェントの実行ファイルを設定します。</value>
   </data>
   <data name="SetupWaitingForChatRequest" xml:space="preserve">
-    <value>完了：チャットからの依頼を待っています。</value>
+    <value>完了: チャットからの依頼を待っています。</value>
   </data>
   <data name="SetupWorkspaceNotFound" xml:space="preserve">
-    <value>次のステップ：作業フォルダーが見つかりません。既存のフォルダーを指定します。</value>
+    <value>次のステップ: 作業フォルダーが見つかりません。既存のフォルダーを指定します。</value>
   </data>
   <data name="SlackConnectionFields" xml:space="preserve">
     <value>Botトークン・Appトークン・許可するユーザーIDを入力してください。</value>
@@ -507,19 +507,20 @@
   <data name="WizardStepIntro" xml:space="preserve">
     <value>はじめに・利用条件</value>
   </data>
+  <data name="WizardStepCounter" xml:space="preserve"><value>ステップ {0}/{1}</value></data>
   <data name="WizardStepSafety" xml:space="preserve">
     <value>承認設定と接続テスト</value>
   </data>
   <data name="WizardSummary" xml:space="preserve">
     <value>AI: {0} / モデル: {1}
-推論の強さ: {2}
+推論レベル: {2}
 作業フォルダー: {3}
 チャット: {4} / アプリ起動時の接続: {5}
 依頼の承認: {6} / 結果: {7}
 AIの操作権限: {8}</value>
   </data>
   <data name="Workspace" xml:space="preserve">
-    <value>ワークスペース</value>
+    <value>作業フォルダー</value>
   </data>
   <data name="WorkspaceMustBeExistingAbsolutePath" xml:space="preserve">
     <value>作業フォルダーには、存在するフォルダーの絶対パスを指定してください。</value>
@@ -553,13 +554,13 @@ AIの操作権限: {8}</value>
     <value>その他のCLI（カスタム）</value>
   </data>
   <data name="BasicProviderHelp" xml:space="preserve">
-    <value>カスタムCLI連携：依頼を標準入力へ渡し、標準出力を返信します。毎回独立した実行となり、会話の自動継続・アプリからのモデル／推論指定には対応しません。CLIの設定や引数で指定し、事前にCLIへログインしてください。</value>
+    <value>カスタムCLI連携: 依頼を標準入力へ渡し、標準出力を返信します。毎回独立した実行となり、会話の自動継続・アプリからのモデル／推論指定には対応しません。CLIの設定や引数で指定し、事前にCLIへログインしてください。</value>
   </data>
   <data name="BasicPermissionManagedByCli" xml:space="preserve">
     <value>操作権限はCLI側の設定に従います。この連携ではアプリからサンドボックスや権限の解除を指定しません。チャットの依頼承認は別途設定できます。</value>
   </data>
   <data name="BasicModelManagedByCli" xml:space="preserve">
-    <value>モデル・推論の強さはCLI側で管理します。この連携では候補一覧を取得できません。</value>
+    <value>モデル・推論レベルはCLI側で管理します。この連携では候補一覧を取得できません。</value>
   </data>
   <data name="BasicCliCheckSucceeded" xml:space="preserve">
     <value>バージョン確認が完了しました。ログイン状態・モデルの利用可否・作業実行は未確認です。AIへの依頼は送信していません。</value>
@@ -595,16 +596,16 @@ AIの操作権限: {8}</value>
     <value>要確認</value>
   </data>
   <data name="OverviewAgentAccessibleName" xml:space="preserve">
-    <value>エージェント設定：{0}。エージェント設定を開く。</value>
+    <value>エージェント設定: {0}。エージェント設定を開く。</value>
   </data>
   <data name="OverviewConnectionAccessibleName" xml:space="preserve">
-    <value>チャット設定：{0}。チャット設定を開く。</value>
+    <value>チャット設定: {0}。チャット設定を開く。</value>
   </data>
   <data name="OverviewChatAccessibleName" xml:space="preserve">
-    <value>接続状態：{0}。チャットを開く。</value>
+    <value>接続状態: {0}。チャットを開く。</value>
   </data>
   <data name="OverviewCliAccessibleName" xml:space="preserve">
-    <value>使用するエージェント：{0}。エージェント設定を開く。</value>
+    <value>使用するエージェント: {0}。エージェント設定を開く。</value>
   </data>
   <data name="OverviewStartupEnabled" xml:space="preserve"><value>有効</value></data>
   <data name="OverviewStartupOff" xml:space="preserve"><value>オフ</value></data>
@@ -612,14 +613,14 @@ AIの操作権限: {8}</value>
   <data name="OverviewStartupDisabledByPolicy" xml:space="preserve"><value>組織のポリシーで無効</value></data>
   <data name="OverviewStartupUnavailable" xml:space="preserve"><value>利用できません</value></data>
   <data name="OverviewStartupError" xml:space="preserve"><value>起動設定を確認できません</value></data>
-  <data name="OverviewStartupAccessibleName" xml:space="preserve"><value>Windowsサインイン時の起動：{0}。詳細は起動設定を確認。</value></data>
+  <data name="OverviewStartupAccessibleName" xml:space="preserve"><value>Windowsサインイン時の起動: {0}。詳細は起動設定を確認。</value></data>
   <data name="OverviewAutoConnectOff" xml:space="preserve"><value>オフ</value></data>
-  <data name="OverviewAutoConnectSlackReady" xml:space="preserve"><value>オン：Slack</value></data>
-  <data name="OverviewAutoConnectMattermostReady" xml:space="preserve"><value>オン：Mattermost</value></data>
+  <data name="OverviewAutoConnectSlackReady" xml:space="preserve"><value>オン: Slack</value></data>
+  <data name="OverviewAutoConnectMattermostReady" xml:space="preserve"><value>オン: Mattermost</value></data>
   <data name="OverviewAutoConnectNeedsSlack" xml:space="preserve"><value>Slack接続の設定が必要</value></data>
   <data name="OverviewAutoConnectNeedsMattermost" xml:space="preserve"><value>Mattermost接続の設定が必要</value></data>
   <data name="OverviewAutoConnectError" xml:space="preserve"><value>保存済み設定を読み込めません</value></data>
-  <data name="OverviewAutoConnectAccessibleName" xml:space="preserve"><value>アプリ起動時のチャット接続：{0}。チャット設定を開く。</value></data>
+  <data name="OverviewAutoConnectAccessibleName" xml:space="preserve"><value>アプリ起動時のチャット接続: {0}。チャット設定を開く。</value></data>
   <data name="OverviewError" xml:space="preserve"><value>異常・要確認</value></data>
   <data name="OverviewConnectionError" xml:space="preserve"><value>接続エラー</value></data>
   <data name="LanguageRestartTitle" xml:space="preserve"><value>再起動が必要です</value></data>
@@ -654,23 +655,23 @@ AIの操作権限: {8}</value>
   <data name="MattermostThreadAlreadyAllowed" xml:space="preserve"><value>会話 {0} はすでに許可リストにあります。</value></data>
   <data name="MattermostThreadAddedSaveNeeded" xml:space="preserve"><value>会話 {0} を追加しました。変更内容を確認した後、再接続してください。</value></data>
   <data name="MattermostThreadAllowlistInvalid" xml:space="preserve"><value>既存の会話許可リストに無効なIDがあります。追加前に修正してください。</value></data>
-  <data name="SlackUsernameLookupInProgress" xml:space="preserve"><value>設定されたSlackボットトークンでユーザーを検索しています…</value></data>
+  <data name="SlackUsernameLookupInProgress" xml:space="preserve"><value>設定されたSlackのBotトークンでユーザーを検索しています…</value></data>
   <data name="SlackUsernameLookupFound" xml:space="preserve"><value>Slackアカウントが見つかりました。ワークスペースとメンバーIDを確認し、「このユーザーを追加」を選んでください。</value></data>
   <data name="SlackUsernameLookupIdentity" xml:space="preserve"><value>ユーザー名: @{0}
 氏名: {1}
 メンバーID: {2}
 ワークスペース: {3} ({4})</value></data>
   <data name="SlackUsernameLookupInvalidUsername" xml:space="preserve"><value>Slackのユーザー名・表示名またはメンバーIDを1つ正確に入力してください。先頭の@は省略できます。</value></data>
-  <data name="SlackUsernameLookupMissingCredentials" xml:space="preserve"><value>ユーザー検索の前にSlackボットトークンを入力してください。</value></data>
-  <data name="SlackUsernameLookupInvalidToken" xml:space="preserve"><value>Slackがボットトークンを拒否しました。トークンを確認するか再入力してください。</value></data>
+  <data name="SlackUsernameLookupMissingCredentials" xml:space="preserve"><value>ユーザー検索の前にSlackのBotトークンを入力してください。</value></data>
+  <data name="SlackUsernameLookupInvalidToken" xml:space="preserve"><value>SlackがBotトークンを拒否しました。トークンを確認するか再入力してください。</value></data>
   <data name="SlackUsernameLookupWrongWorkspace" xml:space="preserve"><value>検索結果は認証中のものとは別のSlackワークスペースのアカウントです。</value></data>
-  <data name="SlackUsernameLookupMissingScope" xml:space="preserve"><value>ユーザー検索にはSlackボットトークンの「{0}」スコープが必要です。Slackアプリにスコープを追加して再インストールし、新しいトークンが発行された場合は入力し直してください。</value></data>
+  <data name="SlackUsernameLookupMissingScope" xml:space="preserve"><value>ユーザー検索にはSlackのBotトークンの「{0}」スコープが必要です。Slackアプリにスコープを追加して再インストールし、新しいトークンが発行された場合は入力し直してください。</value></data>
   <data name="SlackUsernameLookupRateLimited" xml:space="preserve"><value>Slackが検索を一時制限しています。少し待ってから再試行してください。</value></data>
   <data name="SlackUsernameLookupNotFound" xml:space="preserve"><value>認証中のワークスペースに一致するSlackユーザー名またはメンバーIDがありません。</value></data>
   <data name="SlackUsernameLookupAmbiguous" xml:space="preserve"><value>Slackで同じユーザー名が複数見つかりました。メンバーIDで検索してください。</value></data>
   <data name="SlackUsernameLookupTimeout" xml:space="preserve"><value>Slackユーザー検索がタイムアウトしました。接続を確認して再試行してください。</value></data>
   <data name="SlackUsernameLookupInvalidResponse" xml:space="preserve"><value>Slackから確認できないアカウント情報が返されました。再試行するかSlackアプリを確認してください。</value></data>
-  <data name="SlackUsernameLookupNetwork" xml:space="preserve"><value>Slackに接続できませんでした。ネットワークとボットトークンを確認して再試行してください。</value></data>
+  <data name="SlackUsernameLookupNetwork" xml:space="preserve"><value>Slackに接続できませんでした。ネットワークとBotトークンを確認して再試行してください。</value></data>
   <data name="SlackUsernameAlreadyAllowed" xml:space="preserve"><value>@{0}は許可ユーザーの下書きにすでに登録されています。</value></data>
   <data name="SlackUsernameAddedSaveNeeded" xml:space="preserve"><value>@{0}を許可リストに追加しました。変更内容を確認した後、Slackに再接続してください。</value></data>
   <data name="SlackUsernameAllowlistInvalid" xml:space="preserve"><value>許可ユーザー一覧が無効か、すでに100人登録されています。追加する前に一覧を修正してください。</value></data>
@@ -680,17 +681,17 @@ AIの操作権限: {8}</value>
 チャンネル: {1}
 会話ID（最初の投稿）: {2}</value></data>
   <data name="SlackThreadLookupInvalidLink" xml:space="preserve"><value>認証中のワークスペースに属する有効なSlackメッセージリンクを貼り付けてください。</value></data>
-  <data name="SlackThreadLookupMissingCredentials" xml:space="preserve"><value>メッセージリンクを確認する前にSlackボットトークンを入力してください。</value></data>
-  <data name="SlackThreadLookupInvalidToken" xml:space="preserve"><value>Slackがボットトークンを拒否しました。トークンを確認するか再入力してください。</value></data>
-  <data name="SlackThreadLookupWrongWorkspace" xml:space="preserve"><value>このリンクは設定されたボットトークンとは別のSlackワークスペースに属しています。</value></data>
-  <data name="SlackThreadLookupMissingScope" xml:space="preserve"><value>メッセージを確認するにはSlackボットトークンの「{0}」スコープが必要です。Slackアプリにスコープを追加して再インストールし、新しいトークンが発行された場合は入力し直してください。</value></data>
+  <data name="SlackThreadLookupMissingCredentials" xml:space="preserve"><value>メッセージリンクを確認する前にSlackのBotトークンを入力してください。</value></data>
+  <data name="SlackThreadLookupInvalidToken" xml:space="preserve"><value>SlackがBotトークンを拒否しました。トークンを確認するか再入力してください。</value></data>
+  <data name="SlackThreadLookupWrongWorkspace" xml:space="preserve"><value>このリンクは設定されたBotトークンとは別のSlackワークスペースに属しています。</value></data>
+  <data name="SlackThreadLookupMissingScope" xml:space="preserve"><value>メッセージを確認するにはSlackのBotトークンの「{0}」スコープが必要です。Slackアプリにスコープを追加して再インストールし、新しいトークンが発行された場合は入力し直してください。</value></data>
   <data name="SlackThreadLookupRateLimited" xml:space="preserve"><value>Slackがリンク確認を一時制限しています。少し待ってから再試行してください。</value></data>
-  <data name="SlackThreadLookupNotFound" xml:space="preserve"><value>認証中のワークスペースにメッセージが見つかりません。ボットがチャンネルにアクセスできるか確認してください。</value></data>
+  <data name="SlackThreadLookupNotFound" xml:space="preserve"><value>認証中のワークスペースにメッセージが見つかりません。Botがチャンネルにアクセスできるか確認してください。</value></data>
   <data name="SlackThreadLookupWrongChannel" xml:space="preserve"><value>リンク先のチャンネルに設定されたSlackアプリがアクセスできません。</value></data>
   <data name="SlackThreadLookupDeleted" xml:space="preserve"><value>リンク先の投稿または会話のルートが削除されているため追加できません。</value></data>
   <data name="SlackThreadLookupTimeout" xml:space="preserve"><value>Slackメッセージ検索がタイムアウトしました。接続を確認して再試行してください。</value></data>
   <data name="SlackThreadLookupInvalidResponse" xml:space="preserve"><value>Slackから確認できないメッセージ情報が返されました。</value></data>
-  <data name="SlackThreadLookupNetwork" xml:space="preserve"><value>Slackに接続できませんでした。ネットワークとボットトークンを確認して再試行してください。</value></data>
+  <data name="SlackThreadLookupNetwork" xml:space="preserve"><value>Slackに接続できませんでした。ネットワークとBotトークンを確認して再試行してください。</value></data>
   <data name="SlackThreadAlreadyAllowed" xml:space="preserve"><value>チャンネルと会話 {0} は許可範囲の下書きにすでに登録されています。</value></data>
   <data name="SlackThreadAddedSaveNeeded" xml:space="preserve"><value>チャンネル {0} と会話 {1} を追加しました。変更内容を確認した後、Slackに再接続してください。</value></data>
   <data name="SlackThreadAllowlistInvalid" xml:space="preserve"><value>チャンネルまたはスレッドの範囲一覧が無効か、すでに100件登録されています。追加する前に一覧を修正してください。</value></data>
@@ -703,29 +704,29 @@ AIの操作権限: {8}</value>
   <data name="AttachmentLimitsMustBeWholeNumbers" xml:space="preserve"><value>添付の上限には整数を指定してください。</value></data>
   <data name="GeneralSettingsSaved" xml:space="preserve"><value>自動接続先を保存しました</value></data>
   <data name="GeneralSettingsSavedDetails" xml:space="preserve"><value>次回のアプリ起動時から、この自動接続設定を使用します。</value></data>
-  <data name="CliModelsUnavailableDetails" xml:space="preserve"><value>CLIの起動・バージョン確認は成功しました。モデル候補の取得で失敗しました：{0}</value></data>
-  <data name="TrustedFolderRecoveryChanged" xml:space="preserve"><value>フォルダーが変更されたか、安全に信頼対象へ追加できません。作業先を確認してCLIを再チェックしてください。</value></data>
+  <data name="CliModelsUnavailableDetails" xml:space="preserve"><value>CLIの起動・バージョン確認は成功しました。モデル候補の取得で失敗しました: {0}</value></data>
+  <data name="TrustedFolderRecoveryChanged" xml:space="preserve"><value>フォルダーが変更されたか、安全に信頼対象へ追加できません。作業フォルダーを確認してCLIを再チェックしてください。</value></data>
   <data name="WizardConnectionDeferredTitle" xml:space="preserve"><value>設定を保存して完了しました</value></data>
   <data name="WizardConnectionDeferredDetails" xml:space="preserve"><value>接続テストはまだ完了していません。「チャット」から接続できます。すでに接続中の場合は、変更した設定を使うために再接続してください。</value></data>
   <data name="WizardSkipStep" xml:space="preserve"><value>この設定をスキップ</value></data>
   <data name="WizardSkippedTitle" xml:space="preserve"><value>未設定の項目を残して完了しました</value></data>
-  <data name="WizardSkippedDetails" xml:space="preserve"><value>未設定: {0}。概要・チャットの画面から後で設定できます。</value></data>
+  <data name="WizardSkippedDetails" xml:space="preserve"><value>未設定: {0}。「全般」と「チャット」の画面から後で設定できます。</value></data>
   <data name="WizardSkippedNotice" xml:space="preserve"><value>未設定: {0}。このまま完了して、後で設定できます。</value></data>
   <data name="WizardSkippedCli" xml:space="preserve"><value>CLIの確認</value></data>
   <data name="WizardSkippedChat" xml:space="preserve"><value>チャット接続</value></data>
   <data name="WizardSkippedSeparator" xml:space="preserve"><value>、</value></data>
-  <data name="AntigravityProviderHelp" xml:space="preserve"><value>Antigravity CLI（agy）は同じチャットスレッドの会話を継続します。アカウントで使えるモデルの候補を取得するか、モデルIDを直接入力できます。推論の強さはCLIの設定に従います。事前にCLIへログインしてください。</value></data>
+  <data name="AntigravityProviderHelp" xml:space="preserve"><value>Antigravity CLI（agy）は同じチャットスレッドの会話を継続します。アカウントで使えるモデルの候補を取得するか、モデルIDを直接入力できます。推論レベルはCLIの設定に従います。事前にCLIへログインしてください。</value></data>
   <data name="AntigravityPermissionHelp" xml:space="preserve"><value>Antigravity CLIはヘッドレスモードでは確認画面を出せないため、ここで作業フォルダーへの書き込みを許可するモードか「フルアクセス」を選ぶか、agyのsettings.jsonに許可ルールを追加しない限り、編集とコマンドは自動的に拒否されます。読み取り専用と操作ごとの確認は使えません。「CLIの既定値を使う」を選ぶとagy自身の設定に従います。</value></data>
   <data name="SessionCliProviderHelp" xml:space="preserve"><value>Gemini CLI・GitHub Copilot CLIは同じチャットスレッドの会話を継続し、モデル名を直接指定できます。モデル候補の取得とアプリからの推論・操作権限の上書きには対応しません。事前にCLIへログインしてください。</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>このCLIではモデル候補を取得できません。CLIと契約が対応するモデルID・別名を直接入力するか、空欄でCLIの既定モデルを使ってください。モデルの利用可否は実行時に確認されます。推論と操作権限はCLIの設定に従います。</value></data>
-  <data name="OverviewAutoConnectDiscordReady" xml:space="preserve"><value>オン：Discord</value></data>
+  <data name="OverviewAutoConnectDiscordReady" xml:space="preserve"><value>オン: Discord</value></data>
   <data name="OverviewAutoConnectNeedsDiscord" xml:space="preserve"><value>Discord Botとアクセス設定が必要</value></data>
   <data name="DiscordConnectionFields" xml:space="preserve"><value>Botトークンと許可するユーザーIDを入力してください。ダイレクトメッセージを有効にしない場合は、許可するサーバーIDも1つ以上必要です。</value></data>
-  <data name="KiroProviderHelp" xml:space="preserve"><value>Kiro CLIはWindows 11のネイティブ版を使用します。非対話実行用のKIRO_API_KEYをPC側で設定してください。モデル候補を取得し、同じスレッドの会話を継続します。操作権限と推論の強さはCLIの設定に従います。CLI側の確認が必要な操作は非対話実行では拒否されます。</value></data>
+  <data name="KiroProviderHelp" xml:space="preserve"><value>Kiro CLIはWindows 11のネイティブ版を使用します。非対話実行用のKIRO_API_KEYをPC側で設定してください。モデル候補を取得し、同じスレッドの会話を継続します。操作権限と推論レベルはCLIの設定に従います。CLI側の確認が必要な操作は非対話実行では拒否されます。</value></data>
   <data name="QwenProviderHelp" xml:space="preserve"><value>Qwen Codeは同じチャットスレッドの会話を継続します。モデル名を入力し、認証・推論・操作権限はCLI側で設定してください。モデル候補の取得は未対応です。</value></data>
   <data name="MuseProviderHelp" xml:space="preserve"><value>Muse Code CLIのモデルと権限設定はCLI側に従います。モデル名を直接入力してください。モデル候補の取得には未対応です。承認とサンドボックスはMuse CLIの設定に従い、CABがすべての権限を自動付与することはありません。</value></data>
   <data name="KimiProviderHelp" xml:space="preserve"><value>Kimi Code CLIは同じチャットスレッドの会話を継続します。モデル名またはCLIで設定した別名を入力できます。モデル候補の取得は未対応です。</value></data>
   <data name="KimiPermissionHelp" xml:space="preserve"><value>「CLIの既定値を使う」では、承認が必要なツール操作をCABで確認します。「フルアクセス」ではこの確認を省略し、Kimi側の対応が必要です。これらの権限設定は、OSレベルのサンドボックスを提供しません。</value></data>
-  <data name="CodexWorkspaceRejected" xml:space="preserve"><value>Codexが作業フォルダー「{0}」を拒否しました。「エージェント設定」→「共通設定」で作業フォルダーを確認し、必要に応じてCLIを更新してください。CABで信頼確認した作業先はGit管理外でも利用できます。</value></data>
+  <data name="CodexWorkspaceRejected" xml:space="preserve"><value>Codexが作業フォルダー「{0}」を拒否しました。「エージェント設定」→「共通設定」で作業フォルダーを確認し、必要に応じてCLIを更新してください。CABで信頼確認した作業フォルダーはGit管理外でも利用できます。</value></data>
   <data name="ManualWorkspaceSummary" xml:space="preserve"><value>作業フォルダー: {0}</value></data>
 </root>

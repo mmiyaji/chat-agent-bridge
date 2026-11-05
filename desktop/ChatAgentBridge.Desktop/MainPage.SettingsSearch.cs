@@ -260,7 +260,7 @@ public sealed partial class MainPage
             foreach (var field in AgentSettings.AgentEditorCapabilities.SearchableFields(scope))
                 yield return Field(field.LabelResource, scope, field.AutomationId, aliases, field.Keywords);
         }
-        foreach (var scope in new[] { "common", "mattermost", "slack", "discord" })
+        foreach (var scope in new[] { "common", "slack", "mattermost", "discord" })
             yield return Entry(scope == "common" ? ScopeSearchLabel("connections", scope) :
                 DesktopText.Get("SearchScopeSettings", ScopeSearchLabel("connections", scope)), "connections", scope, null, [scope]);
 
