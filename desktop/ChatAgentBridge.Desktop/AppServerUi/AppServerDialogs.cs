@@ -17,22 +17,18 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
         ArgumentNullException.ThrowIfNull(approval);
         using var localCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var quickDecision = new TaskCompletionSource<AppServerDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var highRisk = ChatAgentBridge.Core.AppServer.ApprovalRisk.Assess(approval).Level ==
+            ChatAgentBridge.Core.AppServer.ApprovalRiskLevel.High;
         string token = "";
         try
         {
             await OnUiAsync(() =>
             {
                 App.PendingRequestNotifications.TryNotifyPendingRequest(Notifications.PendingNotificationKind.AiApproval,
-                    // A high-risk command is never approved from the toast; the button just brings the details forward.
-                    () =>
-                    {
-                        if (ChatAgentBridge.Core.AppServer.ApprovalRisk.Assess(approval).Level == ChatAgentBridge.Core.AppServer.ApprovalRiskLevel.High)
-                            App.Tray.ShowWindow();
-                        else quickDecision.TrySetResult(AppServerDecision.Accept);
-                        return Task.CompletedTask;
-                    },
+                    () => { quickDecision.TrySetResult(AppServerDecision.Accept); return Task.CompletedTask; },
                     () => { quickDecision.TrySetResult(AppServerDecision.Decline); return Task.CompletedTask; },
-                    () => { App.Tray.ShowWindow(); return Task.CompletedTask; }, out token);
+                    () => { App.Tray.ShowWindow(); return Task.CompletedTask; }, out token,
+                    highRisk ? DesktopText.Get("NotificationAiApprovalHighRiskBody") : null);
             });
             var local = ShowAsync(xamlRoot => BuildApprovalDialog(xamlRoot, approval),
                 AppServerDecision.Decline, localCancellation.Token);
@@ -160,13 +156,12 @@ public sealed class AppServerDialogs(Func<XamlRoot?> root)
         var risk = ChatAgentBridge.Core.AppServer.ApprovalRisk.Assess(approval);
         if (risk.Level != ChatAgentBridge.Core.AppServer.ApprovalRiskLevel.Normal)
         {
-            var high = risk.Level == ChatAgentBridge.Core.AppServer.ApprovalRiskLevel.High;
             body.Children.Add(new TextBlock
             {
                 Text = ChatAgentBridge.Core.AppServer.ApprovalRisk.Describe(risk),
                 TextWrapping = TextWrapping.Wrap,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[high ? "SystemFillColorCriticalBrush" : "SystemFillColorCautionBrush"]
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[risk.Level == ChatAgentBridge.Core.AppServer.ApprovalRiskLevel.High ? "SystemFillColorCriticalBrush" : "SystemFillColorCautionBrush"]
             });
         }
 

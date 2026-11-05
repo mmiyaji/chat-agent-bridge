@@ -25,9 +25,13 @@ A chat post causes the CLI on your PC to read and write files and run commands. 
 
 ## System overview and request flow
 
-![Requests travel from Slack, Mattermost or Discord on another device to Chat Agent Bridge and a CLI on the Windows PC; results return to chat](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)
+The first-run wizard shows the terms and privacy policy links and consent checkboxes before the diagram. Click the diagram to enlarge it.
 
-This is the diagram shown in the app's setup guide and General page. It uses Codex and Claude Code as examples. Gemini CLI, GitHub Copilot CLI, Antigravity CLI and Muse Code Preview use the same arrangement.
+Required wizard fields are marked with an asterisk (*). These fields are required when configuring that step, even if the step can be skipped.
+
+![A requester mentions a dedicated Bot from a phone or browser; Chat Agent Bridge passes the request to a CLI on the local PC and the result returns in the same thread](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)
+
+This diagram appears in the app's first-run wizard and General page. The requester mentions a dedicated Bot from their own chat account using a phone or browser. We recommend using a dedicated Bot account. Bridge checks allowed users and passes the request to a CLI on the PC. Codex CLI and Claude Code CLI are examples; they are not bundled and must be installed and authenticated separately. Other supported CLIs, including Muse Code Preview, use the same arrangement.
 
 1. **Post from another device** in Slack, Mattermost or Discord. That device does not need an agent CLI installed.
 2. **Bridge on the Windows PC** receives the post and checks allowed users and conversation approval settings. Requests that need approval wait for a decision.
@@ -119,6 +123,7 @@ Manual runs use the working folder selected in Agent settings, regardless of whe
 **Chat settings** contains approval and sharing rules common to all chat services, along with each service's connection details and allowed users.
 
 - **Request approval** can be required every time, only for the first request, or handled automatically. This approval starts the request; the CLI's permission to perform individual operations is configured separately.
+- Codex App Server approvals show an informational warning for a small set of clearly destructive command patterns. The warning does not change the available approval controls or replace the CLI's permission safeguards.
 - **Access restrictions** specify who and which conversations can send requests. Register folders where requests may start as trusted working folders. Changing the folder from chat requires a location within that scope and approval on the PC.
 - **Result sharing** can be manual, automatic or disabled. Sent content is visible to everyone who can access the destination chat or thread.
 - **Generated file attachments** require approval each time by default. You can instead require approval only for the first attachment in a thread, allow automatic attachments or prohibit attachments. Set per-file size, total size and file count limits.
@@ -208,7 +213,11 @@ The app uses Japanese when the Windows language preference is Japanese and Engli
 
 Portable builds can check for and apply updates from **About**. Downloads show received and total size while active or paused, transfer speed and estimated time remaining, elapsed time while waiting for data, retry counts, and verification and preparation stages. Downloads can be canceled. Downloads support pause and resume, including after restarting the app. Network failures or five minutes without data trigger up to three retries. The completed archive is verified with SHA-256. The `Data` folder is retained during updates. Completed update downloads and temporary binary payloads are cleaned up automatically; update logs are retained. Information → Update settings shows storage usage. Manual cleanup is under Information → Advanced settings → Maintenance. For manual updates, close the app and replace the files while keeping `Data`.
 
-Screenshots show a development build using dedicated demo settings and sample usage records. They contain no real conversations or credentials. Released versions may differ.
+Screenshots were captured from the development build on 2026-11-02 with isolated
+demo settings. They contain no real conversations or credentials. The usage
+summary retains 70 sample runs across 28 active days while detailed history
+shows 52 records still within its default 30-day retention period. These values
+are examples, not performance results. Released versions may differ.
 
 ## Uninstalling
 

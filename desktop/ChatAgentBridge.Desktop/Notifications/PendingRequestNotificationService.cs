@@ -170,11 +170,12 @@ public sealed class PendingRequestNotificationService
         Func<Task> approve,
         Func<Task> decline,
         Func<Task> open,
-        out string token)
+        out string token,
+        string? aiApprovalBody = null)
     {
         if (approve is null || decline is null || open is null) { token = ""; return false; }
         return TryNotifyPendingRequest(kind, async () => { await approve(); return PendingNotificationActionResult.Completed; },
-            async () => { await decline(); return PendingNotificationActionResult.Completed; }, open, out token);
+            async () => { await decline(); return PendingNotificationActionResult.Completed; }, open, out token, aiApprovalBody);
     }
 
     public bool TryNotifyPendingRequest(
@@ -182,18 +183,19 @@ public sealed class PendingRequestNotificationService
         Func<Task<PendingNotificationActionResult>> approve,
         Func<Task<PendingNotificationActionResult>> decline,
         Func<Task> open,
-        out string token)
+        out string token,
+        string? aiApprovalBody = null)
     {
         token = string.Empty;
         if (!IsAvailable || approve is null || decline is null || open is null)
             return false;
 
-        var entry = _pending.Add(kind, PendingLifetime, approve, decline, open);
+        var entry = _pending.Add(kind, PendingLifetime, approve, decline, open, aiApprovalBody);
         var candidate = entry.Token;
 
         try
         {
-            AppNotification notification = BuildNotification(kind, candidate, entry.ExpiresAt);
+            AppNotification notification = BuildNotification(kind, candidate, entry.ExpiresAt, aiApprovalBody);
             _manager.Show(notification);
             _diagnostics?.Write("notification.shown", candidate, outcome: notification.Id == 0 ? "rejected" : "accepted");
             if (notification.Id == 0)
@@ -264,12 +266,14 @@ public sealed class PendingRequestNotificationService
         _diagnostics?.Dispose();
     }
 
-    private AppNotification BuildNotification(PendingNotificationKind kind, string token, DateTimeOffset expiresAt)
+    private AppNotification BuildNotification(PendingNotificationKind kind, string token, DateTimeOffset expiresAt,
+        string? aiApprovalBody)
     {
         (string title, string body) = kind switch
         {
             PendingNotificationKind.ChatRequest => (DesktopText.Get("NotificationChatRequestTitle"), DesktopText.Get("NotificationChatRequestBody")),
-            PendingNotificationKind.AiApproval => (DesktopText.Get("NotificationAiApprovalTitle"), DesktopText.Get("NotificationAiApprovalBody")),
+            PendingNotificationKind.AiApproval => (DesktopText.Get("NotificationAiApprovalTitle"),
+                string.IsNullOrWhiteSpace(aiApprovalBody) ? DesktopText.Get("NotificationAiApprovalBody") : aiApprovalBody),
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
 
@@ -375,7 +379,7 @@ public sealed class PendingRequestNotificationService
                     // Windows dismisses a clicked toast. Re-show the same decision
                     // with its original lifetime; never queue automatic execution.
                     if (entry is not null && entry.ExpiresAt > DateTimeOffset.UtcNow)
-                        _manager.Show(BuildNotification(entry.Kind, token, entry.ExpiresAt));
+                        _manager.Show(BuildNotification(entry.Kind, token, entry.ExpiresAt, entry.AiApprovalBody));
                     RequestAttention();
                     break;
                 case PendingNotificationRegistry.Outcome.Missing:

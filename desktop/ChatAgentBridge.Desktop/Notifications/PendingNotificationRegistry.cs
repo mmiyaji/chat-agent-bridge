@@ -9,9 +9,10 @@ internal sealed class PendingNotificationRegistry(TimeProvider? clock = null)
     private readonly ConcurrentDictionary<string, Entry> _entries = new(StringComparer.Ordinal);
 
     internal Entry Add(PendingNotificationKind kind, TimeSpan lifetime,
-        Func<Task<PendingNotificationActionResult>> approve, Func<Task<PendingNotificationActionResult>> decline, Func<Task> open)
+        Func<Task<PendingNotificationActionResult>> approve, Func<Task<PendingNotificationActionResult>> decline, Func<Task> open,
+        string? aiApprovalBody = null)
     {
-        var entry = new Entry(Guid.NewGuid().ToString("N"), _clock.GetUtcNow() + lifetime, kind, approve, decline, open);
+        var entry = new Entry(Guid.NewGuid().ToString("N"), _clock.GetUtcNow() + lifetime, kind, approve, decline, open, aiApprovalBody);
         _entries[entry.Token] = entry;
         return entry;
     }
@@ -60,7 +61,8 @@ internal sealed class PendingNotificationRegistry(TimeProvider? clock = null)
 
     internal enum Outcome { Completed, Opened, Busy, Unavailable, Expired, Missing, InvalidAction }
     internal sealed class Entry(string token, DateTimeOffset expiresAt, PendingNotificationKind kind,
-        Func<Task<PendingNotificationActionResult>> approve, Func<Task<PendingNotificationActionResult>> decline, Func<Task> open)
+        Func<Task<PendingNotificationActionResult>> approve, Func<Task<PendingNotificationActionResult>> decline, Func<Task> open,
+        string? aiApprovalBody)
     {
         internal readonly string Token = token;
         internal readonly DateTimeOffset ExpiresAt = expiresAt;
@@ -68,6 +70,7 @@ internal sealed class PendingNotificationRegistry(TimeProvider? clock = null)
         internal readonly Func<Task<PendingNotificationActionResult>> Approve = approve;
         internal readonly Func<Task<PendingNotificationActionResult>> Decline = decline;
         internal readonly Func<Task> Open = open;
+        internal readonly string? AiApprovalBody = aiApprovalBody;
         internal int InFlight;
     }
 }

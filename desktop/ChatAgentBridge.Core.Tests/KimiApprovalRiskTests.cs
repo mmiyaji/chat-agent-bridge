@@ -12,6 +12,8 @@ public sealed class KimiApprovalRiskTests
 
         Assert.Equal(ApprovalRiskLevel.Elevated, assessment.Level);
         Assert.Contains("ApprovalRiskUnknownTool", assessment.ReasonKeys);
+        Assert.Contains(Localization.CoreText.Get("ApprovalRiskElevated"), ApprovalRisk.Describe(assessment));
+        Assert.Contains(Localization.CoreText.Get("ApprovalRiskUnknownTool"), ApprovalRisk.Describe(assessment));
     }
 
     [Fact]

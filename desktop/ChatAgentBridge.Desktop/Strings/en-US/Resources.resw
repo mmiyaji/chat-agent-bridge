@@ -1389,4 +1389,5 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="KeepAwakeAcOnly.Content" xml:space="preserve"><value>Only on AC power</value></data>
   <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>Loading setting…</value></data>
   <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>When to keep the PC awake</value></data>
+  <data name="WizardRequiredFieldsHint.Text" xml:space="preserve"><value>* marks fields required when configuring this step.</value></data>
 </root>

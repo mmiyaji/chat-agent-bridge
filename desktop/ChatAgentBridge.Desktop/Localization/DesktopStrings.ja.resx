@@ -1024,4 +1024,5 @@
   <data name="KeepAwakeNativeReason" xml:space="preserve"><value>Chat Agent Bridgeが依頼を処理しています。</value></data>
   <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>設定を読み込み中…</value></data>
   <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>PCをスリープさせない条件</value></data>
+  <data name="NotificationAiApprovalHighRiskBody" xml:space="preserve"><value>危険性の高いコマンドです。承認前に内容を確認してください。承認方法は通常どおりです。</value></data>
 </root>

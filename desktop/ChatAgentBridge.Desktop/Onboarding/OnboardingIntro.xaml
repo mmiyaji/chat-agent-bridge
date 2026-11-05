@@ -9,10 +9,9 @@
         <SolidColorBrush x:Key="MissingConsentBorderBrush" Color="{ThemeResource SystemFillColorCritical}" />
         <SolidColorBrush x:Key="MissingConsentBackgroundBrush" Color="{ThemeResource SystemFillColorCriticalBackground}" />
     </UserControl.Resources>
-    <StackPanel x:Name="IntroStackPanel" Spacing="16" HorizontalAlignment="Stretch">
+    <StackPanel x:Name="IntroStackPanel" Spacing="12" HorizontalAlignment="Stretch">
         <localization:LanguageSettings x:Name="IntroLanguageSettings" />
         <TextBlock x:Name="IntroHeading" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock001" />
-        <diagrams:ArchitecturePreview x:Name="ArchitectureImage" MaxPreviewHeight="200" AutomationProperties.AutomationId="WizardArchitecture" x:Uid="WizardArchitecture" />
         <TextBlock x:Name="IntroDescription" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock002" />
         <TextBlock x:Name="IntroDataNotice" TextWrapping="Wrap"  x:Uid="onboardingOnboardingIntroTextBlock003" />
         <TextBlock x:Name="IntroDisclaimer" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  x:Uid="onboardingOnboardingIntroTextBlock004" />
@@ -40,5 +39,6 @@
             </Border>
         </Grid>
         <TextBlock Text="{x:Bind ViewModel.ConsentStatus, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="WizardConsentStatus" />
+        <diagrams:ArchitecturePreview x:Name="ArchitectureImage" MaxPreviewHeight="160" AutomationProperties.AutomationId="WizardArchitecture" x:Uid="WizardArchitecture" />
     </StackPanel>
 </UserControl>

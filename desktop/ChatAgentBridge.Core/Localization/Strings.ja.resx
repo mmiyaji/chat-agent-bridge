@@ -120,19 +120,12 @@
   <data name="DiscordActionUnavailable" xml:space="preserve"><value>この承認は利用できなくなりました。</value></data>
   <data name="DiscordActionClosed" xml:space="preserve"><value>この承認は終了しました。現在の状態は進捗メッセージまたは PC で確認してください。</value></data>
   <data name="ApprovalRiskHigh" xml:space="preserve"><value>⚠️ 危険度が高い操作です:</value></data>
-  <data name="ApprovalRiskElevated" xml:space="preserve"><value>内容をよく確認してください:</value></data>
   <data name="ApprovalRiskRecursiveDelete" xml:space="preserve"><value>再帰的な削除またはディスクの初期化</value></data>
   <data name="ApprovalRiskForcePush" xml:space="preserve"><value>強制プッシュまたはハードリセット</value></data>
   <data name="ApprovalRiskPipeToShell" xml:space="preserve"><value>コードをダウンロードして実行</value></data>
   <data name="ApprovalRiskElevation" xml:space="preserve"><value>管理者権限での実行</value></data>
   <data name="ApprovalRiskSystemChange" xml:space="preserve"><value>システムまたはレジストリの変更</value></data>
   <data name="ApprovalRiskDatabaseDrop" xml:space="preserve"><value>データベースのデータ削除</value></data>
-  <data name="ApprovalRiskNetworkTransfer" xml:space="preserve"><value>ネットワーク通信</value></data>
-  <data name="ApprovalRiskPackageInstall" xml:space="preserve"><value>パッケージのインストール</value></data>
-  <data name="ApprovalRiskDelete" xml:space="preserve"><value>ファイルの削除</value></data>
-  <data name="ApprovalRiskGitWrite" xml:space="preserve"><value>gitの履歴やブランチの変更</value></data>
-  <data name="ApprovalRiskTruncated" xml:space="preserve"><value>コマンドが長いため、すべては確認できていません</value></data>
-  <data name="ApprovalRiskCodeOnly" xml:space="preserve"><value>危険度が高いため承認ボタンは出しません。下のコードを返信するか、PCで判断してください。</value></data>
   <data name="KimiFullAccessRequired" xml:space="preserve"><value>Kimi ACPの「継承」モードでは、ツール操作ごとに承認が必要です。「フルアクセス」はKimiが明示的なフルアクセスモードを提示した場合のみ選択できます。Kimiの権限機能を使い、OSレベルのサンドボックスは提供しません。</value></data>
   <data name="BridgeManagedArgumentsRecovery" xml:space="preserve"><value>保存されたコマンドライン引数はこのプロバイダーでは使用できません。別のプロバイダーに切り替えて戻し、管理対象の引数を初期化してから、もう一度保存してください。</value></data>
   <data name="KimiPromptTooLong" xml:space="preserve"><value>Windows版Kimi Code CLIに渡せる依頼文の長さを超えています。依頼文を短くするか、引き継ぎ要約なしで新しい会話を開始してください。</value></data>
@@ -148,4 +141,6 @@
   <data name="KimiAcpIncomplete" xml:space="preserve"><value>Kimi Code CLIの依頼が完了しませんでした。会話の紐付けは変更していません。</value></data>
   <data name="KimiAcpTimeout" xml:space="preserve"><value>Kimi Code CLIの応答が制限時間内に得られませんでした。再試行してください。</value></data>
   <data name="KimiAcpProtocolFailed" xml:space="preserve"><value>Kimi Code CLIとの通信に失敗したか、操作が拒否されました。CLIのバージョン・ログイン・承認設定を確認してください。</value></data>
+  <data name="ApprovalRiskApprovalReminder" xml:space="preserve"><value>承認前にコマンドを確認してください。承認方法は通常どおりです。</value></data>
+  <data name="ApprovalRiskElevated" xml:space="preserve"><value>内容をよく確認してください:</value></data>
 </root>

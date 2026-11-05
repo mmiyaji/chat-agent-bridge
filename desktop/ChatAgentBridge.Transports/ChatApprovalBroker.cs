@@ -73,8 +73,7 @@ public sealed class ChatApprovalBroker
         IAsyncDisposable? actionLease = null;
         try
         {
-            // High-risk commands get no one-tap button or reaction: the approver has to type the code on purpose.
-            if (transport is IChatActionTransport actions && ApprovalRisk.Assess(approval).Level != ApprovalRiskLevel.High)
+            if (transport is IChatActionTransport actions)
                 actionLease = await actions.PostActionsAsync(origin, FormatRequest(approval, pending.Code, 1800),
                     ChatActionKind.ToolApproval, async (decision, ct) =>
                     {
@@ -173,7 +172,7 @@ public sealed class ChatApprovalBroker
         builder.AppendLine(CoreText.Get("ApprovalRequestTitle"));
         var risk = ApprovalRisk.Assess(approval);
         if (risk.Level != ApprovalRiskLevel.Normal) builder.AppendLine(ApprovalRisk.Describe(risk));
-        if (risk.Level == ApprovalRiskLevel.High) builder.AppendLine(CoreText.Get("ApprovalRiskCodeOnly"));
+        if (risk.Level == ApprovalRiskLevel.High) builder.AppendLine(CoreText.Get("ApprovalRiskApprovalReminder"));
         int remaining = maximumCharacters - builder.Length - footer.Length;
         Append(CoreText.Get("ApprovalMethodLabel"), approval.Method);
         Append(CoreText.Get("ApprovalDescriptionLabel"), approval.Description);

@@ -1389,4 +1389,5 @@
   <data name="KeepAwakeAcOnly.Content" xml:space="preserve"><value>AC電源接続中のみ</value></data>
   <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>設定を読み込み中…</value></data>
   <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>PCをスリープさせない条件</value></data>
+  <data name="WizardRequiredFieldsHint.Text" xml:space="preserve"><value>* は、この手順を設定する場合の必須項目です。</value></data>
 </root>

@@ -30,6 +30,21 @@ public sealed class ChatApprovalActionBrokerTests
     }
 
     [Fact]
+    public async Task HighRiskWarningKeepsTheConfiguredChatApprovalControls()
+    {
+        var approval = Approval with { Command = "rm -rf /tmp/build" };
+        var transport = new FakeActionTransport();
+        var request = new ChatApprovalBroker(TimeSpan.FromSeconds(3)).RequestAsync(
+            transport, Origin, approval, null, publishToThread: true);
+        await transport.Posted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal(ChatActionKind.ToolApproval, transport.Kind);
+        Assert.Contains("rm -rf /tmp/build", transport.Text, StringComparison.Ordinal);
+        Assert.Equal(ChatActionResult.Completed, await transport.ClickAsync(ChatActionDecision.Approve));
+        Assert.Equal(AppServerDecision.Accept, await request.WaitAsync(TimeSpan.FromSeconds(2)));
+    }
+
+    [Fact]
     public async Task ApprovalIsPrivateByDefaultAndDoesNotPostActions()
     {
         var transport = new FakeActionTransport();

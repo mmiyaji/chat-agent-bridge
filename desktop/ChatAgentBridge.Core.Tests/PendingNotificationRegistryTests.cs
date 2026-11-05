@@ -24,6 +24,23 @@ public sealed class PendingNotificationRegistryTests
     }
 
     [Fact]
+    public async Task AiWarningSurvivesBusyRetryWithoutExtendingApprovalLifetime()
+    {
+        var clock = new Clock();
+        var registry = new PendingNotificationRegistry(clock);
+        var entry = registry.Add(PendingNotificationKind.AiApproval, TimeSpan.FromMinutes(5),
+            () => Task.FromResult(PendingNotificationActionResult.Busy),
+            () => Task.FromResult(PendingNotificationActionResult.Completed), () => Task.CompletedTask,
+            "Review the destructive command before approving.");
+        var expires = entry.ExpiresAt;
+        Assert.Equal(PendingNotificationRegistry.Outcome.Busy, (await registry.InvokeAsync(entry.Token, "approve")).Outcome);
+        Assert.Equal("Review the destructive command before approving.", entry.AiApprovalBody);
+        Assert.Equal(expires, entry.ExpiresAt);
+        clock.Now += TimeSpan.FromMinutes(5);
+        Assert.Equal(PendingNotificationRegistry.Outcome.Expired, (await registry.InvokeAsync(entry.Token, "approve")).Outcome);
+    }
+
+    [Fact]
     public async Task Duplicate_click_during_processing_does_not_invoke_callback_twice()
     {
         var registry = new PendingNotificationRegistry();
