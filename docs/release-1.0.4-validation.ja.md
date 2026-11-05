@@ -16,8 +16,14 @@
 - 元の `PortableUpdateSmokeTest.ps1` は `-WorkingDirectory` 配下にステージを作りますが、実際の整理ガードは `%LOCALAPPDATA%/ChatAgentBridge/Updates` の所有ルートだけを許可します。検証では `.artifacts/` 内の一時コピーのみを調整し、作業場所を一意なGUIDの所有ルートに移動しました。旧ヘルパー用コピーではステージ assertion を「非ログの旧ペイロードは削除し、旧版が残すJSON/TXTメタデータのみ残る」に変更しました。成功、ロールバック、設定・履歴のハッシュ、復旧確認は維持し、リポジトリの元スクリプトは変更していません。アプリ終了はその試験プロセスだけを停止し、ロールバックダイアログはCUAから読み、閉じました。
 - 旧ZIP、ローカルpreview ZIP、試験ログと一時成果物は `.artifacts/release-1.0.4-preview.1/` にあります。旧ZIPの元ファイルは変更していません。CUAのダイアログAXには期待する英語メッセージが表示されましたが、スクリーンショット保存結果はダイアログの証跡にならない画像でした。
 
-## CI / 未完了
+## CI
 
 - `workflow_dispatch` CI run `42065799100` は release branch head `aef2237` で成功しました。`npm run check`、`npm test`、日英・設定チェック、Pythonチェック、リリース版数とStore設定チェック、Core/Transportテスト、portable build、third-party notice 検証、UI smoke と証跡アップロードがすべて成功しました。
-- コード修正は commit 済み・release branchへpush済みです。最終CIとUI smokeは成功済みです。mainへの統合、タグ付け、GitHub preview配布は未完了です。
 - 手元の smoke 実行用一時コピーは `.artifacts/` のみで、cleanup guard や product source script は変更していません。実サービス接続・送信、ARM64実機確認は未実施です。
+
+## 公開結果
+
+- `v1.0.4-preview.1` は main commit `d68b4e61627c8379a31660e4ce29af76b2e0617c` から作成し、GitHub prerelease として公開しました。Microsoft Store への提出・公開はしていません。
+- [GitHub preview release](https://github.com/mmiyaji/chat-agent-bridge/releases/tag/v1.0.4-preview.1) にある x64 ZIP は 131,244,392 bytes / SHA-256 `71e19c80fb4df4f3a5bf354c42c48f6c272ec8317f7f5145d54cceea63b45d95`、ARM64 ZIP は 125,050,626 bytes / SHA-256 `028d0e1505542d80aa32e7fed3bb9cfbb425ba2b57d25a4c8c34a0313eb4386c` です。x64 のダウンロード済みZIPでは GitHub digest と一致すること、内部の `portable-release.json` が版数・CPUを示すこと、`portable-files.json` / `SHA256SUMS.txt` および更新ヘルパーが含まれ、Core DLL と更新ヘルパーの内部 SHA-256 が一致することを確認しました。ARM64実機での起動は未確認です。
+- GitHub Actions の main CI [42068204868](https://github.com/mmiyaji/chat-agent-bridge/actions/runs/42068204868)、Portable release [42068233497](https://github.com/mmiyaji/chat-agent-bridge/actions/runs/42068233497)、説明文更新後の Distribution data [42071406839](https://github.com/mmiyaji/chat-agent-bridge/actions/runs/42071406839) はすべて成功しました。
+- 配信フィードの preview は `v1.0.4-preview.1` を先頭に含み、x64 / ARM64 のサイズとdigestが公開Releaseと一致します。stable フィードは変更されず、最新安定版は `v1.0.3` です。フィードはRelease本文を含まず、レビュー済みの日英リリースノートはGitHub Releaseに掲載されています。
