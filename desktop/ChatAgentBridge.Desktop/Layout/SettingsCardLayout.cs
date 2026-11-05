@@ -29,11 +29,12 @@ public static class SettingsCardLayout
     {
         var alignment = width < 680 ? ContentAlignment.Vertical : ContentAlignment.Right;
         if (card.ContentAlignment != alignment) card.ContentAlignment = alignment;
-        if (card.Content is Microsoft.UI.Xaml.Controls.RadioButtons choices)
+        if (card.Content is Microsoft.UI.Xaml.Controls.StackPanel row &&
+            row.Children.Count > 0 && row.Children.All(child => child is Microsoft.UI.Xaml.Controls.RadioButton))
         {
-            // A single column preserves reading order when the three options cannot fit together.
-            var columns = width < 520 ? 1 : 3;
-            if (choices.MaxColumns != columns) choices.MaxColumns = columns;
+            // Options sit in one row beside the text; a narrow card stacks them so none is cut off.
+            var orientation = width < 520 ? Microsoft.UI.Xaml.Controls.Orientation.Vertical : Microsoft.UI.Xaml.Controls.Orientation.Horizontal;
+            if (row.Orientation != orientation) row.Orientation = orientation;
         }
     }
 }

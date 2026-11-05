@@ -103,7 +103,7 @@ function Wait-Value([string]$Id,[string]$Expected,[int]$Seconds=12) {
 }
 function Wait-Step([string]$Step) {
     $until=[DateTimeOffset]::UtcNow.AddSeconds(12)
-    do { if ((Value 'OnboardingTitle').StartsWith($Step)) { return }; Start-Sleep -Milliseconds 150 } while ([DateTimeOffset]::UtcNow -lt $until)
+    do { if ((Value 'OnboardingStep').Contains($Step)) { return }; Start-Sleep -Milliseconds 150 } while ([DateTimeOffset]::UtcNow -lt $until)
     throw "Wizard did not advance to $Step"
 }
 function Click([string]$Id) { UI @('invoke',$Id) | Out-Null }
@@ -191,7 +191,7 @@ try {
     } while ([DateTimeOffset]::UtcNow -lt $languageUntil)
     Check $languageSaved "The $Language language selection persisted before entering the overview."
     UI @('scroll-into-view','WizardAcceptTerms') | Out-Null
-    Click 'WizardAcceptTerms'; Click 'WizardAcceptPrivacy'; Click 'OnboardingNext'; Wait-Step '[2/5]'
+    Click 'WizardAcceptTerms'; Click 'WizardAcceptPrivacy'; Click 'OnboardingNext'; Wait-Step '2/5'
     UI @('set-value','WizardWorkspaceRoot',(Join-Path $dataPath 'work')) | Out-Null
     Select-ComboItem 'WizardAgentProvider' 'Gemini CLI'
     Wait-Value 'WizardAgentExecutable' 'gemini'
@@ -200,12 +200,12 @@ try {
     Select-ComboItem 'WizardAgentProvider' $(if ($Language -eq 'ja') { 'その他のCLI（カスタム）' } else { 'Other CLI (custom)' })
     UI @('set-value','WizardAgentExecutable',$dotnet) | Out-Null
     UI @('set-value','WizardAgentArguments','') | Out-Null
-    Click 'OnboardingNext'; Wait-Step '[3/5]'
+    Click 'OnboardingNext'; Wait-Step '3/5'
     Click 'CheckCli'
     $until=[DateTimeOffset]::UtcNow.AddSeconds(15)
     do { if ((Value 'CliVersion') -match '^\d+\.\d+\.\d+') { break }; Start-Sleep -Milliseconds 150 } while ([DateTimeOffset]::UtcNow -lt $until)
     Check ((Value 'CliVersion') -match '^\d+\.\d+\.\d+') 'The wizard checks a custom CLI version without requiring a model catalog.'
-    Click 'OnboardingNext'; Wait-Step '[4/5]'
+    Click 'OnboardingNext'; Wait-Step '4/5'
     Check $true 'Gemini, GitHub Copilot and a custom CLI can be selected in the wizard and a checked custom CLI advances to chat setup.'
     Click 'OnboardingDefer'
     foreach ($id in @('OverviewAgentTile','OverviewConnectionTile','OverviewChatTile','OverviewCliTile','OverviewNextAction')) { Wait-Element $id | Out-Null }

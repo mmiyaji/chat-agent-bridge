@@ -106,6 +106,8 @@ public sealed partial class ModelCatalogMetadataControl : UserControl, INotifyPr
         MetadataText = catalog?.HasCatalogMetadata == true ? catalog.FetchedAtDisplayText : "";
         IsRefreshRecommendedVisible = catalog?.HasCatalogMetadata == true && catalog.IsRefreshRecommended;
         RefreshRecommendationTooltip = DesktopText.Get("ModelCatalogRefreshRecommended");
+        // An empty line would still take a row (plus the parent's spacing) before any list is fetched.
+        if (MetadataRoot is not null) MetadataRoot.Visibility =MetadataText.Length > 0 || IsRefreshRecommendedVisible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

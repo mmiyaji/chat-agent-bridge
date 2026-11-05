@@ -9,7 +9,9 @@ namespace ChatAgentBridge_Desktop;
 public sealed partial class MainPage
 {
     // Tone also refreshes this label when the nullable provider is cleared.
-    public static string ConnectionNavigationServiceLabel(string? provider, string tone) => ConnectionProviderLabel(provider);
+    // Without a provider the footer names the connection, not the Chat page listed above it.
+    public static string ConnectionNavigationServiceLabel(string? provider, string tone) =>
+        string.IsNullOrEmpty(provider) ? DesktopText.Get("SidebarConnectionNone") : ConnectionProviderLabel(provider);
 
     public static string ConnectionNavigationStateLabel(string tone) =>
         DesktopText.Get(tone switch

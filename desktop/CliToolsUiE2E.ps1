@@ -155,12 +155,12 @@ try {
     }
     Pass 'Settings controls remain accessible at 500 DIP in Light and Dark'
     Go 'NavOverview'; Scroll-ToElement 'StartOnboarding'; UI @('invoke','StartOnboarding') | Out-Null
-    if ((Value 'OnboardingTitle') -match '\[1/5\]') {
+    if ((Value 'OnboardingStep') -match '1/5') {
         UI @('invoke','WizardAcceptTerms') | Out-Null
         UI @('invoke','WizardAcceptPrivacy') | Out-Null
         UI @('invoke','OnboardingNext') | Out-Null
     }
-    Wait-Text 'OnboardingTitle' '[2/5]'
+    Wait-Text 'OnboardingStep' '2/5'
     Scroll-ToElement 'WizardBrowseAgentExecutable'
     $before=Value 'WizardAgentExecutable'
     Pick 'WizardBrowseAgentExecutable' $true
@@ -170,7 +170,7 @@ try {
     Assert ((Get-FileHash $settingsFile).Hash -eq $savedHash) 'Wizard picker implicitly saved settings.'
     Capture 'wizard-picker.png'
     UI @('invoke','OnboardingNext') | Out-Null
-    Wait-Text 'OnboardingTitle' '[3/5]'
+    Wait-Text 'OnboardingStep' '3/5'
     $wizardHash=(Get-FileHash $settingsFile).Hash
     Scroll-ToElement 'WizardReloadProcessEnvironment'
     UI @('invoke','WizardReloadProcessEnvironment') | Out-Null

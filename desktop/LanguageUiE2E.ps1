@@ -185,7 +185,7 @@ try {
     Wait-Text 'OnboardingTitle' 'Introduction and terms'
     $checks.Add(@{name='First consent, title, action and policy switch immediately without restart';passed=$true})
     Restart
-    Wait-Text 'OnboardingTitle' '[1/5]'
+    Wait-Text 'OnboardingStep' '1/5'
     Assert ((Value 'OnboardingTitle') -notmatch '[ぁ-んァ-ン一-龯]') 'Dynamic wizard heading is not English.'
     Assert ((Name 'WizardTerms') -match '(?i)terms') 'Static XAML terms button is not English.'
     Capture 'english-intro.png'
@@ -208,13 +208,13 @@ try {
     UI @('invoke','WizardAcceptTerms') | Out-Null
     UI @('invoke','WizardAcceptPrivacy') | Out-Null
     UI @('invoke','OnboardingNext') | Out-Null
-    Wait-Text 'OnboardingTitle' '[2/5]'
+    Wait-Text 'OnboardingStep' '2/5'
     UI @('set-value','WizardWorkspaceRoot',(Join-Path $dataPath 'work')) | Out-Null
     UI @('invoke','OnboardingNext') | Out-Null
-    Wait-Text 'OnboardingTitle' '[3/5]'
+    Wait-Text 'OnboardingStep' '3/5'
     UI @('invoke','OnboardingNext') | Out-Null
     UI @('wait-for','WizardStatus','-t','3000') | Out-Null
-    Assert ((Value 'OnboardingTitle').StartsWith('[3/5]')) 'Wizard advanced without checking the CLI.'
+    Assert ((Value 'OnboardingStep').Contains('3/5')) 'Wizard advanced without checking the CLI.'
     $status = UI @('inspect','WizardStatus','-d','4') | ConvertFrom-Json
     $messages = @($status.windows.elements.children | Where-Object { $_.automationId -in @('Title','Message') } | ForEach-Object name)
     Assert ($messages.Count -gt 0 -and ($messages -join ' ') -notmatch '[ぁ-んァ-ン一-龯]') 'Validation text was not translated into English.'

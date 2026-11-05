@@ -21,26 +21,20 @@
                 <ComboBoxItem x:Uid="CloseBehaviorExitApp" AutomationProperties.AutomationId="CloseBehaviorExitApp" />
             </ComboBox>
         </settings:SettingsCard>
-        <Expander x:Uid="TrayActions" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="TrayActionsExpander" localization:LocalizedResourceKey.Key="TrayActions">
-            <StackPanel Spacing="8">
-                <Grid ColumnSpacing="8">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                    <Button x:Name="MoveToTrayButton" x:Uid="MoveToTrayButton" Click="MoveToTrayButton_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="MoveToTrayButton" />
-                    <Button Grid.Column="1" x:Name="ExitCompletelyButton" x:Uid="ExitCompletelyButton" Click="ExitCompletelyButton_Click" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ExitCompletelyButton">
-                        <Button.Resources><ResourceDictionary Source="ms-appx:///ExitActionResources.xaml" /></Button.Resources>
-                        <Button.ContentTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon Glyph="&#xE7E8;" AutomationProperties.AccessibilityView="Raw" />
-                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </Button.ContentTemplate>
-                    </Button>
-                </Grid>
-                <TextBlock x:Uid="TrayExitDescription" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="TrayExitDescription" />
-            </StackPanel>
-        </Expander>
+        <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="TrayMoveSettingRow">
+            <settings:SettingsCard.Header><TextBlock x:Uid="TrayMoveLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+            <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE921;" /></settings:SettingsCard.HeaderIcon>
+            <settings:SettingsCard.Description><TextBlock x:Uid="TrayMoveDescription" TextWrapping="Wrap" /></settings:SettingsCard.Description>
+            <Button x:Name="MoveToTrayButton" x:Uid="MoveToTrayButton" Click="MoveToTrayButton_Click" MinWidth="160" AutomationProperties.AutomationId="MoveToTrayButton" />
+        </settings:SettingsCard>
+        <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="TrayExitSettingRow">
+            <settings:SettingsCard.Header><TextBlock x:Uid="TrayExitLabel" TextWrapping="Wrap" /></settings:SettingsCard.Header>
+            <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE7E8;" /></settings:SettingsCard.HeaderIcon>
+            <settings:SettingsCard.Description><TextBlock x:Uid="TrayExitDescription" TextWrapping="Wrap" AutomationProperties.AutomationId="TrayExitDescription" /></settings:SettingsCard.Description>
+            <Button x:Name="ExitCompletelyButton" x:Uid="ExitCompletelyButton" Click="ExitCompletelyButton_Click" MinWidth="160" AutomationProperties.AutomationId="ExitCompletelyButton">
+                <Button.Resources><ResourceDictionary Source="ms-appx:///ExitActionResources.xaml" /></Button.Resources>
+            </Button>
+        </settings:SettingsCard>
         <TextBlock x:Name="StatusText" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="TraySettingsStatus" />
     </StackPanel>
 </UserControl>

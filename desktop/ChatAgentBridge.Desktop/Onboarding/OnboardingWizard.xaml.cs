@@ -165,6 +165,7 @@ public sealed partial class OnboardingWizard : UserControl
 
     public static Visibility ToVisibility(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
     public static bool Not(bool value) => !value;
+    public static Visibility HiddenWhen(bool value) => value ? Visibility.Collapsed : Visibility.Visible;
     public static bool SupportsOperationApproval(bool isCodex, bool useAppServer) => isCodex && useAppServer;
     public static bool EnvironmentReloadAllowed(bool isLoading, bool isRunning, bool isCheckingCli,
         bool isCatalogLoading, bool isOnboardingBusy, bool isInboxExecuting, bool isSaving) =>

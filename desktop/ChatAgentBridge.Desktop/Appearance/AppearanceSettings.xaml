@@ -10,11 +10,11 @@
         <settings:SettingsCard.Description>
             <TextBlock x:Name="ThemeStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="AppThemeStatus" />
         </settings:SettingsCard.Description>
-        <RadioButtons x:Name="ThemeChoices" x:Uid="AppTheme" SelectionChanged="ThemeChoices_SelectionChanged"
-                      MaxColumns="3" AutomationProperties.AutomationId="AppTheme">
-            <RadioButton x:Uid="ThemeSystem" Tag="system" AutomationProperties.AutomationId="ThemeSystem" />
-            <RadioButton x:Uid="ThemeLight" Tag="light" AutomationProperties.AutomationId="ThemeLight" />
-            <RadioButton x:Uid="ThemeDark" Tag="dark" AutomationProperties.AutomationId="ThemeDark" />
-        </RadioButtons>
+        <!-- One row sized by each label: long localized labels cannot overlap and the card stays one line high. -->
+        <StackPanel x:Name="ThemeChoices" x:Uid="AppTheme" Orientation="Horizontal" Spacing="20">
+            <RadioButton x:Uid="ThemeSystem" Tag="system" GroupName="AppTheme" MinWidth="0" Checked="ThemeChoice_Checked" AutomationProperties.AutomationId="ThemeSystem" />
+            <RadioButton x:Uid="ThemeLight" Tag="light" GroupName="AppTheme" MinWidth="0" Checked="ThemeChoice_Checked" AutomationProperties.AutomationId="ThemeLight" />
+            <RadioButton x:Uid="ThemeDark" Tag="dark" GroupName="AppTheme" MinWidth="0" Checked="ThemeChoice_Checked" AutomationProperties.AutomationId="ThemeDark" />
+        </StackPanel>
     </settings:SettingsCard>
 </UserControl>

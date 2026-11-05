@@ -507,6 +507,7 @@
   <data name="WizardStepIntro" xml:space="preserve">
     <value>Introduction and terms</value>
   </data>
+  <data name="WizardStepCounter" xml:space="preserve"><value>Step {0}/{1}</value></data>
   <data name="WizardStepSafety" xml:space="preserve">
     <value>Approval settings and connection test</value>
   </data>
@@ -601,7 +602,7 @@ Internal user ID: {2}</value></data>
     <value>Chat setup: {0}. Open chat settings.</value>
   </data>
   <data name="OverviewChatAccessibleName" xml:space="preserve">
-    <value>Connection: {0}. Open chat.</value>
+    <value>Chat connection: {0}. Open chat.</value>
   </data>
   <data name="OverviewCliAccessibleName" xml:space="preserve">
     <value>Default agent: {0}. Open agent settings.</value>
@@ -709,7 +710,7 @@ Conversation ID (first message): {2}</value></data>
   <data name="WizardConnectionDeferredDetails" xml:space="preserve"><value>The connection test is not complete. Connect from Chat when ready. If already connected, reconnect to use the changed settings.</value></data>
   <data name="WizardSkipStep" xml:space="preserve"><value>Skip this setting</value></data>
   <data name="WizardSkippedTitle" xml:space="preserve"><value>Setup finished with items left</value></data>
-  <data name="WizardSkippedDetails" xml:space="preserve"><value>Not set yet: {0}. You can finish them later from the Overview and Chat pages.</value></data>
+  <data name="WizardSkippedDetails" xml:space="preserve"><value>Not set yet: {0}. You can finish them later from the General and Chat pages.</value></data>
   <data name="WizardSkippedNotice" xml:space="preserve"><value>Not set yet: {0}. You can finish now and set them up later.</value></data>
   <data name="WizardSkippedCli" xml:space="preserve"><value>CLI check</value></data>
   <data name="WizardSkippedChat" xml:space="preserve"><value>chat connection</value></data>

@@ -26,8 +26,8 @@
             <StackPanel x:Name="ConnectionActions" Orientation="Horizontal" Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8"
                           Visibility="{x:Bind inbox:ChatInboxPage.ConnectCommandsVisibility(ViewModel.IsWideLayout, ViewModel.IsConnected), Mode=OneWay}">
-                <Button Command="{x:Bind ViewModel.ConnectMattermostCommand}" AutomationProperties.AutomationId="ConnectMattermost" x:Uid="ConnectMattermost" />
                 <Button Command="{x:Bind ViewModel.ConnectSlackCommand}" AutomationProperties.AutomationId="ConnectSlack" x:Uid="ConnectSlack" />
+                <Button Command="{x:Bind ViewModel.ConnectMattermostCommand}" AutomationProperties.AutomationId="ConnectMattermost" x:Uid="ConnectMattermost" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8"
                           Visibility="{x:Bind inbox:ChatInboxPage.ConnectCommandsVisibility(ViewModel.IsWideLayout, ViewModel.IsConnected), Mode=OneWay}">
@@ -198,7 +198,7 @@
                 <ScrollViewer x:Name="InboxEmptyListScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
                               Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.ShowEmptyConversationList), Mode=OneWay}">
-                    <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="12" MaxWidth="460"
+                    <Border Padding="20" Margin="12" MaxWidth="460"
                             HorizontalAlignment="Stretch" VerticalAlignment="Center"
                             AutomationProperties.AutomationId="InboxEmptyListCard">
                             <StackPanel Spacing="12" HorizontalAlignment="Center">
@@ -207,10 +207,10 @@
                                     <SymbolIcon Symbol="Message" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                 </Viewbox>
                                 <TextBlock Text="{x:Bind ViewModel.EmptyConversationHeading, Mode=OneWay}"
-                                           Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                           Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
                                            AutomationProperties.AutomationId="InboxEmptyList" />
                                 <TextBlock Text="{x:Bind ViewModel.EmptyConversationDescription, Mode=OneWay}"
-                                           Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                           Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" TextAlignment="Center"
                                            AutomationProperties.AutomationId="InboxEmptyListBody" />
                                 <Button Command="{x:Bind ViewModel.ClearConversationFiltersCommand}"
                                         Content="{x:Bind ViewModel.ClearConversationFiltersLabel, Mode=OneWay}"
@@ -233,7 +233,7 @@
                               VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
                               Visibility="{x:Bind inbox:ChatInboxPage.HiddenWhen(ViewModel.HasSelectedConversation), Mode=OneWay}">
-                    <Border Style="{StaticResource ActivityCardStyle}" Padding="20" Margin="12" MaxWidth="460"
+                    <Border Padding="20" Margin="12" MaxWidth="460"
                             HorizontalAlignment="Stretch" VerticalAlignment="Center"
                             AutomationProperties.AutomationId="InboxDetailEmptyCard">
                             <StackPanel Spacing="12" HorizontalAlignment="Center">
@@ -242,10 +242,10 @@
                                     <SymbolIcon Symbol="Message" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                 </Viewbox>
                                 <TextBlock Text="{x:Bind ViewModel.EmptyDetailHeading, Mode=OneWay}"
-                                           Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                           Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
                                            AutomationProperties.AutomationId="InboxDetailEmpty" />
                                 <TextBlock Text="{x:Bind ViewModel.EmptyDetailDescription, Mode=OneWay}"
-                                           Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" TextAlignment="Center"
+                                           Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" TextAlignment="Center"
                                            AutomationProperties.AutomationId="InboxDetailEmptyBody" />
                             </StackPanel>
                     </Border>

@@ -289,9 +289,10 @@ public partial class MainPageViewModel : ObservableObject
     public partial string SetupDraftNotice { get; set; } = "";
     public bool HasSetupDraftNotice => !string.IsNullOrEmpty(SetupDraftNotice);
 
-    public void SetChatConnectionState(bool connected, bool connecting, bool failed = false, string? target = null)
+    public void SetChatConnectionState(bool connected, bool connecting, bool failed = false, string? target = null, string? provider = null)
     {
         _overviewConnectedTarget = target ?? "";
+        _overviewConnectedProvider = connected || connecting ? provider ?? "" : "";
         _chatConnectionConfirmed = connected;
         if (!connected) ClearWizardConnection();
         _chatConnectionPreparing = connecting;
@@ -1035,12 +1036,22 @@ public partial class MainPageViewModel : ObservableObject
     private static string ResultLabel(string value) => value switch
     { "auto" => ViewModelText.Get("ResultAutomatic"), "none" => ViewModelText.Get("ResultDoNotShare"), _ => ViewModelText.Get("ResultManual") };
 
+    // Show the product name ("Codex"), keeping a custom file name visible when one is set.
+    private string SavedAgentLabel()
+    {
+        if (IsCustomProvider) return AgentExecutable;
+        var file = Path.GetFileName(AgentExecutable.Trim());
+        return file.Contains('.') || AgentExecutable.IndexOfAny(['\\', '/']) >= 0
+            ? $"{AgentProviderDisplayName} ({file})"
+            : AgentProviderDisplayName;
+    }
+
     private void UpdateSavedAgentSummary()
     {
         RefreshSavedOverview();
         SavedAgentSummary = string.IsNullOrWhiteSpace(AgentExecutable)
             ? ViewModelText.Get("AgentNotConfigured")
-            : ViewModelText.Get("SavedAgentSummary", AgentExecutable, string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, AgentReasoningEffort ?? ViewModelText.Get("DefaultCliValue"), ViewModelText.Get(UseAppServer ? "InteractiveExecution" : "RunToCompletion"));
+            : ViewModelText.Get("SavedAgentSummary", SavedAgentLabel(), string.IsNullOrWhiteSpace(AgentModel) ? ViewModelText.Get("DefaultCliValue") : AgentModel, AgentReasoningEffort ?? ViewModelText.Get("DefaultCliValue"), ViewModelText.Get(UseAppServer ? "InteractiveExecution" : "RunToCompletion"));
         QueueManualWorkspaceValidation();
     }
 

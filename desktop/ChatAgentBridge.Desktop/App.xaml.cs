@@ -39,13 +39,16 @@ public partial class App : Application
     public static Appearance.AppLayout Layout { get; private set; } = null!;
     public static PricingCatalogManager Pricing { get; private set; } = null!;
     public static Tray.TrayService Tray { get; private set; } = null!;
+    public static KeepAwakeService KeepAwake { get; private set; } = null!;
     public static PortableUpdateCoordinator PortableUpdates { get; private set; } = null!;
     public static PortableIdentityCoordinator PortableIdentity { get; private set; } = null!;
     public static bool IsNotificationOnlyLaunch { get; private set; }
     private readonly CancellationTokenSource _pricingLifetime = new();
     private readonly CancellationTokenSource _portableUpdateLifetime = new();
+    private readonly CancellationTokenSource _keepAwakeLifetime = new();
     private Task? _pricingTask;
     private Task? _logRetentionTask;
+    private Task? _keepAwakeTask;
     private bool _windowServicesClosed;
     private FileStream? _portableLease;
 
@@ -165,6 +168,7 @@ public partial class App : Application
 
         var mainWindow = new MainWindow();
         Window = mainWindow;
+        KeepAwake = new(new ChatAgentBridge.Core.KeepAwakePreferencesStore(), WindowHandle);
         Tray = new(mainWindow, backgroundStore, background);
         SingleInstanceGate.SetShowWindow(Tray.ShowWindow);
         Window.Closed += (_, _) =>
@@ -174,6 +178,8 @@ public partial class App : Application
             // Keep a best-effort fallback for an OS session-ending close.
             _ = Layout.FlushAsync();
             Tray.Dispose();
+            KeepAwake.Dispose();
+            _ = Startup.BackgroundTaskShutdown.StopAsync(_keepAwakeTask, _keepAwakeLifetime);
             _portableUpdateLifetime.Cancel();
             PortableUpdates.Dispose();
             _portableUpdateLifetime.Dispose();
@@ -184,6 +190,7 @@ public partial class App : Application
         };
         Window.Activate();
         if (_windowServicesClosed) return;
+        _keepAwakeTask = InitializeKeepAwakeAsync(_keepAwakeLifetime.Token);
         // Recovery uses only app-owned records and exclusive leases; it can run
         // alongside another window without touching active attachments or Muse prompts.
         _ = RecoverAbandonedInputsAsync(dataDirectory);
@@ -199,6 +206,12 @@ public partial class App : Application
         }
         _pricingTask = RunPricingUpdatesAsync(_pricingLifetime.Token);
         _ = RunPortableUpdateChecksAsync();
+    }
+
+    private static async Task InitializeKeepAwakeAsync(CancellationToken token)
+    {
+        try { await KeepAwake.InitializeAsync(token); }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
     }
 
     private static async Task RecoverAbandonedInputsAsync(string dataDirectory)

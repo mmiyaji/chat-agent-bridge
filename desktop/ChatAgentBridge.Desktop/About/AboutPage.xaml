@@ -19,7 +19,7 @@
         </StackPanel>
         <ScrollViewer x:Name="AboutScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="AboutScroll">
-            <StackPanel Spacing="{StaticResource SettingsCardSpacing}" AutomationProperties.AutomationId="AboutContent">
+            <StackPanel Spacing="{StaticResource SettingsCardSpacing}" MaxWidth="1040" Padding="0,0,16,0" HorizontalAlignment="Left" AutomationProperties.AutomationId="AboutContent" Width="{x:Bind AboutScroll.ViewportWidth, Mode=OneWay}">
                 <!-- Like WinUI Gallery: name, author and version on the header; build details fold beneath. -->
                 <settings:SettingsExpander x:Name="AppDetailsExpander" AutomationProperties.AutomationId="AboutTechnicalDetails">
                     <settings:SettingsExpander.Header>
@@ -66,7 +66,7 @@
 
                 <TextBlock x:Uid="AboutLinksHeading" Style="{StaticResource SettingsSectionHeaderStyle}" localization:LocalizedResourceKey.Key="AboutLinksHeading" />
                 <settings:SettingsCard x:Uid="AboutWebsite" IsClickEnabled="True" Click="OpenLink_Click"
-                                       Tag="https://ruhenheim.org" AutomationProperties.AutomationId="AboutWebsite">
+                                       Tag="https://chat-agent-bridge.ruhenheim.org/" AutomationProperties.AutomationId="AboutWebsite">
                     <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE774;" /></settings:SettingsCard.HeaderIcon>
                     <settings:SettingsCard.ActionIcon><FontIcon Glyph="&#xE8A7;" /></settings:SettingsCard.ActionIcon>
                 </settings:SettingsCard>

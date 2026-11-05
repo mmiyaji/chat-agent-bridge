@@ -92,11 +92,13 @@ public sealed partial class ModelCatalogViewModel : ObservableObject, IDisposabl
         _generation++;
         CancelCurrentLookup();
         IsLoading = false;
+        // "Settings changed" only makes sense when there was a list to discard.
+        var hadCatalog = Models.Count > 0 || FetchedAtUtc is not null;
         Models.Clear();
         FetchedAtUtc = null;
         RefreshFreshness();
         SelectedModel = null;
-        Status = message ?? DesktopText.Get("ModelCatalogSettingsChanged");
+        Status = message ?? DesktopText.Get(hadCatalog ? "ModelCatalogSettingsChanged" : "ModelCatalogAvailable");
     }
 
     [RelayCommand(CanExecute = nameof(CanFetch))]
