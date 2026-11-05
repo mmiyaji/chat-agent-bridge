@@ -602,7 +602,7 @@ Internal user ID: {2}</value></data>
     <value>Chat setup: {0}. Open chat settings.</value>
   </data>
   <data name="OverviewChatAccessibleName" xml:space="preserve">
-    <value>Connection: {0}. Open chat.</value>
+    <value>Chat connection: {0}. Open chat.</value>
   </data>
   <data name="OverviewCliAccessibleName" xml:space="preserve">
     <value>Default agent: {0}. Open agent settings.</value>

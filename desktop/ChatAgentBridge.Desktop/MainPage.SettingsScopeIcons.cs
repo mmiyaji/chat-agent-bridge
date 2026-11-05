@@ -7,9 +7,7 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
-    private static Grid ScopeNavigationLabel(string key, string text)
-    {
-        var slug = key switch
+    private static string ScopeIconSlug(string key) => key switch
         {
             "common" => "folder",
             "codex" => "provider_codex",
@@ -26,6 +24,24 @@ public sealed partial class MainPage
             "discord" => "provider_discord",
             _ => "apps"
         };
+
+    // General tiles show the saved agent's or chat service's own icon; without one, a common glyph.
+    public static FrameworkElement OverviewAgentIcon(string provider) => OverviewProviderIcon(provider, "\uE756");
+    public static FrameworkElement OverviewChatIcon(string provider) => OverviewProviderIcon(provider, "\uE8BD");
+
+    private static FrameworkElement OverviewProviderIcon(string provider, string fallbackGlyph)
+    {
+        var slug = ScopeIconSlug(provider);
+        if (string.IsNullOrEmpty(provider) || !slug.StartsWith("provider_", StringComparison.Ordinal))
+            return new FontIcon { Glyph = fallbackGlyph, FontSize = 18, Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] };
+        var icon = (FrameworkElement)((DataTemplate)Application.Current.Resources["SettingsScopeIcon_" + slug]).LoadContent();
+        AutomationProperties.SetAccessibilityView(icon, AccessibilityView.Raw);
+        return icon;
+    }
+
+    private static Grid ScopeNavigationLabel(string key, string text)
+    {
+        var slug = ScopeIconSlug(key);
         // Scale the original geometry into its own box. A glyph with a smaller
         // fixed Width/Height clips; it does not scale its internal drawing.
         // Each template creates its own geometry; WinUI geometry cannot be

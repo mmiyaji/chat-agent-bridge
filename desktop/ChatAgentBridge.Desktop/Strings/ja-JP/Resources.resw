@@ -930,7 +930,7 @@
     <value>チャット設定</value>
   </data>
   <data name="OverviewChatLabel.Text" xml:space="preserve">
-    <value>接続状態</value>
+    <value>チャット接続状態</value>
   </data>
   <data name="OverviewCliLabel.Text" xml:space="preserve">
     <value>使用するエージェント</value>
