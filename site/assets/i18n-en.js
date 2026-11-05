@@ -2,8 +2,8 @@
 window.CAB_EN = {
  "meta.description": "A Windows app that passes requests posted in Slack, Mattermost or Discord to an AI agent CLI on your PC. How it works, features, getting started and FAQ.",
  "skip": "Skip to content",
+ "grp.use": "Guide",
  "nav.top": "Overview",
- "grp.use": "Using it",
  "nav.how": "How it works",
  "nav.features": "Features",
  "nav.gallery": "Screens",
