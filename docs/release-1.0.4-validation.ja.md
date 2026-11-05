@@ -18,6 +18,6 @@
 
 ## CI / 未完了
 
-- `workflow_dispatch` CI run `42064415897` は cleanup 修正 commit `b3ea496` で実行中です。`npm run check`、`npm test`、日英・設定チェック、Pythonチェック、リリース版数とStore設定チェックは成功し、Coreテストが実行中です。Portable build、notice validation、UI smoke と証跡を待っています。
-- コード修正は commit 済み・release branchへpush済みです。最終CIとUI smokeが成功するまで main へ統合・タグ付けしません。
+- `workflow_dispatch` CI run `42065799100` は release branch head `aef2237` で成功しました。`npm run check`、`npm test`、日英・設定チェック、Pythonチェック、リリース版数とStore設定チェック、Core/Transportテスト、portable build、third-party notice 検証、UI smoke と証跡アップロードがすべて成功しました。
+- コード修正は commit 済み・release branchへpush済みです。最終CIとUI smokeは成功済みです。mainへの統合、タグ付け、GitHub preview配布は未完了です。
 - 手元の smoke 実行用一時コピーは `.artifacts/` のみで、cleanup guard や product source script は変更していません。実サービス接続・送信、ARM64実機確認は未実施です。
