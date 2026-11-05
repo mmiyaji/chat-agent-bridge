@@ -259,25 +259,31 @@ public static class PortableUpdateCacheCleanup
             throw new InvalidDataException("Update payload cleanup is outside the owned cache root.");
         if (!PortableUpdateStageStore.IsCompleted(plan.WorkDirectory)) return;
         EnsureSafeTree(plan.WorkDirectory, CancellationToken.None);
-        RemovePayload(plan.WorkDirectory, CancellationToken.None);
+        var stagePayloadDirectory = Path.Combine(plan.WorkDirectory, "stage");
+        var stagedFiles = SamePath(plan.StagingDirectory, stagePayloadDirectory)
+            ? plan.Files.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : null;
+        RemovePayload(plan.WorkDirectory, CancellationToken.None, stagedFiles: stagedFiles,
+            stagedDirectory: stagedFiles is null ? null : plan.StagingDirectory);
     }
 
-    private static long RemovePayload(string work, CancellationToken token, Func<string, bool>? include = null)
+    private static long RemovePayload(string work, CancellationToken token, Func<string, bool>? include = null,
+        IReadOnlySet<string>? stagedFiles = null, string? stagedDirectory = null)
     {
         long bytes = 0;
         foreach (var child in Directory.EnumerateFileSystemEntries(work)
                      .Where(p => IsPayloadName(Path.GetFileName(p)) && (include is null || include(p)))
                      .OrderBy(p => Path.GetFileName(p).Equals("ChatAgentBridge.Updater.exe", StringComparison.OrdinalIgnoreCase)))
-            Delete(child);
+            Delete(child, stagedFiles is not null && stagedDirectory is not null && SamePath(child, stagedDirectory));
         return bytes;
-        void Delete(string path)
+        void Delete(string path, bool stagedPayload = false)
         {
             token.ThrowIfCancellationRequested();
             PortableUpdatePaths.EnsureNoReparsePoints(path);
             if (Directory.Exists(path))
             {
                 if (ProtectedDirectories.Contains(Path.GetFileName(path))) return;
-                foreach (var entry in Directory.EnumerateFileSystemEntries(path)) Delete(entry);
+                foreach (var entry in Directory.EnumerateFileSystemEntries(path)) Delete(entry, stagedPayload);
                 if (!Directory.EnumerateFileSystemEntries(path).Any()) Directory.Delete(path);
             }
             else if (!LogExtensions.Contains(Path.GetExtension(path)))
@@ -289,7 +295,25 @@ public static class PortableUpdateCacheCleanup
                 File.Delete(path);
                 bytes += size;
             }
+            else if (stagedPayload && IsKnownStagedMetadata(path, stagedDirectory!, stagedFiles))
+            {
+                var size = new FileInfo(path).Length;
+                File.Delete(path);
+                bytes += size;
+            }
         }
+    }
+
+    private static bool IsKnownStagedMetadata(string path, string stageDirectory, IReadOnlySet<string>? stagedFiles)
+    {
+        if (stagedFiles is null) return false;
+        var relative = Path.GetRelativePath(stageDirectory, path).Replace('\\', '/');
+        if (!stagedFiles.Contains(relative)) return false;
+        // Keep known log formats even if a staged manifest lists one. The broader
+        // .json/.txt extensions also contain release metadata and notices, so those
+        // are removable only when their exact paths were authenticated in the plan.
+        return Path.GetExtension(path).Equals(".json", StringComparison.OrdinalIgnoreCase) ||
+               Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase);
     }
 
     private static void EnsureSafeTree(string root, CancellationToken token)

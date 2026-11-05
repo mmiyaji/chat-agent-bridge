@@ -82,6 +82,7 @@ Portable builds are available for Windows. Install and authenticate your chosen 
    - Mattermost: [Mattermost setup guide](docs/mattermost-setup.md) (bot token and conversation channel ID)
    - Discord: [Discord setup guide](docs/discord-setup.md) (bot token, allowed server IDs and Message Content Intent)
 5. Connect from **Chat** and post a request. How to start depends on the service (see [Chat operations](#chat-operations)).
+   Connect buttons are enabled only for services with saved connection details and at least one allowed user. If none are ready, use **Open chat settings** in Chat to finish setup.
 6. Approve the first request on the PC. After execution, review and share the result. Reply in the same thread to continue.
 
 Defaults require approval for the first request in a conversation, manual result sharing and approval for every attachment. The CLI check identifies the CLI and version. Check authentication and available quota through the CLI itself.

@@ -611,8 +611,26 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ConnectMattermost.Content" xml:space="preserve">
     <value>Connect to Mattermost</value>
   </data>
+  <data name="ConnectMattermostSetupHint" xml:space="preserve">
+    <value>Set the server URL, channel ID, token, and an allowed user in chat settings before connecting.</value>
+  </data>
   <data name="ConnectSlack.Content" xml:space="preserve">
     <value>Connect to Slack</value>
+  </data>
+  <data name="ConnectSlackSetupHint" xml:space="preserve">
+    <value>Set both Slack tokens and an allowed user in chat settings before connecting.</value>
+  </data>
+  <data name="ConnectDiscordSetupHint" xml:space="preserve">
+    <value>Set a bot token and allowed user, then allow direct messages or add a server ID in chat settings.</value>
+  </data>
+  <data name="InboxReconnectSetupHint" xml:space="preserve">
+    <value>Complete this service's required settings before reconnecting.</value>
+  </data>
+  <data name="InboxChatSetupNeeded.Title" xml:space="preserve">
+    <value>Chat service setup required</value>
+  </data>
+  <data name="InboxChatSetupNeeded.Message" xml:space="preserve">
+    <value>Configure a service and at least one allowed user before connecting.</value>
   </data>
   <data name="DisconnectChat.Content" xml:space="preserve">
     <value>Disconnect</value>

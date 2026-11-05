@@ -228,13 +228,29 @@ public sealed class PortableUpdateCacheCleanupTests
         using var fixture = new CacheFixture();
         var work = fixture.CreateWork("0.1.0", "helper");
         await fixture.WritePlanAsync(work);
-        Directory.CreateDirectory(Path.Combine(work, "stage"));
+        Directory.CreateDirectory(Path.Combine(work, "stage", "logs"));
         Directory.CreateDirectory(Path.Combine(work, "backup"));
         await File.WriteAllTextAsync(Path.Combine(work, "update-result.json"), "{\"Success\":true}");
         await File.WriteAllTextAsync(Path.Combine(work, "update.zip"), "archive");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "portable-release.json"), "metadata");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "portable-files.json"), "manifest");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "ChatAgentBridge.Desktop.runtimeconfig.json"), "runtime config");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "ChatAgentBridge.Desktop.deps.json"), "dependencies");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "THIRD-PARTY-NOTICES.txt"), "notices");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "SHA256SUMS.txt"), "checksums");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "unknown.json"), "unknown metadata");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "unknown.txt"), "unknown text");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "events.jsonl"), "stage log");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "listed-events.jsonl"), "listed stage log");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "logs", "opaque.bin"), "nested log");
         await File.WriteAllTextAsync(Path.Combine(work, "backup", "old.dll"), "old");
         await File.WriteAllTextAsync(Path.Combine(work, "backup", "audit.jsonl"), "audit");
-        var files = new[] { "ChatAgentBridge.Desktop.exe", "ChatAgentBridge.Updater.exe", "portable-release.json", "portable-files.json" }
+        var files = new[]
+        {
+            "ChatAgentBridge.Desktop.exe", "ChatAgentBridge.Updater.exe", "portable-release.json", "portable-files.json",
+            "ChatAgentBridge.Desktop.runtimeconfig.json", "ChatAgentBridge.Desktop.deps.json", "THIRD-PARTY-NOTICES.txt", "SHA256SUMS.txt",
+            "listed-events.jsonl"
+        }
             .ToDictionary(name => name, _ => new string('a', 64));
         var plan = new PortableUpdatePlan(1, fixture.Install, fixture.Data, Path.Combine(work, "stage"), work,
             1, 1, files, "0.1.0", "x64", Guid.NewGuid().ToString("N"));
@@ -242,11 +258,43 @@ public sealed class PortableUpdateCacheCleanupTests
             PortableUpdateCacheCleanup.CleanSuccessfulPayload(plan, fixture.CacheRoot);
         Assert.False(File.Exists(Path.Combine(work, "update.zip")));
         Assert.False(File.Exists(Path.Combine(work, "backup", "old.dll")));
+        Assert.False(File.Exists(Path.Combine(work, "stage", "portable-release.json")));
+        Assert.False(File.Exists(Path.Combine(work, "stage", "portable-files.json")));
+        Assert.False(File.Exists(Path.Combine(work, "stage", "ChatAgentBridge.Desktop.runtimeconfig.json")));
+        Assert.False(File.Exists(Path.Combine(work, "stage", "ChatAgentBridge.Desktop.deps.json")));
+        Assert.False(File.Exists(Path.Combine(work, "stage", "THIRD-PARTY-NOTICES.txt")));
+        Assert.False(File.Exists(Path.Combine(work, "stage", "SHA256SUMS.txt")));
+        Assert.True(File.Exists(Path.Combine(work, "stage", "unknown.json")));
+        Assert.True(File.Exists(Path.Combine(work, "stage", "unknown.txt")));
+        Assert.True(File.Exists(Path.Combine(work, "stage", "events.jsonl")));
+        Assert.True(File.Exists(Path.Combine(work, "stage", "listed-events.jsonl")));
+        Assert.True(File.Exists(Path.Combine(work, "stage", "logs", "opaque.bin")));
         Assert.True(File.Exists(Path.Combine(work, "backup", "audit.jsonl")));
         Assert.True(File.Exists(Path.Combine(work, "update-result.json")));
         Assert.Throws<InvalidDataException>(() => PortableUpdateCacheCleanup.CleanSuccessfulPayload(plan));
         // Discard API validates actual default ownership rather than accepting any root.
         Assert.Throws<InvalidDataException>(() => PortableUpdateCacheCleanup.DiscardOwnedPayload(fixture.Install, fixture.Data, work));
+    }
+
+    [Fact]
+    public async Task SuccessfulCleanupDoesNotTreatStageDirectoryAsAuthenticatedWhenPlanUsesAnotherStagingPath()
+    {
+        using var fixture = new CacheFixture();
+        var work = fixture.CreateWork("0.1.0", "helper");
+        await fixture.WritePlanAsync(work);
+        Directory.CreateDirectory(Path.Combine(work, "stage"));
+        Directory.CreateDirectory(Path.Combine(work, "other-stage"));
+        await File.WriteAllTextAsync(Path.Combine(work, "update-result.json"), "{\"Success\":true}");
+        await File.WriteAllTextAsync(Path.Combine(work, "stage", "foreign.json"), "foreign payload");
+        var files = new[] { "ChatAgentBridge.Desktop.exe", "ChatAgentBridge.Updater.exe", "foreign.json", "portable-release.json", "portable-files.json" }
+            .ToDictionary(name => name, _ => new string('a', 64));
+        var plan = new PortableUpdatePlan(1, fixture.Install, fixture.Data, Path.Combine(work, "other-stage"), work,
+            1, 1, files, "0.1.0", "x64", Guid.NewGuid().ToString("N"));
+
+        using (PortableUpdateCacheCleanup.AcquireWorkLease(work))
+            PortableUpdateCacheCleanup.CleanSuccessfulPayload(plan, fixture.CacheRoot);
+
+        Assert.True(File.Exists(Path.Combine(work, "stage", "foreign.json")));
     }
 
     [Fact]

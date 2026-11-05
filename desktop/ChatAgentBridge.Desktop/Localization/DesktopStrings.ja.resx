@@ -771,7 +771,7 @@
   <data name="SidebarConnectionConnecting" xml:space="preserve"><value>接続処理中</value></data>
   <data name="SidebarConnectionDisconnected" xml:space="preserve"><value>未接続</value></data>
   <data name="SidebarConnectionError" xml:space="preserve"><value>接続エラー</value></data>
-  <data name="SidebarConnectionNone" xml:space="preserve"><value>チャット接続</value></data>
+  <data name="SidebarConnectionNone" xml:space="preserve"><value>チャット</value></data>
   <data name="InboxQueueSummary" xml:space="preserve"><value>承認待ち {0}件 · 実行中 {1}件</value></data>
   <data name="SettingsDraftAgent" xml:space="preserve"><value>エージェント設定</value></data>
   <data name="SettingsDraftChat" xml:space="preserve"><value>チャット設定</value></data>
@@ -959,8 +959,12 @@
   <data name="DiagnosticsAndSettingsHeading" xml:space="preserve"><value>診断と設定</value></data>
   <data name="InboxReconnectLabel" xml:space="preserve"><value>再接続</value></data>
   <data name="InboxReconnectHint" xml:space="preserve"><value>保存済みの最新設定で、{0}につなぎ直します。</value></data>
+  <data name="InboxReconnectSetupHint" xml:space="preserve"><value>再接続する前に、このサービスの必須設定を完了してください。</value></data>
   <data name="InboxReconnectInitialHint" xml:space="preserve"><value>チャットに一度接続すると、同じサービスへつなぎ直せます。</value></data>
   <data name="InboxReconnectBusyHint" xml:space="preserve"><value>実行中の依頼が完了、または中断してから再接続できます。</value></data>
+  <data name="ConnectMattermostSetupHint" xml:space="preserve"><value>チャット設定でサーバーURL、チャンネルID、トークン、許可するユーザーを設定してから接続してください。</value></data>
+  <data name="ConnectSlackSetupHint" xml:space="preserve"><value>チャット設定でSlackの2つのトークンと許可するユーザーを設定してから接続してください。</value></data>
+  <data name="ConnectDiscordSetupHint" xml:space="preserve"><value>チャット設定でBotトークンと許可するユーザーを設定し、DMを許可するかサーバーIDを追加してください。</value></data>
   <data name="InboxReconnectConfirmTitle" xml:space="preserve"><value>チャットに再接続しますか？</value></data>
   <data name="InboxReconnectConfirmBody" xml:space="preserve"><value>現在の依頼は、この画面から操作できなくなります。未送信の結果・添付は先に共有し、未実行の依頼は再接続後にチャットから再投稿してください。会話履歴は残ります。</value></data>
   <data name="InboxDisconnectFailed" xml:space="preserve"><value>切断処理を完了できませんでした。通信状態を確認し、もう一度お試しください。</value></data>

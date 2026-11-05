@@ -132,6 +132,7 @@ public sealed partial class ChatInboxPage : Page
             _openAppCallbackConfigured = true;
         }
 
+        await ViewModel.RefreshAccessAsync();
         await ViewModel.EnsureConversationsRestoredAsync();
         ViewModel.RevealNewestPendingIfIdle();
     }

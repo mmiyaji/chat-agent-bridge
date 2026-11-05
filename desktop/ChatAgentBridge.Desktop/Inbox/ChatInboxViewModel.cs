@@ -666,16 +666,15 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         QueueConversationRefresh();
     }
 
-    private bool CanConnect() => !_closing && !IsConnected && !IsExecuting && !IsConnectionActionInProgress;
     private bool CanApprove() => !_closing && !IsExecuting && !IsConnectionActionInProgress && IsConnectionConfirmed && Selected is { State: "承認待ち" } item && ReferenceEquals(item.Transport, _transport);
 
-    [RelayCommand(CanExecute = nameof(CanConnect))]
+    [RelayCommand(CanExecute = nameof(CanConnectMattermost))]
     private Task ConnectMattermostAsync() => ConnectProviderAsync("mattermost");
 
-    [RelayCommand(CanExecute = nameof(CanConnect))]
+    [RelayCommand(CanExecute = nameof(CanConnectSlack))]
     private Task ConnectSlackAsync() => ConnectProviderAsync("slack");
 
-    [RelayCommand(CanExecute = nameof(CanConnect))]
+    [RelayCommand(CanExecute = nameof(CanConnectDiscord))]
     private Task ConnectDiscordAsync() => ConnectProviderAsync("discord");
 
     private async Task<IChatTransport> CreateConnectionTransportAsync(string provider)
@@ -1299,6 +1298,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         try
         {
             var settings = await _store.LoadAsync();
+            SetConnectReadiness(settings);
             if (!IsValidInboxWorkspacePath(settings.WorkspaceRoot))
             {
                 ReportInvalidWorkspaceSettings();
@@ -1330,6 +1330,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         }
         catch (Exception)
         {
+            SetConnectReadiness(null);
             Volatile.Write(ref _accessSettings, null);
             RequestExecutionCancellation();
             foreach (var item in Requests) { if (item.State == "承認待ち") item.State = "許可設定を確認できず実行不可"; item.ResultText = ""; }

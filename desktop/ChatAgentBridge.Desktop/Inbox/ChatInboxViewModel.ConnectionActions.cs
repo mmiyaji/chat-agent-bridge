@@ -22,6 +22,7 @@ public sealed partial class ChatInboxViewModel
     public string ReconnectLabel => DesktopText.Get("InboxReconnectLabel");
     public string ReconnectHint => IsExecuting ? DesktopText.Get("InboxReconnectBusyHint") :
         _lastConnectionProvider is null ? DesktopText.Get("InboxReconnectInitialHint") :
+        !IsProviderReady(_lastConnectionProvider) ? DesktopText.Get("InboxReconnectSetupHint") :
         DesktopText.Get("InboxReconnectHint", _lastConnectionProvider switch
         {
             "mattermost" => "Mattermost", "slack" => "Slack", "discord" => "Discord", _ => ""
@@ -29,7 +30,7 @@ public sealed partial class ChatInboxViewModel
 
     private bool CanDisconnect() => !_closing && IsConnected && !IsConnectionActionInProgress;
     private bool CanReconnect() => !_closing && !IsExecuting && !IsConnectionActionInProgress &&
-        _lastConnectionProvider is not null && (!IsConnected || _connection is not null);
+        _lastConnectionProvider is { } provider && IsProviderReady(provider) && (!IsConnected || _connection is not null);
 
     private Task DisconnectCoreAsync() => _disconnectTask is { IsCompleted: false } pending
         ? pending : _disconnectTask = DisconnectTransportAsync();
@@ -42,7 +43,7 @@ public sealed partial class ChatInboxViewModel
 
     private async Task ConnectProviderAsync(string provider)
     {
-        if (!CanConnect()) return;
+        if (!CanConnect(provider)) return;
         IsConnectionActionInProgress = true;
         _lastConnectionProvider = provider;
         OnPropertyChanged(nameof(ReconnectHint));

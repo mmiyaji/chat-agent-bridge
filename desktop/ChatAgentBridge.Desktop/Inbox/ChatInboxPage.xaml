@@ -26,14 +26,23 @@
             <StackPanel x:Name="ConnectionActions" Orientation="Horizontal" Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8"
                           Visibility="{x:Bind inbox:ChatInboxPage.ConnectCommandsVisibility(ViewModel.IsWideLayout, ViewModel.IsConnected), Mode=OneWay}">
-                <Button Command="{x:Bind ViewModel.ConnectSlackCommand}" AutomationProperties.AutomationId="ConnectSlack" x:Uid="ConnectSlack" />
-                <Button Command="{x:Bind ViewModel.ConnectMattermostCommand}" AutomationProperties.AutomationId="ConnectMattermost" x:Uid="ConnectMattermost" />
+                <Button Command="{x:Bind ViewModel.ConnectSlackCommand}" AutomationProperties.AutomationId="ConnectSlack"
+                        AutomationProperties.HelpText="{x:Bind ViewModel.SlackConnectionSetupHint, Mode=OneWay}"
+                        ToolTipService.ToolTip="{x:Bind ViewModel.SlackConnectionSetupHint, Mode=OneWay}" x:Uid="ConnectSlack" />
+                <Button Command="{x:Bind ViewModel.ConnectMattermostCommand}" AutomationProperties.AutomationId="ConnectMattermost"
+                        AutomationProperties.HelpText="{x:Bind ViewModel.MattermostConnectionSetupHint, Mode=OneWay}"
+                        ToolTipService.ToolTip="{x:Bind ViewModel.MattermostConnectionSetupHint, Mode=OneWay}" x:Uid="ConnectMattermost" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8"
                           Visibility="{x:Bind inbox:ChatInboxPage.ConnectCommandsVisibility(ViewModel.IsWideLayout, ViewModel.IsConnected), Mode=OneWay}">
-                <Button Command="{x:Bind ViewModel.ConnectDiscordCommand}" AutomationProperties.AutomationId="ConnectDiscord" x:Uid="ConnectDiscord" />
+                <Button Command="{x:Bind ViewModel.ConnectDiscordCommand}" AutomationProperties.AutomationId="ConnectDiscord"
+                        AutomationProperties.HelpText="{x:Bind ViewModel.DiscordConnectionSetupHint, Mode=OneWay}"
+                        ToolTipService.ToolTip="{x:Bind ViewModel.DiscordConnectionSetupHint, Mode=OneWay}" x:Uid="ConnectDiscord" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Click="OpenConnectionSettings_Click" x:Uid="InboxOpenConnectionSettings"
+                        AutomationProperties.AutomationId="OpenChatConnectionSettings"
+                        Visibility="{x:Bind inbox:ChatInboxPage.VisibleWhen(ViewModel.ShowConnectionSettingsButton), Mode=OneWay}" />
                 <Button Command="{x:Bind ViewModel.ReconnectCommand}" AutomationProperties.AutomationId="ReconnectChat"
                         AutomationProperties.Name="{x:Bind ViewModel.ReconnectLabel, Mode=OneWay}"
                         AutomationProperties.HelpText="{x:Bind ViewModel.ReconnectHint, Mode=OneWay}"
@@ -62,6 +71,8 @@
                             AutomationProperties.AutomationId="InboxOpenPendingApproval" />
                 </InfoBar.ActionButton>
             </InfoBar>
+            <InfoBar IsOpen="{x:Bind ViewModel.ShowChatSetupNotice, Mode=OneWay}" IsClosable="False" Severity="Informational"
+                     x:Uid="InboxChatSetupNeeded" AutomationProperties.AutomationId="InboxChatSetupNeeded" />
             <InfoBar x:Name="NotificationActionNotice" IsOpen="False" IsClosable="True" Severity="Warning"
                      Message="{x:Bind ViewModel.NotificationStatus, Mode=OneWay}"
                      AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="NotificationActionNotice" />

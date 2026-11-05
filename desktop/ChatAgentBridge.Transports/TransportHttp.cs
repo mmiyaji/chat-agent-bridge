@@ -41,9 +41,7 @@ internal static class TransportHttp
 
     internal static Uri MattermostBaseUri(string value)
     {
-        if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) ||
-            (uri.Scheme != Uri.UriSchemeHttps && !(uri.Scheme == Uri.UriSchemeHttp && IsLoopback(uri.Host))) ||
-            !string.IsNullOrEmpty(uri.UserInfo) || !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment))
+        if (!ChatConnectionReadiness.IsMattermostServerUrlValid(value) || !Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri))
             throw new InvalidOperationException("Mattermost URL must use HTTPS (HTTP is allowed only for localhost).");
         return new Uri(uri.GetLeftPart(UriPartial.Authority).TrimEnd('/') + "/");
     }
