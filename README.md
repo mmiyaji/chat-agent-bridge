@@ -60,6 +60,7 @@ The sidebar shows the connected chat service and its status. Select it to open C
 | Files sent from chat | Pass screenshots and text/log files attached to a request to the local agent after request approval |
 | History and usage | Conversation management, execution and operation history, an activity calendar, and token, cache and estimated-cost charts |
 | Startup and appearance | Setup wizard, startup and auto-connect, system tray mode, English/Japanese and light/dark appearance |
+| Keep awake | Optional Windows system power request during active chat requests, manual work or receiver operation; AC-only by default |
 
 ## Documentation
 

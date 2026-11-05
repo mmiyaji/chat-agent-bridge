@@ -1391,4 +1391,15 @@
   <data name="UpdateCacheMaintenanceSection.Header" xml:space="preserve"><value>保守</value></data>
   <data name="UpdateCacheMaintenanceSection.Description" xml:space="preserve"><value>通常は操作する必要はありません。</value></data>
   <data name="PortablePauseUpdate.Content" xml:space="preserve"><value>ダウンロードを一時停止</value></data>
+  <data name="KeepAwakeSectionHeading.Text" xml:space="preserve"><value>スリープ抑止</value></data>
+  <data name="KeepAwakeModeLabel.Text" xml:space="preserve"><value>PCをスリープさせない条件</value></data>
+  <data name="KeepAwakeHelp.Text" xml:space="preserve"><value>画面消灯・ロックは通常どおりです。手動のスリープやふた閉じは抑止しません。モダンスタンバイではバッテリー時の抑止に制限があります。</value></data>
+  <data name="KeepAwakeOff.Content" xml:space="preserve"><value>オフ</value></data>
+  <data name="KeepAwakeRequests.Content" xml:space="preserve"><value>依頼または手動操作の実行中</value></data>
+  <data name="KeepAwakeReceiver.Content" xml:space="preserve"><value>チャット受信が有効な間</value></data>
+  <data name="KeepAwakeAcOnlyLabel.Text" xml:space="preserve"><value>電源</value></data>
+  <data name="KeepAwakeAcOnlyHelp.Text" xml:space="preserve"><value>バッテリー駆動中はスリープ抑止を解除します。</value></data>
+  <data name="KeepAwakeAcOnly.Content" xml:space="preserve"><value>AC電源接続中のみ</value></data>
+  <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>設定を読み込み中…</value></data>
+  <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>PCをスリープさせない条件</value></data>
 </root>

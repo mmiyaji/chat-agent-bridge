@@ -265,6 +265,27 @@
                                 </StackPanel>
                                 <tray:TraySettingsControl />
                                 <deployment:PortableIdentityControl />
+                                <StackPanel Spacing="8" AutomationProperties.AutomationId="KeepAwakeSettingsSection">
+                                    <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" AutomationProperties.AutomationId="KeepAwakeSectionHeading" x:Uid="KeepAwakeSectionHeading" />
+                                    <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="KeepAwakeModeCard">
+                                        <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="Setting" /></settings:SettingsCard.HeaderIcon>
+                                        <settings:SettingsCard.Header><TextBlock x:Uid="KeepAwakeModeLabel" /></settings:SettingsCard.Header>
+                                        <settings:SettingsCard.Description><TextBlock TextWrapping="Wrap" x:Uid="KeepAwakeHelp" /></settings:SettingsCard.Description>
+                                        <ComboBox IsEnabled="{x:Bind local:MainPage.KeepAwakeEditable(KeepAwakeSettings.IsInitialized, KeepAwakeSettings.IsSaving), Mode=OneWay}" SelectedValue="{x:Bind KeepAwakeSettings.Mode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Tag" x:Uid="KeepAwakeMode" AutomationProperties.AutomationId="KeepAwakeMode" MinWidth="200">
+                                            <ComboBoxItem Tag="off" x:Uid="KeepAwakeOff" />
+                                            <ComboBoxItem Tag="requests" x:Uid="KeepAwakeRequests" />
+                                            <ComboBoxItem Tag="receiver" x:Uid="KeepAwakeReceiver" />
+                                        </ComboBox>
+                                    </settings:SettingsCard>
+                                    <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="KeepAwakeAcOnlyCard">
+                                        <settings:SettingsCard.HeaderIcon><SymbolIcon Symbol="Setting" /></settings:SettingsCard.HeaderIcon>
+                                        <settings:SettingsCard.Header><TextBlock x:Uid="KeepAwakeAcOnlyLabel" /></settings:SettingsCard.Header>
+                                        <settings:SettingsCard.Description><TextBlock TextWrapping="Wrap" x:Uid="KeepAwakeAcOnlyHelp" /></settings:SettingsCard.Description>
+                                        <CheckBox IsEnabled="{x:Bind local:MainPage.KeepAwakeEditable(KeepAwakeSettings.IsInitialized, KeepAwakeSettings.IsSaving), Mode=OneWay}" IsChecked="{x:Bind KeepAwakeSettings.AcOnly, Mode=TwoWay}" AutomationProperties.AutomationId="KeepAwakeAcOnly" x:Uid="KeepAwakeAcOnly" />
+                                    </settings:SettingsCard>
+                                    <TextBlock Text="{x:Bind local:MainPage.KeepAwakeStatusText(KeepAwakeSettings.Status), Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="KeepAwakeStatus" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind KeepAwakeSettings.Error, Mode=OneWay}" Visibility="{x:Bind local:MainPage.KeepAwakeErrorVisibility(KeepAwakeSettings.Status), Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="KeepAwakeErrorDetails" TextWrapping="Wrap" />
+                                </StackPanel>
                                 <StackPanel x:Name="GeneralAppearanceSection" Spacing="{StaticResource SettingsCardSpacing}" AutomationProperties.AutomationId="GeneralAppearanceSection">
                                     <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" AutomationProperties.AutomationId="GeneralAppearanceSectionHeading" x:Uid="GeneralAppearanceSectionHeading" />
                                     <localization:LanguageSettings x:Name="SettingsLanguage" AutomationProperties.AutomationId="LanguageCard" />

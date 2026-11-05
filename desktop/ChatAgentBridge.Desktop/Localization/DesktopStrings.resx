@@ -985,4 +985,21 @@ After: {2}</value></data>
   <data name="PortableUpdatePreparing" xml:space="preserve"><value>Preparing update · Saving the verified update…</value></data>
   <data name="PortableUpdateTransferCalculating" xml:space="preserve"><value>Transfer speed and time remaining are being calculated…</value></data>
   <data name="PortableUpdateTransferEstimate" xml:space="preserve"><value>{0:N1} KiB/s · About {1:N0} min remaining</value></data>
+  <data name="KeepAwakeSectionHeading.Text" xml:space="preserve"><value>Keep awake</value></data>
+  <data name="KeepAwakeModeLabel.Text" xml:space="preserve"><value>Keep the computer awake</value></data>
+  <data name="KeepAwakeHelp.Text" xml:space="preserve"><value>Uses a Windows system power request while selected work is active. Windows can still sleep on user request or lid close. Modern Standby may limit battery operation to about five minutes beyond the system timeout.</value></data>
+  <data name="KeepAwakeOff.Content" xml:space="preserve"><value>Off</value></data>
+  <data name="KeepAwakeRequests.Content" xml:space="preserve"><value>While requests or manual work are active</value></data>
+  <data name="KeepAwakeReceiver.Content" xml:space="preserve"><value>While chat receiver is enabled</value></data>
+  <data name="KeepAwakeAcOnlyLabel.Text" xml:space="preserve"><value>Power source</value></data>
+  <data name="KeepAwakeAcOnlyHelp.Text" xml:space="preserve"><value>Allow sleep while running on battery power.</value></data>
+  <data name="KeepAwakeAcOnly.Content" xml:space="preserve"><value>Only on AC power</value></data>
+  <data name="KeepAwakeStatusActive" xml:space="preserve"><value>Windows system request is active.</value></data>
+  <data name="KeepAwakeStatusInactive" xml:space="preserve"><value>Not currently preventing sleep.</value></data>
+  <data name="KeepAwakeStatusWaiting" xml:space="preserve"><value>Waiting for AC power status; no request is active.</value></data>
+  <data name="KeepAwakeStatusError" xml:space="preserve"><value>Keep-awake status could not be applied. Check the preference file or Windows power request.</value></data>
+  <data name="KeepAwakeSaveError" xml:space="preserve"><value>Could not save the keep-awake setting: {0}</value></data>
+  <data name="KeepAwakeNativeReason" xml:space="preserve"><value>Chat Agent Bridge is processing requests.</value></data>
+  <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>Loading setting…</value></data>
+  <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>When to keep the PC awake</value></data>
 </root>

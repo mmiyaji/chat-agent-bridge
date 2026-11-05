@@ -985,4 +985,21 @@
   <data name="PortableUpdatePreparing" xml:space="preserve"><value>更新準備中 · 検証済みの更新情報を保存しています…</value></data>
   <data name="PortableUpdateTransferCalculating" xml:space="preserve"><value>転送速度・残り時間を計算中…</value></data>
   <data name="PortableUpdateTransferEstimate" xml:space="preserve"><value>{0:N1} KiB/秒 · 残り約 {1:N0} 分</value></data>
+  <data name="KeepAwakeSectionHeading.Text" xml:space="preserve"><value>スリープ抑止</value></data>
+  <data name="KeepAwakeModeLabel.Text" xml:space="preserve"><value>PCをスリープさせない条件</value></data>
+  <data name="KeepAwakeHelp.Text" xml:space="preserve"><value>選択した作業中にWindowsのシステム電源要求を使用します。手動のスリープやふたを閉じる操作は引き続き有効です。モダンスタンバイでは、バッテリー時の延長がシステムのタイムアウトから約5分に制限される場合があります。</value></data>
+  <data name="KeepAwakeOff.Content" xml:space="preserve"><value>オフ</value></data>
+  <data name="KeepAwakeRequests.Content" xml:space="preserve"><value>依頼または手動操作の実行中</value></data>
+  <data name="KeepAwakeReceiver.Content" xml:space="preserve"><value>チャット受信が有効な間</value></data>
+  <data name="KeepAwakeAcOnlyLabel.Text" xml:space="preserve"><value>電源</value></data>
+  <data name="KeepAwakeAcOnlyHelp.Text" xml:space="preserve"><value>バッテリー駆動中はスリープ抑止を解除します。</value></data>
+  <data name="KeepAwakeAcOnly.Content" xml:space="preserve"><value>AC電源接続中のみ</value></data>
+  <data name="KeepAwakeStatusActive" xml:space="preserve"><value>Windowsの電源要求は有効です。</value></data>
+  <data name="KeepAwakeStatusInactive" xml:space="preserve"><value>現在はスリープを抑止していません。</value></data>
+  <data name="KeepAwakeStatusWaiting" xml:space="preserve"><value>AC電源の状態を確認できるまで待機中です。電源要求は有効ではありません。</value></data>
+  <data name="KeepAwakeStatusError" xml:space="preserve"><value>スリープ抑止を適用できません。設定ファイルまたはWindowsの電源要求を確認してください。</value></data>
+  <data name="KeepAwakeSaveError" xml:space="preserve"><value>スリープ抑止の設定を保存できませんでした: {0}</value></data>
+  <data name="KeepAwakeNativeReason" xml:space="preserve"><value>Chat Agent Bridge が依頼を処理しています。</value></data>
+  <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>設定を読み込み中…</value></data>
+  <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>PCをスリープさせない条件</value></data>
 </root>

@@ -24,6 +24,7 @@ public sealed partial class MainPage : Page
     private readonly Onboarding.OnboardingWizard _wizard;
 
     public MainPageViewModel ViewModel { get; } = new();
+    public KeepAwakeService KeepAwakeSettings => App.KeepAwake;
     public bool IsOverviewSelected { get; private set; } = true;
     public bool IsWorkbenchSelected { get; private set; }
     public bool IsAgentSelected { get; private set; }
@@ -44,6 +45,7 @@ public sealed partial class MainPage : Page
         PasswordRevealControl.Attach(SlackAppTokenRevealButton, SlackAppTokenBox);
         PasswordRevealControl.Attach(DiscordBotTokenRevealButton, DiscordBotTokenBox);
         InitializeSettingsAutoSave();
+        KeepAwakeSettings.PropertyChanged += KeepAwakeSettings_PropertyChanged;
         InitializeLanguageRestart();
         InitializePortableUpdateBadge();
         InitializePortableUpdateRecoveryProbe();
@@ -53,6 +55,7 @@ public sealed partial class MainPage : Page
         WizardHost.Content = _wizard;
         ViewModel.PropertyChanged += (_, args) =>
         {
+            if (args.PropertyName == nameof(ViewModel.IsRunning)) RefreshKeepAwakeSignals();
             if (args.PropertyName is nameof(ViewModel.IsSettingsLoaded) or nameof(ViewModel.IsLoading))
                 UpdateSettingsNavigationEnabledState();
             if (args.PropertyName == nameof(ViewModel.PersistedSettings))
@@ -92,6 +95,8 @@ public sealed partial class MainPage : Page
         };
         InboxPage.ViewModel.PropertyChanged += (_, args) =>
         {
+            if (args.PropertyName is nameof(ChatInboxViewModel.IsConnected) or nameof(ChatInboxViewModel.HasKeepAwakeWork))
+                RefreshKeepAwakeSignals();
             if (args.PropertyName is nameof(ChatInboxViewModel.IsConnectionConfirmed) or nameof(ChatInboxViewModel.IsConnected) or nameof(ChatInboxViewModel.HasConnectionError) or nameof(ChatInboxViewModel.ConnectionProvider))
             {
                 ViewModel.SetChatConnectionState(InboxPage.ViewModel.IsConnectionConfirmed, InboxPage.ViewModel.IsConnected, InboxPage.ViewModel.HasConnectionError, InboxPage.ViewModel.ConnectionOverviewTarget);
@@ -106,6 +111,8 @@ public sealed partial class MainPage : Page
         InboxPage.OpenRequested += () => MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>()
             .First(item => item.Tag as string == "chat");
         Loaded += MainPage_Loaded;
+        InboxPage.ViewModel.Requests.CollectionChanged += (_, _) => RefreshKeepAwakeSignals();
+        Loaded += (_, _) => RefreshKeepAwakeSignals();
         Loaded += (_, _) =>
         {
             LanguageSettings.LanguageChanged -= RefreshLanguage;
@@ -123,6 +130,51 @@ public sealed partial class MainPage : Page
         MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>()
             .First(item => item.Tag as string == "overview");
     }
+
+    private bool _loadingKeepAwake, _savingKeepAwake;
+    private void KeepAwakeSettings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (_loadingKeepAwake || _savingKeepAwake || !KeepAwakeSettings.IsInitialized || KeepAwakeSettings.IsSaving || args.PropertyName is not (nameof(KeepAwakeService.Mode) or nameof(KeepAwakeService.AcOnly))) return;
+        _ = SaveKeepAwakeSettingsAsync();
+    }
+
+    private async Task SaveKeepAwakeSettingsAsync()
+    {
+        _savingKeepAwake = true;
+        var mode = KeepAwakeSettings.Mode;
+        var acOnly = KeepAwakeSettings.AcOnly;
+        try
+        {
+            await KeepAwakeSettings.SaveAsync(mode, acOnly);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException)
+        {
+            _loadingKeepAwake = true;
+            try { KeepAwakeSettings.RestorePersistedAfterSaveFailure(); }
+            finally { _loadingKeepAwake = false; }
+            KeepAwakeSettings.Error = DesktopText.Get("KeepAwakeSaveError", ex.Message);
+            KeepAwakeSettings.Status = "error";
+        }
+        finally { _savingKeepAwake = false; }
+    }
+
+    private void RefreshKeepAwakeSignals()
+    {
+        if (!DispatcherQueue.HasThreadAccess)
+        {
+            DispatcherQueue.TryEnqueue(RefreshKeepAwakeSignals);
+            return;
+        }
+        var inbox = InboxPage.ViewModel;
+        KeepAwakeSettings.UpdateSignals(inbox.IsConnected, inbox.HasKeepAwakeWork, ViewModel.IsRunning);
+    }
+
+    public static string KeepAwakeStatusText(string status) => DesktopText.Get(status switch
+    {
+        "active" => "KeepAwakeStatusActive", "error" => "KeepAwakeStatusError", "waiting" => "KeepAwakeStatusWaiting", "loading" => "KeepAwakeStatusLoading", _ => "KeepAwakeStatusInactive"
+    });
+    public static bool KeepAwakeEditable(bool initialized, bool saving) => initialized && !saving;
+    public static Visibility KeepAwakeErrorVisibility(string status) => status == "error" ? Visibility.Visible : Visibility.Collapsed;
 
     private void RefreshLanguage(System.Globalization.CultureInfo culture)
     {
@@ -246,7 +298,8 @@ public sealed partial class MainPage : Page
             InboxPage.ViewModel.ConnectSlackCommand.ExecutionTask,
             InboxPage.ViewModel.ConnectDiscordCommand.ExecutionTask,
             InboxPage.ViewModel.DisconnectCommand.ExecutionTask,
-            InboxPage.ViewModel.WaitForConnectionShutdownAsync()
+            InboxPage.ViewModel.WaitForConnectionShutdownAsync(),
+            KeepAwakeSettings.FlushPendingSaveAsync()
         }.OfType<Task>();
         try { await Task.WhenAll(tasks); }
         finally { await InboxPage.ViewModel.FlushConversationPersistenceAsync(); }

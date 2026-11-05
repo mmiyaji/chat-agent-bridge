@@ -1391,4 +1391,15 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="UpdateCacheMaintenanceSection.Header" xml:space="preserve"><value>Maintenance</value></data>
   <data name="UpdateCacheMaintenanceSection.Description" xml:space="preserve"><value>These actions are normally unnecessary.</value></data>
   <data name="PortablePauseUpdate.Content" xml:space="preserve"><value>Pause download</value></data>
+  <data name="KeepAwakeSectionHeading.Text" xml:space="preserve"><value>Keep awake</value></data>
+  <data name="KeepAwakeModeLabel.Text" xml:space="preserve"><value>Keep the computer awake</value></data>
+  <data name="KeepAwakeHelp.Text" xml:space="preserve"><value>Screen timeout and lock are unchanged. Windows may still sleep on user request or lid close. On Modern Standby, battery keep-awake may be limited.</value></data>
+  <data name="KeepAwakeOff.Content" xml:space="preserve"><value>Off</value></data>
+  <data name="KeepAwakeRequests.Content" xml:space="preserve"><value>While requests or manual work are active</value></data>
+  <data name="KeepAwakeReceiver.Content" xml:space="preserve"><value>While chat receiver is enabled</value></data>
+  <data name="KeepAwakeAcOnlyLabel.Text" xml:space="preserve"><value>Power source</value></data>
+  <data name="KeepAwakeAcOnlyHelp.Text" xml:space="preserve"><value>Allow sleep while running on battery power.</value></data>
+  <data name="KeepAwakeAcOnly.Content" xml:space="preserve"><value>Only on AC power</value></data>
+  <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>Loading setting…</value></data>
+  <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>When to keep the PC awake</value></data>
 </root>

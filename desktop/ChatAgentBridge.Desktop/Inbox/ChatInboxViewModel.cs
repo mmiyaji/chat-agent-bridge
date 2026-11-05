@@ -148,6 +148,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public ObservableCollection<InboxItem> Requests { get; } = [];
     /// <summary>Requests waiting for a decision on this PC; the sidebar shows the count on the Chat item.</summary>
     public int PendingApprovalCount => Requests.Count(item => item.State == "承認待ち");
+    public bool HasKeepAwakeWork => IsExecuting || Requests.Any(item => item.State is "承認待ち" or "実行中" or "自動実行を準備" or "追加指示の受領待ち");
     public ObservableCollection<InboxConversation> Conversations { get; } = [];
     public event Action<InboxItem>? RequestReceived;
     public event Action? ConnectionEnded;
@@ -163,7 +164,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsConnectionConfirmed { get; set; }
     [ObservableProperty] public partial bool HasConnectionError { get; set; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasKeepAwakeWork)), NotifyCanExecuteChangedFor(nameof(ApproveCommand)), NotifyCanExecuteChangedFor(nameof(RejectCommand)), NotifyCanExecuteChangedFor(nameof(CancelCommand)), NotifyCanExecuteChangedFor(nameof(SendResultCommand)), NotifyCanExecuteChangedFor(nameof(SendAttachmentsCommand))]
     public partial bool IsExecuting { get; set; }
     partial void OnIsExecutingChanged(bool value)
     {
@@ -635,7 +636,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 {
                     if (args.PropertyName == nameof(InboxItem.State) && item.State != "承認待ち")
                         _ = CompleteRequestActionsAsync(item);
-                    if (args.PropertyName == nameof(InboxItem.State)) NotifyPendingApprovalPresentation();
+                    if (args.PropertyName == nameof(InboxItem.State)) { NotifyPendingApprovalPresentation(); OnPropertyChanged(nameof(HasKeepAwakeWork)); }
                     if (args.PropertyName is nameof(InboxItem.State) or nameof(InboxItem.Workspace)) QueueConversationRefresh(item);
                     if (ReferenceEquals(item, Selected))
                     {
@@ -661,6 +662,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             }
         }
         NotifyPendingApprovalPresentation();
+        OnPropertyChanged(nameof(HasKeepAwakeWork));
         QueueConversationRefresh();
     }
 
