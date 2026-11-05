@@ -46,14 +46,6 @@
                                     Visibility="{x:Bind local:MainPage.SearchTriggerVisibility(ViewModel.IsSettingsLoaded, ViewModel.IsOnboardingActive), Mode=OneWay}"
                                     AutomationProperties.AutomationId="OpenSettingsSearch">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Find" /></NavigationViewItem.Icon>
-                    <NavigationViewItem.Content>
-                        <Grid ColumnSpacing="8">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                            <TextBlock x:Uid="OpenSettingsSearchLabel" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="Ctrl+F" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                        </Grid>
-                    </NavigationViewItem.Content>
                 </NavigationViewItem>
                 <NavigationViewItem  Tag="overview"  AutomationProperties.AutomationId="NavOverview" x:Uid="NavOverview">
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Home" /></NavigationViewItem.Icon>
