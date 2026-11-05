@@ -156,6 +156,26 @@
             </Canvas>
         </Viewbox>
     </DataTemplate>
+    <!-- Small-size Codex mark for the General tile: each strand gets a background-coloured edge so the
+         interlaced knot stays readable instead of blurring into one shape at 24px. -->
+    <DataTemplate x:Key="OverviewIcon_provider_codex">
+        <Viewbox Width="24" Height="24" Stretch="Uniform" VerticalAlignment="Center">
+            <Canvas Width="24" Height="24">
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" StrokeThickness="3.4" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="0" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="0" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" StrokeThickness="3.4" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="60" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="60" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" StrokeThickness="3.4" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="120" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="120" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" StrokeThickness="3.4" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="180" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="180" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" StrokeThickness="3.4" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="240" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="240" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" StrokeThickness="3.4" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="300" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+                <Path Data="M12 3.4 C8.4 .9 4 3.1 4 7.3 L4 12 L10 15.5" Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"><Path.RenderTransform><RotateTransform Angle="300" CenterX="12" CenterY="12" /></Path.RenderTransform></Path>
+            </Canvas>
+        </Viewbox>
+    </DataTemplate>
     <DataTemplate x:Key="SettingsScopeIcon_provider_claude">
         <Viewbox Width="20" Height="20" Stretch="Uniform" VerticalAlignment="Center">
             <Canvas Width="24" Height="24">
