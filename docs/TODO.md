@@ -4,8 +4,10 @@
 
 ## 直近
 
+- [x] チャット実行のBridge内例外で受信箱の状態を必ず終了し、秘密を含まない原因分類と診断コードを表示。CLIの通常失敗と終端履歴を区別し、allowlist分類・機密除外を検証。日英文言、README三種を更新。実サービス会話は未実施。
+
 - [x] 正常起動を確認したポータブル更新後に、更新計画で検証したステージ内 JSON／TXT を整理し、ログ拡張子・`logs`／`diagnostics` と復旧記録を維持するよう修正。PortableUpdateCacheCleanupTests 17件成功。旧1.0.3アップデータは既知の一回限りのキャッシュメタデータを残すため、Previewノートに記載。詳細: [検証記録](release-1.0.4-validation.ja.md)。
-- [ ] v1.0.4-preview.1 の最終更新 smoke（旧版からの成功・ロールバック・設定保持、現行アップデータの整理）と最終 commit の CI / UI smoke を確認後、mainへ統合してプレビュー配布。Store 配布はしない。
+- [x] v1.0.4-preview.1 の更新 smoke、CI / UI smoke、x64 / ARM64ポータブル検査、GitHub prerelease、preview/stableフィード反映を完了。Store 配布はしていません。詳細: [検証記録](release-1.0.4-validation.ja.md)。
 
 - [x] チャット画面の接続ボタンを保存済みのサービス必須設定に応じて有効化し、未設定時にチャット設定への導線と説明を表示。起動時自動接続・ウィザード接続・再接続の状態更新を実装し、関連 Core/Transports テスト、Release ポータブルビルド、日英検査と隔離 CUA で未設定・各サービスの不完全／完全設定・空受信箱・英語ライト／ダーク・狭幅を確認。サイドバー切断ラベルも短縮。実サービスへの接続や投稿は未実施。詳細: [検証記録](chat-connection-readiness-validation.ja.md)。未公開。
 

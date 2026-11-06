@@ -1053,8 +1053,17 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await _sessions.SetFirstApprovalFingerprintAsync(key, item.ExecutionPolicyFingerprint!, token);
             if (updated is not null) item.SessionLabel = DesktopText.Get("InboxUpdatedSessionLabel", updated.SessionId,
                 requestedModel ?? DesktopText.Get("CliDefault"), requestedEffort ?? DesktopText.Get("CliDefault"));
-            record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = result.Success ? "completed" : "failed", ExitCode = result.ExitCode, SessionId = updated?.SessionId, Usage = result.Usage, Metrics = result.Metrics };
-            await _history.RecordAsync(record);
+            var finalizedRecord = record with
+            {
+                FinishedAt = DateTimeOffset.UtcNow,
+                Status = result.Success ? "completed" : "failed",
+                ExitCode = result.ExitCode,
+                SessionId = updated?.SessionId,
+                Usage = result.Usage,
+                Metrics = result.Metrics
+            };
+            await _history.RecordAsync(finalizedRecord);
+            record = finalizedRecord;
             await AuditAsync(record.Status, item.Request, record.Id);
             await FinishProgressAsync(item, result.Success ? ChatProgressState.Completed : ChatProgressState.Failed);
             try
@@ -1092,7 +1101,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.State = "キャンセル"; Status = DesktopText.Get("InboxExecutionCancelled");
             item.Usage = UsageUi.UsageSummaryFormatter.Format(null, null);
             await FinishProgressAsync(item, ChatProgressState.Cancelled);
-            if (record is not null) await FinishFailureAsync(record, "cancelled", item.Request);
+            if (record is not null)
+            {
+                await FinishFailureAsync(record, "cancelled", item.Request);
+                record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = "cancelled" };
+            }
             if (item.Progress is null) await NotifyRequestAsync(item, DesktopText.Get("InboxCancelChatNotice"));
         }
         catch (IncomingFilesException)
@@ -1101,24 +1114,42 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.FullOutput = DesktopText.Get("IncomingFilesFailed");
             Status = item.FullOutput;
             await FinishProgressAsync(item, ChatProgressState.Failed);
-            if (record is not null && record.Status == "running") await FinishFailureAsync(record, "failed", item.Request);
+            if (record is not null && record.Status == "running")
+            {
+                await FinishFailureAsync(record, "failed", item.Request);
+                record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = "failed" };
+            }
             await NotifyRequestAsync(item, DesktopText.Get("IncomingFilesFailed"));
         }
-        catch (Exception)
+        catch (Exception exception)
         {
-            if (record?.Status == "running" || record is null) item.State = "実行／記録エラー";
-            item.Usage = UsageUi.UsageSummaryFormatter.Format(null, null);
-            Status = DesktopText.Get("InboxExecutionRecordFailed");
+            record = await HandleExecutionExceptionAsync(item, exception, record);
             await FinishProgressAsync(item, ChatProgressState.Failed);
-            if (record is not null && record.Status == "running") await FinishFailureAsync(record, "failed", item.Request);
         }
         finally
         {
             try { await CloseActiveTurnAsync(item); }
-            finally { if (incomingFiles is not null) await incomingFiles.DisposeAsync(); }
-            if (record is not null) _history.EndTracking(record.Id);
-            _execution?.Dispose();
+            catch (Exception exception)
+            {
+                record = await HandleExecutionExceptionAsync(item, exception, record);
+            }
+            try { if (incomingFiles is not null) await incomingFiles.DisposeAsync(); }
+            catch (Exception exception)
+            {
+                record = await HandleExecutionExceptionAsync(item, exception, record);
+            }
+            try { if (record is not null) _history.EndTracking(record.Id); }
+            catch (Exception exception)
+            {
+                record = await HandleExecutionExceptionAsync(item, exception, record);
+            }
+            var execution = _execution;
             _execution = null;
+            try { execution?.Dispose(); }
+            catch (Exception exception)
+            {
+                record = await HandleExecutionExceptionAsync(item, exception, record);
+            }
             _activeItem = null;
             IsExecuting = false;
             ConnectMattermostCommand.NotifyCanExecuteChanged();
@@ -1403,6 +1434,43 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             await AuditAsync(status, request, record.Id);
         }
         catch (Exception) { Status += " " + DesktopText.Get("InboxAuditSaveFailed"); }
+    }
+
+    private async Task<ExecutionRecord?> HandleExecutionExceptionAsync(
+        InboxItem item, Exception exception, ExecutionRecord? record)
+    {
+        var diagnostic = ExecutionExceptionDiagnostic.Create(exception);
+        var detail = diagnostic.Cause switch
+        {
+            ExecutionExceptionCause.AccessDenied => DesktopText.Get("InboxExecutionCauseAccessDenied"),
+            ExecutionExceptionCause.WorkspaceUnavailable => DesktopText.Get("InboxExecutionCauseWorkspaceUnavailable"),
+            ExecutionExceptionCause.RequiredFileUnavailable => DesktopText.Get("InboxExecutionCauseRequiredFileUnavailable"),
+            ExecutionExceptionCause.InvalidData => DesktopText.Get("InboxExecutionCauseInvalidData"),
+            ExecutionExceptionCause.Network => DesktopText.Get("InboxExecutionCauseNetwork"),
+            ExecutionExceptionCause.Timeout => DesktopText.Get("InboxExecutionCauseTimeout"),
+            ExecutionExceptionCause.ProcessStart => DesktopText.Get("InboxExecutionCauseProcessStart"),
+            ExecutionExceptionCause.LocalStorage => DesktopText.Get("InboxExecutionCauseLocalStorage"),
+            ExecutionExceptionCause.InvalidSettings => DesktopText.Get("InboxExecutionCauseInvalidSettings"),
+            ExecutionExceptionCause.InvalidState => DesktopText.Get("InboxExecutionCauseInvalidState"),
+            _ => ""
+        };
+        var diagnosticText = diagnostic.Cause == ExecutionExceptionCause.Unknown
+            ? DesktopText.Get("InboxExecutionExceptionUnknown", diagnostic.ExceptionType, diagnostic.HResult)
+            : DesktopText.Get("InboxExecutionExceptionDetails", detail, diagnostic.ExceptionType, diagnostic.HResult);
+        var runningText = DesktopText.Get("InboxAgentRunning");
+        item.FullOutput = BoundOutput(item.FullOutput == runningText || string.IsNullOrWhiteSpace(item.FullOutput)
+            ? diagnosticText
+            : item.FullOutput + Environment.NewLine + Environment.NewLine + diagnosticText);
+        if (ExecutionExceptionDiagnostic.ShouldMarkExecutionError(record?.Status))
+        {
+            item.State = "実行／記録エラー";
+            item.Usage = UsageUi.UsageSummaryFormatter.Format(null, null);
+        }
+        Status = DesktopText.Get("InboxExecutionRecordFailed");
+        if (record is null || record.Status != "running") return record;
+        var failed = record with { FinishedAt = DateTimeOffset.UtcNow, Status = "failed" };
+        await FinishFailureAsync(failed, "failed", item.Request);
+        return failed;
     }
 
     private static string ExtractReply(AgentRunResult result)
