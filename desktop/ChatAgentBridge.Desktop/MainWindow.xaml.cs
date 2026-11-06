@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
+using ChatAgentBridge_Desktop.Inbox;
 using System.Runtime.InteropServices;
 using Windows.Graphics;
 using Windows.System;
@@ -94,6 +95,8 @@ public sealed partial class MainWindow : Window
     }
 
     private MainPage? Page => RootFrame.Content as MainPage;
+
+    internal InboxShutdownSummary GetShutdownSummary() => Page?.GetShutdownSummary() ?? default;
 
     private void SettingsSearchFlyout_Opening(object sender, object args)
     {

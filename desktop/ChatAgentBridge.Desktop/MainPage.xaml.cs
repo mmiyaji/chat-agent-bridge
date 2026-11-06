@@ -10,6 +10,8 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage : Page
 {
+    internal InboxShutdownSummary GetShutdownSummary() => InboxPage.ViewModel.GetShutdownSummary();
+
     private bool _hasLoaded;
     private readonly TaskCompletionSource _initialContentReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
     internal Task InitialContentReady => _initialContentReady.Task;

@@ -12,6 +12,12 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace ChatAgentBridge_Desktop.Inbox;
 
+internal readonly record struct InboxShutdownSummary(
+    int AgentProcessing, int WaitingForUserAnswer, int WaitingForApproval, int QueuedFollowUps)
+{
+    public int Total => AgentProcessing + WaitingForUserAnswer + WaitingForApproval + QueuedFollowUps;
+}
+
 public sealed partial class InboxItem(ChatRequest request, IChatTransport transport, BridgeSettings settings) : ObservableObject
 {
     public ChatRequest Request { get; } = request;
@@ -146,6 +152,34 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public ExecutionUi.LiveOutputViewModel SelectedLiveOutput => Selected?.LiveOutput ?? _emptyLiveOutput;
 
     public ObservableCollection<InboxItem> Requests { get; } = [];
+    internal InboxShutdownSummary GetShutdownSummary()
+    {
+        var processing = 0;
+        var waitingForAnswer = 0;
+        var waitingForApproval = 0;
+        var queuedFollowUps = 0;
+
+        foreach (var item in Requests)
+        {
+            switch (item.State)
+            {
+                case "実行中":
+                    if (_waitingForInput.ContainsKey(item)) waitingForAnswer++;
+                    else processing++;
+                    break;
+                case "承認待ち":
+                case "自動実行を準備":
+                    waitingForApproval++;
+                    break;
+                case "追加指示の受領待ち":
+                    queuedFollowUps++;
+                    break;
+            }
+        }
+
+        return new(processing, waitingForAnswer, waitingForApproval, queuedFollowUps);
+    }
+
     /// <summary>Requests waiting for a decision on this PC; the sidebar shows the count on the Chat item.</summary>
     public int PendingApprovalCount => Requests.Count(item => item.State == "承認待ち");
     public bool HasKeepAwakeWork => IsExecuting || Requests.Any(item => item.State is "承認待ち" or "実行中" or "自動実行を準備" or "追加指示の受領待ち");

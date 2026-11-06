@@ -20,6 +20,7 @@ public sealed class TrayService : IDisposable
     private bool _disposed;
     private bool _closeConfirmationOpen;
     private ContentDialog? _closeConfirmation;
+    private TextBlock? _closeConfirmationMessage;
 
     public WindowCloseBehavior CloseBehavior { get; private set; }
     public bool CloseToTray => CloseBehavior == WindowCloseBehavior.MoveToSystemTray;
@@ -107,19 +108,56 @@ public sealed class TrayService : IDisposable
         {
             if (_window.Content is not FrameworkElement { XamlRoot: { } xamlRoot })
                 return;
-            var body = new TextBlock
+            var summary = _window.GetShutdownSummary();
+            var message = new TextBlock
             {
                 Text = GetCloseConfirmationBody(),
                 TextWrapping = TextWrapping.Wrap
             };
-            AutomationProperties.SetAutomationId(body, "WindowCloseConfirmationMessage");
+            AutomationProperties.SetAutomationId(message, "WindowCloseConfirmationMessage");
+
+            FrameworkElement content = message;
+            if (summary.Total > 0)
+            {
+                var body = new StackPanel { Spacing = 12 };
+                body.Children.Add(message);
+                var summaryText = new TextBlock
+                {
+                    Text = DesktopText.Get("WindowCloseConfirmationActiveSummary", summary.Total),
+                    TextWrapping = TextWrapping.Wrap
+                };
+                AutomationProperties.SetAutomationId(summaryText, "WindowCloseConfirmationActiveSummary");
+                body.Children.Add(summaryText);
+
+                var details = new TextBlock
+                {
+                    Text = string.Join(Environment.NewLine,
+                        DesktopText.Get("WindowCloseConfirmationActiveAgentProcessing", summary.AgentProcessing),
+                        DesktopText.Get("WindowCloseConfirmationActiveWaitingForAnswer", summary.WaitingForUserAnswer),
+                        DesktopText.Get("WindowCloseConfirmationActiveWaitingForApproval", summary.WaitingForApproval),
+                        DesktopText.Get("WindowCloseConfirmationActiveQueuedFollowUps", summary.QueuedFollowUps)),
+                    TextWrapping = TextWrapping.Wrap
+                };
+                AutomationProperties.SetAutomationId(details, "WindowCloseConfirmationActiveDetails");
+                var expander = new Expander
+                {
+                    Header = DesktopText.Get("WindowCloseConfirmationActiveDetailsHeader"),
+                    Content = details,
+                    HorizontalAlignment = HorizontalAlignment.Stretch
+                };
+                AutomationProperties.SetAutomationId(expander, "WindowCloseConfirmationActiveDetailsExpander");
+                body.Children.Add(expander);
+                content = body;
+            }
+
+            _closeConfirmationMessage = message;
 
             var dialog = new ContentDialog
             {
                 XamlRoot = xamlRoot,
                 RequestedTheme = App.Appearance.RequestedTheme,
                 Title = DesktopText.Get("WindowCloseConfirmationTitle"),
-                Content = body,
+                Content = content,
                 PrimaryButtonText = DesktopText.Get("WindowCloseConfirmationExit"),
                 SecondaryButtonText = DesktopText.Get("WindowCloseConfirmationTray"),
                 CloseButtonText = DesktopText.Get("WindowCloseConfirmationCancel"),
@@ -170,6 +208,7 @@ public sealed class TrayService : IDisposable
         finally
         {
             _closeConfirmation = null;
+            _closeConfirmationMessage = null;
             _closeConfirmationOpen = false;
         }
     }
@@ -210,8 +249,8 @@ public sealed class TrayService : IDisposable
         if (_closeConfirmation is { } dialog)
         {
             dialog.IsSecondaryButtonEnabled = IsAvailable;
-            if (dialog.Content is TextBlock body)
-                body.Text = GetCloseConfirmationBody();
+            if (_closeConfirmationMessage is { } message)
+                message.Text = GetCloseConfirmationBody();
         }
     }
 
