@@ -453,7 +453,7 @@ if (args.Contains("--print"))
             await File.AppendAllTextAsync(fixturePidFile, Environment.ProcessId + Environment.NewLine);
 
         var livePrompt = await Console.In.ReadToEndAsync();
-        var liveRunMatch = System.Text.RegularExpressions.Regex.Match(livePrompt, @"\bLIVE_RUN_(ONE|TWO|CHAT_A|CHAT_B)\b", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        var liveRunMatch = System.Text.RegularExpressions.Regex.Match(livePrompt, @"\bLIVE_RUN_(ONE|TWO|CHAT_A|CHAT_B|ERROR_LONG|RECOVERY)\b", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
         if (!liveRunMatch.Success)
         {
             Console.Error.WriteLine("Live-output fixture requires a whitelisted LIVE_RUN marker in the prompt.");
@@ -481,10 +481,13 @@ if (args.Contains("--print"))
             Environment.ExitCode = 3;
             return;
         }
+        var finalResult = liveRunMarker == "LIVE_RUN_ERROR_LONG"
+            ? "LIVE_FIXTURE_FINAL long-output-start|" + new string('L', 65_500) + "|long-output-end"
+            : "LIVE_FIXTURE_FINAL fixed final response";
         await WriteAsync(new
         {
             type = "result", subtype = "success", session_id = "a352fd0c-204e-4d06-8c83-8de46651b3ed",
-            result = "LIVE_FIXTURE_FINAL fixed final response",
+            result = finalResult,
             usage = new { input_tokens = 10, output_tokens = 5 },
             modelUsage = new Dictionary<string, object> { ["fixture-claude"] = new { } }
         });
