@@ -298,7 +298,20 @@
   <data name="InboxStatusReplyFailed" xml:space="preserve"><value>実行は終了しましたが、チャットへの状態通知に失敗しました。ローカル結果は保持しています。</value></data>
   <data name="InboxExecutionCancelled" xml:space="preserve"><value>実行をキャンセルしました。</value></data>
   <data name="InboxCancelChatNotice" xml:space="preserve"><value>Chat Agent Bridge: PCで実行をキャンセルしました。結果本文は送信していません。</value></data>
-  <data name="InboxExecutionRecordFailed" xml:space="preserve"><value>実行または履歴の記録に失敗しました。作業フォルダーを変える場合は !cab folder 絶対パス で変更するか、履歴画面で保存セッションを切り離してから再度依頼してください。ローカル結果も確認してください。</value></data>
+  <data name="InboxExecutionRecordFailed" xml:space="preserve"><value>依頼を完了できませんでした。PC画面の実行ログで原因の目安と診断コードを確認してください。診断はPC上に表示し、例外メッセージ・パス・依頼内容をチャットへ送信しません。</value></data>
+  <data name="InboxExecutionExceptionDetails" xml:space="preserve"><value>{0}
+診断コード: {1} (HRESULT 0x{2})。例外メッセージ、スタック、パス、コマンド引数、依頼内容は表示・記録しません。</value></data>
+  <data name="InboxExecutionExceptionUnknown" xml:space="preserve"><value>CAB内部の予期しないエラーです。診断型: {0}、HRESULT: 0x{1}。</value></data>
+  <data name="InboxExecutionCauseAccessDenied" xml:space="preserve"><value>アクセスが拒否されました。作業フォルダーとCABデータフォルダーの読み書き権限を確認してください。</value></data>
+  <data name="InboxExecutionCauseWorkspaceUnavailable" xml:space="preserve"><value>設定された作業フォルダーを利用できません。フォルダーやマウント中のドライブを確認してください。</value></data>
+  <data name="InboxExecutionCauseRequiredFileUnavailable" xml:space="preserve"><value>必要なCLIまたはファイルが見つかりません。選択したCLIがインストールされ、利用可能か確認してください。</value></data>
+  <data name="InboxExecutionCauseInvalidData" xml:space="preserve"><value>ローカルデータまたはサービスのデータを読み取れませんでした。設定を確認して再試行してください。続く場合は診断コードを添えて報告してください。</value></data>
+  <data name="InboxExecutionCauseNetwork" xml:space="preserve"><value>ネットワーク処理に失敗しました。PCのネットワーク接続とサービスの状態を確認して再試行してください。</value></data>
+  <data name="InboxExecutionCauseTimeout" xml:space="preserve"><value>処理がタイムアウトしました。CLIと必要なサービスが利用可能か確認して再試行してください。</value></data>
+  <data name="InboxExecutionCauseProcessStart" xml:space="preserve"><value>Windowsが設定されたコマンドを起動できませんでした。CLIのインストールと選択内容を確認してください。</value></data>
+  <data name="InboxExecutionCauseLocalStorage" xml:space="preserve"><value>ローカルファイルの処理に失敗しました。空き容量と作業フォルダー・CABデータフォルダーの読み書き権限を確認してください。</value></data>
+  <data name="InboxExecutionCauseInvalidSettings" xml:space="preserve"><value>設定値を受け付けられませんでした。エージェントと作業フォルダーの設定を確認して再試行してください。</value></data>
+  <data name="InboxExecutionCauseInvalidState" xml:space="preserve"><value>現在の状態では処理を完了できませんでした。エージェント設定を確認して再試行してください。</value></data>
   <data name="InboxRequestRejected" xml:space="preserve"><value>依頼を拒否しました。実行していません。</value></data>
   <data name="InboxRejectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: PCで依頼を拒否しました。実行していません。</value></data>
   <data name="InboxRejectRecordFailed" xml:space="preserve"><value>拒否の記録に失敗しました。依頼は実行していません。</value></data>

@@ -299,7 +299,20 @@
   <data name="InboxStatusReplyFailed" xml:space="preserve"><value>Execution ended, but the chat status notice failed. The local result is retained.</value></data>
   <data name="InboxExecutionCancelled" xml:space="preserve"><value>Execution canceled.</value></data>
   <data name="InboxCancelChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Execution was canceled on the PC. The result text was not sent.</value></data>
-  <data name="InboxExecutionRecordFailed" xml:space="preserve"><value>Execution or history recording failed. To change the workspace, use !cab folder followed by an absolute path, or detach the saved session in History, then resubmit. Check the local result too.</value></data>
+  <data name="InboxExecutionRecordFailed" xml:space="preserve"><value>The request could not be completed. Check the local execution log on this PC for a likely cause and diagnostic code. Diagnostics stay on this PC; exception messages, paths, and request content are not sent to chat.</value></data>
+  <data name="InboxExecutionExceptionDetails" xml:space="preserve"><value>{0}
+Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, command arguments, and request content are omitted.</value></data>
+  <data name="InboxExecutionExceptionUnknown" xml:space="preserve"><value>Unexpected CAB error. Diagnostic type: {0}; HRESULT: 0x{1}.</value></data>
+  <data name="InboxExecutionCauseAccessDenied" xml:space="preserve"><value>Access was denied. Check read/write permissions for the workspace and CAB data folder.</value></data>
+  <data name="InboxExecutionCauseWorkspaceUnavailable" xml:space="preserve"><value>The configured workspace is unavailable. Check that the folder and any mounted drive are available.</value></data>
+  <data name="InboxExecutionCauseRequiredFileUnavailable" xml:space="preserve"><value>A required CLI or file could not be found. Check that the selected CLI is installed and available.</value></data>
+  <data name="InboxExecutionCauseInvalidData" xml:space="preserve"><value>Local or service data could not be read. Check the settings and retry; if it repeats, include the diagnostic code in a report.</value></data>
+  <data name="InboxExecutionCauseNetwork" xml:space="preserve"><value>A network operation failed. Check the PC's network connection and service availability, then retry.</value></data>
+  <data name="InboxExecutionCauseTimeout" xml:space="preserve"><value>An operation timed out. Check that the CLI and any required service are available, then retry.</value></data>
+  <data name="InboxExecutionCauseProcessStart" xml:space="preserve"><value>Windows could not start the configured command. Check the CLI installation and selected command.</value></data>
+  <data name="InboxExecutionCauseLocalStorage" xml:space="preserve"><value>A local file operation failed. Check free disk space and read/write permissions for the workspace and CAB data folder.</value></data>
+  <data name="InboxExecutionCauseInvalidSettings" xml:space="preserve"><value>A configuration value was rejected. Review the agent and workspace settings, then retry.</value></data>
+  <data name="InboxExecutionCauseInvalidState" xml:space="preserve"><value>The operation could not complete in its current state. Review the agent settings and retry.</value></data>
   <data name="InboxRequestRejected" xml:space="preserve"><value>Request rejected. It was not run.</value></data>
   <data name="InboxRejectChatNotice" xml:space="preserve"><value>Chat Agent Bridge: Request rejected on the PC. It was not run.</value></data>
   <data name="InboxRejectRecordFailed" xml:space="preserve"><value>Could not record the rejection. The request was not run.</value></data>
