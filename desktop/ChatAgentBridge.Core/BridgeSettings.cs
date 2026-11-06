@@ -37,7 +37,7 @@ public sealed record BridgeSettings
     public string ChatApprovalMode { get; init; } = "first";
     // Takes effect with automatic approval or existing first-turn consent; see ConversationExecutionPolicy.AutoApprovesSwitchCommands.
     public bool AutoApproveSwitchCommands { get; init; }
-    public string ChatResultMode { get; init; } = "manual";
+    public string ChatResultMode { get; init; } = "auto";
     public string ChatFollowUpMode { get; init; } = ChatFollowUpPolicy.Queue;
     public string ChatProgressDetail { get; init; } = Core.ChatProgressDetail.Standard;
     public string SlackAllowedChannelIds { get; init; } = "";

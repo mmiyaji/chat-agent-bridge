@@ -247,7 +247,7 @@ public partial class MainPageViewModel : ObservableObject
     {
         if (value is not ("auto" or "first")) AutoApproveSwitchCommands = false;
     }
-    [ObservableProperty] public partial string ChatResultMode { get; set; } = "manual";
+    [ObservableProperty] public partial string ChatResultMode { get; set; } = "auto";
     [ObservableProperty] public partial string ChatFollowUpMode { get; set; } = ChatFollowUpPolicy.Queue;
     [ObservableProperty] public partial string ChatProgressDetail { get; set; } = ChatAgentBridge.Core.ChatProgressDetail.Standard;
     [ObservableProperty] public partial string FileAttachmentApprovalMode { get; set; } = "always";

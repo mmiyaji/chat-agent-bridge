@@ -43,9 +43,15 @@ The publisher does not permit using this app to publish nudity or gratuitous gra
 
 The product is an unofficial alternative for environments where the AI provider's official remote-control feature cannot be used. AI subscriptions and service charges are separate. The app does not require a Chat Agent Bridge account. Contact mail@ruhenheim.org if additional test access is required. Existing users' bot tokens and AI logins are not supplied.
 
-## Store掲載説明への追加案（未登録）
+## 次回リリース用Store掲載説明案（未登録）
 
 ### 日本語
+
+Chat Agent Bridgeは、Slack・Mattermost・Discordの依頼をWindows PC上のCLIエージェントへ渡して実行するアプリです。
+
+AIエージェントの提供元が公式のリモート操作機能を用意している場合は、そちらの利用を推奨します。本アプリは、環境の制約で公式機能を使えない場合の代替手段です。
+
+予期しないユーザーからの利用や意図しない依頼を実行前に確認して止められるよう、「会話ごとに最初の依頼を確認」をおすすめします。会話開始時にPCで依頼者と内容を確認します。許可ユーザーの制限と併用してください。
 
 **システム構成とアカウントの役割**
 
@@ -55,9 +61,15 @@ The product is an unofficial alternative for environments where the AI provider'
 
 BridgeはWindows PC上で選択されたCLIを、指定された信頼する作業フォルダー内で起動します。CLIは自身に設定されたAIサービスのアカウントで通信します。許可ユーザーからの依頼は、PC側のCLI権限とAIサービスの利用枠を使います。依頼の開始承認と、CLIが個々の操作を行う権限は別々に設定します。
 
-実行結果は元のスレッドへ戻ります。既定ではPCで内容を確認してからBotが投稿します。
+実行結果は元のスレッドへ戻ります。既定では実行結果をBotが元のスレッドへ自動で投稿します。
 
 ### English
+
+Chat Agent Bridge passes requests from Slack, Mattermost or Discord to an AI agent CLI on the user's Windows PC.
+
+Prefer the AI agent provider's official remote-control feature when one is available. This app is an alternative for environments where that feature cannot be used.
+
+We recommend “Confirm the first request in each conversation” so users can review the requester and request on the PC and catch unexpected users or unintended requests before execution. Keep allowed-user restrictions enabled too.
 
 **System and account roles**
 
@@ -67,4 +79,4 @@ The dedicated agent bot account connects Bridge to chat and carries messages. It
 
 Bridge launches the selected CLI on the Windows PC in a configured trusted workspace. The CLI connects with the AI service account configured in that CLI. Requests from allowed users use the PC's configured CLI permissions and AI service quota. Approval to start a request and the CLI's permission to perform individual actions are separate controls.
 
-Results return to the original thread. By default, they are reviewed on the PC before the bot posts them.
+Results return to the original thread. By default, the bot posts results automatically in the original thread.

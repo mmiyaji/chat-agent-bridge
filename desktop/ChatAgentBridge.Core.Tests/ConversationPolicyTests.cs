@@ -29,7 +29,7 @@ public sealed class ConversationPolicyTests
     private static readonly SessionKey Owner = ChatSessionScope.Create("slack", "C1", "1.0", "U1");
     private static BridgeSettings Settings => new()
     {
-        WorkspaceRoot = Path.GetTempPath(), ChatApprovalMode = "first", SlackAllowedUserIds = "U1",
+        WorkspaceRoot = Path.GetTempPath(), ChatApprovalMode = "first", ChatResultMode = "manual", SlackAllowedUserIds = "U1",
         AgentExecutable = "codex", AgentPermissionMode = "inherit"
     };
 

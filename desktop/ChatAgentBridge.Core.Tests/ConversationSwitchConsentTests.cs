@@ -11,7 +11,7 @@ public sealed class ConversationSwitchConsentTests : IDisposable
     private BridgeSettings Settings => new()
     {
         WorkspaceRoot = _directory, AgentProvider = AgentProfile.Codex, AgentExecutable = "codex",
-        AgentArguments = "exec --json -", AgentMode = "exec", ChatApprovalMode = "first",
+        AgentArguments = "exec --json -", AgentMode = "exec", ChatApprovalMode = "first", ChatResultMode = "manual",
         AutoApproveSwitchCommands = true, SlackBotToken = "secret", AgentPermissionMode = "read-only"
     };
 

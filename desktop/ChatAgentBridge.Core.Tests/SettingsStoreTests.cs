@@ -8,6 +8,17 @@ public sealed class SettingsStoreTests : IDisposable
     private readonly string _directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
     [Theory]
+    [InlineData("manual")]
+    [InlineData("none")]
+    public async Task ChatResultModeExplicitChoiceRoundTrips(string mode)
+    {
+        var store = new SettingsStore(_directory);
+        await store.SaveAsync(new BridgeSettings { ChatResultMode = mode });
+
+        Assert.Equal(mode, (await store.LoadAsync()).ChatResultMode);
+    }
+
+    [Theory]
     [InlineData(AgentProfile.Gemini, "gemini", AgentProfile.DefaultGeminiArguments)]
     [InlineData(AgentProfile.GitHubCopilot, "copilot", AgentProfile.DefaultGitHubCopilotArguments)]
     public async Task SessionCliModelNamesPersistWithoutCatalogValidation(string provider, string executable, string arguments)

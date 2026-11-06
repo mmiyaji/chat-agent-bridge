@@ -12,7 +12,7 @@ public sealed class ExecutionPolicyTests
         Assert.False(settings.AllowAgentNetwork);
         Assert.Equal("", settings.TrustedWorkspaceRoots);
         Assert.Equal("first", settings.ChatApprovalMode);
-        Assert.Equal("manual", settings.ChatResultMode);
+        Assert.Equal("auto", settings.ChatResultMode);
         Assert.Equal("", settings.SlackAllowedChannelIds);
     }
 
@@ -44,6 +44,37 @@ public sealed class ExecutionPolicyTests
             await File.WriteAllTextAsync(Path.Combine(path, "settings.json"), json);
             var settings = await new SettingsStore(path).LoadAsync();
             Assert.Equal(expected, settings.ChatApprovalMode);
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData(null, "auto")]
+    [InlineData("", "auto")]
+    [InlineData("   ", "auto")]
+    [InlineData("manual", "manual")]
+    [InlineData("auto", "auto")]
+    [InlineData("none", "none")]
+    public void ChatResultModeUsesAutoAsFallbackAndPreservesExplicitModes(string? stored, string expected)
+    {
+        Assert.Equal(expected, ExecutionPolicy.NormalizeChatResultMode(stored));
+    }
+
+    [Theory]
+    [InlineData("{\"SchemaVersion\":1}", "auto")]
+    [InlineData("{\"SchemaVersion\":1,\"ChatResultMode\":null}", "auto")]
+    [InlineData("{\"SchemaVersion\":1,\"ChatResultMode\":\" \"}", "auto")]
+    [InlineData("{\"SchemaVersion\":1,\"ChatResultMode\":\"manual\"}", "manual")]
+    [InlineData("{\"SchemaVersion\":1,\"ChatResultMode\":\"none\"}", "none")]
+    public async Task SettingsStoreDefaultsChatResultModeAndPreservesExplicitModes(string json, string expected)
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(path);
+            await File.WriteAllTextAsync(Path.Combine(path, "settings.json"), json);
+            var settings = await new SettingsStore(path).LoadAsync();
+            Assert.Equal(expected, settings.ChatResultMode);
         }
         finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
     }

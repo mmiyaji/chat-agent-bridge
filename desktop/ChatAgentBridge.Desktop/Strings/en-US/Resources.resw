@@ -262,13 +262,13 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Ask every time</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageComboBoxItem007.Content" xml:space="preserve">
-    <value>Confirm the first request in each conversation</value>
+    <value>Confirm the first request in each conversation (recommended)</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageComboBoxItem008.Content" xml:space="preserve">
     <value>Approve automatically</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock032.Text" xml:space="preserve">
-    <value>Confirm one request when each conversation starts. Later requests run automatically, unless changed permissions or agent settings require approval again. Automatic approval skips the initial confirmation.</value>
+    <value>We recommend “Confirm the first request in each conversation.” Alongside restricting allowed users, this lets you review the requester and request on the PC and stop unexpected use before it runs. Confirm one request when each conversation starts. Later requests run automatically, unless changed permissions or agent settings require approval again. Automatic approval skips the initial confirmation.</value>
   </data>
   <data name="AutoApproveSwitchCommands.Header" xml:space="preserve">
     <value>Approve folder and agent switches automatically</value>
@@ -801,22 +801,22 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Request approval</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem001.Content" xml:space="preserve">
-    <value>Ask every time (recommended)</value>
+    <value>Ask every time</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem002.Content" xml:space="preserve">
-    <value>Confirm the first request in each conversation</value>
+    <value>Confirm the first request in each conversation (recommended)</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem003.Content" xml:space="preserve">
     <value>Approve automatically</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock022.Text" xml:space="preserve">
-    <value>Confirm one request when each conversation starts. Later requests run automatically, unless changed permissions or agent settings require approval again. Automatic approval skips the initial confirmation.</value>
+    <value>We recommend “Confirm the first request in each conversation.” Alongside restricting allowed users, this lets you review the requester and request on the PC and stop unexpected use before it runs. Confirm one request when each conversation starts. Later requests run automatically, unless changed permissions or agent settings require approval again. Automatic approval skips the initial confirmation.</value>
   </data>
   <data name="WizardChatResultMode.Header" xml:space="preserve">
     <value>Sharing execution results</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem004.Content" xml:space="preserve">
-    <value>Review and share manually (recommended)</value>
+    <value>Review and share manually</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem005.Content" xml:space="preserve">
     <value>Share automatically</value>

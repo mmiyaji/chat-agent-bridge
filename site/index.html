@@ -36,7 +36,7 @@
 <div class="shell"><aside><div class="brand"><img src="assets/img/icon-256.png" alt="" width="20" height="20">Chat Agent Bridge</div>
 <div data-i18n="grp.use" class="grp">ガイド</div><a data-i18n="nav.top" class="on" href="#top">概要</a><a data-i18n="nav.how" href="#how">仕組み</a><a data-i18n="nav.features" href="#features">できること</a><a data-i18n="nav.gallery" href="#gallery">画面</a><a data-i18n="nav.start" href="#start">始め方</a>
 <div data-i18n="grp.ref" class="grp">参考</div><a data-i18n="nav.tips" href="#tips">Tips</a><a data-i18n="nav.faq" href="#faq">よくある質問</a></aside>
-<main id="top"><h1>Chat Agent Bridge</h1><p data-i18n="lead" class="sub">Slack・Mattermost・Discord に投稿した依頼を、Windows PC 上の AI エージェント（CLI）に渡して実行する常駐アプリです。結果は同じスレッドに返り、続きもそのスレッドで頼めます。</p><p data-i18n="note" class="dim">開発プレビュー版の非公式アプリです。各 AI サービスやチャットサービスの公式アプリではありません。</p>
+<main id="top"><h1>Chat Agent Bridge</h1><p data-i18n="lead" class="sub">Slack・Mattermost・Discord に投稿した依頼を、Windows PC 上の AI エージェント（CLI）に渡して実行する常駐アプリです。結果は同じスレッドに返り、続きもそのスレッドで頼めます。</p><p data-i18n="note" class="dim">開発プレビュー版の非公式アプリです。各 AI サービスやチャットサービスの公式アプリではありません。</p><p data-i18n="recommend" class="dim">AI エージェントの提供元が公式のリモート操作機能を用意している場合は、そちらを推奨します。Chat Agent Bridge は、環境の制約で公式機能を使えない場合の代替手段です。</p><p data-i18n="safety" class="dim">予期しないユーザーからの利用や意図しない依頼を実行前に確認して止められるよう、「会話ごとに最初の依頼を確認」をおすすめします。会話の開始時に PC で依頼者と内容を確認します。許可ユーザーの制限と併用してください。</p>
 <div class="row"><a data-i18n="dl" class="btn accent" href="https://github.com/mmiyaji/chat-agent-bridge/releases">ポータブル版をダウンロード</a><a class="store" href="https://apps.microsoft.com/detail/9n1lzk25fsgr?mode=direct"><img class="on-light" src="assets/img/ms-store-badge-ja-dark.svg" data-en-src="assets/img/ms-store-badge-en-dark.svg" alt="Microsoft Store から入手" data-en-alt="Get it from Microsoft" width="132" height="36"><img class="on-dark" src="assets/img/ms-store-badge-ja-light.svg" data-en-src="assets/img/ms-store-badge-en-light.svg" alt="Microsoft Store から入手" data-en-alt="Get it from Microsoft" width="132" height="36"></a></div>
 <a href="assets/img/general-ja.png" class="glightbox shot-link" data-gallery="hero" data-description="全般の画面" data-en-href="assets/img/general-en.png" data-en-description="The General page"><img class="shot" src="assets/img/general-ja.png" alt="全般の画面" data-en-src="assets/img/general-en.png" data-en-alt="The General page" loading="lazy" width="1440" height="980"></a>
 <h2 data-i18n="h.how" id="how">仕組み</h2>
@@ -44,7 +44,7 @@
 <div class="card"><h3><span>01</span><span data-i18n="step1.t">チャットに投稿</span></h3><p data-i18n="step1.d" class="dim">外出先のスマートフォンや別の PC から、Bot へのメンションか <code>!cab</code> で依頼を書きます。操作する側の端末に CLI は要りません。</p></div>
 <div class="card"><h3><span>02</span><span data-i18n="step2.t">PC で受け取って確認</span></h3><p data-i18n="step2.d" class="dim">Windows PC の Chat Agent Bridge が投稿を受け取り、許可ユーザーかどうかと承認設定を確認します。承認が必要な依頼は、PC で承認するまで待ちます。</p></div>
 <div class="card"><h3><span>03</span><span data-i18n="step3.t">CLI が作業フォルダーで実行</span></h3><p data-i18n="step3.d" class="dim">選んだ CLI（Codex、Claude Code など）が、信頼済みの作業フォルダーで依頼を実行します。AI サービスとの通信は各 CLI の設定どおりです。</p></div>
-<div class="card"><h3><span>04</span><span data-i18n="step4.t">結果を同じスレッドへ</span></h3><p data-i18n="step4.d" class="dim">既定では PC で内容を見てから送ります。自動返信にもできます。同じスレッドに返信すると会話が続きます。</p></div>
+<div class="card"><h3><span>04</span><span data-i18n="step4.t">結果を同じスレッドへ</span></h3><p data-i18n="step4.d" class="dim">既定では結果を自動で返信します。PC で確認してから手動で共有する設定にも変更できます。同じスレッドに返信すると会話が続きます。</p></div>
 </div></div>
 <h2 data-i18n="h.features" id="features">できること</h2>
 <div class="stack">
@@ -98,7 +98,7 @@
 <details><summary data-i18n="q8">更新はどうしますか？</summary><p data-i18n="a8">Store 版は Store から更新されます。ポータブル版はアプリの「情報」から更新を確認して適用できます。<code>Data</code> フォルダーは引き継がれます。</p></details>
 <footer><a data-i18n="link1" href="https://github.com/mmiyaji/chat-agent-bridge">GitHub</a> · <a data-i18n="link2" href="https://github.com/mmiyaji/chat-agent-bridge/releases">リリース一覧</a> · <a data-i18n="link3" href="/privacy">プライバシーポリシー</a> · <a data-i18n="link4" href="/terms">利用規約</a> · <a data-i18n="link5" href="https://github.com/mmiyaji/chat-agent-bridge/blob/main/LICENSE">MIT License</a> · <a href="https://ruhenheim.org/">ruhenheim.org</a></footer></main></div>
 <script src="assets/glightbox.min.js?v=03dfe1fbce"></script>
-<script src="assets/i18n-en.js?v=c0e53c207d"></script>
+<script src="assets/i18n-en.js?v=0566e8b335"></script>
 <script src="assets/site.js?v=5bfdf87fef"></script>
 </body>
 </html>

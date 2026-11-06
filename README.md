@@ -11,15 +11,16 @@ Chat Agent Bridge is a Windows app that accepts requests from Slack, Mattermost 
 
 It is intended for devices where you cannot use the Codex or Claude Code desktop app. Bridge starts a command-line agent (CLI) installed on your Windows PC and runs the request in the working folder you selected.
 
-> Prefer the agent provider's official remote-control features when they are available to you. Chat Agent Bridge is developed as an alternative for environments where those official features cannot be used.
+> **Prefer the agent provider's official remote-control features when they are available to you.** Chat Agent Bridge is an alternative for environments where those features cannot be used.
 
 ## Using it safely
 
 A chat post causes the CLI on your PC to read and write files and run commands. Follow these guidelines:
 
 - **Allow only yourself.** An allowed user can send requests that use your PC, your CLI sign-in and your AI service quota. Posts from users who are not allowed are ignored.
+- **Review requests on the PC before they run.** We recommend “Confirm the first request in each conversation” to catch unexpected users or unintended requests before execution. Keep the allowed-user list restricted to yourself.
 - **Limit the working folders.** Register only folders the agent may touch as trusted working folders. Avoid your home folder or an entire drive.
-- **Use automatic approval and sharing with care.** Automatic approval runs requests without confirmation on the PC. Automatic sharing makes results visible to everyone who can read the thread. Defaults require approval for the first request in a conversation and manual result sharing.
+- **Use automatic approval and sharing with care.** Automatic approval runs requests without confirmation on the PC. Automatic sharing makes results visible to everyone who can read the thread. The default is “Confirm the first request in each conversation” and automatic result sharing.
 - **Narrow the channels and threads.** If needed, restrict which channels and threads can send requests.
 - **Do not share your connection tokens.** Tokens are encrypted per Windows user, but do not hand the `Data` folder to anyone else.
 
@@ -36,7 +37,7 @@ This diagram appears in the app's first-run wizard and General page. The request
 1. **Post from another device** in Slack, Mattermost or Discord. That device does not need an agent CLI installed.
 2. **Bridge on the Windows PC** receives the post and checks allowed users and conversation approval settings. Requests that need approval wait for a decision.
 3. **The selected CLI** runs the request in the configured working folder. It connects to AI services according to its own settings and performs file operations or commands.
-4. **Share the result in the original thread.** By default, you review it on the PC before sending it; automatic replies are also available. Replies from the same user in that thread continue the conversation (see [Chat operations](#chat-operations)).
+4. **Share the result in the original thread.** By default, results are shared automatically; you can also choose to review and share them manually on the PC. Replies from the same user in that thread continue the conversation (see [Chat operations](#chat-operations)).
 
 If Chat Agent Bridge itself hits an unexpected error while handling a request, the inbox ends the running state and puts a safe diagnostic before the bounded CLI output. A normal failure reported by the CLI remains a CLI failure. The diagnostic omits exception messages, paths, command arguments and request content. Its allowlisted cause, exception type and HRESULT are also saved in the local audit log (`audit-segment-*.jsonl`) for later troubleshooting and follow the app's audit log retention settings.
 
@@ -85,9 +86,9 @@ Portable builds are available for Windows. Install and authenticate your chosen 
    - Discord: [Discord setup guide](docs/discord-setup.md) (bot token, allowed server IDs and Message Content Intent)
 5. Connect from **Chat** and post a request. How to start depends on the service (see [Chat operations](#chat-operations)).
    Connect buttons are enabled only for services with saved connection details and at least one allowed user. If none are ready, use **Open chat settings** in Chat to finish setup.
-6. Approve the first request on the PC. After execution, review and share the result. Reply in the same thread to continue.
+6. Approve the first request on the PC. By default, the result is posted automatically in the same thread. Reply there to continue.
 
-Defaults require approval for the first request in a conversation, manual result sharing and approval for every attachment. The CLI check identifies the CLI and version. Check authentication and available quota through the CLI itself.
+Defaults require approval for the first request in a conversation and every attachment, with automatic result sharing. The CLI check identifies the CLI and version. Check authentication and available quota through the CLI itself.
 
 ## Supported agents
 
@@ -128,7 +129,7 @@ Manual runs use the working folder selected in Agent settings, regardless of whe
 - **Request approval** can be required every time, only for the first request, or handled automatically. This approval starts the request; the CLI's permission to perform individual operations is configured separately.
 - Codex App Server approvals show an informational warning for a small set of clearly destructive command patterns. The warning does not change the available approval controls or replace the CLI's permission safeguards.
 - **Access restrictions** specify who and which conversations can send requests. Register folders where requests may start as trusted working folders. Changing the folder from chat requires a location within that scope and approval on the PC.
-- **Result sharing** can be manual, automatic or disabled. Sent content is visible to everyone who can access the destination chat or thread.
+- **Result sharing** can be manual, automatic or disabled. New settings default to automatic sharing; updates preserve your saved sharing choice. Sent content is visible to everyone who can access the destination chat or thread.
 - **Generated file attachments** require approval each time by default. You can instead require approval only for the first attachment in a thread, allow automatic attachments or prohibit attachments. Set per-file size, total size and file count limits.
 - **Sharing approvals in chat** can be enabled only when using Codex App Server. When enabled, the original requester can approve from chat (see the table below). It is off by default, and approvals happen on the PC.
 
