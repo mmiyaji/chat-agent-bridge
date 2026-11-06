@@ -38,7 +38,7 @@ This diagram appears in the app's first-run wizard and General page. The request
 3. **The selected CLI** runs the request in the configured working folder. It connects to AI services according to its own settings and performs file operations or commands.
 4. **Share the result in the original thread.** By default, you review it on the PC before sending it; automatic replies are also available. Replies from the same user in that thread continue the conversation (see [Chat operations](#chat-operations)).
 
-If Chat Agent Bridge itself hits an unexpected error while handling a request, the inbox ends the running state and shows a safe local diagnostic with a likely cause and a diagnostic code. A normal failure reported by the CLI remains a CLI failure. Diagnostic text omits exception messages, paths, command arguments and request content.
+If Chat Agent Bridge itself hits an unexpected error while handling a request, the inbox ends the running state and puts a safe diagnostic before the bounded CLI output. A normal failure reported by the CLI remains a CLI failure. The diagnostic omits exception messages, paths, command arguments and request content. Its allowlisted cause, exception type and HRESULT are also saved in the local audit log (`audit-segment-*.jsonl`) for later troubleshooting and follow the app's audit log retention settings.
 
 ## Requirements
 

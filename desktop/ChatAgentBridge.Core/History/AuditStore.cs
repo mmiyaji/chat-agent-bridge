@@ -18,7 +18,7 @@ public sealed class AuditStore
         "received", "approved", "rejected", "started", "completed", "failed", "cancelled", "reply_sent",
         "reply_failed", "detached", "workspace_changed", "model_changed", "agent_changed",
         "attachment_approved", "attachment_sent", "attachment_failed", "follow_up_applied", "follow_up_uncertain",
-        "schedule_created", "schedule_removed", "schedule_fired", "schedule_skipped"
+        "schedule_created", "schedule_removed", "schedule_fired", "schedule_skipped", "execution_exception"
     };
     private const int MaxEntryBytes = 16 * 1024;
     private const int MaxSegmentBytes = 16 * 1024 * 1024;
@@ -469,6 +469,9 @@ public sealed class AuditStore
         HistoryFileStore.ValidateSource(record.Source);
         HistoryFileStore.ValidateText(record.ChannelId, nameof(record.ChannelId), 256);
         HistoryFileStore.ValidateText(record.ThreadId, nameof(record.ThreadId), 256);
+        if ((record.Kind == "execution_exception") != (record.ExecutionDiagnostic is not null))
+            throw new ArgumentException("Execution diagnostics require an execution exception event.", nameof(record));
+        record.ExecutionDiagnostic?.Validate();
     }
 
     private static void ValidateLoaded(AuditEvent? record)

@@ -1494,13 +1494,24 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         var runningText = DesktopText.Get("InboxAgentRunning");
         item.FullOutput = BoundOutput(item.FullOutput == runningText || string.IsNullOrWhiteSpace(item.FullOutput)
             ? diagnosticText
-            : item.FullOutput + Environment.NewLine + Environment.NewLine + diagnosticText);
+            : diagnosticText + Environment.NewLine + Environment.NewLine + item.FullOutput);
         if (ExecutionExceptionDiagnostic.ShouldMarkExecutionError(record?.Status))
         {
             item.State = "実行／記録エラー";
             item.Usage = UsageUi.UsageSummaryFormatter.Format(null, null);
         }
         Status = DesktopText.Get("InboxExecutionRecordFailed");
+        try
+        {
+            await _audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, "execution_exception",
+                record?.Id ?? item.ExecutionId, item.Request.Provider, item.Request.ChannelId, item.Request.ThreadId)
+            { ExecutionDiagnostic = diagnostic });
+        }
+        catch (Exception)
+        {
+            // Logging must not interrupt failure cleanup or replace the original diagnostic.
+            Status += " " + DesktopText.Get("InboxAuditSaveFailed");
+        }
         if (record is null || record.Status != "running") return record;
         var failed = record with { FinishedAt = DateTimeOffset.UtcNow, Status = "failed" };
         await FinishFailureAsync(failed, "failed", item.Request);

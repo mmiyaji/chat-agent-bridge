@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace ChatAgentBridge.Core;
 
-/// <summary>Safe, non-persistent details for an unexpected exception during a chat execution.</summary>
+/// <summary>Safe, bounded details for displaying and auditing an unexpected chat execution exception.</summary>
 public sealed record ExecutionExceptionDiagnostic(
     ExecutionExceptionCause Cause,
     string ExceptionType,
@@ -29,6 +29,14 @@ public sealed record ExecutionExceptionDiagnostic(
     /// <summary>Only an unrecorded or still-running execution should change to the CAB exception state.</summary>
     public static bool ShouldMarkExecutionError(string? executionStatus) =>
         executionStatus is null or "running";
+
+    /// <summary>Rejects unbounded or arbitrary payloads before writing or loading a diagnostic.</summary>
+    internal void Validate()
+    {
+        if (!Enum.IsDefined(Cause) || ExceptionType is null || SafeTypeName(ExceptionType) != ExceptionType ||
+            HResult is null || HResult.Length != 8 || HResult.Any(c => c is not (>= '0' and <= '9' or >= 'A' and <= 'F')))
+            throw new ArgumentException("Invalid execution diagnostic.");
+    }
 
     private static ExecutionExceptionCause Classify(Exception exception) => exception switch
     {

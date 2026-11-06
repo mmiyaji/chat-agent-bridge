@@ -8,6 +8,55 @@ namespace ChatAgentBridge.Core.Tests;
 
 public sealed class AuditStoreTests : IDisposable
 {
+    [Fact]
+    public async Task ExecutionDiagnosticSurvivesReloadAndJsonExportWithoutExceptionPayload()
+    {
+        var diagnostic = ExecutionExceptionDiagnostic.Create(new UnauthorizedAccessException("PRIVATE_TOKEN C:\\private\\prompt.txt"));
+        var record = Event() with { Kind = "execution_exception", ExecutionId = Guid.NewGuid(), ExecutionDiagnostic = diagnostic };
+        await new AuditStore(_directory).AppendAsync(record);
+        var loaded = Assert.Single(await new AuditStore(_directory).ListAsync());
+        Assert.Equal(record, loaded);
+        using var writer = new StringWriter();
+        await AuditExporter.ExportAsync(new AuditStore(_directory), writer, AuditExportFormat.Jsonl);
+        var text = writer.ToString();
+        Assert.Contains("UnauthorizedAccessException", text);
+        Assert.Contains("80070005", text);
+        Assert.DoesNotContain("PRIVATE_TOKEN", text);
+        Assert.DoesNotContain("private", text);
+        Assert.DoesNotContain("Message", text);
+        Assert.DoesNotContain("StackTrace", text);
+    }
+
+    [Theory]
+    [InlineData(-1, "IOException", "80070005")]
+    [InlineData(0, "secret/token", "80070005")]
+    [InlineData(0, "IOException", "private-token")]
+    [InlineData(0, "IOException", "8007000g")]
+    [InlineData(0, "", "80070005")]
+    [InlineData(0, null, "80070005")]
+    [InlineData(0, "IOException", null)]
+    public async Task InvalidExecutionDiagnosticsCannotEnterLog(int cause, string? type, string? code)
+    {
+        var record = Event() with
+        {
+            Kind = "execution_exception",
+            ExecutionDiagnostic = new((ExecutionExceptionCause)cause, type!, code!)
+        };
+        await Assert.ThrowsAsync<ArgumentException>(() => new AuditStore(_directory).AppendAsync(record));
+        Assert.False(Directory.Exists(_directory));
+    }
+
+    [Fact]
+    public async Task DiagnosticsRequireDedicatedEventKindAndPayload()
+    {
+        var store = new AuditStore(_directory);
+        await Assert.ThrowsAsync<ArgumentException>(() => store.AppendAsync(Event() with { Kind = "execution_exception" }));
+        await Assert.ThrowsAsync<ArgumentException>(() => store.AppendAsync(Event() with
+        {
+            ExecutionDiagnostic = ExecutionExceptionDiagnostic.Create(new IOException())
+        }));
+    }
+
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "cab-audit-test-" + Guid.NewGuid().ToString("N"));
     private string Manifest => Path.Combine(_directory, "audit-manifest.json");
     private string Legacy => Path.Combine(_directory, "audit.json");
