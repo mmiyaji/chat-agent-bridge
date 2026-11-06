@@ -50,6 +50,7 @@ public sealed partial class MainPage
             : string.Empty;
 
     public static Visibility NonEmptyTextVisibility(string? text) => ToVisibility(!string.IsNullOrEmpty(text));
+    public static Visibility EmptyTextVisibility(string? text) => ToVisibility(string.IsNullOrEmpty(text));
 
     private void SettingsAutoSaveStateChanged(object? sender, PropertyChangedEventArgs args)
     {

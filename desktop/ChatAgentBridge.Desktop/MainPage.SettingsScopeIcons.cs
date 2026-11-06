@@ -27,7 +27,7 @@ public sealed partial class MainPage
 
     // General tiles show the saved agent's or chat service's own icon; without one, a common glyph.
     public static FrameworkElement OverviewAgentIcon(string provider) => OverviewProviderIcon(provider, "\uE756");
-    public static FrameworkElement OverviewChatIcon(string provider) => OverviewProviderIcon(provider, "\uE8BD");
+    public static FrameworkElement OverviewChatIcon(string provider) => OverviewProviderIcon(provider, ((char)Symbol.Message).ToString());
 
     private static FrameworkElement OverviewProviderIcon(string provider, string fallbackGlyph)
     {
