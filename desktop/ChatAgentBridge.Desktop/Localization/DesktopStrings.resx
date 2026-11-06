@@ -719,6 +719,12 @@
   <data name="PortableUpdateInProgress" xml:space="preserve"><value>Chat Agent Bridge is being updated. Please try again shortly.</value></data>
   <data name="WindowCloseConfirmationTitle" xml:space="preserve"><value>Close Chat Agent Bridge?</value></data>
   <data name="WindowCloseConfirmationMessage" xml:space="preserve"><value>Exiting disconnects the chat and cancels active and pending work. Moving to the system tray keeps the app running.</value></data>
+  <data name="WindowCloseConfirmationActiveSummary" xml:space="preserve"><value>{0} active or waiting requests when this dialog opened.</value></data>
+  <data name="WindowCloseConfirmationActiveDetailsHeader" xml:space="preserve"><value>Show request counts by status</value></data>
+  <data name="WindowCloseConfirmationActiveAgentProcessing" xml:space="preserve"><value>Agent processing: {0} requests</value></data>
+  <data name="WindowCloseConfirmationActiveWaitingForAnswer" xml:space="preserve"><value>Waiting for your answer: {0} requests</value></data>
+  <data name="WindowCloseConfirmationActiveWaitingForApproval" xml:space="preserve"><value>Waiting for approval: {0} requests</value></data>
+  <data name="WindowCloseConfirmationActiveQueuedFollowUps" xml:space="preserve"><value>Follow-up instructions queued: {0} requests</value></data>
   <data name="WindowCloseConfirmationTrayUnavailable" xml:space="preserve"><value>The system tray icon is unavailable, so the app cannot be moved to the tray right now. Exiting disconnects the chat and cancels active and pending work.</value></data>
   <data name="WindowCloseConfirmationExit" xml:space="preserve"><value>Exit</value></data>
   <data name="WindowCloseConfirmationTray" xml:space="preserve"><value>Keep in tray</value></data>
