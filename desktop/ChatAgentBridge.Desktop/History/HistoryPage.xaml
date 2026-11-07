@@ -59,6 +59,7 @@
 
         <TextBlock x:Name="HistoryStatusText" Grid.Row="1" Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap"
                    TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ViewModel.Status, Mode=OneWay}"
+                   Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasStatus), Mode=OneWay}"
                    AutomationProperties.AutomationId="HistoryStatus" />
 
         <Pivot Grid.Row="2" x:Name="HistoryPivot" SelectionChanged="HistoryPivot_SelectionChanged" AutomationProperties.AutomationId="HistorySectionSelector">

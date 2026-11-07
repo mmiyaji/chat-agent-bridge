@@ -314,7 +314,10 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public partial SessionHistoryRow? SelectedSession { get; set; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshCommand)), NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand)), NotifyCanExecuteChangedFor(nameof(RenameSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(ClearSessionFiltersCommand)), NotifyCanExecuteChangedFor(nameof(SwitchSelectedAgentCommand))]
     public partial bool IsBusy { get; set; }
-    [ObservableProperty] public partial string Status { get; set; } = DesktopText.Get("HistoryLoading");
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasStatus))]
+    public partial string Status { get; set; } = DesktopText.Get("HistoryLoading");
+    /// <summary>The status line only takes space while it has a message.</summary>
+    public bool HasStatus => !string.IsNullOrEmpty(Status);
 
     public Func<SessionHistoryRow, Task<bool>>? ConfirmDetachAsync { get; set; }
     public Func<SessionHistoryRow, BridgeSettings, Task<ModelExecutionSelection?>>? EditSessionModelAsync { get; set; }
