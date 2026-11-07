@@ -218,6 +218,7 @@
   <data name="AuditDetached" xml:space="preserve"><value>セッションを切り離し</value></data>
   <data name="AuditWorkspaceChanged" xml:space="preserve"><value>作業フォルダーを変更</value></data>
   <data name="AuditOther" xml:space="preserve"><value>その他の操作</value></data>
+  <data name="AttachmentsExcluded" xml:space="preserve"><value>送信対象外: {0}件（{1}）。設定・認証情報・プログラムらしい名前のファイルは送りません。</value></data>
   <data name="AccessRequestAllow" xml:space="preserve"><value>許可して実行</value></data>
   <data name="AccessRequestUser" xml:space="preserve"><value>{0}（ID: {1}）· {2}</value></data>
   <data name="AccessRequestLocation" xml:space="preserve"><value>チャンネル: {0} · {1}</value></data>

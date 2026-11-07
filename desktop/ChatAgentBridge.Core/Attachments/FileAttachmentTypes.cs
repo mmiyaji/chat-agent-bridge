@@ -7,7 +7,11 @@ public sealed record FileAttachmentSnapshot(string Workspace, IReadOnlySet<strin
 
 public sealed record FileAttachmentCandidate(string FullPath, string RelativePath, long Length, DateTime LastWriteTimeUtc, string Sha256);
 
-public sealed record FileAttachmentScanResult(IReadOnlyList<FileAttachmentCandidate> Candidates, bool IsComplete, string? Error = null, int SkippedCount = 0);
+public sealed record FileAttachmentScanResult(IReadOnlyList<FileAttachmentCandidate> Candidates, bool IsComplete, string? Error = null, int SkippedCount = 0)
+{
+    /// <summary>New files left out because their names look like secrets, settings or programs. Shown to the user, never sent.</summary>
+    public IReadOnlyList<string> ExcludedFiles { get; init; } = [];
+}
 
 public sealed class PreparedFileAttachment
 {

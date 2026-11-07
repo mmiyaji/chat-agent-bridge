@@ -129,17 +129,23 @@ public sealed class FileAttachmentCollectorTests
         var before = await fixture.Collector.CaptureBeforeAsync(fixture.Workspace, fixture.Data, default);
         foreach (var name in new[]
         {
-            "SECRET-notes.txt", "settingsBackup.txt", "notes_SESSION.txt", "private.KEY", "tool.PS1", ".hidden.txt"
+            "SECRET-notes.txt", "settingsBackup.txt", "notes_SESSION.jsonl", "chatHistory.json", "private.KEY", "tool.PS1", ".hidden.txt"
         })
         {
             await File.WriteAllTextAsync(fixture.Path(name), "excluded");
         }
-        await File.WriteAllTextAsync(fixture.Path("safe-report.TXT"), "safe");
+        // Words that only resemble secret or state names stay attachable.
+        foreach (var name in new[] { "safe-report.TXT", "author.md", "authentication-guide.md", "session-notes.md", "staging-plan.md" })
+            await File.WriteAllTextAsync(fixture.Path(name), "safe");
 
         var scan = await fixture.Collector.DiscoverAsync(before, fixture.Settings, default);
 
         Assert.True(scan.IsComplete);
-        Assert.Equal("safe-report.TXT", Assert.Single(scan.Candidates).RelativePath);
+        Assert.Equal(["authentication-guide.md", "author.md", "safe-report.TXT", "session-notes.md", "staging-plan.md"],
+            scan.Candidates.Select(item => item.RelativePath).Order(StringComparer.Ordinal));
+        // New excluded files are reported so the user knows they were not sent.
+        Assert.Equal([".hidden.txt", "SECRET-notes.txt", "chatHistory.json", "notes_SESSION.jsonl", "private.KEY", "settingsBackup.txt", "tool.PS1"],
+            scan.ExcludedFiles.Order(StringComparer.Ordinal));
     }
 
     [Fact]

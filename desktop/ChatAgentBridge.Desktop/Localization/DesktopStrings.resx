@@ -219,6 +219,7 @@
   <data name="AuditDetached" xml:space="preserve"><value>Session detached</value></data>
   <data name="AuditWorkspaceChanged" xml:space="preserve"><value>Workspace changed</value></data>
   <data name="AuditOther" xml:space="preserve"><value>Other action</value></data>
+  <data name="AttachmentsExcluded" xml:space="preserve"><value>Not sent: {0} ({1}). Files named like settings, credentials or programs are never sent.</value></data>
   <data name="AccessRequestAllow" xml:space="preserve"><value>Allow and run</value></data>
   <data name="AccessRequestUser" xml:space="preserve"><value>{0} (ID: {1}) · {2}</value></data>
   <data name="AccessRequestLocation" xml:space="preserve"><value>Channel: {0} · {1}</value></data>

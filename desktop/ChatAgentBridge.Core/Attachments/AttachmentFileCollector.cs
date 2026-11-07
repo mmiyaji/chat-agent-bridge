@@ -11,11 +11,17 @@ public sealed class AttachmentFileCollector
     private const long MaxHashBytes = 100L * 1024 * 1024;
     private const int BufferSize = 64 * 1024;
     private static readonly HashSet<char> InvalidFileNameChars = new(Path.GetInvalidFileNameChars());
+    private const int MaxReportedExclusions = 20;
+    // A name starting with one of these words is excluded, unless the word continues in lower case
+    // ("settings.json", "SECRET-notes.txt" and "settingsBackup.txt" are excluded; "author.md" and "authentication-guide.md" are not).
     private static readonly string[] SensitiveFileNamePrefixes =
     [
-        "secret", "settings", "credentials", "tokens", "auth", "id_rsa", "id_ed25519", "id_ecdsa", "id_dsa"
+        "secret", "settings", "credential", "credentials", "token", "tokens", "auth", "id_rsa", "id_ed25519", "id_ecdsa", "id_dsa"
     ];
-    private static readonly string[] SensitiveFileNameSubstrings = ["history", "session", "appstate", "audit", "staging"];
+    // Words that mark an agent's or tool's own state. They exclude data files ("session-1.jsonl", "history.json"),
+    // not documents a user asked for ("session-notes.md", "staging-plan.md").
+    private static readonly string[] SensitiveStateWords = ["history", "session", "sessions", "appstate", "audit", "staging"];
+    private static readonly string[] StateFileExtensions = ["", ".json", ".jsonl", ".db", ".sqlite", ".sqlite3", ".log", ".dat"];
     private static readonly string[] ReservedFileNameBases =
     [
         "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
@@ -59,12 +65,13 @@ public sealed class AttachmentFileCollector
                     token.ThrowIfCancellationRequested();
                     if (++count > MaxEntries) { complete = false; stack.Clear(); break; }
                     var entry = entries.Current;
-                    if (IsExcludedPath(entry, root, data)) continue;
+                    if (IsExcludedPath(entry, root, data, checkFileName: false)) continue;
                     FileAttributes attributes;
                     try { attributes = File.GetAttributes(entry); }
                     catch (Exception ex) when (IsExpectedFileError(ex)) { complete = false; continue; }
                     if ((attributes & (FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint)) != 0) continue;
-                    if ((attributes & FileAttributes.Directory) != 0) stack.Push((entry, depth + 1));
+                    // Discovery never enters dot or sensitive folders, so the baseline does not need them either.
+                    if ((attributes & FileAttributes.Directory) != 0) { if (IsSafeFileName(Path.GetFileName(entry))) stack.Push((entry, depth + 1)); }
                     else baseline.Add(Path.GetFullPath(entry));
                 }
             }
@@ -79,6 +86,7 @@ public sealed class AttachmentFileCollector
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(settings);
         var candidates = new List<FileAttachmentCandidate>();
+        var excluded = new List<string>();
         var complete = before.IsComplete;
         var errors = new List<string>();
         if (!ExecutionPolicy.IsWorkspaceTrusted(settings, before.Workspace))
@@ -106,17 +114,23 @@ public sealed class AttachmentFileCollector
                     if (++entriesSeen > MaxEntries) { complete = false; stack.Clear(); AddError("Entry limit reached."); break; }
                     var entry = entries.Current;
                     var fileName = Path.GetFileName(entry);
-                    if (!IsSafeFileName(fileName) || IsExcludedPath(entry, root, data, checkFileName: false)) continue;
+                    var safeName = IsSafeFileName(fileName);
+                    if (IsExcludedPath(entry, root, data, checkFileName: false)) continue;
                     FileAttributes attributes;
                     try { attributes = File.GetAttributes(entry); }
                     catch (Exception ex) when (IsExpectedFileError(ex)) { complete = false; AddError("Some workspace entries could not be inspected."); continue; }
                     if ((attributes & (FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint)) != 0) continue;
                     if ((attributes & FileAttributes.Directory) != 0)
                     {
-                        stack.Push((entry, depth + 1));
+                        if (safeName) stack.Push((entry, depth + 1));
                         continue;
                     }
                     if (before.BaselinePaths.Contains(Path.GetFullPath(entry))) continue;
+                    if (!safeName)
+                    {
+                        if (excluded.Count < MaxReportedExclusions) excluded.Add(Path.GetRelativePath(root, entry));
+                        continue;
+                    }
                     if (candidates.Count >= MaxCandidates) { complete = false; AddError("Candidate limit reached."); stack.Clear(); break; }
                     try
                     {
@@ -139,7 +153,10 @@ public sealed class AttachmentFileCollector
             catch (Exception ex) when (IsExpectedFileError(ex)) { complete = false; AddError("Some workspace entries could not be read."); }
             finally { entries?.Dispose(); }
         }
-        return new FileAttachmentScanResult(candidates, complete, errors.Count == 0 ? null : string.Join(" ", errors.Distinct()));
+        return new FileAttachmentScanResult(candidates, complete, errors.Count == 0 ? null : string.Join(" ", errors.Distinct()))
+        {
+            ExcludedFiles = excluded
+        };
 
         void AddError(string error) { if (!errors.Contains(error, StringComparer.Ordinal)) errors.Add(error); }
     }
@@ -211,11 +228,17 @@ public sealed class AttachmentFileCollector
         var nameSpan = name.AsSpan();
         foreach (var token in SensitiveFileNamePrefixes)
         {
-            if (nameSpan.StartsWith(token, StringComparison.OrdinalIgnoreCase)) return false;
+            if (nameSpan.StartsWith(token, StringComparison.OrdinalIgnoreCase) &&
+                (nameSpan.Length == token.Length || !char.IsAsciiLetterLower(nameSpan[token.Length]))) return false;
         }
-        foreach (var token in SensitiveFileNameSubstrings)
+        var stateExtension = Path.GetExtension(name);
+        if (StateFileExtensions.Contains(stateExtension, StringComparer.OrdinalIgnoreCase))
         {
-            if (nameSpan.Contains(token, StringComparison.OrdinalIgnoreCase)) return false;
+            var stem = Path.GetFileNameWithoutExtension(name);
+            foreach (var word in SensitiveStateWords)
+            {
+                if (ContainsWord(stem, word)) return false;
+            }
         }
 
         var dot = nameSpan.IndexOf('.');
@@ -231,6 +254,21 @@ public sealed class AttachmentFileCollector
             if (extension.Equals(blockedExtension, StringComparison.OrdinalIgnoreCase)) return false;
         }
         return true;
+    }
+
+    /// <summary>True when word appears in name as a whole word, separated by non-letters or a camel-case boundary.</summary>
+    private static bool ContainsWord(string name, string word)
+    {
+        for (var start = name.IndexOf(word, StringComparison.OrdinalIgnoreCase); start >= 0;
+             start = name.IndexOf(word, start + 1, StringComparison.OrdinalIgnoreCase))
+        {
+            var end = start + word.Length;
+            var startsWord = start == 0 || !char.IsAsciiLetter(name[start - 1]) ||
+                (char.IsAsciiLetterLower(name[start - 1]) && char.IsAsciiLetterUpper(name[start]));
+            var endsWord = end == name.Length || !char.IsAsciiLetterLower(name[end]);
+            if (startsWord && endsWord) return true;
+        }
+        return false;
     }
 
     private static bool IsExcludedPath(string path, string root, string? dataDirectory, bool checkFileName = true)

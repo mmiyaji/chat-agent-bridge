@@ -393,6 +393,9 @@
   <data name="SetupAllowedUsersMissing" xml:space="preserve">
     <value>Next: check the format of the allowed user IDs. Enter one ID per line.</value>
   </data>
+  <data name="InheritLimitCodexAppServer" xml:space="preserve"><value>With the CLI default, edits inside the working folder work, but network access and changes outside the folder wait for approval on this PC one by one. From outside, the work may look stuck.</value></data>
+  <data name="InheritLimitCodexExec" xml:space="preserve"><value>With the CLI default, Codex follows sandbox_mode in config.toml. If that is read-only, it cannot edit files.</value></data>
+  <data name="InheritLimitClaude" xml:space="preserve"><value>With the CLI default, edits and commands that Claude Code's permission rules do not allow may be denied, because no confirmation prompt can be shown. To allow edits, choose Allow edits in the working folder or add permission rules in Claude Code.</value></data>
   <data name="AllowedUserNameUnknown" xml:space="preserve"><value>Name not known yet</value></data>
   <data name="AllowedUserIdLine" xml:space="preserve"><value>ID: {0} · {1}</value></data>
   <data name="AllowedUserAddedUnknown" xml:space="preserve"><value>No record of when this user was added</value></data>

@@ -263,7 +263,11 @@ public partial class MainPageViewModel : ObservableObject
     public bool CanSelectWorkspaceWritePermission => AgentProvider != "kimi";
     public string AgentPermissionStatus => AgentProvider == "kimi" ? ViewModelText.Get("KimiPermissionHelp") : IsAntigravityProvider ? ViewModelText.Get("AntigravityPermissionHelp")
         : IsBasicProvider ? ViewModelText.Get("BasicPermissionManagedByCli")
-        : _agentPermissionModeAdjusted ? ViewModelText.Get("AskPermissionChangedToReadOnly") : string.Empty;
+        : _agentPermissionModeAdjusted ? ViewModelText.Get("AskPermissionChangedToReadOnly")
+        // The CLI default can block or pause work that the chat user cannot unblock from outside; say so instead of changing it.
+        : AgentPermissionMode == "inherit" && IsCodexProvider ? ViewModelText.Get(UseAppServer ? "InheritLimitCodexAppServer" : "InheritLimitCodexExec")
+        : AgentPermissionMode == "inherit" && AgentProvider == AgentProfile.Claude ? ViewModelText.Get("InheritLimitClaude")
+        : string.Empty;
     private string NetworkPolicyLabel => !IsCodexProvider ? ViewModelText.Get("NetworkManagedByCli")
         : AgentPermissionMode == "full-access" ? ViewModelText.Get("NetworkUnrestrictedFullAccess")
         : AgentPermissionMode == "inherit" && !UseAppServer ? ViewModelText.Get("UseCliNetworkSettings")
