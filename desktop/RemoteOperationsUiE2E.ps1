@@ -182,15 +182,15 @@ function Reply([object]$Snapshot, [string]$Thread, [scriptblock]$Predicate) {
 function Expected-Starts([string]$Kind) {
     if ($script:language -eq 'ja') {
         switch ($Kind) {
-            'status' { return '状態:' }
-            'none' { return 'このスレッドに、あなたの依頼はありません。' }
+            'status' { return 'このスレッドの実行中・待機中の依頼' }
+            'none' { return 'このスレッドに自分の実行中・待機中の依頼はありません。' }
             'stop' { return '停止を要求しました。実行中:' }
             'stop-none' { return 'このスレッドに、あなたの実行中・待機中の依頼はありません。' }
         }
     }
     switch ($Kind) {
-        'status' { return 'Status:' }
-        'none' { return 'No requests from you in this thread.' }
+        'status' { return 'Live requests in this thread' }
+        'none' { return 'No live requests from you in this thread.' }
         'stop' { return 'Stop requested. Running:' }
         'stop-none' { return 'No running or pending requests from you in this thread.' }
     }
@@ -240,8 +240,8 @@ function Check-StatusStopStage {
         Assert-True ((Reply $status $root { param($p) $p.message.StartsWith((Expected-Starts 'status')) }).Count -eq 1) 'Alice status did not return one scoped status response.'
 
         Post ('status-bob-' + $runId) $root 'bob' '!cab status' $true
-        $bob = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message -eq (Expected-Starts 'none') }).Count -ge 1 } 10
-        Assert-True (@(Reply $bob $root { param($p) $p.message -eq (Expected-Starts 'none') }).Count -eq 1) 'Bob learned about Alice work or did not receive the generic no-work status.'
+        $bob = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message.StartsWith((Expected-Starts 'none')) }).Count -ge 1 } 10
+        Assert-True (@(Reply $bob $root { param($p) $p.message.StartsWith((Expected-Starts 'none')) }).Count -eq 1) 'Bob learned about Alice work or did not receive the generic no-work status.'
 
         Post ('stop-wrong-root-' + $runId) $otherRoot 'alice' '!cab stop' $true
         $wrongRoot = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $otherRoot -and $_.message -eq (Expected-Starts 'stop-none') }).Count -ge 1 } 10
@@ -322,9 +322,10 @@ function Check-ChatInputStage([string]$TestAgentPath) {
 
         Post ('answer-right-user-' + $runId) $root 'alice' ("!cab answer $answerCode 1 2") $true
         Wait-UI 'AppServerInputDialog' '' 30 -Gone
-        $expectedResult = "app-server-e2e: approved; answer=beta; prompt=$prompt"
-        $finished = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message -eq $expectedResult }).Count -eq 1 } 40
-        $result = @(Reply $finished $root { param($p) $p.message -eq $expectedResult })
+        # The bridge prepends its attachment note to the prompt, so match the original prompt inside it.
+        $expectedResult = "app-server-e2e: approved; answer=beta; prompt=*$prompt*"
+        $finished = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message -like $expectedResult }).Count -eq 1 } 40
+        $result = @(Reply $finished $root { param($p) $p.message -like $expectedResult })
         Assert-True ($result.Count -eq 1) 'The answer did not produce exactly one successful agent result.'
         $progressIds = @($finished.updates | Where-Object { $_.root_id -eq $root } | Select-Object -ExpandProperty id -Unique)
         $receipt = @($finished.replies | Where-Object { $_.root_id -eq $root -and $_.id -in $progressIds })
@@ -595,9 +596,11 @@ function Check-PendingConfirmationStopStage([string]$NodePath, [string]$SlowAgen
         $stopPost = @(Reply $snapshot $root { param($p) $p.message.StartsWith((Expected-Starts 'stop')) })[-1]
         $receipt = @(Reply $snapshot $root { param($p) $p.id -ne $stopPost.id })
         Assert-True ($receipt.Count -eq 1) 'Expected exactly one initial request receipt.'
-        $cancelledPrefix = if ($script:language -eq 'ja') { '⏹ 実行を停止しました。経過 ' } else { '⏹ Execution stopped. Elapsed ' }
-        $terminal = Wait-Fixture { param($s) @($s.updates | Where-Object { $_.id -eq $receipt[0].id -and $_.message.StartsWith($cancelledPrefix) }).Count -ge 1 } 15
-        Assert-True (@($terminal.updates | Where-Object { $_.id -eq $receipt[0].id -and $_.message.StartsWith($cancelledPrefix) }).Count -ge 1) 'The request receipt was not edited to the localized cancelled state.'
+        # Receipts now use the short cancelled form; the longer sentence is still accepted.
+        $cancelledPrefixes = if ($script:language -eq 'ja') { @('⏹ 停止 ', '⏹ 実行を停止しました。経過 ') } else { @('⏹ Stopped ', '⏹ Execution stopped. Elapsed ') }
+        $isCancelled = { param($u) $u.id -eq $receipt[0].id -and @($cancelledPrefixes | Where-Object { $u.message.StartsWith($_) }).Count -ge 1 }
+        $terminal = Wait-Fixture { param($s) @($s.updates | Where-Object { & $isCancelled $_ }).Count -ge 1 } 15
+        Assert-True (@($terminal.updates | Where-Object { & $isCancelled $_ }).Count -ge 1) 'The request receipt was not edited to the localized cancelled state.'
     }
 }
 
