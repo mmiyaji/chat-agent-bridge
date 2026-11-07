@@ -284,6 +284,10 @@
     <!-- MrtText reads WinUI control properties by name, so the WinUI projection stays whole. -->
     <TrimmerRootAssembly Include="Microsoft.WinUI" />
     <TrimmerRootAssembly Include="WinRT.Runtime" />
+    <!-- The app's own assemblies use reflection-based System.Text.Json for settings, audit records and chat APIs. -->
+    <TrimmerRootAssembly Include="ChatAgentBridge.Core" />
+    <TrimmerRootAssembly Include="ChatAgentBridge.Transports" />
+    <TrimmerRootAssembly Include="ChatAgentBridge.Desktop" />
   </ItemGroup>
   <Target Name="ValidatePortableTrimExperiment" BeforeTargets="PrepareForBuild" Condition="'$(CABPortableTrimExperiment)' == 'true'">
     <Error Condition="'$(CABPortable)' != 'true' or '$(CABStore)' == 'true' or '$(CABExperimentalTableView)' == 'true'"
