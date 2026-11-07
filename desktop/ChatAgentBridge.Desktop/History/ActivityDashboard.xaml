@@ -207,7 +207,7 @@
                         </StackPanel>
                     </Expander>
                     <TextBlock x:Uid="UsageAccountingNote" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="UsageAccountingNote" />
-                    <HyperlinkButton x:Uid="UsageAccountingGuide" AutomationProperties.AutomationId="UsageAccountingGuide" NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/blob/main/desktop/README.ja.md#トークンキャッシュ推定コストの振り返り" />
+                    <HyperlinkButton x:Uid="UsageAccountingGuide" AutomationProperties.AutomationId="UsageAccountingGuide" />
                 </StackPanel>
             </Border>
 

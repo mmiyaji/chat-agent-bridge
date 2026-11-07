@@ -1408,4 +1408,6 @@
   <data name="FileAttachmentVisibilityWarning.Text" xml:space="preserve"><value>⚠ 送信したファイルはチャネルのメンバー全員が見られます。送信前に内容を確認してください。</value></data>
   <data name="FileAttachmentGuide.Content" xml:space="preserve"><value>ファイル添付の詳細</value></data>
   <data name="UsageAccountingGuide.Content" xml:space="preserve"><value>利用状況と推定コストの詳細</value></data>
+  <data name="FileAttachmentGuide.NavigateUri" xml:space="preserve"><value>https://github.com/mmiyaji/chat-agent-bridge/blob/main/desktop/README.ja.md#エージェントが作成したファイルの添付</value></data>
+  <data name="UsageAccountingGuide.NavigateUri" xml:space="preserve"><value>https://github.com/mmiyaji/chat-agent-bridge/blob/main/desktop/README.ja.md#トークンキャッシュ推定コストの振り返り</value></data>
 </root>

@@ -906,7 +906,7 @@ After: {2}</value></data>
   <data name="IncomingFilesSummary" xml:space="preserve"><value>Attached files: {0} ({1}). After request approval, supported files are passed to the agent. Up to 5 files, 10 MB each, 20 MB total. PNG/JPEG/WebP images and UTF-8 TXT/LOG/MD/CSV/JSON files only. Temporary copies are deleted after execution; attach them again if a later request needs them. File-bearing follow-ups wait for a separate run.</value></data>
   <data name="IncomingFileNamePending" xml:space="preserve"><value>name checked after approval</value></data>
   <data name="IncomingFilesInvalid" xml:space="preserve"><value>The attached files cannot be accepted. Send no more than 5 supported files with your request.</value></data>
-  <data name="IncomingFilesFailed" xml:space="preserve"><value>The agent could not start because an attachment could not be read. Check its format, size and access, then attach it to a new request.</value></data>
+  <data name="IncomingFilesFailed" xml:space="preserve"><value>The agent did not start. Attach PNG, JPEG or WebP images or UTF-8 text (TXT, LOG, MD, CSV or JSON) to a new request. Use up to 5 files, 10 MB each and 20 MB total. On Slack, check that the bot has files:read.</value></data>
   <data name="IncomingFilesFailedTitle" xml:space="preserve"><value>Attachment reception failed</value></data>
   <data name="SettingsReviewDiscordUsers" xml:space="preserve"><value>Discord allowed users</value></data>
   <data name="SettingsReviewDiscordGuilds" xml:space="preserve"><value>Discord allowed servers</value></data>

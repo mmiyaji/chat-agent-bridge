@@ -909,7 +909,7 @@
   <data name="IncomingFilesSummary" xml:space="preserve"><value>受信添付: {0}個（{1}）。依頼の承認後、対応ファイルをAIへ渡します。最大5個、1個10MB、合計20MB。PNG/JPEG/WebP画像、UTF-8のTXT/LOG/MD/CSV/JSONに対応します。一時コピーは実行後に削除するため、後の依頼で必要な場合は再添付してください。添付付きの追加指示は別の実行として順番に処理します。</value></data>
   <data name="IncomingFileNamePending" xml:space="preserve"><value>ファイル名は承認後に確認</value></data>
   <data name="IncomingFilesInvalid" xml:space="preserve"><value>添付を受け付けられません。対応形式のファイルを5個以内で依頼に添付してください。</value></data>
-  <data name="IncomingFilesFailed" xml:space="preserve"><value>添付を読み込めなかったため、実行を開始できませんでした。形式・サイズ・アクセス権を確認し、新しい依頼に添付してください。</value></data>
+  <data name="IncomingFilesFailed" xml:space="preserve"><value>添付を読み込めなかったため、実行を開始できませんでした。PNG・JPEG・WebP画像またはUTF-8のテキスト（TXT・LOG・MD・CSV・JSON）を、最大5個、1個10 MB・合計20 MB以内で新しい依頼に添付してください。SlackではBotに files:read 権限が必要です。</value></data>
   <data name="IncomingFilesFailedTitle" xml:space="preserve"><value>添付の受信に失敗</value></data>
   <data name="SettingsReviewDiscordUsers" xml:space="preserve"><value>Discordの許可ユーザー</value></data>
   <data name="SettingsReviewDiscordGuilds" xml:space="preserve"><value>Discordの許可サーバー</value></data>

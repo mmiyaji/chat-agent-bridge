@@ -1408,4 +1408,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="FileAttachmentVisibilityWarning.Text" xml:space="preserve"><value>⚠ Everyone in the channel can view sent files. Review their contents before sending.</value></data>
   <data name="FileAttachmentGuide.Content" xml:space="preserve"><value>File attachment guide</value></data>
   <data name="UsageAccountingGuide.Content" xml:space="preserve"><value>Usage and cost estimation guide</value></data>
+  <data name="FileAttachmentGuide.NavigateUri" xml:space="preserve"><value>https://github.com/mmiyaji/chat-agent-bridge/blob/main/README.md#sharing-generated-files</value></data>
+  <data name="UsageAccountingGuide.NavigateUri" xml:space="preserve"><value>https://github.com/mmiyaji/chat-agent-bridge/blob/main/README.md#history-and-usage</value></data>
 </root>
