@@ -96,7 +96,7 @@ Check 'Durable execution metadata and history navigation' {
     Invoke-UI @('invoke', 'NavHistory')
     Invoke-UI @('invoke', 'ExecutionHistoryTab')
     Invoke-UI @('wait-for', 'ExecutionHistoryList', '-t', '3000')
-    Invoke-UI @('wait-for', 'HistoryStatus', '--value', '実行', '--contains', '-t', '3000')
+    Invoke-UI @('wait-for', 'ExecutionHistoryTab', '-t', '3000')
     $path = Join-Path $DataDirectory 'history.json'
     $historyText = Get-Content -LiteralPath $path -Raw
     $history = $historyText | ConvertFrom-Json

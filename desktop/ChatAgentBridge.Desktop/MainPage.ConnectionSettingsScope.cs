@@ -82,6 +82,7 @@ public sealed partial class MainPage
         _connectionScopeCommonGroup = new StackPanel { Spacing = 16 };
         _connectionScopeDescription = new TextBlock { Text = DesktopText.Get("ConnectionScopeCommonHelp"), TextWrapping = TextWrapping.Wrap };
         _connectionScopeCommonGroup.Children.Add(_connectionScopeDescription);
+        _connectionScopeCommonGroup.Children.Add(AllowedUsersSettingsCard);
         _connectionScopeCommonGroup.Children.Add(ChatApprovalSettingsCard);
         _connectionScopeCommonGroup.Children.Add(FileAttachmentSettings);
         _connectionScopeCommonGroup.Children.Add(CodexChatSharingSettings);
@@ -101,7 +102,8 @@ public sealed partial class MainPage
         foreach (var element in originalChildren)
         {
             if (ReferenceEquals(element, guide) || ReferenceEquals(element, overview) ||
-                ReferenceEquals(element, ChatApprovalSettingsCard) || ReferenceEquals(element, MattermostSettingsCard) ||
+                ReferenceEquals(element, AllowedUsersSettingsCard) || ReferenceEquals(element, ChatApprovalSettingsCard) ||
+                ReferenceEquals(element, MattermostSettingsCard) ||
                 ReferenceEquals(element, SlackSettingsCard) || ReferenceEquals(element, DiscordSettingsCard) || ReferenceEquals(element, FileAttachmentSettings) ||
                 ReferenceEquals(element, CodexChatSharingSettings))
                 continue;

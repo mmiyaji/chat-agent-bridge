@@ -117,7 +117,7 @@ $targets = @{
     agent = @{ nav='NavAgentSettings'; anchor='AgentProvider' }
     connections = @{ nav='NavConnections'; anchor='MattermostServerUrl' }
     chat = @{ nav='NavChat'; anchor='ConnectMattermost' }
-    history = @{ nav='NavHistory'; anchor='HistoryStatus' }
+    history = @{ nav='NavHistory'; anchor='HistorySectionSelector' }
 }
 $records = [Collections.Generic.List[object]]::new()
 $runDirectory = Join-Path $PSScriptRoot 'artifacts'

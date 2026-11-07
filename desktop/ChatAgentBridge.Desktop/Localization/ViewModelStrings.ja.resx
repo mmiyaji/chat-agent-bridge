@@ -397,6 +397,9 @@
   <data name="InheritLimitCodexExec" xml:space="preserve"><value>CLIの既定値では、Codexの設定（config.toml の sandbox_mode）に従います。読み取り専用のままだと、ファイルを編集できません。</value></data>
   <data name="InheritLimitClaude" xml:space="preserve"><value>CLIの既定値では、Claude Codeの許可ルールにない編集やコマンドは、確認画面を出せないため拒否されることがあります。編集させる場合は「フォルダー内の編集を自動許可」を選ぶか、Claude Code側で許可ルールを設定してください。</value></data>
   <data name="AllowedUserNameUnknown" xml:space="preserve"><value>名前未確認</value></data>
+  <data name="AllowedUserTotal" xml:space="preserve"><value>全{0}件</value></data>
+  <data name="AllowedUserShowRemaining" xml:space="preserve"><value>残り{0}件を表示</value></data>
+  <data name="AllowedUserShowLess" xml:space="preserve"><value>折りたたむ</value></data>
   <data name="AllowedUserIdLine" xml:space="preserve"><value>ID: {0} · {1}</value></data>
   <data name="AllowedUserAddedUnknown" xml:space="preserve"><value>追加した記録はありません</value></data>
   <data name="AllowedUserNotSaved" xml:space="preserve"><value>未保存</value></data>
@@ -404,7 +407,9 @@
   <data name="AllowedUserAddedInSettings" xml:space="preserve"><value>設定画面で追加（{0}・{1}）</value></data>
   <data name="AllowedUserActorUnknown" xml:space="preserve"><value>操作したユーザー不明</value></data>
   <data name="AllowedUserLastRequest" xml:space="preserve"><value>最後の依頼: {0}</value></data>
+  <data name="AllowedUserLastRequestUnknown" xml:space="preserve"><value>最後の依頼の記録はありません</value></data>
   <data name="AllowedUserRemove" xml:space="preserve"><value>{0} を一覧から削除</value></data>
+  <data name="AllowedUserHistory" xml:space="preserve"><value>{0} の許可と依頼の記録を見る</value></data>
   <data name="AllowedUserAlreadyListed" xml:space="preserve"><value>{0} はすでに一覧にあります。</value></data>
   <data name="AllowedUserInvalidId" xml:space="preserve"><value>IDは英数字・アンダースコア・ハイフンの128文字以内で、一覧は100件までです。</value></data>
   <data name="AllowedUserInvalidDiscordId" xml:space="preserve"><value>DiscordのユーザーIDは数字のみです。一覧は100件までです。</value></data>

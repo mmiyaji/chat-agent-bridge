@@ -117,6 +117,7 @@ try{
     @('NavHistory','AuditHistoryTab'),@('NavHistory','ActivityTab'),
     @('NavConnections','ChatApprovalCard'),@('NavConnections','FileAttachmentSettings'))
    $choice=$choices[$random.Next($choices.Count)];Go $choice[0];$id=$choice[1]
+   if($id -eq 'AuditHistoryTab'){$runs=Find 'ExecutionHistoryTab';if($runs){[NavigationStressNative]::Act($runs)}}
    $detail="optional:$id";$e=Find $id;if($e -and -not $e.Current.IsOffscreen -and $e.Current.IsEnabled){[NavigationStressNative]::Act($e)}
   }
   Start-Sleep -Milliseconds ($random.Next(5,45))

@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using ChatAgentBridge.Core;
 using ChatAgentBridge_Desktop.Localization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -35,23 +34,28 @@ public sealed partial class AllowedUserRow : ObservableObject
     public bool HasName => !string.IsNullOrWhiteSpace(Name);
     public string DisplayName => HasName ? Name! : ViewModelText.Get("AllowedUserNameUnknown");
     public string PictureName => HasName ? Name! : UserId;
-    public string IdLine => ViewModelText.Get("AllowedUserIdLine", UserId, SourceLabel);
-    public string AddedLine => _record is null
+    public string Summary => HasName ? $"{DisplayName} · {UserId}" : UserId;
+    public string Details => string.Join(Environment.NewLine, ViewModelText.Get("AllowedUserIdLine", UserId, SourceLabel), AddedLine, LastRequestLine);
+
+    private string AddedLine => _record is null
         ? ViewModelText.Get(_pendingName is null ? "AllowedUserAddedUnknown" : "AllowedUserNotSaved")
         : ViewModelText.Get(_record.Method == AllowedUserDirectory.ChatRequestMethod ? "AllowedUserAddedFromChat" : "AllowedUserAddedInSettings",
             _record.AddedAt.ToLocalTime().ToString("g"),
             string.IsNullOrWhiteSpace(_record.Actor) ? ViewModelText.Get("AllowedUserActorUnknown") : _record.Actor);
-    public bool HasLastRequest => _record?.LastRequestAt is not null;
-    public string LastRequestLine => _record?.LastRequestAt is { } at ? ViewModelText.Get("AllowedUserLastRequest", at.ToLocalTime().ToString("g")) : "";
+    private string LastRequestLine => _record?.LastRequestAt is { } at
+        ? ViewModelText.Get("AllowedUserLastRequest", at.ToLocalTime().ToString("g"))
+        : ViewModelText.Get("AllowedUserLastRequestUnknown");
+    public string HistoryLabel => ViewModelText.Get("AllowedUserHistory", HasName ? $"{DisplayName} ({UserId})" : UserId);
     public string RemoveLabel => ViewModelText.Get("AllowedUserRemove", HasName ? $"{DisplayName} ({UserId})" : UserId);
+
+    public string ServiceName => Provider switch { "slack" => "Slack", "mattermost" => "Mattermost", "discord" => "Discord", _ => Provider };
 
     private string SourceLabel
     {
         get
         {
-            var service = Provider switch { "slack" => "Slack", "mattermost" => "Mattermost", "discord" => "Discord", _ => Provider };
-            if (Provider == "mattermost" && Uri.TryCreate(_record?.Origin, UriKind.Absolute, out var server)) return $"{service} ({server.Host})";
-            return service;
+            if (Provider == "mattermost" && Uri.TryCreate(_record?.Origin, UriKind.Absolute, out var server)) return $"{ServiceName} ({server.Host})";
+            return ServiceName;
         }
     }
 }
@@ -77,9 +81,7 @@ public sealed partial class AllowedUserListModel : ObservableObject
     }
 
     public string Provider { get; }
-    public ObservableCollection<AllowedUserRow> Rows { get; } = [];
-    public bool IsEmpty => Rows.Count == 0;
-    public bool HasRows => Rows.Count > 0;
+    public IReadOnlyList<AllowedUserRow> Rows { get; private set; } = [];
 
     [ObservableProperty]
     public partial string NewUserId { get; set; } = "";
@@ -112,16 +114,13 @@ public sealed partial class AllowedUserListModel : ObservableObject
     /// <summary>Rebuilds the rows from the draft. Invalid text is still listed by its parts so it can be removed.</summary>
     internal void Refresh()
     {
-        var ids = SplitIds(_read());
-        Rows.Clear();
-        foreach (var id in ids)
+        Rows = SplitIds(_read()).Select(id =>
         {
             _records.TryGetValue(id, out var record);
             _pendingNames.TryGetValue(id, out var pendingName);
-            Rows.Add(new AllowedUserRow(Provider, id, record, pendingName, Remove));
-        }
-        OnPropertyChanged(nameof(IsEmpty));
-        OnPropertyChanged(nameof(HasRows));
+            return new AllowedUserRow(Provider, id, record, pendingName, Remove);
+        }).ToArray();
+        OnPropertyChanged(nameof(Rows));
     }
 
     [RelayCommand]

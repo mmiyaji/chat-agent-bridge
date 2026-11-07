@@ -630,6 +630,61 @@
                             </Grid>
                             <Grid x:Name="ConnectionsPagePanel" Visibility="{x:Bind local:MainPage.ToVisibility(IsConnectionsSelected), Mode=OneTime}">
                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="ChatSettingsGuide" localization:LocalizedResourceKey.Key="ChatSettingsGuide" />
+                                <Expander x:Name="AllowedUsersSettingsCard" x:Uid="AllowedUsersSettings" AutomationProperties.AutomationId="AllowedUsersSettings" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                    <StackPanel Spacing="8">
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="{x:Bind ViewModel.AllowedUserTable.TotalLabel, Mode=OneWay}" VerticalAlignment="Center"
+                                                       AutomationProperties.AutomationId="AllowedUserTotal" />
+                                            <Button Grid.Column="1" x:Uid="OpenAllowedUserAdd" AutomationProperties.AutomationId="OpenAllowedUserAdd">
+                                                <Button.Flyout>
+                                                    <Flyout x:Name="AllowedUserAddFlyout" Opening="AllowedUserAddFlyout_Opening" Closed="AllowedUserAddFlyout_Closed">
+                                                        <StackPanel Spacing="10" MaxWidth="360">
+                                                            <ComboBox x:Name="AllowedUsersProviderPicker" x:Uid="AllowedUsersProviderPicker" Width="144"
+                                                                      AutomationProperties.AutomationId="AllowedUsersProviderPicker"
+                                                                      SelectedValuePath="Tag" SelectedIndex="0" SelectionChanged="AllowedUsersProviderPicker_SelectionChanged">
+                                                                <ComboBoxItem Content="Mattermost" Tag="mattermost" AutomationProperties.AutomationId="AllowedUsersProviderMattermost" />
+                                                                <ComboBoxItem Content="Slack" Tag="slack" AutomationProperties.AutomationId="AllowedUsersProviderSlack" />
+                                                                <ComboBoxItem Content="Discord" Tag="discord" AutomationProperties.AutomationId="AllowedUsersProviderDiscord" />
+                                                            </ComboBox>
+                                                            <StackPanel Spacing="8" x:Name="CommonMattermostUsernameLookup" AutomationProperties.AutomationId="CommonMattermostUsernameLookup">
+                                                                <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="MattermostUsernameLookupHelp" localization:LocalizedResourceKey.Key="MattermostUsernameLookupHelp" />
+                                                                <Grid ColumnSpacing="8">
+                                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                                    <TextBox Text="{x:Bind ViewModel.MattermostUsernameLookupInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="CommonMattermostUsernameLookupInput" x:Uid="MattermostUsernameLookupInput" />
+                                                                    <Button Command="{x:Bind ViewModel.LookupMattermostUsernameCommand}" Grid.Column="1" VerticalAlignment="Bottom" AutomationProperties.AutomationId="CommonLookupMattermostUserButton" x:Uid="LookupMattermostUserButton" />
+                                                                </Grid>
+                                                                <TextBlock Text="{x:Bind ViewModel.MattermostUsernameLookupResultText, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasMattermostUsernameLookupResult), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="CommonMattermostUsernameLookupResult" />
+                                                                <TextBlock Text="{x:Bind ViewModel.MattermostUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasMattermostUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="CommonMattermostUsernameLookupStatus" />
+                                                                <Button Click="CommonAllowedUserAdd_Click" IsEnabled="{x:Bind ViewModel.CanAddMattermostUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="CommonAddMattermostUserButton" x:Uid="AddMattermostUserButton" />
+                                                            </StackPanel>
+                                                            <StackPanel Spacing="8" x:Name="CommonSlackUsernameLookup" AutomationProperties.AutomationId="CommonSlackUsernameLookup">
+                                                                <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="SlackUsernameLookupHelp" localization:LocalizedResourceKey.Key="SlackUsernameLookupHelp" />
+                                                                <Grid ColumnSpacing="8">
+                                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                                    <TextBox Text="{x:Bind ViewModel.SlackUsernameLookupInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MaxLength="256" AutomationProperties.AutomationId="CommonSlackUsernameLookupInput" x:Uid="SlackUsernameLookupInput" />
+                                                                    <Button Command="{x:Bind ViewModel.LookupSlackUsernameCommand}" Grid.Column="1" VerticalAlignment="Bottom" AutomationProperties.AutomationId="CommonLookupSlackUserButton" x:Uid="LookupSlackUserButton" />
+                                                                </Grid>
+                                                                <TextBlock Text="{x:Bind ViewModel.SlackUsernameLookupResultText, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSlackUsernameLookupResult), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="CommonSlackUsernameLookupResult" />
+                                                                <TextBlock Text="{x:Bind ViewModel.SlackUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSlackUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="CommonSlackUsernameLookupStatus" />
+                                                                <Button Click="CommonAllowedUserAdd_Click" IsEnabled="{x:Bind ViewModel.CanAddSlackUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="CommonAddSlackUserButton" x:Uid="AddSlackUserButton" />
+                                                            </StackPanel>
+                                                            <Grid ColumnSpacing="8">
+                                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                                <TextBox x:Name="CommonAllowedUserIdInput" x:Uid="AllowedUserAddInput"
+                                                                         AutomationProperties.AutomationId="CommonAllowedUserIdInput" MinWidth="180" />
+                                                                <Button Grid.Column="1" VerticalAlignment="Bottom" x:Uid="AllowedUserAddButton"
+                                                                        AutomationProperties.AutomationId="CommonAllowedUserAddById" Click="CommonAllowedUserAddById_Click" />
+                                                            </Grid>
+                                                            <TextBlock x:Name="CommonAllowedUserIdStatus" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                                                        </StackPanel>
+                                                    </Flyout>
+                                                </Button.Flyout>
+                                            </Button>
+                                        </Grid>
+                                        <allowedUsers:AllowedUserListView Model="{x:Bind ViewModel.AllowedUserTable}" RemoveUserRequested="ConfirmAllowedUserRemoval" ShowHistoryRequested="ShowAllowedUserHistory" />
+                                    </StackPanel>
+                                </Expander>
                                 <Expander x:Name="ChatApprovalSettingsCard" AutomationProperties.AutomationId="ChatApprovalCard" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="ChatCommonAccessible" localization:LocalizedResourceKey.Key="ChatCommonAccessible">
                                     <Expander.Header>
                                         <StackPanel Spacing="4" HorizontalAlignment="Stretch">
@@ -761,8 +816,10 @@
                                             <TextBlock Text="{x:Bind ViewModel.MattermostUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasMattermostUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="MattermostUsernameLookupStatus" />
                                             <Button Command="{x:Bind ViewModel.AddMattermostUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddMattermostUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="AddMattermostUserButton" x:Uid="AddMattermostUserButton" />
                                         </StackPanel>
-                                        <allowedUsers:AllowedUserListView Model="{x:Bind ViewModel.MattermostAllowedUsers}" />
-                                        <StackPanel Spacing="8"><TextBlock   AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock052" x:Uid="chatAgentBridgeDesktopMainPageTextBlock052" /><TextBox Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="96"   AutomationProperties.AutomationId="MattermostAllowedUserIds"  x:Uid="MattermostAllowedUserIds" /><TextBlock  TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock053" x:Uid="chatAgentBridgeDesktopMainPageTextBlock053" /></StackPanel>
+                                        <HyperlinkButton x:Uid="OpenAllowedUsers" localization:LocalizedResourceKey.Key="OpenAllowedUsers" AutomationProperties.AutomationId="MattermostOpenAllowedUsers" Click="OpenAllowedUsers_Click" />
+                                        <Expander x:Uid="AllowedUsersBulkEdit" localization:LocalizedResourceKey.Key="AllowedUsersBulkEdit" AutomationProperties.AutomationId="MattermostAllowedUsersBulkEdit" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                            <StackPanel Spacing="8"><TextBlock   AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock052" x:Uid="chatAgentBridgeDesktopMainPageTextBlock052" /><TextBox Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="96"   AutomationProperties.AutomationId="MattermostAllowedUserIds"  x:Uid="MattermostAllowedUserIds" /><TextBlock  TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock053" x:Uid="chatAgentBridgeDesktopMainPageTextBlock053" /></StackPanel>
+                                        </Expander>
                                         <TextBlock TextWrapping="Wrap" x:Uid="chatAgentBridgeDesktopMainPageTextBlock035" localization:LocalizedResourceKey.Key="chatAgentBridgeDesktopMainPageTextBlock035" />
                                         <StackPanel Spacing="8" AutomationProperties.AutomationId="MattermostThreadLookup">
                                             <TextBlock x:Uid="MattermostThreadLookupLabel" localization:LocalizedResourceKey.Key="MattermostThreadLookupLabel" />
@@ -803,8 +860,10 @@
                                             <TextBlock Text="{x:Bind ViewModel.SlackUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSlackUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SlackUsernameLookupStatus" />
                                             <Button Command="{x:Bind ViewModel.AddSlackUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddSlackUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="AddSlackUserButton" x:Uid="AddSlackUserButton" />
                                         </StackPanel>
-                                        <allowedUsers:AllowedUserListView Model="{x:Bind ViewModel.SlackAllowedUsers}" />
-                                        <StackPanel Spacing="8"><TextBlock   AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock057" x:Uid="chatAgentBridgeDesktopMainPageTextBlock057" /><TextBox Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="96"  AutomationProperties.AutomationId="SlackAllowedUserIds"  x:Uid="SlackAllowedUserIds" /><TextBlock  TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock058" x:Uid="chatAgentBridgeDesktopMainPageTextBlock058" /></StackPanel>
+                                        <HyperlinkButton x:Uid="OpenAllowedUsers" localization:LocalizedResourceKey.Key="OpenAllowedUsers" AutomationProperties.AutomationId="SlackOpenAllowedUsers" Click="OpenAllowedUsers_Click" />
+                                        <Expander x:Uid="AllowedUsersBulkEdit" localization:LocalizedResourceKey.Key="AllowedUsersBulkEdit" AutomationProperties.AutomationId="SlackAllowedUsersBulkEdit" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                            <StackPanel Spacing="8"><TextBlock   AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock057" x:Uid="chatAgentBridgeDesktopMainPageTextBlock057" /><TextBox Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="96"  AutomationProperties.AutomationId="SlackAllowedUserIds"  x:Uid="SlackAllowedUserIds" /><TextBlock  TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock058" x:Uid="chatAgentBridgeDesktopMainPageTextBlock058" /></StackPanel>
+                                        </Expander>
                                         <TextBlock TextWrapping="Wrap" x:Uid="SlackConversationScopeHelp" localization:LocalizedResourceKey.Key="SlackConversationScopeHelp" />
                                         <TextBox  Text="{x:Bind ViewModel.SlackAllowedChannelIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="SlackAllowedChannelIds"  x:Uid="SlackAllowedChannelIds" />
                                         <StackPanel Spacing="8" AutomationProperties.AutomationId="SlackThreadLookup">
@@ -836,12 +895,14 @@
                                             <TextBlock x:Uid="DiscordBotTokenLabel" />
                                             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="DiscordBotTokenBox" Grid.ColumnSpan="2" Padding="12,5,44,6" PasswordChanged="DiscordBotTokenBox_PasswordChanged" AutomationProperties.AutomationId="DiscordBotToken" x:Uid="DiscordBotToken" /><ToggleButton x:Name="DiscordBotTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="DiscordBotTokenReveal" /></Grid>
                                         </StackPanel>
-                                        <allowedUsers:AllowedUserListView Model="{x:Bind ViewModel.DiscordAllowedUsers}" />
-                                        <StackPanel Spacing="8">
-                                            <TextBlock x:Uid="DiscordAllowedUserIdsLabel" />
-                                            <TextBox Text="{x:Bind ViewModel.DiscordAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" AutomationProperties.AutomationId="DiscordAllowedUserIds" x:Uid="DiscordAllowedUserIds" />
-                                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="DiscordAllowedUserIdsHelp" />
-                                        </StackPanel>
+                                        <HyperlinkButton x:Uid="OpenAllowedUsers" localization:LocalizedResourceKey.Key="OpenAllowedUsers" AutomationProperties.AutomationId="DiscordOpenAllowedUsers" Click="OpenAllowedUsers_Click" />
+                                        <Expander x:Uid="AllowedUsersBulkEdit" localization:LocalizedResourceKey.Key="AllowedUsersBulkEdit" AutomationProperties.AutomationId="DiscordAllowedUsersBulkEdit" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                            <StackPanel Spacing="8">
+                                                <TextBlock x:Uid="DiscordAllowedUserIdsLabel" />
+                                                <TextBox Text="{x:Bind ViewModel.DiscordAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" AutomationProperties.AutomationId="DiscordAllowedUserIds" x:Uid="DiscordAllowedUserIds" />
+                                                <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="DiscordAllowedUserIdsHelp" />
+                                            </StackPanel>
+                                        </Expander>
                                         <StackPanel Spacing="8">
                                             <TextBlock x:Uid="DiscordAllowedGuildIdsLabel" />
                                             <TextBox Text="{x:Bind ViewModel.DiscordAllowedGuildIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" AutomationProperties.AutomationId="DiscordAllowedGuildIds" x:Uid="DiscordAllowedGuildIds" />

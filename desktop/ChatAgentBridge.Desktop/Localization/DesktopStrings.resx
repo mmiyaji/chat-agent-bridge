@@ -142,6 +142,11 @@
   <data name="AnswerToCodex" xml:space="preserve"><value>Answer Codex</value></data>
   <data name="Send" xml:space="preserve"><value>Send</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="AllowedUserRemoveTitle" xml:space="preserve"><value>Remove this allowed user?</value></data>
+  <data name="AllowedUserRemoveAccept" xml:space="preserve"><value>Remove</value></data>
+  <data name="AllowedUserUsageLoading" xml:space="preserve"><value>Loading retained history…</value></data>
+  <data name="AllowedUserUsageCounts" xml:space="preserve"><value>Retained history: {0} runs · {1} conversations · {2} CLI sessions</value></data>
+  <data name="AllowedUserUsageUnavailable" xml:space="preserve"><value>Could not read the retained execution history.</value></data>
   <data name="None" xml:space="preserve"><value>(none)</value></data>
   <data name="InputMetadata" xml:space="preserve"><value>Thread: {0} | Turn: {1} | Item: {2}</value></data>
   <data name="StartupEnabled" xml:space="preserve"><value>Starts when you sign in to Windows.</value></data>
@@ -262,7 +267,6 @@
   <data name="AskPerAction" xml:space="preserve"><value>Ask for each action</value></data>
   <data name="HistoryLoading" xml:space="preserve"><value>Loading history and sessions.</value></data>
   <data name="HistoryRefreshing" xml:space="preserve"><value>Refreshing history and sessions…</value></data>
-  <data name="HistoryCounts" xml:space="preserve"><value>{0} executions · {1} conversations · {2} activity records</value></data>
   <data name="HistoryLoadFailed" xml:space="preserve"><value>Could not load history: {0}</value></data>
   <data name="HistoryDetaching" xml:space="preserve"><value>Detaching session…</value></data>
   <data name="HistoryDetachedAuditFailed" xml:space="preserve"><value>Session detached, but the audit record could not be saved. Execution history is retained.</value></data>
@@ -273,7 +277,6 @@
   <data name="HistoryPolicySaveFailed" xml:space="preserve"><value>Could not save this conversation's execution policy: {0}</value></data>
   <data name="HistoryModelSaved" xml:space="preserve"><value>Saved the next execution model and updated reasoning effort.</value></data>
   <data name="HistoryModelSaveFailed" xml:space="preserve"><value>Could not save the next execution model. Check that the session still exists.</value></data>
-  <data name="HistorySuccessCounts" xml:space="preserve"><value>{0} {1} executions · {2} conversations · {3} activity records</value></data>
   <data name="WorkspacePathInstruction" xml:space="preserve"><value>Enter an existing absolute folder path on the first line, for example: !cab folder C:\Projects\my-app. Paths with spaces may be enclosed in double quotes.</value></data>
   <data name="WorkspaceOutsideTrustedRoots" xml:space="preserve"><value>The destination is outside the trusted folders. In the PC agent settings, check and save an allowed parent folder, then reconnect.</value></data>
   <data name="WorkspaceChangePrompt" xml:space="preserve"><value>Change workspace (the AI will not run)&#10;Before: {0}&#10;After: {1}&#10;Owner: {2}&#10;Applies only to this user and thread. Saved conversation, model, and approval overrides will be cleared, and the next request will start a new AI session. Execution history will remain.</value></data>
@@ -425,8 +428,8 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="AboutOpenLinkFailed" xml:space="preserve"><value>Could not open the link. Check that a browser or mail app is available.</value></data>
   <data name="HistoryProviderAll" xml:space="preserve"><value>All services</value></data>
   <data name="HistoryUnknownOrigin" xml:space="preserve"><value>Unknown connection</value></data>
-  <data name="HistoryConversationsTab" xml:space="preserve"><value>Conversations</value></data>
-  <data name="HistoryExecutionsTab" xml:space="preserve"><value>Executions</value></data>
+  <data name="HistoryConversationsTab" xml:space="preserve"><value>Conversations ({0})</value></data>
+  <data name="HistoryExecutionsTab" xml:space="preserve"><value>Run records ({0})</value></data>
   <data name="HistoryAuditTab" xml:space="preserve"><value>Audit</value></data>
   <data name="HistorySearchLabel" xml:space="preserve"><value>Search saved conversations</value></data>
   <data name="HistorySearchPlaceholder" xml:space="preserve"><value>Name, workspace, user, model, and more</value></data>
@@ -460,7 +463,6 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="HistoryEditNextModel" xml:space="preserve"><value>Switch model</value></data>
   <data name="HistoryEditPolicy" xml:space="preserve"><value>Approval and sharing</value></data>
   <data name="HistoryStartFresh" xml:space="preserve"><value>Start fresh next time</value></data>
-  <data name="HistoryExecutionSummary" xml:space="preserve"><value>Recent executions ({0})</value></data>
   <data name="HistoryNoExecutions" xml:space="preserve"><value>No execution history yet.</value></data>
   <data name="HistoryNoAudit" xml:space="preserve"><value>No audit events yet.</value></data>
   <data name="HistoryExecutionEmptyHeading" xml:space="preserve"><value>No runs yet</value></data>
@@ -468,7 +470,7 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="HistoryNoExecutionsForDayHeading" xml:space="preserve"><value>No runs for this day</value></data>
   <data name="HistoryNoExecutionsForDayDescription" xml:space="preserve"><value>No execution records match this day. Clear the day filter to see all runs.</value></data>
   <data name="HistoryAuditEmptyDescription" xml:space="preserve"><value>Actions such as session changes and agent switches will be recorded here.</value></data>
-  <data name="HistoryClearExecutionDayFilter" xml:space="preserve"><value>Show all dates</value></data>
+  <data name="HistoryClearExecutionDayFilter" xml:space="preserve"><value>Clear filters</value></data>
   <data name="HistoryStartFreshWarning" xml:space="preserve"><value>This removes the saved session association so the next message in this same chat thread starts a new conversation. It does not delete remote chat history or execution history.</value></data>
   <data name="InboxSelectConversation" xml:space="preserve"><value>Select a conversation to view its request and result.</value></data>
   <data name="InboxConversationCount" xml:space="preserve"><value>{0} conversations</value></data>
@@ -508,24 +510,19 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="Activity90Days" xml:space="preserve"><value>90 days</value></data>
   <data name="ActivityDayCount" xml:space="preserve"><value>{0}: {1:N0} runs</value></data>
   <data name="ActivityDays" xml:space="preserve"><value>{0:N0} days</value></data>
-  <data name="ActivityFilteredExecutions" xml:space="preserve"><value>{0}: {1:N0} saved executions</value></data>
   <data name="ActivityNoPeak" xml:space="preserve"><value>No activity yet</value></data>
   <data name="ActivityOutcomes" xml:space="preserve"><value>In this period: {0:N0} completed · {1:N0} failed · {2:N0} cancelled · {3:N0} running / interrupted</value></data>
   <data name="ActivityNoRunsHeading" xml:space="preserve"><value>No activity yet</value></data>
   <data name="ActivityNoRunsDescription" xml:space="preserve"><value>Usage appears here after a run.</value></data>
   <data name="ActivityNoRunsInPeriodHeading" xml:space="preserve"><value>No runs in this period</value></data>
   <data name="ActivityNoRunsInPeriodDescription" xml:space="preserve"><value>This date range has no execution records. Choose a longer period to see earlier activity.</value></data>
-  <data name="ActivityNoModelsHeading" xml:space="preserve"><value>No model activity</value></data>
-  <data name="ActivityNoModelsDescription" xml:space="preserve"><value>Model activity will appear after a run.</value></data>
-  <data name="ActivityNoModelsInPeriodDescription" xml:space="preserve"><value>There are no model runs in this date range.</value></data>
   <data name="ActivityPeakValue" xml:space="preserve"><value>{0} · {1:N0} runs</value></data>
   <data name="ActivityRunCount" xml:space="preserve"><value>{0:N0} runs</value></data>
-  <data name="ActivitySelectDay" xml:space="preserve"><value>Select a date to explore your activity.</value></data>
+  <data name="ActivitySelectDay" xml:space="preserve"><value>Select a date to see its runs and usage.</value></data>
   <data name="ActivityTabTitle" xml:space="preserve"><value>Activity</value></data>
   <data name="ActivityUnknownModel" xml:space="preserve"><value>Default / not recorded</value></data>
-  <data name="ActivityDailyScale" xml:space="preserve"><value>Peak: {0:N0} runs/day</value></data>
-  <data name="ActivityChatsTabCompact" xml:space="preserve"><value>Chats</value></data>
-  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>Runs</value></data>
+  <data name="ActivityChatsTabCompact" xml:space="preserve"><value>Chats ({0})</value></data>
+  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>Runs ({0})</value></data>
   <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}: outside the selected period</value></data>
   <data name="UsageTokens" xml:space="preserve"><value>Token consumption</value></data>
   <data name="UsageCache" xml:space="preserve"><value>Cache hit rate</value></data>
@@ -552,8 +549,6 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="UsageRequestNote" xml:space="preserve"><value>Partial usage: only the last request of each execution. This is not the full execution total.</value></data>
   <data name="UsageRecentRange" xml:space="preserve"><value>Daily · last 28 days ({0}–{1})</value></data>
   <data name="UsageDetails" xml:space="preserve"><value>Input (including cache): {0} · Output: {1} · Cache read: {2} · Cache write: {3}</value></data>
-  <data name="UsageDayDetails" xml:space="preserve"><value>{0}
-{1}</value></data>
   <data name="UsageBarLabel" xml:space="preserve"><value>{0}: {1}
 {2}</value></data>
   <data name="UsageBarDetails" xml:space="preserve"><value>{0}
@@ -603,7 +598,25 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="HistoryRenameFailed" xml:space="preserve"><value>Could not save the conversation name: {0}</value></data>
   <data name="CustomCliName" xml:space="preserve"><value>Custom CLI</value></data>
   <data name="HistoryThisPc" xml:space="preserve"><value>This PC</value></data>
-  <data name="HistoryChatNamesUnavailable" xml:space="preserve"><value>Chat names unavailable · IDs are available in details</value></data>
+  <data name="HistoryChatIdShort" xml:space="preserve"><value>ID {0}</value></data>
+  <data name="HistoryDurationSeconds" xml:space="preserve"><value>{0}s</value></data>
+  <data name="HistoryDurationMinutes" xml:space="preserve"><value>{0}m {1}s</value></data>
+  <data name="HistoryDurationHours" xml:space="preserve"><value>{0}h {1}m</value></data>
+  <data name="HistoryRunFacts" xml:space="preserve"><value>Duration {0} · Model {1} · Tokens {2}</value></data>
+  <data name="HistoryRecordSearchPlaceholder" xml:space="preserve"><value>Filter by chat, user or ID</value></data>
+  <data name="HistoryRecordResults" xml:space="preserve"><value>{0:N0} of {1:N0}</value></data>
+  <data name="HistoryDayFilterChip" xml:space="preserve"><value>{0} only</value></data>
+  <data name="HistoryRunStartedColumn" xml:space="preserve"><value>Started</value></data>
+  <data name="HistoryRunConversationColumn" xml:space="preserve"><value>Conversation</value></data>
+  <data name="HistoryRunUserColumn" xml:space="preserve"><value>User</value></data>
+  <data name="HistoryRunResultColumn" xml:space="preserve"><value>Result</value></data>
+  <data name="HistoryRunModelColumn" xml:space="preserve"><value>Model</value></data>
+  <data name="HistoryRunDurationColumn" xml:space="preserve"><value>Duration</value></data>
+  <data name="HistoryRunTokensColumn" xml:space="preserve"><value>Tokens</value></data>
+  <data name="HistoryOpenAgentSettings" xml:space="preserve"><value>Open agent settings</value></data>
+  <data name="HistoryNoRecordMatchesHeading" xml:space="preserve"><value>No records match</value></data>
+  <data name="HistoryNoRecordMatchesDescription" xml:space="preserve"><value>Change or clear the search and service filter.</value></data>
+  <data name="UsageRunsMetric" xml:space="preserve"><value>Runs</value></data>
   <data name="HistoryUserNameUnavailable" xml:space="preserve"><value>User name unavailable</value></data>
   <data name="HistoryChannelNameUnavailable" xml:space="preserve"><value>Channel name unavailable</value></data>
   <data name="HistoryDirectMessage" xml:space="preserve"><value>Direct message</value></data>
@@ -1050,4 +1063,18 @@ After: {2}</value></data>
   <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>Loading setting…</value></data>
   <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>When to keep the PC awake</value></data>
   <data name="PermissionAppServerDefault" xml:space="preserve"><value>App Server defaults (workspace write, approval on request, no network access)</value></data>
+  <data name="AuditExecutionIdentifier" xml:space="preserve"><value>Execution ID  {0}</value></data>
+  <data name="AuditDiagnosticCode" xml:space="preserve"><value>Diagnostic code  0x{0} ({1})</value></data>
+  <data name="AuditAllServices" xml:space="preserve"><value>All services</value></data>
+  <data name="AuditAllKinds" xml:space="preserve"><value>All actions</value></data>
+  <data name="AuditFilter_access_requested" xml:space="preserve"><value>Access request</value></data>
+  <data name="AuditFilter_access_allowed" xml:space="preserve"><value>Allow user</value></data>
+  <data name="AuditFilter_access_allowed_once" xml:space="preserve"><value>Allow once</value></data>
+  <data name="AuditFilter_access_denied" xml:space="preserve"><value>Deny access</value></data>
+  <data name="AuditFilter_allowed_user_added" xml:space="preserve"><value>Add allowed user</value></data>
+  <data name="AuditFilter_allowed_user_removed" xml:space="preserve"><value>Remove allowed user</value></data>
+  <data name="AuditTimeColumn" xml:space="preserve"><value>Time</value></data>
+  <data name="AuditActionColumn" xml:space="preserve"><value>Action</value></data>
+  <data name="AuditServiceColumn" xml:space="preserve"><value>Service</value></data>
+  <data name="AuditConversationColumn" xml:space="preserve"><value>Conversation</value></data>
 </root>

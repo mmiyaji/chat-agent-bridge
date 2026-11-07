@@ -7,6 +7,7 @@ public partial class MainPageViewModel
     /// <summary>Refreshes computed onboarding text after the active UI language changes.</summary>
     public void RefreshLocalizedText()
     {
+        _allowedUserTable?.RefreshLocalizedLabels();
         OnPropertyChanged(nameof(OnboardingTitle));
         OnPropertyChanged(nameof(OnboardingDescription));
         OnPropertyChanged(nameof(OnboardingNextLabel));

@@ -8,7 +8,7 @@ public sealed partial class HistoryPageViewModel
 {
     private IReadOnlyDictionary<SessionKey, ChatIdentityLabels> _chatNames = new Dictionary<SessionKey, ChatIdentityLabels>();
     private IReadOnlyList<SessionBinding> _nameBindings = [];
-    private readonly Dictionary<Guid, string> _executionChatLabels = [];
+    private readonly Dictionary<Guid, ExecutionChatInfo> _executionChats = [];
     private readonly Dictionary<Guid, (string Provider, string Channel, string Thread)> _executionChatScopes = [];
     private readonly Dictionary<(string Provider, string Channel, string Thread), string> _auditChatLabels = [];
     private CancellationTokenSource? _chatNameCancellation;
@@ -91,9 +91,11 @@ public sealed partial class HistoryPageViewModel
                 SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
                 ApplySessionFilter();
             }
-            ApplyExecutionDayFilter();
+            ApplyRunFilters();
+            RefreshSessionExecutions();
             for (var i = 0; i < AuditEvents.Count; i++)
-                AuditEvents[i] = new(AuditEvents[i].Record, AuditChatLabel(AuditEvents[i].Record));
+                AuditEvents[i] = AuditEvents[i] with { ChatLabel = AuditChatLabel(AuditEvents[i].Record) };
+            ApplyAuditFilters();
         }
         catch (OperationCanceledException) { }
         catch (Exception)
@@ -105,7 +107,7 @@ public sealed partial class HistoryPageViewModel
 
     private void RebuildChatNameIndexes()
     {
-        _executionChatLabels.Clear();
+        _executionChats.Clear();
         _executionChatScopes.Clear();
         _auditChatLabels.Clear();
         // Old execution records have no origin. Only join when the complete identity has one origin.
@@ -120,7 +122,7 @@ public sealed partial class HistoryPageViewModel
             if (execution.SessionId is null || !sessions.TryGetValue((execution.Source, execution.ChannelId,
                     execution.ThreadId, execution.UserId, execution.SessionId), out var binding)) continue;
             var row = new SessionHistoryRow(binding, ChatLabels: _chatNames.GetValueOrDefault(binding.Key));
-            _executionChatLabels[execution.Id] = $"{row.ListTitle} · {row.ListIdentity} · {row.ListLocation}";
+            _executionChats[execution.Id] = new ExecutionChatInfo($"{row.ListTitle} · {row.ListLocation}", row.UserLabel, binding.Key);
             _executionChatScopes[execution.Id] = (execution.Source, execution.ChannelId, execution.ThreadId);
         }
         foreach (var group in _nameBindings.GroupBy(binding => (binding.Key.Provider, binding.Key.ChannelId, binding.Key.ThreadId)))
@@ -132,10 +134,10 @@ public sealed partial class HistoryPageViewModel
         }
     }
 
-    private string? ExecutionChatLabel(ExecutionRecord record) => _executionChatLabels.GetValueOrDefault(record.Id);
+    private ExecutionChatInfo? ExecutionChat(ExecutionRecord record) => _executionChats.GetValueOrDefault(record.Id);
 
     private string? AuditChatLabel(AuditEvent record) =>
         record.ExecutionId is { } id && _executionChatScopes.GetValueOrDefault(id) == (record.Source, record.ChannelId, record.ThreadId) &&
-        _executionChatLabels.TryGetValue(id, out var label) ? label :
+        _executionChats.TryGetValue(id, out var chat) ? $"{chat.Conversation} · {chat.User}" :
         _auditChatLabels.GetValueOrDefault((record.Source, record.ChannelId, record.ThreadId));
 }

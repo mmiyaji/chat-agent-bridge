@@ -335,7 +335,7 @@ $targets = @(
     @{ nav='NavConnections'; anchor='ChatApprovalMode'; name='connections' },
     @{ nav='NavOverview'; anchor='GeneralAppearanceSectionHeading'; name='appearance' },
     @{ nav='NavChat'; anchor='ConnectMattermost'; name='chat' },
-    @{ nav='NavHistory'; anchor='HistoryStatus'; name='history' },
+    @{ nav='NavHistory'; anchor='HistorySectionSelector'; name='history' },
     @{ nav='NavAbout'; anchor='AboutProduct'; name='about' }
 )
 $workspaceChoices = @($DataDirectory, '', (Join-Path $DataDirectory 'mock-雪-😀'))
@@ -561,7 +561,7 @@ $categoryNames = @{
                             'agent' { 'SettingsCheckCli' }
                             'connections' { 'SlackAppToken' }
                             'chat' { 'InboxConversations' }
-                            'history' { 'HistoryStatus' }
+                            'history' { 'HistorySectionSelector' }
                             'about' { 'AboutProduct' }
                             'appearance' { 'ThemeDark' }
                         }

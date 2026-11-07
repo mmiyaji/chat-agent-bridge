@@ -114,7 +114,7 @@ try {
         UI @('invoke',$(if($theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}))|Out-Null
         foreach($width in @(1160,500)){
             Resize $width;Activity;Scroll-To 'ActivityTotal';Capture "overview-$theme-$width.png"
-            foreach($id in @('SavedConversationsTab','ActivityTab','ExecutionHistoryTab','AuditHistoryTab')){
+            foreach($id in @('SavedConversationsTab','ActivityTab','ExecutionHistoryTab')){
                 $el=Element $id
                 Assert (Visible $el) "Tab $id is inaccessible at $width"
                 Assert ($el.Current.BoundingRectangle.Right -le ([Windows.Automation.AutomationElement]::FromHandle($script:hwnd)).Current.BoundingRectangle.Right) "Tab $id is clipped at $width"

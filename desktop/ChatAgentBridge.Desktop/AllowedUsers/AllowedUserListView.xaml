@@ -6,48 +6,57 @@
     xmlns:inbox="using:ChatAgentBridge_Desktop.Inbox"
     xmlns:localization="using:ChatAgentBridge_Desktop.Localization">
     <StackPanel Spacing="8">
-        <TextBlock x:Uid="AllowedUserListTitle" localization:LocalizedResourceKey.Key="AllowedUserListTitle" />
         <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                    Visibility="{x:Bind Model.IsEmpty, Mode=OneWay}"
                    x:Uid="AllowedUserListEmpty" localization:LocalizedResourceKey.Key="AllowedUserListEmpty" />
-        <ItemsControl ItemsSource="{x:Bind Model.Rows, Mode=OneWay}" Visibility="{x:Bind Model.HasRows, Mode=OneWay}"
-                      AutomationProperties.AutomationId="{x:Bind ListAutomationId, Mode=OneWay}">
+        <Grid ColumnSpacing="8" Visibility="{x:Bind Model.HasRows, Mode=OneWay}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="92" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Uid="AllowedUserServiceColumn" localization:LocalizedResourceKey.Key="AllowedUserServiceColumn" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <TextBlock Grid.Column="1" x:Uid="AllowedUserIdentityColumn" localization:LocalizedResourceKey.Key="AllowedUserIdentityColumn" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <TextBlock Grid.Column="2" x:Uid="AllowedUserActionColumn" localization:LocalizedResourceKey.Key="AllowedUserActionColumn" Style="{StaticResource BodyStrongTextBlockStyle}" />
+        </Grid>
+        <ItemsControl ItemsSource="{x:Bind Model.VisibleRows, Mode=OneWay}" AutomationProperties.AutomationId="AllowedUserTable">
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:AllowedUserRow">
-                    <Grid ColumnSpacing="12" Padding="0,6" BorderThickness="0,0,0,1" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
+                    <Grid ColumnSpacing="8" Padding="0,3" BorderThickness="0,0,0,1" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="100" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="92" />
                         </Grid.ColumnDefinitions>
-                        <PersonPicture Width="32" Height="32" VerticalAlignment="Top" DisplayName="{x:Bind PictureName}"
-                                       ProfilePicture="{x:Bind inbox:ChatInboxPage.AvatarImage(AvatarPath), Mode=OneWay}"
-                                       AutomationProperties.AccessibilityView="Raw" />
-                        <StackPanel Grid.Column="1" Spacing="2">
-                            <TextBlock Text="{x:Bind DisplayName}" TextWrapping="Wrap" />
-                            <TextBlock Text="{x:Bind IdLine}" TextWrapping="Wrap" IsTextSelectionEnabled="True"
-                                       Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            <TextBlock Text="{x:Bind AddedLine}" TextWrapping="Wrap"
-                                       Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            <TextBlock Text="{x:Bind LastRequestLine}" Visibility="{x:Bind HasLastRequest}" TextWrapping="Wrap"
-                                       Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-                        <Button Grid.Column="2" VerticalAlignment="Center" Command="{x:Bind RemoveCommand}"
+                        <TextBlock Text="{x:Bind ServiceName}" VerticalAlignment="Center" />
+                        <Grid Grid.Column="1" ColumnSpacing="8">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <PersonPicture Width="24" Height="24" VerticalAlignment="Center" DisplayName="{x:Bind PictureName}"
+                                           ProfilePicture="{x:Bind inbox:ChatInboxPage.AvatarImage(AvatarPath), Mode=OneWay}"
+                                           AutomationProperties.AccessibilityView="Raw" />
+                            <HyperlinkButton Grid.Column="1" VerticalAlignment="Center" Padding="0" Click="ShowUserDetails_Click"
+                                             AutomationProperties.AutomationId="AllowedUserDetails">
+                                <TextBlock Text="{x:Bind Summary}" TextWrapping="Wrap" />
+                            </HyperlinkButton>
+                        </Grid>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <Button Click="ShowUserHistory_Click"
+                                AutomationProperties.Name="{x:Bind HistoryLabel}" ToolTipService.ToolTip="{x:Bind HistoryLabel}"
+                                AutomationProperties.AutomationId="AllowedUserHistory">
+                            <FontIcon Glyph="&#xE81C;" FontSize="14" />
+                        </Button>
+                        <Button Click="RemoveUser_Click"
                                 AutomationProperties.Name="{x:Bind RemoveLabel}" ToolTipService.ToolTip="{x:Bind RemoveLabel}"
                                 AutomationProperties.AutomationId="AllowedUserRemove">
                             <FontIcon Glyph="&#xE74D;" FontSize="14" />
                         </Button>
+                        </StackPanel>
                     </Grid>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Grid ColumnSpacing="8">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-            <TextBox Text="{x:Bind Model.NewUserId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                     AutomationProperties.AutomationId="{x:Bind AddInputAutomationId, Mode=OneWay}" x:Uid="AllowedUserAddInput" />
-            <Button Grid.Column="1" VerticalAlignment="Bottom" Command="{x:Bind Model.AddCommand, Mode=OneWay}"
-                    AutomationProperties.AutomationId="{x:Bind AddButtonAutomationId, Mode=OneWay}" x:Uid="AllowedUserAddButton" />
-        </Grid>
+        <HyperlinkButton Content="{x:Bind Model.ExpansionLabel, Mode=OneWay}" Command="{x:Bind Model.ToggleExpansionCommand, Mode=OneWay}"
+                         Visibility="{x:Bind Model.HasMoreRows, Mode=OneWay}" AutomationProperties.AutomationId="AllowedUserExpansion" />
         <TextBlock Text="{x:Bind Model.Status, Mode=OneWay}" Visibility="{x:Bind Model.HasStatus, Mode=OneWay}" TextWrapping="Wrap"
                    AutomationProperties.LiveSetting="Polite" />
     </StackPanel>

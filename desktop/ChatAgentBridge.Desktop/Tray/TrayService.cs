@@ -4,7 +4,6 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 
 namespace ChatAgentBridge_Desktop.Tray;
 
@@ -152,7 +151,7 @@ public sealed class TrayService : IDisposable
 
             _closeConfirmationMessage = message;
 
-            var dialog = new ContentDialog
+            var dialog = new WindowCloseDialog
             {
                 XamlRoot = xamlRoot,
                 RequestedTheme = App.Appearance.RequestedTheme,
@@ -164,19 +163,6 @@ public sealed class TrayService : IDisposable
                 IsSecondaryButtonEnabled = IsAvailable,
                 DefaultButton = ContentDialogButton.Close
             };
-            var exitDialogResources = new ResourceDictionary
-            {
-                Source = new Uri("ms-appx:///ExitDialogActionResources.xaml")
-            };
-            var neutralAccentResources = new ResourceDictionary
-            {
-                Source = new Uri("ms-appx:///DialogNeutralAccentResources.xaml")
-            };
-            // ContentDialog promotes DefaultButton.Close to AccentButtonStyle. The dialog-local palette makes that
-            // single close action neutral; PrimaryButton's nearer local red palette wins over it.
-            dialog.Resources.MergedDictionaries.Add(neutralAccentResources);
-            dialog.Opened += (_, _) => dialog.DispatcherQueue.TryEnqueue(
-                () => ApplyCloseDialogButtonStyles(dialog, exitDialogResources));
             _closeConfirmation = dialog;
             AutomationProperties.SetAutomationId(dialog, "WindowCloseConfirmation");
 
@@ -216,33 +202,6 @@ public sealed class TrayService : IDisposable
     private string GetCloseConfirmationBody() => IsAvailable
         ? DesktopText.Get("WindowCloseConfirmationMessage")
         : DesktopText.Get("WindowCloseConfirmationTrayUnavailable");
-
-    private static void ApplyCloseDialogButtonStyles(ContentDialog dialog, ResourceDictionary exitResources)
-    {
-        var primary = FindDialogButton(dialog, "PrimaryButton");
-        if (primary is not null)
-        {
-            // Primary's nearer local red palette overrides the dialog-local neutral AccentButton palette.
-            primary.Resources.MergedDictionaries.Add(exitResources);
-            primary.Style = (Style)exitResources["ExitDialogPrimaryButtonStyle"];
-        }
-    }
-
-    private static Button? FindDialogButton(DependencyObject root, string automationId, string? content = null)
-    {
-        if (root is Button button &&
-            (button.Name == automationId || AutomationProperties.GetAutomationId(button) == automationId ||
-             (content is not null && string.Equals(button.Content?.ToString(), content, StringComparison.Ordinal))))
-            return button;
-
-        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
-        {
-            var result = FindDialogButton(VisualTreeHelper.GetChild(root, index), automationId, content);
-            if (result is not null) return result;
-        }
-
-        return null;
-    }
 
     private void UpdateCloseConfirmationBody()
     {
@@ -333,5 +292,27 @@ public sealed class TrayService : IDisposable
         _native.AvailabilityChanged -= NativeAvailabilityChanged;
         _native.Dispose();
         // An in-flight preference save can still release this gate during exit.
+    }
+}
+
+
+internal sealed partial class WindowCloseDialog : ContentDialog
+{
+    public WindowCloseDialog()
+    {
+        Resources.MergedDictionaries.Add(new ResourceDictionary
+        {
+            Source = new Uri("ms-appx:///DialogNeutralAccentResources.xaml")
+        });
+    }
+
+    protected override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+        if (GetTemplateChild("PrimaryButton") is not Button primary) return;
+
+        var exitPalette = new ResourceDictionary { Source = new Uri("ms-appx:///ExitDialogActionResources.xaml") };
+        primary.Resources.MergedDictionaries.Add(exitPalette);
+        PrimaryButtonStyle = (Style)exitPalette["ExitDialogPrimaryButtonStyle"];
     }
 }
