@@ -346,7 +346,11 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
     {
         var request = ParseRequest(evt, botUserId);
         if (request is not null)
-            return ChatAccessPolicy.IsAllowedRequest(settings, "slack", request.UserId, request.ChannelId, request.ThreadId) ? request : null;
+        {
+            if (ChatAccessPolicy.IsAllowedRequest(settings, "slack", request.UserId, request.ChannelId, request.ThreadId)) return request;
+            return ChatAccessPolicy.IsAllowedScope(settings, "slack", request.ChannelId, request.ThreadId)
+                ? request with { IsAccessRequest = true } : null;
+        }
 
         var continuation = ParseRequest(evt, botUserId, allowPlainThreadReplies: true);
         if (continuation is null || !ChatAccessPolicy.IsAllowedRequest(settings, "slack", continuation.UserId, continuation.ChannelId, continuation.ThreadId)) return null;

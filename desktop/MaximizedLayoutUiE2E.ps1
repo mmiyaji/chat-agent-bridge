@@ -79,7 +79,8 @@ try{
                 # visible input controls and account for their containing card padding.
                 if($index -in @(0,1,2,3)){
                     $fieldId=switch($index){0{'OverviewAgentTile'}1{'Prompt'}2{'WorkspaceRoot'}3{'MattermostServerUrl'}}
-                    $padding=switch($index){0{16}1{0}2{16}3{20}}
+                    # Overview status tiles sit directly on the page (no surrounding card), so they have no extra padding.
+                    $padding=switch($index){0{0}1{0}2{16}3{20}}
                     $field=(Element $fieldId).Current.BoundingRectangle
                     $bodyLeft=($field.Left-$bounds.Left)/$scale-$padding
                     $bodyWidth=$field.Width/$scale+2*$padding

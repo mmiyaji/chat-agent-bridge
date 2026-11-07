@@ -36,6 +36,11 @@ public static class ConversationExecutionPolicy
     public static bool AutoApprovesSwitchCommands(BridgeSettings effective) =>
         effective.ChatApprovalMode is "auto" or "first" && effective.AutoApproveSwitchCommands;
 
+    /// <summary>
+    /// Identifies what a first-request approval consented to: where and how the CLI runs, and with which
+    /// credentials. Model, sharing and allow-list changes do not change what the CLI may do on this PC,
+    /// so they keep an existing consent.
+    /// </summary>
     public static string GetFingerprint(SessionKey key, BridgeSettings settings)
     {
         // Credentials never leave this calculation. Only an irreversible digest is persisted.
@@ -44,12 +49,7 @@ public static class ConversationExecutionPolicy
             key,
             Workspace = Path.TrimEndingDirectorySeparator(Path.GetFullPath(settings.WorkspaceRoot)),
             settings.AgentExecutable, settings.AgentArguments, settings.AgentProvider, settings.AgentMode,
-            settings.AgentModel, settings.AgentReasoningEffort, settings.AgentPermissionMode,
-            settings.AllowAgentNetwork, settings.TrustedWorkspaceRoots, settings.ChatApprovalMode,
-            settings.ChatResultMode, settings.ShareApprovalsInChat,
-            settings.MattermostAllowedUserIds, settings.SlackAllowedUserIds,
-            settings.MattermostChannelId, settings.MattermostAllowedThreadIds,
-            settings.SlackAllowedChannelIds, settings.SlackAllowedThreadIds,
+            settings.AgentPermissionMode, settings.AllowAgentNetwork, settings.TrustedWorkspaceRoots,
             CredentialDigest = Digest(key.Provider switch
             {
                 "slack" => settings.SlackBotToken + "\0" + settings.SlackAppToken,
@@ -57,24 +57,7 @@ public static class ConversationExecutionPolicy
                 _ => settings.MattermostToken
             })
         });
-        var baseFingerprint = Digest(payload);
-        if (key.Provider == "discord")
-            baseFingerprint = Digest(baseFingerprint + "\0discord\0" + JsonSerializer.Serialize(new
-            {
-                settings.DiscordAllowedUserIds, settings.DiscordAllowedGuildIds, settings.DiscordAllowedChannelIds,
-                settings.DiscordAllowedThreadIds, settings.DiscordAllowDirectMessages
-            }));
-        // Keep the historical digest byte-for-byte for the default-off setting so persisted
-        // approvals remain valid when upgrading. Opting in creates a distinct consent scope.
-        var fingerprint = settings.ShareAgentQuestionsInChat
-            ? Digest(baseFingerprint + "\0share-agent-questions")
-            : baseFingerprint;
-        if (ChatFollowUpPolicy.Normalize(settings.ChatFollowUpMode) != ChatFollowUpPolicy.Steer) return fingerprint;
-        var steerFingerprint = Digest(fingerprint + "\0chat-follow-up-steer");
-        // Earlier versions advertised live additions only for Codex. Expanding Claude execution
-        // must not silently reuse first-request consent from that earlier behavior.
-        return settings.AgentProvider == AgentProfile.Claude && settings.AgentMode == "exec"
-            ? Digest(steerFingerprint + "\0claude-stream-input-v1") : steerFingerprint;
+        return Digest("execution-v2\0" + payload);
     }
 
     private static string Digest(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();

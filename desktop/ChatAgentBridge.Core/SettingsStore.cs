@@ -69,6 +69,9 @@ public sealed class SettingsStore
             var autoConnect = stored.AutoConnectProvider ?? "none";
             if (autoConnect is not ("none" or "mattermost" or "slack" or "discord"))
                 throw new InvalidDataException("Settings contain an unsupported auto-connect provider.");
+            // Settings saved before the approval mode existed keep the per-conversation approval they were using.
+            var approvalMode = ExecutionPolicy.NormalizeChatApprovalMode(
+                string.IsNullOrWhiteSpace(stored.ChatApprovalMode) ? "first" : stored.ChatApprovalMode);
             var settings = new BridgeSettings
             {
                 WorkspaceRoot = stored.WorkspaceRoot ?? "",
@@ -100,9 +103,9 @@ public sealed class SettingsStore
                 AgentPermissionMode = ExecutionPolicy.NormalizePermissionMode(stored.AgentPermissionMode),
                 AllowAgentNetwork = stored.AllowAgentNetwork,
                 TrustedWorkspaceRoots = ExecutionPolicy.NormalizeTrustedRoots(stored.TrustedWorkspaceRoots),
-                ChatApprovalMode = ExecutionPolicy.NormalizeChatApprovalMode(stored.ChatApprovalMode),
+                ChatApprovalMode = approvalMode,
                 AutoApproveSwitchCommands = stored.AutoApproveSwitchCommands &&
-                    ExecutionPolicy.NormalizeChatApprovalMode(stored.ChatApprovalMode) is "auto" or "first",
+                    approvalMode is "auto" or "first",
                 ChatResultMode = ExecutionPolicy.NormalizeChatResultMode(stored.ChatResultMode),
                 ChatFollowUpMode = ChatFollowUpPolicy.Normalize(stored.ChatFollowUpMode),
                 ChatProgressDetail = Core.ChatProgressDetail.Normalize(stored.ChatProgressDetail),

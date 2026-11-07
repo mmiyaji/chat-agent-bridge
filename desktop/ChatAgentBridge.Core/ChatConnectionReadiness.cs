@@ -12,12 +12,12 @@ public static class ChatConnectionReadiness
             "mattermost" => IsMattermostServerUrlValid(settings.MattermostServerUrl) &&
                 !string.IsNullOrWhiteSpace(settings.MattermostToken) &&
                 !string.IsNullOrWhiteSpace(settings.MattermostChannelId) &&
-                HasAllowedUsers(settings.MattermostAllowedUserIds),
+                AllowedUsersValid(settings.MattermostAllowedUserIds),
             "slack" => !string.IsNullOrWhiteSpace(settings.SlackBotToken) &&
                 !string.IsNullOrWhiteSpace(settings.SlackAppToken) &&
-                HasAllowedUsers(settings.SlackAllowedUserIds),
+                AllowedUsersValid(settings.SlackAllowedUserIds),
             "discord" => !string.IsNullOrWhiteSpace(settings.DiscordBotToken) &&
-                HasDiscordIds(settings.DiscordAllowedUserIds) &&
+                DiscordIdsValid(settings.DiscordAllowedUserIds) &&
                 (settings.DiscordAllowDirectMessages || HasDiscordIds(settings.DiscordAllowedGuildIds)),
             _ => false
         };
@@ -34,9 +34,16 @@ public static class ChatConnectionReadiness
         return true;
     }
 
-    private static bool HasAllowedUsers(string value)
+    // An empty allowed-user list is valid: unknown users can only ask for access, approved on the PC.
+    private static bool AllowedUsersValid(string value)
     {
-        try { return ChatAccessPolicy.NormalizeAllowedUsers(value).Length > 0; }
+        try { _ = ChatAccessPolicy.NormalizeAllowedUsers(value); return true; }
+        catch (FormatException) { return false; }
+    }
+
+    private static bool DiscordIdsValid(string value)
+    {
+        try { _ = ChatAccessPolicy.NormalizeDiscordSnowflakes(value); return true; }
         catch (FormatException) { return false; }
     }
 

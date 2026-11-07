@@ -11,19 +11,19 @@ public sealed class ExecutionPolicyTests
         Assert.Equal("inherit", settings.AgentPermissionMode);
         Assert.False(settings.AllowAgentNetwork);
         Assert.Equal("", settings.TrustedWorkspaceRoots);
-        Assert.Equal("first", settings.ChatApprovalMode);
+        Assert.Equal("auto", settings.ChatApprovalMode);
         Assert.Equal("auto", settings.ChatResultMode);
         Assert.Equal("", settings.SlackAllowedChannelIds);
     }
 
     [Theory]
-    [InlineData(null, "first")]
-    [InlineData("", "first")]
-    [InlineData("   ", "first")]
+    [InlineData(null, "auto")]
+    [InlineData("", "auto")]
+    [InlineData("   ", "auto")]
     [InlineData("always", "always")]
     [InlineData("first", "first")]
     [InlineData("auto", "auto")]
-    public void ChatApprovalModeUsesFirstAsFallbackAndPreservesExplicitModes(string? stored, string expected)
+    public void ChatApprovalModeUsesAllowedUsersAsFallbackAndPreservesExplicitModes(string? stored, string expected)
     {
         Assert.Equal(expected, ExecutionPolicy.NormalizeChatApprovalMode(stored));
     }
@@ -35,7 +35,7 @@ public sealed class ExecutionPolicyTests
     [InlineData("{\"SchemaVersion\":1,\"ChatApprovalMode\":\"always\"}", "always")]
     [InlineData("{\"SchemaVersion\":1,\"ChatApprovalMode\":\"first\"}", "first")]
     [InlineData("{\"SchemaVersion\":1,\"ChatApprovalMode\":\"auto\"}", "auto")]
-    public async Task SettingsStoreNormalizesFallbackAndPreservesExplicitChatApprovalModes(string json, string expected)
+    public async Task SettingsStoreKeepsFirstForLegacySettingsAndPreservesExplicitChatApprovalModes(string json, string expected)
     {
         var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try

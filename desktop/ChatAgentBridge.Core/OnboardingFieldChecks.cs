@@ -44,32 +44,32 @@ public static class OnboardingFieldChecks
     public static IReadOnlyList<WizardField> CliStep(bool hasCurrentCliCheck) =>
         hasCurrentCliCheck ? [] : [WizardField.CliCheck];
 
-    public static IReadOnlyList<WizardField> SlackChat(string? botToken, string? appToken, bool hasAllowedUsers)
+    public static IReadOnlyList<WizardField> SlackChat(string? botToken, string? appToken, bool allowedUsersValid)
     {
         var missing = new List<WizardField>();
         if (string.IsNullOrWhiteSpace(botToken)) missing.Add(WizardField.SlackBotToken);
         if (string.IsNullOrWhiteSpace(appToken)) missing.Add(WizardField.SlackAppToken);
-        if (!hasAllowedUsers) missing.Add(WizardField.SlackAllowedUsers);
+        if (!allowedUsersValid) missing.Add(WizardField.SlackAllowedUsers);
         return missing;
     }
 
     public static IReadOnlyList<WizardField> MattermostChat(bool serverUrlValid, string? channelId, string? token,
-        bool hasAllowedUsers)
+        bool allowedUsersValid)
     {
         var missing = new List<WizardField>();
         if (!serverUrlValid) missing.Add(WizardField.MattermostServerUrl);
         if (string.IsNullOrWhiteSpace(channelId)) missing.Add(WizardField.MattermostChannel);
         if (string.IsNullOrWhiteSpace(token)) missing.Add(WizardField.MattermostToken);
-        if (!hasAllowedUsers) missing.Add(WizardField.MattermostAllowedUsers);
+        if (!allowedUsersValid) missing.Add(WizardField.MattermostAllowedUsers);
         return missing;
     }
 
-    public static IReadOnlyList<WizardField> DiscordChat(string? botToken, bool hasAllowedUsers, bool hasAllowedGuilds,
+    public static IReadOnlyList<WizardField> DiscordChat(string? botToken, bool allowedUsersValid, bool hasAllowedGuilds,
         bool allowDirectMessages)
     {
         var missing = new List<WizardField>();
         if (string.IsNullOrWhiteSpace(botToken)) missing.Add(WizardField.DiscordBotToken);
-        if (!hasAllowedUsers) missing.Add(WizardField.DiscordAllowedUsers);
+        if (!allowedUsersValid) missing.Add(WizardField.DiscordAllowedUsers);
         if (!hasAllowedGuilds && !allowDirectMessages) missing.Add(WizardField.DiscordAllowedGuilds);
         return missing;
     }

@@ -48,6 +48,7 @@ public sealed partial class ChatInboxPage : Page
         ViewModel.ServerApprovalHandler = serverDialogs.ApproveAsync;
         ViewModel.ServerInputHandler = serverDialogs.InputAsync;
         ViewModel.RequestReceived += NotifyRequest;
+        ViewModel.AccessRequestReceived += NotifyAccessRequest;
         ViewModel.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(ViewModel.Selected))
@@ -137,9 +138,9 @@ public sealed partial class ChatInboxPage : Page
         ViewModel.RevealNewestPendingIfIdle();
     }
 
-    private Task OpenInboxAsync(InboxItem item)
+    private Task OpenInboxAsync(InboxItem? item)
     {
-        if (ViewModel.Requests.Contains(item))
+        if (item is not null && ViewModel.Requests.Contains(item))
         {
             ViewModel.RevealRequest(item);
         }
@@ -327,6 +328,28 @@ public sealed partial class ChatInboxPage : Page
     {
         ViewModel.BackToConversations();
         ConversationList.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
+    }
+
+    private void NotifyAccessRequest(AccessRequestItem item)
+    {
+        var notifications = App.PendingRequestNotifications;
+        if (!notifications.TryNotifyPendingRequest(Notifications.PendingNotificationKind.AccessRequest,
+            () => ViewModel.DecideAccessAsync(item, AccessDecision.Allow),
+            () => ViewModel.DecideAccessAsync(item, AccessDecision.Deny),
+            () => OpenInboxAsync(null), out var token,
+            DesktopText.Get("NotificationAccessRequestDetail", item.Title)))
+        {
+            ViewModel.NotificationStatus = notifications.Status;
+            return;
+        }
+        System.Collections.Specialized.NotifyCollectionChangedEventHandler? resolved = null;
+        resolved = (_, _) =>
+        {
+            if (ViewModel.AccessRequests.Contains(item)) return;
+            notifications.Resolve(token);
+            ViewModel.AccessRequests.CollectionChanged -= resolved;
+        };
+        ViewModel.AccessRequests.CollectionChanged += resolved;
     }
 
     private void NotifyRequest(InboxItem item)

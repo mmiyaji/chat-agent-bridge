@@ -242,8 +242,6 @@ public sealed partial class SessionStore
                 {
                     Model = model,
                     ReasoningEffort = preserveReasoningEffort ? current.ReasoningEffort : effort,
-                    FirstApprovalFingerprint = current.Model == model &&
-                        (preserveReasoningEffort || current.ReasoningEffort == effort) ? current.FirstApprovalFingerprint : null,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
                 await WriteAsync(document, token).ConfigureAwait(false);

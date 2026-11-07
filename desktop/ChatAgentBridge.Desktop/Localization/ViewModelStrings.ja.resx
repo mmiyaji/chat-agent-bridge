@@ -31,7 +31,7 @@
     <value>ユーザー許可リストの範囲内</value>
   </data>
   <data name="ApprovalAutomatic" xml:space="preserve">
-    <value>自動承認</value>
+    <value>許可ユーザーは確認なし</value>
   </data>
   <data name="ApprovalEveryTime" xml:space="preserve">
     <value>毎回確認</value>
@@ -391,8 +391,25 @@
     <value>次のステップ: エージェントと作業フォルダーを設定します。</value>
   </data>
   <data name="SetupAllowedUsersMissing" xml:space="preserve">
-    <value>次のステップ: 接続先ごとに許可するユーザーIDを1行に1つ設定します。空欄では全員を拒否します。</value>
+    <value>次のステップ: 許可ユーザーIDの形式を確認してください。IDは1行に1つ入力します。</value>
   </data>
+  <data name="InheritLimitCodexAppServer" xml:space="preserve"><value>CLIの既定値では、作業フォルダー内の編集はできますが、ネットワークやフォルダー外への操作は1件ずつこのPCでの承認待ちになります。外出先からは作業が止まって見えることがあります。</value></data>
+  <data name="InheritLimitCodexExec" xml:space="preserve"><value>CLIの既定値では、Codexの設定（config.toml の sandbox_mode）に従います。読み取り専用のままだと、ファイルを編集できません。</value></data>
+  <data name="InheritLimitClaude" xml:space="preserve"><value>CLIの既定値では、Claude Codeの許可ルールにない編集やコマンドは、確認画面を出せないため拒否されることがあります。編集させる場合は「フォルダー内の編集を自動許可」を選ぶか、Claude Code側で許可ルールを設定してください。</value></data>
+  <data name="AllowedUserNameUnknown" xml:space="preserve"><value>名前未確認</value></data>
+  <data name="AllowedUserIdLine" xml:space="preserve"><value>ID: {0} · {1}</value></data>
+  <data name="AllowedUserAddedUnknown" xml:space="preserve"><value>追加した記録はありません</value></data>
+  <data name="AllowedUserNotSaved" xml:space="preserve"><value>未保存</value></data>
+  <data name="AllowedUserAddedFromChat" xml:space="preserve"><value>チャットの依頼から許可（{0}・{1}）</value></data>
+  <data name="AllowedUserAddedInSettings" xml:space="preserve"><value>設定画面で追加（{0}・{1}）</value></data>
+  <data name="AllowedUserActorUnknown" xml:space="preserve"><value>操作したユーザー不明</value></data>
+  <data name="AllowedUserLastRequest" xml:space="preserve"><value>最後の依頼: {0}</value></data>
+  <data name="AllowedUserRemove" xml:space="preserve"><value>{0} を一覧から削除</value></data>
+  <data name="AllowedUserAlreadyListed" xml:space="preserve"><value>{0} はすでに一覧にあります。</value></data>
+  <data name="AllowedUserInvalidId" xml:space="preserve"><value>IDは英数字・アンダースコア・ハイフンの128文字以内で、一覧は100件までです。</value></data>
+  <data name="AllowedUserInvalidDiscordId" xml:space="preserve"><value>DiscordのユーザーIDは数字のみです。一覧は100件までです。</value></data>
+  <data name="AllowedUserAddedSaveNeeded" xml:space="preserve"><value>{0} を追加しました。保存すると反映されます。</value></data>
+  <data name="AllowedUserRemovedSaveNeeded" xml:space="preserve"><value>{0} を削除しました。保存すると反映されます。</value></data>
   <data name="SetupDiscordGuildIdsMissing" xml:space="preserve">
     <value>次のステップ: 許可するDiscordサーバーIDを1つ以上入力するか、ダイレクトメッセージを明示的に有効にします。</value>
   </data>

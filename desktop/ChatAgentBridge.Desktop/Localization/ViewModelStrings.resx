@@ -31,7 +31,7 @@
     <value>Within the allowed user list</value>
   </data>
   <data name="ApprovalAutomatic" xml:space="preserve">
-    <value>Approve automatically</value>
+    <value>No approval for allowed users</value>
   </data>
   <data name="ApprovalEveryTime" xml:space="preserve">
     <value>Confirm every time</value>
@@ -391,8 +391,25 @@
     <value>Next: configure the agent and workspace.</value>
   </data>
   <data name="SetupAllowedUsersMissing" xml:space="preserve">
-    <value>Next: enter one allowed user ID per line for each connection. An empty list denies everyone.</value>
+    <value>Next: check the format of the allowed user IDs. Enter one ID per line.</value>
   </data>
+  <data name="InheritLimitCodexAppServer" xml:space="preserve"><value>With the CLI default, edits inside the working folder work, but network access and changes outside the folder wait for approval on this PC one by one. From outside, the work may look stuck.</value></data>
+  <data name="InheritLimitCodexExec" xml:space="preserve"><value>With the CLI default, Codex follows sandbox_mode in config.toml. If that is read-only, it cannot edit files.</value></data>
+  <data name="InheritLimitClaude" xml:space="preserve"><value>With the CLI default, edits and commands that Claude Code's permission rules do not allow may be denied, because no confirmation prompt can be shown. To allow edits, choose Allow edits in the working folder or add permission rules in Claude Code.</value></data>
+  <data name="AllowedUserNameUnknown" xml:space="preserve"><value>Name not known yet</value></data>
+  <data name="AllowedUserIdLine" xml:space="preserve"><value>ID: {0} · {1}</value></data>
+  <data name="AllowedUserAddedUnknown" xml:space="preserve"><value>No record of when this user was added</value></data>
+  <data name="AllowedUserNotSaved" xml:space="preserve"><value>Not saved</value></data>
+  <data name="AllowedUserAddedFromChat" xml:space="preserve"><value>Allowed from a chat request ({0} · {1})</value></data>
+  <data name="AllowedUserAddedInSettings" xml:space="preserve"><value>Added in settings ({0} · {1})</value></data>
+  <data name="AllowedUserActorUnknown" xml:space="preserve"><value>unknown user</value></data>
+  <data name="AllowedUserLastRequest" xml:space="preserve"><value>Last request: {0}</value></data>
+  <data name="AllowedUserRemove" xml:space="preserve"><value>Remove {0} from the list</value></data>
+  <data name="AllowedUserAlreadyListed" xml:space="preserve"><value>{0} is already in the list.</value></data>
+  <data name="AllowedUserInvalidId" xml:space="preserve"><value>IDs use letters, digits, underscores or hyphens, up to 128 characters. The list holds up to 100 IDs.</value></data>
+  <data name="AllowedUserInvalidDiscordId" xml:space="preserve"><value>Discord user IDs contain digits only. The list holds up to 100 IDs.</value></data>
+  <data name="AllowedUserAddedSaveNeeded" xml:space="preserve"><value>Added {0}. Save to apply.</value></data>
+  <data name="AllowedUserRemovedSaveNeeded" xml:space="preserve"><value>Removed {0}. Save to apply.</value></data>
   <data name="SetupDiscordGuildIdsMissing" xml:space="preserve">
     <value>Next: enter at least one allowed Discord server ID, or explicitly enable direct messages.</value>
   </data>

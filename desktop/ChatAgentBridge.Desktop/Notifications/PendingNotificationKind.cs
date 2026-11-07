@@ -4,5 +4,6 @@ namespace ChatAgentBridge_Desktop.Notifications;
 public enum PendingNotificationKind
 {
     ChatRequest,
-    AiApproval
+    AiApproval,
+    AccessRequest
 }

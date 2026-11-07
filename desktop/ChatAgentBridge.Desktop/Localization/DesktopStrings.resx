@@ -219,6 +219,27 @@
   <data name="AuditDetached" xml:space="preserve"><value>Session detached</value></data>
   <data name="AuditWorkspaceChanged" xml:space="preserve"><value>Workspace changed</value></data>
   <data name="AuditOther" xml:space="preserve"><value>Other action</value></data>
+  <data name="AttachmentsExcluded" xml:space="preserve"><value>Not sent: {0} ({1}). Files named like settings, credentials or programs are never sent.</value></data>
+  <data name="AccessRequestAllow" xml:space="preserve"><value>Allow and run</value></data>
+  <data name="AccessRequestUser" xml:space="preserve"><value>{0} (ID: {1}) · {2}</value></data>
+  <data name="AccessRequestLocation" xml:space="preserve"><value>Channel: {0} · {1}</value></data>
+  <data name="AccessRequestPendingReply" xml:space="preserve"><value>Waiting for approval on the PC. The request runs once it is approved.</value></data>
+  <data name="AccessRequestReceivedStatus" xml:space="preserve"><value>{0} sent a request. Choose whether to allow it.</value></data>
+  <data name="AccessRequestAllowedStatus" xml:space="preserve"><value>Added {0} to the allowed users.</value></data>
+  <data name="AccessRequestAllowedOnceStatus" xml:space="preserve"><value>Accepted this request from {0} once.</value></data>
+  <data name="AccessRequestDeniedStatus" xml:space="preserve"><value>Denied the request from {0}.</value></data>
+  <data name="AccessRequestFailedStatus" xml:space="preserve"><value>Could not process the access decision. Check the settings file.</value></data>
+  <data name="AccessRequestNotDispatchedStatus" xml:space="preserve"><value>The connection or settings changed, so this request did not run. Ask the person to send it again.</value></data>
+  <data name="NotificationAccessRequestTitle" xml:space="preserve"><value>Request from someone not allowed yet</value></data>
+  <data name="NotificationAccessRequestBody" xml:space="preserve"><value>Open Chat Agent Bridge to choose whether to allow it.</value></data>
+  <data name="NotificationAccessRequestDetail" xml:space="preserve"><value>Request from {0}. Allowing adds them to the allowed users.</value></data>
+  <data name="AuditAccessRequested" xml:space="preserve"><value>Request from a user who is not allowed: {0}</value></data>
+  <data name="AuditAccessAllowed" xml:space="preserve"><value>Added to allowed users (from a chat request): {0} · {1}</value></data>
+  <data name="AuditAccessAllowedOnce" xml:space="preserve"><value>Allowed to run once: {0} · {1}</value></data>
+  <data name="AuditAccessDenied" xml:space="preserve"><value>Request denied: {0} · {1}</value></data>
+  <data name="AuditAllowedUserAdded" xml:space="preserve"><value>Added to allowed users (settings): {0} · {1}</value></data>
+  <data name="AuditAllowedUserRemoved" xml:space="preserve"><value>Removed from allowed users (settings): {0} · {1}</value></data>
+  <data name="AuditAccessUnknownActor" xml:space="preserve"><value>Unknown user</value></data>
   <data name="HistorySessionConversation" xml:space="preserve"><value>{0} / {1}{2}Conversation owner: {3}</value></data>
   <data name="LegacyUnknownOwner" xml:space="preserve"><value>Legacy record; owner unknown (will not continue automatically)</value></data>
   <data name="DefaultModel" xml:space="preserve"><value>Default model</value></data>
@@ -230,7 +251,7 @@
   <data name="HistoryExecutionPolicy" xml:space="preserve"><value>Conversation policy: approval {0} / results {1} / AI actions {2}</value></data>
   <data name="AskEveryTime" xml:space="preserve"><value>Ask every time</value></data>
   <data name="AskFirstTime" xml:space="preserve"><value>Confirm first request per conversation</value></data>
-  <data name="AutoApprove" xml:space="preserve"><value>Automatic approval</value></data>
+  <data name="AutoApprove" xml:space="preserve"><value>No approval for allowed users</value></data>
   <data name="ManualShare" xml:space="preserve"><value>Review and share manually</value></data>
   <data name="AutoShare" xml:space="preserve"><value>Share automatically</value></data>
   <data name="NoSharing" xml:space="preserve"><value>Do not share</value></data>
@@ -371,7 +392,7 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="UseGlobalSettings" xml:space="preserve"><value>Use global settings</value></data>
   <data name="ConversationExecutionPolicy" xml:space="preserve"><value>Execution policy for this conversation</value></data>
   <data name="ConversationPolicyIntro" xml:space="preserve"><value>Conversation: {0}&#10;When “Use global settings” is selected, approval is {1}, result sharing is {2}, and AI actions are {3}.</value></data>
-  <data name="ConversationPolicyWarning" xml:space="preserve"><value>Automatic approval runs requests from this conversation without a confirmation screen. Full access may bypass CLI permission checks. Claude Code modes do not configure the OS sandbox. “Ask for each action” is available only with Codex App Server.</value></data>
+  <data name="ConversationPolicyWarning" xml:space="preserve"><value>With No approval for allowed users, requests from allowed users in this conversation run without a confirmation screen. Full access may bypass CLI permission checks. Claude Code modes do not configure the OS sandbox. “Ask for each action” is available only with Codex App Server.</value></data>
   <data name="SetConversationExecutionPolicy" xml:space="preserve"><value>Set execution policy for this conversation</value></data>
   <data name="InboxConfirmWorkspaceTitle" xml:space="preserve"><value>Change this conversation's workspace?</value></data>
   <data name="InboxConfirmRunTitle" xml:space="preserve"><value>Run with the local agent?</value></data>
@@ -915,7 +936,7 @@ After: {2}</value></data>
   <data name="SettingsReviewDiscordDirectMessages" xml:space="preserve"><value>Discord direct messages</value></data>
   <data name="DiscordInboxApprovalWaiting" xml:space="preserve"><value>This request is waiting for your approval. Only the requester can use these buttons.</value></data>
   <data name="DiscordInboxApprovalPostFailed" xml:space="preserve"><value>Could not post Discord approval buttons. Approve or reject on this PC.</value></data>
-  <data name="DiscordInboxConfigurationMissing" xml:space="preserve"><value>Enter the Discord bot token and allowed user IDs in Chat settings. Allow server IDs for server conversations, or explicitly enable direct messages.</value></data>
+  <data name="DiscordInboxConfigurationMissing" xml:space="preserve"><value>Enter the Discord bot token in Chat settings. Allow server IDs for server conversations, or explicitly enable direct messages.</value></data>
   <data name="DiscordInboxAuthenticationFailed" xml:space="preserve"><value>Discord rejected the bot token. Check the Bot token in Chat settings; an application ID or public key cannot be used.</value></data>
   <data name="DiscordInboxMessageContentRequired" xml:space="preserve"><value>Enable Message Content Intent in Discord Developer Portal &gt; Bot, then reconnect.</value></data>
   <data name="DiscordInboxPermissionsRequired" xml:space="preserve"><value>Check the Discord bot permissions: View Channel, Send Messages, Read Message History, Create Public Threads, Send Messages in Threads, and Attach Files.</value></data>

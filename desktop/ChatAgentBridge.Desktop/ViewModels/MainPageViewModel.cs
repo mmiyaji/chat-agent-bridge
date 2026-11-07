@@ -239,7 +239,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial bool AllowAgentNetwork { get; set; }
     [ObservableProperty] public partial string TrustedWorkspaceRoots { get; set; } = string.Empty;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanAutoApproveSwitchCommands))]
-    public partial string ChatApprovalMode { get; set; } = "first";
+    public partial string ChatApprovalMode { get; set; } = "auto";
     [ObservableProperty] public partial bool AutoApproveSwitchCommands { get; set; }
     // First-only approval also permits switches after this conversation has been approved.
     public bool CanAutoApproveSwitchCommands => ChatApprovalMode is "auto" or "first";
@@ -263,7 +263,11 @@ public partial class MainPageViewModel : ObservableObject
     public bool CanSelectWorkspaceWritePermission => AgentProvider != "kimi";
     public string AgentPermissionStatus => AgentProvider == "kimi" ? ViewModelText.Get("KimiPermissionHelp") : IsAntigravityProvider ? ViewModelText.Get("AntigravityPermissionHelp")
         : IsBasicProvider ? ViewModelText.Get("BasicPermissionManagedByCli")
-        : _agentPermissionModeAdjusted ? ViewModelText.Get("AskPermissionChangedToReadOnly") : string.Empty;
+        : _agentPermissionModeAdjusted ? ViewModelText.Get("AskPermissionChangedToReadOnly")
+        // The CLI default can block or pause work that the chat user cannot unblock from outside; say so instead of changing it.
+        : AgentPermissionMode == "inherit" && IsCodexProvider ? ViewModelText.Get(UseAppServer ? "InheritLimitCodexAppServer" : "InheritLimitCodexExec")
+        : AgentPermissionMode == "inherit" && AgentProvider == AgentProfile.Claude ? ViewModelText.Get("InheritLimitClaude")
+        : string.Empty;
     private string NetworkPolicyLabel => !IsCodexProvider ? ViewModelText.Get("NetworkManagedByCli")
         : AgentPermissionMode == "full-access" ? ViewModelText.Get("NetworkUnrestrictedFullAccess")
         : AgentPermissionMode == "inherit" && !UseAppServer ? ViewModelText.Get("UseCliNetworkSettings")
@@ -373,6 +377,7 @@ public partial class MainPageViewModel : ObservableObject
             DiscordAllowedChannelIds = _settings.DiscordAllowedChannelIds;
             DiscordAllowedThreadIds = _settings.DiscordAllowedThreadIds;
             DiscordAllowDirectMessages = _settings.DiscordAllowDirectMessages;
+            _ = RefreshAllowedUserDetailsAsync();
             ShareApprovalsInChat = _settings.ShareApprovalsInChat;
             ShareAgentQuestionsInChat = _settings.ShareAgentQuestionsInChat;
             RequireApproval = _settings.RequireApproval;
@@ -586,6 +591,7 @@ public partial class MainPageViewModel : ObservableObject
             else
             {
                 await Task.Run(() => _settingsStore.SaveAsync(snapshot));
+                await AuditAllowedUserChangesAsync(baseline, snapshot);
             }
             _settings = snapshot;
             OnPropertyChanged(nameof(PersistedSettings));
@@ -916,9 +922,9 @@ public partial class MainPageViewModel : ObservableObject
         var mattermostCredentials = !string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) && !string.IsNullOrWhiteSpace(_settings.MattermostChannelId) && !string.IsNullOrWhiteSpace(_settings.MattermostToken);
         var slackCredentials = !string.IsNullOrWhiteSpace(_settings.SlackBotToken) && !string.IsNullOrWhiteSpace(_settings.SlackAppToken);
         var discordCredentials = !string.IsNullOrWhiteSpace(_settings.DiscordBotToken);
-        var mattermostAllowed = HasAllowedUsers(_settings.MattermostAllowedUserIds);
-        var slackAllowed = HasAllowedUsers(_settings.SlackAllowedUserIds);
-        var discordUsersAllowed = HasDiscordIds(_settings.DiscordAllowedUserIds);
+        var mattermostAllowed = AllowedUsersValid(_settings.MattermostAllowedUserIds);
+        var slackAllowed = AllowedUsersValid(_settings.SlackAllowedUserIds);
+        var discordUsersAllowed = DiscordIdsValid(_settings.DiscordAllowedUserIds);
         var discordGuildRequired = !_settings.DiscordAllowDirectMessages && !HasDiscordIds(_settings.DiscordAllowedGuildIds);
         var discordAllowed = discordUsersAllowed && !discordGuildRequired;
         var connectionReady = (mattermostCredentials && mattermostAllowed) || (slackCredentials && slackAllowed) || (discordCredentials && discordAllowed);
@@ -946,9 +952,16 @@ public partial class MainPageViewModel : ObservableObject
         RefreshOverviewStatus();
     }
 
-    private static bool HasAllowedUsers(string value)
+    // An empty allowed-user list is valid: chat users can ask for access and be approved on this PC.
+    private static bool AllowedUsersValid(string value)
     {
-        try { return ChatAccessPolicy.NormalizeAllowedUsers(value).Length > 0; }
+        try { _ = ChatAccessPolicy.NormalizeAllowedUsers(value); return true; }
+        catch (FormatException) { return false; }
+    }
+
+    private static bool DiscordIdsValid(string value)
+    {
+        try { _ = ChatAccessPolicy.NormalizeDiscordSnowflakes(value); return true; }
         catch (FormatException) { return false; }
     }
 

@@ -836,6 +836,16 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     return;
                 }
                 Volatile.Write(ref _accessSettings, accessSettings);
+                if (request.IsAccessRequest)
+                {
+                    // The user may have been allowed since the transport filtered this post.
+                    if (!ChatAccessPolicy.IsAllowed(accessSettings, request.Provider, request.UserId))
+                    {
+                        await QueueAccessRequestAsync(transport, accessSettings, settings, request, token);
+                        return;
+                    }
+                    request = request with { IsAccessRequest = false };
+                }
                 if (_disconnecting || !CanReceive(accessSettings, request, settings)) return;
                 await QueueReceivedAuditAsync(receivedAudits, request, cancellationToken);
                 // A full queue can yield while the user revokes access or disconnects.
@@ -892,6 +902,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             }
             finally { await receivedAudits.DisposeAsync(); }
             foreach (var item in Requests.Where(item => item.State == "承認待ち")) item.State = "接続終了・再受信が必要";
+            ClearAccessRequests();
             ApproveCommand.NotifyCanExecuteChanged();
             RejectCommand.NotifyCanExecuteChanged();
             SendResultCommand.NotifyCanExecuteChanged();
@@ -1363,7 +1374,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     }
 
     private static bool CanReceive(BridgeSettings current, ChatRequest request, BridgeSettings connected) =>
-        ChatAccessPolicy.IsAllowedRequest(current, request.Provider, request.UserId, request.ChannelId, request.ThreadId, request.GuildId) &&
+        !request.IsAccessRequest &&
+        (ChatAccessPolicy.IsAllowedRequest(current, request.Provider, request.UserId, request.ChannelId, request.ThreadId, request.GuildId) ||
+            HasOneTimeAccess(current, request)) &&
         (request.Provider != "mattermost" || string.Equals(current.MattermostChannelId, request.ChannelId, StringComparison.Ordinal)) &&
         ChatConnectionPolicy.Matches(request.Provider, current, connected);
 

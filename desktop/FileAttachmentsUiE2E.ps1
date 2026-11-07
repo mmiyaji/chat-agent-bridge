@@ -236,8 +236,27 @@ function Wait-Server([scriptblock]$Condition,[int]$Seconds=10) {
     while ([DateTime]::UtcNow -lt $deadline)
     throw 'Offline chat fixture did not reach the expected state'
 }
+# InboxSearch is an AutoSuggestBox; winapp resolves its ID to the outer group, so write to the text field through UIA.
+function Set-InboxSearch([string]$Text) {
+    $box = Wait-Element 'InboxSearch'
+    $valueCondition = [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::IsValuePatternAvailableProperty, $true)
+    $target = if ($box.GetSupportedPatterns() -contains [System.Windows.Automation.ValuePattern]::Pattern) { $box }
+        else { $box.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $valueCondition) }
+    if ($null -eq $target) { throw 'InboxSearch has no editable text field.' }
+    $target.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($Text)
+    Start-Sleep -Milliseconds 180
+}
+# The audit log is stored as audit-segment-*.jsonl files; read them all as one text.
+function Read-AuditText {
+    $segments = @(Get-ChildItem -LiteralPath $dataPath -Filter 'audit-segment-*.jsonl' -File -ErrorAction SilentlyContinue | Sort-Object Name)
+    if ($segments.Count -eq 0) { return '' }
+    return (($segments | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n")
+}
+function Read-AuditKinds {
+    foreach ($line in ((Read-AuditText) -split "`r?`n")) { if ($line.Trim()) { ($line | ConvertFrom-Json).Kind } }
+}
 function Select-ConversationRequest([string]$Prompt) {
-    Set-Value 'InboxSearch' $Prompt
+    Set-InboxSearch $Prompt
     Select-FirstRow 'InboxConversations'
     Wait-Element 'ChatRequests' | Out-Null
     Select-Request $Prompt
@@ -252,10 +271,24 @@ function Run-Request([string]$Id,[string]$Filename,[switch]$ExpectAutomaticAttac
     UI @('invoke','PrimaryButton') | Out-Null
     UI @('wait-for','ChatOutput','--value',"Created $Filename",'--contains','-t','12000') | Out-Null
     if (-not $ExpectAutomaticAttachment) {
+        Show-RequestAction 'SendChatAttachments'
         UI @('wait-for','SendChatAttachments','-p','IsEnabled','--value','True','-t','6000') | Out-Null
     }
 }
+# Sending attachments is a secondary command in the request command bar, shown only after opening its "..." menu.
+function Show-RequestAction([string]$Id) {
+    $element = Element $Id
+    if (-not $element -or $element.Current.IsOffscreen) {
+        $bar = Wait-Element 'InboxCommandBar'
+        $more = $bar.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
+            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,'MoreButton'))
+        if ($null -eq $more) { throw 'The request command bar has no overflow button.' }
+        $more.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+        UI @('wait-for',$Id,'-t','4000') | Out-Null
+    }
+}
 function Open-AttachmentDialog {
+    Show-RequestAction 'SendChatAttachments'
     UI @('invoke','SendChatAttachments') | Out-Null
     Wait-Element 'AttachmentConfirmation' | Out-Null
     Wait-Element 'AttachmentFile1' | Out-Null
@@ -327,8 +360,8 @@ try {
         Run-Request 'attachment-1' 'first.txt'
         $snapshot=Invoke-RestMethod "$script:endpoint/test/results"
         Assert-True ($snapshot.uploads.Count -eq 0) 'Default always mode uploaded a file automatically'
-        $auditText=Get-Content (Join-Path $dataPath 'audit.json') -Raw
-        $auditKinds=@((Get-Content (Join-Path $dataPath 'audit.json') -Raw | ConvertFrom-Json).Records | ForEach-Object Kind)
+        $auditText=(Read-AuditText)
+        $auditKinds=@(Read-AuditKinds)
         Assert-True (-not ($auditKinds | Where-Object { $_ -like 'attachment_*' })) 'Default discovery/cancel wrote an attachment approval or send audit event'
         Assert-True (-not $auditText.Contains($workspace) -and -not $auditText.Contains('offline-ui-fixture')) 'Attachment audit exposed a workspace path or token'
         Assert-True ($null -eq (Element 'AttachmentConfirmation')) 'Default always mode opened a confirmation dialog before the user clicked the file action'
@@ -382,14 +415,14 @@ try {
         Confirm-OneAttachment
         $second=Wait-Server { param($s) $s.uploads.Count -eq 1 -and @($s.replies|Where-Object {$_.root_id -eq 'attachments-thread' -and $_.file_ids}).Count -ge 1 }
         Assert-True ($second.uploads[0].name -eq 'second.txt' -and $second.replies[-1].root_id -eq 'attachments-thread') 'Manual attachment did not upload and post the selected file in the requested thread'
-        $auditKinds=@((Get-Content (Join-Path $dataPath 'audit.json') -Raw | ConvertFrom-Json).Records | ForEach-Object Kind)
+        $auditKinds=@(Read-AuditKinds)
         Assert-True (@($auditKinds | Where-Object {$_ -eq 'attachment_approved'}).Count -eq 1 -and @($auditKinds | Where-Object {$_ -eq 'attachment_sent'}).Count -eq 1) 'Manual attachment approval/send audit events were not recorded'
 
         Run-Request 'attachment-3' 'third.txt' -ExpectAutomaticAttachment
         $third=Wait-Server { param($s) $s.uploads.Count -eq 2 }
         Assert-True (@($third.uploads|Where-Object name -eq 'third.txt').Count -eq 1) 'First mode did not upload the next eligible file automatically'
         Assert-True ($null -eq (Element 'AttachmentConfirmation')) 'First mode prompted again after same-session consent'
-        $auditKinds=@((Get-Content (Join-Path $dataPath 'audit.json') -Raw | ConvertFrom-Json).Records | ForEach-Object Kind)
+        $auditKinds=@(Read-AuditKinds)
         Assert-True (@($auditKinds | Where-Object {$_ -eq 'attachment_approved'}).Count -eq 2 -and @($auditKinds | Where-Object {$_ -eq 'attachment_sent'}).Count -eq 2) 'Automatic attachment audit events were not recorded'
 
         Navigate 'NavConnections'
@@ -404,7 +437,7 @@ try {
         Confirm-OneAttachment
         $final=Wait-Server { param($s) $s.uploads.Count -eq 3 }
         Assert-True (@($final.uploads|Where-Object name -eq 'fourth.txt').Count -eq 1) 'The newly approved file was not uploaded'
-        $auditKinds=@((Get-Content (Join-Path $dataPath 'audit.json') -Raw | ConvertFrom-Json).Records | ForEach-Object Kind)
+        $auditKinds=@(Read-AuditKinds)
         Assert-True (@($auditKinds | Where-Object {$_ -eq 'attachment_approved'}).Count -eq 3 -and @($auditKinds | Where-Object {$_ -eq 'attachment_sent'}).Count -eq 3) 'Reconsented attachment audit events were not recorded'
         $calls=@(Get-Content (Join-Path $runRoot 'agent-calls.jsonl')|ForEach-Object {$_|ConvertFrom-Json})
         Assert-True ($calls.Count -eq 4 -and @($calls|Where-Object { $_.args -contains '--resume' }).Count -eq 3) 'The Claude fixture did not resume the same saved session for later requests'

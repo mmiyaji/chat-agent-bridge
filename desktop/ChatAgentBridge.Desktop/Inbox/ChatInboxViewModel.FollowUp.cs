@@ -30,6 +30,7 @@ public sealed partial class ChatInboxViewModel
             _automaticallyAttempted.Remove(completed);
         }
         var incoming = new InboxItem(request, transport, settings);
+        RecordAllowedUserRequest(request);
         InitializeProgress(incoming);
         Requests.Add(incoming);
         if (await TryAddFollowUpAsync(incoming, token)) return;

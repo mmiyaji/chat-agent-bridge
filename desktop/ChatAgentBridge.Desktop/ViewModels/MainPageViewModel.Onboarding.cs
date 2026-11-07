@@ -208,11 +208,11 @@ public partial class MainPageViewModel
     private bool CanGoBackInOnboarding() => CanOnboardingAction() && OnboardingStep > 0;
     private bool HasChosenChatConfiguration() => (IsWizardSlack || IsWizardMattermost || IsWizardDiscord) && MissingChatFields().Count == 0;
     private IReadOnlyList<WizardField> MissingChatFields() => IsWizardSlack
-        ? OnboardingFieldChecks.SlackChat(SlackBotToken, SlackAppToken, HasAllowedUsers(SlackAllowedUserIds))
+        ? OnboardingFieldChecks.SlackChat(SlackBotToken, SlackAppToken, AllowedUsersValid(SlackAllowedUserIds))
         : IsWizardMattermost
-            ? OnboardingFieldChecks.MattermostChat(IsWizardMattermostUrlValid(), MattermostChannelId, MattermostToken, HasAllowedUsers(MattermostAllowedUserIds))
+            ? OnboardingFieldChecks.MattermostChat(IsWizardMattermostUrlValid(), MattermostChannelId, MattermostToken, AllowedUsersValid(MattermostAllowedUserIds))
             : IsWizardDiscord
-                ? OnboardingFieldChecks.DiscordChat(DiscordBotToken, HasAllowedUsers(DiscordAllowedUserIds), HasDiscordIds(DiscordAllowedGuildIds), DiscordAllowDirectMessages)
+                ? OnboardingFieldChecks.DiscordChat(DiscordBotToken, DiscordIdsValid(DiscordAllowedUserIds), HasDiscordIds(DiscordAllowedGuildIds), DiscordAllowDirectMessages)
                 : [];
     private bool IsWizardMattermostUrlValid() => Uri.TryCreate(MattermostServerUrl.Trim(), UriKind.Absolute, out var uri) &&
         (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback) &&

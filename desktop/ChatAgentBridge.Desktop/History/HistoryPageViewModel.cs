@@ -73,8 +73,17 @@ public sealed record AuditHistoryRow(AuditEvent Record, string? ChatLabel = null
         "workspace_changed" => DesktopText.Get("AuditWorkspaceChanged"),
         "model_changed" => DesktopText.Get("AuditModelChanged"),
         "agent_changed" => DesktopText.Get("AgentSwitchCompleted"),
+        "access_requested" => DesktopText.Get("AuditAccessRequested", AccessSubject),
+        "access_allowed" => DesktopText.Get("AuditAccessAllowed", AccessSubject, AccessActor),
+        "access_allowed_once" => DesktopText.Get("AuditAccessAllowedOnce", AccessSubject, AccessActor),
+        "access_denied" => DesktopText.Get("AuditAccessDenied", AccessSubject, AccessActor),
+        "allowed_user_added" => DesktopText.Get("AuditAllowedUserAdded", AccessSubject, AccessActor),
+        "allowed_user_removed" => DesktopText.Get("AuditAllowedUserRemoved", AccessSubject, AccessActor),
         _ => DesktopText.Get("AuditOther")
     };
+    private string AccessSubject => Record.Access is not { } access ? "" :
+        string.IsNullOrWhiteSpace(access.DisplayName) ? access.UserId : $"{access.DisplayName} ({access.UserId})";
+    private string AccessActor => string.IsNullOrWhiteSpace(Record.Access?.Actor) ? DesktopText.Get("AuditAccessUnknownActor") : Record.Access!.Actor;
     public string Source => Record.Source switch
     {
         "local" => DesktopText.Get("Local"),

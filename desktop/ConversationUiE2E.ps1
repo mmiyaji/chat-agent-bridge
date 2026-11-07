@@ -75,6 +75,17 @@ function Set-Search([string]$Id,[string]$Text) {
     (Element $Id).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($Text)
     Start-Sleep -Milliseconds 150
 }
+# The service filter lives in the history page's filter flyout; open it, choose, then dismiss it.
+function Choose-ProviderFilter([string]$Name) {
+    UI @('invoke','SavedSessionsAdvancedFilters') | Out-Null
+    UI @('wait-for','SavedSessionsProviderFilter','-t','3000') | Out-Null
+    Choose 'SavedSessionsProviderFilter' $Name
+    Start-Sleep -Milliseconds 200
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+    Start-Sleep -Milliseconds 200
+}
+
 function Choose([string]$Id,[string]$Name) {
     $combo = Element $Id
     $pattern = $combo.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern)
@@ -204,12 +215,12 @@ process.stdin.on('end', () => setTimeout(() => {
             [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem))
         Assert-True ($first.Current.Name.Contains('project-0')) 'Newest saved conversation is not first'
         Capture 'history-all-conversations'
-        Choose 'SavedSessionsProviderFilter' 'Slack'
+        Choose-ProviderFilter 'Slack'
         UI @('wait-for','SavedSessionsCount','--value','21','--contains','-t','3000') | Out-Null
         Set-Search 'SavedSessionsSearch' 'bob'
         Select-FirstRow 'SavedSessionsList'
         Assert-Visible 'EditSessionModel'
-        Choose 'SavedSessionsProviderFilter' $(if($Language -eq 'ja'){'すべてのサービス'}else{'All services'})
+        Choose-ProviderFilter $(if($Language -eq 'ja'){'すべてのサービス'}else{'All services'})
         Set-Search 'SavedSessionsSearch' ''
     }
     Check 'Saved conversation search and empty results' {

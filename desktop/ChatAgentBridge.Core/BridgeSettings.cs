@@ -34,7 +34,7 @@ public sealed record BridgeSettings
     public string AgentPermissionMode { get; init; } = "inherit";
     public bool AllowAgentNetwork { get; init; }
     public string TrustedWorkspaceRoots { get; init; } = "";
-    public string ChatApprovalMode { get; init; } = "first";
+    public string ChatApprovalMode { get; init; } = "auto";
     // Takes effect with automatic approval or existing first-turn consent; see ConversationExecutionPolicy.AutoApprovesSwitchCommands.
     public bool AutoApproveSwitchCommands { get; init; }
     public string ChatResultMode { get; init; } = "auto";

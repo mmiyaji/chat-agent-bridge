@@ -42,10 +42,13 @@ public sealed partial class ChatInboxViewModel
             item.AttachmentCandidates = discovered.Candidates;
             item.AttachmentSessionId = sessionId;
             item.AttachmentScanComplete = discovered.IsComplete;
-            item.AttachmentStatus = discovered.Candidates.Count == 0
+            item.AttachmentStatus = (discovered.Candidates.Count == 0
                 ? DesktopText.Get(discovered.IsComplete ? "AttachmentsNone" : "AttachmentsScanIncomplete")
                 : DesktopText.Get("AttachmentsFound", discovered.Candidates.Count) +
-                    (discovered.IsComplete ? "" : " " + DesktopText.Get("AttachmentsScanIncomplete"));
+                    (discovered.IsComplete ? "" : " " + DesktopText.Get("AttachmentsScanIncomplete"))) +
+                (discovered.ExcludedFiles.Count == 0 ? "" : " " + DesktopText.Get("AttachmentsExcluded",
+                    discovered.ExcludedFiles.Count, string.Join(", ", discovered.ExcludedFiles.Take(3)) +
+                    (discovered.ExcludedFiles.Count > 3 ? " …" : "")));
             SendAttachmentsCommand.NotifyCanExecuteChanged();
             if (discovered.Candidates.Count == 0) return;
             // The default 'always' mode leaves a visible pending action. Text auto-reply never counts as file consent.

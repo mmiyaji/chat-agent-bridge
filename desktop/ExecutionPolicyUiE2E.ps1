@@ -176,6 +176,8 @@ function Set-Policy([string]$Approval, [string]$ResultMode) {
     $settings = Get-Content -LiteralPath $settingsFile -Raw | ConvertFrom-Json
     $settings.ChatApprovalMode = $Approval
     $settings.ChatResultMode = $ResultMode
+    # Replies are compared with the exact prompt; keep the attachment capability note out of this policy test.
+    $settings | Add-Member -NotePropertyName FileAttachmentApprovalMode -NotePropertyValue 'disabled' -Force
     $temp = "$settingsFile.$([Guid]::NewGuid().ToString('N')).tmp"
     try {
         $json = ConvertTo-Json -InputObject $settings -Depth 20
@@ -241,14 +243,17 @@ try {
     Add-Pass 'auto approval executes fixture and auto shares matching final text'
 
     $currentStep = 'unlisted user'
-    $currentSubstep = 'verify access rejection without execution'
+    $currentSubstep = 'verify the request waits for PC approval without execution'
     $beforeUnlisted = Get-HistoryCount
     $unlistedPost = Post-Request 'policy-unlisted-202' 'unlisted-user'
     Start-Sleep -Seconds 2
-    if ((Get-HistoryCount) -ne $beforeUnlisted -or @((Get-Replies) | Where-Object { $_.root_id -eq $unlistedPost.id }).Count -gt 0) {
-        throw 'An unlisted user created execution history or a reply.'
+    # An unlisted user's request is offered for approval on the PC; the requester only gets a pending notice.
+    $unlistedReplies = @((Get-Replies) | Where-Object { $_.root_id -eq $unlistedPost.id })
+    if ((Get-HistoryCount) -ne $beforeUnlisted -or $unlistedReplies.Count -gt 1 -or
+        @($unlistedReplies | Where-Object { $_.message -notmatch 'このPCで承認待ちです|Waiting for approval on the PC' }).Count -gt 0) {
+        throw 'An unlisted user created execution history or a reply other than the pending-approval notice.'
     }
-    Add-Pass 'unlisted user creates no execution history or replies'
+    Add-Pass 'unlisted user waits for PC approval without execution history'
 
     $currentStep = 'result none'
     $currentSubstep = 'verify state-only reply'
