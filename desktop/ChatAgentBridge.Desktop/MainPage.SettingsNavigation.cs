@@ -1,3 +1,5 @@
+using ChatAgentBridge_Desktop.Localization;
+using ChatAgentBridge_Desktop.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -61,6 +63,108 @@ public sealed partial class MainPage
 
     public static Visibility ActionButtonsVisibility(bool selected, bool settingsLoaded) =>
         ToVisibility(selected && settingsLoaded);
+
+    private void OpenAllowedUsers_Click(object sender, RoutedEventArgs e)
+    {
+        var provider = _connectionSettingsScope;
+        SetConnectionSettingsScope("common");
+        AllowedUsersProviderPicker.SelectedValue = provider;
+        AllowedUsersSettingsCard.IsExpanded = true;
+        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        {
+            if (!IsConnectionsSelected) return;
+            AllowedUsersSettingsCard.StartBringIntoView(new BringIntoViewOptions
+            {
+                VerticalAlignmentRatio = 0,
+                AnimationDesired = false
+            });
+        });
+    }
+
+    private async void ConfirmAllowedUserRemoval(object? sender, AllowedUserRow row)
+    {
+        if (_settingsPromptOpen || _sensitiveSettingsDialogOpen || _autoSaveAttemptRunning || XamlRoot is null) return;
+        _settingsPromptOpen = true;
+        try
+        {
+            var dialog = new ContentDialog
+            {
+                XamlRoot = XamlRoot,
+                RequestedTheme = App.Appearance.RequestedTheme,
+                Title = DesktopText.Get("AllowedUserRemoveTitle"),
+                Content = new TextBlock { Text = $"{row.ServiceName} · {row.Summary}", TextWrapping = TextWrapping.Wrap },
+                PrimaryButtonText = DesktopText.Get("AllowedUserRemoveAccept"),
+                CloseButtonText = DesktopText.Get("Cancel"),
+                DefaultButton = ContentDialogButton.Close
+            };
+            AutomationProperties.SetAutomationId(dialog, "AllowedUserRemoveConfirmation");
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+                row.RemoveCommand.Execute(null);
+        }
+        catch (InvalidOperationException ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Allowed user removal confirmation: {ex.GetType().Name}");
+        }
+        finally
+        {
+            _settingsPromptOpen = false;
+            ScheduleSettingsAutoSave();
+        }
+    }
+
+    private AllowedUserListModel SelectedAllowedUserModel => AllowedUsersProviderPicker.SelectedValue switch
+    {
+        "slack" => ViewModel.SlackAllowedUsers,
+        "discord" => ViewModel.DiscordAllowedUsers,
+        _ => ViewModel.MattermostAllowedUsers
+    };
+
+    private void AllowedUsersProviderPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CommonAllowedUserIdStatus is not null) UpdateAllowedUserAddFlyout();
+    }
+
+    private void AllowedUserAddFlyout_Opening(object sender, object e) => UpdateAllowedUserAddFlyout();
+
+    private void UpdateAllowedUserAddFlyout()
+    {
+        var model = SelectedAllowedUserModel;
+        CommonMattermostUsernameLookup.Visibility = ToVisibility(model.Provider == "mattermost");
+        CommonSlackUsernameLookup.Visibility = ToVisibility(model.Provider == "slack");
+        CommonAllowedUserIdInput.Text = model.NewUserId;
+        CommonAllowedUserIdStatus.Text = "";
+        CommonAllowedUserIdStatus.Visibility = Visibility.Collapsed;
+    }
+
+    private void AllowedUserAddFlyout_Closed(object sender, object e) => ScheduleSettingsAutoSave();
+
+    private void CommonAllowedUserAdd_Click(object sender, RoutedEventArgs e)
+    {
+        var model = SelectedAllowedUserModel;
+        var command = model.Provider == "mattermost"
+            ? ViewModel.AddMattermostUsernameLookupResultCommand
+            : ViewModel.AddSlackUsernameLookupResultCommand;
+        if (!command.CanExecute(null)) return;
+        var count = model.Rows.Count;
+        command.Execute(null);
+        if (model.Rows.Count > count) AllowedUserAddFlyout.Hide();
+    }
+
+    private void CommonAllowedUserAddById_Click(object sender, RoutedEventArgs e)
+    {
+        var model = SelectedAllowedUserModel;
+        model.NewUserId = CommonAllowedUserIdInput.Text;
+        model.Status = "";
+        var count = model.Rows.Count;
+        model.AddCommand.Execute(null);
+        if (model.Rows.Count > count)
+        {
+            AllowedUserAddFlyout.Hide();
+            return;
+        }
+        CommonAllowedUserIdStatus.Text = model.Status;
+        CommonAllowedUserIdStatus.Visibility = ToVisibility(model.HasStatus);
+    }
 
     private void ConnectionsJump_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {

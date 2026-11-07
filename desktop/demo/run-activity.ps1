@@ -56,6 +56,7 @@ try {
     Scroll-Cab -30 1100 600 60
     Start-Sleep 1.5
 
+    Invoke-Cab 'ExecutionHistoryTab'
     Invoke-Cab 'AuditHistoryTab'; Mark 'audit trail'
     Start-Sleep 4
     Scroll-Cab 5 1100 600

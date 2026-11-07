@@ -13,6 +13,10 @@ public partial class MainPageViewModel
     private AllowedUserListModel? _discordAllowedUsers;
     private CancellationTokenSource? _allowedUserPictures;
 
+    private AllowedUserTableModel? _allowedUserTable;
+    public AllowedUserTableModel AllowedUserTable => _allowedUserTable ??=
+        new(MattermostAllowedUsers, SlackAllowedUsers, DiscordAllowedUsers);
+
     public AllowedUserListModel SlackAllowedUsers => _slackAllowedUsers ??=
         new("slack", () => SlackAllowedUserIds, value => SlackAllowedUserIds = value, ChatAccessPolicy.NormalizeAllowedUsers);
     public AllowedUserListModel MattermostAllowedUsers => _mattermostAllowedUsers ??=

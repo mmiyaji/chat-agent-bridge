@@ -124,6 +124,8 @@ See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるc
 
 ## Approvals, access and sharing
 
+Under **Chat settings → Common settings → Allowed users**, one table shows the total count and each user’s service. The first six entries alternate between services with users. Choose **Show … more** to expand the table. To add someone, choose **Add user** and select a service in the popup. Search for a Mattermost or Slack user and confirm the match, or enter the user ID directly. Discord uses ID entry. The service tabs link to this list and provide a collapsed bulk ID editor. Select a name or ID for registration and last-request details, plus run, conversation, and CLI session counts from retained history. Removing a user asks for confirmation.
+
 Manual runs use the working folder selected in Agent settings, regardless of where CAB is installed. A folder selected and saved on the PC is trusted by default. Register other parent folders to permit switching conversations to their subfolders. Chat requests cannot automatically add locations outside that scope, and switching follows your approval settings. Git is not required; trusting a folder does not grant full access.
 
 **Chat settings** contains approval and sharing rules common to all chat services, along with each service's connection details and allowed users.
@@ -197,6 +199,8 @@ Actions are tied to the requester and the conversation (channel, thread and user
 You can also inspect live output and stop a request on the PC.
 
 ## History and usage
+
+In **History → Run history**, select a run to see related actions in time order. Switch to **All actions** to see every audit record, including rejected requests and actions without a run ID. Select an action to see its IDs and any recorded diagnostic code. Filter by service or action type. Drag a column’s right edge to resize it.
 
 Find saved conversations by name or working folder and change their model or agent. Review execution times, statuses, operation records and usage recorded by this app.
 

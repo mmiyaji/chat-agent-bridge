@@ -127,12 +127,12 @@
                                       Width="18" Height="18" VerticalAlignment="Center" />
                     </StackPanel>
                     <InfoBar x:Name="ExecutableDetectionNotice" IsOpen="False" IsClosable="True"
+                             Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(ExecutableDetectionNotice.IsOpen), Mode=OneWay}"
                              AutomationProperties.AutomationId="ExecutableDetectionNotice" />
-                    <TextBlock Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsReasoning), Mode=OneWay}" x:Uid="AgentEditorCliCheckHint" localization:LocalizedResourceKey.Key="AgentEditorCliCheckHint"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
                 </StackPanel>
 
                 <InfoBar x:Name="CliErrorInfoBar" IsOpen="{x:Bind Editor.CliCheckFailed, Mode=OneWay}" IsClosable="False"
+                         Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.CliCheckFailed), Mode=OneWay}"
                          Severity="Error" Message="{x:Bind Editor.CliCheckSummary, Mode=OneWay}">
                     <InfoBar.ActionButton>
                         <Button x:Uid="RetryCliCheck" localization:LocalizedResourceKey.Key="RetryCliCheck"

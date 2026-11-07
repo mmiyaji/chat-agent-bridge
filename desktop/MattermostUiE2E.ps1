@@ -391,6 +391,7 @@ try {
     Wait-UI 'MattermostServerUrl'
     Invoke-UI @('set-value', 'MattermostServerUrl', $state.serverUrl)
     Invoke-UI @('set-value', 'MattermostChannelId', $state.channel.id)
+    Invoke-UI @('invoke', 'MattermostAllowedUsersBulkEdit')
     Invoke-UI @('set-value', 'MattermostAllowedUserIds', "$($state.memberUser.id),$($state.unauthorizedUser.id)")
     $preConnectionSettings = Get-Content -LiteralPath (Join-Path $dataPath 'settings.json') -Raw | ConvertFrom-Json
     if (-not $preConnectionSettings.ShareApprovalsInChat) { Invoke-UI @('invoke', 'ShareApprovalsInChat') }

@@ -93,7 +93,8 @@ public sealed partial class HistoryPageViewModel
             }
             ApplyExecutionDayFilter();
             for (var i = 0; i < AuditEvents.Count; i++)
-                AuditEvents[i] = new(AuditEvents[i].Record, AuditChatLabel(AuditEvents[i].Record));
+                AuditEvents[i] = AuditEvents[i] with { ChatLabel = AuditChatLabel(AuditEvents[i].Record) };
+            ApplyAuditFilters();
         }
         catch (OperationCanceledException) { }
         catch (Exception)

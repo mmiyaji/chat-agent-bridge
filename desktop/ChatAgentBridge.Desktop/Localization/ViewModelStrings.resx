@@ -397,6 +397,9 @@
   <data name="InheritLimitCodexExec" xml:space="preserve"><value>With the CLI default, Codex follows sandbox_mode in config.toml. If that is read-only, it cannot edit files.</value></data>
   <data name="InheritLimitClaude" xml:space="preserve"><value>With the CLI default, edits and commands that Claude Code's permission rules do not allow may be denied, because no confirmation prompt can be shown. To allow edits, choose Allow edits in the working folder or add permission rules in Claude Code.</value></data>
   <data name="AllowedUserNameUnknown" xml:space="preserve"><value>Name not known yet</value></data>
+  <data name="AllowedUserTotal" xml:space="preserve"><value>Total: {0}</value></data>
+  <data name="AllowedUserShowRemaining" xml:space="preserve"><value>Show {0} more</value></data>
+  <data name="AllowedUserShowLess" xml:space="preserve"><value>Show fewer</value></data>
   <data name="AllowedUserIdLine" xml:space="preserve"><value>ID: {0} · {1}</value></data>
   <data name="AllowedUserAddedUnknown" xml:space="preserve"><value>No record of when this user was added</value></data>
   <data name="AllowedUserNotSaved" xml:space="preserve"><value>Not saved</value></data>
@@ -404,6 +407,7 @@
   <data name="AllowedUserAddedInSettings" xml:space="preserve"><value>Added in settings ({0} · {1})</value></data>
   <data name="AllowedUserActorUnknown" xml:space="preserve"><value>unknown user</value></data>
   <data name="AllowedUserLastRequest" xml:space="preserve"><value>Last request: {0}</value></data>
+  <data name="AllowedUserLastRequestUnknown" xml:space="preserve"><value>No last request recorded</value></data>
   <data name="AllowedUserRemove" xml:space="preserve"><value>Remove {0} from the list</value></data>
   <data name="AllowedUserAlreadyListed" xml:space="preserve"><value>{0} is already in the list.</value></data>
   <data name="AllowedUserInvalidId" xml:space="preserve"><value>IDs use letters, digits, underscores or hyphens, up to 128 characters. The list holds up to 100 IDs.</value></data>

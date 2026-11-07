@@ -29,6 +29,8 @@ public sealed partial class HistoryPage : Page
     public HistoryPage()
     {
         InitializeComponent();
+        ExecutionHistoryMode.SelectedItem = ExecutionsModeItem;
+        InitializeExperimentalAuditTable();
         SessionListPane.SizeChanged += SessionListPane_SizeChanged;
         SessionBrowser.SizeChanged += SessionBrowser_SizeChanged;
         SessionSplitter.AddHandler(UIElement.ManipulationStartedEvent,
@@ -42,6 +44,7 @@ public sealed partial class HistoryPage : Page
         {
             ViewModel.ShowExecutionsForActivityDay();
             HistoryPivot.SelectedItem = ExecutionsTab;
+            ExecutionHistoryMode.SelectedItem = ExecutionsModeItem;
         };
         ActivityHost.Content = activity;
         ViewModel.ConfirmDetachAsync = ConfirmDetachAsync;
@@ -65,6 +68,39 @@ public sealed partial class HistoryPage : Page
     public static Visibility EmptyToVisibility(bool hasItems) =>
         hasItems ? Visibility.Collapsed : Visibility.Visible;
     public static Visibility BoolToVisibility(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
+
+    public static Visibility AuditSelectionHint(object? selection) => BoolToVisibility(selection is null);
+
+    partial void InitializeExperimentalAuditTable();
+
+    private void AuditHistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        ViewModel.SelectedAuditRow = AuditHistoryList.SelectedItem as AuditHistoryRow;
+
+    private void ExecutionHistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        ViewModel.SelectedExecution = ExecutionHistoryList.SelectedItem as ExecutionHistoryRow;
+
+    private void ExecutionHistoryMode_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+    {
+        if (ExecutionHistoryPanel is null || AllOperationsPanel is null) return;
+        var showOperations = sender.SelectedItem == AllOperationsModeItem;
+        ExecutionHistoryPanel.Visibility = BoolToVisibility(!showOperations);
+        AllOperationsPanel.Visibility = BoolToVisibility(showOperations);
+    }
+
+    private void AuditBrowser_SizeChanged(object sender, SizeChangedEventArgs e) =>
+        SetHistoryDetailLayout(e.NewSize.Width, AuditDetailColumn, AuditDetailRow, AuditDetailPane);
+
+    private void ExecutionBrowser_SizeChanged(object sender, SizeChangedEventArgs e) =>
+        SetHistoryDetailLayout(e.NewSize.Width, ExecutionDetailColumn, ExecutionDetailRow, ExecutionDetailPane);
+
+    private static void SetHistoryDetailLayout(double width, ColumnDefinition column, RowDefinition row, FrameworkElement pane)
+    {
+        var stacked = width < 680;
+        column.Width = new GridLength(stacked ? 0 : 280);
+        row.Height = stacked ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        Grid.SetColumn(pane, stacked ? 0 : 1);
+        Grid.SetRow(pane, stacked ? 1 : 0);
+    }
 
     private void AgentSettingsRequested_Click(object sender, RoutedEventArgs e) => AgentSettingsRequested?.Invoke();
 

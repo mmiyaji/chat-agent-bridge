@@ -142,6 +142,11 @@
   <data name="AnswerToCodex" xml:space="preserve"><value>Answer Codex</value></data>
   <data name="Send" xml:space="preserve"><value>Send</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="AllowedUserRemoveTitle" xml:space="preserve"><value>Remove this allowed user?</value></data>
+  <data name="AllowedUserRemoveAccept" xml:space="preserve"><value>Remove</value></data>
+  <data name="AllowedUserUsageLoading" xml:space="preserve"><value>Loading retained history…</value></data>
+  <data name="AllowedUserUsageCounts" xml:space="preserve"><value>Retained history: {0} runs · {1} conversations · {2} CLI sessions</value></data>
+  <data name="AllowedUserUsageUnavailable" xml:space="preserve"><value>Could not read the retained execution history.</value></data>
   <data name="None" xml:space="preserve"><value>(none)</value></data>
   <data name="InputMetadata" xml:space="preserve"><value>Thread: {0} | Turn: {1} | Item: {2}</value></data>
   <data name="StartupEnabled" xml:space="preserve"><value>Starts when you sign in to Windows.</value></data>
@@ -426,7 +431,7 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="HistoryProviderAll" xml:space="preserve"><value>All services</value></data>
   <data name="HistoryUnknownOrigin" xml:space="preserve"><value>Unknown connection</value></data>
   <data name="HistoryConversationsTab" xml:space="preserve"><value>Conversations</value></data>
-  <data name="HistoryExecutionsTab" xml:space="preserve"><value>Executions</value></data>
+  <data name="HistoryExecutionsTab" xml:space="preserve"><value>Run history</value></data>
   <data name="HistoryAuditTab" xml:space="preserve"><value>Audit</value></data>
   <data name="HistorySearchLabel" xml:space="preserve"><value>Search saved conversations</value></data>
   <data name="HistorySearchPlaceholder" xml:space="preserve"><value>Name, workspace, user, model, and more</value></data>
@@ -525,7 +530,7 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="ActivityUnknownModel" xml:space="preserve"><value>Default / not recorded</value></data>
   <data name="ActivityDailyScale" xml:space="preserve"><value>Peak: {0:N0} runs/day</value></data>
   <data name="ActivityChatsTabCompact" xml:space="preserve"><value>Chats</value></data>
-  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>Runs</value></data>
+  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>Run history</value></data>
   <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}: outside the selected period</value></data>
   <data name="UsageTokens" xml:space="preserve"><value>Token consumption</value></data>
   <data name="UsageCache" xml:space="preserve"><value>Cache hit rate</value></data>
@@ -1050,4 +1055,18 @@ After: {2}</value></data>
   <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>Loading setting…</value></data>
   <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>When to keep the PC awake</value></data>
   <data name="PermissionAppServerDefault" xml:space="preserve"><value>App Server defaults (workspace write, approval on request, no network access)</value></data>
+  <data name="AuditExecutionIdentifier" xml:space="preserve"><value>Execution ID  {0}</value></data>
+  <data name="AuditDiagnosticCode" xml:space="preserve"><value>Diagnostic code  0x{0} ({1})</value></data>
+  <data name="AuditAllServices" xml:space="preserve"><value>All services</value></data>
+  <data name="AuditAllKinds" xml:space="preserve"><value>All actions</value></data>
+  <data name="AuditFilter_access_requested" xml:space="preserve"><value>Access request</value></data>
+  <data name="AuditFilter_access_allowed" xml:space="preserve"><value>Allow user</value></data>
+  <data name="AuditFilter_access_allowed_once" xml:space="preserve"><value>Allow once</value></data>
+  <data name="AuditFilter_access_denied" xml:space="preserve"><value>Deny access</value></data>
+  <data name="AuditFilter_allowed_user_added" xml:space="preserve"><value>Add allowed user</value></data>
+  <data name="AuditFilter_allowed_user_removed" xml:space="preserve"><value>Remove allowed user</value></data>
+  <data name="AuditTimeColumn" xml:space="preserve"><value>Time</value></data>
+  <data name="AuditActionColumn" xml:space="preserve"><value>Action</value></data>
+  <data name="AuditServiceColumn" xml:space="preserve"><value>Service</value></data>
+  <data name="AuditConversationColumn" xml:space="preserve"><value>Conversation</value></data>
 </root>

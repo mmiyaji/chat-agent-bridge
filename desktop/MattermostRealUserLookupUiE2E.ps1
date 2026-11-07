@@ -345,6 +345,7 @@ try {
     Expose-Button 'LookupMattermostUserButton'; Invoke-UI @('invoke','LookupMattermostUserButton')
     RWait-Text 'MattermostUsernameLookupResult' ([string]$state.memberUser.id) 15
     Expose-Button 'AddMattermostUserButton'; Invoke-UI @('invoke','AddMattermostUserButton')
+    Invoke-UI @('invoke','MattermostAllowedUsersBulkEdit')
     RAssert ((Ui-Value 'MattermostAllowedUserIds').Trim() -match [regex]::Escape([string]$state.memberUser.id)) 'Restoring lookup did not add the resolved member ID.'
     Invoke-UI @('invoke','SaveConnections'); RWait-Text 'Title' '設定を保存しました' 8
     Invoke-UI @('invoke','NavChat'); Disconnect-Chat; Connect-Chat

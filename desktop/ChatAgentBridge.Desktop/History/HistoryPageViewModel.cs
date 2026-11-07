@@ -31,6 +31,7 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record, string? ChatLab
         _ => Record.Status
     };
     public string Summary => $"{Started} · {Source} · {Status}";
+    public string ExecutionIdentifier => DesktopText.Get("AuditExecutionIdentifier", Record.Id);
     public string Workspace => DesktopText.Get("HistoryWorkspace", Record.WorkspaceRoot);
     public string Session => DesktopText.Get("HistorySessionId", Record.SessionId ?? "—");
     public string Model => DesktopText.Get("HistoryModel", Record.AgentModel ?? DesktopText.Get("DefaultModel"));
@@ -50,9 +51,10 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record, string? ChatLab
     };
 }
 
-public sealed record AuditHistoryRow(AuditEvent Record, string? ChatLabel = null)
+public sealed record AuditHistoryRow(AuditEvent Record, AuditColumnLayout Columns, string? ChatLabel = null)
 {
     public string Timestamp => Record.Timestamp.ToLocalTime().ToString("g");
+    public string Time => Record.Timestamp.ToLocalTime().ToString("HH:mm:ss");
     public string Kind => Record.Kind switch
     {
         "received" => DesktopText.Get("AuditReceived"),
@@ -81,6 +83,8 @@ public sealed record AuditHistoryRow(AuditEvent Record, string? ChatLabel = null
         "allowed_user_removed" => DesktopText.Get("AuditAllowedUserRemoved", AccessSubject, AccessActor),
         _ => DesktopText.Get("AuditOther")
     };
+    public string FilterKind => Record.Kind is "execution_exception" ? "failed" : Record.Kind;
+    public string FilterKindLabel => AuditEvent.IsAccessKind(Record.Kind) ? DesktopText.Get($"AuditFilter_{Record.Kind}") : Kind;
     private string AccessSubject => Record.Access is not { } access ? "" :
         string.IsNullOrWhiteSpace(access.DisplayName) ? access.UserId : $"{access.DisplayName} ({access.UserId})";
     private string AccessActor => string.IsNullOrWhiteSpace(Record.Access?.Actor) ? DesktopText.Get("AuditAccessUnknownActor") : Record.Access!.Actor;
@@ -95,7 +99,12 @@ public sealed record AuditHistoryRow(AuditEvent Record, string? ChatLabel = null
     public string Summary => $"{Timestamp} · {Source} · {Kind}";
     public string Conversation => ChatLabel ?? (Record.Source == "local" ? DesktopText.Get("HistoryThisPc") : DesktopText.Get("HistoryChatNamesUnavailable"));
     public string Identifiers => DesktopText.Get("HistoryAuditConversation", Record.ChannelId, Record.ThreadId);
-    public string IdentifiersHeading => DesktopText.Get("HistoryIdentifiersHeading");
+    public bool HasExecutionIdentifier => Record.ExecutionId is not null;
+    public string ExecutionIdentifier => DesktopText.Get("AuditExecutionIdentifier", Record.ExecutionId);
+    public bool HasDiagnostic => Record.ExecutionDiagnostic is not null;
+    public string Diagnostic => Record.ExecutionDiagnostic is { } diagnostic
+        ? DesktopText.Get("AuditDiagnosticCode", diagnostic.HResult, diagnostic.ExceptionType)
+        : "";
 }
 
 public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCount = 0,
@@ -364,6 +373,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
 
     public void RefreshLocalizedText()
     {
+        RefreshAuditFilterOptions();
         // The localized labels are also the ComboBox values. Save their semantic
         // positions before updating the collections, since TwoWay SelectedItem
         // bindings can temporarily clear their source while items are replaced.
@@ -614,10 +624,11 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             ReplaceItems(Sessions, BuildSessionRows(sessions, executions));
             UpdateWorkspaceFilters(sessions);
             ReplaceItems(AuditEvents, auditEvents.OrderByDescending(static item => item.Timestamp)
-                .Select(audit => new AuditHistoryRow(audit, AuditChatLabel(audit))).ToArray());
+                .Select(audit => new AuditHistoryRow(audit, AuditColumns, AuditChatLabel(audit))).ToArray());
             HasExecutions = Executions.Count > 0;
             HasSessions = Sessions.Count > 0;
             HasAuditEvents = AuditEvents.Count > 0;
+            RefreshAuditFilterOptions();
             SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
             ApplySessionFilter();
             NotifySummariesChanged();
@@ -815,10 +826,11 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         UpdateWorkspaceFilters(sessions);
         AuditEvents.Clear();
         foreach (var audit in auditEvents.OrderByDescending(static item => item.Timestamp))
-            AuditEvents.Add(new AuditHistoryRow(audit, AuditChatLabel(audit)));
+            AuditEvents.Add(new AuditHistoryRow(audit, AuditColumns, AuditChatLabel(audit)));
         HasExecutions = Executions.Count > 0;
         HasSessions = Sessions.Count > 0;
         HasAuditEvents = AuditEvents.Count > 0;
+        RefreshAuditFilterOptions();
         SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
         ApplySessionFilter();
         NotifySummariesChanged();

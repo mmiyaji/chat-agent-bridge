@@ -157,6 +157,7 @@
     <_PortableWindowsAppSDKArchitecture Condition="'$(Platform)' == 'x64' or '$(RuntimeIdentifier)' == 'win-x64'">x64</_PortableWindowsAppSDKArchitecture>
     <_PortableWindowsAppSDKArchitecture Condition="'$(Platform)' == 'ARM64' or '$(RuntimeIdentifier)' == 'win-arm64'">arm64</_PortableWindowsAppSDKArchitecture>
     <_PortableWindowsAppSDKRuntimeArchive>$(PkgMicrosoft_WindowsAppSDK_Runtime)\tools\MSIX\win10-$(_PortableWindowsAppSDKArchitecture)\Microsoft.WindowsAppRuntime.2.msix</_PortableWindowsAppSDKRuntimeArchive>
+    <_PortableWindowsAppSDKRuntimeArchive Condition="'$(CABExperimentalTableView)' == 'true'">$(PkgMicrosoft_WindowsAppSDK_Runtime)\tools\MSIX\win10-$(_PortableWindowsAppSDKArchitecture)\Microsoft.WindowsAppRuntime.2-experimentalF.msix</_PortableWindowsAppSDKRuntimeArchive>
     <_PortableAppNotificationResource>$(IntermediateOutputPath)portable-deps\Microsoft.WindowsAppRuntime.Insights.Resource.dll</_PortableAppNotificationResource>
   </PropertyGroup>
 
@@ -222,6 +223,16 @@
     Set <EnableWinAppRunSupport>false</EnableWinAppRunSupport> in a
     <PropertyGroup> above to opt out.
   -->
+  <PropertyGroup Condition="'$(CABExperimentalTableView)' == 'true'">
+    <DefineConstants>$(DefineConstants);CAB_EXPERIMENTAL_TABLE_VIEW</DefineConstants>
+    <OutputPath>bin\$(Platform)\$(Configuration)\portable-tableview-preview\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable-tableview-preview\</IntermediateOutputPath>
+    <NoWarn>$(NoWarn);CS8305</NoWarn>
+  </PropertyGroup>
+  <Target Name="ValidateCabExperimentalTableView" BeforeTargets="PrepareForBuild" Condition="'$(CABExperimentalTableView)' == 'true'">
+    <Error Condition="'$(CABPortable)' != 'true' or '$(CABStore)' == 'true'" Text="CABExperimentalTableView is for local portable previews only." />
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
     <PackageReference Include="CommunityToolkit.WinUI.Controls.Sizers" Version="8.2.251219" />
@@ -229,12 +240,18 @@
     <!-- Component packages instead of the Microsoft.WindowsAppSDK metapackage, which also pulls in unused AI/ML/Search/Widgets binaries. -->
     <!-- CommunityToolkit pulls the 1.6 metapackage transitively; take none of its assets so only the component packages below apply. -->
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250108002" ExcludeAssets="all" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="2.0.4" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.12" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.1.0" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.5.1" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="2.0.4" Condition="'$(CABExperimentalTableView)' != 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="2.0.5-experimental2" Condition="'$(CABExperimentalTableView)' == 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.12" Condition="'$(CABExperimentalTableView)' != 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.13-experimental" Condition="'$(CABExperimentalTableView)' == 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" Condition="'$(CABExperimentalTableView)' != 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.10-experimental" Condition="'$(CABExperimentalTableView)' == 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" Condition="'$(CABExperimentalTableView)' != 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.10-experimental" Condition="'$(CABExperimentalTableView)' == 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.1.0" Condition="'$(CABExperimentalTableView)' != 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.1.1-experimental" Condition="'$(CABExperimentalTableView)' == 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.5.1" Condition="'$(CABExperimentalTableView)' != 'true'" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.5.4-experimental" Condition="'$(CABExperimentalTableView)' == 'true'" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools.WinApp" Version="0.7.1" />
   </ItemGroup>

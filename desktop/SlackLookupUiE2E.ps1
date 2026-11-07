@@ -183,6 +183,7 @@ try{
     Scope 'JumpSlack'
     $savedBefore=Get-Content $settingsPath -Raw|ConvertFrom-Json
     $savedHash=(Get-FileHash $settingsPath).Hash
+    UI @('invoke','SlackAllowedUsersBulkEdit') | Out-Null
     $userBefore=Scope-Value 'SlackAllowedUserIds'
     $channelsBefore=Scope-Value 'SlackAllowedChannelIds'
     $threadsBefore=Scope-Value 'SlackAllowedThreadIds'

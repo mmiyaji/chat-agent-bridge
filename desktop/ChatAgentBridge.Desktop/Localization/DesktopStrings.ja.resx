@@ -142,6 +142,11 @@
   <data name="AnswerToCodex" xml:space="preserve"><value>Codexへの回答</value></data>
   <data name="Send" xml:space="preserve"><value>送信</value></data>
   <data name="Cancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="AllowedUserRemoveTitle" xml:space="preserve"><value>この許可ユーザーを削除しますか？</value></data>
+  <data name="AllowedUserRemoveAccept" xml:space="preserve"><value>削除</value></data>
+  <data name="AllowedUserUsageLoading" xml:space="preserve"><value>保存済みの履歴を確認中…</value></data>
+  <data name="AllowedUserUsageCounts" xml:space="preserve"><value>保存済みの履歴　実行 {0}件・会話 {1}件・CLI セッション {2}件</value></data>
+  <data name="AllowedUserUsageUnavailable" xml:space="preserve"><value>保存済みの実行履歴を読み取れませんでした。</value></data>
   <data name="None" xml:space="preserve"><value>(なし)</value></data>
   <data name="InputMetadata" xml:space="preserve"><value>スレッド: {0} | ターン: {1} | 項目: {2}</value></data>
   <data name="StartupEnabled" xml:space="preserve"><value>Windowsへのサインイン時に起動します。</value></data>
@@ -425,7 +430,7 @@
   <data name="HistoryProviderAll" xml:space="preserve"><value>すべてのサービス</value></data>
   <data name="HistoryUnknownOrigin" xml:space="preserve"><value>接続先不明</value></data>
   <data name="HistoryConversationsTab" xml:space="preserve"><value>会話</value></data>
-  <data name="HistoryExecutionsTab" xml:space="preserve"><value>実行</value></data>
+  <data name="HistoryExecutionsTab" xml:space="preserve"><value>実行履歴</value></data>
   <data name="HistoryAuditTab" xml:space="preserve"><value>操作記録</value></data>
   <data name="HistorySearchLabel" xml:space="preserve"><value>保存済みの会話を検索</value></data>
   <data name="HistorySearchPlaceholder" xml:space="preserve"><value>会話名・作業フォルダー・ユーザー・モデルなど</value></data>
@@ -524,7 +529,7 @@
   <data name="ActivityUnknownModel" xml:space="preserve"><value>既定／モデル未記録</value></data>
   <data name="ActivityDailyScale" xml:space="preserve"><value>最大 {0:N0}回／日</value></data>
   <data name="ActivityChatsTabCompact" xml:space="preserve"><value>会話</value></data>
-  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>実行</value></data>
+  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>実行履歴</value></data>
   <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}: 選択期間外</value></data>
   <data name="UsageTokens" xml:space="preserve"><value>トークン消費量</value></data>
   <data name="UsageCache" xml:space="preserve"><value>キャッシュヒット率</value></data>
@@ -1054,4 +1059,18 @@
   <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>PCをスリープさせない条件</value></data>
   <data name="NotificationAiApprovalHighRiskBody" xml:space="preserve"><value>危険性の高いコマンドです。承認前に内容を確認してください。承認方法は通常どおりです。</value></data>
   <data name="PermissionAppServerDefault" xml:space="preserve"><value>App Serverの既定設定（作業フォルダー内の書き込み、必要時に確認、ネットワークなし）</value></data>
+  <data name="AuditExecutionIdentifier" xml:space="preserve"><value>実行 ID  {0}</value></data>
+  <data name="AuditDiagnosticCode" xml:space="preserve"><value>診断コード  0x{0} ({1})</value></data>
+  <data name="AuditAllServices" xml:space="preserve"><value>すべてのサービス</value></data>
+  <data name="AuditAllKinds" xml:space="preserve"><value>すべての操作</value></data>
+  <data name="AuditFilter_access_requested" xml:space="preserve"><value>アクセス申請</value></data>
+  <data name="AuditFilter_access_allowed" xml:space="preserve"><value>ユーザーを許可</value></data>
+  <data name="AuditFilter_access_allowed_once" xml:space="preserve"><value>今回だけ許可</value></data>
+  <data name="AuditFilter_access_denied" xml:space="preserve"><value>アクセスを拒否</value></data>
+  <data name="AuditFilter_allowed_user_added" xml:space="preserve"><value>許可ユーザーを追加</value></data>
+  <data name="AuditFilter_allowed_user_removed" xml:space="preserve"><value>許可ユーザーを削除</value></data>
+  <data name="AuditTimeColumn" xml:space="preserve"><value>時刻</value></data>
+  <data name="AuditActionColumn" xml:space="preserve"><value>操作</value></data>
+  <data name="AuditServiceColumn" xml:space="preserve"><value>サービス</value></data>
+  <data name="AuditConversationColumn" xml:space="preserve"><value>会話</value></data>
 </root>

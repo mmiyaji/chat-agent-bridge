@@ -212,6 +212,7 @@ try {
     Choose-CompactScope 'ConnectionScopeDiscord'
     $settingsPath = Join-Path $script:data 'settings.json'
     $initial = Get-FileHash -LiteralPath $settingsPath
+    (Wait-Element 'DiscordAllowedUsersBulkEdit').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
 
     Value 'DiscordAllowedUserIds' '100000000000000001, 100000000000000003'
     Value 'DiscordAllowedGuildIds' '200000000000000004'

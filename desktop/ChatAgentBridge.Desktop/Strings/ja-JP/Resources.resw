@@ -467,8 +467,7 @@
   <data name="chatAgentBridgeDesktopMainPageTextBlock053.Text" xml:space="preserve">
     <value>一覧には内部ユーザーIDが入ります。ユーザー名を直接入力しないでください。空欄でも、チャットから届いた依頼をこのPCで承認すると追加できます。Mattermost接続中の場合は再接続してください。</value>
   </data>
-  <data name="AllowedUserListTitle.Text" xml:space="preserve"><value>許可ユーザー</value></data>
-  <data name="AllowedUserListEmpty.Text" xml:space="preserve"><value>まだ誰も許可していません。下でIDを追加するか、接続後にチャットからBotへ依頼し、このPCで「許可して実行」を選ぶと追加されます。</value></data>
+  <data name="AllowedUserListEmpty.Text" xml:space="preserve"><value>登録されていません。</value></data>
   <data name="AllowedUserAddInput.Header" xml:space="preserve"><value>IDで追加</value></data>
   <data name="AllowedUserAddInput.PlaceholderText" xml:space="preserve"><value>ユーザーID</value></data>
   <data name="AllowedUserAddButton.Content" xml:space="preserve"><value>追加</value></data>
@@ -1262,7 +1261,6 @@
   <data name="AgentEditorExecutionDescription.Text" xml:space="preserve"><value>選択したエージェントの設定を編集します。</value></data>
   <data name="AgentEditorExecutableLabel.Text" xml:space="preserve"><value>CLI実行ファイル</value></data>
   <data name="AgentEditorExecutable.PlaceholderText" xml:space="preserve"><value>実行ファイル名、または絶対パス</value></data>
-  <data name="AgentEditorCliCheckHint.Text" xml:space="preserve"><value>バージョンとモデル候補を確認します</value></data>
   <data name="CancelAgentCliCheck.Content" xml:space="preserve"><value>確認を中断</value></data>
   <data name="RetryCliCheck.Content" xml:space="preserve"><value>もう一度確認</value></data>
   <data name="AgentEditorModelLabel.Text" xml:space="preserve"><value>使用するモデル</value></data>
@@ -1420,4 +1418,31 @@
   <data name="UsageAccountingGuide.Content" xml:space="preserve"><value>利用状況と推定コストの詳細</value></data>
   <data name="FileAttachmentGuide.NavigateUri" xml:space="preserve"><value>https://github.com/mmiyaji/chat-agent-bridge/blob/main/desktop/README.ja.md#エージェントが作成したファイルの添付</value></data>
   <data name="UsageAccountingGuide.NavigateUri" xml:space="preserve"><value>https://github.com/mmiyaji/chat-agent-bridge/blob/main/desktop/README.ja.md#トークンキャッシュ推定コストの振り返り</value></data>
+  <data name="AllowedUsersSettings.Header" xml:space="preserve"><value>許可ユーザー</value></data>
+  <data name="OpenAllowedUsers.Content" xml:space="preserve"><value>共通設定の許可ユーザーを開く</value></data>
+  <data name="AllowedUsersBulkEdit.Header" xml:space="preserve"><value>IDをまとめて編集</value></data>
+  <data name="AllowedUsersProviderPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>サービス</value></data>
+  <data name="OpenAllowedUserAdd.Content" xml:space="preserve"><value>ユーザーを追加</value></data>
+  <data name="AllowedUserServiceColumn.Text" xml:space="preserve"><value>サービス</value></data>
+  <data name="AllowedUserIdentityColumn.Text" xml:space="preserve"><value>ユーザー</value></data>
+  <data name="AllowedUserActionColumn.Text" xml:space="preserve"><value>操作</value></data>
+  <data name="AuditTimeColumn.Text" xml:space="preserve"><value>時刻</value></data>
+  <data name="AuditActionColumn.Text" xml:space="preserve"><value>操作</value></data>
+  <data name="AuditServiceColumn.Text" xml:space="preserve"><value>サービス</value></data>
+  <data name="AuditConversationColumn.Text" xml:space="preserve"><value>会話</value></data>
+  <data name="AuditDetailTitle.Text" xml:space="preserve"><value>操作の詳細</value></data>
+  <data name="AuditSelectRow.Text" xml:space="preserve"><value>一覧から操作を選択してください。</value></data>
+  <data name="AuditNoMatches.Text" xml:space="preserve"><value>条件に一致する操作記録はありません。</value></data>
+  <data name="AuditServiceFilter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>サービス</value></data>
+  <data name="AuditKindFilter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>操作の種類</value></data>
+  <data name="AuditResizeTime.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>時刻列の幅を変更</value></data>
+  <data name="AuditResizeAction.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>操作列の幅を変更</value></data>
+  <data name="AuditResizeService.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>サービス列の幅を変更</value></data>
+  <data name="AuditResizeConversation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>会話列の幅を変更</value></data>
+  <data name="HistoryRunsMode.Text" xml:space="preserve"><value>実行一覧</value></data>
+  <data name="HistoryAllOperationsMode.Text" xml:space="preserve"><value>すべての操作</value></data>
+  <data name="ExecutionDetailTitle.Text" xml:space="preserve"><value>実行の詳細</value></data>
+  <data name="ExecutionSelectRow.Text" xml:space="preserve"><value>一覧から実行を選択してください。</value></data>
+  <data name="ExecutionOperationsTitle.Text" xml:space="preserve"><value>関連する操作</value></data>
+  <data name="ExecutionNoOperations.Text" xml:space="preserve"><value>この実行に関連する操作記録はありません。</value></data>
 </root>
