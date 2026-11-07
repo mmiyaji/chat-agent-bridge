@@ -272,4 +272,25 @@
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">False</PublishTrimmed>
   </PropertyGroup>
+  <!-- Keep experimental linker output separate from the normal portable build. -->
+  <PropertyGroup Condition="'$(CABPortableTrimExperiment)' == 'true'">
+    <OutputPath>bin\$(Platform)\$(Configuration)\portable-trim-experiment\</OutputPath>
+    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable-trim-experiment\</IntermediateOutputPath>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(CABPortableTrimExperiment)' == 'true'">
+    <!-- MrtText reads WinUI control properties by name, so the WinUI projection stays whole. -->
+    <TrimmerRootAssembly Include="Microsoft.WinUI" />
+    <TrimmerRootAssembly Include="WinRT.Runtime" />
+    <!-- The app's own assemblies use reflection-based System.Text.Json for settings, audit records and chat APIs. -->
+    <TrimmerRootAssembly Include="ChatAgentBridge.Core" />
+    <TrimmerRootAssembly Include="ChatAgentBridge.Transports" />
+    <TrimmerRootAssembly Include="ChatAgentBridge.Desktop" />
+  </ItemGroup>
+  <Target Name="ValidatePortableTrimExperiment" BeforeTargets="PrepareForBuild" Condition="'$(CABPortableTrimExperiment)' == 'true'">
+    <Error Condition="'$(CABPortable)' != 'true' or '$(CABStore)' == 'true' or '$(CABExperimentalTableView)' == 'true'"
+           Text="CABPortableTrimExperiment requires the ordinary portable build configuration." />
+  </Target>
 </Project>
