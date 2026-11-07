@@ -46,6 +46,16 @@ public sealed class EffectivePermissionTests : IDisposable
     }
 
     [Fact]
+    public void CodexAppServerInheritUsesBridgePolicyInsteadOfUserSandbox()
+    {
+        Write(Path.Combine(Home, ".codex", "config.toml"), "sandbox_mode = \"danger-full-access\"");
+        var settings = Settings("codex") with { AgentMode = "app-server" };
+        Assert.Equal(new EffectivePermissionInfo("inherit", "workspace-write", PermissionSource.BridgeSetting, false),
+            Resolve(settings));
+        Assert.True(Resolve(settings with { AgentMode = "exec" }).Unattended);
+    }
+
+    [Fact]
     public void ClaudeInheritWithoutAnyFileUsesCliDefault()
     {
         var result = Resolve(Settings("claude"));

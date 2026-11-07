@@ -140,6 +140,8 @@ Manual runs use the working folder selected in Agent settings, regardless of whe
 | Slack / Mattermost | On the PC | `!cab approve <code>` / `!cab reject <code>` |
 | Discord | Approve and Reject buttons | Approve and Reject buttons |
 
+A pending access request can grant access only while its chat connection and conversation scope still match. Codex App Server's inherited mode displays the Bridge-applied policy (workspace write, approval on request, and no network access).
+
 ### Files attached to requests
 
 Files attached to a request are downloaded after the request is approved and passed to the agent. These limits are separate from the generated-file upload settings.

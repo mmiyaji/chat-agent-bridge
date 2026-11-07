@@ -163,6 +163,8 @@ public sealed partial class ChatInboxViewModel
         EffectivePermissionInfo info;
         try { info = EffectivePermission.Resolve(settings); }
         catch (Exception) { return (PermissionLabel(settings.AgentPermissionMode), false); }
+        if (info is { ConfiguredMode: "inherit", Source: PermissionSource.BridgeSetting })
+            return (DesktopText.Get("PermissionAppServerDefault"), info.Unattended);
         var text = PermissionLabel(info.ConfiguredMode);
         if (info is { ConfiguredMode: "inherit", NativeMode: { } native })
         {

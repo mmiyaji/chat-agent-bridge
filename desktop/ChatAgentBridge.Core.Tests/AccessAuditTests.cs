@@ -91,4 +91,25 @@ public sealed class AccessAuditTests : IDisposable
         Assert.False(ChatAccessPolicy.IsAllowedScope(settings, "discord", "100", "100", "43"));
         Assert.False(ChatAccessPolicy.IsAllowedScope(settings, "discord", "100", "100", guildId: null));
     }
+
+    [Fact]
+    public async Task StaleAccessApprovalDoesNotAddAUserToTheCurrentConnection()
+    {
+        var store = new SettingsStore(_directory);
+        var connection = new BridgeSettings
+        {
+            MattermostServerUrl = "https://previous.example.test",
+            MattermostChannelId = "channel",
+            MattermostAllowedThreadIds = "thread"
+        };
+        var current = connection with { MattermostServerUrl = "https://current.example.test" };
+        await store.SaveAsync(current);
+
+        Assert.Null(await store.TryAddAllowedUserAsync(connection, "mattermost", "user", "channel", "thread", null));
+        Assert.Null(await store.TryAddAllowedUserAsync(current, "mattermost", "user", "channel", "excluded", null));
+        Assert.Empty((await store.LoadAsync()).MattermostAllowedUserIds);
+
+        Assert.NotNull(await store.TryAddAllowedUserAsync(current, "mattermost", "user", "channel", "thread", null));
+        Assert.Equal("user", (await store.LoadAsync()).MattermostAllowedUserIds);
+    }
 }

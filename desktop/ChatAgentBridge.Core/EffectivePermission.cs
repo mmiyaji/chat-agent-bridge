@@ -10,8 +10,7 @@ public enum PermissionSource { BridgeSetting, ProjectLocalSettings, ProjectSetti
 public sealed record EffectivePermissionInfo(string ConfiguredMode, string? NativeMode, PermissionSource Source, bool Unattended);
 
 /// <summary>
-/// Resolves what permission behavior an agent run will really have. With <c>inherit</c> the bridge adds no flag,
-/// so Claude Code / Codex fall back to their own settings files, which can silently be unattended.
+/// Resolves the permissions applied by the Bridge or inferred from CLI settings.
 /// </summary>
 public static class EffectivePermission
 {
@@ -26,6 +25,11 @@ public static class EffectivePermission
         string provider;
         try { provider = AgentProfile.ResolveProvider(settings); }
         catch (ArgumentException) { provider = AgentProfile.Custom; }
+        if (provider == AgentProfile.Codex && settings.AgentMode == "app-server")
+        {
+            var policy = AppServer.CodexAppServerRunner.PermissionPolicy(mode);
+            return new(mode, policy.Sandbox, PermissionSource.BridgeSetting, mode == "full-access");
+        }
         var cabFull = mode == "full-access";
         if (mode != "inherit")
         {

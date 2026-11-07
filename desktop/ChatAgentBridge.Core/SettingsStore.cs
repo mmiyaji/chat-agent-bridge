@@ -10,6 +10,8 @@ public sealed class SettingsStore
     private const int CurrentSchemaVersion = 1;
     private const string ProtectedPrefix = "dpapi:";
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> WriteGates =
+        new(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
     private readonly string _filePath;
     private readonly StorageOperationRunner _operations = new();
     // Guards against a disappearing backing store within this instance's lifetime; persistence is not journaled across process restarts.
@@ -153,7 +155,32 @@ public sealed class SettingsStore
     }
 
     public async Task SaveAsync(BridgeSettings settings, CancellationToken cancellationToken = default)
-        => await _operations.RunAsync("write", token => SaveCoreAsync(settings, token), cancellationToken).ConfigureAwait(false);
+        => await _operations.RunAsync("write", async token =>
+        {
+            var gate = WriteGates.GetOrAdd(_filePath, static _ => new(1, 1));
+            await gate.WaitAsync(token).ConfigureAwait(false);
+            try { await SaveCoreAsync(settings, token).ConfigureAwait(false); }
+            finally { gate.Release(); }
+        }, cancellationToken).ConfigureAwait(false);
+
+    /// <summary>Grants access only if the pending request still belongs to the saved connection and scope.</summary>
+    public Task<BridgeSettings?> TryAddAllowedUserAsync(BridgeSettings connected, string provider,
+        string userId, string channelId, string threadId, string? guildId, CancellationToken cancellationToken = default)
+        => _operations.RunAsync<BridgeSettings?>("write", async token =>
+        {
+            var gate = WriteGates.GetOrAdd(_filePath, static _ => new(1, 1));
+            await gate.WaitAsync(token).ConfigureAwait(false);
+            try
+            {
+                var current = await LoadCoreAsync(token).ConfigureAwait(false);
+                if (!ChatAccessPolicy.CanApproveAccessRequest(current, connected, provider, channelId, threadId, guildId))
+                    return null;
+                var updated = ChatAccessPolicy.WithAllowedUser(current, provider, userId);
+                if (!ReferenceEquals(updated, current)) await SaveCoreAsync(updated, token).ConfigureAwait(false);
+                return updated;
+            }
+            finally { gate.Release(); }
+        }, cancellationToken);
 
     private async Task SaveCoreAsync(BridgeSettings settings, CancellationToken cancellationToken)
     {

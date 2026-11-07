@@ -1049,4 +1049,5 @@ After: {2}</value></data>
   <data name="KeepAwakeNativeReason" xml:space="preserve"><value>Chat Agent Bridge is processing requests.</value></data>
   <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>Loading setting…</value></data>
   <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>When to keep the PC awake</value></data>
+  <data name="PermissionAppServerDefault" xml:space="preserve"><value>App Server defaults (workspace write, approval on request, no network access)</value></data>
 </root>

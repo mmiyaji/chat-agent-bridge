@@ -43,6 +43,12 @@ public static class ChatAccessPolicy
     public static bool IsAllowedRequest(BridgeSettings settings, string provider, string userId, string channelId, string threadId, string? guildId = null) =>
         IsAllowed(settings, provider, userId) && IsAllowedScope(settings, provider, channelId, threadId, guildId);
 
+    public static bool CanApproveAccessRequest(BridgeSettings current, BridgeSettings connected,
+        string provider, string channelId, string threadId, string? guildId) =>
+        ChatConnectionPolicy.Matches(provider, current, connected) &&
+        IsAllowedScope(current, provider, channelId, threadId, guildId) &&
+        (provider != "mattermost" || string.Equals(current.MattermostChannelId, channelId, StringComparison.Ordinal));
+
     /// <summary>Checks the server, channel and thread restrictions without the allowed-user list.</summary>
     public static bool IsAllowedScope(BridgeSettings settings, string provider, string channelId, string threadId, string? guildId = null)
     {

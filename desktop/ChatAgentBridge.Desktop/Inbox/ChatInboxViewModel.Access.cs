@@ -102,9 +102,8 @@ public sealed partial class ChatInboxViewModel
         ChatRequest request, CancellationToken token)
     {
         if (_disconnecting || _closing || !ReferenceEquals(transport, _transport)) return;
-        if (!ChatAccessPolicy.IsAllowedScope(current, request.Provider, request.ChannelId, request.ThreadId, request.GuildId) ||
-            (request.Provider == "mattermost" && !string.Equals(current.MattermostChannelId, request.ChannelId, StringComparison.Ordinal)) ||
-            !ChatConnectionPolicy.Matches(request.Provider, current, connection)) return;
+        if (!ChatAccessPolicy.CanApproveAccessRequest(current, connection, request.Provider, request.ChannelId,
+            request.ThreadId, request.GuildId)) return;
         var completion = new TaskCompletionSource<AccessRequestItem?>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!App.DispatcherQueue.TryEnqueue(() => completion.TrySetResult(AddAccessRequest(request, transport, connection, current))))
             return;
@@ -178,9 +177,17 @@ public sealed partial class ChatInboxViewModel
                     return;
                 case AccessDecision.Allow:
                 {
-                    var current = await _store.LoadAsync(token);
-                    var updated = ChatAccessPolicy.WithAllowedUser(current, item.Request.Provider, item.Request.UserId);
-                    if (!ReferenceEquals(updated, current)) await _store.SaveAsync(updated, token);
+                    var request = item.Request;
+                    var updated = !_disconnecting && !_closing && ReferenceEquals(item.Transport, _transport)
+                        ? await _store.TryAddAllowedUserAsync(item.Connection, request.Provider, request.UserId,
+                            request.ChannelId, request.ThreadId, request.GuildId, token)
+                        : null;
+                    if (updated is null)
+                    {
+                        RemoveAccessRequest(item);
+                        Status = DesktopText.Get("AccessRequestNotDispatchedStatus");
+                        return;
+                    }
                     RemoveAccessRequest(item);
                     await AppendAccessAuditAsync("access_allowed", item.Request, item.DisplayName, actor, token);
                     try
@@ -203,11 +210,20 @@ public sealed partial class ChatInboxViewModel
                 case AccessDecision.AllowOnce:
                 {
                     if (!item.CanRunOnce) return;
+                    var current = await _store.LoadAsync(token);
+                    var request = item.Request;
+                    if (_disconnecting || _closing || !ReferenceEquals(item.Transport, _transport) ||
+                        !ChatAccessPolicy.CanApproveAccessRequest(current, item.Connection, request.Provider,
+                            request.ChannelId, request.ThreadId, request.GuildId))
+                    {
+                        RemoveAccessRequest(item);
+                        Status = DesktopText.Get("AccessRequestNotDispatchedStatus");
+                        return;
+                    }
                     if (OneTimeAccess.Count >= MaxOneTimeGrants) OneTimeAccess.Clear();
                     OneTimeAccess.TryAdd((item.Request.Provider, item.Request.UserId, item.Request.MessageId), 0);
                     RemoveAccessRequest(item);
                     await AppendAccessAuditAsync("access_allowed_once", item.Request, item.DisplayName, actor, token);
-                    var current = await _store.LoadAsync(token);
                     Status = DesktopText.Get("AccessRequestAllowedOnceStatus", item.Title);
                     await DispatchApprovedAccessRequestAsync(item, current, oneTime: true, token);
                     return;

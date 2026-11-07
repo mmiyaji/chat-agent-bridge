@@ -379,7 +379,7 @@ public sealed class CodexAppServerRunner : IAppServerRunner, IDisposable
             ExecutionPolicy.NormalizePermissionMode(settings.AgentPermissionMode), settings.AllowAgentNetwork ? "network" : "no-network");
     }
 
-    private static (string Sandbox, string SandboxType, string ApprovalPolicy) PermissionPolicy(string permissionMode)
+    internal static (string Sandbox, string SandboxType, string ApprovalPolicy) PermissionPolicy(string permissionMode)
         => permissionMode switch
         {
             "inherit" => ("workspace-write", "workspaceWrite", "on-request"),
