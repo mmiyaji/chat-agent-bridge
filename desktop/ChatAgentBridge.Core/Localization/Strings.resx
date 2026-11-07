@@ -141,6 +141,6 @@
   <data name="KimiAcpIncomplete" xml:space="preserve"><value>Kimi Code CLI did not complete the turn. The conversation binding was not changed.</value></data>
   <data name="KimiAcpTimeout" xml:space="preserve"><value>Kimi Code CLI did not respond within the time limit. Try again.</value></data>
   <data name="KimiAcpProtocolFailed" xml:space="preserve"><value>Communication with Kimi Code CLI failed or an operation was declined. Check the CLI version, sign-in, and approval settings.</value></data>
-  <data name="ApprovalRiskApprovalReminder" xml:space="preserve"><value>Review the command before approving. The usual approval controls still apply.</value></data>
+  <data name="ApprovalRiskApprovalReminder" xml:space="preserve"><value>Review the command before approving.</value></data>
   <data name="ApprovalRiskElevated" xml:space="preserve"><value>Check carefully:</value></data>
 </root>

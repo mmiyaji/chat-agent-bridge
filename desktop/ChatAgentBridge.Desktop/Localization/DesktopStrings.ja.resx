@@ -490,7 +490,7 @@
   <data name="ActivityNoPeak" xml:space="preserve"><value>まだ記録がありません</value></data>
   <data name="ActivityOutcomes" xml:space="preserve"><value>この期間: 完了 {0:N0}回・失敗 {1:N0}回・中止 {2:N0}回・実行中／中断 {3:N0}回</value></data>
   <data name="ActivityNoRunsHeading" xml:space="preserve"><value>アクティビティはまだありません</value></data>
-  <data name="ActivityNoRunsDescription" xml:space="preserve"><value>最初の実行後にアクティビティが表示されます。手動で実行するか、接続済みチャットから依頼してください。</value></data>
+  <data name="ActivityNoRunsDescription" xml:space="preserve"><value>実行すると、ここに利用状況が表示されます。</value></data>
   <data name="ActivityNoRunsInPeriodHeading" xml:space="preserve"><value>この期間に実行はありません</value></data>
   <data name="ActivityNoRunsInPeriodDescription" xml:space="preserve"><value>この期間の実行記録はありません。期間を広げると、以前のアクティビティを確認できます。</value></data>
   <data name="ActivityNoModelsHeading" xml:space="preserve"><value>モデル別アクティビティはありません</value></data>
@@ -541,24 +541,7 @@
   <data name="ChatInputTextReply" xml:space="preserve"><value>回答: !cab answer {0} {1} 回答内容</value></data>
   <data name="ChatInputOptionReply" xml:space="preserve"><value>選択肢の番号で回答: !cab answer {0} {1} 1</value></data>
   <data name="ChatInputOtherReply" xml:space="preserve"><value>別の回答: !cab answer {0} {1} other 回答内容</value></data>
-  <data name="ChatControlHelp" xml:space="preserve"><value>このアカウントとスレッドで使えるコマンド:
-&gt; !cab &lt;依頼&gt; — エージェントに依頼する
-&gt; !cab command / !cab commands / !cab help — この一覧を表示する
-&gt; !cab agent — 登録済みCLI接続と要約あり／なしの切り替え方法を表示
-&gt; !cab model / !cab model list / !cab model モデルID / !cab model default — この会話のモデル確認・候補取得・変更・既定に戻す
-&gt; !cab status — このスレッドにある自分の実行中・承認待ち・待機中の依頼を、状態・実効エージェント・モデル・作業フォルダーとともに表示する
-&gt; !cab stop — 実行中の自分の依頼を停止し、待機中の依頼を取り消す
-&gt; !cab folder "C:\path" — 作業フォルダー変更を申請する。信頼済みフォルダーに限られ、このPCでの承認が必要
-&gt; !cab worktree 名前 — この会話用のgit worktreeを申請する（このPCでの承認が必要）
-&gt; !cab remember 内容 / !cab memory / !cab forget 番号|all — このチャンネルの全依頼に付加するメモの保存・一覧・削除
-&gt; !cab usage — このスレッドと本日の自分の利用トークン数と推定コストを表示
-&gt; !cab schedule add daily 09:00 依頼内容 / !cab schedule list / !cab schedule remove 番号 — このアプリが接続中のあいだ、依頼を定時に実行する
-&gt; !cab approve CODE / !cab reject CODE — チャットでの承認共有が有効な場合に承認を選ぶ（コードは5分で失効。無効時はこのPCで承認）
-&gt; !cab answer CODE 質問番号 選択肢番号 — app-serverの質問に選択肢番号で回答する
-&gt; !cab answer CODE 質問番号 回答内容 — 自由入力で回答する
-&gt; !cab answer CODE 質問番号 other 回答内容 — 質問で許可されている場合に別の回答を入力する
-&gt; 回答のチャット共有はapp-server質問共有が有効な場合だけ利用でき、AppServerが秘密入力と指定した質問はこのPCでのみ回答する。回答コードは5分で失効
-新しい会話は新しい投稿（スレッド）から始め、続きは同じスレッドに返信してください。コマンドと返信は、このプロバイダー、チャンネル、スレッド、サーバー接続元にある自分の依頼だけに適用されます。状態表示は最大10件で、他の依頼者の依頼は表示しません。</value></data>
+  <data name="ChatControlHelp" xml:space="preserve"><value>!cab &lt;依頼&gt;  依頼を送る。同じスレッドへの返信で続ける&#10;!cab agent  CLI切り替えの案内&#10;!cab model [list|モデルID|default]  モデルを確認・変更&#10;!cab status / !cab stop  状態を確認・停止&#10;!cab folder "パス" / !cab worktree 名前  作業先の変更を申請&#10;!cab remember 内容 / !cab memory / !cab forget 番号|all  チャンネルメモ&#10;!cab usage  利用状況&#10;!cab schedule add daily 09:00 依頼 / list / remove 番号  定時実行&#10;!cab approve CODE / !cab reject CODE  承認・拒否&#10;!cab answer CODE 質問番号 選択肢番号|回答|other 回答  質問に回答&#10;チャットで承認・回答するには共有設定が必要です。コードは5分間有効です。&#10;自分の依頼だけが対象です。</value></data>
   <data name="MattermostInboxApprovalWaiting" xml:space="preserve"><value>この依頼は承認待ちです。依頼した本人が ✅ で承認、❌ で拒否できます。</value></data>
   <data name="WorktreeNameInstruction" xml:space="preserve"><value>!cab worktree 名前 の形式で指定してください。名前は英数字・ドット・アンダースコア・ハイフンの1〜40文字で、先頭にドットとハイフンは使えません。</value></data>
   <data name="WorktreeChangedOutput" xml:space="preserve"><value>作業フォルダーをgit worktree {0}（ブランチ {1}）に切り替えました。次の依頼は新しいAI会話として開始します。</value></data>
@@ -627,7 +610,7 @@
   <data name="AgentSwitchConfirm" xml:space="preserve"><value>切り替え先: {0}&#10;CLI: {1}&#10;モデル: {2}&#10;ツール権限: {3}&#10;作業フォルダー: {4}&#10;引き継ぎ: {5}&#10;同じチャットスレッドで、新しいAI会話を始めます。以前のセッション情報はこのPCに残します。次の依頼はこのPCでの承認が必要です。</value></data>
   <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>先に「エージェント設定」で切り替え先のCodex・Claude Code・Gemini CLI・GitHub Copilot CLI・Antigravity CLIを選び、CLIチェック後に「このCLI接続を登録」を実行してください。</value></data>
   <data name="AgentSwitchNoConnections" xml:space="preserve"><value>なし（先にPCでCLI接続を登録してください）</value></data>
-  <data name="AgentSwitchCommands" xml:space="preserve"><value>登録済みCLI接続: {0}&#10;要約の有無を指定してください:&#10;!cab agent codex summary / !cab agent codex fresh&#10;!cab agent claude summary / !cab agent claude fresh&#10;!cab agent gemini summary / !cab agent gemini fresh&#10;!cab agent github-copilot summary / !cab agent github-copilot fresh&#10;!cab agent antigravity summary / !cab agent antigravity fresh&#10;!cab agent kiro summary / !cab agent kiro fresh&#10;!cab agent qwen summary / !cab agent qwen fresh&#10;!cab agent kimi summary / !cab agent kimi fresh&#10;!cab agent muse summary / !cab agent muse fresh&#10;summaryは直近の会話メモを引き継ぎ、freshは引き継ぎません。切り替えには必ずPCでの承認が必要です。チャットから実行ファイルのパスは指定できません。</value></data>
+  <data name="AgentSwitchCommands" xml:space="preserve"><value>使い方  !cab agent &lt;名前&gt; summary|fresh&#10;登録済み  {0}&#10;summary は直近の会話メモを引き継ぎ、fresh は新しく始めます。&#10;切り替えには通常、PCでの承認が必要です。</value></data>
   <data name="AgentSwitchSaved" xml:space="preserve"><value>{0}への切り替えを保存しました。このスレッドで次の依頼を送ってください。PCでの承認が必要です。切り替えで取り消された承認待ちの依頼は、再投稿してください。</value></data>
   <data name="AgentSwitchCompleted" xml:space="preserve"><value>AIエージェント変更済み</value></data>
   <data name="AgentSwitchFailed" xml:space="preserve"><value>切り替えできませんでした。PCでCLI接続の登録、作業フォルダーの信頼設定、要約の有無を確認し、実行の終了後に再試行してください。</value></data>
@@ -926,7 +909,7 @@
   <data name="IncomingFilesSummary" xml:space="preserve"><value>受信添付: {0}個（{1}）。依頼の承認後、対応ファイルをAIへ渡します。最大5個、1個10MB、合計20MB。PNG/JPEG/WebP画像、UTF-8のTXT/LOG/MD/CSV/JSONに対応します。一時コピーは実行後に削除するため、後の依頼で必要な場合は再添付してください。添付付きの追加指示は別の実行として順番に処理します。</value></data>
   <data name="IncomingFileNamePending" xml:space="preserve"><value>ファイル名は承認後に確認</value></data>
   <data name="IncomingFilesInvalid" xml:space="preserve"><value>添付を受け付けられません。対応形式のファイルを5個以内で依頼に添付してください。</value></data>
-  <data name="IncomingFilesFailed" xml:space="preserve"><value>添付をAIに渡せなかったため、エージェントは起動していません。PNG/JPEG/WebP画像、UTF-8のTXT/LOG/MD/CSV/JSONを最大5個、1個10MB、合計20MB以内で添付してください。ファイルへのアクセス権と信頼する作業フォルダーも確認してください。Slackでは files:read 権限も必要です。新しい依頼に再添付してください。</value></data>
+  <data name="IncomingFilesFailed" xml:space="preserve"><value>添付を読み込めなかったため、実行を開始できませんでした。PNG・JPEG・WebP画像またはUTF-8のテキスト（TXT・LOG・MD・CSV・JSON）を、最大5個、1個10 MB・合計20 MB以内で新しい依頼に添付してください。SlackではBotに files:read 権限が必要です。</value></data>
   <data name="IncomingFilesFailedTitle" xml:space="preserve"><value>添付の受信に失敗</value></data>
   <data name="SettingsReviewDiscordUsers" xml:space="preserve"><value>Discordの許可ユーザー</value></data>
   <data name="SettingsReviewDiscordGuilds" xml:space="preserve"><value>Discordの許可サーバー</value></data>

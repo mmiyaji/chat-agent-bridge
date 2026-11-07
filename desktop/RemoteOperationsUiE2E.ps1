@@ -210,7 +210,7 @@ function Check-StatusStopStage {
             $snapshot = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $helpRoot }).Count -ge $replyCount } 10
             $helpPosts = @($snapshot.replies | Where-Object { $_.root_id -eq $helpRoot })
             Assert-True ($helpPosts.Count -eq $replyCount) 'Help created an extra receipt or reply.'
-            foreach ($syntax in @('!cab command', '!cab status', '!cab stop', '!cab folder', '!cab approve', '!cab reject', '!cab answer')) {
+            foreach ($syntax in @('!cab agent', '!cab status', '!cab stop', '!cab folder', '!cab approve', '!cab reject', '!cab answer')) {
                 Assert-True ($helpPosts[-1].message.Contains($syntax)) "Command help omitted $syntax."
             }
             Assert-True ($helpPosts[-1].message -eq $helpPosts[0].message) 'Help aliases returned different command lists.'
@@ -466,7 +466,7 @@ function Check-AgentSwitchStage([string]$AgentHost) {
         $saved.Bindings[0].AgentPermissionMode = 'read-only'
         Write-Json 'sessions.json' $saved
         Post ('agent-choice-' + $runId) $root 'alice' 'agent codex'
-        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.message.Contains('!cab agent codex summary') }).Count -gt 0 }
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message.Contains('summary|fresh') }).Count -gt 0 }
     }
     Check 'Chat provider switch requires local approval and preserves pending state on restart' {
         Post ('agent-switch-' + $runId) $root 'alice' 'agent codex summary'
@@ -552,7 +552,8 @@ function Check-AgentSwitchStage([string]$AgentHost) {
         Post ('agent-other-user-' + $runId) $root 'bob' 'agent codex fresh'
         Post ('agent-other-thread-' + $runId) ('other-'+$root) 'alice' 'agent codex fresh'
         Post ('agent-unregistered-' + $runId) $root 'alice' 'agent gemini fresh'
-        $null = Wait-Fixture { param($s) @($s.replies|Where-Object{$_.message.Contains('!cab agent codex summary')}).Count -ge 2 }
+        $registerHint = if ($script:language -eq 'ja') { '先に「エージェント設定」' } else { 'Register a different CLI in Agent settings first' }
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message.Contains($registerHint) }).Count -gt 0 }
         Start-Sleep -Milliseconds 500
         Assert-True ((Get-Content (Join-Path $script:stageData 'sessions.json') -Raw) -eq $before) 'An unrelated account, thread or provider changed the session'
     }

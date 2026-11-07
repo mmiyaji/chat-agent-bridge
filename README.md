@@ -77,10 +77,10 @@ The sidebar shows the connected chat service and its status. Select it to open C
 
 ## Installation and setup
 
-Portable builds are available for Windows. Install and authenticate your chosen CLI and prepare the chat bot separately.
+Install from the [Microsoft Store](https://apps.microsoft.com/detail/9n1lzk25fsgr) or use a portable build from GitHub Releases. Set up your CLI and chat bot separately.
 
-1. Download the **x64 / ARM64** ZIP for your PC from [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases).
-2. Extract the entire folder to a writable location and run `ChatAgentBridge.Desktop.exe`.
+1. For a portable installation, download the **x64 / ARM64** ZIP for your PC from [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases).
+2. Extract the ZIP to a writable folder and run `ChatAgentBridge.Desktop.exe`. Launch the Store edition from the Start menu.
 3. Install the CLI and sign in through it. Select the CLI and working folder in the setup guide, then run the CLI check.
 4. Prepare a bot on the chat service, then configure connection details and allowed users in **Chat settings**.
    - Slack: [Slack setup guide](docs/slack-setup.md) (Socket Mode app, events and scopes)
@@ -132,7 +132,7 @@ Manual runs use the working folder selected in Agent settings, regardless of whe
 - Codex App Server approvals show an informational warning for a small set of clearly destructive command patterns. The warning does not change the available approval controls or replace the CLI's permission safeguards.
 - **Access restrictions** specify who and which conversations can send requests. Register folders where requests may start as trusted working folders. Changing the folder from chat requires a location within that scope and approval on the PC.
 - **Result sharing** can be manual, automatic or disabled. New settings default to automatic sharing; updates preserve your saved sharing choice. Sent content is visible to everyone who can access the destination chat or thread.
-- **Generated file attachments** require approval each time by default. You can instead require approval only for the first attachment in a thread, allow automatic attachments or prohibit attachments. Set per-file size, total size and file count limits.
+- **File attachments** require approval each time by default. You can instead require approval only for the first attachment in a thread, allow automatic attachments or prohibit attachments. Set per-file size, total size and file count limits.
 - **Sharing approvals in chat** can be enabled only when using Codex App Server. When enabled, the original requester can approve from chat (see the table below). It is off by default, and approvals happen on the PC.
 
 | Service | Approving the request to start | Approving CLI operations (commands, file changes) |
@@ -155,6 +155,12 @@ Files attached to a request are downloaded after the request is approved and pas
 | Slack scope | The bot needs `files:read`; reauthorize the app after adding the scope |
 
 ![Request approvals, result sharing, additional instructions and file attachment settings](docs/assets/screenshots/chat-settings-en.png)
+
+### Sharing generated files
+
+In **Chat settings**, open **File attachments** to set approval and size limits. With **Ask every time**, select files on the PC before sending. **Ask once per conversation** covers eligible new files in the same resumable session after approval. Changes to the session or attachment settings can require a new approval. **Attach automatically** sends eligible files within your limits.
+
+Everyone with access to the channel can view sent files. Review file contents before sending. The app excludes executables and files with names associated with settings or credentials. Turning off result sharing also disables attachments.
 
 ## Chat operations
 

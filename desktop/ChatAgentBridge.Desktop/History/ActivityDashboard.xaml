@@ -207,6 +207,7 @@
                         </StackPanel>
                     </Expander>
                     <TextBlock x:Uid="UsageAccountingNote" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="UsageAccountingNote" />
+                    <HyperlinkButton x:Uid="UsageAccountingGuide" AutomationProperties.AutomationId="UsageAccountingGuide" />
                 </StackPanel>
             </Border>
 

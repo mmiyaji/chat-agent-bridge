@@ -324,7 +324,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Allowed Mattermost conversation IDs (optional)</value>
   </data>
   <data name="MattermostThreadLookupLabel.Text" xml:space="preserve"><value>Choose a conversation from a post link</value></data>
-  <data name="MattermostThreadLookupHelp.Text" xml:space="preserve"><value>In Mattermost, open a post's menu, choose Copy Link, and paste the link here. A reply link resolves to the conversation's first post. Check the conversation ID, then choose Add this conversation. Save settings and reconnect to apply the restriction.</value></data>
+  <data name="MattermostThreadLookupHelp.Text" xml:space="preserve"><value>Paste a link copied from the post menu. A reply link also identifies the first post in the conversation.</value></data>
   <data name="MattermostThreadLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermost post link or ID</value></data>
   <data name="MattermostThreadLookupInput.PlaceholderText" xml:space="preserve"><value>https://chat.example.com/team/pl/…</value></data>
   <data name="ResolveMattermostThreadButton.Content" xml:space="preserve"><value>Check conversation</value></data>
@@ -600,7 +600,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Audit events</value>
   </data>
   <data name="EmptyAuditHistory.Text" xml:space="preserve">
-    <value>There are no audit events yet. Chat actions add metadata to this list.</value>
+    <value>Chat activity such as receiving or approving a request appears here.</value>
   </data>
   <data name="inboxChatInboxPageTextBlock001.Text" xml:space="preserve">
     <value>Chat</value>
@@ -993,7 +993,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ActivityCalendarHeading.Text" xml:space="preserve"><value>Activity calendar</value></data>
   <data name="ActivityCalendarHelp.Text" xml:space="preserve"><value>Color intensity shows the number of runs. Select a day or use the arrow keys, then open its execution history.</value></data>
   <data name="ActivityDailyHeading.Text" xml:space="preserve"><value>Daily runs · last 28 days</value></data>
-  <data name="ActivityEmpty.Text" xml:space="preserve"><value>Your first run will light up this calendar. Try an agent, then come back to see your progress.</value></data>
+  <data name="ActivityEmpty.Text" xml:space="preserve"><value>Usage appears here after a run.</value></data>
   <data name="ActivityEmptyModels.Text" xml:space="preserve"><value>Model activity will appear after your first run.</value></data>
   <data name="ActivityHeading.Text" xml:space="preserve"><value>Your activity, day by day</value></data>
   <data name="ActivityModelsHeading.Text" xml:space="preserve"><value>Models you use most</value></data>
@@ -1022,10 +1022,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="UsageDayExpander.Header" xml:space="preserve"><value>Daily details · all dates in this period</value></data>
   <data name="UsageDay.Header" xml:space="preserve"><value>Date</value></data>
   <data name="UsageDay.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Usage detail date</value></data>
-  <data name="UsageAccountingNote.Text" xml:space="preserve"><value>Tokens = input (including cache reads/writes once) + output, for executions reporting both. Cache hit rate = reported cache reads ÷ corresponding total input; weighted by tokens, not averaged percentages. No input means no rate. Missing reports stay unknown; these are CLI-reported counts, not billing or account limits. Multi-model attribution unavailable from the CLI stays unknown.</value></data>
+  <data name="UsageAccountingNote.Text" xml:space="preserve"><value>Usage totals come from the CLI. They do not show your bill or remaining allowance.</value></data>
   <data name="UsageCostMethod.Header" xml:space="preserve"><value>How estimated API cost is calculated</value></data>
   <data name="UsageCostMethod.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>How estimated API cost is calculated</value></data>
-  <data name="UsageCostMethodDetails.Text" xml:space="preserve"><value>Cost uses recorded token counts multiplied by published standard API rates for the reported model. Only the priced subset is included; executions without a known model or required token counts remain unpriced. Missing cache details produce a range. Daily and model chart bars use the range upper bound for height and display the range in their labels.</value></data>
+  <data name="UsageCostMethodDetails.Text" xml:space="preserve"><value>Estimates use published API rates and reported tokens. Only runs with enough pricing data are included. Missing cache details can produce a range.</value></data>
   <data name="UsageCostLimitations.Text" xml:space="preserve"><value>This is a reference estimate, not billing data. It excludes subscription fees, tools, Fast modes, region, and tax. Cache TTL or context may be unknown, and recorded main-loop usage may omit subagents. Estimates use current local rates; optional catalog updates do not change manual rates, and no AI requests are made.</value></data>
   <data name="UsageOpenAIPricing.Content" xml:space="preserve"><value>OpenAI API pricing</value></data>
   <data name="UsageOpenAIPricing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>OpenAI API pricing</value></data>
@@ -1047,14 +1047,14 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="WizardLookupSlackUserButton.Content" xml:space="preserve"><value>Look up Slack user</value></data>
   <data name="WizardAddSlackUserButton.Content" xml:space="preserve"><value>Add this user</value></data>
   <data name="SlackThreadLookupLabel.Text" xml:space="preserve"><value>Find a Slack conversation from its message link</value></data>
-  <data name="SlackThreadLookupHelp.Text" xml:space="preserve"><value>Paste a Slack message permalink. The app checks the authenticated workspace and finds the actual channel and conversation root. Choose Add this conversation to add both the channel and root thread when needed, then review the change and reconnect. Empty channel and thread lists impose no extra conversation restriction.</value></data>
+  <data name="SlackThreadLookupHelp.Text" xml:space="preserve"><value>Paste a Slack message link to find its channel and thread in the connected workspace.</value></data>
   <data name="SlackThreadLookupInput.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slack message permalink</value></data>
   <data name="SlackThreadLookupInput.PlaceholderText" xml:space="preserve"><value>https://workspace.slack.com/archives/…/p…</value></data>
   <data name="ResolveSlackThreadButton.Content" xml:space="preserve"><value>Check conversation</value></data>
   <data name="AddSlackThreadButton.Content" xml:space="preserve"><value>Add this conversation</value></data>
   <data name="HistoryCompactFilters.Header" xml:space="preserve"><value>Filters</value></data>
   <data name="AgentConnectionRegistrationTitle.Text" xml:space="preserve"><value>Register this CLI connection</value></data>
-  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>Register Codex, Claude Code, Gemini CLI, GitHub Copilot CLI, Antigravity CLI, Kiro CLI, Qwen Code, Kimi Code CLI or Muse Code CLI after a successful check. This saves its local executable and selected agent options for conversation switching; it does not copy login credentials. After registration, brief successful-conversation excerpts are encrypted on this PC for handoff.</value></data>
+  <data name="AgentConnectionRegistrationHelp.Text" xml:space="preserve"><value>Register a checked CLI to switch agents per conversation. Brief handoff notes are encrypted on this PC.</value></data>
   <data name="RegisterAgentConnection.Content" xml:space="preserve"><value>Register this CLI connection</value></data>
   <data name="RegisteredConnectionSummary.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Registered CLI connections</value></data>
   <data name="LoadRegisteredCodexConnection.Content" xml:space="preserve"><value>Load saved Codex</value></data>
@@ -1066,7 +1066,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="FileAttachmentModeAlways.Content" xml:space="preserve"><value>Ask every time (default)</value></data>
   <data name="FileAttachmentModeFirst.Content" xml:space="preserve"><value>Ask once per conversation</value></data>
   <data name="FileAttachmentModeAuto.Content" xml:space="preserve"><value>Attach automatically</value></data>
-  <data name="FileAttachmentSettingsHelp.Text" xml:space="preserve"><value>Automatic result sharing does not approve attachments. Disabling result sharing also disables file attachments. Saving automatic mode opts into sending eligible new files without a prompt. In first mode, one approval covers future eligible new files created by this user in the same conversation session within these limits; a mode or limit change asks again. For CLIs without resumable sessions, approval applies to one send. Channel members may read sent files. The app cannot inspect contents for sensitive information, so review files before sending. Files with settings, credential, or authentication names and executable files are excluded by name.</value></data>
+  <data name="FileAttachmentSettingsHelp.Text" xml:space="preserve"><value>With first approval per thread, eligible files in the same conversation are attached within your limits after the first approval. Files with settings or credential names and executables are excluded.</value></data>
   <data name="FileAttachmentMaxSizeMb.Header" xml:space="preserve"><value>Maximum size per file (MiB)</value></data>
   <data name="FileAttachmentMaxCount.Header" xml:space="preserve"><value>Maximum file count</value></data>
   <data name="FileAttachmentMaxTotalSizeMb.Header" xml:space="preserve"><value>Maximum total size per send (MiB)</value></data>
@@ -1284,13 +1284,13 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="DiscordSectionTitle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord</value></data>
   <data name="DiscordSectionHelp.Text" xml:space="preserve"><value>Connect a Discord bot and restrict which users and servers may reach it.</value></data>
   <data name="DiscordSectionAccessible.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord bot settings</value></data>
-  <data name="DiscordBotSetupHelp.Text" xml:space="preserve"><value>Create a bot in the Discord Developer Portal, enable the Message Content intent, then invite it to your server. Use the bot token only; never use a user token. Enable Developer Mode in Discord to copy user, server, channel, and thread IDs.</value></data>
+  <data name="DiscordBotSetupHelp.Text" xml:space="preserve"><value>Create a bot in the Discord Developer Portal, enable Message Content Intent, and invite it to your server. Use a bot token. Enable Developer Mode to copy IDs.</value></data>
   <data name="DiscordBotTokenLabel.Text" xml:space="preserve"><value>Bot token</value></data>
   <data name="DiscordBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord bot token</value></data>
   <data name="DiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Show or hide Discord bot token</value></data>
   <data name="DiscordAllowedUserIdsLabel.Text" xml:space="preserve"><value>Allowed user IDs</value></data>
   <data name="DiscordAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord user IDs</value></data>
-  <data name="DiscordAllowedUserIdsHelp.Text" xml:space="preserve"><value>Required. Enter one Discord user ID per line. Usernames are not used.</value></data>
+  <data name="DiscordAllowedUserIdsHelp.Text" xml:space="preserve"><value>Enter one allowed Discord user ID per line. Use IDs rather than usernames.</value></data>
   <data name="DiscordAllowedGuildIdsLabel.Text" xml:space="preserve"><value>Allowed server IDs</value></data>
   <data name="DiscordAllowedGuildIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord server IDs</value></data>
   <data name="DiscordAllowedGuildIdsHelp.Text" xml:space="preserve"><value>Required when direct messages are disabled. Enter one server ID per line.</value></data>
@@ -1298,7 +1298,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="DiscordAllowDirectMessages.OnContent" xml:space="preserve"><value>On</value></data>
   <data name="DiscordAllowDirectMessages.OffContent" xml:space="preserve"><value>Off</value></data>
   <data name="DiscordAllowDirectMessages.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allow Discord direct messages</value></data>
-  <data name="DiscordAllowDirectMessagesHelp.Text" xml:space="preserve"><value>Off by default. When enabled, allowed users can send requests in direct messages without a server ID.</value></data>
+  <data name="DiscordAllowDirectMessagesHelp.Text" xml:space="preserve"><value>Allow approved users to send requests by DM without a server ID.</value></data>
   <data name="DiscordAllowedChannelIdsLabel.Text" xml:space="preserve"><value>Allowed channel IDs (optional)</value></data>
   <data name="DiscordAllowedChannelIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord channel IDs</value></data>
   <data name="DiscordAllowedChannelIdsHelp.Text" xml:space="preserve"><value>Optional additional restriction. Enter one channel ID per line.</value></data>
@@ -1308,16 +1308,13 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AutoConnectOptionDiscord.Content" xml:space="preserve"><value>Discord</value></data>
   <data name="WizardProviderDiscord.Content" xml:space="preserve"><value>Discord</value></data>
   <data name="WizardDiscordTitle.Text" xml:space="preserve"><value>Configure a Discord bot</value></data>
-  <data name="WizardDiscordBotSetupHelp.Text" xml:space="preserve"><value>Create a bot in the Discord Developer Portal, enable the Message Content intent, then invite it to your server. Use the bot token only; never use a user token. Enable Developer Mode in Discord to copy user, server, channel, and thread IDs.</value></data>
   <data name="WizardDiscordBotTokenLabel.Text" xml:space="preserve"><value>Bot token</value></data>
   <data name="WizardDiscordBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord bot token</value></data>
   <data name="WizardDiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Show or hide Discord bot token</value></data>
   <data name="WizardDiscordAllowedUsersLabel.Text" xml:space="preserve"><value>Allowed user IDs</value></data>
   <data name="WizardDiscordAllowedUsers.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord user IDs</value></data>
-  <data name="WizardDiscordAllowedUsersHelp.Text" xml:space="preserve"><value>Required. Enter one Discord user ID per line. Usernames are not used.</value></data>
   <data name="WizardDiscordAllowedGuildsLabel.Text" xml:space="preserve"><value>Allowed server IDs</value></data>
   <data name="WizardDiscordAllowedGuilds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord server IDs</value></data>
-  <data name="WizardDiscordAllowedGuildsHelp.Text" xml:space="preserve"><value>Required when direct messages are disabled. Enter one server ID per line.</value></data>
   <data name="WizardDiscordAllowedChannelsLabel.Text" xml:space="preserve"><value>Allowed channel IDs (optional)</value></data>
   <data name="WizardDiscordAllowedChannels.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord channel IDs</value></data>
   <data name="WizardDiscordAllowedThreadsLabel.Text" xml:space="preserve"><value>Allowed thread IDs (optional)</value></data>
@@ -1408,4 +1405,9 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="KeepAwakeStatusLoading" xml:space="preserve"><value>Loading setting…</value></data>
   <data name="KeepAwakeMode.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>When to keep the PC awake</value></data>
   <data name="WizardRequiredFieldsHint.Text" xml:space="preserve"><value>* marks fields required when configuring this step.</value></data>
+  <data name="FileAttachmentVisibilityWarning.Text" xml:space="preserve"><value>⚠ Everyone in the channel can view sent files. Review their contents before sending.</value></data>
+  <data name="FileAttachmentGuide.Content" xml:space="preserve"><value>File attachment guide</value></data>
+  <data name="UsageAccountingGuide.Content" xml:space="preserve"><value>Usage and cost estimation guide</value></data>
+  <data name="FileAttachmentGuide.NavigateUri" xml:space="preserve"><value>https://github.com/mmiyaji/chat-agent-bridge/blob/main/README.md#sharing-generated-files</value></data>
+  <data name="UsageAccountingGuide.NavigateUri" xml:space="preserve"><value>https://github.com/mmiyaji/chat-agent-bridge/blob/main/README.md#history-and-usage</value></data>
 </root>

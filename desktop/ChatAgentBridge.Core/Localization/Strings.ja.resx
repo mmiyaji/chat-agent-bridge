@@ -141,6 +141,6 @@
   <data name="KimiAcpIncomplete" xml:space="preserve"><value>Kimi Code CLIの依頼が完了しませんでした。会話の紐付けは変更していません。</value></data>
   <data name="KimiAcpTimeout" xml:space="preserve"><value>Kimi Code CLIの応答が制限時間内に得られませんでした。再試行してください。</value></data>
   <data name="KimiAcpProtocolFailed" xml:space="preserve"><value>Kimi Code CLIとの通信に失敗したか、操作が拒否されました。CLIのバージョン・ログイン・承認設定を確認してください。</value></data>
-  <data name="ApprovalRiskApprovalReminder" xml:space="preserve"><value>承認前にコマンドを確認してください。承認方法は通常どおりです。</value></data>
+  <data name="ApprovalRiskApprovalReminder" xml:space="preserve"><value>承認前にコマンドを確認してください。</value></data>
   <data name="ApprovalRiskElevated" xml:space="preserve"><value>内容をよく確認してください:</value></data>
 </root>

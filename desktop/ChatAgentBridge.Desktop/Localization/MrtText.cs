@@ -107,6 +107,15 @@ internal static class MrtText
             if (currentValue is not null and not string) continue;
             Apply(id, property, context, value => info.SetValue(element, value));
         }
+        if (element is HyperlinkButton link && !IsBound(element, nameof(HyperlinkButton.NavigateUri)))
+        {
+            Apply(id, nameof(HyperlinkButton.NavigateUri), context, value =>
+            {
+                if (Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps)
+                    link.NavigateUri = uri;
+            });
+        }
+
         var automationKey = $"{id}.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name";
         var automationName = Get(automationKey, context);
         if (!automationName.Equals(automationKey, StringComparison.Ordinal))

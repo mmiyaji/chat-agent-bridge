@@ -78,7 +78,7 @@ window.CAB_EN = {
  "q1": "Do I need to install an AI agent on my phone?",
  "a1": "No. On the phone you only post in the chat app; the CLI on your PC does the work.",
  "q2": "What happens while the PC is asleep?",
- "a2": "Requests cannot be received. Keep the PC on and the app connected. It keeps working while it sits in the system tray.",
+ "a2": "The app cannot receive requests while the PC sleeps. In General settings, use Keep awake for the conditions you need, such as while processing requests or while the chat receiver is enabled. You can still put the PC to sleep manually or close the lid.",
  "q3": "Do I need port forwarding or a public URL?",
  "a3": "No. The PC connects out to each chat service to receive posts, so nothing on the internet connects in to your PC.",
  "q4": "Does it cost anything?",

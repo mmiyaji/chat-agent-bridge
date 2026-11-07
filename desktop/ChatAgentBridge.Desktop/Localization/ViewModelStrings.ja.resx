@@ -127,10 +127,10 @@
     <value>同意して次へ</value>
   </data>
   <data name="ConsentInstructions" xml:space="preserve">
-    <value>文書を開いて内容をご確認ください。同意しない場合は、後で設定するかアプリを終了できます。</value>
+    <value>文書を開いて内容を確認してください。同意しない場合は、後で設定するかアプリを終了できます。</value>
   </data>
   <data name="ConsentInstructionsWizard" xml:space="preserve">
-    <value>文書を開いて内容をご確認ください。このガイドでは両方に同意してから進みます。</value>
+    <value>文書を開いて内容を確認してください。このガイドでは両方に同意してから進みます。</value>
   </data>
   <data name="ConsentRequired" xml:space="preserve">
     <value>利用条件への同意が必要です</value>
@@ -316,7 +316,7 @@
     <value>利用条件を確認してください</value>
   </data>
   <data name="ReviewConsentDetails" xml:space="preserve">
-    <value>最初のページへ戻り、利用規約とプライバシーポリシーをご確認ください。</value>
+    <value>最初のページへ戻り、利用規約とプライバシーポリシーを確認してください。</value>
   </data>
   <data name="ReviewSettings" xml:space="preserve">
     <value>設定内容を確認してください</value>
@@ -716,7 +716,7 @@ AIの操作権限: {8}</value>
   <data name="WizardSkippedChat" xml:space="preserve"><value>チャット接続</value></data>
   <data name="WizardSkippedSeparator" xml:space="preserve"><value>、</value></data>
   <data name="AntigravityProviderHelp" xml:space="preserve"><value>Antigravity CLI（agy）は同じチャットスレッドの会話を継続します。アカウントで使えるモデルの候補を取得するか、モデルIDを直接入力できます。推論レベルはCLIの設定に従います。事前にCLIへログインしてください。</value></data>
-  <data name="AntigravityPermissionHelp" xml:space="preserve"><value>Antigravity CLIはヘッドレスモードでは確認画面を出せないため、ここで作業フォルダーへの書き込みを許可するモードか「フルアクセス」を選ぶか、agyのsettings.jsonに許可ルールを追加しない限り、編集とコマンドは自動的に拒否されます。読み取り専用と操作ごとの確認は使えません。「CLIの既定値を使う」を選ぶとagy自身の設定に従います。</value></data>
+  <data name="AntigravityPermissionHelp" xml:space="preserve"><value>Antigravity CLIは実行中に確認画面を出せません。編集やコマンドを許可するには「フォルダー内の編集を自動許可」「フルアクセス」、またはagyの settings.json の許可ルールを使います。</value></data>
   <data name="SessionCliProviderHelp" xml:space="preserve"><value>Gemini CLI・GitHub Copilot CLIは同じチャットスレッドの会話を継続し、モデル名を直接指定できます。モデル候補の取得とアプリからの推論・操作権限の上書きには対応しません。事前にCLIへログインしてください。</value></data>
   <data name="ManualModelCandidatesUnavailable" xml:space="preserve"><value>このCLIではモデル候補を取得できません。CLIと契約が対応するモデルID・別名を直接入力するか、空欄でCLIの既定モデルを使ってください。モデルの利用可否は実行時に確認されます。推論と操作権限はCLIの設定に従います。</value></data>
   <data name="OverviewAutoConnectDiscordReady" xml:space="preserve"><value>オン: Discord</value></data>
