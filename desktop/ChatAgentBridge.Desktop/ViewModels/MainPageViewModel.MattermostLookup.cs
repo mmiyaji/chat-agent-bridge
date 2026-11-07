@@ -135,6 +135,7 @@ public partial class MainPageViewModel
                 ? user.Id
                 : MattermostAllowedUserIds.TrimEnd() + Environment.NewLine + user.Id;
             _ = ChatAccessPolicy.NormalizeAllowedUsers(candidate);
+            MattermostAllowedUsers.RememberName(user.Id, user.Username);
             MattermostAllowedUserIds = candidate;
             MattermostUsernameLookupStatus = ViewModelText.Get("MattermostUsernameAddedSaveNeeded", user.Username);
         }

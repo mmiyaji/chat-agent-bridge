@@ -441,7 +441,7 @@
     <value>Mattermostアクセストークン</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock052.Text" xml:space="preserve">
-    <value>許可するMattermost内部ユーザーID（1行に1つ）</value>
+    <value>IDをまとめて編集（1行に1つ）</value>
   </data>
   <data name="MattermostAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>許可するMattermost内部ユーザーID（1行に1つ）</value>
@@ -467,6 +467,11 @@
   <data name="chatAgentBridgeDesktopMainPageTextBlock053.Text" xml:space="preserve">
     <value>一覧には内部ユーザーIDが入ります。ユーザー名を直接入力しないでください。空欄でも、チャットから届いた依頼をこのPCで承認すると追加できます。Mattermost接続中の場合は再接続してください。</value>
   </data>
+  <data name="AllowedUserListTitle.Text" xml:space="preserve"><value>許可ユーザー</value></data>
+  <data name="AllowedUserListEmpty.Text" xml:space="preserve"><value>まだ誰も許可していません。下でIDを追加するか、接続後にチャットからBotへ依頼し、このPCで「許可して実行」を選ぶと追加されます。</value></data>
+  <data name="AllowedUserAddInput.Header" xml:space="preserve"><value>IDで追加</value></data>
+  <data name="AllowedUserAddInput.PlaceholderText" xml:space="preserve"><value>ユーザーID</value></data>
+  <data name="AllowedUserAddButton.Content" xml:space="preserve"><value>追加</value></data>
   <data name="InboxAccessRequestsTitle.Text" xml:space="preserve"><value>許可ユーザー以外からの依頼</value></data>
   <data name="InboxAccessRequestsHelp.Text" xml:space="preserve"><value>「許可して実行」を選ぶと許可ユーザーに追加し、次回からはこの確認なしで依頼を受け付けます。依頼者の表示名は変更できるため、IDも確認してください。</value></data>
   <data name="AccessRequestAllowButton.Content" xml:space="preserve"><value>許可して実行</value></data>
@@ -488,7 +493,7 @@
     <value>Slack Appトークン</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock057.Text" xml:space="preserve">
-    <value>許可するSlackメンバーID（1行に1つ）</value>
+    <value>IDをまとめて編集（1行に1つ）</value>
   </data>
   <data name="SlackAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>許可するSlackメンバーID（1行に1つ）</value>
@@ -1293,7 +1298,7 @@
   <data name="DiscordBotTokenLabel.Text" xml:space="preserve"><value>Botトークン</value></data>
   <data name="DiscordBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord Botトークン</value></data>
   <data name="DiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord Botトークンの表示・非表示</value></data>
-  <data name="DiscordAllowedUserIdsLabel.Text" xml:space="preserve"><value>許可するユーザーID</value></data>
+  <data name="DiscordAllowedUserIdsLabel.Text" xml:space="preserve"><value>IDをまとめて編集（1行に1つ）</value></data>
   <data name="DiscordAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordユーザーID</value></data>
   <data name="DiscordAllowedUserIdsHelp.Text" xml:space="preserve"><value>許可するDiscordユーザーIDを1行に1つ入力してください。ユーザー名は使えません。空欄でも、チャットから届いた依頼をこのPCで承認すると追加できます。</value></data>
   <data name="DiscordAllowedGuildIdsLabel.Text" xml:space="preserve"><value>許可するサーバーID</value></data>

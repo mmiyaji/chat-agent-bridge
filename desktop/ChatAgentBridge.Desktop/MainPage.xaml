@@ -9,6 +9,7 @@
     xmlns:history="using:ChatAgentBridge_Desktop.History"
     xmlns:localization="using:ChatAgentBridge_Desktop.Localization"
     xmlns:appearance="using:ChatAgentBridge_Desktop.Appearance"
+    xmlns:allowedUsers="using:ChatAgentBridge_Desktop.AllowedUsers"
     xmlns:executionUi="using:ChatAgentBridge_Desktop.ExecutionUi"
     xmlns:about="using:ChatAgentBridge_Desktop.About"
     xmlns:settings="using:CommunityToolkit.WinUI.Controls"
@@ -760,6 +761,7 @@
                                             <TextBlock Text="{x:Bind ViewModel.MattermostUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasMattermostUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="MattermostUsernameLookupStatus" />
                                             <Button Command="{x:Bind ViewModel.AddMattermostUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddMattermostUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="AddMattermostUserButton" x:Uid="AddMattermostUserButton" />
                                         </StackPanel>
+                                        <allowedUsers:AllowedUserListView Model="{x:Bind ViewModel.MattermostAllowedUsers}" />
                                         <StackPanel Spacing="8"><TextBlock   AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock052" x:Uid="chatAgentBridgeDesktopMainPageTextBlock052" /><TextBox Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="96"   AutomationProperties.AutomationId="MattermostAllowedUserIds"  x:Uid="MattermostAllowedUserIds" /><TextBlock  TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock053" x:Uid="chatAgentBridgeDesktopMainPageTextBlock053" /></StackPanel>
                                         <TextBlock TextWrapping="Wrap" x:Uid="chatAgentBridgeDesktopMainPageTextBlock035" localization:LocalizedResourceKey.Key="chatAgentBridgeDesktopMainPageTextBlock035" />
                                         <StackPanel Spacing="8" AutomationProperties.AutomationId="MattermostThreadLookup">
@@ -801,6 +803,7 @@
                                             <TextBlock Text="{x:Bind ViewModel.SlackUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.HasSlackUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="SlackUsernameLookupStatus" />
                                             <Button Command="{x:Bind ViewModel.AddSlackUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddSlackUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="AddSlackUserButton" x:Uid="AddSlackUserButton" />
                                         </StackPanel>
+                                        <allowedUsers:AllowedUserListView Model="{x:Bind ViewModel.SlackAllowedUsers}" />
                                         <StackPanel Spacing="8"><TextBlock   AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock057" x:Uid="chatAgentBridgeDesktopMainPageTextBlock057" /><TextBox Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="96"  AutomationProperties.AutomationId="SlackAllowedUserIds"  x:Uid="SlackAllowedUserIds" /><TextBlock  TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock058" x:Uid="chatAgentBridgeDesktopMainPageTextBlock058" /></StackPanel>
                                         <TextBlock TextWrapping="Wrap" x:Uid="SlackConversationScopeHelp" localization:LocalizedResourceKey.Key="SlackConversationScopeHelp" />
                                         <TextBox  Text="{x:Bind ViewModel.SlackAllowedChannelIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="SlackAllowedChannelIds"  x:Uid="SlackAllowedChannelIds" />
@@ -833,6 +836,7 @@
                                             <TextBlock x:Uid="DiscordBotTokenLabel" />
                                             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="DiscordBotTokenBox" Grid.ColumnSpan="2" Padding="12,5,44,6" PasswordChanged="DiscordBotTokenBox_PasswordChanged" AutomationProperties.AutomationId="DiscordBotToken" x:Uid="DiscordBotToken" /><ToggleButton x:Name="DiscordBotTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="DiscordBotTokenReveal" /></Grid>
                                         </StackPanel>
+                                        <allowedUsers:AllowedUserListView Model="{x:Bind ViewModel.DiscordAllowedUsers}" />
                                         <StackPanel Spacing="8">
                                             <TextBlock x:Uid="DiscordAllowedUserIdsLabel" />
                                             <TextBox Text="{x:Bind ViewModel.DiscordAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" AutomationProperties.AutomationId="DiscordAllowedUserIds" x:Uid="DiscordAllowedUserIds" />

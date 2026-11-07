@@ -183,6 +183,17 @@ public sealed partial class ChatInboxViewModel
                     if (!ReferenceEquals(updated, current)) await _store.SaveAsync(updated, token);
                     RemoveAccessRequest(item);
                     await AppendAccessAuditAsync("access_allowed", item.Request, item.DisplayName, actor, token);
+                    try
+                    {
+                        await new AllowedUserDirectory(_store.DirectoryPath).RecordAddedAsync(new AllowedUserRecord(
+                            item.Request.Provider, item.Request.UserId, item.DisplayName, DateTimeOffset.UtcNow,
+                            AllowedUserDirectory.ChatRequestMethod, actor, AccessIdentity(item.Request, item.Connection).Origin,
+                            item.Request.ChannelId, item.Request.ThreadId), token);
+                    }
+                    catch (Exception)
+                    {
+                        // Names and times are display details; the permission itself is already saved.
+                    }
                     AllowedUsersSaved?.Invoke(updated);
                     await RefreshAccessAsync();
                     Status = DesktopText.Get("AccessRequestAllowedStatus", item.Title);
@@ -243,6 +254,23 @@ public sealed partial class ChatInboxViewModel
             if (await TryHandleChatControlAsync(item.Transport, current, request, token)) return;
         }
         await AcceptReceivedRequestAsync(request, item.Transport, current, token);
+    }
+
+    private readonly Dictionary<(string Provider, string UserId), DateTimeOffset> _lastRequestRecorded = [];
+
+    /// <summary>Keeps the allowed-user list's "last request" current, writing at most once an hour per user.</summary>
+    private void RecordAllowedUserRequest(ChatRequest request)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var key = (request.Provider, request.UserId);
+        if (_lastRequestRecorded.TryGetValue(key, out var last) && now - last < TimeSpan.FromHours(1)) return;
+        _lastRequestRecorded[key] = now;
+        var directory = _store.DirectoryPath;
+        _ = Task.Run(async () =>
+        {
+            try { await new AllowedUserDirectory(directory).RecordRequestAsync(request.Provider, request.UserId, now); }
+            catch (Exception) { /* Display detail only. */ }
+        });
     }
 
     private Task AppendAccessAuditAsync(string kind, ChatRequest request, string? displayName, string actor, CancellationToken token) =>

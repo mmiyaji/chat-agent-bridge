@@ -160,6 +160,7 @@ public partial class MainPageViewModel
                 ? user.Id
                 : SlackAllowedUserIds.TrimEnd() + Environment.NewLine + user.Id;
             _ = ChatAccessPolicy.NormalizeAllowedUsers(candidate);
+            SlackAllowedUsers.RememberName(user.Id, user.Name);
             SlackAllowedUserIds = candidate;
             SlackUsernameLookupStatus = ViewModelText.Get("SlackUsernameAddedSaveNeeded", user.Name);
         }

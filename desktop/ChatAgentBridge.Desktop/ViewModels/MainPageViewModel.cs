@@ -373,6 +373,7 @@ public partial class MainPageViewModel : ObservableObject
             DiscordAllowedChannelIds = _settings.DiscordAllowedChannelIds;
             DiscordAllowedThreadIds = _settings.DiscordAllowedThreadIds;
             DiscordAllowDirectMessages = _settings.DiscordAllowDirectMessages;
+            _ = RefreshAllowedUserDetailsAsync();
             ShareApprovalsInChat = _settings.ShareApprovalsInChat;
             ShareAgentQuestionsInChat = _settings.ShareAgentQuestionsInChat;
             RequireApproval = _settings.RequireApproval;

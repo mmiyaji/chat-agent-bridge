@@ -441,7 +441,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Mattermost access token</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock052.Text" xml:space="preserve">
-    <value>Internal Mattermost user IDs to allow (one per line)</value>
+    <value>Edit IDs as text (one per line)</value>
   </data>
   <data name="MattermostAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Internal Mattermost user IDs to allow (one per line)</value>
@@ -467,6 +467,11 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="chatAgentBridgeDesktopMainPageTextBlock053.Text" xml:space="preserve">
     <value>This list contains internal user IDs. Do not enter usernames directly. You can leave it blank and add people by approving their chat requests on this PC. Reconnect Mattermost if connected.</value>
   </data>
+  <data name="AllowedUserListTitle.Text" xml:space="preserve"><value>Allowed users</value></data>
+  <data name="AllowedUserListEmpty.Text" xml:space="preserve"><value>No one is allowed yet. Add an ID below, or connect, send a request to the bot from chat, and choose Allow and run on this PC.</value></data>
+  <data name="AllowedUserAddInput.Header" xml:space="preserve"><value>Add by ID</value></data>
+  <data name="AllowedUserAddInput.PlaceholderText" xml:space="preserve"><value>User ID</value></data>
+  <data name="AllowedUserAddButton.Content" xml:space="preserve"><value>Add</value></data>
   <data name="InboxAccessRequestsTitle.Text" xml:space="preserve"><value>Requests from people who are not allowed yet</value></data>
   <data name="InboxAccessRequestsHelp.Text" xml:space="preserve"><value>Allow and run adds the person to the allowed users, so later requests arrive without this check. Display names can change, so check the ID too.</value></data>
   <data name="AccessRequestAllowButton.Content" xml:space="preserve"><value>Allow and run</value></data>
@@ -488,7 +493,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Slack app token</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock057.Text" xml:space="preserve">
-    <value>Slack member IDs to allow (one per line)</value>
+    <value>Edit IDs as text (one per line)</value>
   </data>
   <data name="SlackAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Slack member IDs to allow (one per line)</value>
@@ -1293,7 +1298,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="DiscordBotTokenLabel.Text" xml:space="preserve"><value>Bot token</value></data>
   <data name="DiscordBotToken.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord bot token</value></data>
   <data name="DiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Show or hide Discord bot token</value></data>
-  <data name="DiscordAllowedUserIdsLabel.Text" xml:space="preserve"><value>Allowed user IDs</value></data>
+  <data name="DiscordAllowedUserIdsLabel.Text" xml:space="preserve"><value>Edit IDs as text (one per line)</value></data>
   <data name="DiscordAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord user IDs</value></data>
   <data name="DiscordAllowedUserIdsHelp.Text" xml:space="preserve"><value>Enter one allowed Discord user ID per line. Use IDs rather than usernames. You can leave it blank and add people by approving their chat requests on this PC.</value></data>
   <data name="DiscordAllowedGuildIdsLabel.Text" xml:space="preserve"><value>Allowed server IDs</value></data>
