@@ -460,8 +460,13 @@ function Run-CompletedScenario([string]$Language, [string]$Theme, [string]$Expec
     if ($location.Current.Name -notlike "*$data*") { throw "Data-management location did not point to the isolated data directory for $scenario." }
     Add-Pass "Data management group and isolated data path ($scenario)"
 
+    # Theme choices are ComboBoxItems, which are only exposed to UIA while the
+    # picker is expanded. Scroll to the control and open it before inspecting
+    # the selected item; searching the collapsed ComboBox tree times out.
+    $themePicker = Wait-ElementWhileScrolling $script:activeWindow 'MainContentScroll' 'AppThemePicker' 10 -RequireVisible
+    Expand-Element $themePicker 'app theme picker'
     $themeId = if ($Theme -eq 'light') { 'ThemeLight' } else { 'ThemeDark' }
-    $themeControl = Wait-Element $script:activeWindow $themeId
+    $themeControl = Wait-Element $script:activeWindow $themeId 5
     $selectionPattern = [Windows.Automation.SelectionItemPattern]$themeControl.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)
     if (-not $selectionPattern.Current.IsSelected) { throw "Expected $Theme theme selection for $scenario." }
     Add-Pass "Appearance preference applied ($scenario)"
