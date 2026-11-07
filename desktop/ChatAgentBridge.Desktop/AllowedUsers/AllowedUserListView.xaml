@@ -13,7 +13,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="100" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="52" />
+                <ColumnDefinition Width="92" />
             </Grid.ColumnDefinitions>
             <TextBlock x:Uid="AllowedUserServiceColumn" localization:LocalizedResourceKey.Key="AllowedUserServiceColumn" Style="{StaticResource BodyStrongTextBlockStyle}" />
             <TextBlock Grid.Column="1" x:Uid="AllowedUserIdentityColumn" localization:LocalizedResourceKey.Key="AllowedUserIdentityColumn" Style="{StaticResource BodyStrongTextBlockStyle}" />
@@ -26,7 +26,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="100" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="52" />
+                            <ColumnDefinition Width="92" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="{x:Bind ServiceName}" VerticalAlignment="Center" />
                         <Grid Grid.Column="1" ColumnSpacing="8">
@@ -39,11 +39,18 @@
                                 <TextBlock Text="{x:Bind Summary}" TextWrapping="Wrap" />
                             </HyperlinkButton>
                         </Grid>
-                        <Button Grid.Column="2" VerticalAlignment="Center" Click="RemoveUser_Click"
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <Button Click="ShowUserHistory_Click"
+                                AutomationProperties.Name="{x:Bind HistoryLabel}" ToolTipService.ToolTip="{x:Bind HistoryLabel}"
+                                AutomationProperties.AutomationId="AllowedUserHistory">
+                            <FontIcon Glyph="&#xE81C;" FontSize="14" />
+                        </Button>
+                        <Button Click="RemoveUser_Click"
                                 AutomationProperties.Name="{x:Bind RemoveLabel}" ToolTipService.ToolTip="{x:Bind RemoveLabel}"
                                 AutomationProperties.AutomationId="AllowedUserRemove">
                             <FontIcon Glyph="&#xE74D;" FontSize="14" />
                         </Button>
+                        </StackPanel>
                     </Grid>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

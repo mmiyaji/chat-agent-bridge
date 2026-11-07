@@ -45,6 +45,7 @@ public sealed partial class AllowedUserRow : ObservableObject
     private string LastRequestLine => _record?.LastRequestAt is { } at
         ? ViewModelText.Get("AllowedUserLastRequest", at.ToLocalTime().ToString("g"))
         : ViewModelText.Get("AllowedUserLastRequestUnknown");
+    public string HistoryLabel => ViewModelText.Get("AllowedUserHistory", HasName ? $"{DisplayName} ({UserId})" : UserId);
     public string RemoveLabel => ViewModelText.Get("AllowedUserRemove", HasName ? $"{DisplayName} ({UserId})" : UserId);
 
     public string ServiceName => Provider switch { "slack" => "Slack", "mattermost" => "Mattermost", "discord" => "Discord", _ => Provider };

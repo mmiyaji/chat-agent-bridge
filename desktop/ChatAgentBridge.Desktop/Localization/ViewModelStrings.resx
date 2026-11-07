@@ -409,6 +409,7 @@
   <data name="AllowedUserLastRequest" xml:space="preserve"><value>Last request: {0}</value></data>
   <data name="AllowedUserLastRequestUnknown" xml:space="preserve"><value>No last request recorded</value></data>
   <data name="AllowedUserRemove" xml:space="preserve"><value>Remove {0} from the list</value></data>
+  <data name="AllowedUserHistory" xml:space="preserve"><value>Show access records for {0}</value></data>
   <data name="AllowedUserAlreadyListed" xml:space="preserve"><value>{0} is already in the list.</value></data>
   <data name="AllowedUserInvalidId" xml:space="preserve"><value>IDs use letters, digits, underscores or hyphens, up to 128 characters. The list holds up to 100 IDs.</value></data>
   <data name="AllowedUserInvalidDiscordId" xml:space="preserve"><value>Discord user IDs contain digits only. The list holds up to 100 IDs.</value></data>

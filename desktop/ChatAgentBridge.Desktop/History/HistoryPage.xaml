@@ -10,6 +10,31 @@
     xmlns:presentation="using:ChatAgentBridge_Desktop.Presentation"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+    <Page.Resources>
+        <Style x:Key="HistoryHeaderButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0,2,10,2" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
+        <Style x:Key="HistoryColumnThumbStyle" TargetType="Thumb">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="Width" Value="8" />
+            <Setter Property="IsTabStop" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Grid Background="Transparent">
+                            <Border Width="1" HorizontalAlignment="Center" Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
     <Grid RowSpacing="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -28,8 +53,6 @@
                 <TextBlock x:Name="HistoryDescription" TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="historyHistoryPageTextBlock002" localization:LocalizedResourceKey.Key="historyHistoryPageTextBlock002" />
             </StackPanel>
             <StackPanel x:Name="HistoryHeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Button x:Name="HistoryAgentSettingsButton" Click="AgentSettingsRequested_Click" AutomationProperties.AutomationId="AgentSettingsFromHistory" x:Uid="AgentSettingsFromHistory" />
-                <Button x:Name="ExportAuditButton" Click="ExportAudit_Click" AutomationProperties.AutomationId="ExportAuditHistory" x:Uid="ExportAuditHistory" />
                 <Button Command="{x:Bind ViewModel.RefreshCommand}" AutomationProperties.AutomationId="RefreshHistory" x:Uid="RefreshHistory" />
             </StackPanel>
         </Grid>
@@ -196,7 +219,7 @@
                                     <Grid>
                                     <Grid x:Name="SessionDetailContent" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}" RowSpacing="12">
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <StackPanel Spacing="4">
                                             <TextBlock Text="{x:Bind ViewModel.ConversationHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
@@ -219,7 +242,25 @@
                                             <TextBlock Text="{x:Bind ViewModel.PolicyHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ExecutionPolicy, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         </StackPanel>
-                                        <Expander Grid.Row="3" IsExpanded="False" AutomationProperties.AutomationId="SessionIdentifiers">
+                                        <StackPanel Grid.Row="3" Spacing="2" AutomationProperties.AutomationId="SessionRecentRuns"
+                                                    Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSessionExecutions), Mode=OneWay}">
+                                            <TextBlock x:Uid="SessionRecentRunsHeading" localization:LocalizedResourceKey.Key="SessionRecentRunsHeading" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                            <ItemsControl ItemsSource="{x:Bind ViewModel.SessionExecutions, Mode=OneWay}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:ExecutionHistoryRow">
+                                                        <HyperlinkButton Padding="0,2" Click="SessionExecution_Click" ToolTipService.ToolTip="{x:Bind Started}"
+                                                                         AutomationProperties.AutomationId="SessionRecentRun">
+                                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                <presentation:StatusIcon Tone="{x:Bind StatusTone}" Width="16" Height="16" VerticalAlignment="Center"
+                                                                                         IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
+                                                                <TextBlock Text="{x:Bind SessionListLabel}" />
+                                                            </StackPanel>
+                                                        </HyperlinkButton>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                        <Expander Grid.Row="4" IsExpanded="False" AutomationProperties.AutomationId="SessionIdentifiers">
                                             <Expander.Header>
                                                 <TextBlock Text="{x:Bind ViewModel.IdentifiersSummary, Mode=OneWay}"
                                                            TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
@@ -288,6 +329,11 @@
                                                   AutomationProperties.AutomationId="RenameSession">
                                         <AppBarButton.Icon><SymbolIcon Symbol="Rename" /></AppBarButton.Icon>
                                     </AppBarButton>
+                                    <AppBarButton x:Name="HistoryAgentSettingsButton" Click="AgentSettingsRequested_Click"
+                                                  Label="{x:Bind ViewModel.OpenAgentSettingsLabel, Mode=OneWay}"
+                                                  AutomationProperties.AutomationId="AgentSettingsFromHistory">
+                                        <AppBarButton.Icon><FontIcon Glyph="&#xE713;" /></AppBarButton.Icon>
+                                    </AppBarButton>
                                     <AppBarButton Command="{x:Bind ViewModel.DetachSelectedSessionCommand}"
                                                   Label="{x:Bind ViewModel.StartFreshLabel, Mode=OneWay}"
                                                   AutomationProperties.AutomationId="DetachSession">
@@ -300,184 +346,64 @@
                 </Grid>
             </PivotItem>
 
-            <PivotItem Header="{x:Bind ViewModel.ActivityTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ActivityTab">
-                <ContentControl x:Name="ActivityHost" Margin="0,14,0,0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
-            </PivotItem>
-
             <PivotItem x:Name="ExecutionsTab" Header="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryTab">
-                <Grid Margin="0,14,0,0" RowSpacing="8">
-                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-                    <SelectorBar x:Name="ExecutionHistoryMode" SelectionChanged="ExecutionHistoryMode_SelectionChanged">
-                        <SelectorBarItem x:Name="ExecutionsModeItem" x:Uid="HistoryRunsMode" IsSelected="True" AutomationProperties.AutomationId="ExecutionHistoryModeItem" />
-                        <SelectorBarItem x:Name="AllOperationsModeItem" x:Uid="HistoryAllOperationsMode" AutomationProperties.AutomationId="AuditHistoryTab" />
-                    </SelectorBar>
-                    <Grid x:Name="ExecutionHistoryPanel" Grid.Row="1" RowSpacing="6">
-                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-                        <TextBlock Text="{x:Bind ViewModel.ExecutionSummary, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
-                        <Button Grid.Row="1" Command="{x:Bind ViewModel.ClearExecutionDayFilterCommand}" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowExecutionFilterClearButton), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="ClearExecutionDayFilter" x:Uid="ClearExecutionDayFilter" />
-                        <Grid Grid.Row="2">
-                            <Grid SizeChanged="ExecutionBrowser_SizeChanged" ColumnSpacing="12" RowSpacing="8"
-                                  Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasExecutions), Mode=OneWay}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition x:Name="ExecutionDetailColumn" Width="280" /></Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions><RowDefinition Height="2*" /><RowDefinition x:Name="ExecutionDetailRow" Height="0" /></Grid.RowDefinitions>
-                                <ListView x:Name="ExecutionHistoryList" ItemsSource="{x:Bind ViewModel.Executions, Mode=OneWay}" SelectionChanged="ExecutionHistoryList_SelectionChanged"
-                                          AutomationProperties.AutomationId="ExecutionHistoryList" AutomationProperties.Name="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}">
-                                    <ListView.ItemContainerStyle>
-                                        <Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch" /></Style>
-                                    </ListView.ItemContainerStyle>
-                                    <ListView.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:ExecutionHistoryRow">
-                                            <Grid ColumnSpacing="12">
-                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                                <TextBlock Text="{x:Bind Summary}" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Grid.Column="1" Text="{x:Bind Conversation}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Conversation}" />
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ListView.ItemTemplate>
-                                </ListView>
-                                <Border x:Name="ExecutionDetailPane" Grid.Column="1" BorderThickness="1" CornerRadius="6" Padding="12"
-                                        BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
-                                    <ScrollViewer HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto">
-                                        <StackPanel Spacing="8">
-                                            <TextBlock x:Uid="ExecutionDetailTitle" localization:LocalizedResourceKey.Key="ExecutionDetailTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                            <TextBlock x:Uid="ExecutionSelectRow" localization:LocalizedResourceKey.Key="ExecutionSelectRow" TextWrapping="Wrap"
-                                                       Visibility="{x:Bind vm:HistoryPage.AuditSelectionHint(ViewModel.SelectedExecution), Mode=OneWay}" />
-                                            <StackPanel Spacing="8" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedExecution), Mode=OneWay}">
-                                                <TextBlock Text="{x:Bind ViewModel.SelectedExecution.Summary, Mode=OneWay}" TextWrapping="Wrap" />
-                                                <TextBlock Text="{x:Bind ViewModel.SelectedExecution.ExecutionIdentifier, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                                <TextBlock x:Uid="ExecutionOperationsTitle" localization:LocalizedResourceKey.Key="ExecutionOperationsTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                                <TextBlock x:Uid="ExecutionNoOperations" localization:LocalizedResourceKey.Key="ExecutionNoOperations" TextWrapping="Wrap"
-                                                           Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyExecutionOperations), Mode=OneWay}" />
-                                                <ItemsControl ItemsSource="{x:Bind ViewModel.ExecutionOperations, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionOperationsList">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate x:DataType="vm:AuditHistoryRow">
-                                                            <StackPanel Spacing="4" Padding="0,4">
-                                                                <TextBlock Text="{x:Bind Summary}" TextWrapping="Wrap" AutomationProperties.AutomationId="ExecutionOperation" />
-                                                                <TextBlock Text="{x:Bind Diagnostic}" Visibility="{x:Bind HasDiagnostic}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                                            </StackPanel>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                                <Expander Header="{x:Bind ViewModel.SelectedExecution.Model, Mode=OneWay}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                                                    <StackPanel Spacing="4">
-                                                        <TextBlock Text="{x:Bind ViewModel.SelectedExecution.Workspace, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                                        <TextBlock Text="{x:Bind ViewModel.SelectedExecution.ReasoningEffort, Mode=OneWay}" TextWrapping="Wrap" />
-                                                        <TextBlock Text="{x:Bind ViewModel.SelectedExecution.Usage, Mode=OneWay}" TextWrapping="Wrap" />
-                                                        <TextBlock Text="{x:Bind ViewModel.SelectedExecution.Session, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                                        <TextBlock Text="{x:Bind ViewModel.SelectedExecution.Identifiers, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                                    </StackPanel>
-                                                </Expander>
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </ScrollViewer>
-                                </Border>
+                <SplitView x:Name="RecordDrawer" Margin="0,14,0,0" PanePlacement="Right" DisplayMode="Overlay" OpenPaneLength="380"
+                           IsPaneOpen="{x:Bind ViewModel.IsDetailOpen, Mode=TwoWay}" SizeChanged="RecordDrawer_SizeChanged"
+                           PaneBackground="{ThemeResource LayerOnMicaBaseAltFillColorDefaultBrush}">
+                    <SplitView.Pane>
+                        <Grid Padding="16,12" RowSpacing="8" BorderThickness="1,0,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                              AutomationProperties.AutomationId="RecordDetailDrawer" KeyDown="RecordDrawer_KeyDown">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <TextBlock x:Uid="ExecutionDetailTitle" localization:LocalizedResourceKey.Key="ExecutionDetailTitle" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center"
+                                           Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsRunsMode), Mode=OneWay}" />
+                                <TextBlock x:Uid="AuditDetailTitle" localization:LocalizedResourceKey.Key="AuditDetailTitle" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center"
+                                           Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsOperationsMode), Mode=OneWay}" />
+                                <Button x:Name="CloseRecordDrawerButton" Grid.Column="1" Command="{x:Bind ViewModel.CloseDetailCommand}" Padding="8,6"
+                                        AutomationProperties.AutomationId="CloseRecordDetail" x:Uid="CloseRecordDetail">
+                                    <FontIcon Glyph="&#xE711;" FontSize="12" />
+                                </Button>
                             </Grid>
-                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
-                                          HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
-                                          Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyExecutionHistory), Mode=OneWay}">
-                            <Border Padding="20" Margin="12" MaxWidth="460"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                                    AutomationProperties.AutomationId="ExecutionHistoryEmptyCard">
-                                <StackPanel Spacing="12" HorizontalAlignment="Center">
-                                    <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
-                                             AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
-                                        <SymbolIcon Symbol="Clock" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                    </Viewbox>
-                                    <TextBlock Text="{x:Bind ViewModel.ExecutionEmptyHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}"
-                                               TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="EmptyExecutionHistory" />
-                                    <TextBlock Text="{x:Bind ViewModel.ExecutionEmptyDescription, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="ExecutionHistoryEmptyBody" />
-                                    <Button Command="{x:Bind ViewModel.ClearExecutionDayFilterCommand}"
-                                            Content="{x:Bind ViewModel.ClearExecutionDayFilterLabel, Mode=OneWay}"
-                                            Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyExecutionDayClearAction), Mode=OneWay}"
-                                            AutomationProperties.AutomationId="ClearExecutionDayFilterEmpty" />
-                                </StackPanel>
-                            </Border>
-                            </ScrollViewer>
-                        </Grid>
-                    </Grid>
-                    <Grid x:Name="AllOperationsPanel" Grid.Row="1" RowSpacing="8" Visibility="Collapsed">
-                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-                        <StackPanel Orientation="Horizontal" Spacing="8" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasAuditEvents), Mode=OneWay}">
-                            <ComboBox x:Uid="AuditServiceFilter" AutomationProperties.AutomationId="AuditServiceFilter" Width="150"
-                                      ItemsSource="{x:Bind ViewModel.AuditServiceOptions, Mode=OneWay}" DisplayMemberPath="Label"
-                                      SelectedItem="{x:Bind ViewModel.AuditServiceFilter, Mode=TwoWay}" />
-                            <ComboBox x:Uid="AuditKindFilter" AutomationProperties.AutomationId="AuditKindFilter" Width="158"
-                                      ItemsSource="{x:Bind ViewModel.AuditKindOptions, Mode=OneWay}" DisplayMemberPath="Label"
-                                      SelectedItem="{x:Bind ViewModel.AuditKindFilter, Mode=TwoWay}" />
-                        </StackPanel>
-                        <Grid Grid.Row="1" x:Name="AuditBrowser" SizeChanged="AuditBrowser_SizeChanged" ColumnSpacing="12" RowSpacing="8"
-                              Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasAuditEvents), Mode=OneWay}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition x:Name="AuditDetailColumn" Width="280" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="2*" />
-                                <RowDefinition x:Name="AuditDetailRow" Height="0" />
-                            </Grid.RowDefinitions>
-                            <ListView x:Name="AuditHistoryList" ItemsSource="{x:Bind ViewModel.FilteredAuditEvents, Mode=OneWay}" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                      AutomationProperties.AutomationId="AuditHistoryList" SelectionMode="Single" SelectionChanged="AuditHistoryList_SelectionChanged"
-                                      AutomationProperties.Name="{x:Bind ViewModel.AuditTabTitle, Mode=OneWay}">
-                                <ListView.Resources>
-                                    <Style x:Key="AuditColumnThumbStyle" TargetType="Thumb">
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="Thumb">
-                                                    <Grid Background="Transparent">
-                                                        <Border Width="1" HorizontalAlignment="Center" Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
-                                                    </Grid>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </ListView.Resources>
-                                <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem">
-                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                        <Setter Property="Padding" Value="0" />
-                                    </Style>
-                                </ListView.ItemContainerStyle>
-                                <ListView.Header>
-                                    <Grid ColumnSpacing="8" Padding="12,6">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Time, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Action, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Service, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Conversation, Mode=OneWay}" /></Grid.ColumnDefinitions>
-                                        <TextBlock x:Uid="AuditTimeColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" localization:LocalizedResourceKey.Key="AuditTimeColumn" />
-                                        <TextBlock Grid.Column="1" x:Uid="AuditActionColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" localization:LocalizedResourceKey.Key="AuditActionColumn" />
-                                        <TextBlock Grid.Column="2" x:Uid="AuditServiceColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" localization:LocalizedResourceKey.Key="AuditServiceColumn" />
-                                        <TextBlock Grid.Column="3" x:Uid="AuditConversationColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" localization:LocalizedResourceKey.Key="AuditConversationColumn" />
-                                        <Thumb Grid.Column="0" HorizontalAlignment="Right" Width="8" IsTabStop="True" Tag="Time"
-                                                             x:Uid="AuditResizeTime" AutomationProperties.AutomationId="AuditResizeTime"
-                                                             DragDelta="AuditColumn_DragDelta" KeyDown="AuditColumn_KeyDown" Style="{StaticResource AuditColumnThumbStyle}" />
-                                        <Thumb Grid.Column="1" HorizontalAlignment="Right" Width="8" IsTabStop="True" Tag="Action"
-                                                             x:Uid="AuditResizeAction" AutomationProperties.AutomationId="AuditResizeAction"
-                                                             DragDelta="AuditColumn_DragDelta" KeyDown="AuditColumn_KeyDown" Style="{StaticResource AuditColumnThumbStyle}" />
-                                        <Thumb Grid.Column="2" HorizontalAlignment="Right" Width="8" IsTabStop="True" Tag="Service"
-                                                             x:Uid="AuditResizeService" AutomationProperties.AutomationId="AuditResizeService"
-                                                             DragDelta="AuditColumn_DragDelta" KeyDown="AuditColumn_KeyDown" Style="{StaticResource AuditColumnThumbStyle}" />
-                                        <Thumb Grid.Column="3" HorizontalAlignment="Right" Width="8" IsTabStop="True" Tag="Conversation"
-                                                             x:Uid="AuditResizeConversation" AutomationProperties.AutomationId="AuditResizeConversation"
-                                                             DragDelta="AuditColumn_DragDelta" KeyDown="AuditColumn_KeyDown" Style="{StaticResource AuditColumnThumbStyle}" />
-                                    </Grid>
-                                </ListView.Header>
-                                <ListView.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:AuditHistoryRow">
-                                        <Grid ColumnSpacing="8" Padding="12,5" AutomationProperties.Name="{x:Bind Summary}">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="{x:Bind Columns.Time, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Action, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Service, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Conversation, Mode=OneWay}" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="{x:Bind Time}" ToolTipService.ToolTip="{x:Bind Timestamp}" />
-                                            <TextBlock Grid.Column="1" Text="{x:Bind Kind}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Kind}" />
-                                            <TextBlock Grid.Column="2" Text="{x:Bind Source}" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Grid.Column="3" Text="{x:Bind Conversation}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Conversation}" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
-                            <Border x:Name="AuditDetailPane" Grid.Column="1" BorderThickness="1" CornerRadius="6" Padding="12"
-                                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" AutomationProperties.AutomationId="AuditDetailPane">
-                                <ScrollViewer HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock x:Uid="AuditDetailTitle" localization:LocalizedResourceKey.Key="AuditDetailTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                        <TextBlock x:Uid="AuditSelectRow" localization:LocalizedResourceKey.Key="AuditSelectRow" TextWrapping="Wrap"
-                                                   Visibility="{x:Bind vm:HistoryPage.AuditSelectionHint(ViewModel.SelectedAuditRow), Mode=OneWay}" />
+                            <ScrollViewer Grid.Row="1" HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto">
+                                <Grid>
+                                    <StackPanel x:Name="ExecutionDetailPane" Spacing="8" AutomationProperties.AutomationId="ExecutionDetailPane"
+                                                Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowRunDetail), Mode=OneWay}">
+                                        <TextBlock Text="{x:Bind ViewModel.SelectedExecution.DrawerTitle, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Text="{x:Bind ViewModel.SelectedExecution.ConversationCell, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{x:Bind ViewModel.SelectedExecution.UserCell, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{x:Bind ViewModel.SelectedExecution.DrawerFacts, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <Button Command="{x:Bind ViewModel.OpenSelectedConversationCommand}" AutomationProperties.AutomationId="OpenRunConversation" x:Uid="OpenRunConversation"
+                                                Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.CanOpenSelectedConversation), Mode=OneWay}" />
+                                        <TextBlock x:Uid="ExecutionOperationsTitle" localization:LocalizedResourceKey.Key="ExecutionOperationsTitle" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
+                                        <TextBlock x:Uid="ExecutionNoOperations" localization:LocalizedResourceKey.Key="ExecutionNoOperations" TextWrapping="Wrap"
+                                                   Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyExecutionOperations), Mode=OneWay}" />
+                                        <ItemsControl ItemsSource="{x:Bind ViewModel.ExecutionOperations, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionOperationsList">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:AuditHistoryRow">
+                                                    <StackPanel Spacing="2" Padding="0,4">
+                                                        <TextBlock Text="{x:Bind Kind}" TextWrapping="Wrap" AutomationProperties.AutomationId="ExecutionOperation" />
+                                                        <TextBlock Text="{x:Bind Timestamp}" Style="{StaticResource CaptionTextBlockStyle}" />
+                                                        <TextBlock Text="{x:Bind Diagnostic}" Visibility="{x:Bind HasDiagnostic}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <Expander x:Uid="RunUsageDetails" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="RunUsageDetails">
+                                            <TextBlock Text="{x:Bind ViewModel.SelectedExecutionUsage, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                        </Expander>
+                                        <Expander x:Uid="RunIdentifiers" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" AutomationProperties.AutomationId="RunIdentifiers">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="{x:Bind ViewModel.SelectedExecution.ExecutionIdentifier, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind ViewModel.SelectedExecution.Session, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind ViewModel.SelectedExecution.Identifiers, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind ViewModel.SelectedExecution.Workspace, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind ViewModel.SelectedExecution.ReasoningEffort, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Expander>
+                                    </StackPanel>
+                                    <StackPanel x:Name="AuditDetailPane" Spacing="8" AutomationProperties.AutomationId="AuditDetailPane"
+                                                Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowAuditDetail), Mode=OneWay}">
                                         <ContentControl Content="{x:Bind ViewModel.SelectedAuditRow, Mode=OneWay}" HorizontalContentAlignment="Stretch">
                                             <ContentControl.ContentTemplate>
                                                 <DataTemplate x:DataType="vm:AuditHistoryRow">
@@ -493,33 +419,215 @@
                                                 </DataTemplate>
                                             </ContentControl.ContentTemplate>
                                         </ContentControl>
+                                        <Button Command="{x:Bind ViewModel.OpenAuditExecutionCommand}" AutomationProperties.AutomationId="OpenAuditExecution" x:Uid="OpenAuditExecution"
+                                                Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.CanOpenAuditExecution), Mode=OneWay}" />
                                     </StackPanel>
-                                </ScrollViewer>
-                            </Border>
+                                </Grid>
+                            </ScrollViewer>
                         </Grid>
-                        <TextBlock Grid.Row="1" x:Uid="AuditNoMatches" localization:LocalizedResourceKey.Key="AuditNoMatches"
-                                   Margin="12,44,12,0" TextWrapping="Wrap" IsHitTestVisible="False"
-                                   Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyAuditFilter), Mode=OneWay}" />
-                        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
-                                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
-                                      Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyAuditHistory), Mode=OneWay}">
-                        <Border Padding="20" Margin="12" MaxWidth="460"
-                                HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                                AutomationProperties.AutomationId="AuditHistoryEmptyCard">
-                            <StackPanel Spacing="12" HorizontalAlignment="Center">
-                                <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
-                                         AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
-                                    <SymbolIcon Symbol="Document" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                </Viewbox>
-                                <TextBlock Text="{x:Bind ViewModel.NoAuditText, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}"
-                                           TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="EmptyAuditHistory" />
-                                <TextBlock Text="{x:Bind ViewModel.AuditEmptyDescription, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="AuditHistoryEmptyBody" />
+                    </SplitView.Pane>
+
+                    <Grid RowSpacing="8">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <SelectorBar x:Name="ExecutionHistoryMode" SelectionChanged="ExecutionHistoryMode_SelectionChanged" AutomationProperties.AutomationId="HistoryRecordMode">
+                                <SelectorBarItem x:Name="ExecutionsModeItem" x:Uid="HistoryRunsMode" IsSelected="True" AutomationProperties.AutomationId="ExecutionHistoryModeItem" />
+                                <SelectorBarItem x:Name="AllOperationsModeItem" x:Uid="HistoryAllOperationsMode" AutomationProperties.AutomationId="AuditHistoryTab" />
+                                <SelectorBarItem x:Name="AccessModeItem" x:Uid="HistoryAccessMode" AutomationProperties.AutomationId="AccessHistoryTab" />
+                            </SelectorBar>
+                            <Button x:Name="ExportAuditButton" Grid.Column="1" VerticalAlignment="Center" Click="ExportAudit_Click"
+                                    AutomationProperties.AutomationId="ExportAuditHistory" x:Uid="ExportAuditHistory" />
+                        </Grid>
+                        <Grid x:Name="RecordFilters" Grid.Row="1" ColumnSpacing="8" RowSpacing="8">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="180" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                            <TextBox x:Name="RecordSearchBox" PlaceholderText="{x:Bind ViewModel.RecordSearchPlaceholder, Mode=OneWay}"
+                                     Text="{x:Bind ViewModel.RecordSearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     AutomationProperties.AutomationId="HistoryRecordSearch" x:Uid="HistoryRecordSearch" />
+                            <ComboBox x:Name="RecordServiceFilter" Grid.Column="1" x:Uid="AuditServiceFilter" AutomationProperties.AutomationId="AuditServiceFilter" Width="150"
+                                      ItemsSource="{x:Bind ViewModel.AuditServiceOptions, Mode=OneWay}" DisplayMemberPath="Label"
+                                      SelectedItem="{x:Bind ViewModel.AuditServiceFilter, Mode=TwoWay}" />
+                            <ComboBox x:Name="RecordKindFilter" Grid.Column="2" x:Uid="AuditKindFilter" AutomationProperties.AutomationId="AuditKindFilter" Width="158"
+                                      ItemsSource="{x:Bind ViewModel.AuditKindOptions, Mode=OneWay}" DisplayMemberPath="Label"
+                                      SelectedItem="{x:Bind ViewModel.AuditKindFilter, Mode=TwoWay}"
+                                      Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsOperationsMode), Mode=OneWay}" />
+                            <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{x:Bind ViewModel.RunResultSummary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center"
+                                           AutomationProperties.AutomationId="HistoryRecordCount" />
+                                <Button Command="{x:Bind ViewModel.ClearExecutionDayFilterCommand}" Padding="8,2"
+                                        Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowExecutionFilterClearButton), Mode=OneWay}"
+                                        AutomationProperties.AutomationId="ClearExecutionDayFilter" x:Uid="ClearExecutionDayFilter">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="{x:Bind ViewModel.ExecutionDayFilterLabel, Mode=OneWay}" />
+                                        <FontIcon Glyph="&#xE711;" FontSize="10" />
+                                    </StackPanel>
+                                </Button>
+                                <HyperlinkButton Command="{x:Bind ViewModel.ClearRecordFiltersCommand}" Padding="4,2"
+                                                 Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasRecordFilters), Mode=OneWay}"
+                                                 AutomationProperties.AutomationId="ClearRecordFilters" x:Uid="ClearRecordFilters" />
                             </StackPanel>
-                        </Border>
-                        </ScrollViewer>
+                        </Grid>
+                        <TextBlock Grid.Row="2" x:Uid="HistoryChatNamesNotice" localization:LocalizedResourceKey.Key="HistoryChatNamesNotice"
+                                   TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowChatNamesNotice), Mode=OneWay}"
+                                   AutomationProperties.AutomationId="HistoryChatNamesNotice" />
+
+                        <Grid x:Name="ExecutionHistoryPanel" Grid.Row="3"
+                              Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsRunsMode), Mode=OneWay}">
+                            <Grid x:Name="RunTableHost" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasExecutions), Mode=OneWay}">
+                            <ListView x:Name="ExecutionHistoryList" ItemsSource="{x:Bind ViewModel.Executions, Mode=OneWay}"
+                                      SelectionMode="Single" IsItemClickEnabled="True" ItemClick="ExecutionHistoryList_ItemClick" SelectionChanged="ExecutionHistoryList_SelectionChanged"
+                                      ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                      AutomationProperties.AutomationId="ExecutionHistoryList" AutomationProperties.Name="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        <Setter Property="Padding" Value="0" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.Header>
+                                    <Grid ColumnSpacing="8" Padding="12,6" AutomationProperties.AutomationId="RunTableHeader">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="{x:Bind ViewModel.RunColumns.Started, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.RunColumns.Conversation, Mode=OneWay}" />
+                                            <ColumnDefinition Width="{x:Bind ViewModel.RunColumns.User, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.RunColumns.Result, Mode=OneWay}" />
+                                            <ColumnDefinition Width="{x:Bind ViewModel.RunColumns.Model, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.RunColumns.Duration, Mode=OneWay}" />
+                                            <ColumnDefinition Width="{x:Bind ViewModel.RunColumns.Tokens, Mode=OneWay}" />
+                                        </Grid.ColumnDefinitions>
+                                        <Button Style="{StaticResource HistoryHeaderButtonStyle}" Tag="Started" Click="RunSort_Click" Content="{x:Bind ViewModel.StartedHeader, Mode=OneWay}" AutomationProperties.AutomationId="RunSortStarted" />
+                                        <Button Grid.Column="1" Style="{StaticResource HistoryHeaderButtonStyle}" Tag="Conversation" Click="RunSort_Click" Content="{x:Bind ViewModel.ConversationHeader, Mode=OneWay}" AutomationProperties.AutomationId="RunSortConversation" />
+                                        <Button Grid.Column="2" Style="{StaticResource HistoryHeaderButtonStyle}" Tag="User" Click="RunSort_Click" Content="{x:Bind ViewModel.UserHeader, Mode=OneWay}" AutomationProperties.AutomationId="RunSortUser" />
+                                        <Button Grid.Column="3" Style="{StaticResource HistoryHeaderButtonStyle}" Tag="Result" Click="RunSort_Click" Content="{x:Bind ViewModel.ResultHeader, Mode=OneWay}" AutomationProperties.AutomationId="RunSortResult" />
+                                        <Button Grid.Column="4" Style="{StaticResource HistoryHeaderButtonStyle}" Tag="Model" Click="RunSort_Click" Content="{x:Bind ViewModel.ModelHeader, Mode=OneWay}" AutomationProperties.AutomationId="RunSortModel" />
+                                        <Button Grid.Column="5" Style="{StaticResource HistoryHeaderButtonStyle}" Tag="Duration" Click="RunSort_Click" Content="{x:Bind ViewModel.DurationHeader, Mode=OneWay}" AutomationProperties.AutomationId="RunSortDuration" />
+                                        <Button Grid.Column="6" Style="{StaticResource HistoryHeaderButtonStyle}" Tag="Tokens" Click="RunSort_Click" Content="{x:Bind ViewModel.TokensHeader, Mode=OneWay}" AutomationProperties.AutomationId="RunSortTokens" />
+                                        <Thumb Grid.Column="0" Tag="Run.Started" x:Uid="RunResizeColumn" Style="{StaticResource HistoryColumnThumbStyle}" DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" />
+                                        <Thumb Grid.Column="1" Tag="Run.Conversation" x:Uid="RunResizeColumn" Style="{StaticResource HistoryColumnThumbStyle}" DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" />
+                                        <Thumb Grid.Column="2" Tag="Run.User" x:Uid="RunResizeColumn" Style="{StaticResource HistoryColumnThumbStyle}" DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" />
+                                        <Thumb Grid.Column="3" Tag="Run.Result" x:Uid="RunResizeColumn" Style="{StaticResource HistoryColumnThumbStyle}" DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" />
+                                        <Thumb Grid.Column="4" Tag="Run.Model" x:Uid="RunResizeColumn" Style="{StaticResource HistoryColumnThumbStyle}" DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" />
+                                        <Thumb Grid.Column="5" Tag="Run.Duration" x:Uid="RunResizeColumn" Style="{StaticResource HistoryColumnThumbStyle}" DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" />
+                                    </Grid>
+                                </ListView.Header>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ExecutionHistoryRow">
+                                        <Grid ColumnSpacing="8" Padding="12,5" AutomationProperties.Name="{x:Bind RowLabel}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="{x:Bind ColumnLayout.Started, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ColumnLayout.Conversation, Mode=OneWay}" />
+                                                <ColumnDefinition Width="{x:Bind ColumnLayout.User, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ColumnLayout.Result, Mode=OneWay}" />
+                                                <ColumnDefinition Width="{x:Bind ColumnLayout.Model, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ColumnLayout.Duration, Mode=OneWay}" />
+                                                <ColumnDefinition Width="{x:Bind ColumnLayout.Tokens, Mode=OneWay}" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{x:Bind StartedCompact}" ToolTipService.ToolTip="{x:Bind Started}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="1" Text="{x:Bind ConversationCell}" ToolTipService.ToolTip="{x:Bind ConversationCell}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="2" Text="{x:Bind UserCell}" ToolTipService.ToolTip="{x:Bind UserCell}" TextTrimming="CharacterEllipsis" />
+                                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4">
+                                                <presentation:StatusIcon Tone="{x:Bind StatusTone}" Width="16" Height="16" VerticalAlignment="Center" IsHitTestVisible="False"
+                                                                         AutomationProperties.AccessibilityView="Raw" />
+                                                <TextBlock Text="{x:Bind Status}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="4" Text="{x:Bind ModelCell}" ToolTipService.ToolTip="{x:Bind ModelCell}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="5" Text="{x:Bind DurationCell}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="6" Text="{x:Bind TokensCell}" TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                            </Grid>
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                                          HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
+                                          Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyExecutionHistory), Mode=OneWay}">
+                                <Border Padding="20" Margin="12" MaxWidth="460"
+                                        HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                        AutomationProperties.AutomationId="ExecutionHistoryEmptyCard">
+                                    <StackPanel Spacing="12" HorizontalAlignment="Center">
+                                        <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
+                                                 AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
+                                            <SymbolIcon Symbol="Clock" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </Viewbox>
+                                        <TextBlock Text="{x:Bind ViewModel.ExecutionEmptyHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                                   TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="EmptyExecutionHistory" />
+                                        <TextBlock Text="{x:Bind ViewModel.ExecutionEmptyDescription, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="ExecutionHistoryEmptyBody" />
+                                        <Button Command="{x:Bind ViewModel.ClearRecordFiltersCommand}"
+                                                Content="{x:Bind ViewModel.ClearExecutionDayFilterLabel, Mode=OneWay}"
+                                                Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyExecutionDayClearAction), Mode=OneWay}"
+                                                AutomationProperties.AutomationId="ClearExecutionDayFilterEmpty" />
+                                    </StackPanel>
+                                </Border>
+                            </ScrollViewer>
+                        </Grid>
+
+                        <Grid x:Name="AllOperationsPanel" Grid.Row="3"
+                              Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsOperationsMode), Mode=OneWay}">
+                            <Grid x:Name="AuditBrowser" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasAuditEvents), Mode=OneWay}">
+                                <ListView x:Name="AuditHistoryList" ItemsSource="{x:Bind ViewModel.FilteredAuditEvents, Mode=OneWay}" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                          AutomationProperties.AutomationId="AuditHistoryList" SelectionMode="Single" IsItemClickEnabled="True" ItemClick="AuditHistoryList_ItemClick" SelectionChanged="AuditHistoryList_SelectionChanged"
+                                          AutomationProperties.Name="{x:Bind ViewModel.AuditTabTitle, Mode=OneWay}">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                            <Setter Property="Padding" Value="0" />
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.Header>
+                                        <Grid ColumnSpacing="8" Padding="12,6">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Time, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Action, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Service, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Conversation, Mode=OneWay}" /></Grid.ColumnDefinitions>
+                                            <TextBlock x:Uid="AuditTimeColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditTimeColumn" />
+                                            <TextBlock Grid.Column="1" x:Uid="AuditActionColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditActionColumn" />
+                                            <TextBlock Grid.Column="2" x:Uid="AuditServiceColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditServiceColumn" />
+                                            <TextBlock Grid.Column="3" x:Uid="AuditConversationColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditConversationColumn" />
+                                            <Thumb Grid.Column="0" Tag="Audit.Time" x:Uid="AuditResizeTime" AutomationProperties.AutomationId="AuditResizeTime"
+                                                   DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" Style="{StaticResource HistoryColumnThumbStyle}" />
+                                            <Thumb Grid.Column="1" Tag="Audit.Action" x:Uid="AuditResizeAction" AutomationProperties.AutomationId="AuditResizeAction"
+                                                   DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" Style="{StaticResource HistoryColumnThumbStyle}" />
+                                            <Thumb Grid.Column="2" Tag="Audit.Service" x:Uid="AuditResizeService" AutomationProperties.AutomationId="AuditResizeService"
+                                                   DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" Style="{StaticResource HistoryColumnThumbStyle}" />
+                                            <Thumb Grid.Column="3" Tag="Audit.Conversation" x:Uid="AuditResizeConversation" AutomationProperties.AutomationId="AuditResizeConversation"
+                                                   DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" Style="{StaticResource HistoryColumnThumbStyle}" />
+                                        </Grid>
+                                    </ListView.Header>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:AuditHistoryRow">
+                                            <Grid ColumnSpacing="8" Padding="12,5" AutomationProperties.Name="{x:Bind Summary}">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="{x:Bind Columns.Time, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Action, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Service, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Conversation, Mode=OneWay}" /></Grid.ColumnDefinitions>
+                                                <TextBlock Text="{x:Bind TimeCompact}" ToolTipService.ToolTip="{x:Bind Timestamp}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Grid.Column="1" Text="{x:Bind Kind}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Kind}" />
+                                                <TextBlock Grid.Column="2" Text="{x:Bind Source}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Grid.Column="3" Text="{x:Bind Conversation}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Conversation}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Grid>
+                            <TextBlock x:Uid="AuditNoMatches" localization:LocalizedResourceKey.Key="AuditNoMatches"
+                                       Margin="12,44,12,0" TextWrapping="Wrap" IsHitTestVisible="False"
+                                       Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyAuditFilter), Mode=OneWay}" />
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                                          HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
+                                          Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowEmptyAuditHistory), Mode=OneWay}">
+                                <Border Padding="20" Margin="12" MaxWidth="460"
+                                        HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                        AutomationProperties.AutomationId="AuditHistoryEmptyCard">
+                                    <StackPanel Spacing="12" HorizontalAlignment="Center">
+                                        <Viewbox Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center"
+                                                 AutomationProperties.AccessibilityView="Raw" IsHitTestVisible="False">
+                                            <SymbolIcon Symbol="Document" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </Viewbox>
+                                        <TextBlock Text="{x:Bind ViewModel.NoAuditText, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                                   TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="EmptyAuditHistory" />
+                                        <TextBlock Text="{x:Bind ViewModel.AuditEmptyDescription, Mode=OneWay}" Style="{StaticResource BodyTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextWrapping="Wrap" TextAlignment="Center" AutomationProperties.AutomationId="AuditHistoryEmptyBody" />
+                                    </StackPanel>
+                                </Border>
+                            </ScrollViewer>
+                        </Grid>
                     </Grid>
-                </Grid>
+                </SplitView>
+            </PivotItem>
+
+            <PivotItem Header="{x:Bind ViewModel.ActivityTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ActivityTab">
+                <ContentControl x:Name="ActivityHost" Margin="0,14,0,0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </PivotItem>
         </Pivot>
     </Grid>

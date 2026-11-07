@@ -30,7 +30,7 @@ public sealed partial class HistoryPage : Page
     {
         InitializeComponent();
         ExecutionHistoryMode.SelectedItem = ExecutionsModeItem;
-        InitializeExperimentalAuditTable();
+        InitializeExperimentalTables();
         SessionListPane.SizeChanged += SessionListPane_SizeChanged;
         SessionBrowser.SizeChanged += SessionBrowser_SizeChanged;
         SessionSplitter.AddHandler(UIElement.ManipulationStartedEvent,
@@ -44,7 +44,15 @@ public sealed partial class HistoryPage : Page
         {
             ViewModel.ShowExecutionsForActivityDay();
             HistoryPivot.SelectedItem = ExecutionsTab;
-            ExecutionHistoryMode.SelectedItem = ExecutionsModeItem;
+        };
+        ViewModel.RunRecordsRequested += () => HistoryPivot.SelectedItem = ExecutionsTab;
+        ViewModel.ConversationRequested += key =>
+        {
+            ViewModel.IsDetailOpen = false;
+            ViewModel.SelectConversation(key);
+            HistoryPivot.SelectedItem = ConversationsTab;
+            _showDetailOnNarrow = ViewModel.SelectedSession is not null;
+            UpdateResponsiveLayout();
         };
         ActivityHost.Content = activity;
         ViewModel.ConfirmDetachAsync = ConfirmDetachAsync;
@@ -71,35 +79,98 @@ public sealed partial class HistoryPage : Page
 
     public static Visibility AuditSelectionHint(object? selection) => BoolToVisibility(selection is null);
 
-    partial void InitializeExperimentalAuditTable();
+    partial void InitializeExperimentalTables();
 
-    private void AuditHistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        ViewModel.SelectedAuditRow = AuditHistoryList.SelectedItem as AuditHistoryRow;
+    /// <summary>Opens the run records listing access decisions for one chat user.</summary>
+    public void ShowAccessHistory(string provider, string userId) => ViewModel.ShowAccessHistory(provider, userId);
 
-    private void ExecutionHistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        ViewModel.SelectedExecution = ExecutionHistoryList.SelectedItem as ExecutionHistoryRow;
+    // Row clicks open the detail drawer. Keyboard selection only follows along while the drawer is
+    // already visible, so arrowing through the table does not cover it with an overlay.
+    private bool DrawerFollowsSelection => RecordDrawer.DisplayMode == SplitViewDisplayMode.Inline || ViewModel.IsDetailOpen;
+
+    private void ExecutionHistoryList_ItemClick(object sender, ItemClickEventArgs e) =>
+        ViewModel.SelectExecutionRow(e.ClickedItem as ExecutionHistoryRow);
+
+    private void ExecutionHistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ExecutionHistoryList.SelectedItem is not ExecutionHistoryRow row || ReferenceEquals(row, ViewModel.SelectedExecution)) return;
+        if (DrawerFollowsSelection) ViewModel.SelectExecutionRow(row);
+        else ViewModel.SelectedExecution = row;
+    }
+
+    private void AuditHistoryList_ItemClick(object sender, ItemClickEventArgs e) =>
+        ViewModel.SelectAuditRow(e.ClickedItem as AuditHistoryRow);
+
+    private void AuditHistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (AuditHistoryList.SelectedItem is not AuditHistoryRow row || ReferenceEquals(row, ViewModel.SelectedAuditRow)) return;
+        if (DrawerFollowsSelection) ViewModel.SelectAuditRow(row);
+        else ViewModel.SelectedAuditRow = row;
+    }
 
     private void ExecutionHistoryMode_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        if (ExecutionHistoryPanel is null || AllOperationsPanel is null) return;
-        var showOperations = sender.SelectedItem == AllOperationsModeItem;
-        ExecutionHistoryPanel.Visibility = BoolToVisibility(!showOperations);
-        AllOperationsPanel.Visibility = BoolToVisibility(showOperations);
+        ViewModel.HistoryViewMode = sender.SelectedItem == AllOperationsModeItem ? HistoryViewMode.Operations :
+            sender.SelectedItem == AccessModeItem ? HistoryViewMode.Access : HistoryViewMode.Runs;
     }
 
-    private void AuditBrowser_SizeChanged(object sender, SizeChangedEventArgs e) =>
-        SetHistoryDetailLayout(e.NewSize.Width, AuditDetailColumn, AuditDetailRow, AuditDetailPane);
-
-    private void ExecutionBrowser_SizeChanged(object sender, SizeChangedEventArgs e) =>
-        SetHistoryDetailLayout(e.NewSize.Width, ExecutionDetailColumn, ExecutionDetailRow, ExecutionDetailPane);
-
-    private static void SetHistoryDetailLayout(double width, ColumnDefinition column, RowDefinition row, FrameworkElement pane)
+    private void SyncRecordModeSelector()
     {
-        var stacked = width < 680;
-        column.Width = new GridLength(stacked ? 0 : 280);
-        row.Height = stacked ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
-        Grid.SetColumn(pane, stacked ? 0 : 1);
-        Grid.SetRow(pane, stacked ? 1 : 0);
+        var item = ViewModel.HistoryViewMode switch
+        {
+            HistoryViewMode.Operations => AllOperationsModeItem,
+            HistoryViewMode.Access => AccessModeItem,
+            _ => ExecutionsModeItem
+        };
+        if (!ReferenceEquals(ExecutionHistoryMode.SelectedItem, item)) ExecutionHistoryMode.SelectedItem = item;
+    }
+
+    private void RecordDrawer_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // Wide windows keep the table and the drawer side by side; narrow ones slide the drawer over the table.
+        var mode = e.NewSize.Width >= 1000 ? SplitViewDisplayMode.Inline : SplitViewDisplayMode.Overlay;
+        if (RecordDrawer.DisplayMode != mode) RecordDrawer.DisplayMode = mode;
+        RecordDrawer.OpenPaneLength = Math.Clamp(e.NewSize.Width * 0.4, 300, 420);
+    }
+
+    private void RecordDrawer_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != Windows.System.VirtualKey.Escape) return;
+        ViewModel.IsDetailOpen = false;
+        e.Handled = true;
+    }
+
+    private void RunSort_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: string tag } && Enum.TryParse<RunSortColumn>(tag, out var column))
+            ViewModel.SortRunsBy(column);
+    }
+
+    private void SessionExecution_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ExecutionHistoryRow row }) ViewModel.OpenExecution(row.Record.Id);
+    }
+
+    private void SyncRecordSelection(string? propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(ViewModel.SelectedExecution):
+                if (!ReferenceEquals(ExecutionHistoryList.SelectedItem, ViewModel.SelectedExecution))
+                    ExecutionHistoryList.SelectedItem = ViewModel.SelectedExecution;
+                if (ViewModel.SelectedExecution is { } run) ExecutionHistoryList.ScrollIntoView(run);
+                break;
+            case nameof(ViewModel.SelectedAuditRow):
+                if (!ReferenceEquals(AuditHistoryList.SelectedItem, ViewModel.SelectedAuditRow))
+                    AuditHistoryList.SelectedItem = ViewModel.SelectedAuditRow;
+                break;
+            case nameof(ViewModel.HistoryViewMode):
+                SyncRecordModeSelector();
+                break;
+            case nameof(ViewModel.IsDetailOpen) when ViewModel.IsDetailOpen:
+                DispatcherQueue.TryEnqueue(() => CloseRecordDrawerButton.Focus(FocusState.Programmatic));
+                break;
+        }
     }
 
     private void AgentSettingsRequested_Click(object sender, RoutedEventArgs e) => AgentSettingsRequested?.Invoke();
@@ -205,6 +276,7 @@ public sealed partial class HistoryPage : Page
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        SyncRecordSelection(e.PropertyName);
         if (e.PropertyName == nameof(ViewModel.SelectedSession))
         {
             if (ViewModel.SelectedSession is null) _showDetailOnNarrow = false;
@@ -307,7 +379,6 @@ public sealed partial class HistoryPage : Page
         var compactHeader = ActualWidth < 600;
         HistoryTitle.Style = (Style)Application.Current.Resources[compactHeader ? "SubtitleTextBlockStyle" : "TitleTextBlockStyle"];
         HistoryDescription.Visibility = compactHeader ? Visibility.Collapsed : Visibility.Visible;
-        HistoryAgentSettingsButton.Visibility = compactHeader ? Visibility.Collapsed : Visibility.Visible;
         HistoryStatusText.MaxLines = compactHeader ? 1 : 0;
         SessionFilters.Visibility = narrow && showDetail ? Visibility.Collapsed : Visibility.Visible;
         if (BackToSessionsButton is not null)

@@ -24,6 +24,14 @@ public sealed partial class AllowedUserListView : UserControl
     }
 
     public event EventHandler<AllowedUserRow>? RemoveUserRequested;
+    /// <summary>Raised to show who allowed this user, and when, in the history page.</summary>
+    public event EventHandler<AllowedUserRow>? ShowHistoryRequested;
+
+    private void ShowUserHistory_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: AllowedUserRow row })
+            ShowHistoryRequested?.Invoke(this, row);
+    }
 
     private async void ShowUserDetails_Click(object sender, RoutedEventArgs e)
     {

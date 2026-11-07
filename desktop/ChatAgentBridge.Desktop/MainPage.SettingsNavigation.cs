@@ -81,6 +81,12 @@ public sealed partial class MainPage
         });
     }
 
+    private void ShowAllowedUserHistory(object? sender, AllowedUserRow row)
+    {
+        MainNavigation.SelectedItem = MainNavigation.MenuItems.OfType<NavigationViewItem>().First(item => item.Tag as string == "history");
+        HistoryPage.ShowAccessHistory(row.Provider, row.UserId);
+    }
+
     private async void ConfirmAllowedUserRemoval(object? sender, AllowedUserRow row)
     {
         if (_settingsPromptOpen || _sensitiveSettingsDialogOpen || _autoSaveAttemptRunning || XamlRoot is null) return;

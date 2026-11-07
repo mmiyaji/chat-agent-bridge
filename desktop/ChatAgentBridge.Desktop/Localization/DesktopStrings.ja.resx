@@ -266,7 +266,6 @@
   <data name="AskPerAction" xml:space="preserve"><value>操作ごとに確認</value></data>
   <data name="HistoryLoading" xml:space="preserve"><value>履歴とセッションを読み込んでいます。</value></data>
   <data name="HistoryRefreshing" xml:space="preserve"><value>履歴とセッションを更新しています…</value></data>
-  <data name="HistoryCounts" xml:space="preserve"><value>実行 {0} 件・会話 {1} 件・操作記録 {2} 件</value></data>
   <data name="HistoryLoadFailed" xml:space="preserve"><value>履歴を読み込めませんでした: {0}</value></data>
   <data name="HistoryDetaching" xml:space="preserve"><value>セッションを切り離しています…</value></data>
   <data name="HistoryDetachedAuditFailed" xml:space="preserve"><value>セッションを切り離しましたが、監査記録に失敗しました。実行履歴は保持されています。</value></data>
@@ -277,7 +276,6 @@
   <data name="HistoryPolicySaveFailed" xml:space="preserve"><value>この会話の実行ポリシーを保存できませんでした: {0}</value></data>
   <data name="HistoryModelSaved" xml:space="preserve"><value>次回の実行モデルを保存しました。推論レベルも更新しました。</value></data>
   <data name="HistoryModelSaveFailed" xml:space="preserve"><value>次回の実行モデルを保存できませんでした。セッションが残っているか確認してください。</value></data>
-  <data name="HistorySuccessCounts" xml:space="preserve"><value>{0} 実行 {1} 件・会話 {2} 件・操作記録 {3} 件</value></data>
   <data name="WorkspacePathInstruction" xml:space="preserve"><value>!cab folder C:\Projects\my-app のように、存在するフォルダーの絶対パスを1行目に指定してください。空白を含むパスは二重引用符で囲めます。</value></data>
   <data name="WorkspaceOutsideTrustedRoots" xml:space="preserve"><value>変更先は信頼フォルダーの範囲外です。PCのエージェント設定で、許可する親フォルダーを確認・保存してから再接続してください。</value></data>
   <data name="WorkspaceChangePrompt" xml:space="preserve"><value>作業フォルダーの変更（AIは実行しません）&#10;変更前: {0}&#10;変更後: {1}&#10;所有者: {2}&#10;このユーザー・スレッドだけに適用します。保存済みの会話・モデル・承認の上書きは解除し、次の依頼は新しいAIセッションで開始します。実行履歴は残ります。</value></data>
@@ -429,8 +427,8 @@
   <data name="AboutOpenLinkFailed" xml:space="preserve"><value>リンクを開けませんでした。ブラウザーまたはメールアプリが利用できるか確認してください。</value></data>
   <data name="HistoryProviderAll" xml:space="preserve"><value>すべてのサービス</value></data>
   <data name="HistoryUnknownOrigin" xml:space="preserve"><value>接続先不明</value></data>
-  <data name="HistoryConversationsTab" xml:space="preserve"><value>会話</value></data>
-  <data name="HistoryExecutionsTab" xml:space="preserve"><value>実行履歴</value></data>
+  <data name="HistoryConversationsTab" xml:space="preserve"><value>会話 ({0})</value></data>
+  <data name="HistoryExecutionsTab" xml:space="preserve"><value>実行記録 ({0})</value></data>
   <data name="HistoryAuditTab" xml:space="preserve"><value>操作記録</value></data>
   <data name="HistorySearchLabel" xml:space="preserve"><value>保存済みの会話を検索</value></data>
   <data name="HistorySearchPlaceholder" xml:space="preserve"><value>会話名・作業フォルダー・ユーザー・モデルなど</value></data>
@@ -464,7 +462,6 @@
   <data name="HistoryEditNextModel" xml:space="preserve"><value>モデルを切り替える</value></data>
   <data name="HistoryEditPolicy" xml:space="preserve"><value>承認と共有</value></data>
   <data name="HistoryStartFresh" xml:space="preserve"><value>次回は新しい会話</value></data>
-  <data name="HistoryExecutionSummary" xml:space="preserve"><value>最近の実行 ({0})</value></data>
   <data name="HistoryNoExecutions" xml:space="preserve"><value>実行履歴はまだありません。</value></data>
   <data name="HistoryNoAudit" xml:space="preserve"><value>操作記録はまだありません。</value></data>
   <data name="HistoryExecutionEmptyHeading" xml:space="preserve"><value>実行履歴はまだありません</value></data>
@@ -472,7 +469,7 @@
   <data name="HistoryNoExecutionsForDayHeading" xml:space="preserve"><value>この日の実行履歴はありません</value></data>
   <data name="HistoryNoExecutionsForDayDescription" xml:space="preserve"><value>選択した日に一致する実行記録はありません。日付の絞り込みを解除すると、すべての実行を表示できます。</value></data>
   <data name="HistoryAuditEmptyDescription" xml:space="preserve"><value>セッションの変更やエージェントの切り替えなどの操作がここに記録されます。</value></data>
-  <data name="HistoryClearExecutionDayFilter" xml:space="preserve"><value>すべての日付を表示</value></data>
+  <data name="HistoryClearExecutionDayFilter" xml:space="preserve"><value>絞り込みを解除</value></data>
   <data name="HistoryStartFreshWarning" xml:space="preserve"><value>保存済みセッションとの関連付けを解除します。同じチャットスレッドに次のメッセージを送ると、新しい会話が始まります。リモートのチャット履歴や実行履歴は削除されません。</value></data>
   <data name="InboxSelectConversation" xml:space="preserve"><value>会話を選択すると、リクエストと結果が表示されます。</value></data>
   <data name="InboxConversationCount" xml:space="preserve"><value>会話 {0} 件</value></data>
@@ -512,24 +509,19 @@
   <data name="Activity90Days" xml:space="preserve"><value>90日</value></data>
   <data name="ActivityDayCount" xml:space="preserve"><value>{0}: {1:N0}回</value></data>
   <data name="ActivityDays" xml:space="preserve"><value>{0:N0}日</value></data>
-  <data name="ActivityFilteredExecutions" xml:space="preserve"><value>{0}: 保存済みの実行 {1:N0}件</value></data>
   <data name="ActivityNoPeak" xml:space="preserve"><value>まだ記録がありません</value></data>
   <data name="ActivityOutcomes" xml:space="preserve"><value>この期間: 完了 {0:N0}回・失敗 {1:N0}回・中止 {2:N0}回・実行中／中断 {3:N0}回</value></data>
   <data name="ActivityNoRunsHeading" xml:space="preserve"><value>アクティビティはまだありません</value></data>
   <data name="ActivityNoRunsDescription" xml:space="preserve"><value>実行すると、ここに利用状況が表示されます。</value></data>
   <data name="ActivityNoRunsInPeriodHeading" xml:space="preserve"><value>この期間に実行はありません</value></data>
   <data name="ActivityNoRunsInPeriodDescription" xml:space="preserve"><value>この期間の実行記録はありません。期間を広げると、以前のアクティビティを確認できます。</value></data>
-  <data name="ActivityNoModelsHeading" xml:space="preserve"><value>モデル別アクティビティはありません</value></data>
-  <data name="ActivityNoModelsDescription" xml:space="preserve"><value>実行すると、モデル別の利用状況が表示されます。</value></data>
-  <data name="ActivityNoModelsInPeriodDescription" xml:space="preserve"><value>この期間にはモデル実行がありません。</value></data>
   <data name="ActivityPeakValue" xml:space="preserve"><value>{0}・{1:N0}回</value></data>
   <data name="ActivityRunCount" xml:space="preserve"><value>{0:N0}回</value></data>
-  <data name="ActivitySelectDay" xml:space="preserve"><value>日付を選ぶと、その日の利用状況を確認できます。</value></data>
+  <data name="ActivitySelectDay" xml:space="preserve"><value>日付を選ぶと、その日の実行回数と使用量を表示します。</value></data>
   <data name="ActivityTabTitle" xml:space="preserve"><value>利用状況</value></data>
   <data name="ActivityUnknownModel" xml:space="preserve"><value>既定／モデル未記録</value></data>
-  <data name="ActivityDailyScale" xml:space="preserve"><value>最大 {0:N0}回／日</value></data>
-  <data name="ActivityChatsTabCompact" xml:space="preserve"><value>会話</value></data>
-  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>実行履歴</value></data>
+  <data name="ActivityChatsTabCompact" xml:space="preserve"><value>会話 ({0})</value></data>
+  <data name="ActivityRunsTabCompact" xml:space="preserve"><value>実行 ({0})</value></data>
   <data name="ActivityOutsideDay" xml:space="preserve"><value>{0}: 選択期間外</value></data>
   <data name="UsageTokens" xml:space="preserve"><value>トークン消費量</value></data>
   <data name="UsageCache" xml:space="preserve"><value>キャッシュヒット率</value></data>
@@ -556,8 +548,6 @@
   <data name="UsageRequestNote" xml:space="preserve"><value>部分的な利用量です。各実行の最後のリクエストだけを集計し、実行全体の消費量は表しません。</value></data>
   <data name="UsageRecentRange" xml:space="preserve"><value>日別・直近28日（{0} ～ {1}）</value></data>
   <data name="UsageDetails" xml:space="preserve"><value>入力（キャッシュ込み）: {0} ／ 出力: {1} ／ キャッシュ読み込み: {2} ／ キャッシュ書き込み: {3}</value></data>
-  <data name="UsageDayDetails" xml:space="preserve"><value>{0}
-{1}</value></data>
   <data name="UsageBarLabel" xml:space="preserve"><value>{0}：{1}
 {2}</value></data>
   <data name="UsageBarDetails" xml:space="preserve"><value>{0}
@@ -607,7 +597,25 @@
   <data name="HistoryRenameFailed" xml:space="preserve"><value>会話名を保存できませんでした: {0}</value></data>
   <data name="CustomCliName" xml:space="preserve"><value>カスタムCLI</value></data>
   <data name="HistoryThisPc" xml:space="preserve"><value>このPC</value></data>
-  <data name="HistoryChatNamesUnavailable" xml:space="preserve"><value>チャット名未取得 · IDは詳細で確認できます</value></data>
+  <data name="HistoryChatIdShort" xml:space="preserve"><value>ID {0}</value></data>
+  <data name="HistoryDurationSeconds" xml:space="preserve"><value>{0}秒</value></data>
+  <data name="HistoryDurationMinutes" xml:space="preserve"><value>{0}分{1}秒</value></data>
+  <data name="HistoryDurationHours" xml:space="preserve"><value>{0}時間{1}分</value></data>
+  <data name="HistoryRunFacts" xml:space="preserve"><value>所要時間 {0} · モデル {1} · トークン {2}</value></data>
+  <data name="HistoryRecordSearchPlaceholder" xml:space="preserve"><value>チャット・ユーザー・IDで絞り込み</value></data>
+  <data name="HistoryRecordResults" xml:space="preserve"><value>{0:N0} / {1:N0} 件</value></data>
+  <data name="HistoryDayFilterChip" xml:space="preserve"><value>{0} のみ</value></data>
+  <data name="HistoryRunStartedColumn" xml:space="preserve"><value>開始</value></data>
+  <data name="HistoryRunConversationColumn" xml:space="preserve"><value>会話</value></data>
+  <data name="HistoryRunUserColumn" xml:space="preserve"><value>ユーザー</value></data>
+  <data name="HistoryRunResultColumn" xml:space="preserve"><value>結果</value></data>
+  <data name="HistoryRunModelColumn" xml:space="preserve"><value>モデル</value></data>
+  <data name="HistoryRunDurationColumn" xml:space="preserve"><value>所要時間</value></data>
+  <data name="HistoryRunTokensColumn" xml:space="preserve"><value>トークン</value></data>
+  <data name="HistoryOpenAgentSettings" xml:space="preserve"><value>エージェント設定を開く</value></data>
+  <data name="HistoryNoRecordMatchesHeading" xml:space="preserve"><value>条件に合う記録はありません</value></data>
+  <data name="HistoryNoRecordMatchesDescription" xml:space="preserve"><value>検索語やサービスの絞り込みを変えるか、解除してください。</value></data>
+  <data name="UsageRunsMetric" xml:space="preserve"><value>実行回数</value></data>
   <data name="HistoryUserNameUnavailable" xml:space="preserve"><value>ユーザー名未取得</value></data>
   <data name="HistoryChannelNameUnavailable" xml:space="preserve"><value>チャンネル名未取得</value></data>
   <data name="HistoryDirectMessage" xml:space="preserve"><value>ダイレクトメッセージ</value></data>

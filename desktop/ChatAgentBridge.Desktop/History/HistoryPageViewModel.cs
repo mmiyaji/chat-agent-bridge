@@ -14,9 +14,43 @@ namespace ChatAgentBridge_Desktop.History;
 public sealed record ModelExecutionSelection(string? Model, string? ReasoningEffort);
 public sealed record SessionPolicySelection(string? ChatApprovalMode, string? ChatResultMode, string? AgentPermissionMode);
 
-public sealed record ExecutionHistoryRow(ExecutionRecord Record, string? ChatLabel = null)
+/// <summary>Chat names for an execution, resolved through the saved conversation it belongs to.</summary>
+public sealed record ExecutionChatInfo(string Conversation, string User, SessionKey Session);
+
+public sealed record ExecutionHistoryRow(ExecutionRecord Record, ExecutionChatInfo? Chat = null, RunColumnLayout? Columns = null)
 {
+    public RunColumnLayout ColumnLayout => Columns ?? RunColumnLayout.Default;
     public string Started => Record.StartedAt.ToLocalTime().ToString("g");
+    public string StartedCompact => HistoryFormat.CompactTime(Record.StartedAt);
+    public bool HasChatNames => Chat is not null || Record.Source == "local";
+    public string ConversationCell => Chat?.Conversation ?? (Record.Source == "local"
+        ? DesktopText.Get("HistoryThisPc")
+        : DesktopText.Get("HistoryChatIdShort", HistoryFormat.ShortId(Record.ChannelId)));
+    public string UserCell => Record.Source == "local" ? DesktopText.Get("HistoryThisPc") :
+        Chat?.User is { Length: > 0 } user && user != DesktopText.Get("HistoryUserNameUnavailable") ? user : HistoryFormat.ShortId(Record.UserId);
+    public string StatusTone => Record.Status switch
+    {
+        "running" => "running",
+        "completed" => "success",
+        "failed" => "error",
+        "interrupted" => "warning",
+        "cancelled" => "stopped",
+        _ => "neutral"
+    };
+    public string ModelCell => !string.IsNullOrWhiteSpace(Record.Usage?.Model) ? Record.Usage!.Model! :
+        Record.AgentModel ?? DesktopText.Get("DefaultModel");
+    public TimeSpan? Duration => Record.FinishedAt is { } finished && finished >= Record.StartedAt ? finished - Record.StartedAt : null;
+    public string DurationCell => Record.Status == "running" ? DesktopText.Get("HistoryExecutionRunning") : HistoryFormat.Duration(Duration);
+    public long? TokenTotal => Record.Usage is not { } usage ? null :
+        usage.TotalInputTokens is null && usage.OutputTokens is null ? null : (usage.TotalInputTokens ?? 0) + (usage.OutputTokens ?? 0);
+    public string TokensCell => TokenTotal?.ToString("N0") ?? "—";
+    public string RowLabel => $"{StartedCompact} · {ConversationCell} · {UserCell} · {Status} · {ModelCell} · {DurationCell} · {TokensCell}";
+    public string DrawerTitle => $"{Started} · {Source} · {Status}";
+    public string DrawerFacts => DesktopText.Get("HistoryRunFacts", DurationCell, ModelCell, TokensCell);
+    public string SessionListLabel => $"{StartedCompact} · {Status} · {TokensCell}";
+    public bool HasSession => Chat is not null;
+    internal string SearchIndex => string.Join("\n", ConversationCell, UserCell, Record.UserId, Record.ChannelId, Record.ThreadId,
+        Source, Status, ModelCell, Record.Id, Record.SessionId);
     public string Source => SourceLabel(Record.Source);
     public string Status => Record.HistorySaveDiagnostic is null
         ? ExecutionStatus
@@ -37,7 +71,6 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record, string? ChatLab
     public string Model => DesktopText.Get("HistoryModel", Record.AgentModel ?? DesktopText.Get("DefaultModel"));
     public string ReasoningEffort => DesktopText.Get("HistoryReasoning", Record.AgentReasoningEffort ?? DesktopText.Get("CliDefault"));
     public string Usage => UsageSummaryFormatter.Format(Record.Usage, Record.Metrics);
-    public string Conversation => ChatLabel ?? (Record.Source == "local" ? DesktopText.Get("HistoryThisPc") : DesktopText.Get("HistoryChatNamesUnavailable"));
     public string Identifiers => DesktopText.Get("HistoryExecutionConversation", Record.ChannelId, Record.ThreadId, Record.UserId);
     public string IdentifiersHeading => DesktopText.Get("HistoryIdentifiersHeading");
 
@@ -97,7 +130,12 @@ public sealed record AuditHistoryRow(AuditEvent Record, AuditColumnLayout Column
         _ => DesktopText.Get("UnknownProvider")
     };
     public string Summary => $"{Timestamp} · {Source} · {Kind}";
-    public string Conversation => ChatLabel ?? (Record.Source == "local" ? DesktopText.Get("HistoryThisPc") : DesktopText.Get("HistoryChatNamesUnavailable"));
+    public string TimeCompact => HistoryFormat.CompactTime(Record.Timestamp);
+    public bool HasChatNames => ChatLabel is not null || Record.Source == "local";
+    public string Conversation => ChatLabel ?? (Record.Source == "local" ? DesktopText.Get("HistoryThisPc") :
+        DesktopText.Get("HistoryChatIdShort", HistoryFormat.ShortId(Record.ChannelId)));
+    internal string SearchIndex => string.Join("\n", Kind, Source, Conversation, Record.ChannelId, Record.ThreadId,
+        Record.Access?.UserId, Record.Access?.DisplayName, Record.Access?.Actor, Record.ExecutionId);
     public string Identifiers => DesktopText.Get("HistoryAuditConversation", Record.ChannelId, Record.ThreadId);
     public bool HasExecutionIdentifier => Record.ExecutionId is not null;
     public string ExecutionIdentifier => DesktopText.Get("AuditExecutionIdentifier", Record.ExecutionId);
@@ -285,7 +323,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public Func<SessionHistoryRow, IReadOnlyList<AgentConnectionProfile>, ConversationSummary?, Task<AgentSwitchSelection?>>? ChooseAgentSwitchAsync { get; set; }
 
     public string ConversationsTabTitle => DesktopText.Get(IsNarrow ? "ActivityChatsTabCompact" : "HistoryConversationsTab", Sessions.Count);
-    public string ExecutionsTabTitle => DesktopText.Get(IsNarrow ? "ActivityRunsTabCompact" : "HistoryExecutionsTab", Executions.Count);
+    public string ExecutionsTabTitle => DesktopText.Get(IsNarrow ? "ActivityRunsTabCompact" : "HistoryExecutionsTab", _activityRecords.Count);
     public string AuditTabTitle => DesktopText.Get("HistoryAuditTab", AuditEvents.Count);
     public string SearchLabel => DesktopText.Get("HistorySearchLabel");
     public string SearchPlaceholder => DesktopText.Get("HistorySearchPlaceholder");
@@ -335,18 +373,14 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public string SwitchAgentLabel => DesktopText.Get("AgentSwitchTitle");
     public string EditPolicyLabel => DesktopText.Get("HistoryEditPolicy");
     public string StartFreshLabel => DesktopText.Get("HistoryStartFresh");
+    public string OpenAgentSettingsLabel => DesktopText.Get("HistoryOpenAgentSettings");
     private static string CompactSummaryPart(string value) => value.Length > 28 ? $"{value[..25]}…" : value;
-    public string ExecutionSummary => ExecutionDayFilter is { } date
-        ? DesktopText.Get("ActivityFilteredExecutions", date.ToString("D"), Executions.Count)
-        : DesktopText.Get("HistoryExecutionSummary", _activityRecords.Count);
     public string NoExecutionsText => DesktopText.Get("HistoryNoExecutions");
     public string NoAuditText => DesktopText.Get("HistoryNoAudit");
-    public string ExecutionEmptyHeading => DesktopText.Get(HasExecutionDayFilter
-        ? "HistoryNoExecutionsForDayHeading"
-        : "HistoryExecutionEmptyHeading");
-    public string ExecutionEmptyDescription => DesktopText.Get(HasExecutionDayFilter
-        ? "HistoryNoExecutionsForDayDescription"
-        : "HistoryExecutionEmptyDescription");
+    public string ExecutionEmptyHeading => DesktopText.Get(_activityRecords.Count == 0 ? "HistoryExecutionEmptyHeading" :
+        HasExecutionDayFilter ? "HistoryNoExecutionsForDayHeading" : "HistoryNoRecordMatchesHeading");
+    public string ExecutionEmptyDescription => DesktopText.Get(_activityRecords.Count == 0 ? "HistoryExecutionEmptyDescription" :
+        HasExecutionDayFilter ? "HistoryNoExecutionsForDayDescription" : "HistoryNoRecordMatchesDescription");
     public string AuditEmptyDescription => DesktopText.Get("HistoryAuditEmptyDescription");
     public string ClearExecutionDayFilterLabel => DesktopText.Get("HistoryClearExecutionDayFilter");
 
@@ -363,7 +397,6 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowEmptySessionDetail));
         OnPropertyChanged(nameof(ShowActivityEmptyState));
         OnPropertyChanged(nameof(ShowActivitySummary));
-        OnPropertyChanged(nameof(ShowActivityModelEmptyState));
         OnPropertyChanged(nameof(ActivityStatisticsAvailable));
         OnPropertyChanged(nameof(ShowEmptyExecutionHistory));
         OnPropertyChanged(nameof(ShowEmptyAuditHistory));
@@ -414,7 +447,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             nameof(BackToConversationsLabel), nameof(ContinueInOriginalThreadHint), nameof(ConversationHeading),
             nameof(RuntimeHeading), nameof(PolicyHeading), nameof(IdentifiersHeading), nameof(IdentifiersSummary),
             nameof(ActionsHeading), nameof(EditModelLabel), nameof(SwitchAgentLabel), nameof(EditPolicyLabel),
-            nameof(StartFreshLabel), nameof(NoExecutionsText), nameof(NoAuditText),
+            nameof(StartFreshLabel), nameof(OpenAgentSettingsLabel), nameof(RecordSearchPlaceholder), nameof(NoExecutionsText), nameof(NoAuditText),
             nameof(ExecutionEmptyHeading), nameof(ExecutionEmptyDescription), nameof(AuditEmptyDescription),
             nameof(ClearExecutionDayFilterLabel)
         })
@@ -459,6 +492,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     partial void OnSessionSortChanged(string value) { if (!_refreshingLocalizedFilters) ApplySessionFilter(); }
     partial void OnSelectedSessionChanged(SessionHistoryRow? value)
     {
+        RefreshSessionExecutions();
         OnPropertyChanged(nameof(HasSelectedSession));
         OnPropertyChanged(nameof(SelectedSessionTitle));
         OnPropertyChanged(nameof(IdentifiersSummary));
@@ -479,7 +513,6 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowEmptySessionList));
         OnPropertyChanged(nameof(ShowSessionFilterEmptyAction));
         OnPropertyChanged(nameof(ShowSessionFilterHeaderClearButton));
-        OnPropertyChanged(nameof(ExecutionSummary));
     }
 
     private void ApplySessionFilter()
@@ -635,7 +668,8 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             IsHistoryLoadSuccessful = true;
             _loadedStamp = stamp;
             _loadedAtTick = Environment.TickCount64;
-            Status = DesktopText.Get("HistoryCounts", _activityRecords.Count, Sessions.Count, AuditEvents.Count);
+            // Counts are shown on the tab headers; the status line is kept for messages.
+            Status = string.Empty;
         }
         catch (Exception ex)
         {
@@ -835,7 +869,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         ApplySessionFilter();
         NotifySummariesChanged();
         IsHistoryLoadSuccessful = true;
-        Status = DesktopText.Get("HistorySuccessCounts", successMessage, _activityRecords.Count, Sessions.Count, AuditEvents.Count);
+        Status = successMessage;
         StartChatNameRefresh();
     }
 

@@ -200,7 +200,7 @@ You can also inspect live output and stop a request on the PC.
 
 ## History and usage
 
-In **History → Run history**, select a run to see related actions in time order. Switch to **All actions** to see every audit record, including rejected requests and actions without a run ID. Select an action to see its IDs and any recorded diagnostic code. Filter by service or action type. Drag a column’s right edge to resize it.
+In **History → Run records**, runs are listed in a table with start time, conversation, user, result, model, duration and tokens. Click a column header to sort, or drag its right edge to resize it. Click a row to open its details beside the table: related actions in time order, usage details and IDs, with **Open conversation** to jump to the saved conversation. Switch to **All operations** to see every audit record, including rejected requests and actions without a run ID, or to **Access** to see only allowed-user changes and access decisions made from chat. Filter by chat, user, ID or service.
 
 Find saved conversations by name or working folder and change their model or agent. Review execution times, statuses, operation records and usage recorded by this app.
 

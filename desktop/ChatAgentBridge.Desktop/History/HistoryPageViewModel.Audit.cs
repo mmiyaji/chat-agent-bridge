@@ -23,8 +23,6 @@ public sealed partial class HistoryPageViewModel
     public bool HasSelectedExecution => SelectedExecution is not null;
     public bool ShowEmptyExecutionOperations => ExecutionOperations.Count == 0;
 
-    partial void OnSelectedExecutionChanged(ExecutionHistoryRow? value) => RefreshExecutionOperations();
-
     private void RefreshExecutionOperations() =>
         ExecutionOperations = SelectedExecution is { Record.Id: var id }
             ? AuditEvents.Where(row => row.Record.ExecutionId == id).OrderBy(row => row.Record.Timestamp).ToArray()
@@ -34,7 +32,11 @@ public sealed partial class HistoryPageViewModel
 
     public bool ShowEmptyAuditFilter => HasAuditEvents && FilteredAuditEvents.Count == 0;
 
-    partial void OnAuditServiceFilterChanged(AuditFilterOption? value) => ApplyAuditFilters();
+    partial void OnAuditServiceFilterChanged(AuditFilterOption? value)
+    {
+        ApplyRunFilters();
+        ApplyAuditFilters();
+    }
     partial void OnAuditKindFilterChanged(AuditFilterOption? value) => ApplyAuditFilters();
 
     private void RefreshAuditFilterOptions()
@@ -42,7 +44,9 @@ public sealed partial class HistoryPageViewModel
         RefreshExecutionOperations();
         var service = AuditServiceFilter?.Key;
         var kind = AuditKindFilter?.Key;
-        AuditServiceOptions = BuildAuditOptions("AuditAllServices", AuditEvents.Select(row => new AuditFilterOption(row.Record.Source, row.Source)));
+        // One service filter serves both the run table and the operation table.
+        AuditServiceOptions = BuildAuditOptions("AuditAllServices", AuditEvents.Select(row => new AuditFilterOption(row.Record.Source, row.Source))
+            .Concat(_activityRecords.Select(record => new AuditFilterOption(record.Source, new ExecutionHistoryRow(record).Source))));
         AuditKindOptions = BuildAuditOptions("AuditAllKinds", AuditEvents.Select(row => new AuditFilterOption(row.FilterKind, row.FilterKindLabel)));
         AuditServiceFilter = AuditServiceOptions.FirstOrDefault(option => option.Key == service) ?? AuditServiceOptions[0];
         AuditKindFilter = AuditKindOptions.FirstOrDefault(option => option.Key == kind) ?? AuditKindOptions[0];
@@ -56,9 +60,21 @@ public sealed partial class HistoryPageViewModel
     {
         var service = AuditServiceFilter?.Key;
         var kind = AuditKindFilter?.Key;
+        var accessOnly = HistoryViewMode == HistoryViewMode.Access;
+        var query = RecordSearchQuery.Trim();
+        var day = ExecutionDayFilter;
         FilteredAuditEvents = AuditEvents.Where(row =>
             (string.IsNullOrEmpty(service) || row.Record.Source == service) &&
-            (string.IsNullOrEmpty(kind) || row.FilterKind == kind)).ToArray();
+            (string.IsNullOrEmpty(kind) || row.FilterKind == kind) &&
+            (!accessOnly || ChatAgentBridge.Core.History.AuditEvent.IsAccessKind(row.Record.Kind)) &&
+            (day is null || DateOnly.FromDateTime(row.Record.Timestamp.ToLocalTime().DateTime) == day) &&
+            (query.Length == 0 || row.SearchIndex.Contains(query, StringComparison.OrdinalIgnoreCase))).ToArray();
+        if (SelectedAuditRow is { } selected)
+        {
+            SelectedAuditRow = FilteredAuditEvents.FirstOrDefault(row => row.Record == selected.Record);
+            if (SelectedAuditRow is null && !IsRunsMode) IsDetailOpen = false;
+        }
+        NotifyRecordSummaryChanged();
     }
 }
 

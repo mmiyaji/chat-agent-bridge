@@ -682,7 +682,7 @@
                                                 </Button.Flyout>
                                             </Button>
                                         </Grid>
-                                        <allowedUsers:AllowedUserListView Model="{x:Bind ViewModel.AllowedUserTable}" RemoveUserRequested="ConfirmAllowedUserRemoval" />
+                                        <allowedUsers:AllowedUserListView Model="{x:Bind ViewModel.AllowedUserTable}" RemoveUserRequested="ConfirmAllowedUserRemoval" ShowHistoryRequested="ShowAllowedUserHistory" />
                                     </StackPanel>
                                 </Expander>
                                 <Expander x:Name="ChatApprovalSettingsCard" AutomationProperties.AutomationId="ChatApprovalCard" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="ChatCommonAccessible" localization:LocalizedResourceKey.Key="ChatCommonAccessible">

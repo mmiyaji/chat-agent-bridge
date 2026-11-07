@@ -18,7 +18,6 @@ public sealed partial class ActivityDashboard : UserControl
     {
         ViewModel = viewModel;
         InitializeComponent();
-        ActivityDailyViewport.SizeChanged += (_, e) => FitDailyBars(ActivityDailyPlot, e.NewSize.Width);
         UsageDailyViewport.SizeChanged += (_, e) => FitDailyBars(UsageDailyPlot, e.NewSize.Width);
         SizeChanged += (_, _) => UpdateLayoutForWidth();
         Loaded += (_, _) =>
@@ -33,7 +32,7 @@ public sealed partial class ActivityDashboard : UserControl
     public static Style HeatStyle(int level) => (Style)Application.Current.Resources[
         level < 0 ? "ActivityHeatOutside" : $"ActivityHeat{level}"];
 
-    // Both daily charts have 28 bounded cells. Explicit widths avoid the effective-viewport
+    // The daily chart has 28 bounded cells. Explicit widths avoid the effective-viewport
     // measure loop of a virtualizing repeater inside this scrolling Pivot page.
     private static void FitDailyBars(ItemsControl chart, double width)
     {
@@ -84,10 +83,6 @@ public sealed partial class ActivityDashboard : UserControl
         Grid.SetRow(PeakCard, narrow ? 1 : 0);
         SummaryGrid.ColumnDefinitions[2].Width = new GridLength(narrow ? 0 : 1, GridUnitType.Star);
         SummaryGrid.ColumnDefinitions[3].Width = new GridLength(narrow ? 0 : 1, GridUnitType.Star);
-        Grid.SetColumn(ModelCard, narrow ? 0 : 1);
-        Grid.SetRow(ModelCard, narrow ? 1 : 0);
-        Grid.SetColumnSpan(WeekdayCard, narrow ? 2 : 1);
-        Grid.SetColumnSpan(ModelCard, narrow ? 2 : 1);
         Grid.SetColumn(UsageScopeControl, narrow ? 0 : 1);
         Grid.SetRow(UsageScopeControl, narrow ? 1 : 0);
         Grid.SetColumnSpan(UsageMetricControl, narrow ? 2 : 1);

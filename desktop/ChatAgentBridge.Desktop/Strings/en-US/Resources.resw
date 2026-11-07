@@ -533,9 +533,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="historyHistoryPageTextBlock002.Text" xml:space="preserve">
     <value>Manage saved conversations. Request text and execution output are not saved.</value>
   </data>
-  <data name="AgentSettingsFromHistory.Content" xml:space="preserve">
-    <value>Open agent settings</value>
-  </data>
   <data name="ExportAuditHistory.Content" xml:space="preserve">
     <value>Export audit log</value>
   </data>
@@ -1001,23 +998,17 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ActivityCalendar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Daily AI runs. Use arrow keys to select a date.</value></data>
   <data name="ActivityCalendarHeading.Text" xml:space="preserve"><value>Activity calendar</value></data>
   <data name="ActivityCalendarHelp.Text" xml:space="preserve"><value>Color intensity shows the number of runs. Select a day or use the arrow keys, then open its execution history.</value></data>
-  <data name="ActivityDailyHeading.Text" xml:space="preserve"><value>Daily runs · last 28 days</value></data>
   <data name="ActivityEmpty.Text" xml:space="preserve"><value>Usage appears here after a run.</value></data>
   <data name="ActivityEmptyModels.Text" xml:space="preserve"><value>Model activity will appear after your first run.</value></data>
   <data name="ActivityHeading.Text" xml:space="preserve"><value>Your activity, day by day</value></data>
-  <data name="ActivityModelsHeading.Text" xml:space="preserve"><value>Models you use most</value></data>
-  <data name="ActivityModelsHelp.Text" xml:space="preserve"><value>Top 5 model labels by number of runs.</value></data>
-  <data name="ActivityOpenDay.Content" xml:space="preserve"><value>View executions for this day</value></data>
+  <data name="ActivityOpenDay.Content" xml:space="preserve"><value>Show runs from this day</value></data>
   <data name="ActivityPeakLabel.Text" xml:space="preserve"><value>Your busiest day</value></data>
   <data name="ActivityPeriod.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Activity period</value></data>
   <data name="ActivityScopeNote.Text" xml:space="preserve"><value>Based on up to 500 saved executions in this app, grouped by local start date. Failed and cancelled runs are included. Direct CLI usage and older discarded records are not included. Streaks cover the selected period only.</value></data>
   <data name="ActivityStreakLabel.Text" xml:space="preserve"><value>Longest streak in period</value></data>
   <data name="ActivityTotalLabel.Text" xml:space="preserve"><value>AI runs</value></data>
   <data name="ActivityWeekdaysHeading.Text" xml:space="preserve"><value>Your weekly rhythm</value></data>
-  <data name="ClearExecutionDayFilter.Content" xml:space="preserve"><value>Show all dates</value></data>
-  <data name="ActivityHistogramContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Daily run histogram</value></data>
   <data name="ActivityWeekdayContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Runs by weekday</value></data>
-  <data name="ActivityModelContainer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Runs by model</value></data>
   <data name="ActivityOutsideLegend.Text" xml:space="preserve"><value>– = outside selected period; outlined cells preserve the week layout.</value></data>
   <data name="UsageHeading.Text" xml:space="preserve"><value>Usage and estimated cost</value></data>
   <data name="UsageMetric.Header" xml:space="preserve"><value>Chart metric</value></data>
@@ -1028,9 +1019,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="UsageModelChart.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Tokens, cache hit rate, or estimated API cost by model</value></data>
   <data name="UsageModelsHeading.Text" xml:space="preserve"><value>By reported model · selected period</value></data>
   <data name="UsageDailyHelp.Text" xml:space="preserve"><value>Hover a bar for its date and values. Cost bars use the range upper bound for height and show the range and priced coverage in their labels. 0 = reported or estimated zero; ? = unknown or unpriced; · = no executions. Earlier dates in this period are available below.</value></data>
-  <data name="UsageDayExpander.Header" xml:space="preserve"><value>Daily details · all dates in this period</value></data>
-  <data name="UsageDay.Header" xml:space="preserve"><value>Date</value></data>
-  <data name="UsageDay.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Usage detail date</value></data>
   <data name="UsageAccountingNote.Text" xml:space="preserve"><value>Usage totals come from the CLI. They do not show your bill or remaining allowance.</value></data>
   <data name="UsageCostMethod.Header" xml:space="preserve"><value>How estimated API cost is calculated</value></data>
   <data name="UsageCostMethod.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>How estimated API cost is calculated</value></data>
@@ -1431,7 +1419,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AuditServiceColumn.Text" xml:space="preserve"><value>Service</value></data>
   <data name="AuditConversationColumn.Text" xml:space="preserve"><value>Conversation</value></data>
   <data name="AuditDetailTitle.Text" xml:space="preserve"><value>Action details</value></data>
-  <data name="AuditSelectRow.Text" xml:space="preserve"><value>Select an action from the list.</value></data>
   <data name="AuditNoMatches.Text" xml:space="preserve"><value>No matching audit records.</value></data>
   <data name="AuditServiceFilter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Service</value></data>
   <data name="AuditKindFilter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Action type</value></data>
@@ -1440,9 +1427,21 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AuditResizeService.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Resize service column</value></data>
   <data name="AuditResizeConversation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Resize conversation column</value></data>
   <data name="HistoryRunsMode.Text" xml:space="preserve"><value>Runs</value></data>
+  <data name="HistoryAccessMode.Text" xml:space="preserve"><value>Access</value></data>
+  <data name="CloseRecordDetail.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Close details</value></data>
+  <data name="CloseRecordDetail.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Close details (Esc)</value></data>
+  <data name="OpenRunConversation.Content" xml:space="preserve"><value>Open conversation</value></data>
+  <data name="OpenAuditExecution.Content" xml:space="preserve"><value>Open this run</value></data>
+  <data name="RunUsageDetails.Header" xml:space="preserve"><value>Usage details</value></data>
+  <data name="RunIdentifiers.Header" xml:space="preserve"><value>IDs and work folder</value></data>
+  <data name="HistoryRecordSearch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Filter records</value></data>
+  <data name="ClearRecordFilters.Content" xml:space="preserve"><value>Clear filters</value></data>
+  <data name="ClearExecutionDayFilter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Clear the date filter</value></data>
+  <data name="HistoryChatNamesNotice.Text" xml:space="preserve"><value>Conversations whose chat names have not been fetched yet show their IDs. Names are fetched while the chat is connected.</value></data>
+  <data name="SessionRecentRunsHeading.Text" xml:space="preserve"><value>Recent runs in this conversation</value></data>
+  <data name="RunResizeColumn.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Resize column</value></data>
   <data name="HistoryAllOperationsMode.Text" xml:space="preserve"><value>All actions</value></data>
   <data name="ExecutionDetailTitle.Text" xml:space="preserve"><value>Run details</value></data>
-  <data name="ExecutionSelectRow.Text" xml:space="preserve"><value>Select a run from the list.</value></data>
   <data name="ExecutionOperationsTitle.Text" xml:space="preserve"><value>Related actions</value></data>
   <data name="ExecutionNoOperations.Text" xml:space="preserve"><value>No actions are recorded for this run.</value></data>
 </root>

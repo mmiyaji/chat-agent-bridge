@@ -12,10 +12,6 @@ public sealed record ActivityUsageBar(string Label, string ValueLabel, double Pe
     public double Height => Percent * .96;
     public string AccessibleLabel => DesktopText.Get("UsageBarLabel", Label, ValueLabel, Details);
 }
-public sealed record ActivityUsageDayChoice(DateOnly Date, ActivityUsageTotals Totals)
-{
-    public string Label => Date.ToString("d");
-}
 
 public sealed partial class HistoryPageViewModel
 {
@@ -23,10 +19,10 @@ public sealed partial class HistoryPageViewModel
     private PricingSnapshot? _usagePricing;
     public IReadOnlyList<ActivityUsageBar> UsageDaily { get; private set; } = [];
     public IReadOnlyList<ActivityUsageBar> UsageModels { get; private set; } = [];
-    public IReadOnlyList<ActivityUsageDayChoice> UsageDays { get; private set; } = [];
-    [ObservableProperty] public partial int UsageMetricIndex { get; set; }
+    // 0: runs, 1: tokens, 2: cache hit rate, 3: estimated cost.
+    [ObservableProperty] public partial int UsageMetricIndex { get; set; } = 1;
     [ObservableProperty] public partial int UsageScopeIndex { get; set; }
-    [ObservableProperty] public partial ActivityUsageDayChoice? SelectedUsageDay { get; set; }
+    public string UsageRunsOption => DesktopText.Get("UsageRunsMetric");
     public string UsageTokenOption => DesktopText.Get("UsageTokens");
     public string UsageCacheOption => DesktopText.Get("UsageCache");
     public string UsageCostOption => DesktopText.Get("UsageCostMetric");
@@ -40,18 +36,21 @@ public sealed partial class HistoryPageViewModel
     public string UsageScopeNote => DesktopText.Get(UsageScopeIndex == 1 ? "UsageRequestNote" : "UsageTurnNote");
     public string UsageDailyScale { get; private set; } = "";
     public string UsageDailyRange => DesktopText.Get("UsageRecentRange", _usage.EndDay.AddDays(-27).ToString("d"), _usage.EndDay.ToString("d"));
-    public string UsageSelectedDetails => SelectedUsageDay is { } day
-        ? DesktopText.Get("UsageDayDetails", day.Label, DesktopText.Get("UsageBarDetails",
-            DesktopText.Get("UsageHeadline", Tokens(day.Totals.TotalTokens), Rate(day.Totals.CacheHitPercent)), Details(day.Totals))) : "";
-    public string UsageSelectedCoverage => SelectedUsageDay is { } day ? Coverage(day.Totals) : "";
-    public string UsageSelectedCost => SelectedUsageDay is { } day
-        ? CostDetails(day.Totals.Cost, day.Totals.ExecutionCount) : "";
+    // The calendar selection drives the per-day usage, so there is one day picker on the page.
+    private ActivityUsageTotals? SelectedDayUsage => SelectedActivityDay is { InRange: true } day
+        ? _usage.Days.FirstOrDefault(usage => usage.Date == day.Date)?.Totals : null;
+    public bool HasSelectedDayUsage => SelectedDayUsage is { ExecutionCount: > 0 };
+    public string UsageSelectedDetails => SelectedDayUsage is { ExecutionCount: > 0 } totals
+        ? DesktopText.Get("UsageBarDetails", DesktopText.Get("UsageHeadline", Tokens(totals.TotalTokens), Rate(totals.CacheHitPercent)), Details(totals))
+        : "";
+    public string UsageSelectedCost => SelectedDayUsage is { ExecutionCount: > 0 } totals
+        ? CostDetails(totals.Cost, totals.ExecutionCount) : "";
     partial void OnUsageMetricIndexChanged(int value) => RebuildUsage();
     partial void OnUsageScopeIndexChanged(int value) => _ = RefreshActivityStatisticsAsync();
-    partial void OnSelectedUsageDayChanged(ActivityUsageDayChoice? value)
+    private void NotifySelectedDayUsageChanged()
     {
+        OnPropertyChanged(nameof(HasSelectedDayUsage));
         OnPropertyChanged(nameof(UsageSelectedDetails));
-        OnPropertyChanged(nameof(UsageSelectedCoverage));
         OnPropertyChanged(nameof(UsageSelectedCost));
     }
     private static string Tokens(decimal? value) => value?.ToString("N0") ?? DesktopText.Get("UsageUnknown");
@@ -85,26 +84,30 @@ public sealed partial class HistoryPageViewModel
         DesktopText.Get("UsageCostDetails", Cost(cost), CostCoverage(cost, executionCount));
     private decimal? Metric(ActivityUsageTotals totals) => UsageMetricIndex switch
     {
-        1 => totals.CacheHitPercent is { } rate ? (decimal)rate : null,
-        2 => totals.Cost.MaxUsd,
+        0 => totals.ExecutionCount,
+        2 => totals.CacheHitPercent is { } rate ? (decimal)rate : null,
+        3 => totals.Cost.MaxUsd,
         _ => totals.TotalTokens
     };
+    private bool IsRateMetric => UsageMetricIndex == 2;
+    private bool IsCostMetric => UsageMetricIndex == 3;
     private ActivityUsageBar UsageBar(string label, ActivityUsageTotals totals, decimal maximum)
     {
         var value = Metric(totals);
         var display = UsageMetricIndex switch
         {
-            1 => Rate(totals.CacheHitPercent),
-            2 => totals.Cost.EstimatedCount == 0 ? DesktopText.Get("UsageCostUnknown") :
+            0 => DesktopText.Get("ActivityRunCount", totals.ExecutionCount),
+            2 => Rate(totals.CacheHitPercent),
+            3 => totals.Cost.EstimatedCount == 0 ? DesktopText.Get("UsageCostUnknown") :
                 DesktopText.Get("UsageCostBarValue", Cost(totals.Cost), totals.Cost.EstimatedCount, totals.ExecutionCount),
             _ => Tokens(value)
         };
         if (totals.ExecutionCount == 0) display = DesktopText.Get("UsageNoRuns");
         var percent = value is { } reported && maximum > 0 ? (double)(100m * reported / maximum) : 0;
         return new(label, display, Math.Clamp(percent, 0, 100),
-            DesktopText.Get("UsageBarDetails", UsageMetricIndex == 2
+            DesktopText.Get("UsageBarDetails", IsCostMetric
                     ? DesktopText.Get("UsageCostHeadline", Cost(totals.Cost)) : Details(totals),
-                UsageMetricIndex == 2 ? CostCoverage(totals.Cost, totals.ExecutionCount) : Coverage(totals)),
+                IsCostMetric ? CostCoverage(totals.Cost, totals.ExecutionCount) : Coverage(totals)),
             totals.ExecutionCount == 0 ? "·" : value is null ? "?" : value == 0 ? "0" : "");
     }
     private void RebuildUsage()
@@ -116,24 +119,24 @@ public sealed partial class HistoryPageViewModel
             : _activityStatistics?.Usage ?? ActivityUsageSummary.Build(_activityRecords, _activity.EndDay, _activity.Days.Count, TimeZoneInfo.Local,
                 UsageScopeIndex == 1 ? "last-request" : "turn", _usagePricing);
         var recent = _usage.Days.TakeLast(28).ToArray();
-        var dailyMax = UsageMetricIndex == 1 ? 100m : Math.Max(UsageMetricIndex == 2 ? 0.000001m : 1m,
+        var dailyMax = IsRateMetric ? 100m : Math.Max(IsCostMetric ? 0.000001m : 1m,
             recent.Max(day => Metric(day.Totals) ?? 0));
         UsageDaily = recent.Select(day => UsageBar(day.Date.ToString("D"), day.Totals, dailyMax)).ToArray();
         // Use reported model attribution, never the requested model as a substitute.
         var models = _usage.Models.OrderByDescending(model => Metric(model.Totals) ?? -1).ToArray();
-        var modelMax = UsageMetricIndex == 1 ? 100m : Math.Max(UsageMetricIndex == 2 ? 0.000001m : 1m,
+        var modelMax = IsRateMetric ? 100m : Math.Max(IsCostMetric ? 0.000001m : 1m,
             models.Select(model => Metric(model.Totals) ?? 0).DefaultIfEmpty().Max());
         UsageModels = models.Select(model => UsageBar(model.Model == ActivityStatisticsStore.OtherModelsKey
             ? DesktopText.Get("ActivityOtherModels") : string.IsNullOrWhiteSpace(model.Model)
             ? DesktopText.Get("ActivityUnknownModel") : model.Model, model.Totals, modelMax)).ToArray();
-        var selected = SelectedUsageDay?.Date;
-        UsageDays = _usage.Days.Reverse().Select(day => new ActivityUsageDayChoice(day.Date, day.Totals)).ToArray();
-        OnPropertyChanged(nameof(UsageDays));
-        SelectedUsageDay = UsageDays.FirstOrDefault(day => day.Date == selected) ?? UsageDays.FirstOrDefault();
-        UsageDailyScale = UsageMetricIndex switch { 1 => Rate(100), 2 => Usd(dailyMax), _ => Tokens(dailyMax) };
+        UsageDailyScale = UsageMetricIndex switch
+        {
+            0 => DesktopText.Get("ActivityRunCount", (int)dailyMax), 2 => Rate(100), 3 => Usd(dailyMax), _ => Tokens(dailyMax)
+        };
+        NotifySelectedDayUsageChanged();
         foreach (var name in new[] { nameof(UsageDaily), nameof(UsageModels), nameof(UsageHeadline), nameof(UsageCoverage),
             nameof(UsageCostHeadline), nameof(UsageCostCoverage), nameof(UsageCostMethodDate), nameof(UsageScopeNote),
-            nameof(UsageDailyScale), nameof(UsageDailyRange), nameof(UsageSelectedCost) }) OnPropertyChanged(name);
+            nameof(UsageDailyScale), nameof(UsageDailyRange) }) OnPropertyChanged(name);
     }
 
     public void RefreshPricing() => _ = RefreshActivityStatisticsAsync();

@@ -409,6 +409,7 @@
   <data name="AllowedUserLastRequest" xml:space="preserve"><value>最後の依頼: {0}</value></data>
   <data name="AllowedUserLastRequestUnknown" xml:space="preserve"><value>最後の依頼の記録はありません</value></data>
   <data name="AllowedUserRemove" xml:space="preserve"><value>{0} を一覧から削除</value></data>
+  <data name="AllowedUserHistory" xml:space="preserve"><value>{0} の許可と依頼の記録を見る</value></data>
   <data name="AllowedUserAlreadyListed" xml:space="preserve"><value>{0} はすでに一覧にあります。</value></data>
   <data name="AllowedUserInvalidId" xml:space="preserve"><value>IDは英数字・アンダースコア・ハイフンの128文字以内で、一覧は100件までです。</value></data>
   <data name="AllowedUserInvalidDiscordId" xml:space="preserve"><value>DiscordのユーザーIDは数字のみです。一覧は100件までです。</value></data>
