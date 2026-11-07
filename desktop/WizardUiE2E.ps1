@@ -124,7 +124,7 @@ try {
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
     Start-Sleep -Milliseconds 500
     Assert-That ((Get-Value 'OnboardingStep') -match '1\s*/\s*5') 'The intro page advanced without either consent checkbox.'
-    Assert-That ((Get-Property 'WizardStatus' 'IsOffscreen') -eq 'False') 'Consent validation feedback was hidden outside the scroll viewport.'
+    Assert-That ((Get-Property 'WizardConsentStatus' 'IsOffscreen') -eq 'False') 'Consent validation feedback was hidden outside the scroll viewport.'
     Assert-That (-not (Test-Path -LiteralPath (Join-Path $dataPath 'consent.json'))) 'Consent was saved without both selections.'
     Assert-That (-not (Test-Path -LiteralPath (Join-Path $dataPath 'settings.json'))) 'Settings were saved before the AI setup page.'
 
