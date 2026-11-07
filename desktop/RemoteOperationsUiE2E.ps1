@@ -216,9 +216,14 @@ function Check-StatusStopStage {
             Assert-True ($helpPosts[-1].message -eq $helpPosts[0].message) 'Help aliases returned different command lists.'
         }
         Post ('help-denied-' + $runId) $deniedRoot 'mallory' '!cab command' $true
+        # A user outside the allowed list only learns that the request waits for approval on the PC.
+        $pendingReply = if ($script:language -eq 'ja') { 'このPCで承認待ちです' } else { 'Waiting for approval on the PC' }
+        $snapshot = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $deniedRoot }).Count -ge 1 } 10
         Start-Sleep -Milliseconds 900
         $snapshot = Read-Fixture
-        Assert-True (@($snapshot.replies | Where-Object { $_.root_id -eq $deniedRoot }).Count -eq 0) 'An unauthorized user received command help.'
+        $deniedReplies = @($snapshot.replies | Where-Object { $_.root_id -eq $deniedRoot })
+        Assert-True ($deniedReplies.Count -eq 1 -and $deniedReplies[0].message.StartsWith($pendingReply)) 'An unauthorized user did not receive only the pending-approval notice.'
+        Assert-True (-not $deniedReplies[0].message.Contains('!cab status')) 'An unauthorized user received command help.'
         Assert-True (@($snapshot.updates | Where-Object { $_.root_id -eq $helpRoot }).Count -eq 0) 'Command help created execution progress.'
         $history = Get-Content -LiteralPath (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json
         Assert-True (@($history.Records).Count -eq 0) 'Command help started AI execution or execution history.'

@@ -56,7 +56,7 @@ function Wait-Value([string]$Id,[string]$Value,[int]$Seconds=15) {
 }
 function Wait-Progress([string]$Expected,[int]$Seconds=15) {
     $until = [DateTimeOffset]::UtcNow.AddSeconds($Seconds)
-    do { if ((Get-Value 'OnboardingTitle') -match $Expected) { return $true }; Start-Sleep -Milliseconds 250 } while ([DateTimeOffset]::UtcNow -lt $until)
+    do { if ((Get-Value 'OnboardingStep') -match $Expected) { return $true }; Start-Sleep -Milliseconds 250 } while ([DateTimeOffset]::UtcNow -lt $until)
     return $false
 }
 function Capture([string]$Name) {
@@ -112,7 +112,7 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $dataPath 'work') -PathType Container)) { throw 'Expected the launcher to create DataDir/work.' }
     if ($ServerUrl -notmatch '^https?://' -or -not ([uri]$ServerUrl).IsLoopback) { throw 'ServerUrl must be a loopback HTTP(S) fixture URL.' }
     New-Item -ItemType Directory -Force -Path $screenshots | Out-Null
-    if (-not (Wait-Progress '\[1\s*/\s*5\]' 30)) { throw 'The first-install wizard did not start at page 1 of 5.' }
+    if (-not (Wait-Progress '1\s*/\s*5' 30)) { throw 'The first-install wizard did not start at page 1 of 5.' }
     Capture '01-intro.png'
     Add-Pass 'empty data directory opens the five-page onboarding flow'
 
@@ -123,7 +123,7 @@ try {
     Invoke-UI @('scroll-into-view','WizardTerms') | Out-Null
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
     Start-Sleep -Milliseconds 500
-    Assert-That ((Get-Value 'OnboardingTitle') -match '\[1\s*/\s*5\]') 'The intro page advanced without either consent checkbox.'
+    Assert-That ((Get-Value 'OnboardingStep') -match '1\s*/\s*5') 'The intro page advanced without either consent checkbox.'
     Assert-That ((Get-Property 'WizardStatus' 'IsOffscreen') -eq 'False') 'Consent validation feedback was hidden outside the scroll viewport.'
     Assert-That (-not (Test-Path -LiteralPath (Join-Path $dataPath 'consent.json'))) 'Consent was saved without both selections.'
     Assert-That (-not (Test-Path -LiteralPath (Join-Path $dataPath 'settings.json'))) 'Settings were saved before the AI setup page.'
@@ -143,11 +143,11 @@ try {
     Invoke-UI @('invoke','WizardAcceptTerms') | Out-Null
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
     Start-Sleep -Milliseconds 500
-    Assert-That ((Get-Value 'OnboardingTitle') -match '\[1\s*/\s*5\]') 'One consent checkbox was enough to advance.'
+    Assert-That ((Get-Value 'OnboardingStep') -match '1\s*/\s*5') 'One consent checkbox was enough to advance.'
     Assert-That (-not (Test-Path -LiteralPath (Join-Path $dataPath 'consent.json'))) 'Consent was saved after only one selection.'
     Invoke-UI @('invoke','WizardAcceptPrivacy') | Out-Null
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Assert-That (Wait-Progress '\[2\s*/\s*5\]') 'Both consent selections did not advance to AI setup.'
+    Assert-That (Wait-Progress '2\s*/\s*5') 'Both consent selections did not advance to AI setup.'
     $consentFile = Join-Path $dataPath 'consent.json'
     Assert-That (Test-Path -LiteralPath $consentFile) 'Consent record was not created after both selections.'
     $consent = Get-Content -LiteralPath $consentFile -Raw | ConvertFrom-Json
@@ -168,12 +168,12 @@ try {
     Set-Value 'WizardAgentExecutable' $fixturePath
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
     Start-Sleep -Milliseconds 700
-    Assert-That ((Get-Value 'OnboardingTitle') -match '\[2\s*/\s*5\]') 'Invalid workspace advanced the wizard.'
+    Assert-That ((Get-Value 'OnboardingStep') -match '2\s*/\s*5') 'Invalid workspace advanced the wizard.'
     Assert-That (-not (Test-Path -LiteralPath (Join-Path $dataPath 'settings.json'))) 'Invalid workspace caused settings to be saved.'
     $workspace = Join-Path $dataPath 'work'
     Set-Value 'WizardWorkspaceRoot' $workspace
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Assert-That (Wait-Progress '\[3\s*/\s*5\]') 'Valid agent and workspace did not advance to the CLI page.'
+    Assert-That (Wait-Progress '3\s*/\s*5') 'Valid agent and workspace did not advance to the CLI page.'
     Assert-That (Test-Path -LiteralPath (Join-Path $dataPath 'settings.json')) 'AI setup did not save settings when advancing to CLI setup.'
     Capture '03-step-cli.png'
     Add-Pass 'workspace validation blocks bad path and accepts valid Claude fixture path'
@@ -182,20 +182,20 @@ try {
     $currentSubstep = 'require CLI check before advancing'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
     Start-Sleep -Milliseconds 500
-    Assert-That ((Get-Value 'OnboardingTitle') -match '\[3\s*/\s*5\]') 'CLI page advanced without a CLI check.'
+    Assert-That ((Get-Value 'OnboardingStep') -match '3\s*/\s*5') 'CLI page advanced without a CLI check.'
     $currentSubstep = 'reject an unavailable CLI executable'
     Invoke-UI @('invoke','OnboardingPrevious') | Out-Null
-    Assert-That (Wait-Progress '\[2\s*/\s*5\]') 'Back did not return to the agent settings page.'
+    Assert-That (Wait-Progress '2\s*/\s*5') 'Back did not return to the agent settings page.'
     Set-Value 'WizardAgentExecutable' 'cab-wizard-nonexistent-cli'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Assert-That (Wait-Progress '\[3\s*/\s*5\]') 'Changing the executable prevented return to the CLI page.'
+    Assert-That (Wait-Progress '3\s*/\s*5') 'Changing the executable prevented return to the CLI page.'
     Invoke-UI @('invoke','CheckCli') | Out-Null
     Assert-That (Wait-Value 'CliCheckSummary' '確認できませんでした' 20) 'CLI check did not report the missing executable.'
     Invoke-UI @('invoke','OnboardingPrevious') | Out-Null
-    Assert-That (Wait-Progress '\[2\s*/\s*5\]') 'Back did not return after the unavailable CLI result.'
+    Assert-That (Wait-Progress '2\s*/\s*5') 'Back did not return after the unavailable CLI result.'
     Set-Value 'WizardAgentExecutable' $fixturePath
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Assert-That (Wait-Progress '\[3\s*/\s*5\]') 'Restoring FixtureExe did not return to the CLI page.'
+    Assert-That (Wait-Progress '3\s*/\s*5') 'Restoring FixtureExe did not return to the CLI page.'
     $currentSubstep = 'check fixture CLI version and model catalog'
     Invoke-UI @('invoke','CheckCli') | Out-Null
     Assert-That (Wait-Value 'CliCheckSummary' 'モデル候補を確認しました' 35) 'CLI version/model check did not succeed.'
@@ -203,19 +203,19 @@ try {
     Assert-That ((Get-Value 'CliExecutablePath') -like "*$([IO.Path]::GetFileName($fixturePath))") 'Resolved executable path did not identify FixtureExe.'
     $currentSubstep = 'invalidate a successful CLI check after changing its executable signature'
     Invoke-UI @('invoke','OnboardingPrevious') | Out-Null
-    Assert-That (Wait-Progress '\[2\s*/\s*5\]') 'Back did not return to the agent settings page for signature invalidation.'
+    Assert-That (Wait-Progress '2\s*/\s*5') 'Back did not return to the agent settings page for signature invalidation.'
     Set-Value 'WizardAgentExecutable' 'cab-wizard-nonexistent-cli'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Assert-That (Wait-Progress '\[3\s*/\s*5\]') 'Changed CLI executable did not return to the CLI page.'
+    Assert-That (Wait-Progress '3\s*/\s*5') 'Changed CLI executable did not return to the CLI page.'
     Assert-That (Wait-Value 'CliCheckSummary' 'もう一度チェックしてください' 10) 'Changing the CLI executable did not invalidate the previous successful check.'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
     Start-Sleep -Milliseconds 500
-    Assert-That ((Get-Value 'OnboardingTitle') -match '\[3\s*/\s*5\]') 'CLI page advanced after the signature changed without a new check.'
+    Assert-That ((Get-Value 'OnboardingStep') -match '3\s*/\s*5') 'CLI page advanced after the signature changed without a new check.'
     Invoke-UI @('invoke','OnboardingPrevious') | Out-Null
-    Assert-That (Wait-Progress '\[2\s*/\s*5\]') 'Back did not return to restore the fixture executable.'
+    Assert-That (Wait-Progress '2\s*/\s*5') 'Back did not return to restore the fixture executable.'
     Set-Value 'WizardAgentExecutable' $fixturePath
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Assert-That (Wait-Progress '\[3\s*/\s*5\]') 'Restoring FixtureExe did not return to the CLI page.'
+    Assert-That (Wait-Progress '3\s*/\s*5') 'Restoring FixtureExe did not return to the CLI page.'
     Invoke-UI @('invoke','CheckCli') | Out-Null
     Assert-That (Wait-Value 'CliCheckSummary' 'モデル候補を確認しました' 35) 'Rechecking the restored fixture CLI failed.'
     $currentSubstep = 'select candidate model and reasoning effort'
@@ -224,12 +224,12 @@ try {
     Assert-That ((Get-Value 'WizardModelCandidates') -like '*fixture-claude-large*') 'The CLI model candidate was not selected.'
     Assert-That ((Get-Value 'WizardReasoningEffort') -like '*high*') 'The CLI reasoning effort was not selected.'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Assert-That (Wait-Progress '\[4\s*/\s*5\]') 'Successful CLI check did not advance to the chat page.'
+    Assert-That (Wait-Progress '4\s*/\s*5') 'Successful CLI check did not advance to the chat page.'
     Invoke-UI @('invoke','OnboardingPrevious') | Out-Null
-    Assert-That (Wait-Progress '\[3\s*/\s*5\]') 'Back did not return to the CLI page.'
+    Assert-That (Wait-Progress '3\s*/\s*5') 'Back did not return to the CLI page.'
     Assert-That ((Get-Value 'CliCheckSummary') -like '*候補を確認しました*') 'Returning to the CLI step lost its successful check.'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Assert-That (Wait-Progress '\[4\s*/\s*5\]') 'Returning from the CLI page did not allow the checked setup to continue.'
+    Assert-That (Wait-Progress '4\s*/\s*5') 'Returning from the CLI page did not allow the checked setup to continue.'
     Capture '04-step-chat.png'
     Add-Pass 'CLI version and candidates are checked; fixture model and effort are selectable'
 
@@ -238,39 +238,37 @@ try {
     Select-Candidate 'WizardChatProvider' 'Slack'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
     Start-Sleep -Milliseconds 600
-    Assert-That ((Get-Value 'OnboardingTitle') -match '\[4\s*/\s*5\]') 'Missing Slack credentials advanced the wizard.'
-    $currentSubstep = 'verify missing allowed user blocks Mattermost advancement'
+    Assert-That ((Get-Value 'OnboardingStep') -match '4\s*/\s*5') 'Missing Slack credentials advanced the wizard.'
+    $currentSubstep = 'enter Mattermost connection details'
     Select-Candidate 'WizardChatProvider' 'Mattermost'
     Set-Value 'WizardMattermostServerUrl' $ServerUrl
     Set-Value 'WizardMattermostChannelId' 'test-channel'
     Invoke-UI @('scroll-into-view','WizardMattermostToken') | Out-Null
     $passwordResult = Invoke-UiProcess @('set-value','WizardMattermostToken',$token)
     if ($passwordResult.ExitCode -ne 0) { throw 'winapp could not set the Mattermost PasswordBox value; UIA value support is required for this credential test.' }
-    Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Start-Sleep -Milliseconds 600
-    Assert-That ((Get-Value 'OnboardingTitle') -match '\[4\s*/\s*5\]') 'Missing allowed user advanced the wizard.'
+    # Allowed users are optional: people can also be approved from their first chat request.
     $currentSubstep = 'set allowed user and advance'
     Set-Value 'WizardMattermostAllowedUserIds' 'test-member'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Assert-That (Wait-Progress '\[5\s*/\s*5\]') 'Valid Mattermost credentials and allowed user did not advance to safety setup.'
+    Assert-That (Wait-Progress '5\s*/\s*5') 'Valid Mattermost credentials and allowed user did not advance to safety setup.'
     Capture '05-step-safety.png'
-    Add-Pass 'Slack and Mattermost validation block until required credentials and allowed user are entered'
+    Add-Pass 'Slack and Mattermost validation block until required credentials are entered; allowed users are optional'
 
     $currentStep = 'page 5 safety and connection'
-    $currentSubstep = 'enable auto-connect and confirm first-request approval defaults'
+    $currentSubstep = 'enable auto-connect and confirm approval and sharing defaults'
     Invoke-UI @('scroll-into-view','WizardAutoConnect') | Out-Null
     Invoke-UI @('invoke','WizardAutoConnect') | Out-Null
     Assert-That ((Get-Value 'WizardAutoConnect') -match '^On$') 'Auto-connect toggle did not turn on.'
     Invoke-UI @('scroll-into-view','WizardChatApprovalMode') | Out-Null
-    Assert-That ((Get-Value 'WizardChatApprovalMode') -match '最初だけ確認') 'Chat approval did not default to first-request confirmation.'
+    Assert-That ((Get-Value 'WizardChatApprovalMode') -match '許可ユーザーは確認なし') 'Chat approval did not default to no approval for allowed users.'
     Invoke-UI @('scroll-into-view','WizardChatResultMode') | Out-Null
-    Assert-That ((Get-Value 'WizardChatResultMode') -match '手動で確認して共有') 'Chat result sharing did not default to manual review.'
+    Assert-That ((Get-Value 'WizardChatResultMode') -match '自動共有') 'Chat result sharing did not default to automatic sharing.'
     Invoke-UI @('scroll-into-view','WizardAgentPermissionMode') | Out-Null
     Assert-That ((Get-Value 'WizardAgentPermissionMode') -match 'CLIの既定値') 'Agent permissions did not default to the CLI setting.'
     $currentSubstep = 'reject completion while disconnected'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
     Start-Sleep -Milliseconds 800
-    Assert-That ((Get-Value 'OnboardingTitle') -match '\[5\s*/\s*5\]') 'Wizard completed without a chat connection.'
+    Assert-That ((Get-Value 'OnboardingStep') -match '5\s*/\s*5') 'Wizard completed without a chat connection.'
     $status = Get-Value 'WizardConnectionStatus'
     Assert-That ($status -notmatch '接続しました') 'Connection status unexpectedly says connected before the connect action.'
     $currentSubstep = 'connect to local fixture server'
