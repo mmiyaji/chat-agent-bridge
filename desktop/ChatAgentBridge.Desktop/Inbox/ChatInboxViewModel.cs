@@ -957,6 +957,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         var approvedByNotification = ReferenceEquals(_notificationApprovedItem, item);
         var approvedAutomatically = ReferenceEquals(_automaticallyApprovedItem, item);
         ExecutionRecord? record = null;
+        var terminalRecorded = false;
         IncomingAttachmentLease? incomingFiles = null;
         try
         {
@@ -1046,6 +1047,18 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                         turn => SetActiveTurn(item, turn), options: new AppServerRunOptions(
                             ApprovalHandler: (approval, ct) => HandleApprovalAsync(item, approval, ct),
                             InputHandler: (input, ct) => HandleChatInputAsync(item, input, ct)));
+                // Preserve the CLI outcome before session/history/cleanup work can
+                // fail. A recording error must never turn a successful CLI into a
+                // failed execution or lose its exit code and usage.
+                record = record with
+                {
+                    FinishedAt = DateTimeOffset.UtcNow,
+                    Status = result.Success ? "completed" : "failed",
+                    ExitCode = result.ExitCode,
+                    SessionId = result.Claude?.SessionId ?? result.Codex?.SessionId ?? result.CliSession?.SessionId,
+                    Usage = result.Usage,
+                    Metrics = result.Metrics
+                };
             }
             finally
             {
@@ -1087,17 +1100,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await _sessions.SetFirstApprovalFingerprintAsync(key, item.ExecutionPolicyFingerprint!, token);
             if (updated is not null) item.SessionLabel = DesktopText.Get("InboxUpdatedSessionLabel", updated.SessionId,
                 requestedModel ?? DesktopText.Get("CliDefault"), requestedEffort ?? DesktopText.Get("CliDefault"));
-            var finalizedRecord = record with
+            record = record with { SessionId = updated?.SessionId ?? record.SessionId };
+            try { await _history.RecordAsync(record); }
+            catch (Exception exception)
             {
-                FinishedAt = DateTimeOffset.UtcNow,
-                Status = result.Success ? "completed" : "failed",
-                ExitCode = result.ExitCode,
-                SessionId = updated?.SessionId,
-                Usage = result.Usage,
-                Metrics = result.Metrics
-            };
-            await _history.RecordAsync(finalizedRecord);
-            record = finalizedRecord;
+                record = record with { HistorySaveDiagnostic = ExecutionExceptionDiagnostic.Create(exception) };
+                throw;
+            }
+            terminalRecorded = true;
             await AuditAsync(record.Status, item.Request, record.Id);
             await FinishProgressAsync(item, result.Success ? ChatProgressState.Completed : ChatProgressState.Failed);
             try
@@ -1130,7 +1140,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (result.Success)
                 await DiscoverCompletedAttachmentsAsync(item, attachmentBefore, updated?.SessionId ?? UntrackedAttachmentSession(item), token);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (record is null or { Status: "running" })
         {
             item.State = "キャンセル"; Status = DesktopText.Get("InboxExecutionCancelled");
             item.Usage = UsageUi.UsageSummaryFormatter.Format(null, null);
@@ -1157,7 +1167,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         }
         catch (Exception exception)
         {
-            record = await HandleExecutionExceptionAsync(item, exception, record);
+            record = await HandleExecutionExceptionAsync(item, exception, record, terminalRecorded);
             await FinishProgressAsync(item, ChatProgressState.Failed);
         }
         finally
@@ -1165,24 +1175,24 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             try { await CloseActiveTurnAsync(item); }
             catch (Exception exception)
             {
-                record = await HandleExecutionExceptionAsync(item, exception, record);
+                record = await HandleExecutionExceptionAsync(item, exception, record, terminalRecorded);
             }
             try { if (incomingFiles is not null) await incomingFiles.DisposeAsync(); }
             catch (Exception exception)
             {
-                record = await HandleExecutionExceptionAsync(item, exception, record);
+                record = await HandleExecutionExceptionAsync(item, exception, record, terminalRecorded);
             }
             try { if (record is not null) _history.EndTracking(record.Id); }
             catch (Exception exception)
             {
-                record = await HandleExecutionExceptionAsync(item, exception, record);
+                record = await HandleExecutionExceptionAsync(item, exception, record, terminalRecorded);
             }
             var execution = _execution;
             _execution = null;
             try { execution?.Dispose(); }
             catch (Exception exception)
             {
-                record = await HandleExecutionExceptionAsync(item, exception, record);
+                record = await HandleExecutionExceptionAsync(item, exception, record, terminalRecorded);
             }
             _activeItem = null;
             IsExecuting = false;
@@ -1464,14 +1474,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     {
         try
         {
-            await _history.RecordAsync(record with { FinishedAt = DateTimeOffset.UtcNow, Status = status });
+            await _history.RecordAsync(record with { FinishedAt = record.FinishedAt ?? DateTimeOffset.UtcNow, Status = status });
             await AuditAsync(status, request, record.Id);
         }
         catch (Exception) { Status += " " + DesktopText.Get("InboxAuditSaveFailed"); }
     }
 
     private async Task<ExecutionRecord?> HandleExecutionExceptionAsync(
-        InboxItem item, Exception exception, ExecutionRecord? record)
+        InboxItem item, Exception exception, ExecutionRecord? record, bool terminalRecorded)
     {
         var diagnostic = ExecutionExceptionDiagnostic.Create(exception);
         var detail = diagnostic.Cause switch
@@ -1500,6 +1510,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.State = "実行／記録エラー";
             item.Usage = UsageUi.UsageSummaryFormatter.Format(null, null);
         }
+        else if (record is { Status: "completed" or "failed" })
+            item.State = record.Status == "completed" ? "完了" : $"失敗 ({record.ExitCode})";
         Status = DesktopText.Get("InboxExecutionRecordFailed");
         try
         {
@@ -1512,10 +1524,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             // Logging must not interrupt failure cleanup or replace the original diagnostic.
             Status += " " + DesktopText.Get("InboxAuditSaveFailed");
         }
-        if (record is null || record.Status != "running") return record;
-        var failed = record with { FinishedAt = DateTimeOffset.UtcNow, Status = "failed" };
-        await FinishFailureAsync(failed, "failed", item.Request);
-        return failed;
+        if (record is null || terminalRecorded) return record;
+        var finalized = record with
+        {
+            FinishedAt = record.FinishedAt ?? DateTimeOffset.UtcNow,
+            Status = record.Status == "running" ? "failed" : record.Status
+        };
+        await FinishFailureAsync(finalized, finalized.Status, item.Request);
+        return finalized;
     }
 
     private static string ExtractReply(AgentRunResult result)

@@ -41,6 +41,8 @@ This diagram appears in the app's first-run wizard and General page. The request
 
 If Chat Agent Bridge itself hits an unexpected error while handling a request, the inbox ends the running state and puts a safe diagnostic before the bounded CLI output. A normal failure reported by the CLI remains a CLI failure. The diagnostic omits exception messages, paths, command arguments and request content. Its allowlisted cause, exception type and HRESULT are also saved in the local audit log (`audit-segment-*.jsonl`) for later troubleshooting and follow the app's audit log retention settings.
 
+If the CLI finishes but saving its final history status fails, the app keeps the known CLI result separate from the save error. It first writes only safe terminal metadata to a local recovery file, then repairs history when storage is available, including after a restart. If neither copy can be saved, the unresolved history entry is shown as interrupted. The CLI is never rerun automatically. No prompt, output or exception message is written to the recovery file.
+
 ## Requirements
 
 | Item | Details |

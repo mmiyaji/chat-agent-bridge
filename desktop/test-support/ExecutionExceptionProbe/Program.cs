@@ -53,8 +53,13 @@ foreach (var status in new string?[] { null, "running", "failed", "completed", "
         var limit = (int)vmType.GetField("MaxDisplayedOutputCharacters", BindingFlags.NonPublic | BindingFlags.Static)!.GetRawConstantValue()!;
         Set(item, "FullOutput", new string('x', limit));
     }
-    var record = status is null || isLongOutput ? null : Model(recordType, new { Status = status == "audit-blocked" ? "running" : status });
-    var task = (Task)handler.Invoke(vm, [item, new UnauthorizedAccessException("PRIVATE_TOKEN C:\\private\\prompt.txt"), record])!;
+    var terminalRecorded = status is "failed" or "completed" or "cancelled";
+    var record = status is null || isLongOutput ? null : Model(recordType, new
+    {
+        Status = status == "audit-blocked" ? "running" : status,
+        ExitCode = status == "failed" ? 7 : (int?)null
+    });
+    var task = (Task)handler.Invoke(vm, [item, new UnauthorizedAccessException("PRIVATE_TOKEN C:\\private\\prompt.txt"), record, terminalRecorded])!;
     await task;
     var updated = Get(task, "Result");
     var output = (string)Get(item, "FullOutput")!;
@@ -71,6 +76,7 @@ foreach (var status in new string?[] { null, "running", "failed", "completed", "
     if (status is "running" or "audit-blocked")
     {
         Assert((string)Get(updated!, "Status")! == "failed" && Get(updated!, "FinishedAt") is not null, "History did not finish");
+        Assert(Get(updated!, "HistorySaveDiagnostic") is null, "An execution exception was mislabelled as a history save failure");
         Assert(File.Exists(Path.Combine(data, "history.json")), "History missing");
     }
     else if (status != "long-output") Assert(ReferenceEquals(record, updated), "Existing terminal record replaced");

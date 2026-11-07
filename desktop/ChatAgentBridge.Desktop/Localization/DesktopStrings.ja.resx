@@ -197,6 +197,7 @@
   <data name="HistoryExecutionFailed" xml:space="preserve"><value>失敗</value></data>
   <data name="HistoryExecutionCancelled" xml:space="preserve"><value>キャンセル</value></data>
   <data name="HistoryExecutionInterrupted" xml:space="preserve"><value>中断</value></data>
+  <data name="HistoryExecutionSaveRecovered" xml:space="preserve"><value>{0}（履歴保存エラーあり）</value></data>
   <data name="HistoryWorkspace" xml:space="preserve"><value>作業フォルダー: {0}</value></data>
   <data name="HistorySessionId" xml:space="preserve"><value>セッション ID: {0}</value></data>
   <data name="HistoryModel" xml:space="preserve"><value>指定モデル: {0}</value></data>

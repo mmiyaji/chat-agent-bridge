@@ -78,7 +78,7 @@ public sealed class LocalDataManager(string directory)
                 .Select(name => Checked(Path.Combine(_directory, name)))
                 .Concat(ConversationTemporaryFiles()).ToArray();
         if (kind == LocalDataKind.ExecutionHistory)
-            return new[] { "history.json", "audit.json" }.Select(name => Checked(Path.Combine(_directory, name)))
+            return HistoryRecoveryFiles().Concat(new[] { "history.json", "audit.json" }.Select(name => Checked(Path.Combine(_directory, name))))
                 .Concat(Directory.Exists(_directory)
                     ? Directory.EnumerateFiles(_directory, "audit-*", SearchOption.TopDirectoryOnly)
                         .Where(path => History.AuditStore.OwnedFileName.IsMatch(Path.GetFileName(path))).Select(Checked)
@@ -97,6 +97,14 @@ public sealed class LocalDataManager(string directory)
         return Directory.EnumerateFiles(_directory, "*", SearchOption.TopDirectoryOnly)
             .Where(path => ConversationTemporaryFileName.IsMatch(Path.GetFileName(path)))
             .Select(Checked).ToArray();
+    }
+
+    private IEnumerable<string> HistoryRecoveryFiles()
+    {
+        var path = Checked(Path.Combine(_directory, History.ExecutionHistoryStore.RecoveryDirectoryName));
+        return Directory.Exists(path) ? Directory.EnumerateFiles(path)
+            .Where(file => History.ExecutionHistoryStore.IsOwnedRecoveryFile(Path.GetFileName(file)))
+            .Select(Checked).ToArray() : [];
     }
 
     private string Checked(string path) { EnsureSafe(path); return path; }

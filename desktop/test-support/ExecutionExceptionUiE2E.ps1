@@ -50,6 +50,7 @@ function SelectRequest([string]$Prompt) {
 }
 function Approve([string]$Prompt) { SelectRequest $Prompt; UI @('wait-for','ApproveChat','-p','IsEnabled','--value','True','-t','10000')|Out-Null; UI @('invoke','ApproveChat')|Out-Null; UI @('wait-for','ChatRunConfirmation','-t','5000')|Out-Null; UI @('invoke','PrimaryButton')|Out-Null }
 function WaitHistory([string]$Thread,[string]$Status) { $until=[DateTimeOffset]::UtcNow.AddSeconds(20); do { if(Test-Path (Join-Path $dataPath 'history.json')){try{$h=Get-Content (Join-Path $dataPath 'history.json') -Raw|ConvertFrom-Json;$r=@($h.records|Where-Object {$_.threadId -eq $Thread -and $_.status -eq $Status}|Select-Object -First 1);if($r.Count){return $r[0]}}catch{}}; Start-Sleep -Milliseconds 100 } while([DateTimeOffset]::UtcNow -lt $until); throw "Timed out for history status $Status" }
+function WaitRecoveredHistory([string]$Thread,[int]$Seconds=30) { $until=[DateTimeOffset]::UtcNow.AddSeconds($Seconds); do { if(Test-Path (Join-Path $dataPath 'history.json')){try{$h=Get-Content (Join-Path $dataPath 'history.json') -Raw|ConvertFrom-Json;$r=@($h.records|Where-Object {$_.threadId -eq $Thread -and $_.status -eq 'completed' -and $null -ne $_.historySaveDiagnostic}|Select-Object -First 1);if($r.Count){return @{History=$h;Record=$r[0]}}}catch{}}; Start-Sleep -Milliseconds 100 } while([DateTimeOffset]::UtcNow -lt $until); throw 'Timed out waiting for the completed, diagnosed history row after restart.' }
 function Capture([string]$Name) { UI @('screenshot','-o',(Join-Path $runRoot $Name))|Out-Null }
 function Resize([int]$Width) {
     Add-Type @'
@@ -72,6 +73,7 @@ try {
     @{SchemaVersion=3;Step=4;Status='completed'}|ConvertTo-Json|Set-Content (Join-Path $dataPath 'onboarding.json') -Encoding utf8
     @{Language=$Language}|ConvertTo-Json|Set-Content (Join-Path $dataPath 'language.json') -Encoding utf8
     @{Theme='light'}|ConvertTo-Json|Set-Content (Join-Path $dataPath 'appearance.json') -Encoding utf8
+    @{Seen=@('chat-connect')}|ConvertTo-Json -Depth 4|Set-Content (Join-Path $dataPath 'tips.json') -Encoding utf8
     $appRoot=[IO.Path]::GetFullPath($AppDirectory); $exe=Join-Path $appRoot 'ChatAgentBridge.Desktop.exe'
     Assert ($appRoot.StartsWith($sharedArtifacts+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase) -and (Test-Path -LiteralPath $exe -PathType Leaf)) 'Portable app payload must be an isolated artifact under .artifacts.'
     $start=[Diagnostics.ProcessStartInfo]::new($exe); $start.UseShellExecute=$false; $start.WorkingDirectory=[IO.Path]::GetTempPath(); $start.ArgumentList.Add('--data-dir'); $start.ArgumentList.Add($dataPath); $appProcess=[Diagnostics.Process]::Start($start)
@@ -83,19 +85,44 @@ try {
     $historyPath=Join-Path $dataPath 'history.json'; $running=Get-Content $historyPath -Raw|ConvertFrom-Json; $record=@($running.records|Where-Object {$_.threadId -eq $badThread -and $_.status -eq 'running'}|Select-Object -First 1)[0]; Assert ($null -ne $record) 'Running execution was not persisted before the fault.'
     $historyLock=[IO.File]::Open($historyPath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
     Set-Content -LiteralPath $gate 'release-long-output'
-    WaitContains 'InboxSelectedState' $(if($Language -eq 'ja'){'実行／記録エラー'}else{'Execution or history error'}) 25
+    WaitContains 'InboxSelectedState' $(if($Language -eq 'ja'){'完了'}else{'Completed'}) 25
+    WaitContains 'ChatOutput' 'Exception' 10
     $output=Value 'ChatOutput'; Assert ($output.Contains('Exception')) 'Exception type is missing from the displayed diagnostic.'; Assert ($output -match 'HRESULT 0x[0-9A-Fa-f]{8}' -or $output -match 'HRESULT 0x[0-9A-Fa-f]+') 'HRESULT is missing from the displayed diagnostic.'
     # UIA normalizes line endings from the TextBox, so allow a few characters of length drift while enforcing the 64,000 bound.
     Assert ($output.Contains('LIVE_FIXTURE_FINAL long-output-start|')) 'Long CLI output was not retained after the diagnostic.'; Assert ($output.Length -ge 63900 -and $output.Length -le 64000) "Bounded output exceeded its 64,000-character limit or was unexpectedly short: $($output.Length)"; Assert ($output.IndexOf('Exception',[StringComparison]::Ordinal) -lt $output.IndexOf('LIVE_FIXTURE_FINAL',[StringComparison]::Ordinal)) 'Diagnostic was hidden behind long CLI output.'
     WaitContains 'ChatStatus' $(if($Language -eq 'ja'){'履歴・監査の保存にも失敗しました。'}else{'Could not save history or audit data.'}) 10
     UI @('scroll-into-view','ChatOutput')|Out-Null; Capture "execution-error-$Language-long-output.png"
+    $historyPath=Join-Path $dataPath 'history.json'; $lockedHistory=Get-Content $historyPath -Raw|ConvertFrom-Json; $lockedRow=@($lockedHistory.records|Where-Object {$_.id -eq $record.id}|Select-Object -First 1)[0]
+    Assert ($null -ne $lockedRow -and $lockedRow.status -eq 'running') 'The locked primary history row was overwritten before recovery.'
+    $pendingPath=Join-Path (Join-Path $dataPath 'history-recovery') (([guid]$record.id).ToString('N')+'.json'); Assert (Test-Path -LiteralPath $pendingPath -PathType Leaf) 'Terminal recovery journal was not staged.'
+    $pendingDocument=Get-Content -LiteralPath $pendingPath -Raw|ConvertFrom-Json; $pendingRecord=$pendingDocument.record; $pendingDiagnostic=$pendingRecord.historySaveDiagnostic
+    Assert ($pendingDocument.schemaVersion -eq 1 -and $pendingRecord.id -eq $record.id -and $pendingRecord.status -eq 'completed' -and $pendingRecord.exitCode -eq 0) 'Recovery journal did not preserve the successful terminal result.'
+    Assert ($null -ne $pendingDiagnostic -and $pendingDiagnostic.exceptionType -eq 'UnauthorizedAccessException' -and $pendingDiagnostic.hResult -eq '80070005') 'Recovery journal did not preserve the safe history-write diagnostic.'
+    Assert ($pendingDiagnostic.cause -eq 0 -and (@($pendingDiagnostic.PSObject.Properties.Name|Sort-Object) -join ',' -eq 'Cause,ExceptionType,HResult')) 'Recovery journal diagnostic exceeded the safe allowlist.'
+    $pendingText=Get-Content -LiteralPath $pendingPath -Raw; Assert (-not $pendingText.Contains($badPrompt) -and -not $pendingText.Contains('LIVE_FIXTURE_FINAL')) 'Prompt or CLI output leaked into the recovery journal.'
     $auditFiles=Get-ChildItem $dataPath -Filter 'audit-segment-*.jsonl' -Recurse; $events=@($auditFiles|ForEach-Object {Get-Content $_.FullName|ForEach-Object {try{$_|ConvertFrom-Json}catch{}}}); $event=@($events|Where-Object {$_.kind -eq 'execution_exception'}|Select-Object -First 1)[0]
     Assert ($null -ne $event) 'No persisted execution_exception audit event was found.'; Assert ($event.executionId -eq $record.id) 'Audit execution ID did not match the running request.'
     Assert ($event.executionDiagnostic.Cause -eq 0) 'Injected file-sharing failure did not classify as AccessDenied.'; Assert ($event.executionDiagnostic.exceptionType -eq 'UnauthorizedAccessException') 'Audit exception type did not match the injected write failure.'; Assert ($event.executionDiagnostic.hResult -eq '80070005') 'Audit HRESULT did not match the injected file-sharing failure.'
     $auditText=($auditFiles|ForEach-Object {Get-Content $_.FullName -Raw}) -join "`n"; Assert (-not $auditText.Contains('LIVE_RUN_ERROR_LONG')) 'The request text leaked into audit data.'; Assert (-not $auditText.Contains('offline-ui-fixture')) 'The mock transport credential leaked into audit data.'; Assert (@($event.executionDiagnostic.PSObject.Properties.Name|Sort-Object) -join ',' -eq 'Cause,ExceptionType,HResult') 'Audit diagnostic contained fields beyond the safe allowlist.'
     $replies=(Invoke-RestMethod "$script:endpoint/test/results").replies; Assert (-not (($replies|ForEach-Object {$_.message}) -join "`n"|Select-String 'Exception|HRESULT|long-output-start')) 'Exception diagnostics or CLI output were posted to chat.'
-    $checks=[Collections.Generic.List[object]]::new(); $checks.Add(@{name='transport request approved and CLI emitted 65,500-character result before history-write exception';passed=$true}); $checks.Add(@{name='diagnostic type/HRESULT visible ahead of bounded CLI output; terminal UI state and warning shown';passed=$true;displayedCharacters=$output.Length;diagnosticType=$event.executionDiagnostic.exceptionType;hResult=$event.executionDiagnostic.hResult}); $checks.Add(@{name='execution_exception audit persisted safe type/HRESULT and matched execution ID without prompt/credential';passed=$true;executionId=$event.executionId});
-    $historyLock.Dispose()
+    $checks=[Collections.Generic.List[object]]::new(); $checks.Add(@{name='transport request approved; successful terminal state retained in recovery journal after locked history write';passed=$true;status=$pendingRecord.status;exitCode=$pendingRecord.exitCode}); $checks.Add(@{name='diagnostic type/HRESULT visible ahead of bounded CLI output; completed UI state and save warning shown';passed=$true;displayedCharacters=$output.Length;diagnosticType=$event.executionDiagnostic.exceptionType;hResult=$event.executionDiagnostic.hResult}); $checks.Add(@{name='execution_exception audit persisted safe type/HRESULT and matched execution ID without prompt/credential';passed=$true;executionId=$event.executionId});
+    $historyCountBeforeRestart=@($lockedHistory.records).Count; $fixtureStartsBeforeRestart=if(Test-Path $fixturePidFile){@(Get-Content $fixturePidFile).Count}else{0}
+    $historyLock.Dispose(); $historyLock=$null
+    if(Test-Path -LiteralPath $gate){Remove-Item -LiteralPath $gate}
+    Stop-Process -Id $appProcess.Id -Force; $appProcess.WaitForExit(10000)|Out-Null; $appProcess.Dispose(); $appProcess=$null
+    $appProcess=[Diagnostics.Process]::Start($start); UI @('wait-for','NavWorkbench','-t','20000')|Out-Null
+    # AutoConnectProvider remains none. Give startup and retention maintenance time to repair without reconnecting or replaying the request.
+    Start-Sleep -Milliseconds 1200
+    $recovered=WaitRecoveredHistory $badThread; $success=$recovered.Record; Assert ($success.status -eq 'completed' -and $success.exitCode -eq 0) 'Restart recovery did not retain successful status and exit code.'
+    Assert ($null -ne $success.historySaveDiagnostic -and $success.historySaveDiagnostic.exceptionType -eq 'UnauthorizedAccessException' -and $success.historySaveDiagnostic.hResult -eq '80070005') 'Restart recovery lost the history-save diagnostic.'
+    Assert (-not (Test-Path -LiteralPath $pendingPath)) 'Recovery journal remained after startup repair.'
+    Assert (@($recovered.History.records).Count -eq $historyCountBeforeRestart) 'History grew during restart recovery; the execution may have replayed.'
+    Assert (@($recovered.History.records|Where-Object {$_.threadId -eq $badThread}).Count -eq 1) 'Restart recovery duplicated the original execution row.'
+    $fixtureStartsAfterRestart=if(Test-Path $fixturePidFile){@(Get-Content $fixturePidFile).Count}else{0}; Assert ($fixtureStartsAfterRestart -eq $fixtureStartsBeforeRestart) 'The CLI fixture started again during recovery; the request may have replayed.'
+    $restartState=Invoke-RestMethod "$script:endpoint/test/results"; Assert ($restartState.connections -eq 0) 'The app reconnected automatically after restart despite AutoConnectProvider=none.'
+    $checks.Add(@{name='actual app restart repaired terminal history, retained safe diagnostic, removed journal and did not replay';passed=$true;historyRows=@($recovered.History.records).Count;fixtureStarts=$fixtureStartsAfterRestart})
+    Go 'NavChat'; UI @('invoke','ConnectMattermost')|Out-Null
+    $connected=$false; $deadline=[DateTimeOffset]::UtcNow.AddSeconds(12); do{$state=Invoke-RestMethod "$script:endpoint/test/results";if($state.connections -eq 1){$connected=$true;break};Start-Sleep -Milliseconds 200}while([DateTimeOffset]::UtcNow -lt $deadline); Assert $connected 'Mattermost did not reconnect after startup recovery.'
     $recoveryPrompt='LIVE_RUN_RECOVERY isolated recovery request'; $recoveryThread='execution-error-recovery'; Post 'execution-error-recovery-request' $recoveryThread $recoveryPrompt; Approve $recoveryPrompt; WaitContains 'LiveOutputText' 'LIVE_RUN_RECOVERY LIVE_FIXTURE assistant output arrived' 25 'ChatLiveOutput'; Set-Content -LiteralPath $gate 'release-recovery'; WaitContains 'ChatOutput' 'LIVE_FIXTURE_FINAL fixed final response' 25
     $success=WaitHistory $recoveryThread 'completed'; Assert ($success.status -eq 'completed') 'A later request did not complete after the history fault was removed.'; Capture "execution-error-$Language-recovery.png"; $checks.Add(@{name='subsequent transport request completed after isolated storage fault cleanup';passed=$true})
     $checks|ConvertTo-Json -Depth 8|Set-Content -LiteralPath (Join-Path $runRoot 'results.json') -Encoding utf8

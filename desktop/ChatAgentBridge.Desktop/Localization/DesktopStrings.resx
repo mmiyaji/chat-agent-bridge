@@ -198,6 +198,7 @@
   <data name="HistoryExecutionFailed" xml:space="preserve"><value>Failed</value></data>
   <data name="HistoryExecutionCancelled" xml:space="preserve"><value>Canceled</value></data>
   <data name="HistoryExecutionInterrupted" xml:space="preserve"><value>Interrupted</value></data>
+  <data name="HistoryExecutionSaveRecovered" xml:space="preserve"><value>{0} (history save error)</value></data>
   <data name="HistoryWorkspace" xml:space="preserve"><value>Workspace: {0}</value></data>
   <data name="HistorySessionId" xml:space="preserve"><value>Session ID: {0}</value></data>
   <data name="HistoryModel" xml:space="preserve"><value>Selected model: {0}</value></data>

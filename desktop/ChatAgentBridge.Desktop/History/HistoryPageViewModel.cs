@@ -18,7 +18,10 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record, string? ChatLab
 {
     public string Started => Record.StartedAt.ToLocalTime().ToString("g");
     public string Source => SourceLabel(Record.Source);
-    public string Status => Record.Status switch
+    public string Status => Record.HistorySaveDiagnostic is null
+        ? ExecutionStatus
+        : DesktopText.Get("HistoryExecutionSaveRecovered", ExecutionStatus);
+    private string ExecutionStatus => Record.Status switch
     {
         "running" => DesktopText.Get("HistoryExecutionRunning"),
         "completed" => DesktopText.Get("HistoryExecutionCompleted"),

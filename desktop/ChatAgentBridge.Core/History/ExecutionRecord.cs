@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ChatAgentBridge.Core.History;
 
 /// <summary>Durable execution metadata and usage counters. Prompts, output, credentials, and error text are absent.</summary>
@@ -18,4 +20,6 @@ public sealed record ExecutionRecord
     public string? AgentReasoningEffort { get; init; }
     public AgentUsage? Usage { get; init; }
     public AgentExecutionMetrics? Metrics { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ExecutionExceptionDiagnostic? HistorySaveDiagnostic { get; init; }
 }

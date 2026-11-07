@@ -1,6 +1,6 @@
 namespace ChatAgentBridge.Core.History;
 
-public sealed class ExecutionHistoryStore
+public sealed partial class ExecutionHistoryStore
 {
     private static readonly HashSet<string> AllowedStatuses = new(StringComparer.Ordinal)
         { "running", "completed", "failed", "cancelled", "interrupted" };
@@ -23,11 +23,13 @@ public sealed class ExecutionHistoryStore
     {
         ArgumentNullException.ThrowIfNull(record);
         Validate(record);
+        var terminal = record.Status != "running";
         var gate = HistoryFileStore.LockFor(_filePath);
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var file = await ReadFileAsync(cancellationToken).ConfigureAwait(false);
+            if (terminal) await TryStageAsync(record).ConfigureAwait(false);
+            var file = await RecoverPendingAsync(cancellationToken, record.Id).ConfigureAwait(false);
             var records = file.Records!.ToList();
             await _statisticsStore.MigrateAsync(records, cancellationToken).ConfigureAwait(false);
             // Commit aggregates first; a retry after a history write failure is idempotent.
@@ -38,6 +40,13 @@ public sealed class ExecutionHistoryStore
             records = Prune(records, preferences, _timeProvider.GetUtcNow(), record.Status == "running" ? record.Id : null);
             await HistoryFileStore.WriteAtomicAsync(_filePath, new HistoryDocument { SchemaVersion = HistoryFileStore.SchemaVersion, Records = records }, cancellationToken).ConfigureAwait(false);
             HistoryFileStore.SetLive(record);
+            if (terminal) TryDeletePending(record.Id);
+        }
+        catch (Exception exception) when (terminal)
+        {
+            await TryStageAsync(record with { HistorySaveDiagnostic = record.HistorySaveDiagnostic ?? ExecutionExceptionDiagnostic.Create(exception) }).ConfigureAwait(false);
+            HistoryFileStore.EndTracking(record.Id);
+            throw;
         }
         finally { gate.Release(); }
     }
@@ -55,7 +64,7 @@ public sealed class ExecutionHistoryStore
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var file = await ReadFileAsync(cancellationToken).ConfigureAwait(false);
+            var file = await RecoverPendingAsync(cancellationToken).ConfigureAwait(false);
             // Migrate all surviving source rows before applying history retention so
             // long lived aggregates retain the full pre-pruning history.
             await _statisticsStore.MigrateAsync(file.Records!, cancellationToken).ConfigureAwait(false);
@@ -77,12 +86,12 @@ public sealed class ExecutionHistoryStore
 
     public async Task ApplyRetentionAsync(CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(_filePath)) return;
+        if (!File.Exists(_filePath) && !Directory.Exists(RecoveryDirectory)) return;
         var gate = HistoryFileStore.LockFor(_filePath);
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var file = await ReadFileAsync(cancellationToken).ConfigureAwait(false);
+            var file = await RecoverPendingAsync(cancellationToken).ConfigureAwait(false);
             await _statisticsStore.MigrateAsync(file.Records!, cancellationToken).ConfigureAwait(false);
             var preferences = await _retentionStore.LoadAsync(cancellationToken).ConfigureAwait(false);
             var retained = Prune(file.Records!, preferences, _timeProvider.GetUtcNow());
@@ -121,6 +130,7 @@ public sealed class ExecutionHistoryStore
         if (record.StartedAt == default || record.FinishedAt < record.StartedAt) throw new ArgumentException("Execution timestamps are invalid.", nameof(record));
         HistoryFileStore.ValidateSource(record.Source);
         if (!AllowedStatuses.Contains(record.Status)) throw new ArgumentException("Execution status is not allowlisted.", nameof(record));
+        record.HistorySaveDiagnostic?.Validate();
         HistoryFileStore.ValidateText(record.ChannelId, nameof(record.ChannelId), 256);
         HistoryFileStore.ValidateText(record.ThreadId, nameof(record.ThreadId), 256);
         HistoryFileStore.ValidateText(record.UserId, nameof(record.UserId), 256);
