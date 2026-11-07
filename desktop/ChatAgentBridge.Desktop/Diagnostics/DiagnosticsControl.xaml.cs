@@ -35,22 +35,6 @@ public sealed partial class DiagnosticsControl : UserControl
 
     private static string Text(string key) => Strings.GetString(key, CultureInfo.CurrentUICulture) ?? key;
 
-    private void Control_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        const double stackedWidth = 600;
-        if ((e.PreviousSize.Width < stackedWidth) == (e.NewSize.Width < stackedWidth) && e.PreviousSize.Width > 0) return;
-
-        var narrow = e.NewSize.Width < stackedWidth;
-        foreach (var card in ReleaseCard.Items.Concat(ConnectionsCard.Items).OfType<SettingsCard>())
-        {
-            card.ContentAlignment = narrow ? ContentAlignment.Vertical : ContentAlignment.Right;
-            if (narrow)
-                card.HorizontalContentAlignment = HorizontalAlignment.Stretch;
-            else
-                card.ClearValue(HorizontalContentAlignmentProperty);
-        }
-    }
-
     private void Control_Loaded(object sender, RoutedEventArgs e)
     {
         App.PendingRequestNotifications.StatusChanged += Notifications_StatusChanged;

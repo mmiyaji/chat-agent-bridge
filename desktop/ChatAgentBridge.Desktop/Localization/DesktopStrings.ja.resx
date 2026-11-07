@@ -642,8 +642,7 @@
   <data name="AgentSummaryHelp" xml:space="preserve"><value>直近3回までの成功した依頼・結果の抜粋を、このPCに暗号化して保存します。要約生成の追加AI呼び出しはありません。転送先では入力トークンとして消費されます。内容を確認してから引き継いでください。</value></data>
   <data name="AgentSummaryUnavailable" xml:space="preserve"><value>この会話の要約はまだありません。この版のアプリで依頼が成功すると、以降の切り替え用メモを保存します。今は要約なしで切り替えられます。CLIの過去の履歴は取り込みません。</value></data>
   <data name="AgentSwitchConfirm" xml:space="preserve"><value>切り替え先: {0}&#10;CLI: {1}&#10;モデル: {2}&#10;ツール権限: {3}&#10;作業フォルダー: {4}&#10;引き継ぎ: {5}&#10;同じチャットスレッドで、新しいAI会話を始めます。以前のセッション情報はこのPCに残します。次の依頼はこのPCでの承認が必要です。</value></data>
-  <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>先に「エージェント設定」で切り替え先のCodex・Claude Code・Gemini CLI・GitHub Copilot CLI・Antigravity CLIを選び、CLIチェック後に「このCLI接続を登録」を実行してください。</value></data>
-  <data name="AgentSwitchNoAvailableConnections" xml:space="preserve"><value>切り替え先として使えるCLI接続がありません。「エージェント設定」で切り替え先のCLIを選び、「CLIをチェック」を実行してから接続を登録してください。</value></data>
+  <data name="AgentSwitchRegisterFirst" xml:space="preserve"><value>CLI接続を切り替えるには、「エージェント設定」でCLIを選び、「CLIをチェック」を実行してから「このCLI接続を登録」を選んでください。</value></data>
   <data name="AgentSwitchNoConnections" xml:space="preserve"><value>なし（先にPCでCLI接続を登録してください）</value></data>
   <data name="AgentSwitchCommands" xml:space="preserve"><value>使い方  !cab agent &lt;名前&gt; summary|fresh&#10;登録済み  {0}&#10;summary は直近の会話メモを引き継ぎ、fresh は新しく始めます。&#10;切り替えには通常、PCでの承認が必要です。</value></data>
   <data name="AgentSwitchSaved" xml:space="preserve"><value>{0}への切り替えを保存しました。このスレッドで次の依頼を送ってください。PCでの承認が必要です。切り替えで取り消された承認待ちの依頼は、再投稿してください。</value></data>

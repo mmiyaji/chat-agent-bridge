@@ -94,5 +94,8 @@ public sealed partial class AuditColumnLayout : ObservableObject
     [ObservableProperty] public partial GridLength Time { get; set; } = new(74);
     [ObservableProperty] public partial GridLength Action { get; set; } = new(132);
     [ObservableProperty] public partial GridLength Service { get; set; } = new(100);
-    [ObservableProperty] public partial GridLength Conversation { get; set; } = new(160);
+    // The trailing star starts at a visually negligible weight. It only becomes visible when the user
+    // deliberately drags the conversation divider inward, and lets that column keep resizing responsively.
+    [ObservableProperty] public partial GridLength Conversation { get; set; } = new(1000, GridUnitType.Star);
+    [ObservableProperty] public partial GridLength TrailingSpace { get; set; } = new(0.001, GridUnitType.Star);
 }

@@ -19,7 +19,7 @@ public sealed partial class HistoryPage
             {
                 XamlRoot = XamlRoot, RequestedTheme = App.Appearance.RequestedTheme,
                 Title = DesktopText.Get("AgentSwitchTitle"),
-                Content = new TextBlock { Text = DesktopText.Get("AgentSwitchNoAvailableConnections"), TextWrapping = TextWrapping.Wrap },
+                Content = new TextBlock { Text = DesktopText.Get("AgentSwitchRegisterFirst"), TextWrapping = TextWrapping.Wrap },
                 CloseButtonText = DesktopText.Get("Close"), DefaultButton = ContentDialogButton.Close
             };
             AutomationProperties.SetAutomationId(emptyDialog, "AgentSwitchDialog");

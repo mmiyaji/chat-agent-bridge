@@ -571,7 +571,6 @@
                               Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsOperationsMode), Mode=OneWay}">
                             <Grid x:Name="AuditBrowser" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasAuditEvents), Mode=OneWay}">
                                 <ListView x:Name="AuditHistoryList" ItemsSource="{x:Bind ViewModel.FilteredAuditEvents, Mode=OneWay}" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                          SizeChanged="AuditHistoryList_SizeChanged"
                                           AutomationProperties.AutomationId="AuditHistoryList" SelectionMode="Single" IsItemClickEnabled="True" ItemClick="AuditHistoryList_ItemClick" SelectionChanged="AuditHistoryList_SelectionChanged"
                                           AutomationProperties.Name="{x:Bind ViewModel.AuditTabTitle, Mode=OneWay}">
                                     <ListView.ItemContainerStyle>
@@ -581,8 +580,8 @@
                                         </Style>
                                     </ListView.ItemContainerStyle>
                                     <ListView.Header>
-                                        <Grid ColumnSpacing="8" Padding="12,6">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Time, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Action, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Service, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Conversation, Mode=OneWay}" /></Grid.ColumnDefinitions>
+                                        <Grid x:Name="AuditHistoryHeader" ColumnSpacing="8" Padding="12,6">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Time, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Action, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Service, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Conversation, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.TrailingSpace, Mode=OneWay}" /></Grid.ColumnDefinitions>
                                             <TextBlock x:Uid="AuditTimeColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditTimeColumn" />
                                             <TextBlock Grid.Column="1" x:Uid="AuditActionColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditActionColumn" />
                                             <TextBlock Grid.Column="2" x:Uid="AuditServiceColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditServiceColumn" />
@@ -600,7 +599,7 @@
                                     <ListView.ItemTemplate>
                                         <DataTemplate x:DataType="vm:AuditHistoryRow">
                                             <Grid ColumnSpacing="8" Padding="12,5" AutomationProperties.Name="{x:Bind Summary}">
-                                                <Grid.ColumnDefinitions><ColumnDefinition Width="{x:Bind Columns.Time, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Action, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Service, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Conversation, Mode=OneWay}" /></Grid.ColumnDefinitions>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="{x:Bind Columns.Time, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Action, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Service, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Conversation, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.TrailingSpace, Mode=OneWay}" /></Grid.ColumnDefinitions>
                                                 <TextBlock Text="{x:Bind TimeCompact}" ToolTipService.ToolTip="{x:Bind Timestamp}" TextTrimming="CharacterEllipsis" />
                                                 <TextBlock Grid.Column="1" Text="{x:Bind Kind}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Kind}" />
                                                 <TextBlock Grid.Column="2" Text="{x:Bind Source}" TextTrimming="CharacterEllipsis" />

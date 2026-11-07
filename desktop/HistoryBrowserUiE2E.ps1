@@ -17,9 +17,20 @@ Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 Add-Type @'
 using System; using System.Runtime.InteropServices;
 public static class HistoryBrowserUiNative {
+    [StructLayout(LayoutKind.Explicit, Size = 40)] public struct Input {
+        [FieldOffset(0)] public uint Type;
+        [FieldOffset(8)] public MouseInput Mouse;
+    }
+    [StructLayout(LayoutKind.Sequential)] public struct MouseInput {
+        public int Dx; public int Dy; public uint Data; public uint Flags; public uint Time; public UIntPtr ExtraInfo;
+    }
     [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr hwnd);
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll", SetLastError = true)] private static extern uint SendInput(uint count, Input[] inputs, int size);
+    private static Input Mouse(uint flags, int dx = 0) => new() { Type = 0, Mouse = new MouseInput { Dx = dx, Flags = flags } };
+    public static bool DragBy(int dx) => SendInput(3, new[] { Mouse(0x0002), Mouse(0x0001, dx), Mouse(0x0004) }, Marshal.SizeOf<Input>()) == 3;
 }
 '@
 Add-Type -AssemblyName System.Windows.Forms
@@ -89,6 +100,16 @@ function Resize([int]$Width,[int]$Height) {
     $scale=[HistoryBrowserUiNative]::GetDpiForWindow($appProcess.MainWindowHandle)/96.0
     Assert-True ([HistoryBrowserUiNative]::SetWindowPos($appProcess.MainWindowHandle,[IntPtr]::Zero,40,40,[int]($Width*$scale),[int]($Height*$scale),0x0010)) 'Resize failed'
     Start-Sleep -Milliseconds 250
+}
+function Drag-Column([string]$Id,[int]$DeltaX) {
+    $element=Element $Id
+    Assert-True ($null -ne $element) "Column resize handle is not visible: $Id"
+    $bounds=$element.Current.BoundingRectangle
+    $x=[int]($bounds.X+$bounds.Width/2); $y=[int]($bounds.Y+$bounds.Height/2)
+    Assert-True ([HistoryBrowserUiNative]::SetCursorPos($x,$y)) 'Could not position mouse over the column divider.'
+    Start-Sleep -Milliseconds 60
+    Assert-True ([HistoryBrowserUiNative]::DragBy($DeltaX)) 'Native mouse drag input was not accepted.'
+    Start-Sleep -Milliseconds 300
 }
 function Capture([string]$Name) {
     Start-Sleep -Milliseconds 300
@@ -435,6 +456,18 @@ try {
             Start-Sleep -Milliseconds 200
             Assert-True (Has-Text 'Release preparation · #release-planning · @alice (Alice)') 'Audit history is not linked to the correct execution identity.'
             Capture 'history-audit-names'
+            $beforeDrag=(Element 'AuditResizeConversation').Current.BoundingRectangle.X
+            Drag-Column 'AuditResizeConversation' -80
+            $afterDrag=(Element 'AuditResizeConversation').Current.BoundingRectangle.X
+            Assert-True ($afterDrag -lt $beforeDrag - 40) 'Dragging the conversation divider left did not reduce the column width.'
+            Capture 'history-audit-resized-wide'
+            Resize 500 600
+            $narrowDivider=(Element 'AuditResizeConversation').Current.BoundingRectangle.X
+            Assert-True ($narrowDivider -lt $afterDrag - 200) 'The conversation column did not shrink with the narrow viewport after resizing.'
+            $auditScroll=(Element 'AuditHistoryList').GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern).Current
+            Assert-True (-not $auditScroll.HorizontallyScrollable) 'The resized conversation column caused horizontal overflow at 500 DIP.'
+            Capture 'history-audit-narrow-resized'
+            Resize 1280 800
             UI @('invoke','SavedConversationsTab') | Out-Null
         }
         Check 'Workspace, provider, and display-name search combine correctly' {

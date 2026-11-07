@@ -45,7 +45,7 @@ public sealed partial class RunColumnLayout : ObservableObject
     [ObservableProperty] public partial GridLength Result { get; set; } = new(96);
     [ObservableProperty] public partial GridLength Model { get; set; } = new(130);
     [ObservableProperty] public partial GridLength Duration { get; set; } = new(84);
-    [ObservableProperty] public partial GridLength Tokens { get; set; } = new(96);
+    [ObservableProperty] public partial GridLength Tokens { get; set; } = new(1, GridUnitType.Star);
 }
 
 public sealed partial class HistoryPageViewModel

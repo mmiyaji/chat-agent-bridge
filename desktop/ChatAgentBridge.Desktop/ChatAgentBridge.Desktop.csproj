@@ -271,11 +271,11 @@
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">False</PublishTrimmed>
+    <!-- Keep regular and trimmed builds on the same WinRT projection package; update centrally with the SDK baseline. -->
+    <WindowsSdkPackageVersion>10.0.26100.87</WindowsSdkPackageVersion>
   </PropertyGroup>
   <!-- Keep experimental linker output separate from the normal portable build. -->
   <PropertyGroup Condition="'$(CABPortableTrimExperiment)' == 'true'">
-    <!-- This projection version resolves IL2081 in the WinRT marshaling code. -->
-    <WindowsSdkPackageVersion>10.0.26100.87</WindowsSdkPackageVersion>
     <OutputPath>bin\$(Platform)\$(Configuration)\portable-trim-experiment\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\portable-trim-experiment\</IntermediateOutputPath>
     <PublishTrimmed>true</PublishTrimmed>
