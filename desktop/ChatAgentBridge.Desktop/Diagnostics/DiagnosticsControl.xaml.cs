@@ -86,7 +86,7 @@ public sealed partial class DiagnosticsControl : UserControl
         ChatConnectionLabel.Text = Text("ChatConnectionLabel");
         UpdaterLabel.Text = Text("UpdaterLabel");
         NotificationsLabel.Text = Text("NotificationsLabel");
-        RefreshButton.Content = Text("RefreshButton");
+        RefreshButtonText.Text = Text("RefreshButton");
         TestNotificationButton.Content = Text("TestNotificationButton");
         ExportButton.Content = Text("ExportButton");
     }
@@ -97,8 +97,10 @@ public sealed partial class DiagnosticsControl : UserControl
     private async Task RefreshAsync()
     {
         if (_busy) return;
+        var indicatorStartedAt = System.Diagnostics.Stopwatch.StartNew();
         _busy = true;
         RefreshButton.IsEnabled = false;
+        RefreshProgress.IsActive = true;
         try
         {
             var store = new SettingsStore();
@@ -121,8 +123,11 @@ public sealed partial class DiagnosticsControl : UserControl
         finally
         {
             UpdateSummary();
+            var indicatorRemainder = TimeSpan.FromMilliseconds(300) - indicatorStartedAt.Elapsed;
+            if (indicatorRemainder > TimeSpan.Zero) await Task.Delay(indicatorRemainder);
             _busy = false;
             RefreshButton.IsEnabled = true;
+            RefreshProgress.IsActive = false;
         }
     }
 

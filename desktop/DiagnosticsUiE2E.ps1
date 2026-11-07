@@ -250,11 +250,16 @@ try {
                 Navigate 'NavOverview'
                 $themeId = if ($theme -eq 'light') { 'ThemeLight' } else { 'ThemeDark' }
                 $currentUiStep = 'theme control discovery'
+                Wait-Element 'AppThemePicker'
+                $themePicker = Element 'AppThemePicker'
+                $themePickerExpand = [Windows.Automation.ExpandCollapsePattern]$themePicker.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+                if ($themePickerExpand.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) { $themePickerExpand.Expand() }
                 Wait-Element $themeId
                 $themeControl = Element $themeId
                 $currentUiStep = 'theme control state'
                 $selection = $themeControl.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)
                 if (-not $selection.Current.IsSelected) { throw 'Fixture theme was not applied.' }
+                $themePickerExpand.Collapse()
 
                 $currentUiStep = 'navigate About'
                 Navigate 'NavAbout'
@@ -271,7 +276,7 @@ try {
                 $expected = if ($language -eq 'ja') { 'エクスポート' } else { 'Export support report' }
                 if (-not $exportButton.Current.Name.Contains($expected, [StringComparison]::OrdinalIgnoreCase)) { throw 'Diagnostics text does not match fixture language.' }
                 $currentUiStep = 'diagnostics layout assertions'
-                foreach ($id in @('DiagnosticsVersion','DiagnosticsBuild','DiagnosticsWindows','DiagnosticsProvider','DiagnosticsCliVerification','DiagnosticsChatStatus','DiagnosticsUpdaterStatus','DiagnosticsNotificationStatus','DiagnosticsTestNotificationButton','DiagnosticsExportButton')) {
+                foreach ($id in @('DiagnosticsVersion','DiagnosticsBuild','DiagnosticsWindows','DiagnosticsProvider','DiagnosticsCliVerification','DiagnosticsChatStatus','DiagnosticsUpdaterStatus','DiagnosticsNotificationStatus','DiagnosticsRefreshButton','DiagnosticsTestNotificationButton','DiagnosticsExportButton')) {
                     Assert-InWindow $id
                 }
                 $providerText = (Element 'DiagnosticsProvider').Current.Name
@@ -282,6 +287,40 @@ try {
                 if ($cliText -notmatch 'Not verified|未検証') { throw 'Custom CLI verification was not reported as unverified.' }
                 if ($chatText -notmatch 'No chat provider|チャットプロバイダーは保存されていません') { throw 'Chat configuration state was not reported.' }
                 if ([string]::IsNullOrWhiteSpace($notificationText)) { throw 'Notification registration state was empty.' }
+                $currentUiStep = 'diagnostics refresh feedback'
+                Scroll-TargetIntoView 'DiagnosticsRefreshButton' 'AboutScroll'
+                $refreshButton = Element 'DiagnosticsRefreshButton'
+                $refreshButtonText = Element 'RefreshButtonText'
+                $refreshTextBefore = $refreshButtonText.Current.Name
+                $refreshBoundsBefore = $refreshButton.Current.BoundingRectangle
+                $statusBefore = (Element 'DiagnosticsStatus').Current.Name
+                $refreshButton.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+                Start-Sleep -Milliseconds 40
+                $refreshButton = Element 'DiagnosticsRefreshButton'
+                $busyObserved = -not $refreshButton.Current.IsEnabled
+                $refreshTextDuring = (Element 'RefreshButtonText').Current.Name
+                $refreshBoundsDuring = $refreshButton.Current.BoundingRectangle
+                $statusDuringRefresh = (Element 'DiagnosticsStatus').Current.Name
+                $refreshProgress = Element 'DiagnosticsRefreshProgress'
+                $progressVisibleToAutomation = $refreshProgress -and $refreshProgress.Current.BoundingRectangle.Width -gt 0 -and -not $refreshProgress.Current.IsOffscreen
+                $progressName = if ($refreshProgress) { $refreshProgress.Current.Name } else { '' }
+                UI @('screenshot','-o',(Join-Path $testRoot "diagnostics-refresh-$scenario.png")) | Out-Null
+                $deadline = [DateTime]::UtcNow.AddSeconds(10)
+                do {
+                    $refreshButton = Element 'DiagnosticsRefreshButton'
+                    if ($refreshButton.Current.IsEnabled) { break }
+                    $busyObserved = $true
+                    Start-Sleep -Milliseconds 20
+                } while ([DateTime]::UtcNow -lt $deadline)
+                if (-not $refreshButton.Current.IsEnabled) { throw 'Diagnostics refresh did not finish.' }
+                $refreshBoundsAfter = $refreshButton.Current.BoundingRectangle
+                if ($refreshTextDuring -ne $refreshTextBefore) { throw 'Diagnostics refresh changed button text while in progress.' }
+                if ((Element 'RefreshButtonText').Current.Name -ne $refreshTextBefore) { throw 'Diagnostics refresh changed the button text while running.' }
+                if ($statusDuringRefresh -ne $statusBefore) { throw 'Diagnostics refresh inserted transient status text.' }
+                if ([Math]::Abs($refreshBoundsDuring.Width - $refreshBoundsBefore.Width) -gt 1 -or [Math]::Abs($refreshBoundsDuring.Height - $refreshBoundsBefore.Height) -gt 1 -or [Math]::Abs($refreshBoundsAfter.Width - $refreshBoundsBefore.Width) -gt 1 -or [Math]::Abs($refreshBoundsAfter.Height - $refreshBoundsBefore.Height) -gt 1) { throw 'Diagnostics refresh changed the button size.' }
+                $expectedProgressName = if ($language -eq 'ja') { '診断情報を更新しています' } else { 'Refreshing diagnostics' }
+                if (-not $busyObserved -or -not $progressVisibleToAutomation -or -not $progressName.Contains($expectedProgressName)) { throw 'Diagnostics refresh busy state or progress indicator was not exposed.' }
+                Record-Pass "diagnostics refresh keeps stable text and size ($scenario; busy observed=$busyObserved; progress visible=$progressVisibleToAutomation; name=$progressName)"
                 UI @('screenshot','-o',(Join-Path $testRoot "diagnostics-$scenario.png")) | Out-Null
                 Record-Pass "diagnostics display/layout ($scenario, 500 DIP)"
 

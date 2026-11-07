@@ -38,17 +38,16 @@ public sealed partial class AppearanceSettings : UserControl
     {
         _updating = true;
         var selected = (_pendingTheme ?? App.Appearance.Preference) is "light" or "dark" ? _pendingTheme ?? App.Appearance.Preference : "system";
-        foreach (var choice in ThemeChoices.Children.OfType<RadioButton>())
-            choice.IsChecked = choice.Tag as string == selected;
+        ThemePicker.SelectedValue = selected;
         _updating = false;
         ThemeStatus.Text = App.Appearance.LoadFailed ? DesktopText.Get("AppearanceReadFailed")
             : App.Appearance.Preference == "system" ? DesktopText.Get("AppearanceFollowsSystem")
             : DesktopText.Get("AppearanceSaved");
     }
 
-    private async void ThemeChoice_Checked(object sender, RoutedEventArgs args)
+    private async void ThemePicker_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
-        if (_updating || sender is not RadioButton { Tag: string theme }) return;
+        if (_updating || ThemePicker.SelectedValue is not string theme) return;
         _pendingTheme = theme;
         if (_saving) return;
         _saving = true;

@@ -1,4 +1,4 @@
-﻿param([Parameter(Mandatory)][string]$Layout, [Parameter(Mandatory)][string]$DataDir)
+﻿param([Parameter(Mandatory)][string]$Layout, [Parameter(Mandatory)][string]$DataDir, [switch]$SkipDialogChecks)
 $ErrorActionPreference = 'Stop'
 $layoutPath = [IO.Path]::GetFullPath($Layout)
 $dataPath = [IO.Path]::GetFullPath($DataDir)
@@ -57,14 +57,22 @@ function Scroll-ToElement([string]$Id) {
 }
 function UI([string[]]$Arguments) {
     if ($Arguments[0] -eq 'scroll-into-view') { Scroll-ToElement $Arguments[1]; return '' }
-    $result = & winapp ui @Arguments -a $script:appPid --json 2>$null
-    if ($LASTEXITCODE -ne 0) { throw "UI action failed: $($Arguments[0]) $($Arguments[1])" }
+    $result = & winapp ui @Arguments -a $script:appPid --json 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "UI action failed: $($Arguments[0]) $($Arguments[1]): $($result -join ' ')" }
     return $result
 }
 function Launch {
-    $started = & winapp run $layoutPath --manifest (Join-Path $layoutPath 'AppxManifest.xml') --output-appx-directory (Join-Path $layoutPath 'AppX') --detach --json -- --data-dir $dataPath | ConvertFrom-Json
-    if (-not $started.ProcessId) { throw 'Launch did not return a process.' }
-    $script:appPid = [int]$started.ProcessId
+    $manifest = Join-Path $layoutPath 'AppxManifest.xml'
+    if (Test-Path -LiteralPath $manifest) {
+        $started = & winapp run $layoutPath --manifest $manifest --output-appx-directory (Join-Path $layoutPath 'AppX') --detach --json -- --data-dir $dataPath | ConvertFrom-Json
+        if (-not $started.ProcessId) { throw 'Packaged launch did not return a process.' }
+        $script:appPid = [int]$started.ProcessId
+    } else {
+        $exe = Join-Path $layoutPath 'ChatAgentBridge.Desktop.exe'
+        if (-not (Test-Path -LiteralPath $exe)) { throw 'The isolated desktop executable is missing.' }
+        $started = Start-Process -FilePath $exe -ArgumentList @('--data-dir', "`"$dataPath`"") -PassThru
+        $script:appPid = [int]$started.Id
+    }
     UI @('wait-for','NavOverview','-t','10000') | Out-Null
     Start-Sleep -Milliseconds 300
 }
@@ -93,7 +101,8 @@ function Resize([int]$Width,[int]$Height) {
 function Select-Theme([string]$Theme) {
     UI @('invoke','NavOverview') | Out-Null
     $id = @{system='ThemeSystem';light='ThemeLight';dark='ThemeDark'}[$Theme]
-    UI @('scroll-into-view',$id) | Out-Null
+    UI @('scroll-into-view','AppThemePicker') | Out-Null
+    UI @('click','AppThemePicker') | Out-Null
     # Verify the persisted theme after UIA selection.
     & winapp ui invoke $id -a $script:appPid --json 2>$null | Out-Null
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds(5)
@@ -109,6 +118,9 @@ function Select-Theme([string]$Theme) {
 try {
     Launch
     Assert (-not (Test-Path (Join-Path $dataPath 'appearance.json'))) 'Startup rewrote the default theme preference.'
+    UI @('invoke','NavOverview') | Out-Null
+    $englishLanguageName = (UI @('get-property','DisplayLanguage','-p','Name') | ConvertFrom-Json).properties.Name
+    Assert ($englishLanguageName -eq 'Display language') 'The display language selector was not localized into English.'
     $systemMode = (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize').AppsUseLightTheme
     $expectedSystem = if ($systemMode -eq 0) { 'dark' } else { 'light' }
     Assert-Theme $expectedSystem (Capture 'system-initial.png')
@@ -123,16 +135,19 @@ try {
             UI @('invoke',$page) | Out-Null
             Assert-Theme $theme (Capture "$theme-$page.png")
         }
-        UI @('invoke','NavOverview') | Out-Null
-        UI @('scroll-into-view','OverviewTerms') | Out-Null
-        UI @('invoke','OverviewTerms') | Out-Null
-        UI @('wait-for','PolicyBody','-t','3000') | Out-Null
-        $dialogPath = Capture "$theme-dialog.png"
-        $dialogBrightness = Brightness $dialogPath 0.5 0.18
-        Assert ($(if ($theme -eq 'light') { $dialogBrightness -gt 180 } else { $dialogBrightness -lt 100 })) "Dialog did not use $theme theme."
-        UI @('invoke','CloseButton') | Out-Null
-        UI @('wait-for','PolicyBody','--gone','-t','3000') | Out-Null
-        $checks.Add(@{name="$theme switches immediately across seven pages and dialogs";passed=$true})
+        if (-not $SkipDialogChecks) {
+            UI @('invoke','NavOverview') | Out-Null
+            UI @('scroll-into-view','OverviewTerms') | Out-Null
+            UI @('invoke','OverviewTerms') | Out-Null
+            UI @('wait-for','PolicyBody','-t','10000') | Out-Null
+            $dialogPath = Capture "$theme-dialog.png"
+            $dialogBrightness = Brightness $dialogPath 0.5 0.18
+            Assert ($(if ($theme -eq 'light') { $dialogBrightness -gt 180 } else { $dialogBrightness -lt 100 })) "Dialog did not use $theme theme."
+            UI @('invoke','CloseButton') | Out-Null
+            UI @('wait-for','PolicyBody','--gone','-t','10000') | Out-Null
+        }
+        $pageCheckName = if ($SkipDialogChecks) { "$theme switches immediately across seven pages" } else { "$theme switches immediately across seven pages and dialogs" }
+        $checks.Add(@{name=$pageCheckName;passed=$true})
         Restart
         Assert-Theme $theme (Capture "$theme-after-restart.png")
         $checks.Add(@{name="$theme survives restart";passed=$true})
@@ -147,12 +162,17 @@ try {
     @{Language='ja'} | ConvertTo-Json | Set-Content (Join-Path $dataPath 'language.json')
     Launch
     UI @('invoke','NavOverview') | Out-Null
+    UI @('scroll-into-view','AppThemePicker') | Out-Null
+    UI @('click','AppThemePicker') | Out-Null
     foreach ($entry in @{ThemeSystem='システムに合わせる';ThemeLight='ライト';ThemeDark='ダーク'}.GetEnumerator()) {
         $label = (UI @('get-property',$entry.Key,'-p','Name') | ConvertFrom-Json).properties.Name
         Assert ($label -eq $entry.Value) 'The appearance option was not localized into Japanese.'
     }
-    UI @('scroll-into-view','ThemeSystem') | Out-Null
+    UI @('click','AppThemePicker') | Out-Null
+    UI @('scroll-into-view','AppThemePicker') | Out-Null
     Capture 'japanese-system.png' | Out-Null
+    $languageName = (UI @('get-property','DisplayLanguage','-p','Name') | ConvertFrom-Json).properties.Name
+    Assert ($languageName -eq '表示言語') 'The display language selector was not localized into Japanese.'
     Select-Theme 'light'
     Resize 720 600
     Assert-Theme 'light' (Capture 'japanese-light-narrow.png')

@@ -181,7 +181,11 @@ function Select-VisibleChoice([string]$Label) {
 function Set-Theme([string]$ThemeId) {
     Open-Page 'NavOverview' 'GeneralPageTitle'
     $theme = switch ($ThemeId) { 'ThemeSystem' { 'system' } 'ThemeLight' { 'light' } 'ThemeDark' { 'dark' } default { throw "Unknown theme '$ThemeId'." } }
-    Scroll-ToElement $ThemeId
+    Scroll-ToElement 'AppThemePicker'
+    $picker = [Windows.Automation.AutomationElement]::FromHandle([IntPtr]$windowHwnd).FindFirst([Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, 'AppThemePicker'))
+    if (-not $picker) { throw 'Theme picker is missing.' }
+    ([Windows.Automation.ExpandCollapsePattern]$picker.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)).Expand()
     $element = [Windows.Automation.AutomationElement]::FromHandle([IntPtr]$windowHwnd).FindFirst([Windows.Automation.TreeScope]::Descendants,
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, $ThemeId))
     if (-not $element) { throw "Theme choice '$ThemeId' is missing." }

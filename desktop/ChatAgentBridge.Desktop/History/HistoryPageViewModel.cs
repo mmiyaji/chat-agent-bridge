@@ -309,6 +309,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     [ObservableProperty] public partial bool HasFilteredSessions { get; set; }
     [ObservableProperty] public partial bool HasAuditEvents { get; set; }
     [ObservableProperty] public partial bool IsHistoryLoadSuccessful { get; set; }
+    [ObservableProperty] public partial bool IsRefreshing { get; set; }
 
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(DetachSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionModelCommand)), NotifyCanExecuteChangedFor(nameof(EditSelectedSessionPolicyCommand)), NotifyCanExecuteChangedFor(nameof(RenameSelectedSessionCommand)), NotifyCanExecuteChangedFor(nameof(SwitchSelectedAgentCommand))]
     public partial SessionHistoryRow? SelectedSession { get; set; }
@@ -640,9 +641,10 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public async Task RefreshAsync()
     {
         if (IsBusy) return;
+        var indicatorStartedAt = System.Diagnostics.Stopwatch.StartNew();
         IsHistoryLoadSuccessful = false;
         IsBusy = true;
-        Status = DesktopText.Get("HistoryRefreshing");
+        IsRefreshing = true;
         try
         {
             // Fingerprint before reading so a write during the load triggers another reload.
@@ -681,6 +683,9 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         }
         finally
         {
+            var indicatorRemainder = TimeSpan.FromMilliseconds(300) - indicatorStartedAt.Elapsed;
+            if (indicatorRemainder > TimeSpan.Zero) await Task.Delay(indicatorRemainder);
+            IsRefreshing = false;
             IsBusy = false;
         }
         StartChatNameRefresh();

@@ -118,7 +118,7 @@ try {
     $savedHash=(Get-FileHash $settingsFile).Hash
     Go 'NavAgentSettings'
     Assert (Visible (Element 'AgentProvider')) 'Agent provider disappeared.'
-    foreach ($id in @('DisplayLanguage','ThemeSystem','ChatApprovalMode','ChatScopeCard','AutoConnectProvider')) {
+    foreach ($id in @('DisplayLanguage','AppThemePicker','ChatApprovalMode','ChatScopeCard','AutoConnectProvider')) {
         Assert (-not (Visible (Element $id))) "Misplaced setting remains in Agent settings: $id"
     }
     Scroll-ToElement 'AgentModel'
@@ -130,8 +130,8 @@ try {
     Go 'NavOverview'
     Scroll-ToElement 'DisplayLanguage'
     Assert (Visible (Element 'DisplayLanguage')) 'Language selector is not on General.'
-    Scroll-ToElement 'ThemeSystem'
-    Assert (Visible (Element 'ThemeSystem')) 'Theme selector is not on General.'
+    Scroll-ToElement 'AppThemePicker'
+    Assert (Visible (Element 'AppThemePicker')) 'Theme selector is not on General.'
     Scroll-ToElement 'AutoConnectProvider'
     Assert (Visible (Element 'StartWithWindows')) 'Windows startup is not on General.'
     Scroll-ToElement 'TraySettingsCard'

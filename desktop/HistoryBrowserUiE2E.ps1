@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory)][string]$AppDirectory,
     [ValidateSet('ja','en')][string]$Language = 'ja',
     [switch]$Baseline,
-    [switch]$AccessLinkOnly
+    [switch]$AccessLinkOnly,
+    [switch]$RefreshOnly
 )
 $ErrorActionPreference = 'Stop'
 $artifactRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
@@ -257,6 +258,16 @@ try {
       Status='failed';ExitCode=1;SessionId='orphan-stale-session-id';AgentModel='fixture-model';AgentReasoningEffort='low'}
     $records[0].StartedAt=[DateTimeOffset]::UtcNow.ToString('o')
     $records[0].FinishedAt=[DateTimeOffset]::UtcNow.ToString('o')
+    if ($RefreshOnly) {
+        $recordList = [Collections.Generic.List[object]]::new()
+        foreach ($record in $records) { $recordList.Add($record) }
+        for ($index = 0; $index -lt 449; $index++) {
+            $recordList.Add(@{Id=[guid]::NewGuid().ToString();StartedAt=[DateTimeOffset]::UtcNow.AddMinutes(-$index).ToString('o');FinishedAt=[DateTimeOffset]::UtcNow.ToString('o')
+                Source='slack';ChannelId=$bindings[0].Key.ChannelId;ThreadId=$bindings[0].Key.ThreadId;UserId=$bindings[0].Key.UserId;WorkspaceRoot=$bindings[0].WorkspaceRoot
+                Status='completed';ExitCode=0;SessionId=$bindings[0].SessionId;AgentModel='fixture-model';AgentReasoningEffort='low'})
+        }
+        $records = $recordList
+    }
     $identityEntries=@{}
     foreach($binding in $bindings) {
         $key=$binding.Key
@@ -333,6 +344,55 @@ try {
     }
     Navigate 'NavHistory'
     UI @('wait-for','SavedSessionsList','-t','10000') | Out-Null
+    if ($RefreshOnly) {
+        $refreshButton = Element 'RefreshHistory'
+        $readyDeadline = [DateTime]::UtcNow.AddSeconds(60)
+        do {
+            $refreshButton = Element 'RefreshHistory'
+            if ($refreshButton -and $refreshButton.Current.IsEnabled) { break }
+            Start-Sleep -Milliseconds 100
+        } while ([DateTime]::UtcNow -lt $readyDeadline)
+        Assert-True ($refreshButton -and $refreshButton.Current.IsEnabled) 'History refresh is not ready.'
+        $buttonBoundsBefore = $refreshButton.Current.BoundingRectangle
+        $buttonNameBefore = $refreshButton.Current.Name
+        $statusElement = Element 'HistoryStatus'
+        $statusBoundsBefore = $statusElement.Current.BoundingRectangle
+        $statusNameBefore = $statusElement.Current.Name
+        Assert-True ([string]::IsNullOrWhiteSpace($statusNameBefore)) 'History fixture did not load successfully before refreshing.'
+        $refreshButton.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+        $refreshButton = Element 'RefreshHistory'
+        $observedBusy = -not $refreshButton.Current.IsEnabled
+        $buttonBoundsDuring = $refreshButton.Current.BoundingRectangle
+        $buttonNameDuring = $refreshButton.Current.Name
+        $statusElement = Element 'HistoryStatus'
+        $statusBoundsDuring = $statusElement.Current.BoundingRectangle
+        $duringStatus = $statusElement.Current.Name
+        $refreshIndicator = Element 'RefreshHistoryProgressRing'
+        $progressObserved = $refreshIndicator -and $refreshIndicator.Current.BoundingRectangle.Width -gt 0 -and -not $refreshIndicator.Current.IsOffscreen
+        $progressName = if ($refreshIndicator) { $refreshIndicator.Current.Name } else { '' }
+        $refreshScreenshot = Join-Path $dataPath 'history-refresh-inflight.png'
+        UI @('screenshot','-o',$refreshScreenshot) | Out-Null
+        $deadline = [DateTime]::UtcNow.AddSeconds(30)
+        do {
+            $refreshButton = Element 'RefreshHistory'
+            if ($refreshButton.Current.IsEnabled) { break }
+            $observedBusy = $true
+            Start-Sleep -Milliseconds 20
+        } while ([DateTime]::UtcNow -lt $deadline)
+        Assert-True ($refreshButton.Current.IsEnabled) 'History refresh did not finish.'
+        $statusElement = Element 'HistoryStatus'
+        $statusBoundsAfter = $statusElement.Current.BoundingRectangle
+        Assert-True ($statusElement.Current.Name -eq $statusNameBefore -and $duringStatus -eq $statusNameBefore) 'History refresh showed transient status text.'
+        Assert-True ([Math]::Abs($statusBoundsDuring.Top - $statusBoundsBefore.Top) -lt 1 -and [Math]::Abs($statusBoundsDuring.Height - $statusBoundsBefore.Height) -lt 1 -and [Math]::Abs($statusBoundsAfter.Top - $statusBoundsBefore.Top) -lt 1 -and [Math]::Abs($statusBoundsAfter.Height - $statusBoundsBefore.Height) -lt 1) 'History status row moved or resized during refresh.'
+        $buttonBoundsAfter = $refreshButton.Current.BoundingRectangle
+        Assert-True ($buttonNameDuring -eq $buttonNameBefore -and $refreshButton.Current.Name -eq $buttonNameBefore -and [Math]::Abs($buttonBoundsDuring.Width - $buttonBoundsBefore.Width) -lt 1 -and [Math]::Abs($buttonBoundsAfter.Width - $buttonBoundsBefore.Width) -lt 1) 'History refresh button content or width changed.'
+        $expectedProgressName = if ($Language -eq 'ja') { '履歴を更新しています' } else { 'Refreshing history' }
+        Assert-True ($observedBusy -and $progressObserved -and $progressName.Contains($expectedProgressName)) 'History refresh busy state or progress indicator was not exposed.'
+        $checks.Add(@{name='Refresh uses a stable status row and button';passed=$true;busyObserved=$observedBusy;progressVisibleToAutomation=$progressObserved;progressName=$progressName})
+        Write-Json 'result.json' @{passed=$true;language=$Language;refreshOnly=$true;historyCount=$records.Count;checks=$checks;screenshot=$refreshScreenshot;processId=$appProcess.Id}
+        Write-Output "PASS History refresh UI: $dataPath"
+        return
+    }
     Resize 1280 800
     $screenshotName = if($Baseline){"baseline-history-$Language"}else{'history-wide'}
     Capture $screenshotName

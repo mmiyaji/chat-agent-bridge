@@ -4,15 +4,15 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:settings="using:CommunityToolkit.WinUI.Controls"
     xmlns:layout="using:ChatAgentBridge_Desktop.Layout">
-    <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" Header="Language / 表示言語" AutomationProperties.AutomationId="LanguageSettingRow">
+    <settings:SettingsCard x:Uid="LanguageSettingRow" layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="LanguageSettingRow">
         <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xF2B7;" /></settings:SettingsCard.HeaderIcon>
         <settings:SettingsCard.Description>
             <TextBlock x:Name="LanguageStatus" TextWrapping="Wrap" Visibility="Collapsed" AutomationProperties.AutomationId="DisplayLanguageStatus" />
         </settings:SettingsCard.Description>
         <ComboBox x:Name="LanguagePicker" MinWidth="220" HorizontalAlignment="Left"
                   SelectedValuePath="Tag" SelectionChanged="LanguagePicker_SelectionChanged"
-                  AutomationProperties.AutomationId="DisplayLanguage" AutomationProperties.Name="Language / 表示言語">
-            <ComboBoxItem x:Name="SystemLanguageOption" Content="システムに合わせる (System default)" Tag="system" />
+                  AutomationProperties.AutomationId="DisplayLanguage" x:Uid="DisplayLanguage">
+            <ComboBoxItem x:Name="SystemLanguageOption" x:Uid="SystemLanguageOption" Tag="system" />
             <ComboBoxItem Content="日本語 (Japanese)" Tag="ja" />
             <ComboBoxItem Content="English" Tag="en" />
         </ComboBox>
