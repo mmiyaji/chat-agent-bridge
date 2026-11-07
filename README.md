@@ -18,9 +18,9 @@ It is intended for devices where you cannot use the Codex or Claude Code desktop
 A chat post causes the CLI on your PC to read and write files and run commands. Follow these guidelines:
 
 - **Allow only yourself.** An allowed user can send requests that use your PC, your CLI sign-in and your AI service quota. Posts from users who are not allowed are ignored.
-- **Review requests on the PC before they run.** We recommend “Confirm the first request in each conversation” to catch unexpected users or unintended requests before execution. Keep the allowed-user list restricted to yourself.
+- **Limit who can send requests.** With the default, “No approval for allowed users,” requests from allowed users run without confirmation on the PC. Posts from other users never run. “Confirm the first request in each conversation” and “Ask every time” add approvals on the PC, which makes remote use harder. Keep the allowed-user list restricted to yourself.
 - **Limit the working folders.** Register only folders the agent may touch as trusted working folders. Avoid your home folder or an entire drive.
-- **Use automatic approval and sharing with care.** Automatic approval runs requests without confirmation on the PC. Automatic sharing makes results visible to everyone who can read the thread. The default is “Confirm the first request in each conversation” and automatic result sharing.
+- **Use automatic sharing with care.** Automatic sharing makes results visible to everyone who can read the thread. The defaults are “No approval for allowed users” and automatic result sharing.
 - **Narrow the channels and threads.** If needed, restrict which channels and threads can send requests.
 - **Do not share your connection tokens.** Tokens are encrypted per Windows user, but do not hand the `Data` folder to anyone else.
 
@@ -88,9 +88,9 @@ Install from the [Microsoft Store](https://apps.microsoft.com/detail/9n1lzk25fsg
    - Discord: [Discord setup guide](docs/discord-setup.md) (bot token, allowed server IDs and Message Content Intent)
 5. Connect from **Chat** and post a request. How to start depends on the service (see [Chat operations](#chat-operations)).
    Connect buttons are enabled only for services with saved connection details and at least one allowed user. If none are ready, use **Open chat settings** in Chat to finish setup.
-6. Approve the first request on the PC. By default, the result is posted automatically in the same thread. Reply there to continue.
+6. By default, requests from allowed users run without approval on the PC, and the result is posted automatically in the same thread. Reply there to continue.
 
-Defaults require approval for the first request in a conversation and every attachment, with automatic result sharing. The CLI check identifies the CLI and version. Check authentication and available quota through the CLI itself.
+By default, requests from allowed users run without approval, results are shared automatically and every attachment requires approval. The CLI check identifies the CLI and version. Check authentication and available quota through the CLI itself.
 
 ## Supported agents
 
@@ -128,7 +128,7 @@ Manual runs use the working folder selected in Agent settings, regardless of whe
 
 **Chat settings** contains approval and sharing rules common to all chat services, along with each service's connection details and allowed users.
 
-- **Request approval** can be required every time, only for the first request, or handled automatically. This approval starts the request; the CLI's permission to perform individual operations is configured separately.
+- **Request approval** defaults to no approval for allowed users. You can instead require it for the first request in each conversation or every time. This approval starts the request; the CLI's permission to perform individual operations is configured separately.
 - Codex App Server approvals show an informational warning for a small set of clearly destructive command patterns. The warning does not change the available approval controls or replace the CLI's permission safeguards.
 - **Access restrictions** specify who and which conversations can send requests. Register folders where requests may start as trusted working folders. Changing the folder from chat requires a location within that scope and approval on the PC.
 - **Result sharing** can be manual, automatic or disabled. New settings default to automatic sharing; updates preserve your saved sharing choice. Sent content is visible to everyone who can access the destination chat or thread.
@@ -256,7 +256,7 @@ are examples, not performance results. Released versions may differ.
 | Slack attachments are not received | Whether the bot has `files:read`, and whether you reauthorized the app after adding it |
 | The CLI is not found | Run the **CLI check** in the setup guide or agent settings. Right after installing or updating a CLI, use "Reload environment variables" |
 | Claude Code reports "Not logged in" | Start Claude Code in a terminal as this Windows user, complete `/login`, then post the request again |
-| A request stays awaiting approval | Starting a request requires approval on the PC by default. Approve it in **Chat** on the PC or from the Windows notification |
+| A request stays awaiting approval | With “Confirm the first request in each conversation” or “Ask every time,” starting a request requires approval on the PC. Approve it in **Chat** on the PC or from the Windows notification |
 | Results do not reach the thread | Results are shared manually by default. Review them on the PC and use "Send results to thread" |
 
 ## License

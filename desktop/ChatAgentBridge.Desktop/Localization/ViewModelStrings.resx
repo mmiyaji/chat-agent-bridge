@@ -31,7 +31,7 @@
     <value>Within the allowed user list</value>
   </data>
   <data name="ApprovalAutomatic" xml:space="preserve">
-    <value>Approve automatically</value>
+    <value>No approval for allowed users</value>
   </data>
   <data name="ApprovalEveryTime" xml:space="preserve">
     <value>Confirm every time</value>

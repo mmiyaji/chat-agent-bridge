@@ -137,7 +137,7 @@ public sealed class StructuredCliSessionTests : IDisposable
         await runner.RunAsync(Key, Settings(provider), "first");
         await Store.SetFirstApprovalFingerprintAsync(Key, new string('a', 64));
         await Store.UpdateModelAsync(Key, "session-model");
-        Assert.Null((await Store.FindAsync(Key))!.FirstApprovalFingerprint);
+        Assert.Equal(new string('a', 64), (await Store.FindAsync(Key))!.FirstApprovalFingerprint);
         await runner.RunAsync(Key, Settings(provider), "override");
         Assert.Equal("session-model", AgentProfile.BuildInvocation(fake.Calls.Last()).Model);
         await Assert.ThrowsAsync<ArgumentException>(() => Store.UpdateModelAndEffortAsync(Key, "session-model", "high"));

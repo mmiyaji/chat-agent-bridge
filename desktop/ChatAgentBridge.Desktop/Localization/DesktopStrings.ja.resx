@@ -229,7 +229,7 @@
   <data name="HistoryExecutionPolicy" xml:space="preserve"><value>会話ポリシー: 承認 {0} / 結果 {1} / AI操作 {2}</value></data>
   <data name="AskEveryTime" xml:space="preserve"><value>毎回確認</value></data>
   <data name="AskFirstTime" xml:space="preserve"><value>会話ごとに最初の依頼を確認</value></data>
-  <data name="AutoApprove" xml:space="preserve"><value>自動承認</value></data>
+  <data name="AutoApprove" xml:space="preserve"><value>許可ユーザーは確認なし</value></data>
   <data name="ManualShare" xml:space="preserve"><value>手動で確認して共有</value></data>
   <data name="AutoShare" xml:space="preserve"><value>自動共有</value></data>
   <data name="NoSharing" xml:space="preserve"><value>共有しない</value></data>
@@ -370,7 +370,7 @@
   <data name="UseGlobalSettings" xml:space="preserve"><value>全体設定を使う</value></data>
   <data name="ConversationExecutionPolicy" xml:space="preserve"><value>この会話の実行ポリシー</value></data>
   <data name="ConversationPolicyIntro" xml:space="preserve"><value>会話: {0}&#10;「全体設定を使う」を選ぶと、承認は{1}、結果共有は{2}、AI操作は{3}になります。</value></data>
-  <data name="ConversationPolicyWarning" xml:space="preserve"><value>自動承認ではこの会話から届く依頼を確認画面なしで実行します。フルアクセスはCLIの許可確認を迂回する場合があります。Claude CodeのモードはOSのサンドボックスを設定しません。「操作ごとに確認」はCodex App Serverだけで利用できます。</value></data>
+  <data name="ConversationPolicyWarning" xml:space="preserve"><value>「許可ユーザーは確認なし」では、この会話に届いた許可ユーザーの依頼を確認画面なしで実行します。フルアクセスはCLIの許可確認を迂回する場合があります。Claude CodeのモードはOSのサンドボックスを設定しません。「操作ごとに確認」はCodex App Serverだけで利用できます。</value></data>
   <data name="SetConversationExecutionPolicy" xml:space="preserve"><value>会話ごとの実行ポリシーを設定</value></data>
   <data name="InboxConfirmWorkspaceTitle" xml:space="preserve"><value>この会話の作業フォルダーを変更しますか？</value></data>
   <data name="InboxConfirmRunTitle" xml:space="preserve"><value>ローカルエージェントで実行しますか？</value></data>

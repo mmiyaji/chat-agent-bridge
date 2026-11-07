@@ -1,7 +1,4 @@
 using ChatAgentBridge.Core.Sessions;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 
 namespace ChatAgentBridge.Core.Tests;
 
@@ -46,9 +43,9 @@ public sealed class ConversationPolicyTests
         Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner with { ThreadId = "2.0" }, settings, binding));
         Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner with { ChannelId = "C2" }, settings, binding));
         Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner, settings with { AgentPermissionMode = "full-access" }, binding));
-        Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner, settings with { ChatResultMode = "auto" }, binding));
+        Assert.False(ConversationExecutionPolicy.RequiresApproval(Owner, settings with { ChatResultMode = "auto" }, binding));
         Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner, settings with { SlackBotToken = "changed" }, binding));
-        Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner, settings with { AgentModel = "different" }, binding));
+        Assert.False(ConversationExecutionPolicy.RequiresApproval(Owner, settings with { AgentModel = "different" }, binding));
     }
 
     [Fact]
@@ -85,61 +82,43 @@ public sealed class ConversationPolicyTests
     }
 
     [Fact]
-    public void AgentQuestionSharingPreservesLegacyFingerprintWhenOffAndUsesNewScopeWhenOn()
-    {
-        var settings = Settings with
-        {
-            MattermostAllowedUserIds = "mm-user",
-            MattermostChannelId = "mm-channel",
-            MattermostAllowedThreadIds = "mm-thread",
-            SlackAllowedChannelIds = "C1",
-            SlackAllowedThreadIds = "1.0",
-            ShareApprovalsInChat = true,
-            MattermostToken = "mm-token",
-            SlackBotToken = "bot-token",
-            SlackAppToken = "app-token"
-        };
-
-        var expectedLegacy = LegacyFingerprint(Owner, settings);
-        var actualOff = ConversationExecutionPolicy.GetFingerprint(Owner, settings with { ShareAgentQuestionsInChat = false });
-        var actualOn = ConversationExecutionPolicy.GetFingerprint(Owner, settings with { ShareAgentQuestionsInChat = true });
-
-        Assert.Equal(expectedLegacy, actualOff);
-        Assert.Equal(Digest(actualOff + "\0share-agent-questions"), actualOn);
-        Assert.NotEqual(actualOff, actualOn);
-    }
-
-    [Fact]
-    public void FollowUpSteeringPreservesQueueFingerprintAndCreatesSeparateConsentScope()
+    public void FirstApprovalSurvivesChangesThatDoNotAffectWhatTheCliMayDo()
     {
         var settings = Settings;
-        var queueFingerprint = ConversationExecutionPolicy.GetFingerprint(Owner, settings);
-        var steeringFingerprint = ConversationExecutionPolicy.GetFingerprint(Owner,
-            settings with { ChatFollowUpMode = ChatFollowUpPolicy.Steer });
-
-        Assert.Equal(LegacyFingerprint(Owner, settings), queueFingerprint);
-        Assert.Equal(Digest(queueFingerprint + "\0chat-follow-up-steer"), steeringFingerprint);
-        Assert.NotEqual(queueFingerprint, steeringFingerprint);
-        Assert.Equal(queueFingerprint, ConversationExecutionPolicy.GetFingerprint(Owner,
-            settings with { ChatFollowUpMode = "unknown" }));
+        var fingerprint = ConversationExecutionPolicy.GetFingerprint(Owner, settings);
+        BridgeSettings[] unchanged =
+        [
+            settings with { AgentModel = "other-model", AgentReasoningEffort = "high" },
+            settings with { ChatResultMode = "auto" },
+            settings with { ChatApprovalMode = "always" },
+            settings with { ChatFollowUpMode = ChatFollowUpPolicy.Steer },
+            settings with { ShareApprovalsInChat = true, ShareAgentQuestionsInChat = true },
+            settings with { SlackAllowedUserIds = "U1\nU9", SlackAllowedChannelIds = "C1", SlackAllowedThreadIds = "1.0" },
+            settings with { MattermostAllowedUserIds = "user", MattermostAllowedThreadIds = "root" }
+        ];
+        foreach (var changed in unchanged)
+            Assert.Equal(fingerprint, ConversationExecutionPolicy.GetFingerprint(Owner, changed));
     }
 
     [Fact]
-    public void ClaudeStreamingRequiresRenewedConsentButQueueKeepsExistingConsent()
+    public void FirstApprovalIsRenewedWhenExecutionScopeChanges()
     {
-        var settings = Settings with { AgentProvider = AgentProfile.Claude, AgentMode = "exec", AgentExecutable = "claude" };
-        var queueFingerprint = ConversationExecutionPolicy.GetFingerprint(Owner, settings);
-        var previousSteerFingerprint = Digest(queueFingerprint + "\0chat-follow-up-steer");
-        var binding = new SessionBinding(Owner, settings.WorkspaceRoot, "claude", "", Guid.NewGuid().ToString(),
-            DateTimeOffset.UtcNow, FirstApprovalFingerprint: previousSteerFingerprint);
-        var live = settings with { ChatFollowUpMode = ChatFollowUpPolicy.Steer };
-
-        Assert.Equal(LegacyFingerprint(Owner, settings), queueFingerprint);
-        Assert.Equal(Digest(previousSteerFingerprint + "\0claude-stream-input-v1"),
-            ConversationExecutionPolicy.GetFingerprint(Owner, live));
-        Assert.True(ConversationExecutionPolicy.RequiresApproval(Owner, live, binding));
-        Assert.False(ConversationExecutionPolicy.RequiresApproval(Owner, live,
-            binding with { FirstApprovalFingerprint = ConversationExecutionPolicy.GetFingerprint(Owner, live) }));
+        var settings = Settings;
+        var fingerprint = ConversationExecutionPolicy.GetFingerprint(Owner, settings);
+        BridgeSettings[] changedScopes =
+        [
+            settings with { WorkspaceRoot = Path.Combine(Path.GetTempPath(), "other") },
+            settings with { AgentExecutable = "other-codex" },
+            settings with { AgentArguments = "exec --json --other -" },
+            settings with { AgentProvider = AgentProfile.Claude },
+            settings with { AgentMode = "app-server" },
+            settings with { AgentPermissionMode = "full-access" },
+            settings with { AllowAgentNetwork = true },
+            settings with { TrustedWorkspaceRoots = Path.GetTempPath() },
+            settings with { SlackBotToken = "rotated" }
+        ];
+        foreach (var changed in changedScopes)
+            Assert.NotEqual(fingerprint, ConversationExecutionPolicy.GetFingerprint(Owner, changed));
     }
 
     [Fact]
@@ -153,25 +132,4 @@ public sealed class ConversationPolicyTests
         Assert.Equal("read-only", effective.AgentPermissionMode);
         Assert.Equal("first", Settings.ChatApprovalMode);
     }
-
-    private static string LegacyFingerprint(SessionKey key, BridgeSettings settings)
-    {
-        var payload = JsonSerializer.Serialize(new
-        {
-            key,
-            Workspace = Path.TrimEndingDirectorySeparator(Path.GetFullPath(settings.WorkspaceRoot)),
-            settings.AgentExecutable, settings.AgentArguments, settings.AgentProvider, settings.AgentMode,
-            settings.AgentModel, settings.AgentReasoningEffort, settings.AgentPermissionMode,
-            settings.AllowAgentNetwork, settings.TrustedWorkspaceRoots, settings.ChatApprovalMode,
-            settings.ChatResultMode, settings.ShareApprovalsInChat,
-            settings.MattermostAllowedUserIds, settings.SlackAllowedUserIds,
-            settings.MattermostChannelId, settings.MattermostAllowedThreadIds,
-            settings.SlackAllowedChannelIds, settings.SlackAllowedThreadIds,
-            CredentialDigest = Digest(key.Provider == "slack"
-                ? settings.SlackBotToken + "\0" + settings.SlackAppToken : settings.MattermostToken)
-        });
-        return Digest(payload);
-    }
-
-    private static string Digest(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
 }

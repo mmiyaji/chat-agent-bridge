@@ -132,14 +132,23 @@ public sealed class ConversationSwitchConsentTests : IDisposable
         foreach (var changed in new[]
         {
             Settings with { AutoApproveSwitchCommands = false }, Settings with { ChatApprovalMode = "always" },
-            Settings with { AgentModel = "different" }, Settings with { AgentPermissionMode = "full-access" },
-            Settings with { AllowAgentNetwork = true }, Settings with { ChatResultMode = "auto" },
-            Settings with { SlackBotToken = "revoked" }, Settings with { SlackAllowedUserIds = "U2" },
+            Settings with { AgentPermissionMode = "full-access" }, Settings with { AllowAgentNetwork = true },
+            Settings with { SlackBotToken = "revoked" },
             Settings with { TrustedWorkspaceRoots = Path.Combine(_directory, "next") }
         })
         {
             Assert.True(await RequiresAsync(changed));
             Assert.True(await RequiresAsync(changed, switchCommand: true));
+        }
+        // Changes that do not widen what the CLI may do keep the transferred consent.
+        foreach (var unchanged in new[]
+        {
+            Settings with { AgentModel = "different" }, Settings with { ChatResultMode = "auto" },
+            Settings with { AgentReasoningEffort = "high" }
+        })
+        {
+            Assert.False(await RequiresAsync(unchanged));
+            Assert.False(await RequiresAsync(unchanged, switchCommand: true));
         }
         await Store.RemoveAsync(_key);
         Assert.True(await RequiresAsync(Settings));

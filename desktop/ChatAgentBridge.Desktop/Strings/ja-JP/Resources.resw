@@ -184,7 +184,7 @@
     <value>1  アカウント・チャンネル・スレッドの許可</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock021.Text" xml:space="preserve">
-    <value>2  会話の承認方法（毎回 / 会話ごとに最初の依頼 / 自動）</value>
+    <value>2  会話の承認方法（許可ユーザーは確認なし / 会話ごとに最初の依頼 / 毎回）</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock022.Text" xml:space="preserve">
     <value>3  信頼する作業フォルダーとAIの操作許可</value>
@@ -262,13 +262,13 @@
     <value>毎回確認</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageComboBoxItem007.Content" xml:space="preserve">
-    <value>会話ごとに最初の依頼を確認（おすすめ）</value>
+    <value>会話ごとに最初の依頼を確認</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageComboBoxItem008.Content" xml:space="preserve">
-    <value>自動承認</value>
+    <value>許可ユーザーは確認なし（おすすめ）</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock032.Text" xml:space="preserve">
-    <value>「会話ごとに最初の依頼を確認」を推奨します。許可ユーザーの制限に加え、PCで依頼者と内容を確認し、予期しないユーザーからの利用や意図しない依頼を実行前に止めるためです。会話の最初の依頼で一度確認します。以降の依頼は自動で実行しますが、権限やエージェント設定の変更により再確認が必要になる場合があります。「自動承認」では最初の確認も省略します。</value>
+    <value>許可ユーザーからの依頼は確認なしで実行します。ほかの2つはPCでの承認が増えるため、外出先から使いにくくなります。許可ユーザーのアカウントを使える人も依頼できる点に注意してください。</value>
   </data>
   <data name="AutoApproveSwitchCommands.Header" xml:space="preserve">
     <value>フォルダー・エージェントの切り替えも自動承認する</value>
@@ -804,13 +804,13 @@
     <value>毎回確認</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem002.Content" xml:space="preserve">
-    <value>会話ごとに最初の依頼を確認（おすすめ）</value>
+    <value>会話ごとに最初の依頼を確認</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem003.Content" xml:space="preserve">
-    <value>自動承認</value>
+    <value>許可ユーザーは確認なし（おすすめ）</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock022.Text" xml:space="preserve">
-    <value>「会話ごとに最初の依頼を確認」を推奨します。許可ユーザーの制限に加え、PCで依頼者と内容を確認し、予期しないユーザーからの利用や意図しない依頼を実行前に止めるためです。会話の最初の依頼で一度確認します。以降の依頼は自動で実行しますが、権限やエージェント設定の変更により再確認が必要になる場合があります。「自動承認」では最初の確認も省略します。</value>
+    <value>許可ユーザーからの依頼は確認なしで実行します。ほかの2つはPCでの承認が増えるため、外出先から使いにくくなります。許可ユーザーのアカウントを使える人も依頼できる点に注意してください。</value>
   </data>
   <data name="WizardChatResultMode.Header" xml:space="preserve">
     <value>実行結果の共有</value>

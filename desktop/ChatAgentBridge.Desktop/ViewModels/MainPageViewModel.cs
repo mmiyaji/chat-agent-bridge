@@ -239,7 +239,7 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial bool AllowAgentNetwork { get; set; }
     [ObservableProperty] public partial string TrustedWorkspaceRoots { get; set; } = string.Empty;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanAutoApproveSwitchCommands))]
-    public partial string ChatApprovalMode { get; set; } = "first";
+    public partial string ChatApprovalMode { get; set; } = "auto";
     [ObservableProperty] public partial bool AutoApproveSwitchCommands { get; set; }
     // First-only approval also permits switches after this conversation has been approved.
     public bool CanAutoApproveSwitchCommands => ChatApprovalMode is "auto" or "first";

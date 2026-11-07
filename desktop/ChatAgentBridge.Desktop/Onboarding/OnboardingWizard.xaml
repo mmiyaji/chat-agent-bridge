@@ -223,9 +223,9 @@
                 <StackPanel Spacing="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardSafetyStep), Mode=OneWay}">
                     <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock021" x:Uid="onboardingOnboardingWizardTextBlock021" />
                     <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatApprovalMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatApprovalMode" x:Uid="WizardChatApprovalMode">
-                        <ComboBoxItem  Tag="always"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem001" x:Uid="onboardingOnboardingWizardComboBoxItem001" />
-                        <ComboBoxItem  Tag="first"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem002" x:Uid="onboardingOnboardingWizardComboBoxItem002" />
                         <ComboBoxItem  Tag="auto"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem003" x:Uid="onboardingOnboardingWizardComboBoxItem003" />
+                        <ComboBoxItem  Tag="first"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem002" x:Uid="onboardingOnboardingWizardComboBoxItem002" />
+                        <ComboBoxItem  Tag="always"  AutomationProperties.AutomationId="onboardingOnboardingWizardComboBoxItem001" x:Uid="onboardingOnboardingWizardComboBoxItem001" />
                     </ComboBox>
                     <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock022" x:Uid="onboardingOnboardingWizardTextBlock022" />
                     <ComboBox  SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.ChatResultMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="WizardChatResultMode" x:Uid="WizardChatResultMode">

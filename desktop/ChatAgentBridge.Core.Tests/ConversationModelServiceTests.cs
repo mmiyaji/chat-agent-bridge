@@ -39,7 +39,7 @@ public sealed class ConversationModelServiceTests : IDisposable
         Assert.Equal(binding.DisplayName, after.DisplayName);
         Assert.Equal("alternate", after.Model);
         Assert.Null(after.ReasoningEffort);
-        Assert.Null(after.FirstApprovalFingerprint);
+        Assert.Equal(binding.FirstApprovalFingerprint, after.FirstApprovalFingerprint);
         Assert.True(ConversationExecutionPolicy.RequiresApproval(key,
             ConversationExecutionPolicy.GetEffectiveSettings(settings, after), after));
         foreach (var scope in new[] { stranger, otherThread, otherOrigin })
@@ -89,7 +89,7 @@ public sealed class ConversationModelServiceTests : IDisposable
         var saved = (await new SessionStore(_directory).FindAsync(key))!;
         Assert.Equal("provider-model/v2", saved.Model);
         Assert.Equal(binding.SessionId, saved.SessionId);
-        Assert.Null(saved.FirstApprovalFingerprint);
+        Assert.Equal(binding.FirstApprovalFingerprint, saved.FirstApprovalFingerprint);
         Assert.Equal(binding.Model, (await Store.FindAsync(otherKey))!.Model);
         await service.ChangeAsync(key, settings, null, Allow);
         Assert.Null((await Store.FindAsync(key))!.Model);

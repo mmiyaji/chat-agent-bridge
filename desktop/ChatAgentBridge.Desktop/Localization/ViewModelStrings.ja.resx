@@ -31,7 +31,7 @@
     <value>ユーザー許可リストの範囲内</value>
   </data>
   <data name="ApprovalAutomatic" xml:space="preserve">
-    <value>自動承認</value>
+    <value>許可ユーザーは確認なし</value>
   </data>
   <data name="ApprovalEveryTime" xml:space="preserve">
     <value>毎回確認</value>

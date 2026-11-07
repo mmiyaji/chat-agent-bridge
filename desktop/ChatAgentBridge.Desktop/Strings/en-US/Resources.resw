@@ -184,7 +184,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>1 Check allowed accounts, channels, and threads</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock021.Text" xml:space="preserve">
-    <value>2 Approve requests: every time, once per conversation, or automatically</value>
+    <value>2  Request approval (no approval for allowed users / first request per conversation / every time)</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock022.Text" xml:space="preserve">
     <value>3 Check trusted folders and AI tool permissions</value>
@@ -265,10 +265,10 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Confirm the first request in each conversation (recommended)</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageComboBoxItem008.Content" xml:space="preserve">
-    <value>Approve automatically</value>
+    <value>No approval for allowed users (recommended)</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock032.Text" xml:space="preserve">
-    <value>We recommend “Confirm the first request in each conversation.” Alongside restricting allowed users, this lets you review the requester and request on the PC and stop unexpected use before it runs. Confirm one request when each conversation starts. Later requests run automatically, unless changed permissions or agent settings require approval again. Automatic approval skips the initial confirmation.</value>
+    <value>Requests from allowed users run without confirmation. The other options add approvals on this PC, which makes remote use harder. Anyone who can use an allowed user's account can also send requests.</value>
   </data>
   <data name="AutoApproveSwitchCommands.Header" xml:space="preserve">
     <value>Approve folder and agent switches automatically</value>
@@ -807,10 +807,10 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Confirm the first request in each conversation (recommended)</value>
   </data>
   <data name="onboardingOnboardingWizardComboBoxItem003.Content" xml:space="preserve">
-    <value>Approve automatically</value>
+    <value>No approval for allowed users (recommended)</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock022.Text" xml:space="preserve">
-    <value>We recommend “Confirm the first request in each conversation.” Alongside restricting allowed users, this lets you review the requester and request on the PC and stop unexpected use before it runs. Confirm one request when each conversation starts. Later requests run automatically, unless changed permissions or agent settings require approval again. Automatic approval skips the initial confirmation.</value>
+    <value>Requests from allowed users run without confirmation. The other options add approvals on this PC, which makes remote use harder. Anyone who can use an allowed user's account can also send requests.</value>
   </data>
   <data name="WizardChatResultMode.Header" xml:space="preserve">
     <value>Sharing execution results</value>
