@@ -4,9 +4,9 @@
 
 ## 直近
 
-- [ ] 1.1.0-preview.3 を公開し、x64 / ARM64 ZIP・preview.2 からの x64 更新・Preview配信を確認する。CIとZIPの並行化による時間差も記録する。
+- [x] 1.1.0-preview.3 を公開。x64 / ARM64 ZIP の検証とSHA256、Previewフィード掲載・安定版フィード維持を確認。公開済みpreview.2から実際の公開x64 ZIPへの更新成功・ロールバックも確認。ARM64はクロスビルドのみで実機起動未確認。並行ビルド後の公開workflowは11分17秒（preview.2は14分24秒）、3分07秒短縮。
 
-- [ ] Portable release の x64 / ARM64 ZIP を CI / UI Smoke と並行してビルドし、検証ジョブで両方の成功を待ってから公開する。CI結果とパッケージ検証はすべて公開ゲートとして維持。
+- [x] Portable release の x64 / ARM64 ZIP を CI / UI Smoke と並行してビルドし、検証ジョブで両方の成功を待ってから公開する。CI結果とパッケージ検証はすべて公開ゲートとして維持。preview.3で両ZIPはchecks / UI Smokeと並行開始、verifyはchecksと両ZIP完了後に実行。
 
 - [x] 設定画面の折りたたみ本文を左右同じ余白に揃え、更新・診断・メンテナンスなどの本文を広く表示する。
 
