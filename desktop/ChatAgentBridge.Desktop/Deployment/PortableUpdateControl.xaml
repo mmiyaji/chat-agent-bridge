@@ -8,7 +8,7 @@
                                    AutomationProperties.AutomationId="PortableUpdateSection">
             <settings:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xE895;" /></settings:SettingsExpander.HeaderIcon>
             <settings:SettingsExpander.Items>
-                <settings:SettingsCard ContentAlignment="Vertical" HorizontalContentAlignment="Stretch"
+                <settings:SettingsCard ContentAlignment="Vertical" HorizontalContentAlignment="Stretch" Padding="{StaticResource SettingsExpanderBodyPadding}"
                                        AutomationProperties.AutomationId="PortableUpdateSectionContent">
                     <StackPanel Spacing="8">
                         <InfoBar x:Name="UpdateNotice" IsOpen="False" IsClosable="False"
@@ -45,7 +45,7 @@
                                                    AutomationProperties.AutomationId="PortableUpdatePreferences">
                             <settings:SettingsExpander.HeaderIcon><FontIcon Glyph="&#xE713;" /></settings:SettingsExpander.HeaderIcon>
                             <settings:SettingsExpander.Items>
-                                <settings:SettingsCard AutomationProperties.AutomationId="PortableUpdateAutomaticChecksRow">
+                                <settings:SettingsCard Padding="{StaticResource SettingsExpanderBodyPadding}" AutomationProperties.AutomationId="PortableUpdateAutomaticChecksRow">
                                     <settings:SettingsCard.Header>
                                         <CheckBox x:Name="AutomaticChecksCheckBox" x:Uid="PortableUpdateAutomaticChecks"
                                                   AutomationProperties.AutomationId="PortableUpdateAutomaticChecks"
@@ -56,7 +56,7 @@
                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </settings:SettingsCard.Description>
                                 </settings:SettingsCard>
-                                <settings:SettingsCard AutomationProperties.AutomationId="PortableUpdatePrereleasesRow">
+                                <settings:SettingsCard Padding="{StaticResource SettingsExpanderBodyPadding}" AutomationProperties.AutomationId="PortableUpdatePrereleasesRow">
                                     <settings:SettingsCard.Header>
                                         <CheckBox x:Name="IncludePrereleasesCheckBox" x:Uid="PortableUpdateIncludePrereleases"
                                                   AutomationProperties.AutomationId="PortableUpdateIncludePrereleases"
@@ -67,7 +67,7 @@
                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </settings:SettingsCard.Description>
                                 </settings:SettingsCard>
-                                <settings:SettingsCard x:Uid="PortableUpdateCacheCleanupRow" AutomationProperties.AutomationId="PortableUpdateCacheCleanupRow">
+                                <settings:SettingsCard Padding="{StaticResource SettingsExpanderBodyPadding}" x:Uid="PortableUpdateCacheCleanupRow" AutomationProperties.AutomationId="PortableUpdateCacheCleanupRow">
                                     <settings:SettingsCard.Description>
                                         <StackPanel Spacing="4">
                                             <TextBlock x:Uid="PortableUpdateCacheCleanupHelp" TextWrapping="Wrap" />

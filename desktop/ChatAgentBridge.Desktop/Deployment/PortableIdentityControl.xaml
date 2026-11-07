@@ -11,7 +11,7 @@
                 <SymbolIcon Symbol="Message" />
             </settings:SettingsExpander.HeaderIcon>
             <settings:SettingsExpander.Items>
-                <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="PortableIdentityStateCard">
+                <settings:SettingsCard Padding="{StaticResource SettingsExpanderBodyPadding}" layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="PortableIdentityStateCard">
                     <settings:SettingsCard.Header>
                         <TextBlock x:Name="StateHeading" x:Uid="PortableIdentityStateHeading"
                                    AutomationProperties.AutomationId="PortableIdentityStateHeading" />
@@ -30,7 +30,7 @@
                         </StackPanel>
                     </settings:SettingsCard.Description>
                 </settings:SettingsCard>
-                <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="PortableIdentityActionsCard">
+                <settings:SettingsCard Padding="{StaticResource SettingsExpanderBodyPadding}" layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="PortableIdentityActionsCard">
                     <settings:SettingsCard.Header>
                         <TextBlock x:Name="ActionsHeading" x:Uid="PortableIdentityActionsHeading"
                                    AutomationProperties.AutomationId="PortableIdentityActionsHeading" />

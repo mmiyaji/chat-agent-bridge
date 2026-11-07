@@ -21,7 +21,7 @@
             <FontIcon Glyph="&#xE713;" />
         </settings:SettingsExpander.HeaderIcon>
         <settings:SettingsExpander.Items>
-            <settings:SettingsCard ContentAlignment="Vertical" HorizontalContentAlignment="Stretch">
+            <settings:SettingsCard Padding="{StaticResource SettingsExpanderBodyPadding}" ContentAlignment="Vertical" HorizontalContentAlignment="Stretch">
                 <StackPanel Spacing="24" HorizontalAlignment="Stretch">
                     <!-- Keep future advanced sections as siblings of LogRetentionControl in this container. -->
                     <maintenance:LogRetentionControl x:Name="LogManagementControl" />

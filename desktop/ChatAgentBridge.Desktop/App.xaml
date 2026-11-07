@@ -56,6 +56,7 @@
             </Style>
             <!-- WinUI Gallery settings rhythm: a body-strong group header with room above it, cards 4px apart below. -->
             <x:Double x:Key="SettingsCardSpacing">4</x:Double>
+            <Thickness x:Key="SettingsExpanderBodyPadding">16,12</Thickness>
             <Style x:Key="SettingsSectionHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
                 <Setter Property="Margin" Value="1,18,0,4" />
                 <Setter Property="TextWrapping" Value="Wrap" />

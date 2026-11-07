@@ -11,7 +11,7 @@
             <FontIcon Glyph="&#xE713;" />
         </settings:SettingsExpander.HeaderIcon>
         <settings:SettingsExpander.Items>
-            <settings:SettingsCard x:Uid="PortableUpdateCacheCleanupRow"
+            <settings:SettingsCard Padding="{StaticResource SettingsExpanderBodyPadding}" x:Uid="PortableUpdateCacheCleanupRow"
                                    AutomationProperties.AutomationId="AdvancedUpdateCacheCleanupRow">
                 <settings:SettingsCard.Description>
                     <StackPanel Spacing="4">
