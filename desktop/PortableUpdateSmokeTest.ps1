@@ -159,16 +159,26 @@ try {
     foreach ($rollback in $cases) {
         $name = if ($rollback) { 'rollback' } else { 'success' }
         $case = Join-Path $testRoot $name
-        $work = Join-Path $case 'work'
         $install = Join-Path $case 'install'
-        $oldStage = Join-Path $work 'old-stage'
-        $stage = Join-Path $work 'stage'
-        New-Item -ItemType Directory -Path $work, $install | Out-Null
-        $oldMetadata = Stage-Archive $oldArchive $oldStage (Join-Path $work 'old-staged-files.json')
-        $metadata = Stage-Archive $archive $stage (Join-Path $work 'staged-files.json')
+        $fixture = Join-Path $case 'fixture'
+        $oldStage = Join-Path $fixture 'old-stage'
+        New-Item -ItemType Directory -Path $fixture, $install | Out-Null
+        $oldMetadata = Stage-Archive $oldArchive $oldStage (Join-Path $fixture 'old-staged-files.json')
         Get-ChildItem -LiteralPath $oldStage -Force | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $install -Recurse }
         $data = if ($rollback) { Join-Path $install 'Data' } else { Join-Path $case 'custom-data' }
         New-Item -ItemType Directory -Path $data | Out-Null
+        # Match the production updater cache layout so its post-startup payload cleanup
+        # validates the owner hash and exercises the same path as a real installed update.
+        $installFull = [IO.Path]::GetFullPath($install).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+        $dataFull = [IO.Path]::GetFullPath($data).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+        $ownerIdentity = $installFull + "`n" + $dataFull
+        $ownerHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($ownerIdentity))).ToLowerInvariant()
+        $cacheRoot = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)) 'ChatAgentBridge/Updates'
+        $ownerRoot = Join-Path $cacheRoot $ownerHash
+        $work = Join-Path $ownerRoot ([guid]::NewGuid().ToString('N'))
+        $stage = Join-Path $work 'stage'
+        New-Item -ItemType Directory -Path $work -Force | Out-Null
+        $metadata = Stage-Archive $archive $stage (Join-Path $work 'staged-files.json')
         Write-Json (Join-Path $data 'settings.json') @{ SchemaVersion=1; WorkspaceRoot=$data; AgentExecutable='unused'; AgentProvider='custom'; AgentMode='exec'; AgentArguments=''; TrustedWorkspaceRoots=$data; AutoConnectProvider='none' }
         Write-Json (Join-Path $data 'onboarding.json') @{ schemaVersion=3; step=4; status='completed' }
         $policy = [regex]::Match((Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/OnboardingConsentStore.cs') -Raw), 'CurrentPolicyVersion\s*=\s*"([^"]+)"').Groups[1].Value

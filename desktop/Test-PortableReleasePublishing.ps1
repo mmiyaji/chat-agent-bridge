@@ -31,10 +31,17 @@ $ghMock = {
     }
     if ($Arguments.Count -ge 2 -and $Arguments[0] -ceq 'release' -and $Arguments[1] -ceq 'create') {
         $state.Actions.Add('create')
+        $notesIndex = [Array]::IndexOf($Arguments, '--notes-file')
+        $releaseBody = if ($notesIndex -ge 0 -and $notesIndex + 1 -lt $Arguments.Count) {
+            $notesPath = $Arguments[$notesIndex + 1]
+            if (-not (Test-Path -LiteralPath $notesPath -PathType Leaf)) { throw "Release notes file does not exist: $notesPath" }
+            Get-Content -LiteralPath $notesPath -Raw
+        } else { '' }
         $state.Release = [pscustomobject]@{
             tag_name = $Arguments[2]
             draft = $true
             prerelease = $Arguments -ccontains '--prerelease'
+            body = $releaseBody
             assets = @()
         }
         $state.Releases = @($state.Release)
@@ -98,6 +105,7 @@ try {
     Assert-Equal @('list', 'create', 'upload', 'list', 'publish') $mockGhBox.State.Actions 'Draft creation/upload/verification/publish sequence changed.'
     if ($mockGhBox.State.Release.draft) { throw 'Happy-path mock release was not published.' }
     if (@($mockGhBox.State.Release.assets).Count -ne 4) { throw 'Happy-path mock release did not verify all four archive/checksum assets.' }
+    if ($Tag -eq 'v1.1.0-preview.2' -and $mockGhBox.State.Release.body -notmatch '93\.2 MB') { throw 'Preview release did not use its reviewed release notes.' }
     Write-Host 'PASS: creates a draft, uploads both architectures, verifies all assets, and publishes.'
 
     $mockGhBox.State = New-MockState -DigestMismatch

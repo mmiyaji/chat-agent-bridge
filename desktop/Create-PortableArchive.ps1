@@ -18,6 +18,8 @@ $ErrorActionPreference = 'Stop'
 $project = Join-Path $PSScriptRoot 'ChatAgentBridge.Desktop/ChatAgentBridge.Desktop.csproj'
 $updaterProject = Join-Path $PSScriptRoot 'ChatAgentBridge.Updater/ChatAgentBridge.Updater.csproj'
 $distributionDir = Join-Path $PSScriptRoot 'distribution'
+$releaseBuild = & (Join-Path $PSScriptRoot 'Resolve-ReleaseBuildVersion.ps1') -Version $ReleaseVersion
+$trimmedRelease = [bool]$releaseBuild.Prerelease
 $expectedMachine = if ($Architecture -eq 'x64') { 0x8664 } else { 0xAA64 }
 $requiredNames = @('ChatAgentBridge.Desktop.exe', 'ChatAgentBridge.Desktop.runtimeconfig.json', 'coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'Microsoft.ui.xaml.dll', 'Microsoft.WindowsAppRuntime.Insights.Resource.dll', 'ChatAgentBridge.Desktop.pri', 'README.portable.ja.txt', 'README.portable.en.txt')
 $forbiddenDirectoryNames = @('data', 'private-data', 'privatedata', 'settings', 'history', 'sessions', 'audit', 'credentials', '.credentials', 'token', 'tokens', 'secrets', 'chatagentbridge.testagent', 'appx', 'msix')
@@ -182,6 +184,9 @@ function Assert-PortableContents {
         if ($metadataArchitecture -ne $expectedMetadataArchitecture) {
             throw "portable-release.json architecture is $metadataArchitecture; expected $expectedMetadataArchitecture."
         }
+        $trimModeProperty = $releaseMetadata.PSObject.Properties['trimMode']
+        $trimMode = if ($trimModeProperty) { [string]$trimModeProperty.Value } else { 'none' }
+        if ($trimMode -notin @('none', 'full')) { throw 'portable-release.json has an unsupported trimMode.' }
         if (-not (Test-Path -LiteralPath (Join-Path $resolved 'ChatAgentBridge.Updater.exe') -PathType Leaf)) {
             throw 'ChatAgentBridge.Updater.exe is missing from a metadata-enabled portable package.'
         }
@@ -292,10 +297,16 @@ function New-PayloadChecksums {
 }
 
 function New-PortableMetadata {
-    param([Parameter(Mandatory)][string] $Layout, [Parameter(Mandatory)][string] $Version, [Parameter(Mandatory)][string] $CpuArchitecture)
+    param(
+        [Parameter(Mandatory)][string] $Layout,
+        [Parameter(Mandatory)][string] $Version,
+        [Parameter(Mandatory)][string] $CpuArchitecture,
+        [Parameter(Mandatory)][bool] $Trimmed
+    )
 
     $metadataArchitecture = if ($CpuArchitecture -eq 'x64') { 'x64' } else { 'arm64' }
-    $releaseMetadata = [ordered]@{ schemaVersion = 1; releaseVersion = $Version; architecture = $metadataArchitecture }
+    $trimMode = if ($Trimmed) { 'full' } else { 'none' }
+    $releaseMetadata = [ordered]@{ schemaVersion = 1; releaseVersion = $Version; architecture = $metadataArchitecture; trimMode = $trimMode }
     $releasePath = Join-Path $Layout 'portable-release.json'
     [System.IO.File]::WriteAllText($releasePath, ($releaseMetadata | ConvertTo-Json -Depth 4) + "`n", [System.Text.UTF8Encoding]::new($false))
 
@@ -404,6 +415,7 @@ else {
         ('-p:FileVersion=' + $ApplicationVersion), '-p:DebugType=None', '-p:DebugSymbols=false',
         '-o', $layout
     )
+    if ($trimmedRelease) { $publishArgs += '-p:CABPortableTrimExperiment=true' }
     if ($IdentityCertificateThumbprint) { $publishArgs += '-p:CABPortableIdentity=true' }
     & dotnet @publishArgs
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE" }
@@ -438,7 +450,7 @@ Copy-Item -LiteralPath (Join-Path $distributionDir 'README.portable.en.txt') -De
 if ($IdentityCertificateThumbprint) {
     & (Join-Path $PSScriptRoot 'New-PortableIdentityPackage.ps1') -Layout $layout -CertificateThumbprint $IdentityCertificateThumbprint
 }
-New-PortableMetadata -Layout $layout -Version $ReleaseVersion -CpuArchitecture $Architecture
+New-PortableMetadata -Layout $layout -Version $ReleaseVersion -CpuArchitecture $Architecture -Trimmed $trimmedRelease
 New-PayloadChecksums -Layout $layout
 $null = Assert-PortableContents -Layout $layout
 

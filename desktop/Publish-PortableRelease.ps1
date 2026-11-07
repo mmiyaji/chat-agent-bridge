@@ -49,7 +49,13 @@ $pages = (Invoke-Gh @('api', '--paginate', '--slurp', "repos/$repository/release
 $existing = @($pages | ForEach-Object { $_ } | Where-Object { $_.tag_name -ceq $Tag })
 if ($existing.Count -gt 1) { throw 'Duplicate release tags in API response.' }
 if ($existing.Count -eq 0) {
-    $arguments = @('release', 'create', $Tag, '--repo', $repository, '--verify-tag', '--draft', '--title', "Chat Agent Bridge $($resolved.ReleaseVersion)", '--generate-notes')
+    $arguments = @('release', 'create', $Tag, '--repo', $repository, '--verify-tag', '--draft', '--title', "Chat Agent Bridge $($resolved.ReleaseVersion)")
+    $releaseNotes = Join-Path $PSScriptRoot "../docs/releases/$($resolved.ReleaseVersion).md"
+    if (Test-Path -LiteralPath $releaseNotes -PathType Leaf) {
+        $arguments += @('--notes-file', [IO.Path]::GetFullPath($releaseNotes))
+    } else {
+        $arguments += '--generate-notes'
+    }
     if ($resolved.Prerelease) { $arguments += '--prerelease' }
     Invoke-Gh $arguments | Out-Host
 } elseif ($existing[0].prerelease -ne $resolved.Prerelease) {

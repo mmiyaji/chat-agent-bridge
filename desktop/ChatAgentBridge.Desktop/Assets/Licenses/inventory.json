@@ -36,7 +36,8 @@
       ],
       "runtimePackIdentities": [
         "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/10.0.14",
-        "runtimepack.Microsoft.Windows.SDK.NET.Ref/10.0.26100.57"
+        "runtimepack.Microsoft.Windows.SDK.NET.Ref/10.0.26100.57",
+        "runtimepack.Microsoft.Windows.SDK.NET.Ref/10.0.26100.87"
       ],
       "referenceIdentities": [
         "Microsoft.Web.WebView2.Core.Projection/1.0.3719.77"
@@ -88,14 +89,6 @@
       "noticeFile": "LICENSE-DotNetRuntime.txt"
     },
     {
-      "identity": "runtimepack.Microsoft.Windows.SDK.NET.Ref/10.0.26100.57",
-      "type": "runtimepack",
-      "noticeFile": "LICENSE-WindowsSDK.txt",
-      "packageIdentity": "Microsoft.Windows.SDK.NET.Ref/10.0.26100.57",
-      "licenseSourceUrl": "https://aka.ms/WinSDKLicenseURL",
-      "runtimeSourceUrl": "https://github.com/microsoft/CsWinRT"
-    },
-    {
       "identity": "Microsoft.Web.WebView2.Core.Projection/1.0.3719.77",
       "type": "reference",
       "noticeFile": "LICENSE-WebView2.txt"
@@ -104,6 +97,22 @@
       "identity": "runtimepack.Microsoft.NETCore.App.Runtime.win-arm64/10.0.14",
       "type": "runtimepack",
       "noticeFile": "LICENSE-DotNetRuntime.txt"
+    },
+    {
+      "identity": "runtimepack.Microsoft.Windows.SDK.NET.Ref/10.0.26100.57",
+      "type": "runtimepack",
+      "noticeFile": "LICENSE-WindowsSDK.txt",
+      "packageIdentity": "Microsoft.Windows.SDK.NET.Ref/10.0.26100.57",
+      "licenseSourceUrl": "https://aka.ms/WinSDKLicenseURL",
+      "runtimeSourceUrl": "https://github.com/microsoft/CsWinRT"
+    },
+    {
+      "identity": "runtimepack.Microsoft.Windows.SDK.NET.Ref/10.0.26100.87",
+      "type": "runtimepack",
+      "noticeFile": "LICENSE-WindowsSDK.txt",
+      "packageIdentity": "Microsoft.Windows.SDK.NET.Ref/10.0.26100.87",
+      "licenseSourceUrl": "https://aka.ms/WinSDKLicenseURL",
+      "runtimeSourceUrl": "https://github.com/microsoft/CsWinRT"
     }
   ],
   "packages": [
@@ -408,6 +417,21 @@
       "publishedRuntimeDependencyIn": [
         "ChatAgentBridge.Desktop (runtimepack)"
       ]
+    },
+    {
+      "id": "Microsoft.Windows.SDK.NET.Ref",
+      "version": "10.0.26100.87",
+      "nugetContentSha512": "ESBNznwNe82NJ1kJAauV9gqkNY5v2P5RZC5jHqPg7aVOtdElawwiZQBPxBXc/G7PCPLhvTjnYMufSHQfXBo7Iw==",
+      "licenseExpression": null,
+      "licenseMetadataType": "licenseUrl",
+      "packageLicenseFile": null,
+      "licenseUrl": "https://aka.ms/WinSDKLicenseURL",
+      "projectUrl": "https://aka.ms/WinSDKProjectURL",
+      "repositoryUrl": null,
+      "noticeFile": "LICENSE-WindowsSDK.txt",
+      "publishedRuntimeDependencyIn": [
+        "ChatAgentBridge.Desktop (runtimepack)"
+      ]
     }
   ],
   "redistributedComponents": [
@@ -436,7 +460,7 @@
     {
       "name": "Windows SDK .NET targeting pack",
       "noticeFile": "LICENSE-WindowsSDK.txt",
-      "version": "10.0.26100.57",
+      "version": "10.0.26100.57 or 10.0.26100.87",
       "provenance": "Microsoft.Windows.SDK.NET.Ref runtimepack supplies WinRT.Runtime.dll and Windows SDK projection assemblies",
       "licenseSourceUrl": "https://aka.ms/WinSDKLicenseURL",
       "runtimeSourceUrl": "https://github.com/microsoft/CsWinRT"
@@ -499,8 +523,8 @@
   ],
   "aggregateNotice": {
     "file": "desktop/THIRD-PARTY-NOTICES.txt",
-    "sha256": "a32b7255217d4e0e4f6ac256aef5a1691414463e6a273296dec3efdc01ede017",
-    "bytes": 499267
+    "sha256": "1da49a60fd1dd038475e6ffccb3031c052ae304e5fa758b201f5d647f63cc65a",
+    "bytes": 499287
   },
   "auditNotes": [
     "The .NET 10.0.14 x64 and ARM64 NuGet runtime packs were retrieved and inspected; their bundled THIRD-PARTY-NOTICES.TXT files have identical text, matching the reviewed runtime notice already catalogued.",

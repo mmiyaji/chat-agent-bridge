@@ -8114,7 +8114,7 @@ SOFTWARE.
 
 ==============================================================================
 Windows SDK and C#/WinRT
-Components: Microsoft.Windows.SDK.NET.Ref 10.0.26100.57 (WinRT.Runtime.dll); Windows SDK EULA and C#/WinRT MIT License
+Components: Microsoft.Windows.SDK.NET.Ref 10.0.26100.57 and 10.0.26100.87 (WinRT.Runtime.dll); Windows SDK EULA and C#/WinRT MIT License
 ==============================================================================
 
 **MICROSOFT SOFTWARE LICENSE TERMS**
