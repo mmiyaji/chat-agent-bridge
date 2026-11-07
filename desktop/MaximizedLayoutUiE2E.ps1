@@ -45,6 +45,7 @@ try{
     $policy=[regex]::Match((Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/OnboardingConsentStore.cs') -Raw),'CurrentPolicyVersion\s*=\s*"([^"]+)"').Groups[1].Value
     Assert ([bool]$policy) 'Missing consent policy.'
     Write-Json 'consent.json' @{PolicyVersion=$policy;AcceptedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')}
+    Write-Json 'tips.json' @{Seen=@('chat-connect')}
     Write-Json 'language.json' @{Language=$Language}
     Write-Json 'appearance.json' @{Theme=$(if($Language -eq 'ja'){'dark'}else{'light'})}
     Write-Json 'pricing-auto.json' @{schemaVersion=1;autoUpdateEnabled=$false;catalogJson=(Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/Pricing/model-prices.json') -Raw)}
@@ -56,7 +57,7 @@ try{
     # Close the initial load banner via ordinary navigation before comparing page origins.
     Navigate 'NavWorkbench';Navigate 'NavOverview'
     $pages=@('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAbout')
-    $labels=if($Language -eq 'ja'){@('全般','手動で実行','エージェント設定','接続設定','チャット受信','履歴と会話','情報')}else{@('General','Run manually','Agent settings','Connection settings','Chat inbox','History and conversations','About')}
+    $labels=if($Language -eq 'ja'){@('全般','手動で実行','エージェント設定','チャット設定','チャット','履歴と利用状況','情報')}else{@('General','Run manually','Agent settings','Chat settings','Chat','History and usage','About')}
     $sizes=if($CaptureOnly){@('maximized')}else{@('maximized','1160','720','500','maximized-again')}
     foreach($size in $sizes){
         if($size -like 'maximized*'){[void][MaximizedLayoutNative]::ShowWindow($window,3)}else{[void][MaximizedLayoutNative]::ShowWindow($window,9);[void][MaximizedLayoutNative]::SetWindowPos($window,[IntPtr]::Zero,50,50,[int]([int]$size*$scale),[int](850*$scale),0x0014)}
@@ -78,9 +79,9 @@ try{
                 # WinUI's passive Grid/StackPanel peers report empty bounds. Measure
                 # visible input controls and account for their containing card padding.
                 if($index -in @(0,1,2,3)){
-                    $fieldId=switch($index){0{'OverviewAgentTile'}1{'Prompt'}2{'WorkspaceRoot'}3{'MattermostServerUrl'}}
+                    $fieldId=switch($index){0{'OverviewAgentTile'}1{'Prompt'}2{'AgentScopeList'}3{'ConnectionScopeList'}}
                     # Overview status tiles sit directly on the page (no surrounding card), so they have no extra padding.
-                    $padding=switch($index){0{0}1{0}2{16}3{20}}
+                    $padding=switch($index){0{0}1{0}2{0}3{0}}
                     $field=(Element $fieldId).Current.BoundingRectangle
                     $bodyLeft=($field.Left-$bounds.Left)/$scale-$padding
                     $bodyWidth=$field.Width/$scale+2*$padding
