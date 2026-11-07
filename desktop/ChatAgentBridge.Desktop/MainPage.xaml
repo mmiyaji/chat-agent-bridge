@@ -865,6 +865,7 @@
                                         </StackPanel>
                                     </Expander.Header>
                                     <StackPanel Spacing="12">
+                                        <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="FileAttachmentVisibilityWarning" localization:LocalizedResourceKey.Key="FileAttachmentVisibilityWarning" />
                                         <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="FileAttachmentSettingsHeading" localization:LocalizedResourceKey.Key="FileAttachmentSettingsHeading" />
                                         <ComboBox SelectedValuePath="Tag" SelectedValue="{x:Bind ViewModel.FileAttachmentApprovalMode, Mode=TwoWay}" HorizontalAlignment="Stretch" AutomationProperties.AutomationId="FileAttachmentApprovalMode" x:Uid="FileAttachmentApprovalMode">
                                             <ComboBoxItem Tag="disabled" AutomationProperties.AutomationId="FileAttachmentModeDisabled" x:Uid="FileAttachmentModeDisabled" />
@@ -878,6 +879,7 @@
                                             <NumberBox Value="{x:Bind ViewModel.FileAttachmentMaxTotalSizeMb, Mode=TwoWay}" Minimum="1" Maximum="100" SpinButtonPlacementMode="Inline" SmallChange="1" LargeChange="5" AutomationProperties.AutomationId="FileAttachmentMaxTotalSizeMb" x:Uid="FileAttachmentMaxTotalSizeMb" />
                                         </StackPanel>
                                         <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="FileAttachmentSettingsHelp" localization:LocalizedResourceKey.Key="FileAttachmentSettingsHelp" />
+                                        <HyperlinkButton x:Uid="FileAttachmentGuide" AutomationProperties.AutomationId="FileAttachmentGuide" NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/blob/main/desktop/README.ja.md#エージェントが作成したファイルの添付" />
                                     </StackPanel>
                                 </Expander>
                                 <Expander x:Name="CodexChatSharingSettings" AutomationProperties.AutomationId="CodexChatSharingSettings" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsCodexProvider), Mode=OneWay}" x:Uid="CodexChatSharingAccessible" localization:LocalizedResourceKey.Key="CodexChatSharingAccessible">

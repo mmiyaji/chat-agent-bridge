@@ -77,10 +77,10 @@ The sidebar shows the connected chat service and its status. Select it to open C
 
 ## Installation and setup
 
-Portable builds are available for Windows. Install and authenticate your chosen CLI and prepare the chat bot separately.
+Install from the [Microsoft Store](https://apps.microsoft.com/detail/9n1lzk25fsgr) or use a portable build from GitHub Releases. Set up your CLI and chat bot separately.
 
-1. Download the **x64 / ARM64** ZIP for your PC from [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases).
-2. Extract the entire folder to a writable location and run `ChatAgentBridge.Desktop.exe`.
+1. For a portable installation, download the **x64 / ARM64** ZIP for your PC from [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases).
+2. Extract the ZIP to a writable folder and run `ChatAgentBridge.Desktop.exe`. Launch the Store edition from the Start menu.
 3. Install the CLI and sign in through it. Select the CLI and working folder in the setup guide, then run the CLI check.
 4. Prepare a bot on the chat service, then configure connection details and allowed users in **Chat settings**.
    - Slack: [Slack setup guide](docs/slack-setup.md) (Socket Mode app, events and scopes)

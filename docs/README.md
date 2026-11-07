@@ -8,12 +8,12 @@
 - [実行モードと承認](execution-modes.ja.md)
 - [エージェントの切り替え](conversation-agent-switching.ja.md) / [モデルの切り替え](conversation-model-switching.ja.md)
 - [データのバックアップ・復旧](release-data-recovery.ja.md)
-- [ログと履歴の保持設定](log-retention.ja.md) — 保持期間・容量の設定はこの資料を参照
+- [ログと履歴の保持設定](log-retention.ja.md)（保持期間・容量の設定はこの資料を参照）
 
 ## 開発・検証
 
 - [WinUI版の技術資料・開発手順](../desktop/README.ja.md)
-- [テスト・検証ガイド](testing.ja.md) — 変更別の確認方法、UIスクリプトの分類、リリース前の確認
+- [テスト・検証ガイド](testing.ja.md)（変更別の確認方法、UIスクリプトの分類、リリース前の確認）
 - [CI/CDの運用](ci-cd.ja.md)
 - [更新時のデータ移行](data-migrations.ja.md)
 - [添付の一時ファイルと起動時の回収](incoming-attachment-recovery.md)
@@ -23,12 +23,12 @@
 
 ## 配布
 
-- [ポータブル版のリリース手順](../RELEASE.md) — 公開手順の正本
-- [紹介サイトの公開手順](site-release.ja.md) — `site/` の更新と Cloudflare Pages への公開
+- [ポータブル版のリリース手順](../RELEASE.md)（公開手順の正本）
+- [紹介サイトの公開手順](site-release.ja.md)（`site/` の更新と Cloudflare Pages への公開）
 - [Microsoft Store公開の準備・パッケージ名の方針](store-preparation.ja.md)
 - [Store初回申請の下書きと未完了項目](store-submission-draft.ja.md)
 - [公開済みバージョンと変更履歴](https://github.com/mmiyaji/chat-agent-bridge/releases)
-- [preview.8の補足記録](releases/0.1.0-preview.8.md) — 当該版の記録であり、最新の変更履歴ではありません
+- [preview.8の補足記録](releases/0.1.0-preview.8.md)（当該版の記録であり、最新の変更履歴ではありません）
 
 ## 規約・プライバシー・ライセンス
 
