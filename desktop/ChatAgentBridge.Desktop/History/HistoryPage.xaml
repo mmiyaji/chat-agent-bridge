@@ -263,7 +263,8 @@
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
                                         </StackPanel>
-                                        <Expander Grid.Row="4" IsExpanded="False" AutomationProperties.AutomationId="SessionIdentifiers">
+                                        <Expander Grid.Row="4" IsExpanded="False" HorizontalContentAlignment="Stretch"
+                                                  AutomationProperties.AutomationId="SessionIdentifiers">
                                             <Expander.Header>
                                                 <TextBlock Text="{x:Bind ViewModel.IdentifiersSummary, Mode=OneWay}"
                                                            TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
@@ -352,7 +353,7 @@
             <PivotItem x:Name="ExecutionsTab" Header="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryTab">
                 <SplitView x:Name="RecordDrawer" Margin="0,14,0,0" PanePlacement="Right" DisplayMode="Overlay" OpenPaneLength="380"
                            IsPaneOpen="{x:Bind ViewModel.IsDetailOpen, Mode=TwoWay}" SizeChanged="RecordDrawer_SizeChanged"
-                           PaneBackground="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+                           PaneBackground="{ThemeResource LayerOnMicaBaseAltFillColorTertiaryBrush}">
                     <SplitView.Pane>
                         <Grid Padding="16,12" RowSpacing="8" BorderThickness="1,0,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                               AutomationProperties.AutomationId="RecordDetailDrawer" KeyDown="RecordDrawer_KeyDown">
