@@ -391,7 +391,7 @@
     <value>Next: configure the agent and workspace.</value>
   </data>
   <data name="SetupAllowedUsersMissing" xml:space="preserve">
-    <value>Next: enter one allowed user ID per line for each connection. An empty list denies everyone.</value>
+    <value>Next: check the format of the allowed user IDs. Enter one ID per line.</value>
   </data>
   <data name="SetupDiscordGuildIdsMissing" xml:space="preserve">
     <value>Next: enter at least one allowed Discord server ID, or explicitly enable direct messages.</value>

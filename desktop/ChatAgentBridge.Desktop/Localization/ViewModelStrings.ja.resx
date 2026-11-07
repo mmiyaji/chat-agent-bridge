@@ -391,7 +391,7 @@
     <value>次のステップ: エージェントと作業フォルダーを設定します。</value>
   </data>
   <data name="SetupAllowedUsersMissing" xml:space="preserve">
-    <value>次のステップ: 接続先ごとに許可するユーザーIDを1行に1つ設定します。空欄では全員を拒否します。</value>
+    <value>次のステップ: 許可ユーザーIDの形式を確認してください。IDは1行に1つ入力します。</value>
   </data>
   <data name="SetupDiscordGuildIdsMissing" xml:space="preserve">
     <value>次のステップ: 許可するDiscordサーバーIDを1つ以上入力するか、ダイレクトメッセージを明示的に有効にします。</value>

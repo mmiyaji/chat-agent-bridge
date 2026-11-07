@@ -465,8 +465,13 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="WizardAddMattermostUserButton.Content" xml:space="preserve"><value>Add this user</value></data>
   <data name="WizardAddMattermostUserButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add this user to allowed users</value></data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock053.Text" xml:space="preserve">
-    <value>This list contains internal user IDs. Do not enter usernames directly. A blank list rejects everyone. Review additions to apply the change, then reconnect Mattermost if connected.</value>
+    <value>This list contains internal user IDs. Do not enter usernames directly. You can leave it blank and add people by approving their chat requests on this PC. Reconnect Mattermost if connected.</value>
   </data>
+  <data name="InboxAccessRequestsTitle.Text" xml:space="preserve"><value>Requests from people who are not allowed yet</value></data>
+  <data name="InboxAccessRequestsHelp.Text" xml:space="preserve"><value>Allow and run adds the person to the allowed users, so later requests arrive without this check. Display names can change, so check the ID too.</value></data>
+  <data name="AccessRequestAllowButton.Content" xml:space="preserve"><value>Allow and run</value></data>
+  <data name="AccessRequestAllowOnceButton.Content" xml:space="preserve"><value>Run once</value></data>
+  <data name="AccessRequestDenyButton.Content" xml:space="preserve"><value>Deny</value></data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock054.Text" xml:space="preserve">
     <value>Bot tokens are used for posting, and App tokens are used to receive requests in Socket Mode. Permissions and event subscription settings on the Slack app side and the bot's participation in the channel are required.</value>
   </data>
@@ -489,7 +494,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Slack member IDs to allow (one per line)</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock058.Text" xml:space="preserve">
-    <value>An empty list rejects everyone. Add a user through the search above, or paste an ID from Copy member ID in their Slack profile. This ID field accepts member IDs, not display names or @mentions. Enter one ID per line.</value>
+    <value>Add a user through the search above, or paste an ID from Copy member ID in their Slack profile, one per line. Display names and @mentions are not accepted. You can leave it blank and add people by approving their chat requests on this PC.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock059.Text" xml:space="preserve">
     <value>Tool approvals and privacy</value>
@@ -762,7 +767,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Slack member IDs to allow (one per line)</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock013.Text" xml:space="preserve">
-    <value>Slack requires both the bot token xoxb- and the app token xapp-. If the authorized user ID is empty, no requests will be accepted from anyone.</value>
+    <value>Slack requires both the bot token xoxb- and the app token xapp-. You can leave allowed users blank. After connecting, mention the bot in chat and approve the request on this PC to add yourself.</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock014.Text" xml:space="preserve">
     <value>Add a user through the search above. For manual entry, open their Slack profile, choose Copy member ID from the More menu, and paste it into this ID field.</value>
@@ -789,7 +794,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Internal Mattermost user IDs to allow (one per line)</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock018.Text" xml:space="preserve">
-    <value>This list contains internal user IDs. Do not enter usernames directly. A blank list rejects everyone. Review additions to apply the change, then reconnect Mattermost if connected.</value>
+    <value>This list contains internal user IDs. Do not enter usernames directly. You can leave it blank and add people by approving their chat requests on this PC after connecting.</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock019.Text" xml:space="preserve">
     <value>Please enter your token only on this screen. Does not output tokens in execution results.</value>
@@ -1290,7 +1295,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="DiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Show or hide Discord bot token</value></data>
   <data name="DiscordAllowedUserIdsLabel.Text" xml:space="preserve"><value>Allowed user IDs</value></data>
   <data name="DiscordAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord user IDs</value></data>
-  <data name="DiscordAllowedUserIdsHelp.Text" xml:space="preserve"><value>Enter one allowed Discord user ID per line. Use IDs rather than usernames.</value></data>
+  <data name="DiscordAllowedUserIdsHelp.Text" xml:space="preserve"><value>Enter one allowed Discord user ID per line. Use IDs rather than usernames. You can leave it blank and add people by approving their chat requests on this PC.</value></data>
   <data name="DiscordAllowedGuildIdsLabel.Text" xml:space="preserve"><value>Allowed server IDs</value></data>
   <data name="DiscordAllowedGuildIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord server IDs</value></data>
   <data name="DiscordAllowedGuildIdsHelp.Text" xml:space="preserve"><value>Required when direct messages are disabled. Enter one server ID per line.</value></data>

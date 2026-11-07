@@ -586,6 +586,7 @@ public partial class MainPageViewModel : ObservableObject
             else
             {
                 await Task.Run(() => _settingsStore.SaveAsync(snapshot));
+                await AuditAllowedUserChangesAsync(baseline, snapshot);
             }
             _settings = snapshot;
             OnPropertyChanged(nameof(PersistedSettings));
@@ -916,9 +917,9 @@ public partial class MainPageViewModel : ObservableObject
         var mattermostCredentials = !string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) && !string.IsNullOrWhiteSpace(_settings.MattermostChannelId) && !string.IsNullOrWhiteSpace(_settings.MattermostToken);
         var slackCredentials = !string.IsNullOrWhiteSpace(_settings.SlackBotToken) && !string.IsNullOrWhiteSpace(_settings.SlackAppToken);
         var discordCredentials = !string.IsNullOrWhiteSpace(_settings.DiscordBotToken);
-        var mattermostAllowed = HasAllowedUsers(_settings.MattermostAllowedUserIds);
-        var slackAllowed = HasAllowedUsers(_settings.SlackAllowedUserIds);
-        var discordUsersAllowed = HasDiscordIds(_settings.DiscordAllowedUserIds);
+        var mattermostAllowed = AllowedUsersValid(_settings.MattermostAllowedUserIds);
+        var slackAllowed = AllowedUsersValid(_settings.SlackAllowedUserIds);
+        var discordUsersAllowed = DiscordIdsValid(_settings.DiscordAllowedUserIds);
         var discordGuildRequired = !_settings.DiscordAllowDirectMessages && !HasDiscordIds(_settings.DiscordAllowedGuildIds);
         var discordAllowed = discordUsersAllowed && !discordGuildRequired;
         var connectionReady = (mattermostCredentials && mattermostAllowed) || (slackCredentials && slackAllowed) || (discordCredentials && discordAllowed);
@@ -946,9 +947,16 @@ public partial class MainPageViewModel : ObservableObject
         RefreshOverviewStatus();
     }
 
-    private static bool HasAllowedUsers(string value)
+    // An empty allowed-user list is valid: chat users can ask for access and be approved on this PC.
+    private static bool AllowedUsersValid(string value)
     {
-        try { return ChatAccessPolicy.NormalizeAllowedUsers(value).Length > 0; }
+        try { _ = ChatAccessPolicy.NormalizeAllowedUsers(value); return true; }
+        catch (FormatException) { return false; }
+    }
+
+    private static bool DiscordIdsValid(string value)
+    {
+        try { _ = ChatAccessPolicy.NormalizeDiscordSnowflakes(value); return true; }
         catch (FormatException) { return false; }
     }
 

@@ -17,8 +17,8 @@ It is intended for devices where you cannot use the Codex or Claude Code desktop
 
 A chat post causes the CLI on your PC to read and write files and run commands. Follow these guidelines:
 
-- **Allow only yourself.** An allowed user can send requests that use your PC, your CLI sign-in and your AI service quota. Posts from users who are not allowed are ignored.
-- **Limit who can send requests.** With the default, “No approval for allowed users,” requests from allowed users run without confirmation on the PC. Posts from other users never run. “Confirm the first request in each conversation” and “Ask every time” add approvals on the PC, which makes remote use harder. Keep the allowed-user list restricted to yourself.
+- **Allow only yourself.** An allowed user can send requests that use your PC, your CLI sign-in and your AI service quota. When someone who is not allowed mentions the bot or uses `!cab`, the PC asks for approval. **Allow and run** adds them to the allowed users; **Run once** and **Deny** are also available. Each decision is recorded in the activity history.
+- **Limit who can send requests.** With the default, “No approval for allowed users,” requests from allowed users run without confirmation on the PC. Requests from anyone else wait until you allow them on the PC. “Confirm the first request in each conversation” and “Ask every time” add approvals on the PC, which makes remote use harder. Keep the allowed-user list restricted to yourself.
 - **Limit the working folders.** Register only folders the agent may touch as trusted working folders. Avoid your home folder or an entire drive.
 - **Use automatic sharing with care.** Automatic sharing makes results visible to everyone who can read the thread. The defaults are “No approval for allowed users” and automatic result sharing.
 - **Narrow the channels and threads.** If needed, restrict which channels and threads can send requests.
@@ -82,12 +82,12 @@ Install from the [Microsoft Store](https://apps.microsoft.com/detail/9n1lzk25fsg
 1. For a portable installation, download the **x64 / ARM64** ZIP for your PC from [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases).
 2. Extract the ZIP to a writable folder and run `ChatAgentBridge.Desktop.exe`. Launch the Store edition from the Start menu.
 3. Install the CLI and sign in through it. Select the CLI and working folder in the setup guide, then run the CLI check.
-4. Prepare a bot on the chat service, then configure connection details and allowed users in **Chat settings**.
+4. Prepare a bot on the chat service, then configure connection details in **Chat settings**. Enter allowed users there, or leave the list blank, connect, and choose **Allow and run** on the PC for your first request.
    - Slack: [Slack setup guide](docs/slack-setup.md) (Socket Mode app, events and scopes)
    - Mattermost: [Mattermost setup guide](docs/mattermost-setup.md) (bot token and conversation channel ID)
    - Discord: [Discord setup guide](docs/discord-setup.md) (bot token, allowed server IDs and Message Content Intent)
 5. Connect from **Chat** and post a request. How to start depends on the service (see [Chat operations](#chat-operations)).
-   Connect buttons are enabled only for services with saved connection details and at least one allowed user. If none are ready, use **Open chat settings** in Chat to finish setup.
+   Connect buttons are enabled only for services with saved connection details. If none are ready, use **Open chat settings** in Chat to finish setup.
 6. By default, requests from allowed users run without approval on the PC, and the result is posted automatically in the same thread. Reply there to continue.
 
 By default, requests from allowed users run without approval, results are shared automatically and every attachment requires approval. The CLI check identifies the CLI and version. Check authentication and available quota through the CLI itself.

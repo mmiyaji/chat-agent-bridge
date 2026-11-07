@@ -173,6 +173,29 @@ public sealed class SlackContinuationTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new SlackContinuationTracker(0));
     }
 
+    [Fact]
+    public async Task Explicit_request_from_unlisted_user_is_marked_for_approval_but_plain_replies_are_not()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new SessionStore(directory.Path);
+        using var mention = Event("U9", "C1", "11.1", "11.0", "<@UBOT> please help");
+
+        var request = await SlackSocketModeTransport.ParseRequestAsync(mention.RootElement, "UBOT", Settings(""), store);
+        Assert.NotNull(request);
+        Assert.True(request.IsAccessRequest);
+        Assert.Equal("U9", request.UserId);
+
+        var allowed = await SlackSocketModeTransport.ParseRequestAsync(mention.RootElement, "UBOT", Settings("U9"), store);
+        Assert.NotNull(allowed);
+        Assert.False(allowed.IsAccessRequest);
+
+        Assert.Null(await SlackSocketModeTransport.ParseRequestAsync(mention.RootElement, "UBOT",
+            Settings("") with { SlackAllowedChannelIds = "C2" }, store));
+        await SaveAsync(store, ChatSessionScope.Create("slack", "C1", "10.0", "U9"));
+        using var plainReply = Event("U9", "C1", "10.5", "10.0", "continue");
+        Assert.Null(await SlackSocketModeTransport.ParseRequestAsync(plainReply.RootElement, "UBOT", Settings(""), store));
+    }
+
     private static BridgeSettings Settings(string users) => new() { SlackAllowedUserIds = users };
 
     private static JsonDocument Event(string user, string channel, string ts, string thread, string text) =>

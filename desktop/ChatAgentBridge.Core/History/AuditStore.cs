@@ -18,7 +18,8 @@ public sealed class AuditStore
         "received", "approved", "rejected", "started", "completed", "failed", "cancelled", "reply_sent",
         "reply_failed", "detached", "workspace_changed", "model_changed", "agent_changed",
         "attachment_approved", "attachment_sent", "attachment_failed", "follow_up_applied", "follow_up_uncertain",
-        "schedule_created", "schedule_removed", "schedule_fired", "schedule_skipped", "execution_exception"
+        "schedule_created", "schedule_removed", "schedule_fired", "schedule_skipped", "execution_exception",
+        "access_requested", "access_allowed", "access_allowed_once", "access_denied", "allowed_user_added", "allowed_user_removed"
     };
     private const int MaxEntryBytes = 16 * 1024;
     private const int MaxSegmentBytes = 16 * 1024 * 1024;
@@ -472,6 +473,9 @@ public sealed class AuditStore
         if ((record.Kind == "execution_exception") != (record.ExecutionDiagnostic is not null))
             throw new ArgumentException("Execution diagnostics require an execution exception event.", nameof(record));
         record.ExecutionDiagnostic?.Validate();
+        if (AuditEvent.IsAccessKind(record.Kind) != (record.Access is not null))
+            throw new ArgumentException("Access details require an access event.", nameof(record));
+        record.Access?.Validate();
     }
 
     private static void ValidateLoaded(AuditEvent? record)

@@ -105,6 +105,7 @@ public sealed partial class MainPage : Page
                 RefreshConnectionScopeMarker();
             }
         };
+        InboxPage.ViewModel.AllowedUsersSaved += saved => ViewModel.ApplySavedAllowedUsers(saved);
         ViewModel.SettingsSaved += () =>
         {
             _ = InboxPage.ViewModel.RefreshAccessAsync();

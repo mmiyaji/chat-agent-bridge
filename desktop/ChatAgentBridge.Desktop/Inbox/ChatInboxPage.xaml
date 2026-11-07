@@ -71,6 +71,34 @@
                             AutomationProperties.AutomationId="InboxOpenPendingApproval" />
                 </InfoBar.ActionButton>
             </InfoBar>
+            <Border Visibility="{x:Bind ViewModel.HasAccessRequests, Mode=OneWay}" Style="{StaticResource ActivityCardStyle}" Padding="16,12"
+                    AutomationProperties.AutomationId="InboxAccessRequests">
+                <StackPanel Spacing="4">
+                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="InboxAccessRequestsTitle" localization:LocalizedResourceKey.Key="InboxAccessRequestsTitle" />
+                    <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               x:Uid="InboxAccessRequestsHelp" localization:LocalizedResourceKey.Key="InboxAccessRequestsHelp" />
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.AccessRequests}" AutomationProperties.AutomationId="InboxAccessRequestList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="inbox:AccessRequestItem">
+                                <StackPanel Spacing="4" Padding="0,10,0,0">
+                                    <TextBlock Text="{x:Bind Title, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                    <TextBlock Text="{x:Bind Location, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Text="{x:Bind Preview}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                                        <Button Style="{StaticResource AccentButtonStyle}" Command="{x:Bind AllowCommand}"
+                                                x:Uid="AccessRequestAllowButton" AutomationProperties.AutomationId="AccessRequestAllow" />
+                                        <Button Command="{x:Bind AllowOnceCommand}" x:Uid="AccessRequestAllowOnceButton"
+                                                AutomationProperties.AutomationId="AccessRequestAllowOnce" />
+                                        <Button Command="{x:Bind DenyCommand}" x:Uid="AccessRequestDenyButton"
+                                                AutomationProperties.AutomationId="AccessRequestDeny" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
             <InfoBar IsOpen="{x:Bind ViewModel.ShowChatSetupNotice, Mode=OneWay}" IsClosable="False" Severity="Informational"
                      x:Uid="InboxChatSetupNeeded" AutomationProperties.AutomationId="InboxChatSetupNeeded" />
             <InfoBar x:Name="NotificationActionNotice" IsOpen="False" IsClosable="True" Severity="Warning"

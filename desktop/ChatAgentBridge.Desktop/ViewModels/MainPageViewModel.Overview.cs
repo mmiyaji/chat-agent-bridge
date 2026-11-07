@@ -57,12 +57,12 @@ public partial class MainPageViewModel
         var mattermostReady = _settings is not null &&
             !string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) &&
             !string.IsNullOrWhiteSpace(_settings.MattermostChannelId) &&
-            !string.IsNullOrWhiteSpace(_settings.MattermostToken) && HasAllowedUsers(_settings.MattermostAllowedUserIds);
+            !string.IsNullOrWhiteSpace(_settings.MattermostToken) && AllowedUsersValid(_settings.MattermostAllowedUserIds);
         var slackReady = _settings is not null &&
             !string.IsNullOrWhiteSpace(_settings.SlackBotToken) &&
-            !string.IsNullOrWhiteSpace(_settings.SlackAppToken) && HasAllowedUsers(_settings.SlackAllowedUserIds);
+            !string.IsNullOrWhiteSpace(_settings.SlackAppToken) && AllowedUsersValid(_settings.SlackAllowedUserIds);
         var discordReady = _settings is not null && !string.IsNullOrWhiteSpace(_settings.DiscordBotToken) &&
-            HasDiscordIds(_settings.DiscordAllowedUserIds) &&
+            DiscordIdsValid(_settings.DiscordAllowedUserIds) &&
             (_settings.DiscordAllowDirectMessages || HasDiscordIds(_settings.DiscordAllowedGuildIds));
         var connectionReady = mattermostReady || slackReady || discordReady;
 

@@ -465,8 +465,13 @@
   <data name="WizardAddMattermostUserButton.Content" xml:space="preserve"><value>このユーザーを追加</value></data>
   <data name="WizardAddMattermostUserButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>このユーザーを許可リストに追加</value></data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock053.Text" xml:space="preserve">
-    <value>一覧には内部ユーザーIDが入ります。ユーザー名を直接入力しないでください。空欄の場合は全員を拒否します。Mattermost接続中の場合は再接続してください。</value>
+    <value>一覧には内部ユーザーIDが入ります。ユーザー名を直接入力しないでください。空欄でも、チャットから届いた依頼をこのPCで承認すると追加できます。Mattermost接続中の場合は再接続してください。</value>
   </data>
+  <data name="InboxAccessRequestsTitle.Text" xml:space="preserve"><value>許可ユーザー以外からの依頼</value></data>
+  <data name="InboxAccessRequestsHelp.Text" xml:space="preserve"><value>「許可して実行」を選ぶと許可ユーザーに追加し、次回からはこの確認なしで依頼を受け付けます。依頼者の表示名は変更できるため、IDも確認してください。</value></data>
+  <data name="AccessRequestAllowButton.Content" xml:space="preserve"><value>許可して実行</value></data>
+  <data name="AccessRequestAllowOnceButton.Content" xml:space="preserve"><value>今回だけ実行</value></data>
+  <data name="AccessRequestDenyButton.Content" xml:space="preserve"><value>拒否</value></data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock054.Text" xml:space="preserve">
     <value>Botトークンは投稿用、AppトークンはSocket Modeで依頼を受信するために使います。Slackアプリ側の権限・イベント購読の設定と、Botのチャンネル参加が必要です。</value>
   </data>
@@ -489,7 +494,7 @@
     <value>許可するSlackメンバーID（1行に1つ）</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock058.Text" xml:space="preserve">
-    <value>この一覧が空の場合は全員を拒否します。上の検索から追加するか、プロフィールの「メンバーIDをコピー」で取得したIDを入力します。このID欄には表示名や @メンションは入力できません。IDは1行に1つずつ入力できます。</value>
+    <value>上の検索から追加するか、プロフィールの「メンバーIDをコピー」で取得したIDを1行に1つ入力します。表示名や @メンションは入力できません。空欄でも、チャットから届いた依頼をこのPCで承認すると追加できます。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock059.Text" xml:space="preserve">
     <value>操作承認とプライバシー</value>
@@ -762,7 +767,7 @@
     <value>許可するSlackメンバーID（1行に1つ）</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock013.Text" xml:space="preserve">
-    <value>SlackではBotトークン xoxb- とAppトークン xapp- の両方が必要です。許可ユーザーIDが空の場合は、誰からの依頼も受け付けません。</value>
+    <value>SlackではBotトークン xoxb- とAppトークン xapp- の両方が必要です。許可ユーザーは空欄でも進めます。接続後にチャットからBotへ依頼し、このPCで承認すると追加されます。</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock014.Text" xml:space="preserve">
     <value>上の検索からユーザーを追加できます。手入力する場合は、Slackのプロフィールのその他メニューで「メンバーIDをコピー」を選び、このID欄に貼り付けます。</value>
@@ -789,7 +794,7 @@
     <value>許可するMattermost内部ユーザーID（1行に1つ）</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock018.Text" xml:space="preserve">
-    <value>一覧には内部ユーザーIDが入ります。ユーザー名を直接入力しないでください。空欄の場合は全員を拒否します。Mattermost接続中の場合は再接続してください。</value>
+    <value>一覧には内部ユーザーIDが入ります。ユーザー名を直接入力しないでください。空欄でも、接続後にチャットから届いた依頼をこのPCで承認すると追加できます。</value>
   </data>
   <data name="onboardingOnboardingWizardTextBlock019.Text" xml:space="preserve">
     <value>トークンはこの画面にのみ入力してください。実行結果にトークンを出力しません。</value>
@@ -1290,7 +1295,7 @@
   <data name="DiscordBotTokenReveal.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discord Botトークンの表示・非表示</value></data>
   <data name="DiscordAllowedUserIdsLabel.Text" xml:space="preserve"><value>許可するユーザーID</value></data>
   <data name="DiscordAllowedUserIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordユーザーID</value></data>
-  <data name="DiscordAllowedUserIdsHelp.Text" xml:space="preserve"><value>許可するDiscordユーザーIDを1行に1つ入力してください。ユーザー名は使えません。</value></data>
+  <data name="DiscordAllowedUserIdsHelp.Text" xml:space="preserve"><value>許可するDiscordユーザーIDを1行に1つ入力してください。ユーザー名は使えません。空欄でも、チャットから届いた依頼をこのPCで承認すると追加できます。</value></data>
   <data name="DiscordAllowedGuildIdsLabel.Text" xml:space="preserve"><value>許可するサーバーID</value></data>
   <data name="DiscordAllowedGuildIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordサーバーID</value></data>
   <data name="DiscordAllowedGuildIdsHelp.Text" xml:space="preserve"><value>ダイレクトメッセージを無効にする場合は必須です。サーバーIDを1行に1つ入力してください。</value></data>

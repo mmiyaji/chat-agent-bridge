@@ -515,9 +515,11 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         var explicitRequest = BuildRequest(post, currentUsername, allowPlainThreadReplies: false);
         if (explicitRequest is not null)
         {
-            return ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", explicitRequest.UserId,
-                explicitRequest.ChannelId, explicitRequest.ThreadId)
-                ? new MattermostRequestCandidate(explicitRequest, IsExplicit: true)
+            if (ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", explicitRequest.UserId,
+                    explicitRequest.ChannelId, explicitRequest.ThreadId))
+                return new MattermostRequestCandidate(explicitRequest, IsExplicit: true);
+            return ChatAccessPolicy.IsAllowedScope(settings, "mattermost", explicitRequest.ChannelId, explicitRequest.ThreadId)
+                ? new MattermostRequestCandidate(explicitRequest with { IsAccessRequest = true }, IsExplicit: true)
                 : null;
         }
 

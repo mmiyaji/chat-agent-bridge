@@ -400,7 +400,8 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
         if (HasSeenMessage(parsed.MessageId)) return;
         if (string.Equals(parsed.UserId, _botUserId, StringComparison.Ordinal) || parsed.IsBot || parsed.IsWebhook || parsed.MessageType is not (0 or 19))
             return;
-        if (!ChatAccessPolicy.IsAllowed(settings, "discord", parsed.UserId)) return;
+        // Users outside the allowed list may only ask for access with an explicit mention, !cab or DM.
+        bool userAllowed = ChatAccessPolicy.IsAllowed(settings, "discord", parsed.UserId);
         if (parsed.GuildId is null)
         {
             if (!settings.DiscordAllowDirectMessages) return;
@@ -421,6 +422,7 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
         bool explicitStart = HasTrigger(parsed.Text) || HasBotMention(parsed.Text, _botUserId);
         bool isDirectMessage = parsed.GuildId is null;
         if (!explicitStart && !inThread && !isDirectMessage) return;
+        if (!userAllowed && !explicitStart && !isDirectMessage) return;
         var request = new ChatRequest("discord", parentChannel, threadId, parsed.UserId,
             CleanPrompt(parsed.Text, _botUserId), parsed.MessageId)
         {
@@ -430,7 +432,8 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
             IncomingFilesError = parsed.FilesError
         };
         if (request.Text.Length == 0 && request.IncomingFiles.Count == 0) return;
-        if (!ChatAccessPolicy.IsAllowedRequest(settings, "discord", request.UserId, request.ChannelId, request.ThreadId, request.GuildId)) return;
+        if (!ChatAccessPolicy.IsAllowedScope(settings, "discord", request.ChannelId, request.ThreadId, request.GuildId)) return;
+        if (!userAllowed) request = request with { IsAccessRequest = true };
 
         if (inThread || isDirectMessage)
         {

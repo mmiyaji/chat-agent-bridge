@@ -543,8 +543,11 @@ public sealed class TransportReconnectTests
             MattermostServerUrl = server.BaseUri.ToString(), MattermostChannelId = "channel-1",
             MattermostToken = "local-test-token", MattermostAllowedUserIds = "member-1", MattermostBypassProxy = true
         };
+        var accessRequesters = new System.Collections.Concurrent.ConcurrentBag<string>();
         var run = transport.RunAsync(settings, (request, _) =>
         {
+            // A revoked user's explicit post is offered for approval on the PC instead of being dropped.
+            if (request.IsAccessRequest) { accessRequesters.Add(request.UserId); return Task.CompletedTask; }
             Interlocked.Increment(ref delivered);
             if (request.UserId == "member-1") firstAccepted.TrySetResult(request);
             if (request.UserId == "member-2") addedAccepted.TrySetResult(request);
@@ -557,6 +560,7 @@ public sealed class TransportReconnectTests
         var added = await addedAccepted.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
         Assert.Equal("added-user", added.MessageId);
         Assert.Equal(2, Volatile.Read(ref delivered));
+        Assert.All(accessRequesters, user => Assert.Equal("member-1", user));
         cancellation.Cancel();
         await run.WaitAsync(TimeSpan.FromSeconds(5));
 
@@ -763,8 +767,11 @@ public sealed class TransportReconnectTests
         {
             SlackBotToken = "test-token", SlackAppToken = "test-app-token", SlackAllowedUserIds = "U1"
         };
+        var accessRequesters = new System.Collections.Concurrent.ConcurrentBag<string>();
         var run = transport.RunAsync(settings, (request, _) =>
         {
+            // A revoked user's explicit post is offered for approval on the PC instead of being dropped.
+            if (request.IsAccessRequest) { accessRequesters.Add(request.UserId); return Task.CompletedTask; }
             Interlocked.Increment(ref delivered);
             if (request.UserId == "U1") firstAccepted.TrySetResult(request);
             if (request.UserId == "U2") addedAccepted.TrySetResult(request);
@@ -777,6 +784,7 @@ public sealed class TransportReconnectTests
         var added = await addedAccepted.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
         Assert.Equal("3.0", added.MessageId);
         Assert.Equal(2, Volatile.Read(ref delivered));
+        Assert.All(accessRequesters, user => Assert.Equal("U1", user));
         Assert.Equal(1, Volatile.Read(ref openCount));
         cancellation.Cancel();
         await run.WaitAsync(TimeSpan.FromSeconds(5));

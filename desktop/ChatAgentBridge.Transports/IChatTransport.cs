@@ -61,6 +61,12 @@ public sealed record ChatRequest(
     /// Ordinary posted messages leave this unset.
     /// </summary>
     public string? CancellationTargetMessageId { get; init; }
+
+    /// <summary>
+    /// An explicit request (mention or !cab) from a user who is not on the allowed-user list, posted where
+    /// requests are otherwise accepted. It must only be offered for approval on the PC, never executed directly.
+    /// </summary>
+    public bool IsAccessRequest { get; init; }
 }
 
 /// <summary>Opaque file identity and provider supplied display metadata for an incoming message attachment.</summary>

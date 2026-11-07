@@ -40,10 +40,13 @@ public static class ChatAccessPolicy
             .Contains(userId, StringComparer.Ordinal);
     }
 
-    public static bool IsAllowedRequest(BridgeSettings settings, string provider, string userId, string channelId, string threadId, string? guildId = null)
+    public static bool IsAllowedRequest(BridgeSettings settings, string provider, string userId, string channelId, string threadId, string? guildId = null) =>
+        IsAllowed(settings, provider, userId) && IsAllowedScope(settings, provider, channelId, threadId, guildId);
+
+    /// <summary>Checks the server, channel and thread restrictions without the allowed-user list.</summary>
+    public static bool IsAllowedScope(BridgeSettings settings, string provider, string channelId, string threadId, string? guildId = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        if (!IsAllowed(settings, provider, userId)) return false;
         if (provider == "discord")
         {
             if (guildId is null)
@@ -68,6 +71,34 @@ public static class ChatAccessPolicy
         if (threadScopes is null) return false;
         return (channelScopes is null || ScopeContainsOrUnrestricted(channelScopes, channelId)) &&
             ScopeContainsOrUnrestricted(threadScopes, threadId);
+    }
+
+    /// <summary>Returns the saved allowed-user IDs for a chat provider.</summary>
+    public static IReadOnlyList<string> AllowedUserIds(BridgeSettings settings, string provider)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        var configured = provider switch
+        {
+            "mattermost" => NormalizeAllowedUsers(settings.MattermostAllowedUserIds),
+            "slack" => NormalizeAllowedUsers(settings.SlackAllowedUserIds),
+            "discord" => NormalizeDiscordSnowflakes(settings.DiscordAllowedUserIds),
+            _ => throw new ArgumentException("Unsupported chat provider.", nameof(provider))
+        };
+        return configured.Split(',', StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    /// <summary>Adds one user to a provider's allowed-user list, keeping the stored list format.</summary>
+    public static BridgeSettings WithAllowedUser(BridgeSettings settings, string provider, string userId)
+    {
+        var ids = AllowedUserIds(settings, provider);
+        if (ids.Contains(userId, StringComparer.Ordinal)) return settings;
+        var updated = string.Join(Environment.NewLine, ids.Append(userId));
+        return provider switch
+        {
+            "mattermost" => settings with { MattermostAllowedUserIds = NormalizeAllowedUsers(updated) },
+            "slack" => settings with { SlackAllowedUserIds = NormalizeAllowedUsers(updated) },
+            _ => settings with { DiscordAllowedUserIds = NormalizeDiscordSnowflakes(updated) }
+        };
     }
 
     /// <summary>Normalizes Discord snowflakes, accepting only nonzero unsigned 64-bit decimal IDs.</summary>

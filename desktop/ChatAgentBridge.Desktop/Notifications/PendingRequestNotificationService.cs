@@ -274,15 +274,18 @@ public sealed class PendingRequestNotificationService
             PendingNotificationKind.ChatRequest => (DesktopText.Get("NotificationChatRequestTitle"), DesktopText.Get("NotificationChatRequestBody")),
             PendingNotificationKind.AiApproval => (DesktopText.Get("NotificationAiApprovalTitle"),
                 string.IsNullOrWhiteSpace(aiApprovalBody) ? DesktopText.Get("NotificationAiApprovalBody") : aiApprovalBody),
+            PendingNotificationKind.AccessRequest => (DesktopText.Get("NotificationAccessRequestTitle"),
+                string.IsNullOrWhiteSpace(aiApprovalBody) ? DesktopText.Get("NotificationAccessRequestBody") : aiApprovalBody),
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
+        var approveText = DesktopText.Get(kind == PendingNotificationKind.AccessRequest ? "AccessRequestAllow" : "ApproveAndRun");
 
         var builder = new AppNotificationBuilder()
             .AddArgument(TokenArgument, token)
             .AddArgument(ActionArgument, "open")
             .AddText(title)
             .AddText(body)
-            .AddButton(CreateButton(DesktopText.Get("ApproveAndRun"), token, "approve"))
+            .AddButton(CreateButton(approveText, token, "approve"))
             .AddButton(CreateButton(DesktopText.Get("Deny"), token, "decline"))
             .SetDuration(AppNotificationDuration.Long);
         if (_relayStarted) builder.AddArgument(OwnerArgument, _relay.OwnerId);

@@ -150,7 +150,7 @@
                             <TextBlock Text="{x:Bind ViewModel.SlackUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasSlackUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardSlackUsernameLookupStatus" />
                             <Button Command="{x:Bind ViewModel.AddSlackUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddSlackUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardAddSlackUserButton" x:Uid="WizardAddSlackUserButton" />
                         </StackPanel>
-                        <TextBox x:Name="SlackAllowedUsersBox"  Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardSlackAllowedUserIds"  HeaderTemplate="{StaticResource RequiredHeaderTemplate}" AutomationProperties.IsRequiredForForm="True" x:Uid="WizardSlackAllowedUserIds" />
+                        <TextBox x:Name="SlackAllowedUsersBox"  Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardSlackAllowedUserIds" x:Uid="WizardSlackAllowedUserIds" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock013" x:Uid="onboardingOnboardingWizardTextBlock013" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock014" x:Uid="onboardingOnboardingWizardTextBlock014" />
                     </StackPanel>
@@ -177,7 +177,7 @@
                             <TextBlock Text="{x:Bind ViewModel.MattermostUsernameLookupStatus, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasMattermostUsernameLookupStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardMattermostUsernameLookupStatus" />
                             <Button Command="{x:Bind ViewModel.AddMattermostUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddMattermostUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardAddMattermostUserButton" x:Uid="WizardAddMattermostUserButton" />
                         </StackPanel>
-                        <TextBox x:Name="MattermostAllowedUsersBox"  Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardMattermostAllowedUserIds"  HeaderTemplate="{StaticResource RequiredHeaderTemplate}" AutomationProperties.IsRequiredForForm="True" x:Uid="WizardMattermostAllowedUserIds" />
+                        <TextBox x:Name="MattermostAllowedUsersBox"  Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardMattermostAllowedUserIds" x:Uid="WizardMattermostAllowedUserIds" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock018" x:Uid="onboardingOnboardingWizardTextBlock018" />
                     </StackPanel>
                     <StackPanel Spacing="12" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardDiscord), Mode=OneWay}">
@@ -193,9 +193,8 @@
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="4">
                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardDiscordAllowedUsersLabel" />
-                                <TextBlock Text="*" Foreground="{StaticResource RequiredMarkerBrush}" />
                             </StackPanel>
-                            <TextBox x:Name="DiscordAllowedUsersBox" Text="{x:Bind ViewModel.DiscordAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardDiscordAllowedUsers" AutomationProperties.IsRequiredForForm="True" x:Uid="WizardDiscordAllowedUsers" />
+                            <TextBox x:Name="DiscordAllowedUsersBox" Text="{x:Bind ViewModel.DiscordAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardDiscordAllowedUsers" x:Uid="WizardDiscordAllowedUsers" />
                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordAllowedUserIdsHelp" localization:LocalizedResourceKey.Key="DiscordAllowedUserIdsHelp" />
                         </StackPanel>
                         <StackPanel Spacing="8">
