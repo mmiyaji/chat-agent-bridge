@@ -64,6 +64,7 @@ public sealed partial class MainPage
         tip.Closed += async (_, _) =>
         {
             root.Children.Remove(tip);
+            QueueFooterBadgeLayout();
             try { await _featureTips.MarkSeenAsync(ChatConnectTip); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         };

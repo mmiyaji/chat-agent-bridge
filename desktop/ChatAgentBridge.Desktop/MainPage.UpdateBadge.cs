@@ -45,7 +45,19 @@ public sealed partial class MainPage
             : MrtText.Get("NavAbout.Content");
         AutomationProperties.SetName(AboutNavigationItem, label);
         AutomationProperties.SetName(AboutUpdateBadge, DesktopText.Get("PortableUpdateBadgeAvailable"));
-        ToolTipService.SetToolTip(AboutNavigationItem, available ? label : null);
+        if (!available)
+        {
+            ToolTipService.SetToolTip(AboutNavigationItem, null);
+            return;
+        }
+
+        if (ToolTipService.GetToolTip(AboutNavigationItem) is not ToolTip tip)
+        {
+            tip = new ToolTip();
+            tip.Closed += (_, _) => QueueFooterBadgeLayout();
+            ToolTipService.SetToolTip(AboutNavigationItem, tip);
+        }
+        tip.Content = label;
     }
 
 }
