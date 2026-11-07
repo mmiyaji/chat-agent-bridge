@@ -13,6 +13,19 @@ public sealed partial class HistoryPage
     {
         var current = session.Binding.NextAgentProvider ?? ConversationAgentService.ProviderOf(session.Binding);
         var choices = profiles.Where(profile => session.Binding.NextAgentProvider is not null || profile.Provider != current).ToArray();
+        if (choices.Length == 0)
+        {
+            var emptyDialog = new ContentDialog
+            {
+                XamlRoot = XamlRoot, RequestedTheme = App.Appearance.RequestedTheme,
+                Title = DesktopText.Get("AgentSwitchTitle"),
+                Content = new TextBlock { Text = DesktopText.Get("AgentSwitchNoAvailableConnections"), TextWrapping = TextWrapping.Wrap },
+                CloseButtonText = DesktopText.Get("Close"), DefaultButton = ContentDialogButton.Close
+            };
+            AutomationProperties.SetAutomationId(emptyDialog, "AgentSwitchDialog");
+            await emptyDialog.ShowAsync();
+            return null;
+        }
         var picker = new ComboBox
         {
             Header = DesktopText.Get("AgentSwitchConnection"), HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -21,7 +34,7 @@ public sealed partial class HistoryPage
                 AgentProfile.Codex => "Codex", AgentProfile.Claude => "Claude Code", AgentProfile.Gemini => "Gemini CLI",
                 AgentProfile.GitHubCopilot => "GitHub Copilot CLI", AgentProfile.Antigravity => "Antigravity CLI", AgentProfile.Kiro => "Kiro CLI", AgentProfile.Qwen => "Qwen Code", AgentProfile.Kimi => "Kimi Code CLI", AgentProfile.Muse => "Muse Code CLI", _ => profile.Provider
             }).ToArray(),
-            SelectedIndex = choices.Length > 0 ? Math.Max(0, Array.FindIndex(choices, profile => profile.Provider == current)) : -1
+            SelectedIndex = Math.Max(0, Array.FindIndex(choices, profile => profile.Provider == current))
         };
         AutomationProperties.SetAutomationId(picker, "AgentSwitchConnection");
         var include = new CheckBox
@@ -59,7 +72,6 @@ public sealed partial class HistoryPage
             XamlRoot = XamlRoot, RequestedTheme = App.Appearance.RequestedTheme,
             Title = DesktopText.Get("AgentSwitchTitle"), PrimaryButtonText = DesktopText.Get("Change"),
             CloseButtonText = DesktopText.Get("Cancel"), DefaultButton = ContentDialogButton.Close,
-            IsPrimaryButtonEnabled = choices.Length > 0,
             Content = new ScrollViewer
             {
                 HorizontalScrollMode = ScrollMode.Disabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,

@@ -129,6 +129,8 @@ public sealed partial class HistoryPage : Page
         if (!ReferenceEquals(ExecutionHistoryMode.SelectedItem, item)) ExecutionHistoryMode.SelectedItem = item;
     }
 
+    private void CloseSessionFilters_Click(object sender, RoutedEventArgs e) => SessionFiltersFlyout.Hide();
+
     private void RecordDrawer_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         // Wide windows keep the table and the drawer side by side; narrow ones slide the drawer over the table.

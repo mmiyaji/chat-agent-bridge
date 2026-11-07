@@ -332,6 +332,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public string SearchPlaceholder => DesktopText.Get("HistorySearchPlaceholder");
     public string ProviderLabel => DesktopText.Get("HistoryProviderLabel");
     public string FiltersLabel => DesktopText.Get("HistoryFilters");
+    public string CloseFiltersLabel => DesktopText.Get("Close");
     public string WorkspaceFilterLabel => DesktopText.Get("HistoryWorkspaceFilterLabel");
     public string SortLabel => DesktopText.Get("HistorySortLabel");
     public string ClearSessionFiltersLabel => DesktopText.Get("HistoryClearSessionFilters");
@@ -440,7 +441,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         foreach (var name in new[]
         {
             nameof(ProviderFilters), nameof(SessionSortOptions), nameof(WorkspaceFilters),
-            nameof(SearchLabel), nameof(SearchPlaceholder), nameof(ProviderLabel), nameof(FiltersLabel),
+            nameof(SearchLabel), nameof(SearchPlaceholder), nameof(ProviderLabel), nameof(FiltersLabel), nameof(CloseFiltersLabel),
             nameof(WorkspaceFilterLabel), nameof(SortLabel), nameof(ClearSessionFiltersLabel),
             nameof(RenameSessionLabel), nameof(HasSessionFilters), nameof(SelectedSessionTitle),
             nameof(NoSessionSelectedText), nameof(SessionListEmptyHeading), nameof(SessionListEmptyDescription),

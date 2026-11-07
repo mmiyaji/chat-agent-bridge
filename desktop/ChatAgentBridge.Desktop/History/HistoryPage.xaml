@@ -86,7 +86,7 @@
                                 Content="{x:Bind ViewModel.FiltersLabel, Mode=OneWay}"
                                 VerticalAlignment="Bottom" AutomationProperties.AutomationId="SavedSessionsAdvancedFilters">
                             <Button.Flyout>
-                                <Flyout x:Name="SessionFiltersFlyout">
+                                <Flyout x:Name="SessionFiltersFlyout" Placement="BottomEdgeAlignedRight">
                                     <StackPanel Spacing="8" MinWidth="280">
                                         <ComboBox x:Name="ProviderFilter" Header="{x:Bind ViewModel.ProviderLabel, Mode=OneWay}"
                                                   ItemsSource="{x:Bind ViewModel.ProviderFilters, Mode=OneWay}"
@@ -101,6 +101,8 @@
                                                   ItemsSource="{x:Bind ViewModel.SessionSortOptions, Mode=OneWay}"
                                                   SelectedItem="{x:Bind ViewModel.SessionSort, Mode=TwoWay}"
                                                   HorizontalAlignment="Stretch" AutomationProperties.AutomationId="SavedSessionsSort" />
+                                        <Button Content="{x:Bind ViewModel.CloseFiltersLabel, Mode=OneWay}" HorizontalAlignment="Right"
+                                                Click="CloseSessionFilters_Click" AutomationProperties.AutomationId="CloseSessionFilters" />
                                     </StackPanel>
                                 </Flyout>
                             </Button.Flyout>
@@ -350,7 +352,7 @@
             <PivotItem x:Name="ExecutionsTab" Header="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryTab">
                 <SplitView x:Name="RecordDrawer" Margin="0,14,0,0" PanePlacement="Right" DisplayMode="Overlay" OpenPaneLength="380"
                            IsPaneOpen="{x:Bind ViewModel.IsDetailOpen, Mode=TwoWay}" SizeChanged="RecordDrawer_SizeChanged"
-                           PaneBackground="{ThemeResource LayerOnMicaBaseAltFillColorDefaultBrush}">
+                           PaneBackground="{ThemeResource SolidBackgroundFillColorBaseBrush}">
                     <SplitView.Pane>
                         <Grid Padding="16,12" RowSpacing="8" BorderThickness="1,0,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                               AutomationProperties.AutomationId="RecordDetailDrawer" KeyDown="RecordDrawer_KeyDown">
@@ -522,11 +524,11 @@
                                             <TextBlock Text="{x:Bind StartedCompact}" ToolTipService.ToolTip="{x:Bind Started}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="1" Text="{x:Bind ConversationCell}" ToolTipService.ToolTip="{x:Bind ConversationCell}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="2" Text="{x:Bind UserCell}" ToolTipService.ToolTip="{x:Bind UserCell}" TextTrimming="CharacterEllipsis" />
-                                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4">
+                                            <Grid Grid.Column="3" ColumnSpacing="4" ColumnDefinitions="Auto,*">
                                                 <presentation:StatusIcon Tone="{x:Bind StatusTone}" Width="16" Height="16" VerticalAlignment="Center" IsHitTestVisible="False"
                                                                          AutomationProperties.AccessibilityView="Raw" />
-                                                <TextBlock Text="{x:Bind Status}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                            </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{x:Bind Status}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                            </Grid>
                                             <TextBlock Grid.Column="4" Text="{x:Bind ModelCell}" ToolTipService.ToolTip="{x:Bind ModelCell}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="5" Text="{x:Bind DurationCell}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="6" Text="{x:Bind TokensCell}" TextTrimming="CharacterEllipsis" />
@@ -563,6 +565,7 @@
                               Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsOperationsMode), Mode=OneWay}">
                             <Grid x:Name="AuditBrowser" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasAuditEvents), Mode=OneWay}">
                                 <ListView x:Name="AuditHistoryList" ItemsSource="{x:Bind ViewModel.FilteredAuditEvents, Mode=OneWay}" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                          SizeChanged="AuditHistoryList_SizeChanged"
                                           AutomationProperties.AutomationId="AuditHistoryList" SelectionMode="Single" IsItemClickEnabled="True" ItemClick="AuditHistoryList_ItemClick" SelectionChanged="AuditHistoryList_SelectionChanged"
                                           AutomationProperties.Name="{x:Bind ViewModel.AuditTabTitle, Mode=OneWay}">
                                     <ListView.ItemContainerStyle>

@@ -13,6 +13,19 @@ namespace ChatAgentBridge_Desktop.History;
 
 public sealed partial class HistoryPage
 {
+    private double _auditConversationMinWidth = 160;
+
+    private void AuditHistoryList_SizeChanged(object sender, SizeChangedEventArgs e) =>
+        FillAuditConversationColumn();
+
+    private void FillAuditConversationColumn()
+    {
+        var audit = ViewModel.AuditColumns;
+        // Both the header and the rows have 12 DIP side padding and three 8 DIP gaps.
+        var available = AuditHistoryList.ActualWidth - 48 - audit.Time.Value - audit.Action.Value - audit.Service.Value;
+        audit.Conversation = new GridLength(Math.Max(_auditConversationMinWidth, available));
+    }
+
     private void HistoryColumn_DragDelta(object sender, DragDeltaEventArgs e) =>
         ResizeHistoryColumn((Thumb)sender, e.HorizontalChange);
 
@@ -35,7 +48,9 @@ public sealed partial class HistoryPage
             case "Audit.Time": audit.Time = Resize(audit.Time, delta); break;
             case "Audit.Action": audit.Action = Resize(audit.Action, delta); break;
             case "Audit.Service": audit.Service = Resize(audit.Service, delta); break;
-            case "Audit.Conversation": audit.Conversation = Resize(audit.Conversation, delta); break;
+            case "Audit.Conversation":
+                _auditConversationMinWidth = Math.Max(48, audit.Conversation.Value + delta);
+                break;
             case "Run.Started": runs.Started = Resize(runs.Started, delta); break;
             case "Run.Conversation": runs.Conversation = Resize(runs.Conversation, delta); break;
             case "Run.User": runs.User = Resize(runs.User, delta); break;
@@ -43,6 +58,8 @@ public sealed partial class HistoryPage
             case "Run.Model": runs.Model = Resize(runs.Model, delta); break;
             case "Run.Duration": runs.Duration = Resize(runs.Duration, delta); break;
         }
+        if (thumb.Tag is string column && column.StartsWith("Audit.", StringComparison.Ordinal))
+            FillAuditConversationColumn();
     }
 
 #if CAB_EXPERIMENTAL_TABLE_VIEW
