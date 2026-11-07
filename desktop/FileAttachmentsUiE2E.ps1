@@ -182,6 +182,12 @@ function Choose([string]$Id,[string]$Name) {
     $matches[0].GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
     $expand.Collapse(); Start-Sleep -Milliseconds 150
 }
+# Connection settings are scoped pages now; the attachment limits live in the common scope's collapsed expander.
+function Open-AttachmentSettings {
+    $expander=Wait-Element 'FileAttachmentSettings'
+    $pattern=$expander.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern)
+    if ($pattern.Current.ExpandCollapseState -ne [System.Windows.Automation.ExpandCollapseState]::Expanded) { $pattern.Expand(); Start-Sleep -Milliseconds 250 }
+}
 function Select-FirstRow([string]$Id) {
     $list=Element $Id
     Assert-True ($null -ne $list) "Missing list $Id"
@@ -293,15 +299,23 @@ function Open-AttachmentDialog {
     Wait-Element 'AttachmentConfirmation' | Out-Null
     Wait-Element 'AttachmentFile1' | Out-Null
 }
+# Invoke a button inside the open attachment dialog itself; other controls in the window can share the generic CloseButton id.
+function Invoke-DialogButton([string]$Id) {
+    $dialog=Wait-Element 'AttachmentConfirmation'
+    $button=$dialog.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
+        [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,$Id))
+    Assert-True ($null -ne $button) "Attachment dialog has no $Id"
+    $button.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+}
 function Close-AttachmentDialog {
-    UI @('invoke','CloseButton') | Out-Null
+    Invoke-DialogButton 'CloseButton'
     UI @('wait-for','AttachmentConfirmation','--gone','-t','4000') | Out-Null
 }
 function Confirm-OneAttachment {
     $box=Wait-Element 'AttachmentFile1'
     $box.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
     UI @('wait-for','PrimaryButton','-p','IsEnabled','--value','True','-t','3000') | Out-Null
-    UI @('invoke','PrimaryButton') | Out-Null
+    Invoke-DialogButton 'PrimaryButton'
     UI @('wait-for','AttachmentConfirmation','--gone','-t','5000') | Out-Null
 }
 function Select-Theme([string]$Theme) {
@@ -385,7 +399,7 @@ try {
         Close-AttachmentDialog
         Navigate 'NavConnections'
         Resize 720 760
-        Choose 'ConnectionsJump' $(if($Language -eq 'ja'){'生成ファイルの添付'}else{'File attachments'})
+        Open-AttachmentSettings
         $narrowSettings=Wait-ElementInView 'FileAttachmentApprovalMode'
         Capture 'light-settings-narrow.png'
         if ($Language -eq 'ja') {
@@ -396,7 +410,7 @@ try {
         Resize 1160 840
         Select-Theme 'dark'
         Navigate 'NavConnections'
-        Choose 'ConnectionsJump' $(if($Language -eq 'ja'){'生成ファイルの添付'}else{'File attachments'})
+        Open-AttachmentSettings
         $darkSettings=Wait-ElementInView 'FileAttachmentApprovalMode'
         Capture 'dark-settings.png'
         Navigate 'NavChat'
@@ -426,7 +440,7 @@ try {
         Assert-True (@($auditKinds | Where-Object {$_ -eq 'attachment_approved'}).Count -eq 2 -and @($auditKinds | Where-Object {$_ -eq 'attachment_sent'}).Count -eq 2) 'Automatic attachment audit events were not recorded'
 
         Navigate 'NavConnections'
-        Choose 'ConnectionsJump' $(if($Language -eq 'ja'){'生成ファイルの添付'}else{'File attachments'})
+        Open-AttachmentSettings
         Set-Value 'FileAttachmentMaxSizeMb' '11'
         Confirm-SensitiveSettingsAutoSave 'FileAttachmentMaxSizeMb' 11 -CommitTextInput
         Run-Request 'attachment-4' 'fourth.txt'

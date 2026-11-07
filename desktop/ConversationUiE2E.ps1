@@ -48,7 +48,20 @@ function Navigate([string]$Id) {
     UI @('invoke',$Id) | Out-Null
     Start-Sleep -Milliseconds 200
 }
+# Item text can also appear in tooltips, suggestion popups and detail panes, so click the list row by its own selector.
+function Click-ListRow([string]$ListId) {
+    $list = Element $ListId
+    $first = if ($null -ne $list) { $list.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
+        [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem)) }
+    if ($null -eq $first) { return } # the narrow layout already replaced the list with the opened detail
+    $title = ($first.Current.Name -split ' · ')[0]
+    $found = (UI @('search',$title,'-w',"$($appProcess.MainWindowHandle)")) | ConvertFrom-Json
+    $row = @($found.matches | Where-Object { $_.type -eq 'ListItem' }) | Select-Object -First 1
+    if ($null -eq $row) { return }
+    UI @('click',$row.selector,'-w',"$($appProcess.MainWindowHandle)") | Out-Null
+}
 function Select-FirstRow([string]$Id) {
+    Start-Sleep -Milliseconds 400 # let a just-applied search/filter replace the visible rows
     $list = Element $Id
     Assert-True ($null -ne $list) "Missing list $Id"
     $row = $list.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
@@ -57,6 +70,11 @@ function Select-FirstRow([string]$Id) {
     $pattern = $row.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern)
     $pattern.Select()
     Start-Sleep -Milliseconds 180
+    # Select() can leave a ListViewItem only focused; open the row with a real click so the detail pane loads.
+    if (-not $pattern.Current.IsSelected -or ($Id -eq 'SavedSessionsList' -and -not (Enabled 'EditSessionModel'))) {
+        Click-ListRow $Id
+        Start-Sleep -Milliseconds 300
+    }
 }
 function Value([string]$Id) { (Element $Id).GetCurrentPropertyValue([System.Windows.Automation.ValuePattern]::ValueProperty) }
 function Has-Text([string]$Text) {
@@ -72,7 +90,15 @@ function Show-HistoryAction([string]$Id) {
     }
 }
 function Set-Search([string]$Id,[string]$Text) {
-    (Element $Id).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($Text)
+    $target = Element $Id
+    $value = $null
+    if (-not $target.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$value)) {
+        # AutoSuggestBox exposes its text through the inner edit control.
+        $target = $target.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
+            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Edit))
+        $value = $target.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+    }
+    $value.SetValue($Text)
     Start-Sleep -Milliseconds 150
 }
 # The service filter lives in the history page's filter flyout; open it, choose, then dismiss it.
@@ -153,7 +179,8 @@ try {
 let input=''; process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => input+=chunk);
 process.stdin.on('end', () => setTimeout(() => {
-  process.stdout.write('offline-result: '+input);
+  const original=/--- Original user prompt \(preserved verbatim\) ---\s*([\s\S]*?)\s*--- End original user prompt ---/.exec(input);
+  process.stdout.write('offline-result: '+(original ? original[1] : input));
   if (input.includes('fail-agent')) process.exitCode=1;
 }, input.includes('heartbeat') ? 60000 : input.includes('slow') ? 12000 : 100));
 '@ | Set-Content -LiteralPath $agentFile -Encoding utf8
@@ -166,6 +193,7 @@ process.stdin.on('end', () => setTimeout(() => {
         MattermostAllowedUserIds='alice,bob';ChatApprovalMode='always';ChatResultMode='manual';AutoConnectProvider='none'
     }
     Write-Json 'onboarding.json' @{SchemaVersion=3;Step=4;Status='completed'}
+    Write-Json 'tips.json' @{Seen=@('chat-connect')}
     Write-Json 'language.json' @{Language=$Language}
     Write-Json 'appearance.json' @{Theme=$(if($Theme -ne 'auto'){$Theme}elseif($Language -eq 'ja'){'dark'}else{'light'})}
     $bindings = @(for ($i=0;$i -lt 42;$i++) {
@@ -228,6 +256,8 @@ process.stdin.on('end', () => setTimeout(() => {
         Select-FirstRow 'SavedSessionsList'
         Capture 'history-search'
         Set-Search 'SavedSessionsSearch' 'no-such-conversation'
+        # The selection clears after the search debounce; wait for the action bar to leave instead of sampling it once.
+        UI @('wait-for','EditSessionModel','--gone','-t','3000') | Out-Null
         Assert-True (-not (Enabled 'EditSessionModel')) 'Actions enabled without a matching selected conversation'
     }
     Check 'Refresh keeps the exact selected conversation' {
@@ -243,7 +273,7 @@ process.stdin.on('end', () => setTimeout(() => {
     Capture 'history-wide'
     Check 'Narrow saved conversation detail and return to list' {
         Resize 500 600
-        if (-not (Element 'SavedSessionsList').Current.IsOffscreen) { UI @('click','project-0') | Out-Null }
+        if (-not (Element 'SavedSessionsList').Current.IsOffscreen) { Click-ListRow 'SavedSessionsList' }
         Capture 'history-narrow-detail'
         Assert-Visible 'BackToSessionsButton'
         Assert-Visible 'EditSessionModel'
@@ -256,7 +286,7 @@ process.stdin.on('end', () => setTimeout(() => {
         Capture 'history-narrow-list'
         Select-FirstRow 'SavedSessionsList'
         # SelectionItem.Select on the same row does not imply an open command; clicking must also work.
-        if (-not (Element 'SavedSessionsList').Current.IsOffscreen) { UI @('click','project-0') | Out-Null }
+        if (-not (Element 'SavedSessionsList').Current.IsOffscreen) { Click-ListRow 'SavedSessionsList' }
         UI @('wait-for','BackToSessionsButton','-t','3000') | Out-Null
         Resize 1280
     }
@@ -328,6 +358,8 @@ process.stdin.on('end', () => setTimeout(() => {
         }
     }
     Check 'Requests group by conversation and remain separated by requester' {
+        # Restored saved bindings are listed too, so count the conversations these requests add.
+        $baseConversations = [int][regex]::Match((Element 'InboxConversationCount').Current.Name,'\d+').Value
         Post 'message-1' 'shared-thread' 'alice' 'alpha initial request'
         if ($MattermostPlainReplies) {
             Post 'ignored-other-owner' 'shared-thread' 'bob' 'must not appear' $true
@@ -339,13 +371,17 @@ process.stdin.on('end', () => setTimeout(() => {
         Post 'message-3' 'shared-thread' 'bob' 'beta separate owner'
         Post 'message-4' 'other-thread' 'alice' 'gamma slow request'
         Post 'message-5' 'hidden-thread' 'mallory' 'must not appear'
-        UI @('wait-for','InboxConversationCount','--value','3','--contains','-t','5000') | Out-Null
+        # A requester outside the allowed list is held as an access request on the PC; decline it so it never becomes a conversation.
+        UI @('wait-for','AccessRequestDeny','-t','5000') | Out-Null
+        UI @('invoke','AccessRequestDeny') | Out-Null
+        UI @('wait-for','InboxAccessRequests','--gone','-t','5000') | Out-Null
+        UI @('wait-for','InboxConversationCount','--value',[string]($baseConversations + 3),'--contains','-t','5000') | Out-Null
         Set-Search 'InboxSearch' 'alpha'
         Select-FirstRow 'InboxConversations'
         UI @('wait-for','InboxRequestCount','--value','2','--contains','-t','3000') | Out-Null
         Assert-True (Enabled 'ApproveChat') 'Selected pending request cannot be approved'
         Assert-Visible 'ApproveChat'
-        Assert-Visible 'SendChatResult'
+        Assert-True ($null -eq (Element 'SendChatResult')) 'Result sharing is offered before the pending request is approved'
         UI @('wait-for','InboxConnectionLabel','--value',$(if($Language -eq 'ja'){'依頼を受信できます'}else{'Ready to receive requests'}),'-t','3000') | Out-Null
         UI @('wait-for','InboxSelectedState','--value',$(if($Language -eq 'ja'){'承認待ち'}else{'Awaiting approval'}),'-t','3000') | Out-Null
         Capture 'inbox-wide'
@@ -363,6 +399,7 @@ process.stdin.on('end', () => setTimeout(() => {
         UI @('wait-for','InboxConversationCount','--value','3','--contains','-t','3000') | Out-Null
         Choose 'InboxStateFilter' $(if($Language -eq 'ja'){'すべて'}else{'All'})
         Set-Search 'InboxSearch' 'must not appear'
+        UI @('wait-for','ApproveChat','--gone','-t','3000') | Out-Null
         Assert-True (-not (Enabled 'ApproveChat')) 'Nonmatching conversation still actionable'
     }
     if ($CheckReconnect) {
@@ -392,8 +429,10 @@ process.stdin.on('end', () => setTimeout(() => {
         UI @('invoke','ApproveChat') | Out-Null
         UI @('wait-for','ChatRunConfirmation','-t','3000') | Out-Null
         UI @('invoke','PrimaryButton') | Out-Null
+        UI @('wait-for','InboxSelectedState','--value',$(if($Language -eq 'ja'){'完了'}else{'Completed'}),'-t','8000') | Out-Null
+        # The result box sits below the fold in the request detail; bring it into view before reading it.
+        UI @('scroll-into-view','ChatOutput') | Out-Null
         UI @('wait-for','ChatOutput','--value','offline-result: beta separate owner','--contains','-t','8000') | Out-Null
-        UI @('wait-for','InboxSelectedState','--value',$(if($Language -eq 'ja'){'完了'}else{'Completed'}),'-t','3000') | Out-Null
         UI @('wait-for','SendChatResult','-p','IsEnabled','--value','True','-t','5000') | Out-Null
         UI @('invoke','SendChatResult') | Out-Null
         UI @('wait-for','ReplyConfirmation','-t','3000') | Out-Null
@@ -410,7 +449,8 @@ process.stdin.on('end', () => setTimeout(() => {
         Assert-True ($replies.Count -eq 1 -and $replies[0].root_id -eq 'shared-thread' -and $replies[0].channel_id -eq 'ui-channel') 'Result was not shared to the selected thread'
         Set-Search 'InboxSearch' 'alpha'
         Select-FirstRow 'InboxConversations'
-        Assert-True (-not ((Value 'ChatOutput') -like '*beta separate owner*')) 'Other request result leaked into selected output'
+        # A pending request has no result box at all; any visible output must not be the other request's.
+        Assert-True ($null -eq (Element 'ChatOutput') -or -not ((Value 'ChatOutput') -like '*beta separate owner*')) 'Other request result leaked into selected output'
         Assert-True (-not (Enabled 'SendChatResult')) 'Another request result can be shared from this selection'
     }
     if ($CheckChatProgress) {
@@ -421,7 +461,8 @@ process.stdin.on('end', () => setTimeout(() => {
             $result=@($snapshot.replies | Where-Object message -like '*offline-result: beta*')
             Assert-True ($receipt.Count -eq 1 -and $result.Count -eq 1 -and $receipt[0].id -ne $result[0].id) 'Result replaced the receipt or duplicate completion posts were created'
             Assert-True (@($snapshot.updates | Where-Object { $_.id -eq $completed.id -and $_.message -match 'running|実行中' }).Count -ge 1) 'The receipt was not edited to running'
-            Assert-True (@($snapshot.replies | Where-Object root_id -eq 'hidden-thread').Count -eq 0) 'An unauthorized request received a receipt'
+            $pendingNotice = if ($Language -eq 'ja') { 'このPCで承認待ちです' } else { 'Waiting for approval on the PC' }
+            Assert-True (@($snapshot.replies | Where-Object { $_.root_id -eq 'hidden-thread' -and -not $_.message.StartsWith($pendingNotice) }).Count -eq 0 -and @($snapshot.updates | Where-Object root_id -eq 'hidden-thread').Count -eq 0) 'An unauthorized request received a receipt or progress'
         }
     }
     Check 'Stop only affects selected active request' {
@@ -441,19 +482,24 @@ process.stdin.on('end', () => setTimeout(() => {
         Set-Search 'InboxSearch' 'gamma'
         Select-FirstRow 'InboxConversations'
         UI @('invoke','CancelChat') | Out-Null
-        UI @('wait-for','CancelChat','-p','IsEnabled','--value','False','-t','5000') | Out-Null
+        # The stop button leaves the command bar once the request is no longer active.
+        $stopDeadline=[DateTime]::UtcNow.AddSeconds(5)
+        while ((Enabled 'CancelChat') -and [DateTime]::UtcNow -lt $stopDeadline) { Start-Sleep -Milliseconds 100 }
+        Assert-True (-not (Enabled 'CancelChat')) 'Stop did not finish the selected request'
     }
     Check 'Narrow inbox list and detail are reachable' {
         Resize 500 600
         if ((Element 'InboxConversations').Current.BoundingRectangle.Height -le 0) { UI @('invoke','InboxBackToConversations') | Out-Null }
         Capture 'inbox-narrow-list'
+        # The stopped gamma request is no longer pending, so open a conversation that still awaits approval.
+        Set-Search 'InboxSearch' 'alpha'
         Select-FirstRow 'InboxConversations'
-        if (-not (Element 'InboxConversations').Current.IsOffscreen) { UI @('click','gamma slow request') | Out-Null }
+        if (-not (Element 'InboxConversations').Current.IsOffscreen) { Click-ListRow 'InboxConversations' }
         Start-Sleep -Milliseconds 200
         Capture 'inbox-narrow-detail'
         Assert-Visible 'InboxBackToConversations'
         Assert-Visible 'ApproveChat'
-        Assert-Visible 'SendChatResult'
+        Assert-True ($null -eq (Element 'SendChatResult')) 'Result sharing is offered before the pending request is approved'
         UI @('invoke','InboxBackToConversations') | Out-Null
         Assert-True (-not (Element 'InboxConversations').Current.IsOffscreen) 'Inbox list inaccessible'
     }

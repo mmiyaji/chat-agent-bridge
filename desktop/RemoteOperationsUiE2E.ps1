@@ -22,7 +22,7 @@ $script:stageData = $null
 $script:lastFixtureSnapshot = $null
 $script:language = $Language
 
-Add-Type -AssemblyName System.Security
+Add-Type -AssemblyName System.Security, UIAutomationClient, UIAutomationTypes
 
 function Assert-True([bool]$Value, [string]$Message) {
     if (-not $Value) { throw $Message }
@@ -110,6 +110,9 @@ function New-App([string]$DataDirectory, [string]$AgentProvider, [string]$Execut
         AutoConnectProvider = 'none'
     }
     Write-Json 'onboarding.json' @{ SchemaVersion = 3; Step = 4; Status = 'completed' }
+    # Closing the window must really exit the isolated app (the default hides it in the tray), and tips stay quiet.
+    Write-Json 'background.json' @{ CloseBehavior = 'ExitApp' }
+    Write-Json 'tips.json' @{ Seen = @('chat-connect') }
     Write-Json 'language.json' @{ Language = $script:language }
     Write-Json 'appearance.json' @{ Theme = $(if ($script:language -eq 'ja') { 'dark' } else { 'light' }) }
     Write-Json 'sessions.json' @{ SchemaVersion = 1; Bindings = @(); Workspaces = @() }
@@ -182,15 +185,15 @@ function Reply([object]$Snapshot, [string]$Thread, [scriptblock]$Predicate) {
 function Expected-Starts([string]$Kind) {
     if ($script:language -eq 'ja') {
         switch ($Kind) {
-            'status' { return '状態:' }
-            'none' { return 'このスレッドに、あなたの依頼はありません。' }
+            'status' { return 'このスレッドの実行中・待機中の依頼' }
+            'none' { return 'このスレッドに自分の実行中・待機中の依頼はありません。' }
             'stop' { return '停止を要求しました。実行中:' }
             'stop-none' { return 'このスレッドに、あなたの実行中・待機中の依頼はありません。' }
         }
     }
     switch ($Kind) {
-        'status' { return 'Status:' }
-        'none' { return 'No requests from you in this thread.' }
+        'status' { return 'Live requests in this thread' }
+        'none' { return 'No live requests from you in this thread.' }
         'stop' { return 'Stop requested. Running:' }
         'stop-none' { return 'No running or pending requests from you in this thread.' }
     }
@@ -240,8 +243,8 @@ function Check-StatusStopStage {
         Assert-True ((Reply $status $root { param($p) $p.message.StartsWith((Expected-Starts 'status')) }).Count -eq 1) 'Alice status did not return one scoped status response.'
 
         Post ('status-bob-' + $runId) $root 'bob' '!cab status' $true
-        $bob = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message -eq (Expected-Starts 'none') }).Count -ge 1 } 10
-        Assert-True (@(Reply $bob $root { param($p) $p.message -eq (Expected-Starts 'none') }).Count -eq 1) 'Bob learned about Alice work or did not receive the generic no-work status.'
+        $bob = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message.StartsWith((Expected-Starts 'none')) }).Count -ge 1 } 10
+        Assert-True (@(Reply $bob $root { param($p) $p.message.StartsWith((Expected-Starts 'none')) }).Count -eq 1) 'Bob learned about Alice work or did not receive the generic no-work status.'
 
         Post ('stop-wrong-root-' + $runId) $otherRoot 'alice' '!cab stop' $true
         $wrongRoot = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $otherRoot -and $_.message -eq (Expected-Starts 'stop-none') }).Count -ge 1 } 10
@@ -322,9 +325,10 @@ function Check-ChatInputStage([string]$TestAgentPath) {
 
         Post ('answer-right-user-' + $runId) $root 'alice' ("!cab answer $answerCode 1 2") $true
         Wait-UI 'AppServerInputDialog' '' 30 -Gone
-        $expectedResult = "app-server-e2e: approved; answer=beta; prompt=$prompt"
-        $finished = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message -eq $expectedResult }).Count -eq 1 } 40
-        $result = @(Reply $finished $root { param($p) $p.message -eq $expectedResult })
+        # The bridge prepends its attachment note to the prompt, so match the original prompt inside it.
+        $expectedResult = "app-server-e2e: approved; answer=beta; prompt=*$prompt*"
+        $finished = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.root_id -eq $root -and $_.message -like $expectedResult }).Count -eq 1 } 40
+        $result = @(Reply $finished $root { param($p) $p.message -like $expectedResult })
         Assert-True ($result.Count -eq 1) 'The answer did not produce exactly one successful agent result.'
         $progressIds = @($finished.updates | Where-Object { $_.root_id -eq $root } | Select-Object -ExpandProperty id -Unique)
         $receipt = @($finished.replies | Where-Object { $_.root_id -eq $root -and $_.id -in $progressIds })
@@ -434,26 +438,52 @@ function Check-ModelStage {
     }
 }
 
+# Changing the executable or activating a profile asks for confirmation of sensitive settings; accept it when it appears.
+function Confirm-SensitiveSettingsIfAsked([int]$Seconds = 6) {
+    $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
+    do {
+        $dialog = [Windows.Automation.AutomationElement]::FromHandle($script:app.MainWindowHandle).FindFirst([Windows.Automation.TreeScope]::Descendants,
+            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, 'SensitiveSettingsConfirmation'))
+        if ($null -ne $dialog) {
+            $button = $dialog.FindFirst([Windows.Automation.TreeScope]::Descendants,
+                [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, 'PrimaryButton'))
+            $button.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+            Wait-UI 'SensitiveSettingsConfirmation' '' 5 -Gone
+            return
+        }
+        Start-Sleep -Milliseconds 150
+    } while ([DateTime]::UtcNow -lt $deadline)
+}
+
 function Check-AgentSwitchStage([string]$AgentHost) {
     $root = 'agent-root-' + $runId
     $script:agentSummarySentinel = 'source-note-' + $runId
     Check 'Only successfully checked local CLI settings can be registered' {
         UI @('invoke', 'NavAgentSettings') | Out-Null
-        UI @('wait-for', 'RegisterAgentConnection', '-p', 'IsEnabled', '--value', 'False', '-t', '5000') | Out-Null
-        foreach ($provider in @('claude', 'codex')) {
-            UI @('invoke', 'AgentProvider') | Out-Null
-            UI @('invoke', $(if($provider -eq 'codex'){'ProviderOptionCodex'}else{'ProviderOptionClaude'})) | Out-Null
+        # Each provider has its own scope page; a checked CLI is registered and activated with "use this agent".
+        # Codex goes first so that Claude Code is the active agent the later steps expect.
+        foreach ($provider in @('codex', 'claude')) {
+            UI @('invoke', $(if($provider -eq 'codex'){'AgentScopeCodex'}else{'AgentScopeClaude'})) | Out-Null
+            Wait-UI 'AgentExecutable' '' 10
+            UI @('wait-for', 'UseAgentProfile', '-p', 'IsEnabled', '--value', 'False', '-t', '5000') | Out-Null
             UI @('set-value', 'AgentExecutable', (Join-Path $AgentHost ($provider+'.exe'))) | Out-Null
-            UI @('invoke', 'SettingsCheckCli') | Out-Null
-            UI @('wait-for', 'RegisterAgentConnection', '-p', 'IsEnabled', '--value', 'True', '-t', '15000') | Out-Null
-            UI @('invoke', 'RegisterAgentConnection') | Out-Null
-            Wait-UI 'RegisteredConnectionSummary' $(if($provider -eq 'codex'){'Codex'}else{'Claude Code'})
+            UI @('invoke', 'CheckCli') | Out-Null
+            Confirm-SensitiveSettingsIfAsked
+            UI @('wait-for', 'UseAgentProfile', '-p', 'IsEnabled', '--value', 'True', '-t', '15000') | Out-Null
+            UI @('invoke', 'UseAgentProfile') | Out-Null
+            Confirm-SensitiveSettingsIfAsked 3
+            $registered = Join-Path $script:stageData 'agent-connections.json'
+            $until = [DateTime]::UtcNow.AddSeconds(15)
+            do {
+                $count = if (Test-Path $registered) { @((Get-Content $registered -Raw | ConvertFrom-Json).Profiles | Where-Object { $_.Executable -like ('*' + $provider + '.exe') }).Count } else { 0 }
+                if ($count -eq 0) { Start-Sleep -Milliseconds 200 }
+            } while ($count -eq 0 -and [DateTime]::UtcNow -lt $until)
+            Assert-True ($count -ge 1) "The checked $provider profile was not registered"
         }
         $profiles = (Get-Content (Join-Path $script:stageData 'agent-connections.json') -Raw | ConvertFrom-Json).Profiles
         Assert-True ($profiles.Count -eq 2) 'The checked CLI profiles were not persisted'
         Assert-True (@($profiles | Where-Object { $_.Executable -notlike ($AgentHost+'*') }).Count -eq 0) 'A real CLI was registered'
         Capture 'registered-cli-connections'
-        UI @('invoke', 'LoadRegisteredClaudeConnection') | Out-Null
         UI @('invoke', 'NavChat') | Out-Null
     }
     Check 'Successful conversation creates encrypted local notes without extra AI turns' {
@@ -498,7 +528,9 @@ function Check-AgentSwitchStage([string]$AgentHost) {
         $script:app = [Diagnostics.Process]::Start($start)
         Wait-UI 'NavChat' '' 30
         UI @('invoke', 'NavAgentSettings') | Out-Null
-        Wait-UI 'RegisteredConnectionSummary' 'Codex'
+        # The registrations section of the old page is no longer reachable; the restart must keep both checked profiles on disk.
+        $restartProfiles = (Get-Content (Join-Path $script:stageData 'agent-connections.json') -Raw | ConvertFrom-Json).Profiles
+        Assert-True (@($restartProfiles | Where-Object { $_.Executable -like '*codex.exe' }).Count -ge 1) 'The registered Codex profile was lost after restart'
         UI @('invoke', 'NavChat') | Out-Null
         UI @('invoke', 'ConnectMattermost') | Out-Null
         $null = Wait-Fixture { param($s) $s.connections -eq 1 }
@@ -522,7 +554,7 @@ function Check-AgentSwitchStage([string]$AgentHost) {
         do { $saved=Get-Content (Join-Path $script:stageData 'sessions.json') -Raw|ConvertFrom-Json; if (-not $saved.Agents[0].RequiresApproval) {break}; Start-Sleep -Milliseconds 100 } while ([DateTime]::UtcNow -lt $until)
         Assert-True (-not $saved.Agents[0].RequiresApproval -and -not $saved.Agents[0].ProtectedHandoff) 'The handoff was not consumed'
         Post ('agent-follow-' + $runId) $root 'alice' 'ordinary follow-up after handoff'
-        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.message.Contains('codex-e2e: resumed; prompt=ordinary follow-up after handoff') }).Count -eq 1 }
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.message -match '(?s)codex-e2e: resumed; prompt=.*ordinary follow-up after handoff' }).Count -eq 1 }
     }
     Check 'PC provider dialog offers summary preview and can choose a fresh session' {
         UI @('invoke', 'NavHistory') | Out-Null
@@ -549,7 +581,9 @@ function Check-AgentSwitchStage([string]$AgentHost) {
         UI @('invoke','ApproveChat')|Out-Null
         Wait-UI 'ChatRunConfirmation'
         UI @('invoke','PrimaryButton')|Out-Null
-        Wait-UI 'ChatOutput' 'claude-e2e: new; prompt=fresh provider request' 20
+        # The bridge prepends its attachment note, so check the marker and the original prompt separately.
+        Wait-UI 'ChatOutput' 'claude-e2e: new' 20
+        Wait-UI 'ChatOutput' 'fresh provider request' 10
     }
     Check 'Unregistered providers and other account/thread scopes cannot take over this conversation' {
         $before=Get-Content (Join-Path $script:stageData 'sessions.json') -Raw
@@ -565,7 +599,7 @@ function Check-AgentSwitchStage([string]$AgentHost) {
     Check 'Ordinary requests starting with agent survive the cab trigger and reach the CLI' {
         $before = (Get-Content (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json).Records.Count
         Post ('agent-prose-' + $runId) $root 'alice' 'agent のログを調べて'
-        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.message.Contains('claude-e2e: resumed; prompt=agent のログを調べて') }).Count -eq 1 }
+        $null = Wait-Fixture { param($s) @($s.replies | Where-Object { $_.message -match '(?s)claude-e2e: resumed; prompt=.*agent のログを調べて' }).Count -eq 1 }
         $after = (Get-Content (Join-Path $script:stageData 'history.json') -Raw | ConvertFrom-Json).Records.Count
         Assert-True ($after -eq $before + 1) 'The ordinary request was swallowed as a control command'
     }
@@ -595,9 +629,11 @@ function Check-PendingConfirmationStopStage([string]$NodePath, [string]$SlowAgen
         $stopPost = @(Reply $snapshot $root { param($p) $p.message.StartsWith((Expected-Starts 'stop')) })[-1]
         $receipt = @(Reply $snapshot $root { param($p) $p.id -ne $stopPost.id })
         Assert-True ($receipt.Count -eq 1) 'Expected exactly one initial request receipt.'
-        $cancelledPrefix = if ($script:language -eq 'ja') { '⏹ 実行を停止しました。経過 ' } else { '⏹ Execution stopped. Elapsed ' }
-        $terminal = Wait-Fixture { param($s) @($s.updates | Where-Object { $_.id -eq $receipt[0].id -and $_.message.StartsWith($cancelledPrefix) }).Count -ge 1 } 15
-        Assert-True (@($terminal.updates | Where-Object { $_.id -eq $receipt[0].id -and $_.message.StartsWith($cancelledPrefix) }).Count -ge 1) 'The request receipt was not edited to the localized cancelled state.'
+        # Receipts now use the short cancelled form; the longer sentence is still accepted.
+        $cancelledPrefixes = if ($script:language -eq 'ja') { @('⏹ 停止 ', '⏹ 実行を停止しました。経過 ') } else { @('⏹ Stopped ', '⏹ Execution stopped. Elapsed ') }
+        $isCancelled = { param($u) $u.id -eq $receipt[0].id -and @($cancelledPrefixes | Where-Object { $u.message.StartsWith($_) }).Count -ge 1 }
+        $terminal = Wait-Fixture { param($s) @($s.updates | Where-Object { & $isCancelled $_ }).Count -ge 1 } 15
+        Assert-True (@($terminal.updates | Where-Object { & $isCancelled $_ }).Count -ge 1) 'The request receipt was not edited to the localized cancelled state.'
     }
 }
 

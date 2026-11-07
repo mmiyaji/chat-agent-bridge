@@ -124,7 +124,7 @@ try {
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
     Start-Sleep -Milliseconds 500
     Assert-That ((Get-Value 'OnboardingStep') -match '1\s*/\s*5') 'The intro page advanced without either consent checkbox.'
-    Assert-That ((Get-Property 'WizardStatus' 'IsOffscreen') -eq 'False') 'Consent validation feedback was hidden outside the scroll viewport.'
+    Assert-That ((Get-Property 'WizardConsentStatus' 'IsOffscreen') -eq 'False') 'Consent validation feedback was hidden outside the scroll viewport.'
     Assert-That (-not (Test-Path -LiteralPath (Join-Path $dataPath 'consent.json'))) 'Consent was saved without both selections.'
     Assert-That (-not (Test-Path -LiteralPath (Join-Path $dataPath 'settings.json'))) 'Settings were saved before the AI setup page.'
 
@@ -190,7 +190,14 @@ try {
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
     Assert-That (Wait-Progress '3\s*/\s*5') 'Changing the executable prevented return to the CLI page.'
     Invoke-UI @('invoke','CheckCli') | Out-Null
-    Assert-That (Wait-Value 'CliCheckSummary' '確認できませんでした' 20) 'CLI check did not report the missing executable.'
+    # A failed check is now reported by the error InfoBar (its name carries the message) instead of the plain summary text.
+    $cliError = $false
+    $cliDeadline = [DateTimeOffset]::UtcNow.AddSeconds(20)
+    do {
+        if (((Get-Property 'WizardCliCheckError' 'Name') -like '*確認できませんでした*') -or ((Get-Value 'CliCheckSummary') -like '*確認できませんでした*')) { $cliError = $true; break }
+        Start-Sleep -Milliseconds 250
+    } while ([DateTimeOffset]::UtcNow -lt $cliDeadline)
+    Assert-That $cliError 'CLI check did not report the missing executable.'
     Invoke-UI @('invoke','OnboardingPrevious') | Out-Null
     Assert-That (Wait-Progress '2\s*/\s*5') 'Back did not return after the unavailable CLI result.'
     Set-Value 'WizardAgentExecutable' $fixturePath
@@ -265,10 +272,9 @@ try {
     Assert-That ((Get-Value 'WizardChatResultMode') -match '自動共有') 'Chat result sharing did not default to automatic sharing.'
     Invoke-UI @('scroll-into-view','WizardAgentPermissionMode') | Out-Null
     Assert-That ((Get-Value 'WizardAgentPermissionMode') -match 'CLIの既定値') 'Agent permissions did not default to the CLI setting.'
-    $currentSubstep = 'reject completion while disconnected'
-    Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Start-Sleep -Milliseconds 800
-    Assert-That ((Get-Value 'OnboardingStep') -match '5\s*/\s*5') 'Wizard completed without a chat connection.'
+    # Finishing without a live connection is allowed now (the app saves and explains that connecting can wait),
+    # so only verify the connection status before the explicit connect action.
+    $currentSubstep = 'confirm the connection is not reported as connected before connecting'
     $status = Get-Value 'WizardConnectionStatus'
     Assert-That ($status -notmatch '接続しました') 'Connection status unexpectedly says connected before the connect action.'
     $currentSubstep = 'connect to local fixture server'
@@ -287,7 +293,7 @@ try {
         @('AgentProvider','claude'), @('AgentExecutable',$fixturePath), @('WorkspaceRoot',$workspace),
         @('AgentModel','fixture-claude-large'), @('AgentReasoningEffort','high'),
         @('MattermostServerUrl',$ServerUrl), @('MattermostChannelId','test-channel'),
-        @('MattermostAllowedUserIds','test-member'), @('AutoConnectProvider','mattermost'), @('ChatApprovalMode','first')
+        @('MattermostAllowedUserIds','test-member'), @('AutoConnectProvider','mattermost'), @('ChatApprovalMode','auto')
     )) { Assert-That ([string]$saved.($pair[0]) -eq [string]$pair[1]) "Saved settings field $($pair[0]) did not match expected value." }
     Assert-That (([string]$saved.MattermostToken).StartsWith('dpapi:') -and [string]$saved.MattermostToken -ne $token) 'Saved Mattermost token was absent or was not protected at rest.'
     $progressFile = Join-Path $dataPath 'onboarding.json'
