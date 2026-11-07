@@ -107,8 +107,10 @@ public sealed partial class HistoryPageViewModel
     }
 
     private CancellationTokenSource? _recordSearchDebounce;
+    private string? _linkedAccessUserId;
     partial void OnRecordSearchQueryChanged(string value)
     {
+        _linkedAccessUserId = null;
         _recordSearchDebounce?.Cancel();
         _recordSearchDebounce?.Dispose();
         var debounce = _recordSearchDebounce = new CancellationTokenSource();
@@ -178,8 +180,9 @@ public sealed partial class HistoryPageViewModel
         ExecutionDayFilter = null;
         HistoryViewMode = HistoryViewMode.Access;
         AuditKindFilter = AuditKindOptions.FirstOrDefault();
-        AuditServiceFilter = AuditServiceOptions.FirstOrDefault(option => option.Key == provider) ?? AuditServiceOptions.FirstOrDefault();
+        SelectAccessHistoryService(provider);
         RecordSearchQuery = userId;
+        _linkedAccessUserId = userId;
         ApplyAuditFilters();
         RunRecordsRequested?.Invoke();
     }

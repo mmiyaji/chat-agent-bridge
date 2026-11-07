@@ -74,7 +74,7 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record, ExecutionChatIn
     public string Identifiers => DesktopText.Get("HistoryExecutionConversation", Record.ChannelId, Record.ThreadId, Record.UserId);
     public string IdentifiersHeading => DesktopText.Get("HistoryIdentifiersHeading");
 
-    private static string SourceLabel(string source) => source switch
+    internal static string SourceLabel(string source) => source switch
     {
         "local" => DesktopText.Get("Local"),
         "slack" => "Slack",

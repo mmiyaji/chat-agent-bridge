@@ -432,8 +432,8 @@
                         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                         <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                            <SelectorBar x:Name="ExecutionHistoryMode" SelectionChanged="ExecutionHistoryMode_SelectionChanged" AutomationProperties.AutomationId="HistoryRecordMode">
-                                <SelectorBarItem x:Name="ExecutionsModeItem" x:Uid="HistoryRunsMode" IsSelected="True" AutomationProperties.AutomationId="ExecutionHistoryModeItem" />
+                            <SelectorBar x:Name="ExecutionHistoryMode" Loaded="ExecutionHistoryMode_Loaded" SelectionChanged="ExecutionHistoryMode_SelectionChanged" AutomationProperties.AutomationId="HistoryRecordMode">
+                                <SelectorBarItem x:Name="ExecutionsModeItem" x:Uid="HistoryRunsMode" AutomationProperties.AutomationId="ExecutionHistoryModeItem" />
                                 <SelectorBarItem x:Name="AllOperationsModeItem" x:Uid="HistoryAllOperationsMode" AutomationProperties.AutomationId="AuditHistoryTab" />
                                 <SelectorBarItem x:Name="AccessModeItem" x:Uid="HistoryAccessMode" AutomationProperties.AutomationId="AccessHistoryTab" />
                             </SelectorBar>

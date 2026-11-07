@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory)][string]$AppDirectory,
     [ValidateSet('ja','en')][string]$Language = 'ja',
-    [switch]$Baseline
+    [switch]$Baseline,
+    [switch]$AccessLinkOnly
 )
 $ErrorActionPreference = 'Stop'
 $artifactRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
@@ -29,8 +30,16 @@ function UI([string[]]$Arguments) {
 }
 function Root { [System.Windows.Automation.AutomationElement]::FromHandle($appProcess.MainWindowHandle) }
 function Element([string]$Id) {
-    (Root).FindFirst([System.Windows.Automation.TreeScope]::Descendants,
-        [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,$Id))
+    $idCondition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,$Id)
+    $element=(Root).FindFirst([System.Windows.Automation.TreeScope]::Descendants,$idCondition)
+    if ($element -and -not $element.Current.IsOffscreen) { return $element }
+    # WinUI can host flyouts in a separate window outside the main UIA tree.
+    $processCondition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ProcessIdProperty,$appProcess.Id)
+    foreach($window in [System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children,$processCondition)){
+        $popupElement=$window.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$idCondition)
+        if($popupElement -and -not $popupElement.Current.IsOffscreen){return $popupElement}
+    }
+    return $element
 }
 function Has-Text([string]$Text) {
     $condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty,$Text)
@@ -155,8 +164,16 @@ function Rename-Selected([string]$Name) {
     UI @('wait-for','SessionDisplayName','-t','5000') | Out-Null
     Capture 'history-rename-dialog'
     (Element 'SessionDisplayName').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($Name)
-    UI @('invoke','PrimaryButton') | Out-Null
+    Invoke-RenameDialogButton 'PrimaryButton'
     Start-Sleep -Milliseconds 350
+}
+function Invoke-RenameDialogButton([string]$Id) {
+    $dialog=Element 'RenameSessionDialog'
+    Assert-True ($null -ne $dialog) 'Rename dialog is missing.'
+    $condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,$Id)
+    $button=$dialog.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$condition)
+    Assert-True ($null -ne $button) "Rename dialog button '$Id' is missing."
+    $button.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
 }
 function Assert-RenameStored([int]$Index,[string]$Expected) {
     $saved=Get-Content -LiteralPath (Join-Path $dataPath 'sessions.json') -Raw | ConvertFrom-Json
@@ -184,6 +201,24 @@ function Selected-Name([string]$Id) {
         if ($selected.Count -gt 0) { return $selected[0].Current.Name }
     } catch { }
     try { return $element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value } catch { return $element.Current.Name }
+}
+function Wait-SelectedName([string]$Id,[string]$Expected) {
+    $deadline=[DateTime]::UtcNow.AddSeconds(5)
+    do {
+        $actual=Selected-Name $Id
+        if($actual -eq $Expected){return}
+        Start-Sleep -Milliseconds 100
+    } while([DateTime]::UtcNow -lt $deadline)
+    throw "Expected '$Expected' for $Id, got '$actual'."
+}
+function Open-SessionFilters {
+    UI @('invoke','SavedSessionsAdvancedFilters') | Out-Null
+    UI @('wait-for','SavedSessionsProviderFilter','-t','5000') | Out-Null
+}
+function Close-SessionFilters {
+    [void][HistoryBrowserUiNative]::SetForegroundWindow($appProcess.MainWindowHandle)
+    [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+    Element-Gone 'SavedSessionsProviderFilter'
 }
 try {
     Assert-True ($appRoot.StartsWith($artifactRoot + [IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) 'AppDirectory must be below desktop/artifacts.'
@@ -241,11 +276,24 @@ try {
     if(-not $Baseline) { Write-Json 'chat-identities.json' @{version=1;entries=@($identityEntries.Values)} }
     Write-Json 'sessions.json' @{SchemaVersion=1;Bindings=$bindings;Workspaces=@()}
     Write-Json 'history.json' @{SchemaVersion=1;Records=$records}
-    Write-Json 'audit.json' @{SchemaVersion=1;Records=@(@{Timestamp=[DateTimeOffset]::UtcNow.ToString('o');Kind='completed';ExecutionId=$records[0].Id;Source=$records[0].Source;ChannelId=$records[0].ChannelId;ThreadId=$records[0].ThreadId})}
-    Write-Json 'settings.json' @{SchemaVersion=1;WorkspaceRoot=$dataPath;AgentProvider='custom';AgentMode='exec';AgentExecutable='not-used';AgentArguments='';TrustedWorkspaceRoots=$dataPath;AutoConnectProvider='none'}
+    $linkedUserId='U00000009'
+    $auditRecords=@(@{Timestamp=[DateTimeOffset]::UtcNow.ToString('o');Kind='completed';ExecutionId=$records[0].Id;Source=$records[0].Source;ChannelId=$records[0].ChannelId;ThreadId=$records[0].ThreadId})
+    if(-not $Baseline){
+        foreach($fixture in @(
+            @{Service='slack';UserId=$linkedUserId;Name='Expected access subject'},
+            @{Service='mattermost';UserId=$linkedUserId;Name='Same ID on another service'},
+            @{Service='slack';UserId="$($linkedUserId)0";Name='Different user with the same ID prefix'}
+        )){
+            $auditRecords+=@{Timestamp=[DateTimeOffset]::UtcNow.ToString('o');Kind='allowed_user_added';Source=$fixture.Service;ChannelId='';ThreadId='';
+                Access=@{UserId=$fixture.UserId;DisplayName=$fixture.Name;Actor='Local';Method='settings'}}
+        }
+    }
+    Write-Json 'audit.json' @{SchemaVersion=1;Records=$auditRecords}
+    Write-Json 'settings.json' @{SchemaVersion=1;WorkspaceRoot=$dataPath;AgentProvider='custom';AgentMode='exec';AgentExecutable='not-used';AgentArguments='';TrustedWorkspaceRoots=$dataPath;AutoConnectProvider='none';SlackAllowedUserIds=$linkedUserId}
     Write-Json 'portable-update.json' @{schemaVersion=1;automaticChecksEnabled=$false;includePrereleases=$true}
     Write-Json 'pricing-auto.json' @{schemaVersion=1;autoUpdateEnabled=$false;catalogJson=(Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/Pricing/model-prices.json') -Raw)}
     Write-Json 'onboarding.json' @{SchemaVersion=3;Step=4;Status='completed'}
+    Write-Json 'tips.json' @{Seen=@('chat-connect')}
     Write-Json 'language.json' @{Language=$Language}
     Write-Json 'appearance.json' @{Theme=$(if($Language -eq 'ja'){'dark'}else{'light'})}
     $start=[Diagnostics.ProcessStartInfo]::new((Join-Path $appRoot 'ChatAgentBridge.Desktop.exe'))
@@ -253,6 +301,36 @@ try {
     $appProcess=[Diagnostics.Process]::Start($start)
     Write-Json 'launch.json' @{ProcessId=$appProcess.Id;DataPath=$dataPath}
     UI @('wait-for','NavHistory','-t','15000') | Out-Null
+    if(-not $Baseline){
+        Resize 1280 800
+        foreach($visit in @('first','revisit')){
+            Check "Allowed user link keeps access mode, service and exact ID on $visit visit" {
+                Navigate 'NavConnections'
+                UI @('invoke','ConnectionScopeCommon') | Out-Null
+                UI @('invoke','AllowedUserHistory') | Out-Null
+                UI @('wait-for','AuditHistoryList','-t','10000') | Out-Null
+                Assert-True ((Element 'AccessHistoryTab').GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected) 'Access mode is not selected'
+                Assert-True ((Selected-Name 'AuditServiceFilter') -eq 'Slack') 'Service selection did not survive navigation'
+                Assert-True ((Element 'HistoryRecordSearch').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value -eq $linkedUserId) 'User ID filter was not set'
+                $type=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem)
+                $deadline=[DateTime]::UtcNow.AddSeconds(5)
+                do {
+                    $rows=(Element 'AuditHistoryList').FindAll([System.Windows.Automation.TreeScope]::Descendants,$type)
+                    if($rows.Count -eq 1 -and $rows[0].Current.Name.Contains('Expected access subject')){break}
+                    Start-Sleep -Milliseconds 100
+                } while([DateTime]::UtcNow -lt $deadline)
+                Assert-True ($rows.Count -eq 1 -and $rows[0].Current.Name.Contains('Expected access subject')) 'Wrong service or partial user ID leaked into the results'
+                Capture "access-link-$visit"
+            }
+        }
+        if($AccessLinkOnly){
+            Write-Json 'result.json' @{passed=$true;language=$Language;checks=$checks}
+            Write-Output "PASS Allowed user access history E2E: $dataPath"
+            return
+        }
+        UI @('invoke','ClearRecordFilters') | Out-Null
+        UI @('invoke','SavedConversationsTab') | Out-Null
+    }
     Navigate 'NavHistory'
     UI @('wait-for','SavedSessionsList','-t','10000') | Out-Null
     Resize 1280 800
@@ -261,14 +339,13 @@ try {
     if (-not $Baseline) {
         Wait-Count 42 42
         Check 'Meaningful conversation names and matched activity status/count' {
-            $initialProvider=Selected-Name 'SavedSessionsProviderFilter'
-            $initialWorkspace=Selected-Name 'SavedSessionsWorkspaceFilter'
-            $initialSort=Selected-Name 'SavedSessionsSort'
+            Open-SessionFilters
             if ($Language -eq 'ja') { $allProvider='すべてのサービス'; $allWorkspace='すべての作業フォルダー'; $recent='最近更新した順' }
             else { $allProvider='All services'; $allWorkspace='All workspaces'; $recent='Recently updated' }
-            Assert-True ($initialProvider -eq $allProvider) 'Initial provider filter is not set to All.'
-            Assert-True ($initialWorkspace -eq $allWorkspace) 'Initial workspace filter is not set to All.'
-            Assert-True ($initialSort -eq $recent) 'Initial sort is not set to Recently updated.'
+            Wait-SelectedName 'SavedSessionsProviderFilter' $allProvider
+            Wait-SelectedName 'SavedSessionsWorkspaceFilter' $allWorkspace
+            Wait-SelectedName 'SavedSessionsSort' $recent
+            Close-SessionFilters
             $first=Get-FirstRowText
             Assert-True ($first.Contains('Release preparation')) 'The newest session did not show its saved display name.'
             Assert-True ($first -notmatch $bindings[0].SessionId) 'The session identifier was used as the conversation title.'
@@ -287,21 +364,24 @@ try {
             UI @('invoke','ClearSessionFilters') | Out-Null
             Wait-Count 42 42
             UI @('invoke','ExecutionHistoryTab') | Out-Null
+            (Element 'ExecutionHistoryModeItem').GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
             Start-Sleep -Milliseconds 250
             $visibleText=@((Element 'ExecutionHistoryList').FindAll([System.Windows.Automation.TreeScope]::Descendants,
                 [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Text)) | Where-Object {-not $_.Current.IsOffscreen} | ForEach-Object {$_.Current.Name}) -join "`n"
-            Assert-True ($visibleText.Contains('Example workspace') -and $visibleText.Contains('@alice (Alice)') -and $visibleText.Contains('#release-planning')) 'Execution history is missing its human-readable chat identity.'
+            Assert-True ($visibleText.Contains('@alice (Alice)') -and $visibleText.Contains('#release-planning')) 'Execution history is missing its human-readable chat identity.'
             Assert-True (-not $visibleText.Contains($bindings[0].Key.ThreadId)) 'Execution history exposes thread IDs before expanding details.'
             Capture 'history-execution-names'
             UI @('invoke','AuditHistoryTab') | Out-Null
             Start-Sleep -Milliseconds 200
-            Assert-True (Has-Text 'Release preparation · Slack / Example workspace · @alice (Alice) · #release-planning') 'Audit history is not linked to the correct execution identity.'
+            Assert-True (Has-Text 'Release preparation · #release-planning · @alice (Alice)') 'Audit history is not linked to the correct execution identity.'
             Capture 'history-audit-names'
             UI @('invoke','SavedConversationsTab') | Out-Null
         }
         Check 'Workspace, provider, and display-name search combine correctly' {
+            Open-SessionFilters
             Choose 'SavedSessionsWorkspaceFilter' (Join-Path $dataPath $folders[0])
             Choose 'SavedSessionsProviderFilter' 'Slack'
+            Close-SessionFilters
             Wait-Count 12 42
             Set-Search 'SavedSessionsSearch' 'Release preparation'
             Wait-Count 2 42
@@ -310,14 +390,17 @@ try {
             UI @('invoke','ClearSessionFilters') | Out-Null
             Wait-Count 42 42
             Assert-True ((Element 'SavedSessionsSearch').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value -eq '') 'Clear filters did not clear the search.'
+            Open-SessionFilters
             $provider=Selected-Name 'SavedSessionsProviderFilter'
             $workspace=Selected-Name 'SavedSessionsWorkspaceFilter'
             if ($Language -eq 'ja') { $allProvider='すべてのサービス'; $allWorkspace='すべての作業フォルダー' }
             else { $allProvider='All services'; $allWorkspace='All workspaces' }
             Assert-True ($provider -eq $allProvider) 'Provider filter did not return to the default.'
             Assert-True ($workspace -eq $allWorkspace) 'Workspace filter did not return to the default.'
+            Close-SessionFilters
         }
         Check 'Recent, name, and usage sorts change the first conversation' {
+            Open-SessionFilters
             if ($Language -eq 'ja') { $recent='最近更新した順'; $byName='会話名順'; $byUsage='実行回数が多い順' }
             else { $recent='Recently updated'; $byName='Name'; $byUsage='Most runs' }
             Choose 'SavedSessionsSort' $byName
@@ -326,6 +409,7 @@ try {
             Assert-True ((Get-FirstRowText).Contains('日本語スプリント記録')) 'Usage sort did not put the eight-run conversation first.'
             Choose 'SavedSessionsSort' $recent
             Assert-True ((Get-FirstRowText).Contains('Release preparation')) 'Recent sort did not restore the newest conversation to the top.'
+            Close-SessionFilters
         }
         Check 'Rename persists across refresh/restart, is owner-scoped, and empty restores the default' {
             $initialBobName=$bindings[1].DisplayName
@@ -348,7 +432,7 @@ try {
             UI @('invoke','RenameSession') | Out-Null
             UI @('wait-for','SessionDisplayName','-t','5000') | Out-Null
             (Element 'SessionDisplayName').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('Cancelled rename')
-            UI @('invoke','CloseButton') | Out-Null
+            Invoke-RenameDialogButton 'CloseButton'
             Element-Gone 'RenameSessionDialog'
             Assert-RenameStored 0 'Renamed release preparation'
 

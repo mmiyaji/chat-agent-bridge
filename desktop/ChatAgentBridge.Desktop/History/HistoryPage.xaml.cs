@@ -110,12 +110,16 @@ public sealed partial class HistoryPage : Page
 
     private void ExecutionHistoryMode_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
+        if (!sender.IsLoaded || sender.SelectedItem is null) return;
         ViewModel.HistoryViewMode = sender.SelectedItem == AllOperationsModeItem ? HistoryViewMode.Operations :
             sender.SelectedItem == AccessModeItem ? HistoryViewMode.Access : HistoryViewMode.Runs;
     }
 
+    private void ExecutionHistoryMode_Loaded(object sender, RoutedEventArgs e) => SyncRecordModeSelector();
+
     private void SyncRecordModeSelector()
     {
+        if (!ExecutionHistoryMode.IsLoaded) return;
         var item = ViewModel.HistoryViewMode switch
         {
             HistoryViewMode.Operations => AllOperationsModeItem,
