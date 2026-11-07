@@ -76,6 +76,7 @@ public sealed partial class HistoryPage : Page
     public static Visibility EmptyToVisibility(bool hasItems) =>
         hasItems ? Visibility.Collapsed : Visibility.Visible;
     public static Visibility BoolToVisibility(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
+    public static Visibility InverseBoolToVisibility(bool value) => value ? Visibility.Collapsed : Visibility.Visible;
 
     public static Visibility AuditSelectionHint(object? selection) => BoolToVisibility(selection is null);
 

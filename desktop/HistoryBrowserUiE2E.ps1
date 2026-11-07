@@ -58,6 +58,51 @@ function Has-Text([string]$Text) {
     return $null -ne (Root).FindFirst([System.Windows.Automation.TreeScope]::Descendants,$condition)
 }
 function Assert-True([bool]$Value,[string]$Message) { if (-not $Value) { throw $Message } }
+function Assert-NarrowTableAlignment([string]$ListId,[string[]]$HeaderIds,[string]$Kind) {
+    $list=Element $ListId
+    $scroll=$list.GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
+    Assert-True ($scroll.Current.HorizontallyScrollable) "$Kind table did not enable horizontal scrolling at the narrow window width."
+    $rowsChecked=0
+    $seenHeaderIds=[Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    foreach($percent in @(0,25,50,75,100)) {
+        $scroll.SetScrollPercent($percent,-1)
+        Start-Sleep -Milliseconds 200
+        $rows=@($list.FindAll([System.Windows.Automation.TreeScope]::Descendants,
+            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem)) |
+            Where-Object {-not $_.Current.IsOffscreen})
+        Assert-True ($rows.Count -gt 0) "$Kind table has no visible rows at the narrow window width."
+        $rowsChecked=[Math]::Max($rowsChecked,$rows.Count)
+        $headers=@($HeaderIds | ForEach-Object {$id=$_;$element=Element $id;if($element){$bounds=$element.Current.BoundingRectangle;[pscustomobject]@{Id=$id;Element=$element;X=[double]$bounds.X;Width=[double]$bounds.Width;Name=$element.Current.Name}}} | Where-Object {$_.Width -gt 0 -and [double]::IsFinite($_.X)} | Sort-Object X)
+        $headerSummary=($headers | ForEach-Object {'{0}@{1}:{2}' -f $_.Name,$_.X,$_.Width}) -join ', '
+        Assert-True ($headers.Count -ge 1) "$Kind table exposed no visible column headers at horizontal offset $percent."
+        foreach($header in $headers){[void]$seenHeaderIds.Add($header.Id)}
+        if($Kind -eq 'Audit') {
+            foreach($row in $rows) {
+                $bounds=$row.Current.BoundingRectangle
+                Assert-True ($bounds.Width -gt 0 -and $bounds.Height -gt 0) 'An audit row disappeared while the table was horizontally scrolled.'
+            }
+            Capture "history-audit-narrow-horizontal-$percent"
+            continue
+        }
+        foreach($row in $rows) {
+            $cellCondition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Text)
+            $cellElements=@($row.FindAll([System.Windows.Automation.TreeScope]::Descendants,$cellCondition))
+            $cells=@($cellElements | ForEach-Object {
+                $bounds=$_.Current.BoundingRectangle
+                [pscustomobject]@{Element=$_;X=[double]$bounds.X;Width=[double]$bounds.Width;Name=$_.Current.Name}
+            } | Where-Object {$_.Width -gt 0 -and [double]::IsFinite($_.X)} | Sort-Object X)
+            Assert-True ($cells.Count -ge $headers.Count) "$Kind table row has fewer visible cells than its headers at horizontal offset $percent ($($cells.Count)/$($headers.Count)); headers=$headerSummary; cells=$(($cells | ForEach-Object {'{0}@{1}:{2}' -f $_.Name,$_.X,$_.Width}) -join ', ')."
+            for($i=0;$i -lt $headers.Count;$i++) {
+                $expectedIconOffset=if($Kind -eq 'Execution' -and $headers[$i].Name -match '結果|Result'){20}else{0}
+                $difference=[Math]::Abs(($cells[$i].X-$headers[$i].X)-$expectedIconOffset)
+                Assert-True ($difference -le 2) "$Kind table header/cell misalignment in '$($headers[$i].Name)' (icon offset $expectedIconOffset; row cell '$($cells[$i].Name)') at horizontal offset $percent ($difference DIP)."
+            }
+        }
+    }
+    $unseen=@($HeaderIds | Where-Object {-not $seenHeaderIds.Contains($_)})
+    Assert-True ($unseen.Count -eq 0) "$Kind table did not expose all columns over the horizontal scroll range: $($unseen -join ', ')."
+    $checks.Add(@{name="Narrow $Kind header/row alignment while horizontally scrolling";passed=$true;rowsChecked=$rowsChecked})
+}
 function Navigate([string]$Id) {
     $item = Element $Id
     if ($null -eq $item -or $item.Current.IsOffscreen) { UI @('invoke','TogglePaneButton') | Out-Null }
@@ -374,6 +419,11 @@ try {
             Start-Sleep -Milliseconds 100
         } while ([DateTime]::UtcNow -lt $readyDeadline)
         Assert-True ($refreshButton -and $refreshButton.Current.IsEnabled) 'History refresh is not ready.'
+        $idleProgress = Element 'RefreshHistoryProgressRing'
+        $idleProgressHidden=$idleProgress.Current.IsOffscreen -or $idleProgress.Current.BoundingRectangle.Width -le 0
+        Assert-True ($idleProgressHidden) 'History refresh spinner is still shown while idle.'
+        $refreshIdleScreenshot=Join-Path $dataPath 'history-refresh-idle.png'
+        UI @('screenshot','-o',$refreshIdleScreenshot) | Out-Null
         $buttonBoundsBefore = $refreshButton.Current.BoundingRectangle
         $buttonNameBefore = $refreshButton.Current.Name
         $statusElement = Element 'HistoryStatus'
@@ -391,6 +441,8 @@ try {
         $refreshIndicator = Element 'RefreshHistoryProgressRing'
         $progressObserved = $refreshIndicator -and $refreshIndicator.Current.BoundingRectangle.Width -gt 0 -and -not $refreshIndicator.Current.IsOffscreen
         $progressName = if ($refreshIndicator) { $refreshIndicator.Current.Name } else { '' }
+        $busyProgressBounds = if ($refreshIndicator) { $refreshIndicator.Current.BoundingRectangle } else { [System.Windows.Rect]::Empty }
+        $indicatorPositionStable = [Math]::Abs($busyProgressBounds.Width - 16) -le 1 -and [Math]::Abs($busyProgressBounds.Height - 16) -le 1
         $refreshScreenshot = Join-Path $dataPath 'history-refresh-inflight.png'
         UI @('screenshot','-o',$refreshScreenshot) | Out-Null
         $deadline = [DateTime]::UtcNow.AddSeconds(30)
@@ -408,7 +460,7 @@ try {
         $buttonBoundsAfter = $refreshButton.Current.BoundingRectangle
         Assert-True ($buttonNameDuring -eq $buttonNameBefore -and $refreshButton.Current.Name -eq $buttonNameBefore -and [Math]::Abs($buttonBoundsDuring.Width - $buttonBoundsBefore.Width) -lt 1 -and [Math]::Abs($buttonBoundsAfter.Width - $buttonBoundsBefore.Width) -lt 1) 'History refresh button content or width changed.'
         $expectedProgressName = if ($Language -eq 'ja') { '履歴を更新しています' } else { 'Refreshing history' }
-        Assert-True ($observedBusy -and $progressObserved -and $progressName.Contains($expectedProgressName)) 'History refresh busy state or progress indicator was not exposed.'
+        Assert-True ($observedBusy -and $progressObserved -and $progressName.Contains($expectedProgressName) -and $indicatorPositionStable) 'History refresh busy state did not show the 16x16 spinner in the reserved icon footprint.'
         $checks.Add(@{name='Refresh uses a stable status row and button';passed=$true;busyObserved=$observedBusy;progressVisibleToAutomation=$progressObserved;progressName=$progressName})
         Write-Json 'result.json' @{passed=$true;language=$Language;refreshOnly=$true;historyCount=$records.Count;checks=$checks;screenshot=$refreshScreenshot;processId=$appProcess.Id}
         Write-Output "PASS History refresh UI: $dataPath"
@@ -452,6 +504,10 @@ try {
             Assert-True ($visibleText.Contains('@alice (Alice)') -and $visibleText.Contains('#release-planning')) 'Execution history is missing its human-readable chat identity.'
             Assert-True (-not $visibleText.Contains($bindings[0].Key.ThreadId)) 'Execution history exposes thread IDs before expanding details.'
             Capture 'history-execution-names'
+            Resize 500 600
+            Assert-NarrowTableAlignment 'ExecutionHistoryList' @('RunSortStarted','RunSortConversation','RunSortUser','RunSortResult','RunSortModel','RunSortDuration','RunSortTokens') 'Execution'
+            Capture 'history-execution-narrow-horizontal-scroll'
+            Resize 1280 800
             UI @('invoke','AuditHistoryTab') | Out-Null
             Start-Sleep -Milliseconds 200
             Assert-True (Has-Text 'Release preparation · #release-planning · @alice (Alice)') 'Audit history is not linked to the correct execution identity.'
@@ -467,6 +523,12 @@ try {
             $auditScroll=(Element 'AuditHistoryList').GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern).Current
             Assert-True (-not $auditScroll.HorizontallyScrollable) 'The resized conversation column caused horizontal overflow at 500 DIP.'
             Capture 'history-audit-narrow-resized'
+            Resize 1280 800
+            Drag-Column 'AuditResizeTime' 150
+            Drag-Column 'AuditResizeAction' 50
+            Resize 500 600
+            Capture 'history-audit-narrow-horizontal-scroll'
+            Assert-NarrowTableAlignment 'AuditHistoryList' @('AuditTimeColumn','AuditActionColumn','AuditServiceColumn','AuditConversationColumn') 'Audit'
             Resize 1280 800
             UI @('invoke','SavedConversationsTab') | Out-Null
         }

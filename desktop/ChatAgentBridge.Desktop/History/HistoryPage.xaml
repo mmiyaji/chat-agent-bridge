@@ -55,7 +55,12 @@
             <StackPanel x:Name="HistoryHeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button Command="{x:Bind ViewModel.RefreshCommand}" AutomationProperties.AutomationId="RefreshHistory">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE72C;" Width="16" Height="16" FontSize="16"
+                                  Visibility="{x:Bind vm:HistoryPage.InverseBoolToVisibility(ViewModel.IsRefreshing), Mode=OneWay}"
+                                  AutomationProperties.AutomationId="RefreshHistoryGlyph"
+                                  AutomationProperties.AccessibilityView="Raw" />
                         <ProgressRing x:Uid="RefreshHistoryProgressRing" Width="16" Height="16" IsActive="{x:Bind ViewModel.IsRefreshing, Mode=OneWay}"
+                                      Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsRefreshing), Mode=OneWay}"
                                       AutomationProperties.AutomationId="RefreshHistoryProgressRing" AutomationProperties.LiveSetting="Polite" />
                         <TextBlock x:Uid="RefreshHistory" VerticalAlignment="Center" />
                     </StackPanel>
@@ -582,10 +587,10 @@
                                     <ListView.Header>
                                         <Grid x:Name="AuditHistoryHeader" ColumnSpacing="8" Padding="12,6">
                                             <Grid.ColumnDefinitions><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Time, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Action, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Service, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.Conversation, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind ViewModel.AuditColumns.TrailingSpace, Mode=OneWay}" /></Grid.ColumnDefinitions>
-                                            <TextBlock x:Uid="AuditTimeColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditTimeColumn" />
-                                            <TextBlock Grid.Column="1" x:Uid="AuditActionColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditActionColumn" />
-                                            <TextBlock Grid.Column="2" x:Uid="AuditServiceColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditServiceColumn" />
-                                            <TextBlock Grid.Column="3" x:Uid="AuditConversationColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditConversationColumn" />
+                                            <TextBlock x:Uid="AuditTimeColumn" AutomationProperties.AutomationId="AuditTimeColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditTimeColumn" />
+                                            <TextBlock Grid.Column="1" x:Uid="AuditActionColumn" AutomationProperties.AutomationId="AuditActionColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditActionColumn" />
+                                            <TextBlock Grid.Column="2" x:Uid="AuditServiceColumn" AutomationProperties.AutomationId="AuditServiceColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditServiceColumn" />
+                                            <TextBlock Grid.Column="3" x:Uid="AuditConversationColumn" AutomationProperties.AutomationId="AuditConversationColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditConversationColumn" />
                                             <Thumb Grid.Column="0" Tag="Audit.Time" x:Uid="AuditResizeTime" AutomationProperties.AutomationId="AuditResizeTime"
                                                    DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" Style="{StaticResource HistoryColumnThumbStyle}" />
                                             <Thumb Grid.Column="1" Tag="Audit.Action" x:Uid="AuditResizeAction" AutomationProperties.AutomationId="AuditResizeAction"

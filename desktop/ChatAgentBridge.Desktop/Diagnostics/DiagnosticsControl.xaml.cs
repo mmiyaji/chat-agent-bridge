@@ -84,7 +84,9 @@ public sealed partial class DiagnosticsControl : UserControl
         var indicatorStartedAt = System.Diagnostics.Stopwatch.StartNew();
         _busy = true;
         RefreshButton.IsEnabled = false;
+        RefreshGlyph.Visibility = Visibility.Collapsed;
         RefreshProgress.IsActive = true;
+        RefreshProgress.Visibility = Visibility.Visible;
         try
         {
             var store = new SettingsStore();
@@ -112,6 +114,8 @@ public sealed partial class DiagnosticsControl : UserControl
             _busy = false;
             RefreshButton.IsEnabled = true;
             RefreshProgress.IsActive = false;
+            RefreshProgress.Visibility = Visibility.Collapsed;
+            RefreshGlyph.Visibility = Visibility.Visible;
         }
     }
 

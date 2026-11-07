@@ -58,6 +58,13 @@ function Element([string]$Id) {
     (Root).FindFirst([Windows.Automation.TreeScope]::Descendants,
       [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, $Id))
 }
+function RawElement([string]$Id) {
+    $walker=[Windows.Automation.TreeWalker]::RawViewWalker
+    $stack=[Collections.Generic.Stack[Windows.Automation.AutomationElement]]::new()
+    $first=$walker.GetFirstChild((Root));if($first){$stack.Push($first)}
+    while($stack.Count -gt 0){$node=$stack.Pop();if($node.Current.AutomationId -eq $Id){return $node};$sibling=$walker.GetNextSibling($node);if($sibling){$stack.Push($sibling)};$child=$walker.GetFirstChild($node);if($child){$stack.Push($child)}}
+    return $null
+}
 function Wait-Element([string]$Id, [int]$Seconds = 8) { UI @('wait-for',$Id,'-t',([string]($Seconds*1000))) | Out-Null }
 function Wait-ElementDirect([string]$Id, [int]$Seconds = 8) {
     $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
@@ -221,6 +228,7 @@ function Write-ScenarioFixture([string]$DataDirectory, [string]$Language, [strin
     Write-Json (Join-Path $DataDirectory 'consent.json') @{ PolicyVersion=$PolicyVersion; AcceptedAtUtc=[DateTimeOffset]::UtcNow.ToString('o') }
     Write-Json (Join-Path $DataDirectory 'language.json') @{ Language=$Language }
     Write-Json (Join-Path $DataDirectory 'appearance.json') @{ Theme=$Theme }
+    Write-Json (Join-Path $DataDirectory 'tips.json') @{ Seen=@('chat-connect') }
     Write-Json (Join-Path $DataDirectory 'portable-update.json') @{ schemaVersion=1; automaticChecksEnabled=$false; includePrereleases=$false; lastAttemptUtc=$null; availableRelease=$null }
     Write-Json (Join-Path $DataDirectory 'pricing-auto.json') @{ schemaVersion=1; autoUpdateEnabled=$false }
 }
@@ -291,9 +299,13 @@ try {
                 Scroll-TargetIntoView 'DiagnosticsRefreshButton' 'AboutScroll'
                 $refreshButton = Element 'DiagnosticsRefreshButton'
                 $refreshButtonText = Element 'RefreshButtonText'
+                $refreshGlyph = RawElement 'DiagnosticsRefreshGlyph'
+                $idleProgress = Element 'DiagnosticsRefreshProgress'
+                if ($refreshGlyph.Current.IsOffscreen -or -not $idleProgress.Current.IsOffscreen -and $idleProgress.Current.BoundingRectangle.Width -gt 0) { throw 'Diagnostics refresh did not show the idle refresh icon in place of the spinner.' }
                 $refreshTextBefore = $refreshButtonText.Current.Name
                 $refreshBoundsBefore = $refreshButton.Current.BoundingRectangle
                 $statusBefore = (Element 'DiagnosticsStatus').Current.Name
+                UI @('screenshot','-o',(Join-Path $testRoot "diagnostics-refresh-idle-$scenario.png")) | Out-Null
                 $refreshButton.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
                 Start-Sleep -Milliseconds 40
                 $refreshButton = Element 'DiagnosticsRefreshButton'
@@ -304,6 +316,10 @@ try {
                 $refreshProgress = Element 'DiagnosticsRefreshProgress'
                 $progressVisibleToAutomation = $refreshProgress -and $refreshProgress.Current.BoundingRectangle.Width -gt 0 -and -not $refreshProgress.Current.IsOffscreen
                 $progressName = if ($refreshProgress) { $refreshProgress.Current.Name } else { '' }
+                $busyGlyph = RawElement 'DiagnosticsRefreshGlyph'
+                $busyGlyphHidden = $null -eq $busyGlyph -or $busyGlyph.Current.IsOffscreen -or $busyGlyph.Current.BoundingRectangle.Width -le 0
+                $busyProgressBounds = if ($refreshProgress) { $refreshProgress.Current.BoundingRectangle } else { [System.Windows.Rect]::Empty }
+                $indicatorFootprintStable = [Math]::Abs($busyProgressBounds.Width - 16) -le 1 -and [Math]::Abs($busyProgressBounds.Height - 16) -le 1
                 UI @('screenshot','-o',(Join-Path $testRoot "diagnostics-refresh-$scenario.png")) | Out-Null
                 $deadline = [DateTime]::UtcNow.AddSeconds(10)
                 do {
@@ -319,7 +335,7 @@ try {
                 if ($statusDuringRefresh -ne $statusBefore) { throw 'Diagnostics refresh inserted transient status text.' }
                 if ([Math]::Abs($refreshBoundsDuring.Width - $refreshBoundsBefore.Width) -gt 1 -or [Math]::Abs($refreshBoundsDuring.Height - $refreshBoundsBefore.Height) -gt 1 -or [Math]::Abs($refreshBoundsAfter.Width - $refreshBoundsBefore.Width) -gt 1 -or [Math]::Abs($refreshBoundsAfter.Height - $refreshBoundsBefore.Height) -gt 1) { throw 'Diagnostics refresh changed the button size.' }
                 $expectedProgressName = if ($language -eq 'ja') { '診断情報を更新しています' } else { 'Refreshing diagnostics' }
-                if (-not $busyObserved -or -not $progressVisibleToAutomation -or -not $progressName.Contains($expectedProgressName)) { throw 'Diagnostics refresh busy state or progress indicator was not exposed.' }
+                if (-not $busyObserved -or -not $progressVisibleToAutomation -or -not $progressName.Contains($expectedProgressName) -or -not $busyGlyphHidden -or -not $indicatorFootprintStable) { throw "Diagnostics refresh indicator state mismatch: busy=$busyObserved progress=$progressVisibleToAutomation name='$progressName' glyphHidden=$busyGlyphHidden size16x16=$indicatorFootprintStable busySize=($($busyProgressBounds.Width),$($busyProgressBounds.Height))." }
                 Record-Pass "diagnostics refresh keeps stable text and size ($scenario; busy observed=$busyObserved; progress visible=$progressVisibleToAutomation; name=$progressName)"
                 UI @('screenshot','-o',(Join-Path $testRoot "diagnostics-$scenario.png")) | Out-Null
                 Record-Pass "diagnostics display/layout ($scenario, 500 DIP)"

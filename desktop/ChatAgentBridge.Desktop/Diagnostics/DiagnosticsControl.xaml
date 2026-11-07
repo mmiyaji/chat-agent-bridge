@@ -34,7 +34,10 @@
         <StackPanel Spacing="8">
             <Button x:Name="RefreshButton" HorizontalAlignment="Stretch" Click="Refresh_Click" AutomationProperties.AutomationId="DiagnosticsRefreshButton">
                 <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <ProgressRing x:Name="RefreshProgress" x:Uid="DiagnosticsRefreshProgress" Width="16" Height="16" IsActive="False"
+                    <FontIcon x:Name="RefreshGlyph" Glyph="&#xE72C;" Width="16" Height="16" FontSize="16"
+                              AutomationProperties.AutomationId="DiagnosticsRefreshGlyph"
+                              AutomationProperties.AccessibilityView="Raw" />
+                    <ProgressRing x:Name="RefreshProgress" x:Uid="DiagnosticsRefreshProgress" Width="16" Height="16" IsActive="False" Visibility="Collapsed"
                                   AutomationProperties.AutomationId="DiagnosticsRefreshProgress" AutomationProperties.LiveSetting="Polite" />
                     <TextBlock x:Name="RefreshButtonText" VerticalAlignment="Center" />
                 </StackPanel>
