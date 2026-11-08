@@ -66,6 +66,12 @@ public sealed partial class MainPage
         for (var i = 0; i < _agentScopeKeys.Length; i++)
         {
             var key = _agentScopeKeys[i];
+            if (key == "codex")
+            {
+                var providerSeparator = new NavigationViewItemSeparator { Margin = new Thickness(12, 4, 12, 4) };
+                AutomationProperties.SetAutomationId(providerSeparator, "AgentScopeProviderSeparator");
+                _agentScopeNavigation.MenuItems.Add(providerSeparator);
+            }
             var item = new SettingsScopeNavigationItem(_agentScopeNavigation, () => QueueAgentScopeSelection(key)) { Tag = key, Content = key };
             AutomationProperties.SetAutomationId(item, "AgentScope" + (key switch { "common" => "Common", "codex" => "Codex", "claude" => "Claude", "gemini" => "Gemini", "github-copilot" => "Copilot", "antigravity" => "Antigravity", "kiro" => "Kiro", "qwen" => "Qwen", "kimi" => "Kimi", "muse" => "Muse", _ => "Custom" }));
             _agentScopeNavigation.MenuItems.Add(item);
@@ -135,7 +141,8 @@ public sealed partial class MainPage
         string[] iconKeys = ["common", "codex", "claude", "gemini", "github-copilot", "antigravity", "kiro", "qwen", "kimi", "muse", "custom"];
         for (var i = 0; i < labels.Length; i++)
         {
-            var item = (NavigationViewItem)_agentScopeNavigation.MenuItems[i];
+            var item = _agentScopeNavigation.MenuItems.OfType<NavigationViewItem>()
+                .First(candidate => Equals(candidate.Tag, iconKeys[i]));
             item.Content = ScopeNavigationLabel(iconKeys[i], labels[i]);
             AutomationProperties.SetName(item, labels[i]);
         }
@@ -173,8 +180,9 @@ public sealed partial class MainPage
     {
         _syncingAgentScope = true;
         var index = Array.IndexOf(_agentScopeKeys, _agentSettingsScope);
-        if (_agentScopeNavigation is not null && index >= 0 && index < _agentScopeNavigation.MenuItems.Count)
-            _agentScopeNavigation.SelectedItem = _agentScopeNavigation.MenuItems[index];
+        if (_agentScopeNavigation is not null && index >= 0)
+            _agentScopeNavigation.SelectedItem = _agentScopeNavigation.MenuItems.OfType<NavigationViewItem>()
+                .FirstOrDefault(item => Equals(item.Tag, _agentSettingsScope));
         if (_agentScopeCommonGroup is not null) _agentScopeCommonGroup.Visibility = ToVisibility(_agentSettingsScope == "common");
         if (_agentProfileDetails is not null) _agentProfileDetails.Visibility = ToHiddenVisibility(_agentSettingsScope == "common");
         UpdateScopeBreadcrumb(_agentScopeBreadcrumb, "agent", _agentScopeNavigation, _agentSettingsScope == "common");

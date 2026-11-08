@@ -132,7 +132,7 @@ public sealed partial class MainPage
         _connectionScopeNavigation.RegisterPropertyChangedCallback(NavigationView.OpenPaneLengthProperty, (_, _) => RefreshConnectionScopeMarker());
         AutomationProperties.SetName(_connectionScopeNavigation, DesktopText.Get("AgentScopePicker"));
         AddConnectionScopeItem(_connectionScopeNavigation, "common", DesktopText.Get("AgentScopeCommon"), "ConnectionScopeCommon");
-        var serviceSeparator = new NavigationViewItemSeparator();
+        var serviceSeparator = new NavigationViewItemSeparator { Margin = new Thickness(12, 4, 12, 4) };
         AutomationProperties.SetAutomationId(serviceSeparator, "ConnectionScopeServiceSeparator");
         _connectionScopeNavigation.MenuItems.Add(serviceSeparator);
         AddConnectionScopeItem(_connectionScopeNavigation, "slack", MrtText.Get("SlackSectionTitle.Text"), "ConnectionScopeSlack");
