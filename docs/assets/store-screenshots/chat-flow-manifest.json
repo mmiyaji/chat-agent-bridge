@@ -4,7 +4,7 @@
   "requiredTargets": [
     "microsoft-store/desktop/screenshot"
   ],
-  "source": "Original chat screenshot captures in ../screenshots, composed into a two-column state-flow image.",
+  "source": "Real Mattermost and Slack thread screenshots; crops and layout annotations are documented in create-chat-service-flow-store.py",
   "images": [
     {
       "file": "ja/chat-service-flow.png",
@@ -19,10 +19,10 @@
       "kind": "screenshot-composite",
       "mode": "real chat screenshots in an annotated two-service state-flow layout",
       "sourceFiles": [
-        "../screenshots/mattermost-demo-running-en.png",
-        "../screenshots/mattermost-demo-completed-en.png",
-        "../screenshots/slack-demo-running-ja.png",
-        "../screenshots/slack-demo-completed-ja.png"
+        "mattermost-demo-running-en.png",
+        "mattermost-demo-completed-en.png",
+        "slack-demo-running-ja.png",
+        "slack-demo-completed-ja.png"
       ],
       "contentGuidelineReview": "pending; explanatory labels and flow arrows are included by user-approved request"
     },
@@ -39,10 +39,10 @@
       "kind": "screenshot-composite",
       "mode": "real chat screenshots in an annotated two-service state-flow layout",
       "sourceFiles": [
-        "../screenshots/mattermost-demo-running-en.png",
-        "../screenshots/mattermost-demo-completed-en.png",
-        "../screenshots/slack-demo-running-en.png",
-        "../screenshots/slack-demo-completed-en.png"
+        "mattermost-demo-running-en.png",
+        "mattermost-demo-completed-en.png",
+        "slack-demo-running-en.png",
+        "slack-demo-completed-en.png"
       ],
       "contentGuidelineReview": "pending; explanatory labels and flow arrows are included by user-approved request"
     }

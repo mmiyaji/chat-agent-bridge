@@ -3,7 +3,7 @@
     {
       "file": "ja/general-ja.png",
       "width": 1426,
-      "sha256": "10f565183e9de578728b650856bc6b2ed4823fc3f18f4ac1bde5daf69967bf19",
+      "sha256": "b8ed642d1d662d7d7bd94c93e0ad1616fcded9bcc162c1673f598c82541c9cbf",
       "store": "microsoft-store",
       "language": "ja",
       "mode": "raw native app capture",
@@ -51,7 +51,7 @@
     {
       "file": "en/general-en.png",
       "width": 1426,
-      "sha256": "7191e98770df9d99126d399db7fcc5fb5eef668393e7fc513380130fc7086a3a",
+      "sha256": "942b8f703dfa0d63f0fc7f9d4fee4f910d4a5046894e808e70f0d7e16c34dd59",
       "store": "microsoft-store",
       "language": "en",
       "mode": "raw native app capture",

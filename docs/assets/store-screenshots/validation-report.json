@@ -1,0 +1,31 @@
+{
+  "status": "pass",
+  "submissionReady": false,
+  "machine": {
+    "status": "pass",
+    "issues": [],
+    "warnings": [
+      {
+        "code": "unknown-limit",
+        "target": "microsoft-store/desktop/screenshot",
+        "message": "Source does not state all limits: formats=png, maxBytes=52428800, maxWidth=null, maxHeight=null. Null means unknown."
+      }
+    ],
+    "checkedFiles": 8
+  },
+  "manualReview": "pending",
+  "specFreshness": {
+    "status": "fresh",
+    "generatedAt": "2026-10-31T18:11:12.708Z"
+  },
+  "specCoverage": [
+    {
+      "target": "microsoft-store/desktop/screenshot",
+      "maxBytes": 52428800,
+      "maxWidth": null,
+      "maxHeight": null
+    }
+  ],
+  "outputDir": "D:\\git\\chat-agent-bridge\\docs\\assets\\store-screenshots",
+  "createdAt": "2026-11-07T18:44:27.391Z"
+}

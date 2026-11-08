@@ -57,21 +57,7 @@ class MattermostDemoAgent implements Agent {
   } as const;
 
   async execute(request: AgentExecutionRequest): Promise<AgentExecutionResult> {
-    await request.onActivity?.({
-      stream: "stdout",
-      text: "Inspecting the thread request...",
-    });
-    await sleep(500);
-    await request.onActivity?.({
-      stream: "stdout",
-      text: "Preparing a bridge-managed demo response...",
-    });
-    await sleep(600);
-    await request.onActivity?.({
-      stream: "stdout",
-      text: "Composing the final response for Mattermost...",
-    });
-    await sleep(500);
+    await sleep(40_000);
     return {
       sessionId: request.session.sessionId,
       summary: "Implemented the README-ready Mattermost demo.",
@@ -140,6 +126,8 @@ function createDemoConfig(
     chatProvider: "mattermost",
     agentKind: "codex",
     allowedDirectories: [process.cwd()],
+    slackAllowedUserIds: [],
+    mattermostAllowedUserIds: [],
     repoAliases: {},
     defaultApprovalPolicy: "manual",
     networkAccess: "disabled",
@@ -165,6 +153,7 @@ function createDemoConfig(
     claudeCommandTimeoutMs: 1_000,
     claudeMaxRuntimeMs: 20_000,
     autoSplitThreadUserMessageCount: 30,
+    agentRetryCount: 0,
     mattermostServerUrl: state.serverUrl,
     mattermostBotToken: state.bridgeUser.token,
     mattermostActionBaseUrl: actionBaseUrl,
@@ -197,6 +186,46 @@ async function maybeDismissOnboarding(page: import("@playwright/test").Page): Pr
   const dismiss = page.getByText(/No thanks/i).first();
   if ((await dismiss.count()) > 0) {
     await dismiss.click().catch(() => undefined);
+  }
+
+  await page
+    .locator('[data-cy="onboarding-task-list-overlay"]')
+    .evaluate((overlay) => overlay.remove())
+    .catch(() => undefined);
+}
+
+async function redactSessionDetails(page: import("@playwright/test").Page): Promise<void> {
+  const counts = await page.evaluate(() => {
+    let sessionIds = 0;
+    let workspacePaths = 0;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      const original = node.textContent ?? "";
+      const masked = original
+        .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, () => {
+          sessionIds += 1;
+          return "••••••••";
+        })
+        .replace(/\b[A-Z]:\\[^\s`]+/gi, () => {
+          workspacePaths += 1;
+          return "[workspace]";
+        });
+      if (masked !== original) {
+        node.textContent = masked;
+      }
+    }
+
+    const remainingText = document.body.innerText;
+    return {
+      sessionIds,
+      workspacePaths,
+      hasUnmaskedSessionId: /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i.test(remainingText),
+      hasUnmaskedWorkspacePath: /\b[A-Z]:\\[^\s`]+/i.test(remainingText),
+    };
+  });
+  if (counts.hasUnmaskedSessionId || counts.hasUnmaskedWorkspacePath) {
+    throw new Error("Session details remain visible after screenshot redaction.");
   }
 }
 
@@ -315,7 +344,7 @@ async function main(): Promise<void> {
   await fs.mkdir(videoTempDir, { recursive: true });
   await fs.mkdir(outputDir, { recursive: true });
 
-  const demoChannelName = `demo-${Date.now()}`;
+  const demoChannelName = process.env.CAB_MATTERMOST_DEMO_CHANNEL_NAME ?? `demo-${Date.now()}`;
   const demoChannel = await apiRequest<MattermostChannel>(
     state.serverUrl,
     "/api/v4/channels",
@@ -325,7 +354,7 @@ async function main(): Promise<void> {
       body: {
         team_id: state.team.id,
         name: demoChannelName,
-        display_name: demoChannelName,
+        display_name: process.env.CAB_MATTERMOST_DEMO_CHANNEL_DISPLAY_NAME ?? "Remote Request",
         type: "O",
       },
     },
@@ -360,13 +389,22 @@ async function main(): Promise<void> {
 
   const browser = await chromium.launch({
     headless: true,
+    ...(process.env.CAB_MATTERMOST_DEMO_BROWSER_CHANNEL
+      ? { channel: process.env.CAB_MATTERMOST_DEMO_BROWSER_CHANNEL }
+      : {}),
   });
+  const screenshotOnly = process.env.CAB_MATTERMOST_DEMO_SCREENSHOT_ONLY === "1";
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
-    recordVideo: {
-      dir: videoTempDir,
-      size: { width: 1440, height: 900 },
-    },
+    permissions: ["notifications"],
+    ...(!screenshotOnly
+      ? {
+          recordVideo: {
+            dir: videoTempDir,
+            size: { width: 1440, height: 900 },
+          },
+        }
+      : {}),
   });
   const page = await context.newPage();
   let videoPath = "";
@@ -376,8 +414,9 @@ async function main(): Promise<void> {
     await maybeDismissOnboarding(page);
     await page.goto(`${state.serverUrl}/${state.team.name}/channels/${demoChannelName}`);
     await page.waitForLoadState("networkidle");
+    await maybeDismissOnboarding(page);
 
-    const token = `README demo ${Date.now()}`;
+    const token = "Please summarize this sample project's recent changes (capture 2).";
     const prompt = `@${state.bridgeUser.username} ${token}`;
     const composer = page.locator('textarea[data-testid="post_textbox"]');
     await composer.fill(prompt);
@@ -396,11 +435,12 @@ async function main(): Promise<void> {
       demoChannel.id,
       rootPost.id,
       state.memberUser.token,
-      /Implemented the README-ready Mattermost demo\./,
+      /State: Running/,
     );
 
     await page.goto(`${state.serverUrl}/${state.team.name}/channels/${demoChannelName}`);
     await page.waitForLoadState("networkidle");
+    await maybeDismissOnboarding(page);
 
     const rootCard = page.locator(".post").filter({ hasText: token }).first();
     await rootCard.waitFor({ state: "visible", timeout: 30_000 });
@@ -411,30 +451,55 @@ async function main(): Promise<void> {
     await replyLink.click();
 
     await page
+      .locator(".post")
+      .filter({ hasText: "Received your request for session" })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await redactSessionDetails(page);
+    await page.screenshot({
+      path: path.join(outputDir, "mattermost-demo-running.png"),
+      fullPage: true,
+    });
+
+    await waitForThreadReplyByMessage(
+      state,
+      demoChannel.id,
+      rootPost.id,
+      state.memberUser.token,
+      /Implemented the README-ready Mattermost demo\./,
+    );
+    await page
       .getByText("Implemented the README-ready Mattermost demo.")
       .waitFor({ state: "visible", timeout: 30_000 });
+    await redactSessionDetails(page);
     await sleep(1_200);
 
     await page.screenshot({
-      path: path.join(outputDir, "mattermost-demo-final.png"),
+      path: path.join(outputDir, "mattermost-demo-completed.png"),
       fullPage: true,
     });
-    videoPath = await page.video()!.path();
+    if (!screenshotOnly) {
+      videoPath = await page.video()!.path();
+    }
   } finally {
     await context.close();
     await browser.close();
     await chatAdapter.stop().catch(() => undefined);
   }
 
-  const webmPath = path.join(outputDir, "mattermost-demo.webm");
-  const gifPath = path.join(outputDir, "mattermost-demo.gif");
-  const palettePath = path.join(tempRoot, "mattermost-demo-palette.png");
-  await fs.copyFile(videoPath, webmPath);
-  await convertVideoToGif(videoPath, gifPath, palettePath);
+  if (screenshotOnly) {
+    console.log(`Saved Mattermost in-progress screenshot: ${path.join(outputDir, "mattermost-demo-running.png")}`);
+    console.log(`Saved Mattermost completed screenshot: ${path.join(outputDir, "mattermost-demo-completed.png")}`);
+  } else {
+    const webmPath = path.join(outputDir, "mattermost-demo.webm");
+    const gifPath = path.join(outputDir, "mattermost-demo.gif");
+    const palettePath = path.join(tempRoot, "mattermost-demo-palette.png");
+    await fs.copyFile(videoPath, webmPath);
+    await convertVideoToGif(videoPath, gifPath, palettePath);
 
-  console.log(`Saved Mattermost demo video: ${webmPath}`);
-  console.log(`Saved Mattermost demo gif: ${gifPath}`);
-  console.log(`Saved Mattermost demo screenshot: ${path.join(outputDir, "mattermost-demo-final.png")}`);
+    console.log(`Saved Mattermost demo video: ${webmPath}`);
+    console.log(`Saved Mattermost demo gif: ${gifPath}`);
+    console.log(`Saved Mattermost demo screenshot: ${path.join(outputDir, "mattermost-demo-completed.png")}`);
+  }
 }
 
 void main().catch((error) => {
