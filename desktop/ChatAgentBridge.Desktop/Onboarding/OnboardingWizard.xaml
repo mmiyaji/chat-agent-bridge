@@ -151,6 +151,11 @@
                             <Button Command="{x:Bind ViewModel.AddSlackUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddSlackUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardAddSlackUserButton" x:Uid="WizardAddSlackUserButton" />
                         </StackPanel>
                         <TextBox x:Name="SlackAllowedUsersBox"  Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardSlackAllowedUserIds" x:Uid="WizardSlackAllowedUserIds" />
+                        <StackPanel Spacing="8" AutomationProperties.AutomationId="WizardSlackAllowedChannels">
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardSlackAllowedChannelsLabel" />
+                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="WizardSlackAllowedChannelsHelp" />
+                            <Button AutomationProperties.AutomationId="WizardSearchSlackChannelsButton" HorizontalAlignment="Left" Click="SearchSlackChannels_Click" x:Uid="SearchSlackChannelsButton" />
+                        </StackPanel>
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock013" x:Uid="onboardingOnboardingWizardTextBlock013" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock014" x:Uid="onboardingOnboardingWizardTextBlock014" />
                     </StackPanel>
@@ -161,6 +166,7 @@
                         <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="WizardMattermostProxyHelp" x:Uid="MattermostProxyHelp" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock016" x:Uid="onboardingOnboardingWizardTextBlock016" />
                         <TextBox x:Name="MattermostChannelBox"  Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="WizardMattermostChannelId"  HeaderTemplate="{StaticResource RequiredHeaderTemplate}" AutomationProperties.IsRequiredForForm="True" x:Uid="WizardMattermostChannelId" />
+                        <Button x:Uid="WizardSearchMattermostChannelsButton" AutomationProperties.AutomationId="WizardSearchMattermostChannelsButton" HorizontalAlignment="Left" Click="SearchMattermostChannels_Click" />
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="4">
                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock017" x:Uid="onboardingOnboardingWizardTextBlock017" />
@@ -209,11 +215,8 @@
                         <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordAllowDirectMessagesHelp" />
                         <StackPanel Spacing="8">
                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardDiscordAllowedChannelsLabel" />
-                            <TextBox Text="{x:Bind ViewModel.DiscordAllowedChannelIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="WizardDiscordAllowedChannels" x:Uid="WizardDiscordAllowedChannels" />
-                        </StackPanel>
-                        <StackPanel Spacing="8">
-                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardDiscordAllowedThreadsLabel" />
-                            <TextBox Text="{x:Bind ViewModel.DiscordAllowedThreadIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="WizardDiscordAllowedThreads" x:Uid="WizardDiscordAllowedThreads" />
+                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="WizardDiscordAllowedChannelsHelp" />
+                            <Button AutomationProperties.AutomationId="WizardSearchDiscordChannelsButton" HorizontalAlignment="Left" Click="SearchDiscordChannels_Click" x:Uid="SearchDiscordChannelsButton" />
                         </StackPanel>
                     </StackPanel>
                     <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock019" x:Uid="onboardingOnboardingWizardTextBlock019" />

@@ -11,13 +11,15 @@ public sealed partial class AllowedUserRow : ObservableObject
     private readonly AllowedUserRecord? _record;
 
     private readonly string? _pendingName;
+    private readonly string? _resolvedName;
 
-    internal AllowedUserRow(string provider, string userId, AllowedUserRecord? record, string? pendingName, Action<AllowedUserRow> remove)
+    internal AllowedUserRow(string provider, string userId, AllowedUserRecord? record, string? pendingName, string? resolvedName, Action<AllowedUserRow> remove)
     {
         Provider = provider;
         UserId = userId;
         _record = record;
         _pendingName = pendingName;
+        _resolvedName = resolvedName;
         RemoveCommand = new RelayCommand(() => remove(this));
     }
 
@@ -30,7 +32,10 @@ public sealed partial class AllowedUserRow : ObservableObject
 
     public IRelayCommand RemoveCommand { get; }
 
-    private string? Name => string.IsNullOrWhiteSpace(_record?.DisplayName) ? _pendingName : _record.DisplayName;
+    private string? Name => !string.IsNullOrWhiteSpace(_resolvedName) ? _resolvedName
+        : !string.IsNullOrWhiteSpace(_pendingName) ? _pendingName
+        : !string.IsNullOrWhiteSpace(_record?.DisplayName) ? _record.DisplayName
+        : null;
     public bool HasName => !string.IsNullOrWhiteSpace(Name);
     public string DisplayName => HasName ? Name! : ViewModelText.Get("AllowedUserNameUnknown");
     public string PictureName => HasName ? Name! : UserId;
@@ -70,6 +75,8 @@ public sealed partial class AllowedUserListModel : ObservableObject
     private readonly Action<string> _write;
     private readonly Func<string, string> _normalize;
     private readonly Dictionary<string, string> _pendingNames = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _resolvedNames = new(StringComparer.Ordinal);
+    private string? _resolvedNameScope;
     private IReadOnlyDictionary<string, AllowedUserRecord> _records = new Dictionary<string, AllowedUserRecord>();
 
     internal AllowedUserListModel(string provider, Func<string> read, Action<string> write, Func<string, string> normalize)
@@ -106,6 +113,18 @@ public sealed partial class AllowedUserListModel : ObservableObject
 
     internal void ClearPendingNames() => _pendingNames.Clear();
 
+    internal void SetResolvedNames(string scope, IReadOnlyDictionary<string, string> names)
+    {
+        if (!string.Equals(_resolvedNameScope, scope, StringComparison.Ordinal))
+        {
+            _resolvedNames.Clear();
+            _resolvedNameScope = scope;
+        }
+        foreach (var (id, name) in names)
+            if (!string.IsNullOrWhiteSpace(name)) _resolvedNames[id] = name.Trim();
+        Refresh();
+    }
+
     internal void SetRecords(IEnumerable<AllowedUserRecord> records)
     {
         _records = records.Where(record => record.Provider == Provider)
@@ -121,7 +140,8 @@ public sealed partial class AllowedUserListModel : ObservableObject
         {
             _records.TryGetValue(id, out var record);
             _pendingNames.TryGetValue(id, out var pendingName);
-            return new AllowedUserRow(Provider, id, record, pendingName, Remove);
+            _resolvedNames.TryGetValue(id, out var resolvedName);
+            return new AllowedUserRow(Provider, id, record, pendingName, resolvedName, Remove);
         }).ToArray();
         OnPropertyChanged(nameof(Rows));
         OnPropertyChanged(nameof(TotalLabel));

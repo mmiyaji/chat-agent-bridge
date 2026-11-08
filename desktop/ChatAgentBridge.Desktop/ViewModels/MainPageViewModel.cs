@@ -520,6 +520,8 @@ public partial class MainPageViewModel : ObservableObject
             // same UI turn, before validation can yield to a pending picker.
             var baseline = _settings!;
             var draft = CreateSettingsSnapshot();
+            var pendingChanges = SettingsDraftChanges.Compare(baseline, draft,
+                FileAttachmentMaxSizeMb, FileAttachmentMaxCount, FileAttachmentMaxTotalSizeMb);
             var rollback = CaptureSettingsDraftRollback(baseline);
             var attachmentSize = FileAttachmentMaxSizeMb;
             var attachmentCount = FileAttachmentMaxCount;
@@ -549,31 +551,62 @@ public partial class MainPageViewModel : ObservableObject
                 FileAttachmentMaxCount = ToAttachmentLimit(FileAttachmentMaxCount),
                 FileAttachmentMaxTotalSizeMb = ToAttachmentLimit(FileAttachmentMaxTotalSizeMb)
             };
-            snapshot = snapshot with
+            if (_isAgentProfileEditor)
             {
-                TrustedWorkspaceRoots = await Task.Run(() => _isAgentProfileEditor
-                    ? ExecutionPolicy.NormalizeTrustedRoots(draft.TrustedWorkspaceRoots)
-                    : ExecutionPolicy.IncludeConfiguredWorkspace(draft.TrustedWorkspaceRoots, draft.WorkspaceRoot))
-            };
+                snapshot = snapshot with
+                {
+                    TrustedWorkspaceRoots = await Task.Run(() => ExecutionPolicy.NormalizeTrustedRoots(draft.TrustedWorkspaceRoots))
+                };
+            }
+            else if (pendingChanges.Agent)
+            {
+                snapshot = snapshot with
+                {
+                    TrustedWorkspaceRoots = await Task.Run(() => ExecutionPolicy.IncludeConfiguredWorkspace(draft.TrustedWorkspaceRoots, draft.WorkspaceRoot))
+                };
+            }
+            else
+            {
+                // Chat and general settings remain editable if a previously saved workspace
+                // is now missing or outside the trusted roots. Preserve the agent profile as-is;
+                // agent changes still pass the full workspace trust validation below.
+                snapshot = snapshot with
+                {
+                    WorkspaceRoot = baseline.WorkspaceRoot,
+                    AgentExecutable = baseline.AgentExecutable,
+                    AgentArguments = baseline.AgentArguments,
+                    AgentMode = baseline.AgentMode,
+                    AgentProvider = baseline.AgentProvider,
+                    AgentModel = baseline.AgentModel,
+                    AgentReasoningEffort = baseline.AgentReasoningEffort,
+                    RequireApproval = baseline.RequireApproval,
+                    AgentPermissionMode = baseline.AgentPermissionMode,
+                    AllowAgentNetwork = baseline.AllowAgentNetwork,
+                    TrustedWorkspaceRoots = baseline.TrustedWorkspaceRoots
+                };
+            }
             if (!_isAgentProfileEditor)
             {
                 FileAttachmentPolicy.Validate(snapshot);
-                if (string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot) || !Path.IsPathFullyQualified(snapshot.WorkspaceRoot))
-                    throw new InvalidOperationException(ViewModelText.Get("WorkspaceMustBeExistingAbsolutePath"));
-                var workspaceValidation = await Task.Run(() =>
+                if (pendingChanges.Agent)
                 {
-                    var exists = Directory.Exists(snapshot.WorkspaceRoot);
-                    return (Exists: exists, Trusted: exists && ExecutionPolicy.IsWorkspaceTrusted(snapshot, snapshot.WorkspaceRoot));
-                });
-                if (!workspaceValidation.Exists)
-                    throw new InvalidOperationException(ViewModelText.Get("WorkspaceMustBeExistingAbsolutePath"));
-                if (!workspaceValidation.Trusted)
-                    throw new InvalidOperationException(ViewModelText.Get("WorkspaceOutsideTrustedRoots"));
-                if (snapshot.AgentProvider == AgentProfile.Codex && AgentProfile.ResolveProvider(snapshot) == AgentProfile.Custom &&
-                    (snapshot.AgentPermissionMode != "inherit" ||
-                     snapshot.AgentModel is not null || snapshot.AgentReasoningEffort is not null))
-                    throw new InvalidOperationException(ViewModelText.Get("CodexExecutableRequiredForAgentSettings"));
-                _ = AgentProfile.BuildInvocation(snapshot);
+                    if (string.IsNullOrWhiteSpace(snapshot.WorkspaceRoot) || !Path.IsPathFullyQualified(snapshot.WorkspaceRoot))
+                        throw new InvalidOperationException(ViewModelText.Get("WorkspaceMustBeExistingAbsolutePath"));
+                    var workspaceValidation = await Task.Run(() =>
+                    {
+                        var exists = Directory.Exists(snapshot.WorkspaceRoot);
+                        return (Exists: exists, Trusted: exists && ExecutionPolicy.IsWorkspaceTrusted(snapshot, snapshot.WorkspaceRoot));
+                    });
+                    if (!workspaceValidation.Exists)
+                        throw new InvalidOperationException(ViewModelText.Get("WorkspaceMustBeExistingAbsolutePath"));
+                    if (!workspaceValidation.Trusted)
+                        throw new InvalidOperationException(ViewModelText.Get("WorkspaceOutsideTrustedRoots"));
+                    if (snapshot.AgentProvider == AgentProfile.Codex && AgentProfile.ResolveProvider(snapshot) == AgentProfile.Custom &&
+                        (snapshot.AgentPermissionMode != "inherit" ||
+                         snapshot.AgentModel is not null || snapshot.AgentReasoningEffort is not null))
+                        throw new InvalidOperationException(ViewModelText.Get("CodexExecutableRequiredForAgentSettings"));
+                    _ = AgentProfile.BuildInvocation(snapshot);
+                }
             }
             else if (!string.Equals(snapshot.AgentProvider, _agentEditorProvider, StringComparison.Ordinal))
             {

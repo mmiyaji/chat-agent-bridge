@@ -8,6 +8,7 @@ namespace ChatAgentBridge_Desktop.ViewModels;
 public partial class MainPageViewModel
 {
     private static readonly string[] ChatProviders = ["slack", "mattermost", "discord"];
+    private int _allowedUserNameRefreshGeneration;
     private AllowedUserListModel? _slackAllowedUsers;
     private AllowedUserListModel? _mattermostAllowedUsers;
     private AllowedUserListModel? _discordAllowedUsers;
@@ -42,8 +43,79 @@ public partial class MainPageViewModel
         catch (Exception) { return; }
         AllowedUserListModel[] models = [SlackAllowedUsers, MattermostAllowedUsers, DiscordAllowedUsers];
         foreach (var model in models) model.SetRecords(records);
+        await ResolveAllowedUserNamesAsync(models);
         StartAllowedUserPictures(models);
     }
+
+    private async Task ResolveAllowedUserNamesAsync(AllowedUserListModel[] models)
+    {
+        if (_settings is not { } settings) return;
+        var generation = Interlocked.Increment(ref _allowedUserNameRefreshGeneration);
+        var rows = models.SelectMany(model => model.Rows)
+            .Where(row => (row.Provider != "discord" || AllowedUserListModel.SplitIds(settings.DiscordAllowedChannelIds).Length > 0) &&
+                (row.Provider != "mattermost" || IsMattermostBaseUrl(settings.MattermostServerUrl)))
+            .Take(100).ToArray();
+        var scopes = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["slack"] = "slack",
+            ["mattermost"] = MattermostNameScope(settings.MattermostServerUrl),
+            ["discord"] = "discord:" + (AllowedUserListModel.SplitIds(settings.DiscordAllowedChannelIds).FirstOrDefault() ?? "")
+        };
+        var noNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var model in models) model.SetResolvedNames(scopes[model.Provider], noNames);
+        if (rows.Length == 0) return;
+
+        try
+        {
+            var keys = rows.Select(row => row.Provider switch
+            {
+                "mattermost" => ChatSessionScope.Create("mattermost", "", "", row.UserId, settings.MattermostServerUrl),
+                "slack" => ChatSessionScope.Create("slack", "", "", row.UserId),
+                "discord" => ChatSessionScope.Create("discord", AllowedUserListModel.SplitIds(settings.DiscordAllowedChannelIds).FirstOrDefault() ?? "", "", row.UserId),
+                _ => ChatSessionScope.Create(row.Provider, "", "", row.UserId)
+            }).ToArray();
+            using var identities = new ChatIdentityDirectory(_settingsStore.DirectoryPath);
+            var cached = await identities.ReadCachedAsync(keys);
+            ApplyNames(cached);
+            var resolved = await identities.ResolveAsync(settings, keys);
+            ApplyNames(resolved);
+        }
+        catch (Exception)
+        {
+            // The ID remains visible if the chat service is unavailable or profile lookup is denied.
+        }
+
+        void ApplyNames(IReadOnlyDictionary<SessionKey, ChatIdentityLabels> labels)
+        {
+            if (generation != Volatile.Read(ref _allowedUserNameRefreshGeneration) || !HasSameIdentitySettings(settings, _settings)) return;
+            foreach (var model in models)
+            {
+                var names = rows.Where(row => row.Provider == model.Provider)
+                    .Select(row => (row.UserId, Name: labels.FirstOrDefault(pair => pair.Key.UserId == row.UserId && pair.Key.Provider == row.Provider).Value?.UserName))
+                    .Where(item => !string.IsNullOrWhiteSpace(item.Name))
+                    .GroupBy(item => item.UserId, StringComparer.Ordinal)
+                    .ToDictionary(group => group.Key, group => group.Last().Name!, StringComparer.Ordinal);
+                model.SetResolvedNames(scopes[model.Provider], names);
+            }
+        }
+
+        static string MattermostNameScope(string url)
+        {
+            try { return ChatSessionScope.Create("mattermost", "", "", "scope", url).Origin ?? "mattermost:" + url.Trim(); }
+            catch (Exception) { return "mattermost:" + url.Trim(); }
+        }
+    }
+
+    private static bool IsMattermostBaseUrl(string value) => Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+        uri.Scheme is "http" or "https" && !string.IsNullOrWhiteSpace(uri.Host) &&
+        string.IsNullOrEmpty(uri.UserInfo) && string.IsNullOrEmpty(uri.Query) && string.IsNullOrEmpty(uri.Fragment);
+
+    private static bool HasSameIdentitySettings(BridgeSettings expected, BridgeSettings? current) => current is not null &&
+        string.Equals(expected.MattermostServerUrl, current.MattermostServerUrl, StringComparison.Ordinal) &&
+        string.Equals(expected.MattermostToken, current.MattermostToken, StringComparison.Ordinal) &&
+        string.Equals(expected.SlackBotToken, current.SlackBotToken, StringComparison.Ordinal) &&
+        string.Equals(expected.DiscordBotToken, current.DiscordBotToken, StringComparison.Ordinal) &&
+        string.Equals(expected.DiscordAllowedChannelIds, current.DiscordAllowedChannelIds, StringComparison.Ordinal);
 
     private void StartAllowedUserPictures(IEnumerable<AllowedUserListModel> models)
     {

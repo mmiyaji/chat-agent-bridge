@@ -785,6 +785,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="WizardMattermostChannelId.Header" xml:space="preserve">
     <value>Channel ID</value>
   </data>
+  <data name="WizardSearchMattermostChannelsButton.Content" xml:space="preserve"><value>Find channel</value></data>
   <data name="onboardingOnboardingWizardTextBlock017.Text" xml:space="preserve">
     <value>Bot or user access token</value>
   </data>
@@ -1318,10 +1319,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="WizardDiscordAllowedUsers.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord user IDs</value></data>
   <data name="WizardDiscordAllowedGuildsLabel.Text" xml:space="preserve"><value>Allowed server IDs</value></data>
   <data name="WizardDiscordAllowedGuilds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord server IDs</value></data>
-  <data name="WizardDiscordAllowedChannelsLabel.Text" xml:space="preserve"><value>Allowed channel IDs (optional)</value></data>
-  <data name="WizardDiscordAllowedChannels.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord channel IDs</value></data>
-  <data name="WizardDiscordAllowedThreadsLabel.Text" xml:space="preserve"><value>Allowed thread IDs (optional)</value></data>
-  <data name="WizardDiscordAllowedThreads.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord thread IDs</value></data>
+  <data name="WizardDiscordAllowedChannelsLabel.Text" xml:space="preserve"><value>Allowed channels</value></data>
+  <data name="WizardDiscordAllowedChannelsHelp.Text" xml:space="preserve"><value>Enter server IDs above, then choose channels that can receive requests. Leave this empty to apply no additional channel restriction.</value></data>
+  <data name="WizardSlackAllowedChannelsLabel.Text" xml:space="preserve"><value>Allowed channels</value></data>
+  <data name="WizardSlackAllowedChannelsHelp.Text" xml:space="preserve"><value>Choose channels that can receive requests. Leave this empty to apply no additional channel restriction; allowed-user settings still apply.</value></data>
   <data name="WizardConnectDiscord.Content" xml:space="preserve"><value>Connect Discord</value></data>
   <data name="WizardConnectDiscord.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Connect Discord</value></data>
   <data name="ConnectDiscord.Content" xml:space="preserve"><value>Connect to Discord</value></data>
@@ -1451,4 +1452,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="ExecutionDetailTitle.Text" xml:space="preserve"><value>Run details</value></data>
   <data name="ExecutionOperationsTitle.Text" xml:space="preserve"><value>Related actions</value></data>
   <data name="ExecutionNoOperations.Text" xml:space="preserve"><value>No actions are recorded for this run.</value></data>
+  <data name="SearchMattermostChannelsButton.Content" xml:space="preserve"><value>Find channel</value></data>
+  <data name="SearchSlackChannelsButton.Content" xml:space="preserve"><value>Find and select channels</value></data>
+  <data name="SearchDiscordChannelsButton.Content" xml:space="preserve"><value>Find and select channels</value></data>
 </root>

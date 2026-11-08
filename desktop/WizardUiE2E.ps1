@@ -2,19 +2,28 @@ param(
     [Parameter(Mandatory)][int]$AppPid,
     [Parameter(Mandatory)][string]$DataDir,
     [Parameter(Mandatory)][string]$FixtureExe,
-    [Parameter(Mandatory)][string]$ServerUrl
+    [Parameter(Mandatory)][string]$ServerUrl,
+    [string]$ArtifactRoot
 )
 
 $ErrorActionPreference = 'Stop'
 $dataPath = [IO.Path]::GetFullPath($DataDir)
 $fixturePath = [IO.Path]::GetFullPath($FixtureExe)
-$artifactRoot = Join-Path $PSScriptRoot 'artifacts/onboarding-wizard-review'
+$artifactRoot = if ([string]::IsNullOrWhiteSpace($ArtifactRoot)) {
+    Join-Path $PSScriptRoot 'artifacts/onboarding-wizard-review'
+} else {
+    [IO.Path]::GetFullPath($ArtifactRoot)
+}
+$allowedArtifactRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
+if (-not $artifactRoot.StartsWith($allowedArtifactRoot.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) {
+    throw 'ArtifactRoot must be a new directory under desktop/artifacts.'
+}
 $screenshots = Join-Path $artifactRoot 'screenshots'
 $resultsPath = Join-Path $artifactRoot 'ui-results.json'
 $results = [System.Collections.Generic.List[object]]::new()
 $currentStep = 'preflight'
 $currentSubstep = 'verify isolated empty settings directory'
-$token = 'notification-fixture-token'
+$token = 'offline-ui-fixture'
 
 function Invoke-UiProcess([string[]]$Arguments) {
     $start = [Diagnostics.ProcessStartInfo]::new()
@@ -249,10 +258,21 @@ try {
     $currentSubstep = 'enter Mattermost connection details'
     Select-Candidate 'WizardChatProvider' 'Mattermost'
     Set-Value 'WizardMattermostServerUrl' $ServerUrl
-    Set-Value 'WizardMattermostChannelId' 'test-channel'
-    Invoke-UI @('scroll-into-view','WizardMattermostToken') | Out-Null
     $passwordResult = Invoke-UiProcess @('set-value','WizardMattermostToken',$token)
     if ($passwordResult.ExitCode -ne 0) { throw 'winapp could not set the Mattermost PasswordBox value; UIA value support is required for this credential test.' }
+    Invoke-UI @('scroll-into-view','WizardSearchMattermostChannelsButton') | Out-Null
+    Invoke-UI @('invoke','WizardSearchMattermostChannelsButton') | Out-Null
+    Invoke-UI @('wait-for','ChannelPickerSearchBox','-t','10000') | Out-Null
+    Invoke-UI @('wait-for','ChannelPickerOption_wizard-channel','-t','10000') | Out-Null
+    Set-Value 'ChannelPickerSearchBox' 'wizard-demo'
+    Invoke-UI @('wait-for','ChannelPickerOption_wizard-channel','-t','10000') | Out-Null
+    Invoke-UI @('invoke','ChannelPickerOption_wizard-channel') | Out-Null
+    Invoke-UI @('invoke','PrimaryButton') | Out-Null
+    Invoke-UI @('wait-for','ChannelPickerSearchBox','--gone','-t','10000') | Out-Null
+    Assert-That ((Get-Value 'WizardMattermostChannelId') -eq 'wizard-channel') 'Wizard channel picker did not apply the selected channel ID.'
+    Capture '04-mattermost-channel-picker.png'
+    Add-Pass 'Mattermost wizard searches channel names and fills the required channel ID'
+    Invoke-UI @('scroll-into-view','WizardMattermostToken') | Out-Null
     # Allowed users are optional: people can also be approved from their first chat request.
     $currentSubstep = 'set allowed user and advance'
     Set-Value 'WizardMattermostAllowedUserIds' 'test-member'
@@ -292,7 +312,7 @@ try {
     foreach ($pair in @(
         @('AgentProvider','claude'), @('AgentExecutable',$fixturePath), @('WorkspaceRoot',$workspace),
         @('AgentModel','fixture-claude-large'), @('AgentReasoningEffort','high'),
-        @('MattermostServerUrl',$ServerUrl), @('MattermostChannelId','test-channel'),
+        @('MattermostServerUrl',$ServerUrl), @('MattermostChannelId','wizard-channel'),
         @('MattermostAllowedUserIds','test-member'), @('AutoConnectProvider','mattermost'), @('ChatApprovalMode','auto')
     )) { Assert-That ([string]$saved.($pair[0]) -eq [string]$pair[1]) "Saved settings field $($pair[0]) did not match expected value." }
     Assert-That (([string]$saved.MattermostToken).StartsWith('dpapi:') -and [string]$saved.MattermostToken -ne $token) 'Saved Mattermost token was absent or was not protected at rest.'

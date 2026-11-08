@@ -785,6 +785,7 @@
   <data name="WizardMattermostChannelId.Header" xml:space="preserve">
     <value>チャンネルID</value>
   </data>
+  <data name="WizardSearchMattermostChannelsButton.Content" xml:space="preserve"><value>チャンネルを検索</value></data>
   <data name="onboardingOnboardingWizardTextBlock017.Text" xml:space="preserve">
     <value>Botまたはユーザーのアクセストークン</value>
   </data>
@@ -1318,10 +1319,10 @@
   <data name="WizardDiscordAllowedUsers.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordユーザーID</value></data>
   <data name="WizardDiscordAllowedGuildsLabel.Text" xml:space="preserve"><value>許可するサーバーID</value></data>
   <data name="WizardDiscordAllowedGuilds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordサーバーID</value></data>
-  <data name="WizardDiscordAllowedChannelsLabel.Text" xml:space="preserve"><value>許可するチャンネルID（任意）</value></data>
-  <data name="WizardDiscordAllowedChannels.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordチャンネルID</value></data>
-  <data name="WizardDiscordAllowedThreadsLabel.Text" xml:space="preserve"><value>許可するスレッドID（任意）</value></data>
-  <data name="WizardDiscordAllowedThreads.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordスレッドID</value></data>
+  <data name="WizardDiscordAllowedChannelsLabel.Text" xml:space="preserve"><value>許可するチャンネル</value></data>
+  <data name="WizardDiscordAllowedChannelsHelp.Text" xml:space="preserve"><value>上でサーバーIDを指定してから、依頼を受け付けるチャンネルを選択します。未選択の場合はチャンネルを制限しません。</value></data>
+  <data name="WizardSlackAllowedChannelsLabel.Text" xml:space="preserve"><value>許可するチャンネル</value></data>
+  <data name="WizardSlackAllowedChannelsHelp.Text" xml:space="preserve"><value>依頼を受け付けるチャンネルを選択します。未選択の場合はチャンネルを制限しません（許可ユーザーの設定は適用されます）。</value></data>
   <data name="WizardConnectDiscord.Content" xml:space="preserve"><value>Discordに接続</value></data>
   <data name="WizardConnectDiscord.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discordに接続</value></data>
   <data name="ConnectDiscord.Content" xml:space="preserve"><value>Discordに接続</value></data>
@@ -1451,4 +1452,7 @@
   <data name="ExecutionDetailTitle.Text" xml:space="preserve"><value>実行の詳細</value></data>
   <data name="ExecutionOperationsTitle.Text" xml:space="preserve"><value>関連する操作</value></data>
   <data name="ExecutionNoOperations.Text" xml:space="preserve"><value>この実行に関連する操作記録はありません。</value></data>
+  <data name="SearchMattermostChannelsButton.Content" xml:space="preserve"><value>チャンネルを検索</value></data>
+  <data name="SearchSlackChannelsButton.Content" xml:space="preserve"><value>チャンネルを検索・選択</value></data>
+  <data name="SearchDiscordChannelsButton.Content" xml:space="preserve"><value>チャンネルを検索・選択</value></data>
 </root>

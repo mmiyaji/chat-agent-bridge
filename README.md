@@ -86,6 +86,7 @@ Install from the [Microsoft Store](https://apps.microsoft.com/detail/9n1lzk25fsg
    - Slack: [Slack setup guide](docs/slack-setup.md) (Socket Mode app, events and scopes)
    - Mattermost: [Mattermost setup guide](docs/mattermost-setup.md) (bot token and conversation channel ID)
    - Discord: [Discord setup guide](docs/discord-setup.md) (bot token, allowed server IDs and Message Content Intent)
+   - Use **Find channel** beside the channel ID field to search channels visible to the bot. Slack and Discord selections are added to the allowed-channel list.
 5. Connect from **Chat** and post a request. How to start depends on the service (see [Chat operations](#chat-operations)).
    Connect buttons are enabled only for services with saved connection details. If none are ready, use **Open chat settings** in Chat to finish setup.
 6. By default, requests from allowed users run without approval on the PC, and the result is posted automatically in the same thread. Reply there to continue.

@@ -76,6 +76,7 @@ CodexやClaude Codeのデスクトップアプリを使えない端末からの�
    - Slack：[Slackの設定手順](docs/slack-setup.md)（Socket Modeのアプリ・イベント・権限）
    - Mattermost：[Mattermostの設定手順](docs/mattermost-setup.md)（Botトークン・会話のチャンネルID）
    - Discord：[Discordの設定手順](docs/discord-setup.md)（Botトークン・許可サーバーID・Message Content Intent）
+   - チャンネルID欄の「チャンネルを検索」から、Botが参照できるチャンネルを名前で検索して選べます。Slack・Discordでは選んだIDを許可チャンネルに追加します。
 5. **チャット**から接続し、チャット側で依頼を投稿します。開始方法はサービスごとに異なります（[チャットからの操作](#チャットからの操作)を参照）。
    接続ボタンは、接続情報を保存したサービスだけ有効になります。設定が未完了の場合は、チャット画面の「チャット設定を開く」から設定できます。
 6. 初期値では、許可ユーザーの依頼はPCでの承認なしに実行し、結果が同じスレッドへ自動で返ります。続きはそのスレッドへ返信します。

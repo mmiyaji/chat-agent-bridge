@@ -1081,4 +1081,31 @@ After: {2}</value></data>
   <data name="AuditActionColumn" xml:space="preserve"><value>Action</value></data>
   <data name="AuditServiceColumn" xml:space="preserve"><value>Service</value></data>
   <data name="AuditConversationColumn" xml:space="preserve"><value>Conversation</value></data>
+  <data name="Apply" xml:space="preserve"><value>Apply</value></data>
+  <data name="ChannelPickerSearch" xml:space="preserve"><value>Search channels by name</value></data>
+  <data name="ChannelPickerNoMatches" xml:space="preserve"><value>No matching channels.</value></data>
+  <data name="ChannelPickerTitle" xml:space="preserve"><value>Select {0} channels</value></data>
+  <data name="ChannelPickerLoadingTitle" xml:space="preserve"><value>Loading channels</value></data>
+  <data name="ChannelPickerErrorTitle" xml:space="preserve"><value>Could not load channels</value></data>
+  <data name="ChannelPickerTimedOut" xml:space="preserve"><value>The request timed out. Check the connection and network.</value></data>
+  <data name="ChannelPickerTokenRequired" xml:space="preserve"><value>Enter the bot token first.</value></data>
+  <data name="ChannelPickerServerUrlInvalid" xml:space="preserve"><value>Check the Mattermost server URL.</value></data>
+  <data name="ChannelPickerSlackMissingScope" xml:space="preserve"><value>Add the channels:read and groups:read bot token scopes to the Slack app, then reinstall it.</value></data>
+  <data name="ChannelPickerDiscordGuildRequired" xml:space="preserve"><value>Set allowed server IDs first. Results are channels in those servers.</value></data>
+  <data name="ChannelPickerDiscordGuildIdsInvalid" xml:space="preserve"><value>Check the allowed server IDs. Discord server IDs must be numeric.</value></data>
+  <data name="ChannelPickerDiscordTooManyGuilds" xml:space="preserve"><value>Channel search supports up to 50 allowed servers at a time.</value></data>
+  <data name="ChannelPickerResponseTooLarge" xml:space="preserve"><value>The service returned a response that is too large.</value></data>
+  <data name="ChannelPickerConnectionFailed" xml:space="preserve"><value>Check the token, server URL, and whether the bot is a member with permission to view channels.</value></data>
+  <data name="ChannelPickerSubtitle" xml:space="preserve"><value>Search channels, review their details, and choose which ones the bot can use.</value></data>
+  <data name="ChannelPickerDetailsEmpty" xml:space="preserve"><value>Select a channel to review its details.</value></data>
+  <data name="ChannelPickerAllowChannel" xml:space="preserve"><value>Allow this channel</value></data>
+  <data name="ChannelPickerUseChannel" xml:space="preserve"><value>Use this channel</value></data>
+  <data name="ChannelPickerSelectedCount" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="ChannelPickerIdentifier" xml:space="preserve"><value>Channel ID: {0}</value></data>
+  <data name="ChannelPickerPublic" xml:space="preserve"><value>Public channel</value></data>
+  <data name="ChannelPickerPrivate" xml:space="preserve"><value>Private channel</value></data>
+  <data name="ChannelPickerTeam" xml:space="preserve"><value>Team: {0}</value></data>
+  <data name="ChannelPickerConnectionLabel" xml:space="preserve"><value>Connected to: {0}</value></data>
+  <data name="ChannelPickerAllowNamedChannel" xml:space="preserve"><value>Allow {0}</value></data>
+  <data name="ChannelPickerMemberCount" xml:space="preserve"><value>{0} members</value></data>
 </root>

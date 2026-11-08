@@ -277,7 +277,7 @@
                                                   AutomationProperties.AutomationId="SessionIdentifiers">
                                             <Expander.Header>
                                                 <TextBlock Text="{x:Bind ViewModel.IdentifiersSummary, Mode=OneWay}"
-                                                           TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                                                           TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" Margin="0,4" />
                                             </Expander.Header>
                                             <StackPanel Spacing="4" Margin="0,4,0,0">
                                                 <TextBlock Text="{x:Bind ViewModel.UserIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />

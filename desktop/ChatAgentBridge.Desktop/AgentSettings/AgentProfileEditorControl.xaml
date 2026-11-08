@@ -206,7 +206,7 @@
             <StackPanel Grid.Row="3" Spacing="12" Margin="0,0,0,14">
                 <Expander x:Name="AdvancedExpander" AutomationProperties.AutomationId="AgentProfileDetails" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                     <Expander.Header>
-                        <StackPanel Spacing="3">
+                        <StackPanel Spacing="8" Margin="0,6">
                             <TextBlock x:Uid="AgentProfileDetails" localization:LocalizedResourceKey.Key="AgentProfileDetails" />
                             <TextBlock x:Uid="AgentProfileDetailsSummary" localization:LocalizedResourceKey.Key="AgentProfileDetailsSummary"
                                        Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />

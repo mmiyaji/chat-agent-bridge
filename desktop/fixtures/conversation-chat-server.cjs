@@ -119,6 +119,13 @@ const server = http.createServer(async (req, res) => {
     res.end('{}');
   } else if (req.headers.authorization !== 'Bearer offline-ui-fixture') {
     res.writeHead(401).end('{}');
+  } else if (req.method === 'GET' && req.url === '/api/v4/users/me/teams') {
+    res.end(JSON.stringify([{ id: 'ui-team', display_name: 'Offline UI Fixture' }]));
+  } else if (req.method === 'GET' && req.url.startsWith('/api/v4/users/me/teams/ui-team/channels?')) {
+    res.end(JSON.stringify([
+      { id: 'wizard-channel', display_name: 'wizard-demo', type: 'O' },
+      { id: 'general-channel', display_name: 'general-fixture', type: 'O' }
+    ]));
   } else if (req.method === 'GET' && /^\/api\/v4\/users\/[^/]+\/image$/.test(req.url)) {
     const userId = decodeURIComponent(req.url.split('/')[4]);
     if (galleryAvatarFixture) profileImageRequests++;

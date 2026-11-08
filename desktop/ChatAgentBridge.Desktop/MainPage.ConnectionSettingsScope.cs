@@ -76,7 +76,7 @@ public sealed partial class MainPage
         _connectionScopeHeading.Margin = new Thickness(0);
         headingRow.Children.Add(_connectionScopeHeading);
         headingRow.Children.Add(_connectionScopeConnectedBadge);
-        _connectionScopeHeader = new StackPanel { Spacing = 8, Margin = new Thickness(0, 0, 0, 14) };
+        _connectionScopeHeader = new StackPanel { Spacing = 8, Margin = new Thickness(0, 0, 0, 8) };
         _connectionScopeHeader.Children.Add(headingRow);
         _connectionScopeHeader.Children.Add(_connectionScopeStatusRow);
         AutomationProperties.SetAutomationId(_connectionScopeHeader, "ConnectionScopeHeader");
@@ -209,7 +209,7 @@ public sealed partial class MainPage
             };
             AutomationProperties.SetAutomationId(button, $"ConnectionScopeConfigure_{provider}");
             button.Click += (_, _) => SetConnectionSettingsScope(provider);
-            var row = new Grid { ColumnSpacing = 12, Margin = new Thickness(12, 8, 12, 8) };
+            var row = new Grid { ColumnSpacing = 12 };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var details = new StackPanel { Spacing = 2 };

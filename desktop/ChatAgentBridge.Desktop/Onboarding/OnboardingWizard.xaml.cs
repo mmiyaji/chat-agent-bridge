@@ -1,4 +1,6 @@
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Transports;
+using ChatAgentBridge_Desktop;
 using ChatAgentBridge_Desktop.Inbox;
 using ChatAgentBridge_Desktop.ViewModels;
 using Microsoft.UI.Xaml;
@@ -239,6 +241,54 @@ public sealed partial class OnboardingWizard : UserControl
 
     private void MattermostTokenBox_PasswordChanged(object sender, RoutedEventArgs e) =>
         ViewModel.SetMattermostToken(MattermostTokenBox.Password);
+
+    private async void SearchSlackChannels_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = await ChatChannelPickerDialog.LoadAndShowAsync(
+            XamlRoot, "Slack", CreateChannelPickerSettings(), ParseChannelIds(ViewModel.SlackAllowedChannelIds));
+        if (selected is not null)
+            ViewModel.SlackAllowedChannelIds = ReplaceVisibleChannelIds(ViewModel.SlackAllowedChannelIds, selected.Channels, selected.Selected, discord: false);
+    }
+
+    private async void SearchMattermostChannels_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = await ChatChannelPickerDialog.LoadAndShowAsync(
+            XamlRoot, "Mattermost", CreateChannelPickerSettings(), new[] { ViewModel.MattermostChannelId }, allowMultiple: false);
+        if (selected?.Selected.FirstOrDefault() is { } channel)
+            ViewModel.MattermostChannelId = channel.Id;
+    }
+
+    private async void SearchDiscordChannels_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = await ChatChannelPickerDialog.LoadAndShowAsync(
+            XamlRoot, "Discord", CreateChannelPickerSettings(), ParseChannelIds(ViewModel.DiscordAllowedChannelIds));
+        if (selected is not null)
+            ViewModel.DiscordAllowedChannelIds = ReplaceVisibleChannelIds(ViewModel.DiscordAllowedChannelIds, selected.Channels, selected.Selected, discord: true);
+    }
+
+    private BridgeSettings CreateChannelPickerSettings() => new()
+    {
+        MattermostServerUrl = ViewModel.MattermostServerUrl,
+        MattermostToken = ViewModel.MattermostToken,
+        MattermostBypassProxy = ViewModel.MattermostBypassProxy,
+        SlackBotToken = ViewModel.SlackBotToken,
+        SlackAppToken = ViewModel.SlackAppToken,
+        DiscordBotToken = ViewModel.DiscordBotToken,
+        DiscordAllowedGuildIds = ViewModel.DiscordAllowedGuildIds
+    };
+
+    private static string[] ParseChannelIds(string value) => value.Split(
+        ['\r', '\n', ',', ';', '\t', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    private static string ReplaceVisibleChannelIds(string current, IReadOnlyList<ChatChannelChoice> visible,
+        IEnumerable<ChatChannelChoice> selected, bool discord)
+    {
+        var visibleIds = visible.Select(channel => channel.Id).ToHashSet(StringComparer.Ordinal);
+        var ids = ParseChannelIds(current).Where(id => !visibleIds.Contains(id))
+            .Concat(selected.Select(channel => channel.Id)).Distinct(StringComparer.Ordinal);
+        var value = string.Join(Environment.NewLine, ids);
+        return discord ? ChatAccessPolicy.NormalizeDiscordSnowflakes(value) : ChatAccessPolicy.NormalizeScopes(value);
+    }
 
     private void DiscordBotTokenBox_PasswordChanged(object sender, RoutedEventArgs e) =>
         ViewModel.DiscordBotToken = DiscordBotTokenBox.Password;

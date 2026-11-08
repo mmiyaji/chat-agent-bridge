@@ -118,10 +118,10 @@
             <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       AutomationProperties.AutomationId="InboxConnectionDetails" x:Uid="InboxConnectionSummary" localization:LocalizedResourceKey.Key="InboxConnectionSummary">
                 <Expander.Header>
-                    <Grid ColumnSpacing="12" HorizontalAlignment="Stretch">
+                    <Grid ColumnSpacing="12" HorizontalAlignment="Stretch" Margin="0,6">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                         <presentation:StatusIcon Tone="{x:Bind ViewModel.ConnectionTone, Mode=OneWay}" VerticalAlignment="Center" />
-                        <StackPanel Grid.Column="1" Spacing="4">
+                        <StackPanel Grid.Column="1" Spacing="8">
                             <TextBlock Text="{x:Bind ViewModel.ConnectionLabel, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" AutomationProperties.AutomationId="InboxConnectionLabel" />
                             <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" MaxLines="2" TextTrimming="WordEllipsis"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}"

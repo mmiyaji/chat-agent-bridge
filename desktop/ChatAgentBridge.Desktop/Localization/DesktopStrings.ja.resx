@@ -1085,4 +1085,31 @@
   <data name="AuditActionColumn" xml:space="preserve"><value>操作</value></data>
   <data name="AuditServiceColumn" xml:space="preserve"><value>サービス</value></data>
   <data name="AuditConversationColumn" xml:space="preserve"><value>会話</value></data>
+  <data name="Apply" xml:space="preserve"><value>適用</value></data>
+  <data name="ChannelPickerSearch" xml:space="preserve"><value>チャンネル名で検索</value></data>
+  <data name="ChannelPickerNoMatches" xml:space="preserve"><value>一致するチャンネルがありません。</value></data>
+  <data name="ChannelPickerTitle" xml:space="preserve"><value>{0} チャンネルを選択</value></data>
+  <data name="ChannelPickerLoadingTitle" xml:space="preserve"><value>チャンネル一覧を取得中</value></data>
+  <data name="ChannelPickerErrorTitle" xml:space="preserve"><value>チャンネル一覧を取得できません</value></data>
+  <data name="ChannelPickerTimedOut" xml:space="preserve"><value>取得がタイムアウトしました。接続先とネットワークを確認してください。</value></data>
+  <data name="ChannelPickerTokenRequired" xml:space="preserve"><value>先にBotトークンを入力してください。</value></data>
+  <data name="ChannelPickerServerUrlInvalid" xml:space="preserve"><value>MattermostのサーバーURLを確認してください。</value></data>
+  <data name="ChannelPickerSlackMissingScope" xml:space="preserve"><value>Slackアプリに channels:read と groups:read のBot Token Scopeを追加し、アプリを再インストールしてください。</value></data>
+  <data name="ChannelPickerDiscordGuildRequired" xml:space="preserve"><value>先に許可サーバーIDを設定してください。候補はそのサーバー内のチャンネルです。</value></data>
+  <data name="ChannelPickerDiscordGuildIdsInvalid" xml:space="preserve"><value>許可サーバーIDを確認してください。DiscordのサーバーIDは数字で入力します。</value></data>
+  <data name="ChannelPickerDiscordTooManyGuilds" xml:space="preserve"><value>一度に検索できる許可サーバーは50件までです。</value></data>
+  <data name="ChannelPickerResponseTooLarge" xml:space="preserve"><value>サービスから大きすぎる応答が返りました。</value></data>
+  <data name="ChannelPickerConnectionFailed" xml:space="preserve"><value>トークン、接続先、Botの参加状態と閲覧権限を確認してください。</value></data>
+  <data name="ChannelPickerSubtitle" xml:space="preserve"><value>チャンネルを検索し、詳細を確認して、Botが利用できる場所を選択します。</value></data>
+  <data name="ChannelPickerDetailsEmpty" xml:space="preserve"><value>チャンネルを選ぶと詳細を確認できます。</value></data>
+  <data name="ChannelPickerAllowChannel" xml:space="preserve"><value>このチャンネルを許可</value></data>
+  <data name="ChannelPickerUseChannel" xml:space="preserve"><value>このチャンネルを使用</value></data>
+  <data name="ChannelPickerSelectedCount" xml:space="preserve"><value>{0} 件選択中</value></data>
+  <data name="ChannelPickerIdentifier" xml:space="preserve"><value>チャンネルID: {0}</value></data>
+  <data name="ChannelPickerPublic" xml:space="preserve"><value>公開チャンネル</value></data>
+  <data name="ChannelPickerPrivate" xml:space="preserve"><value>プライベートチャンネル</value></data>
+  <data name="ChannelPickerTeam" xml:space="preserve"><value>チーム: {0}</value></data>
+  <data name="ChannelPickerConnectionLabel" xml:space="preserve"><value>接続先: {0}</value></data>
+  <data name="ChannelPickerAllowNamedChannel" xml:space="preserve"><value>「{0}」を許可</value></data>
+  <data name="ChannelPickerMemberCount" xml:space="preserve"><value>メンバー: {0} 人</value></data>
 </root>

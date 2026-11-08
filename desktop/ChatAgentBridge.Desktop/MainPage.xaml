@@ -418,7 +418,7 @@
                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="AgentSettingsGuide" localization:LocalizedResourceKey.Key="AgentSettingsGuide" />
                                 <Expander x:Name="AgentBasicSettings" AutomationProperties.AutomationId="AgentBasicSettings" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="AgentBasicAccessible" localization:LocalizedResourceKey.Key="AgentBasicAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="AgentBasicTitle" localization:LocalizedResourceKey.Key="AgentBasicTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="AgentBasicHelp" localization:LocalizedResourceKey.Key="AgentBasicHelp" />
                                         </StackPanel>
@@ -463,7 +463,7 @@
                                 </Expander>
                                 <Expander x:Name="AgentCommonSettings" AutomationProperties.AutomationId="AgentCommonSettings" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="AgentCommonAccessible" localization:LocalizedResourceKey.Key="AgentCommonAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="AgentCommonTitle" localization:LocalizedResourceKey.Key="AgentCommonTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="AgentCommonHelp" localization:LocalizedResourceKey.Key="AgentCommonHelp" />
                                         </StackPanel>
@@ -491,7 +491,7 @@
                                 </Expander>
                                 <Expander x:Name="AgentModelSettings" AutomationProperties.AutomationId="AgentModelSettings" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.SupportsModel), Mode=OneWay}" x:Uid="AgentModelSectionAccessible" localization:LocalizedResourceKey.Key="AgentModelSectionAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="AgentModelSectionTitle" localization:LocalizedResourceKey.Key="AgentModelSectionTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="AgentModelSectionHelp" localization:LocalizedResourceKey.Key="AgentModelSectionHelp" />
                                         </StackPanel>
@@ -515,7 +515,7 @@
                                 </Expander>
                                 <Expander x:Name="AgentPermissionsSettings" AutomationProperties.AutomationId="AgentPermissionsSettings" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsBasicProvider), Mode=OneWay}" x:Uid="AgentPermissionsAccessible" localization:LocalizedResourceKey.Key="AgentPermissionsAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="AgentPermissionsTitle" localization:LocalizedResourceKey.Key="AgentPermissionsTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="AgentPermissionsHelp" localization:LocalizedResourceKey.Key="AgentPermissionsHelp" />
                                         </StackPanel>
@@ -537,7 +537,7 @@
                                 </Expander>
                                 <Expander x:Name="CodexSettings" AutomationProperties.AutomationId="CodexSettings" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsCodexProvider), Mode=OneWay}" x:Uid="CodexSettingsAccessible" localization:LocalizedResourceKey.Key="CodexSettingsAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="CodexSettingsTitle" localization:LocalizedResourceKey.Key="CodexSettingsTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="CodexSettingsHelp" localization:LocalizedResourceKey.Key="CodexSettingsHelp" />
                                         </StackPanel>
@@ -551,7 +551,7 @@
                                 </Expander>
                                 <Expander x:Name="AgentAdvancedSettings" AutomationProperties.AutomationId="AgentAdvanced" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="AgentAdvancedSectionAccessible" localization:LocalizedResourceKey.Key="AgentAdvancedSectionAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="AgentAdvancedSectionTitle" localization:LocalizedResourceKey.Key="AgentAdvancedSectionTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="AgentAdvancedSectionHelp" localization:LocalizedResourceKey.Key="AgentAdvancedSectionHelp" />
                                         </StackPanel>
@@ -573,7 +573,7 @@
                                 </Expander>
                                 <Expander x:Name="AgentRegistrationsSettings" AutomationProperties.AutomationId="AgentRegistrationsSettings" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="AgentRegistrationsAccessible" localization:LocalizedResourceKey.Key="AgentRegistrationsAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="AgentRegistrationsTitle" localization:LocalizedResourceKey.Key="AgentRegistrationsTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="AgentRegistrationsHelp" localization:LocalizedResourceKey.Key="AgentRegistrationsHelp" />
                                         </StackPanel>
@@ -603,7 +603,7 @@
                                 </Expander>
                                 <Expander x:Name="AgentExecutionExplanation" AutomationProperties.AutomationId="AgentExecutionExplanation" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="AgentExecutionExplanationAccessible" localization:LocalizedResourceKey.Key="AgentExecutionExplanationAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="AgentExecutionExplanationTitle" localization:LocalizedResourceKey.Key="AgentExecutionExplanationTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="AgentExecutionExplanationHelp" localization:LocalizedResourceKey.Key="AgentExecutionExplanationHelp" />
                                         </StackPanel>
@@ -687,7 +687,7 @@
                                 </Expander>
                                 <Expander x:Name="ChatApprovalSettingsCard" AutomationProperties.AutomationId="ChatApprovalCard" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="ChatCommonAccessible" localization:LocalizedResourceKey.Key="ChatCommonAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="ChatCommonTitle" localization:LocalizedResourceKey.Key="ChatCommonTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ChatCommonHelp" localization:LocalizedResourceKey.Key="ChatCommonHelp" />
                                         </StackPanel>
@@ -783,7 +783,7 @@
                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="ChatScopeOverview" localization:LocalizedResourceKey.Key="ChatScopeOverview" />
                                 <Expander x:Name="MattermostSettingsCard" AutomationProperties.AutomationId="MattermostSettingsCard" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="MattermostSectionAccessible" localization:LocalizedResourceKey.Key="MattermostSectionAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="MattermostConnectionTitle" localization:LocalizedResourceKey.Key="MattermostConnectionTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="MattermostSectionHelp" localization:LocalizedResourceKey.Key="MattermostSectionHelp" />
                                         </StackPanel>
@@ -793,7 +793,7 @@
                                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock048" x:Uid="chatAgentBridgeDesktopMainPageTextBlock048" />
                                         <StackPanel Spacing="8"><TextBlock   AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock049" x:Uid="chatAgentBridgeDesktopMainPageTextBlock049" /><TextBox Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com"  AutomationProperties.AutomationId="MattermostServerUrl"  x:Uid="MattermostServerUrl" /></StackPanel>
 
-                                        <StackPanel Spacing="8"><TextBlock   AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock050" x:Uid="chatAgentBridgeDesktopMainPageTextBlock050" /><TextBox Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  AutomationProperties.AutomationId="MattermostChannelId"  x:Uid="MattermostChannelId" /></StackPanel>
+                                        <StackPanel Spacing="8"><TextBlock   AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock050" x:Uid="chatAgentBridgeDesktopMainPageTextBlock050" /><TextBox Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  AutomationProperties.AutomationId="MattermostChannelId"  x:Uid="MattermostChannelId" /><Button x:Uid="SearchMattermostChannelsButton" AutomationProperties.AutomationId="SearchMattermostChannelsButton" HorizontalAlignment="Left" Click="SearchMattermostChannels_Click" /></StackPanel>
 
                                         <StackPanel Spacing="8"><TextBlock   AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock051" x:Uid="chatAgentBridgeDesktopMainPageTextBlock051" /><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="MattermostTokenBox" Grid.ColumnSpan="2" Padding="12,5,44,6" PasswordChanged="MattermostTokenBox_PasswordChanged"  AutomationProperties.AutomationId="MattermostToken"  x:Uid="MattermostToken" /><ToggleButton x:Name="MattermostTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="MattermostTokenReveal" /></Grid></StackPanel>
                                         <StackPanel Spacing="8">
@@ -827,7 +827,7 @@
                                 </Expander>
                                 <Expander x:Name="SlackSettingsCard" AutomationProperties.AutomationId="SlackSettingsCard" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="SlackSectionAccessible" localization:LocalizedResourceKey.Key="SlackSectionAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="SlackConnectionTitle" localization:LocalizedResourceKey.Key="SlackConnectionTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="SlackSectionHelp" localization:LocalizedResourceKey.Key="SlackSectionHelp" />
                                         </StackPanel>
@@ -842,6 +842,7 @@
 
                                         <TextBlock TextWrapping="Wrap" x:Uid="SlackConversationScopeHelp" localization:LocalizedResourceKey.Key="SlackConversationScopeHelp" />
                                         <TextBox  Text="{x:Bind ViewModel.SlackAllowedChannelIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="SlackAllowedChannelIds"  x:Uid="SlackAllowedChannelIds" />
+                                        <Button x:Uid="SearchSlackChannelsButton" AutomationProperties.AutomationId="SearchSlackChannelsButton" HorizontalAlignment="Left" Click="SearchSlackChannels_Click" />
                                         <StackPanel Spacing="8" AutomationProperties.AutomationId="SlackThreadLookup">
                                             <TextBlock x:Uid="SlackThreadLookupLabel" localization:LocalizedResourceKey.Key="SlackThreadLookupLabel" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="SlackThreadLookupHelp" localization:LocalizedResourceKey.Key="SlackThreadLookupHelp" />
@@ -860,7 +861,7 @@
                                 </Expander>
                                 <Expander x:Name="DiscordSettingsCard" AutomationProperties.AutomationId="DiscordSettingsCard" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" x:Uid="DiscordSectionAccessible" localization:LocalizedResourceKey.Key="DiscordSectionAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DiscordConnectionTitle" localization:LocalizedResourceKey.Key="DiscordConnectionTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="DiscordSectionHelp" localization:LocalizedResourceKey.Key="DiscordSectionHelp" />
                                         </StackPanel>
@@ -883,6 +884,7 @@
                                         <StackPanel Spacing="8">
                                             <TextBlock x:Uid="DiscordAllowedChannelIdsLabel" />
                                             <TextBox Text="{x:Bind ViewModel.DiscordAllowedChannelIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" AutomationProperties.AutomationId="DiscordAllowedChannelIds" x:Uid="DiscordAllowedChannelIds" />
+                                            <Button x:Uid="SearchDiscordChannelsButton" AutomationProperties.AutomationId="SearchDiscordChannelsButton" HorizontalAlignment="Left" Click="SearchDiscordChannels_Click" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="DiscordAllowedChannelIdsHelp" />
                                         </StackPanel>
                                         <StackPanel Spacing="8">
@@ -894,7 +896,7 @@
                                 </Expander>
                                 <Expander x:Name="FileAttachmentSettings" AutomationProperties.AutomationId="FileAttachmentSettings" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"  x:Uid="ChatAttachmentsAccessible" localization:LocalizedResourceKey.Key="ChatAttachmentsAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="ChatAttachmentsTitle" localization:LocalizedResourceKey.Key="ChatAttachmentsTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="ChatAttachmentsHelp" localization:LocalizedResourceKey.Key="ChatAttachmentsHelp" />
                                         </StackPanel>
@@ -919,7 +921,7 @@
                                 </Expander>
                                 <Expander x:Name="CodexChatSharingSettings" AutomationProperties.AutomationId="CodexChatSharingSettings" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsCodexProvider), Mode=OneWay}" x:Uid="CodexChatSharingAccessible" localization:LocalizedResourceKey.Key="CodexChatSharingAccessible">
                                     <Expander.Header>
-                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <StackPanel Spacing="8" HorizontalAlignment="Stretch" Margin="0,6">
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="CodexChatSharingTitle" localization:LocalizedResourceKey.Key="CodexChatSharingTitle" />
                                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="CodexChatSharingHelp" localization:LocalizedResourceKey.Key="CodexChatSharingHelp" />
                                         </StackPanel>
