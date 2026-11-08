@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-08",
+  "requiredTargets": [
+    "microsoft-store/desktop/screenshot"
+  ],
+  "source": "Original chat screenshot captures in ../screenshots, composed into a two-column state-flow image.",
+  "images": [
+    {
+      "file": "ja/chat-service-flow.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "PNG",
+      "bytes": 473652,
+      "sha256": "452a99183a64fd4aced393602b10ad27c4320c92f52532e6fb37d3c11c011678",
+      "store": "microsoft-store",
+      "language": "ja",
+      "device": "desktop",
+      "kind": "screenshot-composite",
+      "mode": "real chat screenshots in an annotated two-service state-flow layout",
+      "sourceFiles": [
+        "../screenshots/mattermost-demo-running-en.png",
+        "../screenshots/mattermost-demo-completed-en.png",
+        "../screenshots/slack-demo-running-ja.png",
+        "../screenshots/slack-demo-completed-ja.png"
+      ],
+      "contentGuidelineReview": "pending; explanatory labels and flow arrows are included by user-approved request"
+    },
+    {
+      "file": "en/chat-service-flow.png",
+      "width": 2560,
+      "height": 1440,
+      "format": "PNG",
+      "bytes": 425595,
+      "sha256": "241ca14b89b02b1a763020456ed9ba297cad856cfa9a86f78719cd7d1c98e16f",
+      "store": "microsoft-store",
+      "language": "en",
+      "device": "desktop",
+      "kind": "screenshot-composite",
+      "mode": "real chat screenshots in an annotated two-service state-flow layout",
+      "sourceFiles": [
+        "../screenshots/mattermost-demo-running-en.png",
+        "../screenshots/mattermost-demo-completed-en.png",
+        "../screenshots/slack-demo-running-en.png",
+        "../screenshots/slack-demo-completed-en.png"
+      ],
+      "contentGuidelineReview": "pending; explanatory labels and flow arrows are included by user-approved request"
+    }
+  ]
+}

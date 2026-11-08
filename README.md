@@ -231,11 +231,16 @@ The app uses Japanese when the Windows language preference is Japanese and Engli
 
 Portable builds can check for and apply updates from **About**. Downloads show received and total size while active or paused, transfer speed and estimated time remaining, elapsed time while waiting for data, retry counts, and verification and preparation stages. Downloads can be canceled. Downloads support pause and resume, including after restarting the app. Network failures or five minutes without data trigger up to three retries. The completed archive is verified with SHA-256. The `Data` folder is retained during updates. Completed update downloads and temporary binary payloads are cleaned up automatically; update logs are retained. Information → Update settings shows storage usage. Manual cleanup is under Information → Advanced settings → Maintenance. For manual updates, close the app and replace the files while keeping `Data`.
 
-Screenshots were captured from the development build on 2026-11-02 with isolated
-demo settings. They contain no real conversations or credentials. The usage
+App screenshots were captured from the development build on 2026-11-08 with isolated
+demo settings; they contain no real conversations or credentials. The Slack
+thread demo is a real test exchange with human account details redacted. The usage
 summary retains 70 sample runs across 28 active days while detailed history
 shows 52 records still within its default 30-day retention period. These values
 are examples, not performance results. Released versions may differ.
+
+![Mattermost and Slack request flow from in progress to completed reply](docs/assets/screenshots/chat-service-flow-en.png)
+
+This composite uses real Mattermost and Slack test conversations. Mattermost is shown in English; the Slack interface is English, with Japanese bot status text noted in the image. Human account details are redacted.
 
 ## Uninstalling
 

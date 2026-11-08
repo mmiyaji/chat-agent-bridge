@@ -1,0 +1,106 @@
+{
+  "images": [
+    {
+      "file": "ja/general-ja.png",
+      "width": 1426,
+      "sha256": "b8ed642d1d662d7d7bd94c93e0ad1616fcded9bcc162c1673f598c82541c9cbf",
+      "store": "microsoft-store",
+      "language": "ja",
+      "mode": "raw native app capture",
+      "feature": "general",
+      "height": 973,
+      "device": "desktop",
+      "kind": "screenshot"
+    },
+    {
+      "file": "ja/agents-ja.png",
+      "width": 1426,
+      "sha256": "39982ee80394a3a5cfe28c06e0bdfa070c16743e1e4f6dae5e6b41ba5fc29b8e",
+      "store": "microsoft-store",
+      "language": "ja",
+      "mode": "raw native app capture",
+      "feature": "agents",
+      "height": 973,
+      "device": "desktop",
+      "kind": "screenshot"
+    },
+    {
+      "file": "ja/chat-settings-ja.png",
+      "width": 1426,
+      "sha256": "5874a420516608b107ccb0464bcd88c6eb7a03b5b1c3e9633e16f64b80483737",
+      "store": "microsoft-store",
+      "language": "ja",
+      "mode": "raw native app capture",
+      "feature": "chat-settings",
+      "height": 973,
+      "device": "desktop",
+      "kind": "screenshot"
+    },
+    {
+      "file": "ja/history-ja.png",
+      "width": 1426,
+      "sha256": "7751e06312b2635ac0320cdb371be8f7cc3dad5865fd8a707876f4291a5b7db4",
+      "store": "microsoft-store",
+      "language": "ja",
+      "mode": "raw native app capture",
+      "feature": "history",
+      "height": 973,
+      "device": "desktop",
+      "kind": "screenshot"
+    },
+    {
+      "file": "en/general-en.png",
+      "width": 1426,
+      "sha256": "942b8f703dfa0d63f0fc7f9d4fee4f910d4a5046894e808e70f0d7e16c34dd59",
+      "store": "microsoft-store",
+      "language": "en",
+      "mode": "raw native app capture",
+      "feature": "general",
+      "height": 973,
+      "device": "desktop",
+      "kind": "screenshot"
+    },
+    {
+      "file": "en/agents-en.png",
+      "width": 1426,
+      "sha256": "c5be57d3e3e61ddd19de06a258cdbea4809af27018cc103ddfe0640c2c43e7ac",
+      "store": "microsoft-store",
+      "language": "en",
+      "mode": "raw native app capture",
+      "feature": "agents",
+      "height": 973,
+      "device": "desktop",
+      "kind": "screenshot"
+    },
+    {
+      "file": "en/chat-settings-en.png",
+      "width": 1426,
+      "sha256": "71a9cd518c28cc91d06057e938f70730318c49a33682a129e364260f804136a4",
+      "store": "microsoft-store",
+      "language": "en",
+      "mode": "raw native app capture",
+      "feature": "chat-settings",
+      "height": 973,
+      "device": "desktop",
+      "kind": "screenshot"
+    },
+    {
+      "file": "en/history-en.png",
+      "width": 1426,
+      "sha256": "c2a42f5a908ab5ecd1e1d71d895ac86f97cdc3a176900250e62a12a669cf192f",
+      "store": "microsoft-store",
+      "language": "en",
+      "mode": "raw native app capture",
+      "feature": "history",
+      "height": 973,
+      "device": "desktop",
+      "kind": "screenshot"
+    }
+  ],
+  "source": "Chat Agent Bridge native WinUI screenshot capture; isolated demo profile",
+  "schemaVersion": 1,
+  "requiredTargets": [
+    "microsoft-store/desktop/screenshot"
+  ],
+  "generatedAt": "2026-11-08"
+}

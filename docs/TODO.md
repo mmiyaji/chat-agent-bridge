@@ -4,6 +4,9 @@
 
 ## 直近
 
+- [x] Mattermost・Slackの実行中／完了画面を撮り直し、左右2列・上下遷移の日英PNG（2560×1440）を作成。Slack実行中画面のBot返信全文も表示するよう切り出しを修正。README・ホームページへ反映し、個人アカウント情報をマスキング。ストア向けサイズを検証。ストア提出は停止中。
+
+
 - [x] 1.1.0-preview.3 を公開。x64 / ARM64 ZIP の検証とSHA256、Previewフィード掲載・安定版フィード維持を確認。公開済みpreview.2から実際の公開x64 ZIPへの更新成功・ロールバックも確認。ARM64はクロスビルドのみで実機起動未確認。並行ビルド後の公開workflowは11分17秒（preview.2は14分24秒）、3分07秒短縮。
 
 - [x] Portable release の x64 / ARM64 ZIP を CI / UI Smoke と並行してビルドし、検証ジョブで両方の成功を待ってから公開する。CI結果とパッケージ検証はすべて公開ゲートとして維持。preview.3で両ZIPはchecks / UI Smokeと並行開始、verifyはchecksと両ZIP完了後に実行。
