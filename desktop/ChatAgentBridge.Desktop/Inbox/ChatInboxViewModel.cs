@@ -756,13 +756,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 _ => settings.SlackAllowedUserIds
             };
             if (string.IsNullOrWhiteSpace(allowed))
-            {
-                await transport.DisposeAsync();
-                IsConnected = false;
-                Status = DesktopText.Get("InboxAllowedUsersRequired");
-                HasConnectionError = true;
-                return;
-            }
+                ProgressNotice = DesktopText.Get("InboxFirstRequestNeedsApproval");
             if (transport is DiscordGatewayTransport &&
                 (string.IsNullOrWhiteSpace(settings.DiscordBotToken) ||
                  !settings.DiscordAllowDirectMessages && string.IsNullOrWhiteSpace(settings.DiscordAllowedGuildIds)))

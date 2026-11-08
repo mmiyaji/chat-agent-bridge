@@ -250,6 +250,8 @@ try {
     Add-Pass 'CLI version and candidates are checked; fixture model and effort are selectable'
 
     $currentStep = 'page 4 chat connection and allowed users'
+    $currentSubstep = 'confirm the heading identifies allowed-user setup as optional'
+    Assert-That ((Get-Value 'OnboardingDescription') -match '接続に必要な情報' -and (Get-Value 'OnboardingDescription') -notmatch 'ユーザーIDを入力') 'Chat step description still makes allowed-user IDs sound required.'
     $currentSubstep = 'verify missing Slack credentials block advancement'
     Select-Candidate 'WizardChatProvider' 'Slack'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
@@ -265,10 +267,9 @@ try {
     Assert-That ((Get-Value 'WizardMattermostChannelId') -eq $null) 'The wizard still exposes the advanced Mattermost channel ID field.'
     Add-Pass 'Mattermost wizard recommends the default DM flow and leaves channel restrictions to Chat settings'
     # Allowed users are optional: people can also be approved from their first chat request.
-    $currentSubstep = 'set allowed user and advance'
-    Set-Value 'WizardMattermostAllowedUserIds' 'test-member'
+    $currentSubstep = 'keep the optional allowed-user list blank'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
-    Assert-That (Wait-Progress '5\s*/\s*5') 'Valid Mattermost credentials and allowed user did not advance to safety setup.'
+    Assert-That (Wait-Progress '5\s*/\s*5') 'Valid Mattermost credentials with no allowed users did not advance to safety setup.'
     Capture '05-step-safety.png'
     Add-Pass 'Slack and Mattermost validation requires credentials; channel restrictions are deferred'
 
@@ -304,7 +305,7 @@ try {
         @('AgentProvider','claude'), @('AgentExecutable',$fixturePath), @('WorkspaceRoot',$workspace),
         @('AgentModel','fixture-claude-large'), @('AgentReasoningEffort','high'),
         @('MattermostServerUrl',$ServerUrl),
-        @('MattermostAllowedUserIds','test-member'), @('AutoConnectProvider','mattermost'), @('ChatApprovalMode','auto')
+        @('MattermostAllowedUserIds',''), @('AutoConnectProvider','mattermost'), @('ChatApprovalMode','auto')
     )) { Assert-That ([string]$saved.($pair[0]) -eq [string]$pair[1]) "Saved settings field $($pair[0]) did not match expected value." }
     Assert-That ([bool]$saved.MattermostAllowDirectMessages) 'The wizard did not preserve the default-on Mattermost DM setting.'
     Assert-That (([string]$saved.MattermostToken).StartsWith('dpapi:') -and [string]$saved.MattermostToken -ne $token) 'Saved Mattermost token was absent or was not protected at rest.'

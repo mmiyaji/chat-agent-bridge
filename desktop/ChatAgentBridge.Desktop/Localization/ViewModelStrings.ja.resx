@@ -489,7 +489,7 @@
     <value>このPCで使うAIと、作業するフォルダーを選びます。CLIのインストールとログインは事前に必要です。</value>
   </data>
   <data name="WizardChatDescription" xml:space="preserve">
-    <value>Slack、Mattermost、またはDiscordを選び、接続情報と利用を許可するユーザーIDを入力します。</value>
+    <value>Slack、Mattermost、またはDiscordを選び、接続に必要な情報を入力します。許可ユーザーの指定は任意です。</value>
   </data>
   <data name="WizardCliDescription" xml:space="preserve">
     <value>CLIのバージョンを確認します。Codex・Claude Codeではモデル候補も取得します。AIへ作業の依頼は送りません。</value>
