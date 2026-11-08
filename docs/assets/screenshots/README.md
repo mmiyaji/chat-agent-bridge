@@ -1,6 +1,8 @@
 # README screenshots
 
 Captured on Windows on 2026-11-08 from the current native desktop development
+build. The General tab was recaptured from main commit `3321676` in an isolated
+profile after finding that the previous General images came from an older app
 build. The images show General, Agent settings, shared Chat settings, and the
 History and usage Activity tab.
 
