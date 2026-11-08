@@ -248,7 +248,6 @@ internal static class ChatChannelPickerDialog
         detailContent.Children.Add(detailsId);
         var detailsPane = new ScrollViewer { Content = detailContent, VerticalScrollMode = ScrollMode.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         AutomationProperties.SetAutomationId(detailsPane, "ChannelPickerDetails");
-        var divider = new Border { Background = (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"] };
         var narrowLayout = root.Size.Width < 760;
         var contentWidth = Math.Max(280, Math.Min(780, root.Size.Width - (narrowLayout ? 120 : 96)));
         var panes = new Grid { ColumnSpacing = 0, Width = contentWidth, Height = narrowLayout ? 390 : 400 };
@@ -259,30 +258,55 @@ internal static class ChatChannelPickerDialog
             panes.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             list.MaxHeight = 210;
             Grid.SetRow(detailsPane, 1);
-            Grid.SetRow(divider, 1);
-            divider.Width = double.NaN;
-            divider.Height = 1;
-            divider.HorizontalAlignment = HorizontalAlignment.Stretch;
-            divider.VerticalAlignment = VerticalAlignment.Top;
-            divider.Margin = new Thickness(0, 0, 0, 8);
+            var horizontalDivider = new Border
+            {
+                Height = 1,
+                Background = (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"],
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+            Grid.SetRow(horizontalDivider, 1);
             detailContent.Margin = new Thickness(8, 12, 8, 4);
             panes.Children.Add(leftPane);
-            panes.Children.Add(divider);
+            panes.Children.Add(horizontalDivider);
             panes.Children.Add(detailsPane);
         }
         else
         {
+            leftPane.Children.Clear();
+            panes.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            panes.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            panes.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             panes.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.2, GridUnitType.Star) });
+            panes.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
             panes.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0.85, GridUnitType.Star) });
-            panes.Children.Add(leftPane);
-            var verticalDivider = divider;
-            verticalDivider.Width = 1;
-            verticalDivider.Height = double.NaN;
-            verticalDivider.HorizontalAlignment = HorizontalAlignment.Left;
-            verticalDivider.VerticalAlignment = VerticalAlignment.Stretch;
-            verticalDivider.Margin = new Thickness(8, 0, 0, 0);
+            Grid.SetRow(search, 0);
+            Grid.SetColumn(search, 0);
+            Grid.SetRow(list, 1);
+            Grid.SetColumn(list, 0);
+            Grid.SetRow(noMatches, 1);
+            Grid.SetColumn(noMatches, 0);
+            Grid.SetRow(count, 2);
+            Grid.SetColumn(count, 0);
+            panes.Children.Add(search);
+            panes.Children.Add(list);
+            panes.Children.Add(noMatches);
+            panes.Children.Add(count);
+            var verticalDivider = new Border
+            {
+                Width = 1,
+                Background = (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"],
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Stretch
+            };
+            Grid.SetRow(verticalDivider, 1);
+            Grid.SetRowSpan(verticalDivider, 2);
+            Grid.SetColumn(verticalDivider, 1);
             panes.Children.Add(verticalDivider);
-            Grid.SetColumn(detailsPane, 1);
+            Grid.SetRow(detailsPane, 1);
+            Grid.SetRowSpan(detailsPane, 2);
+            Grid.SetColumn(detailsPane, 2);
             panes.Children.Add(detailsPane);
         }
 
