@@ -1199,14 +1199,16 @@
   <data name="AgentRegistrationsHelp.Text" xml:space="preserve"><value>Codex・Claude Code・Gemini CLI・GitHub Copilot CLI・Antigravity CLI・Kiro CLI・Qwen Code・Kimi Code CLI・Muse Code CLIの接続設定を登録・呼び出し</value></data>
   <data name="AgentExecutionExplanationTitle.Text" xml:space="preserve"><value>実行承認のしくみ</value></data>
   <data name="AgentExecutionExplanationHelp.Text" xml:space="preserve"><value>承認の流れと現在の実行ポリシーを確認</value></data>
-  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>使うサービスの設定を開いてください。承認や添付の設定は、各チャットサービスに共通です。</value></data>
+  <data name="ChatSettingsGuide.Text" xml:space="preserve"><value>使うチャットサービスを選んで接続情報を設定します。許可ユーザーと共通の動作は共通設定で管理します。</value></data>
   <data name="ChatCommonTitle.Text" xml:space="preserve"><value>共通のチャット動作</value></data>
   <data name="ChatCommonHelp.Text" xml:space="preserve"><value>各チャットサービス共通の依頼承認と結果の投稿方法</value></data>
-  <data name="ChatScopeOverview.Text" xml:space="preserve"><value>利用するサービスを開き、認証情報・許可ユーザー・会話の制限を設定してください。</value></data>
+  <data name="ChatScopeOverview.Text" xml:space="preserve"><value>利用するサービスの設定から、接続情報と会話の制限を設定してください。</value></data>
   <data name="MattermostSectionTitle.Text" xml:space="preserve"><value>Mattermost</value></data>
   <data name="MattermostSectionHelp.Text" xml:space="preserve"><value>サーバー、トークン、許可ユーザー、会話の制限</value></data>
   <data name="SlackSectionTitle.Text" xml:space="preserve"><value>Slack</value></data>
-  <data name="ChatServiceConnectionTitle.Text" xml:space="preserve"><value>接続情報と許可ユーザー</value></data>
+  <data name="MattermostConnectionTitle.Text" xml:space="preserve"><value>Mattermost 接続情報</value></data>
+  <data name="SlackConnectionTitle.Text" xml:space="preserve"><value>Slack 接続情報</value></data>
+  <data name="DiscordConnectionTitle.Text" xml:space="preserve"><value>Discord 接続情報</value></data>
   <data name="SlackSectionHelp.Text" xml:space="preserve"><value>トークン、許可ユーザー、チャンネル・スレッドの制限</value></data>
   <data name="ChatAttachmentsTitle.Text" xml:space="preserve"><value>ファイル添付</value></data>
   <data name="ChatAttachmentsHelp.Text" xml:space="preserve"><value>生成ファイルの送信承認と、サイズ・個数の上限</value></data>
@@ -1412,7 +1414,7 @@
   <data name="FileAttachmentGuide.NavigateUri" xml:space="preserve"><value>https://github.com/mmiyaji/chat-agent-bridge/blob/main/desktop/README.ja.md#エージェントが作成したファイルの添付</value></data>
   <data name="UsageAccountingGuide.NavigateUri" xml:space="preserve"><value>https://github.com/mmiyaji/chat-agent-bridge/blob/main/desktop/README.ja.md#トークンキャッシュ推定コストの振り返り</value></data>
   <data name="AllowedUsersSettings.Header" xml:space="preserve"><value>許可ユーザー</value></data>
-  <data name="OpenAllowedUsers.Content" xml:space="preserve"><value>共通設定の許可ユーザーを開く</value></data>
+  <data name="OpenAllowedUsers.Content" xml:space="preserve"><value>許可ユーザーを管理</value></data>
   <data name="AllowedUsersBulkEdit.Header" xml:space="preserve"><value>IDをまとめて編集</value></data>
   <data name="AllowedUsersProviderPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>サービス</value></data>
   <data name="OpenAllowedUserAdd.Content" xml:space="preserve"><value>ユーザーを追加</value></data>

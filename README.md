@@ -11,7 +11,7 @@ Chat Agent Bridge is a Windows app that accepts requests from Slack, Mattermost 
 
 It is intended for devices where you cannot use the Codex or Claude Code desktop app. Bridge starts a command-line agent (CLI) installed on your Windows PC and runs the request in the working folder you selected.
 
-> **Prefer the agent provider's official remote-control features when they are available to you.** Chat Agent Bridge is an alternative for environments where those features cannot be used.
+> **Prefer remote-control features offered through the AI agent provider's official desktop app or another official client when available.** Chat Agent Bridge is an alternative for environments where those features are unavailable.
 
 ## Using it safely
 
@@ -124,11 +124,11 @@ See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるc
 
 ## Approvals, access and sharing
 
-Under **Chat settings → Common settings → Allowed users**, one table shows the total count and each user’s service. The first six entries alternate between services with users. Choose **Show … more** to expand the table. To add someone, choose **Add user** and select a service in the popup. Search for a Mattermost or Slack user and confirm the match, or enter the user ID directly. Discord uses ID entry. The service tabs link to this list and provide a collapsed bulk ID editor. Select a name or ID for registration and last-request details, plus run, conversation, and CLI session counts from retained history. Removing a user asks for confirmation.
+Under **Chat settings → Common settings → Allowed users**, one table shows the total count and each user’s service. The first six entries alternate between services with users. Choose **Show … more** to expand the table. To add someone, choose **Add user** and select a service in the popup. Search for a Mattermost or Slack user and confirm the match, or enter the user ID directly. Discord uses ID entry. Each service's settings show its allowed-user count and link to this shared list. Select a name or ID for registration and last-request details, plus run, conversation, and CLI session counts from retained history. Removing a user asks for confirmation.
 
 Manual runs use the working folder selected in Agent settings, regardless of where CAB is installed. A folder selected and saved on the PC is trusted by default. Register other parent folders to permit switching conversations to their subfolders. Chat requests cannot automatically add locations outside that scope, and switching follows your approval settings. Git is not required; trusting a folder does not grant full access.
 
-**Chat settings** contains approval and sharing rules common to all chat services, along with each service's connection details and allowed users.
+**Chat settings** contains each service's connection details and approval and sharing rules common to all chat services. Manage allowed users in one shared list under Common settings.
 
 - **Request approval** defaults to no approval for allowed users. You can instead require it for the first request in each conversation or every time. This approval starts the request; the CLI's permission to perform individual operations is configured separately.
 - Codex App Server approvals show an informational warning for a small set of clearly destructive command patterns. The warning does not change the available approval controls or replace the CLI's permission safeguards.

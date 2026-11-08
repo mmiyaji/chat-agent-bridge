@@ -50,7 +50,7 @@ The product is an unofficial alternative for environments where the AI provider'
 
 Chat Agent Bridgeは、Slack・Mattermost・Discordの依頼をWindows PC上のCLIエージェントへ渡して実行するアプリです。
 
-AIエージェントの提供元が公式のリモート操作機能を用意している場合は、そちらの利用を推奨します。本アプリは、環境の制約で公式機能を使えない場合の代替手段です。
+AIエージェントの提供元が公式デスクトップアプリなどを通じてリモート操作機能を提供している場合は、そちらの利用を推奨します。本アプリは、公式機能を利用できない環境での代替手段です。
 
 初期値は「許可ユーザーは確認なし」です。許可ユーザーの依頼はPCでの確認なしに実行し、許可されていないユーザーの投稿は実行しません。「会話ごとに最初の依頼を確認」「毎回確認」も選べますが、PCでの承認が増えるため外出先から使いにくくなります。
 
@@ -68,7 +68,7 @@ BridgeはWindows PC上で選択されたCLIを、指定された信頼する作�
 
 Chat Agent Bridge passes requests from Slack, Mattermost or Discord to an AI agent CLI on the user's Windows PC.
 
-Prefer the AI agent provider's official remote-control feature when one is available. This app is an alternative for environments where that feature cannot be used.
+Prefer remote control offered through the AI agent provider's official desktop app or another official client when available. This app is an alternative for environments where that feature is unavailable.
 
 We recommend “Confirm the first request in each conversation” so users can review the requester and request on the PC and catch unexpected users or unintended requests before execution. Keep allowed-user restrictions enabled too.
 

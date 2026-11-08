@@ -82,6 +82,9 @@ public sealed partial class AllowedUserListModel : ObservableObject
 
     public string Provider { get; }
     public IReadOnlyList<AllowedUserRow> Rows { get; private set; } = [];
+    public string TotalLabel => ViewModelText.Get("AllowedUserTotal", Rows.Count);
+
+    internal void RefreshLocalizedLabels() => OnPropertyChanged(nameof(TotalLabel));
 
     [ObservableProperty]
     public partial string NewUserId { get; set; } = "";
@@ -121,6 +124,7 @@ public sealed partial class AllowedUserListModel : ObservableObject
             return new AllowedUserRow(Provider, id, record, pendingName, Remove);
         }).ToArray();
         OnPropertyChanged(nameof(Rows));
+        OnPropertyChanged(nameof(TotalLabel));
     }
 
     [RelayCommand]

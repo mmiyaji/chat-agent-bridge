@@ -928,6 +928,9 @@ After: {2}</value></data>
   <data name="AgentScopePicker" xml:space="preserve"><value>Edit settings for</value></data>
   <data name="AgentScopeCommonHelp" xml:space="preserve"><value>Workspace, trusted folders and local run approval apply to every agent.</value></data>
   <data name="ConnectionScopeCommonHelp" xml:space="preserve"><value>Approval, result sharing and attachment settings apply to Slack, Mattermost and Discord.</value></data>
+  <data name="ConnectionScopeServicesTitle" xml:space="preserve"><value>Chat service status</value></data>
+  <data name="ConnectionScopeServicesHelp" xml:space="preserve"><value>Choose a service and configure its connection. Status reflects saved settings and the current connection.</value></data>
+  <data name="ConnectionScopeConfigure" xml:space="preserve"><value>Open settings</value></data>
   <data name="CurrentAgentMarkerTooltip" xml:space="preserve"><value>Default agent: {0}</value></data>
   <data name="CurrentAgentMarkerName" xml:space="preserve"><value>default agent</value></data>
   <data name="CurrentConnectionMarkerTooltip" xml:space="preserve"><value>Connected: {0}</value></data>
@@ -936,6 +939,7 @@ After: {2}</value></data>
   <data name="ConnectionStatusConnected" xml:space="preserve"><value>Connected</value></data>
   <data name="ConnectionStatusError" xml:space="preserve"><value>Connection error</value></data>
   <data name="ConnectionStatusDisconnected" xml:space="preserve"><value>Not connected</value></data>
+  <data name="ConnectionStatusNeedsSetup" xml:space="preserve"><value>Connection setup needed</value></data>
   <data name="ConnectionStatusAutoConnect" xml:space="preserve"><value>Connects when the app starts</value></data>
   <data name="IncomingFilesSummary" xml:space="preserve"><value>Attached files: {0} ({1}). After request approval, supported files are passed to the agent. Up to 5 files, 10 MB each, 20 MB total. PNG/JPEG/WebP images and UTF-8 TXT/LOG/MD/CSV/JSON files only. Temporary copies are deleted after execution; attach them again if a later request needs them. File-bearing follow-ups wait for a separate run.</value></data>
   <data name="IncomingFileNamePending" xml:space="preserve"><value>name checked after approval</value></data>

@@ -21,6 +21,8 @@ public sealed partial class MainPage
     private StackPanel? _connectionScopeMattermostGroup;
     private StackPanel? _connectionScopeSlackGroup;
     private StackPanel? _connectionScopeDiscordGroup;
+    private readonly Dictionary<string, TextBlock> _connectionScopeSummaryStatuses = new(StringComparer.Ordinal);
+    private readonly List<(string Provider, Button Button)> _connectionScopeSummaryButtons = [];
     private string _connectionSettingsScope = "common";
     private bool _syncingConnectionScopeSelection;
     private string? _pendingConnectionScope;
@@ -80,6 +82,7 @@ public sealed partial class MainPage
         AutomationProperties.SetAutomationId(_connectionScopeHeader, "ConnectionScopeHeader");
 
         _connectionScopeCommonGroup = new StackPanel { Spacing = 16 };
+        _connectionScopeCommonGroup.Children.Add(CreateConnectionScopeServiceSummary());
         _connectionScopeDescription = new TextBlock { Text = DesktopText.Get("ConnectionScopeCommonHelp"), TextWrapping = TextWrapping.Wrap };
         _connectionScopeCommonGroup.Children.Add(_connectionScopeDescription);
         _connectionScopeCommonGroup.Children.Add(AllowedUsersSettingsCard);
@@ -128,10 +131,10 @@ public sealed partial class MainPage
         AutomationProperties.SetAutomationId(_connectionScopeNavigation, "ConnectionScopeList");
         _connectionScopeNavigation.RegisterPropertyChangedCallback(NavigationView.OpenPaneLengthProperty, (_, _) => RefreshConnectionScopeMarker());
         AutomationProperties.SetName(_connectionScopeNavigation, DesktopText.Get("AgentScopePicker"));
-        AddConnectionScopeItem(_connectionScopeNavigation, "common", DesktopText.Get("AgentScopeCommon"), "ConnectionScopeCommon");
         AddConnectionScopeItem(_connectionScopeNavigation, "slack", MrtText.Get("SlackSectionTitle.Text"), "ConnectionScopeSlack");
         AddConnectionScopeItem(_connectionScopeNavigation, "mattermost", MrtText.Get("MattermostSectionTitle.Text"), "ConnectionScopeMattermost");
         AddConnectionScopeItem(_connectionScopeNavigation, "discord", MrtText.Get("DiscordSectionTitle.Text"), "ConnectionScopeDiscord");
+        AddConnectionScopeItem(_connectionScopeNavigation, "common", DesktopText.Get("AgentScopeCommon"), "ConnectionScopeCommon");
         _connectionScopeNavigation.SelectionChanged += (_, args) =>
         {
             if (_syncingConnectionScopeSelection || args.SelectedItemContainer is not NavigationViewItem item) return;
@@ -144,19 +147,80 @@ public sealed partial class MainPage
         _connectionScopeBreadcrumb = CreateScopeBreadcrumb("ConnectionScopeBreadcrumb", () => SetConnectionSettingsScope("common"));
         page.Children.Add(_connectionScopeBreadcrumb);
         page.Children.Add(_connectionScopeHeader);
-        page.Children.Add(_connectionScopeCommonGroup);
         page.Children.Add(_connectionScopeSlackGroup);
         page.Children.Add(_connectionScopeMattermostGroup);
         page.Children.Add(_connectionScopeDiscordGroup);
+        page.Children.Add(_connectionScopeCommonGroup);
         _connectionSettingsScroll = CreateSettingsDetailScroll(page, "ConnectionSettingsScroll");
         _connectionScopeNavigation.Content = _connectionSettingsScroll;
         originalContent.Children.Add(shell);
 
         _connectionScopeNavigation.SizeChanged += (_, args) => UpdateConnectionScopeNavigation(args.NewSize.Width);
-        SetConnectionSettingsScope("common");
+        SetConnectionSettingsScope(GetInitialConnectionSettingsScope());
         RefreshConnectionScopeLabels(System.Globalization.CultureInfo.CurrentUICulture);
         UpdateConnectionScopeNavigation(_connectionScopeNavigation.ActualWidth);
         UpdateSettingsNavigationEnabledState();
+    }
+
+    private string GetInitialConnectionSettingsScope()
+    {
+        var inbox = InboxPage.ViewModel;
+        if (inbox.IsConnectionConfirmed && inbox.IsConnected && !inbox.HasConnectionError &&
+            inbox.ConnectionProvider is "mattermost" or "slack" or "discord")
+            return inbox.ConnectionProvider;
+
+        var settings = ViewModel.PersistedSettings;
+        if (settings?.AutoConnectProvider is "mattermost" or "slack" or "discord") return settings.AutoConnectProvider;
+        return "common";
+    }
+
+    private StackPanel CreateConnectionScopeServiceSummary()
+    {
+        var summary = new StackPanel { Spacing = 8 };
+        summary.Children.Add(new TextBlock
+        {
+            Text = DesktopText.Get("ConnectionScopeServicesTitle"),
+            Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"],
+            TextWrapping = TextWrapping.Wrap
+        });
+        summary.Children.Add(new TextBlock
+        {
+            Text = DesktopText.Get("ConnectionScopeServicesHelp"),
+            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
+            Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        foreach (var (provider, name) in new[]
+        {
+            ("slack", "Slack"), ("mattermost", "Mattermost"), ("discord", "Discord")
+        })
+        {
+            var status = new TextBlock { TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+            AutomationProperties.SetAutomationId(status, $"ConnectionScopeSummaryStatus_{provider}");
+            var button = new Button
+            {
+                Content = DesktopText.Get("ConnectionScopeConfigure"),
+                MinWidth = 112,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            AutomationProperties.SetAutomationId(button, $"ConnectionScopeConfigure_{provider}");
+            button.Click += (_, _) => SetConnectionSettingsScope(provider);
+            var row = new Grid { ColumnSpacing = 12, Margin = new Thickness(12, 8, 12, 8) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var details = new StackPanel { Spacing = 2 };
+            details.Children.Add(new TextBlock { Text = name, Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"] });
+            details.Children.Add(status);
+            row.Children.Add(details);
+            Grid.SetColumn(button, 1);
+            row.Children.Add(button);
+            summary.Children.Add(new Border { Style = (Style)Application.Current.Resources["ActivityCardStyle"], Child = row });
+            _connectionScopeSummaryStatuses[provider] = status;
+            _connectionScopeSummaryButtons.Add((provider, button));
+        }
+
+        return summary;
     }
 
     private void QueueConnectionScopeSelection(string scope)
@@ -228,7 +292,7 @@ public sealed partial class MainPage
         _syncingConnectionScopeSelection = true;
         if (_connectionScopeNavigation is not null)
         {
-            var index = _connectionSettingsScope switch { "slack" => 1, "mattermost" => 2, "discord" => 3, _ => 0 };
+            var index = _connectionSettingsScope switch { "slack" => 0, "mattermost" => 1, "discord" => 2, _ => 3 };
             _connectionScopeNavigation.SelectedItem = _connectionScopeNavigation.MenuItems[index];
         }
         _syncingConnectionScopeSelection = false;
@@ -239,13 +303,13 @@ public sealed partial class MainPage
     private void RefreshConnectionScopeLabels(System.Globalization.CultureInfo culture)
     {
         if (_connectionScopeNavigation is null) return;
-        string[] iconKeys = ["common", "slack", "mattermost", "discord"];
+        string[] iconKeys = ["slack", "mattermost", "discord", "common"];
         var labels = new[]
         {
-            DesktopText.Get("AgentScopeCommon"),
             MrtText.Get("SlackSectionTitle.Text", culture),
             MrtText.Get("MattermostSectionTitle.Text", culture),
-            MrtText.Get("DiscordSectionTitle.Text", culture)
+            MrtText.Get("DiscordSectionTitle.Text", culture),
+            DesktopText.Get("AgentScopeCommon")
         };
         for (var index = 0; index < labels.Length; index++)
         {
@@ -257,6 +321,12 @@ public sealed partial class MainPage
         }
         AutomationProperties.SetName(_connectionScopeNavigation, DesktopText.Get("AgentScopePicker"));
         if (_connectionScopeDescription is not null) _connectionScopeDescription.Text = DesktopText.Get("ConnectionScopeCommonHelp");
+        foreach (var (_, button) in _connectionScopeSummaryButtons) button.Content = DesktopText.Get("ConnectionScopeConfigure");
+        if (_connectionScopeCommonGroup?.Children.FirstOrDefault() is StackPanel summary && summary.Children.Count > 1)
+        {
+            if (summary.Children[0] is TextBlock title) title.Text = DesktopText.Get("ConnectionScopeServicesTitle");
+            if (summary.Children[1] is TextBlock help) help.Text = DesktopText.Get("ConnectionScopeServicesHelp");
+        }
         SetConnectionSettingsScope(_connectionSettingsScope);
         RefreshConnectionScopeMarker();
     }
@@ -276,6 +346,36 @@ public sealed partial class MainPage
                 DesktopText.Get("CurrentConnectionMarkerName"));
         }
         RefreshConnectionScopeHeader();
+        RefreshConnectionScopeSummary();
+    }
+
+    private void RefreshConnectionScopeSummary()
+    {
+        if (ViewModel.PersistedSettings is not { } settings) return;
+        var inbox = InboxPage.ViewModel;
+        foreach (var (provider, textBlock) in _connectionScopeSummaryStatuses)
+        {
+            var isLive = inbox.IsConnectionConfirmed && inbox.IsConnected && !inbox.HasConnectionError && inbox.ConnectionProvider == provider;
+            var isError = !isLive && inbox.ConnectionProvider == provider && inbox.HasConnectionError;
+            var stateKey = isLive
+                ? "ConnectionStatusConnected"
+                : isError
+                    ? "ConnectionStatusError"
+                    : ChatAgentBridge.Core.ChatConnectionReadiness.IsReady(settings, provider)
+                        ? "ConnectionStatusDisconnected"
+                        : "ConnectionStatusNeedsSetup";
+            textBlock.Text = DesktopText.Get(stateKey);
+            if (settings.AutoConnectProvider == provider)
+                textBlock.Text += " · " + DesktopText.Get("ConnectionStatusAutoConnect");
+            var providerName = provider switch
+            {
+                "mattermost" => MrtText.Get("MattermostSectionTitle.Text"),
+                "slack" => MrtText.Get("SlackSectionTitle.Text"),
+                "discord" => MrtText.Get("DiscordSectionTitle.Text"),
+                _ => provider
+            };
+            AutomationProperties.SetName(textBlock, $"{providerName}: {textBlock.Text}");
+        }
     }
 
     /// <summary>Shows the selected service's connection state under its title, matching the agent header.</summary>

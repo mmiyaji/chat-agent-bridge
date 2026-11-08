@@ -124,9 +124,19 @@ try {
  Point-At (Wait-Element 'BrowseAgentExecutable')
  Capture "agent-default-sidebar-$Language-$Theme"
  Select-Element 'NavConnections'
- $first=(Wait-Element 'ConnectionScopeCommon').Current.BoundingRectangle
+ Select-Element 'ConnectionScopeCommon'
+ Wait-Element 'ConnectionScopeSummaryStatus_slack'
+ Wait-Element 'ConnectionScopeConfigure_mattermost'
+ Assert (-not (Wait-Element 'ConnectionScopeSummaryStatus_mattermost').Current.IsOffscreen) 'The initial chat settings view must show service connection status.'
+ Invoke-Element (Wait-Element 'ConnectionScopeConfigure_mattermost') 'open Mattermost connection settings from the overview'
+ Wait-Element 'MattermostAllowedUserCount'
+ Wait-Element 'MattermostOpenAllowedUsers'
+ Assert ($null -eq (Find-Element $script:window 'MattermostUsernameLookupInput')) 'Service settings should route allowed-user search through Common settings.'
+ Invoke-Element (Wait-Element 'MattermostOpenAllowedUsers') 'open shared allowed-user management'
+ Wait-For { ((Wait-Element 'ConnectionScopeCommon').GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)).Current.IsSelected } 'shared allowed-user list selected'
+ $first=(Wait-Element 'ConnectionScopeSlack').Current.BoundingRectangle
  $next=(Wait-Element 'ConnectionScopeMattermost').Current.BoundingRectangle
- Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Chat side list must be visible at the default 1160 x 800 size.'
+ Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Chat service list must start with services at the default 1160 x 800 size.'
  Capture "chat-default-sidebar-$Language-$Theme"
  Add-Pass 'Both settings pages show side lists at the actual default window size'
  Resize-Test 1440
@@ -212,9 +222,9 @@ try {
  Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Agent scopes should remain in a side list at the relaxed width.'
  Capture "agent-relaxed-sidebar-$Language-$Theme"
  Select-Element 'NavConnections'
- $first=(Wait-Element 'ConnectionScopeCommon').Current.BoundingRectangle
+ $first=(Wait-Element 'ConnectionScopeSlack').Current.BoundingRectangle
  $next=(Wait-Element 'ConnectionScopeMattermost').Current.BoundingRectangle
- Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Chat scopes should remain in a side list at the relaxed width.'
+ Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Chat service scopes should remain in a side list at the relaxed width.'
  Capture "chat-relaxed-sidebar-$Language-$Theme"
  Add-Pass 'Both settings pages retain the side list in a narrower window'
  Select-Element 'NavAgentSettings'

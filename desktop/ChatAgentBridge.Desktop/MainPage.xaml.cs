@@ -64,6 +64,7 @@ public sealed partial class MainPage : Page
             {
                 RefreshAgentScopeMarker();
                 RefreshConnectionScopeHeader();
+                RefreshConnectionScopeSummary();
             }
             // PasswordBox cannot use a two-way x:Bind. Reflect rejected edits back
             // into its editor as well as the view model, without persisting them.

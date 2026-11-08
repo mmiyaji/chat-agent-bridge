@@ -8,6 +8,9 @@ public partial class MainPageViewModel
     public void RefreshLocalizedText()
     {
         _allowedUserTable?.RefreshLocalizedLabels();
+        _mattermostAllowedUsers?.RefreshLocalizedLabels();
+        _slackAllowedUsers?.RefreshLocalizedLabels();
+        _discordAllowedUsers?.RefreshLocalizedLabels();
         OnPropertyChanged(nameof(OnboardingTitle));
         OnPropertyChanged(nameof(OnboardingDescription));
         OnPropertyChanged(nameof(OnboardingNextLabel));

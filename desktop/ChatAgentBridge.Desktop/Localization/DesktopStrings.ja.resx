@@ -931,6 +931,9 @@
   <data name="AgentScopePicker" xml:space="preserve"><value>設定する対象</value></data>
   <data name="AgentScopeCommonHelp" xml:space="preserve"><value>作業フォルダー・信頼するフォルダー・PCでの実行確認は、すべてのエージェントに適用されます。</value></data>
   <data name="ConnectionScopeCommonHelp" xml:space="preserve"><value>承認・結果共有・添付の設定は、Slack、Mattermost、Discordに共通です。</value></data>
+  <data name="ConnectionScopeServicesTitle" xml:space="preserve"><value>チャットサービスの接続状況</value></data>
+  <data name="ConnectionScopeServicesHelp" xml:space="preserve"><value>使うサービスを選び、接続情報を設定してください。状態は保存済みの設定と現在の接続を示します。</value></data>
+  <data name="ConnectionScopeConfigure" xml:space="preserve"><value>設定を開く</value></data>
   <data name="CurrentAgentMarkerTooltip" xml:space="preserve"><value>既定のエージェント: {0}</value></data>
   <data name="CurrentAgentMarkerName" xml:space="preserve"><value>既定のエージェント</value></data>
   <data name="CurrentConnectionMarkerTooltip" xml:space="preserve"><value>接続中: {0}</value></data>
@@ -939,6 +942,7 @@
   <data name="ConnectionStatusConnected" xml:space="preserve"><value>接続中</value></data>
   <data name="ConnectionStatusError" xml:space="preserve"><value>接続エラー</value></data>
   <data name="ConnectionStatusDisconnected" xml:space="preserve"><value>未接続</value></data>
+  <data name="ConnectionStatusNeedsSetup" xml:space="preserve"><value>接続設定が必要</value></data>
   <data name="ConnectionStatusAutoConnect" xml:space="preserve"><value>アプリ起動時に自動接続</value></data>
   <data name="IncomingFilesSummary" xml:space="preserve"><value>受信添付: {0}個（{1}）。依頼の承認後、対応ファイルをAIへ渡します。最大5個、1個10MB、合計20MB。PNG/JPEG/WebP画像、UTF-8のTXT/LOG/MD/CSV/JSONに対応します。一時コピーは実行後に削除するため、後の依頼で必要な場合は再添付してください。添付付きの追加指示は別の実行として順番に処理します。</value></data>
   <data name="IncomingFileNamePending" xml:space="preserve"><value>ファイル名は承認後に確認</value></data>
