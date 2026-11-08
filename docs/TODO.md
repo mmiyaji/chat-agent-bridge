@@ -4,6 +4,7 @@
 
 ## 直近
 
+- [x] チャンネル選択ポップアップの未選択件数誤表示を修正。Mattermostの必須入力をURL → トークン → チャンネル選択の順に揃え、狭い幅では一覧と詳細を縦積みにする。ウィザードも同順にし、最小幅での実画面を確認。ビルド・ローカライズ・Expander検査成功。既存ChannelPicker E2EはUI Automationのナビ要素取得で停止し、シナリオ未実施。
 - [x] チャット接続設定にチャンネル名の検索・選択ポップアップを追加。Mattermostは送信チャンネルを選択、SlackとDiscordは許可チャンネルを複数選択できるようにし、Botから見える候補を取得する。Discordは設定済みの許可サーバーIDが対象。日英UIとREADMEを更新。ローカルMattermost APIを使ったUI E2Eで検索・選択・保存・キャンセルを確認。
 - [x] 1.1.0-preview.5 を公開。初回ウィザードの許可チャンネル選択、許可ユーザー名表示、折りたたみ見出しと接続状況の余白を反映。Core 1,676件・Transports 297件・日英リソース・SettingsExpander・ローカルMattermostチャンネル選択E2E、GitHub CI / リリース用UI Smoke / x64・ARM64 ZIP検査が成功。GitHub Release と preview.json、ホームページを配信。ARM64実機での起動試験は未実施。
 - [x] 1.1.0-preview.4 を公開。チャット設定の接続状況一覧・共通許可ユーザー管理・共通設定とサービス設定の区切り、サイトとREADME等の説明を反映。CI / release-readiness UI Smoke / x64・ARM64ポータブルZIP検査 / 公開検証が成功し、GitHub Releases と preview.json に掲載。ホームページもCloudflare Pagesへ配信済み。ARM64実機での起動試験は未実施。

@@ -89,7 +89,7 @@ internal static class ChatChannelPickerDialog
 
     public static async Task<IReadOnlyList<ChatChannelChoice>?> ShowAsync(XamlRoot root, string provider, string connectionName, IReadOnlyList<ChatChannelChoice> channels, IEnumerable<string> alreadySelected, bool allowMultiple = true)
     {
-        var selected = new HashSet<string>(alreadySelected, StringComparer.Ordinal);
+        var selected = new HashSet<string>(alreadySelected.Where(id => !string.IsNullOrWhiteSpace(id)), StringComparer.Ordinal);
         ChatChannelChoice? activeChannel = null;
         var search = new TextBox { PlaceholderText = DesktopText.Get("ChannelPickerSearch"), Margin = new Thickness(0, 0, 0, 8) };
         AutomationProperties.SetAutomationId(search, "ChannelPickerSearchBox");
@@ -248,16 +248,43 @@ internal static class ChatChannelPickerDialog
         detailContent.Children.Add(detailsId);
         var detailsPane = new ScrollViewer { Content = detailContent, VerticalScrollMode = ScrollMode.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         AutomationProperties.SetAutomationId(detailsPane, "ChannelPickerDetails");
-        var contentWidth = Math.Max(420, Math.Min(780, root.Size.Width - 96));
-        var panes = new Grid { ColumnSpacing = 0, Width = contentWidth, Height = 400 };
-        panes.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.2, GridUnitType.Star) });
-        panes.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0.85, GridUnitType.Star) });
-        panes.Children.Add(leftPane);
-        var divider = new Border { Width = 1, Background = (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"], HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(8, 0, 0, 0) };
-        Grid.SetColumn(divider, 1);
-        panes.Children.Add(divider);
-        Grid.SetColumn(detailsPane, 1);
-        panes.Children.Add(detailsPane);
+        var divider = new Border { Background = (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"] };
+        var narrowLayout = root.Size.Width < 760;
+        var contentWidth = Math.Max(280, Math.Min(780, root.Size.Width - (narrowLayout ? 120 : 96)));
+        var panes = new Grid { ColumnSpacing = 0, Width = contentWidth, Height = narrowLayout ? 390 : 400 };
+        if (narrowLayout)
+        {
+            panes.RowDefinitions.Add(new RowDefinition { Height = new GridLength(230) });
+            panes.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            panes.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            list.MaxHeight = 210;
+            Grid.SetRow(detailsPane, 1);
+            Grid.SetRow(divider, 1);
+            divider.Width = double.NaN;
+            divider.Height = 1;
+            divider.HorizontalAlignment = HorizontalAlignment.Stretch;
+            divider.VerticalAlignment = VerticalAlignment.Top;
+            divider.Margin = new Thickness(0, 0, 0, 8);
+            detailContent.Margin = new Thickness(8, 12, 8, 4);
+            panes.Children.Add(leftPane);
+            panes.Children.Add(divider);
+            panes.Children.Add(detailsPane);
+        }
+        else
+        {
+            panes.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.2, GridUnitType.Star) });
+            panes.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0.85, GridUnitType.Star) });
+            panes.Children.Add(leftPane);
+            var verticalDivider = divider;
+            verticalDivider.Width = 1;
+            verticalDivider.Height = double.NaN;
+            verticalDivider.HorizontalAlignment = HorizontalAlignment.Left;
+            verticalDivider.VerticalAlignment = VerticalAlignment.Stretch;
+            verticalDivider.Margin = new Thickness(8, 0, 0, 0);
+            panes.Children.Add(verticalDivider);
+            Grid.SetColumn(detailsPane, 1);
+            panes.Children.Add(detailsPane);
+        }
 
         var body = new StackPanel { Spacing = 8, Width = contentWidth };
         body.Children.Add(connectionLabel);
@@ -273,7 +300,7 @@ internal static class ChatChannelPickerDialog
             RequestedTheme = App.Appearance.RequestedTheme,
             XamlRoot = root
         };
-        dialog.Resources["ContentDialogMaxWidth"] = Math.Max(460, Math.Min(920, root.Size.Width - 32));
+        dialog.Resources["ContentDialogMaxWidth"] = Math.Max(320, Math.Min(920, root.Size.Width - 32));
         Refresh();
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return null;
         return channels.Where(c => selected.Contains(c.Id)).ToArray();

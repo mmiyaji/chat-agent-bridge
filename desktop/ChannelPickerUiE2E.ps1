@@ -10,6 +10,13 @@ $exe = Join-Path $appRoot 'ChatAgentBridge.Desktop.exe'
 if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Desktop executable was not found: $exe" }
 
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+Add-Type @'
+using System; using System.Runtime.InteropServices;
+public static class ChannelPickerWindowSizing {
+    [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
+}
+'@
 $script:root = Join-Path $artifactRoot ([guid]::NewGuid().ToString('D'))
 $script:data = Join-Path $script:root 'data'
 $script:app = $null
@@ -84,7 +91,7 @@ try {
     Save-Json (Join-Path $script:data 'settings.json') @{
         SchemaVersion = 1; WorkspaceRoot = $workspace; TrustedWorkspaceRoots = $workspace
         AgentProvider = 'codex'; AgentMode = 'exec'; AgentExecutable = 'codex'; AgentArguments = 'exec --json -'
-        MattermostServerUrl = $endpoint; MattermostChannelId = 'channel-general-fixture'; MattermostToken = $protected
+        MattermostServerUrl = $endpoint; MattermostChannelId = ''; MattermostToken = $protected
         MattermostBypassProxy = $true; AutoConnectProvider = 'none'; ChatApprovalMode = 'auto'; ChatResultMode = 'manual'
     }
     Save-Json (Join-Path $script:data 'onboarding.json') @{ SchemaVersion = 3; Step = 4; Status = 'completed' }
@@ -109,14 +116,20 @@ try {
         Start-Sleep -Milliseconds 150
     } while ([DateTime]::UtcNow -lt $deadline)
     Assert ($null -ne $script:window) 'No accessible app window appeared.'
+    $scale = [ChannelPickerWindowSizing]::GetDpiForWindow($script:app.MainWindowHandle) / 96.0
+    Assert ([ChannelPickerWindowSizing]::SetWindowPos($script:app.MainWindowHandle, [IntPtr]::Zero, 40, 40, [int](500*$scale), [int](700*$scale), 0x0010)) 'Could not resize the app to its minimum width.'
+    Start-Sleep -Milliseconds 250
 
     Invoke-Element (Wait-Element 'NavConnections') 'open chat connection settings'
-    Invoke-Element (Wait-Element 'ConnectionScopeMattermost') 'select Mattermost settings'
+    Invoke-Element (Wait-Element 'ConnectionScopeConfigure_mattermost') 'open Mattermost settings'
     Invoke-Element (Wait-Element 'SearchMattermostChannelsButton') 'open channel picker'
     Wait-Element 'ChannelPickerSearchBox' | Out-Null
     Wait-Element 'ChannelPickerOption_channel-cab-release' | Out-Null
     Wait-Element 'ChannelPickerOption_channel-cab-ops' | Out-Null
-    Add-Pass 'Picker loads channel names and team context from the local Mattermost fixture'
+    $selectedCount = Wait-Element 'ChannelPickerSelectedCount'
+    Wait-For { $selectedCount.Current.Name -eq '0 selected' } 'zero selection count for an unset Mattermost channel'
+    Assert ($selectedCount.Current.Name -eq '0 selected') 'An unset channel must not be counted as selected.'
+    Add-Pass 'At minimum width, the picker loads channels and shows zero selected before the user chooses one'
 
     Set-Value 'ChannelPickerSearchBox' 'cab-release'
     Wait-Element 'ChannelPickerOption_channel-cab-release' | Out-Null
