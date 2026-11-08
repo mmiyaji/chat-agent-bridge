@@ -63,3 +63,9 @@ html.en-pending body{visibility:hidden}
 
 /* Keep horizontal navigation clear of the language and theme controls. */
 @media (max-width:860px){aside{padding-top:52px}}
+
+/* Readable notice and vertically listed setup references. */
+.infobar{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start;margin:16px 0 10px;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:6px;background:color-mix(in srgb,var(--accent) 8%,var(--card));color:var(--fg)}.infobar>div{min-width:0}.infobar strong{font-size:14px}.infobar p{margin:2px 0 0;color:var(--fg);font-size:13px}.infobar-icon{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-weight:700;font-size:13px;line-height:1}
+.link-list{list-style:none;margin:0;padding:0}.link-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0;border-top:1px solid var(--line)}.link-list li:first-child{border-top:0}.link-list small{color:var(--muted)}.link-list a{font-size:13px;white-space:nowrap}.cli-card h3{margin:16px 0 4px}.cli-card h3:first-of-type{margin-top:10px}.cli-card>p:last-child{margin:16px 0 0;color:var(--muted)}
+.glightbox-clean .gslide-description{background:var(--card)!important;color:var(--fg)!important}.glightbox-clean .gslide-title,.glightbox-clean .gslide-desc{color:var(--fg)!important}
+@media(max-width:600px){.link-list li{align-items:flex-start;flex-direction:column;gap:2px}}
