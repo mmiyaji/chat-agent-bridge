@@ -37,6 +37,7 @@ window.CAB_EN = {
  "f4.d": "Shows saved conversations, run and action records, a daily usage calendar, and token and cache charts. Estimated cost is a reference based on published prices. Request and result text are not stored.",
  "f5.t": "Runs in the background",
  "f5.d": "Start at Windows sign-in, connect automatically, and stay in the system tray. The portable version checks for updates in the app, and downloads can be paused and resumed.",
+ "h.cli": "Supported CLIs",
  "h.start": "Getting started",
  "r1.k": "OS",
  "r1.v": "Windows 10 (version 1809 or later) or Windows 11",
