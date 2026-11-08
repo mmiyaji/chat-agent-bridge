@@ -134,9 +134,9 @@ try {
  Assert ($null -eq (Find-Element $script:window 'MattermostUsernameLookupInput')) 'Service settings should route allowed-user search through Common settings.'
  Invoke-Element (Wait-Element 'MattermostOpenAllowedUsers') 'open shared allowed-user management'
  Wait-For { ((Wait-Element 'ConnectionScopeCommon').GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern)).Current.IsSelected } 'shared allowed-user list selected'
- $first=(Wait-Element 'ConnectionScopeSlack').Current.BoundingRectangle
- $next=(Wait-Element 'ConnectionScopeMattermost').Current.BoundingRectangle
- Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Chat service list must start with services at the default 1160 x 800 size.'
+ $first=(Wait-Element 'ConnectionScopeCommon').Current.BoundingRectangle
+ $next=(Wait-Element 'ConnectionScopeSlack').Current.BoundingRectangle
+ Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Common settings must appear above the service list at the default 1160 x 800 size.'
  Capture "chat-default-sidebar-$Language-$Theme"
  Add-Pass 'Both settings pages show side lists at the actual default window size'
  Resize-Test 1440
@@ -222,9 +222,9 @@ try {
  Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Agent scopes should remain in a side list at the relaxed width.'
  Capture "agent-relaxed-sidebar-$Language-$Theme"
  Select-Element 'NavConnections'
- $first=(Wait-Element 'ConnectionScopeSlack').Current.BoundingRectangle
+ $first=(Wait-Element 'ConnectionScopeCommon').Current.BoundingRectangle
  $next=(Wait-Element 'ConnectionScopeMattermost').Current.BoundingRectangle
- Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Chat service scopes should remain in a side list at the relaxed width.'
+ Assert ([Math]::Abs($first.Left-$next.Left) -lt 2 -and $next.Top -gt $first.Top) 'Common settings must remain above service scopes at the relaxed width.'
  Capture "chat-relaxed-sidebar-$Language-$Theme"
  Add-Pass 'Both settings pages retain the side list in a narrower window'
  Select-Element 'NavAgentSettings'
@@ -252,7 +252,7 @@ try {
  Invoke-Element (Wait-Element 'NavConnections') 'open chat settings at minimum width'
  Top
  Capture "connection-narrow-$Language-$Theme"
- foreach($id in @('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeDiscord','ConnectionScopeCommon')){
+ foreach($id in @('ConnectionScopeCommon','ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeDiscord')){
    Choose-CompactScope 'ConnectionScopeList' $id
  }
  Assert ((Results).connections -eq 1 -and (Results).totalConnections -eq 1) 'Compact scope browsing reconnected chat.'
@@ -405,7 +405,7 @@ try {
     Start-Sleep -Milliseconds 120
     Top
     $scopeNav=if($page -eq 'agent'){'AgentScopeList'}else{'ConnectionScopeList'}
-    $choices=if($page -eq 'agent'){@('AgentScopeCodex','AgentScopeClaude','AgentScopeGemini','AgentScopeCopilot','AgentScopeAntigravity','AgentScopeCustom','AgentScopeCommon')}else{@('ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeDiscord','ConnectionScopeCommon')}
+    $choices=if($page -eq 'agent'){@('AgentScopeCodex','AgentScopeClaude','AgentScopeGemini','AgentScopeCopilot','AgentScopeAntigravity','AgentScopeCustom','AgentScopeCommon')}else{@('ConnectionScopeCommon','ConnectionScopeMattermost','ConnectionScopeSlack','ConnectionScopeDiscord')}
     $choices=@($choices|Sort-Object {$random.Next()})
     foreach($id in $choices){
      if($script:app.HasExited){throw "App exited during stress cycle $cycle / $id"}

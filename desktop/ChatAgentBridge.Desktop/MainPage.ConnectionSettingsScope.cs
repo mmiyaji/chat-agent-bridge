@@ -131,10 +131,13 @@ public sealed partial class MainPage
         AutomationProperties.SetAutomationId(_connectionScopeNavigation, "ConnectionScopeList");
         _connectionScopeNavigation.RegisterPropertyChangedCallback(NavigationView.OpenPaneLengthProperty, (_, _) => RefreshConnectionScopeMarker());
         AutomationProperties.SetName(_connectionScopeNavigation, DesktopText.Get("AgentScopePicker"));
+        AddConnectionScopeItem(_connectionScopeNavigation, "common", DesktopText.Get("AgentScopeCommon"), "ConnectionScopeCommon");
+        var serviceSeparator = new NavigationViewItemSeparator();
+        AutomationProperties.SetAutomationId(serviceSeparator, "ConnectionScopeServiceSeparator");
+        _connectionScopeNavigation.MenuItems.Add(serviceSeparator);
         AddConnectionScopeItem(_connectionScopeNavigation, "slack", MrtText.Get("SlackSectionTitle.Text"), "ConnectionScopeSlack");
         AddConnectionScopeItem(_connectionScopeNavigation, "mattermost", MrtText.Get("MattermostSectionTitle.Text"), "ConnectionScopeMattermost");
         AddConnectionScopeItem(_connectionScopeNavigation, "discord", MrtText.Get("DiscordSectionTitle.Text"), "ConnectionScopeDiscord");
-        AddConnectionScopeItem(_connectionScopeNavigation, "common", DesktopText.Get("AgentScopeCommon"), "ConnectionScopeCommon");
         _connectionScopeNavigation.SelectionChanged += (_, args) =>
         {
             if (_syncingConnectionScopeSelection || args.SelectedItemContainer is not NavigationViewItem item) return;
@@ -292,8 +295,9 @@ public sealed partial class MainPage
         _syncingConnectionScopeSelection = true;
         if (_connectionScopeNavigation is not null)
         {
-            var index = _connectionSettingsScope switch { "slack" => 0, "mattermost" => 1, "discord" => 2, _ => 3 };
-            _connectionScopeNavigation.SelectedItem = _connectionScopeNavigation.MenuItems[index];
+            _connectionScopeNavigation.SelectedItem = _connectionScopeNavigation.MenuItems
+                .OfType<NavigationViewItem>()
+                .FirstOrDefault(item => item.Tag as string == _connectionSettingsScope);
         }
         _syncingConnectionScopeSelection = false;
         UpdateScopeBreadcrumb(_connectionScopeBreadcrumb, "connections", _connectionScopeNavigation, isCommon);
@@ -303,21 +307,20 @@ public sealed partial class MainPage
     private void RefreshConnectionScopeLabels(System.Globalization.CultureInfo culture)
     {
         if (_connectionScopeNavigation is null) return;
-        string[] iconKeys = ["slack", "mattermost", "discord", "common"];
-        var labels = new[]
+        var items = new[]
         {
-            MrtText.Get("SlackSectionTitle.Text", culture),
-            MrtText.Get("MattermostSectionTitle.Text", culture),
-            MrtText.Get("DiscordSectionTitle.Text", culture),
-            DesktopText.Get("AgentScopeCommon")
+            (Key: "common", Label: DesktopText.Get("AgentScopeCommon")),
+            (Key: "slack", Label: MrtText.Get("SlackSectionTitle.Text", culture)),
+            (Key: "mattermost", Label: MrtText.Get("MattermostSectionTitle.Text", culture)),
+            (Key: "discord", Label: MrtText.Get("DiscordSectionTitle.Text", culture))
         };
-        for (var index = 0; index < labels.Length; index++)
+        foreach (var (key, label) in items)
         {
-            if (_connectionScopeNavigation.MenuItems[index] is NavigationViewItem navigationItem)
-            {
-                navigationItem.Content = ScopeNavigationLabel(iconKeys[index], labels[index]);
-                AutomationProperties.SetName(navigationItem, labels[index]);
-            }
+            var navigationItem = _connectionScopeNavigation.MenuItems.OfType<NavigationViewItem>()
+                .FirstOrDefault(item => item.Tag as string == key);
+            if (navigationItem is null) continue;
+            navigationItem.Content = ScopeNavigationLabel(key, label);
+            AutomationProperties.SetName(navigationItem, label);
         }
         AutomationProperties.SetName(_connectionScopeNavigation, DesktopText.Get("AgentScopePicker"));
         if (_connectionScopeDescription is not null) _connectionScopeDescription.Text = DesktopText.Get("ConnectionScopeCommonHelp");
