@@ -5,7 +5,8 @@
 - 製品名：Chat Agent Bridge
 - Store ID：`9N1LZK25FSGR`
 - 申請：Submission 1
-- パッケージ：`mmiyaji.ChatAgentBridge` / `1.0.0.0` / x64・ARM64
+- 初回提出パッケージ：`mmiyaji.ChatAgentBridge` / `1.0.0.0` / x64・ARM64
+- 更新準備：`1.1.0.0` のx64・ARM64 `.msixupload` をローカルで作成・検証済み。Partner Centerへの登録・提出は未実施。
 - [Partner Centerの製品概要](https://partner.microsoft.com/ja-jp/dashboard/products/9N1LZK25FSGR/overview)
 
 ## 保存・確認できた項目
@@ -16,7 +17,7 @@
 - Windowsユーザー単位で暗号化された設定を含むため、OneDriveへの自動バックアップの宣言はオフ。
 - Store掲載情報：日本語・英語。各言語の説明、短い説明、主要機能4件、実機スクリーンショット4枚、開発元・権利表記を保存。「完了」を確認。
 - Mattermost と Slack の実行中・完了画面をまとめた日英の合成画像を `docs/assets/store-screenshots/{ja,en}/chat-service-flow.png` に追加。2560×1440 PNGでサイズ要件を満たす。実画面はすべて表示されるよう再確認済み。Partner Centerには未アップロード。
-- Partner Centerには2026-10-24撮影の旧画像を保存。ローカルのREADME・ホームページ・ストア用画像は2026-11-08に現行UIで更新済み（`docs/assets/store-screenshots/{ja,en}/`）。Partner Centerの下書きは再アップロードするまで旧画像のまま。ストア版は停止中のためアップロードしていない。履歴・統計には説明用サンプルデータの注記を付与。
+- Partner Centerには2026-10-24撮影の旧画像を保存。ローカルのREADME・ホームページ・ストア用画像は2026-11-08に現行UIで更新し、1.1.0で変わったMattermost設定画面の日英画像も11-09撮影の実画面に更新（`docs/assets/store-screenshots/{ja,en}/`）。新画像は隔離したデモプロファイルの架空トークン（マスク表示）とローカルテスト接続先を使う。Partner Centerの下書きは再アップロードするまで旧画像のまま。スクリーンショットは寸法・形式・容量を検査済みで、掲載内容の目視確認は提出前に行う。
 - 既存の「システム構成と依頼の流れ」図を、スマートフォン／ブラウザーからのBotメンション、Bot専用アカウントの推奨、CLIの別途インストールが分かるよう日英で更新（[編集元SVGとプレビュー](assets/overview/README.md)）。初回起動時のウィザードとREADMEで使用。Partner Centerには未アップロード。
 - パッケージ：x64・ARM64をアップロードし、両方の `Validated` とパッケージ項目の「完了」を確認。
 - 対象デバイスはWindowsデスクトップのみ。将来のデバイスファミリーへの自動提供はオフ。
@@ -44,7 +45,7 @@ The publisher does not permit using this app to publish nudity or gratuitous gra
 
 The product is an unofficial alternative for environments where the AI provider's official remote-control feature cannot be used. AI subscriptions and service charges are separate. The app does not require a Chat Agent Bridge account. Contact mail@ruhenheim.org if additional test access is required. Existing users' bot tokens and AI logins are not supplied.
 
-## 次回リリース用Store掲載説明案（未登録）
+## 1.1.0用Store掲載説明案（Partner Center未登録）
 
 ### 日本語
 

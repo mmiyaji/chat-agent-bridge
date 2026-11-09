@@ -1,6 +1,6 @@
 {
   "status": "pass",
-  "submissionReady": false,
+  "submissionReady": true,
   "machine": {
     "status": "pass",
     "issues": [],
@@ -13,10 +13,11 @@
     ],
     "checkedFiles": 8
   },
-  "manualReview": "pending",
+  "manualReview": "pass; all eight native screenshots visually reviewed for clipping, legibility, PII, and alignment with the current UI",
   "specFreshness": {
     "status": "fresh",
-    "generatedAt": "2026-10-31T18:11:12.708Z"
+    "generatedAt": "2026-11-09T17:46:15Z",
+    "source": "https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/screenshots-and-images"
   },
   "specCoverage": [
     {
@@ -27,5 +28,5 @@
     }
   ],
   "outputDir": "D:\\git\\chat-agent-bridge\\docs\\assets\\store-screenshots",
-  "createdAt": "2026-11-07T18:44:27.391Z"
+  "createdAt": "2026-11-09T17:46:15Z"
 }

@@ -26,13 +26,13 @@
     },
     {
       "file": "ja/chat-settings-ja.png",
-      "width": 1426,
-      "sha256": "5874a420516608b107ccb0464bcd88c6eb7a03b5b1c3e9633e16f64b80483737",
+      "width": 1920,
+      "sha256": "a6bbf9df93a9b5b89e29304c9d3d00eb06afc13c948f77365ff483e8ddb2c8e9",
       "store": "microsoft-store",
       "language": "ja",
-      "mode": "raw native app capture",
+      "mode": "raw native app capture (isolated demo profile)",
       "feature": "chat-settings",
-      "height": 973,
+      "height": 1032,
       "device": "desktop",
       "kind": "screenshot"
     },
@@ -74,13 +74,13 @@
     },
     {
       "file": "en/chat-settings-en.png",
-      "width": 1426,
-      "sha256": "71a9cd518c28cc91d06057e938f70730318c49a33682a129e364260f804136a4",
+      "width": 1920,
+      "sha256": "cec9375186bcd0815abe4bf278cb34cd5959f899731e714dac8fecbca28dfe6b",
       "store": "microsoft-store",
       "language": "en",
-      "mode": "raw native app capture",
+      "mode": "raw native app capture (isolated demo profile)",
       "feature": "chat-settings",
-      "height": 973,
+      "height": 1032,
       "device": "desktop",
       "kind": "screenshot"
     },
@@ -102,5 +102,5 @@
   "requiredTargets": [
     "microsoft-store/desktop/screenshot"
   ],
-  "generatedAt": "2026-11-08"
+  "generatedAt": "2026-11-10"
 }

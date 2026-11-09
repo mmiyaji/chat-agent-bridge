@@ -29,9 +29,13 @@ the Partner Center draft still contains an earlier image set.
 The Store screenshot assets are in `../store-screenshots/{ja,en}/`. Each
 language has four unannotated native app captures and one chat-flow composite.
 The Store listing is paused; these files have not been uploaded to Partner
-Center. Storeframe checked the eight native captures against the cached MSIX
-desktop target, with no machine-check issues. Both composites were separately
-checked for PNG format, 2560 × 1440 dimensions, and file size under 50 MB.
+Center. The Japanese and English Store chat-settings captures were refreshed
+from the current 1.1.0 app on 2026-11-09, using an isolated demo profile. They
+show the Mattermost connection, allowed requester, and default-on individual
+DM setting; the token is a fake test value and is masked. The other six native
+captures remain the 2026-11-08 set. All eight native captures passed PNG, size, dimensions, and SHA-256 checks. Their content was visually reviewed. Microsoft’s current MSIX desktop screenshot requirements were rechecked on 2026-11-10.
+Both composites were separately checked for PNG format, 2560 × 1440 dimensions,
+and file size under 50 MB. Partner Center still needs the replacement images.
 Microsoft lists a minimum of 1366 × 768 pixels and a 50 MB maximum per
 screenshot. See the current [Microsoft screenshot
 requirements](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/screenshots-and-images).
