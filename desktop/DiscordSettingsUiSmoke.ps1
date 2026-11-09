@@ -149,7 +149,7 @@ function Start-IsolatedApp {
         MattermostServerUrl = ''; MattermostChannelId = ''; MattermostToken = ''; MattermostAllowedUserIds = ''; MattermostAllowedThreadIds = ''
         SlackBotToken = ''; SlackAppToken = ''; SlackAllowedUserIds = ''; SlackAllowedChannelIds = ''; SlackAllowedThreadIds = ''
         DiscordBotToken = $protectedToken; DiscordAllowedUserIds = '100000000000000001'; DiscordAllowedGuildIds = '200000000000000002'
-        DiscordAllowedChannelIds = ''; DiscordAllowedThreadIds = ''; DiscordAllowDirectMessages = $false
+        DiscordAllowedChannelIds = ''; DiscordAllowedThreadIds = ''; DiscordAllowDirectMessages = $true
         AutoConnectProvider = 'none'; PostConnectionNotice = $false; ShareApprovalsInChat = $false; ShareAgentQuestionsInChat = $false
         ChatApprovalMode = 'auto'; ChatResultMode = 'auto'; ChatFollowUpMode = 'queue'; TrustedWorkspaceRoots = $workspace
         AllowAgentNetwork = $false; FileAttachmentApprovalMode = 'always'; FileAttachmentMaxSizeMb = 10
@@ -195,7 +195,7 @@ try {
     $list = Wait-Element 'ConnectionScopeList'
     Assert ($null -ne (Find-Element $list 'ConnectionScopeDiscord')) 'Discord scope is missing from settings navigation.'
     Invoke-Element (Wait-Element 'ConnectionScopeDiscord') 'open Discord settings'
-    Assert (-not (Checked 'DiscordAllowDirectMessages')) 'Direct messages must default off.'
+    Assert (Checked 'DiscordAllowDirectMessages') 'Direct messages must default on.'
     $commonRect = (Wait-Element 'ConnectionScopeCommon').Current.BoundingRectangle
     $discordRect = (Wait-Element 'ConnectionScopeDiscord').Current.BoundingRectangle
     Write-Output "LAYOUT common=($($commonRect.Left),$($commonRect.Top),$($commonRect.Width),$($commonRect.Height)) discord=($($discordRect.Left),$($discordRect.Top),$($discordRect.Width),$($discordRect.Height))"
@@ -212,39 +212,34 @@ try {
     Choose-CompactScope 'ConnectionScopeDiscord'
     $settingsPath = Join-Path $script:data 'settings.json'
     $initial = Get-FileHash -LiteralPath $settingsPath
-    (Wait-Element 'DiscordAllowedUsersBulkEdit').GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
-
-    Value 'DiscordAllowedUserIds' '100000000000000001, 100000000000000003'
     Value 'DiscordAllowedGuildIds' '200000000000000004'
-    Set-Checked 'DiscordAllowDirectMessages' $true
+    Set-Checked 'DiscordAllowDirectMessages' $false
     (Wait-Element 'ConnectionScopeDiscord').SetFocus()
     $confirmation = Wait-ProcessElement 'SensitiveSettingsConfirmation'
     Invoke-Element (Find-Element $confirmation 'CloseButton') 'cancel sensitive Discord settings change'
     Start-Sleep -Milliseconds 500
     Assert ((Get-FileHash -LiteralPath $settingsPath).Hash -eq $initial.Hash) 'Cancelling changed the saved settings file.'
-    Assert (-not (Checked 'DiscordAllowDirectMessages')) 'Cancelling did not restore the DM toggle.'
-    Assert (((Wait-Element 'DiscordAllowedUserIds').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).Current.Value -eq '100000000000000001') 'Cancelling did not restore allowed users.'
+    Assert (Checked 'DiscordAllowDirectMessages') 'Cancelling did not restore the DM setting.'
     Assert (((Wait-Element 'DiscordAllowedGuildIds').GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern)).Current.Value -eq '200000000000000002') 'Cancelling did not restore allowed guilds.'
-    Add-Pass 'Cancel rolls back Discord DM and guild/user allowlist edits without changing persisted settings'
+    Add-Pass 'Cancel rolls back Discord DM and guild edits without changing persisted settings'
 
-    Value 'DiscordAllowedUserIds' '100000000000000001, 100000000000000003'
     Value 'DiscordAllowedGuildIds' '200000000000000004'
-    Set-Checked 'DiscordAllowDirectMessages' $true
+    Set-Checked 'DiscordAllowDirectMessages' $false
     (Wait-Element 'ConnectionScopeDiscord').SetFocus()
     $confirmation = Wait-ProcessElement 'SensitiveSettingsConfirmation'
     Invoke-Element (Find-Element $confirmation 'PrimaryButton') 'confirm Discord settings change'
     $deadline = [DateTime]::UtcNow.AddSeconds(15)
     do {
         $saved = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
-        if ($saved.DiscordAllowDirectMessages -eq $true -and $saved.DiscordAllowedGuildIds -eq '200000000000000004') { break }
+        if ($saved.DiscordAllowDirectMessages -eq $false -and $saved.DiscordAllowedGuildIds -eq '200000000000000004') { break }
         Start-Sleep -Milliseconds 150
     } while ([DateTime]::UtcNow -lt $deadline)
-    Assert ($saved.DiscordAllowDirectMessages -eq $true) 'Confirmed DM setting was not persisted.'
-    Assert ($saved.DiscordAllowedUserIds -eq '100000000000000001,100000000000000003') 'Confirmed user IDs were not normalized and persisted.'
+    Assert ($saved.DiscordAllowDirectMessages -eq $false) 'Confirmed DM setting was not persisted.'
+    Assert ($saved.DiscordAllowedUserIds -eq '100000000000000001') 'Changing the DM setting changed the allowed-user list.'
     Assert ($saved.DiscordAllowedGuildIds -eq '200000000000000004') 'Confirmed guild ID was not persisted.'
     Assert ($saved.DiscordBotToken -notmatch 'isolated-discord-settings-token') 'Bot token was written in plaintext.'
     Assert ($saved.AutoConnectProvider -eq 'none') 'The settings smoke test changed the provider connection setting.'
-    Add-Pass 'Confirm persists normalized Discord IDs and DM permission while keeping the token encrypted and auto-connect disabled'
+    Add-Pass 'Confirm persists the DM setting while keeping the allowed-user list, token encryption, and auto-connect unchanged'
     Write-Output (ConvertTo-Json -InputObject @($script:results) -Compress)
 }
 catch {

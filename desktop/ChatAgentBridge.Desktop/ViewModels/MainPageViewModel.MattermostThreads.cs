@@ -46,8 +46,15 @@ public partial class MainPageViewModel
         !string.IsNullOrWhiteSpace(MattermostThreadLookupInput);
     public bool CanAddMattermostThreadLookupResult => HasMattermostThreadLookupResult &&
         !IsResolvingMattermostThread && !_closing && ThreadLookupInputsMatch();
+    public bool HasMattermostChannelConfiguration => !string.IsNullOrWhiteSpace(MattermostChannelId) ||
+        !string.IsNullOrWhiteSpace(MattermostAllowedThreadIds);
 
-    partial void OnMattermostChannelIdChanged(string value) => InvalidateMattermostThreadLookup();
+    partial void OnMattermostChannelIdChanged(string value)
+    {
+        InvalidateMattermostThreadLookup();
+        OnPropertyChanged(nameof(HasMattermostChannelConfiguration));
+    }
+    partial void OnMattermostAllowedThreadIdsChanged(string value) => OnPropertyChanged(nameof(HasMattermostChannelConfiguration));
     partial void OnMattermostThreadLookupInputChanged(string value) => InvalidateMattermostThreadLookup();
 
     [RelayCommand(CanExecute = nameof(CanResolveMattermostThread))]

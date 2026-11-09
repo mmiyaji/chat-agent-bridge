@@ -56,7 +56,7 @@ public partial class MainPageViewModel
             !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && _savedWorkspaceExists;
         var mattermostReady = _settings is not null &&
             !string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) &&
-            !string.IsNullOrWhiteSpace(_settings.MattermostChannelId) &&
+            (!string.IsNullOrWhiteSpace(_settings.MattermostChannelId) || _settings.MattermostAllowDirectMessages) &&
             !string.IsNullOrWhiteSpace(_settings.MattermostToken) && AllowedUsersValid(_settings.MattermostAllowedUserIds);
         var slackReady = _settings is not null &&
             !string.IsNullOrWhiteSpace(_settings.SlackBotToken) &&

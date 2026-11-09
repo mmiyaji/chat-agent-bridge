@@ -16,8 +16,10 @@ public sealed record SettingsBackup
     public string Workspace { get; init; } = "";
     public string MattermostServer { get; init; } = "";
     public string MattermostChannel { get; init; } = "";
+    public bool MattermostAllowDirectMessages { get; init; } = true;
     public bool MattermostBypassProxy { get; init; }
     public string SlackChannel { get; init; } = "";
+    public bool SlackAllowDirectMessages { get; init; } = true;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -35,8 +37,10 @@ public sealed record SettingsBackup
         Workspace = settings.WorkspaceRoot,
         MattermostServer = SafeServer(settings.MattermostServerUrl),
         MattermostChannel = settings.MattermostChannelId,
+        MattermostAllowDirectMessages = settings.MattermostAllowDirectMessages,
         MattermostBypassProxy = settings.MattermostBypassProxy,
-        SlackChannel = settings.SlackAllowedChannelIds
+        SlackChannel = settings.SlackAllowedChannelIds,
+        SlackAllowDirectMessages = settings.SlackAllowDirectMessages
     };
 
     public byte[] Serialize()
@@ -84,8 +88,10 @@ public sealed record SettingsBackup
             TrustedWorkspaceRoots = trustWorkspace ? Workspace : "",
             MattermostServerUrl = SafeServer(MattermostServer),
             MattermostChannelId = MattermostChannel,
+            MattermostAllowDirectMessages = MattermostAllowDirectMessages,
             MattermostBypassProxy = MattermostBypassProxy,
             SlackAllowedChannelIds = SlackChannel,
+            SlackAllowDirectMessages = SlackAllowDirectMessages,
             AutoConnectProvider = "none",
             RequireApproval = true,
             ChatApprovalMode = "always",

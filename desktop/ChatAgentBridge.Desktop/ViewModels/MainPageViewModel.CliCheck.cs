@@ -15,9 +15,9 @@ public partial class MainPageViewModel
     private long _cliCheckGeneration;
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(CheckCliCommand)), NotifyCanExecuteChangedFor(nameof(CancelCliCheckCommand))]
     public partial bool IsCheckingCli { get; set; }
-    [ObservableProperty] public partial bool CliCheckSucceeded { get; set; }
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowCliCheckSummary))] public partial bool CliCheckSucceeded { get; set; }
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowCliCheckSummary))] public partial bool CliCheckFailed { get; set; }
-    public bool ShowCliCheckSummary => !CliCheckFailed;
+    public bool ShowCliCheckSummary => !CliCheckFailed && !CliCheckSucceeded;
     [ObservableProperty] public partial string CliVersion { get; set; } = ViewModelText.Get("NotChecked");
     [ObservableProperty] public partial string CliExecutablePath { get; set; } = "";
     [ObservableProperty] public partial string CliCheckSummary { get; set; } = ViewModelText.Get("CliCheckIntro");

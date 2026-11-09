@@ -281,7 +281,7 @@ public sealed partial class MattermostWebSocketTransport
             original = progress.Request;
             if (!string.Equals(original.Provider, "mattermost", StringComparison.OrdinalIgnoreCase) ||
                 !string.Equals(original.ChannelId, _channelId, StringComparison.Ordinal) ||
-                !string.Equals(original.ChannelId, settings.MattermostChannelId, StringComparison.Ordinal) ||
+                !settings.MattermostAllowDirectMessages && !string.Equals(original.ChannelId, settings.MattermostChannelId, StringComparison.Ordinal) ||
                 !string.Equals(actorId, original.UserId, StringComparison.Ordinal) ||
                 reactionChannel is not null && !string.Equals(reactionChannel, original.ChannelId, StringComparison.Ordinal) ||
                 dataChannel is not null && !string.Equals(dataChannel, original.ChannelId, StringComparison.Ordinal) ||

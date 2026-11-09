@@ -16,8 +16,8 @@ public sealed class SettingsSensitiveChangesTests
         yield return [nameof(BridgeSettings.TrustedWorkspaceRoots), nameof(SettingsSensitiveChanges.TrustedWorkspaces)];
         foreach (var name in new[] { nameof(BridgeSettings.ChatApprovalMode), nameof(BridgeSettings.SlackAllowedChannelIds),
                      nameof(BridgeSettings.SlackAllowedThreadIds), nameof(BridgeSettings.MattermostAllowedThreadIds),
-                     nameof(BridgeSettings.MattermostAllowedUserIds), nameof(BridgeSettings.SlackAllowedUserIds),
-                     nameof(BridgeSettings.DiscordAllowedUserIds), nameof(BridgeSettings.DiscordAllowedGuildIds),
+                     nameof(BridgeSettings.MattermostAllowedUserIds), nameof(BridgeSettings.MattermostAllowDirectMessages), nameof(BridgeSettings.SlackAllowedUserIds),
+                     nameof(BridgeSettings.SlackAllowDirectMessages), nameof(BridgeSettings.DiscordAllowedUserIds), nameof(BridgeSettings.DiscordAllowedGuildIds),
                      nameof(BridgeSettings.DiscordAllowedChannelIds), nameof(BridgeSettings.DiscordAllowedThreadIds),
                      nameof(BridgeSettings.DiscordAllowDirectMessages), nameof(BridgeSettings.AutoApproveSwitchCommands) })
             yield return [name, nameof(SettingsSensitiveChanges.ChatAccess)];

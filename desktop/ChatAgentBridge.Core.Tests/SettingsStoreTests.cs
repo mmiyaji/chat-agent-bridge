@@ -195,7 +195,7 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task DiscordSettingsPersistAndLegacyFilesDefaultDiscordFields()
+    public async Task DiscordSettingsPersistAndLegacyFilesDefaultChatDirectMessagesOn()
     {
         var store = new SettingsStore(_directory);
         var settings = new BridgeSettings
@@ -218,13 +218,15 @@ public sealed class SettingsStoreTests : IDisposable
 
         var path = Path.Combine(_directory, "settings.json");
         var json = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
-        foreach (var name in new[] { "DiscordBotToken", "DiscordAllowedUserIds", "DiscordAllowedGuildIds", "DiscordAllowedChannelIds", "DiscordAllowedThreadIds", "DiscordAllowDirectMessages" })
+        foreach (var name in new[] { "DiscordBotToken", "DiscordAllowedUserIds", "DiscordAllowedGuildIds", "DiscordAllowedChannelIds", "DiscordAllowedThreadIds", "DiscordAllowDirectMessages", "MattermostAllowDirectMessages", "SlackAllowDirectMessages" })
             json.AsObject().Remove(name);
         await File.WriteAllTextAsync(path, json.ToJsonString());
         loaded = await store.LoadAsync();
         Assert.Empty(loaded.DiscordBotToken);
         Assert.Empty(loaded.DiscordAllowedUserIds);
-        Assert.False(loaded.DiscordAllowDirectMessages);
+        Assert.True(loaded.MattermostAllowDirectMessages);
+        Assert.True(loaded.DiscordAllowDirectMessages);
+        Assert.True(loaded.SlackAllowDirectMessages);
     }
 
     [Theory]

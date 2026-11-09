@@ -114,12 +114,20 @@ public partial class MainPageViewModel
         MattermostServerUrl = settings.MattermostServerUrl;
         MattermostBypassProxy = settings.MattermostBypassProxy;
         MattermostChannelId = settings.MattermostChannelId;
+        MattermostAllowDirectMessages = settings.MattermostAllowDirectMessages;
         PostConnectionNotice = settings.PostConnectionNotice;
         MattermostToken = settings.MattermostToken;
         SlackBotToken = settings.SlackBotToken;
         SlackAppToken = settings.SlackAppToken;
+        SlackAllowDirectMessages = settings.SlackAllowDirectMessages;
+        DiscordBotToken = settings.DiscordBotToken;
+        DiscordAllowDirectMessages = settings.DiscordAllowDirectMessages;
         MattermostAllowedUserIds = settings.MattermostAllowedUserIds;
         SlackAllowedUserIds = settings.SlackAllowedUserIds;
+        DiscordAllowedUserIds = settings.DiscordAllowedUserIds;
+        DiscordAllowedGuildIds = settings.DiscordAllowedGuildIds;
+        DiscordAllowedChannelIds = settings.DiscordAllowedChannelIds;
+        DiscordAllowedThreadIds = settings.DiscordAllowedThreadIds;
         ShareApprovalsInChat = settings.ShareApprovalsInChat;
         ShareAgentQuestionsInChat = settings.ShareAgentQuestionsInChat;
         RequireApproval = settings.RequireApproval;
@@ -138,6 +146,7 @@ public partial class MainPageViewModel
         SlackAllowedChannelIds = settings.SlackAllowedChannelIds;
         SlackAllowedThreadIds = settings.SlackAllowedThreadIds;
         MattermostAllowedThreadIds = settings.MattermostAllowedThreadIds;
+        _ = RefreshAllowedUserDetailsAsync();
         InvalidateMattermostUsernameLookup();
         InvalidateMattermostThreadLookup();
     }

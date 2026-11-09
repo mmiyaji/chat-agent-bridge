@@ -36,23 +36,18 @@ public sealed class OnboardingFieldChecksTests
     }
 
     [Fact]
-    public void MattermostChatListsEveryMissingValue()
+    public void MattermostChatRequiresCredentialsButNotAnAdvancedChannelRestriction()
     {
-        Assert.Equal([WizardField.MattermostServerUrl, WizardField.MattermostChannel,
-            WizardField.MattermostToken, WizardField.MattermostAllowedUsers],
-            OnboardingFieldChecks.MattermostChat(false, " ", null, false));
-        Assert.Equal([WizardField.MattermostChannel], OnboardingFieldChecks.MattermostChat(true, "", "t", true));
-        Assert.Empty(OnboardingFieldChecks.MattermostChat(true, "c", "t", true));
+        Assert.Equal([WizardField.MattermostServerUrl, WizardField.MattermostToken, WizardField.MattermostAllowedUsers],
+            OnboardingFieldChecks.MattermostChat(false, null, false));
+        Assert.Empty(OnboardingFieldChecks.MattermostChat(true, "t", true));
     }
 
     [Fact]
-    public void DiscordChatRequiresTokenAndUsersAndGuildOrDirectMessageOptIn()
+    public void DiscordChatRequiresTokenAndUsersButNotAdvancedServerRestrictions()
     {
-        Assert.Equal([WizardField.DiscordBotToken, WizardField.DiscordAllowedUsers, WizardField.DiscordAllowedGuilds],
-            OnboardingFieldChecks.DiscordChat(null, false, false, false));
-        Assert.Equal([WizardField.DiscordAllowedGuilds],
-            OnboardingFieldChecks.DiscordChat("token", true, false, false));
-        Assert.Empty(OnboardingFieldChecks.DiscordChat("token", true, false, true));
-        Assert.Empty(OnboardingFieldChecks.DiscordChat("token", true, true, false));
+        Assert.Equal([WizardField.DiscordBotToken, WizardField.DiscordAllowedUsers],
+            OnboardingFieldChecks.DiscordChat(null, false));
+        Assert.Empty(OnboardingFieldChecks.DiscordChat("token", true));
     }
 }

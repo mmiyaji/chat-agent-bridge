@@ -51,7 +51,7 @@ public sealed partial class KeepAwakeService : ObservableObject, IDisposable
             Error = ex.Message;
             _storageError = Error;
             Status = "error";
-            _preferences = new();
+            _preferences = new() { Mode = KeepAwakeMode.Off };
         }
         if (_closed || token.IsCancellationRequested) return;
         Mode = _preferences.Mode;

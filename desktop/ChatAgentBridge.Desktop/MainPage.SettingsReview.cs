@@ -49,6 +49,7 @@ public sealed partial class MainPage
         Add("SlackUsers", saved.SlackAllowedUserIds, draft.SlackAllowedUserIds);
         Add("SlackChannels", saved.SlackAllowedChannelIds, draft.SlackAllowedChannelIds);
         Add("SlackThreads", saved.SlackAllowedThreadIds, draft.SlackAllowedThreadIds);
+        Add("SlackDirectMessages", saved.SlackAllowDirectMessages, draft.SlackAllowDirectMessages);
         Add("MattermostThreads", saved.MattermostAllowedThreadIds, draft.MattermostAllowedThreadIds);
         Add("DiscordUsers", saved.DiscordAllowedUserIds, draft.DiscordAllowedUserIds);
         Add("DiscordGuilds", saved.DiscordAllowedGuildIds, draft.DiscordAllowedGuildIds);
@@ -73,6 +74,7 @@ public sealed partial class MainPage
         // Server URLs can contain credentials in user-info or query parameters.
         Add("Server", saved.MattermostServerUrl, draft.MattermostServerUrl, hidden: true);
         Add("MattermostChannel", saved.MattermostChannelId, draft.MattermostChannelId);
+        Add("MattermostDirectMessages", saved.MattermostAllowDirectMessages, draft.MattermostAllowDirectMessages);
         Add("Credentials", (saved.MattermostToken, saved.SlackBotToken, saved.SlackAppToken, saved.DiscordBotToken),
             (draft.MattermostToken, draft.SlackBotToken, draft.SlackAppToken, draft.DiscordBotToken), hidden: true);
         return details;

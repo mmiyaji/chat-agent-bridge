@@ -2,6 +2,7 @@
 <root>
   <data name="OverviewCliPreviouslyVerified" xml:space="preserve"><value>前回確認済み</value></data>
   <data name="CliVerificationRestored" xml:space="preserve"><value>{0}のCLI確認結果を引き継ぎました。CLIファイルと設定に変更はありません。ログイン状態やモデルの利用可否は利用時に確認します。モデル一覧を更新するには「CLIをチェック」を押してください。</value></data>
+  <data name="UpdateNoticeTitle" xml:space="preserve"><value>Chat Agent Bridge を更新しました（{0}）</value></data>
   <data name="CliVerificationSaveFailed" xml:space="preserve"><value>確認には成功しましたが、結果を保存できませんでした。再起動後は再確認してください。</value></data>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -751,4 +752,16 @@ AIの操作権限: {8}</value>
   <data name="KimiPermissionHelp" xml:space="preserve"><value>「CLIの既定値を使う」では、承認が必要なツール操作をCABで確認します。「フルアクセス」ではこの確認を省略し、Kimi側の対応が必要です。これらの権限設定は、OSレベルのサンドボックスを提供しません。</value></data>
   <data name="CodexWorkspaceRejected" xml:space="preserve"><value>Codexが作業フォルダー「{0}」を拒否しました。「エージェント設定」→「共通設定」で作業フォルダーを確認し、必要に応じてCLIを更新してください。CABで信頼確認した作業フォルダーはGit管理外でも利用できます。</value></data>
   <data name="ManualWorkspaceSummary" xml:space="preserve"><value>作業フォルダー: {0}</value></data>
+  <data name="MattermostAccountIdentityChecking" xml:space="preserve"><value>トークンのアカウントを確認しています…</value></data>
+  <data name="MattermostAccountIdentityVerified" xml:space="preserve"><value>トークンのアカウントを確認しました。</value></data>
+  <data name="MattermostAccountIdentityBot" xml:space="preserve"><value>Botアカウント</value></data>
+  <data name="MattermostAccountIdentityUser" xml:space="preserve"><value>ユーザーアカウント（専用Botを推奨）</value></data>
+  <data name="MattermostAccountIdentity" xml:space="preserve"><value>{0}（@{1}）— {2}。ユーザーID: {3}</value></data>
+  <data name="MattermostAccountIdentityInvalidUrl" xml:space="preserve"><value>MattermostサーバーのURLを確認してください。</value></data>
+  <data name="MattermostAccountIdentityMissingToken" xml:space="preserve"><value>Mattermostのトークンを入力してください。</value></data>
+  <data name="MattermostAccountIdentityInvalidResponse" xml:space="preserve"><value>サーバーから有効なアカウント情報を取得できませんでした。</value></data>
+  <data name="MattermostAccountIdentityUnauthorized" xml:space="preserve"><value>トークンが拒否されました。有効なトークンか確認してください。</value></data>
+  <data name="MattermostAccountIdentityForbidden" xml:space="preserve"><value>トークンにアカウント情報を読む権限がありません。</value></data>
+  <data name="MattermostAccountIdentityTimeout" xml:space="preserve"><value>アカウント確認がタイムアウトしました。</value></data>
+  <data name="MattermostAccountIdentityNetwork" xml:space="preserve"><value>アカウントを確認できませんでした。サーバーURLとネットワークを確認してください。</value></data>
 </root>

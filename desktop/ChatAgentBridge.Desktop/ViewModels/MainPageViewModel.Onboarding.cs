@@ -75,6 +75,8 @@ public partial class MainPageViewModel
             HasAcceptedTerms = HasAcceptedPrivacy = _hasCurrentConsent;
             OnboardingStep = !_hasCurrentConsent ? 0 : progress?.Step > 1 ? 2 : progress?.Step ?? 0;
             OnboardingChatProvider = PreferredWizardProvider();
+            if (!_hasSavedSettings && AutoConnectProvider == "none")
+                AutoConnectProvider = OnboardingChatProvider;
             await SaveOnboardingProgressAsync("active", OnboardingStep);
             IsOnboardingActive = true;
             IsStatusOpen = false;
@@ -89,8 +91,13 @@ public partial class MainPageViewModel
     private Task StartOnboardingAsync() => RunOnboardingActionAsync(async () =>
     {
         OnboardingChatProvider = PreferredWizardProvider();
-        HasAcceptedTerms = HasAcceptedPrivacy = false;
-        ConsentStatus = ViewModelText.Get("ConsentInstructionsWizard");
+        // Consent belongs to the current policy version, not to a single wizard session.
+        // Reopening the guide should keep accepted checkboxes; a version change makes both false.
+        _hasCurrentConsent = OnboardingConsentStore.IsCurrent(await _onboardingConsentStore.LoadAsync());
+        HasAcceptedTerms = HasAcceptedPrivacy = _hasCurrentConsent;
+        ConsentStatus = _hasCurrentConsent
+            ? ViewModelText.Get("ConsentSaved", OnboardingConsentStore.CurrentPolicyVersion)
+            : ViewModelText.Get("ConsentInstructionsWizard");
         await SaveOnboardingProgressAsync("active", 0);
         OnboardingStep = 0;
         IsOnboardingActive = true;
@@ -210,9 +217,9 @@ public partial class MainPageViewModel
     private IReadOnlyList<WizardField> MissingChatFields() => IsWizardSlack
         ? OnboardingFieldChecks.SlackChat(SlackBotToken, SlackAppToken, AllowedUsersValid(SlackAllowedUserIds))
         : IsWizardMattermost
-            ? OnboardingFieldChecks.MattermostChat(IsWizardMattermostUrlValid(), MattermostChannelId, MattermostToken, AllowedUsersValid(MattermostAllowedUserIds))
+            ? OnboardingFieldChecks.MattermostChat(IsWizardMattermostUrlValid(), MattermostToken, AllowedUsersValid(MattermostAllowedUserIds))
             : IsWizardDiscord
-                ? OnboardingFieldChecks.DiscordChat(DiscordBotToken, DiscordIdsValid(DiscordAllowedUserIds), HasDiscordIds(DiscordAllowedGuildIds), DiscordAllowDirectMessages)
+                ? OnboardingFieldChecks.DiscordChat(DiscordBotToken, DiscordIdsValid(DiscordAllowedUserIds))
                 : [];
     private bool IsWizardMattermostUrlValid() => Uri.TryCreate(MattermostServerUrl.Trim(), UriKind.Absolute, out var uri) &&
         (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback) &&

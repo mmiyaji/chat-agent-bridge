@@ -13,12 +13,10 @@ public enum WizardField
     SlackAppToken,
     SlackAllowedUsers,
     MattermostServerUrl,
-    MattermostChannel,
     MattermostToken,
     MattermostAllowedUsers,
     DiscordBotToken,
     DiscordAllowedUsers,
-    DiscordAllowedGuilds
 }
 
 /// <summary>Lists the missing required inputs of a wizard step, in the order they appear on screen.</summary>
@@ -53,24 +51,20 @@ public static class OnboardingFieldChecks
         return missing;
     }
 
-    public static IReadOnlyList<WizardField> MattermostChat(bool serverUrlValid, string? channelId, string? token,
-        bool allowedUsersValid)
+    public static IReadOnlyList<WizardField> MattermostChat(bool serverUrlValid, string? token, bool allowedUsersValid)
     {
         var missing = new List<WizardField>();
         if (!serverUrlValid) missing.Add(WizardField.MattermostServerUrl);
-        if (string.IsNullOrWhiteSpace(channelId)) missing.Add(WizardField.MattermostChannel);
         if (string.IsNullOrWhiteSpace(token)) missing.Add(WizardField.MattermostToken);
         if (!allowedUsersValid) missing.Add(WizardField.MattermostAllowedUsers);
         return missing;
     }
 
-    public static IReadOnlyList<WizardField> DiscordChat(string? botToken, bool allowedUsersValid, bool hasAllowedGuilds,
-        bool allowDirectMessages)
+    public static IReadOnlyList<WizardField> DiscordChat(string? botToken, bool allowedUsersValid)
     {
         var missing = new List<WizardField>();
         if (string.IsNullOrWhiteSpace(botToken)) missing.Add(WizardField.DiscordBotToken);
         if (!allowedUsersValid) missing.Add(WizardField.DiscordAllowedUsers);
-        if (!hasAllowedGuilds && !allowDirectMessages) missing.Add(WizardField.DiscordAllowedGuilds);
         return missing;
     }
 }

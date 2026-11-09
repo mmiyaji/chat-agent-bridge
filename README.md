@@ -17,8 +17,8 @@ It is intended for devices where you cannot use the Codex or Claude Code desktop
 
 A chat post causes the CLI on your PC to read and write files and run commands. Follow these guidelines:
 
-- **Allow only yourself.** An allowed user can send requests that use your PC, your CLI sign-in and your AI service quota. When someone who is not allowed mentions the bot or uses `!cab`, the PC asks for approval. **Allow and run** adds them to the allowed users; **Run once** and **Deny** are also available. Each decision is recorded in the activity history.
-- **Limit who can send requests.** With the default, “No approval for allowed users,” requests from allowed users run without confirmation on the PC. Requests from anyone else wait until you allow them on the PC. “Confirm the first request in each conversation” and “Ask every time” add approvals on the PC, which makes remote use harder. Keep the allowed-user list restricted to yourself.
+- **Allow only yourself.** An allowed user can send requests that use your PC, your CLI sign-in and your AI service quota. An explicit request from another user can be shown for PC approval when it is in an allowed conversation. **Allow and run** adds them to the allowed users; **Run once** and **Deny** are also available. Each decision is recorded in the activity history.
+- **Limit automatic execution to allowed users.** With the default, “No approval for allowed users,” requests from allowed users run without confirmation on the PC. Unlisted users cannot run work without a PC decision. “Confirm the first request in each conversation” and “Ask every time” add approvals on the PC, which makes remote use harder. Keep the allowed-user list restricted to yourself.
 - **Limit the working folders.** Register only folders the agent may touch as trusted working folders. Avoid your home folder or an entire drive.
 - **Use automatic sharing with care.** Automatic sharing makes results visible to everyone who can read the thread. The defaults are “No approval for allowed users” and automatic result sharing.
 - **Narrow the channels and threads.** If needed, restrict which channels and threads can send requests.
@@ -32,12 +32,14 @@ Required wizard fields are marked with an asterisk (*). These fields are require
 
 ![A requester mentions a dedicated Bot from a phone or browser; Chat Agent Bridge passes the request to a CLI on the local PC and the result returns in the same thread](desktop/ChatAgentBridge.Desktop/Assets/OverviewArchitecture.en.svg)
 
-This diagram appears in the app's first-run wizard and General page. The requester mentions a dedicated Bot from their own chat account using a phone or browser. We recommend using a dedicated Bot account. Bridge checks allowed users and passes the request to a CLI on the PC. Codex CLI and Claude Code CLI are examples; they are not bundled and must be installed and authenticated separately. Other supported CLIs, including Muse Code Preview, use the same arrangement.
+The requester uses their regular chat account. The Bot is a separate service account that Bridge uses to connect to chat and post replies. The AI agent CLI is installed and signed in separately on the PC; its AI-service credentials are also separate from the chat Bot credentials. Codex CLI and Claude Code CLI are examples; they are not bundled. Other supported CLIs, including Muse Code Preview, use the same arrangement.
 
 1. **Post from another device** in Slack, Mattermost or Discord. That device does not need an agent CLI installed.
-2. **Bridge on the Windows PC** receives the post and checks allowed users and conversation approval settings. Requests that need approval wait for a decision.
+2. **Bridge on the Windows PC** receives posts while the app is running and connected. An allowed conversation is a configured DM or channel, optionally limited to selected threads. Requests from allowed users follow the configured approval mode. An explicit request from another user in that scope can be shown for PC approval; choose **Run once**, **Allow and run**, or **Deny**.
 3. **The selected CLI** runs the request in the configured working folder. It connects to AI services according to its own settings and performs file operations or commands.
-4. **Share the result in the original thread.** By default, results are shared automatically; you can also choose to review and share them manually on the PC. Replies from the same user in that thread continue the conversation (see [Chat operations](#chat-operations)).
+4. **Return the result to the original conversation.** Request results can be shared automatically, manually or not at all. Generated-file attachments require PC approval each time by default. Anything sent is visible to people who can access that conversation. The same user can reply in the same thread to continue (see [Chat operations](#chat-operations)).
+
+Closing the app stops receiving and running requests. CAB attempts to reconnect after transient connection failures, but a post sent while disconnected is not guaranteed to be delivered later. Check the connection status and repost any request that did not arrive. Request approval, the CLI's permission to perform individual operations, result sharing and file-attachment approval are separate controls (see [Approvals, access and sharing](#approvals-access-and-sharing)).
 
 If Chat Agent Bridge itself hits an unexpected error while handling a request, the inbox ends the running state and puts a safe diagnostic before the bounded CLI output. A normal failure reported by the CLI remains a CLI failure. The diagnostic omits exception messages, paths, command arguments and request content. Its allowlisted cause, exception type and HRESULT are also saved in the local audit log (`audit-segment-*.jsonl`) for later troubleshooting and follow the app's audit log retention settings.
 
@@ -51,8 +53,10 @@ If the CLI finishes but saving its final history status fails, the app keeps the
 | CPU | x64 / ARM64 (a separate ZIP for each) |
 | Additional installs | None (no administrator rights or separate .NET runtime required) |
 | CLI | Codex, Claude Code, Gemini CLI, GitHub Copilot CLI, Antigravity CLI, Muse Code Preview or another CLI (install and sign in yourself) |
-| Chat | Slack (Socket Mode), Mattermost (bot token), Discord (Gateway) |
+| Chat | Slack (Socket Mode), Mattermost (bot token over REST API and WebSocket), Discord (Gateway) |
 | Network | The PC connects out to the chat service; no public URL or open port is needed |
+
+These are app-to-service connections maintained from the PC. Request start rules and channel or thread behavior differ by provider; see each service's setup guide.
 
 ## Main features
 
@@ -69,7 +73,7 @@ The sidebar shows the connected chat service and its status. Select it to open C
 | Files sent from chat | Pass screenshots and text/log files attached to a request to the local agent after request approval |
 | History and usage | Conversation management, execution and operation history, an activity calendar, and token, cache and estimated-cost charts |
 | Startup and appearance | Setup wizard, startup and auto-connect, system tray mode, English/Japanese and light/dark appearance |
-| Keep awake | Optional Windows system power request during active chat requests, manual work or receiver operation; AC-only by default |
+| Keep awake | Windows system power request during chat requests or manual work by default; enabled only on AC power |
 
 ## Documentation
 
@@ -82,11 +86,10 @@ Install from the [Microsoft Store](https://apps.microsoft.com/detail/9n1lzk25fsg
 1. For a portable installation, download the **x64 / ARM64** ZIP for your PC from [GitHub Releases](https://github.com/mmiyaji/chat-agent-bridge/releases).
 2. Extract the ZIP to a writable folder and run `ChatAgentBridge.Desktop.exe`. Launch the Store edition from the Start menu.
 3. Install the CLI and sign in through it. Select the CLI and working folder in the setup guide, then run the CLI check.
-4. Prepare a bot on the chat service, then configure connection details in **Chat settings**. Enter allowed users there, or leave the list blank, connect, and choose **Allow and run** on the PC for your first request.
+4. Configure the chat service and bot connection in the first-run wizard. Direct messages are enabled by default, so you can start with a dedicated DM with the bot. Add shared channels or channel restrictions later in **Chat settings** if needed. Under **Common settings → Allowed users**, add your own account (at least one user is required to connect). Requests from other users in an allowed conversation can wait for a decision on the PC.
    - Slack: [Slack setup guide](docs/slack-setup.md) (Socket Mode app, events and scopes)
-   - Mattermost: [Mattermost setup guide](docs/mattermost-setup.md) (bot token and conversation channel ID)
+   - Mattermost: [Mattermost setup guide](docs/mattermost-setup.md) (current screenshots show the card layout, individual DMs and shared-channel search)
    - Discord: [Discord setup guide](docs/discord-setup.md) (bot token, allowed server IDs and Message Content Intent)
-   - Use **Find channel** beside the channel ID field to search channels visible to the bot. Slack and Discord selections are added to the allowed-channel list.
 5. Connect from **Chat** and post a request. How to start depends on the service (see [Chat operations](#chat-operations)).
    Connect buttons are enabled only for services with saved connection details. If none are ready, use **Open chat settings** in Chat to finish setup.
 6. By default, requests from allowed users run without approval on the PC, and the result is posted automatically in the same thread. Reply there to continue.
@@ -131,7 +134,7 @@ Manual runs use the working folder selected in Agent settings, regardless of whe
 
 **Chat settings** contains each service's connection details and approval and sharing rules common to all chat services. Manage allowed users in one shared list under Common settings.
 
-- **Request approval** defaults to no approval for allowed users. You can instead require it for the first request in each conversation or every time. This approval starts the request; the CLI's permission to perform individual operations is configured separately.
+- **Request approval** defaults to no approval for allowed users. You can instead require it for the first request in each conversation or every time. This approval starts the request. The CLI's own permissions determine which actions, such as file edits or commands, it can perform and whether it asks for approval on the PC; requester authorization does not change those permissions.
 - Codex App Server approvals show an informational warning for a small set of clearly destructive command patterns. The warning does not change the available approval controls or replace the CLI's permission safeguards.
 - **Access restrictions** specify who and which conversations can send requests. Register folders where requests may start as trusted working folders. Changing the folder from chat requires a location within that scope and approval on the PC.
 - **Result sharing** can be manual, automatic or disabled. New settings default to automatic sharing; updates preserve your saved sharing choice. Sent content is visible to everyone who can access the destination chat or thread.
@@ -173,13 +176,13 @@ Actions are tied to the requester and the conversation (channel, thread and user
 
 | Action | Slack | Mattermost | Discord |
 | --- | --- | --- | --- |
-| Start a request | Mention the bot | Mention the bot, or `!cab <request>` | Mention the bot, or `!cab <request>` |
+| Start a request | Mention the bot, or post in an individual DM (DMs are on by default) | Regular message in an individual DM; mention or `!cab <request>` in a shared channel | Mention the bot, or post in an individual DM (DMs are on by default) |
 | Continue | Reply in the same thread | Reply in the same thread | Reply in the same thread |
 | Check status | `!cab status` | `!cab status` | `!cab status` |
 | Stop | `!cab stop` | `!cab stop`, or the 🛑 reaction on the progress post | `!cab stop`, or the Stop button on the progress post |
 
 - **Continuing**: after the first request, replies in the same thread become follow-up requests. No mention or `!cab` is needed.
-- **After restarting the app**: the Chat conversation list is restored, but requests that were awaiting approval or running appear as interrupted and are never resumed automatically. To continue, start a new request in the same thread (mention in Slack; mention or `!cab` in Mattermost and Discord).
+- **After restarting the app**: the Chat conversation list is restored, but requests that were awaiting approval or running appear as interrupted and are never resumed automatically. To continue, start a new request in the same thread (mention or a regular message in an individual DM for Slack; a regular message in a Mattermost DM; mention, a regular message in an individual DM, or `!cab` for Discord).
 - **Stopping**: only the original requester can use the reaction or button. Stopping does not undo file changes already made.
 - **Approving with reactions (Mattermost)**: when sharing approvals in chat is on, the bot adds ✅ and ❌ to its approval post. Only the requester can use them; the post then shows `→ ✅` or `→ ❌`. Otherwise approve on the PC.
 - **Progress message detail**: Chat settings → "Progress message detail" chooses Minimal (status only), Standard (default; one line that collapses to a summary with operation count and usage when the request ends) or Detailed (agent, model, permission, recent operations and reply hints). In Standard, the permission is shown only when the agent runs without asking, and the reply/stop hints appear once per requester per app session.

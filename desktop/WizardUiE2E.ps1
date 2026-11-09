@@ -260,26 +260,17 @@ try {
     Set-Value 'WizardMattermostServerUrl' $ServerUrl
     $passwordResult = Invoke-UiProcess @('set-value','WizardMattermostToken',$token)
     if ($passwordResult.ExitCode -ne 0) { throw 'winapp could not set the Mattermost PasswordBox value; UIA value support is required for this credential test.' }
-    Invoke-UI @('scroll-into-view','WizardSearchMattermostChannelsButton') | Out-Null
-    Invoke-UI @('invoke','WizardSearchMattermostChannelsButton') | Out-Null
-    Invoke-UI @('wait-for','ChannelPickerSearchBox','-t','10000') | Out-Null
-    Invoke-UI @('wait-for','ChannelPickerOption_wizard-channel','-t','10000') | Out-Null
-    Set-Value 'ChannelPickerSearchBox' 'wizard-demo'
-    Invoke-UI @('wait-for','ChannelPickerOption_wizard-channel','-t','10000') | Out-Null
-    Invoke-UI @('invoke','ChannelPickerOption_wizard-channel') | Out-Null
-    Invoke-UI @('invoke','PrimaryButton') | Out-Null
-    Invoke-UI @('wait-for','ChannelPickerSearchBox','--gone','-t','10000') | Out-Null
-    Assert-That ((Get-Value 'WizardMattermostChannelId') -eq 'wizard-channel') 'Wizard channel picker did not apply the selected channel ID.'
-    Capture '04-mattermost-channel-picker.png'
-    Add-Pass 'Mattermost wizard searches channel names and fills the required channel ID'
-    Invoke-UI @('scroll-into-view','WizardMattermostToken') | Out-Null
+    Invoke-UI @('scroll-into-view','WizardMattermostDirectMessagesGroup') | Out-Null
+    Assert-That ((Get-Property 'WizardMattermostAllowDirectMessages' 'IsChecked') -eq 'True') 'Mattermost direct messages are not enabled by default in the wizard.'
+    Assert-That ((Get-Value 'WizardMattermostChannelId') -eq $null) 'The wizard still exposes the advanced Mattermost channel ID field.'
+    Add-Pass 'Mattermost wizard recommends the default DM flow and leaves channel restrictions to Chat settings'
     # Allowed users are optional: people can also be approved from their first chat request.
     $currentSubstep = 'set allowed user and advance'
     Set-Value 'WizardMattermostAllowedUserIds' 'test-member'
     Invoke-UI @('invoke','OnboardingNext') | Out-Null
     Assert-That (Wait-Progress '5\s*/\s*5') 'Valid Mattermost credentials and allowed user did not advance to safety setup.'
     Capture '05-step-safety.png'
-    Add-Pass 'Slack and Mattermost validation block until required credentials are entered; allowed users are optional'
+    Add-Pass 'Slack and Mattermost validation requires credentials; channel restrictions are deferred'
 
     $currentStep = 'page 5 safety and connection'
     $currentSubstep = 'enable auto-connect and confirm approval and sharing defaults'
@@ -312,9 +303,10 @@ try {
     foreach ($pair in @(
         @('AgentProvider','claude'), @('AgentExecutable',$fixturePath), @('WorkspaceRoot',$workspace),
         @('AgentModel','fixture-claude-large'), @('AgentReasoningEffort','high'),
-        @('MattermostServerUrl',$ServerUrl), @('MattermostChannelId','wizard-channel'),
+        @('MattermostServerUrl',$ServerUrl),
         @('MattermostAllowedUserIds','test-member'), @('AutoConnectProvider','mattermost'), @('ChatApprovalMode','auto')
     )) { Assert-That ([string]$saved.($pair[0]) -eq [string]$pair[1]) "Saved settings field $($pair[0]) did not match expected value." }
+    Assert-That ([bool]$saved.MattermostAllowDirectMessages) 'The wizard did not preserve the default-on Mattermost DM setting.'
     Assert-That (([string]$saved.MattermostToken).StartsWith('dpapi:') -and [string]$saved.MattermostToken -ne $token) 'Saved Mattermost token was absent or was not protected at rest.'
     $progressFile = Join-Path $dataPath 'onboarding.json'
     $completed = $false

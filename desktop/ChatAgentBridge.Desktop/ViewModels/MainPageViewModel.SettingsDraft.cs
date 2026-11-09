@@ -127,11 +127,13 @@ public partial class MainPageViewModel
         Track(() => AutoConnectProvider, value => AutoConnectProvider = value, baseline.AutoConnectProvider);
         Track(() => MattermostServerUrl, value => MattermostServerUrl = value, baseline.MattermostServerUrl);
         Track(() => MattermostChannelId, value => MattermostChannelId = value, baseline.MattermostChannelId);
+        Track(() => MattermostAllowDirectMessages, value => MattermostAllowDirectMessages = value, baseline.MattermostAllowDirectMessages);
         Track(() => MattermostToken, SetMattermostToken, baseline.MattermostToken);
         Track(() => MattermostBypassProxy, value => MattermostBypassProxy = value, baseline.MattermostBypassProxy);
         Track(() => PostConnectionNotice, value => PostConnectionNotice = value, baseline.PostConnectionNotice);
         Track(() => SlackBotToken, value => SlackBotToken = value, baseline.SlackBotToken);
         Track(() => SlackAppToken, value => SlackAppToken = value, baseline.SlackAppToken);
+        Track(() => SlackAllowDirectMessages, value => SlackAllowDirectMessages = value, baseline.SlackAllowDirectMessages);
         Track(() => DiscordBotToken, value => DiscordBotToken = value, baseline.DiscordBotToken);
         Track(() => MattermostAllowedUserIds, value => MattermostAllowedUserIds = value, baseline.MattermostAllowedUserIds);
         Track(() => SlackAllowedUserIds, value => SlackAllowedUserIds = value, baseline.SlackAllowedUserIds);
@@ -181,9 +183,9 @@ public partial class MainPageViewModel
         nameof(WorkspaceRoot) or nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or
         nameof(AgentModel) or nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(RequireApproval) or
         nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or
-        nameof(AutoConnectProvider) or nameof(MattermostServerUrl) or nameof(MattermostChannelId) or
+        nameof(AutoConnectProvider) or nameof(MattermostServerUrl) or nameof(MattermostChannelId) or nameof(MattermostAllowDirectMessages) or
         nameof(MattermostBypassProxy) or nameof(PostConnectionNotice) or nameof(SlackBotToken) or
-        nameof(SlackAppToken) or nameof(MattermostAllowedUserIds) or nameof(SlackAllowedUserIds) or
+        nameof(SlackAppToken) or nameof(SlackAllowDirectMessages) or nameof(MattermostAllowedUserIds) or nameof(SlackAllowedUserIds) or
         nameof(DiscordBotToken) or nameof(DiscordAllowedUserIds) or nameof(DiscordAllowedGuildIds) or
         nameof(DiscordAllowedChannelIds) or nameof(DiscordAllowedThreadIds) or nameof(DiscordAllowDirectMessages) or
         nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(ChatApprovalMode) or

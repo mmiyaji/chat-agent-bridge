@@ -2,6 +2,7 @@
 <root>
   <data name="OverviewCliPreviouslyVerified" xml:space="preserve"><value>Previously checked</value></data>
   <data name="CliVerificationRestored" xml:space="preserve"><value>Reusing the CLI check from {0}. The CLI files and settings are unchanged. Login status and model availability are checked during use; use Check CLI to refresh the model list.</value></data>
+  <data name="UpdateNoticeTitle" xml:space="preserve"><value>Chat Agent Bridge was updated ({0})</value></data>
   <data name="CliVerificationSaveFailed" xml:space="preserve"><value>The check succeeded, but its result could not be saved. Check again after restarting.</value></data>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -751,4 +752,16 @@ Conversation ID (first message): {2}</value></data>
   <data name="KimiPermissionHelp" xml:space="preserve"><value>With “Use CLI default”, tool operations requiring approval are shown in CAB. “Full access” skips these confirmations and requires support from Kimi. These permissions do not provide an operating-system sandbox.</value></data>
   <data name="CodexWorkspaceRejected" xml:space="preserve"><value>Codex refused the working folder: {0}. Check the working folder in Agent settings → Common settings and update the CLI if needed. A Git repository is not required for working folders trusted by CAB.</value></data>
   <data name="ManualWorkspaceSummary" xml:space="preserve"><value>Working folder: {0}</value></data>
+  <data name="MattermostAccountIdentityChecking" xml:space="preserve"><value>Checking the token account…</value></data>
+  <data name="MattermostAccountIdentityVerified" xml:space="preserve"><value>Token account found.</value></data>
+  <data name="MattermostAccountIdentityBot" xml:space="preserve"><value>Bot account</value></data>
+  <data name="MattermostAccountIdentityUser" xml:space="preserve"><value>User account (a dedicated bot is recommended)</value></data>
+  <data name="MattermostAccountIdentity" xml:space="preserve"><value>{0} (@{1}) — {2}. User ID: {3}</value></data>
+  <data name="MattermostAccountIdentityInvalidUrl" xml:space="preserve"><value>Enter a valid Mattermost server URL.</value></data>
+  <data name="MattermostAccountIdentityMissingToken" xml:space="preserve"><value>Enter a Mattermost token.</value></data>
+  <data name="MattermostAccountIdentityInvalidResponse" xml:space="preserve"><value>The server did not return a valid account identity.</value></data>
+  <data name="MattermostAccountIdentityUnauthorized" xml:space="preserve"><value>The token was rejected. Check that it is valid and active.</value></data>
+  <data name="MattermostAccountIdentityForbidden" xml:space="preserve"><value>The token does not have permission to read its account.</value></data>
+  <data name="MattermostAccountIdentityTimeout" xml:space="preserve"><value>The account check timed out.</value></data>
+  <data name="MattermostAccountIdentityNetwork" xml:space="preserve"><value>Could not check the account. Check the server URL and network.</value></data>
 </root>

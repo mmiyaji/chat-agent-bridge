@@ -1375,9 +1375,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
 
     private static bool CanReceive(BridgeSettings current, ChatRequest request, BridgeSettings connected) =>
         !request.IsAccessRequest &&
-        (ChatAccessPolicy.IsAllowedRequest(current, request.Provider, request.UserId, request.ChannelId, request.ThreadId, request.GuildId) ||
+        (ChatAccessPolicy.IsAllowedRequest(current, request.Provider, request.UserId, request.ChannelId, request.ThreadId, request.GuildId, request.IsDirectMessage) ||
             HasOneTimeAccess(current, request)) &&
-        (request.Provider != "mattermost" || string.Equals(current.MattermostChannelId, request.ChannelId, StringComparison.Ordinal)) &&
+        (request.Provider != "slack" || !request.IsDirectMessage || current.SlackAllowDirectMessages) &&
+        (request.Provider != "mattermost" || current.MattermostAllowDirectMessages || string.Equals(current.MattermostChannelId, request.ChannelId, StringComparison.Ordinal)) &&
         ChatConnectionPolicy.Matches(request.Provider, current, connected);
 
     public async Task RefreshAccessAsync()

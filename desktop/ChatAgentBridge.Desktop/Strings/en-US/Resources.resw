@@ -9,6 +9,13 @@
   <data name="SettingsSearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Search settings</value></data>
   <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>Open chat settings</value></data>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>Connect without a proxy</value></data>
+  <data name="MattermostAllowDirectMessages.Content" xml:space="preserve"><value>Accept requests in individual direct messages</value></data>
+  <data name="MattermostAllowDirectMessagesHelp.Text" xml:space="preserve"><value>On by default. People can send requests by opening a DM with the bot; the bot does not need to start it. Only allowed users can run requests, and approval follows Common settings. For DMs only, the server URL and bot token are enough to connect; no channel or thread ID is needed.</value></data>
+  <data name="SlackDirectMessagesGroupTitle.Text" xml:space="preserve"><value>Individual direct messages</value></data>
+  <data name="SlackAllowDirectMessages.Content" xml:space="preserve"><value>Accept requests in individual direct messages</value></data>
+  <data name="SlackAllowDirectMessagesHelp.Text" xml:space="preserve"><value>On by default. Allowed users can start a request by sending a regular message in a DM with the bot. The bot does not need to start the DM, and approval follows Common settings. Add the message.im event and im:history scope to your Slack app, reinstall it, then reconnect in CAB.</value></data>
+  <data name="WizardSlackAllowDirectMessages.Content" xml:space="preserve"><value>Use individual direct messages for requests</value></data>
+  <data name="WizardMattermostAllowDirectMessages.Content" xml:space="preserve"><value>Use individual direct messages for requests (recommended)</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>Turn on for a direct connection to your internal Mattermost server. When off, the system proxy settings are used. This applies to user lookup, post link checks, and sending and receiving messages. Reconnect after changing this setting.</value></data>
   <data name="MainNavigation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Main navigation</value>
@@ -420,7 +427,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Configure your service and allowed users, then connect from Chat.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock048.Text" xml:space="preserve">
-    <value>Enter the ID of the channel to receive requests from. For a bot DM, use that DM's channel ID. Start with a leading @mention or !cab followed by your request. The same sender can then continue by replying normally in that thread. The bot must also join any regular channel you use.</value>
+    <value>Search by name to choose a channel, then add the bot to it. Leave the channel unset if you only use individual direct messages.</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock049.Text" xml:space="preserve">
     <value>Server URL</value>
@@ -429,10 +436,10 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Mattermost server URL</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock050.Text" xml:space="preserve">
-    <value>Channel ID</value>
+    <value>Channel ID (manual entry only; leave blank for direct messages only)</value>
   </data>
   <data name="MattermostChannelId.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Mattermost Channel ID</value>
+    <value>Mattermost Channel ID (leave empty for DM-only mode)</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock051.Text" xml:space="preserve">
     <value>Access token for the connected bot or user</value>
@@ -752,6 +759,9 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="onboardingOnboardingWizardTextBlock010.Text" xml:space="preserve">
     <value>Slack connection information</value>
   </data>
+  <data name="WizardSlackGuideLink.Content" xml:space="preserve"><value>Slack setup guide</value></data>
+  <data name="WizardSlackGuideLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Open the Slack setup guide</value></data>
+  <data name="WizardDirectMessageDefaultHelp.Text" xml:space="preserve"><value>Direct messages are enabled by default. Start with a dedicated DM with your bot. Add shared channels or channel restrictions later in Chat settings if you need them.</value></data>
   <data name="onboardingOnboardingWizardTextBlock011.Text" xml:space="preserve">
     <value>Bot token (value starting with xoxb-)</value>
   </data>
@@ -776,6 +786,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="onboardingOnboardingWizardTextBlock015.Text" xml:space="preserve">
     <value>Mattermost connection information</value>
   </data>
+  <data name="WizardMattermostGuideLink.Content" xml:space="preserve"><value>Mattermost setup guide</value></data>
+  <data name="WizardMattermostGuideLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Open the Mattermost setup guide</value></data>
+  <data name="WizardDiscordGuideLink.Content" xml:space="preserve"><value>Discord setup guide</value></data>
+  <data name="WizardDiscordGuideLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Open the Discord setup guide</value></data>
   <data name="WizardMattermostServerUrl.Header" xml:space="preserve">
     <value>Server URL</value>
   </data>
@@ -783,7 +797,7 @@ Keep this app and your local PC running to stay connected.</value>
     <value>Enter the HTTPS server URL. HTTP can only be used on servers running on this PC (such as localhost).</value>
   </data>
   <data name="WizardMattermostChannelId.Header" xml:space="preserve">
-    <value>Channel ID</value>
+    <value>Channel ID (optional)</value>
   </data>
   <data name="WizardSearchMattermostChannelsButton.Content" xml:space="preserve"><value>Find channel</value></data>
   <data name="onboardingOnboardingWizardTextBlock017.Text" xml:space="preserve">
@@ -1173,6 +1187,10 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PortableUpdatePreferences.Description" xml:space="preserve"><value>Automatic checks and preview releases</value></data>
   <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>Release notes (GitHub)</value></data>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLI check failed</value></data>
+  <data name="CliCheckSuccess.Title" xml:space="preserve"><value>CLI check succeeded</value></data>
+  <data name="UpdateNotice.Message" xml:space="preserve"><value>Review the main changes and improvements in this version.</value></data>
+  <data name="UpdateNoticeAction.Content" xml:space="preserve"><value>View changes</value></data>
+  <data name="UpdateNoticeAction.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>View app changes</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Start this app when signing in to Windows</value></data>
   <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Chat to connect automatically when the app starts</value></data>
   <data name="TrayMoveLabel.Text" xml:space="preserve"><value>Move to the system tray now</value></data>
@@ -1298,11 +1316,11 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="DiscordAllowedGuildIdsLabel.Text" xml:space="preserve"><value>Allowed server IDs</value></data>
   <data name="DiscordAllowedGuildIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord server IDs</value></data>
   <data name="DiscordAllowedGuildIdsHelp.Text" xml:space="preserve"><value>Required when direct messages are disabled. Enter one server ID per line.</value></data>
-  <data name="DiscordAllowDirectMessages.Header" xml:space="preserve"><value>Allow direct messages</value></data>
-  <data name="DiscordAllowDirectMessages.OnContent" xml:space="preserve"><value>On</value></data>
-  <data name="DiscordAllowDirectMessages.OffContent" xml:space="preserve"><value>Off</value></data>
-  <data name="DiscordAllowDirectMessages.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allow Discord direct messages</value></data>
-  <data name="DiscordAllowDirectMessagesHelp.Text" xml:space="preserve"><value>Allow approved users to send requests by DM without a server ID.</value></data>
+  <data name="DiscordAllowDirectMessages.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Accept requests in individual direct messages</value></data>
+  <data name="DiscordDirectMessagesGroupTitle.Text" xml:space="preserve"><value>Individual direct messages</value></data>
+  <data name="DiscordAllowDirectMessages.Content" xml:space="preserve"><value>Accept requests in individual direct messages</value></data>
+  <data name="WizardDiscordAllowDirectMessages.Content" xml:space="preserve"><value>Use individual direct messages for requests</value></data>
+  <data name="DiscordAllowDirectMessagesHelp.Text" xml:space="preserve"><value>On by default. Allowed users can start a request by sending a regular message in a DM with the bot. The bot does not need to start the DM, and approval follows Common settings. A server ID is not needed when using DMs only.</value></data>
   <data name="DiscordAllowedChannelIdsLabel.Text" xml:space="preserve"><value>Allowed channel IDs (optional)</value></data>
   <data name="DiscordAllowedChannelIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Allowed Discord channel IDs</value></data>
   <data name="DiscordAllowedChannelIdsHelp.Text" xml:space="preserve"><value>Optional additional restriction. Enter one channel ID per line.</value></data>
@@ -1455,4 +1473,17 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="SearchMattermostChannelsButton.Content" xml:space="preserve"><value>Find channel</value></data>
   <data name="SearchSlackChannelsButton.Content" xml:space="preserve"><value>Find and select channels</value></data>
   <data name="SearchDiscordChannelsButton.Content" xml:space="preserve"><value>Find and select channels</value></data>
+  <data name="MattermostCheckAccountButton.Content" xml:space="preserve"><value>Check token account</value></data>
+  <data name="MattermostCheckAccountButton.ToolTipService.ToolTip" xml:space="preserve"><value>Shows which Mattermost account the token represents. Use a dedicated Bot account; register request senders separately in Allowed users.</value></data>
+  <data name="MattermostConnectionGroupTitle.Text" xml:space="preserve"><value>Connection</value></data>
+  <data name="MattermostIdentityVerified.Title" xml:space="preserve"><value>Connected account verified</value></data>
+  <data name="MattermostRequestersGroupTitle.Text" xml:space="preserve"><value>Allowed requesters</value></data>
+  <data name="MattermostRequestersGroupHelp.Text" xml:space="preserve"><value>Manage people who send requests in Common settings. Do not add the bot account as a requester.</value></data>
+  <data name="MattermostRequestersEmpty.Text" xml:space="preserve"><value>No allowed requesters have been registered yet.</value></data>
+  <data name="MattermostDirectMessagesGroupTitle.Text" xml:space="preserve"><value>Individual direct messages</value></data>
+  <data name="MattermostDestinationsGroupTitle.Text" xml:space="preserve"><value>Shared channel and thread (optional)</value></data>
+  <data name="MattermostDestinationsGroupSummary.Text" xml:space="preserve"><value>Nothing to set for direct messages only. Open this when using a shared channel.</value></data>
+  <data name="MattermostOptionalThreadGroupTitle.Text" xml:space="preserve"><value>Specify a thread (optional)</value></data>
+  <data name="MattermostAdditionalGroupTitle.Text" xml:space="preserve"><value>Other connection settings</value></data>
+  <data name="OpenSettingsFolder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Open settings folder</value></data>
 </root>

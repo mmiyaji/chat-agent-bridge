@@ -5,6 +5,14 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage
 {
+    private async void OpenSettingsFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var path = ViewModel.SettingsLocation;
+        if (string.IsNullOrWhiteSpace(path) || !System.IO.Directory.Exists(path)) return;
+        try { await Windows.System.Launcher.LaunchFolderPathAsync(path); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Could not open settings folder: {ex.Message}"); }
+    }
+
     private async void OpenSavedAgentSettings_Click(object sender, RoutedEventArgs e)
     {
         OpenAgentSettings_Click(sender, e);

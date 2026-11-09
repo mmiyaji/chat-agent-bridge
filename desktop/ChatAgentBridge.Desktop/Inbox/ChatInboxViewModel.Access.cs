@@ -93,7 +93,7 @@ public sealed partial class ChatInboxViewModel
 
     private static bool HasOneTimeAccess(BridgeSettings current, ChatRequest request) =>
         OneTimeAccess.ContainsKey((request.Provider, request.UserId, request.MessageId)) &&
-        ChatAccessPolicy.IsAllowedScope(current, request.Provider, request.ChannelId, request.ThreadId, request.GuildId);
+        ChatAccessPolicy.IsAllowedScope(current, request.Provider, request.ChannelId, request.ThreadId, request.GuildId, request.IsDirectMessage);
 
     private static (string Provider, string? Origin, string UserId) AccessIdentity(ChatRequest request, BridgeSettings connection) =>
         (request.Provider, request.Provider == "mattermost" ? connection.MattermostServerUrl : request.GuildId, request.UserId);
@@ -103,7 +103,7 @@ public sealed partial class ChatInboxViewModel
     {
         if (_disconnecting || _closing || !ReferenceEquals(transport, _transport)) return;
         if (!ChatAccessPolicy.CanApproveAccessRequest(current, connection, request.Provider, request.ChannelId,
-            request.ThreadId, request.GuildId)) return;
+            request.ThreadId, request.GuildId, request.IsDirectMessage)) return;
         var completion = new TaskCompletionSource<AccessRequestItem?>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!App.DispatcherQueue.TryEnqueue(() => completion.TrySetResult(AddAccessRequest(request, transport, connection, current))))
             return;
@@ -180,7 +180,7 @@ public sealed partial class ChatInboxViewModel
                     var request = item.Request;
                     var updated = !_disconnecting && !_closing && ReferenceEquals(item.Transport, _transport)
                         ? await _store.TryAddAllowedUserAsync(item.Connection, request.Provider, request.UserId,
-                            request.ChannelId, request.ThreadId, request.GuildId, token)
+                            request.ChannelId, request.ThreadId, request.GuildId, token, request.IsDirectMessage)
                         : null;
                     if (updated is null)
                     {
@@ -214,7 +214,7 @@ public sealed partial class ChatInboxViewModel
                     var request = item.Request;
                     if (_disconnecting || _closing || !ReferenceEquals(item.Transport, _transport) ||
                         !ChatAccessPolicy.CanApproveAccessRequest(current, item.Connection, request.Provider,
-                            request.ChannelId, request.ThreadId, request.GuildId))
+                            request.ChannelId, request.ThreadId, request.GuildId, request.IsDirectMessage))
                     {
                         RemoveAccessRequest(item);
                         Status = DesktopText.Get("AccessRequestNotDispatchedStatus");

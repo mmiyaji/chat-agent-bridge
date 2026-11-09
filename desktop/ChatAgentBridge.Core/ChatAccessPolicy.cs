@@ -40,19 +40,21 @@ public static class ChatAccessPolicy
             .Contains(userId, StringComparer.Ordinal);
     }
 
-    public static bool IsAllowedRequest(BridgeSettings settings, string provider, string userId, string channelId, string threadId, string? guildId = null) =>
-        IsAllowed(settings, provider, userId) && IsAllowedScope(settings, provider, channelId, threadId, guildId);
+    public static bool IsAllowedRequest(BridgeSettings settings, string provider, string userId, string channelId, string threadId, string? guildId = null, bool isDirectMessage = false) =>
+        IsAllowed(settings, provider, userId) && IsAllowedScope(settings, provider, channelId, threadId, guildId, isDirectMessage);
 
     public static bool CanApproveAccessRequest(BridgeSettings current, BridgeSettings connected,
-        string provider, string channelId, string threadId, string? guildId) =>
+        string provider, string channelId, string threadId, string? guildId, bool isDirectMessage = false) =>
         ChatConnectionPolicy.Matches(provider, current, connected) &&
-        IsAllowedScope(current, provider, channelId, threadId, guildId) &&
-        (provider != "mattermost" || string.Equals(current.MattermostChannelId, channelId, StringComparison.Ordinal));
+        IsAllowedScope(current, provider, channelId, threadId, guildId, isDirectMessage) &&
+        (provider != "slack" || !isDirectMessage || current.SlackAllowDirectMessages) &&
+        (provider != "mattermost" || current.MattermostAllowDirectMessages || string.Equals(current.MattermostChannelId, channelId, StringComparison.Ordinal));
 
     /// <summary>Checks the server, channel and thread restrictions without the allowed-user list.</summary>
-    public static bool IsAllowedScope(BridgeSettings settings, string provider, string channelId, string threadId, string? guildId = null)
+    public static bool IsAllowedScope(BridgeSettings settings, string provider, string channelId, string threadId, string? guildId = null, bool isDirectMessage = false)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        if (provider == "slack" && isDirectMessage) return settings.SlackAllowDirectMessages;
         if (provider == "discord")
         {
             if (guildId is null)

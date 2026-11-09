@@ -51,6 +51,7 @@ public partial class MainPageViewModel
 
     partial void OnMattermostServerUrlChanged(string value)
     {
+        InvalidateMattermostConnectionIdentity();
         InvalidateMattermostUsernameLookup();
         InvalidateMattermostThreadLookup();
     }
@@ -58,6 +59,7 @@ public partial class MainPageViewModel
 
     partial void OnMattermostBypassProxyChanged(bool value)
     {
+        InvalidateMattermostConnectionIdentity();
         InvalidateMattermostUsernameLookup();
         InvalidateMattermostThreadLookup();
     }

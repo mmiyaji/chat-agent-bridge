@@ -868,6 +868,7 @@
   <data name="SettingsReviewAttachmentTotal" xml:space="preserve"><value>添付合計の上限（MB）</value></data>
   <data name="SettingsReviewServer" xml:space="preserve"><value>Mattermostの接続先</value></data>
   <data name="SettingsReviewMattermostChannel" xml:space="preserve"><value>Mattermostのチャンネル</value></data>
+  <data name="SettingsReviewMattermostDirectMessages" xml:space="preserve"><value>Mattermostの個別DM受付</value></data>
   <data name="SettingsReviewCredentials" xml:space="preserve"><value>認証トークン</value></data>
   <data name="SettingsReviewHidden" xml:space="preserve"><value>{0}: 変更あり（値は非表示）</value></data>
   <data name="SettingsReviewChange" xml:space="preserve"><value>{0}
@@ -954,6 +955,7 @@
   <data name="SettingsReviewDiscordChannels" xml:space="preserve"><value>Discordの許可チャンネル</value></data>
   <data name="SettingsReviewDiscordThreads" xml:space="preserve"><value>Discordの許可スレッド</value></data>
   <data name="SettingsReviewDiscordDirectMessages" xml:space="preserve"><value>Discordのダイレクトメッセージ</value></data>
+  <data name="SettingsReviewSlackDirectMessages" xml:space="preserve"><value>Slackの個別DM</value></data>
   <data name="DiscordInboxApprovalWaiting" xml:space="preserve"><value>この依頼は承認待ちです。ボタンは依頼した本人だけが操作できます。</value></data>
   <data name="DiscordInboxApprovalPostFailed" xml:space="preserve"><value>Discordに承認ボタンを投稿できませんでした。PC側で承認・拒否してください。</value></data>
   <data name="DiscordInboxConfigurationMissing" xml:space="preserve"><value>チャット設定でDiscordのBotトークンを入力してください。サーバーで使う場合は許可サーバーIDも指定し、DMで使う場合はDMを有効にしてください。</value></data>

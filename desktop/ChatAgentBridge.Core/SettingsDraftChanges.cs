@@ -31,9 +31,9 @@ public readonly record struct SettingsDraftChanges(bool Agent, bool Chat, bool G
         settings.AllowAgentNetwork, settings.TrustedWorkspaceRoots);
 
     private static object ChatValues(BridgeSettings settings) => (
-        settings.MattermostServerUrl.Trim(), settings.MattermostChannelId.Trim(), settings.MattermostToken,
+        settings.MattermostServerUrl.Trim(), settings.MattermostChannelId.Trim(), settings.MattermostAllowDirectMessages, settings.MattermostToken,
         settings.MattermostBypassProxy, settings.PostConnectionNotice, settings.SlackBotToken,
-        settings.SlackAppToken, settings.MattermostAllowedUserIds, settings.SlackAllowedUserIds,
+        settings.SlackAppToken, settings.SlackAllowDirectMessages, settings.MattermostAllowedUserIds, settings.SlackAllowedUserIds,
         settings.DiscordBotToken, settings.DiscordAllowedUserIds, settings.DiscordAllowedGuildIds,
         settings.DiscordAllowedChannelIds, settings.DiscordAllowedThreadIds, settings.DiscordAllowDirectMessages,
         settings.ShareApprovalsInChat, settings.ShareAgentQuestionsInChat, settings.ChatApprovalMode,

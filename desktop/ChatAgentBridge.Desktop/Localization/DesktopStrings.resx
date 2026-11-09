@@ -865,6 +865,7 @@ Save all pending settings changes together. Reconnect chat to apply saved change
   <data name="SettingsReviewAttachmentTotal" xml:space="preserve"><value>Total attachment limit (MB)</value></data>
   <data name="SettingsReviewServer" xml:space="preserve"><value>Mattermost server</value></data>
   <data name="SettingsReviewMattermostChannel" xml:space="preserve"><value>Mattermost channel</value></data>
+  <data name="SettingsReviewMattermostDirectMessages" xml:space="preserve"><value>Mattermost individual DMs</value></data>
   <data name="SettingsReviewCredentials" xml:space="preserve"><value>Authentication tokens</value></data>
   <data name="SettingsReviewHidden" xml:space="preserve"><value>{0}: changed (values hidden)</value></data>
   <data name="SettingsReviewChange" xml:space="preserve"><value>{0}
@@ -951,6 +952,7 @@ After: {2}</value></data>
   <data name="SettingsReviewDiscordChannels" xml:space="preserve"><value>Discord allowed channels</value></data>
   <data name="SettingsReviewDiscordThreads" xml:space="preserve"><value>Discord allowed threads</value></data>
   <data name="SettingsReviewDiscordDirectMessages" xml:space="preserve"><value>Discord direct messages</value></data>
+  <data name="SettingsReviewSlackDirectMessages" xml:space="preserve"><value>Slack individual direct messages</value></data>
   <data name="DiscordInboxApprovalWaiting" xml:space="preserve"><value>This request is waiting for your approval. Only the requester can use these buttons.</value></data>
   <data name="DiscordInboxApprovalPostFailed" xml:space="preserve"><value>Could not post Discord approval buttons. Approve or reject on this PC.</value></data>
   <data name="DiscordInboxConfigurationMissing" xml:space="preserve"><value>Enter the Discord bot token in Chat settings. Allow server IDs for server conversations, or explicitly enable direct messages.</value></data>

@@ -27,11 +27,13 @@ public readonly record struct SettingsSensitiveChanges(
                 (draft.AgentPermissionMode, draft.AllowAgentNetwork, draft.RequireApproval),
             saved.TrustedWorkspaceRoots != draft.TrustedWorkspaceRoots,
             (saved.ChatApprovalMode, saved.SlackAllowedChannelIds, saved.SlackAllowedThreadIds,
-                saved.MattermostAllowedThreadIds, saved.MattermostAllowedUserIds, saved.SlackAllowedUserIds,
+                saved.MattermostAllowedThreadIds, saved.MattermostAllowedUserIds, saved.MattermostAllowDirectMessages, saved.SlackAllowedUserIds,
+                saved.SlackAllowDirectMessages,
                 saved.DiscordAllowedUserIds, saved.DiscordAllowedGuildIds, saved.DiscordAllowedChannelIds,
                 saved.DiscordAllowedThreadIds, saved.DiscordAllowDirectMessages, saved.AutoApproveSwitchCommands) !=
                 (draft.ChatApprovalMode, draft.SlackAllowedChannelIds, draft.SlackAllowedThreadIds,
-                draft.MattermostAllowedThreadIds, draft.MattermostAllowedUserIds, draft.SlackAllowedUserIds,
+                draft.MattermostAllowedThreadIds, draft.MattermostAllowedUserIds, draft.MattermostAllowDirectMessages, draft.SlackAllowedUserIds,
+                draft.SlackAllowDirectMessages,
                 draft.DiscordAllowedUserIds, draft.DiscordAllowedGuildIds, draft.DiscordAllowedChannelIds,
                 draft.DiscordAllowedThreadIds, draft.DiscordAllowDirectMessages, draft.AutoApproveSwitchCommands),
             (saved.ChatResultMode, saved.ShareApprovalsInChat, saved.ShareAgentQuestionsInChat) !=

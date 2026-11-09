@@ -15,17 +15,19 @@ public sealed record BridgeSettings
     public string AutoConnectProvider { get; init; } = "none";
     public string MattermostServerUrl { get; init; } = "";
     public string MattermostChannelId { get; init; } = "";
+    public bool MattermostAllowDirectMessages { get; init; } = true;
     public string MattermostToken { get; init; } = "";
     public bool MattermostBypassProxy { get; init; }
     public bool PostConnectionNotice { get; init; }
     public string SlackBotToken { get; init; } = "";
     public string SlackAppToken { get; init; } = "";
+    public bool SlackAllowDirectMessages { get; init; } = true;
     public string DiscordBotToken { get; init; } = "";
     public string DiscordAllowedUserIds { get; init; } = "";
     public string DiscordAllowedGuildIds { get; init; } = "";
     public string DiscordAllowedChannelIds { get; init; } = "";
     public string DiscordAllowedThreadIds { get; init; } = "";
-    public bool DiscordAllowDirectMessages { get; init; }
+    public bool DiscordAllowDirectMessages { get; init; } = true;
     public string MattermostAllowedUserIds { get; init; } = "";
     public string SlackAllowedUserIds { get; init; } = "";
     public bool ShareApprovalsInChat { get; init; }

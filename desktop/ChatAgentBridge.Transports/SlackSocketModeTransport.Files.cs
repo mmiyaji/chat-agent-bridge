@@ -114,7 +114,7 @@ public sealed partial class SlackSocketModeTransport
     private void EnsureIncomingFileAccess(ChatRequest request)
     {
         var settings = Volatile.Read(ref _liveAccessSettings);
-        if (settings is not null && !ChatAccessPolicy.IsAllowedRequest(settings, "slack", request.UserId, request.ChannelId, request.ThreadId))
+        if (settings is not null && !ChatAccessPolicy.IsAllowedRequest(settings, "slack", request.UserId, request.ChannelId, request.ThreadId, isDirectMessage: request.IsDirectMessage))
             throw new InvalidOperationException("Slack access to this request was revoked.");
     }
 

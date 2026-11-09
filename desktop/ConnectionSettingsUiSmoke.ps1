@@ -226,6 +226,7 @@ try {
     Remove-Item -LiteralPath $script:gate -Force
 
     Select-Element 'NavConnections'
+    Select-Element 'ConnectionScopeCommon'
     $approvalCard = Wait-Element 'ChatApprovalCard'
     $cardExpand = $null
     if (-not $approvalCard.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$cardExpand)) { throw 'ChatApprovalCard lacks ExpandCollapsePattern.' }

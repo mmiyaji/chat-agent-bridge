@@ -5,11 +5,11 @@ namespace ChatAgentBridge.Core.Tests;
 public sealed class KeepAwakeTests
 {
     [Fact]
-    public async Task PreferencesDefaultToOffAndPersistIndependently()
+    public async Task PreferencesDefaultToActiveWorkAndPersistIndependently()
     {
         using var directory = new TemporaryDirectory();
         var store = new KeepAwakePreferencesStore(directory.Path);
-        Assert.Equal(KeepAwakeMode.Off, (await store.LoadAsync()).Mode);
+        Assert.Equal(KeepAwakeMode.Requests, (await store.LoadAsync()).Mode);
         Assert.True((await store.LoadAsync()).AcOnly);
         var value = new KeepAwakePreferences { Mode = KeepAwakeMode.Receiver };
         await store.SaveAsync(value);
@@ -24,9 +24,9 @@ public sealed class KeepAwakeTests
         await File.WriteAllTextAsync(path, "{");
         var store = new KeepAwakePreferencesStore(directory.Path);
         await Assert.ThrowsAsync<InvalidDataException>(() => store.LoadAsync());
-        Assert.Equal(KeepAwakeMode.Off, new KeepAwakePreferences().Mode);
+        Assert.Equal(KeepAwakeMode.Requests, new KeepAwakePreferences().Mode);
         await store.SaveAsync(new());
-        Assert.Equal(KeepAwakeMode.Off, (await store.LoadAsync()).Mode);
+        Assert.Equal(KeepAwakeMode.Requests, (await store.LoadAsync()).Mode);
     }
 
     [Theory]

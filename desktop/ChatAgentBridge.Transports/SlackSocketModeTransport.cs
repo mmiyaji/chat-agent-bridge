@@ -310,7 +310,7 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
         return ValueTask.CompletedTask;
     }
 
-    internal static ChatRequest? ParseRequest(JsonElement evt, string? botUserId, bool allowPlainThreadReplies = false)
+    internal static ChatRequest? ParseRequest(JsonElement evt, string? botUserId, bool allowPlainThreadReplies = false, bool allowDirectMessages = false)
     {
         if (!TryString(evt, "type", out var eventType) || !TryString(evt, "channel", out var channel) ||
             !TryString(evt, "user", out var user) || !TryString(evt, "text", out var text) ||
@@ -322,9 +322,11 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
 
         var threadTimestamp = TryString(evt, "thread_ts", out var thread) ? thread : null;
         var isThreadReply = !string.IsNullOrWhiteSpace(threadTimestamp) && threadTimestamp != timestamp;
+        var isDirectMessage = TryString(evt, "channel_type", out var channelType) && channelType == "im";
         var mentionsBot = ContainsBotMention(text, botUserId);
         var hasTrigger = StartsWithTrigger(text);
-        if (eventType == "message" && (!isThreadReply || (!allowPlainThreadReplies && !hasTrigger && !mentionsBot))) return null;
+        if (eventType == "message" && (!isThreadReply || (!allowPlainThreadReplies && !hasTrigger && !mentionsBot)) &&
+            !(isDirectMessage && allowDirectMessages && !isThreadReply)) return null;
         if (eventType == "app_mention" && !mentionsBot) return null;
 
         var root = threadTimestamp ?? timestamp;
@@ -336,7 +338,8 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
         return new ChatRequest("slack", channel, root, user, normalized, timestamp)
         {
             IncomingFiles = files,
-            IncomingFilesError = filesError
+            IncomingFilesError = filesError,
+            IsDirectMessage = isDirectMessage
         };
     }
 
@@ -344,16 +347,16 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
         BridgeSettings settings, SessionStore sessions, CancellationToken cancellationToken = default,
         SlackContinuationTracker? continuations = null)
     {
-        var request = ParseRequest(evt, botUserId);
+        var request = ParseRequest(evt, botUserId, allowDirectMessages: settings.SlackAllowDirectMessages);
         if (request is not null)
         {
-            if (ChatAccessPolicy.IsAllowedRequest(settings, "slack", request.UserId, request.ChannelId, request.ThreadId)) return request;
-            return ChatAccessPolicy.IsAllowedScope(settings, "slack", request.ChannelId, request.ThreadId)
+            if (ChatAccessPolicy.IsAllowedRequest(settings, "slack", request.UserId, request.ChannelId, request.ThreadId, isDirectMessage: request.IsDirectMessage)) return request;
+            return ChatAccessPolicy.IsAllowedScope(settings, "slack", request.ChannelId, request.ThreadId, isDirectMessage: request.IsDirectMessage)
                 ? request with { IsAccessRequest = true } : null;
         }
 
-        var continuation = ParseRequest(evt, botUserId, allowPlainThreadReplies: true);
-        if (continuation is null || !ChatAccessPolicy.IsAllowedRequest(settings, "slack", continuation.UserId, continuation.ChannelId, continuation.ThreadId)) return null;
+        var continuation = ParseRequest(evt, botUserId, allowPlainThreadReplies: true, allowDirectMessages: settings.SlackAllowDirectMessages);
+        if (continuation is null || !ChatAccessPolicy.IsAllowedRequest(settings, "slack", continuation.UserId, continuation.ChannelId, continuation.ThreadId, isDirectMessage: continuation.IsDirectMessage)) return null;
 
         var key = ChatSessionScope.Create("slack", continuation.ChannelId, continuation.ThreadId, continuation.UserId);
         if (continuations?.Contains(key) == true) return continuation;

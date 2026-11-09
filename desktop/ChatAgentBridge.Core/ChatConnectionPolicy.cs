@@ -17,7 +17,8 @@ public static class ChatConnectionPolicy
         {
             "mattermost" => MatchesMattermost(current, connected),
             "slack" => string.Equals(current.SlackBotToken, connected.SlackBotToken, StringComparison.Ordinal) &&
-                string.Equals(current.SlackAppToken, connected.SlackAppToken, StringComparison.Ordinal),
+                string.Equals(current.SlackAppToken, connected.SlackAppToken, StringComparison.Ordinal) &&
+                current.SlackAllowDirectMessages == connected.SlackAllowDirectMessages,
             "discord" => string.Equals(current.DiscordBotToken, connected.DiscordBotToken, StringComparison.Ordinal),
             _ => false
         };
@@ -26,6 +27,7 @@ public static class ChatConnectionPolicy
     private static bool MatchesMattermost(BridgeSettings current, BridgeSettings connected)
     {
         if (!string.Equals(current.MattermostChannelId, connected.MattermostChannelId, StringComparison.Ordinal) ||
+            current.MattermostAllowDirectMessages != connected.MattermostAllowDirectMessages ||
             !string.Equals(current.MattermostToken, connected.MattermostToken, StringComparison.Ordinal) ||
             current.MattermostBypassProxy != connected.MattermostBypassProxy)
             return false;

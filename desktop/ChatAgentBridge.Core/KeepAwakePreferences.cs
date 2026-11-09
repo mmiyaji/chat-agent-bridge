@@ -2,7 +2,7 @@ namespace ChatAgentBridge.Core;
 
 public sealed record KeepAwakePreferences
 {
-    public string Mode { get; init; } = KeepAwakeMode.Off;
+    public string Mode { get; init; } = KeepAwakeMode.Requests;
     public bool AcOnly { get; init; } = true;
     public KeepAwakePreferences Validate() => this with { Mode = KeepAwakeMode.Normalize(Mode) };
 }

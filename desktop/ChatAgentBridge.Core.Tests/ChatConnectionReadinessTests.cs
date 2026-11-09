@@ -22,7 +22,8 @@ public sealed class ChatConnectionReadinessTests
             MattermostServerUrl = "https://chat.example.com",
             MattermostToken = "token",
             MattermostChannelId = "channel",
-            MattermostAllowedUserIds = "user"
+            MattermostAllowedUserIds = "user",
+            MattermostAllowDirectMessages = false
         };
 
         Assert.True(ChatConnectionReadiness.IsReady(complete, "mattermost"));
@@ -31,6 +32,21 @@ public sealed class ChatConnectionReadinessTests
         Assert.False(ChatConnectionReadiness.IsReady(complete with { MattermostServerUrl = "http://chat.example.com" }, "mattermost"));
         Assert.True(ChatConnectionReadiness.IsReady(complete with { MattermostServerUrl = "http://localhost:8065" }, "mattermost"));
         Assert.False(ChatConnectionReadiness.IsReady(complete with { MattermostServerUrl = "https://user:password@chat.example.com" }, "mattermost"));
+    }
+
+    [Fact]
+    public void MattermostDirectMessagesConnectWithoutChannelOrThreadIds()
+    {
+        var dmOnly = new BridgeSettings
+        {
+            MattermostServerUrl = "https://chat.example.com",
+            MattermostToken = "token",
+            MattermostAllowDirectMessages = true
+        };
+
+        Assert.True(ChatConnectionReadiness.IsReady(dmOnly, "mattermost"));
+        Assert.False(ChatConnectionReadiness.IsReady(dmOnly with { MattermostAllowDirectMessages = false }, "mattermost"));
+        Assert.False(ChatConnectionReadiness.IsReady(dmOnly with { MattermostToken = "" }, "mattermost"));
     }
 
     [Fact]
@@ -55,7 +71,8 @@ public sealed class ChatConnectionReadinessTests
         {
             DiscordBotToken = "token",
             DiscordAllowedUserIds = "123456789012345678",
-            DiscordAllowedGuildIds = "223456789012345678"
+            DiscordAllowedGuildIds = "223456789012345678",
+            DiscordAllowDirectMessages = false
         };
 
         Assert.True(ChatConnectionReadiness.IsReady(complete, "discord"));

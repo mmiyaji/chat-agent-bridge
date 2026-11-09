@@ -18,9 +18,9 @@ public sealed class SettingsDraftChangesTests
     private static readonly string[] ChatProperties =
     [
         nameof(BridgeSettings.MattermostServerUrl), nameof(BridgeSettings.MattermostChannelId),
-        nameof(BridgeSettings.MattermostToken), nameof(BridgeSettings.MattermostBypassProxy),
+        nameof(BridgeSettings.MattermostToken), nameof(BridgeSettings.MattermostAllowDirectMessages), nameof(BridgeSettings.MattermostBypassProxy),
         nameof(BridgeSettings.PostConnectionNotice), nameof(BridgeSettings.SlackBotToken),
-        nameof(BridgeSettings.SlackAppToken), nameof(BridgeSettings.MattermostAllowedUserIds),
+        nameof(BridgeSettings.SlackAppToken), nameof(BridgeSettings.SlackAllowDirectMessages), nameof(BridgeSettings.MattermostAllowedUserIds),
         nameof(BridgeSettings.DiscordBotToken), nameof(BridgeSettings.DiscordAllowedUserIds),
         nameof(BridgeSettings.DiscordAllowedGuildIds), nameof(BridgeSettings.DiscordAllowedChannelIds),
         nameof(BridgeSettings.DiscordAllowedThreadIds), nameof(BridgeSettings.DiscordAllowDirectMessages),

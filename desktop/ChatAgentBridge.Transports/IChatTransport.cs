@@ -50,6 +50,9 @@ public sealed record ChatRequest(
     /// <summary>The Discord guild that owns the channel, or null for a direct message.</summary>
     public string? GuildId { get; init; }
 
+    /// <summary>True when the incoming message was sent in an individual direct message.</summary>
+    public bool IsDirectMessage { get; init; }
+
     /// <summary>The Discord channel that contained MessageId; differs from ChannelId for a new public thread.</summary>
     public string? SourceChannelId { get; init; }
 

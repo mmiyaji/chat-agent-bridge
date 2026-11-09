@@ -56,6 +56,11 @@ function Invoke-Element([Windows.Automation.AutomationElement]$Element, [string]
     if ($Element.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) { ([Windows.Automation.InvokePattern]$pattern).Invoke(); return }
     if ($Element.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern, [ref]$pattern)) { ([Windows.Automation.SelectionItemPattern]$pattern).Select(); return }
     if ($Element.TryGetCurrentPattern([Windows.Automation.TogglePattern]::Pattern, [ref]$pattern)) { ([Windows.Automation.TogglePattern]$pattern).Toggle(); return }
+    if ($Element.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$pattern)) {
+        $expander = [Windows.Automation.ExpandCollapsePattern]$pattern
+        if ($expander.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) { $expander.Expand() } else { $expander.Collapse() }
+        return
+    }
     throw "No Invoke or Toggle pattern for $Description."
 }
 function Set-Value([string]$Id, [string]$Value) {
@@ -116,12 +121,22 @@ try {
         Start-Sleep -Milliseconds 150
     } while ([DateTime]::UtcNow -lt $deadline)
     Assert ($null -ne $script:window) 'No accessible app window appeared.'
-    $scale = [ChannelPickerWindowSizing]::GetDpiForWindow($script:app.MainWindowHandle) / 96.0
-    Assert ([ChannelPickerWindowSizing]::SetWindowPos($script:app.MainWindowHandle, [IntPtr]::Zero, 40, 40, [int](500*$scale), [int](700*$scale), 0x0010)) 'Could not resize the app to its minimum width.'
-    Start-Sleep -Milliseconds 250
 
     Invoke-Element (Wait-Element 'NavConnections') 'open chat connection settings'
     Invoke-Element (Wait-Element 'ConnectionScopeConfigure_mattermost') 'open Mattermost settings'
+    Wait-For { (Wait-Element 'ConnectionScopeHeading').Current.Name -eq 'Mattermost' } 'Mattermost settings scope to become selected'
+    $scale = [ChannelPickerWindowSizing]::GetDpiForWindow($script:app.MainWindowHandle) / 96.0
+    Assert ([ChannelPickerWindowSizing]::SetWindowPos($script:app.MainWindowHandle, [IntPtr]::Zero, 40, 40, [int](500*$scale), [int](700*$scale), 0x0010)) 'Could not resize the app to its minimum width.'
+    Start-Sleep -Milliseconds 250
+    $settingsScroll = Wait-Element 'ConnectionSettingsScroll'
+    $scrollPattern = $null
+    if ($settingsScroll.TryGetCurrentPattern([Windows.Automation.ScrollPattern]::Pattern, [ref]$scrollPattern) -and
+        ([Windows.Automation.ScrollPattern]$scrollPattern).Current.VerticallyScrollable) {
+        ([Windows.Automation.ScrollPattern]$scrollPattern).SetScrollPercent(-1, 100)
+        Start-Sleep -Milliseconds 250
+    }
+    # Destination controls are collapsed until a channel ID is configured.
+    Invoke-Element (Wait-Element 'MattermostDestinationsGroup') 'expand optional destination settings'
     Invoke-Element (Wait-Element 'SearchMattermostChannelsButton') 'open channel picker'
     Wait-Element 'ChannelPickerSearchBox' | Out-Null
     Wait-Element 'ChannelPickerOption_channel-cab-release' | Out-Null

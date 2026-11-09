@@ -13,7 +13,7 @@ public sealed class MattermostBotDmIntegrationTests
     private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(25);
 
     [Fact]
-    public async Task BotToken_DirectMessageMentionAndFallbackWorkAcrossReconnect()
+    public async Task BotToken_DirectMessageModesAndFallbackWorkAcrossReconnect()
     {
         if (!string.Equals(Environment.GetEnvironmentVariable("CAB_ENABLE_NATIVE_MATTERMOST_E2E"), "1", StringComparison.Ordinal))
             return;
@@ -46,6 +46,14 @@ public sealed class MattermostBotDmIntegrationTests
             botTokenId = token.Id;
             botToken = token.Token;
 
+            using (var identityResolver = new MattermostConnectionIdentityResolver())
+            {
+                var identity = await identityResolver.ResolveAsync(state.ServerUrl, botToken, cancellation.Token);
+                Assert.Equal(botId, identity.Id);
+                Assert.Equal(botUsername, identity.Username);
+                Assert.True(identity.IsBot);
+            }
+
             var memberDmId = await CreateDirectChannelAsync(http, server, state.MemberUser.Token,
                 state.MemberUser.Id!, botId!, cancellation.Token);
             var botDmId = await CreateDirectChannelAsync(http, server, botToken!, botId!,
@@ -61,10 +69,11 @@ public sealed class MattermostBotDmIntegrationTests
                 MattermostToken = botToken,
                 MattermostAllowedUserIds = state.MemberUser.Id
             };
-            await AssertUnauthorizedDmIgnoredAsync(http, server, state, settings with
+            await AssertUnauthorizedDmRequiresApprovalAsync(http, server, state, settings with
             {
-                MattermostChannelId = unauthorizedDmId
-            }, botUsername, cancellation.Token);
+                MattermostChannelId = "",
+                MattermostAllowDirectMessages = true
+            }, unauthorizedDmId, botUsername, cancellation.Token);
 
             using var temporary = new TemporaryDirectory();
             var workspace = Path.Combine(temporary.Path, "workspace");
@@ -83,6 +92,11 @@ public sealed class MattermostBotDmIntegrationTests
             Assert.NotNull(await reloadedSessions.FindAsync(ownerKey, cancellation.Token));
             await RunPersistedDmReconnectAsync(http, server, state, settings, botUsername,
                 mentionPostId, reloadedSessions, cancellation.Token);
+            await RunDynamicDirectDmFlowAsync(http, server, state, settings with
+            {
+                MattermostChannelId = "",
+                MattermostAllowDirectMessages = true
+            }, memberDmId, botUsername, cancellation.Token);
         }
         finally
         {
@@ -409,8 +423,8 @@ public sealed class MattermostBotDmIntegrationTests
         }
     }
 
-    private static async Task AssertUnauthorizedDmIgnoredAsync(HttpClient http, Uri server, BootstrapState state,
-        BridgeSettings settings, string botUsername, CancellationToken ct)
+    private static async Task AssertUnauthorizedDmRequiresApprovalAsync(HttpClient http, Uri server, BootstrapState state,
+        BridgeSettings settings, string dmChannelId, string botUsername, CancellationToken ct)
     {
         var accepted = Channel.CreateUnbounded<ChatRequest>();
         await using var transport = new MattermostWebSocketTransport();
@@ -425,7 +439,53 @@ public sealed class MattermostBotDmIntegrationTests
                 (request, token) => accepted.Writer.WriteAsync(request, token).AsTask(), runCancellation.Token);
             await connected.Task.WaitAsync(OperationTimeout, ct);
             using var unauthorizedPost = await PostAsync(http, server, state.UnauthorizedUser.Token,
-                settings.MattermostChannelId!, $"@{botUsername} unauthorized sender", ct);
+                dmChannelId, $"@{botUsername} unauthorized sender", ct);
+            var accessRequest = await accepted.Reader.ReadAsync(ct).AsTask().WaitAsync(OperationTimeout, ct);
+            Assert.True(accessRequest.IsAccessRequest);
+            Assert.Equal(state.UnauthorizedUser.Id, accessRequest.UserId);
+        }
+        finally
+        {
+            transport.Connected -= connectedHandler;
+            runCancellation.Cancel();
+            if (run is not null) await AssertCanceledOrCompletedAsync(run, runCancellation);
+        }
+    }
+
+    private static async Task RunDynamicDirectDmFlowAsync(HttpClient http, Uri server, BootstrapState state,
+        BridgeSettings settings, string dmChannelId, string botUsername, CancellationToken ct)
+    {
+        var accepted = Channel.CreateUnbounded<ChatRequest>();
+        await using var transport = new MattermostWebSocketTransport();
+        using var runCancellation = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        Task? run = null;
+        var connected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Action connectedHandler = () => connected.TrySetResult();
+        transport.Connected += connectedHandler;
+        try
+        {
+            run = transport.RunAsync(settings,
+                (request, token) => accepted.Writer.WriteAsync(request, token).AsTask(), runCancellation.Token);
+            await connected.Task.WaitAsync(OperationTimeout, ct);
+
+            const string dmRequest = "plain DM request without a mention: 日本語 🌊";
+            using var requestPost = await PostAsync(http, server, state.MemberUser.Token, dmChannelId, dmRequest, ct);
+            var request = await accepted.Reader.ReadAsync(ct).AsTask().WaitAsync(OperationTimeout, ct);
+            Assert.Equal(dmChannelId, request.ChannelId);
+            Assert.Equal(requestPost.RootElement.GetProperty("id").GetString(), request.ThreadId);
+            Assert.Equal(state.MemberUser.Id, request.UserId);
+            Assert.Equal(dmRequest, request.Text);
+
+            const string replyText = "CAB DM-only reply verified 🟢";
+            await transport.ReplyAsync(request, replyText, ct);
+            using var thread = await GetThreadAsync(http, server, settings.MattermostToken,
+                request.ThreadId, ct);
+            Assert.Contains(thread.RootElement.GetProperty("posts").EnumerateObject(), item =>
+                item.Value.TryGetProperty("message", out var message) && message.GetString() == replyText &&
+                item.Value.TryGetProperty("root_id", out var rootId) && rootId.GetString() == request.ThreadId);
+
+            using var publicPost = await PostAsync(http, server, state.MemberUser.Token,
+                state.Channel.Id, $"@{botUsername} this public-channel post must be ignored", ct);
             await AssertNoRequestAsync(accepted.Reader, ct);
         }
         finally

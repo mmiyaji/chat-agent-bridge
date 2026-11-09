@@ -76,7 +76,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
             ArgumentNullException.ThrowIfNull(onRequest);
             if (string.IsNullOrWhiteSpace(settings.MattermostServerUrl) || string.IsNullOrWhiteSpace(settings.MattermostToken))
                 throw new InvalidOperationException("Mattermost server URL and token are required.");
-            if (string.IsNullOrWhiteSpace(settings.MattermostChannelId))
+            if (string.IsNullOrWhiteSpace(settings.MattermostChannelId) && !settings.MattermostAllowDirectMessages)
                 throw new InvalidOperationException("A Mattermost channel ID is required.");
 
             root = TransportHttp.MattermostBaseUri(settings.MattermostServerUrl);
@@ -96,6 +96,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
 
         var sessions = _injectedSessionStore ?? new SessionStore();
         var continuations = new MattermostContinuationTracker();
+        var directMessageChannels = new Dictionary<string, bool>(StringComparer.Ordinal);
         var me = await GetIdentityWithRetryAsync(root, token, runToken).ConfigureAwait(false);
         _currentUserId = me.Id;
 
@@ -109,7 +110,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
             try
             {
                 await RunSocketConnectionAsync(socketUri, root, token, settings, me.Username, sessions, continuations,
-                    onRequest, runToken).ConfigureAwait(false);
+                    directMessageChannels, onRequest, runToken).ConfigureAwait(false);
                 if (!runToken.IsCancellationRequested)
                     throw new MattermostReconnectException();
             }
@@ -154,6 +155,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
 
     private async Task RunSocketConnectionAsync(Uri socketUri, Uri root, string token, BridgeSettings settings,
         string? username, SessionStore sessions, MattermostContinuationTracker continuations,
+        Dictionary<string, bool> directMessageChannels,
         Func<ChatRequest, CancellationToken, Task> onRequest, CancellationToken cancellationToken)
     {
         using var socket = new ClientWebSocket();
@@ -205,6 +207,37 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
             if (!envelope.TryGetProperty("data", out var data) || !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
 
             var post = postJson.GetString()!;
+            var isDirectMessage = false;
+            if (currentSettings.MattermostAllowDirectMessages)
+            {
+                try
+                {
+                    using var postDocument = JsonDocument.Parse(post);
+                    var channelId = postDocument.RootElement.TryGetProperty("channel_id", out var channelValue) ? channelValue.GetString() : null;
+                    if (string.IsNullOrWhiteSpace(channelId)) continue;
+                    else
+                    {
+                        if (string.Equals(channelId, currentSettings.MattermostChannelId, StringComparison.Ordinal))
+                        {
+                            isDirectMessage = false;
+                        }
+                        else if (!directMessageChannels.TryGetValue(channelId, out isDirectMessage))
+                        {
+                            var cacheResult = true;
+                            try { isDirectMessage = await IsDirectMessageChannelAsync(root, token, channelId, cancellationToken).ConfigureAwait(false); }
+                            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                            catch { isDirectMessage = false; cacheResult = false; }
+                            if (cacheResult)
+                            {
+                                if (directMessageChannels.Count >= 2000) directMessageChannels.Clear();
+                                directMessageChannels[channelId] = isDirectMessage;
+                            }
+                        }
+                        if (!isDirectMessage && !string.Equals(channelId, currentSettings.MattermostChannelId, StringComparison.Ordinal)) continue;
+                    }
+                }
+                catch (JsonException) { continue; }
+            }
             await ProcessPostAsync(post, currentSettings, _currentUserId ?? "", username, sessions, continuations, _seen,
                 async (request, ct) =>
                 {
@@ -220,8 +253,17 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
                     if (isBot) return false;
                     await onRequest(request, ct).ConfigureAwait(false);
                     return true;
-                }, cancellationToken).ConfigureAwait(false);
+                }, cancellationToken, isDirectMessage).ConfigureAwait(false);
         }
+    }
+
+    private async Task<bool> IsDirectMessageChannelAsync(Uri root, string token, string channelId, CancellationToken cancellationToken)
+    {
+        var request = TransportHttp.AuthenticatedRequest(HttpMethod.Get,
+            new Uri(root, "api/v4/channels/" + Uri.EscapeDataString(channelId)), token);
+        using var channel = await TransportHttp.SendJsonAsync<JsonDocument>(ActiveHttp, request, cancellationToken).ConfigureAwait(false);
+        return channel.RootElement.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String &&
+            string.Equals(type.GetString(), "D", StringComparison.Ordinal);
     }
 
     private async Task<MattermostUser> GetAuthorWithRetryAsync(Uri root, string token, string userId,
@@ -305,8 +347,10 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         ObjectDisposedException.ThrowIf(_disposed, this);
         CancellationToken runToken = _runLifetime?.Token ?? new CancellationToken(canceled: true);
         if (runToken.IsCancellationRequested) throw new OperationCanceledException(runToken);
-        if (!string.Equals(settings.MattermostChannelId, _channelId, StringComparison.Ordinal))
+        if (!string.Equals(settings.MattermostChannelId, _channelId, StringComparison.Ordinal) ||
+            settings.MattermostAllowDirectMessages != (_liveAccessSettings ?? settings).MattermostAllowDirectMessages)
             throw new InvalidOperationException("Mattermost notification settings do not match the active connection.");
+        if (string.IsNullOrWhiteSpace(settings.MattermostChannelId)) return;
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(runToken, cancellationToken);
         var root = _serverUri ?? throw new InvalidOperationException("Mattermost is not connected.");
         var token = _token ?? throw new InvalidOperationException("Mattermost is not connected.");
@@ -459,20 +503,21 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         MattermostPost? post;
         try { post = JsonSerializer.Deserialize<MattermostPost>(json, TransportHttp.JsonOptions); }
         catch (JsonException) { return null; }
-        if (post is null || string.IsNullOrWhiteSpace(post.Id) || string.IsNullOrWhiteSpace(post.UserId) ||
-            !string.Equals(post.ChannelId, channelFilter, StringComparison.Ordinal) ||
+        if (post is null || string.IsNullOrWhiteSpace(post.Id) || string.IsNullOrWhiteSpace(post.UserId) || string.IsNullOrWhiteSpace(post.ChannelId) ||
+            (!string.IsNullOrEmpty(channelFilter) && !string.Equals(post.ChannelId, channelFilter, StringComparison.Ordinal)) ||
             string.Equals(post.UserId, currentUserId, StringComparison.Ordinal) || isBot ||
             string.IsNullOrWhiteSpace(post.Message) || IsFromWebhook(post)) return null;
         return post;
     }
 
-    private static ChatRequest? BuildRequest(MattermostPost? post, string? currentUsername, bool allowPlainThreadReplies)
+    private static ChatRequest? BuildRequest(MattermostPost? post, string? currentUsername, bool allowPlainThreadReplies, bool allowPlainDirectMessage = false)
     {
         if (post is null) return null;
         var threadId = string.IsNullOrWhiteSpace(post.RootId) ? post.Id : post.RootId;
         var isThreadReply = !string.IsNullOrWhiteSpace(post.RootId) &&
             !string.Equals(post.RootId, post.Id, StringComparison.Ordinal);
-        if (!TryGetTriggeredText(post.Message, currentUsername, allowPlainThreadReplies, isThreadReply, out var text)) return null;
+        if (!TryGetTriggeredText(post.Message, currentUsername, allowPlainThreadReplies, isThreadReply, out var text,
+                allowPlainDirectMessage && !isThreadReply)) return null;
         var files = ReadIncomingFileIds(post.FileIds, out var filesError);
         return new ChatRequest("mattermost", post.ChannelId, threadId, post.UserId, text, post.Id)
         {
@@ -490,10 +535,11 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         MattermostContinuationTracker continuations,
         BoundedSeenSet seen,
         Func<ChatRequest, CancellationToken, Task<bool>> deliver,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool isDirectMessage = false)
     {
         var candidate = await ResolvePostCandidateAsync(json, settings, currentUserId, currentUsername,
-            sessions, continuations, cancellationToken).ConfigureAwait(false);
+            sessions, continuations, cancellationToken, isDirectMessage).ConfigureAwait(false);
         if (candidate is null || !seen.TryAdd(candidate.Request.MessageId)) return false;
 
         var delivered = await deliver(candidate.Request, cancellationToken).ConfigureAwait(false);
@@ -509,10 +555,11 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         string? currentUsername,
         SessionStore sessions,
         MattermostContinuationTracker continuations,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool isDirectMessage = false)
     {
-        var post = ReadPost(json, settings.MattermostChannelId, currentUserId, isBot: false);
-        var explicitRequest = BuildRequest(post, currentUsername, allowPlainThreadReplies: false);
+        var post = ReadPost(json, isDirectMessage ? "" : settings.MattermostChannelId, currentUserId, isBot: false);
+        var explicitRequest = BuildRequest(post, currentUsername, allowPlainThreadReplies: false, allowPlainDirectMessage: isDirectMessage);
         if (explicitRequest is not null)
         {
             if (ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", explicitRequest.UserId,
@@ -523,7 +570,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
                 : null;
         }
 
-        var continuation = BuildRequest(post, currentUsername, allowPlainThreadReplies: true);
+        var continuation = BuildRequest(post, currentUsername, allowPlainThreadReplies: true, allowPlainDirectMessage: isDirectMessage);
         if (continuation is null || !ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", continuation.UserId,
                 continuation.ChannelId, continuation.ThreadId)) return null;
 
@@ -539,7 +586,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         ChatSessionScope.Create("mattermost", request.ChannelId, request.ThreadId, request.UserId, settings.MattermostServerUrl);
 
     private static bool TryGetTriggeredText(string message, string? currentUsername, bool allowPlainThreadReplies,
-        bool isThreadReply, out string text)
+        bool isThreadReply, out string text, bool allowPlainTopLevel = false)
     {
         text = string.Empty;
         if (HasTrigger(message))
@@ -570,7 +617,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
             }
         }
 
-        if (!allowPlainThreadReplies || !isThreadReply) return false;
+        if (!allowPlainTopLevel && (!allowPlainThreadReplies || !isThreadReply)) return false;
         text = message.Trim();
         return text.Length > 0;
     }

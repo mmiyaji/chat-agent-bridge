@@ -6,6 +6,7 @@ public sealed record OnboardingConsent(string PolicyVersion, DateTimeOffset Acce
 
 public sealed class OnboardingConsentStore
 {
+    // Bump this when either the Terms or Privacy Policy changes so every installation must consent again.
     public const string CurrentPolicyVersion = "2026-10-20.2";
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly string _filePath;

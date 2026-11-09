@@ -9,6 +9,13 @@
   <data name="SettingsSearchBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>設定を検索</value></data>
   <data name="InboxOpenConnectionSettings.Content" xml:space="preserve"><value>チャット設定を開く</value></data>
   <data name="MattermostBypassProxy.Content" xml:space="preserve"><value>プロキシを使わず直接接続</value></data>
+  <data name="MattermostAllowDirectMessages.Content" xml:space="preserve"><value>利用者との個別DMでも依頼を受け付ける</value></data>
+  <data name="MattermostAllowDirectMessagesHelp.Text" xml:space="preserve"><value>初期値はオンです。利用者がBotとのDMを開いて送るだけで依頼できます。BotからDMを作る必要はありません。実行できるのは許可ユーザーのみで、依頼の承認方法は共通設定に従います。DMだけならサーバーURLとBotトークンで接続でき、チャンネルIDとスレッドの指定は不要です。</value></data>
+  <data name="SlackDirectMessagesGroupTitle.Text" xml:space="preserve"><value>個別DM</value></data>
+  <data name="SlackAllowDirectMessages.Content" xml:space="preserve"><value>利用者との個別DMでも依頼を受け付ける</value></data>
+  <data name="SlackAllowDirectMessagesHelp.Text" xml:space="preserve"><value>初期値はオンです。許可ユーザーがBotとのDMに通常のメッセージを送って依頼できます。Botが先にDMを開く必要はなく、依頼の承認方法は共通設定に従います。Slackアプリに message.im イベントと im:history 権限を追加して再インストールし、CABを再接続してください。</value></data>
+  <data name="WizardSlackAllowDirectMessages.Content" xml:space="preserve"><value>利用者との個別DMを依頼先にする</value></data>
+  <data name="WizardMattermostAllowDirectMessages.Content" xml:space="preserve"><value>利用者との個別DMを依頼先にする（おすすめ）</value></data>
   <data name="MattermostProxyHelp.Text" xml:space="preserve"><value>社内のMattermostへ直接接続する場合にオンにします。オフはシステムのプロキシ設定を使用します。ユーザー検索・投稿リンクの確認・メッセージ送受信すべてに適用します。変更後は再接続してください。</value></data>
   <data name="MainNavigation.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>メイン ナビゲーション</value>
@@ -420,7 +427,7 @@
     <value>使うサービスの接続先と許可ユーザーを設定し、「チャット」から接続してください。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock048.Text" xml:space="preserve">
-    <value>受信するチャンネルのIDを指定します。BotとのDMを使う場合は、そのDMのチャンネルIDです。先頭の @メンションか !cab 依頼内容で開始し、開始した本人は同じスレッドへ普通に返信して続けられます。通常のチャンネルではBotの参加も必要です。</value>
+    <value>チャンネルを使う場合は、名前で検索して選択します。Botをそのチャンネルに参加させてください。個別DMだけを使う場合、チャンネルの指定は不要です。</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock049.Text" xml:space="preserve">
     <value>サーバーURL</value>
@@ -429,10 +436,10 @@
     <value>MattermostサーバーURL</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock050.Text" xml:space="preserve">
-    <value>受信するチャンネルのID</value>
+    <value>チャンネルID（手入力する場合のみ。個別DMだけなら空欄）</value>
   </data>
   <data name="MattermostChannelId.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>MattermostチャンネルID</value>
+    <value>MattermostチャンネルID（個別DMのみの場合は空欄）</value>
   </data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock051.Text" xml:space="preserve">
     <value>接続するBotまたはユーザーのアクセストークン</value>
@@ -752,6 +759,9 @@
   <data name="onboardingOnboardingWizardTextBlock010.Text" xml:space="preserve">
     <value>Slackの接続情報</value>
   </data>
+  <data name="WizardSlackGuideLink.Content" xml:space="preserve"><value>Slackの設定手順</value></data>
+  <data name="WizardSlackGuideLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Slackの設定手順を開く</value></data>
+  <data name="WizardDirectMessageDefaultHelp.Text" xml:space="preserve"><value>個別DMは初期設定で有効です。まずBotとの専用DMで利用できます。共有チャンネルやチャンネル制限は、必要になったときにチャット設定で追加できます。</value></data>
   <data name="onboardingOnboardingWizardTextBlock011.Text" xml:space="preserve">
     <value>Botトークン（xoxb-で始まる値）</value>
   </data>
@@ -776,6 +786,10 @@
   <data name="onboardingOnboardingWizardTextBlock015.Text" xml:space="preserve">
     <value>Mattermostの接続情報</value>
   </data>
+  <data name="WizardMattermostGuideLink.Content" xml:space="preserve"><value>Mattermostの設定手順</value></data>
+  <data name="WizardMattermostGuideLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mattermostの設定手順を開く</value></data>
+  <data name="WizardDiscordGuideLink.Content" xml:space="preserve"><value>Discordの設定手順</value></data>
+  <data name="WizardDiscordGuideLink.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discordの設定手順を開く</value></data>
   <data name="WizardMattermostServerUrl.Header" xml:space="preserve">
     <value>サーバーURL</value>
   </data>
@@ -783,7 +797,7 @@
     <value>HTTPSのサーバーURLを入力します。HTTPは、このPCで動くサーバー（localhostなど）に限り利用できます。</value>
   </data>
   <data name="WizardMattermostChannelId.Header" xml:space="preserve">
-    <value>チャンネルID</value>
+    <value>チャンネルID（任意）</value>
   </data>
   <data name="WizardSearchMattermostChannelsButton.Content" xml:space="preserve"><value>チャンネルを検索</value></data>
   <data name="onboardingOnboardingWizardTextBlock017.Text" xml:space="preserve">
@@ -1173,6 +1187,10 @@
   <data name="PortableUpdatePreferences.Description" xml:space="preserve"><value>自動確認・プレビュー版</value></data>
   <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>リリースノート（GitHub）</value></data>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLIを確認できませんでした</value></data>
+  <data name="CliCheckSuccess.Title" xml:space="preserve"><value>CLIを確認しました</value></data>
+  <data name="UpdateNotice.Message" xml:space="preserve"><value>このバージョンの主な変更点や改善点を確認できます。</value></data>
+  <data name="UpdateNoticeAction.Content" xml:space="preserve"><value>変更内容を見る</value></data>
+  <data name="UpdateNoticeAction.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>アプリの変更内容を確認</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Windowsサインイン時にこのアプリを起動</value></data>
   <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>アプリ起動後に自動接続するチャット</value></data>
   <data name="TrayMoveLabel.Text" xml:space="preserve"><value>今すぐシステム トレイに移動</value></data>
@@ -1298,11 +1316,11 @@
   <data name="DiscordAllowedGuildIdsLabel.Text" xml:space="preserve"><value>許可するサーバーID</value></data>
   <data name="DiscordAllowedGuildIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordサーバーID</value></data>
   <data name="DiscordAllowedGuildIdsHelp.Text" xml:space="preserve"><value>ダイレクトメッセージを無効にする場合は必須です。サーバーIDを1行に1つ入力してください。</value></data>
-  <data name="DiscordAllowDirectMessages.Header" xml:space="preserve"><value>ダイレクトメッセージを許可</value></data>
-  <data name="DiscordAllowDirectMessages.OnContent" xml:space="preserve"><value>オン</value></data>
-  <data name="DiscordAllowDirectMessages.OffContent" xml:space="preserve"><value>オフ</value></data>
-  <data name="DiscordAllowDirectMessages.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Discordのダイレクトメッセージを許可</value></data>
-  <data name="DiscordAllowDirectMessagesHelp.Text" xml:space="preserve"><value>有効にすると、許可したユーザーからサーバーIDなしでDMの依頼を受け取れます。</value></data>
+  <data name="DiscordAllowDirectMessages.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>利用者との個別DMでも依頼を受け付ける</value></data>
+  <data name="DiscordDirectMessagesGroupTitle.Text" xml:space="preserve"><value>個別DM</value></data>
+  <data name="DiscordAllowDirectMessages.Content" xml:space="preserve"><value>利用者との個別DMでも依頼を受け付ける</value></data>
+  <data name="WizardDiscordAllowDirectMessages.Content" xml:space="preserve"><value>利用者との個別DMを依頼先にする</value></data>
+  <data name="DiscordAllowDirectMessagesHelp.Text" xml:space="preserve"><value>初期値はオンです。許可ユーザーがBotとのDMに通常のメッセージを送って依頼できます。Botが先にDMを開く必要はなく、依頼の承認方法は共通設定に従います。DMだけを使う場合はサーバーIDの指定は不要です。</value></data>
   <data name="DiscordAllowedChannelIdsLabel.Text" xml:space="preserve"><value>許可するチャンネルID（任意）</value></data>
   <data name="DiscordAllowedChannelIds.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>許可するDiscordチャンネルID</value></data>
   <data name="DiscordAllowedChannelIdsHelp.Text" xml:space="preserve"><value>追加の制限として設定できます。チャンネルIDを1行に1つ入力してください。</value></data>
@@ -1455,4 +1473,17 @@
   <data name="SearchMattermostChannelsButton.Content" xml:space="preserve"><value>チャンネルを検索</value></data>
   <data name="SearchSlackChannelsButton.Content" xml:space="preserve"><value>チャンネルを検索・選択</value></data>
   <data name="SearchDiscordChannelsButton.Content" xml:space="preserve"><value>チャンネルを検索・選択</value></data>
+  <data name="MattermostCheckAccountButton.Content" xml:space="preserve"><value>トークンのアカウントを確認</value></data>
+  <data name="MattermostCheckAccountButton.ToolTipService.ToolTip" xml:space="preserve"><value>このトークンが接続するMattermostアカウントを表示します。専用Botを使い、依頼者は別途「許可ユーザー」に登録してください。</value></data>
+  <data name="MattermostConnectionGroupTitle.Text" xml:space="preserve"><value>接続設定</value></data>
+  <data name="MattermostIdentityVerified.Title" xml:space="preserve"><value>接続アカウントを確認しました</value></data>
+  <data name="MattermostRequestersGroupTitle.Text" xml:space="preserve"><value>許可ユーザー</value></data>
+  <data name="MattermostRequestersGroupHelp.Text" xml:space="preserve"><value>依頼する人を共通設定で管理します。Botアカウントは依頼者として追加しません。</value></data>
+  <data name="MattermostRequestersEmpty.Text" xml:space="preserve"><value>許可ユーザーはまだ登録されていません。</value></data>
+  <data name="MattermostDirectMessagesGroupTitle.Text" xml:space="preserve"><value>個別DM</value></data>
+  <data name="MattermostDestinationsGroupTitle.Text" xml:space="preserve"><value>共有チャンネルとスレッド（任意）</value></data>
+  <data name="MattermostDestinationsGroupSummary.Text" xml:space="preserve"><value>個別DMだけなら設定不要。共有チャンネルを使う場合に開きます。</value></data>
+  <data name="MattermostOptionalThreadGroupTitle.Text" xml:space="preserve"><value>スレッドの指定（任意）</value></data>
+  <data name="MattermostAdditionalGroupTitle.Text" xml:space="preserve"><value>その他の接続設定</value></data>
+  <data name="OpenSettingsFolder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>設定フォルダーを開く</value></data>
 </root>

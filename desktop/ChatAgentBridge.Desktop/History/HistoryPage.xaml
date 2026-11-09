@@ -234,7 +234,8 @@
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <StackPanel Spacing="4">
+                                        <Border Grid.Row="0" Style="{StaticResource ActivityCardStyle}" Padding="12" AutomationProperties.AutomationId="SessionConversationSummaryCard">
+                                        <StackPanel Spacing="8">
                                             <TextBlock Text="{x:Bind ViewModel.ConversationHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ListIdentity, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ListLocation, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
@@ -242,7 +243,9 @@
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.Updated, Mode=OneWay, FallbackValue=''}" Style="{StaticResource CaptionTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.ContinueInOriginalThreadHint, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
                                         </StackPanel>
-                                        <StackPanel Grid.Row="1" Spacing="4">
+                                        </Border>
+                                        <Border Grid.Row="1" Style="{StaticResource ActivityCardStyle}" Padding="12" AutomationProperties.AutomationId="SessionRuntimeCard">
+                                        <StackPanel Spacing="8">
                                             <TextBlock Text="{x:Bind ViewModel.RuntimeHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.WorkspacePathLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.Workspace, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
@@ -251,10 +254,13 @@
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.Model, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ReasoningEffort, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         </StackPanel>
-                                        <StackPanel Grid.Row="2" Spacing="4">
+                                        </Border>
+                                        <Border Grid.Row="2" Style="{StaticResource ActivityCardStyle}" Padding="12" AutomationProperties.AutomationId="SessionPolicyCard">
+                                        <StackPanel Spacing="8">
                                             <TextBlock Text="{x:Bind ViewModel.PolicyHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ExecutionPolicy, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         </StackPanel>
+                                        </Border>
                                         <StackPanel Grid.Row="3" Spacing="2" AutomationProperties.AutomationId="SessionRecentRuns"
                                                     Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSessionExecutions), Mode=OneWay}">
                                             <TextBlock x:Uid="SessionRecentRunsHeading" localization:LocalizedResourceKey.Key="SessionRecentRunsHeading" Style="{StaticResource BodyStrongTextBlockStyle}" />

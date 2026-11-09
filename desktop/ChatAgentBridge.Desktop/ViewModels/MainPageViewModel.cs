@@ -93,8 +93,8 @@ public partial class MainPageViewModel : ObservableObject
             if (e.PropertyName is nameof(IsLoading) or nameof(IsSettingsLoaded) or nameof(WorkspaceRoot) or
                 nameof(AgentExecutable) or nameof(AgentArguments) or nameof(AgentProvider) or nameof(AgentModel) or
                 nameof(AgentReasoningEffort) or nameof(UseAppServer) or nameof(AutoConnectProvider) or nameof(RequireApproval) or
-                nameof(MattermostServerUrl) or nameof(MattermostBypassProxy) or nameof(MattermostChannelId) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
-                nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowedUserIds) or nameof(DiscordBotToken) or nameof(DiscordAllowedUserIds) or nameof(DiscordAllowedGuildIds) or nameof(DiscordAllowedChannelIds) or nameof(DiscordAllowedThreadIds) or nameof(DiscordAllowDirectMessages) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(PostConnectionNotice) or
+                nameof(MattermostServerUrl) or nameof(MattermostBypassProxy) or nameof(MattermostChannelId) or nameof(MattermostAllowDirectMessages) or nameof(MattermostToken) or nameof(MattermostAllowedUserIds) or
+                nameof(SlackBotToken) or nameof(SlackAppToken) or nameof(SlackAllowDirectMessages) or nameof(SlackAllowedUserIds) or nameof(DiscordBotToken) or nameof(DiscordAllowedUserIds) or nameof(DiscordAllowedGuildIds) or nameof(DiscordAllowedChannelIds) or nameof(DiscordAllowedThreadIds) or nameof(DiscordAllowDirectMessages) or nameof(ShareApprovalsInChat) or nameof(ShareAgentQuestionsInChat) or nameof(PostConnectionNotice) or
                 nameof(AgentPermissionMode) or nameof(AllowAgentNetwork) or nameof(TrustedWorkspaceRoots) or nameof(ChatApprovalMode) or
                 nameof(AutoApproveSwitchCommands) or nameof(ChatResultMode) or nameof(ChatFollowUpMode) or nameof(ChatProgressDetail) or nameof(FileAttachmentApprovalMode) or nameof(FileAttachmentMaxSizeMb) or nameof(FileAttachmentMaxCount) or nameof(FileAttachmentMaxTotalSizeMb) or
                 nameof(SlackAllowedChannelIds) or nameof(SlackAllowedThreadIds) or nameof(MattermostAllowedThreadIds))
@@ -214,8 +214,10 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty] public partial string MattermostServerUrl { get; set; } = string.Empty;
     [ObservableProperty] public partial bool MattermostBypassProxy { get; set; }
     [ObservableProperty] public partial string MattermostChannelId { get; set; } = string.Empty;
+    [ObservableProperty] public partial bool MattermostAllowDirectMessages { get; set; }
     [ObservableProperty] public partial string SlackBotToken { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackAppToken { get; set; } = string.Empty;
+    [ObservableProperty] public partial bool SlackAllowDirectMessages { get; set; }
     [ObservableProperty] public partial string DiscordBotToken { get; set; } = string.Empty;
     [ObservableProperty] public partial string MattermostAllowedUserIds { get; set; } = string.Empty;
     [ObservableProperty] public partial string SlackAllowedUserIds { get; set; } = string.Empty;
@@ -365,10 +367,12 @@ public partial class MainPageViewModel : ObservableObject
             MattermostServerUrl = _settings.MattermostServerUrl;
             MattermostBypassProxy = _settings.MattermostBypassProxy;
             MattermostChannelId = _settings.MattermostChannelId;
+            MattermostAllowDirectMessages = _settings.MattermostAllowDirectMessages;
             PostConnectionNotice = _settings.PostConnectionNotice;
             MattermostToken = _settings.MattermostToken;
             SlackBotToken = _settings.SlackBotToken;
             SlackAppToken = _settings.SlackAppToken;
+            SlackAllowDirectMessages = _settings.SlackAllowDirectMessages;
             DiscordBotToken = _settings.DiscordBotToken;
             MattermostAllowedUserIds = _settings.MattermostAllowedUserIds;
             SlackAllowedUserIds = _settings.SlackAllowedUserIds;
@@ -896,6 +900,7 @@ public partial class MainPageViewModel : ObservableObject
         if (_closing) return;
         _closing = true;
         LiveOutput.Dispose();
+        CancelMattermostConnectionIdentityCheck();
         CancelMattermostUsernameLookup();
         CancelMattermostThreadLookup();
         CancelSlackLookups();
@@ -919,6 +924,7 @@ public partial class MainPageViewModel : ObservableObject
         if (changed)
         {
             OnPropertyChanged(nameof(MattermostToken));
+            InvalidateMattermostConnectionIdentity();
             InvalidateMattermostUsernameLookup();
             InvalidateMattermostThreadLookup();
             RefreshSettingsDraftChanges(notifyEdited: true);
@@ -952,7 +958,7 @@ public partial class MainPageViewModel : ObservableObject
         }
 
         var agentReady = _hasSavedSettings && !string.IsNullOrWhiteSpace(_settings.AgentExecutable) && !string.IsNullOrWhiteSpace(_settings.WorkspaceRoot) && _savedWorkspaceExists;
-        var mattermostCredentials = !string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) && !string.IsNullOrWhiteSpace(_settings.MattermostChannelId) && !string.IsNullOrWhiteSpace(_settings.MattermostToken);
+        var mattermostCredentials = !string.IsNullOrWhiteSpace(_settings.MattermostServerUrl) && (!string.IsNullOrWhiteSpace(_settings.MattermostChannelId) || _settings.MattermostAllowDirectMessages) && !string.IsNullOrWhiteSpace(_settings.MattermostToken);
         var slackCredentials = !string.IsNullOrWhiteSpace(_settings.SlackBotToken) && !string.IsNullOrWhiteSpace(_settings.SlackAppToken);
         var discordCredentials = !string.IsNullOrWhiteSpace(_settings.DiscordBotToken);
         var mattermostAllowed = AllowedUsersValid(_settings.MattermostAllowedUserIds);
@@ -1017,10 +1023,12 @@ public partial class MainPageViewModel : ObservableObject
         MattermostServerUrl = MattermostServerUrl.Trim(),
         MattermostBypassProxy = MattermostBypassProxy,
         MattermostChannelId = MattermostChannelId.Trim(),
+        MattermostAllowDirectMessages = MattermostAllowDirectMessages,
         PostConnectionNotice = PostConnectionNotice,
         MattermostToken = MattermostToken,
         SlackBotToken = SlackBotToken,
         SlackAppToken = SlackAppToken,
+        SlackAllowDirectMessages = SlackAllowDirectMessages,
         DiscordBotToken = DiscordBotToken,
         DiscordAllowedUserIds = DiscordAllowedUserIds,
         DiscordAllowedGuildIds = DiscordAllowedGuildIds,

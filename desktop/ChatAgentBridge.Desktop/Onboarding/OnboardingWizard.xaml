@@ -93,6 +93,11 @@
                                     AutomationProperties.AutomationId="WizardCliReviewTrust" />
                         </InfoBar.ActionButton>
                     </InfoBar>
+                    <InfoBar x:Uid="CliCheckSuccess" Severity="Success" IsClosable="False"
+                             IsOpen="{x:Bind ViewModel.CliCheckSucceeded, Mode=OneWay}"
+                             Message="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
+                             AutomationProperties.Name="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
+                             AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardCliCheckSuccess" />
                     <StackPanel Spacing="8">
                         <Button Click="ReloadProcessEnvironment_Click" IsEnabled="{x:Bind local:OnboardingWizard.EnvironmentReloadAllowed(ViewModel.IsLoading, ViewModel.IsRunning, ViewModel.IsCheckingCli, ViewModel.ModelCatalog.IsLoading, ViewModel.IsOnboardingBusy, Inbox.IsExecuting, ViewModel.SaveSettingsCommand.IsRunning), Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardReloadProcessEnvironment" x:Uid="WizardReloadProcessEnvironment" />
                         <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="WizardReloadProcessEnvironmentHelp" x:Uid="WizardReloadProcessEnvironmentHelp" />
@@ -125,8 +130,10 @@
                         <ComboBoxItem Content="Mattermost" Tag="mattermost" />
                         <ComboBoxItem Content="Discord" Tag="discord" x:Uid="WizardProviderDiscord" />
                     </ComboBox>
-                    <StackPanel Spacing="12" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardSlack), Mode=OneWay}">
+                    <Border Style="{StaticResource ActivityCardStyle}" Padding="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardSlack), Mode=OneWay}">
+                    <StackPanel Spacing="16">
                         <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock010" x:Uid="onboardingOnboardingWizardTextBlock010" />
+                        <HyperlinkButton NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/blob/main/docs/slack-setup.md" x:Uid="WizardSlackGuideLink" HorizontalAlignment="Left" />
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="4">
                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock011" x:Uid="onboardingOnboardingWizardTextBlock011" />
@@ -141,6 +148,14 @@
                             </StackPanel>
                             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="SlackAppTokenBox" Grid.ColumnSpan="2" Padding="12,5,44,6" PasswordChanged="SlackAppTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardSlackAppToken"  AutomationProperties.IsRequiredForForm="True" x:Uid="WizardSlackAppToken" /><ToggleButton x:Name="SlackAppTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="WizardSlackAppTokenReveal" /></Grid>
                         </StackPanel>
+                        <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="WizardSlackDirectMessagesGroup">
+                            <StackPanel Spacing="8">
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="SlackDirectMessagesGroupTitle" />
+                                <CheckBox IsChecked="{x:Bind ViewModel.SlackAllowDirectMessages, Mode=TwoWay}" AutomationProperties.AutomationId="WizardSlackAllowDirectMessages" x:Uid="WizardSlackAllowDirectMessages" />
+                                <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="SlackAllowDirectMessagesHelp" />
+                            </StackPanel>
+                        </Border>
+                        <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="WizardDirectMessageDefaultHelp" />
                         <StackPanel Spacing="8" AutomationProperties.AutomationId="WizardSlackUsernameLookup">
                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardSlackUsernameLookupLabel" />
                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="SlackUsernameLookupHelp" />
@@ -151,16 +166,14 @@
                             <Button Command="{x:Bind ViewModel.AddSlackUsernameLookupResultCommand}" IsEnabled="{x:Bind ViewModel.CanAddSlackUsernameLookupResult, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardAddSlackUserButton" x:Uid="WizardAddSlackUserButton" />
                         </StackPanel>
                         <TextBox x:Name="SlackAllowedUsersBox"  Text="{x:Bind ViewModel.SlackAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardSlackAllowedUserIds" x:Uid="WizardSlackAllowedUserIds" />
-                        <StackPanel Spacing="8" AutomationProperties.AutomationId="WizardSlackAllowedChannels">
-                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardSlackAllowedChannelsLabel" />
-                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="WizardSlackAllowedChannelsHelp" />
-                            <Button AutomationProperties.AutomationId="WizardSearchSlackChannelsButton" HorizontalAlignment="Left" Click="SearchSlackChannels_Click" x:Uid="SearchSlackChannelsButton" />
-                        </StackPanel>
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock013" x:Uid="onboardingOnboardingWizardTextBlock013" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock014" x:Uid="onboardingOnboardingWizardTextBlock014" />
                     </StackPanel>
-                    <StackPanel Spacing="12" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardMattermost), Mode=OneWay}">
+                    </Border>
+                    <Border Style="{StaticResource ActivityCardStyle}" Padding="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardMattermost), Mode=OneWay}">
+                    <StackPanel Spacing="16">
                         <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock015" x:Uid="onboardingOnboardingWizardTextBlock015" />
+                        <HyperlinkButton NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/blob/main/docs/mattermost-setup.md" x:Uid="WizardMattermostGuideLink" HorizontalAlignment="Left" />
                         <TextBox x:Name="MattermostServerUrlBox"  Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com" AutomationProperties.AutomationId="WizardMattermostServerUrl"  HeaderTemplate="{StaticResource RequiredHeaderTemplate}" AutomationProperties.IsRequiredForForm="True" x:Uid="WizardMattermostServerUrl" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock016" x:Uid="onboardingOnboardingWizardTextBlock016" />
                         <StackPanel Spacing="8">
@@ -170,8 +183,22 @@
                             </StackPanel>
                             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="36" /></Grid.ColumnDefinitions><PasswordBox x:Name="MattermostTokenBox" Grid.ColumnSpan="2" Padding="12,5,44,6" PasswordChanged="MattermostTokenBox_PasswordChanged"  AutomationProperties.AutomationId="WizardMattermostToken"  AutomationProperties.IsRequiredForForm="True" x:Uid="WizardMattermostToken" /><ToggleButton x:Name="MattermostTokenRevealButton" Grid.Column="1" Width="36" Height="36" Padding="0" AutomationProperties.AutomationId="WizardMattermostTokenReveal" /></Grid>
                         </StackPanel>
-                        <TextBox x:Name="MattermostChannelBox"  Text="{x:Bind ViewModel.MattermostChannelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="WizardMattermostChannelId"  HeaderTemplate="{StaticResource RequiredHeaderTemplate}" AutomationProperties.IsRequiredForForm="True" x:Uid="WizardMattermostChannelId" />
-                        <Button x:Uid="WizardSearchMattermostChannelsButton" AutomationProperties.AutomationId="WizardSearchMattermostChannelsButton" HorizontalAlignment="Left" Click="SearchMattermostChannels_Click" />
+                        <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button Command="{x:Bind ViewModel.CheckMattermostConnectionIdentityCommand}" IsEnabled="{x:Bind ViewModel.CanCheckMattermostConnectionIdentity, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="WizardMattermostCheckAccountButton" x:Uid="MattermostCheckAccountButton" />
+                                <ProgressRing IsActive="{x:Bind ViewModel.IsCheckingMattermostConnectionIdentity, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsCheckingMattermostConnectionIdentity), Mode=OneWay}" Width="20" Height="20" AutomationProperties.AutomationId="WizardMattermostCheckAccountProgress" />
+                            </StackPanel>
+                            <TextBlock Text="{x:Bind ViewModel.MattermostConnectionIdentityText, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasMattermostConnectionIdentity), Mode=OneWay}" TextWrapping="Wrap" />
+                            <TextBlock Text="{x:Bind ViewModel.MattermostConnectionIdentityStatus, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.HasMattermostConnectionIdentityStatus), Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardMattermostConnectionIdentityStatus" />
+                        </StackPanel>
+                        <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="WizardMattermostDirectMessagesGroup">
+                            <StackPanel Spacing="8">
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="MattermostDirectMessagesGroupTitle" />
+                                <CheckBox IsChecked="{x:Bind ViewModel.MattermostAllowDirectMessages, Mode=TwoWay}" AutomationProperties.AutomationId="WizardMattermostAllowDirectMessages" x:Uid="WizardMattermostAllowDirectMessages" />
+                                <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="MattermostAllowDirectMessagesHelp" />
+                            </StackPanel>
+                        </Border>
+                        <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="WizardDirectMessageDefaultHelp" />
                         <CheckBox IsChecked="{x:Bind ViewModel.MattermostBypassProxy, Mode=TwoWay}" AutomationProperties.AutomationId="WizardMattermostBypassProxy" x:Uid="MattermostBypassProxy" />
                         <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" AutomationProperties.AutomationId="WizardMattermostProxyHelp" x:Uid="MattermostProxyHelp" />
                         <StackPanel Spacing="8" AutomationProperties.AutomationId="WizardMattermostUsernameLookup">
@@ -186,9 +213,12 @@
                         <TextBox x:Name="MattermostAllowedUsersBox"  Text="{x:Bind ViewModel.MattermostAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardMattermostAllowedUserIds" x:Uid="WizardMattermostAllowedUserIds" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock018" x:Uid="onboardingOnboardingWizardTextBlock018" />
                     </StackPanel>
-                    <StackPanel Spacing="12" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardDiscord), Mode=OneWay}">
+                    </Border>
+                    <Border Style="{StaticResource ActivityCardStyle}" Padding="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardDiscord), Mode=OneWay}">
+                    <StackPanel Spacing="16">
                         <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="WizardDiscordTitle" />
                         <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordBotSetupHelp" localization:LocalizedResourceKey.Key="DiscordBotSetupHelp" />
+                        <HyperlinkButton NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/blob/main/docs/discord-setup.md" x:Uid="WizardDiscordGuideLink" HorizontalAlignment="Left" />
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="4">
                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardDiscordBotTokenLabel" />
@@ -203,22 +233,16 @@
                             <TextBox x:Name="DiscordAllowedUsersBox" Text="{x:Bind ViewModel.DiscordAllowedUserIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardDiscordAllowedUsers" x:Uid="WizardDiscordAllowedUsers" />
                             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordAllowedUserIdsHelp" localization:LocalizedResourceKey.Key="DiscordAllowedUserIdsHelp" />
                         </StackPanel>
-                        <StackPanel Spacing="8">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardDiscordAllowedGuildsLabel" />
-                                <TextBlock Text="*" Foreground="{StaticResource RequiredMarkerBrush}" Visibility="{x:Bind local:OnboardingWizard.ToInverseVisibility(ViewModel.DiscordAllowDirectMessages), Mode=OneWay}" />
+                        <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="WizardDiscordDirectMessagesGroup">
+                            <StackPanel Spacing="8">
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="DiscordDirectMessagesGroupTitle" />
+                                <CheckBox IsChecked="{x:Bind ViewModel.DiscordAllowDirectMessages, Mode=TwoWay}" AutomationProperties.AutomationId="WizardDiscordAllowDirectMessages" x:Uid="WizardDiscordAllowDirectMessages" />
+                                <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordAllowDirectMessagesHelp" />
                             </StackPanel>
-                            <TextBox x:Name="DiscordAllowedGuildsBox" Text="{x:Bind ViewModel.DiscordAllowedGuildIds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" AutomationProperties.AutomationId="WizardDiscordAllowedGuilds" AutomationProperties.IsRequiredForForm="{x:Bind local:OnboardingWizard.Not(ViewModel.DiscordAllowDirectMessages), Mode=OneWay}" x:Uid="WizardDiscordAllowedGuilds" />
-                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordAllowedGuildIdsHelp" localization:LocalizedResourceKey.Key="DiscordAllowedGuildIdsHelp" />
-                        </StackPanel>
-                        <ToggleSwitch IsOn="{x:Bind ViewModel.DiscordAllowDirectMessages, Mode=TwoWay}" AutomationProperties.AutomationId="WizardDiscordAllowDirectMessages" x:Uid="DiscordAllowDirectMessages" />
-                        <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordAllowDirectMessagesHelp" />
-                        <StackPanel Spacing="8">
-                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardDiscordAllowedChannelsLabel" />
-                            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="WizardDiscordAllowedChannelsHelp" />
-                            <Button AutomationProperties.AutomationId="WizardSearchDiscordChannelsButton" HorizontalAlignment="Left" Click="SearchDiscordChannels_Click" x:Uid="SearchDiscordChannelsButton" />
-                        </StackPanel>
+                        </Border>
+                        <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="WizardDirectMessageDefaultHelp" />
                     </StackPanel>
+                    </Border>
                     <TextBlock  TextWrapping="Wrap" Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock019" x:Uid="onboardingOnboardingWizardTextBlock019" />
                 </StackPanel>
 

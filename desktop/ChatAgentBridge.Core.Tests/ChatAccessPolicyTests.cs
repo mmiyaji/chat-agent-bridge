@@ -69,13 +69,13 @@ public sealed class ChatAccessPolicyTests
     }
 
     [Fact]
-    public void DiscordDirectMessagesRequireExplicitOptInAndHonorConfiguredScopes()
+    public void DiscordDirectMessagesAreEnabledByDefaultAndHonorConfiguredScopes()
     {
         const string user = "123456789012345678";
         const string channel = "323456789012345678";
         var settings = new BridgeSettings { DiscordAllowedUserIds = user };
-        Assert.False(ChatAccessPolicy.IsAllowedRequest(settings, "discord", user, channel, channel));
-        Assert.True(ChatAccessPolicy.IsAllowedRequest(settings with { DiscordAllowDirectMessages = true }, "discord", user, channel, channel));
+        Assert.True(ChatAccessPolicy.IsAllowedRequest(settings, "discord", user, channel, channel));
+        Assert.False(ChatAccessPolicy.IsAllowedRequest(settings with { DiscordAllowDirectMessages = false }, "discord", user, channel, channel));
         Assert.False(ChatAccessPolicy.IsAllowedRequest(settings with
         {
             DiscordAllowDirectMessages = true, DiscordAllowedChannelIds = "423456789012345678"

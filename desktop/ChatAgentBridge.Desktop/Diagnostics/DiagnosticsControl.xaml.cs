@@ -179,7 +179,7 @@ public sealed partial class DiagnosticsControl : UserControl
             !string.IsNullOrWhiteSpace(settings.SlackAllowedUserIds))
             providers.Add("Slack");
         if (!string.IsNullOrWhiteSpace(settings.MattermostServerUrl) &&
-            !string.IsNullOrWhiteSpace(settings.MattermostChannelId) &&
+            (!string.IsNullOrWhiteSpace(settings.MattermostChannelId) || settings.MattermostAllowDirectMessages) &&
             !string.IsNullOrWhiteSpace(settings.MattermostToken) &&
             !string.IsNullOrWhiteSpace(settings.MattermostAllowedUserIds))
             providers.Add("Mattermost");

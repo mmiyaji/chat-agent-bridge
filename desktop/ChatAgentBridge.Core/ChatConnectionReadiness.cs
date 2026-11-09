@@ -11,7 +11,7 @@ public static class ChatConnectionReadiness
         {
             "mattermost" => IsMattermostServerUrlValid(settings.MattermostServerUrl) &&
                 !string.IsNullOrWhiteSpace(settings.MattermostToken) &&
-                !string.IsNullOrWhiteSpace(settings.MattermostChannelId) &&
+                (!string.IsNullOrWhiteSpace(settings.MattermostChannelId) || settings.MattermostAllowDirectMessages) &&
                 AllowedUsersValid(settings.MattermostAllowedUserIds),
             "slack" => !string.IsNullOrWhiteSpace(settings.SlackBotToken) &&
                 !string.IsNullOrWhiteSpace(settings.SlackAppToken) &&

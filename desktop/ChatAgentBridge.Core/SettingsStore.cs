@@ -49,7 +49,8 @@ public sealed class SettingsStore
             var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             return new BridgeSettings
             {
-                WorkspaceRoot = Path.IsPathFullyQualified(documents) && Directory.Exists(documents) ? documents : ""
+                WorkspaceRoot = Path.IsPathFullyQualified(documents) && Directory.Exists(documents) ? documents : "",
+                MattermostAllowDirectMessages = true
             };
         }
     }
@@ -86,11 +87,13 @@ public sealed class SettingsStore
                 AutoConnectProvider = autoConnect,
                 MattermostServerUrl = stored.MattermostServerUrl ?? "",
                 MattermostChannelId = stored.MattermostChannelId ?? "",
+                MattermostAllowDirectMessages = stored.MattermostAllowDirectMessages,
                 MattermostToken = Unprotect(stored.MattermostToken),
                 MattermostBypassProxy = stored.MattermostBypassProxy,
                 PostConnectionNotice = stored.PostConnectionNotice,
                 SlackBotToken = Unprotect(stored.SlackBotToken),
                 SlackAppToken = Unprotect(stored.SlackAppToken),
+                SlackAllowDirectMessages = stored.SlackAllowDirectMessages,
                 DiscordBotToken = Unprotect(stored.DiscordBotToken),
                 DiscordAllowedUserIds = ChatAccessPolicy.NormalizeDiscordSnowflakes(stored.DiscordAllowedUserIds ?? ""),
                 DiscordAllowedGuildIds = ChatAccessPolicy.NormalizeDiscordSnowflakes(stored.DiscordAllowedGuildIds ?? ""),
@@ -165,7 +168,8 @@ public sealed class SettingsStore
 
     /// <summary>Grants access only if the pending request still belongs to the saved connection and scope.</summary>
     public Task<BridgeSettings?> TryAddAllowedUserAsync(BridgeSettings connected, string provider,
-        string userId, string channelId, string threadId, string? guildId, CancellationToken cancellationToken = default)
+        string userId, string channelId, string threadId, string? guildId, CancellationToken cancellationToken = default,
+        bool isDirectMessage = false)
         => _operations.RunAsync<BridgeSettings?>("write", async token =>
         {
             var gate = WriteGates.GetOrAdd(_filePath, static _ => new(1, 1));
@@ -173,7 +177,7 @@ public sealed class SettingsStore
             try
             {
                 var current = await LoadCoreAsync(token).ConfigureAwait(false);
-                if (!ChatAccessPolicy.CanApproveAccessRequest(current, connected, provider, channelId, threadId, guildId))
+                if (!ChatAccessPolicy.CanApproveAccessRequest(current, connected, provider, channelId, threadId, guildId, isDirectMessage))
                     return null;
                 var updated = ChatAccessPolicy.WithAllowedUser(current, provider, userId);
                 if (!ReferenceEquals(updated, current)) await SaveCoreAsync(updated, token).ConfigureAwait(false);
@@ -245,11 +249,13 @@ public sealed class SettingsStore
             AutoConnectProvider = settings.AutoConnectProvider,
             MattermostServerUrl = settings.MattermostServerUrl,
             MattermostChannelId = settings.MattermostChannelId,
+            MattermostAllowDirectMessages = settings.MattermostAllowDirectMessages,
             MattermostToken = Protect(settings.MattermostToken),
             MattermostBypassProxy = settings.MattermostBypassProxy,
             PostConnectionNotice = settings.PostConnectionNotice,
             SlackBotToken = Protect(settings.SlackBotToken),
             SlackAppToken = Protect(settings.SlackAppToken),
+            SlackAllowDirectMessages = settings.SlackAllowDirectMessages,
             DiscordBotToken = Protect(settings.DiscordBotToken),
             DiscordAllowedUserIds = discordAllowedUsers,
             DiscordAllowedGuildIds = discordAllowedGuilds,
@@ -340,17 +346,19 @@ public sealed class SettingsStore
         public string? AutoConnectProvider { get; set; }
         public string? MattermostServerUrl { get; set; }
         public string? MattermostChannelId { get; set; }
+        public bool MattermostAllowDirectMessages { get; set; } = true;
         public string? MattermostToken { get; set; }
         public bool MattermostBypassProxy { get; set; }
         public bool PostConnectionNotice { get; set; }
         public string? SlackBotToken { get; set; }
         public string? SlackAppToken { get; set; }
+        public bool SlackAllowDirectMessages { get; set; } = true;
         public string? DiscordBotToken { get; set; }
         public string? DiscordAllowedUserIds { get; set; }
         public string? DiscordAllowedGuildIds { get; set; }
         public string? DiscordAllowedChannelIds { get; set; }
         public string? DiscordAllowedThreadIds { get; set; }
-        public bool DiscordAllowDirectMessages { get; set; }
+        public bool DiscordAllowDirectMessages { get; set; } = true;
         public string? MattermostAllowedUserIds { get; set; }
         public string? SlackAllowedUserIds { get; set; }
         public bool ShareApprovalsInChat { get; set; }

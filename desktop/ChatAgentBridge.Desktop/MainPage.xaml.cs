@@ -2,6 +2,7 @@ using ChatAgentBridge_Desktop.ViewModels;
 using ChatAgentBridge_Desktop.Inbox;
 using ChatAgentBridge.Core;
 using ChatAgentBridge_Desktop.Localization;
+using ChatAgentBridge_Desktop.Deployment;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -409,6 +410,20 @@ public sealed partial class MainPage : Page
 
     private async void ShowTerms_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: false);
     private async void ShowPrivacy_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: true);
+    private async void UpdateNotice_CloseButtonClick(InfoBar sender, object args) =>
+        await ViewModel.DismissUpdateNoticeAsync();
+
+    private async void UpdateNotice_ShowChangesClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var opened = await Windows.System.Launcher.LaunchUriAsync(
+                new Uri("https://github.com/mmiyaji/chat-agent-bridge/releases"));
+            if (opened) await ViewModel.DismissUpdateNoticeAsync();
+        }
+        catch { /* Keep the notice available if the release page cannot be opened. */ }
+    }
+
     public static Visibility ToHiddenVisibility(bool visible) => visible ? Visibility.Collapsed : Visibility.Visible;
     public static bool CanReloadSettings(bool isLoading, bool isRunning) => !isLoading && !isRunning;
     public static InfoBarSeverity ToInfoBarSeverity(string severity) => severity switch
@@ -436,6 +451,7 @@ public sealed partial class MainPage : Page
 #endif
             var startupRefresh = ViewModel.RefreshStartupAsync();
             await ViewModel.LoadAsync();
+            await ViewModel.InitializeUpdateNoticeAsync(DeploymentRuntime.GetDisplayVersion());
             InitializeAgentSettingsScope();
             InitializeConnectionSettingsScope();
             if (IsAgentSelected) await EnsureAgentSettingsScopeAsync();
