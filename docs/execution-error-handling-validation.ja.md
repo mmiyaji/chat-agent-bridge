@@ -20,7 +20,7 @@
 - 結果受信後の履歴確定時に、検証用データ内の `history.json` を `FileShare.Read` で保持し、Windowsの置換を失敗させた。実行経路で `UnauthorizedAccessException` / HRESULT `80070005` が発生し、英語・日本語の画面で終端状態、履歴・監査保存の警告、原因・例外型・HRESULTを確認した。
 - 表示出力は診断を先頭に保持し、CLI結果の先頭も続けて表示。TextBoxのUI Automation値は改行正規化で63,997文字だったが、64,000文字上限内で診断が見えることを確認した。保存監査イベントは `execution_exception`、対象実行ID、cause `0`、例外型、HRESULTを含み、依頼文・トークン・例外メッセージ・パス・スタックを含まない。チャット返信にも診断・CLI結果は含まれなかった。
 - ファイル共有を解除した後の別依頼は実行・履歴保存とも成功。意図的に履歴保存を壊した依頼は、画面で終端状態を示し監査イベントも保存した一方、故障中の履歴JSONには `running` が残る。failed状態の履歴永続化まで検証できるシナリオではない。
-- 成功結果: 英語4確認、[英語画面](../.artifacts/execution-error-e2e/run-en-c8762199ab9e40aa8a2ea8e05db2ee3f/execution-error-en-long-output.png)、[英語回復後](../.artifacts/execution-error-e2e/run-en-c8762199ab9e40aa8a2ea8e05db2ee3f/execution-error-en-recovery.png)。日本語4確認、[日本語画面](../.artifacts/execution-error-e2e/run-ja-29843b85782345f2be18eca5a2727681/execution-error-ja-long-output.png)、[日本語回復後](../.artifacts/execution-error-e2e/run-ja-29843b85782345f2be18eca5a2727681/execution-error-ja-recovery.png)。JSON結果は各実行フォルダーの `results.json`。
+- 成功結果は英語・日本語で各4項目。スクリーンショットと `results.json` は、下記の再現コマンドで作成する各実行フォルダーに出力される。
 - 実サービスへの通信・投稿と認証済みCLI／AI推論は未実施。例外ハンドラーを直接呼ぶ検証とは異なり、受信・承認・CLIプロセス・UI表示・監査保存・後続依頼までを確認した。
 
 初期の試行は検索入力・依頼選択の自動操作、およびUI Automationの改行正規化を考慮しない文字数アサーションで停止した。ハーネスを修正した後、日英で例外から回復まで成功した。製品コードの追加修正は行っていない。

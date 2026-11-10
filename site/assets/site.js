@@ -1,8 +1,8 @@
 (function () {
   var root = document.documentElement;
-  var english = new URLSearchParams(location.search).get('lang') === 'en';
+  var english = new URLSearchParams(location.search).get('lang') === 'en' && Boolean(window.CAB_EN);
 
-  if (english && window.CAB_EN) {
+  if (english) {
     root.lang = 'en';
     document.title = 'Chat Agent Bridge';
     var description = document.querySelector('meta[name="description"]');
@@ -17,7 +17,9 @@
     });
     document.querySelectorAll('[data-en-href]').forEach(function (link) {
       link.href = link.getAttribute('data-en-href');
-      link.setAttribute('data-description', link.getAttribute('data-en-description') || '');
+      if (link.hasAttribute('data-en-description')) {
+        link.setAttribute('data-description', link.getAttribute('data-en-description'));
+      }
     });
   }
   root.classList.remove('en-pending');
@@ -32,11 +34,19 @@
     langLabel.textContent = names[currentLang];
     langLabel.lang = currentLang;
     langButton.setAttribute('aria-label', (english ? 'Language: ' : '言語: ') + names[currentLang]);
-    langList.querySelectorAll('a[data-lang]').forEach(function (link) {
+    var languageLinks = langList.querySelectorAll('a[data-lang]');
+    languageLinks.forEach(function (link) {
       var code = link.getAttribute('data-lang');
-      link.href = location.pathname + (code === 'ja' ? '' : '?lang=' + code) + location.hash;
       if (code === currentLang) link.setAttribute('aria-current', 'true');
     });
+    function updateLanguageLinks() {
+      languageLinks.forEach(function (link) {
+        var code = link.getAttribute('data-lang');
+        link.href = location.pathname + (code === 'ja' ? '' : '?lang=' + code) + location.hash;
+      });
+    }
+    updateLanguageLinks();
+    window.addEventListener('hashchange', updateLanguageLinks);
     var links = function () { return Array.prototype.slice.call(langList.querySelectorAll('a')); };
     var setOpen = function (open, focusFirst) {
       langList.hidden = !open;

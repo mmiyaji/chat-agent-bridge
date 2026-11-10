@@ -5,5 +5,10 @@
     var saved = localStorage.getItem('cab-theme');
     if (saved === 'light' || saved === 'dark') root.dataset.theme = saved;
   } catch (e) { /* storage may be unavailable */ }
-  if (new URLSearchParams(location.search).get('lang') === 'en') root.classList.add('en-pending');
+  if (new URLSearchParams(location.search).get('lang') === 'en') {
+    root.classList.add('en-pending');
+    document.addEventListener('DOMContentLoaded', function () {
+      root.classList.remove('en-pending');
+    }, { once: true });
+  }
 })();
