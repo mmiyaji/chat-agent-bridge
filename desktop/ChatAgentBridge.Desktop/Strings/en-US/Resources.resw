@@ -1190,7 +1190,6 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="CliCheckSuccess.Title" xml:space="preserve"><value>CLI check succeeded</value></data>
   <data name="ReleaseHighlightsHeading.Text" xml:space="preserve"><value>What's new</value></data>
   <data name="ReleaseHighlightsSummary.Text" xml:space="preserve"><value>• Chat and history load in the background when you switch pages.&#10;• Settings and history are easier to read in narrow windows.</value></data>
-  <data name="UpdateNoticeDismiss.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Dismiss update notice</value></data>
   <data name="UpdateNoticeAction.Content" xml:space="preserve"><value>View changes</value></data>
   <data name="UpdateNoticeAction.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>View app changes</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Start this app when signing in to Windows</value></data>

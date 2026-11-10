@@ -410,17 +410,8 @@ public sealed partial class MainPage : Page
 
     private async void ShowTerms_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: false);
     private async void ShowPrivacy_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: true);
-    private async void UpdateNotice_CloseButtonClick(object sender, RoutedEventArgs args) =>
+    private async void UpdateNotice_CloseButtonClick(InfoBar sender, object args) =>
         await ViewModel.DismissUpdateNoticeAsync();
-
-    private void UpdateNoticeCard_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        var narrow = e.NewSize.Width < 560;
-        Grid.SetColumnSpan(UpdateNoticeCopy, narrow ? 2 : 1);
-        Grid.SetColumn(UpdateNoticeActionButton, narrow ? 0 : 1);
-        Grid.SetRow(UpdateNoticeActionButton, narrow ? 1 : 0);
-        UpdateNoticeActionButton.Margin = narrow ? new Thickness(0, 8, 0, 0) : new Thickness(0);
-    }
 
     private void UpdateNotice_ShowChangesClick(object sender, RoutedEventArgs e)
     {

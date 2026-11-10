@@ -20,6 +20,7 @@ public partial class MainPageViewModel
         OnPropertyChanged(nameof(AgentProviderDisplayName));
         OnPropertyChanged(nameof(AgentPermissionStatus));
         OnPropertyChanged(nameof(UpdateNoticeTitle));
+        OnPropertyChanged(nameof(UpdateNoticeSummary));
         RefreshOverviewStatus();
         if (_startupState is { } startupState)
             _ = RefreshStartupStatusForLanguageAsync(startupState);

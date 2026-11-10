@@ -15,6 +15,7 @@ public partial class MainPageViewModel
     public partial bool IsUpdateNoticeOpen { get; set; }
 
     public string UpdateNoticeTitle => ViewModelText.Get("UpdateNoticeTitle", UpdateNoticeVersion);
+    public string UpdateNoticeSummary => MrtText.Get("ReleaseHighlightsSummary.Text");
 
     public async Task InitializeUpdateNoticeAsync(string appVersion)
     {

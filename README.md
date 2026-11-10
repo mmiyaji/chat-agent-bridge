@@ -234,7 +234,7 @@ The app uses Japanese when the Windows language preference is Japanese and Engli
 
 ![Current status, startup, auto-connect and system tray settings](docs/assets/screenshots/general-en.png)
 
-After an update, a card at the top of the app shows the main changes. You can revisit them under **About → What's new** after dismissing the card.
+After an update, a notice at the top of the app shows the main changes. You can revisit them under **About → What's new** after dismissing the notice.
 
 Portable builds can check for and apply updates from **About**. Downloads show received and total size while active or paused, transfer speed and estimated time remaining, elapsed time while waiting for data, retry counts, and verification and preparation stages. Downloads can be canceled. Downloads support pause and resume, including after restarting the app. Network failures or five minutes without data trigger up to three retries. The completed archive is verified with SHA-256. The `Data` folder is retained during updates. Completed update downloads and temporary binary payloads are cleaned up automatically; update logs are retained. Information → Update settings shows storage usage. Manual cleanup is under Information → Advanced settings → Maintenance. For manual updates, close the app and replace the files while keeping `Data`.
 

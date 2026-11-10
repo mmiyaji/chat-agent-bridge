@@ -135,30 +135,17 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0">
-                        <Border x:Name="UpdateNoticeCard" Style="{StaticResource ActivityCardStyle}" Margin="0,0,0,12"
-                                BorderBrush="{ThemeResource AccentFillColorDefaultBrush}" BorderThickness="4,0,0,0" Padding="12,8"
-                                Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsUpdateNoticeOpen), Mode=OneWay}"
-                                SizeChanged="UpdateNoticeCard_SizeChanged"
-                                AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="UpdateNoticeBar">
-                            <Grid ColumnSpacing="12">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                                <StackPanel x:Name="UpdateNoticeCopy" Spacing="4">
-                                    <TextBlock Text="{x:Bind ViewModel.UpdateNoticeTitle, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap"
-                                               AutomationProperties.AutomationId="UpdateNoticeTitle" />
-                                    <TextBlock x:Uid="ReleaseHighlightsSummary" localization:LocalizedResourceKey.Key="ReleaseHighlightsSummary"
-                                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
-                                </StackPanel>
-                                <Button x:Name="UpdateNoticeActionButton" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left"
-                                        x:Uid="UpdateNoticeAction" localization:LocalizedResourceKey.Key="UpdateNoticeAction"
+                        <InfoBar Margin="0,0,0,12" Severity="Informational" IsClosable="True"
+                                 IsOpen="{x:Bind ViewModel.IsUpdateNoticeOpen, Mode=TwoWay}"
+                                 Title="{x:Bind ViewModel.UpdateNoticeTitle, Mode=OneWay}"
+                                 Message="{x:Bind ViewModel.UpdateNoticeSummary, Mode=OneWay}"
+                                 CloseButtonClick="UpdateNotice_CloseButtonClick"
+                                 AutomationProperties.AutomationId="UpdateNoticeBar">
+                            <InfoBar.ActionButton>
+                                <Button x:Uid="UpdateNoticeAction" localization:LocalizedResourceKey.Key="UpdateNoticeAction"
                                         Click="UpdateNotice_ShowChangesClick" AutomationProperties.AutomationId="UpdateNoticeShowChanges" />
-                                <Button Grid.Column="2" VerticalAlignment="Top" Style="{StaticResource SubtleButtonStyle}"
-                                        x:Uid="UpdateNoticeDismiss" localization:LocalizedResourceKey.Key="UpdateNoticeDismiss"
-                                        Click="UpdateNotice_CloseButtonClick" AutomationProperties.AutomationId="UpdateNoticeDismiss">
-                                    <FontIcon Glyph="&#xE711;" FontSize="12" />
-                                </Button>
-                            </Grid>
-                        </Border>
+                            </InfoBar.ActionButton>
+                        </InfoBar>
                         <InfoBar Margin="0,0,0,16" AutomationProperties.AutomationId="ExecutionStatus"
                                  IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
                                  Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.StatusSeverity), Mode=OneWay}"

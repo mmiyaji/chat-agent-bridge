@@ -8,7 +8,7 @@ main へのマージ・push と、Release の公開は別の操作です。
 
 ## 1. 公開する変更を確定する
 
-更新カードと「情報」に表示する主な変更点を、日英の `Resources.resw` の `ReleaseHighlightsSummary.Text` に1〜2件ずつ記載します。
+更新のお知らせと「情報」に表示する主な変更点を、日英の `Resources.resw` の `ReleaseHighlightsSummary.Text` に1〜2件ずつ記載します。
 
 - 対象の変更をレビューし、テストを通してコミットします。
 - 公開対象を main に取り込み、origin/main へ反映します。
