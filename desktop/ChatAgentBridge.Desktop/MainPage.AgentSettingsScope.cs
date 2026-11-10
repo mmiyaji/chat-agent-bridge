@@ -109,7 +109,6 @@ public sealed partial class MainPage
             : NavigationViewPaneDisplayMode.Top;
         if (_agentScopeNavigation.PaneDisplayMode == mode) return;
         _agentScopeNavigation.PaneDisplayMode = mode;
-        UpdateSettingsScopeDetailMargin(_agentScopeNavigation, mode);
         _agentScopeNavigation.IsPaneOpen = width >= SettingsScopeNavigationBreakpoint;
         RefreshAgentScopeMarker();
     }

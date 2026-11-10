@@ -40,12 +40,6 @@ public sealed partial class MainPage
         navigation.Resources["NavigationViewContentGridBorderThickness"] = new Thickness(0, 1, 0, 0);
     }
 
-    private static void UpdateSettingsScopeDetailMargin(NavigationView navigation, NavigationViewPaneDisplayMode mode)
-    {
-        if (navigation.Content is ScrollViewer { Content: FrameworkElement detail })
-            detail.Margin = mode == NavigationViewPaneDisplayMode.Top ? new Thickness(0, 16, 16, 16) : new Thickness(16);
-    }
-
     private ScrollViewer? ScrollViewerForPage(string? tag) => tag switch
     {
         "agent" => _agentSettingsScroll,

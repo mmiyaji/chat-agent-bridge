@@ -473,7 +473,7 @@
                                       ItemsSource="{x:Bind ViewModel.AuditKindOptions, Mode=OneWay}" DisplayMemberPath="Label"
                                       SelectedItem="{x:Bind ViewModel.AuditKindFilter, Mode=TwoWay}"
                                       Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.IsOperationsMode), Mode=OneWay}" />
-                            <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="8">
+                            <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="12,0" Orientation="Horizontal" Spacing="8">
                                 <TextBlock Text="{x:Bind ViewModel.RunResultSummary, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center"
                                            AutomationProperties.AutomationId="HistoryRecordCount" />
                                 <Button Command="{x:Bind ViewModel.ClearExecutionDayFilterCommand}" Padding="8,2"

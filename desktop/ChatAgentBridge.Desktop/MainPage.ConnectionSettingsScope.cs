@@ -264,7 +264,6 @@ public sealed partial class MainPage
             : NavigationViewPaneDisplayMode.Top;
         if (_connectionScopeNavigation.PaneDisplayMode == mode) return;
         _connectionScopeNavigation.PaneDisplayMode = mode;
-        UpdateSettingsScopeDetailMargin(_connectionScopeNavigation, mode);
         _connectionScopeNavigation.IsPaneOpen = showNavigation;
         RefreshConnectionScopeMarker();
     }
