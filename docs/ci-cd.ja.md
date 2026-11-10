@@ -4,11 +4,11 @@
 
 | きっかけ | 処理 | 公開先 |
 | --- | --- | --- |
-| PR、main / codex/* への push | TypeScript、ローカライズ、配信JSON、.NETテスト、WinUI x64 ビルド | テスト結果のみ（Actions artifact、7日） |
+| PR、main または CI で指定した作業ブランチへの push | TypeScript、ローカライズ、配信JSON、.NETテスト、WinUI x64 ビルド | テスト結果のみ（Actions artifact、7日） |
 | CI の手動実行、またはリリースタグの検証 | 発行済みポータブルアプリの UI スモークテスト | UI 証跡 artifact（7日） |
 | Portable release の手動実行 | 上記検証と x64 / ARM64 ポータブルZIPの作成 | Actions artifact のみ（7日）。ReleaseやPagesは変更しない |
 | Store package (build only) の手動実行 | x64 / ARM64 のStore用MSIX生成・内容検査 | `.msixupload` のActions artifactのみ（7日）。Storeへの提出・公開はしない |
-| main 上のコミットへ `vX.Y.Z` / `vX.Y.Z-preview.N` タグをpush | 検証 → 両CPU向けZIP → 下書きRelease → アセット照合 → Release公開 → 配信JSON生成 | GitHub Releases、GitHub Pages |
+| main 上のコミットへ `vX.Y.Z` / `vX.Y.Z-preview.N` タグをpush | CI・UI 検証と x64 / ARM64 ZIP 作成を並行実行 → 両方の成功を確認 → 下書きRelease → アセット照合 → Release公開 → 配信JSON生成 | GitHub Releases、GitHub Pages |
 | main の料金表・配信生成スクリプト変更 | 公開済みRelease一覧と最新料金表からJSONを再生成 | GitHub Pages |
 | GitHub上でReleaseを手動公開・編集・非公開化・削除 | 公開対象を再取得してJSONを再生成 | GitHub Pages |
 | Distribution data の手動実行（main） | 配信データを再生成・再配置 | GitHub Pages |

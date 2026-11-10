@@ -32,7 +32,7 @@ foreach ($architecture in @('x64', 'ARM64')) {
     foreach ($file in @($archive, $checksum)) {
         $expectedAssets[(Split-Path -Leaf $file)] = @{
             Size = (Get-Item -LiteralPath $file).Length
-            Digest = 'sha256:' + (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
+            Digest = 'sha256:' + $(if ($file -eq $archive) { $sha } else { (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant() })
         }
     }
 }

@@ -25,7 +25,6 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       application_version: ${{ steps.version.outputs.application_version }}
       tag: ${{ steps.version.outputs.tag }}
-      prerelease: ${{ steps.version.outputs.prerelease }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -49,7 +48,6 @@ jobs:
           "version=$($resolved.ReleaseVersion)" >> $env:GITHUB_OUTPUT
           "application_version=$($resolved.ApplicationVersion)" >> $env:GITHUB_OUTPUT
           "tag=$($resolved.Tag)" >> $env:GITHUB_OUTPUT
-          "prerelease=$($resolved.Prerelease.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
 
   checks:
     needs: version
