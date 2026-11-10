@@ -238,7 +238,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public string SelectedAttachmentPolicyHelp => GetSelectedPolicyHelp("InboxAttachmentPolicyHelp", "FileAttachmentApprovalMode");
     public bool HasVisibleConversations => VisibleConversations.Count > 0;
     public bool HasConversationFilters => !string.IsNullOrWhiteSpace(SearchText) || StateFilter != "all";
-    public bool ShowEmptyConversationList => !HasVisibleConversations && !HasConnectionError;
+    public bool ShowEmptyConversationList => !IsInitialConversationLoading && !HasVisibleConversations &&
+        !HasConnectionError && !HasConversationPersistenceWarning;
     public string EmptyConversationHeading => DesktopText.Get(HasConversationFilters
         ? "InboxEmptyFilteredHeading"
         : !IsConnected ? "InboxEmptyOfflineHeading"

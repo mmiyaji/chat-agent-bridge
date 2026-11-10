@@ -21,7 +21,12 @@ public sealed partial class ChatInboxViewModel
     private HashSet<SessionKey> _cachedConversationNameKeys = [];
     private int _lastReportedRejectedConversationCount;
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasConversationPersistenceWarning))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowEmptyConversationList))]
+    public partial bool IsInitialConversationLoading { get; private set; } = true;
+    [ObservableProperty]
+    public partial bool IsConversationReloading { get; private set; }
+
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasConversationPersistenceWarning)), NotifyPropertyChangedFor(nameof(ShowEmptyConversationList))]
     public partial string ConversationPersistenceWarning { get; set; } = "";
     public bool HasConversationPersistenceWarning => ConversationPersistenceWarning.Length > 0;
     public bool HasSelectedRequest => Selected is not null && SelectedConversation?.Requests.Contains(Selected) == true;
@@ -71,6 +76,12 @@ public sealed partial class ChatInboxViewModel
                 return conversation;
             }).ToArray());
             if (_closing) return;
+            if (IsConversationReloading)
+            {
+                SelectedConversation = null;
+                Selected = null;
+                Requests.Clear();
+            }
             Conversations.ReplaceAll(restored);
             _conversationPersistenceReady = true;
             RefreshVisibleConversations();
@@ -79,6 +90,10 @@ public sealed partial class ChatInboxViewModel
         {
             // Do not silently replace an unreadable file with an empty list.
             ConversationPersistenceWarning = DesktopText.Get("InboxPersistenceLoadFailed");
+        }
+        finally
+        {
+            IsInitialConversationLoading = false;
         }
     }
 
@@ -281,10 +296,7 @@ public sealed partial class ChatInboxViewModel
     internal async Task ReloadConversationsAsync()
     {
         await PauseConversationPersistenceAsync();
-        Requests.Clear();
-        Conversations.Clear();
-        SelectedConversation = null;
-        Selected = null;
+        IsConversationReloading = true;
         _conversationPersistenceReady = false;
         _lastSavedConversationSnapshots = null;
         _lastReportedRejectedConversationCount = 0;
@@ -293,7 +305,8 @@ public sealed partial class ChatInboxViewModel
         _cachedConversationNames = new Dictionary<SessionKey, ChatIdentityLabels>();
         _conversationRestoreTask = null;
         ConversationPersistenceWarning = "";
-        await EnsureConversationsRestoredAsync();
+        try { await EnsureConversationsRestoredAsync(); }
+        finally { IsConversationReloading = false; }
     }
 
     internal void ResumeConversationPersistence()

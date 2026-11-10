@@ -642,6 +642,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     {
         if (IsBusy) return;
         var indicatorStartedAt = System.Diagnostics.Stopwatch.StartNew();
+        if (!_activityRecordsLoaded) IsInitialActivityLoading = true;
         IsHistoryLoadSuccessful = false;
         IsBusy = true;
         IsRefreshing = true;
@@ -657,6 +658,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            if (!_activityRecordsLoaded) IsInitialActivityLoading = false;
             Status = DesktopText.Get("HistoryLoadFailed", ex.Message);
         }
         finally
