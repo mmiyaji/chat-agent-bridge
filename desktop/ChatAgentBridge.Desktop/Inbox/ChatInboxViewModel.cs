@@ -858,7 +858,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                     await TryHandleChatControlAsync(transport, accessSettings, request, token);
                     return;
                 }
-                if (_approvalBroker.TryHandle(request)) return;
+                if (await _approvalBroker.TryHandleAsync(request, token)) return;
                 if (await TryHandleChatAnswerAsync(transport, accessSettings, request, token)) return;
                 if (await TryHandleAgentCommandAsync(transport, accessSettings, request, token)) return;
                 if (await TryHandleChatControlAsync(transport, accessSettings, request, token)) return;

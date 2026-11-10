@@ -80,6 +80,7 @@ public sealed class PortableReleaseClient : IDisposable
         ReleaseVersion bestVersion = default;
         foreach (var release in releases.EnumerateArray())
         {
+            if (release.ValueKind != JsonValueKind.Object) continue;
             if (!release.TryGetProperty("draft", out var draft) || draft.ValueKind != JsonValueKind.False) continue;
             if (!release.TryGetProperty("tag_name", out var tagElement) || tagElement.ValueKind != JsonValueKind.String) continue;
             var tag = tagElement.GetString()!;
@@ -91,10 +92,11 @@ public sealed class PortableReleaseClient : IDisposable
             var wantedName = $"ChatAgentBridge.Portable-{tag.TrimStart('v')}-{suffix}.zip";
             foreach (var asset in assets.EnumerateArray())
             {
+                if (asset.ValueKind != JsonValueKind.Object) continue;
                 if (!asset.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String || name.GetString() != wantedName) continue;
-                if (!asset.TryGetProperty("size", out var size) || !size.TryGetInt64(out var assetSize) || assetSize <= 0 || assetSize > MaxAssetBytes) continue;
+                if (!asset.TryGetProperty("size", out var size) || size.ValueKind != JsonValueKind.Number || !size.TryGetInt64(out var assetSize) || assetSize <= 0 || assetSize > MaxAssetBytes) continue;
                 if (!asset.TryGetProperty("digest", out var digest) || digest.ValueKind != JsonValueKind.String || !TryDigest(digest.GetString(), out var sha)) continue;
-                if (!asset.TryGetProperty("browser_download_url", out var url) || !IsExactAssetUrl(url.GetString(), tag, wantedName, out var download)) continue;
+                if (!asset.TryGetProperty("browser_download_url", out var url) || url.ValueKind != JsonValueKind.String || !IsExactAssetUrl(url.GetString(), tag, wantedName, out var download)) continue;
                 if (best is null || parsed.CompareTo(bestVersion) > 0)
                 {
                     best = new PortableRelease(parsed.ToString(), tag, wantedName, download, sha, assetSize, releasePage);

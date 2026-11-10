@@ -264,7 +264,7 @@ public sealed partial class ChatInboxViewModel
         await AuditAsync("received", request, null, token);
         if (!oneTime)
         {
-            if (_approvalBroker.TryHandle(request)) return;
+            if (await _approvalBroker.TryHandleAsync(request, token)) return;
             if (await TryHandleChatAnswerAsync(item.Transport, current, request, token)) return;
             if (await TryHandleAgentCommandAsync(item.Transport, current, request, token)) return;
             if (await TryHandleChatControlAsync(item.Transport, current, request, token)) return;

@@ -12,6 +12,57 @@ namespace ChatAgentBridge.Transports.Tests;
 public sealed class TransportReconnectTests
 {
     [Fact]
+    public async Task Mattermost_ignores_wrong_json_shapes_and_receives_the_next_post()
+    {
+        var received = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);
+        LoopbackServer? server = null;
+        await using var serverLifetime = server = new LoopbackServer(
+            context => server!.WriteJsonAsync(context, HttpStatusCode.OK, context.Request.Url?.AbsolutePath == "/api/v4/users/me"
+                ? """{"id":"bot-1","username":"cab-bot","is_bot":true}"""
+                : """{"id":"member-1","is_bot":false}"""),
+            async (_, socket, token) =>
+            {
+                await ReadSocketMessageAsync(socket, token);
+                await SendSocketJsonAsync(socket, """{"seq_reply":1,"status":"OK"}""", token);
+                await SendSocketJsonAsync(socket, "[]", token);
+                await SendSocketJsonAsync(socket, """{"seq_reply":"1","status":"OK"}""", token);
+                await SendSocketJsonAsync(socket, """{"event":"posted","data":null}""", token);
+                await SendSocketJsonAsync(socket, """{"event":"posted","data":{"post":"[]"}}""", token);
+                await SendSocketJsonAsync(socket, """{"event":"posted","data":{"post":"{\"channel_id\":1}"}}""", token);
+                var post = """{"id":"incoming","channel_id":"channel-1","user_id":"member-1","message":"!cab do work"}""";
+                await SendSocketJsonAsync(socket, JsonSerializer.Serialize(new { @event = "posted", data = new { post } }), token);
+                await ReadSocketMessageAsync(socket, token);
+            });
+        await using var transport = new MattermostWebSocketTransport();
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var run = transport.RunAsync(new BridgeSettings
+        {
+            MattermostServerUrl = server.BaseUri.ToString(),
+            MattermostChannelId = "channel-1",
+            MattermostToken = "local-test-token",
+            MattermostAllowedUserIds = "member-1",
+            MattermostAllowDirectMessages = true,
+            MattermostBypassProxy = true
+        }, (request, _) =>
+        {
+            received.TrySetResult(request);
+            return Task.CompletedTask;
+        }, cancellation.Token);
+
+        try
+        {
+            var completed = await Task.WhenAny(received.Task, run).WaitAsync(cancellation.Token);
+            Assert.Same(received.Task, completed);
+            Assert.Equal("incoming", (await received.Task).MessageId);
+        }
+        finally
+        {
+            cancellation.Cancel();
+            await run.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    [Fact]
     public async Task Mattermost_stop_reaction_targets_only_requester_and_only_while_progress_post_is_live()
     {
         var originalReady = new TaskCompletionSource<ChatRequest>(TaskCreationOptions.RunContinuationsAsynchronously);

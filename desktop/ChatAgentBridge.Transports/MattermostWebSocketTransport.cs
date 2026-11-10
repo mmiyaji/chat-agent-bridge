@@ -182,9 +182,11 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
                 return;
             }
             var envelope = document.RootElement;
+            if (envelope.ValueKind != JsonValueKind.Object) continue;
             if (envelope.TryGetProperty("status", out var authStatus) && authStatus.ValueKind == JsonValueKind.String && authStatus.GetString() != "OK")
                 throw new InvalidOperationException("Mattermost WebSocket authentication failed.");
-            if (envelope.TryGetProperty("seq_reply", out var sequence) && sequence.TryGetInt32(out var replySequence) && replySequence == 1 && authStatus.ValueKind == JsonValueKind.String && authStatus.GetString() == "OK")
+            if (envelope.TryGetProperty("seq_reply", out var sequence) && sequence.ValueKind == JsonValueKind.Number &&
+                sequence.TryGetInt32(out var replySequence) && replySequence == 1 && authStatus.ValueKind == JsonValueKind.String && authStatus.GetString() == "OK")
             {
                 _connected = true;
                 _fileUploadConnected = true;
@@ -204,7 +206,8 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
                 continue;
             }
             if (eventName.GetString() != "posted") continue;
-            if (!envelope.TryGetProperty("data", out var data) || !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
+            if (!envelope.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object ||
+                !data.TryGetProperty("post", out var postJson) || postJson.ValueKind != JsonValueKind.String) continue;
 
             var post = postJson.GetString()!;
             var isDirectMessage = false;
@@ -213,7 +216,7 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
                 try
                 {
                     using var postDocument = JsonDocument.Parse(post);
-                    var channelId = postDocument.RootElement.TryGetProperty("channel_id", out var channelValue) ? channelValue.GetString() : null;
+                    var channelId = ReadString(postDocument.RootElement, "channel_id");
                     if (string.IsNullOrWhiteSpace(channelId)) continue;
                     else
                     {

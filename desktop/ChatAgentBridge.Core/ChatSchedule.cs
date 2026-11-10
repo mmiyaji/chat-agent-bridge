@@ -69,9 +69,9 @@ public sealed record ChatScheduleCommand(
     string Prompt = "",
     string Target = "")
 {
-    private static readonly Regex TimePattern = new(@"^(?<h>[01]?\d|2[0-3]):(?<m>[0-5]\d)$",
+    private static readonly Regex TimePattern = new(@"^(?<h>[01]?[0-9]|2[0-3]):(?<m>[0-5][0-9])$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex EveryPattern = new(@"^(?<n>[1-9]\d{0,3})(?<u>[mh])$",
+    private static readonly Regex EveryPattern = new(@"^(?<n>[1-9][0-9]{0,3})(?<u>[mh])$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
     public static ChatScheduleCommand Parse(string? argument)

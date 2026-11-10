@@ -26,34 +26,26 @@ internal static class ChatChannelPickerDialog
         using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(35));
         var userClosed = false;
         var hideRequested = false;
-        loading.Closed += (_, _) =>
+        loading.Closing += (_, _) =>
         {
             if (hideRequested) return;
             userClosed = true;
             cancellation.Cancel();
         };
-        var fetch = ChatChannelDirectory.ListAsync(provider, settings, cancellation.Token);
         var loadingTask = loading.ShowAsync().AsTask();
-        ChatChannelDirectoryResult directory;
+        ChatChannelDirectoryResult? directory = null;
+        string? errorKey = null;
         try
         {
-            directory = await fetch;
+            directory = await ChatChannelDirectory.ListAsync(provider, settings, cancellation.Token);
         }
         catch (OperationCanceledException)
         {
-            hideRequested = true;
-            loading.Hide();
-            await loadingTask;
-            if (userClosed) return null;
-            await ShowErrorAsync(root, "ChannelPickerTimedOut");
-            return null;
+            errorKey = "ChannelPickerTimedOut";
         }
         catch (Exception ex)
         {
-            hideRequested = true;
-            loading.Hide();
-            await loadingTask;
-            var key = ex.Message switch
+            errorKey = ex.Message switch
             {
                 "TokenRequired" => "ChannelPickerTokenRequired",
                 "ServerUrlInvalid" => "ChannelPickerServerUrlInvalid",
@@ -64,12 +56,23 @@ internal static class ChatChannelPickerDialog
                 "ResponseTooLarge" => "ChannelPickerResponseTooLarge",
                 _ => "ChannelPickerConnectionFailed"
             };
-            await ShowErrorAsync(root, key);
+        }
+        finally
+        {
+            if (!userClosed)
+            {
+                hideRequested = true;
+                loading.Hide();
+            }
+            await loadingTask;
+        }
+        if (userClosed) return null;
+        if (errorKey is not null)
+        {
+            await ShowErrorAsync(root, errorKey);
             return null;
         }
-        hideRequested = true;
-        loading.Hide();
-        await loadingTask;
+        if (directory is null) return null;
         var selected = await ShowAsync(root, provider, directory.ConnectionName, directory.Channels, alreadySelected, allowMultiple);
         return selected is null ? null : new ChatChannelPickerResult(directory.Channels, selected);
     }

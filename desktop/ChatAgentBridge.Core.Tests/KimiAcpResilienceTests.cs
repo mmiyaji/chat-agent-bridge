@@ -68,7 +68,9 @@ public sealed class KimiAcpResilienceTests : IDisposable
         if (!OperatingSystem.IsWindows()) return;
         var executable = CopyFixture("kimi");
         var approvalHandled = false;
-        var result = await Run(executable, "__CAB_SCENARIO_HANG_AFTER_APPROVAL____CAB_SCENARIO_PRE_APPROVAL_DELAY____CAB_SCENARIO_FINISH_AFTER_APPROVAL_DELAY__", TimeSpan.FromSeconds(3),
+        // Allow for fixture startup on a busy runner. The pre- and post-approval delays
+        // together still exceed six seconds; the post-approval delay alone does not.
+        var result = await Run(executable, "__CAB_SCENARIO_HANG_AFTER_APPROVAL____CAB_SCENARIO_PRE_APPROVAL_DELAY____CAB_SCENARIO_FINISH_AFTER_APPROVAL_DELAY__", TimeSpan.FromSeconds(6),
             approval: async (_, _) =>
             {
                 await Task.Delay(1500);

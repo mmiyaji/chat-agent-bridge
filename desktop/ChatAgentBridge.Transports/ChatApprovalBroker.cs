@@ -55,7 +55,7 @@ public sealed class ChatApprovalBroker
             return winner == local ? await local.ConfigureAwait(false) : AppServerDecision.Decline;
         }
 
-        var pending = new PendingApproval(origin);
+        var pending = new PendingApproval(origin, canDecideInChat, cancellationToken);
         lock (_sync)
         {
             if (_pending.Count >= MaximumPending)
@@ -75,20 +75,9 @@ public sealed class ChatApprovalBroker
         {
             if (transport is IChatActionTransport actions)
                 actionLease = await actions.PostActionsAsync(origin, FormatRequest(approval, pending.Code, 1800),
-                    ChatActionKind.ToolApproval, async (decision, ct) =>
-                    {
-                        if (ct.IsCancellationRequested || cancellationToken.IsCancellationRequested ||
-                            canDecideInChat is not null && !await canDecideInChat(ct).ConfigureAwait(false))
-                            return ChatActionResult.Unavailable;
-                        lock (_sync)
-                        {
-                            if (!_pending.TryGetValue(pending.Code, out var current) || !ReferenceEquals(current, pending))
-                                return ChatActionResult.Unavailable;
-                            return pending.Completion.TrySetResult(decision == ChatActionDecision.Approve
-                                ? AppServerDecision.Accept : AppServerDecision.Decline)
-                                ? ChatActionResult.Completed : ChatActionResult.Unavailable;
-                        }
-                    }, cancellationToken).ConfigureAwait(false);
+                    ChatActionKind.ToolApproval, (decision, ct) => TryDecideInChatAsync(pending,
+                        decision == ChatActionDecision.Approve ? AppServerDecision.Accept : AppServerDecision.Decline, ct),
+                    cancellationToken).ConfigureAwait(false);
             else
                 await transport.ReplyAsync(origin, FormatRequest(approval, pending.Code), cancellationToken).ConfigureAwait(false);
             Task<AppServerDecision>? localTask = localHandler is null
@@ -123,24 +112,45 @@ public sealed class ChatApprovalBroker
     }
 
     /// <summary>Consumes well-formed control messages, including stale or wrongly scoped ones.</summary>
-    public bool TryHandle(ChatRequest incoming)
+    public async ValueTask<bool> TryHandleAsync(ChatRequest incoming, CancellationToken cancellationToken = default)
     {
         if (incoming is null) return false;
         Match match = ControlPattern.Match(incoming.Text?.Trim() ?? string.Empty);
         if (!match.Success) return false;
 
         string code = match.Groups["code"].Value;
+        PendingApproval? pending;
+        lock (_sync) _pending.TryGetValue(code, out pending);
+        if (pending is not null && SameScope(pending.Origin, incoming))
+            await TryDecideInChatAsync(pending,
+                match.Groups["decision"].Value.Equals("approve", StringComparison.OrdinalIgnoreCase)
+                    ? AppServerDecision.Accept : AppServerDecision.Decline, cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    private async Task<ChatActionResult> TryDecideInChatAsync(
+        PendingApproval pending, AppServerDecision decision, CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested || pending.CancellationToken.IsCancellationRequested ||
+            pending.Completion.Task.IsCompleted)
+            return ChatActionResult.Unavailable;
+        try
+        {
+            if (pending.CanDecideInChat is { } authorize && !await authorize(cancellationToken).ConfigureAwait(false))
+                return ChatActionResult.Unavailable;
+        }
+        catch (Exception)
+        {
+            return ChatActionResult.Unavailable;
+        }
+
         lock (_sync)
         {
-            if (_pending.TryGetValue(code, out PendingApproval? pending) && SameScope(pending.Origin, incoming))
-            {
-                AppServerDecision decision = match.Groups["decision"].Value.Equals("approve", StringComparison.OrdinalIgnoreCase)
-                    ? AppServerDecision.Accept
-                    : AppServerDecision.Decline;
-                pending.Completion.TrySetResult(decision);
-            }
+            if (cancellationToken.IsCancellationRequested || pending.CancellationToken.IsCancellationRequested ||
+                !_pending.TryGetValue(pending.Code, out var current) || !ReferenceEquals(current, pending))
+                return ChatActionResult.Unavailable;
+            return pending.Completion.TrySetResult(decision) ? ChatActionResult.Completed : ChatActionResult.Unavailable;
         }
-        return true;
     }
 
     private static async Task<AppServerDecision> InvokeLocalAsync(
@@ -194,9 +204,12 @@ public sealed class ChatApprovalBroker
         }
     }
 
-    private sealed class PendingApproval(ChatRequest origin)
+    private sealed class PendingApproval(ChatRequest origin, Func<CancellationToken, Task<bool>>? canDecideInChat,
+        CancellationToken cancellationToken)
     {
         public ChatRequest Origin { get; } = origin;
+        public Func<CancellationToken, Task<bool>>? CanDecideInChat { get; } = canDecideInChat;
+        public CancellationToken CancellationToken { get; } = cancellationToken;
         public string Code { get; set; } = string.Empty;
         public TaskCompletionSource<AppServerDecision> Completion { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
