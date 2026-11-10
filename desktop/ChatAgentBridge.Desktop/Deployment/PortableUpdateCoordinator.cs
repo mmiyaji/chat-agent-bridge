@@ -267,13 +267,14 @@ public sealed class PortableUpdateCoordinator : IDisposable
                 : DesktopText.Get("PortableUpdateAvailable", _available.Version);
         }
         catch (OperationCanceledException) { ShowCancellationOrTimeout(); }
-        catch (Exception error) { ShowError(error); }
+        catch (Exception error) { ShowError(error, "check"); }
         finally { EndOperation(); }
     }
 
     public async Task DownloadAsync()
     {
         if (_available is not { } release || !TryBegin()) return;
+        var failureStage = "download";
         var resuming = IsPaused;
         if (!resuming) DiscardDownload();
         IsPaused = false;
@@ -385,9 +386,11 @@ public sealed class PortableUpdateCoordinator : IDisposable
             IsDownloading = false;
             Status = DesktopText.Get("PortableUpdateVerifying");
             Notify();
+            failureStage = "extract";
             _staged = await PortableArchiveStager.ExtractAsync(zip, Path.Combine(_workDirectory, "stage"), release, _operation.Token);
             Status = DesktopText.Get("PortableUpdatePreparing");
             Notify();
+            failureStage = "save";
             await PortableUpdateStageStore.SaveAsync(_workDirectory, _installDirectory, _dataDirectory, Architecture(), release, _staged, _operation.Token);
             Status = DesktopText.Get("PortableUpdateReady", release.Version);
         }
@@ -399,7 +402,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
         catch (HttpRequestException error)
         {
             IsPaused = true;
-            ShowError(error);
+            ShowError(error, failureStage);
         }
         catch (OperationCanceledException) when (_operation?.IsCancellationRequested != true)
         {
@@ -407,7 +410,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
             ShowCancellationOrTimeout();
         }
         catch (OperationCanceledException) { DiscardDownload(); ShowCancellationOrTimeout(); }
-        catch (Exception error) { DiscardDownload(); ShowError(error); }
+        catch (Exception error) { DiscardDownload(); ShowError(error, failureStage); }
         finally { IsDownloading = false; EndOperation(); }
     }
 
@@ -485,7 +488,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
             }
         }
         catch (OperationCanceledException) { ShowCancellationOrTimeout(); }
-        catch (Exception error) { ShowError(error); }
+        catch (Exception error) { ShowError(error, "apply"); }
         finally
         {
             try
@@ -588,18 +591,38 @@ public sealed class PortableUpdateCoordinator : IDisposable
         Notify();
     }
 
-    private void ShowError(Exception error)
+    private void ShowError(Exception error, string stage)
     {
         // Report useful categories without echoing tokens, signed redirect URLs or HTTP response bodies.
         var reason = error switch
         {
             HttpRequestException => DesktopText.Get("PortableUpdateNetworkError"),
-            UnauthorizedAccessException => DesktopText.Get("PortableUpdateAccessError"),
+            UnauthorizedAccessException => DesktopText.Get("PortableUpdateAccessError", GetUpdateStage(stage), FormatErrorCode(error)),
             InvalidDataException or JsonException => DesktopText.Get("PortableUpdateIntegrityError"),
-            _ => DesktopText.Get("PortableUpdateLocalError")
+            IOException io when GetWindowsErrorCode(io) is 39 or 112 => DesktopText.Get("PortableUpdateDiskFullError", GetUpdateStage(stage), FormatErrorCode(io)),
+            IOException io when GetWindowsErrorCode(io) is 32 or 33 => DesktopText.Get("PortableUpdateFileBusyError", GetUpdateStage(stage), FormatErrorCode(io)),
+            IOException io => DesktopText.Get("PortableUpdateIoError", GetUpdateStage(stage), FormatErrorCode(io)),
+            _ => DesktopText.Get("PortableUpdateStageError", GetUpdateStage(stage), FormatErrorCode(error))
         };
         Status = DesktopText.Get("PortableUpdateFailed", reason);
     }
+
+    private static int GetWindowsErrorCode(Exception error) =>
+        (error.HResult & unchecked((int)0xFFFF0000)) == unchecked((int)0x80070000)
+            ? error.HResult & 0xFFFF
+            : 0;
+
+    private static string FormatErrorCode(Exception error) => $"0x{error.HResult:X8}";
+
+    private static string GetUpdateStage(string stage) => DesktopText.Get(stage switch
+    {
+        "check" => "PortableUpdateStageCheck",
+        "extract" => "PortableUpdateStageExtract",
+        "save" => "PortableUpdateStageSave",
+        "apply" => "PortableUpdateStageApply",
+        "download" => "PortableUpdateStageDownload",
+        _ => "PortableUpdateStageGeneral"
+    });
 
     private void ShowCancellationOrTimeout() => Status = _operation?.IsCancellationRequested == true
         ? DesktopText.Get("PortableUpdateCancelled")
