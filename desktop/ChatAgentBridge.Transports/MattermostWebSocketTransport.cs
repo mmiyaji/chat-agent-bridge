@@ -433,7 +433,10 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         if (!string.Equals(request.Provider, "mattermost", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Request provider must be Mattermost.", nameof(request));
         EnsureConnectedForProgress();
-        if (!string.Equals(request.ChannelId, _channelId, StringComparison.Ordinal))
+        var matchesChannel = request.IsDirectMessage
+            ? Volatile.Read(ref _liveAccessSettings)?.MattermostAllowDirectMessages == true
+            : string.Equals(request.ChannelId, _channelId, StringComparison.Ordinal);
+        if (!matchesChannel)
             throw new InvalidOperationException("Mattermost progress request does not match the active channel.");
     }
 
@@ -513,17 +516,19 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         return post;
     }
 
-    private static ChatRequest? BuildRequest(MattermostPost? post, string? currentUsername, bool allowPlainThreadReplies, bool allowPlainDirectMessage = false)
+    private static ChatRequest? BuildRequest(MattermostPost? post, string? currentUsername, bool allowPlainThreadReplies,
+        bool isDirectMessage = false)
     {
         if (post is null) return null;
         var threadId = string.IsNullOrWhiteSpace(post.RootId) ? post.Id : post.RootId;
         var isThreadReply = !string.IsNullOrWhiteSpace(post.RootId) &&
             !string.Equals(post.RootId, post.Id, StringComparison.Ordinal);
         if (!TryGetTriggeredText(post.Message, currentUsername, allowPlainThreadReplies, isThreadReply, out var text,
-                allowPlainDirectMessage && !isThreadReply)) return null;
+                isDirectMessage && !isThreadReply)) return null;
         var files = ReadIncomingFileIds(post.FileIds, out var filesError);
         return new ChatRequest("mattermost", post.ChannelId, threadId, post.UserId, text, post.Id)
         {
+            IsDirectMessage = isDirectMessage,
             IncomingFiles = files,
             IncomingFilesError = filesError
         };
@@ -562,20 +567,23 @@ public sealed partial class MattermostWebSocketTransport : IChatTransport, IChat
         bool isDirectMessage = false)
     {
         var post = ReadPost(json, isDirectMessage ? "" : settings.MattermostChannelId, currentUserId, isBot: false);
-        var explicitRequest = BuildRequest(post, currentUsername, allowPlainThreadReplies: false, allowPlainDirectMessage: isDirectMessage);
+        var explicitRequest = BuildRequest(post, currentUsername, allowPlainThreadReplies: false,
+            isDirectMessage: isDirectMessage);
         if (explicitRequest is not null)
         {
             if (ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", explicitRequest.UserId,
-                    explicitRequest.ChannelId, explicitRequest.ThreadId))
+                    explicitRequest.ChannelId, explicitRequest.ThreadId, isDirectMessage: explicitRequest.IsDirectMessage))
                 return new MattermostRequestCandidate(explicitRequest, IsExplicit: true);
-            return ChatAccessPolicy.IsAllowedScope(settings, "mattermost", explicitRequest.ChannelId, explicitRequest.ThreadId)
+            return ChatAccessPolicy.IsAllowedScope(settings, "mattermost", explicitRequest.ChannelId, explicitRequest.ThreadId,
+                    isDirectMessage: explicitRequest.IsDirectMessage)
                 ? new MattermostRequestCandidate(explicitRequest with { IsAccessRequest = true }, IsExplicit: true)
                 : null;
         }
 
-        var continuation = BuildRequest(post, currentUsername, allowPlainThreadReplies: true, allowPlainDirectMessage: isDirectMessage);
+        var continuation = BuildRequest(post, currentUsername, allowPlainThreadReplies: true,
+            isDirectMessage: isDirectMessage);
         if (continuation is null || !ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", continuation.UserId,
-                continuation.ChannelId, continuation.ThreadId)) return null;
+                continuation.ChannelId, continuation.ThreadId, isDirectMessage: continuation.IsDirectMessage)) return null;
 
         var key = CreateSessionKey(settings, continuation);
         if (continuations.Contains(key)) return new MattermostRequestCandidate(continuation, IsExplicit: false);

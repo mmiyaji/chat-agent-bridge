@@ -89,6 +89,7 @@ Install from the [Microsoft Store](https://apps.microsoft.com/detail/9n1lzk25fsg
 4. Configure the chat service and bot connection in the first-run wizard. Direct messages are enabled by default, so you can start with a dedicated DM with the bot. Add shared channels or channel restrictions later in **Chat settings** if needed. Under **Common settings → Allowed users**, add your own account (at least one user is required to connect). Requests from other users in an allowed conversation can wait for a decision on the PC.
    - Slack: [Slack setup guide](docs/slack-setup.md) (Socket Mode app, events and scopes)
    - Mattermost: [Mattermost setup guide](docs/mattermost-setup.md) (current screenshots show the card layout, individual DMs and shared-channel search)
+     Shared-channel thread restrictions apply only to the shared channel. Individual bot DMs follow the DM setting, allowed-user checks and approval policy.
    - Discord: [Discord setup guide](docs/discord-setup.md) (bot token, allowed server IDs and Message Content Intent)
 5. Connect from **Chat** and post a request. How to start depends on the service (see [Chat operations](#chat-operations)).
    Connect buttons are enabled only for services with saved connection details. If none are ready, use **Open chat settings** in Chat to finish setup.

@@ -475,11 +475,20 @@ public sealed class MattermostBotDmIntegrationTests
             Assert.Equal(requestPost.RootElement.GetProperty("id").GetString(), request.ThreadId);
             Assert.Equal(state.MemberUser.Id, request.UserId);
             Assert.Equal(dmRequest, request.Text);
+            Assert.True(request.IsDirectMessage);
+
+            var progress = await transport.PostProgressAsync(request, "CAB DM progress started", ct);
+            const string progressText = "CAB DM progress completed";
+            await transport.UpdateProgressAsync(request, progress, progressText, ct);
+            await transport.CompleteProgressAsync(progress, ct);
 
             const string replyText = "CAB DM-only reply verified 🟢";
             await transport.ReplyAsync(request, replyText, ct);
             using var thread = await GetThreadAsync(http, server, settings.MattermostToken,
                 request.ThreadId, ct);
+            Assert.Contains(thread.RootElement.GetProperty("posts").EnumerateObject(), item =>
+                item.Name == progress.MessageId && item.Value.GetProperty("message").GetString() == progressText &&
+                item.Value.GetProperty("root_id").GetString() == request.ThreadId);
             Assert.Contains(thread.RootElement.GetProperty("posts").EnumerateObject(), item =>
                 item.Value.TryGetProperty("message", out var message) && message.GetString() == replyText &&
                 item.Value.TryGetProperty("root_id", out var rootId) && rootId.GetString() == request.ThreadId);

@@ -41,7 +41,8 @@ public sealed partial class ChatInboxViewModel
                 // Mark first: a crash or rejection must not turn into a run on every tick.
                 await _schedules.MarkRunAsync(schedule.Id, now, token);
                 var request = new ChatRequest(schedule.Provider, schedule.ChannelId, schedule.ThreadId, schedule.UserId,
-                    schedule.Prompt, $"schedule:{schedule.Id}:{now.ToUnixTimeSeconds()}") { GuildId = schedule.GuildId };
+                    schedule.Prompt, $"schedule:{schedule.Id}:{now.ToUnixTimeSeconds()}")
+                { GuildId = schedule.GuildId, IsDirectMessage = schedule.IsDirectMessage };
                 // Access is checked again now, so a revoked user or channel stops its schedules.
                 if (!CanReceive(access, request, connected))
                 {
@@ -80,6 +81,7 @@ public sealed partial class ChatInboxViewModel
                 {
                     Provider = request.Provider, Origin = scope.Origin, ChannelId = request.ChannelId, ThreadId = request.ThreadId,
                     GuildId = request.GuildId, UserId = request.UserId, Prompt = parsed.Prompt, Kind = parsed.Schedule!.Value,
+                    IsDirectMessage = request.IsDirectMessage,
                     MinuteOfDay = parsed.MinuteOfDay, EveryMinutes = parsed.EveryMinutes, CreatedAt = DateTimeOffset.UtcNow
                 }, token);
                 if (result == ChatScheduleAddResult.TooManyForUser) return DesktopText.Get("ChatScheduleFull", ChatScheduleStore.MaximumPerUser);
