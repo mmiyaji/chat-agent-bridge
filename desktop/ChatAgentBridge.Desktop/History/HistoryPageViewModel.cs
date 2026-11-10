@@ -649,29 +649,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         {
             // Fingerprint before reading so a write during the load triggers another reload.
             var stamp = await ComputeDataStampAsync();
-            var executionsTask = _executionStore.ListAsync();
-            var sessionsTask = _sessionStore.ListAsync();
-            var auditTask = _auditStore.ListAsync();
-            await Task.WhenAll(executionsTask, sessionsTask, auditTask);
-            var executions = await executionsTask;
-            var sessions = await sessionsTask;
-            var auditEvents = await auditTask;
-
-            var selectedKey = SelectedSession?.Binding.Key;
-            await LoadCachedChatNamesAsync(sessions);
-            SetExecutionRecords(executions);
-            ReplaceItems(Sessions, BuildSessionRows(sessions, executions));
-            UpdateWorkspaceFilters(sessions);
-            ReplaceItems(AuditEvents, auditEvents.OrderByDescending(static item => item.Timestamp)
-                .Select(audit => new AuditHistoryRow(audit, AuditColumns, AuditChatLabel(audit))).ToArray());
-            HasExecutions = Executions.Count > 0;
-            HasSessions = Sessions.Count > 0;
-            HasAuditEvents = AuditEvents.Count > 0;
-            RefreshAuditFilterOptions();
-            SelectedSession = selectedKey is null ? null : Sessions.FirstOrDefault(row => row.Binding.Key == selectedKey);
-            ApplySessionFilter();
-            NotifySummariesChanged();
-            IsHistoryLoadSuccessful = true;
+            await LoadHistoryContentsAsync();
             _loadedStamp = stamp;
             _loadedAtTick = Environment.TickCount64;
             // Counts are shown on the tab headers; the status line is kept for messages.
@@ -858,18 +836,29 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     private async Task RefreshContentsAsync(string successMessage)
     {
         IsHistoryLoadSuccessful = false;
-        var executions = await _executionStore.ListAsync();
-        var sessions = await _sessionStore.ListAsync();
-        var auditEvents = await _auditStore.ListAsync();
-        var selectedKey = SelectedSession?.Binding.Key;
+        await LoadHistoryContentsAsync();
+        Status = successMessage;
+        StartChatNameRefresh();
+    }
+
+    private async Task LoadHistoryContentsAsync()
+    {
+        var executionsTask = Task.Run(() => _executionStore.ListAsync());
+        var sessionsTask = Task.Run(() => _sessionStore.ListAsync());
+        var auditTask = Task.Run(async () => (await _auditStore.ListAsync())
+            .OrderByDescending(static item => item.Timestamp).ToArray());
+        await Task.WhenAll(executionsTask, sessionsTask, auditTask);
+        var executions = await executionsTask;
+        var sessions = await sessionsTask;
+        var auditEvents = await auditTask;
         await LoadCachedChatNamesAsync(sessions);
+        var chatNames = _chatNames;
+        var sessionRows = await Task.Run(() => BuildSessionRows(sessions, executions, chatNames));
+        var selectedKey = SelectedSession?.Binding.Key;
         SetExecutionRecords(executions);
-        Sessions.Clear();
-        foreach (var row in BuildSessionRows(sessions, executions)) Sessions.Add(row);
+        ReplaceItems(Sessions, sessionRows);
         UpdateWorkspaceFilters(sessions);
-        AuditEvents.Clear();
-        foreach (var audit in auditEvents.OrderByDescending(static item => item.Timestamp))
-            AuditEvents.Add(new AuditHistoryRow(audit, AuditColumns, AuditChatLabel(audit)));
+        ReplaceItems(AuditEvents, auditEvents.Select(audit => new AuditHistoryRow(audit, AuditColumns, AuditChatLabel(audit))).ToArray());
         HasExecutions = Executions.Count > 0;
         HasSessions = Sessions.Count > 0;
         HasAuditEvents = AuditEvents.Count > 0;
@@ -878,12 +867,11 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         ApplySessionFilter();
         NotifySummariesChanged();
         IsHistoryLoadSuccessful = true;
-        Status = successMessage;
-        StartChatNameRefresh();
     }
 
-    private IReadOnlyList<SessionHistoryRow> BuildSessionRows(
-        IReadOnlyList<SessionBinding> bindings, IReadOnlyList<ExecutionRecord> records)
+    private static IReadOnlyList<SessionHistoryRow> BuildSessionRows(
+        IReadOnlyList<SessionBinding> bindings, IReadOnlyList<ExecutionRecord> records,
+        IReadOnlyDictionary<SessionKey, ChatIdentityLabels> chatNames)
     {
         var ambiguous = new Dictionary<SessionExecutionIdentity, HashSet<string>>();
         foreach (var binding in bindings)
@@ -907,9 +895,9 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         return bindings.Select(binding =>
         {
             if (!TryGetIdentity(binding, out var identity) || ambiguousIdentities.Contains(identity) || !executions.TryGetValue(identity, out var activity))
-                return new SessionHistoryRow(binding, ChatLabels: _chatNames.GetValueOrDefault(binding.Key));
+                return new SessionHistoryRow(binding, ChatLabels: chatNames.GetValueOrDefault(binding.Key));
             return new SessionHistoryRow(binding, activity.Count, activity.LatestStatus, activity.LatestModel,
-                _chatNames.GetValueOrDefault(binding.Key));
+                chatNames.GetValueOrDefault(binding.Key));
         }).OrderByDescending(static row => row.Binding.UpdatedAt).ToArray();
     }
 

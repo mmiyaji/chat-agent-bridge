@@ -567,7 +567,13 @@ public sealed partial class MainPage : Page
                 });
             }
         }
-        if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshIfStaleAsync();
+        if (pageChanged && IsHistorySelected)
+        {
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshIfStaleAsync();
+            });
+        }
         if (pageChanged && IsOverviewSelected && _hasLoaded) _ = ViewModel.RefreshStartupAsync();
         if (pageChanged && IsAboutSelected) AboutPage.ResetScroll();
         if (IsAgentSelected) _ = EnsureAgentSettingsScopeAsync();

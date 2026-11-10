@@ -183,7 +183,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     /// <summary>Requests waiting for a decision on this PC; the sidebar shows the count on the Chat item.</summary>
     public int PendingApprovalCount => Requests.Count(item => item.State == "承認待ち");
     public bool HasKeepAwakeWork => IsExecuting || Requests.Any(item => item.State is "承認待ち" or "実行中" or "自動実行を準備" or "追加指示の受領待ち");
-    public ObservableCollection<InboxConversation> Conversations { get; } = [];
+    public BatchObservableCollection<InboxConversation> Conversations { get; } = [];
     public event Action<InboxItem>? RequestReceived;
     public event Action? ConnectionEnded;
     [ObservableProperty] public partial string NotificationStatus { get; set; } = "";

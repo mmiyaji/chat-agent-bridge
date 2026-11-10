@@ -39,12 +39,6 @@ public sealed partial class HistoryPage : Page
             new ManipulationCompletedEventHandler(SessionSplitter_ManipulationCompleted), true);
         SessionSplitter.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(SessionSplitter_KeyDown), true);
         SessionSplitter.AddHandler(UIElement.KeyUpEvent, new KeyEventHandler(SessionSplitter_KeyUp), true);
-        var activity = new ActivityDashboard(ViewModel);
-        activity.OpenDayRequested += () =>
-        {
-            ViewModel.ShowExecutionsForActivityDay();
-            HistoryPivot.SelectedItem = ExecutionsTab;
-        };
         ViewModel.RunRecordsRequested += () => HistoryPivot.SelectedItem = ExecutionsTab;
         ViewModel.ConversationRequested += key =>
         {
@@ -54,7 +48,6 @@ public sealed partial class HistoryPage : Page
             _showDetailOnNarrow = ViewModel.SelectedSession is not null;
             UpdateResponsiveLayout();
         };
-        ActivityHost.Content = activity;
         ViewModel.ConfirmDetachAsync = ConfirmDetachAsync;
         ViewModel.EditSessionModelAsync = EditSessionModelAsync;
         ViewModel.EditSessionPolicyAsync = EditSessionPolicyAsync;
@@ -64,12 +57,18 @@ public sealed partial class HistoryPage : Page
         SizeChanged += Page_SizeChanged;
         // MainPage hosts this Page directly and switches Visibility, so Frame
         // navigation events alone do not cover its actual lifetime.
-        Loaded += (_, _) => SetPricingUpdatesEnabled(true);
+        Loaded += (_, _) =>
+        {
+            SetPricingUpdatesEnabled(true);
+            UpdateActivityTab();
+        };
         Unloaded += (_, _) =>
         {
             SetPricingUpdatesEnabled(false);
+            ViewModel.SetActivityTabActive(false);
             SessionFiltersFlyout.Hide();
         };
+        RegisterPropertyChangedCallback(VisibilityProperty, (_, _) => UpdateActivityTab());
         UpdateResponsiveLayout();
     }
 
@@ -278,8 +277,39 @@ public sealed partial class HistoryPage : Page
         }
     }
 
-    private void HistoryPivot_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+    private void HistoryPivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
         UpdateResponsiveLayout();
+        UpdateActivityTab();
+    }
+
+    private void UpdateActivityTab()
+    {
+        if (!IsActivityTabVisible())
+        {
+            ViewModel.SetActivityTabActive(false);
+            return;
+        }
+
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (!IsActivityTabVisible()) return;
+            if (ActivityHost.Content is null)
+            {
+                var activity = new ActivityDashboard(ViewModel);
+                activity.OpenDayRequested += () =>
+                {
+                    ViewModel.ShowExecutionsForActivityDay();
+                    HistoryPivot.SelectedItem = ExecutionsTab;
+                };
+                ActivityHost.Content = activity;
+            }
+            ViewModel.SetActivityTabActive(true);
+        });
+    }
+
+    private bool IsActivityTabVisible() =>
+        IsLoaded && Visibility == Visibility.Visible && ReferenceEquals(HistoryPivot?.SelectedItem, ActivityTab);
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

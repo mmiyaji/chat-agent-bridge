@@ -54,32 +54,12 @@ public sealed partial class ChatInboxViewModel
 
     private async Task RestoreConversationsAsync()
     {
-        await Task.Yield();
         try
         {
-            var store = new InboxConversationStore(_store.DirectoryPath);
-            var snapshots = (await store.ListAsync()).ToDictionary(item => item.Key);
-            // Upgrade existing owner-scoped session bindings without restoring request content.
-            IReadOnlyList<SessionBinding> bindings = [];
-            try { bindings = await _sessions.ListAsync(); }
-            catch (Exception) { /* Legacy binding migration is optional; valid metadata still restores. */ }
-            foreach (var binding in bindings)
-            {
-                if (snapshots.TryGetValue(binding.Key, out var existing))
-                {
-                    snapshots[binding.Key] = existing with { DisplayName = SafeLabel(binding.DisplayName) };
-                    continue;
-                }
-                if (!HasRestorableScope(binding.Key) || binding.UpdatedAt == default ||
-                    binding.WorkspaceRoot.Length > 2048 || binding.WorkspaceRoot.Any(char.IsControl) ||
-                    !Path.IsPathFullyQualified(binding.WorkspaceRoot)) continue;
-                snapshots[binding.Key] = new(binding.Key, binding.WorkspaceRoot, binding.UpdatedAt,
-                    "idle", 0, SafeLabel(binding.DisplayName));
-            }
-            var retained = snapshots.Values.OrderByDescending(item => item.UpdatedAt).Take(500).ToArray();
-            var names = await ReadCachedConversationNamesAsync(retained.Select(item => item.Key));
+            var retained = await Task.Run(ReadRestorableConversationsAsync);
             if (_closing) return;
-            foreach (var item in retained)
+            var names = await ReadCachedConversationNamesAsync(retained.Select(item => item.Key));
+            var restored = await Task.Run(() => retained.Select(item =>
             {
                 var snapshot = WithCachedNames(item, names.GetValueOrDefault(item.Key));
                 var conversation = new InboxConversation(JsonSerializer.Serialize(snapshot.Key))
@@ -88,8 +68,10 @@ public sealed partial class ChatInboxViewModel
                     RequestCount = snapshot.RequestCount
                 };
                 ApplyRestoredPresentation(conversation);
-                Conversations.Add(conversation);
-            }
+                return conversation;
+            }).ToArray());
+            if (_closing) return;
+            Conversations.ReplaceAll(restored);
             _conversationPersistenceReady = true;
             RefreshVisibleConversations();
         }
@@ -98,6 +80,30 @@ public sealed partial class ChatInboxViewModel
             // Do not silently replace an unreadable file with an empty list.
             ConversationPersistenceWarning = DesktopText.Get("InboxPersistenceLoadFailed");
         }
+    }
+
+    private async Task<InboxConversationSnapshot[]> ReadRestorableConversationsAsync()
+    {
+        var store = new InboxConversationStore(_store.DirectoryPath);
+        var snapshots = (await store.ListAsync()).ToDictionary(item => item.Key);
+        // Upgrade existing owner-scoped session bindings without restoring request content.
+        IReadOnlyList<SessionBinding> bindings = [];
+        try { bindings = await _sessions.ListAsync(); }
+        catch (Exception) { /* Legacy binding migration is optional; valid metadata still restores. */ }
+        foreach (var binding in bindings)
+        {
+            if (snapshots.TryGetValue(binding.Key, out var existing))
+            {
+                snapshots[binding.Key] = existing with { DisplayName = SafeLabel(binding.DisplayName) };
+                continue;
+            }
+            if (!HasRestorableScope(binding.Key) || binding.UpdatedAt == default ||
+                binding.WorkspaceRoot.Length > 2048 || binding.WorkspaceRoot.Any(char.IsControl) ||
+                !Path.IsPathFullyQualified(binding.WorkspaceRoot)) continue;
+            snapshots[binding.Key] = new(binding.Key, binding.WorkspaceRoot, binding.UpdatedAt,
+                "idle", 0, SafeLabel(binding.DisplayName));
+        }
+        return snapshots.Values.OrderByDescending(item => item.UpdatedAt).Take(500).ToArray();
     }
 
     private static bool HasRestorableScope(SessionKey key) =>
@@ -147,7 +153,7 @@ public sealed partial class ChatInboxViewModel
         return _cachedConversationNames;
     }
 
-    private void ApplyConversationLabels(InboxConversation conversation)
+    private static void ApplyConversationLabels(InboxConversation conversation)
     {
         if (conversation.Snapshot is not { } snapshot) return;
         var provider = snapshot.Key.Provider switch { "mattermost" => "Mattermost", "discord" => "Discord", _ => "Slack" };
@@ -159,7 +165,7 @@ public sealed partial class ChatInboxViewModel
         conversation.Identity = $"{conversation.Title} / {conversation.Location} / {snapshot.Key.ThreadId}";
     }
 
-    private void ApplyRestoredPresentation(InboxConversation conversation)
+    private static void ApplyRestoredPresentation(InboxConversation conversation)
     {
         if (conversation.Snapshot is not { } snapshot) return;
         ApplyConversationLabels(conversation);

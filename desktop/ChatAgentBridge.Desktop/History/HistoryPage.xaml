@@ -646,7 +646,7 @@
                 </SplitView>
             </PivotItem>
 
-            <PivotItem Header="{x:Bind ViewModel.ActivityTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ActivityTab">
+            <PivotItem x:Name="ActivityTab" Header="{x:Bind ViewModel.ActivityTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ActivityTab">
                 <ContentControl x:Name="ActivityHost" Margin="0,14,0,0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </PivotItem>
         </Pivot>

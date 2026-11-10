@@ -27,6 +27,9 @@ public sealed partial class HistoryPageViewModel
     private ActivityStatisticsSnapshot? _activityStatistics;
     private bool _activityStatisticsFailed;
     private int _activityStatisticsRequest;
+    private bool _activityTabActive;
+    private bool _activityNeedsRefresh = true;
+    private bool _activityRecordsLoaded;
     private ActivitySummary _activity = ActivitySummary.Build([], DateOnly.FromDateTime(DateTime.Today), 90, TimeZoneInfo.Local);
     public IReadOnlyList<ActivityCalendarCell> ActivityCalendar { get; private set; } = [];
     public ObservableCollection<ActivityBarRow> ActivityWeekdays { get; } = [];
@@ -86,28 +89,42 @@ public sealed partial class HistoryPageViewModel
     private void SetExecutionRecords(IReadOnlyList<ExecutionRecord> records)
     {
         _activityRecords = records;
+        _activityRecordsLoaded = true;
         RebuildChatNameIndexes();
         ApplyRunFilters();
         _ = RefreshActivityStatisticsAsync();
     }
 
+    internal void SetActivityTabActive(bool active)
+    {
+        if (_activityTabActive == active) return;
+        _activityTabActive = active;
+        if (active && _activityNeedsRefresh) _ = RefreshActivityStatisticsAsync();
+    }
+
     private async Task RefreshActivityStatisticsAsync()
     {
         var request = Interlocked.Increment(ref _activityStatisticsRequest);
+        _activityNeedsRefresh = true;
+        if (!_activityTabActive || !_activityRecordsLoaded) return;
         var count = ActivityRangeIndex switch { 0 => 30, 2 => 365, _ => 90 };
         var scope = UsageScopeIndex == 1 ? "last-request" : "turn";
         try
         {
-            var snapshot = await _activityStatisticsStore.ReadAsync(DateOnly.FromDateTime(DateTime.Today), count,
-                TimeZoneInfo.Local, scope, App.Pricing.Current);
-            if (request != _activityStatisticsRequest) return;
+            var endDay = DateOnly.FromDateTime(DateTime.Today);
+            var zone = TimeZoneInfo.Local;
+            var pricing = App.Pricing.Current;
+            var snapshot = await Task.Run(() => _activityStatisticsStore.ReadAsync(endDay, count, zone, scope, pricing));
+            if (request != _activityStatisticsRequest || !_activityTabActive) return;
+            _activityNeedsRefresh = false;
             _activityStatistics = snapshot;
             _activityStatisticsFailed = false;
             RebuildActivity();
         }
         catch
         {
-            if (request != _activityStatisticsRequest) return;
+            if (request != _activityStatisticsRequest || !_activityTabActive) return;
+            _activityNeedsRefresh = false;
             _activityStatistics = null;
             _activityStatisticsFailed = true;
             RebuildActivity();
