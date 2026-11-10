@@ -4,6 +4,7 @@ using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Core.Sessions;
 using ChatAgentBridge.Transports;
+using ChatAgentBridge_Desktop.Inbox;
 using ChatAgentBridge_Desktop.Localization;
 using ChatAgentBridge_Desktop.UsageUi;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -294,7 +295,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
     public ObservableCollection<ExecutionHistoryRow> Executions { get; } = [];
     public ObservableCollection<AuditHistoryRow> AuditEvents { get; } = [];
     public ObservableCollection<SessionHistoryRow> Sessions { get; } = [];
-    public ObservableCollection<SessionHistoryRow> FilteredSessions { get; } = [];
+    public BatchObservableCollection<SessionHistoryRow> FilteredSessions { get; } = [];
     public ObservableCollection<string> WorkspaceFilters { get; } = [DesktopText.Get("HistoryWorkspaceAll")];
     public ObservableCollection<string> SessionSortOptions { get; } =
         [DesktopText.Get("HistorySortRecent"), DesktopText.Get("HistorySortName"), DesktopText.Get("HistorySortUsage")];
@@ -547,9 +548,15 @@ public sealed partial class HistoryPageViewModel : ObservableObject
             _ => filtered.OrderByDescending(static row => row.Binding.UpdatedAt).ToArray()
         };
 
-        ReplaceItems(FilteredSessions, matches);
+        var reset = ShouldBatchSessionResults(matches);
+        if (reset) FilteredSessions.ReplaceAll(matches);
+        else ReplaceItems(FilteredSessions, matches);
         HasFilteredSessions = matches.Length > 0;
-        SelectedSession = selectedKey is null ? null : matches.FirstOrDefault(row => row.Binding.Key == selectedKey);
+        var selected = selectedKey is null ? null : matches.FirstOrDefault(row => row.Binding.Key == selectedKey);
+        if (reset && selected is not null && Equals(SelectedSession, selected))
+            OnPropertyChanged(nameof(SelectedSession)); // A collection Reset clears ListView selection.
+        else
+            SelectedSession = selected;
         OnPropertyChanged(nameof(HasSessionFilters));
         OnPropertyChanged(nameof(SessionResultSummary));
         OnPropertyChanged(nameof(SessionListEmptyText));
@@ -559,6 +566,16 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowSessionFilterEmptyAction));
         OnPropertyChanged(nameof(ShowSessionFilterHeaderClearButton));
         ClearSessionFiltersCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool ShouldBatchSessionResults(IReadOnlyList<SessionHistoryRow> matches)
+    {
+        const int batchThreshold = 16; // Same cutoff as the chat inbox list.
+        var changes = Math.Abs(FilteredSessions.Count - matches.Count);
+        var common = Math.Min(FilteredSessions.Count, matches.Count);
+        for (var index = 0; changes < batchThreshold && index < common; index++)
+            if (FilteredSessions[index] != matches[index]) changes++;
+        return changes >= batchThreshold;
     }
 
     /// <summary>Updates a collection in place, touching only items that differ so unchanged content raises no UI churn.</summary>
