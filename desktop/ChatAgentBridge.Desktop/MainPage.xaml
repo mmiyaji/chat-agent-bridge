@@ -135,7 +135,7 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0">
-                        <InfoBar Margin="0,0,0,12" Severity="Informational" IsClosable="True"
+                        <InfoBar Margin="0,0,0,8" Severity="Informational" IsClosable="True"
                                  IsOpen="{x:Bind ViewModel.IsUpdateNoticeOpen, Mode=TwoWay}"
                                  Title="{x:Bind ViewModel.UpdateNoticeTitle, Mode=OneWay}"
                                  Message="{x:Bind ViewModel.UpdateNoticeSummary, Mode=OneWay}"
@@ -143,6 +143,7 @@
                                  AutomationProperties.AutomationId="UpdateNoticeBar">
                             <InfoBar.ActionButton>
                                 <Button x:Uid="UpdateNoticeAction" localization:LocalizedResourceKey.Key="UpdateNoticeAction"
+                                        MinHeight="24" Padding="8,1"
                                         Click="UpdateNotice_ShowChangesClick" AutomationProperties.AutomationId="UpdateNoticeShowChanges" />
                             </InfoBar.ActionButton>
                         </InfoBar>
