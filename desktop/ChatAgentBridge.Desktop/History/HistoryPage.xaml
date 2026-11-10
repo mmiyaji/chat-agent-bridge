@@ -78,7 +78,8 @@
                     <TextBlock Text="{x:Bind Mode=OneTime}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                 </DataTemplate>
             </Pivot.HeaderTemplate>
-            <PivotItem x:Name="ConversationsTab" Header="{x:Bind ViewModel.ConversationsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="SavedConversationsTab">
+            <!-- The shell supplies the page gutter. Override PivotItem's default 12-DIP side margins for all three bodies. -->
+            <PivotItem x:Name="ConversationsTab" Margin="0" Header="{x:Bind ViewModel.ConversationsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="SavedConversationsTab">
                 <Grid Margin="0,14,0,0" RowSpacing="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -366,7 +367,7 @@
                 </Grid>
             </PivotItem>
 
-            <PivotItem x:Name="ExecutionsTab" Header="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryTab">
+            <PivotItem x:Name="ExecutionsTab" Margin="0" Header="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryTab">
                 <SplitView x:Name="RecordDrawer" Margin="0,14,0,0" PanePlacement="Right" DisplayMode="Overlay" OpenPaneLength="380"
                            IsPaneOpen="{x:Bind ViewModel.IsDetailOpen, Mode=TwoWay}" SizeChanged="RecordDrawer_SizeChanged"
                            PaneBackground="{ThemeResource LayerOnMicaBaseAltFillColorTertiaryBrush}">
@@ -646,7 +647,7 @@
                 </SplitView>
             </PivotItem>
 
-            <PivotItem x:Name="ActivityTab" Header="{x:Bind ViewModel.ActivityTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ActivityTab">
+            <PivotItem x:Name="ActivityTab" Margin="0" Header="{x:Bind ViewModel.ActivityTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ActivityTab">
                 <Grid>
                     <ContentControl x:Name="ActivityHost" Margin="0,14,0,0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                                     Visibility="{x:Bind vm:HistoryPage.InverseBoolToVisibility(ViewModel.IsInitialActivityLoading), Mode=OneWay}" />
