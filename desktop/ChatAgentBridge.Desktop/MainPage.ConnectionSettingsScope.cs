@@ -128,6 +128,7 @@ public sealed partial class MainPage
             IsBackButtonVisible = NavigationViewBackButtonVisible.Collapsed,
             IsSettingsVisible = false
         };
+        AlignSettingsScopeNavigation(_connectionScopeNavigation);
         AutomationProperties.SetAutomationId(_connectionScopeNavigation, "ConnectionScopeList");
         _connectionScopeNavigation.RegisterPropertyChangedCallback(NavigationView.OpenPaneLengthProperty, (_, _) => RefreshConnectionScopeMarker());
         AutomationProperties.SetName(_connectionScopeNavigation, DesktopText.Get("AgentScopePicker"));
@@ -263,6 +264,7 @@ public sealed partial class MainPage
             : NavigationViewPaneDisplayMode.Top;
         if (_connectionScopeNavigation.PaneDisplayMode == mode) return;
         _connectionScopeNavigation.PaneDisplayMode = mode;
+        UpdateSettingsScopeDetailMargin(_connectionScopeNavigation, mode);
         _connectionScopeNavigation.IsPaneOpen = showNavigation;
         RefreshConnectionScopeMarker();
     }

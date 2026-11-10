@@ -60,6 +60,7 @@ public sealed partial class MainPage
             IsBackButtonVisible = NavigationViewBackButtonVisible.Collapsed,
             IsSettingsVisible = false
         };
+        AlignSettingsScopeNavigation(_agentScopeNavigation);
         AutomationProperties.SetAutomationId(_agentScopeNavigation, "AgentScopeList");
         _agentScopeNavigation.RegisterPropertyChangedCallback(NavigationView.OpenPaneLengthProperty, (_, _) => RefreshAgentScopeMarker());
         AutomationProperties.SetName(_agentScopeNavigation, DesktopText.Get("AgentScopePicker"));
@@ -108,6 +109,7 @@ public sealed partial class MainPage
             : NavigationViewPaneDisplayMode.Top;
         if (_agentScopeNavigation.PaneDisplayMode == mode) return;
         _agentScopeNavigation.PaneDisplayMode = mode;
+        UpdateSettingsScopeDetailMargin(_agentScopeNavigation, mode);
         _agentScopeNavigation.IsPaneOpen = width >= SettingsScopeNavigationBreakpoint;
         RefreshAgentScopeMarker();
     }
