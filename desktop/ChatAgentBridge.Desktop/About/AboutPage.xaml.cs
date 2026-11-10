@@ -61,7 +61,6 @@ public sealed partial class AboutPage : Page
         StorePageButton.IsEnabled = _isStorePackage;
         CheckUpdatesButton.IsEnabled = _isStorePackage;
         StoreUpdateCard.Visibility = DeploymentRuntime.IsPortable ? Visibility.Collapsed : Visibility.Visible;
-        PackageReleaseNotesLink.Visibility = DeploymentRuntime.IsPortable ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private static string GetBuildTimestampText()

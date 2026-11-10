@@ -410,18 +410,22 @@ public sealed partial class MainPage : Page
 
     private async void ShowTerms_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: false);
     private async void ShowPrivacy_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: true);
-    private async void UpdateNotice_CloseButtonClick(InfoBar sender, object args) =>
+    private async void UpdateNotice_CloseButtonClick(object sender, RoutedEventArgs args) =>
         await ViewModel.DismissUpdateNoticeAsync();
 
-    private async void UpdateNotice_ShowChangesClick(object sender, RoutedEventArgs e)
+    private void UpdateNoticeCard_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        try
-        {
-            var opened = await Windows.System.Launcher.LaunchUriAsync(
-                new Uri("https://github.com/mmiyaji/chat-agent-bridge/releases"));
-            if (opened) await ViewModel.DismissUpdateNoticeAsync();
-        }
-        catch { /* Keep the notice available if the release page cannot be opened. */ }
+        var narrow = e.NewSize.Width < 560;
+        Grid.SetColumnSpan(UpdateNoticeCopy, narrow ? 2 : 1);
+        Grid.SetColumn(UpdateNoticeActionButton, narrow ? 0 : 1);
+        Grid.SetRow(UpdateNoticeActionButton, narrow ? 1 : 0);
+        UpdateNoticeActionButton.Margin = narrow ? new Thickness(0, 8, 0, 0) : new Thickness(0);
+    }
+
+    private void UpdateNotice_ShowChangesClick(object sender, RoutedEventArgs e)
+    {
+        MainNavigation.SelectedItem = AboutNavigationItem;
+        if (IsAboutSelected) AboutPage.ResetScroll();
     }
 
     public static Visibility ToHiddenVisibility(bool visible) => visible ? Visibility.Collapsed : Visibility.Visible;

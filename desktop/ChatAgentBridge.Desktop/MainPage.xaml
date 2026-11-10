@@ -134,11 +134,37 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <InfoBar Grid.Row="0" Margin="0,0,0,16" AutomationProperties.AutomationId="ExecutionStatus"
-                             IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
-                             Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.StatusSeverity), Mode=OneWay}"
-                             Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
-                             Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
+                    <StackPanel Grid.Row="0">
+                        <Border x:Name="UpdateNoticeCard" Style="{StaticResource ActivityCardStyle}" Margin="0,0,0,12"
+                                BorderBrush="{ThemeResource AccentFillColorDefaultBrush}" BorderThickness="4,0,0,0" Padding="12,8"
+                                Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsUpdateNoticeOpen), Mode=OneWay}"
+                                SizeChanged="UpdateNoticeCard_SizeChanged"
+                                AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="UpdateNoticeBar">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                <StackPanel x:Name="UpdateNoticeCopy" Spacing="4">
+                                    <TextBlock Text="{x:Bind ViewModel.UpdateNoticeTitle, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap"
+                                               AutomationProperties.AutomationId="UpdateNoticeTitle" />
+                                    <TextBlock x:Uid="ReleaseHighlightsSummary" localization:LocalizedResourceKey.Key="ReleaseHighlightsSummary"
+                                               TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                                </StackPanel>
+                                <Button x:Name="UpdateNoticeActionButton" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                        x:Uid="UpdateNoticeAction" localization:LocalizedResourceKey.Key="UpdateNoticeAction"
+                                        Click="UpdateNotice_ShowChangesClick" AutomationProperties.AutomationId="UpdateNoticeShowChanges" />
+                                <Button Grid.Column="2" VerticalAlignment="Top" Style="{StaticResource SubtleButtonStyle}"
+                                        x:Uid="UpdateNoticeDismiss" localization:LocalizedResourceKey.Key="UpdateNoticeDismiss"
+                                        Click="UpdateNotice_CloseButtonClick" AutomationProperties.AutomationId="UpdateNoticeDismiss">
+                                    <FontIcon Glyph="&#xE711;" FontSize="12" />
+                                </Button>
+                            </Grid>
+                        </Border>
+                        <InfoBar Margin="0,0,0,16" AutomationProperties.AutomationId="ExecutionStatus"
+                                 IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
+                                 Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.StatusSeverity), Mode=OneWay}"
+                                 Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
+                                 Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
+                    </StackPanel>
                     <StackPanel Grid.Row="1" HorizontalAlignment="Stretch" Spacing="4" Margin="0,0,0,16"
                                 Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
                         <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock013" x:Uid="chatAgentBridgeDesktopMainPageTextBlock013" />
@@ -195,15 +221,6 @@
                                     <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="GeneralPageTitle" x:Uid="GeneralPageTitle" />
                                     <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="GeneralPageDescription" x:Uid="GeneralPageDescription" />
                                 </StackPanel>
-                                <InfoBar x:Uid="UpdateNotice" Severity="Informational" IsClosable="True"
-                                         IsOpen="{x:Bind ViewModel.IsUpdateNoticeOpen, Mode=TwoWay}"
-                                         Title="{x:Bind ViewModel.UpdateNoticeTitle, Mode=OneWay}"
-                                         CloseButtonClick="UpdateNotice_CloseButtonClick"
-                                         AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="UpdateNoticeBar">
-                                    <InfoBar.ActionButton>
-                                        <Button x:Uid="UpdateNoticeAction" Click="UpdateNotice_ShowChangesClick" AutomationProperties.AutomationId="UpdateNoticeShowChanges" />
-                                    </InfoBar.ActionButton>
-                                </InfoBar>
                                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
                                     <StackPanel Spacing="8">
                                         <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" AutomationProperties.AutomationId="OverviewStatusHeading" x:Uid="OverviewStatusHeading" />
