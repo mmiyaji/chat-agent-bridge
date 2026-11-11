@@ -428,7 +428,8 @@ public sealed partial class HistoryPage : Page
         var compactHeader = ActualWidth < 600;
         HistoryTitle.Style = (Style)Application.Current.Resources[compactHeader ? "SubtitleTextBlockStyle" : "TitleTextBlockStyle"];
         HistoryDescription.Visibility = compactHeader ? Visibility.Collapsed : Visibility.Visible;
-        HistoryStatusText.MaxLines = compactHeader ? 1 : 0;
+        HistoryStatusText.MaxLines = compactHeader ? 1 : 2;
+        HistoryStatusText.MaxWidth = compactHeader ? 160 : 320;
         SessionFilters.Visibility = narrow && showDetail ? Visibility.Collapsed : Visibility.Visible;
         if (BackToSessionsButton is not null)
             BackToSessionsButton.Visibility = narrow && showDetail ? Visibility.Visible : Visibility.Collapsed;

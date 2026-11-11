@@ -38,7 +38,6 @@
     <Grid RowSpacing="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -52,7 +51,13 @@
                 <TextBlock x:Name="HistoryTitle" Style="{StaticResource TitleTextBlockStyle}" x:Uid="historyHistoryPageTextBlock001" localization:LocalizedResourceKey.Key="historyHistoryPageTextBlock001" />
                 <TextBlock x:Name="HistoryDescription" TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" x:Uid="historyHistoryPageTextBlock002" localization:LocalizedResourceKey.Key="historyHistoryPageTextBlock002" />
             </StackPanel>
-            <StackPanel x:Name="HistoryHeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <StackPanel x:Name="HistoryHeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <!-- Operation results show beside Refresh, so the header reserves no extra line when there is no message. -->
+                <TextBlock x:Name="HistoryStatusText" Text="{x:Bind ViewModel.Status, Mode=OneWay}" MaxWidth="320" MaxLines="2"
+                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" TextAlignment="Right"
+                           Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           ToolTipService.ToolTip="{x:Bind ViewModel.Status, Mode=OneWay}"
+                           AutomationProperties.AutomationId="HistoryStatus" AutomationProperties.LiveSetting="Polite" />
                 <Button Command="{x:Bind ViewModel.RefreshCommand}" AutomationProperties.AutomationId="RefreshHistory">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <FontIcon Glyph="&#xE72C;" Width="16" Height="16" FontSize="16"
@@ -68,11 +73,7 @@
             </StackPanel>
         </Grid>
 
-        <TextBlock x:Name="HistoryStatusText" Grid.Row="1" MinHeight="20" Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap"
-                   TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ViewModel.Status, Mode=OneWay}"
-                   AutomationProperties.AutomationId="HistoryStatus" />
-
-        <Pivot Grid.Row="2" x:Name="HistoryPivot" SelectionChanged="HistoryPivot_SelectionChanged" AutomationProperties.AutomationId="HistorySectionSelector">
+        <Pivot Grid.Row="1" x:Name="HistoryPivot" SelectionChanged="HistoryPivot_SelectionChanged" AutomationProperties.AutomationId="HistorySectionSelector">
             <Pivot.HeaderTemplate>
                 <DataTemplate x:DataType="x:String">
                     <TextBlock Text="{x:Bind Mode=OneTime}" Style="{StaticResource BodyStrongTextBlockStyle}" />
@@ -97,7 +98,7 @@
                                 Content="{x:Bind ViewModel.FiltersLabel, Mode=OneWay}"
                                 VerticalAlignment="Bottom" AutomationProperties.AutomationId="SavedSessionsAdvancedFilters">
                             <Button.Flyout>
-                                <Flyout x:Name="SessionFiltersFlyout" Placement="BottomEdgeAlignedRight">
+                                <Flyout x:Name="SessionFiltersFlyout" presentation:PopupBackdrop.UseSystemBackdrop="True" Placement="BottomEdgeAlignedRight">
                                     <StackPanel Spacing="8" MinWidth="280">
                                         <ComboBox x:Name="ProviderFilter" Header="{x:Bind ViewModel.ProviderLabel, Mode=OneWay}"
                                                   ItemsSource="{x:Bind ViewModel.ProviderFilters, Mode=OneWay}"
