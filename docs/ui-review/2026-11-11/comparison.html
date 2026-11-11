@@ -8,8 +8,8 @@
 </style>
 <main>
 <h1>CAB UI検査・現状と改善モック</h1>
-<p>ローカルmain 849220dを基準に、履歴画面の保存済みスクリーンショットとXAMLを照合しました。左が実画面、右がImageGenによる改善モックです。画像をクリックすると原寸で開きます。</p>
-<p class="note">新規の画面操作はツール初期化エラーにより未確認です。生成モックは一部の文言・アイコン・サービス表記に差があります。3番の現状はフィルターが開いた状態、提案は閉じた状態です。<a href="README.ja.md">検査範囲と指摘の詳細</a></p>
+<p>ローカルmain 849220dを基準に、今回アプリを操作して撮り直した日本語画面とXAMLを照合しました。左が実画面、右がImageGenによる改善モックです。画像をクリックすると原寸で開きます。</p>
+<p class="note">WinApp CLIで撮影。合成データを使った通常幅・ダークテーマでの確認です。生成モックは文字・アイコンの厳密な再現に差があります。<a href="live/index.html">全般・設定・チャットなどの撮り直した画面</a>。<a href="README.ja.md">検査範囲と指摘の詳細</a></p>
 <section>
 <h2>1. 会話一覧の情報密度</h2>
 <p>反復するメタ情報を3行へまとめ、状態を揃えます。長い作業情報は詳細で確認します。</p>
@@ -30,7 +30,7 @@
 <h2>3. 詳細ペインの情報階層</h2>
 <p>内側のカードを区切り線に替え、会話の識別情報・最近の実行・エージェント設定を一つの面で読めるようにします。</p>
 <div class="scroll"><div class="pair">
-<figure><figcaption>現状・フィルター表示中</figcaption><a href="03-detail-current.png"><img src="03-detail-current.png" alt="現状の会話詳細。内側にカードが重なり、フィルターが上部を覆っている"></a></figure>
+<figure><figcaption>現状・フィルターを閉じた状態</figcaption><a href="03-detail-current.png"><img src="03-detail-current.png" alt="現状の会話詳細。内側にカードが重なり、フィルターが上部を覆っている"></a></figure>
 <figure><figcaption>改善モック・フィルターを閉じた状態</figcaption><a href="03-detail-proposal.png"><img src="03-detail-proposal.png" alt="会話詳細の枠を減らし、区切り線と折りたたみで整理した改善モック"></a></figure>
 </div></div>
 </section>
