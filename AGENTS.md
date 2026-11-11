@@ -38,6 +38,7 @@ CI の全体は `.github/workflows/ci.yml` を参照してください。
 - UI を変えたときは、影響範囲に合う `desktop/*UiE2E.ps1` / `*UiSmoke.ps1` を選び、実行可能な環境なら確認する。UI テストは時間や環境の負荷を考慮して適宜判断し、実施できない場合は理由を報告する。リリース前には必要な UI 検証を実施する。
 - UI 文字列を変えたら日英の文言を揃え、`CheckLocalization.py` を通す。
 - 利用者向けの挙動を変えたら `README.md` / `README.ja.md` / `desktop/README.ja.md` を実装に合わせて更新する。
+- 検証用のポータブルビルドを起動したら、作業の最後に `./desktop/Clear-DevNotificationRegistrations.ps1 -IncludeDevelopmentBuilds` で使っていない通知登録を削除する（詳細は `docs/testing.ja.md` の「検証データの後片付け」）。
 - 作業用の一時ファイルは `.artifacts/` に置く。`.env`、接続トークン、`data/` はコミットしない。
 - main への直接コミットはしない。作業ブランチは変更の種類を表す一般的な prefix と短い kebab-case の説明で命名する（例：`feature/add-kiro-cli`、`fix/session-resume`、`docs/update-testing-guide`、`refactor/agent-adapters`、`test/ui-smoke-coverage`、`chore/update-dependencies`、`release/v1.2.0`）。エージェント名の prefix は使わない。
 - 区切りのよいところで適宜コミットする。メッセージの prefix は add / update / fix / refactor。
