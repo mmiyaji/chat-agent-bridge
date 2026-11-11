@@ -163,6 +163,9 @@ function Start-IsolatedApp {
     $policy = [regex]::Match((Get-Content -LiteralPath (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/OnboardingConsentStore.cs') -Raw), 'CurrentPolicyVersion\s*=\s*"([^"]+)"').Groups[1].Value
     Assert (-not [string]::IsNullOrWhiteSpace($policy)) 'Could not read current onboarding consent policy version.'
     Save-Json (Join-Path $script:data 'consent.json') @{ PolicyVersion = $policy; AcceptedAtUtc = [DateTimeOffset]::UtcNow.ToString('o') }
+    # Mark the current version's update highlights as seen; the shared notice would otherwise take space from every page under test.
+    $fixtureAppVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $appRoot 'ChatAgentBridge.Desktop.exe')).ProductVersion.Split('+')[0]
+    Save-Json (Join-Path $script:data 'update-notice.json') @{ SchemaVersion = 1; LastObservedVersion = $fixtureAppVersion; PendingVersion = $null; DismissedVersion = $fixtureAppVersion }
     Save-Json (Join-Path $script:data 'language.json') @{ Language = 'en' }
     Save-Json (Join-Path $script:data 'appearance.json') @{ Theme = 'light' }
     Save-Json (Join-Path $script:data 'portable-update.json') @{ SchemaVersion = 1; AutomaticChecksEnabled = $false; IncludePrereleases = $false; LastAttemptUtc = $null; AvailableRelease = $null }
