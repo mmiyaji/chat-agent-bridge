@@ -50,7 +50,7 @@ public sealed partial class AccessRequestItem : ObservableObject
     public IAsyncRelayCommand AllowOnceCommand { get; }
     public IAsyncRelayCommand DenyCommand { get; }
 
-    public string Title => DesktopText.Get("AccessRequestUser", DisplayName ?? DesktopText.Get("AllowedUserNameUnknown"), Request.UserId, ProviderLabel);
+    public string Title => DesktopText.Get("AccessRequestUser", DisplayName ?? DesktopText.Get("HistoryUserNameUnavailable"), Request.UserId, ProviderLabel);
     public string Location => DesktopText.Get("AccessRequestLocation", ChannelName ?? Request.ChannelId, ReceivedAt.ToString("t"));
     public string Preview => Request.Text.Length > 200 ? Request.Text[..200] + "…" : Request.Text;
 
