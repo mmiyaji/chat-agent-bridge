@@ -1189,7 +1189,7 @@
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLIを確認できませんでした</value></data>
   <data name="CliCheckSuccess.Title" xml:space="preserve"><value>CLIを確認しました</value></data>
   <data name="ReleaseHighlightsHeading.Text" xml:space="preserve"><value>主な変更点</value></data>
-  <data name="ReleaseHighlightsSummary.Text" xml:space="preserve"><value>• チャットと履歴をバックグラウンドで読み込み&#10;• 狭いウィンドウでの表示を改善</value></data>
+  <data name="ReleaseHighlightsSummary.Text" xml:space="preserve"><value>• 許可ユーザー未登録でもチャットから利用開始&#10;• 履歴とポップアップの表示を改善</value></data>
   <data name="UpdateNoticeAction.Content" xml:space="preserve"><value>変更点を見る</value></data>
   <data name="UpdateNoticeAction.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>アプリの変更内容を確認</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Windowsサインイン時にこのアプリを起動</value></data>
