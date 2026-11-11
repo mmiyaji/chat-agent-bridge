@@ -229,7 +229,7 @@
                                            ToolTipService.ToolTip="{x:Bind ViewModel.SelectedSessionTitle, Mode=OneWay}" />
                             </Grid>
                             <Grid Grid.Row="1" Margin="8,0">
-                                <ScrollViewer x:Name="SessionDetailScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <ScrollViewer x:Name="SessionDetailScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="SessionDetailScroll">
                                     <Grid>
                                     <Grid x:Name="SessionDetailContent" Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSelectedSession), Mode=OneWay}" RowSpacing="12">
                                         <Grid.RowDefinitions>
@@ -385,7 +385,7 @@
                                     <FontIcon Glyph="&#xE711;" FontSize="12" />
                                 </Button>
                             </Grid>
-                            <ScrollViewer Grid.Row="1" HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer x:Name="RecordDetailScroll" Grid.Row="1" HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="RecordDetailScroll">
                                 <Grid>
                                     <StackPanel x:Name="ExecutionDetailPane" Spacing="8" AutomationProperties.AutomationId="ExecutionDetailPane"
                                                 Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.ShowRunDetail), Mode=OneWay}">

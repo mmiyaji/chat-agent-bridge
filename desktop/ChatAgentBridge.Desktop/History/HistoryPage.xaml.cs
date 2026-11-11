@@ -29,6 +29,8 @@ public sealed partial class HistoryPage : Page
     public HistoryPage()
     {
         InitializeComponent();
+        Layout.MouseWheelScrollBehavior.Attach(SessionDetailScroll);
+        Layout.MouseWheelScrollBehavior.Attach(RecordDetailScroll);
         ExecutionHistoryMode.SelectedItem = ExecutionsModeItem;
         InitializeExperimentalTables();
         SessionListPane.SizeChanged += SessionListPane_SizeChanged;

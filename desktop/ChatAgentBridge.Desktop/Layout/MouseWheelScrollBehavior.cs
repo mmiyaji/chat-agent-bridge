@@ -3,13 +3,15 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Media;
 
-namespace ChatAgentBridge_Desktop.Inbox;
+namespace ChatAgentBridge_Desktop.Layout;
 
 /// <summary>
-/// Replaces the eased wheel step only for the restored conversation detail viewer.
+/// Keeps wheel movement crisp in opted-in text detail panes.
 /// </summary>
-internal sealed class RestoredConversationWheelBehavior
+internal sealed class MouseWheelScrollBehavior
 {
     private const uint SpiGetWheelScrollLines = 0x0068;
     private const uint WheelPageScroll = uint.MaxValue;
@@ -18,22 +20,28 @@ internal sealed class RestoredConversationWheelBehavior
     private double _distanceRemainder;
     private double? _pendingWheelOffset;
 
-    private RestoredConversationWheelBehavior(ScrollViewer viewer)
+    private MouseWheelScrollBehavior(ScrollViewer viewer)
     {
         _viewer = viewer;
         if (viewer.Content is UIElement content)
+        {
+            // Empty panel gaps must receive the same wheel input as the text.
+            if (content is Panel { Background: null } panel)
+                panel.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
             content.PointerWheelChanged += OnPointerWheelChanged;
+        }
         _viewer.ViewChanged += OnViewChanged;
     }
 
-    public static void Attach(ScrollViewer viewer) => _ = new RestoredConversationWheelBehavior(viewer);
+    public static void Attach(ScrollViewer viewer) => _ = new MouseWheelScrollBehavior(viewer);
 
     private void OnPointerWheelChanged(object sender, PointerRoutedEventArgs e)
     {
         var point = e.GetCurrentPoint(_viewer);
         if (e.Handled || e.KeyModifiers != Windows.System.VirtualKeyModifiers.None ||
             e.Pointer.PointerDeviceType != PointerDeviceType.Mouse ||
-            point.Properties.IsHorizontalMouseWheel || _viewer.ScrollableHeight <= 0)
+            point.Properties.IsHorizontalMouseWheel || _viewer.ScrollableHeight <= 0 ||
+            HasInnerWheelTarget(e.OriginalSource))
         {
             _pendingWheelOffset = null;
             _distanceRemainder = 0;
@@ -73,6 +81,20 @@ internal sealed class RestoredConversationWheelBehavior
             _pendingWheelOffset = target;
         else
             _pendingWheelOffset = null;
+    }
+
+    private bool HasInnerWheelTarget(object source)
+    {
+        // Let nested editors, lists and horizontal charts consume or chain their own
+        // input. Otherwise a parent pane could move as well as the hovered control.
+        for (var node = source as DependencyObject; node is not null && !ReferenceEquals(node, _viewer);
+            node = VisualTreeHelper.GetParent(node))
+        {
+            if (node is ScrollViewer or TextBox or PasswordBox or RichEditBox or ComboBox or
+                NumberBox or Slider or ScrollBar or ListViewBase)
+                return true;
+        }
+        return false;
     }
 
     private void OnViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)

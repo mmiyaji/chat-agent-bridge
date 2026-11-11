@@ -211,6 +211,8 @@ In **History → Run records**, runs are listed in a table with start time, conv
 
 Find saved conversations by name or working folder and change their model or agent. Conversation rows show the title, participants, service and latest result; workspace and CLI settings are available in the detail pane. Access records show the target user, with the saved name and ID together when a name is available. Review execution times, statuses, operation records and usage recorded by this app.
 
+Chat request and history detail panes scroll in steps with the mouse wheel. Embedded text and output areas keep their own scrolling.
+
 ![Daily activity calendar with sample records](docs/assets/screenshots/history-en.png)
 
 Usage is shown by day and model. Token and cache figures use CLI-reported values; missing values remain unknown. Estimated costs use public pricing and are reference values, not bills or subscription quotas. Price tables can update automatically, with manual overrides taking priority over downloaded prices.
