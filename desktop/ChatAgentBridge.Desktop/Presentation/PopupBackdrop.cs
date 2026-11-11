@@ -28,6 +28,8 @@ public static class PopupBackdrop
     private static void OnUseSystemBackdropChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
     {
         if (sender is not FlyoutBase flyout || args.NewValue is not true) return;
+        // A system backdrop is drawn only for a windowed popup, not one rendered inside the app window.
+        flyout.ShouldConstrainToRootBounds = false;
         flyout.SystemBackdrop = new DesktopAcrylicBackdrop();
         if (flyout is Flyout contentFlyout)
         {
@@ -43,7 +45,7 @@ public static class PopupBackdrop
     {
         if (sender is not Flyout flyout) return;
         var current = flyout.FlyoutPresenterStyle;
-        if (current?.Setters.OfType<Setter>().Any(setter => setter.Property == Control.BackgroundProperty && setter.Value == Transparent) == true)
+        if (current?.Setters.OfType<Setter>().Any(setter => setter.Property == Control.BackgroundProperty && ReferenceEquals(setter.Value, Transparent)) == true)
             return;
         // The presenter's own background would otherwise cover the backdrop.
         var style = new Style(typeof(FlyoutPresenter)) { BasedOn = current };
