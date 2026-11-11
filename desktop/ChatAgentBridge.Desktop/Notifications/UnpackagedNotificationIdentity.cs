@@ -10,8 +10,8 @@ namespace ChatAgentBridge_Desktop.Notifications;
 internal static class UnpackagedNotificationIdentity
 {
     internal const string DisplayName = "Chat Agent Bridge";
-    // Windows recolors single-hue icons in unpackaged app notifications for contrast; in dark mode the blue app icon
-    // turned orange. This notification-only icon uses a slightly lighter blue gradient, which Windows leaves unchanged.
+    // In dark mode, Windows inverts dark icons in unpackaged app notifications, so the blue app icon showed as orange.
+    // This notification-only icon uses a slightly lighter blue gradient, which Windows leaves unchanged.
     private const string IconRelativePath = @"Assets\NotificationIcon.png";
     private const int AppModelErrorNoPackage = 15700;
 
