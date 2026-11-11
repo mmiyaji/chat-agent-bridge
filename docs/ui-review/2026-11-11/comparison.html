@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CAB UI検査・現状と改善モック</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f6f6;color:#242424;font:16px/1.7 "Segoe UI","Yu Gothic UI",sans-serif}main{max-width:1920px;margin:auto;padding:32px}h1{font-size:28px;margin:0 0 8px}h2{font-size:22px;margin:0 0 8px}p{max-width:1000px;margin:8px 0 16px}section{margin-top:40px;padding-top:24px;border-top:1px solid #ccc}.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;min-width:900px}.scroll{overflow:auto}figure{margin:0}figcaption{font-weight:600;margin-bottom:8px}img{display:block;width:100%;height:auto;border:1px solid #ccc}a{color:#005fb8}.note{color:#555;font-size:14px}footer{margin-top:40px;font-size:14px} @media(max-width:700px){main{padding:20px}}
+</style>
+<main>
+<h1>CAB UI検査・現状と改善モック</h1>
+<p>ローカルmain 849220dを基準に、履歴画面の保存済みスクリーンショットとXAMLを照合しました。左が実画面、右がImageGenによる改善モックです。画像をクリックすると原寸で開きます。</p>
+<p class="note">新規の画面操作はツール初期化エラーにより未確認です。生成モックは一部の文言・アイコン・サービス表記に差があります。3番の現状はフィルターが開いた状態、提案は閉じた状態です。<a href="README.ja.md">検査範囲と指摘の詳細</a></p>
+<section>
+<h2>1. 会話一覧の情報密度</h2>
+<p>反復するメタ情報を3行へまとめ、状態を揃えます。長い作業情報は詳細で確認します。</p>
+<div class="scroll"><div class="pair">
+<figure><figcaption>現状</figcaption><a href="01-conversations-current.png"><img src="01-conversations-current.png" alt="現状の会話一覧。状態行が折り返されている"></a></figure>
+<figure><figcaption>改善モック</figcaption><a href="01-conversations-proposal.png"><img src="01-conversations-proposal.png" alt="会話一覧の情報を3行にまとめ、状態の位置を揃えた改善モック"></a></figure>
+</div></div>
+</section>
+<section>
+<h2>2. アクセス許可の対象ユーザー</h2>
+<p>アクセス許可モードでは対象ユーザーを列に出し、時刻と操作名も確認できる幅にします。</p>
+<div class="scroll"><div class="pair">
+<figure><figcaption>現状</figcaption><a href="02-access-current.png"><img src="02-access-current.png" alt="現状のアクセス許可一覧。操作名が省略され、会話列はID未設定を示す"></a></figure>
+<figure><figcaption>改善モック</figcaption><a href="02-access-proposal.png"><img src="02-access-proposal.png" alt="時刻、操作、サービス、対象ユーザーを並べたアクセス許可一覧の改善モック"></a></figure>
+</div></div>
+</section>
+<section>
+<h2>3. 詳細ペインの情報階層</h2>
+<p>内側のカードを区切り線に替え、会話の識別情報・最近の実行・エージェント設定を一つの面で読めるようにします。</p>
+<div class="scroll"><div class="pair">
+<figure><figcaption>現状・フィルター表示中</figcaption><a href="03-detail-current.png"><img src="03-detail-current.png" alt="現状の会話詳細。内側にカードが重なり、フィルターが上部を覆っている"></a></figure>
+<figure><figcaption>改善モック・フィルターを閉じた状態</figcaption><a href="03-detail-proposal.png"><img src="03-detail-proposal.png" alt="会話詳細の枠を減らし、区切り線と折りたたみで整理した改善モック"></a></figure>
+</div></div>
+</section>
+<footer>監査基準は <a href="https://github.com/heydamir/unslop">unslop by Damir Sokolovsky</a>（CC BY 4.0）をWinUI向けに適用。</footer>
+</main>
+</html>
