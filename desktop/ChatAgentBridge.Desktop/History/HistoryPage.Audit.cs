@@ -51,7 +51,11 @@ public sealed partial class HistoryPage
         var flexibleWidth = AuditHistoryHeader.ColumnDefinitions[3].ActualWidth + AuditHistoryHeader.ColumnDefinitions[4].ActualWidth;
         if (!double.IsFinite(flexibleWidth) || flexibleWidth < 96) return;
 
-        var conversationWidth = Math.Clamp(AuditHistoryHeader.ColumnDefinitions[3].ActualWidth + delta, 48, flexibleWidth - 48);
+        // Matches MinWidth on the conversation column in HistoryPage.xaml: the name and ID stay readable when the
+        // window narrows, and horizontal scrolling reaches the rest.
+        const double minimumConversationWidth = 160;
+        if (flexibleWidth <= minimumConversationWidth) return;
+        var conversationWidth = Math.Clamp(AuditHistoryHeader.ColumnDefinitions[3].ActualWidth + delta, minimumConversationWidth, flexibleWidth);
         var trailingWidth = flexibleWidth - conversationWidth;
         var totalWeight = audit.Conversation.Value + audit.TrailingSpace.Value;
         var conversationWeight = totalWeight * conversationWidth / flexibleWidth;

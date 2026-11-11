@@ -56,6 +56,7 @@ public sealed partial class HistoryPage : Page
         ViewModel.RenameSessionAsync = RenameSessionAsync;
         ViewModel.ChooseAgentSwitchAsync = ChooseAgentSwitchAsync;
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        ViewModel.SessionListCriteriaChanged += ScrollSessionListToTop;
         SizeChanged += Page_SizeChanged;
         // MainPage hosts this Page directly and switches Visibility, so Frame
         // navigation events alone do not cover its actual lifetime.
@@ -388,6 +389,15 @@ public sealed partial class HistoryPage : Page
         SessionSplitterColumn.Width = new GridLength(SessionSplitterWidth, GridUnitType.Pixel);
         SessionDetailColumn.Width = new GridLength(Math.Max(MinimumSessionDetailWidth, contentWidth - width), GridUnitType.Star);
     }
+
+    // A new sort or filter should start from its first rows. The selection is kept, but restoring it after a
+    // batched reset would otherwise scroll the list to the selected row.
+    private void ScrollSessionListToTop() =>
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (SessionList.Items.Count > 0)
+                SessionList.ScrollIntoView(SessionList.Items[0], ScrollIntoViewAlignment.Leading);
+        });
 
     private void BackToSessions_Click(object sender, RoutedEventArgs e)
     {
