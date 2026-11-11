@@ -14,6 +14,7 @@ public sealed partial class MainPage
     private AgentProfileEditorControl? _agentProfileDetails;
     private NavigationView? _agentScopeNavigation;
     private ScrollViewer? _agentSettingsScroll;
+    private StackPanel? _agentSettingsPageContent;
     private StackPanel? _agentScopeCommonGroup;
     private TextBlock? _agentScopeCommonHeading;
     private TextBlock? _agentScopeCommonHelp;
@@ -82,7 +83,7 @@ public sealed partial class MainPage
             if (!_syncingAgentScope && args.SelectedItemContainer is NavigationViewItem { Tag: string scope })
                 QueueAgentScopeSelection(scope);
         };
-        var page = new StackPanel { Spacing = 16, Margin = new Thickness(16) };
+        var page = _agentSettingsPageContent = new StackPanel { Spacing = 16, Margin = new Thickness(16, 16, 0, 16) };
         _agentScopeBreadcrumb = CreateScopeBreadcrumb("AgentScopeBreadcrumb", () => QueueAgentScopeSelection("common"));
         page.Children.Add(_agentScopeBreadcrumb);
         page.Children.Add(_agentScopeCommonGroup);
@@ -107,6 +108,10 @@ public sealed partial class MainPage
         var mode = width >= SettingsScopeNavigationBreakpoint
             ? NavigationViewPaneDisplayMode.Left
             : NavigationViewPaneDisplayMode.Top;
+        if (_agentSettingsPageContent is not null)
+            _agentSettingsPageContent.Margin = mode == NavigationViewPaneDisplayMode.Left
+                ? new Thickness(16, 16, 0, 16)
+                : new Thickness(0, 16, 0, 16);
         if (_agentScopeNavigation.PaneDisplayMode == mode) return;
         _agentScopeNavigation.PaneDisplayMode = mode;
         _agentScopeNavigation.IsPaneOpen = width >= SettingsScopeNavigationBreakpoint;

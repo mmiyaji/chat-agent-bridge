@@ -10,6 +10,7 @@ public sealed partial class MainPage
 {
     private NavigationView? _connectionScopeNavigation;
     private ScrollViewer? _connectionSettingsScroll;
+    private StackPanel? _connectionSettingsPageContent;
     private TextBlock? _connectionScopeHeading;
     private StackPanel? _connectionScopeHeader;
     private Border? _connectionScopeConnectedBadge;
@@ -147,7 +148,7 @@ public sealed partial class MainPage
         shell.Children.Add(_connectionScopeNavigation);
         AttachSettingsNavigationResizer(_connectionScopeNavigation, shell, "ConnectionScopeSizer");
 
-        var page = new StackPanel { Spacing = 12, Margin = new Thickness(16) };
+        var page = _connectionSettingsPageContent = new StackPanel { Spacing = 12, Margin = new Thickness(16, 16, 0, 16) };
         _connectionScopeBreadcrumb = CreateScopeBreadcrumb("ConnectionScopeBreadcrumb", () => SetConnectionSettingsScope("common"));
         page.Children.Add(_connectionScopeBreadcrumb);
         page.Children.Add(_connectionScopeHeader);
@@ -262,6 +263,10 @@ public sealed partial class MainPage
         var mode = showNavigation
             ? NavigationViewPaneDisplayMode.Left
             : NavigationViewPaneDisplayMode.Top;
+        if (_connectionSettingsPageContent is not null)
+            _connectionSettingsPageContent.Margin = showNavigation
+                ? new Thickness(16, 16, 0, 16)
+                : new Thickness(0, 16, 0, 16);
         if (_connectionScopeNavigation.PaneDisplayMode == mode) return;
         _connectionScopeNavigation.PaneDisplayMode = mode;
         _connectionScopeNavigation.IsPaneOpen = showNavigation;

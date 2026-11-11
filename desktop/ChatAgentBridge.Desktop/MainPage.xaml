@@ -127,7 +127,7 @@
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
             <NavigationView.Content>
-                <Grid x:Name="MainContentGrid" Padding="16" AutomationProperties.AutomationId="MainContentGrid">
+                <Grid x:Name="MainContentGrid" Padding="16" SizeChanged="MainContentGrid_SizeChanged" AutomationProperties.AutomationId="MainContentGrid">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />

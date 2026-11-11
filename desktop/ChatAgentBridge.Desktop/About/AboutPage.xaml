@@ -19,7 +19,7 @@
         </StackPanel>
         <ScrollViewer x:Name="AboutScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="AboutScroll">
-            <StackPanel Spacing="{StaticResource SettingsCardSpacing}" MaxWidth="1040" Padding="0,0,16,0" HorizontalAlignment="Left" AutomationProperties.AutomationId="AboutContent" Width="{x:Bind AboutScroll.ViewportWidth, Mode=OneWay}">
+            <StackPanel Spacing="{StaticResource SettingsCardSpacing}" MaxWidth="1040" HorizontalAlignment="Left" AutomationProperties.AutomationId="AboutContent" Width="{x:Bind AboutScroll.ViewportWidth, Mode=OneWay}">
                 <StackPanel Spacing="4" AutomationProperties.AutomationId="AboutReleaseHighlights">
                     <TextBlock x:Uid="ReleaseHighlightsHeading" localization:LocalizedResourceKey.Key="ReleaseHighlightsHeading"
                                Style="{StaticResource SettingsSectionHeaderStyle}" />

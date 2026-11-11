@@ -11,6 +11,9 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage : Page
 {
+    private const double CompactPageInsetBreakpoint = 720;
+    private const double CompactPageInset = 16;
+    private const double StandardPageInset = 24;
     internal InboxShutdownSummary GetShutdownSummary() => InboxPage.ViewModel.GetShutdownSummary();
 
     private bool _hasLoaded;
@@ -406,6 +409,18 @@ public sealed partial class MainPage : Page
         MainContentGrid.Margin = MainNavigation.DisplayMode == NavigationViewDisplayMode.Minimal
             ? new Thickness(0, 48, 0, 0)
             : new Thickness(0);
+    }
+
+    private void MainContentGrid_SizeChanged(object sender, SizeChangedEventArgs e) =>
+        UpdatePageInset(e.NewSize.Width);
+
+    private void UpdatePageInset(double width)
+    {
+        if (MainContentGrid is null || width <= 0) return;
+        var inset = width <= CompactPageInsetBreakpoint ? CompactPageInset : StandardPageInset;
+        var current = MainContentGrid.Padding;
+        if (current.Left == inset && current.Right == inset) return;
+        MainContentGrid.Padding = new Thickness(inset, current.Top, inset, current.Bottom);
     }
 
     private async void ShowTerms_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: false);
