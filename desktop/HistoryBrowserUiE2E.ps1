@@ -200,12 +200,37 @@ function Wait-Text([string]$Text,[int]$Seconds=8) {
 }
 function Get-FirstRowText {
     $list=Element 'SavedSessionsList'
+    # Batched list updates keep the selected conversation in view, so reset the scroll position to read the true first row.
+    $listScroll=$null
+    try { $listScroll=$list.GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern) } catch {}
+    if ($listScroll -and $listScroll.Current.VerticallyScrollable) { $listScroll.SetScrollPercent(-1,0); Start-Sleep -Milliseconds 250 }
     $condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem)
     $row=$list.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$condition)
     Assert-True ($null -ne $row) 'No visible saved conversation row.'
     $textCondition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Text)
     $labels=$row.FindAll([System.Windows.Automation.TreeScope]::Descendants,$textCondition)
     return (@($labels | ForEach-Object {$_.Current.Name}) -join ' ') + ' ' + $row.Current.Name
+}
+function Assert-FirstRowOnScreenWithoutScroll([string]$ExpectedText,[string]$Step) {
+    Start-Sleep -Milliseconds 400
+    $list=Element 'SavedSessionsList'
+    $condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem)
+    $row=$list.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$condition)
+    Assert-True ($null -ne $row) "$Step : no saved conversation row."
+    Assert-True (-not $row.Current.IsOffscreen) "$Step : the first row is off-screen right after changing the sort (the list kept the selected row in view instead of showing the top)."
+    $listScroll=$null
+    try { $listScroll=$list.GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern) } catch {}
+    if ($listScroll -and $listScroll.Current.VerticallyScrollable) { Assert-True ($listScroll.Current.VerticalScrollPercent -lt 1) "$Step : list is scrolled away from the top ($($listScroll.Current.VerticalScrollPercent)%)." }
+    $textCondition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Text)
+    $text=(@($row.FindAll([System.Windows.Automation.TreeScope]::Descendants,$textCondition) | ForEach-Object {$_.Current.Name}) -join ' ') + ' ' + $row.Current.Name
+    Assert-True ($text.Contains($ExpectedText)) "$Step : visible first row was '$text', expected '$ExpectedText'."
+}
+function Get-VisibleAuditRow {
+    $condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem)
+    foreach($row in (Element 'AuditHistoryList').FindAll([System.Windows.Automation.TreeScope]::Descendants,$condition)) {
+        if (-not $row.Current.IsOffscreen -and $null -ne (Get-AuditContextCell $row)) { return $row }
+    }
+    return $null
 }
 function Get-AuditContextCell([System.Windows.Automation.AutomationElement]$Row) {
     $condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,'AuditContextCell')
@@ -296,6 +321,10 @@ function Open-SessionFilters {
 function Close-SessionFilters {
     [void][HistoryBrowserUiNative]::SetForegroundWindow($appProcess.MainWindowHandle)
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+    # After the sort combo box collapses the Escape key can be consumed by the combo box itself; use the flyout's Close button then.
+    $closeDeadline=[DateTime]::UtcNow.AddSeconds(1.5)
+    while ($null -ne (Element 'SavedSessionsProviderFilter') -and [DateTime]::UtcNow -lt $closeDeadline) { Start-Sleep -Milliseconds 100 }
+    if ($null -ne (Element 'SavedSessionsProviderFilter')) { UI @('invoke','CloseSessionFilters') | Out-Null }
     Element-Gone 'SavedSessionsProviderFilter'
 }
 try {
@@ -433,6 +462,12 @@ try {
                 Assert-True ((Element 'AccessHistoryTab').GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected) 'Access mode is not selected'
                 Assert-True ((Selected-Name 'AuditServiceFilter') -eq 'Slack') 'Service selection did not survive navigation'
                 Assert-True ((Element 'HistoryRecordSearch').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value -eq $linkedUserId) 'User ID filter was not set'
+                # The detail drawer stays open across page visits. Below 1000 DIP of table width it overlays the table with light dismiss,
+                # so a row click would only dismiss it. Close it first so the row click must open the details itself.
+                if(Element 'CloseRecordDetail'){
+                    UI @('invoke','CloseRecordDetail') | Out-Null
+                    Element-Gone 'CloseRecordDetail'
+                }
                 $type=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem)
                 if($NarrowAccessOnly){
                     $auditList=Element 'AuditHistoryList'
@@ -633,16 +668,32 @@ try {
             Start-Sleep -Milliseconds 200
             Assert-True (Has-Text 'Release preparation · #release-planning · @alice (Alice)') 'Audit history is not linked to the correct execution identity.'
             Capture 'history-audit-names'
+            # The widened time/action columns make the audit table scroll horizontally at 500 DIP even before any column is dragged.
+            # Record that baseline so the later check can prove the dragged conversation column adds no extra overflow.
+            Resize 500 600
+            $baselineScroll=(Element 'AuditHistoryList').GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern).Current
+            Resize 1280 800
             $beforeDrag=(Element 'AuditResizeConversation').Current.BoundingRectangle.X
             Drag-Column 'AuditResizeConversation' -80
             $afterDrag=(Element 'AuditResizeConversation').Current.BoundingRectangle.X
-            Assert-True ($afterDrag -lt $beforeDrag - 40) 'Dragging the conversation divider left did not reduce the column width.'
+            $wideConversationWidth=$afterDrag-(Element 'AuditConversationColumn').Current.BoundingRectangle.X
+            Assert-True ($afterDrag -lt $beforeDrag - 40) "Dragging the conversation divider left did not reduce the column width (divider X $beforeDrag -> $afterDrag, column width $wideConversationWidth)."
             Capture 'history-audit-resized-wide'
             Resize 500 600
-            $narrowDivider=(Element 'AuditResizeConversation').Current.BoundingRectangle.X
-            Assert-True ($narrowDivider -lt $afterDrag - 200) 'The conversation column did not shrink with the narrow viewport after resizing.'
-            $auditScroll=(Element 'AuditHistoryList').GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern).Current
-            Assert-True (-not $auditScroll.HorizontallyScrollable) 'The resized conversation column caused horizontal overflow at 500 DIP.'
+            # Reveal the rightmost column; its divider is clipped when the table is scrolled to the left.
+            $auditScrollPattern=(Element 'AuditHistoryList').GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
+            $auditScrollPattern.SetScrollPercent(100,-1)
+            Start-Sleep -Milliseconds 250
+            $narrowConversationWidth=(Element 'AuditResizeConversation').Current.BoundingRectangle.X-(Element 'AuditConversationColumn').Current.BoundingRectangle.X
+            $auditRow=Get-VisibleAuditRow
+            $narrowContextWidth=if($auditRow){$cc=Get-AuditContextCell $auditRow; if($cc){$cc.Current.BoundingRectangle.Width}else{0}}else{0}
+            Assert-True ($narrowConversationWidth -ge 150) "The conversation column header collapsed at 500 DIP after resizing (width $narrowConversationWidth, expected >= 150)."
+            Assert-True ($narrowContextWidth -ge 150) "The conversation/target cell collapsed at 500 DIP after resizing (width $narrowContextWidth, expected >= 150)."
+            # The column now has a 160 DIP floor: it only has room to shrink further when the wide-window width was above that floor.
+            Assert-True ($narrowConversationWidth -le $wideConversationWidth + 1 -and ($wideConversationWidth -lt 200 -or $narrowConversationWidth -lt $wideConversationWidth - 40)) "The conversation column did not shrink with the narrow viewport after resizing (wide $wideConversationWidth, narrow $narrowConversationWidth)."
+            Write-Output "INFO audit conversation column: wide $wideConversationWidth DIP, at 500 DIP header $narrowConversationWidth DIP, cell $narrowContextWidth DIP"
+            $auditScroll=$auditScrollPattern.Current
+            Assert-True ($auditScroll.HorizontalViewSize -ge $baselineScroll.HorizontalViewSize - 0.5) "The resized conversation column caused extra horizontal overflow at 500 DIP (visible $($auditScroll.HorizontalViewSize)% vs $($baselineScroll.HorizontalViewSize)% before resizing)."
             Capture 'history-audit-narrow-resized'
             Resize 1280 800
             Drag-Column 'AuditResizeTime' 150
@@ -680,6 +731,7 @@ try {
             if ($Language -eq 'ja') { $recent='最近更新した順'; $byName='会話名順'; $byUsage='実行回数が多い順' }
             else { $recent='Recently updated'; $byName='Name'; $byUsage='Most runs' }
             Choose 'SavedSessionsSort' $byName
+            Assert-FirstRowOnScreenWithoutScroll 'Architecture decision notes' 'Name sort (selected row is no longer first)'
             Assert-True ((Get-FirstRowText).Contains('Architecture decision notes')) 'Name sort did not put the alphabetically first title at the top.'
             Choose 'SavedSessionsSort' $byUsage
             Assert-True ((Get-FirstRowText).Contains('日本語スプリント記録')) 'Usage sort did not put the eight-run conversation first.'

@@ -193,6 +193,12 @@ process.stdin.on('end', () => setTimeout(() => {
         MattermostAllowedUserIds='alice,bob';ChatApprovalMode='always';ChatResultMode='manual';AutoConnectProvider='none'
     }
     Write-Json 'onboarding.json' @{SchemaVersion=3;Step=4;Status='completed'}
+    # Mark the current version's update highlights as seen so the shared notice does not take space from the narrow layouts under test.
+    $appExecutable = Join-Path ([IO.Path]::GetFullPath($AppDirectory)) 'ChatAgentBridge.Desktop.exe'
+    if (Test-Path -LiteralPath $appExecutable) {
+        $fixtureAppVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($appExecutable).ProductVersion.Split('+')[0]
+        Write-Json 'update-notice.json' @{SchemaVersion=1;LastObservedVersion=$fixtureAppVersion;PendingVersion=$null;DismissedVersion=$fixtureAppVersion}
+    }
     Write-Json 'tips.json' @{Seen=@('chat-connect')}
     Write-Json 'language.json' @{Language=$Language}
     Write-Json 'appearance.json' @{Theme=$(if($Theme -ne 'auto'){$Theme}elseif($Language -eq 'ja'){'dark'}else{'light'})}

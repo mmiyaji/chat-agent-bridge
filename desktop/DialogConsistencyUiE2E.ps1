@@ -23,7 +23,17 @@ function Assert([bool]$Value,[string]$Message){if(-not $Value){throw $Message}}
 function UI([string[]]$Arguments){$out=winapp ui @Arguments -a $app.Id --json;if($LASTEXITCODE){throw "UI failed: $($Arguments -join ' ')"};$out}
 function Root{[Windows.Automation.AutomationElement]::FromHandle($window)}
 function Find($Parent,[string]$Id){$Parent.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$Id))}
-function Element([string]$Id){Find (Root) $Id}
+function Element([string]$Id){
+    $found=Find (Root) $Id
+    if($found){return $found}
+    # Dialogs opened from a flyout command can be hosted in a separate top-level window of the app process.
+    $process=[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ProcessIdProperty,$app.Id)
+    foreach($top in [Windows.Automation.AutomationElement]::RootElement.FindAll([Windows.Automation.TreeScope]::Children,$process)){
+        $found=Find $top $Id
+        if($found){return $found}
+    }
+    return $null
+}
 function Visible([string]$Id){$e=Element $Id;return $e -and -not $e.Current.IsOffscreen -and $e.Current.BoundingRectangle.Height -gt 0}
 function Go([string]$Id){if(-not (Visible $Id)){UI @('invoke','TogglePaneButton')|Out-Null};UI @('invoke',$Id)|Out-Null;Start-Sleep -Milliseconds 120}
 function Scroll([string]$Id){UI @('scroll-into-view',$Id)|Out-Null}
@@ -68,7 +78,17 @@ function History-Selection {
     $item=$list.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::ListItem))
     Assert ($null -ne $item) 'Isolated session fixture did not appear'
     $item.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
-    UI @('wait-for','RenameSession','-t','4000')|Out-Null
+    UI @('wait-for','SessionActionsCommandBar','-t','4000')|Out-Null
+}
+# Secondary conversation actions (rename, policy, start fresh) live in the CommandBar overflow menu until it is opened.
+function Reveal-SessionAction([string]$Id){
+    if(-not (Visible $Id)){
+        $more=Element 'MoreButton'
+        Assert ($more -and -not $more.Current.IsOffscreen) "Session action overflow button is not available for $Id"
+        UI @('invoke','MoreButton')|Out-Null
+        UI @('wait-for',$Id,'-t','4000')|Out-Null
+    }
+    Assert (Visible $Id) "Session action is not reachable: $Id"
 }
 try{
     $policy=[regex]::Match((Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/OnboardingConsentStore.cs') -Raw),'CurrentPolicyVersion\s*=\s*"([^"]+)"').Groups[1].Value
@@ -113,7 +133,7 @@ try{
         }
         # Conversation dialogs share the same footer while preserving cancelled edits.
         foreach($pair in @(@('RenameSession','RenameSessionDialog'),@('EditSessionModel','SessionModelDialog'),@('EditSessionExecutionPolicy','SessionExecutionPolicyDialog'),@('SwitchSessionAgent','AgentSwitchDialog'),@('DetachSession','DetachSessionConfirmation'))){
-            History-Selection;Scroll $pair[0];UI @('invoke',$pair[0])|Out-Null
+            History-Selection;Reveal-SessionAction $pair[0];UI @('invoke',$pair[0])|Out-Null
             Dismiss $pair[1] 2 ('500-history-'+$pair[0])
         }
         $saved=Get-Content (Join-Path $data 'sessions.json') -Raw|ConvertFrom-Json
@@ -145,8 +165,11 @@ try{
             Capture "$width-wizard-footer"
             $checks.Add(@{locale=$locale;theme=$color;width=$width;dialog='WizardFooter';passed=$true})
         }
-        Scroll 'WizardAcceptTerms';(Element 'WizardAcceptTerms').GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Toggle()
-        Scroll 'WizardAcceptPrivacy';(Element 'WizardAcceptPrivacy').GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Toggle()
+        # Reopening the guide restores consent already given for the current policy version, so the boxes must arrive checked.
+        foreach($consent in @('WizardAcceptTerms','WizardAcceptPrivacy')){
+            Scroll $consent
+            Assert ((Element $consent).GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Current.ToggleState -eq [Windows.Automation.ToggleState]::On) "$consent did not restore the saved consent"
+        }
         UI @('invoke','OnboardingNext')|Out-Null;Start-Sleep -Milliseconds 150
         Assert ((Element 'OnboardingPrevious').Current.IsEnabled) 'Wizard Back did not enable on the next step'
         UI @('invoke','OnboardingPrevious')|Out-Null

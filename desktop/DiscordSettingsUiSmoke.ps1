@@ -193,7 +193,14 @@ try {
     Start-IsolatedApp
     Invoke-Element (Wait-Element 'NavConnections') 'open connection settings'
     $list = Wait-Element 'ConnectionScopeList'
-    Assert ($null -ne (Find-Element $list 'ConnectionScopeDiscord')) 'Discord scope is missing from settings navigation.'
+    # NavigationView realizes its items after the list container appears (a separator now precedes the chat services), so wait for the Discord item.
+    $scopeDeadline = [DateTime]::UtcNow.AddSeconds(8)
+    do {
+        $discordScope = Find-Element $list 'ConnectionScopeDiscord'
+        if ($discordScope) { break }
+        Start-Sleep -Milliseconds 120
+    } while ([DateTime]::UtcNow -lt $scopeDeadline)
+    Assert ($null -ne $discordScope) 'Discord scope is missing from settings navigation.'
     Invoke-Element (Wait-Element 'ConnectionScopeDiscord') 'open Discord settings'
     Assert (Checked 'DiscordAllowDirectMessages') 'Direct messages must default on.'
     $commonRect = (Wait-Element 'ConnectionScopeCommon').Current.BoundingRectangle

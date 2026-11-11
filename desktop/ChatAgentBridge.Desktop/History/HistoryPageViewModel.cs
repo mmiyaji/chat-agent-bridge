@@ -485,7 +485,7 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         // Keep the filter chip and clear command responsive; only the list rebuild waits.
         OnPropertyChanged(nameof(HasSessionFilters));
         ClearSessionFiltersCommand.NotifyCanExecuteChanged();
-        if (string.IsNullOrWhiteSpace(value)) { ApplySessionFilter(); return; }
+        if (string.IsNullOrWhiteSpace(value)) { ApplyChangedSessionCriteria(); return; }
         var debounce = _searchDebounce = new CancellationTokenSource();
         _ = ApplySessionFilterAfterDelayAsync(debounce.Token);
     }
@@ -495,11 +495,25 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         try { await Task.Delay(TimeSpan.FromMilliseconds(200), cancellationToken); }
         catch (OperationCanceledException) { return; }
         ApplySessionFilter();
+        SessionListCriteriaChanged?.Invoke();
     }
     partial void OnIsNarrowChanged(bool value) => NotifySummariesChanged();
-    partial void OnProviderFilterChanged(string value) { if (!_refreshingLocalizedFilters) ApplySessionFilter(); }
-    partial void OnWorkspaceFilterChanged(string value) { if (!_refreshingLocalizedFilters) ApplySessionFilter(); }
-    partial void OnSessionSortChanged(string value) { if (!_refreshingLocalizedFilters) ApplySessionFilter(); }
+    partial void OnProviderFilterChanged(string value) => ApplyChangedSessionCriteria();
+    partial void OnWorkspaceFilterChanged(string value) => ApplyChangedSessionCriteria();
+    partial void OnSessionSortChanged(string value) => ApplyChangedSessionCriteria();
+
+    /// <summary>
+    /// Raised after the user changes the sort, search or filters, so the list can show its new first rows.
+    /// Background reloads keep the current scroll position and do not raise it.
+    /// </summary>
+    public event Action? SessionListCriteriaChanged;
+
+    private void ApplyChangedSessionCriteria()
+    {
+        if (_refreshingLocalizedFilters) return;
+        ApplySessionFilter();
+        SessionListCriteriaChanged?.Invoke();
+    }
     partial void OnSelectedSessionChanged(SessionHistoryRow? value)
     {
         RefreshSessionExecutions();

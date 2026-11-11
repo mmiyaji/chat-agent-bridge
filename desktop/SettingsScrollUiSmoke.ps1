@@ -151,7 +151,16 @@ function Select-Page([string]$AutomationId) {
     throw "Page navigation did not select '$AutomationId'."
 }
 function Select-Scope([string]$AutomationId) {
-    $scope = Wait-Element $script:activeWindow $AutomationId
+    $scope = Find-Element $script:activeWindow $AutomationId
+    if (-not $scope -or $scope.Current.IsOffscreen) {
+        # Narrow top-tab navigation moves trailing scopes (the chat services) into the overflow menu.
+        $overflow = Find-Element $script:activeWindow 'TopNavOverflowButton'
+        if ($overflow -and -not $overflow.Current.IsOffscreen) {
+            Invoke-Pattern $overflow "open the overflow menu for $AutomationId"
+            $scope = Wait-ProcessElement $AutomationId
+        }
+    }
+    if (-not $scope) { $scope = Wait-Element $script:activeWindow $AutomationId }
     Invoke-Pattern $scope "select $AutomationId"
     $deadline = [DateTime]::UtcNow.AddSeconds(8)
     do {
@@ -302,13 +311,14 @@ function Run-Scenario([string]$Language, [string]$Theme) {
     Set-WindowWidth 1200
     Select-Page 'NavConnections'
     Select-Scope 'ConnectionScopeMattermost'
-    Assert-InnerScrollAndFixedNav 'ConnectionSettingsScroll' 'ConnectionScopeSlack' 'MattermostAllowedThreadIds' 'connections-wide'
+    # The thread allow-list now sits in a collapsed optional group; the last always-visible Mattermost control is the post-connection notice toggle.
+    Assert-InnerScrollAndFixedNav 'ConnectionSettingsScroll' 'ConnectionScopeSlack' 'PostConnectionNotice' 'connections-wide'
     Assert-ResetToTop 'ConnectionSettingsScroll' 'ConnectionScopeCommon' 'connection-common-switch'
     Capture-Window "$script:activeScenario-connections-common.png"
 
     Set-WindowWidth 500
     Select-Scope 'ConnectionScopeMattermost'
-    Assert-InnerScrollAndFixedNav 'ConnectionSettingsScroll' 'ConnectionScopeCommon' 'MattermostAllowedThreadIds' 'connections-narrow'
+    Assert-InnerScrollAndFixedNav 'ConnectionSettingsScroll' 'ConnectionScopeCommon' 'PostConnectionNotice' 'connections-narrow'
     Capture-Window "$script:activeScenario-connections-narrow.png"
 
     if ($script:activeProcess -and -not $script:activeProcess.HasExited) {
