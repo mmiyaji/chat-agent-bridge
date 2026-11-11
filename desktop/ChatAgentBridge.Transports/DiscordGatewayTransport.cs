@@ -429,7 +429,8 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
             GuildId = parsed.GuildId,
             SourceChannelId = parsed.ChannelId,
             IncomingFiles = parsed.Files,
-            IncomingFilesError = parsed.FilesError
+            IncomingFilesError = parsed.FilesError,
+            UserDisplayName = parsed.UserDisplayName
         };
         if (request.Text.Length == 0 && request.IncomingFiles.Count == 0) return;
         if (!ChatAccessPolicy.IsAllowedScope(settings, "discord", request.ChannelId, request.ThreadId, request.GuildId)) return;
@@ -969,8 +970,20 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
         bool webhook = data.TryGetProperty("webhook_id", out var webhookId) && webhookId.ValueKind == JsonValueKind.String;
         int type = data.TryGetProperty("type", out var typeElement) && typeElement.TryGetInt32(out var parsedType) ? parsedType : -1;
         var files = ReadAttachments(data, out string? filesError);
-        result = new ParsedMessage(messageId, channelId, userId, text, guildId, parent, isBot, webhook, type, files, filesError);
+        result = new ParsedMessage(messageId, channelId, userId, text, guildId, parent, isBot, webhook, type, files, filesError,
+            ReadUserDisplayName(author));
         return true;
+    }
+
+    private static string? ReadUserDisplayName(JsonElement author) =>
+        ReadSafeDisplayName(author, "global_name") ?? ReadSafeDisplayName(author, "username");
+
+    private static string? ReadSafeDisplayName(JsonElement author, string property)
+    {
+        const int maxLength = 128;
+        string? value = ReadString(author, property)?.Trim();
+        return !string.IsNullOrWhiteSpace(value) && value.Length <= maxLength && !value.Any(char.IsControl)
+            ? value : null;
     }
 
     private static IReadOnlyList<IncomingChatFile> ReadAttachments(JsonElement data, out string? error)
@@ -1004,7 +1017,8 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
             GuildId = message.GuildId,
             SourceChannelId = message.ChannelId,
             IncomingFiles = message.Files,
-            IncomingFilesError = message.FilesError
+            IncomingFilesError = message.FilesError,
+            UserDisplayName = message.UserDisplayName
         };
     }
 
@@ -1149,7 +1163,7 @@ public sealed partial class DiscordGatewayTransport : IChatTransport, IChatProgr
         ChatRequest? StopRequest = null, Func<ChatRequest, CancellationToken, Task>? StopHandler = null);
     private sealed record ParsedMessage(string MessageId, string ChannelId, string UserId, string Text,
         string? GuildId, string? ParentChannelId, bool IsBot, bool IsWebhook, int MessageType,
-        IReadOnlyList<IncomingChatFile> Files, string? FilesError);
+        IReadOnlyList<IncomingChatFile> Files, string? FilesError, string? UserDisplayName = null);
     private sealed record GatewayBotResponse([property: JsonPropertyName("url")] string? Url);
     private sealed record QueuedDiscordMessage(JsonElement Data, long? Sequence);
     private sealed record ThreadParentCacheEntry(string ChannelId, string? ParentId, DateTimeOffset ExpiresAt);

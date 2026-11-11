@@ -18,7 +18,7 @@ public sealed record SessionPolicySelection(string? ChatApprovalMode, string? Ch
 /// <summary>Chat names for an execution, resolved through the saved conversation it belongs to.</summary>
 public sealed record ExecutionChatInfo(string Conversation, string User, SessionKey Session);
 
-public sealed record ExecutionHistoryRow(ExecutionRecord Record, ExecutionChatInfo? Chat = null, RunColumnLayout? Columns = null)
+public sealed record ExecutionHistoryRow(ExecutionRecord Record, ExecutionChatInfo? Chat = null, RunColumnLayout? Columns = null, string? UserName = null)
 {
     public RunColumnLayout ColumnLayout => Columns ?? RunColumnLayout.Default;
     public string Started => Record.StartedAt.ToLocalTime().ToString("g");
@@ -28,7 +28,7 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record, ExecutionChatIn
         ? DesktopText.Get("HistoryThisPc")
         : DesktopText.Get("HistoryChatIdShort", HistoryFormat.ShortId(Record.ChannelId)));
     public string UserCell => Record.Source == "local" ? DesktopText.Get("HistoryThisPc") :
-        HistoryFormat.UserIdentity(Chat?.User, Record.UserId);
+        HistoryFormat.UserIdentity(Chat?.User ?? UserName, Record.UserId);
     public string StatusTone => Record.Status switch
     {
         "running" => "running",

@@ -385,7 +385,7 @@ try {
         @{Provider='slack';UserId='U_FALLBACK_0001';DisplayName='Slack directory name';AddedAt=[DateTimeOffset]::UtcNow.ToString('o');Method='settings';Actor='Local'},
         @{Provider='mattermost';UserId='U_FALLBACK_0001';DisplayName='Mattermost directory name';AddedAt=[DateTimeOffset]::UtcNow.ToString('o');Method='settings';Actor='Local'}
     )
-    Write-Json 'settings.json' @{SchemaVersion=1;WorkspaceRoot=$dataPath;AgentProvider='custom';AgentMode='exec';AgentExecutable='not-used';AgentArguments='';TrustedWorkspaceRoots=$dataPath;AutoConnectProvider='none';SlackAllowedUserIds=$linkedUserId}
+    Write-Json 'settings.json' @{SchemaVersion=1;WorkspaceRoot=$dataPath;AgentProvider='custom';AgentMode='exec';AgentExecutable='not-used';AgentArguments='';TrustedWorkspaceRoots=$dataPath;AutoConnectProvider='none';SlackAllowedUserIds=$linkedUserId;MattermostAllowedUserIds=$(if($AccessLinkOnly -and -not $Baseline){$linkedUserId}else{''})}
     Write-Json 'portable-update.json' @{schemaVersion=1;automaticChecksEnabled=$false;includePrereleases=$true}
     Write-Json 'update-notice.json' @{SchemaVersion=1;LastObservedVersion=$fixtureAppVersion;PendingVersion=$null;DismissedVersion=$fixtureAppVersion}
     Write-Json 'pricing-auto.json' @{schemaVersion=1;autoUpdateEnabled=$false;catalogJson=(Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/Pricing/model-prices.json') -Raw)}
@@ -404,7 +404,31 @@ try {
             Check "Allowed user link keeps access mode, service and exact ID on $visit visit" {
                 Navigate 'NavConnections'
                 UI @('invoke','ConnectionScopeCommon') | Out-Null
-                UI @('invoke','AllowedUserHistory') | Out-Null
+                if($AccessLinkOnly){
+                    Check 'Common allowed-user list recovers audit-only names per service' {
+                        $textType=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Text)
+                        $deadline=[DateTime]::UtcNow.AddSeconds(8)
+                        do {
+                            $names=@((Root).FindAll([System.Windows.Automation.TreeScope]::Descendants,$textType) | ForEach-Object {$_.Current.Name})
+                            if(($names -join "`n").Contains('Expected access subject') -and ($names -join "`n").Contains('Same ID on another service')){break}
+                            Start-Sleep -Milliseconds 150
+                        } while([DateTime]::UtcNow -lt $deadline)
+                        $joined=$names -join "`n"
+                        Assert-True ($joined.Contains('Expected access subject') -and $joined.Contains($linkedUserId)) 'Slack allowed-user row did not recover the name and ID from its audit record.'
+                        Assert-True ($joined.Contains('Same ID on another service') -and $joined.Contains($linkedUserId)) 'Mattermost allowed-user row did not recover the name and ID from its audit record.'
+                        Capture 'allowed-users-audit-name-fallback'
+                    }
+                }
+                if($AccessLinkOnly){
+                    $historyId=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,'AllowedUserHistory')
+                    $historyButtons=@((Root).FindAll([System.Windows.Automation.TreeScope]::Descendants,$historyId))
+                    Assert-True ($historyButtons.Count -eq 2) "Expected one history button per same-ID service row; found $($historyButtons.Count)."
+                    $slackHistory=@($historyButtons | Where-Object {$_.Current.Name.Contains('Expected access subject')})
+                    Assert-True ($slackHistory.Count -eq 1) 'Could not identify the Slack history action by the audit-only user name.'
+                    $slackHistory[0].GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+                }else{
+                    UI @('invoke','AllowedUserHistory') | Out-Null
+                }
                 UI @('wait-for','AuditHistoryList','-t','10000') | Out-Null
                 Assert-True ((Element 'AccessHistoryTab').GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected) 'Access mode is not selected'
                 Assert-True ((Selected-Name 'AuditServiceFilter') -eq 'Slack') 'Service selection did not survive navigation'

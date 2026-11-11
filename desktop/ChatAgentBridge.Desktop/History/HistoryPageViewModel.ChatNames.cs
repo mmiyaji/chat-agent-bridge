@@ -11,8 +11,8 @@ public sealed partial class HistoryPageViewModel
     private readonly Dictionary<Guid, ExecutionChatInfo> _executionChats = [];
     private readonly Dictionary<Guid, (string Provider, string Channel, string Thread)> _executionChatScopes = [];
     private readonly Dictionary<(string Provider, string Channel, string Thread), string> _auditChatLabels = [];
-    private IReadOnlyDictionary<(string Provider, string UserId), string?> _allowedUserNames =
-        new Dictionary<(string, string), string?>();
+    private IReadOnlyDictionary<(string Provider, string UserId), string> _allowedUserNames =
+        new Dictionary<(string, string), string>();
     private CancellationTokenSource? _chatNameCancellation;
     private int _chatNameGeneration;
     private bool _chatNameUpdatesEnabled = true;
@@ -26,14 +26,17 @@ public sealed partial class HistoryPageViewModel
         _chatNames = await directory.ReadCachedAsync(bindings.Select(binding => binding.Key));
         try
         {
-            var users = await new ChatAgentBridge.Core.AllowedUserDirectory(_settingsStore.DirectoryPath).LoadAsync();
-            _allowedUserNames = users.GroupBy(user => (user.Provider, user.UserId))
-                .ToDictionary(group => group.Key, group => group.OrderByDescending(user => user.AddedAt).First().DisplayName);
+            _allowedUserNames = await Task.Run(() =>
+                new ChatAgentBridge.Core.AllowedUserDirectory(_settingsStore.DirectoryPath).LoadDisplayNamesAsync());
+            _chatNames = _chatNames.ToDictionary(pair => pair.Key, pair => pair.Value with
+            {
+                UserName = pair.Value.UserName ?? _allowedUserNames.GetValueOrDefault((pair.Key.Provider, pair.Key.UserId ?? ""))
+            });
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             // Optional display names must not prevent offline history from loading.
-            _allowedUserNames = new Dictionary<(string, string), string?>();
+            _allowedUserNames = new Dictionary<(string, string), string>();
         }
     }
 
@@ -80,7 +83,11 @@ public sealed partial class HistoryPageViewModel
         {
             var settings = await _settingsStore.LoadAsync(cancellationToken);
             using var directory = new ChatIdentityDirectory(_settingsStore.DirectoryPath);
-            var names = await directory.ResolveAsync(settings, keys, cancellationToken);
+            var resolved = await directory.ResolveAsync(settings, keys, cancellationToken);
+            var names = resolved.ToDictionary(pair => pair.Key, pair => pair.Value with
+            {
+                UserName = pair.Value.UserName ?? _allowedUserNames.GetValueOrDefault((pair.Key.Provider, pair.Key.UserId ?? ""))
+            });
             if (cancellationToken.IsCancellationRequested || generation != _chatNameGeneration || IsBusy) return;
             if (keys.All(key => Equals(_chatNames.GetValueOrDefault(key), names.GetValueOrDefault(key)))) return;
             _chatNames = names;

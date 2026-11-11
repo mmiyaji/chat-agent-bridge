@@ -131,6 +131,8 @@ See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるc
 
 Under **Chat settings → Common settings → Allowed users**, one table shows the total count and each user’s service. The first six entries alternate between services with users. Choose **Show … more** to expand the table. To add someone, choose **Add user** and select a service in the popup. Search for a Mattermost or Slack user and confirm the match, or enter the user ID directly. Discord uses ID entry. Each service's settings show its allowed-user count and link to this shared list. Select a name or ID for registration and last-request details, plus run, conversation, and CLI session counts from retained history. Removing a user asks for confirmation.
 
+Where a user ID is shown, the app also shows a known display name. It reuses saved allowed-user, access-history, and conversation names when offline; if a name is unavailable, the allowed-user list says so. Names are display metadata and do not change access permissions.
+
 Manual runs use the working folder selected in Agent settings, regardless of where CAB is installed. A folder selected and saved on the PC is trusted by default. Register other parent folders to permit switching conversations to their subfolders. Chat requests cannot automatically add locations outside that scope, and switching follows your approval settings. Git is not required; trusting a folder does not grant full access.
 
 **Chat settings** contains each service's connection details and approval and sharing rules common to all chat services. Manage allowed users in one shared list under Common settings.

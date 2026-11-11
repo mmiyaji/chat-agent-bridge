@@ -58,6 +58,8 @@ public sealed record ChatRequest(
 
     /// <summary>A fixed, user-safe marker when incoming attachments could not be represented safely.</summary>
     public string? IncomingFilesError { get; init; }
+    /// <summary>Provider-supplied display metadata for the requester; never used for access decisions.</summary>
+    public string? UserDisplayName { get; init; }
     /// <summary>
     /// Transport-generated stop signal target. When set, the request represents a cancellation
     /// signal for this original request's MessageId and must not be treated as a new AI request.

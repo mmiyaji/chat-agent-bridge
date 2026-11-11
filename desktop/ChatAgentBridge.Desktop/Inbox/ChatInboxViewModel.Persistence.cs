@@ -16,7 +16,9 @@ public sealed partial class ChatInboxViewModel
     private bool _conversationPersistencePaused;
     private InboxConversationSnapshot[]? _lastSavedConversationSnapshots;
     private CancellationTokenSource? _conversationSaveCooldown;
-    private (long Ticks, long Length)? _conversationNamesStamp;
+    private (long Ticks, long Length)[]? _conversationNameStamps;
+    private static readonly string[] ConversationNameFiles =
+        ["chat-identities.json", "allowed-users.json", "audit-manifest.json", "audit.json", "chat-conversations.json"];
     private IReadOnlyDictionary<SessionKey, ChatIdentityLabels> _cachedConversationNames = new Dictionary<SessionKey, ChatIdentityLabels>();
     private HashSet<SessionKey> _cachedConversationNameKeys = [];
     private int _lastReportedRejectedConversationCount;
@@ -149,15 +151,25 @@ public sealed partial class ChatInboxViewModel
         var requested = keys.ToHashSet();
         try
         {
-            var info = new FileInfo(Path.Combine(_store.DirectoryPath, "chat-identities.json"));
-            var stamp = info.Exists ? (info.LastWriteTimeUtc.Ticks, info.Length) : (-1L, -1L);
-            if (_conversationNamesStamp == stamp && requested.IsSubsetOf(_cachedConversationNameKeys))
+            var stamps = ConversationNameFiles.Select(file =>
+            {
+                var info = new FileInfo(Path.Combine(_store.DirectoryPath, file));
+                return info.Exists ? (info.LastWriteTimeUtc.Ticks, info.Length) : (-1L, -1L);
+            }).ToArray();
+            if (_conversationNameStamps is { } previous && previous.SequenceEqual(stamps) &&
+                requested.IsSubsetOf(_cachedConversationNameKeys))
                 return _cachedConversationNames;
             // Capture the stamp before reading: an intervening cache replacement is read next time.
-            _conversationNamesStamp = stamp;
+            _conversationNameStamps = stamps;
             _cachedConversationNameKeys = requested;
             using var directory = new ChatIdentityDirectory(_store.DirectoryPath);
             _cachedConversationNames = await directory.ReadCachedAsync(requested);
+            var savedNames = await Task.Run(() =>
+                new ChatAgentBridge.Core.AllowedUserDirectory(_store.DirectoryPath).LoadDisplayNamesAsync());
+            _cachedConversationNames = _cachedConversationNames.ToDictionary(pair => pair.Key, pair => pair.Value with
+            {
+                UserName = pair.Value.UserName ?? savedNames.GetValueOrDefault((pair.Key.Provider, pair.Key.UserId ?? ""))
+            });
         }
         catch (Exception)
         {
@@ -178,6 +190,8 @@ public sealed partial class ChatInboxViewModel
         conversation.Location = snapshot.ChannelName is { Length: > 0 } channel
             ? channel : DesktopText.Get("ConversationLocation", snapshot.Key.ChannelId, snapshot.Key.ThreadId);
         conversation.Identity = $"{conversation.Title} / {conversation.Location} / {snapshot.Key.ThreadId}";
+        foreach (var item in conversation.Requests)
+            item.UserName = snapshot.UserName ?? item.Request.UserDisplayName;
     }
 
     private static void ApplyRestoredPresentation(InboxConversation conversation)
@@ -215,8 +229,9 @@ public sealed partial class ChatInboxViewModel
         };
         conversation.Snapshot = conversation.Snapshot is { } old
             ? old with { WorkspaceRoot = latest.Workspace, UpdatedAt = latest.ReceivedAt,
-                State = state, RequestCount = conversation.RequestCount }
-            : new(CreateSessionKey(latest), latest.Workspace, latest.ReceivedAt, state, conversation.RequestCount);
+                State = state, RequestCount = conversation.RequestCount, UserName = old.UserName ?? latest.UserName }
+            : new(CreateSessionKey(latest), latest.Workspace, latest.ReceivedAt, state, conversation.RequestCount,
+                UserName: latest.UserName);
         ApplyConversationLabels(conversation);
     }
 
@@ -300,7 +315,7 @@ public sealed partial class ChatInboxViewModel
         _conversationPersistenceReady = false;
         _lastSavedConversationSnapshots = null;
         _lastReportedRejectedConversationCount = 0;
-        _conversationNamesStamp = null;
+        _conversationNameStamps = null;
         _cachedConversationNameKeys.Clear();
         _cachedConversationNames = new Dictionary<SessionKey, ChatIdentityLabels>();
         _conversationRestoreTask = null;

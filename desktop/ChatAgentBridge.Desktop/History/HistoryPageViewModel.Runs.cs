@@ -28,9 +28,7 @@ internal static class HistoryFormat
     public static string ShortId(string? id) => string.IsNullOrWhiteSpace(id) ? "—" : id.Length <= 12 ? id : id[..10] + "…";
 
     public static string UserIdentity(string? name, string? id) =>
-        string.IsNullOrWhiteSpace(name) || name == DesktopText.Get("HistoryUserNameUnavailable") || name == id
-            ? (string.IsNullOrWhiteSpace(id) ? "—" : id)
-            : string.IsNullOrWhiteSpace(id) ? name : $"{name} ({id})";
+        Presentation.UserIdentityText.Format(name == DesktopText.Get("HistoryUserNameUnavailable") ? null : name, id);
 
     public static string Duration(TimeSpan? duration)
     {
@@ -236,7 +234,7 @@ public sealed partial class HistoryPageViewModel
         var rows = _activityRecords
             .Where(record => ExecutionDayFilter is null || DateOnly.FromDateTime(record.StartedAt.ToLocalTime().DateTime) == ExecutionDayFilter)
             .Where(record => string.IsNullOrEmpty(service) || record.Source == service)
-            .Select(record => new ExecutionHistoryRow(record, ExecutionChat(record), RunColumns))
+            .Select(record => new ExecutionHistoryRow(record, ExecutionChat(record), RunColumns, _allowedUserNames.GetValueOrDefault((record.Source, record.UserId ?? ""))))
             .Where(row => query.Length == 0 || row.SearchIndex.Contains(query, StringComparison.OrdinalIgnoreCase));
         IEnumerable<ExecutionHistoryRow> sorted = RunSort switch
         {
@@ -285,7 +283,7 @@ public sealed partial class HistoryPageViewModel
         SessionExecutions = SelectedSession is { } session
             ? _activityRecords.Where(record => _executionChats.GetValueOrDefault(record.Id)?.Session == session.Binding.Key)
                 .OrderByDescending(static record => record.StartedAt).Take(5)
-                .Select(record => new ExecutionHistoryRow(record, ExecutionChat(record), RunColumns)).ToArray()
+                .Select(record => new ExecutionHistoryRow(record, ExecutionChat(record), RunColumns, _allowedUserNames.GetValueOrDefault((record.Source, record.UserId ?? "")))).ToArray()
             : [];
     }
 

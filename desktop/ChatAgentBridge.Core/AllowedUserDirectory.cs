@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ChatAgentBridge.Core.History;
 
 namespace ChatAgentBridge.Core;
 
@@ -39,6 +40,46 @@ public sealed class AllowedUserDirectory
         await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try { return await ReadAsync(cancellationToken).ConfigureAwait(false); }
         finally { Gate.Release(); }
+    }
+
+    /// <summary>Display-only names remembered in user records, audit events, and inbox metadata.</summary>
+    public async Task<IReadOnlyDictionary<(string Provider, string UserId), string>> LoadDisplayNamesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var names = new Dictionary<(string Provider, string UserId), string>();
+        var records = await LoadAsync(cancellationToken).ConfigureAwait(false);
+        foreach (var record in records.OrderByDescending(record => record.LastRequestAt ?? record.AddedAt))
+            Remember(record.Provider, record.UserId, record.DisplayName);
+
+        var directory = Path.GetDirectoryName(_path)!;
+        try
+        {
+            var events = await new AuditStore(directory).ListAsync(cancellationToken).ConfigureAwait(false);
+            foreach (var item in events.OrderByDescending(item => item.Timestamp))
+                if (item.Access is { } user) Remember(item.Source, user.UserId, user.DisplayName);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            // Optional audit metadata must not hide names already saved with allowed users.
+        }
+        try
+        {
+            var conversations = await new InboxConversationStore(directory).ListAsync(cancellationToken).ConfigureAwait(false);
+            foreach (var conversation in conversations.OrderByDescending(item => item.UpdatedAt))
+                if (conversation.Key.UserId is { } userId)
+                    Remember(conversation.Key.Provider, userId, conversation.UserName);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            // Inbox metadata is another optional source of display names.
+        }
+        return names;
+
+        void Remember(string provider, string userId, string? name)
+        {
+            if (!string.IsNullOrWhiteSpace(name) && name != userId)
+                names.TryAdd((provider, userId), name);
+        }
     }
 
     /// <summary>Adds or refreshes a record. Existing details are kept when the new record does not know them.</summary>

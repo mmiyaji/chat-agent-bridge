@@ -24,7 +24,10 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public IChatTransport Transport { get; } = transport;
     public BridgeSettings Settings { get; } = settings;
     public BridgeSettings? EffectiveSettings { get; set; }
-    public string Source => $"{Request.Provider} / {Request.ChannelId} / {Request.UserId}";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Source)), NotifyPropertyChangedFor(nameof(UserIdentity))]
+    public partial string? UserName { get; set; } = request.UserDisplayName;
+    public string UserIdentity => Presentation.UserIdentityText.Format(UserName, Request.UserId);
+    public string Source => $"{Request.Provider} / {Request.ChannelId} / {UserIdentity}";
     public string Prompt => Request.Text;
     // ChatRequest and the session scope inputs are immutable for an inbox item.
     // Keep the serialized grouping key so state/workspace changes do not rebuild it.
@@ -261,7 +264,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             if (_activeItem is not { } active) return "";
             var provider = active.Request.Provider switch { "mattermost" => "Mattermost", "slack" => "Slack", "discord" => "Discord", _ => active.Request.Provider };
             var conversation = Conversations.FirstOrDefault(item => item.Requests.Contains(active));
-            var identity = conversation?.Title ?? $"{provider} · {active.Request.UserId}";
+            var identity = conversation?.Title ?? $"{provider} · {active.UserIdentity}";
             var prompt = active.Prompt.Replace('\r', ' ').Replace('\n', ' ').Trim();
             if (prompt.Length > 90) prompt = prompt[..90] + "…";
             return DesktopText.Get("InboxActiveRequestBanner", identity, prompt);
@@ -1011,7 +1014,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var requestedEffort = effectiveSettings.AgentReasoningEffort;
             item.SessionLabel = binding is null ? DesktopText.Get("InboxNewConversation") : DesktopText.Get("InboxContinueSession", binding.SessionId);
             item.SessionLabel += DesktopText.Get("InboxSessionModel", requestedModel ?? DesktopText.Get("CliDefault"), requestedEffort ?? DesktopText.Get("CliDefault"));
-            item.SessionLabel += DesktopText.Get("InboxConversationOwner", item.Request.UserId);
+            item.SessionLabel += DesktopText.Get("InboxConversationOwner", item.UserIdentity);
             item.SessionLabel += DesktopText.Get("InboxSessionPolicy", ApprovalLabel(effectiveSettings.ChatApprovalMode), ResultLabel(effectiveSettings.ChatResultMode), PermissionDisplay(effectiveSettings));
             if (!approvedByNotification && !approvedAutomatically && (ConfirmAsync is null || !await ConfirmAsync(item, token))) return;
             if (item.State != "承認待ち" || token.IsCancellationRequested) return;

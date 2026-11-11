@@ -19,6 +19,7 @@ public sealed partial class AccessRequestItem : ObservableObject
         Func<AccessRequestItem, AccessDecision, Task> decide)
     {
         Request = request;
+        DisplayName = request.UserDisplayName;
         Transport = transport;
         Connection = connection;
         ReceivedAt = DateTimeOffset.Now;
@@ -49,7 +50,7 @@ public sealed partial class AccessRequestItem : ObservableObject
     public IAsyncRelayCommand AllowOnceCommand { get; }
     public IAsyncRelayCommand DenyCommand { get; }
 
-    public string Title => DesktopText.Get("AccessRequestUser", DisplayName ?? Request.UserId, Request.UserId, ProviderLabel);
+    public string Title => DesktopText.Get("AccessRequestUser", DisplayName ?? DesktopText.Get("AllowedUserNameUnknown"), Request.UserId, ProviderLabel);
     public string Location => DesktopText.Get("AccessRequestLocation", ChannelName ?? Request.ChannelId, ReceivedAt.ToString("t"));
     public string Preview => Request.Text.Length > 200 ? Request.Text[..200] + "…" : Request.Text;
 
@@ -137,10 +138,13 @@ public sealed partial class ChatInboxViewModel
         var key = ChatSessionScope.Create(item.Request.Provider, item.Request.ChannelId, item.Request.ThreadId,
             item.Request.UserId, item.Request.Provider == "mattermost" ? item.Connection.MattermostServerUrl : null);
         ChatIdentityLabels? labels = null;
+        string? savedName = null;
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(TimeSpan.FromSeconds(5));
+            var savedNames = await Task.Run(() => new AllowedUserDirectory(_store.DirectoryPath).LoadDisplayNamesAsync(timeout.Token));
+            savedName = savedNames.GetValueOrDefault((item.Request.Provider, item.Request.UserId));
             using var directory = new ChatIdentityDirectory(_store.DirectoryPath);
             var resolved = await directory.ResolveAsync(settings, [key], timeout.Token);
             resolved.TryGetValue(key, out labels);
@@ -148,13 +152,13 @@ public sealed partial class ChatInboxViewModel
         catch (Exception)
         {
             // Names are optional. The request remains identified by its immutable user ID.
-            return;
         }
-        if (labels is null || cancellationToken.IsCancellationRequested) return;
+        if (cancellationToken.IsCancellationRequested) return;
         App.DispatcherQueue.TryEnqueue(() =>
         {
-            item.DisplayName = labels.UserName ?? item.DisplayName;
-            item.ChannelName = labels.ChannelName ?? item.ChannelName;
+            if (_closing || !AccessRequests.Contains(item)) return;
+            item.DisplayName = item.Request.UserDisplayName ?? labels?.UserName ?? savedName ?? item.DisplayName;
+            item.ChannelName = labels?.ChannelName ?? item.ChannelName;
         });
     }
 

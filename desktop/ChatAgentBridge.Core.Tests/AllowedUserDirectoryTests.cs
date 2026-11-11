@@ -50,4 +50,61 @@ public sealed class AllowedUserDirectoryTests : IDisposable
         await Assert.ThrowsAsync<ArgumentException>(() => new AllowedUserDirectory(_directory).RecordAddedAsync(
             new AllowedUserRecord("slack", "U3", null, DateTimeOffset.UtcNow, "unknown", null)));
     }
+
+    [Fact]
+    public async Task DisplayNamesMergeSavedAuditAndInboxMetadataByProviderAndUserId()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var directory = new AllowedUserDirectory(_directory);
+        await directory.RecordAddedAsync(new AllowedUserRecord("slack", "U_SHARED", "Saved Slack name", now,
+            AllowedUserDirectory.SettingsMethod, "local"));
+        await directory.RecordAddedAsync(new AllowedUserRecord("mattermost", "U_SHARED", null, now,
+            AllowedUserDirectory.SettingsMethod, "local"));
+        await directory.RecordAddedAsync(new AllowedUserRecord("discord", "U_NO_NAME", null, now,
+            AllowedUserDirectory.SettingsMethod, "local"));
+
+        var audit = new ChatAgentBridge.Core.History.AuditStore(_directory);
+        await audit.AppendAsync(new ChatAgentBridge.Core.History.AuditEvent(now.AddMinutes(1), "allowed_user_added", null, "slack", "", "")
+        {
+            Access = new ChatAgentBridge.Core.History.AuditAccessSubject("U_SHARED", "Audit Slack name", "local", ChatAgentBridge.Core.History.AuditAccessSubject.SettingsMethod)
+        });
+        await audit.AppendAsync(new ChatAgentBridge.Core.History.AuditEvent(now.AddMinutes(2), "allowed_user_added", null, "mattermost", "", "")
+        {
+            Access = new ChatAgentBridge.Core.History.AuditAccessSubject("U_SHARED", "Mattermost audit name", "local", ChatAgentBridge.Core.History.AuditAccessSubject.SettingsMethod)
+        });
+        await audit.AppendAsync(new ChatAgentBridge.Core.History.AuditEvent(now.AddMinutes(3), "allowed_user_added", null, "discord", "", "")
+        {
+            Access = new ChatAgentBridge.Core.History.AuditAccessSubject("U_NO_NAME", null, "local", ChatAgentBridge.Core.History.AuditAccessSubject.SettingsMethod)
+        });
+
+        await new ChatAgentBridge.Core.History.InboxConversationStore(_directory).SaveAsync(
+        [
+            new(ChatAgentBridge.Core.Sessions.ChatSessionScope.Create("mattermost", "C1", "T1", "U_SHARED", "https://chat.example"),
+                _directory, now.AddMinutes(4), "idle", 1, UserName: "Mattermost inbox name"),
+            new(new ChatAgentBridge.Core.Sessions.SessionKey("slack", "C2", "T2", "U_AUDIT_ONLY", "slack"),
+                _directory, now.AddMinutes(4), "idle", 1, UserName: "Inbox only name"),
+            new(new ChatAgentBridge.Core.Sessions.SessionKey("slack", "C3", "T3", "U_SHARED", "slack"),
+                _directory, now.AddMinutes(5), "idle", 1, UserName: "Inbox Slack name")
+        ]);
+
+        var names = await new AllowedUserDirectory(_directory).LoadDisplayNamesAsync();
+
+        Assert.Equal("Saved Slack name", names[("slack", "U_SHARED")]);
+        Assert.Equal("Mattermost audit name", names[("mattermost", "U_SHARED")]);
+        Assert.Equal("Inbox only name", names[("slack", "U_AUDIT_ONLY")]);
+        Assert.False(names.ContainsKey(("discord", "U_NO_NAME")));
+    }
+
+    [Fact]
+    public async Task InvalidOptionalAuditAndInboxFilesDoNotDiscardSavedDisplayNames()
+    {
+        await new AllowedUserDirectory(_directory).RecordAddedAsync(new AllowedUserRecord("slack", "U1", "Saved name",
+            DateTimeOffset.UtcNow, AllowedUserDirectory.SettingsMethod, "local"));
+        await File.WriteAllTextAsync(Path.Combine(_directory, "audit.json"), "{ not json");
+        await File.WriteAllTextAsync(Path.Combine(_directory, "chat-conversations.json"), "{ not json");
+
+        var names = await new AllowedUserDirectory(_directory).LoadDisplayNamesAsync();
+
+        Assert.Equal("Saved name", names[("slack", "U1")]);
+    }
 }
