@@ -320,8 +320,27 @@ function Confirm-OneAttachment {
 }
 function Select-Theme([string]$Theme) {
     Navigate 'NavOverview'
-    UI @('scroll-into-view',$(if($Theme -eq 'light'){'ThemeLight'}else{'ThemeDark'})) | Out-Null
-    UI @('invoke',$(if($Theme -eq 'light'){'ThemeLight'}else{'ThemeDark'})) | Out-Null
+    # The theme choices live in a ComboBox; open it before invoking the item.
+    $themeItem=if($Theme -eq 'light'){'ThemeLight'}else{'ThemeDark'}
+    UI @('scroll-into-view','AppThemePicker') | Out-Null
+    $picker=Element 'AppThemePicker'
+    Assert-True ($null -ne $picker) 'Theme picker is missing'
+    $expand=$picker.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern)
+    $expand.Expand()
+    # The drop-down items live in a popup window of the app process, outside the main window tree.
+    $itemCondition=[System.Windows.Automation.AndCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,$themeItem),
+        [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ProcessIdProperty,$script:appProcess.Id))
+    $item=$null
+    $itemDeadline=[DateTime]::UtcNow.AddSeconds(5)
+    while ($null -eq $item -and [DateTime]::UtcNow -lt $itemDeadline) {
+        $item=[System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Descendants,$itemCondition) |
+            Where-Object {-not $_.Current.IsOffscreen} | Select-Object -First 1
+        if ($null -eq $item) { Start-Sleep -Milliseconds 100 }
+    }
+    Assert-True ($null -ne $item) "Theme choice $themeItem did not appear in the opened picker"
+    $item.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
+    try { $expand.Collapse() } catch {}
     $deadline=[DateTime]::UtcNow.AddSeconds(5)
     do {
         $saved=Get-Content (Join-Path $dataPath 'appearance.json') -Raw | ConvertFrom-Json
