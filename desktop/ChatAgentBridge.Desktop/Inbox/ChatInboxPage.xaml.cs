@@ -27,6 +27,7 @@ public sealed partial class ChatInboxPage : Page
     public ChatInboxPage()
     {
         InitializeComponent();
+        RestoredConversationWheelBehavior.Attach(InboxRestoredConversationScroll);
         ConversationSplitter.AddHandler(UIElement.ManipulationStartedEvent,
             new Microsoft.UI.Xaml.Input.ManipulationStartedEventHandler((_, _) => _isResizingConversationList = true), true);
         ConversationSplitter.AddHandler(UIElement.ManipulationCompletedEvent,
