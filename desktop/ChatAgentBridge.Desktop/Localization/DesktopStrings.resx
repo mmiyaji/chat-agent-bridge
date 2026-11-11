@@ -1120,4 +1120,6 @@ After: {2}</value></data>
   <data name="ChannelPickerConnectionLabel" xml:space="preserve"><value>Connected to: {0}</value></data>
   <data name="ChannelPickerAllowNamedChannel" xml:space="preserve"><value>Allow {0}</value></data>
   <data name="ChannelPickerMemberCount" xml:space="preserve"><value>{0} members</value></data>
+  <data name="HistoryAccessUserColumn" xml:space="preserve"><value>Target user</value></data>
+  <data name="HistoryAuditContextColumn" xml:space="preserve"><value>Conversation / target user</value></data>
 </root>

@@ -49,3 +49,19 @@ Damir Sokolovskyの[unslop](https://github.com/heydamir/unslop)（`97daa3e`、CC
 - プロダクトのソース変更は含まない。今回の操作はページ遷移・会話選択・履歴モード切り替えまで。読み上げとモック実装後の表示は未確認。
 
 unslop by [Damir Sokolovsky / @heydamir](https://github.com/heydamir/unslop)、CC BY 4.0。監査基準をWinUI向けに適用した。
+
+## 選択後の実装
+
+- 会話一覧は会話名と時刻、ユーザーとチャネル、サービスと状態の3行に変更。作業フォルダー・CLI・モデルはツールチップと詳細で確認できる。
+- アクセス許可の一覧に対象ユーザーの名前とIDを表示。「すべての操作」でもアクセスイベントには対象ユーザーを出し、操作列には短い操作名を使う。
+- 対象ユーザー名は記録時の表示名を優先し、未記録ならサービスとIDが一致する許可ユーザー情報から補う。名前が未取得ならIDを表示する。
+- 実行のユーザー欄と会話の識別情報に、名前を取得できている場合はIDも併記する。
+- 会話詳細の内側の背景を除き、区切り線で整理。承認と結果共有は折りたたみへ変更し、元の操作導線と最近の実行リンクを保持した。
+
+検証はLunaが担当。x64 Releaseビルドに対し、日英それぞれで次のUIテストを実施した。
+
+- `HistoryBrowserUiE2E.ps1 -AppDirectory <検証ビルド> -Language ja|en -AccessLinkOnly`。初回・再訪のサービスとIDの絞り込み、名前とIDの実セル表示、名前未取得時のID表示、保存名を補うときのサービス別照合を確認。
+- `HistoryBrowserUiE2E.ps1 -AppDirectory <検証ビルド> -Language ja|en -CompactConversationsOnly`。3件の会話を表示し、選択行と詳細のセッションID・ユーザー名・ユーザーIDが一致することを確認。
+- `HistoryBrowserUiE2E.ps1 -AppDirectory <検証ビルド> -Language ja -NarrowAccessOnly`。幅500 DIPで右端まで横スクロールし、対象ユーザー列が表示できることを確認。
+
+通常構成と `CABExperimentalTableView=true` の試用構成を別々に発行できることも確認した。UIテストは通常構成に対して実施し、狭幅はUI Automationの横スクロールと対象セルの境界・内容を確認した。履歴ブラウザー全体のE2Eは今回再実行せず、上記の変更対象シナリオを検証した。

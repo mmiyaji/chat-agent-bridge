@@ -3,11 +3,14 @@ param(
     [ValidateSet('ja','en')][string]$Language = 'ja',
     [switch]$Baseline,
     [switch]$AccessLinkOnly,
-    [switch]$RefreshOnly
+    [switch]$NarrowAccessOnly,
+    [switch]$RefreshOnly,
+    [switch]$CompactConversationsOnly
 )
 $ErrorActionPreference = 'Stop'
 $artifactRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
 $appRoot = [IO.Path]::GetFullPath($AppDirectory)
+$fixtureAppVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $appRoot 'ChatAgentBridge.Desktop.exe')).ProductVersion.Split('+')[0]
 $dataPath = Join-Path $artifactRoot ('history-browser-ui-' + [guid]::NewGuid().ToString('N'))
 [IO.Directory]::CreateDirectory($dataPath) | Out-Null
 Set-Content (Join-Path $dataPath '.cab-history-browser-ui') 'Isolated offline history browser UI test'
@@ -204,6 +207,14 @@ function Get-FirstRowText {
     $labels=$row.FindAll([System.Windows.Automation.TreeScope]::Descendants,$textCondition)
     return (@($labels | ForEach-Object {$_.Current.Name}) -join ' ') + ' ' + $row.Current.Name
 }
+function Get-AuditContextCell([System.Windows.Automation.AutomationElement]$Row) {
+    $condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,'AuditContextCell')
+    return $Row.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$condition)
+}
+function Get-ElementText([System.Windows.Automation.AutomationElement]$Element) {
+    if (-not [string]::IsNullOrWhiteSpace($Element.Current.Name)) { return $Element.Current.Name }
+    try { return $Element.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value } catch { return '' }
+}
 function Wait-Count([int]$Visible,[int]$Total=42,[int]$Seconds=8) {
     $until=[DateTime]::UtcNow.AddSeconds($Seconds)
     do {
@@ -293,7 +304,8 @@ try {
     $folders=@('project-alpha-long-folder','project-beta','project-gamma','project-delta')
     foreach ($folder in $folders) { [IO.Directory]::CreateDirectory((Join-Path $dataPath $folder)) | Out-Null }
     $aliases=@('Release preparation','Client report review','日本語スプリント記録','Architecture decision notes','Quarterly planning','Long running migration')
-    $bindings=@(for($i=0;$i -lt 42;$i++) {
+    $bindingCount=if($CompactConversationsOnly){3}else{42}
+    $bindings=@(for($i=0;$i -lt $bindingCount;$i++) {
         $pair=[int][math]::Floor($i/2); $provider=if($pair%2 -eq 0){'slack'}else{'mattermost'}
         $user=if($provider -eq 'slack'){if($i%2 -eq 0){'U00000001'}else{'U00000002'}}else{if($i%2 -eq 0){('a'*25)+'1'}else{('b'*25)+'2'}}
         $origin=if($provider -eq 'slack'){'slack'}else{'a'*64}
@@ -355,19 +367,27 @@ try {
     Write-Json 'history.json' @{SchemaVersion=1;Records=$records}
     $linkedUserId='U00000009'
     $auditRecords=@(@{Timestamp=[DateTimeOffset]::UtcNow.ToString('o');Kind='completed';ExecutionId=$records[0].Id;Source=$records[0].Source;ChannelId=$records[0].ChannelId;ThreadId=$records[0].ThreadId})
-    if(-not $Baseline){
+    if(-not $Baseline -and -not $CompactConversationsOnly){
         foreach($fixture in @(
             @{Service='slack';UserId=$linkedUserId;Name='Expected access subject'},
             @{Service='mattermost';UserId=$linkedUserId;Name='Same ID on another service'},
-            @{Service='slack';UserId="$($linkedUserId)0";Name='Different user with the same ID prefix'}
+            @{Service='slack';UserId="$($linkedUserId)0";Name='Different user with the same ID prefix'},
+            @{Service='slack';UserId='U_FALLBACK_0001';Name=$null},
+            @{Service='mattermost';UserId='U_FALLBACK_0001';Name=$null},
+            @{Service='slack';UserId='U_UNKNOWN_0001';Name=$null}
         )){
             $auditRecords+=@{Timestamp=[DateTimeOffset]::UtcNow.ToString('o');Kind='allowed_user_added';Source=$fixture.Service;ChannelId='';ThreadId='';
                 Access=@{UserId=$fixture.UserId;DisplayName=$fixture.Name;Actor='Local';Method='settings'}}
         }
     }
     Write-Json 'audit.json' @{SchemaVersion=1;Records=$auditRecords}
+    Write-Json 'allowed-users.json' @(
+        @{Provider='slack';UserId='U_FALLBACK_0001';DisplayName='Slack directory name';AddedAt=[DateTimeOffset]::UtcNow.ToString('o');Method='settings';Actor='Local'},
+        @{Provider='mattermost';UserId='U_FALLBACK_0001';DisplayName='Mattermost directory name';AddedAt=[DateTimeOffset]::UtcNow.ToString('o');Method='settings';Actor='Local'}
+    )
     Write-Json 'settings.json' @{SchemaVersion=1;WorkspaceRoot=$dataPath;AgentProvider='custom';AgentMode='exec';AgentExecutable='not-used';AgentArguments='';TrustedWorkspaceRoots=$dataPath;AutoConnectProvider='none';SlackAllowedUserIds=$linkedUserId}
     Write-Json 'portable-update.json' @{schemaVersion=1;automaticChecksEnabled=$false;includePrereleases=$true}
+    Write-Json 'update-notice.json' @{SchemaVersion=1;LastObservedVersion=$fixtureAppVersion;PendingVersion=$null;DismissedVersion=$fixtureAppVersion}
     Write-Json 'pricing-auto.json' @{schemaVersion=1;autoUpdateEnabled=$false;catalogJson=(Get-Content (Join-Path $PSScriptRoot 'ChatAgentBridge.Core/Pricing/model-prices.json') -Raw)}
     Write-Json 'onboarding.json' @{SchemaVersion=3;Step=4;Status='completed'}
     Write-Json 'tips.json' @{Seen=@('chat-connect')}
@@ -378,8 +398,8 @@ try {
     $appProcess=[Diagnostics.Process]::Start($start)
     Write-Json 'launch.json' @{ProcessId=$appProcess.Id;DataPath=$dataPath}
     UI @('wait-for','NavHistory','-t','15000') | Out-Null
-    if(-not $Baseline){
-        Resize 1280 800
+    if(-not $Baseline -and -not $CompactConversationsOnly){
+        if($NarrowAccessOnly){Resize 500 600}else{Resize 1280 800}
         foreach($visit in @('first','revisit')){
             Check "Allowed user link keeps access mode, service and exact ID on $visit visit" {
                 Navigate 'NavConnections'
@@ -390,6 +410,13 @@ try {
                 Assert-True ((Selected-Name 'AuditServiceFilter') -eq 'Slack') 'Service selection did not survive navigation'
                 Assert-True ((Element 'HistoryRecordSearch').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value -eq $linkedUserId) 'User ID filter was not set'
                 $type=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem)
+                if($NarrowAccessOnly){
+                    $auditList=Element 'AuditHistoryList'
+                    $scroll=$auditList.GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
+                    Assert-True ($scroll.Current.HorizontallyScrollable) 'Access table must remain horizontally scrollable at 500 DIP.'
+                    $scroll.SetScrollPercent(100,-1)
+                    Start-Sleep -Milliseconds 200
+                }
                 $deadline=[DateTime]::UtcNow.AddSeconds(5)
                 do {
                     $rows=(Element 'AuditHistoryList').FindAll([System.Windows.Automation.TreeScope]::Descendants,$type)
@@ -397,10 +424,52 @@ try {
                     Start-Sleep -Milliseconds 100
                 } while([DateTime]::UtcNow -lt $deadline)
                 Assert-True ($rows.Count -eq 1 -and $rows[0].Current.Name.Contains('Expected access subject')) 'Wrong service or partial user ID leaked into the results'
-                Capture "access-link-$visit"
+                $contextCell=Get-AuditContextCell $rows[0]
+                Assert-True ($null -ne $contextCell -and $contextCell.Current.Name.Contains('Expected access subject') -and $contextCell.Current.Name.Contains($linkedUserId)) "Access target cell did not show the exact target name and ID: $(if($contextCell){$contextCell.Current.Name}else{'missing AuditContextCell'})"
+                if($NarrowAccessOnly){
+                    Assert-True (-not $contextCell.Current.IsOffscreen -and $contextCell.Current.BoundingRectangle.Width -gt 0) 'Target user name and ID are not reachable at the rightmost horizontal offset.'
+                }
+                $rows[0].GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
+                UI @('click',$rows[0].Current.Name) | Out-Null
+                Start-Sleep -Milliseconds 300
+                $detailType=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::Text)
+                $detailTexts=@((Root).FindAll([System.Windows.Automation.TreeScope]::Descendants,$detailType) | ForEach-Object {$_.Current.Name})
+                $fullIdentityDetail=@($detailTexts | Where-Object {$_.Contains('Expected access subject') -and $_.Contains($linkedUserId) -and $_.Contains('Local')})
+                Assert-True ($fullIdentityDetail.Count -gt 0) 'Access record details lost the full target identity and actor.'
+                Capture $(if($NarrowAccessOnly){"access-narrow-rightmost-$visit"}else{"access-link-$visit"})
             }
         }
         if($AccessLinkOnly){
+            Check 'Unknown access subject falls back to its exact ID' {
+                (Element 'HistoryRecordSearch').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('U_UNKNOWN_0001')
+                $auditRowType=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem)
+                $deadline=[DateTime]::UtcNow.AddSeconds(5)
+                do {
+                    $rows=(Element 'AuditHistoryList').FindAll([System.Windows.Automation.TreeScope]::Descendants,$auditRowType)
+                    if($rows.Count -eq 1 -and $rows[0].Current.Name.Contains('U_UNKNOWN_0001')){break}
+                    Start-Sleep -Milliseconds 100
+                } while([DateTime]::UtcNow -lt $deadline)
+                Assert-True ((Selected-Name 'AuditServiceFilter') -eq 'Slack') 'Unknown user search lost the selected service.'
+                Assert-True ($rows.Count -eq 1) 'Unknown user search returned unrelated access records.'
+                $contextCell=Get-AuditContextCell $rows[0]
+                Assert-True ($null -ne $contextCell -and $contextCell.Current.Name -eq 'U_UNKNOWN_0001') "Unknown access subject did not fall back to its ID: $(if($contextCell){$contextCell.Current.Name}else{'missing AuditContextCell'})"
+                Capture 'access-unknown-id-fallback'
+            }
+            Check 'Access directory name fallback is scoped to service and ID' {
+                (Element 'HistoryRecordSearch').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue('U_FALLBACK_0001')
+                $auditRowType=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem)
+                $deadline=[DateTime]::UtcNow.AddSeconds(5)
+                do {
+                    $rows=(Element 'AuditHistoryList').FindAll([System.Windows.Automation.TreeScope]::Descendants,$auditRowType)
+                    if($rows.Count -eq 1 -and $rows[0].Current.Name.Contains('U_FALLBACK_0001')){break}
+                    Start-Sleep -Milliseconds 100
+                } while([DateTime]::UtcNow -lt $deadline)
+                Assert-True ((Selected-Name 'AuditServiceFilter') -eq 'Slack') 'Directory fallback search lost the selected service.'
+                Assert-True ($rows.Count -eq 1) 'Directory fallback matched a same-ID record from another service.'
+                $contextCell=Get-AuditContextCell $rows[0]
+                Assert-True ($null -ne $contextCell -and $contextCell.Current.Name -eq 'Slack directory name (U_FALLBACK_0001)') "Directory fallback used the wrong service identity: $(if($contextCell){$contextCell.Current.Name}else{'missing AuditContextCell'})"
+                Capture 'access-directory-name-fallback'
+            }
             Write-Json 'result.json' @{passed=$true;language=$Language;checks=$checks}
             Write-Output "PASS Allowed user access history E2E: $dataPath"
             return
@@ -410,6 +479,34 @@ try {
     }
     Navigate 'NavHistory'
     UI @('wait-for','SavedSessionsList','-t','10000') | Out-Null
+    if ($CompactConversationsOnly) {
+        Resize 1280 800
+        Check 'Three compact conversations remain selectable with matching details' {
+            Wait-Count 3 3
+            $list=Element 'SavedSessionsList'
+            $rowType=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem)
+            $rows=@($list.FindAll([System.Windows.Automation.TreeScope]::Descendants,$rowType) | Where-Object {-not $_.Current.IsOffscreen -and $_.Current.BoundingRectangle.Height -gt 0})
+            Assert-True ($rows.Count -eq 3) "Expected three visible compact conversations, got $($rows.Count)."
+            $targetIndex=1
+            $target=$rows[$targetIndex]
+            $target.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
+            UI @('click',$target.Current.Name) | Out-Null
+            Wait-Text $bindings[$targetIndex].DisplayName
+            $identifierExpander=Element 'SessionIdentifiers'
+            $identifierExpander.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+            Start-Sleep -Milliseconds 150
+            $selectedId=Element 'SelectedSessionId'
+            Assert-True ((Get-ElementText $selectedId) -eq $bindings[$targetIndex].SessionId) "Selected detail session ID did not match row ${targetIndex}: '$(Get-ElementText $selectedId)'."
+            $selectedUserIdentity=Element 'SelectedSessionUserIdentity'
+            Assert-True ($selectedUserIdentity.Current.Name.Contains($bindings[$targetIndex].Key.UserId) -and $selectedUserIdentity.Current.Name.Contains('@bob (Bob)')) 'Selected conversation detail did not preserve the matching user name and ID.'
+            $selection=$list.GetCurrentPattern([System.Windows.Automation.SelectionPattern]::Pattern).Current.GetSelection()
+            Assert-True ($selection.Count -eq 1 -and $selection[0].Current.Name.Contains($bindings[$targetIndex].DisplayName)) 'Selected row and conversation detail refer to different conversations.'
+            Capture 'history-three-compact-conversations-detail'
+        }
+        Write-Json 'result.json' @{passed=$true;language=$Language;compactConversationsOnly=$true;checks=$checks}
+        Write-Output "PASS Compact conversation history E2E: $dataPath"
+        return
+    }
     if ($RefreshOnly) {
         $refreshButton = Element 'RefreshHistory'
         $readyDeadline = [DateTime]::UtcNow.AddSeconds(60)

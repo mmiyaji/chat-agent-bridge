@@ -207,7 +207,7 @@ You can also inspect live output and stop a request on the PC.
 
 In **History → Run records**, runs are listed in a table with start time, conversation, user, result, model, duration and tokens. Click a column header to sort, or drag its right edge to resize it. Click a row to open its details beside the table: related actions in time order, usage details and IDs, with **Open conversation** to jump to the saved conversation. Switch to **All operations** to see every audit record, including rejected requests and actions without a run ID, or to **Access** to see only allowed-user changes and access decisions made from chat. Filter by chat, user, ID or service.
 
-Find saved conversations by name or working folder and change their model or agent. Review execution times, statuses, operation records and usage recorded by this app.
+Find saved conversations by name or working folder and change their model or agent. Conversation rows show the title, participants, service and latest result; workspace and CLI settings are available in the detail pane. Access records show the target user, with the saved name and ID together when a name is available. Review execution times, statuses, operation records and usage recorded by this app.
 
 ![Daily activity calendar with sample records](docs/assets/screenshots/history-en.png)
 

@@ -148,16 +148,15 @@
                                           AutomationProperties.Name="{x:Bind ViewModel.ConversationsTabTitle, Mode=OneWay}">
                                     <ListView.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SessionHistoryRow">
-                                            <Grid Margin="8" RowSpacing="4">
+                                            <Grid Margin="8" RowSpacing="4" ToolTipService.ToolTip="{x:Bind ListTooltip}">
                                                 <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
                                                 <Grid ColumnSpacing="8">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                                    <TextBlock Text="{x:Bind ListTitle}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListTitle}" />
+                                                    <TextBlock Text="{x:Bind ListTitle}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListTitle}" />
                                                     <TextBlock Grid.Column="1" Text="{x:Bind UpdatedCompact}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" ToolTipService.ToolTip="{x:Bind UpdatedTooltip}" />
                                                 </Grid>
                                                 <Grid Grid.Row="1" ColumnSpacing="6">
@@ -166,16 +165,17 @@
                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" IsHitTestVisible="False"
                                                               AutomationProperties.AccessibilityView="Raw" />
                                                     <TextBlock Grid.Column="1" Text="{x:Bind ListConversation}" Style="{StaticResource CaptionTextBlockStyle}"
-                                                               TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListConversation}" />
+                                                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListConversation}" />
                                                 </Grid>
-                                                <TextBlock Grid.Row="2" Text="{x:Bind ListContext}" Style="{StaticResource CaptionTextBlockStyle}"
-                                                           TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListContext}" />
-                                                <Grid Grid.Row="3" ColumnSpacing="6">
-                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                                    <presentation:StatusIcon Tone="{x:Bind StatusTone}" Width="24" Height="24"
+                                                <Grid Grid.Row="2" ColumnSpacing="8">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{x:Bind SiteLabel}" Style="{StaticResource CaptionTextBlockStyle}"
+                                                               VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListTooltip}" />
+                                                    <presentation:StatusIcon Grid.Column="1" Tone="{x:Bind StatusTone}" Width="16" Height="16"
                                                                              VerticalAlignment="Center" IsHitTestVisible="False"
                                                                              AutomationProperties.AccessibilityView="Raw" />
-                                                    <TextBlock Grid.Column="1" Text="{x:Bind ListActivity}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListActivity}" />
+                                                    <TextBlock Grid.Column="2" Text="{x:Bind ActivitySummary}" Style="{StaticResource CaptionTextBlockStyle}"
+                                                               VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ListActivity}" />
                                                 </Grid>
                                             </Grid>
                                         </DataTemplate>
@@ -235,8 +235,8 @@
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <Border Grid.Row="0" Style="{StaticResource ActivityCardStyle}" Padding="12" AutomationProperties.AutomationId="SessionConversationSummaryCard">
-                                        <StackPanel Spacing="8">
+                                        <Border Grid.Row="0" Padding="4,8,4,12" BorderThickness="0,0,0,1" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" AutomationProperties.AutomationId="SessionConversationSummaryCard">
+                                        <StackPanel Spacing="4">
                                             <TextBlock Text="{x:Bind ViewModel.ConversationHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ListIdentity, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ListLocation, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" />
@@ -245,8 +245,8 @@
                                             <TextBlock Text="{x:Bind ViewModel.ContinueInOriginalThreadHint, Mode=OneWay}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
                                         </StackPanel>
                                         </Border>
-                                        <Border Grid.Row="1" Style="{StaticResource ActivityCardStyle}" Padding="12" AutomationProperties.AutomationId="SessionRuntimeCard">
-                                        <StackPanel Spacing="8">
+                                        <Border Grid.Row="1" Padding="4,0,4,12" BorderThickness="0,0,0,1" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" AutomationProperties.AutomationId="SessionRuntimeCard">
+                                        <StackPanel Spacing="4">
                                             <TextBlock Text="{x:Bind ViewModel.RuntimeHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.WorkspacePathLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.Workspace, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
@@ -256,12 +256,11 @@
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ReasoningEffort, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                         </StackPanel>
                                         </Border>
-                                        <Border Grid.Row="2" Style="{StaticResource ActivityCardStyle}" Padding="12" AutomationProperties.AutomationId="SessionPolicyCard">
-                                        <StackPanel Spacing="8">
-                                            <TextBlock Text="{x:Bind ViewModel.PolicyHeading, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <Expander Grid.Row="2" Header="{x:Bind ViewModel.PolicyHeading, Mode=OneWay}"
+                                                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                                  AutomationProperties.AutomationId="SessionPolicyCard">
                                             <TextBlock Text="{x:Bind ViewModel.SelectedSession.ExecutionPolicy, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                                        </StackPanel>
-                                        </Border>
+                                        </Expander>
                                         <StackPanel Grid.Row="3" Spacing="2" AutomationProperties.AutomationId="SessionRecentRuns"
                                                     Visibility="{x:Bind vm:HistoryPage.BoolToVisibility(ViewModel.HasSessionExecutions), Mode=OneWay}">
                                             <TextBlock x:Uid="SessionRecentRunsHeading" localization:LocalizedResourceKey.Key="SessionRecentRunsHeading" Style="{StaticResource BodyStrongTextBlockStyle}" />
@@ -288,7 +287,7 @@
                                             </Expander.Header>
                                             <StackPanel Spacing="4" Margin="0,4,0,0">
                                                 <TextBlock Text="{x:Bind ViewModel.UserIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
-                                                <TextBlock Text="{x:Bind ViewModel.SelectedSession.UserId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                                <TextBlock Text="{x:Bind ViewModel.SelectedSession.UserIdentity, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="SelectedSessionUserIdentity" />
                                                 <TextBlock Text="{x:Bind ViewModel.ChannelIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
                                                 <TextBlock Text="{x:Bind ViewModel.SelectedSession.ChannelId, Mode=OneWay, FallbackValue=''}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                                                 <TextBlock Text="{x:Bind ViewModel.ThreadIdLabel, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
@@ -597,7 +596,7 @@
                                             <TextBlock x:Uid="AuditTimeColumn" AutomationProperties.AutomationId="AuditTimeColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditTimeColumn" />
                                             <TextBlock Grid.Column="1" x:Uid="AuditActionColumn" AutomationProperties.AutomationId="AuditActionColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditActionColumn" />
                                             <TextBlock Grid.Column="2" x:Uid="AuditServiceColumn" AutomationProperties.AutomationId="AuditServiceColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditServiceColumn" />
-                                            <TextBlock Grid.Column="3" x:Uid="AuditConversationColumn" AutomationProperties.AutomationId="AuditConversationColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="AuditConversationColumn" />
+                                            <TextBlock Grid.Column="3" Text="{x:Bind ViewModel.AuditContextHeader, Mode=OneWay}" AutomationProperties.AutomationId="AuditConversationColumn" Margin="0,0,10,0" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionTextBlockStyle}" />
                                             <Thumb Grid.Column="0" Tag="Audit.Time" x:Uid="AuditResizeTime" AutomationProperties.AutomationId="AuditResizeTime"
                                                    DragDelta="HistoryColumn_DragDelta" KeyDown="HistoryColumn_KeyDown" Style="{StaticResource HistoryColumnThumbStyle}" />
                                             <Thumb Grid.Column="1" Tag="Audit.Action" x:Uid="AuditResizeAction" AutomationProperties.AutomationId="AuditResizeAction"
@@ -613,9 +612,10 @@
                                             <Grid ColumnSpacing="8" Padding="12,5" AutomationProperties.Name="{x:Bind Summary}">
                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="{x:Bind Columns.Time, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Action, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Service, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.Conversation, Mode=OneWay}" /><ColumnDefinition Width="{x:Bind Columns.TrailingSpace, Mode=OneWay}" /></Grid.ColumnDefinitions>
                                                 <TextBlock Text="{x:Bind TimeCompact}" ToolTipService.ToolTip="{x:Bind Timestamp}" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Grid.Column="1" Text="{x:Bind Kind}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Kind}" />
+                                                <TextBlock Grid.Column="1" Text="{x:Bind ActionCell}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Kind}" />
                                                 <TextBlock Grid.Column="2" Text="{x:Bind Source}" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Grid.Column="3" Text="{x:Bind Conversation}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Conversation}" />
+                                                <TextBlock Grid.Column="3" Text="{x:Bind ContextCell}" TextWrapping="Wrap" MaxLines="2"
+                                                           TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ContextCell}" AutomationProperties.AutomationId="AuditContextCell" />
                                             </Grid>
                                         </DataTemplate>
                                     </ListView.ItemTemplate>

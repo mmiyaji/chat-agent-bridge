@@ -1124,4 +1124,6 @@
   <data name="ChannelPickerConnectionLabel" xml:space="preserve"><value>接続先: {0}</value></data>
   <data name="ChannelPickerAllowNamedChannel" xml:space="preserve"><value>「{0}」を許可</value></data>
   <data name="ChannelPickerMemberCount" xml:space="preserve"><value>メンバー: {0} 人</value></data>
+  <data name="HistoryAccessUserColumn" xml:space="preserve"><value>対象ユーザー</value></data>
+  <data name="HistoryAuditContextColumn" xml:space="preserve"><value>会話・対象ユーザー</value></data>
 </root>

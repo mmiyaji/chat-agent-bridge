@@ -28,7 +28,7 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record, ExecutionChatIn
         ? DesktopText.Get("HistoryThisPc")
         : DesktopText.Get("HistoryChatIdShort", HistoryFormat.ShortId(Record.ChannelId)));
     public string UserCell => Record.Source == "local" ? DesktopText.Get("HistoryThisPc") :
-        Chat?.User is { Length: > 0 } user && user != DesktopText.Get("HistoryUserNameUnavailable") ? user : HistoryFormat.ShortId(Record.UserId);
+        HistoryFormat.UserIdentity(Chat?.User, Record.UserId);
     public string StatusTone => Record.Status switch
     {
         "running" => "running",
@@ -72,7 +72,7 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record, ExecutionChatIn
     public string Model => DesktopText.Get("HistoryModel", Record.AgentModel ?? DesktopText.Get("DefaultModel"));
     public string ReasoningEffort => DesktopText.Get("HistoryReasoning", Record.AgentReasoningEffort ?? DesktopText.Get("CliDefault"));
     public string Usage => UsageSummaryFormatter.Format(Record.Usage, Record.Metrics);
-    public string Identifiers => DesktopText.Get("HistoryExecutionConversation", Record.ChannelId, Record.ThreadId, Record.UserId);
+    public string Identifiers => DesktopText.Get("HistoryExecutionConversation", Record.ChannelId, Record.ThreadId, UserCell);
     public string IdentifiersHeading => DesktopText.Get("HistoryIdentifiersHeading");
 
     internal static string SourceLabel(string source) => source switch
@@ -85,7 +85,8 @@ public sealed record ExecutionHistoryRow(ExecutionRecord Record, ExecutionChatIn
     };
 }
 
-public sealed record AuditHistoryRow(AuditEvent Record, AuditColumnLayout Columns, string? ChatLabel = null)
+public sealed record AuditHistoryRow(AuditEvent Record, AuditColumnLayout Columns, string? ChatLabel = null,
+    string? UserName = null)
 {
     public string Timestamp => Record.Timestamp.ToLocalTime().ToString("g");
     public string Time => Record.Timestamp.ToLocalTime().ToString("HH:mm:ss");
@@ -119,8 +120,8 @@ public sealed record AuditHistoryRow(AuditEvent Record, AuditColumnLayout Column
     };
     public string FilterKind => Record.Kind is "execution_exception" ? "failed" : Record.Kind;
     public string FilterKindLabel => AuditEvent.IsAccessKind(Record.Kind) ? DesktopText.Get($"AuditFilter_{Record.Kind}") : Kind;
-    private string AccessSubject => Record.Access is not { } access ? "" :
-        string.IsNullOrWhiteSpace(access.DisplayName) ? access.UserId : $"{access.DisplayName} ({access.UserId})";
+    public string AccessSubject => Record.Access is not { } access ? "" :
+        HistoryFormat.UserIdentity(string.IsNullOrWhiteSpace(access.DisplayName) ? UserName : access.DisplayName, access.UserId);
     private string AccessActor => string.IsNullOrWhiteSpace(Record.Access?.Actor) ? DesktopText.Get("AuditAccessUnknownActor") : Record.Access!.Actor;
     public string Source => Record.Source switch
     {
@@ -135,8 +136,10 @@ public sealed record AuditHistoryRow(AuditEvent Record, AuditColumnLayout Column
     public bool HasChatNames => ChatLabel is not null || Record.Source == "local";
     public string Conversation => ChatLabel ?? (Record.Source == "local" ? DesktopText.Get("HistoryThisPc") :
         DesktopText.Get("HistoryChatIdShort", HistoryFormat.ShortId(Record.ChannelId)));
+    public string ActionCell => AuditEvent.IsAccessKind(Record.Kind) ? FilterKindLabel : Kind;
+    public string ContextCell => AuditEvent.IsAccessKind(Record.Kind) ? AccessSubject : Conversation;
     internal string SearchIndex => string.Join("\n", Kind, Source, Conversation, Record.ChannelId, Record.ThreadId,
-        Record.Access?.UserId, Record.Access?.DisplayName, Record.Access?.Actor, Record.ExecutionId);
+        Record.Access?.UserId, Record.Access?.DisplayName, UserName, Record.Access?.Actor, Record.ExecutionId);
     public string Identifiers => DesktopText.Get("HistoryAuditConversation", Record.ChannelId, Record.ThreadId);
     public bool HasExecutionIdentifier => Record.ExecutionId is not null;
     public string ExecutionIdentifier => DesktopText.Get("AuditExecutionIdentifier", Record.ExecutionId);
@@ -165,6 +168,7 @@ public sealed record SessionHistoryRow(SessionBinding Binding, int ExecutionCoun
         : $"{Binding.AgentExecutable} {Binding.AgentArguments}".Trim();
     public string SessionId => Binding.SessionId;
     public string UserId => Binding.Key.UserId ?? DesktopText.Get("LegacyUnknownOwner");
+    public string UserIdentity => HistoryFormat.UserIdentity(UserLabel, UserId);
     public string Origin => Binding.Key.Origin ?? DesktopText.Get("HistoryUnknownOrigin");
     public string WorkspaceName => Path.GetFileName(Binding.WorkspaceRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) is { Length: > 0 } name
         ? name : Binding.WorkspaceRoot;
@@ -877,7 +881,8 @@ public sealed partial class HistoryPageViewModel : ObservableObject
         SetExecutionRecords(executions);
         ReplaceItems(Sessions, sessionRows);
         UpdateWorkspaceFilters(sessions);
-        ReplaceItems(AuditEvents, auditEvents.Select(audit => new AuditHistoryRow(audit, AuditColumns, AuditChatLabel(audit))).ToArray());
+        ReplaceItems(AuditEvents, auditEvents.Select(audit => new AuditHistoryRow(audit, AuditColumns,
+            AuditChatLabel(audit), AccessUserName(audit))).ToArray());
         HasExecutions = Executions.Count > 0;
         HasSessions = Sessions.Count > 0;
         HasAuditEvents = AuditEvents.Count > 0;

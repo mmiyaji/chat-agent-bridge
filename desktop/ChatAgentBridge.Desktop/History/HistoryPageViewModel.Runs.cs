@@ -27,6 +27,11 @@ internal static class HistoryFormat
     /// <summary>Keeps chat IDs recognisable in a narrow column without hiding that they are IDs.</summary>
     public static string ShortId(string? id) => string.IsNullOrWhiteSpace(id) ? "—" : id.Length <= 12 ? id : id[..10] + "…";
 
+    public static string UserIdentity(string? name, string? id) =>
+        string.IsNullOrWhiteSpace(name) || name == DesktopText.Get("HistoryUserNameUnavailable") || name == id
+            ? (string.IsNullOrWhiteSpace(id) ? "—" : id)
+            : string.IsNullOrWhiteSpace(id) ? name : $"{name} ({id})";
+
     public static string Duration(TimeSpan? duration)
     {
         if (duration is not { } value) return "—";
@@ -75,9 +80,9 @@ public sealed partial class HistoryPageViewModel
     public bool CanOpenSelectedConversation => SelectedExecution?.Chat is { } chat && Sessions.Any(row => row.Binding.Key == chat.Session);
     public bool CanOpenAuditExecution => SelectedAuditRow?.Record.ExecutionId is { } id && _executionsById.ContainsKey(id);
     public string SelectedExecutionUsage => SelectedExecution is { } row ? UsageSummaryFormatter.Format(row.Record.Usage, row.Record.Metrics) : "";
-    public bool ShowChatNamesNotice => IsRunsMode
+    public bool ShowChatNamesNotice => HistoryViewMode != HistoryViewMode.Access && (IsRunsMode
         ? Executions.Any(static row => !row.HasChatNames)
-        : FilteredAuditEvents.Any(static row => !row.HasChatNames);
+        : FilteredAuditEvents.Any(static row => !row.HasChatNames && !AuditEvent.IsAccessKind(row.Record.Kind)));
     public string RecordSearchPlaceholder => DesktopText.Get("HistoryRecordSearchPlaceholder");
     public string RunResultSummary => IsRunsMode
         ? DesktopText.Get("HistoryRecordResults", Executions.Count, _activityRecords.Count)

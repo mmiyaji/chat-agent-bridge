@@ -78,16 +78,18 @@ public sealed partial class HistoryPage
         RunTableHost.Children.Insert(0, runs);
 
         var audit = CreateTable("AuditHistoryTable", ViewModel.AuditTabTitle,
-            (nameof(AuditHistoryRow.TimeCompact), "AuditTimeColumn", new GridLength(96)),
-            (nameof(AuditHistoryRow.Kind), "AuditActionColumn", new GridLength(160)),
+            (nameof(AuditHistoryRow.TimeCompact), "AuditTimeColumn", new GridLength(112)),
+            (nameof(AuditHistoryRow.ActionCell), "AuditActionColumn", new GridLength(196)),
             (nameof(AuditHistoryRow.Source), "AuditServiceColumn", new GridLength(100)),
-            (nameof(AuditHistoryRow.Conversation), "AuditConversationColumn", new GridLength(1, GridUnitType.Star)));
+            (nameof(AuditHistoryRow.ContextCell), "HistoryAuditContextColumn", new GridLength(1, GridUnitType.Star)));
         audit.ItemsSource = ViewModel.FilteredAuditEvents;
         audit.SelectionChanged += (sender, _) => ViewModel.SelectAuditRow(sender.SelectedItem as AuditHistoryRow);
         ViewModel.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(ViewModel.FilteredAuditEvents))
                 audit.ItemsSource = ViewModel.FilteredAuditEvents;
+            if (args.PropertyName == nameof(ViewModel.AuditContextHeader))
+                audit.Columns[3].Header = ViewModel.AuditContextHeader;
         };
         AuditHistoryList.Visibility = Visibility.Collapsed;
         AuditBrowser.Children.Insert(0, audit);

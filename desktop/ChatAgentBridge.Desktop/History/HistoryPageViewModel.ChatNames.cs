@@ -11,6 +11,8 @@ public sealed partial class HistoryPageViewModel
     private readonly Dictionary<Guid, ExecutionChatInfo> _executionChats = [];
     private readonly Dictionary<Guid, (string Provider, string Channel, string Thread)> _executionChatScopes = [];
     private readonly Dictionary<(string Provider, string Channel, string Thread), string> _auditChatLabels = [];
+    private IReadOnlyDictionary<(string Provider, string UserId), string?> _allowedUserNames =
+        new Dictionary<(string, string), string?>();
     private CancellationTokenSource? _chatNameCancellation;
     private int _chatNameGeneration;
     private bool _chatNameUpdatesEnabled = true;
@@ -22,6 +24,17 @@ public sealed partial class HistoryPageViewModel
         _nameBindings = bindings;
         using var directory = new ChatIdentityDirectory(_settingsStore.DirectoryPath);
         _chatNames = await directory.ReadCachedAsync(bindings.Select(binding => binding.Key));
+        try
+        {
+            var users = await new ChatAgentBridge.Core.AllowedUserDirectory(_settingsStore.DirectoryPath).LoadAsync();
+            _allowedUserNames = users.GroupBy(user => (user.Provider, user.UserId))
+                .ToDictionary(group => group.Key, group => group.OrderByDescending(user => user.AddedAt).First().DisplayName);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            // Optional display names must not prevent offline history from loading.
+            _allowedUserNames = new Dictionary<(string, string), string?>();
+        }
     }
 
     public void SetChatNameUpdatesEnabled(bool enabled)
@@ -94,7 +107,8 @@ public sealed partial class HistoryPageViewModel
             ApplyRunFilters();
             RefreshSessionExecutions();
             for (var i = 0; i < AuditEvents.Count; i++)
-                AuditEvents[i] = AuditEvents[i] with { ChatLabel = AuditChatLabel(AuditEvents[i].Record) };
+                AuditEvents[i] = AuditEvents[i] with { ChatLabel = AuditChatLabel(AuditEvents[i].Record),
+                    UserName = AccessUserName(AuditEvents[i].Record) };
             ApplyAuditFilters();
         }
         catch (OperationCanceledException) { }
@@ -135,6 +149,9 @@ public sealed partial class HistoryPageViewModel
     }
 
     private ExecutionChatInfo? ExecutionChat(ExecutionRecord record) => _executionChats.GetValueOrDefault(record.Id);
+
+    private string? AccessUserName(AuditEvent record) => record.Access is { } access
+        ? _allowedUserNames.GetValueOrDefault((record.Source, access.UserId)) : null;
 
     private string? AuditChatLabel(AuditEvent record) =>
         record.ExecutionId is { } id && _executionChatScopes.GetValueOrDefault(id) == (record.Source, record.ChannelId, record.ThreadId) &&
