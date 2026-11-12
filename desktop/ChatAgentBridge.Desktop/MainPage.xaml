@@ -40,23 +40,8 @@
 
                         AutomationProperties.AutomationId="MainNavigation" x:Uid="MainNavigation">
             <NavigationView.Resources>
-                <ResourceDictionary>
-                    <!-- WinUI's subtle fills; AppAppearance tints them with the chosen accent. High contrast falls through to WinUI. -->
-                    <ResourceDictionary.ThemeDictionaries>
-                        <ResourceDictionary x:Key="Light">
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#09000000" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#06000000" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#09000000" />
-                        </ResourceDictionary>
-                        <ResourceDictionary x:Key="Dark">
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#0FFFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#0AFFFFFF" />
-                            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#0FFFFFFF" />
-                        </ResourceDictionary>
-                    </ResourceDictionary.ThemeDictionaries>
-                    <!-- Trimmed labels use the room the default 20px right gap reserves for an expand chevron the sidebar never shows. -->
-                    <Thickness x:Key="NavigationViewItemContentPresenterMargin">4,-1,6,-1</Thickness>
-                </ResourceDictionary>
+                <!-- Trimmed labels use the room the default 20px right gap reserves for an expand chevron the sidebar never shows. -->
+                <Thickness x:Key="NavigationViewItemContentPresenterMargin">4,-1,6,-1</Thickness>
             </NavigationView.Resources>
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Name="OpenSettingsSearch" x:Uid="OpenSettingsSearch"

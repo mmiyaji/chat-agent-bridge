@@ -115,18 +115,6 @@ public sealed class AppAppearance(AppearancePreferencesStore store) : IDisposabl
     }
 
     private readonly Dictionary<(string Owner, object Theme, string Key), Windows.UI.Color> _originalBrushColors = [];
-    private readonly List<ResourceDictionary> _accentDictionaries = [];
-
-    /// <summary>
-    /// Adds a control's own theme dictionaries to the accent recoloring, for template brushes that app-level
-    /// resources cannot override (NavigationView's selected row).
-    /// </summary>
-    public void RegisterAccentResources(ResourceDictionary resources)
-    {
-        if (_accentDictionaries.Contains(resources)) return;
-        _accentDictionaries.Add(resources);
-        RecolorControlBrushes(AccentPalette.Find(Accent));
-    }
 
     /// <summary>
     /// WinUI's accent brushes live in XamlControlsResources and are bound to the system colors there, so overriding
@@ -141,10 +129,8 @@ public sealed class AppAppearance(AppearancePreferencesStore store) : IDisposabl
         var controls = Application.Current.Resources.MergedDictionaries
             .OfType<Microsoft.UI.Xaml.Controls.XamlControlsResources>().FirstOrDefault();
         if (controls is not null) Recolor("controls", controls.ThemeDictionaries, BrushMapping);
-        // App-level brushes (update badge) and registered page dictionaries (selected navigation row) likewise.
+        // App-level brushes (update badge) likewise.
         Recolor("app", Application.Current.Resources.ThemeDictionaries, AppBrushMapping);
-        for (var index = 0; index < _accentDictionaries.Count; index++)
-            Recolor($"registered{index}", _accentDictionaries[index].ThemeDictionaries, AppBrushMapping);
 
         void Recolor(string owner, IDictionary<object, object> themes,
             Func<AccentRamp?, bool, IEnumerable<(string Key, uint? Rgb, byte Alpha)>> mapping)
@@ -169,8 +155,7 @@ public sealed class AppAppearance(AppearancePreferencesStore store) : IDisposabl
     }
 
     /// <summary>
-    /// The update badge uses the accent fill with WinUI's text color for it (white in light, black in dark). The
-    /// selected navigation row gets a light accent tint so the choice is visible beyond the thin indicator.
+    /// The update badge uses the accent fill with WinUI's text color for it (white in light, black in dark).
     /// </summary>
     private static IEnumerable<(string Key, uint? Rgb, byte Alpha)> AppBrushMapping(AccentRamp? ramp, bool dark)
     {
@@ -180,9 +165,6 @@ public sealed class AppAppearance(AppearancePreferencesStore store) : IDisposabl
         [
             ("UpdateBadgeBackgroundBrush", fill, 0xFF),
             ("UpdateBadgeForegroundBrush", onFill, 0xFF),
-            ("NavigationViewItemBackgroundSelected", fill, (byte)(dark ? 0x40 : 0x30)),
-            ("NavigationViewItemBackgroundSelectedPointerOver", fill, (byte)(dark ? 0x50 : 0x40)),
-            ("NavigationViewItemBackgroundSelectedPressed", fill, (byte)(dark ? 0x33 : 0x26)),
         ];
     }
 

@@ -46,7 +46,6 @@ public sealed partial class MainPage : Page
     public MainPage()
     {
         InitializeComponent();
-        App.Appearance.RegisterAccentResources(MainNavigation.Resources);
         PasswordRevealControl.Attach(MattermostTokenRevealButton, MattermostTokenBox);
         PasswordRevealControl.Attach(SlackBotTokenRevealButton, SlackBotTokenBox);
         PasswordRevealControl.Attach(SlackAppTokenRevealButton, SlackAppTokenBox);
