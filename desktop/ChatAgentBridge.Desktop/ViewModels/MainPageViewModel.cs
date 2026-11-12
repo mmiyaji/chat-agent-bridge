@@ -357,7 +357,8 @@ public partial class MainPageViewModel : ObservableObject
             _effortModel = NormalizeModel(AgentModel);
             _unsupportedSavedEffort = false;
             _hasCatalogForCurrentModel = false;
-            SelectedReasoningEffort = null;
+            // No saved effort means the CLI default; show that choice instead of an empty selection.
+            SelectedReasoningEffort = string.IsNullOrWhiteSpace(AgentReasoningEffort) ? ReasoningEffortChoice.Default : null;
             ModelEffortStatus = AgentReasoningEffort is { Length: > 0 } savedEffort
                 ? ViewModelText.Get("SavedEffortPending", savedEffort)
                 : ViewModelText.Get("UseDefaultCliValue");
