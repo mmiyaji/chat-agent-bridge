@@ -1191,7 +1191,7 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLI check failed</value></data>
   <data name="CliCheckSuccess.Title" xml:space="preserve"><value>CLI check succeeded</value></data>
   <data name="ReleaseHighlightsHeading.Text" xml:space="preserve"><value>What's new</value></data>
-  <data name="ReleaseHighlightsSummary.Text" xml:space="preserve"><value>• Start using chat before registering allowed users&#10;• Clearer history and better-blended popups</value></data>
+  <data name="ReleaseHighlightsSummary.Text" xml:space="preserve"><value>• Audit log records why runs needed re-approval or were cancelled&#10;• Chat progress updates after reconnecting</value></data>
   <data name="UpdateNoticeAction.Content" xml:space="preserve"><value>What's new</value></data>
   <data name="UpdateNoticeAction.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>View app changes</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Start this app when signing in to Windows</value></data>
