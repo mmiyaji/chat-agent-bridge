@@ -1,4 +1,5 @@
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Transports;
 using ChatAgentBridge_Desktop.Localization;
 
@@ -24,6 +25,7 @@ public sealed partial class ChatInboxViewModel
                     HasConnectionError = false;
                     var delay = Math.Max(1, (int)Math.Ceiling(status.NextRetryDelay?.TotalSeconds ?? 1));
                     Status = DesktopText.Get("InboxReconnecting", status.Attempt, delay);
+                    _ = AuditConnectionAsync(ProviderOf(transport), "reconnecting", $"attempt:{status.Attempt}");
                 }
             });
 
@@ -34,6 +36,8 @@ public sealed partial class ChatInboxViewModel
                 IsConnectionConfirmed = true;
                 HasConnectionError = false;
                 Status = DesktopText.Get(hasConnected ? "InboxReconnected" : "InboxConnectedWaiting");
+                _ = AuditConnectionAsync(ProviderOf(transport), "connected",
+                    hasConnected ? AuditCodes.ConnectionReconnected : AuditCodes.ConnectionFirst);
                 if (!hasConnected && settings.PostConnectionNotice)
                     _connectionNotice = NotifyConnectionAsync(transport, settings,
                         DesktopText.Get("InboxConnectedChatNotice"));

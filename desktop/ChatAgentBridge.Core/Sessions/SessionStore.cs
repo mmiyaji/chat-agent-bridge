@@ -275,6 +275,7 @@ public sealed partial class SessionStore
                     ChatResultMode = result,
                     AgentPermissionMode = permission,
                     FirstApprovalFingerprint = null,
+                    FirstApprovalComponents = null,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
                 await WriteAsync(document, token).ConfigureAwait(false);
@@ -285,9 +286,16 @@ public sealed partial class SessionStore
     }
 
     /// <summary>Stores the settings fingerprint approved for first-only chat execution.</summary>
-    public Task SetFirstApprovalFingerprintAsync(SessionKey key, string fingerprint, CancellationToken cancellationToken = default)
+    public Task SetFirstApprovalFingerprintAsync(SessionKey key, string fingerprint, CancellationToken cancellationToken = default) =>
+        SetFirstApprovalFingerprintAsync(key, fingerprint, null, cancellationToken);
+
+    /// <summary>Stores the approved fingerprint and its per-item digests, used to explain a later re-approval.</summary>
+    public Task SetFirstApprovalFingerprintAsync(SessionKey key, string fingerprint, string? components,
+        CancellationToken cancellationToken = default)
     {
         ValidateKey(key);
+        if (!ConversationExecutionPolicy.IsValidComponents(components))
+            throw new ArgumentException("Approval components are invalid.", nameof(components));
         if (fingerprint is null || fingerprint.Length != 64 || fingerprint.Any(c => !Uri.IsHexDigit(c)))
             throw new ArgumentException("Approval fingerprint must be a 64-character hexadecimal SHA-256 value.", nameof(fingerprint));
         fingerprint = fingerprint.ToLowerInvariant();
@@ -300,7 +308,7 @@ public sealed partial class SessionStore
                 var bindings = document.Bindings!;
                 var index = bindings.FindIndex(item => item.Key == key);
                 if (index < 0) throw new KeyNotFoundException("No saved session exists for this conversation.");
-                bindings[index] = bindings[index] with { FirstApprovalFingerprint = fingerprint, UpdatedAt = DateTimeOffset.UtcNow };
+                bindings[index] = bindings[index] with { FirstApprovalFingerprint = fingerprint, FirstApprovalComponents = components, UpdatedAt = DateTimeOffset.UtcNow };
                 await WriteAsync(document, token).ConfigureAwait(false);
             }
             finally { _gate.Release(); }
@@ -428,6 +436,8 @@ public sealed partial class SessionStore
         if (binding.FirstApprovalFingerprint is not null &&
             (binding.FirstApprovalFingerprint.Length != 64 || binding.FirstApprovalFingerprint.Any(c => !Uri.IsHexDigit(c))))
             throw new ArgumentException("Session approval fingerprint must be a 64-character hexadecimal SHA-256 value.");
+        if (!ConversationExecutionPolicy.IsValidComponents(binding.FirstApprovalComponents))
+            throw new ArgumentException("Session approval components are invalid.");
         _ = NormalizeDisplayName(binding.DisplayName);
         if (binding.NextAgentProvider is not null && !AgentProfile.IsSupportedCliProvider(binding.NextAgentProvider))
             throw new ArgumentException("Unsupported pending agent provider.");

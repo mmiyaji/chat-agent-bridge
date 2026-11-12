@@ -42,6 +42,7 @@ public sealed partial class MainPage
             if (directory.EndsWith(':')) directory += "\\.";
             // The relaunched process must own the data folder rather than hand itself back to this one.
             Deployment.SingleInstanceGate.Release();
+            AppLifecycleAudit.RecordStoppedBeforeRestart(ChatAgentBridge.Core.History.AuditCodes.StopLanguageRestart);
             _ = AppInstance.Restart($"--data-dir \"{directory}\"");
             // A successful restart does not return.
             Deployment.SingleInstanceGate.Reclaim();

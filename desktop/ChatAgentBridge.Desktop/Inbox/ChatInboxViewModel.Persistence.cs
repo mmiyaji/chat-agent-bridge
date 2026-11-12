@@ -34,7 +34,7 @@ public sealed partial class ChatInboxViewModel
     private void ReportInvalidWorkspaceSettings()
     {
         Volatile.Write(ref _accessSettings, null);
-        RequestExecutionCancellation();
+        RequestExecutionCancellation(CancellationReasons.SettingsUnavailable);
         foreach (var item in Requests.Where(item => item.State == "承認待ち"))
             item.State = "許可設定を確認できず実行不可";
         HasConnectionError = true;

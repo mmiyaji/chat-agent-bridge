@@ -98,7 +98,7 @@ public sealed partial class SessionStore
                     expected.ChatApprovalMode, expected.ChatResultMode, now));
                 document.Bindings[index] = expected with
                 {
-                    NextAgentProvider = provider, FirstApprovalFingerprint = null, UpdatedAt = now
+                    NextAgentProvider = provider, FirstApprovalFingerprint = null, FirstApprovalComponents = null, UpdatedAt = now
                 };
                 document.Workspaces ??= [];
                 document.Workspaces.RemoveAll(item => item.Key == expected.Key);

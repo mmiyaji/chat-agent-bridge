@@ -460,6 +460,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
             File.Copy(originalHelper, helperPath, overwrite: true);
             var start = new ProcessStartInfo(helperPath) { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = _workDirectory };
             foreach (var argument in new[] { "--apply", planFile, "--nonce", plan.Nonce }) start.ArgumentList.Add(argument);
+            AppLifecycleAudit.StopReason = ChatAgentBridge.Core.History.AuditCodes.StopUpdate;
             helper = Process.Start(start) ?? throw new IOException("Update helper did not start.");
             Status = DesktopText.Get("PortableUpdateStarting");
             Notify();

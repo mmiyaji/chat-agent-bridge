@@ -28,6 +28,39 @@ public sealed class ChatProgressReporterTests
     }
 
     [Fact]
+    public async Task TerminalUpdateRetriesOnceAndReportsDelivery()
+    {
+        var transport = new FakeProgressTransport { FailTerminalAttempts = 1 };
+        await using var reporter = CreateReporter(transport, TimeSpan.FromHours(1));
+        await reporter.ReceiveAsync();
+        await reporter.StartAsync();
+        Assert.True(await reporter.FinishAsync(ChatProgressState.Completed));
+        Assert.Contains(transport.Updates, update => update.Text == "Completed");
+    }
+
+    [Fact]
+    public async Task TerminalUpdateReportsFailureSoCallerCanFallBack()
+    {
+        var transport = new FakeProgressTransport { FailTerminalUpdate = true };
+        await using var failing = CreateReporter(transport, TimeSpan.FromHours(1));
+        await failing.ReceiveAsync();
+        await failing.StartAsync();
+        Assert.False(await failing.FinishAsync(ChatProgressState.Completed));
+        Assert.NotNull(failing.Message);
+        Assert.Equal("Completed", failing.FormatTerminal(ChatProgressState.Completed));
+
+        var publish = true;
+        var refused = new FakeProgressTransport();
+        await using var replaced = new ChatProgressReporter(refused, Request, (state, _) => state.ToString(),
+            _ => Task.FromResult(publish), null, TimeSpan.FromHours(1), TimeSpan.FromSeconds(1));
+        await replaced.ReceiveAsync();
+        await replaced.StartAsync();
+        publish = false;
+        Assert.False(await replaced.FinishAsync(ChatProgressState.Cancelled));
+        Assert.DoesNotContain(refused.Updates, update => update.Text == "Cancelled");
+    }
+
+    [Fact]
     public async Task RequestUpdateCoalescesBurstsAndRespectsMinimumInterval()
     {
         var transport = new FakeProgressTransport();
@@ -199,7 +232,8 @@ public sealed class ChatProgressReporterTests
         await reporter.FinishAsync(ChatProgressState.Completed);
 
         Assert.Same(transport.PostedMessage, Assert.Single(transport.CompletedProgress));
-        Assert.Equal(new[] { "complete", "terminal-update" }, transport.LifecycleOrder);
+        // The failed final edit is retried once so a transient provider error does not leave "running" behind.
+        Assert.Equal(new[] { "complete", "terminal-update", "terminal-update" }, transport.LifecycleOrder);
     }
 
     [Fact]
@@ -284,6 +318,7 @@ public sealed class ChatProgressReporterTests
         public ChatProgressMessage? PostedMessage { get; private set; }
         public bool FailPost { get; init; }
         public bool FailTerminalUpdate { get; init; }
+        public int FailTerminalAttempts;
         public bool BlockHeartbeat { get; init; }
         public TaskCompletionSource HeartbeatEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource HeartbeatCancelled { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -306,7 +341,8 @@ public sealed class ChatProgressReporterTests
             if (text is "Completed" or "FollowUpApplied" or "FollowUpUncertain")
             {
                 lock (_sync) _lifecycleOrder.Add("terminal-update");
-                if (FailTerminalUpdate) throw new InvalidOperationException("terminal update failed");
+                if (FailTerminalUpdate || Interlocked.Decrement(ref FailTerminalAttempts) >= 0)
+                    throw new InvalidOperationException("terminal update failed");
             }
             var isHeartbeat = (text is "Running" or "FollowUpPending") && Interlocked.Increment(ref _heartbeatCalls) > 1;
             if (BlockHeartbeat && isHeartbeat)

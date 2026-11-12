@@ -88,8 +88,22 @@ public sealed record AuditHistoryRow(AuditEvent Record, AuditColumnLayout Column
 {
     public string Timestamp => Record.Timestamp.ToLocalTime().ToString("g");
     public string Time => Record.Timestamp.ToLocalTime().ToString("HH:mm:ss");
-    public string Kind => Record.Kind switch
+    /// <summary>The event label followed by its short detail code, if any (approval method, reason, failure category...).</summary>
+    public string Kind => DetailText is { } detail ? $"{BaseKind} ({detail})" : BaseKind;
+
+    private string? DetailText => Record.CancellationReason ?? Record.Detail ??
+        (Record.Failure is { } failure ? failure.ExitCode is { } code ? $"{failure.Category}:{code}" : failure.Category : null) ??
+        (Record.Execution is { } context ? $"{context.Provider}/{context.PermissionMode}/{context.ApprovalMode}" : null);
+
+    private string BaseKind => Record.Kind switch
     {
+        "connected" => DesktopText.Get("AuditConnected"),
+        "reconnecting" => DesktopText.Get("AuditReconnecting"),
+        "connection_lost" => DesktopText.Get("AuditConnectionLost"),
+        "disconnected" => DesktopText.Get("AuditDisconnected"),
+        "app_started" => DesktopText.Get("AuditAppStarted"),
+        "app_stopped" => DesktopText.Get("AuditAppStopped"),
+        "settings_changed" => DesktopText.Get("AuditSettingsChanged"),
         "received" => DesktopText.Get("AuditReceived"),
         "follow_up_applied" => DesktopText.Get("AuditFollowUpApplied"),
         "follow_up_uncertain" => DesktopText.Get("AuditFollowUpUncertain"),
@@ -108,6 +122,7 @@ public sealed record AuditHistoryRow(AuditEvent Record, AuditColumnLayout Column
         "workspace_changed" => DesktopText.Get("AuditWorkspaceChanged"),
         "model_changed" => DesktopText.Get("AuditModelChanged"),
         "agent_changed" => DesktopText.Get("AgentSwitchCompleted"),
+        "approval_required" => DesktopText.Get("AuditApprovalRequired", Record.ApprovalReason ?? ""),
         "access_requested" => DesktopText.Get("AuditAccessRequested", AccessSubject),
         "access_allowed" => DesktopText.Get("AuditAccessAllowed", AccessSubject, AccessActor),
         "access_allowed_once" => DesktopText.Get("AuditAccessAllowedOnce", AccessSubject, AccessActor),
@@ -117,7 +132,7 @@ public sealed record AuditHistoryRow(AuditEvent Record, AuditColumnLayout Column
         _ => DesktopText.Get("AuditOther")
     };
     public string FilterKind => Record.Kind is "execution_exception" ? "failed" : Record.Kind;
-    public string FilterKindLabel => AuditEvent.IsAccessKind(Record.Kind) ? DesktopText.Get($"AuditFilter_{Record.Kind}") : Kind;
+    public string FilterKindLabel => AuditEvent.IsAccessKind(Record.Kind) || Record.Kind == "approval_required" ? DesktopText.Get($"AuditFilter_{Record.Kind}") : BaseKind;
     private string AccessSubject => Record.Access is not { } access ? "" :
         string.IsNullOrWhiteSpace(access.DisplayName) ? access.UserId : $"{access.DisplayName} ({access.UserId})";
     private string AccessActor => string.IsNullOrWhiteSpace(Record.Access?.Actor) ? DesktopText.Get("AuditAccessUnknownActor") : Record.Access!.Actor;

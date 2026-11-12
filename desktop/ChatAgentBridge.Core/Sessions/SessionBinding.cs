@@ -16,4 +16,5 @@ public sealed record SessionBinding(
     string? AgentPermissionMode = null,
     string? FirstApprovalFingerprint = null,
     string? DisplayName = null,
-    string? NextAgentProvider = null);
+    string? NextAgentProvider = null,
+    string? FirstApprovalComponents = null);

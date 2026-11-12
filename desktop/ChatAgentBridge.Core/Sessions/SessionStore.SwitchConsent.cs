@@ -4,6 +4,11 @@ public sealed partial class SessionStore
 {
     /// <summary>Rechecks exact conversation consent, including a validated folder or agent transition.</summary>
     public async Task<bool> RequiresApprovalAsync(SessionKey key, BridgeSettings effective, SessionBinding? binding,
+        bool switchCommand = false, CancellationToken token = default) =>
+        (await CheckApprovalAsync(key, effective, binding, switchCommand, token).ConfigureAwait(false)).Required;
+
+    /// <summary>Same decision as <see cref="RequiresApprovalAsync"/>, with a message-free reason code for the audit log.</summary>
+    public async Task<ApprovalCheck> CheckApprovalAsync(SessionKey key, BridgeSettings effective, SessionBinding? binding,
         bool switchCommand = false, CancellationToken token = default)
     {
         ValidateKey(key);
@@ -12,14 +17,29 @@ public sealed partial class SessionStore
         {
             var document = await ReadSharedAsync(token).ConfigureAwait(false);
             // A stale caller may never authorize execution after a conversation mutation.
-            if (ExecutionBinding(document, key) != binding) return true;
-            if (switchCommand) return !HasSwitchConsent(document, key, effective, binding);
-            if (effective.ChatApprovalMode == "always") return true;
-            if (HasTransferredConsent(document, key, effective)) return false;
-            return ConversationExecutionPolicy.RequiresApproval(key, effective, binding) ||
-                document.Agents?.Any(item => item.Key == key && item.RequiresApproval) == true;
+            if (ExecutionBinding(document, key) != binding) return ApprovalCheck.Require(ApprovalCheck.StaleBinding);
+            if (switchCommand)
+                return HasSwitchConsent(document, key, effective, binding) ? ApprovalCheck.NotRequired
+                    : ApprovalCheck.Require(ApprovalCheck.SwitchCommand);
+            if (effective.ChatApprovalMode == "always") return ApprovalCheck.Require(ApprovalCheck.AlwaysMode);
+            if (HasTransferredConsent(document, key, effective)) return ApprovalCheck.NotRequired;
+            if (ConversationExecutionPolicy.RequiresApproval(key, effective, binding))
+                return ApprovalCheck.Require(DescribeFirstApprovalMismatch(key, effective, binding));
+            return document.Agents?.Any(item => item.Key == key && item.RequiresApproval) == true
+                ? ApprovalCheck.Require(ApprovalCheck.AgentSwitchPending) : ApprovalCheck.NotRequired;
         }
         finally { _gate.Release(); }
+    }
+
+    private static string DescribeFirstApprovalMismatch(SessionKey key, BridgeSettings effective, SessionBinding? binding)
+    {
+        if (binding is null) return ApprovalCheck.NewConversation;
+        if (binding.FirstApprovalFingerprint is null) return ApprovalCheck.NoPriorApproval;
+        var changed = ConversationExecutionPolicy.GetChangedComponents(binding.FirstApprovalComponents,
+            ConversationExecutionPolicy.GetFingerprintComponents(key, effective));
+        return changed is null ? ApprovalCheck.ChangedUnknown
+            : changed.Count == 0 ? ApprovalCheck.ChangedFormat
+            : ApprovalCheck.ChangedPrefix + string.Join(',', changed);
     }
 
     private static SessionBinding? ExecutionBinding(StoredSessions document, SessionKey key) =>
