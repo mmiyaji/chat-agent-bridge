@@ -114,7 +114,19 @@ public sealed class AppAppearance(AppearancePreferencesStore store) : IDisposabl
             Windows.UI.Color.FromArgb(alpha, (byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
     }
 
-    private readonly Dictionary<(object Theme, string Key), Windows.UI.Color> _originalBrushColors = [];
+    private readonly Dictionary<(string Owner, object Theme, string Key), Windows.UI.Color> _originalBrushColors = [];
+    private readonly List<ResourceDictionary> _accentDictionaries = [];
+
+    /// <summary>
+    /// Adds a control's own theme dictionaries to the accent recoloring, for template brushes that app-level
+    /// resources cannot override (NavigationView's selected row).
+    /// </summary>
+    public void RegisterAccentResources(ResourceDictionary resources)
+    {
+        if (_accentDictionaries.Contains(resources)) return;
+        _accentDictionaries.Add(resources);
+        RecolorControlBrushes(AccentPalette.Find(Accent));
+    }
 
     /// <summary>
     /// WinUI's accent brushes live in XamlControlsResources and are bound to the system colors there, so overriding
@@ -124,26 +136,54 @@ public sealed class AppAppearance(AppearancePreferencesStore store) : IDisposabl
     /// </summary>
     private void RecolorControlBrushes(AccentColor? color)
     {
+        // Nothing to restore while the Windows accent has never been replaced.
+        if (color is null && _originalBrushColors.Count == 0) return;
         var controls = Application.Current.Resources.MergedDictionaries
             .OfType<Microsoft.UI.Xaml.Controls.XamlControlsResources>().FirstOrDefault();
-        // Nothing to restore while the Windows accent has never been replaced.
-        if (controls is null || color is null && _originalBrushColors.Count == 0) return;
-        foreach (var (themeKey, themeValue) in controls.ThemeDictionaries)
+        if (controls is not null) Recolor("controls", controls.ThemeDictionaries, BrushMapping);
+        // App-level brushes (update badge) and registered page dictionaries (selected navigation row) likewise.
+        Recolor("app", Application.Current.Resources.ThemeDictionaries, AppBrushMapping);
+        for (var index = 0; index < _accentDictionaries.Count; index++)
+            Recolor($"registered{index}", _accentDictionaries[index].ThemeDictionaries, AppBrushMapping);
+
+        void Recolor(string owner, IDictionary<object, object> themes,
+            Func<AccentRamp?, bool, IEnumerable<(string Key, uint? Rgb, byte Alpha)>> mapping)
         {
-            if (themeValue is not ResourceDictionary theme || themeKey is "HighContrast") continue;
-            var dark = themeKey is "Default" or "Dark";
-            AccentRamp? ramp = color is null ? null : AccentPalette.CreateRamp(color, dark);
-            foreach (var (brushKey, rgb, alpha) in BrushMapping(ramp, dark))
+            foreach (var (themeKey, themeValue) in themes)
             {
-                if (!theme.TryGetValue(brushKey, out var value) || value is not Microsoft.UI.Xaml.Media.SolidColorBrush brush) continue;
-                var id = (themeKey, brushKey);
-                if (!_originalBrushColors.TryGetValue(id, out var original))
-                    _originalBrushColors[id] = original = brush.Color;
-                brush.Color = rgb is { } shade
-                    ? Windows.UI.Color.FromArgb(alpha, (byte)(shade >> 16), (byte)(shade >> 8), (byte)shade)
-                    : original;
+                if (themeValue is not ResourceDictionary theme || themeKey is "HighContrast") continue;
+                var dark = themeKey is "Default" or "Dark";
+                AccentRamp? ramp = color is null ? null : AccentPalette.CreateRamp(color, dark);
+                foreach (var (brushKey, rgb, alpha) in mapping(ramp, dark))
+                {
+                    if (!theme.TryGetValue(brushKey, out var value) || value is not Microsoft.UI.Xaml.Media.SolidColorBrush brush) continue;
+                    var id = (owner, themeKey, brushKey);
+                    if (!_originalBrushColors.TryGetValue(id, out var original))
+                        _originalBrushColors[id] = original = brush.Color;
+                    brush.Color = rgb is { } shade
+                        ? Windows.UI.Color.FromArgb(alpha, (byte)(shade >> 16), (byte)(shade >> 8), (byte)shade)
+                        : original;
+                }
             }
         }
+    }
+
+    /// <summary>
+    /// The update badge uses the accent fill with WinUI's text color for it (white in light, black in dark). The
+    /// selected navigation row gets a light accent tint so the choice is visible beyond the thin indicator.
+    /// </summary>
+    private static IEnumerable<(string Key, uint? Rgb, byte Alpha)> AppBrushMapping(AccentRamp? ramp, bool dark)
+    {
+        uint? fill = ramp is null ? null : dark ? ramp.Light2 : ramp.Dark1;
+        uint? onFill = ramp is null ? null : dark ? 0x000000u : 0xFFFFFFu;
+        return
+        [
+            ("UpdateBadgeBackgroundBrush", fill, 0xFF),
+            ("UpdateBadgeForegroundBrush", onFill, 0xFF),
+            ("NavigationViewItemBackgroundSelected", fill, (byte)(dark ? 0x40 : 0x30)),
+            ("NavigationViewItemBackgroundSelectedPointerOver", fill, (byte)(dark ? 0x50 : 0x40)),
+            ("NavigationViewItemBackgroundSelectedPressed", fill, (byte)(dark ? 0x33 : 0x26)),
+        ];
     }
 
     private static IEnumerable<(string Key, uint? Rgb, byte Alpha)> BrushMapping(AccentRamp? ramp, bool dark)
