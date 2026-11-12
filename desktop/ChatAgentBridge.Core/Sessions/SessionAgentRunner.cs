@@ -127,7 +127,8 @@ public sealed class SessionAgentRunner
             await _store.SaveAsync(new SessionBinding(key, workspace, executable, sessionArguments,
                 newSessionId, DateTimeOffset.UtcNow,
                 existing?.Model, existing?.ReasoningEffort, existing?.ChatApprovalMode, existing?.ChatResultMode,
-                existing?.AgentPermissionMode, existing?.FirstApprovalFingerprint), CancellationToken.None).ConfigureAwait(false);
+                existing?.AgentPermissionMode, existing?.FirstApprovalFingerprint,
+                FirstApprovalComponents: existing?.FirstApprovalComponents), CancellationToken.None).ConfigureAwait(false);
             if (turnFailed && result.Success)
                 return FailClosed(result, tracksCodex
                     ? "Codex reported turn.failed; the session was saved so it can be resumed."

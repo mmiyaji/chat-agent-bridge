@@ -189,6 +189,7 @@ public partial class App : Application
             _ = Startup.BackgroundTaskShutdown.StopAsync(_logRetentionTask, _logRetentionLifetime);
         };
         Window.Activate();
+        _ = AppLifecycleAudit.RecordStartedAsync();
         if (_windowServicesClosed) return;
         _keepAwakeTask = InitializeKeepAwakeAsync(_keepAwakeLifetime.Token);
         // Recovery uses only app-owned records and exclusive leases; it can run

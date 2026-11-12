@@ -125,8 +125,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private readonly ChatApprovalBroker _approvalBroker = new();
     private readonly ExecutionHistoryStore _history = new();
     private readonly AuditStore _audit = new();
+    private readonly HashSet<InboxItem> _approvalReasonsLogged = new(ReferenceEqualityComparer.Instance);
     private CancellationTokenSource? _connection;
     private CancellationTokenSource? _execution;
+    private string? _executionCancellationReason;
+    private string _notificationApprovalMethod = AuditCodes.ApprovedByNotification;
+    private string _disconnectDetail = AuditCodes.DisconnectedByUser;
     private Task? _receiveTask;
     private IChatTransport? _transport;
     private BridgeSettings? _accessSettings;
@@ -891,7 +895,10 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             IsConnectionConfirmed = false;
             ConnectionEnded?.Invoke();
-            RequestExecutionCancellation();
+            if (!_disconnecting && !_closing)
+                await AuditConnectionAsync(ProviderOf(transport), "connection_lost",
+                    HasConnectionError ? AuditCodes.ConnectionError : AuditCodes.ConnectionEnded);
+            RequestExecutionCancellation(CancellationReasons.ConnectionLost);
             connection.Cancel();
             try
             {
@@ -944,7 +951,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         HasConnectionError = false;
         var wasConfirmed = IsConnectionConfirmed;
         IsConnectionConfirmed = false;
-        RequestExecutionCancellation();
+        if (_transport is { } closingTransport)
+            await AuditConnectionAsync(ProviderOf(closingTransport), "disconnected",
+                _closing ? AuditCodes.DisconnectedAppClosing : _disconnectDetail);
+        _disconnectDetail = AuditCodes.DisconnectedByUser;
+        RequestExecutionCancellation(CancellationReasons.Disconnected);
         if (wasConfirmed && _transport is { } transport && Volatile.Read(ref _accessSettings) is { } settings)
         {
             await _connectionNotice;
@@ -973,6 +984,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var connection = _connection;
             if (connection is null || connection.IsCancellationRequested) return;
             _execution = CancellationTokenSource.CreateLinkedTokenSource(connection.Token);
+            _executionCancellationReason = null;
             CancelCommand.NotifyCanExecuteChanged();
             var token = _execution.Token;
             if (!await CheckAccessAsync(item, token)) return;
@@ -1002,8 +1014,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.Workspace = effectiveSettings.WorkspaceRoot;
             if (!ExecutionPolicy.IsWorkspaceTrusted(effectiveSettings, effectiveSettings.WorkspaceRoot))
                 throw new InvalidOperationException(DesktopText.Get("WorkspaceOutsideTrustedRootsShort"));
-            if (approvedAutomatically && await _sessions.RequiresApprovalAsync(key, effectiveSettings, binding, token: token))
+            if (approvedAutomatically && await _sessions.CheckApprovalAsync(key, effectiveSettings, binding, token: token) is { Required: true } recheck)
             {
+                await AuditApprovalRequiredAsync(item, recheck, token);
                 NotifyPendingRequest(item);
                 Status = DesktopText.Get("InboxApprovalRequiredAgain");
                 return;
@@ -1030,8 +1043,12 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             };
             await _history.RecordAsync(record, _execution.Token);
             item.ExecutionId = record.Id;
-            await AuditAsync("approved", item.Request, record.Id, _execution.Token);
-            await AuditAsync("started", item.Request, record.Id, _execution.Token);
+            var approvalMethod = approvedAutomatically ? AuditCodes.ApprovedAutomatically
+                : approvedByNotification ? _notificationApprovalMethod : AuditCodes.ApprovedInApp;
+            await _audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, "approved", record.Id, item.Request.Provider,
+                item.Request.ChannelId, item.Request.ThreadId) { Detail = approvalMethod }, _execution.Token);
+            await _audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, "started", record.Id, item.Request.Provider,
+                item.Request.ChannelId, item.Request.ThreadId) { Execution = AuditExecutionContext.From(effectiveSettings) }, _execution.Token);
             item.State = "実行中";
             item.FullOutput = DesktopText.Get("InboxAgentRunning");
             item.Usage = DesktopText.Get("UsageRunning");
@@ -1106,7 +1123,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             }
             if (result.Success && !approvedAutomatically && effectiveSettings.ChatApprovalMode == "first" && updated is not null &&
                 await CheckAccessAsync(item, token))
-                await _sessions.SetFirstApprovalFingerprintAsync(key, item.ExecutionPolicyFingerprint!, token);
+                await _sessions.SetFirstApprovalFingerprintAsync(key, item.ExecutionPolicyFingerprint!,
+                    ConversationExecutionPolicy.GetFingerprintComponents(key, effectiveSettings), token);
             if (updated is not null) item.SessionLabel = DesktopText.Get("InboxUpdatedSessionLabel", updated.SessionId,
                 requestedModel ?? DesktopText.Get("CliDefault"), requestedEffort ?? DesktopText.Get("CliDefault"));
             record = record with { SessionId = updated?.SessionId ?? record.SessionId };
@@ -1117,8 +1135,15 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 throw;
             }
             terminalRecorded = true;
-            await AuditAsync(record.Status, item.Request, record.Id);
-            await FinishProgressAsync(item, result.Success ? ChatProgressState.Completed : ChatProgressState.Failed);
+            await _audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, record.Status, record.Id, item.Request.Provider,
+                item.Request.ChannelId, item.Request.ThreadId)
+            {
+                Failure = record.Status != "failed" ? null
+                    : needsLogin ? new AuditFailure(AuditFailure.LoginRequired, result.ExitCode)
+                    : result.ExitCode != 0 ? new AuditFailure(AuditFailure.ExitCodeCategory, result.ExitCode)
+                    : new AuditFailure(AuditFailure.AgentReported, result.ExitCode)
+            });
+            await FinishExecutionProgressAsync(item, result.Success ? ChatProgressState.Completed : ChatProgressState.Failed);
             try
             {
                 if (!await CheckAccessAsync(item, token)) return;
@@ -1153,10 +1178,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             item.State = "キャンセル"; Status = DesktopText.Get("InboxExecutionCancelled");
             item.Usage = UsageUi.UsageSummaryFormatter.Format(null, null);
-            await FinishProgressAsync(item, ChatProgressState.Cancelled);
+            var cancellationReason = ResolveCancellationReason();
+            await FinishExecutionProgressAsync(item, ChatProgressState.Cancelled);
             if (record is not null)
             {
-                await FinishFailureAsync(record, "cancelled", item.Request);
+                await FinishFailureAsync(record, "cancelled", item.Request, cancellationReason);
                 record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = "cancelled" };
             }
             if (item.Progress is null) await NotifyRequestAsync(item, DesktopText.Get("InboxCancelChatNotice"));
@@ -1177,7 +1203,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         catch (Exception exception)
         {
             record = await HandleExecutionExceptionAsync(item, exception, record, terminalRecorded);
-            await FinishProgressAsync(item, ChatProgressState.Failed);
+            await FinishExecutionProgressAsync(item, ChatProgressState.Failed);
         }
         finally
         {
@@ -1232,7 +1258,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         RejectCommand.NotifyCanExecuteChanged();
     }
 
-    public async Task<Notifications.PendingNotificationActionResult> ApproveNotificationAsync(InboxItem item)
+    public async Task<Notifications.PendingNotificationActionResult> ApproveNotificationAsync(InboxItem item,
+        string approvalMethod = AuditCodes.ApprovedByNotification)
     {
         bool IsAvailable() => !_closing && Requests.Contains(item) && IsConnectionConfirmed &&
             ReferenceEquals(item.Transport, _transport) && _connection is { IsCancellationRequested: false } &&
@@ -1258,8 +1285,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         if (IsExecuting || IsConnectionActionInProgress || ApproveCommand.IsRunning || RejectCommand.IsRunning)
             return Notifications.PendingNotificationActionResult.Busy;
         _notificationApprovedItem = item;
+        _notificationApprovalMethod = approvalMethod;
         try { await ApproveCommand.ExecuteAsync(null); }
-        finally { _notificationApprovedItem = null; }
+        finally { _notificationApprovedItem = null; _notificationApprovalMethod = AuditCodes.ApprovedByNotification; }
         return item.State != "承認待ち" ? Notifications.PendingNotificationActionResult.Completed
             : Notifications.PendingNotificationActionResult.Unavailable;
     }
@@ -1319,6 +1347,41 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         catch (OperationCanceledException) { Status = DesktopText.Get("InboxResultSendCancelled"); }
         catch (Exception) { Status = DesktopText.Get("InboxResultSendFailed"); }
         finally { _execution?.Dispose(); _execution = null; _activeItem = null; IsExecuting = false; }
+    }
+
+    /// <summary>Records once per request why it waits for approval, so unexpected re-approvals can be traced.</summary>
+    private async Task AuditApprovalRequiredAsync(InboxItem item, ApprovalCheck check, CancellationToken token)
+    {
+        if (check.Reason is null || !_approvalReasonsLogged.Add(item)) return;
+        try
+        {
+            await _audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, "approval_required", null, item.Request.Provider,
+                item.Request.ChannelId, item.Request.ThreadId) { ApprovalReason = check.Reason }, token);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { }
+    }
+
+    private static string? ProviderOf(IChatTransport transport) => transport switch
+    {
+        MattermostWebSocketTransport => "mattermost",
+        SlackSocketModeTransport => "slack",
+        DiscordGatewayTransport => "discord",
+        _ => null
+    };
+
+    /// <summary>Records a connection lifecycle event. Audit failures never affect the connection itself.</summary>
+    private async Task AuditConnectionAsync(string? provider, string kind, string detail)
+    {
+        if (provider is null) return;
+        try { await _audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, kind, null, provider, "", "") { Detail = detail }); }
+        catch (Exception) { }
+    }
+
+    /// <summary>Records an app-level event that is not tied to a chat conversation.</summary>
+    private async Task AuditAppEventAsync(string kind, string detail)
+    {
+        try { await _audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, kind, null, "local", "", "") { Detail = detail }); }
+        catch (Exception) { }
     }
 
     private Task AuditAsync(string kind, ChatRequest request, Guid? executionId, CancellationToken token = default) =>
@@ -1393,21 +1456,25 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             }
             var previous = Volatile.Read(ref _accessSettings);
             Volatile.Write(ref _accessSettings, settings);
+            if (previous is not null && SettingsAuditChanges.Describe(previous, settings) is { Count: > 0 } changes)
+                await AuditAppEventAsync("settings_changed", string.Join(',', changes));
             if (_transport is IChatLiveAccessSettings live) live.UpdateAccessSettings(settings);
             if (_attachmentTransferActive && previous is not null && !SameAttachmentPolicy(previous, settings))
-                RequestExecutionCancellation();
+                RequestExecutionCancellation(CancellationReasons.AccessChanged);
             foreach (var item in Requests.Where(item => !HasAccess(settings, item.Request, item.Settings)))
             {
                 if (item.State == "承認待ち") item.State = "許可取り消し・実行不可";
                 item.ResultText = "";
             }
-            if (_activeItem is { } active && !HasAccess(settings, active.Request, active.Settings)) RequestExecutionCancellation();
+            if (_activeItem is { } active && !HasAccess(settings, active.Request, active.Settings))
+                RequestExecutionCancellation(CancellationReasons.AccessChanged);
             if (IsConnected && _connectionSettings is { } connected && ConnectionProvider is { } provider &&
                 !ChatConnectionPolicy.Matches(provider, settings, connected))
             {
                 // Old credentials or a different server/channel must never remain a green,
                 // apparently usable connection after the settings have been saved.
                 IsConnectionConfirmed = false;
+                _disconnectDetail = AuditCodes.DisconnectedSettingsChanged;
                 await DisconnectCoreAsync();
                 HasConnectionError = true;
                 Status = DesktopText.Get("InboxConnectionSettingsChanged");
@@ -1419,7 +1486,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         {
             SetConnectReadiness(null);
             Volatile.Write(ref _accessSettings, null);
-            RequestExecutionCancellation();
+            RequestExecutionCancellation(CancellationReasons.SettingsUnavailable);
             foreach (var item in Requests) { if (item.State == "承認待ち") item.State = "許可設定を確認できず実行不可"; item.ResultText = ""; }
             Status = DesktopText.Get("InboxPermissionsUnavailable");
             HasConnectionError = true;
@@ -1482,12 +1549,14 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         catch (Exception) { if (!_closing) Status += " " + DesktopText.Get("InboxConnectionNoticeFailed"); }
     }
 
-    private async Task FinishFailureAsync(ExecutionRecord record, string status, ChatRequest request)
+    private async Task FinishFailureAsync(ExecutionRecord record, string status, ChatRequest request,
+        string? cancellationReason = null)
     {
         try
         {
             await _history.RecordAsync(record with { FinishedAt = record.FinishedAt ?? DateTimeOffset.UtcNow, Status = status });
-            await AuditAsync(status, request, record.Id);
+            await _audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, status, record.Id, request.Provider,
+                request.ChannelId, request.ThreadId) { CancellationReason = cancellationReason });
         }
         catch (Exception) { Status += " " + DesktopText.Get("InboxAuditSaveFailed"); }
     }
@@ -1574,8 +1643,9 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 var binding = await _sessions.FindExecutionBindingAsync(key);
                 var effective = ConversationExecutionPolicy.GetEffectiveSettings(await _sessions.ApplyWorkspaceAsync(key, await _store.LoadAsync()), binding);
                 item.Workspace = effective.WorkspaceRoot;
-                if (await _sessions.RequiresApprovalAsync(key, effective, binding, switchCommand: switchesConversation))
+                if (await _sessions.CheckApprovalAsync(key, effective, binding, switchCommand: switchesConversation) is { Required: true } check)
                 {
+                    await AuditApprovalRequiredAsync(item, check, CancellationToken.None);
                     NotifyPendingRequest(item);
                     continue;
                 }
@@ -1649,13 +1719,15 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanCancel))]
     private void Cancel()
     {
-        if (CanCancel()) RequestExecutionCancellation();
+        if (CanCancel()) RequestExecutionCancellation(CancellationReasons.UserApp);
     }
 
-    private void RequestExecutionCancellation()
+    private void RequestExecutionCancellation(string reason)
     {
         var cancellation = _execution;
         if (cancellation is null || cancellation.IsCancellationRequested) return;
+        // The first reason wins: later requests only observe an execution that is already stopping.
+        _executionCancellationReason ??= reason;
         cancellation.Cancel();
         if (_activeItem is { } active)
             active.LiveOutput.IsCancellationPending = true;
@@ -1674,7 +1746,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         _nameLookupCancellation.Cancel();
         CloseAvatars();
         IsConnectionConfirmed = false;
-        RequestExecutionCancellation();
+        RequestExecutionCancellation(CancellationReasons.AppClosing);
         _connection?.Cancel();
         foreach (var item in Requests) item.LiveOutput.Dispose();
         _emptyLiveOutput.Dispose();

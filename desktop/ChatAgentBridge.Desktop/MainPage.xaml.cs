@@ -297,6 +297,7 @@ public sealed partial class MainPage : Page
         if (_agentProfileDetails is not null) await _agentProfileDetails.ShutdownAsync();
         ViewModel.CancelForWindowClose();
         InboxPage.ViewModel.Close();
+        var stopAudit = AppLifecycleAudit.RecordStoppedAsync();
         var tasks = new[]
         {
             ViewModel.RunCommand.ExecutionTask,
@@ -307,7 +308,8 @@ public sealed partial class MainPage : Page
             InboxPage.ViewModel.ConnectDiscordCommand.ExecutionTask,
             InboxPage.ViewModel.DisconnectCommand.ExecutionTask,
             InboxPage.ViewModel.WaitForConnectionShutdownAsync(),
-            KeepAwakeSettings.FlushPendingSaveAsync()
+            KeepAwakeSettings.FlushPendingSaveAsync(),
+            stopAudit
         }.OfType<Task>();
         try { await Task.WhenAll(tasks); }
         finally { await InboxPage.ViewModel.FlushConversationPersistenceAsync(); }
@@ -318,9 +320,13 @@ public sealed partial class MainPage : Page
     public static Style OverviewStatusDotStyle(OverviewIconState state) => (Style)Application.Current.Resources[state switch
     {
         OverviewIconState.Ready => "OverviewReadyDotStyle",
+        OverviewIconState.Warning => "OverviewAttentionDotStyle",
         OverviewIconState.Error => "OverviewErrorDotStyle",
         _ => "OverviewNeutralDotStyle"
     }];
+
+    public static Style OverviewCliStatusStyle(bool changed) => (Style)Application.Current.Resources[
+        changed ? "OverviewAttentionStatusStyle" : "OverviewSecondaryStatusStyle"];
 
     public static Style OverviewIconStyle(OverviewIconState state) => (Style)Application.Current.Resources[state switch
     {

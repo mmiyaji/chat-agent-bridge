@@ -1,6 +1,7 @@
 using System.Globalization;
 using ChatAgentBridge.Core;
 using ChatAgentBridge.Core.Localization;
+using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Transports;
 using ChatAgentBridge_Desktop.Localization;
 
@@ -260,6 +261,42 @@ public sealed partial class ChatInboxViewModel
         await item.Progress.FinishAsync(state, cancellationToken);
         if (state is ChatProgressState.FollowUpApplied or ChatProgressState.FollowUpUncertain)
             await item.Progress.DisposeAsync();
+    }
+
+    /// <summary>
+    /// Nothing in this app asked to stop, yet the run ended as cancelled: the agent runner gave up on its own.
+    /// </summary>
+    private string ResolveCancellationReason() => _executionCancellationReason ?? CancellationReasons.AgentAborted;
+
+    /// <summary>
+    /// Finishes an execution's progress post. When the original connection can no longer edit it (for example after a
+    /// reconnect), the current connection edits the same post, or as a last resort replies with the final state, so
+    /// the chat never keeps showing a stopped execution as running.
+    /// </summary>
+    private async Task FinishExecutionProgressAsync(InboxItem item, ChatProgressState state)
+    {
+        if (item.Progress is not { } progress) return;
+        await item.ReceiptNotification;
+        bool delivered;
+        try { delivered = await progress.FinishAsync(state); }
+        catch (Exception) { delivered = false; }
+        if (delivered || progress.Message is not { } message || progress.FormatTerminal(state) is not { } text) return;
+        if (_transport is not { } current || ReferenceEquals(current, item.Transport) ||
+            current.GetType() != item.Transport.GetType() ||
+            Volatile.Read(ref _accessSettings) is not { } settings || !HasAccess(settings, item.Request, item.Settings))
+            return;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        try
+        {
+            if (current is IChatProgressTransport progressTransport)
+            {
+                await progressTransport.UpdateProgressAsync(item.Request, message, text, timeout.Token);
+                return;
+            }
+        }
+        catch (Exception) { }
+        try { await current.ReplyAsync(item.Request, DesktopText.Get("InboxExecutionStateChatNotice", item.StateDisplay), timeout.Token); }
+        catch (Exception) { ProgressNotice = DesktopText.Get("ProgressNoticeFailed"); }
     }
 
     private async Task FinishConnectionProgressAsync(IChatTransport transport)

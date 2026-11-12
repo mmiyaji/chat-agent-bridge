@@ -17,7 +17,9 @@ public partial class MainPageViewModel
     public partial bool IsCheckingCli { get; set; }
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowCliCheckSummary))] public partial bool CliCheckSucceeded { get; set; }
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowCliCheckSummary))] public partial bool CliCheckFailed { get; set; }
-    public bool ShowCliCheckSummary => !CliCheckFailed && !CliCheckSucceeded;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowCliCheckSummary))] public partial bool CliExecutableChanged { get; set; }
+    partial void OnCliExecutableChangedChanged(bool value) => RefreshOverviewStatus();
+    public bool ShowCliCheckSummary => !CliCheckFailed && !CliCheckSucceeded && !CliExecutableChanged;
     [ObservableProperty] public partial string CliVersion { get; set; } = ViewModelText.Get("NotChecked");
     [ObservableProperty] public partial string CliExecutablePath { get; set; } = "";
     [ObservableProperty] public partial string CliCheckSummary { get; set; } = ViewModelText.Get("CliCheckIntro");
@@ -54,6 +56,7 @@ public partial class MainPageViewModel
             {
                 CancelCliCheck();
                 CliCheckSucceeded = false;
+                CliExecutableChanged = false;
                 IsCliCheckRestored = false;
                 _checkedCliSignature = null;
                 _checkedConnectionSignature = null;
@@ -72,6 +75,7 @@ public partial class MainPageViewModel
     {
         ClearCliTrustRecovery();
         CliCheckSucceeded = false;
+        CliExecutableChanged = false;
         IsCliCheckRestored = false;
         _ = ClearSavedCliVerificationAsync();
         CliCheckFailed = false;
@@ -93,6 +97,7 @@ public partial class MainPageViewModel
         var signature = CurrentCliSignature();
         ClearCliTrustRecovery();
         CliCheckSucceeded = false;
+        CliExecutableChanged = false;
         IsCliCheckRestored = false;
         CliCheckFailed = false;
         _checkedCliSignature = null;
@@ -177,6 +182,7 @@ public partial class MainPageViewModel
         IsCheckingCli = false;
         CliCheckSucceeded = false;
         IsCliCheckRestored = false;
+        CliExecutableChanged = false;
         CliCheckFailed = false;
         _checkedCliSignature = null;
         _checkedConnectionSignature = null;

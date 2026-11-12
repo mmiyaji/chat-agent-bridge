@@ -28,45 +28,80 @@ function Check([string]$Name, [scriptblock]$Action) {
 
 # Refuse to edit settings unless the running app uses the requested test directory.
 Invoke-UI @('invoke', 'NavOverview')
+# The settings location sits inside the collapsed technical-details expander.
+Invoke-UI @('invoke', 'SavedSettingsDetails')
 Invoke-UI @('wait-for', 'SettingsLocation', '--value', [System.IO.Path]::GetFullPath($DataDirectory), '-t', '5000')
+
+# Security-relevant edits ask for confirmation ("確認して保存") when the edited scope is left or checked.
+function Confirm-SettingsSave {
+    & winapp ui wait-for PrimaryButton -t 3000 -a $AppPid | Out-Null
+    if ($LASTEXITCODE -eq 0) { Invoke-UI @('invoke', 'PrimaryButton') }
+}
+function Select-AgentScope([string]$Scope) {
+    Invoke-UI @('invoke', $Scope)
+    Confirm-SettingsSave
+    # A pending confirmation cancels the first navigation, so select the scope again.
+    Invoke-UI @('invoke', $Scope)
+}
+function Read-Settings { Get-Content -LiteralPath (Join-Path $DataDirectory 'settings.json') -Raw | ConvertFrom-Json }
+function Wait-Settings([scriptblock]$Condition, [string]$Message) {
+    for ($i = 0; $i -lt 20; $i++) { if (& $Condition (Read-Settings)) { return }; Start-Sleep -Milliseconds 250 }
+    throw $Message
+}
+# Each changed field is confirmed separately and a confirmation consumes the check request, so keep checking
+# (confirming any dialog) until the profile can be used.
+function Invoke-CliCheck {
+    for ($i = 0; $i -lt 6; $i++) {
+        & winapp ui wait-for PrimaryButton -t 1000 -a $AppPid | Out-Null
+        if ($LASTEXITCODE -eq 0) { Invoke-UI @('invoke', 'PrimaryButton') }
+        Invoke-UI @('invoke', 'CheckCli')
+        & winapp ui wait-for UseAgentProfile -p IsEnabled --value True -t 8000 -a $AppPid | Out-Null
+        if ($LASTEXITCODE -eq 0) { return }
+    }
+    throw 'CLI check did not enable the profile.'
+}
+$fixtureExecutable = (Get-Command pwsh -ErrorAction Stop).Source
+$fixtureArguments = '-NoProfile -NonInteractive -Command "[Console]::Write([Console]::In.ReadToEnd())"'
 
 Check 'Navigation and initialized settings' {
     Invoke-UI @('wait-for', 'NavOverview', '-t', '5000')
     Invoke-UI @('invoke', 'NavAgentSettings')
-    Invoke-UI @('wait-for', 'AgentProvider', '-t', '3000')
+    Invoke-UI @('wait-for', 'AgentScopeCommon', '-t', '3000')
+    Select-AgentScope 'AgentScopeCommon'
     Invoke-UI @('wait-for', 'WorkspaceRoot', '-t', '3000')
     Invoke-UI @('invoke', 'NavWorkbench')
     Invoke-UI @('wait-for', 'Prompt', '-t', '3000')
-    Invoke-UI @('wait-for', 'RunAgent', '-p', 'IsEnabled', '--value', 'True', '-t', '3000')
+    Invoke-UI @('wait-for', 'RunAgent', '-t', '3000')
 }
 
-Check 'Claude profile and model persist without running a paid model' {
+Check 'Workspace persists after confirmation' {
     Invoke-UI @('invoke', 'NavAgentSettings')
-    Select-ComboItem 'AgentProvider' 'ProviderOptionClaude'
-    Invoke-UI @('wait-for', 'AgentExecutable', '--value', 'claude', '-t', '3000')
-    Invoke-UI @('set-value', 'AgentModel', 'claude-smoke-model')
-    Invoke-UI @('invoke', 'SaveSettings')
-    Invoke-UI @('wait-for', 'Title', '--value', '設定を保存しました', '--contains', '-t', '3000')
-    $saved = Get-Content -LiteralPath (Join-Path $DataDirectory 'settings.json') -Raw | ConvertFrom-Json
-    if ($saved.AgentProvider -ne 'claude' -or $saved.AgentExecutable -ne 'claude' -or
-        $saved.AgentArguments -ne '--print --output-format stream-json --verbose' -or $saved.AgentModel -ne 'claude-smoke-model') {
-        throw 'Claude profile executable, arguments, or model were not persisted.'
-    }
-}
-
-Check 'Select custom PowerShell fixture and save isolated settings' {
-    Invoke-UI @('invoke', 'NavAgentSettings')
-    Select-ComboItem 'AgentProvider' 'ProviderOptionCustom'
+    Select-AgentScope 'AgentScopeCommon'
     Invoke-UI @('set-value', 'WorkspaceRoot', $DataDirectory)
-    Invoke-UI @('set-value', 'AgentExecutable', 'powershell.exe')
-    Invoke-UI @('set-value', 'AgentArguments', '-NoProfile -NonInteractive -Command "[Console]::Write([Console]::In.ReadToEnd())"')
-    Invoke-UI @('invoke', 'SaveSettings')
-    Invoke-UI @('wait-for', 'Title', '--value', '設定を保存しました', '--contains', '-t', '3000')
-    $saved = Get-Content -LiteralPath (Join-Path $DataDirectory 'settings.json') -Raw | ConvertFrom-Json
-    if ($saved.AgentProvider -ne 'custom' -or $saved.AgentModel -or $saved.WorkspaceRoot -ne $DataDirectory -or
-        $saved.AgentExecutable -ne 'powershell.exe' -or $saved.AgentArguments -ne '-NoProfile -NonInteractive -Command "[Console]::Write([Console]::In.ReadToEnd())"') {
-        throw 'Custom PowerShell profile or workspace was not persisted.'
-    }
+    Select-AgentScope 'AgentScopeClaude'
+    Wait-Settings { param($s) $s.WorkspaceRoot -eq $DataDirectory } 'Confirmed workspace was not persisted.'
+}
+
+Check 'Claude profile shows its defaults without running a paid model' {
+    Invoke-UI @('invoke', 'NavAgentSettings')
+    Select-AgentScope 'AgentScopeClaude'
+    Invoke-UI @('wait-for', 'AgentExecutable', '--value', 'claude', '-t', '3000')
+    Invoke-UI @('wait-for', 'CheckCli', '-t', '3000')
+    if ((Read-Settings).AgentProvider -eq 'claude') { throw 'Viewing the Claude profile switched the active agent.' }
+}
+
+Check 'Custom PowerShell fixture can be checked and used' {
+    Invoke-UI @('invoke', 'NavAgentSettings')
+    Select-AgentScope 'AgentScopeCustom'
+    Invoke-UI @('set-value', 'AgentExecutable', $fixtureExecutable)
+    Invoke-UI @('invoke', 'AgentProfileDetails')
+    Invoke-UI @('set-value', 'AgentArguments', $fixtureArguments)
+    Invoke-CliCheck
+    Invoke-UI @('wait-for', 'UseAgentProfile', '-p', 'IsEnabled', '--value', 'True', '-t', '20000')
+    Invoke-UI @('invoke', 'UseAgentProfile')
+    Confirm-SettingsSave
+    Wait-Settings { param($s) $s.AgentProvider -eq 'custom' -and $s.AgentExecutable -eq $fixtureExecutable -and
+        $s.AgentArguments -eq $fixtureArguments -and $s.WorkspaceRoot -eq $DataDirectory } 'Custom PowerShell profile was not activated.'
     Invoke-UI @('invoke', 'NavWorkbench')
     Invoke-UI @('wait-for', 'RunAgent', '-p', 'IsEnabled', '--value', 'True', '-t', '3000')
 }
@@ -87,10 +122,13 @@ Check 'Approved local stdin output' {
 }
 Check 'Connections and chat navigation' {
     Invoke-UI @('invoke', 'NavConnections')
+    Invoke-UI @('invoke', 'ConnectionScopeMattermost')
     Invoke-UI @('wait-for', 'MattermostServerUrl', '-t', '3000')
     Invoke-UI @('invoke', 'NavChat')
     Invoke-UI @('wait-for', 'ConnectMattermost', '-t', '3000')
-    Invoke-UI @('wait-for', 'ApproveChat', '-p', 'IsEnabled', '--value', 'False', '-t', '3000')
+    # Approve/reject actions only exist while a chat request is pending; none is pending here.
+    & winapp ui wait-for ApproveChat -t 1000 -a $AppPid | Out-Null
+    if ($LASTEXITCODE -eq 0) { throw 'An approval action is shown without a pending chat request.' }
 }
 Check 'Durable execution metadata and history navigation' {
     Invoke-UI @('invoke', 'NavHistory')
@@ -102,8 +140,10 @@ Check 'Durable execution metadata and history navigation' {
     $history = $historyText | ConvertFrom-Json
     if (-not ($history.Records | Where-Object { $_.Source -eq 'local' -and $_.Status -eq 'completed' })) { throw 'Completed execution metadata was not persisted.' }
     if ($historyText.Contains('winui-smoke-no-model') -or $historyText -match '"(Prompt|Output|Error)"\s*:') { throw 'History leaked prompt or output.' }
-    $audit = Get-Content -LiteralPath (Join-Path $DataDirectory 'audit.json') -Raw | ConvertFrom-Json
-    if (-not ($audit.Records | Where-Object { $_.Kind -eq 'completed' })) { throw 'Completion audit event was not persisted.' }
+    # The audit log is append-only JSONL segments (one event per line).
+    $audit = Get-ChildItem -LiteralPath $DataDirectory -Filter 'audit-segment-*.jsonl' | Get-Content |
+        Where-Object { $_.Trim() } | ForEach-Object { $_ | ConvertFrom-Json }
+    if (-not ($audit | Where-Object { $_.Kind -eq 'completed' })) { throw 'Completion audit event was not persisted.' }
 }
 if ($TestSessionDetach) {
     Check 'Session detach confirmation and persistence' {

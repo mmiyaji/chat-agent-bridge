@@ -5,6 +5,42 @@ namespace ChatAgentBridge.Core.Tests;
 public sealed class ConversationPolicyTests
 {
     [Fact]
+    public async Task ReapprovalReasonNamesChangedComponents()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "cab-reapproval-reason-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new SessionStore(directory);
+            var settings = Settings;
+            Assert.Equal(ApprovalCheck.NewConversation, (await store.CheckApprovalAsync(Owner, settings, null)).Reason);
+            await store.SaveAsync(new SessionBinding(Owner, settings.WorkspaceRoot, "codex", "exec --json -",
+                Guid.NewGuid().ToString(), DateTimeOffset.UtcNow));
+            var binding = await store.FindAsync(Owner);
+            Assert.Equal(ApprovalCheck.NoPriorApproval, (await store.CheckApprovalAsync(Owner, settings, binding)).Reason);
+
+            await store.SetFirstApprovalFingerprintAsync(Owner, ConversationExecutionPolicy.GetFingerprint(Owner, settings),
+                ConversationExecutionPolicy.GetFingerprintComponents(Owner, settings));
+            binding = await new SessionStore(directory).FindAsync(Owner);
+            Assert.False((await store.CheckApprovalAsync(Owner, settings, binding)).Required);
+            Assert.False((await store.CheckApprovalAsync(Owner, settings with { AgentModel = "other" }, binding)).Required);
+
+            var changed = await store.CheckApprovalAsync(Owner,
+                settings with { AgentExecutable = @"C:\tools\codex.exe", SlackBotToken = "rotated" }, binding);
+            Assert.True(changed.Required);
+            Assert.Equal("changed:executable,credentials", changed.Reason);
+            Assert.DoesNotContain("tools", changed.Reason);
+
+            await store.SetFirstApprovalFingerprintAsync(Owner, ConversationExecutionPolicy.GetFingerprint(Owner, settings));
+            binding = await store.FindAsync(Owner);
+            Assert.Equal(ApprovalCheck.ChangedUnknown,
+                (await store.CheckApprovalAsync(Owner, settings with { AgentArguments = "x" }, binding)).Reason);
+            Assert.Equal(ApprovalCheck.AlwaysMode,
+                (await store.CheckApprovalAsync(Owner, settings with { ChatApprovalMode = "always" }, binding)).Reason);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Fact]
     public async Task FirstApprovalSurvivesStoreNormalizationAndReload()
     {
         var directory = Path.Combine(Path.GetTempPath(), "cab-first-consent-" + Guid.NewGuid().ToString("N"));

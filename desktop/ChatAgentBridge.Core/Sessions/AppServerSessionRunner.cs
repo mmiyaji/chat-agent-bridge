@@ -52,7 +52,8 @@ public sealed class AppServerSessionRunner(SessionStore store, IAppServerRunner?
 
             await store.SaveAsync(new SessionBinding(key, workspace, executable, "app-server", actualId.ToString("D"), DateTimeOffset.UtcNow,
                 existing?.Model, existing?.ReasoningEffort, existing?.ChatApprovalMode, existing?.ChatResultMode,
-                existing?.AgentPermissionMode, existing?.FirstApprovalFingerprint), CancellationToken.None).ConfigureAwait(false);
+                existing?.AgentPermissionMode, existing?.FirstApprovalFingerprint,
+                FirstApprovalComponents: existing?.FirstApprovalComponents), CancellationToken.None).ConfigureAwait(false);
             return run.Result;
         }, cancellationToken);
     }

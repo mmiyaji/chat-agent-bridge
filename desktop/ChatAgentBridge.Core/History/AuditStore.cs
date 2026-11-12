@@ -19,7 +19,8 @@ public sealed class AuditStore
         "reply_failed", "detached", "workspace_changed", "model_changed", "agent_changed",
         "attachment_approved", "attachment_sent", "attachment_failed", "follow_up_applied", "follow_up_uncertain",
         "schedule_created", "schedule_removed", "schedule_fired", "schedule_skipped", "execution_exception",
-        "access_requested", "access_allowed", "access_allowed_once", "access_denied", "allowed_user_added", "allowed_user_removed"
+        "approval_required", "connected", "reconnecting", "connection_lost", "disconnected", "app_started", "app_stopped",
+        "settings_changed", "access_requested", "access_allowed", "access_allowed_once", "access_denied", "allowed_user_added", "allowed_user_removed"
     };
     private const int MaxEntryBytes = 16 * 1024;
     private const int MaxSegmentBytes = 16 * 1024 * 1024;
@@ -476,6 +477,20 @@ public sealed class AuditStore
         if (AuditEvent.IsAccessKind(record.Kind) != (record.Access is not null))
             throw new ArgumentException("Access details require an access event.", nameof(record));
         record.Access?.Validate();
+        if ((record.Kind == "approval_required") != (record.ApprovalReason is not null) ||
+            record.ApprovalReason is not null && !AuditEvent.IsValidApprovalReason(record.ApprovalReason))
+            throw new ArgumentException("Approval reasons require a valid approval_required event.", nameof(record));
+        if (record.CancellationReason is not null &&
+            (record.Kind != "cancelled" || !CancellationReasons.IsKnown(record.CancellationReason)))
+            throw new ArgumentException("Cancellation reasons require a valid cancelled event.", nameof(record));
+        if (record.Detail is not null && (!AuditEvent.CanHaveDetail(record.Kind) || !AuditCodes.IsValidDetail(record.Detail)))
+            throw new ArgumentException("Audit detail is not valid for this event.", nameof(record));
+        if (record.Execution is not null && record.Kind != "started")
+            throw new ArgumentException("Execution context requires a started event.", nameof(record));
+        record.Execution?.Validate();
+        if (record.Failure is not null && record.Kind != "failed")
+            throw new ArgumentException("Failure details require a failed event.", nameof(record));
+        record.Failure?.Validate();
     }
 
     private static void ValidateLoaded(AuditEvent? record)

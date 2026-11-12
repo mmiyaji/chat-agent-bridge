@@ -110,7 +110,10 @@
     <value>The version was confirmed, but model options could not be retrieved. Check the CLI login and network, then try again.</value>
   </data>
   <data name="CliSettingsChanged" xml:space="preserve">
-    <value>The CLI or working folder settings changed. Run the check again.</value>
+    <value>The CLI or its settings changed, so it needs to be checked again. Select Check CLI. You can also recheck here after updating the CLI.</value>
+  </data>
+  <data name="CliExecutableChangedNotice" xml:space="preserve">
+    <value>The CLI executable has changed. After an update or replacement, check that it starts and review the model options.</value>
   </data>
   <data name="CliStartedFetchingModels" xml:space="preserve">
     <value>The CLI started successfully. Checking model options…</value>
@@ -260,7 +263,7 @@
     <value>Not allowed</value>
   </data>
   <data name="NotChecked" xml:space="preserve">
-    <value>Not checked</value>
+    <value>Check required</value>
   </data>
   <data name="NotLoaded" xml:space="preserve">
     <value>Not loaded</value>
@@ -610,7 +613,10 @@ Internal user ID: {2}</value></data>
     <value>Disconnected</value>
   </data>
   <data name="OverviewCliNotChecked" xml:space="preserve">
-    <value>Not checked</value>
+    <value>Check required</value>
+  </data>
+  <data name="OverviewCliChanged" xml:space="preserve">
+    <value>CLI changed · check required</value>
   </data>
   <data name="OverviewCliVerified" xml:space="preserve">
     <value>Check passed</value>

@@ -221,6 +221,15 @@
   <data name="AuditReplyFailed" xml:space="preserve"><value>状態通知に失敗</value></data>
   <data name="AuditReplySent" xml:space="preserve"><value>結果を送信</value></data>
   <data name="AuditDetached" xml:space="preserve"><value>セッションを切り離し</value></data>
+  <data name="AuditFilter_approval_required" xml:space="preserve"><value>承認待ち</value></data>
+  <data name="AuditApprovalRequired" xml:space="preserve"><value>承認待ち（理由: {0}）</value></data>
+  <data name="AuditConnected" xml:space="preserve"><value>接続</value></data>
+  <data name="AuditReconnecting" xml:space="preserve"><value>再接続中</value></data>
+  <data name="AuditConnectionLost" xml:space="preserve"><value>接続が切れた</value></data>
+  <data name="AuditDisconnected" xml:space="preserve"><value>切断</value></data>
+  <data name="AuditAppStarted" xml:space="preserve"><value>アプリ起動</value></data>
+  <data name="AuditAppStopped" xml:space="preserve"><value>アプリ終了</value></data>
+  <data name="AuditSettingsChanged" xml:space="preserve"><value>設定変更</value></data>
   <data name="AuditWorkspaceChanged" xml:space="preserve"><value>作業フォルダーを変更</value></data>
   <data name="AuditOther" xml:space="preserve"><value>その他の操作</value></data>
   <data name="AttachmentsExcluded" xml:space="preserve"><value>送信対象外: {0}件（{1}）。設定・認証情報・プログラムらしい名前のファイルは送りません。</value></data>

@@ -110,7 +110,10 @@
     <value>バージョンは確認できましたが、モデル候補を取得できませんでした。CLIへのログインとネットワークを確認し、再チェックしてください。</value>
   </data>
   <data name="CliSettingsChanged" xml:space="preserve">
-    <value>CLIまたは作業フォルダーの設定が変わりました。もう一度チェックしてください。</value>
+    <value>CLI本体または設定が変わったため、再確認が必要です。「CLIをチェック」を押してください。CLIを更新したあとも、ここで確認し直せます。</value>
+  </data>
+  <data name="CliExecutableChangedNotice" xml:space="preserve">
+    <value>CLIの実行ファイルが変わりました。更新や入れ替えのあとに、起動とモデル候補を再確認してください。</value>
   </data>
   <data name="CliStartedFetchingModels" xml:space="preserve">
     <value>CLIを起動できました。続いてモデル候補を確認しています…</value>
@@ -260,7 +263,7 @@
     <value>不許可</value>
   </data>
   <data name="NotChecked" xml:space="preserve">
-    <value>未確認</value>
+    <value>確認が必要</value>
   </data>
   <data name="NotLoaded" xml:space="preserve">
     <value>未読み込み</value>
@@ -610,7 +613,10 @@ AIの操作権限: {8}</value>
     <value>未接続</value>
   </data>
   <data name="OverviewCliNotChecked" xml:space="preserve">
-    <value>未確認</value>
+    <value>確認が必要</value>
+  </data>
+  <data name="OverviewCliChanged" xml:space="preserve">
+    <value>CLI変更あり・要再確認</value>
   </data>
   <data name="OverviewCliVerified" xml:space="preserve">
     <value>確認済み</value>

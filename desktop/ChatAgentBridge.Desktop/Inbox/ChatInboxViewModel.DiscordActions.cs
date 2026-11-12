@@ -1,3 +1,4 @@
+using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Transports;
 using ChatAgentBridge_Desktop.Localization;
 
@@ -63,7 +64,7 @@ public sealed partial class ChatInboxViewModel
                     return;
                 }
                 var result = decision == ChatActionDecision.Approve
-                    ? await ApproveNotificationAsync(item) : await RejectNotificationAsync(item);
+                    ? await ApproveNotificationAsync(item, AuditCodes.ApprovedInChat) : await RejectNotificationAsync(item);
                 completion.TrySetResult(result switch
                 {
                     Notifications.PendingNotificationActionResult.Completed => ChatActionResult.Completed,

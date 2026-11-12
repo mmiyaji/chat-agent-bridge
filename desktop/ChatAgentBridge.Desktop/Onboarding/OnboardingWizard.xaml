@@ -83,7 +83,7 @@
                         <ProgressRing IsActive="{x:Bind ViewModel.IsCheckingCli, Mode=OneWay}" Width="20" Height="20" VerticalAlignment="Center" />
                     </StackPanel>
                     <InfoBar x:Uid="CliCheckError" Severity="Error" IsClosable="False"
-                             IsOpen="{x:Bind ViewModel.CliCheckFailed, Mode=OneWay}"
+                             IsOpen="{x:Bind ViewModel.CliCheckFailed, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.CliCheckFailed), Mode=OneWay}"
                              Message="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
                              AutomationProperties.Name="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
                              AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardCliCheckError">
@@ -94,7 +94,7 @@
                         </InfoBar.ActionButton>
                     </InfoBar>
                     <InfoBar x:Uid="CliCheckSuccess" Severity="Success" IsClosable="False"
-                             IsOpen="{x:Bind ViewModel.CliCheckSucceeded, Mode=OneWay}"
+                             IsOpen="{x:Bind ViewModel.CliCheckSucceeded, Mode=OneWay}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.CliCheckSucceeded), Mode=OneWay}"
                              Message="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
                              AutomationProperties.Name="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}"
                              AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="WizardCliCheckSuccess" />
@@ -104,7 +104,7 @@
                     </StackPanel>
                     <TextBlock Text="{x:Bind ViewModel.CliCheckSummary, Mode=OneWay}" TextWrapping="Wrap"
                                Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.ShowCliCheckSummary), Mode=OneWay}" AutomationProperties.AutomationId="CliCheckSummary" />
-                    <Grid ColumnSpacing="16" RowSpacing="4">
+                    <Grid ColumnSpacing="16" RowSpacing="4" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.CliCheckSucceeded), Mode=OneWay}">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                         <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock006" x:Uid="onboardingOnboardingWizardTextBlock006" />

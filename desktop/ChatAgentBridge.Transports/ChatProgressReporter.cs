@@ -27,6 +27,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan LifecycleWaitLimit = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan DefaultRequestUpdateInterval = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan TerminalRetryDelay = TimeSpan.FromSeconds(1);
 
     private readonly IChatProgressTransport? _transport;
     private readonly IChatProgressLifecycleTransport? _lifecycleTransport;
@@ -55,6 +56,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     private bool _updateRequested;
     private long _lastEditTimestamp;
     private bool _hasEdited;
+    private bool _lastUpdateReachedProvider;
 
     public ChatProgressReporter(
         IChatTransport transport,
@@ -193,16 +195,26 @@ public sealed class ChatProgressReporter : IAsyncDisposable
         catch (Exception ex) { ReportFailure(ex); }
     }
 
-    public async Task FinishAsync(ChatProgressState terminal, CancellationToken cancellationToken = default)
+    /// <summary>The posted progress message, if any, so a caller can deliver the terminal state another way.</summary>
+    public ChatProgressMessage? Message => _message;
+
+    /// <summary>Text for a terminal state at the current elapsed time, or null when formatting fails.</summary>
+    public string? FormatTerminal(ChatProgressState terminal) => IsTerminalState(terminal) ? Format(terminal) : null;
+
+    /// <summary>
+    /// Publishes the terminal state. Returns false only when a progress post exists but its terminal edit could not be
+    /// delivered (publishing refused or the provider failed twice), so the caller can fall back to another route.
+    /// </summary>
+    public async Task<bool> FinishAsync(ChatProgressState terminal, CancellationToken cancellationToken = default)
     {
         if (!IsTerminalState(terminal) || _transport is null)
-            return;
+            return true;
         if (!await EnterLifecycleAsync(cancellationToken).ConfigureAwait(false))
-            return;
+            return _message is null;
         try
         {
             if (_terminal || _disposed)
-                return;
+                return true;
 
             // Close the state transition before stopping the heartbeat. A tick that has not already
             // entered its provider call will observe this flag and cannot publish a stale Running edit.
@@ -213,10 +225,19 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             _elapsed.Stop();
 
             if (_message is null)
-                return;
+                return true;
             var text = Format(terminal);
-            if (text is not null)
-                await TryUpdateAsync(_message, text, cancellationToken, allowTerminal: true).ConfigureAwait(false);
+            if (text is null)
+                return false;
+            if (await TryUpdateAsync(_message, text, cancellationToken, allowTerminal: true).ConfigureAwait(false))
+                return true;
+            // Publishing refused (access or connection changed): retrying here cannot help; the caller may fall back.
+            if (!_lastUpdateReachedProvider)
+                return false;
+            // A stale "running" post is the worst outcome for the requester, so give a transient failure one more try.
+            try { await Task.Delay(TerminalRetryDelay, cancellationToken).ConfigureAwait(false); }
+            catch (OperationCanceledException) { return false; }
+            return await TryUpdateAsync(_message, text, cancellationToken, allowTerminal: true).ConfigureAwait(false);
         }
         finally
         {
@@ -278,20 +299,25 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             token => _transport.PostProgressAsync(_request, text, token), callerToken).ConfigureAwait(false);
     }
 
-    private async Task TryUpdateAsync(ChatProgressMessage message, string text, CancellationToken callerToken, bool allowTerminal)
+    private async Task<bool> TryUpdateAsync(ChatProgressMessage message, string text, CancellationToken callerToken, bool allowTerminal)
     {
         if (_transport is null || _disposed || _terminal && !allowTerminal ||
             !await CanPublishAsync(callerToken).ConfigureAwait(false) ||
             _disposed || _terminal && !allowTerminal)
-            return;
+        {
+            _lastUpdateReachedProvider = false;
+            return false;
+        }
 
-        await InvokeProviderAsync(async token =>
+        _lastUpdateReachedProvider = true;
+        var delivered = await InvokeProviderAsync(async token =>
         {
             await _transport.UpdateProgressAsync(_request, message, text, token).ConfigureAwait(false);
             return true;
         }, callerToken).ConfigureAwait(false);
         _lastEditTimestamp = Stopwatch.GetTimestamp();
         _hasEdited = true;
+        return delivered;
     }
 
     private async Task<T?> InvokeProviderAsync<T>(Func<CancellationToken, Task<T>> invoke, CancellationToken callerToken)

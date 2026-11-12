@@ -105,6 +105,38 @@ public sealed class CliVerificationStore
         finally { _gate.Release(); }
     }
 
+    /// <summary>Returns true when the saved CLI context still matches but a verified executable file changed.</summary>
+    public async Task<bool> HasChangedExecutableAsync(BridgeSettings settings, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var info = new FileInfo(_path);
+            if (!info.Exists || info.Length is <= 0 or > MaxFileBytes) return false;
+            await using var stream = new FileStream(_path, FileMode.Open, FileAccess.Read,
+                FileShare.Read | FileShare.Delete, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            if (stream.Length is <= 0 or > MaxFileBytes) return false;
+            var bytes = new byte[(int)stream.Length];
+            await stream.ReadExactlyAsync(bytes, cancellationToken).ConfigureAwait(false);
+            var doc = JsonSerializer.Deserialize<CacheDocument>(bytes, JsonOptions);
+            if (doc is null || doc.SchemaVersion != SchemaVersion || doc.Probe is null ||
+                !IsValidSignature(doc.ContextFingerprint)) return false;
+            var savedFingerprint = doc.ContextFingerprint!;
+            var launch = CliProbeService.ResolveLaunch(settings);
+            var fingerprint = CreateContextFingerprint(settings, launch);
+            if (!CryptographicOperations.FixedTimeEquals(Convert.FromHexString(fingerprint), Convert.FromHexString(savedFingerprint)) ||
+                !PathEquals(doc.Probe.Executable, launch.Executable)) return false;
+            return !StampsMatch(doc.Stamps, GetStamps(launch));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException or
+                                      NotSupportedException or System.Security.SecurityException or FormatException or OverflowException)
+        { return false; }
+        finally { _gate.Release(); }
+    }
+
     private async Task<CachedCliVerification?> LoadCoreAsync(BridgeSettings settings, CancellationToken cancellationToken)
     {
         var doc = await LoadValidatedDocumentAsync(settings, cancellationToken).ConfigureAwait(false);

@@ -222,6 +222,15 @@
   <data name="AuditReplyFailed" xml:space="preserve"><value>Status notification failed</value></data>
   <data name="AuditReplySent" xml:space="preserve"><value>Result sent</value></data>
   <data name="AuditDetached" xml:space="preserve"><value>Session detached</value></data>
+  <data name="AuditFilter_approval_required" xml:space="preserve"><value>Approval required</value></data>
+  <data name="AuditApprovalRequired" xml:space="preserve"><value>Approval required (reason: {0})</value></data>
+  <data name="AuditConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="AuditReconnecting" xml:space="preserve"><value>Reconnecting</value></data>
+  <data name="AuditConnectionLost" xml:space="preserve"><value>Connection lost</value></data>
+  <data name="AuditDisconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="AuditAppStarted" xml:space="preserve"><value>App started</value></data>
+  <data name="AuditAppStopped" xml:space="preserve"><value>App stopped</value></data>
+  <data name="AuditSettingsChanged" xml:space="preserve"><value>Settings changed</value></data>
   <data name="AuditWorkspaceChanged" xml:space="preserve"><value>Workspace changed</value></data>
   <data name="AuditOther" xml:space="preserve"><value>Other action</value></data>
   <data name="AttachmentsExcluded" xml:space="preserve"><value>Not sent: {0} ({1}). Files named like settings, credentials or programs are never sent.</value></data>

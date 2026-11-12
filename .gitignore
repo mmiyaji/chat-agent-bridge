@@ -11,7 +11,8 @@ data/
 nodecheck-sandbox.js
 playwright-report/
 test-results/
-.claude/
+.claude/*
+!.claude/skills/
 .claude-*
 .test-*
 coverage/

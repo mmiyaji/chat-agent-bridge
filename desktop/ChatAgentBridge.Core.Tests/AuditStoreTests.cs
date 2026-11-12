@@ -9,6 +9,74 @@ namespace ChatAgentBridge.Core.Tests;
 public sealed class AuditStoreTests : IDisposable
 {
     [Fact]
+    public async Task ApprovalReasonSurvivesReload()
+    {
+        var record = Event() with { Kind = "approval_required", ApprovalReason = "changed:executable,credentials" };
+        await new AuditStore(_directory).AppendAsync(record);
+        Assert.Equal(record, Assert.Single(await new AuditStore(_directory).ListAsync()));
+    }
+
+    [Fact]
+    public async Task CancellationReasonIsStoredOnlyOnCancelledEvents()
+    {
+        var record = Event() with { Kind = "cancelled", ExecutionId = Guid.NewGuid(), CancellationReason = CancellationReasons.AgentAborted };
+        await new AuditStore(_directory).AppendAsync(record);
+        Assert.Equal(record, Assert.Single(await new AuditStore(_directory).ListAsync()));
+        await Assert.ThrowsAsync<ArgumentException>(() => new AuditStore(_directory).AppendAsync(
+            Event() with { Kind = "completed", CancellationReason = CancellationReasons.UserApp }));
+        await Assert.ThrowsAsync<ArgumentException>(() => new AuditStore(_directory).AppendAsync(
+            Event() with { Kind = "cancelled", CancellationReason = "C:/secret" }));
+    }
+
+    [Fact]
+    public async Task LifecycleDetailsRoundTripAndAreRestrictedToTheirEvents()
+    {
+        var settings = new BridgeSettings { WorkspaceRoot = Path.GetTempPath(), AgentProvider = AgentProfile.Claude,
+            AgentPermissionMode = "read-only", ChatApprovalMode = "first", AgentModel = "sonnet" };
+        var records = new[]
+        {
+            Event() with { Kind = "approved", Detail = AuditCodes.ApprovedInChat },
+            Event() with { Kind = "started", Execution = AuditExecutionContext.From(settings) },
+            Event() with { Kind = "failed", Failure = new AuditFailure(AuditFailure.ExitCodeCategory, 2) },
+            Event() with { Kind = "reconnecting", Detail = "attempt:3" },
+            Event() with { Kind = "app_started", Source = "local", ChannelId = "", ThreadId = "", Detail = "1.1.0" },
+            Event() with { Kind = "settings_changed", Source = "local", ChannelId = "", ThreadId = "", Detail = "chat_approval_mode,network" }
+        };
+        await new AuditStore(_directory).AppendManyAsync(records);
+        Assert.Equal(records.Reverse(), await new AuditStore(_directory).ListAsync());
+        Assert.DoesNotContain(Path.GetTempPath(), System.Text.Json.JsonSerializer.Serialize(records[1]));
+
+        var store = new AuditStore(_directory);
+        await Assert.ThrowsAsync<ArgumentException>(() => store.AppendAsync(Event() with { Kind = "completed", Detail = "auto" }));
+        await Assert.ThrowsAsync<ArgumentException>(() => store.AppendAsync(Event() with { Kind = "approved", Detail = "C:/path" }));
+        await Assert.ThrowsAsync<ArgumentException>(() => store.AppendAsync(
+            Event() with { Kind = "completed", Execution = AuditExecutionContext.From(settings) }));
+        await Assert.ThrowsAsync<ArgumentException>(() => store.AppendAsync(
+            Event() with { Kind = "failed", Failure = new AuditFailure("anything") }));
+    }
+
+    [Fact]
+    public void SettingsChangesNameOnlySecurityRelevantFields()
+    {
+        var before = new BridgeSettings { ChatApprovalMode = "first", SlackBotToken = "a" };
+        Assert.Empty(SettingsAuditChanges.Describe(before, before with { AgentModel = "other" }));
+        Assert.Equal(new[] { "chat_approval_mode", "credentials" },
+            SettingsAuditChanges.Describe(before, before with { ChatApprovalMode = "always", SlackBotToken = "b" }));
+    }
+
+    [Theory]
+    [InlineData("approval_required", null)]
+    [InlineData("received", "no_prior_approval")]
+    [InlineData("approval_required", "")]
+    [InlineData("approval_required", "Changed:Executable")]
+    [InlineData("approval_required", "changed:C:\tools")]
+    public async Task ApprovalReasonRequiresMatchingKindAndSafeCode(string kind, string? reason)
+    {
+        var record = Event() with { Kind = kind, ApprovalReason = reason };
+        await Assert.ThrowsAsync<ArgumentException>(() => new AuditStore(_directory).AppendAsync(record));
+    }
+
+    [Fact]
     public async Task ExecutionDiagnosticSurvivesReloadAndJsonExportWithoutExceptionPayload()
     {
         var diagnostic = ExecutionExceptionDiagnostic.Create(new UnauthorizedAccessException("PRIVATE_TOKEN C:\\private\\prompt.txt"));

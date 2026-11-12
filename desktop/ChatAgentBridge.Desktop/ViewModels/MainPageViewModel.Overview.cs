@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ChatAgentBridge_Desktop.ViewModels;
 
-public enum OverviewIconState { Neutral, Ready, Attention, Error }
+public enum OverviewIconState { Neutral, Ready, Attention, Warning, Error }
 
 public partial class MainPageViewModel
 {
@@ -93,10 +93,11 @@ public partial class MainPageViewModel
         var cliVerified = HasCurrentCliCheck();
         var cliChecking = IsCheckingCli;
         var cliFailed = loadFailed || CliCheckFailed;
-        var cliStatusKey = cliChecking ? "OverviewChecking" : cliVerified ? (IsCliCheckRestored ? "OverviewCliPreviouslyVerified" : "OverviewCliVerified") : cliFailed ? "OverviewCliFailed" : "OverviewCliNotChecked";
+        var cliStatusKey = cliChecking ? "OverviewChecking" : cliVerified ? (IsCliCheckRestored ? "OverviewCliPreviouslyVerified" : "OverviewCliVerified") : cliFailed ? "OverviewCliFailed" : CliExecutableChanged ? "OverviewCliChanged" : "OverviewCliNotChecked";
         OverviewCliStatus = ViewModelText.Get(cliStatusKey);
         OverviewCliGlyph = cliChecking ? OverviewPendingGlyph : cliFailed ? OverviewErrorGlyph : cliVerified ? OverviewCheckGlyph : OverviewWarningGlyph;
-        OverviewCliIconState = cliChecking || checking ? OverviewIconState.Neutral : cliFailed ? OverviewIconState.Error : cliVerified ? OverviewIconState.Ready : OverviewIconState.Attention;
+        OverviewCliIconState = cliChecking || checking ? OverviewIconState.Neutral : cliFailed ? OverviewIconState.Error
+            : cliVerified ? OverviewIconState.Ready : CliExecutableChanged ? OverviewIconState.Warning : OverviewIconState.Attention;
         OverviewCliProvider = checking || _settings is null || string.IsNullOrWhiteSpace(_settings.AgentExecutable) ? ""
             : ChatAgentBridge.Core.AgentProfile.ResolveProvider(_settings);
         OverviewCliTarget = checking || _settings is null || string.IsNullOrWhiteSpace(_settings.AgentExecutable) ? ""

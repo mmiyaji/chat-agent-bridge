@@ -1,4 +1,5 @@
 using ChatAgentBridge.Core;
+using ChatAgentBridge.Core.History;
 using ChatAgentBridge.Transports;
 using ChatAgentBridge_Desktop.Localization;
 
@@ -72,7 +73,7 @@ public sealed partial class ChatInboxViewModel
                 foreach (var item in pending) item.State = "キャンセル";
                 var active = own.Any(item => ReferenceEquals(item, _activeItem) && (item.State is "承認待ち" or "実行中")) &&
                     _execution is { IsCancellationRequested: false };
-                if (active) RequestExecutionCancellation();
+                if (active) RequestExecutionCancellation(CancellationReasons.UserChat);
                 reply = active || pending.Length > 0
                     ? DesktopText.Get("ChatControlStop", active ? 1 : 0, pending.Length)
                     : DesktopText.Get("ChatControlStopNone");
