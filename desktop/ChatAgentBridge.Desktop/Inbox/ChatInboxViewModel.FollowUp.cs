@@ -28,6 +28,7 @@ public sealed partial class ChatInboxViewModel
             if (completed.Progress is { } progress) _ = progress.DisposeAsync();
             _notifiedRequests.Remove(completed);
             _automaticallyAttempted.Remove(completed);
+            _approvalReasonsLogged.Remove(completed);
         }
         var incoming = new InboxItem(request, transport, settings);
         RecordAllowedUserRequest(request);

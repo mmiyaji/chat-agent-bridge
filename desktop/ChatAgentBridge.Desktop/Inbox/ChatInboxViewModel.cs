@@ -129,6 +129,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private CancellationTokenSource? _connection;
     private CancellationTokenSource? _execution;
     private string? _executionCancellationReason;
+    // The connection token the running execution is linked to; its cancellation also stops the execution.
+    private CancellationToken _executionConnectionToken;
     private string _notificationApprovalMethod = AuditCodes.ApprovedByNotification;
     private string _disconnectDetail = AuditCodes.DisconnectedByUser;
     private Task? _receiveTask;
@@ -791,6 +793,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             Requests.Clear();
             _notifiedRequests.Clear();
             _automaticallyAttempted.Clear();
+            _approvalReasonsLogged.Clear();
             Selected = null;
             _transport = transport;
             App.DispatcherQueue.TryEnqueue(StartScheduleTimer);
@@ -984,6 +987,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             var connection = _connection;
             if (connection is null || connection.IsCancellationRequested) return;
             _execution = CancellationTokenSource.CreateLinkedTokenSource(connection.Token);
+            _executionConnectionToken = connection.Token;
             _executionCancellationReason = null;
             CancelCommand.NotifyCanExecuteChanged();
             var token = _execution.Token;
@@ -1725,9 +1729,11 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     private void RequestExecutionCancellation(string reason)
     {
         var cancellation = _execution;
-        if (cancellation is null || cancellation.IsCancellationRequested) return;
-        // The first reason wins: later requests only observe an execution that is already stopping.
+        if (cancellation is null) return;
+        // The first reason wins. Record it even when the execution is already stopping: a dropped connection cancels
+        // the linked execution token before this call, and the reason must not be lost.
         _executionCancellationReason ??= reason;
+        if (cancellation.IsCancellationRequested) return;
         cancellation.Cancel();
         if (_activeItem is { } active)
             active.LiveOutput.IsCancellationPending = true;

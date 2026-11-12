@@ -264,9 +264,11 @@ public sealed partial class ChatInboxViewModel
     }
 
     /// <summary>
-    /// Nothing in this app asked to stop, yet the run ended as cancelled: the agent runner gave up on its own.
+    /// Why the run ended as cancelled. A cancelled connection token means the connection ended before anything
+    /// recorded a reason; otherwise nothing in this app asked to stop and the agent runner gave up on its own.
     /// </summary>
-    private string ResolveCancellationReason() => _executionCancellationReason ?? CancellationReasons.AgentAborted;
+    private string ResolveCancellationReason() => _executionCancellationReason ??
+        (_executionConnectionToken.IsCancellationRequested ? CancellationReasons.ConnectionLost : CancellationReasons.AgentAborted);
 
     /// <summary>
     /// Finishes an execution's progress post. When the original connection can no longer edit it (for example after a
@@ -283,7 +285,8 @@ public sealed partial class ChatInboxViewModel
         if (delivered || progress.Message is not { } message || progress.FormatTerminal(state) is not { } text) return;
         if (_transport is not { } current || ReferenceEquals(current, item.Transport) ||
             current.GetType() != item.Transport.GetType() ||
-            Volatile.Read(ref _accessSettings) is not { } settings || !HasAccess(settings, item.Request, item.Settings))
+            Volatile.Read(ref _accessSettings) is not { } settings || !HasAccess(settings, item.Request, item.Settings) ||
+            !IsSameChatAccount(item.Request.Provider, item.Settings, settings))
             return;
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         try
@@ -298,6 +301,19 @@ public sealed partial class ChatInboxViewModel
         try { await current.ReplyAsync(item.Request, DesktopText.Get("InboxExecutionStateChatNotice", item.StateDisplay), timeout.Token); }
         catch (Exception) { ProgressNotice = DesktopText.Get("ProgressNoticeFailed"); }
     }
+
+    /// <summary>
+    /// The current connection may edit or reply in the original thread only when it is the same bot on the same
+    /// server; after a server or token change the old post belongs to another account.
+    /// </summary>
+    private static bool IsSameChatAccount(string provider, BridgeSettings original, BridgeSettings current) => provider switch
+    {
+        "mattermost" => string.Equals(original.MattermostServerUrl, current.MattermostServerUrl, StringComparison.OrdinalIgnoreCase) &&
+            original.MattermostToken == current.MattermostToken,
+        "slack" => original.SlackBotToken == current.SlackBotToken,
+        "discord" => original.DiscordBotToken == current.DiscordBotToken,
+        _ => false
+    };
 
     private async Task FinishConnectionProgressAsync(IChatTransport transport)
     {
