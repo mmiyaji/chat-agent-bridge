@@ -422,6 +422,13 @@
   <data name="AppearanceFollowsSystem" xml:space="preserve"><value>Windowsのアプリの配色設定に合わせます。アプリ起動中の変更にも追従します。</value></data>
   <data name="AppearanceReadFailed" xml:space="preserve"><value>保存済みのテーマを読み込めなかったため、Windowsの設定に合わせています。選び直すと再保存できます。</value></data>
   <data name="AppearanceSaveFailed" xml:space="preserve"><value>テーマを保存できませんでした。以前の設定を維持しています。設定フォルダーへのアクセスを確認して再試行してください。</value></data>
+  <data name="AccentFollowsSystem" xml:space="preserve"><value>Windowsのアクセントカラーを使います。</value></data>
+  <data name="AccentSaved" xml:space="preserve"><value>日本の伝統色「{0}」をアクセントに使っています。ライトとダークで見やすい明るさに調整します。</value></data>
+  <data name="AccentSaveFailed" xml:space="preserve"><value>アクセントカラーを保存できませんでした。以前の設定を維持しています。</value></data>
+  <data name="AccentSystemOption" xml:space="preserve"><value>Windowsに合わせる</value></data>
+  <data name="AccentMoreOption" xml:space="preserve"><value>その他の色…（{0}色）</value></data>
+  <data name="AccentMoreTitle" xml:space="preserve"><value>アクセントカラーを選択</value></data>
+  <data name="AccentMoreCancel" xml:space="preserve"><value>キャンセル</value></data>
   <data name="AboutProductName" xml:space="preserve"><value>Chat Agent Bridge</value></data>
   <data name="AboutBuildTimestamp" xml:space="preserve"><value>{0:g} (UTC{0:zzz})</value></data>
   <data name="AboutBuildTimestampUnknown" xml:space="preserve"><value>不明</value></data>

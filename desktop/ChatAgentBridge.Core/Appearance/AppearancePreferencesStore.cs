@@ -2,7 +2,8 @@ using System.Text.Json;
 
 namespace ChatAgentBridge.Core.Appearance;
 
-public sealed record AppearancePreferences(string Theme = "system");
+/// <summary>Theme is system, light or dark; Accent is "system" (Windows accent) or an <see cref="AccentPalette"/> id.</summary>
+public sealed record AppearancePreferences(string Theme = "system", string Accent = AccentPalette.System);
 
 public sealed class AppearancePreferencesStore
 {
@@ -27,7 +28,10 @@ public sealed class AppearancePreferencesStore
                 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
             var stored = await JsonSerializer.DeserializeAsync<AppearancePreferences>(stream, JsonOptions, cancellationToken)
                 .ConfigureAwait(false);
-            return IsSupported(stored?.Theme) ? stored! : new AppearancePreferences();
+            if (stored is null) return new AppearancePreferences();
+            // An unknown theme or accent (older or edited file) falls back on its own without losing the other value.
+            return new AppearancePreferences(IsSupported(stored.Theme) ? stored.Theme : "system",
+                AccentPalette.IsSupported(stored.Accent) ? stored.Accent : AccentPalette.System);
         }
         catch (JsonException) { return new AppearancePreferences(); }
         catch (InvalidDataException) { return new AppearancePreferences(); }
@@ -38,6 +42,8 @@ public sealed class AppearancePreferencesStore
         ArgumentNullException.ThrowIfNull(preferences);
         if (!IsSupported(preferences.Theme))
             throw new ArgumentException("Theme must be system, light, or dark.", nameof(preferences));
+        if (!AccentPalette.IsSupported(preferences.Accent))
+            throw new ArgumentException("Accent must be system or a supported accent color.", nameof(preferences));
         Directory.CreateDirectory(DirectoryPath);
         var tempPath = Path.Combine(DirectoryPath, $"appearance.{Guid.NewGuid():N}.tmp");
         try

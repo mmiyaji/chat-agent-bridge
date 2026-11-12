@@ -423,6 +423,13 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="AppearanceFollowsSystem" xml:space="preserve"><value>Follows the Windows app color setting, including changes while this app is running.</value></data>
   <data name="AppearanceReadFailed" xml:space="preserve"><value>Could not read the saved theme. The Windows setting is used. Select a theme to save it again.</value></data>
   <data name="AppearanceSaveFailed" xml:space="preserve"><value>Could not save the theme. The previous setting is still in use. Check access to the settings folder and try again.</value></data>
+  <data name="AccentFollowsSystem" xml:space="preserve"><value>Uses the Windows accent color.</value></data>
+  <data name="AccentSaved" xml:space="preserve"><value>Using the traditional Japanese color "{0}" as the accent, with brightness adjusted for light and dark themes.</value></data>
+  <data name="AccentSaveFailed" xml:space="preserve"><value>Could not save the accent color. The previous setting is still in use.</value></data>
+  <data name="AccentSystemOption" xml:space="preserve"><value>Use Windows setting</value></data>
+  <data name="AccentMoreOption" xml:space="preserve"><value>More colors… ({0})</value></data>
+  <data name="AccentMoreTitle" xml:space="preserve"><value>Choose an accent color</value></data>
+  <data name="AccentMoreCancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="AboutProductName" xml:space="preserve"><value>Chat Agent Bridge</value></data>
   <data name="AboutBuildTimestamp" xml:space="preserve"><value>{0:g} (UTC{0:zzz})</value></data>
   <data name="AboutBuildTimestampUnknown" xml:space="preserve"><value>Unknown</value></data>
