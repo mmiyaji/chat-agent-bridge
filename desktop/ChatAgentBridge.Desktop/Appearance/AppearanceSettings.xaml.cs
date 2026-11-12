@@ -74,8 +74,7 @@ public sealed partial class AppearanceSettings : UserControl
         AccentPicker.SelectedItem = AccentPicker.Items.OfType<ComboBoxItem>().FirstOrDefault(item => (string)item.Tag == current)
             ?? AccentPicker.Items[0];
         _updating = false;
-        AccentStatus.Text = AccentPalette.Find(current) is { } chosen
-            ? DesktopText.Get("AccentSaved", chosen.Label) : DesktopText.Get("AccentFollowsSystem");
+        AccentStatus.Text = DesktopText.Get("AccentDescription");
     }
 
     private FrameworkElement CreateSwatchLabel(AccentColor color)
