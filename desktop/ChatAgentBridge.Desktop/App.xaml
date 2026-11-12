@@ -27,10 +27,11 @@
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="UpdateBadgeBackgroundBrush" Color="#3284F5" />
                     <SolidColorBrush x:Key="UpdateBadgeForegroundBrush" Color="White" />
-                    <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="{ThemeResource SystemAccentColorDark3}" />
-                    <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="{ThemeResource SystemAccentColorDark1}" />
-                    <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="{ThemeResource SystemAccentColorLight1}" />
-                    <SolidColorBrush x:Key="ActivityHeatPeakBrush" Color="{ThemeResource SystemAccentColorLight3}" />
+                    <!-- Dark: low stays close to the background, peak is the most vivid accent (not a pale tint). -->
+                    <SolidColorBrush x:Key="ActivityHeatLowBrush" Color="{ThemeResource SystemAccentColor}" Opacity="0.3" />
+                    <SolidColorBrush x:Key="ActivityHeatMediumBrush" Color="{ThemeResource SystemAccentColor}" Opacity="0.55" />
+                    <SolidColorBrush x:Key="ActivityHeatHighBrush" Color="{ThemeResource SystemAccentColor}" Opacity="0.8" />
+                    <SolidColorBrush x:Key="ActivityHeatPeakBrush" Color="{ThemeResource SystemAccentColorLight1}" />
                     <SolidColorBrush x:Key="OverviewReadyIconBrush" Color="#A8C583" />
                     <SolidColorBrush x:Key="OverviewAttentionIconBrush" Color="#D1BD79" />
                     <SolidColorBrush x:Key="OverviewErrorIconBrush" Color="#D99B9B" />
