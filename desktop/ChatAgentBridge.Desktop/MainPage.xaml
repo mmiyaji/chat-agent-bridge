@@ -3,6 +3,7 @@
     x:Class="ChatAgentBridge_Desktop.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:presentation="using:ChatAgentBridge_Desktop.Presentation"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:ChatAgentBridge_Desktop"
     xmlns:inbox="using:ChatAgentBridge_Desktop.Inbox"
@@ -127,18 +128,34 @@
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
             <NavigationView.Content>
-                <Grid x:Name="MainContentGrid" Padding="16" AutomationProperties.AutomationId="MainContentGrid">
+                <Grid x:Name="MainContentGrid" Padding="16" SizeChanged="MainContentGrid_SizeChanged" AutomationProperties.AutomationId="MainContentGrid">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <InfoBar Grid.Row="0" Margin="0,0,0,16" AutomationProperties.AutomationId="ExecutionStatus"
-                             IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
-                             Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.StatusSeverity), Mode=OneWay}"
-                             Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
-                             Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
+                    <StackPanel Grid.Row="0">
+                        <InfoBar Margin="0,0,0,8" Severity="Informational" IsClosable="True"
+                                 IsOpen="{x:Bind ViewModel.IsUpdateNoticeOpen, Mode=TwoWay}"
+                                 Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsUpdateNoticeOpen), Mode=OneWay}"
+                                 Title="{x:Bind ViewModel.UpdateNoticeTitle, Mode=OneWay}"
+                                 Message="{x:Bind ViewModel.UpdateNoticeSummary, Mode=OneWay}"
+                                 CloseButtonClick="UpdateNotice_CloseButtonClick"
+                                 AutomationProperties.AutomationId="UpdateNoticeBar">
+                            <InfoBar.ActionButton>
+                                <Button x:Uid="UpdateNoticeAction" localization:LocalizedResourceKey.Key="UpdateNoticeAction"
+                                        MinHeight="24" Padding="8,1"
+                                        Click="UpdateNotice_ShowChangesClick" AutomationProperties.AutomationId="UpdateNoticeShowChanges" />
+                            </InfoBar.ActionButton>
+                        </InfoBar>
+                        <InfoBar Margin="0,0,0,16" AutomationProperties.AutomationId="ExecutionStatus"
+                                 IsOpen="{x:Bind ViewModel.IsStatusOpen, Mode=TwoWay}"
+                                 Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsStatusOpen), Mode=OneWay}"
+                                 Severity="{x:Bind local:MainPage.ToInfoBarSeverity(ViewModel.StatusSeverity), Mode=OneWay}"
+                                 Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
+                                 Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
+                    </StackPanel>
                     <StackPanel Grid.Row="1" HorizontalAlignment="Stretch" Spacing="4" Margin="0,0,0,16"
                                 Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
                         <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock013" x:Uid="chatAgentBridgeDesktopMainPageTextBlock013" />
@@ -154,7 +171,7 @@
                             Visibility="{x:Bind local:MainPage.ToHiddenVisibility(ViewModel.IsSettingsLoaded), Mode=OneWay}"
                             HorizontalAlignment="Left" AutomationProperties.AutomationId="ReloadSettings"  x:Uid="ReloadSettings" />
 
-                    <StackPanel Grid.Row="2" Spacing="8" Margin="0,0,0,12" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsAgentSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}">
+                    <StackPanel Grid.Row="2" Spacing="8" Margin="0,0,0,12" presentation:EmptyPanelMargin.IsEnabled="True" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsAgentSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}">
                         <Grid ColumnSpacing="8" Visibility="{x:Bind local:MainPage.SettingsAutoSaveRetryVisibility(ViewModel.HasUnsavedSettings, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                             <FontIcon Glyph="&#xE74E;" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
@@ -172,7 +189,7 @@
                             <ComboBoxItem Tag="explanation" AutomationProperties.AutomationId="JumpAgentExplanation" x:Uid="JumpAgentExplanation" />
                         </ComboBox>
                     </StackPanel>
-                    <StackPanel Grid.Row="2" Margin="0,0,0,12" Spacing="8" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsConnectionsSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}">
+                    <StackPanel Grid.Row="2" Margin="0,0,0,12" Spacing="8" presentation:EmptyPanelMargin.IsEnabled="True" Visibility="{x:Bind local:MainPage.ActionButtonsVisibility(IsConnectionsSelected, ViewModel.IsSettingsLoaded), Mode=OneWay}">
                         <Grid ColumnSpacing="8" Visibility="{x:Bind local:MainPage.SettingsAutoSaveRetryVisibility(ViewModel.HasUnsavedSettings, ViewModel.IsSensitiveConfirmationPending, ViewModel.IsStatusOpen, ViewModel.StatusSeverity), Mode=OneWay}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                             <FontIcon Glyph="&#xE74E;" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
@@ -195,15 +212,6 @@
                                     <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="GeneralPageTitle" x:Uid="GeneralPageTitle" />
                                     <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="GeneralPageDescription" x:Uid="GeneralPageDescription" />
                                 </StackPanel>
-                                <InfoBar x:Uid="UpdateNotice" Severity="Informational" IsClosable="True"
-                                         IsOpen="{x:Bind ViewModel.IsUpdateNoticeOpen, Mode=TwoWay}"
-                                         Title="{x:Bind ViewModel.UpdateNoticeTitle, Mode=OneWay}"
-                                         CloseButtonClick="UpdateNotice_CloseButtonClick"
-                                         AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="UpdateNoticeBar">
-                                    <InfoBar.ActionButton>
-                                        <Button x:Uid="UpdateNoticeAction" Click="UpdateNotice_ShowChangesClick" AutomationProperties.AutomationId="UpdateNoticeShowChanges" />
-                                    </InfoBar.ActionButton>
-                                </InfoBar>
                                 <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
                                     <StackPanel Spacing="8">
                                         <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" AutomationProperties.AutomationId="OverviewStatusHeading" x:Uid="OverviewStatusHeading" />
@@ -667,7 +675,7 @@
                                                        AutomationProperties.AutomationId="AllowedUserTotal" />
                                             <Button Grid.Column="1" x:Uid="OpenAllowedUserAdd" AutomationProperties.AutomationId="OpenAllowedUserAdd">
                                                 <Button.Flyout>
-                                                    <Flyout x:Name="AllowedUserAddFlyout" Opening="AllowedUserAddFlyout_Opening" Closed="AllowedUserAddFlyout_Closed">
+                                                    <Flyout x:Name="AllowedUserAddFlyout" presentation:PopupBackdrop.UseSystemBackdrop="True" Opening="AllowedUserAddFlyout_Opening" Closed="AllowedUserAddFlyout_Closed">
                                                         <StackPanel Spacing="10" MaxWidth="360">
                                                             <ComboBox x:Name="AllowedUsersProviderPicker" x:Uid="AllowedUsersProviderPicker" Width="144"
                                                                       AutomationProperties.AutomationId="AllowedUsersProviderPicker"
@@ -757,7 +765,7 @@
                                             <Button x:Name="ProgressPreviewButton" Grid.Column="1" Content="Preview" VerticalAlignment="Bottom" Unloaded="ProgressPreviewAnchor_Unloaded"
                                                     AutomationProperties.AutomationId="ProgressPreviewButton" x:Uid="ProgressPreviewButton">
                                                 <Button.Flyout>
-                                                    <Flyout x:Name="ProgressPreviewFlyout" Opening="ProgressPreviewFlyout_Opening" Opened="ProgressPreviewFlyout_Opened" Closed="ProgressPreviewFlyout_Closed">
+                                                    <Flyout x:Name="ProgressPreviewFlyout" presentation:PopupBackdrop.UseSystemBackdrop="True" Opening="ProgressPreviewFlyout_Opening" Opened="ProgressPreviewFlyout_Opened" Closed="ProgressPreviewFlyout_Closed">
                                                         <Flyout.FlyoutPresenterStyle>
                                                             <Style TargetType="FlyoutPresenter">
                                                                 <Setter Property="MinWidth" Value="0" />

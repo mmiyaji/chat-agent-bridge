@@ -2,7 +2,7 @@
 <root>
   <data name="OverviewCliPreviouslyVerified" xml:space="preserve"><value>前回確認済み</value></data>
   <data name="CliVerificationRestored" xml:space="preserve"><value>{0}のCLI確認結果を引き継ぎました。CLIファイルと設定に変更はありません。ログイン状態やモデルの利用可否は利用時に確認します。モデル一覧を更新するには「CLIをチェック」を押してください。</value></data>
-  <data name="UpdateNoticeTitle" xml:space="preserve"><value>Chat Agent Bridge を更新しました（{0}）</value></data>
+  <data name="UpdateNoticeTitle" xml:space="preserve"><value>バージョン {0} に更新しました</value></data>
   <data name="CliVerificationSaveFailed" xml:space="preserve"><value>確認には成功しましたが、結果を保存できませんでした。再起動後は再確認してください。</value></data>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -492,7 +492,7 @@
     <value>このPCで使うAIと、作業するフォルダーを選びます。CLIのインストールとログインは事前に必要です。</value>
   </data>
   <data name="WizardChatDescription" xml:space="preserve">
-    <value>Slack、Mattermost、またはDiscordを選び、接続情報と利用を許可するユーザーIDを入力します。</value>
+    <value>Slack、Mattermost、またはDiscordを選び、接続に必要な情報を入力します。許可ユーザーの指定は任意です。</value>
   </data>
   <data name="WizardCliDescription" xml:space="preserve">
     <value>CLIのバージョンを確認します。Codex・Claude Codeではモデル候補も取得します。AIへ作業の依頼は送りません。</value>

@@ -16,7 +16,7 @@
             <StackPanel Spacing="4">
                 <TextBlock Text="{x:Bind ViewModel.OnboardingProgress, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="OnboardingStep" />
                 <TextBlock Text="{x:Bind ViewModel.OnboardingTitle, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="OnboardingTitle" />
-                <TextBlock Text="{x:Bind ViewModel.OnboardingDescription, Mode=OneWay}" TextWrapping="Wrap" />
+                <TextBlock Text="{x:Bind ViewModel.OnboardingDescription, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="OnboardingDescription" />
             </StackPanel>
             <Button Grid.Column="1"  Command="{x:Bind ViewModel.DeferOnboardingCommand}" Visibility="{x:Bind local:OnboardingWizard.HiddenWhen(ViewModel.IsWizardSafetyStep), Mode=OneWay}" VerticalAlignment="Top" AutomationProperties.AutomationId="OnboardingDefer"  x:Uid="OnboardingDefer" />
         </Grid>

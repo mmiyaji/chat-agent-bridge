@@ -185,7 +185,7 @@ public sealed partial class MattermostWebSocketTransport
                 dataChannel is not null && !string.Equals(dataChannel, original.ChannelId, StringComparison.Ordinal) ||
                 broadcastChannel is not null && !string.Equals(broadcastChannel, original.ChannelId, StringComparison.Ordinal) ||
                 !ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", original.UserId,
-                    original.ChannelId, original.ThreadId))
+                    original.ChannelId, original.ThreadId, isDirectMessage: original.IsDirectMessage))
                 return Task.CompletedTask;
 
             entry.InFlight = true;

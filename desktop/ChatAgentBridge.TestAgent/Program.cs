@@ -229,7 +229,7 @@ if (structuredFixtureName.StartsWith("kimi", StringComparison.Ordinal) && args i
                     using var permission = JsonDocument.Parse(permissionLine);
                     if (permission.RootElement.GetProperty("result").GetProperty("outcome").GetProperty("outcome").GetString() == "selected" &&
                         promptText.Contains("__CAB_SCENARIO_FINISH_AFTER_APPROVAL_DELAY__", StringComparison.Ordinal))
-                        await Task.Delay(promptText.Contains("__CAB_SCENARIO_PRE_APPROVAL_DELAY__", StringComparison.Ordinal) ? 2500 : 0);
+                        await Task.Delay(promptText.Contains("__CAB_SCENARIO_PRE_APPROVAL_DELAY__", StringComparison.Ordinal) ? 5500 : 0);
                     else if (permission.RootElement.GetProperty("result").GetProperty("outcome").GetProperty("outcome").GetString() == "selected")
                         await Task.Delay(Timeout.InfiniteTimeSpan);
                 }

@@ -402,7 +402,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
         catch (HttpRequestException error)
         {
             IsPaused = true;
-            ShowError(error);
+            ShowError(error, failureStage);
         }
         catch (OperationCanceledException) when (_operation?.IsCancellationRequested != true)
         {
@@ -592,7 +592,7 @@ public sealed class PortableUpdateCoordinator : IDisposable
         Notify();
     }
 
-    private void ShowError(Exception error, string? stage = null)
+    private void ShowError(Exception error, string stage)
     {
         // Report useful categories without echoing tokens, signed redirect URLs or HTTP response bodies.
         var reason = error switch
@@ -608,11 +608,14 @@ public sealed class PortableUpdateCoordinator : IDisposable
         Status = DesktopText.Get("PortableUpdateFailed", reason);
     }
 
-    private static int GetWindowsErrorCode(Exception error) => error.HResult & 0xFFFF;
+    private static int GetWindowsErrorCode(Exception error) =>
+        (error.HResult & unchecked((int)0xFFFF0000)) == unchecked((int)0x80070000)
+            ? error.HResult & 0xFFFF
+            : 0;
 
     private static string FormatErrorCode(Exception error) => $"0x{error.HResult:X8}";
 
-    private static string GetUpdateStage(string? stage) => DesktopText.Get(stage switch
+    private static string GetUpdateStage(string stage) => DesktopText.Get(stage switch
     {
         "check" => "PortableUpdateStageCheck",
         "extract" => "PortableUpdateStageExtract",

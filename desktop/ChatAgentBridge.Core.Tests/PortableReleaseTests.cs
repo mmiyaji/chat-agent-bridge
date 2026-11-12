@@ -93,6 +93,21 @@ public sealed class PortableReleaseClientTests
     }
 
     [Fact]
+    public async Task SkipsMalformedFeedEntriesAndSelectsTheValidAsset()
+    {
+        var release = Release("v0.1.0-preview.6", AssetName, Digest);
+        var badSize = Asset(AssetName, Digest);
+        badSize["size"] = "123";
+        var badUrl = Asset(AssetName, Digest);
+        badUrl["browser_download_url"] = 123;
+        release["assets"] = new object?[] { null, badSize, badUrl, Asset(AssetName, Digest) };
+        var json = JsonSerializer.Serialize(new { schemaVersion = 1, channel = "preview", releases = new object?[] { null, release } });
+        using var client = new PortableReleaseClient(new HttpClient(new StubHandler(_ => JsonResponse(json), routePagesToLegacyApi: false)));
+
+        Assert.Equal("0.1.0-preview.6", (await client.FindUpdateAsync("0.1.0-preview.5", "x64", true, default))?.Version);
+    }
+
+    [Fact]
     public async Task RejectsOversizedApiBody()
     {
         using var client = new PortableReleaseClient(new HttpClient(new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("[" + new string(' ', 2 * 1024 * 1024) + "]") })));

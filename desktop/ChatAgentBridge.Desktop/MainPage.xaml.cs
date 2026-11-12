@@ -11,6 +11,9 @@ namespace ChatAgentBridge_Desktop;
 
 public sealed partial class MainPage : Page
 {
+    private const double CompactPageInsetBreakpoint = 720;
+    private const double CompactPageInset = 16;
+    private const double StandardPageInset = 24;
     internal InboxShutdownSummary GetShutdownSummary() => InboxPage.ViewModel.GetShutdownSummary();
 
     private bool _hasLoaded;
@@ -414,20 +417,27 @@ public sealed partial class MainPage : Page
             : new Thickness(0);
     }
 
+    private void MainContentGrid_SizeChanged(object sender, SizeChangedEventArgs e) =>
+        UpdatePageInset(e.NewSize.Width);
+
+    private void UpdatePageInset(double width)
+    {
+        if (MainContentGrid is null || width <= 0) return;
+        var inset = width <= CompactPageInsetBreakpoint ? CompactPageInset : StandardPageInset;
+        var current = MainContentGrid.Padding;
+        if (current.Left == inset && current.Right == inset) return;
+        MainContentGrid.Padding = new Thickness(inset, current.Top, inset, current.Bottom);
+    }
+
     private async void ShowTerms_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: false);
     private async void ShowPrivacy_Click(object sender, RoutedEventArgs e) => await Onboarding.PolicyDialog.ShowAsync(XamlRoot, privacy: true);
     private async void UpdateNotice_CloseButtonClick(InfoBar sender, object args) =>
         await ViewModel.DismissUpdateNoticeAsync();
 
-    private async void UpdateNotice_ShowChangesClick(object sender, RoutedEventArgs e)
+    private void UpdateNotice_ShowChangesClick(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            var opened = await Windows.System.Launcher.LaunchUriAsync(
-                new Uri("https://github.com/mmiyaji/chat-agent-bridge/releases"));
-            if (opened) await ViewModel.DismissUpdateNoticeAsync();
-        }
-        catch { /* Keep the notice available if the release page cannot be opened. */ }
+        MainNavigation.SelectedItem = AboutNavigationItem;
+        if (IsAboutSelected) AboutPage.ResetScroll();
     }
 
     public static Visibility ToHiddenVisibility(bool visible) => visible ? Visibility.Collapsed : Visibility.Visible;
@@ -573,7 +583,13 @@ public sealed partial class MainPage : Page
                 });
             }
         }
-        if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshIfStaleAsync();
+        if (pageChanged && IsHistorySelected)
+        {
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                if (IsHistorySelected) _ = HistoryPage.ViewModel.RefreshIfStaleAsync();
+            });
+        }
         if (pageChanged && IsOverviewSelected && _hasLoaded) _ = ViewModel.RefreshStartupAsync();
         if (pageChanged && IsAboutSelected) AboutPage.ResetScroll();
         if (IsAgentSelected) _ = EnsureAgentSettingsScopeAsync();

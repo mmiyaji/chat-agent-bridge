@@ -9,6 +9,8 @@ public sealed record AuditFilterOption(string Key, string Label);
 public sealed partial class HistoryPageViewModel
 {
     public AuditColumnLayout AuditColumns { get; } = new();
+    public string AuditContextHeader => HistoryViewMode == HistoryViewMode.Access
+        ? DesktopText.Get("HistoryAccessUserColumn") : DesktopText.Get("HistoryAuditContextColumn");
 
     [ObservableProperty] public partial IReadOnlyList<AuditFilterOption> AuditServiceOptions { get; private set; } = [];
     [ObservableProperty] public partial IReadOnlyList<AuditFilterOption> AuditKindOptions { get; private set; } = [];
@@ -80,6 +82,7 @@ public sealed partial class HistoryPageViewModel
             (day is null || DateOnly.FromDateTime(row.Record.Timestamp.ToLocalTime().DateTime) == day) &&
             (linkedUserId is not null ? row.Record.Access?.UserId == linkedUserId :
                 query.Length == 0 || row.SearchIndex.Contains(query, StringComparison.OrdinalIgnoreCase))).ToArray();
+        OnPropertyChanged(nameof(AuditContextHeader));
         if (SelectedAuditRow is { } selected)
         {
             SelectedAuditRow = FilteredAuditEvents.FirstOrDefault(row => row.Record == selected.Record);
@@ -91,8 +94,8 @@ public sealed partial class HistoryPageViewModel
 
 public sealed partial class AuditColumnLayout : ObservableObject
 {
-    [ObservableProperty] public partial GridLength Time { get; set; } = new(74);
-    [ObservableProperty] public partial GridLength Action { get; set; } = new(132);
+    [ObservableProperty] public partial GridLength Time { get; set; } = new(112);
+    [ObservableProperty] public partial GridLength Action { get; set; } = new(196);
     [ObservableProperty] public partial GridLength Service { get; set; } = new(100);
     // The trailing star starts at a visually negligible weight. It only becomes visible when the user
     // deliberately drags the conversation divider inward, and lets that column keep resizing responsively.

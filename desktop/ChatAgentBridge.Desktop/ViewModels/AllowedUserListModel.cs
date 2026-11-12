@@ -39,7 +39,7 @@ public sealed partial class AllowedUserRow : ObservableObject
     public bool HasName => !string.IsNullOrWhiteSpace(Name);
     public string DisplayName => HasName ? Name! : ViewModelText.Get("AllowedUserNameUnknown");
     public string PictureName => HasName ? Name! : UserId;
-    public string Summary => HasName ? $"{DisplayName} · {UserId}" : UserId;
+    public string Summary => Presentation.UserIdentityText.Format(DisplayName, UserId);
     public string Details => string.Join(Environment.NewLine, ViewModelText.Get("AllowedUserIdLine", UserId, SourceLabel), AddedLine, LastRequestLine);
 
     private string AddedLine => _record is null

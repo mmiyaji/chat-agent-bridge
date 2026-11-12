@@ -33,6 +33,13 @@ public sealed partial class MainPage
         return scroll;
     }
 
+    private static void AlignSettingsScopeNavigation(NavigationView navigation)
+    {
+        navigation.Resources["NavigationViewItemButtonMargin"] = new Thickness(0, 2, 4, 2);
+        navigation.Resources["TopNavigationViewTopNavGridMargin"] = new Thickness(0);
+        navigation.Resources["NavigationViewContentGridBorderThickness"] = new Thickness(0, 1, 0, 0);
+    }
+
     private ScrollViewer? ScrollViewerForPage(string? tag) => tag switch
     {
         "agent" => _agentSettingsScroll,

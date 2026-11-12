@@ -12,6 +12,7 @@ public sealed class ChatScheduleStore
     public const int MaximumPerUser = 5;
     public const int MaximumTotal = 50;
     private const int CurrentSchemaVersion = 1;
+    private const int ScheduleIdLength = 6;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> PathGates = new(
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
@@ -51,7 +52,7 @@ public sealed class ChatScheduleStore
                     item.UserId == template.UserId) >= MaximumPerUser)
                 return (ChatScheduleAddResult.TooManyForUser, null);
             string id;
-            do { id = RandomNumberGenerator.GetHexString(6).ToLowerInvariant(); }
+            do { id = RandomNumberGenerator.GetHexString(ScheduleIdLength).ToLowerInvariant(); }
             while (document.Schedules.Any(item => item.Id == id));
             var schedule = template with { Id = id, CreatedAt = template.CreatedAt == default ? DateTimeOffset.UtcNow : template.CreatedAt };
             document.Schedules.Add(schedule);
@@ -66,7 +67,9 @@ public sealed class ChatScheduleStore
         CancellationToken cancellationToken = default)
     {
         var id = target;
-        if (int.TryParse(target, out var number)) id = number >= 1 && number <= visible.Count ? visible[number - 1].Id : "";
+        // An all-digit generated ID is still an ID, even when its numeric value is a valid list position.
+        if (target.Length != ScheduleIdLength && int.TryParse(target, out var number))
+            id = number >= 1 && number <= visible.Count ? visible[number - 1].Id : "";
         if (id.Length == 0 || visible.All(item => !item.Id.Equals(id, StringComparison.OrdinalIgnoreCase))) return null;
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try

@@ -113,11 +113,9 @@ public sealed partial class HistoryPageViewModel
     private void RebuildUsage()
     {
         _usagePricing = App.Pricing.Current;
-        _usage = _activityStatisticsFailed
-            ? ActivityUsageSummary.Build([], _activity.EndDay, _activity.Days.Count, TimeZoneInfo.Local,
-                UsageScopeIndex == 1 ? "last-request" : "turn", _usagePricing)
-            : _activityStatistics?.Usage ?? ActivityUsageSummary.Build(_activityRecords, _activity.EndDay, _activity.Days.Count, TimeZoneInfo.Local,
-                UsageScopeIndex == 1 ? "last-request" : "turn", _usagePricing);
+        _usage = _activityStatistics?.Usage ?? ActivityUsageSummary.Build(
+            _activityStatisticsFailed ? [] : _activityRecords, _activity.EndDay, _activity.Days.Count, TimeZoneInfo.Local,
+            UsageScopeIndex == 1 ? "last-request" : "turn", _usagePricing);
         var recent = _usage.Days.TakeLast(28).ToArray();
         var dailyMax = IsRateMetric ? 100m : Math.Max(IsCostMetric ? 0.000001m : 1m,
             recent.Max(day => Metric(day.Totals) ?? 0));

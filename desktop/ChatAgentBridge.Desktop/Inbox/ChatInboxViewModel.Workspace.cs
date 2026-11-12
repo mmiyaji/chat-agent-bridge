@@ -51,7 +51,7 @@ public sealed partial class ChatInboxViewModel
             item.ExecutionPolicyFingerprint = ConversationExecutionPolicy.GetFingerprint(key, effective);
             var currentWorkspace = previousWorkspace ?? defaults.WorkspaceRoot;
             originalDisplay = (item.Workspace, item.SessionLabel);
-            previewDisplay = (path, DesktopText.Get("WorkspaceChangePrompt", currentWorkspace, path, item.Request.UserId));
+            previewDisplay = (path, DesktopText.Get("WorkspaceChangePrompt", currentWorkspace, path, item.UserIdentity));
             item.Workspace = previewDisplay.Value.Workspace;
             item.SessionLabel = previewDisplay.Value.SessionLabel;
             // A folder change requires a local decision unless it was approved from a notification or the user

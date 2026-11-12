@@ -58,6 +58,41 @@ public sealed class ChatIdentityDirectoryDiscordTests
         finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
     }
 
+    [Fact]
+    public async Task Discord_allowed_user_name_resolves_without_a_channel_and_is_cached()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "cab-discord-user-identities-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var handler = new UserOnlyHandler(User);
+            using var directory = new ChatIdentityDirectory(handler, path);
+            var key = new SessionKey("discord", "", "", User, "discord");
+            var settings = new BridgeSettings { DiscordBotToken = "synthetic-token", DiscordAllowedUserIds = User };
+
+            var labels = (await directory.ResolveAsync(settings, [key]))[key];
+            Assert.Equal("Alice", labels.UserName);
+            Assert.Equal(["/api/v10/users/" + User], handler.Paths);
+
+            var cached = (await directory.ResolveAsync(settings, [key]))[key];
+            Assert.Equal("Alice", cached.UserName);
+            Assert.Single(handler.Paths);
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    }
+
+    [Fact]
+    public async Task Discord_disallowed_user_is_never_fetched_without_a_channel()
+    {
+        var handler = new UserOnlyHandler(User);
+        using var directory = new ChatIdentityDirectory(handler);
+        var key = new SessionKey("discord", "", "", User, "discord");
+        var labels = (await directory.ResolveAsync(new BridgeSettings
+            { DiscordBotToken = "synthetic-token", DiscordAllowedUserIds = "999999999999999999" }, [key]))[key];
+
+        Assert.Null(labels.UserName);
+        Assert.Empty(handler.Paths);
+    }
+
     private sealed class IdentityHandler : HttpMessageHandler
     {
         public bool Redirect { get; init; }
@@ -82,6 +117,22 @@ public sealed class ChatIdentityDirectoryDiscordTests
                 "/api/v10/users/" + User => $$"""{"id":"{{User}}","global_name":"Alice","username":"alice"}""",
                 _ => throw new InvalidOperationException("Unexpected synthetic identity route")
             };
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                { Content = new StringContent(json, Encoding.UTF8, "application/json") });
+        }
+    }
+
+    private sealed class UserOnlyHandler(string expectedUser) : HttpMessageHandler
+    {
+        public List<string> Paths { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            Paths.Add(path);
+            Assert.Equal("Bot", request.Headers.Authorization?.Scheme);
+            Assert.Equal("/api/v10/users/" + expectedUser, path);
+            var json = $$"""{"id":"{{expectedUser}}","global_name":"Alice","username":"alice"}""";
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
                 { Content = new StringContent(json, Encoding.UTF8, "application/json") });
         }

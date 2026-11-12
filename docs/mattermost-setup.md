@@ -22,7 +22,7 @@ Mattermostの設定は、**接続設定 → 許可ユーザー → 個別DM → 
 
 ![Mattermost設定画面。接続情報、許可ユーザーのプレビュー、個別DM、任意の共有チャンネル設定を表示](assets/screenshots/mattermost-setup-settings-ja.png)
 
-共有チャンネルは名前で検索し、一覧のチェックボックスで選択します。詳細ペインでチーム・説明・チャンネルIDを確認してから適用できます。特定の会話だけを受け付ける場合は、チャンネルの選択後にスレッドの投稿リンクを指定します。
+共有チャンネルは名前で検索し、一覧のチェックボックスで選択します。詳細ペインでチーム・説明・チャンネルIDを確認してから適用できます。特定の会話だけを受け付ける場合は、チャンネルの選択後にスレッドの投稿リンクを指定します。この制限は共有チャンネル内に適用します。個別DMには、DMの受付設定、許可ユーザー、承認方法が適用されます。
 
 ![Mattermostのチャンネル検索・選択画面（テスト用チャンネル）](assets/screenshots/mattermost-setup-channel-picker-ja.png)
 
@@ -177,7 +177,7 @@ Shared-channel mode monitors the one conversation you configure. DM mode detects
 1. In **Chat settings → Mattermost**, enter the server URL and bot token, then select **Check token account**. Verify that CAB shows the dedicated bot account. A user token may work, but a dedicated bot account is recommended.
 2. Search for your own username (for example `@alice`) and add the matching result to **Allowed users**; at least one allowed user is required to connect. Do not add the bot as a requester. CAB stores Mattermost's internal user ID for each allowed user. Explicit requests from unlisted users can still appear for PC approval when they are in an allowed conversation.
 3. **Accept requests in individual direct messages** is on for new settings. Check its current value on saved installations. A user can open a DM with the bot and send the first post; Mattermost creates the DM channel, so the bot does not need to create it. To also use a shared channel, invite the bot and select it under the optional shared-channel settings. DM-only mode does not need a channel or thread ID.
-4. Save and connect to Mattermost from **Chat**. Requesters can send regular messages in their bot DM. In a shared channel, start with `@botname` or `!cab`. Optionally restrict requests to specific threads using a post link.
+4. Save and connect to Mattermost from **Chat**. Requesters can send regular messages in their bot DM. In a shared channel, start with `@botname` or `!cab`. A post link limits requests within the shared channel. Individual DMs follow the DM setting, allowed-user checks and approval policy.
 
 #### Connect without a proxy
 

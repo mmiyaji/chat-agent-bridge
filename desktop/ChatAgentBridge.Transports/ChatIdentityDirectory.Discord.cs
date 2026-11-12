@@ -13,41 +13,47 @@ public sealed partial class ChatIdentityDirectory
         foreach (var key in keys)
         {
             if (budget.Limited || token.IsCancellationRequested) break;
-            if (!IsDiscordId(key.ChannelId) || !IsDiscordId(key.UserId) ||
+            if (!IsDiscordId(key.UserId) ||
                 !ChatAccessPolicy.IsAllowed(settings, "discord", key.UserId!)) continue;
-            var channelKey = new CacheKey("discord", "discord", "channel", key.ChannelId);
-            if (NeedsRefresh(store, channelKey))
+            // A DM-only history entry may not carry a channel ID. Resolve the allowlisted
+            // user's display name independently; channel and guild labels still require
+            // validating the channel against the configured Discord scopes.
+            if (IsDiscordId(key.ChannelId))
             {
-                CacheEntry? resolvedChannel = null;
-                await FetchAndStoreAsync(store, channelKey, "Discord", null, false, async () =>
+                var channelKey = new CacheKey("discord", "discord", "channel", key.ChannelId);
+                if (NeedsRefresh(store, channelKey))
                 {
-                    using var channel = await DiscordJsonAsync($"channels/{key.ChannelId}", settings.DiscordBotToken, budget, token);
-                    var data = channel.RootElement;
-                    if (!IdMatches(data, "id", key.ChannelId)) return null;
-                    var guild = data.TryGetProperty("guild_id", out var guildValue) && guildValue.ValueKind == JsonValueKind.String
-                        ? guildValue.GetString() : null;
-                    if (!ChatAccessPolicy.IsAllowedRequest(settings, "discord", key.UserId!, key.ChannelId, key.ThreadId, guild))
-                        return null;
-                    var direct = data.TryGetProperty("type", out var type) && type.TryGetInt32(out var channelType) && channelType == 1;
-                    if (guild is null && !direct) return null;
-                    var site = "Discord";
-                    if (IsDiscordId(guild))
+                    CacheEntry? resolvedChannel = null;
+                    await FetchAndStoreAsync(store, channelKey, "Discord", null, false, async () =>
                     {
-                        var guildKey = new CacheKey("discord", "discord", "team", guild!);
-                        if (NeedsRefresh(store, guildKey))
-                            await FetchAndStoreAsync(store, guildKey, "Discord", null, false, async () =>
-                            {
-                                using var document = await DiscordJsonAsync($"guilds/{guild}", settings.DiscordBotToken, budget, token);
-                                return IdMatches(document.RootElement, "id", guild!) ? SafeLabel(document.RootElement, "name") : null;
-                            }, token);
-                        site = GetFreshOrStale(store, "discord", "discord", "team", guild!)?.SiteName ?? "Discord";
-                    }
-                    // FetchAndStore owns the ordinary label update; enrich the site/direct fields afterward.
-                    var label = direct ? "Direct message" : SafeLabel(data, "name");
-                    resolvedChannel = Entry(channelKey, site, label, direct, true);
-                    return label;
-                }, token);
-                if (resolvedChannel is not null) store[channelKey] = resolvedChannel;
+                        using var channel = await DiscordJsonAsync($"channels/{key.ChannelId}", settings.DiscordBotToken, budget, token);
+                        var data = channel.RootElement;
+                        if (!IdMatches(data, "id", key.ChannelId)) return null;
+                        var guild = data.TryGetProperty("guild_id", out var guildValue) && guildValue.ValueKind == JsonValueKind.String
+                            ? guildValue.GetString() : null;
+                        if (!ChatAccessPolicy.IsAllowedRequest(settings, "discord", key.UserId!, key.ChannelId, key.ThreadId, guild))
+                            return null;
+                        var direct = data.TryGetProperty("type", out var type) && type.TryGetInt32(out var channelType) && channelType == 1;
+                        if (guild is null && !direct) return null;
+                        var site = "Discord";
+                        if (IsDiscordId(guild))
+                        {
+                            var guildKey = new CacheKey("discord", "discord", "team", guild!);
+                            if (NeedsRefresh(store, guildKey))
+                                await FetchAndStoreAsync(store, guildKey, "Discord", null, false, async () =>
+                                {
+                                    using var document = await DiscordJsonAsync($"guilds/{guild}", settings.DiscordBotToken, budget, token);
+                                    return IdMatches(document.RootElement, "id", guild!) ? SafeLabel(document.RootElement, "name") : null;
+                                }, token);
+                            site = GetFreshOrStale(store, "discord", "discord", "team", guild!)?.SiteName ?? "Discord";
+                        }
+                        // FetchAndStore owns the ordinary label update; enrich the site/direct fields afterward.
+                        var label = direct ? "Direct message" : SafeLabel(data, "name");
+                        resolvedChannel = Entry(channelKey, site, label, direct, true);
+                        return label;
+                    }, token);
+                    if (resolvedChannel is not null) store[channelKey] = resolvedChannel;
+                }
             }
             if (budget.Limited) break;
             var userKey = new CacheKey("discord", "discord", "user", key.UserId!);

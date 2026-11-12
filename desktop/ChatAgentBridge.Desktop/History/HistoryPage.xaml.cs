@@ -29,6 +29,8 @@ public sealed partial class HistoryPage : Page
     public HistoryPage()
     {
         InitializeComponent();
+        Layout.MouseWheelScrollBehavior.Attach(SessionDetailScroll);
+        Layout.MouseWheelScrollBehavior.Attach(RecordDetailScroll);
         ExecutionHistoryMode.SelectedItem = ExecutionsModeItem;
         InitializeExperimentalTables();
         SessionListPane.SizeChanged += SessionListPane_SizeChanged;
@@ -39,12 +41,6 @@ public sealed partial class HistoryPage : Page
             new ManipulationCompletedEventHandler(SessionSplitter_ManipulationCompleted), true);
         SessionSplitter.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(SessionSplitter_KeyDown), true);
         SessionSplitter.AddHandler(UIElement.KeyUpEvent, new KeyEventHandler(SessionSplitter_KeyUp), true);
-        var activity = new ActivityDashboard(ViewModel);
-        activity.OpenDayRequested += () =>
-        {
-            ViewModel.ShowExecutionsForActivityDay();
-            HistoryPivot.SelectedItem = ExecutionsTab;
-        };
         ViewModel.RunRecordsRequested += () => HistoryPivot.SelectedItem = ExecutionsTab;
         ViewModel.ConversationRequested += key =>
         {
@@ -54,22 +50,28 @@ public sealed partial class HistoryPage : Page
             _showDetailOnNarrow = ViewModel.SelectedSession is not null;
             UpdateResponsiveLayout();
         };
-        ActivityHost.Content = activity;
         ViewModel.ConfirmDetachAsync = ConfirmDetachAsync;
         ViewModel.EditSessionModelAsync = EditSessionModelAsync;
         ViewModel.EditSessionPolicyAsync = EditSessionPolicyAsync;
         ViewModel.RenameSessionAsync = RenameSessionAsync;
         ViewModel.ChooseAgentSwitchAsync = ChooseAgentSwitchAsync;
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        ViewModel.SessionListCriteriaChanged += ScrollSessionListToTop;
         SizeChanged += Page_SizeChanged;
         // MainPage hosts this Page directly and switches Visibility, so Frame
         // navigation events alone do not cover its actual lifetime.
-        Loaded += (_, _) => SetPricingUpdatesEnabled(true);
+        Loaded += (_, _) =>
+        {
+            SetPricingUpdatesEnabled(true);
+            UpdateActivityTab();
+        };
         Unloaded += (_, _) =>
         {
             SetPricingUpdatesEnabled(false);
+            ViewModel.SetActivityTabActive(false);
             SessionFiltersFlyout.Hide();
         };
+        RegisterPropertyChangedCallback(VisibilityProperty, (_, _) => UpdateActivityTab());
         UpdateResponsiveLayout();
     }
 
@@ -278,8 +280,39 @@ public sealed partial class HistoryPage : Page
         }
     }
 
-    private void HistoryPivot_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+    private void HistoryPivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
         UpdateResponsiveLayout();
+        UpdateActivityTab();
+    }
+
+    private void UpdateActivityTab()
+    {
+        if (!IsActivityTabVisible())
+        {
+            ViewModel.SetActivityTabActive(false);
+            return;
+        }
+
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (!IsActivityTabVisible()) return;
+            if (ActivityHost.Content is null)
+            {
+                var activity = new ActivityDashboard(ViewModel);
+                activity.OpenDayRequested += () =>
+                {
+                    ViewModel.ShowExecutionsForActivityDay();
+                    HistoryPivot.SelectedItem = ExecutionsTab;
+                };
+                ActivityHost.Content = activity;
+            }
+            ViewModel.SetActivityTabActive(true);
+        });
+    }
+
+    private bool IsActivityTabVisible() =>
+        IsLoaded && Visibility == Visibility.Visible && ReferenceEquals(HistoryPivot?.SelectedItem, ActivityTab);
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -357,6 +390,15 @@ public sealed partial class HistoryPage : Page
         SessionDetailColumn.Width = new GridLength(Math.Max(MinimumSessionDetailWidth, contentWidth - width), GridUnitType.Star);
     }
 
+    // A new sort or filter should start from its first rows. The selection is kept, but restoring it after a
+    // batched reset would otherwise scroll the list to the selected row.
+    private void ScrollSessionListToTop() =>
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (SessionList.Items.Count > 0)
+                SessionList.ScrollIntoView(SessionList.Items[0], ScrollIntoViewAlignment.Leading);
+        });
+
     private void BackToSessions_Click(object sender, RoutedEventArgs e)
     {
         _showDetailOnNarrow = false;
@@ -386,7 +428,8 @@ public sealed partial class HistoryPage : Page
         var compactHeader = ActualWidth < 600;
         HistoryTitle.Style = (Style)Application.Current.Resources[compactHeader ? "SubtitleTextBlockStyle" : "TitleTextBlockStyle"];
         HistoryDescription.Visibility = compactHeader ? Visibility.Collapsed : Visibility.Visible;
-        HistoryStatusText.MaxLines = compactHeader ? 1 : 0;
+        HistoryStatusText.MaxLines = compactHeader ? 1 : 2;
+        HistoryStatusText.MaxWidth = compactHeader ? 160 : 320;
         SessionFilters.Visibility = narrow && showDetail ? Visibility.Collapsed : Visibility.Visible;
         if (BackToSessionsButton is not null)
             BackToSessionsButton.Visibility = narrow && showDetail ? Visibility.Visible : Visibility.Collapsed;

@@ -20,6 +20,7 @@
 - [利用統計の集計設計](release-activity-statistics.md)
 - [ポータブル更新のローカル試験](portable-update-tryout.ja.md)
 - [画面切り替えの耐久テスト](ui-navigation-stress.ja.md)
+- [履歴とチャット受信箱の負荷検証](history-load-performance-validation.ja.md)
 
 ## 配布
 

@@ -27,6 +27,14 @@ public sealed partial class HistoryPageViewModel
     private ActivityStatisticsSnapshot? _activityStatistics;
     private bool _activityStatisticsFailed;
     private int _activityStatisticsRequest;
+    private bool _activityTabActive;
+    private bool _activityNeedsRefresh = true;
+    private bool _activityRecordsLoaded;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowActivityReloadProgress))]
+    public partial bool IsInitialActivityLoading { get; private set; } = true;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowActivityReloadProgress))]
+    public partial bool IsActivityRefreshing { get; private set; }
+    public bool ShowActivityReloadProgress => IsActivityRefreshing && !IsInitialActivityLoading;
     private ActivitySummary _activity = ActivitySummary.Build([], DateOnly.FromDateTime(DateTime.Today), 90, TimeZoneInfo.Local);
     public IReadOnlyList<ActivityCalendarCell> ActivityCalendar { get; private set; } = [];
     public ObservableCollection<ActivityBarRow> ActivityWeekdays { get; } = [];
@@ -50,7 +58,7 @@ public sealed partial class HistoryPageViewModel
     public bool ShowActivityEmptyState => ActivityStatisticsAvailable && !HasActivity;
     // The summary tiles only repeat "0" while the empty state already explains there is no activity.
     public bool ShowActivitySummary => ActivityStatisticsAvailable && HasActivity;
-    public bool ActivityStatisticsAvailable => IsHistoryLoadSuccessful && !IsBusy && !_activityStatisticsFailed && _activityStatistics is not null;
+    public bool ActivityStatisticsAvailable => _activityStatistics is not null;
     public string ActivityStatisticsNotice => _activityStatisticsFailed
         ? DesktopText.Get("ActivityStatisticsUnavailable")
         : _activityStatistics?.MigratedFromAvailableRetainedHistory == true && _activityRecords.Count > 0
@@ -86,40 +94,62 @@ public sealed partial class HistoryPageViewModel
     private void SetExecutionRecords(IReadOnlyList<ExecutionRecord> records)
     {
         _activityRecords = records;
+        _activityRecordsLoaded = true;
         RebuildChatNameIndexes();
         ApplyRunFilters();
         _ = RefreshActivityStatisticsAsync();
     }
 
+    internal void SetActivityTabActive(bool active)
+    {
+        if (_activityTabActive == active) return;
+        _activityTabActive = active;
+        if (!active) IsActivityRefreshing = false;
+        if (active && _activityNeedsRefresh) _ = RefreshActivityStatisticsAsync();
+    }
+
     private async Task RefreshActivityStatisticsAsync()
     {
         var request = Interlocked.Increment(ref _activityStatisticsRequest);
+        _activityNeedsRefresh = true;
+        if (!_activityTabActive || !_activityRecordsLoaded) return;
+        IsActivityRefreshing = true;
         var count = ActivityRangeIndex switch { 0 => 30, 2 => 365, _ => 90 };
         var scope = UsageScopeIndex == 1 ? "last-request" : "turn";
         try
         {
-            var snapshot = await _activityStatisticsStore.ReadAsync(DateOnly.FromDateTime(DateTime.Today), count,
-                TimeZoneInfo.Local, scope, App.Pricing.Current);
-            if (request != _activityStatisticsRequest) return;
+            var endDay = DateOnly.FromDateTime(DateTime.Today);
+            var zone = TimeZoneInfo.Local;
+            var pricing = App.Pricing.Current;
+            var snapshot = await Task.Run(() => _activityStatisticsStore.ReadAsync(endDay, count, zone, scope, pricing));
+            if (request != _activityStatisticsRequest || !_activityTabActive) return;
+            _activityNeedsRefresh = false;
             _activityStatistics = snapshot;
             _activityStatisticsFailed = false;
             RebuildActivity();
         }
         catch
         {
-            if (request != _activityStatisticsRequest) return;
-            _activityStatistics = null;
+            if (request != _activityStatisticsRequest || !_activityTabActive) return;
+            _activityNeedsRefresh = false;
             _activityStatisticsFailed = true;
-            RebuildActivity();
+            OnPropertyChanged(nameof(ActivityStatisticsNotice));
+            OnPropertyChanged(nameof(HasActivityStatisticsNotice));
+        }
+        finally
+        {
+            if (request == _activityStatisticsRequest && _activityTabActive)
+            {
+                IsActivityRefreshing = false;
+                IsInitialActivityLoading = false;
+            }
         }
     }
 
     private void RebuildActivity()
     {
         var count = ActivityRangeIndex switch { 0 => 30, 2 => 365, _ => 90 };
-        _activity = _activityStatisticsFailed
-            ? ActivitySummary.Build([], DateOnly.FromDateTime(DateTime.Today), count, TimeZoneInfo.Local)
-            : _activityStatistics?.Activity ?? ActivitySummary.Build(_activityRecords, DateOnly.FromDateTime(DateTime.Today), count, TimeZoneInfo.Local);
+        _activity = _activityStatistics?.Activity ?? ActivitySummary.Build(_activityRecords, DateOnly.FromDateTime(DateTime.Today), count, TimeZoneInfo.Local);
         var selectedDate = SelectedActivityDay?.Date;
         var calendar = new List<ActivityCalendarCell>();
         var firstMonday = _activity.StartDay.AddDays(-(((int)_activity.StartDay.DayOfWeek + 6) % 7));

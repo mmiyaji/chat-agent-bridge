@@ -85,7 +85,8 @@ public sealed partial class MattermostWebSocketTransport
     private void EnsureIncomingFileAccess(ChatRequest request)
     {
         var settings = Volatile.Read(ref _liveAccessSettings);
-        if (settings is not null && !ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", request.UserId, request.ChannelId, request.ThreadId))
+        if (settings is not null && !ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", request.UserId,
+                request.ChannelId, request.ThreadId, isDirectMessage: request.IsDirectMessage))
             throw new InvalidOperationException("Mattermost access to this request was revoked.");
     }
 

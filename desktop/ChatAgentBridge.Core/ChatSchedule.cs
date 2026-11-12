@@ -19,6 +19,8 @@ public sealed record ChatSchedule
     public string ThreadId { get; init; } = "";
     /// <summary>The Discord guild that owned the channel; null elsewhere. Needed to re-check access when it fires.</summary>
     public string? GuildId { get; init; }
+    /// <summary>Whether the originating channel was verified as a personal direct message.</summary>
+    public bool IsDirectMessage { get; init; }
     public string UserId { get; init; } = "";
     public string Prompt { get; init; } = "";
     public ChatScheduleKind Kind { get; init; }
@@ -69,9 +71,9 @@ public sealed record ChatScheduleCommand(
     string Prompt = "",
     string Target = "")
 {
-    private static readonly Regex TimePattern = new(@"^(?<h>[01]?\d|2[0-3]):(?<m>[0-5]\d)$",
+    private static readonly Regex TimePattern = new(@"^(?<h>[01]?[0-9]|2[0-3]):(?<m>[0-5][0-9])$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex EveryPattern = new(@"^(?<n>[1-9]\d{0,3})(?<u>[mh])$",
+    private static readonly Regex EveryPattern = new(@"^(?<n>[1-9][0-9]{0,3})(?<u>[mh])$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
     public static ChatScheduleCommand Parse(string? argument)

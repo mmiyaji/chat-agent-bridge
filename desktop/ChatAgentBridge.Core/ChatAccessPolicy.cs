@@ -55,6 +55,9 @@ public static class ChatAccessPolicy
     {
         ArgumentNullException.ThrowIfNull(settings);
         if (provider == "slack" && isDirectMessage) return settings.SlackAllowDirectMessages;
+        // Mattermost verifies the channel type before setting this flag. A personal DM
+        // does not belong to the shared-channel thread allowlist.
+        if (provider == "mattermost" && isDirectMessage) return settings.MattermostAllowDirectMessages;
         if (provider == "discord")
         {
             if (guildId is null)

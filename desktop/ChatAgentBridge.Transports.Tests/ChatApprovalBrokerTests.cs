@@ -20,9 +20,9 @@ public sealed class ChatApprovalBrokerTests
         Task<AppServerDecision> request = broker.RequestAsync(transport, Origin, Approval, null, publishToThread: true);
         string code = await GetCodeAsync(transport);
 
-        Assert.True(broker.TryHandle(Origin with { Text = $"!cab {verb} {code}" }));
+        Assert.True(await broker.TryHandleAsync(Origin with { Text = $"!cab {verb} {code}" }));
         Assert.Equal(expected, await request.WaitAsync(TimeSpan.FromSeconds(2)));
-        Assert.True(broker.TryHandle(Origin with { Text = $"approve {code}" }));
+        Assert.True(await broker.TryHandleAsync(Origin with { Text = $"approve {code}" }));
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public sealed class ChatApprovalBrokerTests
         Assert.True(text.Length <= 3000);
         Assert.Contains($"!cab approve {code}", text);
         Assert.Contains($"!cab reject {code}", text);
-        broker.TryHandle(Origin with { Text = $"reject {code}" });
+        await broker.TryHandleAsync(Origin with { Text = $"reject {code}" });
         Assert.Equal(AppServerDecision.Decline, await request.WaitAsync(TimeSpan.FromSeconds(2)));
     }
 
@@ -62,9 +62,9 @@ public sealed class ChatApprovalBrokerTests
             "provider" => Origin with { Provider = "slack" },
             _ => throw new ArgumentOutOfRangeException(nameof(changedScope))
         };
-        Assert.True(broker.TryHandle(otherScope with { Text = $"approve {code}" }));
+        Assert.True(await broker.TryHandleAsync(otherScope with { Text = $"approve {code}" }));
         Assert.False(request.IsCompleted);
-        Assert.True(broker.TryHandle(Origin with { Text = $"approve {code}" }));
+        Assert.True(await broker.TryHandleAsync(Origin with { Text = $"approve {code}" }));
         Assert.Equal(AppServerDecision.Accept, await request.WaitAsync(TimeSpan.FromSeconds(2)));
     }
 
@@ -75,16 +75,16 @@ public sealed class ChatApprovalBrokerTests
         var firstTransport = new FakeTransport();
         Task<AppServerDecision> first = broker.RequestAsync(firstTransport, Origin, Approval, null, publishToThread: true);
         string oldCode = await GetCodeAsync(firstTransport);
-        broker.TryHandle(Origin with { Text = $"reject {oldCode}" });
+        await broker.TryHandleAsync(Origin with { Text = $"reject {oldCode}" });
         Assert.Equal(AppServerDecision.Decline, await first.WaitAsync(TimeSpan.FromSeconds(2)));
 
         var secondTransport = new FakeTransport();
         Task<AppServerDecision> second = broker.RequestAsync(secondTransport, Origin, Approval, null, publishToThread: true);
         string newCode = await GetCodeAsync(secondTransport);
         Assert.NotEqual(oldCode, newCode);
-        Assert.True(broker.TryHandle(Origin with { Text = $"approve {oldCode}" }));
+        Assert.True(await broker.TryHandleAsync(Origin with { Text = $"approve {oldCode}" }));
         Assert.False(second.IsCompleted);
-        broker.TryHandle(Origin with { Text = $"approve {newCode}" });
+        await broker.TryHandleAsync(Origin with { Text = $"approve {newCode}" });
         Assert.Equal(AppServerDecision.Accept, await second.WaitAsync(TimeSpan.FromSeconds(2)));
     }
 
@@ -105,7 +105,7 @@ public sealed class ChatApprovalBrokerTests
         string code = await GetCodeAsync(transport);
         await callbackStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
 
-        broker.TryHandle(Origin with { Text = $"approve {code}" });
+        await broker.TryHandleAsync(Origin with { Text = $"approve {code}" });
         Assert.Equal(AppServerDecision.Accept, await request.WaitAsync(TimeSpan.FromSeconds(2)));
         await callbackCancelled.Task.WaitAsync(TimeSpan.FromSeconds(2));
     }
@@ -121,12 +121,12 @@ public sealed class ChatApprovalBrokerTests
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => request);
-        Assert.True(broker.TryHandle(Origin with { Text = $"approve {code}" }));
+        Assert.True(await broker.TryHandleAsync(Origin with { Text = $"approve {code}" }));
         var nextTransport = new FakeTransport();
         Task<AppServerDecision> next = broker.RequestAsync(nextTransport, Origin, Approval, null, publishToThread: true);
         string nextCode = await GetCodeAsync(nextTransport);
         Assert.NotEqual(code, nextCode);
-        broker.TryHandle(Origin with { Text = $"reject {nextCode}" });
+        await broker.TryHandleAsync(Origin with { Text = $"reject {nextCode}" });
         Assert.Equal(AppServerDecision.Decline, await next.WaitAsync(TimeSpan.FromSeconds(2)));
     }
 

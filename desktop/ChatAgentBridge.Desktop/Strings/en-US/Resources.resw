@@ -1190,8 +1190,9 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="PortableUpdateReleaseNotes.Content" xml:space="preserve"><value>Release notes (GitHub)</value></data>
   <data name="CliCheckError.Title" xml:space="preserve"><value>CLI check failed</value></data>
   <data name="CliCheckSuccess.Title" xml:space="preserve"><value>CLI check succeeded</value></data>
-  <data name="UpdateNotice.Message" xml:space="preserve"><value>Review the main changes and improvements in this version.</value></data>
-  <data name="UpdateNoticeAction.Content" xml:space="preserve"><value>View changes</value></data>
+  <data name="ReleaseHighlightsHeading.Text" xml:space="preserve"><value>What's new</value></data>
+  <data name="ReleaseHighlightsSummary.Text" xml:space="preserve"><value>• Start using chat before registering allowed users&#10;• Clearer history and better-blended popups</value></data>
+  <data name="UpdateNoticeAction.Content" xml:space="preserve"><value>What's new</value></data>
   <data name="UpdateNoticeAction.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>View app changes</value></data>
   <data name="StartWithWindows.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Start this app when signing in to Windows</value></data>
   <data name="AutoConnectProvider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Chat to connect automatically when the app starts</value></data>
@@ -1409,6 +1410,8 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="AgentLegacyBadge.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>For new setups, use Antigravity CLI. Enterprise licenses and API-key access to Gemini CLI remain supported.</value></data>
   <data name="DetectCliExecutable.Content" xml:space="preserve"><value>Detect CLI</value></data>
   <data name="DetectCliExecutable.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Find the selected CLI on PATH. This does not run the AI agent.</value></data>
+  <data name="ContentLoadingText.Text" xml:space="preserve"><value>Loading…</value></data>
+  <data name="ContentReloadProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Refreshing</value></data>
   <data name="ShutdownLoadingText.Text" xml:space="preserve"><value>Closing…</value></data>
   <data name="ShutdownLoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Application shutdown progress</value></data>
   <data name="PortableUpdateCacheCleanupRow.Header" xml:space="preserve"><value>Temporary update files</value></data>

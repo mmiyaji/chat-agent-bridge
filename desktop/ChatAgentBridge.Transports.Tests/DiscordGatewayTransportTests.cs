@@ -18,7 +18,7 @@ public sealed class DiscordGatewayTransportTests
     [Fact]
     public void Parser_binds_top_level_and_thread_messages_to_logical_parent_and_source_channel()
     {
-        using var root = JsonDocument.Parse("""{"id":"m1","channel_id":"parent","guild_id":"guild","author":{"id":"user"},"content":"<@!bot> inspect","attachments":[{"id":"a1","filename":"spec.txt","size":12,"content_type":"text/plain"}],"type":0}""");
+        using var root = JsonDocument.Parse("""{"id":"m1","channel_id":"parent","guild_id":"guild","author":{"id":"user","global_name":"Alice Example","username":"alice"},"content":"<@!bot> inspect","attachments":[{"id":"a1","filename":"spec.txt","size":12,"content_type":"text/plain"}],"type":0}""");
         var top = DiscordGatewayTransport.ParseMessageRequest(root.RootElement, "bot");
         Assert.NotNull(top);
         Assert.Equal("parent", top.ChannelId);
@@ -26,6 +26,7 @@ public sealed class DiscordGatewayTransportTests
         Assert.Equal("parent", top.SourceChannelId);
         Assert.Equal("inspect", top.Text);
         Assert.Equal("guild", top.GuildId);
+        Assert.Equal("Alice Example", top.UserDisplayName);
         Assert.Equal(new IncomingChatFile("a1", "spec.txt", 12, "text/plain"), Assert.Single(top.IncomingFiles));
 
         using var followup = JsonDocument.Parse("""{"id":"m2","channel_id":"thread","thread_id":"parent","guild_id":"guild","author":{"id":"user"},"content":"continue","type":0}""");
@@ -35,6 +36,36 @@ public sealed class DiscordGatewayTransportTests
         Assert.Equal("thread", reply.ThreadId);
         Assert.Equal("thread", reply.SourceChannelId);
         Assert.Equal("continue", reply.Text);
+    }
+
+    [Fact]
+    public void Parser_uses_only_bounded_non_control_author_names_without_changing_request_identity()
+    {
+        var cases = new (string? GlobalName, string? Username, string? ExpectedName)[]
+        {
+            ("  Alice  ", "alice", "Alice"),
+            ("bad\nname", "safe-name", "safe-name"),
+            (new string('x', 129), "safe-name", "safe-name"),
+            (new string('x', 129), "also\runsafe", null),
+            (null, null, null)
+        };
+
+        foreach (var (globalName, username, expectedName) in cases)
+        {
+            string json = JsonSerializer.Serialize(new
+            {
+                id = "message-1", channel_id = "channel-1", content = "!cab inspect", type = 0,
+                author = new { id = "requester-1", global_name = globalName, username }
+            });
+            using var document = JsonDocument.Parse(json);
+            var request = DiscordGatewayTransport.ParseMessageRequest(document.RootElement, "bot");
+
+            Assert.NotNull(request);
+            Assert.Equal("requester-1", request.UserId);
+            Assert.Equal("inspect", request.Text);
+            Assert.Equal(expectedName, request.UserDisplayName);
+            Assert.False(request.IsAccessRequest);
+        }
     }
 
     [Fact]

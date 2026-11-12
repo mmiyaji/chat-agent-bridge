@@ -2,7 +2,7 @@
 <root>
   <data name="OverviewCliPreviouslyVerified" xml:space="preserve"><value>Previously checked</value></data>
   <data name="CliVerificationRestored" xml:space="preserve"><value>Reusing the CLI check from {0}. The CLI files and settings are unchanged. Login status and model availability are checked during use; use Check CLI to refresh the model list.</value></data>
-  <data name="UpdateNoticeTitle" xml:space="preserve"><value>Chat Agent Bridge was updated ({0})</value></data>
+  <data name="UpdateNoticeTitle" xml:space="preserve"><value>Updated to version {0}</value></data>
   <data name="CliVerificationSaveFailed" xml:space="preserve"><value>The check succeeded, but its result could not be saved. Check again after restarting.</value></data>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -492,7 +492,7 @@
     <value>Choose the AI and workspace for this PC. Install and sign in to the CLI first.</value>
   </data>
   <data name="WizardChatDescription" xml:space="preserve">
-    <value>Choose Slack, Mattermost, or Discord, enter its connection details, and specify the user IDs allowed to use it.</value>
+    <value>Choose Slack, Mattermost, or Discord and enter the required connection details. Setting allowed users is optional.</value>
   </data>
   <data name="WizardCliDescription" xml:space="preserve">
     <value>Check the CLI version. Codex and Claude Code also provide model candidates. No AI task request is sent.</value>

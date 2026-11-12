@@ -4,6 +4,13 @@ namespace ChatAgentBridge_Desktop.Inbox;
 
 public sealed partial class InboxItem
 {
+    partial void OnUserNameChanged(string? oldValue, string? newValue)
+    {
+        var oldOwner = DesktopText.Get("InboxConversationOwner", Presentation.UserIdentityText.Format(oldValue, Request.UserId));
+        var newOwner = DesktopText.Get("InboxConversationOwner", UserIdentity);
+        SessionLabel = SessionLabel.Replace(oldOwner, newOwner, StringComparison.Ordinal);
+    }
+
     public void RefreshLocalizedText()
     {
         OnPropertyChanged(nameof(StateDisplay));

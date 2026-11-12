@@ -1,6 +1,6 @@
 param([Parameter(Mandatory)][string]$Version)
 $ErrorActionPreference = 'Stop'
-if ($Version -cnotmatch '^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-preview\.(0|[1-9][0-9]*))?$') {
+if ($Version -cnotmatch '\Av?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-preview\.(0|[1-9][0-9]*))?\z') {
     throw 'Version must be X.Y.Z or X.Y.Z-preview.N with an optional lowercase v prefix.'
 }
 $parts = @($Matches[1], $Matches[2], $Matches[3], $(if ($Matches.ContainsKey(4)) { $Matches[4] } else { '0' }))

@@ -3,7 +3,7 @@ param(
     [ValidateSet('x64', 'ARM64')]
     [string] $Architecture = 'x64',
     [string] $ReleaseVersion = '0.1.0-preview.5',
-    [string] $ApplicationVersion = '0.1.0.4',
+    [string] $ApplicationVersion,
     [string] $OutputDirectory = (Join-Path $PSScriptRoot 'artifacts/portable-releases'),
     [switch] $ValidateOnly,
     [string] $ArchivePath,
@@ -19,6 +19,10 @@ $project = Join-Path $PSScriptRoot 'ChatAgentBridge.Desktop/ChatAgentBridge.Desk
 $updaterProject = Join-Path $PSScriptRoot 'ChatAgentBridge.Updater/ChatAgentBridge.Updater.csproj'
 $distributionDir = Join-Path $PSScriptRoot 'distribution'
 $releaseBuild = & (Join-Path $PSScriptRoot 'Resolve-ReleaseBuildVersion.ps1') -Version $ReleaseVersion
+$ReleaseVersion = $releaseBuild.ReleaseVersion
+if (-not $PSBoundParameters.ContainsKey('ApplicationVersion')) {
+    $ApplicationVersion = $releaseBuild.ApplicationVersion
+}
 $trimmedRelease = [bool]$releaseBuild.Prerelease
 $expectedMachine = if ($Architecture -eq 'x64') { 0x8664 } else { 0xAA64 }
 $requiredNames = @('ChatAgentBridge.Desktop.exe', 'ChatAgentBridge.Desktop.runtimeconfig.json', 'coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'Microsoft.ui.xaml.dll', 'Microsoft.WindowsAppRuntime.Insights.Resource.dll', 'ChatAgentBridge.Desktop.pri', 'README.portable.ja.txt', 'README.portable.en.txt')

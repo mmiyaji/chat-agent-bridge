@@ -55,6 +55,7 @@ UIスクリプトは現在 `desktop/` 直下に置かれています。ファイ
 
 - 検証後は専用アプリ・模擬サーバーを停止し、不要になった古いビルド、展開済み更新ファイル、更新ZIPを適宜削除します。結果の要約・証跡と直近の確認用ビルドは残します。
 - `%LOCALAPPDATA%/ChatAgentBridge/Updates` には配置先とデータ先ごとのキャッシュも作られます。記録されたパスが検証専用であること、使用中のアプリ・アップデーターがないこと、対象がキャッシュ配下であることを確認します。通常利用のDataや用途不明のバックアップは削除しません。
+- ポータブル版は起動した実行ファイルの場所ごとに Windows の通知登録を作るため、検証用ビルドを起動するたびに通知設定へ「Chat Agent Bridge」が増えます。検証用ビルドを起動した作業の最後に `./desktop/Clear-DevNotificationRegistrations.ps1 -IncludeDevelopmentBuilds` を実行し、使っていない登録を削除します。実行中のビルドと Store 版の登録は残し、削除前のレジストリを `desktop/artifacts/notification-registration-backups/` に保存します。対象は `-WhatIf` で事前に確認できます。
 - 削除が環境の自動チェックで拒否された場合は、別手段で迂回せず未完了として報告します。
 
 ## リリース前

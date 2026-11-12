@@ -54,7 +54,7 @@ public sealed partial class AllowedUserListView : UserControl
         var content = new StackPanel { Spacing = 8, MaxWidth = 360 };
         content.Children.Add(details);
         content.Children.Add(usage);
-        new Flyout { Content = content }.ShowAt(button);
+        Presentation.PopupBackdrop.Apply(new Flyout { Content = content }).ShowAt(button);
 
         try
         {

@@ -27,7 +27,9 @@ public sealed class ChatScheduleTests : IDisposable
 
     [Theory]
     [InlineData("add daily 25:00 x")]
+    [InlineData("add daily 1٢:00 x")]
     [InlineData("add every 5m x")]
+    [InlineData("add every 3٠m x")]
     [InlineData("add every 99999h x")]
     [InlineData("add daily 09:00")]
     [InlineData("add monthly 09:00 x")]
@@ -94,6 +96,21 @@ public sealed class ChatScheduleTests : IDisposable
         Assert.NotNull(await store.RemoveAsync("1", u1));
         Assert.Equal(ChatScheduleStore.MaximumPerUser, (await store.ListAsync()).Count);
         Assert.Null(await store.RemoveAsync("99", u1));
+    }
+
+    [Fact]
+    public async Task NumericIdsDoNotResolveAsListPositions()
+    {
+        var store = new ChatScheduleStore(_directory);
+        var own = Daily(0, DateTimeOffset.UtcNow) with { Id = "123456" };
+        var other = own with { Id = "000001", UserId = "other" };
+        Directory.CreateDirectory(_directory);
+        await File.WriteAllTextAsync(Path.Combine(_directory, "chat-schedules.json"),
+            System.Text.Json.JsonSerializer.Serialize(new { SchemaVersion = 1, Schedules = new[] { own, other } }));
+
+        Assert.Null(await store.RemoveAsync(other.Id, [own]));
+        Assert.Equal(own, await store.RemoveAsync(own.Id, [own]));
+        Assert.Equal(other, Assert.Single(await store.ListAsync()));
     }
 
     [Fact]

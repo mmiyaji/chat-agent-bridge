@@ -89,6 +89,7 @@ Install from the [Microsoft Store](https://apps.microsoft.com/detail/9n1lzk25fsg
 4. Configure the chat service and bot connection in the first-run wizard. Direct messages are enabled by default, so you can start with a dedicated DM with the bot. Add shared channels or channel restrictions later in **Chat settings** if needed. Under **Common settings → Allowed users**, add your own account (at least one user is required to connect). Requests from other users in an allowed conversation can wait for a decision on the PC.
    - Slack: [Slack setup guide](docs/slack-setup.md) (Socket Mode app, events and scopes)
    - Mattermost: [Mattermost setup guide](docs/mattermost-setup.md) (current screenshots show the card layout, individual DMs and shared-channel search)
+     Shared-channel thread restrictions apply only to the shared channel. Individual bot DMs follow the DM setting, allowed-user checks and approval policy.
    - Discord: [Discord setup guide](docs/discord-setup.md) (bot token, allowed server IDs and Message Content Intent)
 5. Connect from **Chat** and post a request. How to start depends on the service (see [Chat operations](#chat-operations)).
    Connect buttons are enabled only for services with saved connection details. If none are ready, use **Open chat settings** in Chat to finish setup.
@@ -129,6 +130,8 @@ See the [per-CLI support guide (Japanese)](desktop/README.ja.md#利用できるc
 ## Approvals, access and sharing
 
 Under **Chat settings → Common settings → Allowed users**, one table shows the total count and each user’s service. The first six entries alternate between services with users. Choose **Show … more** to expand the table. To add someone, choose **Add user** and select a service in the popup. Search for a Mattermost or Slack user and confirm the match, or enter the user ID directly. Discord uses ID entry. Each service's settings show its allowed-user count and link to this shared list. Select a name or ID for registration and last-request details, plus run, conversation, and CLI session counts from retained history. Removing a user asks for confirmation.
+
+Where a user ID is shown, the app also shows a known display name. It reuses saved allowed-user, access-history, and conversation names when offline; if a name is unavailable, the allowed-user list says so. Names are display metadata and do not change access permissions.
 
 Manual runs use the working folder selected in Agent settings, regardless of where CAB is installed. A folder selected and saved on the PC is trusted by default. Register other parent folders to permit switching conversations to their subfolders. Chat requests cannot automatically add locations outside that scope, and switching follows your approval settings. Git is not required; trusting a folder does not grant full access.
 
@@ -206,7 +209,9 @@ You can also inspect live output and stop a request on the PC.
 
 In **History → Run records**, runs are listed in a table with start time, conversation, user, result, model, duration and tokens. Click a column header to sort, or drag its right edge to resize it. Click a row to open its details beside the table: related actions in time order, usage details and IDs, with **Open conversation** to jump to the saved conversation. Switch to **All operations** to see every audit record, including rejected requests and actions without a run ID, or to **Access** to see only allowed-user changes and access decisions made from chat. Filter by chat, user, ID or service.
 
-Find saved conversations by name or working folder and change their model or agent. Review execution times, statuses, operation records and usage recorded by this app.
+Find saved conversations by name or working folder and change their model or agent. Conversation rows show the title, participants, service and latest result; workspace and CLI settings are available in the detail pane. Access records show the target user, with the saved name and ID together when a name is available. Review execution times, statuses, operation records and usage recorded by this app.
+
+Chat request and history detail panes scroll in steps with the mouse wheel. Embedded text and output areas keep their own scrolling.
 
 ![Daily activity calendar with sample records](docs/assets/screenshots/history-en.png)
 
@@ -233,7 +238,9 @@ The app uses Japanese when the Windows language preference is Japanese and Engli
 
 ![Current status, startup, auto-connect and system tray settings](docs/assets/screenshots/general-en.png)
 
-Portable builds can check for and apply updates from **About**. Downloads show received and total size while active or paused, transfer speed and estimated time remaining, elapsed time while waiting for data, retry counts, and verification and preparation stages. Downloads can be canceled. Downloads support pause and resume, including after restarting the app. Network failures or five minutes without data trigger up to three retries. The completed archive is verified with SHA-256. The `Data` folder is retained during updates. Completed update downloads and temporary binary payloads are cleaned up automatically; update logs are retained. Information → Update settings shows storage usage. Manual cleanup is under Information → Advanced settings → Maintenance. For manual updates, close the app and replace the files while keeping `Data`.
+After an update, a notice at the top of the app shows the main changes. You can revisit them under **About → What's new** after dismissing the notice.
+
+Portable builds can check for and apply updates from **About**. Downloads show received and total size while active or paused, transfer speed and estimated time remaining, elapsed time while waiting for data, retry counts, and verification and preparation stages. Downloads can be canceled. Downloads support pause and resume, including after restarting the app. Network failures or five minutes without data trigger up to three retries. The completed archive is verified with SHA-256. Local failures show the update stage, a cause when identified (such as low disk space or a file in use), and a code to share with support. The `Data` folder is retained during updates. Completed update downloads and temporary binary payloads are cleaned up automatically; update logs are retained. Information → Update settings shows storage usage. Manual cleanup is under Information → Advanced settings → Maintenance. For manual updates, close the app and replace the files while keeping `Data`.
 
 App screenshots were captured from the development build on 2026-11-08 with isolated
 demo settings; they contain no real conversations or credentials. The Slack

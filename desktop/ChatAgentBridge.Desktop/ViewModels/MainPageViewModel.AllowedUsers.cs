@@ -52,17 +52,25 @@ public partial class MainPageViewModel
         if (_settings is not { } settings) return;
         var generation = Interlocked.Increment(ref _allowedUserNameRefreshGeneration);
         var rows = models.SelectMany(model => model.Rows)
-            .Where(row => (row.Provider != "discord" || AllowedUserListModel.SplitIds(settings.DiscordAllowedChannelIds).Length > 0) &&
-                (row.Provider != "mattermost" || IsMattermostBaseUrl(settings.MattermostServerUrl)))
-            .Take(100).ToArray();
+            .Where(row => row.Provider != "mattermost" || IsMattermostBaseUrl(settings.MattermostServerUrl))
+            .ToArray();
         var scopes = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["slack"] = "slack",
             ["mattermost"] = MattermostNameScope(settings.MattermostServerUrl),
             ["discord"] = "discord:" + (AllowedUserListModel.SplitIds(settings.DiscordAllowedChannelIds).FirstOrDefault() ?? "")
         };
-        var noNames = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var model in models) model.SetResolvedNames(scopes[model.Provider], noNames);
+        IReadOnlyDictionary<(string Provider, string UserId), string> savedNames =
+            new Dictionary<(string, string), string>();
+        try
+        {
+            savedNames = await Task.Run(() => new AllowedUserDirectory(_settingsStore.DirectoryPath).LoadDisplayNamesAsync());
+        }
+        catch (Exception) { /* Display metadata is optional; cached and online lookup can still supply a name. */ }
+        if (generation != Volatile.Read(ref _allowedUserNameRefreshGeneration) || !HasSameIdentitySettings(settings, _settings)) return;
+        foreach (var model in models)
+            model.SetResolvedNames(scopes[model.Provider], savedNames.Where(pair => pair.Key.Provider == model.Provider)
+                .ToDictionary(pair => pair.Key.UserId, pair => pair.Value, StringComparer.Ordinal));
         if (rows.Length == 0) return;
 
         try
@@ -200,6 +208,7 @@ public partial class MainPageViewModel
                 foreach (var id in ids)
                 {
                     model.PendingNames.TryGetValue(id, out var name);
+                    name ??= model.Rows.FirstOrDefault(row => row.UserId == id && row.HasName)?.DisplayName;
                     try
                     {
                         await audit.AppendAsync(new AuditEvent(DateTimeOffset.UtcNow, kind, null, provider, "", "")

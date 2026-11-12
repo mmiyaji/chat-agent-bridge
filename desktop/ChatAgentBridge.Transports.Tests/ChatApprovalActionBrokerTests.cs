@@ -111,6 +111,25 @@ public sealed class ChatApprovalActionBrokerTests
     }
 
     [Fact]
+    public async Task TextControlChecksLiveAuthorizationBeforeSettlingApproval()
+    {
+        var transport = new FakeActionTransport();
+        var broker = new ChatApprovalBroker(TimeSpan.FromSeconds(3));
+        var canDecide = false;
+        var request = broker.RequestAsync(transport, Origin, Approval, null, publishToThread: true,
+            canDecideInChat: _ => Task.FromResult(canDecide));
+        await transport.Posted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        var command = Origin with { Text = $"approve {GetCode(transport.Text)}" };
+
+        Assert.True(await broker.TryHandleAsync(command));
+        Assert.False(request.IsCompleted);
+
+        canDecide = true;
+        Assert.True(await broker.TryHandleAsync(command));
+        Assert.Equal(AppServerDecision.Accept, await request.WaitAsync(TimeSpan.FromSeconds(2)));
+    }
+
+    [Fact]
     public async Task TextControlFromWrongGuildIsConsumedButCannotApprove()
     {
         var transport = new FakeActionTransport();
@@ -119,9 +138,9 @@ public sealed class ChatApprovalActionBrokerTests
         await transport.Posted.Task.WaitAsync(TimeSpan.FromSeconds(2));
         var code = GetCode(transport.Text);
 
-        Assert.True(broker.TryHandle(Origin with { GuildId = "923456789012345678", Text = $"approve {code}" }));
+        Assert.True(await broker.TryHandleAsync(Origin with { GuildId = "923456789012345678", Text = $"approve {code}" }));
         Assert.False(request.IsCompleted);
-        Assert.True(broker.TryHandle(Origin with { Text = $"approve {code}" }));
+        Assert.True(await broker.TryHandleAsync(Origin with { Text = $"approve {code}" }));
         Assert.Equal(AppServerDecision.Accept, await request.WaitAsync(TimeSpan.FromSeconds(2)));
     }
 

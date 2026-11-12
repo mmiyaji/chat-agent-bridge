@@ -287,7 +287,7 @@ public sealed partial class MattermostWebSocketTransport
                 dataChannel is not null && !string.Equals(dataChannel, original.ChannelId, StringComparison.Ordinal) ||
                 broadcastChannel is not null && !string.Equals(broadcastChannel, original.ChannelId, StringComparison.Ordinal) ||
                 !ChatAccessPolicy.IsAllowedRequest(settings, "mattermost", original.UserId,
-                    original.ChannelId, original.ThreadId))
+                    original.ChannelId, original.ThreadId, isDirectMessage: original.IsDirectMessage))
                 return;
 
             progress.StopRequested = true;
@@ -298,7 +298,8 @@ public sealed partial class MattermostWebSocketTransport
                 ? $"stop-reaction:{postId}:{actorId}"
                 : $"reaction:{reactionId}")
         {
-            CancellationTargetMessageId = original.MessageId
+            CancellationTargetMessageId = original.MessageId,
+            IsDirectMessage = original.IsDirectMessage
         };
         await onRequest(synthetic, cancellationToken).ConfigureAwait(false);
     }

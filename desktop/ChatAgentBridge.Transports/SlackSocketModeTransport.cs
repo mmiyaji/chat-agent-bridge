@@ -165,10 +165,7 @@ public sealed partial class SlackSocketModeTransport : IChatTransport, IChatProg
             {
                 var reason = TryString(envelope, "reason", out var disconnectReason) ? disconnectReason : "";
                 if (reason == "link_disabled") throw new InvalidOperationException("Slack Socket Mode was disabled for this app.");
-                // Slack sends `warning` shortly before normal recycling and `refresh_requested` when a fresh
-                // WebSocket URL is required. Fetch a new URL immediately for either normal refresh path.
-                if (reason is "warning" or "refresh_warning" or "refresh_requested" || string.IsNullOrEmpty(reason))
-                    throw new SlackReconnectException();
+                // Reconnect through apps.connections.open to obtain a fresh WebSocket URL.
                 throw new SlackReconnectException();
             }
             if (!TryString(envelope, "envelope_id", out var envelopeId)) continue;
