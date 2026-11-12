@@ -764,9 +764,19 @@
   <data name="PortableUpdateCancelled" xml:space="preserve"><value>更新操作をキャンセルしました。</value></data>
   <data name="PortableUpdateVerifying" xml:space="preserve"><value>検証中 · 更新ファイルを確認・展開しています…</value></data>
   <data name="PortableUpdateNetworkError" xml:space="preserve"><value>ネットワーク接続を確認して、もう一度お試しください。</value></data>
-  <data name="PortableUpdateAccessError" xml:space="preserve"><value>アプリのフォルダーに書き込めないか、ファイルが使用中です。</value></data>
+  <data name="PortableUpdateAccessError" xml:space="preserve"><value>{0}で更新用フォルダーにアクセスできませんでした。アクセス権を確認してください（コード: {1}）。</value></data>
   <data name="PortableUpdateIntegrityError" xml:space="preserve"><value>取得したファイルを検証できませんでした。もう一度ダウンロードしてください。</value></data>
-  <data name="PortableUpdateLocalError" xml:space="preserve"><value>更新の準備に失敗しました。空き容量を確認し、同じアプリを複数起動している場合は閉じてください。</value></data>
+  <data name="PortableUpdateDiskFullError" xml:space="preserve"><value>{0}でディスクの空き容量が不足しました。空き容量を増やして再試行してください（コード: {1}）。</value></data>
+  <data name="PortableUpdateFileBusyError" xml:space="preserve"><value>{0}で更新ファイルが別のアプリから使用中です。Chat Agent Bridgeの他のウィンドウを閉じて再試行してください（コード: {1}）。</value></data>
+  <data name="PortableUpdateIoError" xml:space="preserve"><value>{0}で更新データを読み書きできませんでした。保存先の状態を確認してください（コード: {1}）。</value></data>
+  <data name="PortableUpdateStageError" xml:space="preserve"><value>{0}で予期しないエラーが発生しました。サポートに問い合わせる場合はコードをお知らせください（コード: {1}）。</value></data>
+  <data name="PortableUpdateStageCheck" xml:space="preserve"><value>更新の確認</value></data>
+  <data name="PortableUpdateStageDownload" xml:space="preserve"><value>更新のダウンロード</value></data>
+  <data name="PortableUpdateStageExtract" xml:space="preserve"><value>ダウンロードしたファイルの展開・検証</value></data>
+  <data name="PortableUpdateStageSave" xml:space="preserve"><value>更新データの保存</value></data>
+  <data name="PortableUpdateStageApply" xml:space="preserve"><value>更新の適用準備</value></data>
+  <data name="PortableUpdateStageGeneral" xml:space="preserve"><value>更新処理</value></data>
+  <data name="PortableUpdateLocalError" xml:space="preserve"><value>更新設定を読み書きできませんでした。情報画面を開き直してください。</value></data>
   <data name="PortableUpdateInProgress" xml:space="preserve"><value>Chat Agent Bridgeを更新中です。しばらくしてから起動してください。</value></data>
   <data name="WindowCloseConfirmationTitle" xml:space="preserve"><value>Chat Agent Bridgeを終了しますか？</value></data>
   <data name="WindowCloseConfirmationMessage" xml:space="preserve"><value>終了するとチャット接続を切断し、実行中および待機中の作業をキャンセルします。システム トレイに格納するとアプリは実行を続けます。</value></data>

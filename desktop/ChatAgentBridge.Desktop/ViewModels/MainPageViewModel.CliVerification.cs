@@ -24,6 +24,13 @@ public partial class MainPageViewModel
         if (_closing || IsCheckingCli || generation != _cliCheckGeneration || signature != CurrentCliSignature()) return;
         if (cached is null)
         {
+            var settings = CreateSettingsSnapshot();
+            var providerStore = ProviderCliVerificationStore(settings);
+            CliExecutableChanged = await providerStore.HasChangedExecutableAsync(settings) ||
+                await new CliVerificationStore(_settingsStore.DirectoryPath).HasChangedExecutableAsync(settings);
+            if (CliExecutableChanged)
+                CliCheckSummary = ViewModelText.Get("CliExecutableChangedNotice");
+            RefreshOverviewStatus();
             if (CliCheckSucceeded)
             {
                 CancelCliCheck();
@@ -36,6 +43,8 @@ public partial class MainPageViewModel
         }
 
         ApplyCliVerification(cached, signature, restored: true);
+        CliExecutableChanged = false;
+        RefreshOverviewStatus();
     }
 
     private void ApplyCliVerification(CachedCliVerification cached, string signature, bool restored)

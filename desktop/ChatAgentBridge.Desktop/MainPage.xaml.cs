@@ -315,9 +315,13 @@ public sealed partial class MainPage : Page
     public static Style OverviewStatusDotStyle(OverviewIconState state) => (Style)Application.Current.Resources[state switch
     {
         OverviewIconState.Ready => "OverviewReadyDotStyle",
+        OverviewIconState.Warning => "OverviewAttentionDotStyle",
         OverviewIconState.Error => "OverviewErrorDotStyle",
         _ => "OverviewNeutralDotStyle"
     }];
+
+    public static Style OverviewCliStatusStyle(bool changed) => (Style)Application.Current.Resources[
+        changed ? "OverviewAttentionStatusStyle" : "OverviewSecondaryStatusStyle"];
 
     public static Style OverviewIconStyle(OverviewIconState state) => (Style)Application.Current.Resources[state switch
     {

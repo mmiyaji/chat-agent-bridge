@@ -184,6 +184,8 @@
   <data name="SettingsCheckCli.Content" xml:space="preserve">
     <value>CLIをチェック</value>
   </data>
+  <data name="CliExecutableChangedNotice.Title" xml:space="preserve"><value>CLIの変更を検出しました</value></data>
+  <data name="CliExecutableChangedCheck.Content" xml:space="preserve"><value>CLIをチェック</value></data>
   <data name="chatAgentBridgeDesktopMainPageTextBlock019.Text" xml:space="preserve">
     <value>依頼が実行され、結果が届くまで</value>
   </data>
@@ -1297,7 +1299,7 @@
   <data name="AgentEditorChecked" xml:space="preserve"><value>CLI確認済み</value></data>
   <data name="AgentEditorCheckFailed" xml:space="preserve"><value>CLIの確認に失敗</value></data>
   <data name="AgentEditorModelChoicesBox.PlaceholderText" xml:space="preserve"><value>CLIを確認するとモデルを選べます</value></data>
-  <data name="AgentEditorNotChecked" xml:space="preserve"><value>CLI未確認</value></data>
+  <data name="AgentEditorNotChecked" xml:space="preserve"><value>CLI確認が必要</value></data>
   <data name="AgentEditorModelChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>CLIから取得したモデル候補</value></data>
   <data name="AgentEditorReasoning.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>推論レベル</value></data>
   <data name="AgentEditorPermission.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>操作権限</value></data>

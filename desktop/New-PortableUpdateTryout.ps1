@@ -1,12 +1,102 @@
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [Parameter(Mandatory)][string]$TestArchive,
-    [Parameter(Mandatory)][string]$UpdateArchive,
+    [string]$TestArchive,
+    [string]$UpdateArchive,
     [string]$WorkingDirectory = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'ChatAgentBridge/UpdateTryouts'),
-    [switch]$NoLaunch
+    [switch]$NoLaunch,
+    [switch]$CleanupOnly,
+    [ValidateRange(1, 50)][int]$KeepTryouts = 3
 )
 
 $ErrorActionPreference = 'Stop'
+$workingRoot = [IO.Path]::GetFullPath($WorkingDirectory)
+for ($ancestor=$workingRoot; $ancestor; $ancestor=[IO.Path]::GetDirectoryName($ancestor)) {
+    if ((Test-Path -LiteralPath $ancestor) -and ((Get-Item -LiteralPath $ancestor -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw 'Choose a working directory without symbolic links or junctions; the production updater rejects those paths.'
+    }
+}
+
+function Get-GeneratedTryouts {
+    if (-not (Test-Path -LiteralPath $workingRoot -PathType Container)) { return @() }
+    Get-ChildItem -LiteralPath $workingRoot -Directory -Force | Where-Object {
+        $_.Name -match '^portable-update-tryout-[0-9a-f]{32}$' -and
+        -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -and
+        (Test-Path -LiteralPath (Join-Path $_.FullName 'Start-Tryout.ps1') -PathType Leaf) -and
+        ((Get-Content -LiteralPath (Join-Path $_.FullName 'README.txt') -TotalCount 1 -ErrorAction SilentlyContinue) -eq 'Chat Agent Bridge: local portable update tryout')
+    }
+}
+
+function Get-TryoutActiveProcessPaths {
+    try {
+        @(Get-CimInstance -ClassName Win32_Process -Filter "Name = 'ChatAgentBridge.Desktop.exe' OR Name = 'ChatAgentBridge.Updater.exe'" -ErrorAction Stop |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_.ExecutablePath) } |
+            ForEach-Object { [IO.Path]::GetFullPath($_.ExecutablePath) })
+    } catch {
+        throw 'Could not safely check whether a tryout is running. No old tryouts were removed.'
+    }
+}
+
+function Remove-OldTryouts {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param([string]$CurrentTryout)
+    $candidates = @(Get-GeneratedTryouts)
+    if ($candidates.Count -le $KeepTryouts) {
+        return [pscustomobject]@{ Removed=0; Active=0; Remaining=$candidates.Count }
+    }
+
+    $processPaths = @(Get-TryoutActiveProcessPaths)
+    $rootPrefix = [IO.Path]::TrimEndingDirectorySeparator($workingRoot) + [IO.Path]::DirectorySeparatorChar
+    $active = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($candidate in $candidates) {
+        $candidatePath = [IO.Path]::GetFullPath($candidate.FullName)
+        if (-not $candidatePath.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase) -or
+            [IO.Path]::GetDirectoryName($candidatePath) -ne [IO.Path]::TrimEndingDirectorySeparator($workingRoot)) {
+            continue
+        }
+        $prefix = [IO.Path]::TrimEndingDirectorySeparator($candidatePath) + [IO.Path]::DirectorySeparatorChar
+        if ($processPaths | Where-Object { $_.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) }) {
+            [void]$active.Add($candidatePath)
+        }
+    }
+
+    $slots = [Math]::Max(0, $KeepTryouts - $active.Count)
+    $inactive = @($candidates | Where-Object { -not $active.Contains([IO.Path]::GetFullPath($_.FullName)) } |
+        Sort-Object @{Expression={ if (Test-Path -LiteralPath (Join-Path $_.FullName '.last-used')) { (Get-Item -LiteralPath (Join-Path $_.FullName '.last-used')).LastWriteTimeUtc } else { $_.LastWriteTimeUtc } }; Ascending=$false })
+    $keep = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($candidate in ($inactive | Select-Object -First $slots)) { [void]$keep.Add([IO.Path]::GetFullPath($candidate.FullName)) }
+
+    $removed = 0
+    foreach ($candidate in $inactive) {
+        $candidatePath = [IO.Path]::GetFullPath($candidate.FullName)
+        if ($candidatePath -eq $CurrentTryout -or $keep.Contains($candidatePath)) { continue }
+        try {
+            $reparsePoint = Get-ChildItem -LiteralPath $candidatePath -Force -Recurse -ErrorAction Stop |
+                Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint } | Select-Object -First 1
+            if ($reparsePoint) {
+                Write-Warning "Keeping tryout with a link or junction: $($candidate.Name)"
+                continue
+            }
+            if ($PSCmdlet.ShouldProcess($candidatePath, 'Remove old portable update tryout')) {
+                Remove-Item -LiteralPath $candidatePath -Recurse -Force -ErrorAction Stop
+                $removed++
+            }
+        } catch {
+            Write-Warning "Could not safely remove tryout '$($candidate.Name)': $($_.Exception.Message)"
+        }
+    }
+    $remaining = @(Get-GeneratedTryouts).Count
+    [pscustomobject]@{ Removed=$removed; Active=$active.Count; Remaining=$remaining }
+}
+
+if ($CleanupOnly) {
+    $cleanup = Remove-OldTryouts -CurrentTryout ''
+    Write-Output "Tryout cleanup: removed $($cleanup.Removed), active $($cleanup.Active), remaining $($cleanup.Remaining); retention limit $KeepTryouts."
+    return
+}
+
+if ([string]::IsNullOrWhiteSpace($TestArchive) -or [string]::IsNullOrWhiteSpace($UpdateArchive)) {
+    throw 'Specify both -TestArchive and -UpdateArchive, or use -CleanupOnly.'
+}
 $testZip = (Resolve-Path -LiteralPath $TestArchive).Path
 $updateZip = (Resolve-Path -LiteralPath $UpdateArchive).Path
 $archivePattern = '^ChatAgentBridge\.Portable-(\d+\.\d+\.\d+(?:-preview\.\d+)?)-win-(x64|arm64)\.zip$'
@@ -28,12 +118,6 @@ foreach ($candidate in @(@{Path=$testZip;Version=$oldVersion},@{Path=$updateZip;
             throw 'Portable ZIP filename and release metadata must match.'
         }
     } finally { $archive.Dispose() }
-}
-$workingRoot = [IO.Path]::GetFullPath($WorkingDirectory)
-for ($ancestor=$workingRoot; $ancestor; $ancestor=[IO.Path]::GetDirectoryName($ancestor)) {
-    if ((Test-Path -LiteralPath $ancestor) -and ((Get-Item -LiteralPath $ancestor -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
-        throw 'Choose a working directory without symbolic links or junctions; the production updater rejects those paths.'
-    }
 }
 $root = Join-Path $workingRoot ('portable-update-tryout-' + [guid]::NewGuid().ToString('N'))
 $fixture = Join-Path $root 'fixture'
@@ -83,11 +167,13 @@ The updater confirmation can also be cancelled.
 Your normal app settings and credentials are not used.
 To start this older test app again before applying the update, run Start-Tryout.ps1.
 After updating, create a fresh tryout using desktop/New-PortableUpdateTryout.ps1.
+New tryouts keep the newest three folders by default; older inactive tryouts are removed.
 Do not distribute the test build. No GitHub release is created by this script.
 "@
 $notes | Set-Content (Join-Path $root 'README.txt') -Encoding utf8
 $launcher = @'
 $ErrorActionPreference='Stop'
+[IO.File]::WriteAllText((Join-Path $PSScriptRoot '.last-used'), [DateTime]::UtcNow.ToString('O'))
 $start=[Diagnostics.ProcessStartInfo]::new((Join-Path $PSScriptRoot 'ChatAgentBridge.Portable/ChatAgentBridge.Desktop.exe'))
 $start.UseShellExecute=$false
 $start.WorkingDirectory=Join-Path $PSScriptRoot 'ChatAgentBridge.Portable'
@@ -97,8 +183,11 @@ $start.Environment['CAB_PORTABLE_UPDATE_TEST_DIRECTORY']=Join-Path $PSScriptRoot
 [void][Diagnostics.Process]::Start($start)
 '@
 $launcher | Set-Content (Join-Path $root 'Start-Tryout.ps1') -Encoding utf8
+$cleanup = Remove-OldTryouts -CurrentTryout ([IO.Path]::GetFullPath($root))
+Write-Output "Tryout cleanup: removed $($cleanup.Removed), active $($cleanup.Active), remaining $($cleanup.Remaining); retention limit $KeepTryouts."
 $appId = $null
 if (-not $NoLaunch) {
+    [IO.File]::WriteAllText((Join-Path $root '.last-used'), [DateTime]::UtcNow.ToString('O'))
     $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $install 'ChatAgentBridge.Desktop.exe'))
     $start.UseShellExecute = $false
     $start.WorkingDirectory = $install

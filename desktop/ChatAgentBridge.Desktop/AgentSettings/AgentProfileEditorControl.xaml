@@ -139,6 +139,15 @@
                                 AutomationProperties.AutomationId="RetryCliCheck" Click="CheckCli_Click" />
                     </InfoBar.ActionButton>
                 </InfoBar>
+                <InfoBar x:Name="CliExecutableChangedInfoBar" IsOpen="{x:Bind Editor.CliExecutableChanged, Mode=OneWay}" IsClosable="False"
+                         Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.CliExecutableChanged), Mode=OneWay}"
+                         Severity="Warning" Message="{x:Bind Editor.CliCheckSummary, Mode=OneWay}"
+                         AutomationProperties.AutomationId="CliExecutableChangedInfoBar">
+                    <InfoBar.ActionButton>
+                        <Button x:Uid="CliExecutableChangedCheck" localization:LocalizedResourceKey.Key="CliExecutableChangedCheck"
+                                AutomationProperties.AutomationId="CliExecutableChangedCheck" Click="CheckCli_Click" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
 
                 <Grid x:Name="ModelGrid" ColumnSpacing="10" AutomationProperties.AutomationId="AgentEditorModelSettings"
                       Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsModel), Mode=OneWay}">
