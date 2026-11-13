@@ -204,7 +204,9 @@ public sealed partial class ChatInboxViewModel
         {
             if (!await CheckAccessAsync(item, token)) return;
             var reason = detail is null ? DesktopText.Get(reasonKey) : DesktopText.Get(reasonKey, detail);
-            await item.Transport.ReplyAsync(item.Request, DesktopText.Get("AttachmentsChatNotice", reason), token);
+            // Waiting for approval is not a failure, so it is sent without the "could not send" lead.
+            await item.Transport.ReplyAsync(item.Request, reasonKey == "AttachmentsChatApprovalPending"
+                ? reason : DesktopText.Get("AttachmentsChatNotice", reason), token);
         }
         catch (Exception) { }
     }

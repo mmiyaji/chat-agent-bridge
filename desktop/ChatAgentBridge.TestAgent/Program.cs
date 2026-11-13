@@ -513,11 +513,13 @@ if (args.Contains("--print"))
         }
 
         var attachmentPrompt = await Console.In.ReadToEndAsync();
-        var attachmentFileMatch = System.Text.RegularExpressions.Regex.Match(attachmentPrompt, @"CREATE ATTACHMENT (first|second|third|fourth|secret)\.txt", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        var attachmentFileMatch = System.Text.RegularExpressions.Regex.Match(attachmentPrompt, @"CREATE ATTACHMENT (first|second|third|fourth|secret)\.txt|CREATE ATTACHMENT (chart)\.png", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
         var attachmentResult = "No fixture file requested.";
         if (attachmentFileMatch.Success)
         {
-            var fileName = attachmentFileMatch.Groups[1].Value.ToLowerInvariant() + ".txt";
+            var fileName = attachmentFileMatch.Groups[1].Success
+                ? attachmentFileMatch.Groups[1].Value.ToLowerInvariant() + ".txt"
+                : attachmentFileMatch.Groups[2].Value.ToLowerInvariant() + ".png";
             var filePath = Path.Combine(workspace, fileName);
             if (!string.Equals(Path.GetDirectoryName(Path.GetFullPath(filePath)), workspace, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
             {
@@ -525,7 +527,8 @@ if (args.Contains("--print"))
                 Environment.ExitCode = 2;
                 return;
             }
-            await File.WriteAllTextAsync(filePath, $"Offline fixture file {fileName}{Environment.NewLine}");
+            if (fileName.EndsWith(".png", StringComparison.Ordinal)) await File.WriteAllBytesAsync(filePath, FixturePng.BarChart());
+            else await File.WriteAllTextAsync(filePath, $"Offline fixture file {fileName}{Environment.NewLine}");
             attachmentResult = $"Created {fileName}";
         }
 
@@ -777,4 +780,66 @@ static object FixtureModes(string fixtureName)
         ? new object[] { new { id = "default", name = "Default" } }
         : new object[] { new { id = "default", name = "Default" }, new { id = "yolo", name = "YOLO" } };
     return new { availableModes = modes };
+}
+
+/// <summary>Writes a small bar chart PNG without image libraries, for attachment UI checks.</summary>
+static class FixturePng
+{
+    public static byte[] BarChart()
+    {
+        const int width = 320, height = 200;
+        int[] bars = [60, 120, 90, 160, 130];
+        (byte R, byte G, byte B)[] colors = [(0x3b, 0x82, 0xf6), (0x10, 0xb9, 0x81), (0xf5, 0x9e, 0x0b), (0xef, 0x44, 0x44), (0x8b, 0x5c, 0xf6)];
+        var raw = new byte[height * (width * 3 + 1)];
+        for (var y = 0; y < height; y++)
+        {
+            var row = y * (width * 3 + 1);
+            for (var x = 0; x < width; x++)
+            {
+                var pixel = (R: (byte)0xf8, G: (byte)0xfa, B: (byte)0xfc);
+                var bar = (x - 20) / 58;
+                if (x >= 20 && bar < bars.Length && (x - 20) % 58 < 44 && height - 20 - y < bars[bar] && y < height - 20) pixel = colors[bar];
+                if (y == height - 20 && x >= 12 && x < width - 12) pixel = (0x47, 0x55, 0x69);
+                raw[row + 1 + x * 3] = pixel.R; raw[row + 2 + x * 3] = pixel.G; raw[row + 3 + x * 3] = pixel.B;
+            }
+        }
+        using var png = new MemoryStream();
+        png.Write([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+        var header = new byte[13];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(header, width);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(header.AsSpan(4), height);
+        header[8] = 8; header[9] = 2;
+        Chunk(png, "IHDR", header);
+        using (var compressed = new MemoryStream())
+        {
+            using (var zlib = new System.IO.Compression.ZLibStream(compressed, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true)) zlib.Write(raw);
+            Chunk(png, "IDAT", compressed.ToArray());
+        }
+        Chunk(png, "IEND", []);
+        return png.ToArray();
+    }
+
+    private static uint Crc32(byte[] data)
+    {
+        var crc = 0xffffffffu;
+        foreach (var b in data)
+        {
+            crc ^= b;
+            for (var bit = 0; bit < 8; bit++) crc = (crc & 1) != 0 ? 0xedb88320u ^ (crc >> 1) : crc >> 1;
+        }
+        return ~crc;
+    }
+
+    private static void Chunk(Stream output, string type, byte[] data)
+    {
+        Span<byte> number = stackalloc byte[4];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(number, data.Length);
+        output.Write(number);
+        var typed = new byte[4 + data.Length];
+        System.Text.Encoding.ASCII.GetBytes(type).CopyTo(typed, 0);
+        data.CopyTo(typed, 4);
+        output.Write(typed);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(number, Crc32(typed));
+        output.Write(number);
+    }
 }

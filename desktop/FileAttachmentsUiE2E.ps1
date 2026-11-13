@@ -258,6 +258,7 @@ function Post([string]$Id,[string]$Prompt) {
     if ($script:mm) {
         $body=@{channel_id=$script:mm.channel.id;message="!cab $Prompt"}
         if ($script:rootId) { $body.root_id=$script:rootId }
+        if ($script:nextFileIds) { $body.file_ids=@($script:nextFileIds); $script:nextFileIds=$null }
         $created=Invoke-MM 'Post' '/api/v4/posts' $body
         if (-not $script:rootId) { $script:rootId=$created.id }
         Start-Sleep -Milliseconds 800
@@ -450,6 +451,25 @@ try {
         Confirm-OneAttachment
         $sent=Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'first.txt').Count -eq 1 } 30
         $script:checks.Add(@{name='Real Mattermost upload';passed=$true})
+    }
+    Check 'Real Mattermost: an image request receives a chart image' {
+        Add-Type -AssemblyName System.Drawing
+        $input=Join-Path $runRoot 'whiteboard.png'
+        $bitmap=[Drawing.Bitmap]::new(360,220); $graphics=[Drawing.Graphics]::FromImage($bitmap)
+        $graphics.Clear([Drawing.Color]::FromArgb(255,255,251,235))
+        $font=[Drawing.Font]::new('Yu Gothic UI',18,[Drawing.FontStyle]::Bold)
+        $graphics.DrawString('売上メモ',$font,[Drawing.Brushes]::DimGray,16,14)
+        $small=[Drawing.Font]::new('Yu Gothic UI',13)
+        $y=60; foreach ($line in @('4月  60','5月 120','6月  90','7月 160','8月 130')) { $graphics.DrawString($line,$small,[Drawing.Brushes]::Black,24,$y); $y+=28 }
+        $graphics.Dispose(); $bitmap.Save($input,[Drawing.Imaging.ImageFormat]::Png); $bitmap.Dispose()
+        $uploaded=Invoke-RestMethod "$script:endpoint/api/v4/files?channel_id=$($script:mm.channel.id)" -Method Post `
+            -Headers @{Authorization="Bearer $($script:mm.memberUser.token)"} -Form @{files=Get-Item $input}
+        $script:nextFileIds=@($uploaded.file_infos[0].id)
+        Run-Prompt 'attachment-image' 'この画像の数字をグラフにして添付して CREATE ATTACHMENT chart.png' 'Created chart.png'
+        Open-AttachmentDialog
+        Confirm-OneAttachment
+        Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'chart.png').Count -eq 1 } 30 | Out-Null
+        $script:checks.Add(@{name='Real Mattermost image round trip';passed=$true})
     }
     } else {
 
