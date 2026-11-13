@@ -141,6 +141,7 @@ public partial class MainPageViewModel
         ChatFollowUpMode = settings.ChatFollowUpMode;
         ChatProgressDetail = settings.ChatProgressDetail;
         FileAttachmentApprovalMode = settings.FileAttachmentApprovalMode;
+        FileAttachmentScope = settings.FileAttachmentScope;
         FileAttachmentMaxSizeMb = settings.FileAttachmentMaxSizeMb;
         FileAttachmentMaxCount = settings.FileAttachmentMaxCount;
         FileAttachmentMaxTotalSizeMb = settings.FileAttachmentMaxTotalSizeMb;

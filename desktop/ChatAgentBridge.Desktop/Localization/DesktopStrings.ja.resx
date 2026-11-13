@@ -1153,4 +1153,5 @@
   <data name="AttachmentsChatApprovalPending" xml:space="preserve"><value>添付ファイルは、PCで送信の承認を待っています。</value></data>
   <data name="AttachmentsChatPolicyChanged" xml:space="preserve"><value>添付の設定が変わったため送信を止めました。</value></data>
   <data name="AttachmentsChatFailed" xml:space="preserve"><value>アップロードに失敗しました。PCの状態を確認してください。</value></data>
+  <data name="SettingsReviewAttachmentScope" xml:space="preserve"><value>送れるファイルの範囲</value></data>
 </root>

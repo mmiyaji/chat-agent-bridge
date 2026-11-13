@@ -104,6 +104,7 @@ public static class SettingsAuditChanges
         Check("network", before.AllowAgentNetwork, after.AllowAgentNetwork);
         Check("auto_approve_switch", before.AutoApproveSwitchCommands, after.AutoApproveSwitchCommands);
         Check("file_attachment_approval", before.FileAttachmentApprovalMode, after.FileAttachmentApprovalMode);
+        Check("file_attachment_scope", before.FileAttachmentScope, after.FileAttachmentScope);
         Check("allowed_users",
             (before.MattermostAllowedUserIds, before.SlackAllowedUserIds, before.DiscordAllowedUserIds),
             (after.MattermostAllowedUserIds, after.SlackAllowedUserIds, after.DiscordAllowedUserIds));

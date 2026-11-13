@@ -1149,4 +1149,5 @@ After: {2}</value></data>
   <data name="AttachmentsChatApprovalPending" xml:space="preserve"><value>The attachments are waiting for approval on the PC.</value></data>
   <data name="AttachmentsChatPolicyChanged" xml:space="preserve"><value>Sending stopped because the attachment settings changed.</value></data>
   <data name="AttachmentsChatFailed" xml:space="preserve"><value>The upload failed. Check the status on the PC.</value></data>
+  <data name="SettingsReviewAttachmentScope" xml:space="preserve"><value>Files that can be sent</value></data>
 </root>

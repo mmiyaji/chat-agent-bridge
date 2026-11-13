@@ -526,6 +526,32 @@ try {
         Wait-Server { param($s) @($s.replies|Where-Object { "$($_.message)".Contains($refusal) }).Count -ge 1 } 20 | Out-Null
         $script:checks.Add(@{name='Real Mattermost incoming documents';passed=$true})
     }
+    Check 'Real Mattermost: the conversation scope sends files created earlier in the conversation' {
+        Navigate 'NavConnections'
+        Open-AttachmentSettings
+        Choose 'FileAttachmentScope' $(if($Language -eq 'ja'){'この会話で作ったファイル'}else{'Files created in this conversation'})
+        Confirm-SensitiveSettingsAutoSave 'FileAttachmentScope' 'conversation'
+        # The conversation starts counting here; chart.png was created before, notes.txt after.
+        Run-Prompt 'scope-create' 'CREATE ATTACHMENT notes.txt' 'Created notes.txt'
+        Run-Prompt 'scope-name' 'NAME ATTACHMENT notes.txt NAME ATTACHMENT chart.png' 'Named notes.txt, chart.png'
+        Open-AttachmentDialog
+        Assert-True ($null -eq (Element 'AttachmentFile2')) 'A file created before the conversation began was offered'
+        Confirm-OneAttachment
+        Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'notes.txt').Count -eq 1 } 30 | Out-Null
+        $script:checks.Add(@{name='Real Mattermost conversation scope';passed=$true})
+    }
+    Check 'Real Mattermost: the workspace scope sends an existing file after confirmation' {
+        Navigate 'NavConnections'
+        Open-AttachmentSettings
+        Choose 'FileAttachmentScope' $(if($Language -eq 'ja'){'ワークスペース全体（毎回確認）'}else{'Whole workspace (always ask)'})
+        Confirm-SensitiveSettingsAutoSave 'FileAttachmentScope' 'workspace'
+        Run-Prompt 'scope-workspace' 'NAME ATTACHMENT baseline.txt NAME ATTACHMENT .env' 'Named baseline.txt'
+        Open-AttachmentDialog
+        Assert-True ($null -eq (Element 'AttachmentFile2')) 'An excluded file was offered'
+        Confirm-OneAttachment
+        Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'baseline.txt').Count -eq 1 } 30 | Out-Null
+        $script:checks.Add(@{name='Real Mattermost workspace scope';passed=$true})
+    }
     } else {
 
     Check 'Default always mode finds new files without an automatic dialog or upload' {

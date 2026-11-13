@@ -46,6 +46,8 @@ public sealed record BridgeSettings
     public string SlackAllowedThreadIds { get; init; } = "";
     public string MattermostAllowedThreadIds { get; init; } = "";
     public string FileAttachmentApprovalMode { get; init; } = "always";
+    /// <summary>Which existing files an agent may name for upload: "run", "conversation" or "workspace".</summary>
+    public string FileAttachmentScope { get; init; } = "run";
     public int FileAttachmentMaxSizeMb { get; init; } = 10;
     public int FileAttachmentMaxCount { get; init; } = 3;
     public int FileAttachmentMaxTotalSizeMb { get; init; } = 20;

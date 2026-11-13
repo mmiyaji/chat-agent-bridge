@@ -26,6 +26,10 @@ public sealed partial class ChatInboxViewModel
             item.AttachmentSettingsAtStart = effective;
             if (FileAttachmentPolicy.NormalizeMode(effective.FileAttachmentApprovalMode) == "disabled" ||
                 effective.ChatResultMode == "none" || item.Transport is not IChatFileTransport) return null;
+            // The conversation scope counts files created after the conversation was first seen.
+            if (FileAttachmentPolicy.NormalizeScope(effective.FileAttachmentScope) == "conversation")
+                item.AttachmentConversationStartUtc = await new AttachmentConversationStore(_store.DirectoryPath)
+                    .GetOrAddStartAsync(CreateSessionKey(item), token);
             return await _attachmentCollector.CaptureBeforeAsync(effective.WorkspaceRoot, _store.DirectoryPath, token);
         }
         catch (OperationCanceledException) { throw; }
@@ -48,6 +52,18 @@ public sealed partial class ChatInboxViewModel
         try
         {
             var discovered = await _attachmentCollector.DiscoverAsync(before, settings, token);
+            if (item.AttachmentNamedFiles.Count > 0)
+            {
+                var named = await _attachmentCollector.ResolveNamedAsync(before, item.AttachmentNamedFiles, settings,
+                    item.AttachmentConversationStartUtc, token);
+                var paths = discovered.Candidates.Select(file => file.FullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                discovered = discovered with
+                {
+                    Candidates = [.. discovered.Candidates, .. named.Candidates.Where(file => paths.Add(file.FullPath))],
+                    IsComplete = discovered.IsComplete && named.IsComplete,
+                    ExcludedFiles = [.. discovered.ExcludedFiles, .. named.ExcludedFiles]
+                };
+            }
             item.AttachmentCandidates = discovered.Candidates;
             item.AttachmentSessionId = sessionId;
             item.AttachmentScanComplete = discovered.IsComplete;
@@ -212,12 +228,13 @@ public sealed partial class ChatInboxViewModel
     }
 
     private static bool SameAttachmentPolicy(BridgeSettings a, BridgeSettings b) =>
-        a.FileAttachmentApprovalMode == b.FileAttachmentApprovalMode && a.FileAttachmentMaxSizeMb == b.FileAttachmentMaxSizeMb &&
+        a.FileAttachmentApprovalMode == b.FileAttachmentApprovalMode && a.FileAttachmentScope == b.FileAttachmentScope && a.FileAttachmentMaxSizeMb == b.FileAttachmentMaxSizeMb &&
         a.FileAttachmentMaxCount == b.FileAttachmentMaxCount && a.FileAttachmentMaxTotalSizeMb == b.FileAttachmentMaxTotalSizeMb;
 
     private static BridgeSettings CopyAttachmentPolicy(BridgeSettings settings, BridgeSettings current) => settings with
     {
         FileAttachmentApprovalMode = current.FileAttachmentApprovalMode,
+        FileAttachmentScope = current.FileAttachmentScope,
         FileAttachmentMaxSizeMb = current.FileAttachmentMaxSizeMb,
         FileAttachmentMaxCount = current.FileAttachmentMaxCount,
         FileAttachmentMaxTotalSizeMb = current.FileAttachmentMaxTotalSizeMb

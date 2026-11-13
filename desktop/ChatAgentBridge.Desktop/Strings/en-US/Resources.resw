@@ -1493,4 +1493,9 @@ Keep this app and your local PC running to stay connected.</value>
   <data name="MattermostOptionalThreadGroupTitle.Text" xml:space="preserve"><value>Specify a thread (optional)</value></data>
   <data name="MattermostAdditionalGroupTitle.Text" xml:space="preserve"><value>Other connection settings</value></data>
   <data name="OpenSettingsFolder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Open settings folder</value></data>
+  <data name="FileAttachmentScope.Header" xml:space="preserve"><value>Files that can be sent</value></data>
+  <data name="FileAttachmentScope.Description" xml:space="preserve"><value>With "This conversation" and "Whole workspace", the agent can also name existing files in its reply. Name-based exclusions always apply, and "Whole workspace" always asks on the PC.</value></data>
+  <data name="FileAttachmentScopeRun.Content" xml:space="preserve"><value>Only files created in this run (default)</value></data>
+  <data name="FileAttachmentScopeConversation.Content" xml:space="preserve"><value>Files created in this conversation</value></data>
+  <data name="FileAttachmentScopeWorkspace.Content" xml:space="preserve"><value>Whole workspace (always ask)</value></data>
 </root>

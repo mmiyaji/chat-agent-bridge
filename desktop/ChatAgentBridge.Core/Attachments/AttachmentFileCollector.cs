@@ -42,6 +42,88 @@ public sealed class AttachmentFileCollector
     public Task<IReadOnlyList<PreparedFileAttachment>> PrepareAsync(IReadOnlyList<FileAttachmentCandidate> candidates, BridgeSettings settings, string dataDirectory, CancellationToken cancellationToken) =>
         Task.Run(() => Prepare(candidates, settings, dataDirectory, cancellationToken), cancellationToken);
 
+    /// <summary>
+    /// Checks files the agent named for upload. "run" accepts none, "conversation" accepts files created since
+    /// <paramref name="conversationStartUtc"/>, "workspace" accepts any file. The usual name, folder and type exclusions always apply.
+    /// </summary>
+    public Task<FileAttachmentScanResult> ResolveNamedAsync(FileAttachmentSnapshot before, IReadOnlyList<string> names,
+        BridgeSettings settings, DateTime? conversationStartUtc, CancellationToken cancellationToken) =>
+        Task.Run(() => ResolveNamed(before, names, settings, conversationStartUtc, cancellationToken), cancellationToken);
+
+    private static FileAttachmentScanResult ResolveNamed(FileAttachmentSnapshot before, IReadOnlyList<string> names,
+        BridgeSettings settings, DateTime? conversationStartUtc, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(before);
+        ArgumentNullException.ThrowIfNull(names);
+        ArgumentNullException.ThrowIfNull(settings);
+        var scope = FileAttachmentPolicy.NormalizeScope(settings.FileAttachmentScope);
+        var candidates = new List<FileAttachmentCandidate>();
+        var excluded = new List<string>();
+        if (scope == "run" || names.Count == 0) return new FileAttachmentScanResult(candidates, true);
+        if (scope == "conversation" && conversationStartUtc is null) return new FileAttachmentScanResult(candidates, true);
+        if (!ExecutionPolicy.IsWorkspaceTrusted(settings, before.Workspace))
+            return new FileAttachmentScanResult(candidates, false, "Workspace is outside configured trusted roots.");
+        string root;
+        try { root = CanonicalDirectory(before.Workspace); }
+        catch (Exception ex) when (IsExpectedFileError(ex)) { return new FileAttachmentScanResult(candidates, false, "Workspace is unavailable."); }
+        var seen = new HashSet<string>(PathComparer);
+        foreach (var name in names.Take(MaxCandidates))
+        {
+            token.ThrowIfCancellationRequested();
+            var reported = name.Trim();
+            try
+            {
+                if (reported.Length == 0 || reported.IndexOfAny(['\0', '*', '?', '<', '>', '|', '"']) >= 0) continue;
+                var full = Path.GetFullPath(Path.IsPathFullyQualified(reported) ? reported : Path.Combine(root, reported));
+                if (!seen.Add(full)) continue;
+                var relative = Path.GetRelativePath(root, full);
+                var parts = relative.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries);
+                if (!IsWithin(full, root) || string.Equals(full, root, PathComparison) || IsNetworkPath(full) ||
+                    IsExcludedPath(full, root, before.DataDirectory) || parts.Any(part => !IsSafeFileName(part)) ||
+                    HasUnsafeAncestor(full, root))
+                {
+                    if (excluded.Count < MaxReportedExclusions) excluded.Add(reported);
+                    continue;
+                }
+                var info = new FileInfo(full);
+                if (!info.Exists || (info.Attributes & (FileAttributes.Directory | FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint)) != 0)
+                {
+                    if (excluded.Count < MaxReportedExclusions) excluded.Add(reported);
+                    continue;
+                }
+                if (scope == "conversation" && info.CreationTimeUtc < conversationStartUtc!.Value)
+                {
+                    if (excluded.Count < MaxReportedExclusions) excluded.Add(reported);
+                    continue;
+                }
+                var length = info.Length;
+                if (length > MaxHashBytes) { if (excluded.Count < MaxReportedExclusions) excluded.Add(reported); continue; }
+                using var stream = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan);
+                AttachmentHandlePolicy.EnsureSafe(stream, root, full);
+                var hash = Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant();
+                var after = new FileInfo(full);
+                if (after.Length != length || after.LastWriteTimeUtc != info.LastWriteTimeUtc) continue;
+                candidates.Add(new FileAttachmentCandidate(full, relative, length, info.LastWriteTimeUtc, hash));
+            }
+            catch (Exception ex) when (IsExpectedFileError(ex))
+            {
+                if (excluded.Count < MaxReportedExclusions) excluded.Add(reported);
+            }
+        }
+        return new FileAttachmentScanResult(candidates, true) { ExcludedFiles = excluded };
+    }
+
+    private static bool HasUnsafeAncestor(string full, string root)
+    {
+        for (var directory = Path.GetDirectoryName(full); directory is not null && !string.Equals(directory, root, PathComparison);
+             directory = Path.GetDirectoryName(directory))
+        {
+            var attributes = File.GetAttributes(directory);
+            if ((attributes & (FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint)) != 0) return true;
+        }
+        return false;
+    }
+
     private static FileAttachmentSnapshot CaptureBefore(string workspace, string dataDirectory, CancellationToken token)
     {
         var root = CanonicalDirectory(workspace);

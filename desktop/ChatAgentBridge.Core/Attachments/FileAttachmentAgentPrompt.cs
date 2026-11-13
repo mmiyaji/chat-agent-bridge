@@ -16,6 +16,12 @@ public static class FileAttachmentAgentPrompt
             return userPrompt;
         }
 
-        return $"{CapabilityNote}\n\n--- Original user prompt (preserved verbatim) ---\n{userPrompt}\n--- End original user prompt ---";
+        var scopeNote = FileAttachmentPolicy.NormalizeScope(settings.FileAttachmentScope) switch
+        {
+            "conversation" => " To attach a file that was already created earlier in this conversation, do not copy it; instead add a line \"CAB-ATTACH: <workspace-relative path>\" to your final reply.",
+            "workspace" => " To attach an existing workspace file that the user explicitly asked for, do not copy it; instead add a line \"CAB-ATTACH: <workspace-relative path>\" to your final reply. Name only files the user asked for; the user approves every such file on the PC.",
+            _ => ""
+        };
+        return $"{CapabilityNote}{scopeNote}\n\n--- Original user prompt (preserved verbatim) ---\n{userPrompt}\n--- End original user prompt ---";
     }
 }

@@ -515,7 +515,7 @@ if (args.Contains("--print"))
         var attachmentPrompt = await Console.In.ReadToEndAsync();
         // Only these fixture names may be created, and only inside the isolated workspace.
         string[] fixtureNames = ["first.txt", "second.txt", "third.txt", "fourth.txt", "secret.txt", "chart.png",
-            "report.csv", "report.md", "report.json", "report.pdf", "report.zip"];
+            "report.csv", "report.md", "report.json", "report.pdf", "report.zip", "notes.txt"];
         var created = new List<string>();
         foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(attachmentPrompt,
             @"CREATE ATTACHMENT ([a-z]+\.[a-z]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant))
@@ -536,6 +536,12 @@ if (args.Contains("--print"))
             .Select(m => m.Value).Where(name => name.StartsWith("sample", StringComparison.OrdinalIgnoreCase)).Distinct().ToList();
         var attachmentResult = created.Count == 0 ? "No fixture file requested." : "Created " + string.Join(", ", created);
         if (incoming.Count > 0) attachmentResult += " | Received " + string.Join(", ", incoming);
+        // "NAME ATTACHMENT x" asks the bridge to attach an existing file through a CAB-ATTACH line.
+        var named = System.Text.RegularExpressions.Regex.Matches(attachmentPrompt, @"NAME ATTACHMENT ([\w./-]+)")
+            .Select(m => m.Groups[1].Value).Distinct().ToList();
+        if (named.Count > 0)
+            attachmentResult = (created.Count == 0 ? "" : attachmentResult + " | ") + "Named " + string.Join(", ", named) +
+                string.Concat(named.Select(name => "\nCAB-ATTACH: " + name));
 
         var attachmentResumeIndex = Array.IndexOf(args, "--resume");
         var attachmentSession = attachmentResumeIndex >= 0 && attachmentResumeIndex + 1 < args.Length

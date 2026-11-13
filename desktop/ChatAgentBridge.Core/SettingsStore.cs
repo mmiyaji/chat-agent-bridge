@@ -118,6 +118,7 @@ public sealed class SettingsStore
                 SlackAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.SlackAllowedThreadIds ?? ""),
                 MattermostAllowedThreadIds = ChatAccessPolicy.NormalizeScopes(stored.MattermostAllowedThreadIds ?? ""),
                 FileAttachmentApprovalMode = FileAttachmentPolicy.NormalizeMode(stored.FileAttachmentApprovalMode ?? "always"),
+                FileAttachmentScope = FileAttachmentPolicy.NormalizeScope(stored.FileAttachmentScope),
                 FileAttachmentMaxSizeMb = stored.FileAttachmentMaxSizeMb,
                 FileAttachmentMaxCount = stored.FileAttachmentMaxCount,
                 FileAttachmentMaxTotalSizeMb = stored.FileAttachmentMaxTotalSizeMb
@@ -205,7 +206,7 @@ public sealed class SettingsStore
         string slackAllowedUsers;
         string slackAllowedChannels, slackAllowedThreads, mattermostAllowedThreads;
         string discordAllowedUsers, discordAllowedGuilds, discordAllowedChannels, discordAllowedThreads;
-        string permissionMode, approvalMode, resultMode, followUpMode, trustedRoots, attachmentMode;
+        string permissionMode, approvalMode, resultMode, followUpMode, trustedRoots, attachmentMode, attachmentScope;
         try
         {
             mattermostAllowedUsers = ChatAccessPolicy.NormalizeAllowedUsers(settings.MattermostAllowedUserIds);
@@ -223,9 +224,10 @@ public sealed class SettingsStore
             followUpMode = ChatFollowUpPolicy.Normalize(settings.ChatFollowUpMode);
             trustedRoots = ExecutionPolicy.NormalizeTrustedRoots(settings.TrustedWorkspaceRoots);
             attachmentMode = FileAttachmentPolicy.NormalizeMode(settings.FileAttachmentApprovalMode);
+            attachmentScope = FileAttachmentPolicy.NormalizeScope(settings.FileAttachmentScope);
         }
         catch (FormatException ex) { throw new ArgumentException("Allowed-user or scope IDs are invalid: " + ex.Message, nameof(settings), ex); }
-        var validatedSettings = settings with { FileAttachmentApprovalMode = attachmentMode };
+        var validatedSettings = settings with { FileAttachmentApprovalMode = attachmentMode, FileAttachmentScope = attachmentScope };
         FileAttachmentPolicy.Validate(validatedSettings);
         if (provider == AgentProfile.Custom && model is not null)
             throw new ArgumentException("A custom agent cannot use a provider model override.", nameof(settings));
@@ -279,6 +281,7 @@ public sealed class SettingsStore
             SlackAllowedThreadIds = slackAllowedThreads,
             MattermostAllowedThreadIds = mattermostAllowedThreads,
             FileAttachmentApprovalMode = attachmentMode,
+            FileAttachmentScope = attachmentScope,
             FileAttachmentMaxSizeMb = settings.FileAttachmentMaxSizeMb,
             FileAttachmentMaxCount = settings.FileAttachmentMaxCount,
             FileAttachmentMaxTotalSizeMb = settings.FileAttachmentMaxTotalSizeMb
@@ -376,6 +379,7 @@ public sealed class SettingsStore
         public string? SlackAllowedThreadIds { get; set; }
         public string? MattermostAllowedThreadIds { get; set; }
         public string? FileAttachmentApprovalMode { get; set; } = "always";
+        public string? FileAttachmentScope { get; set; } = "run";
         public int FileAttachmentMaxSizeMb { get; set; } = 10;
         public int FileAttachmentMaxCount { get; set; } = 3;
         public int FileAttachmentMaxTotalSizeMb { get; set; } = 20;

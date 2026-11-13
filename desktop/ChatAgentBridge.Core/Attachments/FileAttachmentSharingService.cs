@@ -22,18 +22,20 @@ public sealed class FileAttachmentSharingService(string dataDirectory)
         ArgumentNullException.ThrowIfNull(context);
         FileAttachmentPolicy.Validate(context.Settings);
         var mode = FileAttachmentPolicy.NormalizeMode(context.Settings.FileAttachmentApprovalMode);
+        // Files named from anywhere in the workspace are always confirmed on the PC, whatever the approval mode.
+        var alwaysConfirm = FileAttachmentPolicy.NormalizeScope(context.Settings.FileAttachmentScope) == "workspace";
         if (mode == "disabled") return FileAttachmentShareOutcome.Disabled;
         if (ExecutionPolicy.NormalizeChatResultMode(context.Settings.ChatResultMode) == "none") return FileAttachmentShareOutcome.Private;
         if (context.Candidates.Count == 0) return FileAttachmentShareOutcome.None;
         if (!await validateScope(cancellationToken).ConfigureAwait(false)) return FileAttachmentShareOutcome.ScopeChanged;
         var fingerprint = FileAttachmentPolicy.GetConsentFingerprint(context.Key, context.SessionId, context.Settings);
-        var alreadyApproved = mode == "first" &&
+        var alreadyApproved = mode == "first" && !alwaysConfirm &&
             await _consents.IsApprovedAsync(context.Key, context.SessionId, fingerprint, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<FileAttachmentCandidate> selected = context.Candidates;
         var explicitConsent = !automatic;
         if (automatic)
         {
-            if (!context.ScanComplete || (mode != "auto" && !alreadyApproved) ||
+            if (!context.ScanComplete || alwaysConfirm || (mode != "auto" && !alreadyApproved) ||
                 selected.Count > context.Settings.FileAttachmentMaxCount ||
                 selected.Any(file => file.Length > context.Settings.FileAttachmentMaxSizeMb * 1024L * 1024L) ||
                 selected.Sum(file => file.Length) > context.Settings.FileAttachmentMaxTotalSizeMb * 1024L * 1024L)
@@ -55,7 +57,7 @@ public sealed class FileAttachmentSharingService(string dataDirectory)
         if (!await validateScope(cancellationToken).ConfigureAwait(false)) return FileAttachmentShareOutcome.ScopeChanged;
         // Start once; transport errors must never trigger an automatic retry of a possibly shared file.
         await upload(prepared, cancellationToken).ConfigureAwait(false);
-        if (mode == "first" && explicitConsent && await validateScope(cancellationToken).ConfigureAwait(false))
+        if (mode == "first" && !alwaysConfirm && explicitConsent && await validateScope(cancellationToken).ConfigureAwait(false))
             await _consents.SaveAsync(context.Key, context.SessionId, fingerprint, cancellationToken).ConfigureAwait(false);
         return FileAttachmentShareOutcome.Sent;
     }

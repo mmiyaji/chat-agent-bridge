@@ -1493,4 +1493,9 @@
   <data name="MattermostOptionalThreadGroupTitle.Text" xml:space="preserve"><value>スレッドの指定（任意）</value></data>
   <data name="MattermostAdditionalGroupTitle.Text" xml:space="preserve"><value>その他の接続設定</value></data>
   <data name="OpenSettingsFolder.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>設定フォルダーを開く</value></data>
+  <data name="FileAttachmentScope.Header" xml:space="preserve"><value>送れるファイルの範囲</value></data>
+  <data name="FileAttachmentScope.Description" xml:space="preserve"><value>「会話中」と「ワークスペース全体」では、エージェントが返信で指定した既存のファイルも送れます。名前で除外するルールは常に適用され、「ワークスペース全体」では毎回PCで確認します。</value></data>
+  <data name="FileAttachmentScopeRun.Content" xml:space="preserve"><value>今回の実行で作ったファイルのみ（既定）</value></data>
+  <data name="FileAttachmentScopeConversation.Content" xml:space="preserve"><value>この会話で作ったファイル</value></data>
+  <data name="FileAttachmentScopeWorkspace.Content" xml:space="preserve"><value>ワークスペース全体（毎回確認）</value></data>
 </root>
