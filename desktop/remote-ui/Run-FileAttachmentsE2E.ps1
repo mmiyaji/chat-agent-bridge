@@ -6,6 +6,9 @@ $out = if ($env:REMOTE_UI_OUT) { $env:REMOTE_UI_OUT } else { Join-Path $PSScript
 New-Item -ItemType Directory -Path $out -Force | Out-Null
 $desktop = Split-Path $PSScriptRoot -Parent
 $artifacts = Join-Path $desktop 'artifacts'
+# The offline chat fixture needs the repository's node packages (ws); the runner cleans untracked files.
+Push-Location (Split-Path $desktop -Parent)
+try { npm ci --ignore-scripts --no-audit --no-fund; if ($LASTEXITCODE -ne 0) { throw 'npm ci failed.' } } finally { Pop-Location }
 dotnet build (Join-Path $desktop 'ChatAgentBridge.Desktop\ChatAgentBridge.Desktop.csproj') -p:CABPortable=true -v:minimal
 if ($LASTEXITCODE -ne 0) { throw 'App build failed.' }
 $exe = Get-ChildItem (Join-Path $desktop 'ChatAgentBridge.Desktop\bin\AnyCPU\Debug\portable') -Recurse -Filter 'ChatAgentBridge.Desktop.exe' |
