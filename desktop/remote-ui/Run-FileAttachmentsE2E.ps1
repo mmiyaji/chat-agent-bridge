@@ -1,6 +1,6 @@
 # Entry script for the remote-win-ui-test skill: builds the portable app and the test agent on the test PC,
 # then runs FileAttachmentsUiE2E.ps1 against an offline chat fixture. Results go to $env:REMOTE_UI_OUT.
-param([ValidateSet('ja','en')][string]$Language = 'ja')
+param([ValidateSet('ja','en')][string]$Language = 'ja', [string]$MattermostStateFile)
 $ErrorActionPreference = 'Stop'
 $out = if ($env:REMOTE_UI_OUT) { $env:REMOTE_UI_OUT } else { Join-Path $PSScriptRoot '..\artifacts\remote-ui' }
 New-Item -ItemType Directory -Path $out -Force | Out-Null
@@ -21,7 +21,7 @@ Copy-Item (Split-Path $exe) $publish -Recurse
 dotnet publish (Join-Path $desktop 'ChatAgentBridge.TestAgent\ChatAgentBridge.TestAgent.csproj') -c Release -r win-x64 --self-contained `
     -o (Join-Path $artifacts 'file-attachment-test-agent') -v:minimal
 if ($LASTEXITCODE -ne 0) { throw 'Test agent publish failed.' }
-& (Join-Path $desktop 'FileAttachmentsUiE2E.ps1') -AppDirectory $publish -Portable -Language $Language *>&1 | Tee-Object -Variable log
+& (Join-Path $desktop 'FileAttachmentsUiE2E.ps1') -AppDirectory $publish -Portable -Language $Language -MattermostStateFile $MattermostStateFile *>&1 | Tee-Object -Variable log
 $code = $LASTEXITCODE
 $run = ($log | Select-String 'File attachment UI results: (.+)$').Matches.Groups[1].Value
 if ($run -and (Test-Path $run)) {
