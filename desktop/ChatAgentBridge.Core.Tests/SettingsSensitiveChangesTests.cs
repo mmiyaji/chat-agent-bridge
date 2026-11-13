@@ -24,7 +24,7 @@ public sealed class SettingsSensitiveChangesTests
         foreach (var name in new[] { nameof(BridgeSettings.ChatResultMode), nameof(BridgeSettings.ShareApprovalsInChat),
                      nameof(BridgeSettings.ShareAgentQuestionsInChat), nameof(BridgeSettings.ChatFollowUpMode) })
             yield return [name, nameof(SettingsSensitiveChanges.ChatSharing)];
-        foreach (var name in new[] { nameof(BridgeSettings.FileAttachmentApprovalMode), nameof(BridgeSettings.FileAttachmentMaxSizeMb),
+        foreach (var name in new[] { nameof(BridgeSettings.FileAttachmentApprovalMode), nameof(BridgeSettings.FileAttachmentScope), nameof(BridgeSettings.FileAttachmentMaxSizeMb),
                      nameof(BridgeSettings.FileAttachmentMaxCount), nameof(BridgeSettings.FileAttachmentMaxTotalSizeMb) })
             yield return [name, nameof(SettingsSensitiveChanges.FileAttachments)];
         foreach (var name in new[] { nameof(BridgeSettings.MattermostServerUrl), nameof(BridgeSettings.MattermostChannelId),

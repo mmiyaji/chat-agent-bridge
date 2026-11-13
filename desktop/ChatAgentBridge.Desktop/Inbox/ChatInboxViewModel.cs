@@ -82,6 +82,9 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public BridgeSettings? AttachmentSettingsAtStart { get; set; }
     public string? AttachmentSessionId { get; set; }
     public bool AttachmentScanComplete { get; set; }
+    /// <summary>Existing files the agent named with CAB-ATTACH lines; checked against the attachment scope after the run.</summary>
+    public IReadOnlyList<string> AttachmentNamedFiles { get; set; } = [];
+    public DateTime? AttachmentConversationStartUtc { get; set; }
     [ObservableProperty] public partial string AttachmentStatus { get; set; } = "";
     public ChatProgressReporter? Progress { get; set; }
     public Task ReceiptNotification { get; set; } = Task.CompletedTask;
@@ -1110,6 +1113,8 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             item.FullOutput = BoundOutput(output);
             // Keep the reply preview and displayed output bounded for the 100-item inbox cap.
             var reply = ExtractReply(result);
+            item.AttachmentNamedFiles = FileAttachmentMarkers.Extract(reply);
+            reply = FileAttachmentMarkers.Strip(reply);
             item.ResultText = reply.Length > 4001 ? reply[..4001] : reply;
             item.State = result.Success ? "完了" : $"失敗 ({result.ExitCode})";
             var updated = await _sessions.FindAsync(key);

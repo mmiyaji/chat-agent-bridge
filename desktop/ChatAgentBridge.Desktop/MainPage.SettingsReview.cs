@@ -68,6 +68,8 @@ public sealed partial class MainPage
         Add("FollowUpMode", FollowUpMode(saved.ChatFollowUpMode), FollowUpMode(draft.ChatFollowUpMode));
         string Attachment(string mode) => MrtText.Get("FileAttachmentMode" + (mode switch { "disabled" => "Disabled", "first" => "First", "auto" => "Auto", _ => "Always" }) + ".Content");
         Add("AttachmentApproval", Attachment(saved.FileAttachmentApprovalMode), Attachment(draft.FileAttachmentApprovalMode));
+        string Scope(string scope) => MrtText.Get("FileAttachmentScope" + (scope switch { "conversation" => "Conversation", "workspace" => "Workspace", _ => "Run" }) + ".Content");
+        Add("AttachmentScope", Scope(saved.FileAttachmentScope), Scope(draft.FileAttachmentScope));
         Add("AttachmentSize", saved.FileAttachmentMaxSizeMb, draft.FileAttachmentMaxSizeMb);
         Add("AttachmentCount", saved.FileAttachmentMaxCount, draft.FileAttachmentMaxCount);
         Add("AttachmentTotal", saved.FileAttachmentMaxTotalSizeMb, draft.FileAttachmentMaxTotalSizeMb);

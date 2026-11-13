@@ -513,11 +513,15 @@ if (args.Contains("--print"))
         }
 
         var attachmentPrompt = await Console.In.ReadToEndAsync();
-        var attachmentFileMatch = System.Text.RegularExpressions.Regex.Match(attachmentPrompt, @"CREATE ATTACHMENT (first|second|third|fourth|secret)\.txt", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
-        var attachmentResult = "No fixture file requested.";
-        if (attachmentFileMatch.Success)
+        // Only these fixture names may be created, and only inside the isolated workspace.
+        string[] fixtureNames = ["first.txt", "second.txt", "third.txt", "fourth.txt", "secret.txt", "chart.png",
+            "report.csv", "report.md", "report.json", "report.pdf", "report.zip", "notes.txt"];
+        var created = new List<string>();
+        foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(attachmentPrompt,
+            @"CREATE ATTACHMENT ([a-z]+\.[a-z]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant))
         {
-            var fileName = attachmentFileMatch.Groups[1].Value.ToLowerInvariant() + ".txt";
+            var fileName = match.Groups[1].Value.ToLowerInvariant();
+            if (!fixtureNames.Contains(fileName) || created.Contains(fileName)) continue;
             var filePath = Path.Combine(workspace, fileName);
             if (!string.Equals(Path.GetDirectoryName(Path.GetFullPath(filePath)), workspace, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
             {
@@ -525,9 +529,19 @@ if (args.Contains("--print"))
                 Environment.ExitCode = 2;
                 return;
             }
-            await File.WriteAllTextAsync(filePath, $"Offline fixture file {fileName}{Environment.NewLine}");
-            attachmentResult = $"Created {fileName}";
+            await File.WriteAllBytesAsync(filePath, FixtureFiles.Create(fileName));
+            created.Add(fileName);
         }
+        var incoming = System.Text.RegularExpressions.Regex.Matches(attachmentPrompt, @"[\w-]+\.(?:txt|log|md|csv|json|png|jpg|jpeg|webp)(?=[\s""')\]]|$)")
+            .Select(m => m.Value).Where(name => name.StartsWith("sample", StringComparison.OrdinalIgnoreCase)).Distinct().ToList();
+        var attachmentResult = created.Count == 0 ? "No fixture file requested." : "Created " + string.Join(", ", created);
+        if (incoming.Count > 0) attachmentResult += " | Received " + string.Join(", ", incoming);
+        // "NAME ATTACHMENT x" asks the bridge to attach an existing file through a CAB-ATTACH line.
+        var named = System.Text.RegularExpressions.Regex.Matches(attachmentPrompt, @"NAME ATTACHMENT ([\w./-]+)")
+            .Select(m => m.Groups[1].Value).Distinct().ToList();
+        if (named.Count > 0)
+            attachmentResult = (created.Count == 0 ? "" : attachmentResult + " | ") + "Named " + string.Join(", ", named) +
+                string.Concat(named.Select(name => "\nCAB-ATTACH: " + name));
 
         var attachmentResumeIndex = Array.IndexOf(args, "--resume");
         var attachmentSession = attachmentResumeIndex >= 0 && attachmentResumeIndex + 1 < args.Length
@@ -777,4 +791,112 @@ static object FixtureModes(string fixtureName)
         ? new object[] { new { id = "default", name = "Default" } }
         : new object[] { new { id = "default", name = "Default" }, new { id = "yolo", name = "YOLO" } };
     return new { availableModes = modes };
+}
+
+/// <summary>Writes a small bar chart PNG without image libraries, for attachment UI checks.</summary>
+static class FixturePng
+{
+    public static byte[] BarChart()
+    {
+        const int width = 320, height = 200;
+        int[] bars = [60, 120, 90, 160, 130];
+        (byte R, byte G, byte B)[] colors = [(0x3b, 0x82, 0xf6), (0x10, 0xb9, 0x81), (0xf5, 0x9e, 0x0b), (0xef, 0x44, 0x44), (0x8b, 0x5c, 0xf6)];
+        var raw = new byte[height * (width * 3 + 1)];
+        for (var y = 0; y < height; y++)
+        {
+            var row = y * (width * 3 + 1);
+            for (var x = 0; x < width; x++)
+            {
+                var pixel = (R: (byte)0xf8, G: (byte)0xfa, B: (byte)0xfc);
+                var bar = (x - 20) / 58;
+                if (x >= 20 && bar < bars.Length && (x - 20) % 58 < 44 && height - 20 - y < bars[bar] && y < height - 20) pixel = colors[bar];
+                if (y == height - 20 && x >= 12 && x < width - 12) pixel = (0x47, 0x55, 0x69);
+                raw[row + 1 + x * 3] = pixel.R; raw[row + 2 + x * 3] = pixel.G; raw[row + 3 + x * 3] = pixel.B;
+            }
+        }
+        using var png = new MemoryStream();
+        png.Write([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+        var header = new byte[13];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(header, width);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(header.AsSpan(4), height);
+        header[8] = 8; header[9] = 2;
+        Chunk(png, "IHDR", header);
+        using (var compressed = new MemoryStream())
+        {
+            using (var zlib = new System.IO.Compression.ZLibStream(compressed, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true)) zlib.Write(raw);
+            Chunk(png, "IDAT", compressed.ToArray());
+        }
+        Chunk(png, "IEND", []);
+        return png.ToArray();
+    }
+
+    private static uint Crc32(byte[] data)
+    {
+        var crc = 0xffffffffu;
+        foreach (var b in data)
+        {
+            crc ^= b;
+            for (var bit = 0; bit < 8; bit++) crc = (crc & 1) != 0 ? 0xedb88320u ^ (crc >> 1) : crc >> 1;
+        }
+        return ~crc;
+    }
+
+    private static void Chunk(Stream output, string type, byte[] data)
+    {
+        Span<byte> number = stackalloc byte[4];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(number, data.Length);
+        output.Write(number);
+        var typed = new byte[4 + data.Length];
+        System.Text.Encoding.ASCII.GetBytes(type).CopyTo(typed, 0);
+        data.CopyTo(typed, 4);
+        output.Write(typed);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(number, Crc32(typed));
+        output.Write(number);
+    }
+}
+
+/// <summary>Small, valid files of each type for attachment UI checks.</summary>
+static class FixtureFiles
+{
+    public static byte[] Create(string name) => Path.GetExtension(name) switch
+    {
+        ".png" => FixturePng.BarChart(),
+        ".csv" => System.Text.Encoding.UTF8.GetBytes("month,sales\n4月,60\n5月,120\n6月,90\n7月,160\n8月,130\n"),
+        ".md" => System.Text.Encoding.UTF8.GetBytes("# 売上レポート\n\n- 最高: 7月 160\n- 合計: 560\n"),
+        ".json" => System.Text.Encoding.UTF8.GetBytes("{\"total\":560,\"best\":{\"month\":\"7月\",\"sales\":160}}\n"),
+        ".pdf" => Pdf(),
+        ".zip" => Zip(),
+        _ => System.Text.Encoding.UTF8.GetBytes($"Offline fixture file {name}{Environment.NewLine}")
+    };
+
+    private static byte[] Pdf()
+    {
+        string[] objects =
+        [
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 120] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+            "<< /Length 44 >>\nstream\nBT /F1 18 Tf 24 60 Td (Sales report) Tj ET\nendstream",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+        ];
+        var text = new System.Text.StringBuilder("%PDF-1.4\n");
+        var offsets = new List<int>();
+        for (var i = 0; i < objects.Length; i++) { offsets.Add(text.Length); text.Append($"{i + 1} 0 obj\n{objects[i]}\nendobj\n"); }
+        var xref = text.Length;
+        text.Append($"xref\n0 {objects.Length + 1}\n0000000000 65535 f \n");
+        foreach (var offset in offsets) text.Append($"{offset:D10} 00000 n \n");
+        text.Append($"trailer\n<< /Size {objects.Length + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
+        return System.Text.Encoding.ASCII.GetBytes(text.ToString());
+    }
+
+    private static byte[] Zip()
+    {
+        using var buffer = new MemoryStream();
+        using (var zip = new System.IO.Compression.ZipArchive(buffer, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+        {
+            using var writer = new StreamWriter(zip.CreateEntry("report.csv").Open());
+            writer.Write("month,sales\n7月,160\n");
+        }
+        return buffer.ToArray();
+    }
 }

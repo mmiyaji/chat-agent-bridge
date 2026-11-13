@@ -39,9 +39,9 @@ public readonly record struct SettingsSensitiveChanges(
             (saved.ChatResultMode, saved.ShareApprovalsInChat, saved.ShareAgentQuestionsInChat) !=
                 (draft.ChatResultMode, draft.ShareApprovalsInChat, draft.ShareAgentQuestionsInChat) ||
             saved.ChatFollowUpMode != draft.ChatFollowUpMode,
-            (saved.FileAttachmentApprovalMode, saved.FileAttachmentMaxSizeMb, saved.FileAttachmentMaxCount,
+            (saved.FileAttachmentApprovalMode, saved.FileAttachmentScope, saved.FileAttachmentMaxSizeMb, saved.FileAttachmentMaxCount,
                 saved.FileAttachmentMaxTotalSizeMb) !=
-                (draft.FileAttachmentApprovalMode, draft.FileAttachmentMaxSizeMb, draft.FileAttachmentMaxCount,
+                (draft.FileAttachmentApprovalMode, draft.FileAttachmentScope, draft.FileAttachmentMaxSizeMb, draft.FileAttachmentMaxCount,
                 draft.FileAttachmentMaxTotalSizeMb),
             (saved.MattermostServerUrl.Trim(), saved.MattermostChannelId.Trim(), saved.MattermostToken,
                 saved.SlackBotToken, saved.SlackAppToken) !=

@@ -15,10 +15,21 @@ public static class FileAttachmentPolicy
             : throw new ArgumentException("Unsupported file attachment approval mode.", nameof(value));
     }
 
+    /// <summary>"run": only files new in this run. "conversation": files created since the conversation began.
+    /// "workspace": any eligible workspace file the agent names; sending those always needs approval on the PC.</summary>
+    public static string NormalizeScope(string? value)
+    {
+        var scope = string.IsNullOrWhiteSpace(value) ? "run" : value.Trim().ToLowerInvariant();
+        return scope is "run" or "conversation" or "workspace"
+            ? scope
+            : throw new ArgumentException("Unsupported file attachment scope.", nameof(value));
+    }
+
     public static void Validate(BridgeSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
         _ = NormalizeMode(settings.FileAttachmentApprovalMode);
+        _ = NormalizeScope(settings.FileAttachmentScope);
         if (settings.FileAttachmentMaxSizeMb is < 1 or > 100)
             throw new ArgumentOutOfRangeException(nameof(settings.FileAttachmentMaxSizeMb), "Per-file attachment limit must be between 1 and 100 MiB.");
         if (settings.FileAttachmentMaxCount is < 1 or > 10)
@@ -38,6 +49,7 @@ public static class FileAttachmentPolicy
             Conversation = ConversationExecutionPolicy.GetFingerprint(key, settings),
             SessionId = sessionId,
             Mode = NormalizeMode(settings.FileAttachmentApprovalMode),
+            Scope = NormalizeScope(settings.FileAttachmentScope),
             settings.FileAttachmentMaxSizeMb,
             settings.FileAttachmentMaxCount,
             settings.FileAttachmentMaxTotalSizeMb

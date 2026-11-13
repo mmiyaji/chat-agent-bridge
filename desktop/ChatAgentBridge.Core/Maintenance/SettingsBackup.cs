@@ -97,7 +97,8 @@ public sealed record SettingsBackup
             ChatApprovalMode = "always",
             ChatResultMode = "manual",
             AgentPermissionMode = "inherit",
-            FileAttachmentApprovalMode = "always"
+            FileAttachmentApprovalMode = "always",
+            FileAttachmentScope = "run"
         };
     }
 
