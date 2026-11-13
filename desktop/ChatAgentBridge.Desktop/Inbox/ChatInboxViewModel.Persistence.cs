@@ -83,6 +83,7 @@ public sealed partial class ChatInboxViewModel
                 SelectedConversation = null;
                 Selected = null;
                 Requests.Clear();
+                _approvalReasonsLogged.Clear();
             }
             Conversations.ReplaceAll(restored);
             _conversationPersistenceReady = true;

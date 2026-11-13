@@ -27,7 +27,7 @@ internal static class AppLifecycleAudit
     public static void RecordStoppedBeforeRestart(string reason)
     {
         StopReason = reason;
-        try { Task.Run(RecordStoppedAsync).Wait(TimeSpan.FromSeconds(2)); }
+        try { Task.Run(RecordStoppedAsync).Wait(TimeSpan.FromMilliseconds(500)); }
         catch (Exception) { }
     }
 
