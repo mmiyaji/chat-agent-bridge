@@ -77,7 +77,7 @@ public sealed partial class MattermostWebSocketTransport
         ArgumentNullException.ThrowIfNull(request);
         if (!string.Equals(request.Provider, "mattermost", StringComparison.OrdinalIgnoreCase)) throw new ArgumentException("Request provider must be Mattermost.", nameof(request));
         EnsureConnectedForProgress();
-        if (!_fileUploadConnected || !string.Equals(request.ChannelId, _channelId, StringComparison.Ordinal) ||
+        if (!_fileUploadConnected || !MatchesFileChannel(request) ||
             string.IsNullOrWhiteSpace(request.ThreadId) || string.IsNullOrWhiteSpace(request.MessageId))
             throw new InvalidOperationException("Mattermost file request does not match the active connection.");
     }
@@ -95,7 +95,7 @@ public sealed partial class MattermostWebSocketTransport
         cancellationToken.ThrowIfCancellationRequested();
         EnsureConnectedForProgress();
         if (!_fileUploadConnected || generation != Volatile.Read(ref _fileUploadConnectionGeneration) ||
-            !string.Equals(request.ChannelId, _channelId, StringComparison.Ordinal))
+            !MatchesFileChannel(request))
             throw new InvalidOperationException("Mattermost connection changed during file download.");
     }
 
@@ -221,7 +221,7 @@ public sealed partial class MattermostWebSocketTransport
         EnsureConnectedForProgress();
         if (!_fileUploadConnected)
             throw new InvalidOperationException("Mattermost is reconnecting.");
-        if (!string.Equals(request.ChannelId, _channelId, StringComparison.Ordinal))
+        if (!MatchesFileChannel(request))
             throw new InvalidOperationException("Mattermost file upload request does not match the active channel.");
         if (string.IsNullOrWhiteSpace(request.ThreadId))
             throw new ArgumentException("Mattermost file uploads require a thread.", nameof(request));
@@ -232,9 +232,17 @@ public sealed partial class MattermostWebSocketTransport
         cancellationToken.ThrowIfCancellationRequested();
         EnsureConnectedForProgress();
         if (!_fileUploadConnected || generation != Volatile.Read(ref _fileUploadConnectionGeneration) ||
-            !string.Equals(request.ChannelId, _channelId, StringComparison.Ordinal))
+            !MatchesFileChannel(request))
             throw new InvalidOperationException("Mattermost connection changed during file upload.");
     }
+
+    /// <summary>
+    /// Direct messages arrive outside the configured channel; like progress replies, they are accepted while DMs are
+    /// allowed. The post lookup still checks that each file belongs to the request's own channel and message.
+    /// </summary>
+    private bool MatchesFileChannel(ChatRequest request) => request.IsDirectMessage
+        ? Volatile.Read(ref _liveAccessSettings)?.MattermostAllowDirectMessages == true
+        : string.Equals(request.ChannelId, _channelId, StringComparison.Ordinal);
 
     private static async Task<string[]> ReadAndValidateMattermostFilesAsync(
         HttpResponseMessage response,
