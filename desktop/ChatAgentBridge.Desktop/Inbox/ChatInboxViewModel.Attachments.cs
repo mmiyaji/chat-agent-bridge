@@ -35,7 +35,16 @@ public sealed partial class ChatInboxViewModel
     private async Task DiscoverCompletedAttachmentsAsync(InboxItem item, FileAttachmentSnapshot? before,
         string sessionId, CancellationToken token)
     {
-        if (before is null || item.AttachmentSettingsAtStart is not { } settings) return;
+        if (item.AttachmentSettingsAtStart is not { } settings) return;
+        if (before is null)
+        {
+            if (AsksForAttachment(item.Request.Text))
+                await ReplyAttachmentNoticeAsync(item, settings, item.Transport is IChatFileTransport
+                    ? (FileAttachmentPolicy.NormalizeMode(settings.FileAttachmentApprovalMode) == "disabled"
+                        ? "AttachmentsChatDisabled" : "AttachmentsChatIncomplete")
+                    : "AttachmentsChatNotSupported", null, token);
+            return;
+        }
         try
         {
             var discovered = await _attachmentCollector.DiscoverAsync(before, settings, token);
@@ -50,7 +59,17 @@ public sealed partial class ChatInboxViewModel
                     discovered.ExcludedFiles.Count, string.Join(", ", discovered.ExcludedFiles.Take(3)) +
                     (discovered.ExcludedFiles.Count > 3 ? " …" : "")));
             SendAttachmentsCommand.NotifyCanExecuteChanged();
-            if (discovered.Candidates.Count == 0) return;
+            if (discovered.Candidates.Count == 0)
+            {
+                if (discovered.ExcludedFiles.Count > 0)
+                    await ReplyAttachmentNoticeAsync(item, settings, "AttachmentsChatExcluded",
+                        string.Join(", ", discovered.ExcludedFiles.Take(3)) + (discovered.ExcludedFiles.Count > 3 ? " …" : ""), token);
+                else if (!discovered.IsComplete)
+                    await ReplyAttachmentNoticeAsync(item, settings, "AttachmentsChatIncomplete", null, token);
+                else if (AsksForAttachment(item.Request.Text))
+                    await ReplyAttachmentNoticeAsync(item, settings, "AttachmentsChatNone", null, token);
+                return;
+            }
             // The default 'always' mode leaves a visible pending action. Text auto-reply never counts as file consent.
             await ShareAttachmentsAsync(item, automatic: true, token);
         }
@@ -113,6 +132,7 @@ public sealed partial class ChatInboxViewModel
                 item.AttachmentStatus = DesktopText.Get("AttachmentsSent", sentCount);
             }
             else if (outcome != FileAttachmentShareOutcome.PendingConsent || !automatic)
+            {
                 item.AttachmentStatus = DesktopText.Get(outcome switch
                 {
                     FileAttachmentShareOutcome.Disabled => "AttachmentsDisabled",
@@ -122,6 +142,15 @@ public sealed partial class ChatInboxViewModel
                     FileAttachmentShareOutcome.PendingConsent => "AttachmentsApprovalRequired",
                     _ => "AttachmentsNone"
                 });
+            }
+            var chatReason = outcome switch
+            {
+                FileAttachmentShareOutcome.Disabled => "AttachmentsChatDisabled",
+                FileAttachmentShareOutcome.ScopeChanged => "AttachmentsChatPolicyChanged",
+                FileAttachmentShareOutcome.PendingConsent when automatic => "AttachmentsChatApprovalPending",
+                _ => null
+            };
+            if (chatReason is not null) await ReplyAttachmentNoticeAsync(item, settings, chatReason, null, token);
         }
         catch (OperationCanceledException) { item.AttachmentStatus = DesktopText.Get("AttachmentsCancelled"); }
         catch (Exception ex)
@@ -130,6 +159,8 @@ public sealed partial class ChatInboxViewModel
             item.AttachmentStatus = DesktopText.Get(missingScope
                 ? "AttachmentsSlackScopeMissing" : "AttachmentsFailed");
             try { await AuditAsync("attachment_failed", item.Request, item.ExecutionId); } catch (Exception) { }
+            if (!token.IsCancellationRequested)
+                await ReplyAttachmentNoticeAsync(item, item.EffectiveSettings, "AttachmentsChatFailed", null, token);
         }
         finally { _attachmentTransferActive = false; SendAttachmentsCommand.NotifyCanExecuteChanged(); }
     }
@@ -160,6 +191,22 @@ public sealed partial class ChatInboxViewModel
             catch (Exception) { completion.TrySetResult(null); }
         })) completion.TrySetResult(null);
         return completion.Task;
+    }
+
+    private static bool AsksForAttachment(string? text) => FileAttachmentRequest.IsRequested(text);
+
+    /// <summary>Tells the chat why no file was sent, unless results stay private. Never throws.</summary>
+    private async Task ReplyAttachmentNoticeAsync(InboxItem item, BridgeSettings? settings, string reasonKey,
+        string? detail, CancellationToken token)
+    {
+        if (settings is not null && ExecutionPolicy.NormalizeChatResultMode(settings.ChatResultMode) == "none") return;
+        try
+        {
+            if (!await CheckAccessAsync(item, token)) return;
+            var reason = detail is null ? DesktopText.Get(reasonKey) : DesktopText.Get(reasonKey, detail);
+            await item.Transport.ReplyAsync(item.Request, DesktopText.Get("AttachmentsChatNotice", reason), token);
+        }
+        catch (Exception) { }
     }
 
     private static bool SameAttachmentPolicy(BridgeSettings a, BridgeSettings b) =>
