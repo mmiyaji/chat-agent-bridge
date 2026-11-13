@@ -262,6 +262,7 @@ function Read-AuditKinds {
     foreach ($line in ((Read-AuditText) -split "`r?`n")) { if ($line.Trim()) { ($line | ConvertFrom-Json).Kind } }
 }
 function Select-ConversationRequest([string]$Prompt) {
+    Navigate 'NavChat'
     Set-InboxSearch $Prompt
     Select-FirstRow 'InboxConversations'
     Wait-Element 'ChatRequests' | Out-Null
