@@ -4,6 +4,8 @@ public sealed class FileAttachmentRequestTests
 {
     [Theory]
     [InlineData("さっきの画像を添付して")]
+    [InlineData("グラフにして添付してください")]
+    [InlineData("結果を添付で返して")]
     [InlineData("画像を送って")]
     [InlineData("そのファイルをください")]
     [InlineData("Please attach the chart")]
@@ -14,5 +16,7 @@ public sealed class FileAttachmentRequestTests
     [InlineData("")]
     [InlineData(null)]
     [InlineData("テストを実行して結果を教えて")]
+    [InlineData("添付した3つのファイルを読んで要約して")]
+    [InlineData("添付ファイルの中身を確認して")]
     public void Ignores_other_requests(string? text) => Assert.False(FileAttachmentRequest.IsRequested(text));
 }

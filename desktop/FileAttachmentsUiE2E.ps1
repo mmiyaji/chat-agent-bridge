@@ -207,7 +207,7 @@ function Select-Request([string]$Text) {
     $items=[System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Descendants,
         [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem))
     $match=$null
-    foreach ($candidate in $items) { if ($candidate.Current.ProcessId -eq $script:appProcess.Id -and $candidate.Current.Name.Contains($Text)) { $match=$candidate; break } }
+    foreach ($candidate in $items) { if ($candidate.Current.ProcessId -eq $script:appProcess.Id -and $candidate.Current.Name.Contains($Text.Substring(0,[Math]::Min(40,$Text.Length)))) { $match=$candidate; break } }
     Assert-True ($null -ne $match) "Could not find request '$Text'"
     $match.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
     $expand.Collapse(); Start-Sleep -Milliseconds 180
@@ -357,6 +357,23 @@ function Close-AttachmentDialog {
     Invoke-DialogButton 'CloseButton'
     UI @('wait-for','AttachmentConfirmation','--gone','-t','4000') | Out-Null
 }
+function Confirm-Attachments([int]$Count) {
+    for ($i=1; $i -le $Count; $i++) {
+        (Wait-Element "AttachmentFile$i").GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
+    }
+    UI @('wait-for','PrimaryButton','-p','IsEnabled','--value','True','-t','3000') | Out-Null
+    Invoke-DialogButton 'PrimaryButton'
+    UI @('wait-for','AttachmentConfirmation','--gone','-t','8000') | Out-Null
+}
+function Send-MemberFiles([string[]]$Paths) {
+    $ids=@()
+    foreach ($path in $Paths) {
+        $uploaded=Invoke-RestMethod "$script:endpoint/api/v4/files?channel_id=$($script:mm.channel.id)" -Method Post `
+            -Headers @{Authorization="Bearer $($script:mm.memberUser.token)"} -Form @{files=Get-Item $path}
+        $ids+=$uploaded.file_infos[0].id
+    }
+    $script:nextFileIds=$ids
+}
 function Confirm-OneAttachment {
     $box=Wait-Element 'AttachmentFile1'
     $box.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle()
@@ -442,7 +459,7 @@ try {
     Navigate 'NavChat'
     UI @('invoke','ConnectMattermost') | Out-Null
     Wait-Server { param($s) $s.connections -eq 1 } | Out-Null
-    if ($script:mm) { UI @('wait-for','DisconnectChat','-p','IsEnabled','--value','True','-t','20000') | Out-Null }
+    if ($script:mm) { UI @('wait-for','DisconnectChat','-p','IsEnabled','--value','True','-t','20000') | Out-Null; Start-Sleep -Seconds 3 }
 
     if ($script:mm) {
     Check 'Real Mattermost: a selected file is uploaded to the thread' {
@@ -470,6 +487,44 @@ try {
         Confirm-OneAttachment
         Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'chart.png').Count -eq 1 } 30 | Out-Null
         $script:checks.Add(@{name='Real Mattermost image round trip';passed=$true})
+    }
+    Check 'Real Mattermost: CSV, PDF, ZIP, Markdown and JSON files are sent' {
+        Navigate 'NavConnections'
+        Open-AttachmentSettings
+        Set-Value 'FileAttachmentMaxCount' '5'
+        Confirm-SensitiveSettingsAutoSave 'FileAttachmentMaxCount' 5 -CommitTextInput
+        $names=@('report.csv','report.pdf','report.zip','report.md','report.json')
+        Run-Prompt 'attachment-documents' (($names|ForEach-Object {"CREATE ATTACHMENT $_"}) -join ' ') 'Created report.csv'
+        Open-AttachmentDialog
+        Confirm-Attachments $names.Count
+        $sent=Wait-Server { param($s) @($s.uploads|Where-Object { $names -contains $_.name }).Count -eq $names.Count } 30
+        $script:checks.Add(@{name='Real Mattermost document attachments';passed=$true})
+    }
+    Check 'Real Mattermost: CSV, Markdown and JSON files reach the agent; PDF is refused' {
+        $samples=Join-Path $runRoot 'samples'; [IO.Directory]::CreateDirectory($samples) | Out-Null
+        $csv=Join-Path $samples 'sample-sales.csv'; [IO.File]::WriteAllText($csv,"month,sales`n4月,60`n5月,120`n")
+        $md=Join-Path $samples 'sample-notes.md'; [IO.File]::WriteAllText($md,"# メモ`n- 7月が最高`n")
+        $json=Join-Path $samples 'sample-config.json'; [IO.File]::WriteAllText($json,'{"target":200}')
+        Send-MemberFiles @($csv,$md,$json)
+        $noticePrefix=$(if($Language -eq 'ja'){'添付ファイルを送れませんでした'}else{'Could not send attachments'})
+        $noticesBefore=@((Get-Results).replies|Where-Object { "$($_.message)".Contains($noticePrefix) }).Count
+        Run-Prompt 'incoming-documents' '添付した3つのファイルを読んで要約して' 'Received '
+        $call=Get-Content (Join-Path $runRoot 'agent-calls.jsonl') | Select-Object -Last 1 | ConvertFrom-Json
+        foreach ($name in 'sample-sales.csv','sample-notes.md','sample-config.json') { Assert-True ($call.result.Contains($name)) "The agent did not receive $name" }
+        Start-Sleep -Seconds 2
+        Assert-True (@((Get-Results).replies|Where-Object { "$($_.message)".Contains($noticePrefix) }).Count -eq $noticesBefore) 'Reading attached files was mistaken for a request to send files'
+        $pdf=Join-Path $samples 'sample-report.pdf'
+        [IO.File]::WriteAllBytes($pdf,[Text.Encoding]::ASCII.GetBytes("%PDF-1.4`n1 0 obj << /Type /Catalog >> endobj`ntrailer << /Root 1 0 R >>`n%%EOF`n"))
+        Send-MemberFiles @($pdf)
+        $prompt='このPDFを読んで'
+        Post 'incoming-pdf' $prompt
+        Select-ConversationRequest $prompt
+        UI @('invoke','ApproveChat') | Out-Null
+        Wait-Element 'ChatRunConfirmation' | Out-Null
+        UI @('invoke','PrimaryButton') | Out-Null
+        $refusal=$(if($Language -eq 'ja'){'添付を読み込めなかった'}else{'could not'})
+        Wait-Server { param($s) @($s.replies|Where-Object { "$($_.message)".Contains($refusal) }).Count -ge 1 } 20 | Out-Null
+        $script:checks.Add(@{name='Real Mattermost incoming documents';passed=$true})
     }
     } else {
 
