@@ -281,6 +281,18 @@ function Run-Request([string]$Id,[string]$Filename,[switch]$ExpectAutomaticAttac
         UI @('wait-for','SendChatAttachments','-p','IsEnabled','--value','True','-t','6000') | Out-Null
     }
 }
+function Run-Prompt([string]$Id,[string]$Prompt,[string]$ExpectedOutput) {
+    Post $Id $Prompt
+    Select-ConversationRequest $Prompt
+    UI @('invoke','ApproveChat') | Out-Null
+    Wait-Element 'ChatRunConfirmation' | Out-Null
+    UI @('invoke','PrimaryButton') | Out-Null
+    UI @('wait-for','ChatOutput','--value',$ExpectedOutput,'--contains','-t','12000') | Out-Null
+}
+function Wait-Notice([string]$Fragment) {
+    $prefix=$(if($Language -eq 'ja'){'添付ファイルを送れませんでした'}else{'Could not send attachments'})
+    return Wait-Server { param($s) @($s.replies|Where-Object { $_.root_id -eq 'attachments-thread' -and "$($_.message)".StartsWith($prefix) -and "$($_.message)".Contains($Fragment) }).Count -ge 1 }
+}
 # Sending attachments is a secondary command in the request command bar, shown only after opening its "..." menu.
 function Show-RequestAction([string]$Id) {
     $element = Element $Id
@@ -475,6 +487,20 @@ try {
         $calls=@(Get-Content (Join-Path $runRoot 'agent-calls.jsonl')|ForEach-Object {$_|ConvertFrom-Json})
         Assert-True ($calls.Count -eq 4 -and @($calls|Where-Object { $_.args -contains '--resume' }).Count -eq 3) 'The Claude fixture did not resume the same saved session for later requests'
         $script:checks.Add(@{name='First-mode consent, same-session auto send, and changed-limit reconsent';passed=$true})
+    }
+    Check 'Chat is told why nothing was attached' {
+        Run-Prompt 'attachment-5' $(if($Language -eq 'ja'){'さっきの画像を添付して'}else{'Please attach the earlier image'}) 'No fixture file requested.'
+        Wait-Notice $(if($Language -eq 'ja'){'新しく作られたファイルだけ'}else{'newly created'}) | Out-Null
+        Run-Prompt 'attachment-6' 'CREATE ATTACHMENT secret.txt' 'Created secret.txt'
+        $excluded=Wait-Notice 'secret.txt'
+        Assert-True (@($excluded.uploads|Where-Object name -eq 'secret.txt').Count -eq 0) 'An excluded file was uploaded'
+        $before=@($excluded.replies).Count
+        Run-Prompt 'attachment-7' 'Summarize the workspace' 'No fixture file requested.'
+        Start-Sleep -Seconds 2
+        $after=Invoke-RestMethod "$script:endpoint/test/results"
+        $prefix=$(if($Language -eq 'ja'){'添付ファイルを送れませんでした'}else{'Could not send attachments'})
+        Assert-True (@($after.replies|Select-Object -Skip $before|Where-Object { "$($_.message)".StartsWith($prefix) }).Count -eq 0) 'A request that did not ask for files got an attachment notice'
+        $script:checks.Add(@{name='Chat notices for missing, excluded, and unrequested attachments';passed=$true})
     }
     UI @('invoke','DisconnectChat') | Out-Null
 } catch {
