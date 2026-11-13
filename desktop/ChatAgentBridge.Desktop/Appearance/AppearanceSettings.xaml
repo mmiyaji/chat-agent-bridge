@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:settings="using:CommunityToolkit.WinUI.Controls"
     xmlns:layout="using:ChatAgentBridge_Desktop.Layout">
+    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
     <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="ThemeSettingRow">
         <settings:SettingsCard.Header><TextBlock x:Uid="AppThemeCardHeading" AutomationProperties.AutomationId="AppThemeCardHeading" /></settings:SettingsCard.Header>
         <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE790;" /></settings:SettingsCard.HeaderIcon>
@@ -18,4 +19,14 @@
             <ComboBoxItem x:Uid="ThemeSystem" Tag="system" AutomationProperties.AutomationId="ThemeSystem" />
         </ComboBox>
     </settings:SettingsCard>
+    <settings:SettingsCard layout:SettingsCardLayout.IsAdaptive="True" AutomationProperties.AutomationId="AccentSettingRow">
+        <settings:SettingsCard.Header><TextBlock x:Uid="AppAccentCardHeading" AutomationProperties.AutomationId="AppAccentCardHeading" /></settings:SettingsCard.Header>
+        <settings:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE2B1;" /></settings:SettingsCard.HeaderIcon>
+        <settings:SettingsCard.Description>
+            <TextBlock x:Name="AccentStatus" TextWrapping="Wrap" AutomationProperties.AutomationId="AppAccentStatus" />
+        </settings:SettingsCard.Description>
+        <ComboBox x:Name="AccentPicker" x:Uid="AppAccent" MinWidth="180" HorizontalAlignment="Left"
+                  SelectionChanged="AccentPicker_SelectionChanged" AutomationProperties.AutomationId="AppAccentPicker" />
+    </settings:SettingsCard>
+    </StackPanel>
 </UserControl>
