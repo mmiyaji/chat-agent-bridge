@@ -30,6 +30,7 @@ public sealed class FileAttachmentAgentPromptTests
         var result = FileAttachmentAgentPrompt.Build(prompt, new BridgeSettings(), deliveryAvailable: true);
 
         Assert.StartsWith("Attachment delivery capability note:", result, StringComparison.Ordinal);
+        Assert.Contains("copy just that file to a new uniquely named file", result, StringComparison.Ordinal);
         Assert.Contains("--- Original user prompt (preserved verbatim) ---\n" + prompt + "\n--- End original user prompt ---", result, StringComparison.Ordinal);
     }
 
