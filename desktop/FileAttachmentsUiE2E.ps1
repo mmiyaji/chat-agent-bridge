@@ -3,7 +3,10 @@ param(
     [string]$TestAgentPath,
     [ValidateSet('ja','en')][string]$Language = 'ja',
     [switch]$Portable,
-    [switch]$KeepRunningOnFailure
+    [switch]$KeepRunningOnFailure,
+    # State file from StartMattermostE2E.ps1. Runs the upload and notice checks against that real Mattermost
+    # instead of the offline fixture.
+    [string]$MattermostStateFile
 )
 $ErrorActionPreference = 'Stop'
 $artifactRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'artifacts'))
@@ -230,7 +233,36 @@ function Confirm-SensitiveSettingsAutoSave([string]$Property,[object]$ExpectedVa
     } while ([DateTime]::UtcNow -lt $deadline)
     throw "Sensitive setting $Property did not auto-save to '$ExpectedValue'."
 }
+$script:mm=$null; $script:rootId=$null
+function Invoke-MM([string]$Method,[string]$Path,$Body=$null) {
+    $headers=@{Authorization="Bearer $($script:mm.memberUser.token)"}
+    if ($null -eq $Body) { return Invoke-RestMethod "$script:endpoint$Path" -Method $Method -Headers $headers }
+    Invoke-RestMethod "$script:endpoint$Path" -Method $Method -Headers $headers -ContentType 'application/json' -Body ([Text.Encoding]::UTF8.GetBytes(($Body|ConvertTo-Json -Compress)))
+}
+# Shapes the real thread like the offline fixture's results so the checks stay the same.
+function Get-Results {
+    if (-not $script:mm) { return Get-Results }
+    $replies=@(); $uploads=@()
+    if ($script:rootId) {
+        $thread=Invoke-MM 'Get' "/api/v4/posts/$($script:rootId)/thread"
+        foreach ($id in @($thread.order)) {
+            $post=$thread.posts.$id
+            if ($post.user_id -ne $script:mm.bridgeUser.id) { continue }
+            $replies+=[pscustomobject]@{root_id='attachments-thread';message=$post.message;file_ids=$post.file_ids;create_at=$post.create_at}
+            foreach ($file in @($post.metadata.files)) { if ($file) { $uploads+=[pscustomobject]@{name=$file.name} } }
+        }
+    }
+    [pscustomobject]@{replies=@($replies|Sort-Object create_at);uploads=$uploads;connections=1}
+}
 function Post([string]$Id,[string]$Prompt) {
+    if ($script:mm) {
+        $body=@{channel_id=$script:mm.channel.id;message="!cab $Prompt"}
+        if ($script:rootId) { $body.root_id=$script:rootId }
+        $created=Invoke-MM 'Post' '/api/v4/posts' $body
+        if (-not $script:rootId) { $script:rootId=$created.id }
+        Start-Sleep -Milliseconds 800
+        return
+    }
     $body=@{id=$Id;thread='attachments-thread';user='alice';text=$Prompt;mention=$false;plain=$false}|ConvertTo-Json -Compress
     $result=Invoke-RestMethod "$script:endpoint/test/request" -Method Post -ContentType 'application/json' -Body ([Text.Encoding]::UTF8.GetBytes($body))
     Assert-True ($result.delivered -eq 1) 'Expected one connected offline chat transport'
@@ -238,7 +270,7 @@ function Post([string]$Id,[string]$Prompt) {
 }
 function Wait-Server([scriptblock]$Condition,[int]$Seconds=10) {
     $deadline=[DateTime]::UtcNow.AddSeconds($Seconds)
-    do { $snapshot=Invoke-RestMethod "$script:endpoint/test/results"; if (& $Condition $snapshot) { return $snapshot }; Start-Sleep -Milliseconds 250 }
+    do { $snapshot=Get-Results; if (& $Condition $snapshot) { return $snapshot }; Start-Sleep -Milliseconds 250 }
     while ([DateTime]::UtcNow -lt $deadline)
     throw 'Offline chat fixture did not reach the expected state'
 }
@@ -262,6 +294,7 @@ function Read-AuditKinds {
     foreach ($line in ((Read-AuditText) -split "`r?`n")) { if ($line.Trim()) { ($line | ConvertFrom-Json).Kind } }
 }
 function Select-ConversationRequest([string]$Prompt) {
+    Navigate 'NavChat'
     Set-InboxSearch $Prompt
     Select-FirstRow 'InboxConversations'
     Wait-Element 'ChatRequests' | Out-Null
@@ -280,6 +313,18 @@ function Run-Request([string]$Id,[string]$Filename,[switch]$ExpectAutomaticAttac
         Show-RequestAction 'SendChatAttachments'
         UI @('wait-for','SendChatAttachments','-p','IsEnabled','--value','True','-t','6000') | Out-Null
     }
+}
+function Run-Prompt([string]$Id,[string]$Prompt,[string]$ExpectedOutput) {
+    Post $Id $Prompt
+    Select-ConversationRequest $Prompt
+    UI @('invoke','ApproveChat') | Out-Null
+    Wait-Element 'ChatRunConfirmation' | Out-Null
+    UI @('invoke','PrimaryButton') | Out-Null
+    UI @('wait-for','ChatOutput','--value',$ExpectedOutput,'--contains','-t','12000') | Out-Null
+}
+function Wait-Notice([string]$Fragment) {
+    $prefix=$(if($Language -eq 'ja'){'添付ファイルを送れませんでした'}else{'Could not send attachments'})
+    return Wait-Server { param($s) @($s.replies|Where-Object { $_.root_id -eq 'attachments-thread' -and "$($_.message)".StartsWith($prefix) -and "$($_.message)".Contains($Fragment) }).Count -ge 1 }
 }
 # Sending attachments is a secondary command in the request command bar, shown only after opening its "..." menu.
 function Show-RequestAction([string]$Id) {
@@ -351,6 +396,10 @@ function Select-Theme([string]$Theme) {
 }
 
 try {
+    if ($MattermostStateFile) {
+        $script:mm=Get-Content -LiteralPath $MattermostStateFile -Raw | ConvertFrom-Json
+        $script:endpoint=$script:mm.serverUrl.TrimEnd('/')
+    } else {
     $portFile=Join-Path $dataPath 'port.txt'
     $serverScript=Join-Path $PSScriptRoot 'fixtures/file-attachments-chat-server.cjs'
     $server=Start-Process $node -ArgumentList @('"'+$serverScript+'"','"'+$portFile+'"') -WindowStyle Hidden -PassThru
@@ -358,18 +407,22 @@ try {
     while (-not (Test-Path $portFile) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 100 }
     Assert-True (Test-Path $portFile) 'Offline chat fixture did not start'
     $script:endpoint='http://127.0.0.1:'+(Get-Content $portFile -Raw).Trim()
+    }
+    $chatToken=$(if($script:mm){$script:mm.bridgeUser.token}else{'offline-ui-fixture'})
     $protected='dpapi:'+[Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect(
-        [Text.Encoding]::UTF8.GetBytes('offline-ui-fixture'),$null,[Security.Cryptography.DataProtectionScope]::CurrentUser))
+        [Text.Encoding]::UTF8.GetBytes($chatToken),$null,[Security.Cryptography.DataProtectionScope]::CurrentUser))
     Write-Json 'settings.json' @{
         SchemaVersion=1;WorkspaceRoot=$workspace;AgentProvider='claude';AgentMode='exec';AgentExecutable=$agentPath;AgentArguments=''
         AgentPermissionMode='workspace-write';TrustedWorkspaceRoots=$workspace
-        MattermostServerUrl=$script:endpoint;MattermostChannelId='ui-channel';MattermostToken=$protected
-        MattermostAllowedUserIds='alice';ChatApprovalMode='always';ChatResultMode='manual';AutoConnectProvider='none'
+        MattermostServerUrl=$script:endpoint;MattermostChannelId=$(if($script:mm){$script:mm.channel.id}else{'ui-channel'});MattermostToken=$protected
+        MattermostAllowedUserIds=$(if($script:mm){$script:mm.memberUser.id}else{'alice'});ChatApprovalMode='always';ChatResultMode='manual';AutoConnectProvider='none'
         FileAttachmentApprovalMode='always';FileAttachmentMaxSizeMb=10;FileAttachmentMaxCount=3;FileAttachmentMaxTotalSizeMb=20
     }
     Write-Json 'onboarding.json' @{schemaVersion=3;step=4;status='completed'}
     Write-Json 'language.json' @{Language=$Language}
     Write-Json 'appearance.json' @{Theme='dark'}
+    # The one-time chat teaching tip would cover the conversation list.
+    Write-Json 'tips.json' @{Seen=@('chat-connect')}
     $env:CAB_FILE_ATTACHMENTS_WORKSPACE=$workspace
     $env:CAB_FILE_ATTACHMENTS_TRANSCRIPT=Join-Path $runRoot 'agent-calls.jsonl'
     if ($Portable) {
@@ -388,10 +441,21 @@ try {
     Navigate 'NavChat'
     UI @('invoke','ConnectMattermost') | Out-Null
     Wait-Server { param($s) $s.connections -eq 1 } | Out-Null
+    if ($script:mm) { UI @('wait-for','DisconnectChat','-p','IsEnabled','--value','True','-t','20000') | Out-Null }
+
+    if ($script:mm) {
+    Check 'Real Mattermost: a selected file is uploaded to the thread' {
+        Run-Request 'attachment-1' 'first.txt'
+        Open-AttachmentDialog
+        Confirm-OneAttachment
+        $sent=Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'first.txt').Count -eq 1 } 30
+        $script:checks.Add(@{name='Real Mattermost upload';passed=$true})
+    }
+    } else {
 
     Check 'Default always mode finds new files without an automatic dialog or upload' {
         Run-Request 'attachment-1' 'first.txt'
-        $snapshot=Invoke-RestMethod "$script:endpoint/test/results"
+        $snapshot=Get-Results
         Assert-True ($snapshot.uploads.Count -eq 0) 'Default always mode uploaded a file automatically'
         $auditText=(Read-AuditText)
         $auditKinds=@(Read-AuditKinds)
@@ -405,7 +469,7 @@ try {
         Resize 980 740
         Capture 'dark-attachment-confirmation.png'
         Close-AttachmentDialog
-        $snapshot=Invoke-RestMethod "$script:endpoint/test/results"
+        $snapshot=Get-Results
         Assert-True ($snapshot.uploads.Count -eq 0) 'Cancelling the file dialog uploaded a file'
         $script:checks.Add(@{name='Default always mode, empty selection, and cancel';passed=$true})
     }
@@ -441,7 +505,7 @@ try {
         Choose 'FileAttachmentApprovalMode' $(if($Language -eq 'ja'){'スレッドの初回のみ確認'}else{'Ask once per conversation'})
         Confirm-SensitiveSettingsAutoSave 'FileAttachmentApprovalMode' 'first'
         Run-Request 'attachment-2' 'second.txt'
-        $before=Invoke-RestMethod "$script:endpoint/test/results"
+        $before=Get-Results
         Assert-True ($before.uploads.Count -eq 0) 'First mode uploaded before a user approved the first file'
         Open-AttachmentDialog
         Assert-True (Has-Text $(if($Language -eq 'ja'){'この選択を承認すると'}else{'Approving this selection also allows'})) 'First-consent future-upload warning is missing'
@@ -463,7 +527,7 @@ try {
         Set-Value 'FileAttachmentMaxSizeMb' '11'
         Confirm-SensitiveSettingsAutoSave 'FileAttachmentMaxSizeMb' 11 -CommitTextInput
         Run-Request 'attachment-4' 'fourth.txt'
-        $changed=Invoke-RestMethod "$script:endpoint/test/results"
+        $changed=Get-Results
         Assert-True ($changed.uploads.Count -eq 2) 'Changed limits reused old consent without asking'
         Open-AttachmentDialog
         Assert-True (Has-Text $(if($Language -eq 'ja'){'この選択を承認すると'}else{'Approving this selection also allows'})) 'Changed limits did not request fresh first-mode consent'
@@ -476,9 +540,24 @@ try {
         Assert-True ($calls.Count -eq 4 -and @($calls|Where-Object { $_.args -contains '--resume' }).Count -eq 3) 'The Claude fixture did not resume the same saved session for later requests'
         $script:checks.Add(@{name='First-mode consent, same-session auto send, and changed-limit reconsent';passed=$true})
     }
+    }
+    Check 'Chat is told why nothing was attached' {
+        Run-Prompt 'attachment-5' $(if($Language -eq 'ja'){'さっきの画像を添付して'}else{'Please attach the earlier image'}) 'No fixture file requested.'
+        Wait-Notice $(if($Language -eq 'ja'){'新しく作られたファイルだけ'}else{'newly created'}) | Out-Null
+        Run-Prompt 'attachment-6' 'CREATE ATTACHMENT secret.txt' 'Created secret.txt'
+        $excluded=Wait-Notice 'secret.txt'
+        Assert-True (@($excluded.uploads|Where-Object name -eq 'secret.txt').Count -eq 0) 'An excluded file was uploaded'
+        $before=@($excluded.replies).Count
+        Run-Prompt 'attachment-7' 'Summarize the workspace' 'No fixture file requested.'
+        Start-Sleep -Seconds 2
+        $after=Get-Results
+        $prefix=$(if($Language -eq 'ja'){'添付ファイルを送れませんでした'}else{'Could not send attachments'})
+        Assert-True (@($after.replies|Select-Object -Skip $before|Where-Object { "$($_.message)".StartsWith($prefix) }).Count -eq 0) 'A request that did not ask for files got an attachment notice'
+        $script:checks.Add(@{name='Chat notices for missing, excluded, and unrequested attachments';passed=$true})
+    }
     UI @('invoke','DisconnectChat') | Out-Null
 } catch {
-    if ($script:endpoint) { try { Write-Json 'server-results-on-failure.json' (Invoke-RestMethod "$script:endpoint/test/results") } catch { } }
+    if ($script:endpoint) { try { Write-Json 'server-results-on-failure.json' (Get-Results) } catch { } }
     if ($appProcess -and -not $appProcess.HasExited) { try { Capture 'failure.png' } catch { } }
     $script:checks.Add(@{name='File attachment UI E2E';passed=$false;detail=$_.Exception.Message})
     Write-Output "FAIL $($_.Exception.Message)"

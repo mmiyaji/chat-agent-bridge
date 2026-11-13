@@ -1144,4 +1144,13 @@
   <data name="ChannelPickerMemberCount" xml:space="preserve"><value>メンバー: {0} 人</value></data>
   <data name="HistoryAccessUserColumn" xml:space="preserve"><value>対象ユーザー</value></data>
   <data name="HistoryAuditContextColumn" xml:space="preserve"><value>会話・対象ユーザー</value></data>
+  <data name="AttachmentsChatNotice" xml:space="preserve"><value>添付ファイルを送れませんでした。{0}</value></data>
+  <data name="AttachmentsChatNone" xml:space="preserve"><value>添付できるのは、今回の実行でワークスペース内に新しく作られたファイルだけです。対象のファイルが見つかりませんでした。</value></data>
+  <data name="AttachmentsChatExcluded" xml:space="preserve"><value>添付ルールにより送らなかったファイル: {0}（設定・認証情報・プログラムらしい名前のファイルは送りません）</value></data>
+  <data name="AttachmentsChatIncomplete" xml:space="preserve"><value>ワークスペースのファイル検索が完了しませんでした。</value></data>
+  <data name="AttachmentsChatDisabled" xml:space="preserve"><value>ファイル添付が設定で無効になっています。</value></data>
+  <data name="AttachmentsChatNotSupported" xml:space="preserve"><value>この接続ではファイルを送れません。</value></data>
+  <data name="AttachmentsChatApprovalPending" xml:space="preserve"><value>PCで送信の承認を待っています。</value></data>
+  <data name="AttachmentsChatPolicyChanged" xml:space="preserve"><value>添付の設定が変わったため送信を止めました。</value></data>
+  <data name="AttachmentsChatFailed" xml:space="preserve"><value>アップロードに失敗しました。PCの状態を確認してください。</value></data>
 </root>
