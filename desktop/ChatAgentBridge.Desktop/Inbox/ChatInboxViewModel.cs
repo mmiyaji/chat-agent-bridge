@@ -1190,7 +1190,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         catch (IncomingFilesException)
         {
             item.State = "添付受信エラー";
-            item.FullOutput = DesktopText.Get("IncomingFilesFailed");
+            item.FullOutput = IncomingFilesFailedText(item.Request.Provider);
             Status = item.FullOutput;
             await FinishProgressAsync(item, ChatProgressState.Failed);
             if (record is not null && record.Status == "running")
@@ -1198,7 +1198,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await FinishFailureAsync(record, "failed", item.Request);
                 record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = "failed" };
             }
-            await NotifyRequestAsync(item, DesktopText.Get("IncomingFilesFailed"));
+            await NotifyRequestAsync(item, item.FullOutput);
         }
         catch (Exception exception)
         {
