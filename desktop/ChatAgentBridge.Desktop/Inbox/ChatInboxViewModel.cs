@@ -211,6 +211,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
     public partial bool IsExecuting { get; set; }
     partial void OnIsExecutingChanged(bool value)
     {
+        if (!value) _ = TryReconnectAfterSettingsChangeAsync();
         ReconnectCommand.NotifyCanExecuteChanged();
         ConnectMattermostCommand.NotifyCanExecuteChanged();
         ConnectSlackCommand.NotifyCanExecuteChanged();
@@ -1194,7 +1195,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
         catch (IncomingFilesException)
         {
             item.State = "添付受信エラー";
-            item.FullOutput = DesktopText.Get("IncomingFilesFailed");
+            item.FullOutput = IncomingFilesFailedText(item.Request.Provider);
             Status = item.FullOutput;
             await FinishProgressAsync(item, ChatProgressState.Failed);
             if (record is not null && record.Status == "running")
@@ -1202,7 +1203,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await FinishFailureAsync(record, "failed", item.Request);
                 record = record with { FinishedAt = DateTimeOffset.UtcNow, Status = "failed" };
             }
-            await NotifyRequestAsync(item, DesktopText.Get("IncomingFilesFailed"));
+            await NotifyRequestAsync(item, item.FullOutput);
         }
         catch (Exception exception)
         {
@@ -1482,6 +1483,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await DisconnectCoreAsync();
                 HasConnectionError = true;
                 Status = DesktopText.Get("InboxConnectionSettingsChanged");
+                _pendingSettingsReconnect = provider;
             }
             else if (IsConnected && previous is not null && !SameExecutionDefaults(previous, settings))
                 Status = DesktopText.Get("InboxExecutionSettingsChanged");
@@ -1496,6 +1498,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
             HasConnectionError = true;
         }
         finally { _accessRefreshGate.Release(); }
+        _ = TryReconnectAfterSettingsChangeAsync();
         ApproveCommand.NotifyCanExecuteChanged();
         RejectCommand.NotifyCanExecuteChanged();
         SendResultCommand.NotifyCanExecuteChanged();

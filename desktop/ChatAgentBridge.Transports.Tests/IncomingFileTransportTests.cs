@@ -204,6 +204,40 @@ public sealed class IncomingFileTransportTests
     }
 
     [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public async Task Mattermost_direct_message_files_download_only_while_direct_messages_are_allowed(bool allowDirectMessages, bool expected)
+    {
+        var handler = new RouteHandler((request, _) =>
+        {
+            if (request.RequestUri!.AbsolutePath.EndsWith("/info", StringComparison.Ordinal))
+                return Task.FromResult(JsonResponse("""{"id":"F1","name":"a.png","size":3,"mime_type":"image/png","post_id":"post-1"}"""));
+            if (request.RequestUri.AbsolutePath.EndsWith("/posts/post-1", StringComparison.Ordinal))
+                return Task.FromResult(JsonResponse("""{"id":"post-1","channel_id":"D1","user_id":"U1","root_id":"","file_ids":["F1"]}"""));
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 2, 3]) });
+        });
+        using var http = new HttpClient(handler);
+        await using var transport = new MattermostWebSocketTransport(http, new Uri("https://mattermost.example/"), "token", "C1");
+        transport.UpdateAccessSettings(new BridgeSettings { MattermostAllowedUserIds = "U1", MattermostAllowDirectMessages = allowDirectMessages });
+        var request = new ChatRequest("mattermost", "D1", "post-1", "U1", "inspect", "post-1")
+        {
+            IsDirectMessage = true,
+            IncomingFiles = [new IncomingChatFile("F1", string.Empty, 0, null)]
+        };
+
+        if (!expected)
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() => transport.ResolveIncomingFilesAsync(request, CancellationToken.None));
+            Assert.Equal(0, handler.RequestCount);
+            return;
+        }
+        var resolved = await transport.ResolveIncomingFilesAsync(request, CancellationToken.None);
+        using var destination = new MemoryStream();
+        await transport.DownloadFileAsync(request, Assert.Single(resolved), destination, 3, CancellationToken.None);
+        Assert.Equal(new byte[] { 1, 2, 3 }, destination.ToArray());
+    }
+
+    [Theory]
     [InlineData("other-channel", "U1", "root-1")]
     [InlineData("C1", "other-user", "root-1")]
     [InlineData("C1", "U1", "other-root")]

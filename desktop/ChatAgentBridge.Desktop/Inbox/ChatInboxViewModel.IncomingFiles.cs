@@ -30,6 +30,12 @@ public sealed partial class ChatInboxViewModel
 {
     private sealed class IncomingFilesException : Exception;
 
+    /// <summary>The files:read hint applies only to Slack (the English hint carries its own leading space).</summary>
+    private static string IncomingFilesFailedText(string provider) =>
+        string.Equals(provider, "slack", StringComparison.OrdinalIgnoreCase)
+            ? DesktopText.Get("IncomingFilesFailed") + DesktopText.Get("IncomingFilesFailedSlackHint")
+            : DesktopText.Get("IncomingFilesFailed");
+
     private async Task<IncomingAttachmentLease?> PrepareIncomingFilesAsync(InboxItem item, CancellationToken token)
     {
         if (item.Request.IncomingFilesError is not null) throw new IncomingFilesException();
