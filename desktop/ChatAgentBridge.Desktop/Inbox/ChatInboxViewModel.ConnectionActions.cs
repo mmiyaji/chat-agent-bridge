@@ -11,6 +11,7 @@ public sealed partial class ChatInboxViewModel
     private readonly CancellationTokenSource _connectionActionsLifetime = new();
     private string? _lastConnectionProvider;
     private Task? _disconnectTask;
+    private string? _pendingSettingsReconnect;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectMattermostCommand), nameof(ConnectSlackCommand), nameof(ConnectDiscordCommand), nameof(DisconnectCommand), nameof(ReconnectCommand))]
@@ -39,6 +40,7 @@ public sealed partial class ChatInboxViewModel
     {
         OnPropertyChanged(nameof(ReconnectHint));
         if (!value && !_closing) _ = ProcessPendingPoliciesAsync();
+        if (!value) _ = TryReconnectAfterSettingsChangeAsync();
     }
 
     private async Task ConnectProviderAsync(string provider)
@@ -98,5 +100,22 @@ public sealed partial class ChatInboxViewModel
             }
         }
         finally { IsConnectionActionInProgress = false; }
+    }
+
+    /// <summary>
+    /// After a saved chat setting closed the old connection for safety, connect again with the new settings. Waits for a
+    /// running request to finish winding down; skipped if the user connected in the meantime.
+    /// </summary>
+    private async Task TryReconnectAfterSettingsChangeAsync()
+    {
+        if (_pendingSettingsReconnect is not { } provider) return;
+        if (_closing || IsConnected) { _pendingSettingsReconnect = null; return; }
+        // New settings that cannot connect (cleared token, other provider) wait for the user instead.
+        if (!IsProviderReady(provider)) { _pendingSettingsReconnect = null; return; }
+        if (!CanConnect(provider)) return;
+        _pendingSettingsReconnect = null;
+        Status = DesktopText.Get("InboxReconnectingAfterSettingsChange");
+        await ConnectProviderAsync(provider);
+        if (!_closing && IsConnected) Status = DesktopText.Get("InboxReconnectedAfterSettingsChange");
     }
 }

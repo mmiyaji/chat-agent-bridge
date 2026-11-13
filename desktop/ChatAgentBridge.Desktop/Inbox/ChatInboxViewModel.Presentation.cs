@@ -177,7 +177,12 @@ public sealed partial class ChatInboxViewModel
         OnPropertyChanged(nameof(EmptyConversationHeading));
         OnPropertyChanged(nameof(EmptyConversationDescription));
     }
-    partial void OnIsConnectedChanged(bool value) => NotifyConnectionPresentation();
+    partial void OnIsConnectedChanged(bool value)
+    {
+        // A manual connect replaces a pending automatic reconnect after a settings change.
+        if (value) _pendingSettingsReconnect = null;
+        NotifyConnectionPresentation();
+    }
     partial void OnIsConnectionConfirmedChanged(bool value) => NotifyConnectionPresentation();
     partial void OnHasConnectionErrorChanged(bool value) => NotifyConnectionPresentation();
 }

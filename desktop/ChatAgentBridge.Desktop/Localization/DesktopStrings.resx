@@ -354,6 +354,8 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="InboxResultSendCancelled" xml:space="preserve"><value>Sending the result was canceled.</value></data>
   <data name="InboxResultSendFailed" xml:space="preserve"><value>Could not send the result or save the audit record. Check the thread before resending.</value></data>
   <data name="InboxExecutionSettingsChanged" xml:space="preserve"><value>Execution settings changed. New messages use the saved settings without reconnecting. Requests received before the change may need to be resubmitted or approved again.</value></data>
+  <data name="InboxReconnectingAfterSettingsChange" xml:space="preserve"><value>Reconnecting with the saved chat settings…</value></data>
+  <data name="InboxReconnectedAfterSettingsChange" xml:space="preserve"><value>Reconnected with the saved chat settings.</value></data>
   <data name="InboxConnectionSettingsChanged" xml:space="preserve"><value>The server, channel, token, or proxy setting changed. The old connection was closed for safety. Connect again to use the saved chat settings.</value></data>
   <data name="InboxPermissionsUnavailable" xml:space="preserve"><value>Could not load permission settings. Request execution and result sharing are stopped. Repair the settings and reconnect.</value></data>
   <data name="InboxExecutionPausedSettingsChanged" xml:space="preserve"><value>Execution and result sharing stopped because access scope or execution and conversation settings changed. Check the settings and resubmit the request.</value></data>
