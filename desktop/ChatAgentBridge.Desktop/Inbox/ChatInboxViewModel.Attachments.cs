@@ -26,10 +26,6 @@ public sealed partial class ChatInboxViewModel
             item.AttachmentSettingsAtStart = effective;
             if (FileAttachmentPolicy.NormalizeMode(effective.FileAttachmentApprovalMode) == "disabled" ||
                 effective.ChatResultMode == "none" || item.Transport is not IChatFileTransport) return null;
-            // The conversation scope counts files created after the conversation was first seen.
-            if (FileAttachmentPolicy.NormalizeScope(effective.FileAttachmentScope) == "conversation")
-                item.AttachmentConversationStartUtc = await new AttachmentConversationStore(_store.DirectoryPath)
-                    .GetOrAddStartAsync(CreateSessionKey(item), token);
             return await _attachmentCollector.CaptureBeforeAsync(effective.WorkspaceRoot, _store.DirectoryPath, token);
         }
         catch (OperationCanceledException) { throw; }
@@ -52,10 +48,18 @@ public sealed partial class ChatInboxViewModel
         try
         {
             var discovered = await _attachmentCollector.DiscoverAsync(before, settings, token);
+            var conversationStore = new AttachmentConversationStore(_store.DirectoryPath);
+            var key = CreateSessionKey(item);
+            // Only complete discovery results establish durable eligibility for later conversation markers.
+            await conversationStore.RecordDiscoveredAsync(key, settings.WorkspaceRoot, discovered.Candidates,
+                discovered.IsComplete, token);
             if (item.AttachmentNamedFiles.Count > 0)
             {
+                var eligible = FileAttachmentPolicy.NormalizeScope(settings.FileAttachmentScope) == "conversation"
+                    ? await conversationStore.GetDiscoveredAsync(key, settings.WorkspaceRoot, token)
+                    : null;
                 var named = await _attachmentCollector.ResolveNamedAsync(before, item.AttachmentNamedFiles, settings,
-                    item.AttachmentConversationStartUtc, token);
+                    eligible, token);
                 var paths = discovered.Candidates.Select(file => file.FullPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
                 discovered = discovered with
                 {

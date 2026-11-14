@@ -10,7 +10,7 @@ public static partial class FileAttachmentMarkers
 {
     public const int MaxNames = 20;
 
-    [GeneratedRegex(@"^[ \t]*`?CAB-ATTACH:[ \t]*(?<path>[^`\r\n]+?)[ \t]*`?[ \t]*$", RegexOptions.Multiline | RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^[ \t]*`?CAB-ATTACH:[ \t]*(?<path>[^`\r\n]+?)[ \t]*`?[ \t]*\r?$", RegexOptions.Multiline | RegexOptions.CultureInvariant)]
     private static partial Regex MarkerLine();
 
     [GeneratedRegex(@"^[ \t]*`?CAB-ATTACH:[^\r\n]*(\r?\n)?", RegexOptions.Multiline | RegexOptions.CultureInvariant)]

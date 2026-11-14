@@ -17,6 +17,7 @@ $workspace = Join-Path $runRoot 'workspace'
 [IO.Directory]::CreateDirectory($workspace) | Out-Null
 Set-Content -LiteralPath (Join-Path $runRoot '.cab-file-attachments-ui') 'Isolated offline attachment UI test'
 Set-Content -LiteralPath (Join-Path $workspace 'baseline.txt') 'Present before the agent run.'
+Set-Content -LiteralPath (Join-Path $workspace '.env') 'FIXTURE_SECRET=never-upload'
 $script:checks = [Collections.Generic.List[object]]::new()
 $script:server = $null; $script:appProcess = $null
 $node = (Get-Command node -ErrorAction Stop).Source
@@ -241,7 +242,7 @@ function Invoke-MM([string]$Method,[string]$Path,$Body=$null) {
 }
 # Shapes the real thread like the offline fixture's results so the checks stay the same.
 function Get-Results {
-    if (-not $script:mm) { return Get-Results }
+    if (-not $script:mm) { return Invoke-RestMethod "$script:endpoint/test/results" }
     $replies=@(); $uploads=@()
     if ($script:rootId) {
         $thread=Invoke-MM 'Get' "/api/v4/posts/$($script:rootId)/thread"
@@ -341,9 +342,43 @@ function Show-RequestAction([string]$Id) {
 }
 function Open-AttachmentDialog {
     Show-RequestAction 'SendChatAttachments'
-    UI @('invoke','SendChatAttachments') | Out-Null
+    Invoke-AvailableAction 'SendChatAttachments'
     Wait-Element 'AttachmentConfirmation' | Out-Null
     Wait-Element 'AttachmentFile1' | Out-Null
+}
+function Invoke-AvailableAction([string]$Id,[int]$Seconds=6) {
+    $condition=[System.Windows.Automation.AndCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,$Id),
+        [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ProcessIdProperty,$script:appProcess.Id))
+    $deadline=[DateTime]::UtcNow.AddSeconds($Seconds)
+    $last=@()
+    do {
+        $matches=[System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Descendants,$condition)
+        $last=@()
+        foreach ($element in $matches) {
+            try {
+                $current=$element.Current
+                $description='{0}: type={1}, offscreen={2}, enabled={3}' -f
+                    $current.Name,$current.ControlType.ProgrammaticName,$current.IsOffscreen,$current.IsEnabled
+                $last+=$description
+                if ($current.IsOffscreen -or -not $current.IsEnabled) { continue }
+                $invoke=$null
+                try {
+                    if ($element.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern,[ref]$invoke)) {
+                        $invoke.Invoke(); return
+                    }
+                } catch { $last+=('InvokePattern unavailable: ' + $_.Exception.Message) }
+                $legacy=$null
+                try {
+                    if ($element.TryGetCurrentPattern([System.Windows.Automation.LegacyIAccessiblePattern]::Pattern,[ref]$legacy)) {
+                        $legacy.DoDefaultAction(); return
+                    }
+                } catch { $last+=('LegacyIAccessiblePattern unavailable: ' + $_.Exception.Message) }
+            } catch { $last+=('element unavailable: ' + $_.Exception.Message) }
+        }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw "No visible, enabled, invokable UIA peer for $Id after ${Seconds}s. Candidates: $($last -join '; ')"
 }
 # Invoke a button inside the open attachment dialog itself; other controls in the window can share the generic CloseButton id.
 function Invoke-DialogButton([string]$Id) {
@@ -531,13 +566,16 @@ try {
         Open-AttachmentSettings
         Choose 'FileAttachmentScope' $(if($Language -eq 'ja'){'この会話で作ったファイル'}else{'Files created in this conversation'})
         Confirm-SensitiveSettingsAutoSave 'FileAttachmentScope' 'conversation'
-        # The conversation starts counting here; chart.png was created before, notes.txt after.
+        # Earlier successful runs are tracked even if they used run scope, so chart.png and notes.txt can both be named.
         Run-Prompt 'scope-create' 'CREATE ATTACHMENT notes.txt' 'Created notes.txt'
+        $chartUploadsBefore=@((Get-Results).uploads|Where-Object name -eq 'chart.png').Count
+        $expectedChartUploads=$chartUploadsBefore + 1
         Run-Prompt 'scope-name' 'NAME ATTACHMENT notes.txt NAME ATTACHMENT chart.png' 'Named notes.txt, chart.png'
         Open-AttachmentDialog
-        Assert-True ($null -eq (Element 'AttachmentFile2')) 'A file created before the conversation began was offered'
-        Confirm-OneAttachment
+        Assert-True ($null -ne (Element 'AttachmentFile2')) 'An earlier discovered conversation file was not offered'
+        Confirm-Attachments 2
         Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'notes.txt').Count -eq 1 } 30 | Out-Null
+        Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'chart.png').Count -eq $expectedChartUploads } 30 | Out-Null
         $script:checks.Add(@{name='Real Mattermost conversation scope';passed=$true})
     }
     Check 'Real Mattermost: the workspace scope sends an existing file after confirmation' {
@@ -642,11 +680,46 @@ try {
         $script:checks.Add(@{name='First-mode consent, same-session auto send, and changed-limit reconsent';passed=$true})
     }
     }
+    if (-not $script:mm) {
+    Check 'Conversation scope reattaches an earlier output using CRLF markers' {
+        Navigate 'NavConnections'
+        Open-AttachmentSettings
+        Choose 'FileAttachmentScope' $(if($Language -eq 'ja'){'この会話で作ったファイル'}else{'Files created in this conversation'})
+        Confirm-SensitiveSettingsAutoSave 'FileAttachmentScope' 'conversation'
+        $priorUploads=@((Get-Results).uploads|Where-Object name -eq 'second.txt').Count
+        Run-Prompt 'scope-create' 'CREATE ATTACHMENT notes.txt' 'Created notes.txt'
+        Run-Prompt 'scope-name' 'MARKERS=CRLF NAME ATTACHMENT notes.txt NAME ATTACHMENT second.txt' 'Named notes.txt, second.txt'
+        Open-AttachmentDialog
+        Assert-True ($null -ne (Element 'AttachmentFile2')) 'The earlier conversation file was not offered'
+        Confirm-Attachments 2
+        $sent=Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'notes.txt').Count -eq 1 -and @($s.uploads|Where-Object name -eq 'second.txt').Count -eq ($priorUploads + 1) } 30
+        Assert-True (@($sent.uploads|Where-Object name -eq 'second.txt').Count -eq ($priorUploads + 1)) 'The earlier conversation file was not uploaded again'
+        $script:checks.Add(@{name='Offline conversation scope and CRLF marker';passed=$true})
+    }
+    Check 'Workspace scope offers an existing allowed file only after consent' {
+        Navigate 'NavConnections'
+        Open-AttachmentSettings
+        Choose 'FileAttachmentScope' $(if($Language -eq 'ja'){'ワークスペース全体（毎回確認）'}else{'Whole workspace (always ask)'})
+        Confirm-SensitiveSettingsAutoSave 'FileAttachmentScope' 'workspace'
+        $baselineBefore=@((Get-Results).uploads|Where-Object name -eq 'baseline.txt').Count
+        Run-Prompt 'scope-workspace' 'NAME ATTACHMENT baseline.txt NAME ATTACHMENT .env' 'Named baseline.txt, .env'
+        Assert-True (Has-Text 'baseline.txt') 'Workspace scope did not offer the existing baseline file'
+        Open-AttachmentDialog
+        Assert-True ($null -eq (Element 'AttachmentFile2')) 'Workspace scope offered an excluded .env file'
+        Assert-True (@((Get-Results).uploads|Where-Object name -eq 'baseline.txt').Count -eq $baselineBefore) 'Workspace scope uploaded before explicit PC consent'
+        Confirm-OneAttachment
+        Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'baseline.txt').Count -eq ($baselineBefore + 1) } 30 | Out-Null
+        $script:checks.Add(@{name='Offline workspace scope and explicit consent';passed=$true})
+    }
+    }
     Check 'Chat is told why nothing was attached' {
         Run-Prompt 'attachment-5' $(if($Language -eq 'ja'){'さっきの画像を添付して'}else{'Please attach the earlier image'}) 'No fixture file requested.'
         Wait-Notice $(if($Language -eq 'ja'){'新しく作られたファイルだけ'}else{'newly created'}) | Out-Null
         Run-Prompt 'attachment-6' 'CREATE ATTACHMENT secret.txt' 'Created secret.txt'
-        $excluded=Wait-Notice 'secret.txt'
+        $excludedFragment=$(if($Language -eq 'ja'){'添付ルールにより送らなかったファイル'}else{'withheld by the attachment rules'})
+        $excluded=Wait-Notice $excludedFragment
+        $excludedNotice=@($excluded.replies|Where-Object { "$($_.message)".Contains($excludedFragment) }|Select-Object -Last 1)
+        Assert-True ($excludedNotice.Count -eq 1 -and -not "$($excludedNotice[0].message)".Contains('secret.txt')) 'An excluded filename was revealed in the chat notice'
         Assert-True (@($excluded.uploads|Where-Object name -eq 'secret.txt').Count -eq 0) 'An excluded file was uploaded'
         $before=@($excluded.replies).Count
         Run-Prompt 'attachment-7' 'Summarize the workspace' 'No fixture file requested.'
