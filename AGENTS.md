@@ -37,6 +37,7 @@ CI の全体は `.github/workflows/ci.yml` を参照してください。
 - テスト仕様の設計、曖昧な失敗の原因分析、探索的なUX評価、AIエージェントの応答品質・安全性の評価など、判断の質が結果に影響する作業では、必要に応じて高性能モデルを選ぶ。モデル能力を評価するテストでは、評価対象と同等のモデルをテスト判定役に使わず、固定基準や独立した評価方法を使う。
 - UI を変えたときは、影響範囲に合う `desktop/*UiE2E.ps1` / `*UiSmoke.ps1` を選び、実行可能な環境なら確認する。UI テストは時間や環境の負荷を考慮して適宜判断し、実施できない場合は理由を報告する。リリース前には必要な UI 検証を実施する。
 - 開発PCに画面を出さずに UI Smoke を回す場合は、LAN 内のテスト機で実行する `.agents/skills/remote-ui-smoke/SKILL.md`（`desktop/remote-ui/`、ユーザースコープの `remote-win-ui-test` スキルが前提）を使う。
+- 画面のレイアウトを変えたら、[`docs/ui-layout-rules.ja.md`](docs/ui-layout-rules.ja.md) のアライメントのルール（本文幅・内側余白・見出しの階層・入力列・リンク・タブ・ウィザード）に合わせる。
 - UI 文字列を変えたら日英の文言を揃え、`CheckLocalization.py` を通す。
 - 利用者向けの挙動を変えたら `README.md` / `README.ja.md` / `desktop/README.ja.md` を実装に合わせて更新する。
 - 検証用のポータブルビルドを起動したら、作業の最後に `./desktop/Clear-DevNotificationRegistrations.ps1 -IncludeDevelopmentBuilds` で使っていない通知登録を削除する（詳細は `docs/testing.ja.md` の「検証データの後片付け」）。
