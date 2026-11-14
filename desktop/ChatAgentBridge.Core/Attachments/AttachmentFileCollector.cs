@@ -43,15 +43,15 @@ public sealed class AttachmentFileCollector
         Task.Run(() => Prepare(candidates, settings, dataDirectory, cancellationToken), cancellationToken);
 
     /// <summary>
-    /// Checks files the agent named for upload. "run" accepts none, "conversation" accepts files created since
-    /// <paramref name="conversationStartUtc"/>, "workspace" accepts any file. The usual name, folder and type exclusions always apply.
+    /// Checks files the agent named for upload. "run" accepts none, "conversation" accepts only unchanged files
+    /// discovered during a successful run for that conversation, and "workspace" accepts any eligible workspace file.
     /// </summary>
     public Task<FileAttachmentScanResult> ResolveNamedAsync(FileAttachmentSnapshot before, IReadOnlyList<string> names,
-        BridgeSettings settings, DateTime? conversationStartUtc, CancellationToken cancellationToken) =>
-        Task.Run(() => ResolveNamed(before, names, settings, conversationStartUtc, cancellationToken), cancellationToken);
+        BridgeSettings settings, IReadOnlyList<FileAttachmentCandidate>? conversationFiles, CancellationToken cancellationToken) =>
+        Task.Run(() => ResolveNamed(before, names, settings, conversationFiles, cancellationToken), cancellationToken);
 
     private static FileAttachmentScanResult ResolveNamed(FileAttachmentSnapshot before, IReadOnlyList<string> names,
-        BridgeSettings settings, DateTime? conversationStartUtc, CancellationToken token)
+        BridgeSettings settings, IReadOnlyList<FileAttachmentCandidate>? conversationFiles, CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(names);
@@ -60,7 +60,9 @@ public sealed class AttachmentFileCollector
         var candidates = new List<FileAttachmentCandidate>();
         var excluded = new List<string>();
         if (scope == "run" || names.Count == 0) return new FileAttachmentScanResult(candidates, true);
-        if (scope == "conversation" && conversationStartUtc is null) return new FileAttachmentScanResult(candidates, true);
+        var eligible = scope == "conversation"
+            ? (conversationFiles ?? []).ToDictionary(file => Path.GetFullPath(file.FullPath), PathComparer)
+            : null;
         if (!ExecutionPolicy.IsWorkspaceTrusted(settings, before.Workspace))
             return new FileAttachmentScanResult(candidates, false, "Workspace is outside configured trusted roots.");
         string root;
@@ -91,7 +93,9 @@ public sealed class AttachmentFileCollector
                     if (excluded.Count < MaxReportedExclusions) excluded.Add(reported);
                     continue;
                 }
-                if (scope == "conversation" && info.CreationTimeUtc < conversationStartUtc!.Value)
+                var fullPath = Path.GetFullPath(full);
+                FileAttachmentCandidate? registered = null;
+                if (scope == "conversation" && (eligible is null || !eligible.TryGetValue(fullPath, out registered)))
                 {
                     if (excluded.Count < MaxReportedExclusions) excluded.Add(reported);
                     continue;
@@ -103,7 +107,15 @@ public sealed class AttachmentFileCollector
                 var hash = Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant();
                 var after = new FileInfo(full);
                 if (after.Length != length || after.LastWriteTimeUtc != info.LastWriteTimeUtc) continue;
-                candidates.Add(new FileAttachmentCandidate(full, relative, length, info.LastWriteTimeUtc, hash));
+                var candidate = new FileAttachmentCandidate(fullPath, relative, length, info.LastWriteTimeUtc, hash);
+                if (scope == "conversation" && (registered is null || registered.Length != candidate.Length ||
+                    registered.LastWriteTimeUtc != candidate.LastWriteTimeUtc ||
+                    !string.Equals(registered.Sha256, candidate.Sha256, StringComparison.OrdinalIgnoreCase)))
+                {
+                    if (excluded.Count < MaxReportedExclusions) excluded.Add(reported);
+                    continue;
+                }
+                candidates.Add(candidate);
             }
             catch (Exception ex) when (IsExpectedFileError(ex))
             {

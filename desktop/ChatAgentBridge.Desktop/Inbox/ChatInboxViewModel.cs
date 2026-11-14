@@ -84,7 +84,6 @@ public sealed partial class InboxItem(ChatRequest request, IChatTransport transp
     public bool AttachmentScanComplete { get; set; }
     /// <summary>Existing files the agent named with CAB-ATTACH lines; checked against the attachment scope after the run.</summary>
     public IReadOnlyList<string> AttachmentNamedFiles { get; set; } = [];
-    public DateTime? AttachmentConversationStartUtc { get; set; }
     [ObservableProperty] public partial string AttachmentStatus { get; set; } = "";
     public ChatProgressReporter? Progress { get; set; }
     public Task ReceiptNotification { get; set; } = Task.CompletedTask;

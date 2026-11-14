@@ -15,8 +15,8 @@ public static class FileAttachmentPolicy
             : throw new ArgumentException("Unsupported file attachment approval mode.", nameof(value));
     }
 
-    /// <summary>"run": only files new in this run. "conversation": files created since the conversation began.
-    /// "workspace": any eligible workspace file the agent names; sending those always needs approval on the PC.</summary>
+    /// <summary>"run": only files discovered in this run. "conversation": unchanged files discovered in successful runs
+    /// for the same conversation and workspace. "workspace": any eligible workspace file the agent names; sending those always needs approval on the PC.</summary>
     public static string NormalizeScope(string? value)
     {
         var scope = string.IsNullOrWhiteSpace(value) ? "run" : value.Trim().ToLowerInvariant();

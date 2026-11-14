@@ -531,13 +531,16 @@ try {
         Open-AttachmentSettings
         Choose 'FileAttachmentScope' $(if($Language -eq 'ja'){'この会話で作ったファイル'}else{'Files created in this conversation'})
         Confirm-SensitiveSettingsAutoSave 'FileAttachmentScope' 'conversation'
-        # The conversation starts counting here; chart.png was created before, notes.txt after.
+        # Earlier successful runs are tracked even if they used run scope, so chart.png and notes.txt can both be named.
         Run-Prompt 'scope-create' 'CREATE ATTACHMENT notes.txt' 'Created notes.txt'
+        $chartUploadsBefore=@((Get-Results).uploads|Where-Object name -eq 'chart.png').Count
+        $expectedChartUploads=$chartUploadsBefore + 1
         Run-Prompt 'scope-name' 'NAME ATTACHMENT notes.txt NAME ATTACHMENT chart.png' 'Named notes.txt, chart.png'
         Open-AttachmentDialog
-        Assert-True ($null -eq (Element 'AttachmentFile2')) 'A file created before the conversation began was offered'
-        Confirm-OneAttachment
+        Assert-True ($null -ne (Element 'AttachmentFile2')) 'An earlier discovered conversation file was not offered'
+        Confirm-Attachments 2
         Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'notes.txt').Count -eq 1 } 30 | Out-Null
+        Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'chart.png').Count -eq $expectedChartUploads } 30 | Out-Null
         $script:checks.Add(@{name='Real Mattermost conversation scope';passed=$true})
     }
     Check 'Real Mattermost: the workspace scope sends an existing file after confirmation' {
@@ -646,7 +649,10 @@ try {
         Run-Prompt 'attachment-5' $(if($Language -eq 'ja'){'さっきの画像を添付して'}else{'Please attach the earlier image'}) 'No fixture file requested.'
         Wait-Notice $(if($Language -eq 'ja'){'新しく作られたファイルだけ'}else{'newly created'}) | Out-Null
         Run-Prompt 'attachment-6' 'CREATE ATTACHMENT secret.txt' 'Created secret.txt'
-        $excluded=Wait-Notice 'secret.txt'
+        $excludedFragment=$(if($Language -eq 'ja'){'添付ルールにより送らなかったファイル'}else{'withheld by the attachment rules'})
+        $excluded=Wait-Notice $excludedFragment
+        $excludedNotice=@($excluded.replies|Where-Object { "$($_.message)".Contains($excludedFragment) }|Select-Object -Last 1)
+        Assert-True ($excludedNotice.Count -eq 1 -and -not "$($excludedNotice[0].message)".Contains('secret.txt')) 'An excluded filename was revealed in the chat notice'
         Assert-True (@($excluded.uploads|Where-Object name -eq 'secret.txt').Count -eq 0) 'An excluded file was uploaded'
         $before=@($excluded.replies).Count
         Run-Prompt 'attachment-7' 'Summarize the workspace' 'No fixture file requested.'

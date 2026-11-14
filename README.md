@@ -151,6 +151,8 @@ Manual runs use the working folder selected in Agent settings, regardless of whe
 
 A pending access request can grant access only while its chat connection and conversation scope still match. Codex App Server's inherited mode displays the Bridge-applied policy (workspace write, approval on request, and no network access).
 
+Attachment scope controls which files a final reply can name with a `CAB-ATTACH: <workspace-relative path>` line. **Only files created in this run** accepts files discovered in that run. **Files created in this conversation** accepts unchanged files discovered in successful runs for the same service, chat origin, channel, thread, user and workspace; older timestamp-only records grant no access. **Whole workspace (always ask)** can name existing eligible files, but always requires approval on the PC. Existing-file markers are requests only and do not bypass exclusions or approval.
+
 ### Files attached to requests
 
 Files attached to a request are downloaded after the request is approved and passed to the agent. These limits are separate from the generated-file upload settings.
