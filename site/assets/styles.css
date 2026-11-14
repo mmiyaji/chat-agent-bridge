@@ -4,7 +4,7 @@
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.75 var(--font-ja)}
 html:lang(en) body{font-family:var(--font-en),var(--font-ja)}
-a{color:var(--accent)}code{font-family:"Cascadia Mono",Consolas,"SFMono-Regular",monospace;font-size:.88em;background:var(--card2);border:1px solid var(--line);padding:0 .35em;border-radius:4px}
+a{color:var(--accent)}code{font-family:"Cascadia Mono",Consolas,"SFMono-Regular","Yu Gothic UI","Yu Gothic",Meiryo,monospace;font-size:.88em;background:var(--card2);border:1px solid var(--line);padding:0 .35em;border-radius:4px}
 .shell{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
 aside{position:sticky;top:0;height:100vh;padding:14px 10px;border-right:1px solid var(--line)}
 .brand{display:flex;gap:10px;align-items:center;padding:6px 10px 18px;font-size:13px;color:var(--muted)}.brand img{width:20px}
@@ -22,7 +22,7 @@ h1{font-size:30px;font-weight:600;margin:0 0 6px}h2{font-size:20px;font-weight:6
 .shot{width:100%;display:block;border-radius:6px;border:1px solid var(--line)}.shot-link{display:block;cursor:zoom-in}
 .state{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
 .state .card{padding:12px 14px;background:var(--card2)}
-.state h3{display:flex;gap:8px;align-items:baseline}.state h3 span{color:var(--accent);font-family:"Cascadia Mono",monospace;font-size:13px}
+.state h3{display:flex;gap:8px;align-items:baseline}.state h3 span:first-child{color:var(--accent);font-family:"Cascadia Mono",monospace;font-size:13px}
 .stack>.card+.card{margin-top:4px}
 .exp{padding:0}.exp>.head{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;padding:16px 18px;align-items:center}
 .exp p{margin:2px 0 0;color:var(--muted);font-size:14px}
@@ -69,3 +69,6 @@ html.en-pending body{visibility:hidden}
 .link-list{list-style:none;margin:0;padding:0}.link-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0;border-top:1px solid var(--line)}.link-list li:first-child{border-top:0}.link-list small{color:var(--muted)}.link-list a{font-size:13px;white-space:nowrap}.cli-card h3{margin:16px 0 4px}.cli-card h3:first-of-type{margin-top:10px}.cli-card>p:last-child{margin:16px 0 0;color:var(--muted)}
 .glightbox-clean .gslide-description{background:var(--card)!important;color:var(--fg)!important}.glightbox-clean .gslide-title,.glightbox-clean .gslide-desc{color:var(--fg)!important}
 @media(max-width:600px){.link-list li{align-items:flex-start;flex-direction:column;gap:2px}}
+/* Japanese text: keep the notice title at the same weight as other headings, and drop the wide tracking meant for Latin group labels. */
+.infobar-head strong{font-weight:600}
+html:lang(ja) aside .grp{letter-spacing:.02em}
