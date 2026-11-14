@@ -18,6 +18,9 @@ public sealed partial class MainPage
 
     // The NavigationView owns the bounded menu pane (including its own overflow
     // scrolling); this viewer owns only the settings details in either pane mode.
+    // The detail pane is a card in both Left and Top layouts, so its content keeps the same inner padding on every side.
+    private static readonly Thickness SettingsDetailContentMargin = new(16);
+
     private static ScrollViewer CreateSettingsDetailScroll(UIElement content, string automationId)
     {
         var scroll = new ScrollViewer

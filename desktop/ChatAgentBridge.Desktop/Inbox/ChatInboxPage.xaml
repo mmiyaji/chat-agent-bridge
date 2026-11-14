@@ -32,9 +32,7 @@
                 <Button Command="{x:Bind ViewModel.ConnectMattermostCommand}" AutomationProperties.AutomationId="ConnectMattermost"
                         AutomationProperties.HelpText="{x:Bind ViewModel.MattermostConnectionSetupHint, Mode=OneWay}"
                         ToolTipService.ToolTip="{x:Bind ViewModel.MattermostConnectionSetupHint, Mode=OneWay}" x:Uid="ConnectMattermost" />
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="8"
-                          Visibility="{x:Bind inbox:ChatInboxPage.ConnectCommandsVisibility(ViewModel.IsWideLayout, ViewModel.IsConnected), Mode=OneWay}">
+                <!-- All three services stay on one row so narrow layouts wrap into "connect" and "settings" rows. -->
                 <Button Command="{x:Bind ViewModel.ConnectDiscordCommand}" AutomationProperties.AutomationId="ConnectDiscord"
                         AutomationProperties.HelpText="{x:Bind ViewModel.DiscordConnectionSetupHint, Mode=OneWay}"
                         ToolTipService.ToolTip="{x:Bind ViewModel.DiscordConnectionSetupHint, Mode=OneWay}" x:Uid="ConnectDiscord" />

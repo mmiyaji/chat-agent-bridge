@@ -426,7 +426,6 @@ public sealed partial class HistoryPage : Page
         Grid.SetColumnSpan(SessionListPane, narrow ? 3 : 1);
         if (!narrow) ApplySessionColumnWidths();
         var compactHeader = ActualWidth < 600;
-        HistoryTitle.Style = (Style)Application.Current.Resources[compactHeader ? "SubtitleTextBlockStyle" : "TitleTextBlockStyle"];
         HistoryDescription.Visibility = compactHeader ? Visibility.Collapsed : Visibility.Visible;
         HistoryStatusText.MaxLines = compactHeader ? 1 : 2;
         HistoryStatusText.MaxWidth = compactHeader ? 160 : 320;

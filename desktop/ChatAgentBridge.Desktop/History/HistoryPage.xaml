@@ -73,14 +73,14 @@
             </StackPanel>
         </Grid>
 
-        <Pivot Grid.Row="1" x:Name="HistoryPivot" SelectionChanged="HistoryPivot_SelectionChanged" AutomationProperties.AutomationId="HistorySectionSelector">
+        <Pivot Grid.Row="1" x:Name="HistoryPivot" Margin="-12,0,0,0" SelectionChanged="HistoryPivot_SelectionChanged" AutomationProperties.AutomationId="HistorySectionSelector">
             <Pivot.HeaderTemplate>
                 <DataTemplate x:DataType="x:String">
                     <TextBlock Text="{x:Bind Mode=OneTime}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                 </DataTemplate>
             </Pivot.HeaderTemplate>
-            <!-- The shell supplies the page gutter. Override PivotItem's default 12-DIP side margins for all three bodies. -->
-            <PivotItem x:Name="ConversationsTab" Margin="0" Header="{x:Bind ViewModel.ConversationsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="SavedConversationsTab">
+            <!-- The pivot is shifted 12 DIP left so the first tab label (12-DIP header margin) lines up with the page title; each body moves back by the same 12 DIP. -->
+            <PivotItem x:Name="ConversationsTab" Margin="12,0,0,0" Header="{x:Bind ViewModel.ConversationsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="SavedConversationsTab">
                 <Grid Margin="0,14,0,0" RowSpacing="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -367,7 +367,7 @@
                 </Grid>
             </PivotItem>
 
-            <PivotItem x:Name="ExecutionsTab" Margin="0" Header="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryTab">
+            <PivotItem x:Name="ExecutionsTab" Margin="12,0,0,0" Header="{x:Bind ViewModel.ExecutionsTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ExecutionHistoryTab">
                 <SplitView x:Name="RecordDrawer" Margin="0,14,0,0" PanePlacement="Right" DisplayMode="Overlay" OpenPaneLength="380"
                            IsPaneOpen="{x:Bind ViewModel.IsDetailOpen, Mode=TwoWay}" SizeChanged="RecordDrawer_SizeChanged"
                            PaneBackground="{ThemeResource LayerOnMicaBaseAltFillColorTertiaryBrush}">
@@ -452,7 +452,8 @@
                         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                         <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                            <SelectorBar x:Name="ExecutionHistoryMode" Loaded="ExecutionHistoryMode_Loaded" SelectionChanged="ExecutionHistoryMode_SelectionChanged" AutomationProperties.AutomationId="HistoryRecordMode">
+                            <!-- Negative margin cancels the item padding so "Runs" lines up with the filter box below. -->
+                            <SelectorBar x:Name="ExecutionHistoryMode" Margin="-12,0,0,0" Loaded="ExecutionHistoryMode_Loaded" SelectionChanged="ExecutionHistoryMode_SelectionChanged" AutomationProperties.AutomationId="HistoryRecordMode">
                                 <SelectorBarItem x:Name="ExecutionsModeItem" x:Uid="HistoryRunsMode" AutomationProperties.AutomationId="ExecutionHistoryModeItem" />
                                 <SelectorBarItem x:Name="AllOperationsModeItem" x:Uid="HistoryAllOperationsMode" AutomationProperties.AutomationId="AuditHistoryTab" />
                                 <SelectorBarItem x:Name="AccessModeItem" x:Uid="HistoryAccessMode" AutomationProperties.AutomationId="AccessHistoryTab" />
@@ -648,7 +649,7 @@
                 </SplitView>
             </PivotItem>
 
-            <PivotItem x:Name="ActivityTab" Margin="0" Header="{x:Bind ViewModel.ActivityTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ActivityTab">
+            <PivotItem x:Name="ActivityTab" Margin="12,0,0,0" Header="{x:Bind ViewModel.ActivityTabTitle, Mode=OneWay}" AutomationProperties.AutomationId="ActivityTab">
                 <Grid>
                     <ContentControl x:Name="ActivityHost" Margin="0,14,0,0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                                     Visibility="{x:Bind vm:HistoryPage.InverseBoolToVisibility(ViewModel.IsInitialActivityLoading), Mode=OneWay}" />

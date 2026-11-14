@@ -323,7 +323,7 @@ try {
    (Get-Content $settingsPath -Raw|ConvertFrom-Json).WorkspaceRoot -eq $childWorkspace
  } 'shared workspace saved'
  Choose-Scope 'AgentScopeCodex'
- Wait-For {(Wait-Element 'AgentEditorStatus').Current.Name -eq $(if($Language -eq 'ja'){'CLI未確認'}else{'CLI not checked'})} 'workspace change invalidates old CLI proof'
+ Wait-For {(Wait-Element 'AgentEditorStatus').Current.Name -eq $(if($Language -eq 'ja'){'CLI確認が必要'}else{'CLI check required'})} 'workspace change invalidates old CLI proof'
  Assert (-not (Wait-Element 'UseAgentProfile').Current.IsEnabled) 'Stale context check can activate a profile.'
  Assert ((Results).connections -eq 1) 'Shared workspace edit disconnected chat.'
  Capture "changed-workspace-$Language-$Theme"

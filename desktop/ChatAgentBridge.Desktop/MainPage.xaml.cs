@@ -288,6 +288,9 @@ public sealed partial class MainPage : Page
     }
 
     public static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+    /// <summary>Form pages cap their body at <see cref="FormContentMaxWidth"/>; chat and history use the full width.</summary>
+    public static double PageContentMaxWidth(bool chat, bool history) => chat || history ? double.PositiveInfinity : FormContentMaxWidth;
+    public const double FormContentMaxWidth = 1040;
 
     public static Visibility SearchTriggerVisibility(bool isSettingsLoaded, bool isOnboardingActive) =>
         isSettingsLoaded && !isOnboardingActive ? Visibility.Visible : Visibility.Collapsed;

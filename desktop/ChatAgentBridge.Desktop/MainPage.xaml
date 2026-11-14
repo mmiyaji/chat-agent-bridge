@@ -135,7 +135,10 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0">
+                    <!-- Notices share the page's content width so their right edge lines up with the page body. -->
+                    <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" MaxWidth="{x:Bind local:MainPage.PageContentMaxWidth(IsChatSelected, IsHistorySelected), Mode=OneTime}" /></Grid.ColumnDefinitions>
+                    <StackPanel>
                         <InfoBar Margin="0,0,0,8" Severity="Informational" IsClosable="True"
                                  IsOpen="{x:Bind ViewModel.IsUpdateNoticeOpen, Mode=TwoWay}"
                                  Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsUpdateNoticeOpen), Mode=OneWay}"
@@ -156,6 +159,7 @@
                                  Title="{x:Bind ViewModel.StatusTitle, Mode=OneWay}"
                                  Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
                     </StackPanel>
+                    </Grid>
                     <StackPanel Grid.Row="1" HorizontalAlignment="Stretch" Spacing="4" Margin="0,0,0,16"
                                 Visibility="{x:Bind local:MainPage.ToVisibility(IsAgentSelected), Mode=OneTime}">
                         <TextBlock Style="{StaticResource TitleTextBlockStyle}" AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock013" x:Uid="chatAgentBridgeDesktopMainPageTextBlock013" />
@@ -344,7 +348,7 @@
                                                     <Button x:Name="SetupGuideAction" Grid.Column="1" Click="StartOnboarding_Click" IsEnabled="{x:Bind ViewModel.IsSettingsLoaded, Mode=OneWay}" HorizontalAlignment="Left" AutomationProperties.AutomationId="StartOnboarding" x:Uid="StartOnboarding" />
                                                 </Grid>
                                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                                    <HyperlinkButton Click="ShowTerms_Click" AutomationProperties.AutomationId="OverviewTerms" x:Uid="OverviewTerms" />
+                                                    <HyperlinkButton Style="{StaticResource LeadingLinkButtonStyle}" Click="ShowTerms_Click" AutomationProperties.AutomationId="OverviewTerms" x:Uid="OverviewTerms" />
                                                     <HyperlinkButton Click="ShowPrivacy_Click" AutomationProperties.AutomationId="OverviewPrivacy" x:Uid="OverviewPrivacy" />
                                                 </StackPanel>
                                             </StackPanel>
@@ -828,7 +832,7 @@
                                     <StackPanel Spacing="16">
                                         <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="MattermostConnectionGroup">
                                             <StackPanel Spacing="12">
-                                                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" x:Uid="MattermostConnectionGroupTitle" />
+                                                <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" TextWrapping="Wrap" x:Uid="MattermostConnectionGroupTitle" />
                                                 <StackPanel Spacing="8">
                                                     <TextBlock AutomationProperties.AutomationId="chatAgentBridgeDesktopMainPageTextBlock049" x:Uid="chatAgentBridgeDesktopMainPageTextBlock049" />
                                                     <TextBox Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com" AutomationProperties.AutomationId="MattermostServerUrl" x:Uid="MattermostServerUrl" />
@@ -856,7 +860,7 @@
 
                                         <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="MattermostRequestersGroup">
                                             <StackPanel Spacing="10">
-                                                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" x:Uid="MattermostRequestersGroupTitle" />
+                                                <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" TextWrapping="Wrap" x:Uid="MattermostRequestersGroupTitle" />
                                                 <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="MattermostRequestersGroupHelp" />
                                                 <ItemsControl ItemsSource="{x:Bind ViewModel.MattermostAllowedUsers.PreviewRows, Mode=OneWay}" AutomationProperties.AutomationId="MattermostAllowedUserPreview">
                                                     <ItemsControl.ItemTemplate>
@@ -880,7 +884,7 @@
 
                                         <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="MattermostDirectMessagesGroup">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" x:Uid="MattermostDirectMessagesGroupTitle" />
+                                                <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" TextWrapping="Wrap" x:Uid="MattermostDirectMessagesGroupTitle" />
                                                 <CheckBox IsChecked="{x:Bind ViewModel.MattermostAllowDirectMessages, Mode=TwoWay}" AutomationProperties.AutomationId="MattermostAllowDirectMessages" x:Uid="MattermostAllowDirectMessages" />
                                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="MattermostAllowDirectMessagesHelp" />
                                             </StackPanel>
@@ -925,7 +929,7 @@
 
                                         <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="MattermostAdditionalGroup">
                                             <StackPanel Spacing="12">
-                                                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" x:Uid="MattermostAdditionalGroupTitle" />
+                                                <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" TextWrapping="Wrap" x:Uid="MattermostAdditionalGroupTitle" />
                                                 <StackPanel Spacing="8">
                                                     <CheckBox IsChecked="{x:Bind ViewModel.MattermostBypassProxy, Mode=TwoWay}" AutomationProperties.AutomationId="MattermostBypassProxy" x:Uid="MattermostBypassProxy" />
                                                     <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="MattermostProxyHelp" x:Uid="MattermostProxyHelp" />
@@ -955,7 +959,7 @@
 
                                         <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="SlackDirectMessagesGroup">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" x:Uid="SlackDirectMessagesGroupTitle" />
+                                                <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" TextWrapping="Wrap" x:Uid="SlackDirectMessagesGroupTitle" />
                                                 <CheckBox IsChecked="{x:Bind ViewModel.SlackAllowDirectMessages, Mode=TwoWay}" AutomationProperties.AutomationId="SlackAllowDirectMessages" x:Uid="SlackAllowDirectMessages" />
                                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="SlackAllowDirectMessagesHelp" />
                                             </StackPanel>
@@ -997,7 +1001,7 @@
 
                                         <Border Style="{StaticResource ActivityCardStyle}" AutomationProperties.AutomationId="DiscordDirectMessagesGroup">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" x:Uid="DiscordDirectMessagesGroupTitle" />
+                                                <TextBlock Style="{StaticResource SettingsSectionHeaderStyle}" TextWrapping="Wrap" x:Uid="DiscordDirectMessagesGroupTitle" />
                                                 <CheckBox IsChecked="{x:Bind ViewModel.DiscordAllowDirectMessages, Mode=TwoWay}" AutomationProperties.AutomationId="DiscordAllowDirectMessages" x:Uid="DiscordAllowDirectMessages" />
                                                 <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" x:Uid="DiscordAllowDirectMessagesHelp" />
                                             </StackPanel>
@@ -1048,7 +1052,7 @@
                                             <NumberBox Value="{x:Bind ViewModel.FileAttachmentMaxTotalSizeMb, Mode=TwoWay}" Minimum="1" Maximum="100" SpinButtonPlacementMode="Inline" SmallChange="1" LargeChange="5" AutomationProperties.AutomationId="FileAttachmentMaxTotalSizeMb" x:Uid="FileAttachmentMaxTotalSizeMb" />
                                         </StackPanel>
                                         <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="FileAttachmentSettingsHelp" localization:LocalizedResourceKey.Key="FileAttachmentSettingsHelp" />
-                                        <HyperlinkButton x:Uid="FileAttachmentGuide" AutomationProperties.AutomationId="FileAttachmentGuide" />
+                                        <HyperlinkButton Style="{StaticResource LeadingLinkButtonStyle}" x:Uid="FileAttachmentGuide" AutomationProperties.AutomationId="FileAttachmentGuide" />
                                     </StackPanel>
                                 </Expander>
                                 <Expander x:Name="CodexChatSharingSettings" AutomationProperties.AutomationId="CodexChatSharingSettings" IsExpanded="False" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Visibility="{x:Bind local:MainPage.ToVisibility(ViewModel.IsCodexProvider), Mode=OneWay}" x:Uid="CodexChatSharingAccessible" localization:LocalizedResourceKey.Key="CodexChatSharingAccessible">
