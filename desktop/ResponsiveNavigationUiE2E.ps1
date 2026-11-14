@@ -48,22 +48,31 @@ function Heading([string]$Name) {
     $condition = [System.Windows.Automation.AndCondition]::new(
         [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty, $Name),
         [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Text))
-    $found = (Root).FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
-    $contentTop = (Root).Current.BoundingRectangle.Top + 32*$scale
-    $visible = @($found | Where-Object { -not $_.Current.IsOffscreen -and $_.Current.BoundingRectangle.Width -gt 0 -and $_.Current.BoundingRectangle.Top -ge $contentTop } |
-        Sort-Object { $_.Current.BoundingRectangle.Left } -Descending | Select-Object -First 1)
+    # Page transitions can take longer than the fixed navigation delay, so poll briefly for the heading.
+    $deadline = [DateTime]::UtcNow.AddSeconds(5)
+    do {
+        $found = (Root).FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
+        $contentTop = (Root).Current.BoundingRectangle.Top + 32*$scale
+        $visible = @($found | Where-Object { -not $_.Current.IsOffscreen -and $_.Current.BoundingRectangle.Width -gt 0 -and $_.Current.BoundingRectangle.Top -ge $contentTop } |
+            Sort-Object { $_.Current.BoundingRectangle.Left } -Descending | Select-Object -First 1)
+        if ($visible.Count -eq 1) { break }
+        Start-Sleep -Milliseconds 200
+    } while ([DateTime]::UtcNow -lt $deadline)
     if ($visible.Count -ne 1) { throw "Expected one visible page heading '$Name', found $($visible.Count)." }
     return $visible[0].Current.BoundingRectangle
 }
 $labels = if ($Language -eq 'ja') {
-    @('全般','手動で実行','エージェント設定','接続設定','チャット受信','履歴と会話','情報')
+    @('全般','手動で実行','エージェント設定','チャット設定','チャット','履歴と利用状況','情報')
 } else {
-    @('General','Run manually','Agent settings','Connection settings','Chat inbox','History and conversations','About')
+    @('General','Run manually','Agent settings','Chat settings','Chat','History and usage','About')
 }
 $pages = @('NavOverview','NavWorkbench','NavAgentSettings','NavConnections','NavChat','NavHistory','NavAbout')
 $overviewOffsets = @{}
 try {
     Navigate 'NavOverview'
+    UI @('wait-for','SavedSettingsDetails','-t','5000') | Out-Null
+    $details = (Element 'SavedSettingsDetails').GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern)
+    if ($details.Current.ExpandCollapseState -eq [System.Windows.Automation.ExpandCollapseState]::Collapsed) { $details.Expand() }
     UI @('wait-for','SettingsLocation','--value',$dataPath,'-t','5000') | Out-Null
     # Minimal -> Compact -> Expanded -> Minimal also checks that the offset is cleared.
     foreach ($width in @(500,720,1160,500,720)) {

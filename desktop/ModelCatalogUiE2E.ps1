@@ -24,6 +24,32 @@ function Wait([string]$Id, [string]$Value = '') {
     UI $args
 }
 function Pass([string]$Name) { $results.Add(@{name=$Name; passed=$true}) }
+# Settings are now saved automatically (there is no SaveSettings button), so wait for settings.json to reflect the edit.
+function Wait-Saved([scriptblock]$Predicate, [string]$What) {
+    $path = Join-Path $dataPath 'settings.json'
+    for ($i = 0; $i -lt 60; $i++) {
+        if (Test-Path $path) {
+            try { $saved = Get-Content $path -Raw | ConvertFrom-Json; if (& $Predicate $saved) { return $saved } } catch { }
+        }
+        Start-Sleep -Milliseconds 250
+    }
+    throw "Settings were not saved automatically: $What"
+}
+# Agent edits are saved as separate drafts when the field loses focus; a changed CLI command asks for confirmation first.
+function Commit-Draft {
+    UI @('focus','CheckCli')
+    try { UI @('wait-for','SensitiveSettingsConfirmation','-t','3000'); UI @('invoke','PrimaryButton') } catch { }
+    Start-Sleep -Milliseconds 800
+}
+# The edited profile only becomes the active settings after a CLI check and an explicit Use.
+function Use-Profile {
+    UI @('invoke','CheckCli')
+    UI @('wait-for','CheckCli','-p','IsEnabled','--value','True','-t','20000')
+    UI @('wait-for','UseAgentProfile','-p','IsEnabled','--value','True','-t','20000')
+    UI @('invoke','UseAgentProfile')
+    # Switching provider or CLI command asks for confirmation before it is applied.
+    try { UI @('wait-for','SensitiveSettingsConfirmation','-t','3000'); UI @('invoke','PrimaryButton') } catch { }
+}
 function Select-Candidate([string]$ComboId, [string]$Label, [switch]$Prefix) {
     UI @('invoke',$ComboId)
     $tree = (& winapp ui inspect $ComboId -a $AppPid --depth 5 --json) | ConvertFrom-Json
@@ -40,6 +66,13 @@ function Select-Candidate([string]$ComboId, [string]$Label, [switch]$Prefix) {
 $step = 'preflight'
 try {
     UI @('invoke', 'NavOverview')
+    # The settings location now lives inside the collapsed technical-details expander.
+    Wait 'SavedSettingsDetails'
+    $details = [Windows.Automation.AutomationElement]::FromHandle((Get-Process -Id $AppPid).MainWindowHandle).FindFirst(
+        [Windows.Automation.TreeScope]::Descendants,
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty, 'SavedSettingsDetails'))
+    $expand = $details.GetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern)
+    if ($expand.Current.ExpandCollapseState -eq [Windows.Automation.ExpandCollapseState]::Collapsed) { $expand.Expand() }
     Wait 'SettingsLocation' $dataPath
     New-Item -ItemType Directory -Path $dataPath -Force | Out-Null
     $marker = Join-Path $dataPath '.cab-model-catalog-ui'
@@ -52,15 +85,26 @@ try {
     foreach ($provider in @('codex','claude')) {
         $step = "$provider candidates and explicit selection"
         UI @('invoke','NavAgentSettings')
-        UI @('invoke','AgentProvider')
-        UI @('invoke',$(if($provider -eq 'codex'){'ProviderOptionCodex'}else{'ProviderOptionClaude'}))
-        UI @('set-value','AgentExecutable',(Join-Path $fixturePath "$provider.exe"))
+        # The workspace now belongs to the common scope; the CLI path and model belong to the provider scope.
+        UI @('invoke','AgentScopeCommon')
         UI @('set-value','WorkspaceRoot',$dataPath)
+        UI @('invoke',$(if($provider -eq 'codex'){'AgentScopeCodex'}else{'AgentScopeClaude'}))
+        if (-not (Test-Path (Join-Path $dataPath 'settings.json'))) {
+            # Leaving the common scope commits the draft; a newly trusted workspace folder asks for confirmation first.
+            UI @('wait-for','PrimaryButton','-t','10000')
+            UI @('invoke','PrimaryButton')
+            Wait-Saved { param($s) $s.WorkspaceRoot -eq $dataPath } 'workspace' | Out-Null
+            UI @('invoke',$(if($provider -eq 'codex'){'AgentScopeCodex'}else{'AgentScopeClaude'}))
+        }
+        UI @('set-value','AgentExecutable',(Join-Path $fixturePath "$provider.exe"))
         UI @('set-value','AgentModel','manual-model-before-fetch')
+        Commit-Draft
         UI @('invoke','FetchModels')
         Wait 'ModelCatalogStatus' '件'
         Wait 'AgentModel' 'manual-model-before-fetch'
-        if (Test-Path (Join-Path $dataPath 'settings.json')) { throw 'Fetching candidates saved settings unexpectedly.' }
+        # Fetching candidates and drafting never change the active settings; only Use applies them.
+        $current = Get-Content (Join-Path $dataPath 'settings.json') -Raw | ConvertFrom-Json
+        if ($current.AgentModel -or $current.AgentExecutable -like '*.exe') { throw 'Fetching candidates changed the active settings unexpectedly.' }
         $providerLabel = if ($provider -eq 'codex') { 'Codex' } else { 'Claude' }
         Select-Candidate 'ModelCandidates' "Fixture $providerLabel Small (fixture-$provider-small)"
         Wait 'AgentModel' "fixture-$provider-small"
@@ -69,18 +113,23 @@ try {
         Pass "$provider CLI candidates leave manual text intact until selected"
     }
     $step = 'save selected ID and retain manual entry'
-    UI @('invoke','SaveSettings')
-    Wait 'Title' '設定を保存しました'
-    $saved = Get-Content (Join-Path $dataPath 'settings.json') -Raw | ConvertFrom-Json
+    Use-Profile
+    $saved = Wait-Saved { param($s) $s.AgentModel -eq 'fixture-claude-small' -and $s.AgentReasoningEffort -eq 'low' } 'selected claude model and effort'
     if ($saved.AgentModel -ne 'fixture-claude-small') { throw 'Selection saved a label instead of a model ID.' }
     if ($saved.AgentReasoningEffort -ne 'low') { throw 'Selected reasoning effort did not persist.' }
     UI @('set-value','AgentModel','manual-custom-model')
-    UI @('invoke','SaveSettings')
-    Wait 'Title' '設定を保存しました'
-    $saved = Get-Content (Join-Path $dataPath 'settings.json') -Raw | ConvertFrom-Json
-    if ($saved.AgentModel -ne 'manual-custom-model') { throw 'Manual model entry was not preserved.' }
-    if ($saved.AgentReasoningEffort) { throw 'Manual model edit retained the previous model reasoning effort.' }
-    Pass 'Selected IDs and manually entered IDs both persist'
+    Commit-Draft
+    # A model ID absent from the CLI candidates cannot be verified, so it stays in the saved agent draft
+    # (with the previous effort cleared) and the active settings keep the last applied profile.
+    $draftsPath = Join-Path $dataPath 'agent-settings-drafts.json'
+    $draft = $null
+    for ($i = 0; $i -lt 40 -and -not $draft; $i++) {
+        $draft = @((Get-Content $draftsPath -Raw | ConvertFrom-Json).Drafts) | Where-Object { $_.Provider -eq 'claude' -and $_.Model -eq 'manual-custom-model' } | Select-Object -First 1
+        if (-not $draft) { Start-Sleep -Milliseconds 250 }
+    }
+    if (-not $draft) { throw 'Manual model entry was not preserved.' }
+    if ($draft.ReasoningEffort) { throw 'Manual model edit retained the previous model reasoning effort.' }
+    Pass 'Selected IDs persist when applied and manually entered IDs persist as drafts'
 
     $step = 'session override candidates'
     $sessionId = [guid]::NewGuid().ToString('D')
@@ -95,7 +144,11 @@ try {
     UI @('invoke','SavedConversationsTab')
     UI @('invoke','RefreshHistory')
     Wait 'SavedSessionsList'
-    UI @('click','model-catalog-thread')
+    # The row is titled by its workspace folder now, so select the only saved conversation by its list position.
+    $list = (& winapp ui inspect SavedSessionsList -a $AppPid --depth 2 --json) | ConvertFrom-Json
+    $row = @($list.windows | ForEach-Object { $_.elements } | ForEach-Object { $_.children } | Where-Object { $_.type -eq 'ListItem' }) | Select-Object -First 1
+    if (-not $row) { throw 'Saved conversation row is missing.' }
+    UI @('invoke',$row.selector)
     UI @('scroll-into-view','EditSessionModel')
     UI @('invoke','EditSessionModel')
     Wait 'SessionModelDialog'
@@ -140,22 +193,26 @@ try {
 
     $step = 'unavailable CLI preserves manual entry'
     UI @('invoke','NavAgentSettings')
+    UI @('invoke','AgentScopeClaude')
     UI @('set-value','AgentExecutable',(Join-Path $dataPath 'missing-claude.exe'))
     UI @('set-value','AgentModel','manual-model-after-failure')
+    Commit-Draft
     UI @('invoke','FetchModels')
-    Wait 'ModelCatalogStatus' '取得できませんでした'
+    Wait 'ModelCatalogStatus' '返りませんでした'
     Wait 'AgentModel' 'manual-model-after-failure'
     UI @('wait-for','FetchModels','-p','IsEnabled','--value','True','-t','5000')
     Pass 'Failed lookup retains manual text and permits another lookup'
 
     $step = 'record selected effort on an offline execution'
     UI @('set-value','AgentExecutable',(Join-Path $fixturePath 'claude.exe'))
+    UI @('set-value','AgentModel','manual-model-after-failure')
+    Commit-Draft
     UI @('invoke','FetchModels')
     Wait 'ModelCatalogStatus' '件'
     Select-Candidate 'ModelCandidates' 'Fixture Claude Small (fixture-claude-small)'
     Select-Candidate 'ReasoningEffortCandidates' 'low' -Prefix
-    UI @('invoke','SaveSettings')
-    Wait 'Title' '設定を保存しました'
+    # The reselected model and effort equal the applied profile, so there is nothing further to apply.
+    Wait-Saved { param($s) $s.AgentModel -eq 'fixture-claude-small' -and $s.AgentReasoningEffort -eq 'low' -and $s.AgentExecutable -eq (Join-Path $fixturePath 'claude.exe') } 'offline claude selection' | Out-Null
     UI @('invoke','NavWorkbench')
     UI @('set-value','Prompt','offline-effort-check')
     UI @('invoke','RunAgent')

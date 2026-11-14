@@ -228,7 +228,7 @@ try {
     Invoke-Element 'CheckCli'
     [void](Wait-Text 'AgentEditorStatus' { param($v) $v -match 'CLI verified|CLI確認済み' } 'to complete the inactive Antigravity CLI check')
     Invoke-Element 'NavOverview'
-    $inactiveOverview = Wait-Text 'OverviewCliTile' { param($v) $v -match 'not checked|未確認' } 'to keep the active Claude CLI unchecked'
+    $inactiveOverview = Wait-Text 'OverviewCliTile' { param($v) $v -match 'not checked|Check required|未確認|確認が必要' } 'to keep the active Claude CLI unchecked'
     $inactiveAfter = Get-Content -LiteralPath $inactiveSettingsPath -Raw | ConvertFrom-Json
     if ($inactiveAfter.AgentProvider -ne $inactiveBefore.AgentProvider -or $inactiveAfter.AgentExecutable -ne $inactiveBefore.AgentExecutable) {
         throw 'Checking the inactive Antigravity profile changed the saved active Claude profile.'
