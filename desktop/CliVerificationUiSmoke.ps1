@@ -203,7 +203,7 @@ try {
     [IO.File]::SetLastWriteTimeUtc($fixtureExe, $newTime)
     Start-TestApp $dataDirectory
     Open-AntigravityEditor
-    $status = Wait-Text 'AgentEditorStatus' { param($v) $v -match 'CLI not checked|CLI未確認' } 'to invalidate after executable stamp changed'
+    $status = Wait-Text 'AgentEditorStatus' { param($v) $v -match 'CLI check required|CLI確認が必要' } 'to invalidate after executable stamp changed'
     Add-Pass 'Changed CLI executable stamp invalidates restored verification' $status
     Stop-TestApp
 
