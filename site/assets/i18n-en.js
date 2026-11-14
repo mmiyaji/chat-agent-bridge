@@ -12,7 +12,7 @@ window.CAB_EN = {
  "nav.tips": "Tips",
  "nav.faq": "FAQ",
  "lead": "A Windows app that passes requests posted in Slack, Mattermost or Discord to an AI agent CLI on your PC. Results come back to the same thread, and you continue the conversation there.",
- "info.title": "Info",
+ "info.title": "Notice",
  "note": "Chat Agent Bridge is not an official app from any AI agent, AI service or chat service provider.",
  "recommend": "If the AI agent provider offers remote control through its official desktop app or another official client, we recommend using it. Chat Agent Bridge is an alternative for environments where that feature is unavailable.",
  "safety": "We recommend “Confirm the first request in each conversation” (the default) so you can catch unexpected users or unintended requests before execution by reviewing the requester and request on your PC when a conversation starts. Keep allowed-user restrictions enabled too.",
