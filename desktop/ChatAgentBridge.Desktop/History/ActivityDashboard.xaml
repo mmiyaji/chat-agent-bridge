@@ -177,13 +177,13 @@
                             <TextBlock Text="{x:Bind ViewModel.UsageCostMethodDate, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.AutomationId="UsageCostMethodDate" />
                             <TextBlock x:Uid="UsageCostMethodDetails" TextWrapping="Wrap" AutomationProperties.AutomationId="UsageCostMethodDetails" />
                             <TextBlock x:Uid="UsageCostLimitations" TextWrapping="Wrap" AutomationProperties.AutomationId="UsageCostLimitations" />
-                            <HyperlinkButton NavigateUri="https://developers.openai.com/api/docs/pricing" AutomationProperties.AutomationId="UsageOpenAIPricing" x:Uid="UsageOpenAIPricing" />
-                            <HyperlinkButton NavigateUri="https://platform.claude.com/docs/en/about-claude/pricing" AutomationProperties.AutomationId="UsageClaudePricing" x:Uid="UsageClaudePricing" />
+                            <HyperlinkButton Style="{StaticResource LeadingLinkButtonStyle}" NavigateUri="https://developers.openai.com/api/docs/pricing" AutomationProperties.AutomationId="UsageOpenAIPricing" x:Uid="UsageOpenAIPricing" />
+                            <HyperlinkButton Style="{StaticResource LeadingLinkButtonStyle}" NavigateUri="https://platform.claude.com/docs/en/about-claude/pricing" AutomationProperties.AutomationId="UsageClaudePricing" x:Uid="UsageClaudePricing" />
                         </StackPanel>
                     </Expander>
                     <pricing:PricingSettings />
                     <TextBlock x:Uid="UsageAccountingNote" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" localization:LocalizedResourceKey.Key="UsageAccountingNote" />
-                    <HyperlinkButton x:Uid="UsageAccountingGuide" AutomationProperties.AutomationId="UsageAccountingGuide" />
+                    <HyperlinkButton Style="{StaticResource LeadingLinkButtonStyle}" x:Uid="UsageAccountingGuide" AutomationProperties.AutomationId="UsageAccountingGuide" />
                 </StackPanel>
             </Border>
 

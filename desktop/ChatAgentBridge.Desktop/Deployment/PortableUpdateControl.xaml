@@ -39,7 +39,7 @@
                             <Button x:Name="CheckUpdatesButton" x:Uid="PortableCheckUpdates" AutomationProperties.AutomationId="PortableCheckUpdates"
                                     Click="CheckUpdates_Click" />
                         </settings:SettingsCard>
-                        <HyperlinkButton x:Name="ReleaseNotesLink" x:Uid="PortableUpdateReleaseNotes"
+                        <HyperlinkButton Style="{StaticResource LeadingLinkButtonStyle}" x:Name="ReleaseNotesLink" x:Uid="PortableUpdateReleaseNotes"
                                          AutomationProperties.AutomationId="PortableUpdateReleaseNotes" HorizontalAlignment="Left" />
                         <settings:SettingsExpander x:Name="UpdatePreferencesExpander" x:Uid="PortableUpdatePreferences" IsExpanded="False"
                                                    AutomationProperties.AutomationId="PortableUpdatePreferences">

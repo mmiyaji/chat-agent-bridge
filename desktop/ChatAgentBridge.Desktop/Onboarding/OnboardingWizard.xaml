@@ -12,7 +12,8 @@
         </DataTemplate>
     </UserControl.Resources>
     <Grid Padding="24" RowSpacing="16" MaxWidth="880" HorizontalAlignment="Stretch"><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-        <Grid Grid.Row="0" ColumnSpacing="16" VerticalAlignment="Center"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+        <!-- Header and footer share the scroll body's insets (8 left for required-field outlines, 12 right for the scroll bar) so all three line up. -->
+        <Grid Grid.Row="0" ColumnSpacing="16" VerticalAlignment="Center" Margin="8,0,12,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <StackPanel Spacing="4">
                 <TextBlock Text="{x:Bind ViewModel.OnboardingProgress, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="OnboardingStep" />
                 <TextBlock Text="{x:Bind ViewModel.OnboardingTitle, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="OnboardingTitle" />
@@ -133,7 +134,7 @@
                     <Border Style="{StaticResource ActivityCardStyle}" Padding="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardSlack), Mode=OneWay}">
                     <StackPanel Spacing="16">
                         <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock010" x:Uid="onboardingOnboardingWizardTextBlock010" />
-                        <HyperlinkButton NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/blob/main/docs/slack-setup.md" x:Uid="WizardSlackGuideLink" HorizontalAlignment="Left" />
+                        <HyperlinkButton Style="{StaticResource LeadingLinkButtonStyle}" NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/blob/main/docs/slack-setup.md" x:Uid="WizardSlackGuideLink" HorizontalAlignment="Left" />
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="4">
                             <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock011" x:Uid="onboardingOnboardingWizardTextBlock011" />
@@ -173,7 +174,7 @@
                     <Border Style="{StaticResource ActivityCardStyle}" Padding="16" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.IsWizardMattermost), Mode=OneWay}">
                     <StackPanel Spacing="16">
                         <TextBlock  Style="{StaticResource BodyStrongTextBlockStyle}"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock015" x:Uid="onboardingOnboardingWizardTextBlock015" />
-                        <HyperlinkButton NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/blob/main/docs/mattermost-setup.md" x:Uid="WizardMattermostGuideLink" HorizontalAlignment="Left" />
+                        <HyperlinkButton Style="{StaticResource LeadingLinkButtonStyle}" NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/blob/main/docs/mattermost-setup.md" x:Uid="WizardMattermostGuideLink" HorizontalAlignment="Left" />
                         <TextBox x:Name="MattermostServerUrlBox"  Text="{x:Bind ViewModel.MattermostServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="https://chat.example.com" AutomationProperties.AutomationId="WizardMattermostServerUrl"  HeaderTemplate="{StaticResource RequiredHeaderTemplate}" AutomationProperties.IsRequiredForForm="True" x:Uid="WizardMattermostServerUrl" />
                         <TextBlock  TextWrapping="Wrap"  AutomationProperties.AutomationId="onboardingOnboardingWizardTextBlock016" x:Uid="onboardingOnboardingWizardTextBlock016" />
                         <StackPanel Spacing="8">
@@ -218,7 +219,7 @@
                     <StackPanel Spacing="16">
                         <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" x:Uid="WizardDiscordTitle" />
                         <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DiscordBotSetupHelp" localization:LocalizedResourceKey.Key="DiscordBotSetupHelp" />
-                        <HyperlinkButton NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/blob/main/docs/discord-setup.md" x:Uid="WizardDiscordGuideLink" HorizontalAlignment="Left" />
+                        <HyperlinkButton Style="{StaticResource LeadingLinkButtonStyle}" NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/blob/main/docs/discord-setup.md" x:Uid="WizardDiscordGuideLink" HorizontalAlignment="Left" />
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="4">
                             <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="WizardDiscordBotTokenLabel" />
@@ -290,7 +291,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <Grid Grid.Row="2" ColumnSpacing="8" VerticalAlignment="Bottom" Padding="0,12,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+        <Grid Grid.Row="2" ColumnSpacing="8" VerticalAlignment="Bottom" Margin="8,0,12,0" Padding="0,12,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <Button Grid.Column="0"  Command="{x:Bind ViewModel.PreviousOnboardingCommand}" AutomationProperties.AutomationId="OnboardingPrevious"  x:Uid="OnboardingPrevious" />
             <ProgressRing Grid.Column="2" IsActive="{x:Bind ViewModel.IsOnboardingBusy, Mode=OneWay}" Width="24" Height="24" />
             <Button Grid.Column="1" HorizontalAlignment="Right" Content="{x:Bind ViewModel.OnboardingSkipLabel, Mode=OneWay}" Command="{x:Bind ViewModel.SkipOnboardingStepCommand}" Visibility="{x:Bind local:OnboardingWizard.ToVisibility(ViewModel.CanSkipOnboardingStep), Mode=OneWay}" AutomationProperties.AutomationId="OnboardingSkip" />

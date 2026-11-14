@@ -24,7 +24,7 @@
                     <TextBlock x:Uid="ReleaseHighlightsHeading" localization:LocalizedResourceKey.Key="ReleaseHighlightsHeading"
                                Style="{StaticResource SettingsSectionHeaderStyle}" />
                     <TextBlock x:Uid="ReleaseHighlightsSummary" localization:LocalizedResourceKey.Key="ReleaseHighlightsSummary" TextWrapping="Wrap" />
-                    <HyperlinkButton x:Uid="PortableUpdateReleaseNotes" NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/releases"
+                    <HyperlinkButton Style="{StaticResource LeadingLinkButtonStyle}" x:Uid="PortableUpdateReleaseNotes" NavigateUri="https://github.com/mmiyaji/chat-agent-bridge/releases"
                                      HorizontalAlignment="Left" AutomationProperties.AutomationId="AboutReleaseNotes" localization:LocalizedResourceKey.Key="PortableUpdateReleaseNotes" />
                 </StackPanel>
                 <!-- Like WinUI Gallery: name, author and version on the header; build details fold beneath. -->

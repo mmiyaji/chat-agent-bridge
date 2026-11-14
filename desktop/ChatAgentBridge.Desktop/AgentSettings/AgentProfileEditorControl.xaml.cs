@@ -290,13 +290,15 @@ public sealed partial class AgentProfileEditorControl : UserControl, INotifyProp
     {
         if (WorkspaceGrid is null) return;
         var compact = EditorLayout.ActualWidth < 600;
-        ApplyResponsiveRow(WorkspaceGrid, WorkspaceLabel, WorkspaceValue, OpenCommonSettingsButton, compact, 16);
+        ApplyResponsiveRow(WorkspaceGrid, WorkspaceLabel, WorkspaceValue, OpenCommonSettingsButton, compact, 10);
         ApplyResponsiveRow(ExecutableGrid, ExecutableLabel, ExecutableInput, BrowseAgentExecutableButton, compact, 10);
         ApplyResponsiveRow(ModelGrid, ModelLabel, AgentModelControl, FetchModelsButton, compact, 10);
         ApplyResponsiveRow(ReasoningGrid, ReasoningLabel, ReasoningCombo, null, compact, 10);
         ApplyResponsiveRow(PermissionGrid, PermissionLabel, PermissionCombo, null, compact, 10);
         ApplyResponsiveRow(ArgumentsGrid, ArgumentsLabel, ArgumentsInput, null, compact, 10);
-        CheckCliActions.Margin = compact ? new Thickness(0) : new Thickness(200, 0, 0, 0);
+        var fieldColumn = compact ? new Thickness(0) : new Thickness(200, 0, 0, 0);
+        CheckCliActions.Margin = fieldColumn;
+        ModelCatalogPanel.Margin = fieldColumn;
     }
 
     private static void ApplyResponsiveRow(Grid grid, FrameworkElement label, FrameworkElement field,

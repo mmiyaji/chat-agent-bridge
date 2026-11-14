@@ -70,7 +70,7 @@
 
             <Border Grid.Row="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,1"
                     Padding="0,12" Margin="0,0,0,14">
-                <Grid x:Name="WorkspaceGrid" ColumnSpacing="16">
+                <Grid x:Name="WorkspaceGrid" ColumnSpacing="10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="190" />
                         <ColumnDefinition Width="*" />
@@ -81,7 +81,8 @@
                         <TextBlock x:Uid="AgentEditorWorkspaceDescription" localization:LocalizedResourceKey.Key="AgentEditorWorkspaceDescription"
                                    Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                     </StackPanel>
-                    <TextBlock x:Name="WorkspaceValue" Grid.Column="1" Text="{x:Bind Editor.WorkspaceRoot, Mode=OneWay}" TextTrimming="CharacterEllipsis"
+                    <!-- Left padding matches the TextBox border + padding so read-only values line up with input text. -->
+                    <TextBlock x:Name="WorkspaceValue" Grid.Column="1" Padding="11,0,0,0" Text="{x:Bind Editor.WorkspaceRoot, Mode=OneWay}" TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center" AutomationProperties.AutomationId="AgentEditorWorkspaceValue" />
                     <Button x:Name="OpenCommonSettingsButton" Grid.Column="2" x:Uid="AgentEditorOpenCommonSettings" localization:LocalizedResourceKey.Key="AgentEditorOpenCommonSettings"
                             AutomationProperties.AutomationId="OpenCommonSettings"
@@ -165,6 +166,8 @@
                             Command="{x:Bind Editor.ModelCatalog.FetchModelsCommand}" />
                 </Grid>
 
+                <!-- Candidates belong to the model row, so they start in the field column. -->
+                <StackPanel x:Name="ModelCatalogPanel" Spacing="10" Margin="200,0,0,0">
                 <ComboBox ItemsSource="{x:Bind Editor.ModelCatalog.Models, Mode=OneWay}" DisplayMemberPath="SelectionLabel"
                           SelectedItem="{x:Bind Editor.ModelCatalog.SelectedModel, Mode=TwoWay}"
                           HorizontalAlignment="Stretch" AutomationProperties.AutomationId="ModelCandidates"
@@ -177,6 +180,7 @@
                            Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsModelCatalog), Mode=OneWay}" />
                 <modelSelection:ModelCatalogMetadataControl x:Name="ModelCatalogMetadata" Catalog="{x:Bind Editor.ModelCatalog, Mode=OneWay}"
                            Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsModelCatalog), Mode=OneWay}" />
+                </StackPanel>
                 <TextBlock Text="{x:Bind Editor.BasicProviderHelp, Mode=OneWay}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.IsBasicProvider), Mode=OneWay}" />
                 <Grid x:Name="ReasoningGrid" ColumnSpacing="10" Visibility="{x:Bind agentSettings:AgentProfileEditorControl.BoolToVisibility(Editor.SupportsReasoning), Mode=OneWay}">

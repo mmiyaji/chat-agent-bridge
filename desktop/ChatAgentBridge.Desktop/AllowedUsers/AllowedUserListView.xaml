@@ -17,7 +17,7 @@
             </Grid.ColumnDefinitions>
             <TextBlock x:Uid="AllowedUserServiceColumn" localization:LocalizedResourceKey.Key="AllowedUserServiceColumn" Style="{StaticResource BodyStrongTextBlockStyle}" />
             <TextBlock Grid.Column="1" x:Uid="AllowedUserIdentityColumn" localization:LocalizedResourceKey.Key="AllowedUserIdentityColumn" Style="{StaticResource BodyStrongTextBlockStyle}" />
-            <TextBlock Grid.Column="2" x:Uid="AllowedUserActionColumn" localization:LocalizedResourceKey.Key="AllowedUserActionColumn" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <TextBlock Grid.Column="2" HorizontalAlignment="Right" x:Uid="AllowedUserActionColumn" localization:LocalizedResourceKey.Key="AllowedUserActionColumn" Style="{StaticResource BodyStrongTextBlockStyle}" />
         </Grid>
         <ItemsControl ItemsSource="{x:Bind Model.VisibleRows, Mode=OneWay}" AutomationProperties.AutomationId="AllowedUserTable">
             <ItemsControl.ItemTemplate>
@@ -39,7 +39,7 @@
                                 <TextBlock Text="{x:Bind Summary}" TextWrapping="Wrap" />
                             </HyperlinkButton>
                         </Grid>
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center">
                         <Button Click="ShowUserHistory_Click"
                                 AutomationProperties.Name="{x:Bind HistoryLabel}" ToolTipService.ToolTip="{x:Bind HistoryLabel}"
                                 AutomationProperties.AutomationId="AllowedUserHistory">
@@ -55,7 +55,7 @@
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <HyperlinkButton Content="{x:Bind Model.ExpansionLabel, Mode=OneWay}" Command="{x:Bind Model.ToggleExpansionCommand, Mode=OneWay}"
+        <HyperlinkButton Style="{StaticResource LeadingLinkButtonStyle}" Content="{x:Bind Model.ExpansionLabel, Mode=OneWay}" Command="{x:Bind Model.ToggleExpansionCommand, Mode=OneWay}"
                          Visibility="{x:Bind Model.HasMoreRows, Mode=OneWay}" AutomationProperties.AutomationId="AllowedUserExpansion" />
         <TextBlock Text="{x:Bind Model.Status, Mode=OneWay}" Visibility="{x:Bind Model.HasStatus, Mode=OneWay}" TextWrapping="Wrap"
                    AutomationProperties.LiveSetting="Polite" />
