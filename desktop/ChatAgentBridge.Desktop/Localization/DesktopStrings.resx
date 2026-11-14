@@ -1142,7 +1142,7 @@ After: {2}</value></data>
   <data name="HistoryAuditContextColumn" xml:space="preserve"><value>Conversation / target user</value></data>
   <data name="AttachmentsChatNotice" xml:space="preserve"><value>Could not send attachments. {0}</value></data>
   <data name="AttachmentsChatNone" xml:space="preserve"><value>Only files newly created in the workspace during this run can be attached, and none were found.</value></data>
-  <data name="AttachmentsChatExcluded" xml:space="preserve"><value>These files were withheld by the attachment rules: {0} (files that look like settings, credentials or programs are never sent).</value></data>
+  <data name="AttachmentsChatExcluded" xml:space="preserve"><value>These files were withheld by the attachment rules: {0} file(s) (names are shown only on this PC; files that look like settings, credentials or programs are never sent).</value></data>
   <data name="AttachmentsChatIncomplete" xml:space="preserve"><value>The workspace file search did not complete.</value></data>
   <data name="AttachmentsChatDisabled" xml:space="preserve"><value>File attachments are turned off in the settings.</value></data>
   <data name="AttachmentsChatNotSupported" xml:space="preserve"><value>This chat connection cannot send files.</value></data>

@@ -79,7 +79,8 @@ public sealed partial class ChatInboxViewModel
             {
                 if (discovered.ExcludedFiles.Count > 0)
                     await ReplyAttachmentNoticeAsync(item, settings, "AttachmentsChatExcluded",
-                        string.Join(", ", discovered.ExcludedFiles.Take(3)) + (discovered.ExcludedFiles.Count > 3 ? " …" : ""), token);
+                        // Withheld files may be secrets, so the chat gets only the count; names stay in the local status.
+                        discovered.ExcludedFiles.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), token);
                 else if (!discovered.IsComplete)
                     await ReplyAttachmentNoticeAsync(item, settings, "AttachmentsChatIncomplete", null, token);
                 else if (AsksForAttachment(item.Request.Text))
