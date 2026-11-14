@@ -62,18 +62,31 @@ public sealed class AppAppearance(AppearancePreferencesStore store) : IDisposabl
         Apply();
     }
 
+    // Theme and accent share one file; saving one at a time keeps each write from restoring the other's old value.
+    private readonly SemaphoreSlim _saveGate = new(1, 1);
+
     public async Task SaveAsync(string theme)
     {
-        await store.SaveAsync(new AppearancePreferences(theme, Accent));
-        Preference = theme;
+        await _saveGate.WaitAsync();
+        try
+        {
+            await store.SaveAsync(new AppearancePreferences(theme, Accent));
+            Preference = theme;
+        }
+        finally { _saveGate.Release(); }
         LoadFailed = false;
         Apply();
     }
 
     public async Task SaveAccentAsync(string accent)
     {
-        await store.SaveAsync(new AppearancePreferences(Preference, accent));
-        Accent = accent;
+        await _saveGate.WaitAsync();
+        try
+        {
+            await store.SaveAsync(new AppearancePreferences(Preference, accent));
+            Accent = accent;
+        }
+        finally { _saveGate.Release(); }
         LoadFailed = false;
         ApplyAccentResources();
         RefreshThemeResources();
