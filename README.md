@@ -153,6 +153,8 @@ A pending access request can grant access only while its chat connection and con
 
 Attachment scope controls which files a final reply can name with a `CAB-ATTACH: <workspace-relative path>` line. **Only files created in this run** accepts files discovered in that run. **Files created in this conversation** accepts unchanged files discovered in successful runs for the same service, chat origin, channel, thread, user and workspace; older timestamp-only records grant no access. **Whole workspace (always ask)** can name existing eligible files, but always requires approval on the PC. Existing-file markers are requests only and do not bypass exclusions or approval.
 
+If attachment settings change after files are discovered, run the request again before sending them. Deleting a conversation also removes its recorded attachment candidates and attachment consents.
+
 ### Files attached to requests
 
 Files attached to a request are downloaded after the request is approved and passed to the agent. These limits are separate from the generated-file upload settings.
@@ -166,6 +168,8 @@ Files attached to a request are downloaded after the request is approved and pas
 | Follow-ups | Follow-ups with files wait for a separate run |
 | Images | Inspecting images requires a CLI with image-reading tools |
 | Slack scope | The bot needs `files:read`; reauthorize the app after adding the scope |
+
+Incoming files require a working folder and data directory whose paths contain no symbolic links, junctions or other reparse points. If staging fails, choose folders without those links and retry the request.
 
 ![Request approvals, result sharing, additional instructions and file attachment settings](docs/assets/screenshots/chat-settings-en.png)
 

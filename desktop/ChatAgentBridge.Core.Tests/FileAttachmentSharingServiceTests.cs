@@ -120,6 +120,18 @@ public sealed class FileAttachmentSharingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task NarrowingScopeAfterDiscoveryRejectsManualSendBeforeConfirmation()
+    {
+        var context = await ContextAsync();
+        context = context with { DiscoverySettings = context.Settings with { FileAttachmentScope = "workspace" },
+            Settings = context.Settings with { FileAttachmentScope = "run" } };
+        var outcome = await new FileAttachmentSharingService(Data).ShareAsync(context, false, Accept, Allowed, Upload);
+        Assert.Equal(FileAttachmentShareOutcome.ScopeChanged, outcome);
+        Assert.Equal(0, _confirmations);
+        Assert.Equal(0, _uploads);
+    }
+
+    [Fact]
     public async Task RevocationWhileTheUserConfirmsStopsAllExternalTraffic()
     {
         var context = await ContextAsync(); var allowed = true;

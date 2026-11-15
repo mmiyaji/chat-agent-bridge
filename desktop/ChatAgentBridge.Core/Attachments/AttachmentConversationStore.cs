@@ -26,6 +26,8 @@ public sealed class AttachmentConversationStore
         try
         {
             var entries = await LoadAsync(cancellationToken).ConfigureAwait(false);
+            // Timestamp-only legacy entries cannot grant access and must not evict usable records.
+            entries.RemoveAll(entry => entry is null || entry.Workspace is null);
             var existing = entries.FirstOrDefault(entry => Matches(entry, key, canonicalWorkspace));
             if (existing is null)
             {
@@ -38,12 +40,13 @@ public sealed class AttachmentConversationStore
             {
                 if (!IsValidCandidate(candidate, canonicalWorkspace)) continue;
                 var index = files.FindIndex(file => PathEquals(file.FullPath, candidate.FullPath));
-                if (index >= 0) files[index] = candidate;
-                else files.Add(candidate);
+                if (index >= 0) files.RemoveAt(index);
+                files.Add(candidate);
             }
             if (files.Count > MaxFilesPerConversation) files.RemoveRange(0, files.Count - MaxFilesPerConversation);
             var updated = existing with { Files = files };
-            entries[entries.IndexOf(existing)] = updated;
+            entries.Remove(existing);
+            entries.Add(updated);
             if (entries.Count > MaxEntries) entries.RemoveRange(0, entries.Count - MaxEntries);
             await SaveAsync(entries, cancellationToken).ConfigureAwait(false);
         }
@@ -58,14 +61,36 @@ public sealed class AttachmentConversationStore
         await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var entry = (await LoadAsync(cancellationToken).ConfigureAwait(false))
-                .FirstOrDefault(candidate => Matches(candidate, key, canonicalWorkspace));
-            return entry?.Files?.Where(file => IsValidCandidate(file, canonicalWorkspace)).ToArray() ?? [];
+            var entries = await LoadAsync(cancellationToken).ConfigureAwait(false);
+            var entry = entries.FirstOrDefault(candidate => Matches(candidate, key, canonicalWorkspace));
+            var files = entry?.Files?.Where(file => IsValidCandidate(file, canonicalWorkspace)).ToArray() ?? [];
+            // Preserve active conversations even when they only reuse previously discovered files.
+            if (entry is not null && files.Length > 0 && !ReferenceEquals(entry, entries[^1]))
+            {
+                entries.Remove(entry);
+                entries.Add(entry);
+                await SaveAsync(entries, cancellationToken).ConfigureAwait(false);
+            }
+            return files;
         }
         finally { Gate.Release(); }
     }
 
-    private async Task<List<Entry>> LoadAsync(CancellationToken cancellationToken)
+    /// <summary>Removes all workspace records for exactly one conversation.</summary>
+    public async Task ClearAsync(SessionKey key, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var entries = await LoadAsync(cancellationToken, failOnInvalid: true).ConfigureAwait(false);
+            if (entries.RemoveAll(entry => MatchesConversation(entry, key)) > 0)
+                await SaveAsync(entries, cancellationToken).ConfigureAwait(false);
+        }
+        finally { Gate.Release(); }
+    }
+
+    private async Task<List<Entry>> LoadAsync(CancellationToken cancellationToken, bool failOnInvalid = false)
     {
         if (!File.Exists(_filePath)) return [];
         try
@@ -73,8 +98,8 @@ public sealed class AttachmentConversationStore
             await using var stream = File.OpenRead(_filePath);
             return await JsonSerializer.DeserializeAsync<List<Entry>>(stream, cancellationToken: cancellationToken).ConfigureAwait(false) ?? [];
         }
-        catch (JsonException) { return []; }
-        catch (NotSupportedException) { return []; }
+        catch (JsonException ex) { if (failOnInvalid) throw new InvalidDataException("Attachment conversation data is unreadable.", ex); return []; }
+        catch (NotSupportedException ex) { if (failOnInvalid) throw new InvalidDataException("Attachment conversation data is unreadable.", ex); return []; }
     }
 
     private async Task SaveAsync(List<Entry> entries, CancellationToken cancellationToken)
@@ -94,6 +119,9 @@ public sealed class AttachmentConversationStore
 
     private static bool Matches(Entry entry, SessionKey key, string workspace) =>
         entry.Workspace is not null && PathEquals(entry.Workspace, workspace) &&
+        MatchesConversation(entry, key);
+
+    private static bool MatchesConversation(Entry entry, SessionKey key) =>
         entry.Provider == key.Provider && entry.ChannelId == key.ChannelId && entry.ThreadId == key.ThreadId &&
         entry.UserId == key.UserId && entry.Origin == key.Origin;
 

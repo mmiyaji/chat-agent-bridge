@@ -3,7 +3,10 @@ using ChatAgentBridge.Core.Sessions;
 namespace ChatAgentBridge.Core;
 
 public sealed record FileAttachmentShareContext(SessionKey Key, string SessionId, BridgeSettings Settings,
-    IReadOnlyList<FileAttachmentCandidate> Candidates, bool ScanComplete);
+    IReadOnlyList<FileAttachmentCandidate> Candidates, bool ScanComplete)
+{
+    public BridgeSettings? DiscoverySettings { get; init; }
+}
 
 public enum FileAttachmentShareOutcome { None, Disabled, Private, PendingConsent, Cancelled, ScopeChanged, Sent }
 
@@ -27,6 +30,10 @@ public sealed class FileAttachmentSharingService(string dataDirectory)
         if (mode == "disabled") return FileAttachmentShareOutcome.Disabled;
         if (ExecutionPolicy.NormalizeChatResultMode(context.Settings.ChatResultMode) == "none") return FileAttachmentShareOutcome.Private;
         if (context.Candidates.Count == 0) return FileAttachmentShareOutcome.None;
+        if (context.DiscoverySettings is { } discovered &&
+            FileAttachmentPolicy.GetConsentFingerprint(context.Key, context.SessionId, discovered) !=
+            FileAttachmentPolicy.GetConsentFingerprint(context.Key, context.SessionId, context.Settings))
+            return FileAttachmentShareOutcome.ScopeChanged;
         if (!await validateScope(cancellationToken).ConfigureAwait(false)) return FileAttachmentShareOutcome.ScopeChanged;
         var fingerprint = FileAttachmentPolicy.GetConsentFingerprint(context.Key, context.SessionId, context.Settings);
         var alreadyApproved = mode == "first" && !alwaysConfirm &&

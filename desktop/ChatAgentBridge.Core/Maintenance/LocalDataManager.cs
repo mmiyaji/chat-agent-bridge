@@ -8,9 +8,9 @@ public sealed class LocalDataManager(string directory)
 {
     private readonly string _directory = Path.GetFullPath(directory);
     private static readonly string[] ConversationFiles =
-        ["sessions.json", "conversation-summaries.json", "chat-conversations.json", "attachment-consents.json", "chat-identities.json"];
+        ["sessions.json", "conversation-summaries.json", "chat-conversations.json", "attachment-consents.json", "attachment-conversations.json", "chat-identities.json"];
     private static readonly System.Text.RegularExpressions.Regex ConversationTemporaryFileName = new(
-        "^(?:sessions|conversation-summaries|chat-conversations|attachment-consents|chat-identities)\\.[0-9a-fA-F]{32}\\.tmp\\z",
+        "^(?:(?:sessions|conversation-summaries|chat-conversations|attachment-consents|chat-identities)\\.|attachment-conversations\\.json\\.)[0-9a-fA-F]{32}\\.tmp\\z",
         System.Text.RegularExpressions.RegexOptions.CultureInvariant | System.Text.RegularExpressions.RegexOptions.Compiled);
 
     public IReadOnlyList<LocalDataSize> Inspect() => Enum.GetValues<LocalDataKind>().Select(kind =>

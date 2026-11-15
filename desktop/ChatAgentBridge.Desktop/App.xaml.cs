@@ -227,7 +227,7 @@ public partial class App : Application
             });
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or ArgumentException or
+        catch (Exception ex) when (ex is System.IO.IOException or System.IO.InvalidDataException or UnauthorizedAccessException or ArgumentException or
             NotSupportedException or System.Security.SecurityException)
         {
             // Read-only/unavailable data locations must not prevent startup.

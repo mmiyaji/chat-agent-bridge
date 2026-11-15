@@ -193,8 +193,7 @@ function Open-AttachmentSettings {
     if ($pattern.Current.ExpandCollapseState -ne [System.Windows.Automation.ExpandCollapseState]::Expanded) { $pattern.Expand(); Start-Sleep -Milliseconds 250 }
 }
 function Select-FirstRow([string]$Id) {
-    $list=Element $Id
-    Assert-True ($null -ne $list) "Missing list $Id"
+    $list=Wait-Element $Id
     $row=$list.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
         [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty,[System.Windows.Automation.ControlType]::ListItem))
     Assert-True ($null -ne $row) "No row in $Id"
@@ -711,10 +710,31 @@ try {
         Wait-Server { param($s) @($s.uploads|Where-Object name -eq 'baseline.txt').Count -eq ($baselineBefore + 1) } 30 | Out-Null
         $script:checks.Add(@{name='Offline workspace scope and explicit consent';passed=$true})
     }
+    Check 'Narrowing attachment scope blocks previously discovered files' {
+        $prompt='NAME ATTACHMENT baseline.txt POLICY RECHECK'
+        Run-Prompt 'scope-change' $prompt 'Named baseline.txt'
+        $before=@((Get-Results).uploads|Where-Object name -eq 'baseline.txt').Count
+        Navigate 'NavConnections'
+        Open-AttachmentSettings
+        Choose 'FileAttachmentScope' $(if($Language -eq 'ja'){'今回の実行で作ったファイルのみ（既定）'}else{'Only files created in this run (default)'})
+        Confirm-SensitiveSettingsAutoSave 'FileAttachmentScope' 'run'
+        Navigate 'NavChat'
+        Set-InboxSearch $prompt
+        Select-FirstRow 'InboxConversations'
+        Wait-Element 'ChatRequests' | Out-Null
+        Select-Request $prompt
+        Show-RequestAction 'SendChatAttachments'
+        Invoke-AvailableAction 'SendChatAttachments'
+        $changed=$(if($Language -eq 'ja'){'添付設定が変更されました'}else{'Attachment settings changed'})
+        UI @('wait-for','SelectedAttachmentStatus','--value',$changed,'--contains','-t','6000') | Out-Null
+        Assert-True ($null -eq (Element 'AttachmentConfirmation')) 'A stale candidate reached the confirmation dialog'
+        Assert-True (@((Get-Results).uploads|Where-Object name -eq 'baseline.txt').Count -eq $before) 'A stale candidate was uploaded after scope narrowing'
+        $script:checks.Add(@{name='Offline scope narrowing blocks stale attachments';passed=$true})
+    }
     }
     Check 'Chat is told why nothing was attached' {
         Run-Prompt 'attachment-5' $(if($Language -eq 'ja'){'さっきの画像を添付して'}else{'Please attach the earlier image'}) 'No fixture file requested.'
-        Wait-Notice $(if($Language -eq 'ja'){'新しく作られたファイルだけ'}else{'newly created'}) | Out-Null
+        Wait-Notice $(if($Language -eq 'ja'){'現在の添付設定で送れるファイル'}else{'eligible under the current attachment settings'}) | Out-Null
         Run-Prompt 'attachment-6' 'CREATE ATTACHMENT secret.txt' 'Created secret.txt'
         $excludedFragment=$(if($Language -eq 'ja'){'添付ルールにより送らなかったファイル'}else{'withheld by the attachment rules'})
         $excluded=Wait-Notice $excludedFragment
@@ -731,10 +751,12 @@ try {
     }
     UI @('invoke','DisconnectChat') | Out-Null
 } catch {
+    $failureDetail = $_.Exception.Message
+    if ($_.ScriptStackTrace) { $failureDetail += "`n$($_.ScriptStackTrace)" }
     if ($script:endpoint) { try { Write-Json 'server-results-on-failure.json' (Get-Results) } catch { } }
     if ($appProcess -and -not $appProcess.HasExited) { try { Capture 'failure.png' } catch { } }
-    $script:checks.Add(@{name='File attachment UI E2E';passed=$false;detail=$_.Exception.Message})
-    Write-Output "FAIL $($_.Exception.Message)"
+    $script:checks.Add(@{name='File attachment UI E2E';passed=$false;detail=$failureDetail})
+    Write-Output "FAIL $failureDetail"
 } finally {
     Write-Json 'results.json' @{passed=($script:checks.Count -gt 0 -and @($script:checks|Where-Object{-not $_.passed}).Count -eq 0);checks=@($script:checks)}
     $keep=$KeepRunningOnFailure -and @($script:checks|Where-Object{-not $_.passed}).Count -gt 0

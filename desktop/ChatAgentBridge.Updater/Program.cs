@@ -25,17 +25,11 @@ try
     var probe = Path.Combine(plan.InstallDirectory, ".cab-probe-" + plan.Nonce);
     using (File.Create(probe)) { }
     File.Delete(probe);
+    // Verify and hold the original process before announcing readiness. The app cancels an uncommitted
+    // update by terminating the helper; after it commits, even a slow shutdown must not abandon the update.
+    using var parent = PortableUpdateParentWaiter.OpenExpectedParent(plan.ParentProcessId, plan.ParentStartTimeUtcTicks);
     await File.WriteAllTextAsync(plan.ReadyFile, plan.Nonce);
-    using (var wait = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
-    {
-        try
-        {
-            using var parent = Process.GetProcessById(plan.ParentProcessId);
-            if (parent.StartTime.ToUniversalTime().Ticks == plan.ParentStartTimeUtcTicks)
-                await parent.WaitForExitAsync(wait.Token);
-        }
-        catch (ArgumentException) { /* Parent has already exited. */ }
-    }
+    await PortableUpdateParentWaiter.WaitForExitAsync(parent);
     parentHasExited = true;
     var result = await new PortableUpdateApplier(starter).ApplyAsync(plan);
     if (result.Success) CleanVerifiedPayload(plan);

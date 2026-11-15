@@ -185,6 +185,8 @@ public sealed partial class SessionStore
             {
                 var document = await ReadAsync(token).ConfigureAwait(false);
                 await ClearConversationNotesAsync(key, token).ConfigureAwait(false);
+                await new AttachmentConversationStore(DirectoryPath).ClearAsync(key, token).ConfigureAwait(false);
+                await new AttachmentConsentStore(DirectoryPath).ClearAsync(key, token).ConfigureAwait(false);
                 var bindings = document.Bindings!;
                 var removed = bindings.RemoveAll(item => item.Key == key);
                 removed += document.Agents?.RemoveAll(item => item.Key == key) ?? 0;

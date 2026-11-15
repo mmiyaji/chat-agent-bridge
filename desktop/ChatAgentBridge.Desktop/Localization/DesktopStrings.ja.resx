@@ -677,19 +677,19 @@
   <data name="AuditAttachmentSent" xml:space="preserve"><value>ファイルを添付</value></data>
   <data name="AuditAttachmentFailed" xml:space="preserve"><value>ファイル添付に失敗</value></data>
   <data name="AttachmentDestination" xml:space="preserve"><value>送信先: {0}、スレッド {1}、ワークスペース {2}</value></data>
-  <data name="AttachmentConfirmIntro" xml:space="preserve"><value>新しく作成されたファイルから送信するものを選んでください。ファイルはチャネルのメンバーが閲覧できる場合があります。</value></data>
+  <data name="AttachmentConfirmIntro" xml:space="preserve"><value>送信するファイルを選んでください。ファイルはチャネルのメンバーが閲覧できる場合があります。</value></data>
   <data name="AttachmentPrivacyHint" xml:space="preserve"><value>送信したファイルはチャット参加者が閲覧できます。アプリは内容の機密情報を判定できないため、送信前に各ファイルを確認してください。</value></data>
   <data name="AttachmentFileAccessibleName" xml:space="preserve"><value>{0}、{1}</value></data>
-  <data name="AttachmentFirstConsentWarning" xml:space="preserve"><value>この選択を承認すると、同じユーザーによってこの会話セッションで今後作成される対象ファイルも、最大{0}個、1ファイル{1} MiB、合計{2} MiBの範囲で自動送信されます。モードまたは上限を変更すると、再度承認が必要です。</value></data>
+  <data name="AttachmentFirstConsentWarning" xml:space="preserve"><value>この選択を承認すると、同じユーザーと会話セッションの今後の対象ファイルも、最大{0}個、1ファイル{1} MiB、合計{2} MiBの範囲で自動送信されます。モード・範囲・上限を変更すると、再度承認が必要です。</value></data>
   <data name="AttachmentSelectionLimits" xml:space="preserve"><value>1回の送信の上限: {0}個、1ファイル{1} MiB、合計{2} MiB。</value></data>
   <data name="AttachmentSelectAtLeastOne" xml:space="preserve"><value>送信するには1つ以上のファイルを選択してください。</value></data>
   <data name="AttachmentSelectionCountExceeded" xml:space="preserve"><value>ファイルは{0}個まで選択できます。</value></data>
   <data name="AttachmentSelectionFileTooLarge" xml:space="preserve"><value>1ファイルのサイズは{0} MiB以下にしてください。</value></data>
   <data name="AttachmentSelectionTotalTooLarge" xml:space="preserve"><value>選択したファイルの合計が{0} MiBの上限を超えています。</value></data>
-  <data name="AttachmentConfirmTitle" xml:space="preserve"><value>生成したファイルを送信しますか？</value></data>
+  <data name="AttachmentConfirmTitle" xml:space="preserve"><value>ファイルを送信しますか？</value></data>
   <data name="AttachmentSendSelected" xml:space="preserve"><value>選択したファイルを送信</value></data>
-  <data name="AttachmentsNone" xml:space="preserve"><value>送信対象の新しいファイルはありません。</value></data>
-  <data name="AttachmentsFound" xml:space="preserve"><value>送信対象の新しいファイルが{0}個あります。内容を確認してください。</value></data>
+  <data name="AttachmentsNone" xml:space="preserve"><value>送信対象のファイルはありません。</value></data>
+  <data name="AttachmentsFound" xml:space="preserve"><value>送信対象のファイルが{0}個あります。内容を確認してください。</value></data>
   <data name="AttachmentsScanIncomplete" xml:space="preserve"><value>ファイルの検索が完了しませんでした。送信前に対象ファイルを確認してください。</value></data>
   <data name="AttachmentsSkipped" xml:space="preserve"><value>添付ルールにより{0}個のファイルを除外しました。</value></data>
   <data name="AttachmentsNotSupported" xml:space="preserve"><value>このチャット接続ではファイルを送信できません。</value></data>
@@ -698,7 +698,7 @@
   <data name="AttachmentsSlackScopeMissing" xml:space="preserve"><value>Slackアプリに files:write 権限が必要です。権限を追加して再認可後、接続し直してください。</value></data>
   <data name="AttachmentsCancelled" xml:space="preserve"><value>ファイル送信をキャンセルしました。</value></data>
   <data name="AttachmentsApprovalRequired" xml:space="preserve"><value>送信するにはファイルを確認して承認してください。</value></data>
-  <data name="AttachmentsPolicyChanged" xml:space="preserve"><value>添付設定が変更されました。ファイルを確認し、再度承認してください。</value></data>
+  <data name="AttachmentsPolicyChanged" xml:space="preserve"><value>添付設定が変更されました。候補を再取得するため、依頼を再実行してください。</value></data>
   <data name="AttachmentsDisabled" xml:space="preserve"><value>ファイル添付は無効です。</value></data>
   <data name="AttachmentsResultPrivate" xml:space="preserve"><value>結果の自動共有はファイル添付の承認にはなりません。</value></data>
   <data name="LiveOutputTitle" xml:space="preserve"><value>実行中の出力</value></data>
@@ -1145,8 +1145,8 @@
   <data name="HistoryAccessUserColumn" xml:space="preserve"><value>対象ユーザー</value></data>
   <data name="HistoryAuditContextColumn" xml:space="preserve"><value>会話・対象ユーザー</value></data>
   <data name="AttachmentsChatNotice" xml:space="preserve"><value>添付ファイルを送れませんでした。{0}</value></data>
-  <data name="AttachmentsChatNone" xml:space="preserve"><value>添付できるのは、今回の実行でワークスペース内に新しく作られたファイルだけです。対象のファイルが見つかりませんでした。</value></data>
-  <data name="AttachmentsChatExcluded" xml:space="preserve"><value>添付ルールにより送らなかったファイル: {0}件（名前はこのPCの画面にだけ表示します。設定・認証情報・プログラムらしい名前のファイルは送りません）</value></data>
+  <data name="AttachmentsChatNone" xml:space="preserve"><value>現在の添付設定で送れるファイルが見つかりませんでした。</value></data>
+  <data name="AttachmentsChatExcluded" xml:space="preserve"><value>添付ルールにより送らなかったファイル: {0}件（名前はこのPCの画面にだけ表示します）。対象範囲外、ファイルの不在・変更、名前による除外などが考えられます。</value></data>
   <data name="AttachmentsChatIncomplete" xml:space="preserve"><value>ワークスペースのファイル検索が完了しませんでした。</value></data>
   <data name="AttachmentsChatDisabled" xml:space="preserve"><value>ファイル添付が設定で無効になっています。</value></data>
   <data name="AttachmentsChatNotSupported" xml:space="preserve"><value>この接続ではファイルを送れません。</value></data>

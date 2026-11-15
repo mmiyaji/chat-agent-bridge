@@ -674,19 +674,19 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="AuditAttachmentSent" xml:space="preserve"><value>File attachment sent</value></data>
   <data name="AuditAttachmentFailed" xml:space="preserve"><value>File attachment failed</value></data>
   <data name="AttachmentDestination" xml:space="preserve"><value>Destination: {0}, thread {1}, workspace {2}</value></data>
-  <data name="AttachmentConfirmIntro" xml:space="preserve"><value>Select the newly created files you want to send. Files may be readable by members of this chat channel.</value></data>
+  <data name="AttachmentConfirmIntro" xml:space="preserve"><value>Select the files you want to send. Files may be readable by members of this chat channel.</value></data>
   <data name="AttachmentPrivacyHint" xml:space="preserve"><value>Chat participants can view sent files. The app cannot inspect file contents for sensitive information, so review each file before sending.</value></data>
   <data name="AttachmentFileAccessibleName" xml:space="preserve"><value>{0}, {1}</value></data>
-  <data name="AttachmentFirstConsentWarning" xml:space="preserve"><value>Approving this selection also allows future eligible new files created by this user in this same conversation session to be sent automatically within these limits: at most {0} files, {1} MiB each, and {2} MiB total. A mode or limit change requires new consent.</value></data>
+  <data name="AttachmentFirstConsentWarning" xml:space="preserve"><value>Approving this selection also allows future eligible files for this user and conversation session to be sent automatically within these limits: at most {0} files, {1} MiB each, and {2} MiB total. A mode, scope or limit change requires new consent.</value></data>
   <data name="AttachmentSelectionLimits" xml:space="preserve"><value>Per-send limits: up to {0} files, {1} MiB per file, and {2} MiB total.</value></data>
   <data name="AttachmentSelectAtLeastOne" xml:space="preserve"><value>Select at least one file to enable sending.</value></data>
   <data name="AttachmentSelectionCountExceeded" xml:space="preserve"><value>Select no more than {0} files.</value></data>
   <data name="AttachmentSelectionFileTooLarge" xml:space="preserve"><value>Each file must be at most {0} MiB.</value></data>
   <data name="AttachmentSelectionTotalTooLarge" xml:space="preserve"><value>The selected files exceed the {0} MiB total limit.</value></data>
-  <data name="AttachmentConfirmTitle" xml:space="preserve"><value>Send generated files?</value></data>
+  <data name="AttachmentConfirmTitle" xml:space="preserve"><value>Send files?</value></data>
   <data name="AttachmentSendSelected" xml:space="preserve"><value>Send selected files</value></data>
-  <data name="AttachmentsNone" xml:space="preserve"><value>No eligible new files were found.</value></data>
-  <data name="AttachmentsFound" xml:space="preserve"><value>{0} eligible new file(s) are ready to review.</value></data>
+  <data name="AttachmentsNone" xml:space="preserve"><value>No eligible files were found.</value></data>
+  <data name="AttachmentsFound" xml:space="preserve"><value>{0} eligible file(s) are ready to review.</value></data>
   <data name="AttachmentsScanIncomplete" xml:space="preserve"><value>File scan was incomplete. Review the eligible files before sending.</value></data>
   <data name="AttachmentsSkipped" xml:space="preserve"><value>{0} file(s) were skipped by the attachment rules.</value></data>
   <data name="AttachmentsNotSupported" xml:space="preserve"><value>This chat connection cannot send files.</value></data>
@@ -695,7 +695,7 @@ Diagnostic code: {1} (HRESULT 0x{2}). Exception messages, stack traces, paths, c
   <data name="AttachmentsSlackScopeMissing" xml:space="preserve"><value>Slack needs the files:write permission. Add that permission, reauthorize the app, and reconnect.</value></data>
   <data name="AttachmentsCancelled" xml:space="preserve"><value>File sending was cancelled.</value></data>
   <data name="AttachmentsApprovalRequired" xml:space="preserve"><value>Review and approve the files before they can be sent.</value></data>
-  <data name="AttachmentsPolicyChanged" xml:space="preserve"><value>Attachment settings changed. Review the files and approve again.</value></data>
+  <data name="AttachmentsPolicyChanged" xml:space="preserve"><value>Attachment settings changed. Run the request again to find eligible files.</value></data>
   <data name="AttachmentsDisabled" xml:space="preserve"><value>File attachments are disabled.</value></data>
   <data name="AttachmentsResultPrivate" xml:space="preserve"><value>Automatic result sharing does not approve file attachments.</value></data>
   <data name="LiveOutputTitle" xml:space="preserve"><value>Live execution output</value></data>
@@ -1141,8 +1141,8 @@ After: {2}</value></data>
   <data name="HistoryAccessUserColumn" xml:space="preserve"><value>Target user</value></data>
   <data name="HistoryAuditContextColumn" xml:space="preserve"><value>Conversation / target user</value></data>
   <data name="AttachmentsChatNotice" xml:space="preserve"><value>Could not send attachments. {0}</value></data>
-  <data name="AttachmentsChatNone" xml:space="preserve"><value>Only files newly created in the workspace during this run can be attached, and none were found.</value></data>
-  <data name="AttachmentsChatExcluded" xml:space="preserve"><value>These files were withheld by the attachment rules: {0} file(s) (names are shown only on this PC; files that look like settings, credentials or programs are never sent).</value></data>
+  <data name="AttachmentsChatNone" xml:space="preserve"><value>No files eligible under the current attachment settings were found.</value></data>
+  <data name="AttachmentsChatExcluded" xml:space="preserve"><value>Files withheld by the attachment rules: {0} (names are shown only on this PC). Files may be outside the allowed scope, unavailable, changed, or excluded by name.</value></data>
   <data name="AttachmentsChatIncomplete" xml:space="preserve"><value>The workspace file search did not complete.</value></data>
   <data name="AttachmentsChatDisabled" xml:space="preserve"><value>File attachments are turned off in the settings.</value></data>
   <data name="AttachmentsChatNotSupported" xml:space="preserve"><value>This chat connection cannot send files.</value></data>

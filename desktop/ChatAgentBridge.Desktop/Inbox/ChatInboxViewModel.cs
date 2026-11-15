@@ -1122,7 +1122,7 @@ public sealed partial class ChatInboxViewModel : ObservableObject
                 await _sessions.CompleteAgentHandoffAsync(key, updated.SessionId, token);
                 try
                 {
-                    var answer = ExtractReply(result);
+                    var answer = reply;
                     if (!string.IsNullOrWhiteSpace(answer) && (await new AgentConnectionStore().ListAsync(token)).Count > 0)
                         await new ConversationSummaryStore().RecordAsync(key, AgentProfile.ResolveProvider(effectiveSettings),
                             updated.SessionId, SummaryPrompt(item),

@@ -20,14 +20,25 @@ public static class IncomingAttachmentRecovery
         var registry = ResolveRegistryDirectory(recoveryDataDirectory);
         var recovered = 0;
         var started = Stopwatch.StartNew();
+        // A retained record must not permanently prevent later records from being inspected.
+        // Persist the enumeration offset across app restarts; deleted records are deducted below.
+        var offset = ReadRecoveryOffset(registry);
         var manifests = Directory.EnumerateFiles(registry, "*.json", SearchOption.TopDirectoryOnly)
-            .Take(MaximumManifestsPerPass).ToArray();
+            .Skip(offset).Take(MaximumManifestsPerPass).ToArray();
+        if (manifests.Length == 0 && offset != 0)
+        {
+            offset = 0;
+            manifests = Directory.EnumerateFiles(registry, "*.json", SearchOption.TopDirectoryOnly)
+                .Take(MaximumManifestsPerPass).ToArray();
+        }
+        var visited = 0;
 
         foreach (var manifestPath in manifests)
         {
             try
             {
                 if (started.Elapsed > TimeSpan.FromSeconds(5)) break;
+                visited++;
                 EnsurePlainFile(manifestPath);
                 var id = Path.GetFileNameWithoutExtension(manifestPath);
                 if (!Guid.TryParseExact(id, "N", out _)) continue;
@@ -56,13 +67,56 @@ public static class IncomingAttachmentRecovery
                 if (!TryCleanup(data)) continue;
                 File.Delete(manifestPath);
                 recovered++;
+                // Close the exclusive lease before deleting its now-unneeded lock file.
+                leaseLock.Dispose();
+                try { File.Delete(lockPath); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException or InvalidDataException or JsonException or NotSupportedException)
             {
                 // Recovery is best-effort and fail-closed. The next startup may retry.
             }
         }
+        var nextOffset = visited == manifests.Length && manifests.Length < MaximumManifestsPerPass
+            ? 0 : Math.Max(0, offset + visited - recovered);
+        if (offset != 0 || nextOffset != 0) WriteRecoveryOffset(registry, nextOffset);
         return recovered;
+    }
+
+    private static int ReadRecoveryOffset(string registry)
+    {
+        var path = Path.Combine(registry, "recovery.cursor");
+        try
+        {
+            if (!File.Exists(path)) return 0;
+            EnsurePlainFile(path);
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            AttachmentHandlePolicy.EnsureSafe(stream, registry, path);
+            if (stream.Length is <= 0 or > 16) return 0;
+            using var reader = new StreamReader(stream);
+            return int.TryParse(reader.ReadToEnd(), out var offset) && offset >= 0 ? offset : 0;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or InvalidDataException or ArgumentException or NotSupportedException) { return 0; }
+    }
+
+    private static void WriteRecoveryOffset(string registry, int offset)
+    {
+        var path = Path.Combine(registry, "recovery.cursor");
+        var temp = Path.Combine(registry, "cursor-" + Guid.NewGuid().ToString("N") + ".tmp");
+        try
+        {
+            // Never overwrite a link or another unsafe pre-existing cursor.
+            if (File.Exists(path))
+            {
+                EnsurePlainFile(path);
+                using var existing = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                AttachmentHandlePolicy.EnsureSafe(existing, registry, path);
+            }
+            File.WriteAllText(temp, offset.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            File.Move(temp, path, overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or InvalidDataException or ArgumentException or NotSupportedException) { }
+        finally { try { File.Delete(temp); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { } }
     }
 
     /// <summary>Associates a just-started worker with the active incoming lease before attachment paths are sent.</summary>

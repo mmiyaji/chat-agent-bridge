@@ -384,6 +384,56 @@ public sealed class IncomingAttachmentStagerTests
         Assert.True(File.Exists(Path.Combine(fixture.Root, "incoming-attachments", oversizedId + ".json")));
     }
 
+    [Fact]
+    public async Task Recovery_progresses_past_retained_records_and_removes_completed_lock()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var registry = Path.Combine(fixture.Root, "incoming-attachments");
+        Directory.CreateDirectory(registry);
+        for (var i = 0; i < 257; i++)
+            await File.WriteAllTextAsync(Path.Combine(registry, Guid.NewGuid().ToString("N") + ".json"), "{}");
+        var target = Directory.EnumerateFiles(registry, "*.json").Last();
+        var id = Path.GetFileNameWithoutExtension(target);
+        var stage = Path.Combine(fixture.Workspace, ".cab-incoming-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(stage);
+        var path = Path.Combine(stage, "file-1.txt");
+        await File.WriteAllTextAsync(path, "orphan");
+        var identity = ReadIdentity(path);
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(path)));
+        var manifest = new IncomingAttachmentRecovery.Manifest(1, id, fixture.Workspace, stage,
+            [new IncomingAttachmentRecovery.FileEntry("file-1.txt", IncomingAttachmentRecovery.FileIdentity.From(identity), 6, hash)], null, null);
+        await File.WriteAllBytesAsync(target, JsonSerializer.SerializeToUtf8Bytes(manifest));
+
+        Assert.Equal(0, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.True(File.Exists(path));
+        Assert.Equal(1, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.False(File.Exists(path));
+        Assert.False(File.Exists(target));
+        Assert.False(File.Exists(Path.ChangeExtension(target, ".lock")));
+        Assert.Equal(256, Directory.EnumerateFiles(registry, "*.json").Count());
+    }
+
+    [Fact]
+    public async Task Recovery_does_not_overwrite_a_linked_cursor_target()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        using var fixture = new Fixture();
+        var registry = Path.Combine(fixture.Root, "incoming-attachments");
+        Directory.CreateDirectory(registry);
+        var outside = Path.Combine(fixture.Root, "outside.txt");
+        await File.WriteAllTextAsync(outside, "keep");
+        var cursor = Path.Combine(registry, "recovery.cursor");
+        try { File.CreateSymbolicLink(cursor, outside); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException) { return; }
+        for (var i = 0; i < 256; i++)
+            await File.WriteAllTextAsync(Path.Combine(registry, Guid.NewGuid().ToString("N") + ".json"), "{}");
+
+        Assert.Equal(0, IncomingAttachmentRecovery.RecoverAbandoned(fixture.Root));
+        Assert.Equal("keep", await File.ReadAllTextAsync(outside));
+        Assert.True((File.GetAttributes(cursor) & FileAttributes.ReparsePoint) != 0);
+    }
+
     private static AttachmentHandlePolicy.AttachmentFileIdentity ReadIdentity(string path)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);

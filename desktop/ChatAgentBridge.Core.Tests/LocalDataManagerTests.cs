@@ -11,7 +11,7 @@ public sealed class LocalDataManagerTests : IDisposable
     public async Task RemovingConversationDataPreservesSettingsAndUnrelatedFiles()
     {
         Directory.CreateDirectory(_directory);
-        foreach (var name in new[] { "sessions.json", "conversation-summaries.json", "chat-conversations.json", "attachment-consents.json", "chat-identities.json", "settings.json", "keep.txt" })
+        foreach (var name in new[] { "sessions.json", "conversation-summaries.json", "chat-conversations.json", "attachment-consents.json", "attachment-conversations.json", "chat-identities.json", "settings.json", "keep.txt" })
             await File.WriteAllTextAsync(Path.Combine(_directory, name), "sentinel");
         await new LocalDataManager(_directory).ClearAsync([LocalDataKind.Conversations]);
         Assert.True(File.Exists(Path.Combine(_directory, "settings.json")));
@@ -19,6 +19,7 @@ public sealed class LocalDataManagerTests : IDisposable
         Assert.False(File.Exists(Path.Combine(_directory, "sessions.json")));
         Assert.False(File.Exists(Path.Combine(_directory, "chat-conversations.json")));
         Assert.False(File.Exists(Path.Combine(_directory, "attachment-consents.json")));
+        Assert.False(File.Exists(Path.Combine(_directory, "attachment-conversations.json")));
         Assert.False(File.Exists(Path.Combine(_directory, "chat-identities.json")));
     }
 
@@ -34,6 +35,8 @@ public sealed class LocalDataManagerTests : IDisposable
             expectedBytes += bytes.Length;
             await File.WriteAllBytesAsync(Path.Combine(_directory, $"{stem}.{Guid.NewGuid():N}.tmp"), bytes);
         }
+        await File.WriteAllBytesAsync(Path.Combine(_directory, $"attachment-conversations.json.{Guid.NewGuid():N}.tmp"), [1, 2, 3]);
+        expectedBytes += 3;
 
         var dashedGuid = Guid.NewGuid().ToString("D");
         var malformedAndUnrelated = new[]
@@ -41,7 +44,9 @@ public sealed class LocalDataManagerTests : IDisposable
             $"sessions.{dashedGuid}.tmp",
             "sessions.not-a-guid.tmp",
             $"unrelated.{Guid.NewGuid():N}.tmp",
-            $"sessions.{Guid.NewGuid():N}.tmp.extra"
+            $"sessions.{Guid.NewGuid():N}.tmp.extra",
+            $"attachment-conversations.{Guid.NewGuid():N}.tmp",
+            $"attachment-conversations.json.{dashedGuid}.tmp"
         };
         foreach (var name in malformedAndUnrelated)
             await File.WriteAllTextAsync(Path.Combine(_directory, name), "keep");
@@ -53,7 +58,7 @@ public sealed class LocalDataManagerTests : IDisposable
         var manager = new LocalDataManager(_directory);
         var conversationData = Assert.Single(manager.Inspect(), size => size.Kind == LocalDataKind.Conversations);
         Assert.Equal(expectedBytes, conversationData.Bytes);
-        Assert.Equal(stems.Length, conversationData.Files);
+        Assert.Equal(stems.Length + 1, conversationData.Files);
 
         await manager.ClearAsync([LocalDataKind.Conversations]);
 

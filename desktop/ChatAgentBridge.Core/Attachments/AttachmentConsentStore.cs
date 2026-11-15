@@ -70,6 +70,20 @@ public sealed class AttachmentConsentStore
         finally { Gate.Release(); }
     }
 
+    /// <summary>Revokes every attachment consent for exactly one conversation and its sessions.</summary>
+    public async Task ClearAsync(SessionKey key, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var entries = await LoadEntriesAsync(cancellationToken).ConfigureAwait(false);
+            if (entries.RemoveAll(entry => MatchesConversation(entry, key)) > 0)
+                await SaveEntriesAsync(entries, cancellationToken).ConfigureAwait(false);
+        }
+        finally { Gate.Release(); }
+    }
+
     private async Task<List<ConsentEntry>> LoadEntriesAsync(CancellationToken token)
     {
         if (!File.Exists(_filePath)) return [];
@@ -125,13 +139,16 @@ public sealed class AttachmentConsentStore
     }
 
     private static bool Matches(ConsentEntry entry, SessionKey key, string sessionId, string fingerprint) =>
+        MatchesConversation(entry, key) &&
+        string.Equals(entry.SessionId, sessionId, StringComparison.Ordinal) &&
+        string.Equals(entry.Fingerprint, fingerprint, StringComparison.OrdinalIgnoreCase);
+
+    private static bool MatchesConversation(ConsentEntry entry, SessionKey key) =>
         string.Equals(entry.Provider, key.Provider, StringComparison.Ordinal) &&
         string.Equals(entry.ChannelId, key.ChannelId, StringComparison.Ordinal) &&
         string.Equals(entry.ThreadId, key.ThreadId, StringComparison.Ordinal) &&
         string.Equals(entry.UserId, key.UserId, StringComparison.Ordinal) &&
-        string.Equals(entry.Origin, key.Origin, StringComparison.Ordinal) &&
-        string.Equals(entry.SessionId, sessionId, StringComparison.Ordinal) &&
-        string.Equals(entry.Fingerprint, fingerprint, StringComparison.OrdinalIgnoreCase);
+        string.Equals(entry.Origin, key.Origin, StringComparison.Ordinal);
 
     private static bool IsFingerprint(string? value) => value is { Length: 64 } && value.All(Uri.IsHexDigit);
     private static bool HasText(string? value, int maxLength) => !string.IsNullOrWhiteSpace(value) && value.Length <= maxLength;

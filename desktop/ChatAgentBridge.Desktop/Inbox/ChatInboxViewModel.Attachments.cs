@@ -134,7 +134,7 @@ public sealed partial class ChatInboxViewModel
             var settings = automatic ? item.AttachmentSettingsAtStart ?? effective : effective;
             item.EffectiveSettings = settings;
             var context = new FileAttachmentShareContext(key, item.AttachmentSessionId, settings,
-                item.AttachmentCandidates, item.AttachmentScanComplete);
+                item.AttachmentCandidates, item.AttachmentScanComplete) { DiscoverySettings = item.AttachmentSettingsAtStart };
             var sentCount = 0;
             var outcome = await new FileAttachmentSharingService(_store.DirectoryPath).ShareAsync(context, automatic,
                 (files, first, ct) => ConfirmAttachmentsOnUiAsync(item, files, first, ct),
