@@ -272,6 +272,190 @@ public sealed class ChatProgressReporterTests
         transport.ReleaseCleanup.TrySetResult();
     }
 
+    [Fact]
+    public async Task FailedTerminalEditIsRetriedOnReconnectWithOriginalHandle()
+    {
+        var transport = new ReconnectingProgressTransport { FailTerminalAttempts = 2 };
+        await using var reporter = CreateReporter(transport, TimeSpan.FromHours(1));
+        await reporter.ReceiveAsync();
+        await reporter.StartAsync();
+
+        Assert.False(await reporter.FinishAsync(ChatProgressState.Completed));
+        Assert.DoesNotContain(transport.Updates, update => update.Text == "Completed");
+        transport.RaiseConnected();
+        await transport.WaitForUpdatesAsync(2);
+        var terminal = Assert.Single(transport.Updates, update => update.Text == "Completed");
+        Assert.Same(transport.PostedMessage, terminal.Message);
+        transport.RaiseConnected();
+        await Task.Delay(100);
+        Assert.Single(transport.Updates, update => update.Text == "Completed");
+    }
+
+    [Fact]
+    public async Task ReconnectRetryRechecksAccessAndDisposeCancelsPendingRetry()
+    {
+        var transport = new ReconnectingProgressTransport { FailTerminalAttempts = 2 };
+        var allowed = true;
+        var checks = 0;
+        var reporter = new ChatProgressReporter(transport, Request, (state, _) => state.ToString(),
+            _ => { Interlocked.Increment(ref checks); return Task.FromResult(allowed); },
+            interval: TimeSpan.FromHours(1), timeout: TimeSpan.FromSeconds(1));
+        await reporter.ReceiveAsync();
+        await reporter.StartAsync();
+        Assert.False(await reporter.FinishAsync(ChatProgressState.Failed));
+        allowed = false;
+        var before = Volatile.Read(ref checks);
+        transport.RaiseConnected();
+        await WaitForAsync(() => Volatile.Read(ref checks) > before);
+        Assert.DoesNotContain(transport.Updates, update => update.Text == "Failed");
+        await reporter.DisposeAsync();
+        allowed = true;
+        transport.RaiseConnected();
+        await Task.Delay(100);
+        Assert.DoesNotContain(transport.Updates, update => update.Text == "Failed");
+    }
+
+    [Fact]
+    public async Task DisposeCancelsReconnectRetryWaitingForAccessCheck()
+    {
+        var transport = new ReconnectingProgressTransport { FailTerminalAttempts = 2 };
+        var block = false;
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reporter = new ChatProgressReporter(transport, Request, (state, _) => state.ToString(), async _ =>
+        {
+            if (block) { entered.TrySetResult(); await release.Task; }
+            return true;
+        }, interval: TimeSpan.FromHours(1), timeout: TimeSpan.FromSeconds(10));
+        await reporter.ReceiveAsync();
+        await reporter.StartAsync();
+        Assert.False(await reporter.FinishAsync(ChatProgressState.Completed));
+        block = true;
+        transport.RaiseConnected();
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await reporter.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        release.TrySetResult();
+        transport.RaiseConnected();
+        await Task.Delay(100);
+        Assert.DoesNotContain(transport.Updates, update => update.Text == "Completed");
+    }
+
+    [Fact]
+    public async Task ConcurrentDisposeCallsDoNotAllowReconnectWrites()
+    {
+        var transport = new ReconnectingProgressTransport { FailTerminalAttempts = 2 };
+        var reporter = CreateReporter(transport, TimeSpan.FromHours(1));
+        await reporter.ReceiveAsync();
+        await reporter.StartAsync();
+        Assert.False(await reporter.FinishAsync(ChatProgressState.Completed));
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(async () => await reporter.DisposeAsync())));
+        transport.RaiseConnected();
+        await Task.Delay(100);
+        Assert.DoesNotContain(transport.Updates, update => update.Text == "Completed");
+        Assert.Single(transport.CompletedProgress);
+    }
+
+    [Fact]
+    public async Task DisposeCanRetryCleanupAfterLifecycleGateTimesOut()
+    {
+        var transport = new ReconnectingProgressTransport();
+        var block = false;
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reporter = new ChatProgressReporter(transport, Request, (state, _) => state.ToString(), async _ =>
+        {
+            if (block) { entered.TrySetResult(); await release.Task; }
+            return true;
+        }, interval: TimeSpan.FromHours(1), timeout: TimeSpan.FromSeconds(12));
+        await reporter.ReceiveAsync();
+        block = true;
+        var start = reporter.StartAsync();
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await reporter.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(7));
+        Assert.Empty(transport.CompletedProgress);
+        release.TrySetResult();
+        await start.WaitAsync(TimeSpan.FromSeconds(2));
+        await reporter.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Single(transport.CompletedProgress);
+        Assert.Empty(transport.Updates);
+    }
+
+    [Fact]
+    public async Task ReconnectWhileEarlierRetryIsSlowIsNotDropped()
+    {
+        var transport = new ReconnectingProgressTransport { FailTerminalAttempts = 2 };
+        var blockRetries = false;
+        var attempts = 0;
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var reporter = new ChatProgressReporter(transport, Request, (state, _) => state.ToString(), async _ =>
+        {
+            if (blockRetries && Interlocked.Increment(ref attempts) == 1)
+            {
+                entered.TrySetResult();
+                await release.Task;
+                return false;
+            }
+            return true;
+        }, interval: TimeSpan.FromHours(1), timeout: TimeSpan.FromSeconds(10));
+        await reporter.ReceiveAsync();
+        await reporter.StartAsync();
+        Assert.False(await reporter.FinishAsync(ChatProgressState.Completed));
+        blockRetries = true;
+        transport.RaiseConnected();
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        transport.RaiseConnected();
+        await Task.Delay(TimeSpan.FromMilliseconds(5300));
+        release.TrySetResult();
+        await transport.WaitForUpdatesAsync(2);
+        Assert.Single(transport.Updates, update => update.Text == "Completed");
+    }
+
+    [Fact]
+    public async Task RepeatedReconnectRetriesPendingTerminalUntilDelivered()
+    {
+        var transport = new ReconnectingProgressTransport { FailTerminalAttempts = 3 };
+        await using var reporter = CreateReporter(transport, TimeSpan.FromHours(1));
+        await reporter.ReceiveAsync();
+        await reporter.StartAsync();
+        Assert.False(await reporter.FinishAsync(ChatProgressState.Completed));
+        transport.RaiseConnected();
+        await WaitForAsync(() => transport.LifecycleOrder.Count(item => item == "terminal-update") >= 3);
+        Assert.DoesNotContain(transport.Updates, update => update.Text == "Completed");
+        transport.RaiseConnected();
+        await transport.WaitForUpdatesAsync(2);
+        Assert.Single(transport.Updates, update => update.Text == "Completed");
+    }
+
+    [Fact]
+    public async Task ReconnectDuringFailedTerminalEditIsNotLost()
+    {
+        var transport = new ReconnectingProgressTransport { FailTerminalAttempts = 2, SignalOnTerminalFailure = true };
+        await using var reporter = CreateReporter(transport, TimeSpan.FromHours(1));
+        await reporter.ReceiveAsync();
+        await reporter.StartAsync();
+        Assert.False(await reporter.FinishAsync(ChatProgressState.Completed));
+        await transport.WaitForUpdatesAsync(2);
+        Assert.Single(transport.Updates, update => update.Text == "Completed");
+    }
+
+    private static async Task WaitForAsync(Func<bool> condition)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        while (!condition()) await Task.Delay(5, timeout.Token);
+    }
+
+    private sealed class ReconnectingProgressTransport : FakeProgressTransport, IChatConnectionEvents
+    {
+        public event Action? Connected;
+        public bool SignalOnTerminalFailure { get; init; }
+        public void RaiseConnected() => Connected?.Invoke();
+        protected override void OnTerminalFailure()
+        {
+            if (SignalOnTerminalFailure) RaiseConnected();
+        }
+    }
+
     private sealed class AsyncCleanupTransport : FakeProgressTransport, IChatProgressLifecycleTransport
     {
         public TaskCompletionSource CleanupStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -338,11 +522,14 @@ public sealed class ChatProgressReporterTests
 
         public async Task UpdateProgressAsync(ChatRequest request, ChatProgressMessage message, string text, CancellationToken cancellationToken)
         {
-            if (text is "Completed" or "FollowUpApplied" or "FollowUpUncertain")
+            if (text is "Completed" or "Failed" or "FollowUpApplied" or "FollowUpUncertain")
             {
                 lock (_sync) _lifecycleOrder.Add("terminal-update");
                 if (FailTerminalUpdate || Interlocked.Decrement(ref FailTerminalAttempts) >= 0)
+                {
+                    OnTerminalFailure();
                     throw new InvalidOperationException("terminal update failed");
+                }
             }
             var isHeartbeat = (text is "Running" or "FollowUpPending") && Interlocked.Increment(ref _heartbeatCalls) > 1;
             if (BlockHeartbeat && isHeartbeat)
@@ -357,6 +544,8 @@ public sealed class ChatProgressReporterTests
             }
             lock (_sync) _updates.Add((message, text));
         }
+
+        protected virtual void OnTerminalFailure() { }
 
         public void CompleteProgress(ChatProgressMessage message)
         {

@@ -381,6 +381,51 @@ public sealed class DiscordGatewayTransportTests
     }
 
     [Fact]
+    public async Task Terminal_progress_is_delivered_after_gateway_recovers_from_long_disconnect()
+    {
+        var first = new FakeSocket { AckHeartbeats = true };
+        var second = new FakeSocket { AckHeartbeats = true };
+        first.Enqueue("""{"op":10,"d":{"heartbeat_interval":100}}""");
+        first.Enqueue("""{"op":0,"s":1,"t":"READY","d":{"session_id":"session","resume_gateway_url":"wss://gateway.discord.gg","user":{"id":"bot"}}}""");
+        second.Enqueue("""{"op":10,"d":{"heartbeat_interval":100}}""");
+        second.Enqueue("""{"op":0,"s":2,"t":"RESUMED","d":{}}""");
+        var socketIndex = 0;
+        var api = new RecordingHandler(request =>
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            if (path == "/api/v10/gateway/bot") return Json(HttpStatusCode.OK, """{"url":"wss://gateway.discord.gg"}""");
+            if (path == "/api/v10/channels/thread/messages" && request.Method == HttpMethod.Post) return Json(HttpStatusCode.OK, """{"id":"progress-message"}""");
+            if (path == "/api/v10/channels/thread/messages/progress-message" && request.Method == HttpMethod.Patch) return Json(HttpStatusCode.OK, "{}");
+            throw new Xunit.Sdk.XunitException($"Unexpected API request: {request.Method} {path}");
+        });
+        await using var transport = new DiscordGatewayTransport(new HttpClient(api), new Uri(ApiBase),
+            socketFactory: _ => Interlocked.Increment(ref socketIndex) == 1 ? first : second,
+            retryDelay: _ => TimeSpan.FromSeconds(3));
+        var connected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reconnecting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        transport.Connected += () => connected.TrySetResult();
+        transport.ReconnectionStatusChanged += status =>
+        {
+            if (status.State == ChatReconnectionState.Reconnecting) reconnecting.TrySetResult();
+        };
+        using var lifetime = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+        var run = transport.RunAsync(AllowedSettings(), (_, _) => Task.CompletedTask, lifetime.Token);
+        await connected.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        await using var reporter = new ChatProgressReporter(transport, Request("thread"), (state, _) => state.ToString(),
+            _ => Task.FromResult(true), interval: TimeSpan.FromHours(1), timeout: TimeSpan.FromSeconds(1));
+        await reporter.ReceiveAsync();
+        await reporter.StartAsync();
+        first.Close();
+        await reconnecting.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        Assert.False(await reporter.FinishAsync(ChatProgressState.Completed));
+        Assert.DoesNotContain(api.Bodies, body => body.Contains("Completed", StringComparison.Ordinal));
+        await WaitUntilAsync(() => api.Bodies.Any(body => body.Contains("Completed", StringComparison.Ordinal)), TimeSpan.FromSeconds(6));
+        Assert.Single(api.Bodies, body => body.Contains("Completed", StringComparison.Ordinal));
+        lifetime.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(3));
+    }
+
+    [Fact]
     public async Task Denied_user_and_guild_cannot_create_a_public_thread()
     {
         var socket = new FakeSocket();

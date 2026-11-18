@@ -31,6 +31,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
 
     private readonly IChatProgressTransport? _transport;
     private readonly IChatProgressLifecycleTransport? _lifecycleTransport;
+    private readonly IChatConnectionEvents? _connectionEvents;
     private readonly ChatRequest _request;
     private readonly Func<ChatProgressState, TimeSpan, string> _format;
     private readonly Func<CancellationToken, Task<bool>> _canPublish;
@@ -43,6 +44,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     private readonly SemaphoreSlim _providerGate = new(1, 1);
     private readonly Stopwatch _elapsed = new();
     private readonly CancellationTokenSource _heartbeatStop = new();
+    private readonly CancellationTokenSource _recoveryStop = new();
 
     private ChatProgressMessage? _message;
     private Task? _heartbeatTask;
@@ -57,6 +59,10 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     private long _lastEditTimestamp;
     private bool _hasEdited;
     private bool _lastUpdateReachedProvider;
+    private string? _pendingTerminalText;
+    private long _connectedEvents;
+    private int _connectionSubscribed;
+    private int _disposeRequested;
 
     public ChatProgressReporter(
         IChatTransport transport,
@@ -71,6 +77,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(transport);
         _transport = transport as IChatProgressTransport;
         _lifecycleTransport = transport as IChatProgressLifecycleTransport;
+        _connectionEvents = transport as IChatConnectionEvents;
         _request = request ?? throw new ArgumentNullException(nameof(request));
         _format = format ?? throw new ArgumentNullException(nameof(format));
         _canPublish = canPublish ?? throw new ArgumentNullException(nameof(canPublish));
@@ -82,6 +89,11 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             throw new ArgumentOutOfRangeException(nameof(interval));
         if (_timeout <= TimeSpan.Zero)
             throw new ArgumentOutOfRangeException(nameof(timeout));
+        if (_transport is not null && _connectionEvents is not null)
+        {
+            _connectionEvents.Connected += OnConnected;
+            _connectionSubscribed = 1;
+        }
     }
 
     public async Task ReceiveAsync(CancellationToken cancellationToken = default)
@@ -93,7 +105,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             return;
         try
         {
-            if (_terminal || _disposed || _receiptAttempted)
+            if (_terminal || _disposed || Volatile.Read(ref _disposeRequested) != 0 || _receiptAttempted)
                 return;
 
             _receiptAttempted = true;
@@ -118,7 +130,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             return;
         try
         {
-            if (_terminal || _disposed || _started)
+            if (_terminal || _disposed || Volatile.Read(ref _disposeRequested) != 0 || _started)
                 return;
 
             if (!_receiptAttempted)
@@ -158,7 +170,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
     /// </summary>
     public void RequestUpdate()
     {
-        if (_transport is null || !_started || _terminal || _disposed || _message is null) return;
+        if (_transport is null || !_started || _terminal || _disposed || Volatile.Read(ref _disposeRequested) != 0 || _message is null) return;
         lock (_requestGate)
         {
             if (_terminal || _disposed) return;
@@ -213,7 +225,7 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             return _message is null;
         try
         {
-            if (_terminal || _disposed)
+            if (_terminal || _disposed || Volatile.Read(ref _disposeRequested) != 0)
                 return true;
 
             // Close the state transition before stopping the heartbeat. A tick that has not already
@@ -225,19 +237,38 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             _elapsed.Stop();
 
             if (_message is null)
+            {
+                UnsubscribeConnection();
                 return true;
+            }
             var text = Format(terminal);
             if (text is null)
+            {
+                UnsubscribeConnection();
                 return false;
-            if (await TryUpdateAsync(_message, text, cancellationToken, allowTerminal: true).ConfigureAwait(false))
-                return true;
-            // Publishing refused (access or connection changed): retrying here cannot help; the caller may fall back.
-            if (!_lastUpdateReachedProvider)
-                return false;
-            // A stale "running" post is the worst outcome for the requester, so give a transient failure one more try.
-            try { await Task.Delay(TerminalRetryDelay, cancellationToken).ConfigureAwait(false); }
-            catch (OperationCanceledException) { return false; }
-            return await TryUpdateAsync(_message, text, cancellationToken, allowTerminal: true).ConfigureAwait(false);
+            }
+            var connectedBeforeEdit = Interlocked.Read(ref _connectedEvents);
+            var delivered = await TryUpdateAsync(_message, text, cancellationToken, allowTerminal: true).ConfigureAwait(false);
+            if (!delivered && _lastUpdateReachedProvider)
+            {
+                // Give transient failures one immediate retry before waiting for a connection event.
+                try { await Task.Delay(TerminalRetryDelay, cancellationToken).ConfigureAwait(false); }
+                catch (OperationCanceledException) { }
+                if (!cancellationToken.IsCancellationRequested)
+                    delivered = await TryUpdateAsync(_message, text, cancellationToken, allowTerminal: true).ConfigureAwait(false);
+            }
+            if (delivered || cancellationToken.IsCancellationRequested || Volatile.Read(ref _disposeRequested) != 0 || _connectionEvents is null ||
+                terminal is not (ChatProgressState.Completed or ChatProgressState.Failed or ChatProgressState.Cancelled))
+                UnsubscribeConnection();
+            else
+            {
+                // Retain the original handle only for this transport; every retry rechecks access.
+                _pendingTerminalText = text;
+                // A reconnect may have happened while the failed edit was in flight.
+                if (Interlocked.Read(ref _connectedEvents) != connectedBeforeEdit)
+                    _ = RetryPendingTerminalAsync();
+            }
+            return delivered;
         }
         finally
         {
@@ -247,6 +278,12 @@ public sealed class ChatProgressReporter : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        // Stop and detach before waiting for the lifecycle gate: a retry may be in flight.
+        if (Interlocked.Exchange(ref _disposeRequested, 1) == 0)
+        {
+            _recoveryStop.Cancel();
+            UnsubscribeConnection();
+        }
         if (!await EnterLifecycleAsync(CancellationToken.None).ConfigureAwait(false))
             return;
         try
@@ -254,6 +291,8 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             if (_disposed)
                 return;
             _disposed = true;
+            _pendingTerminalText = null;
+            UnsubscribeConnection();
             _heartbeatStop.Cancel();
             await CompleteProgressAsync().ConfigureAwait(false);
             await DrainHeartbeatAsync().ConfigureAwait(false);
@@ -264,6 +303,40 @@ public sealed class ChatProgressReporter : IAsyncDisposable
             _lifecycleGate.Release();
             _heartbeatStop.Dispose();
         }
+    }
+
+    private void OnConnected()
+    {
+        Interlocked.Increment(ref _connectedEvents);
+        if (Volatile.Read(ref _disposeRequested) == 0) _ = RetryPendingTerminalAsync();
+    }
+
+    private async Task RetryPendingTerminalAsync()
+    {
+        try
+        {
+            // A later reconnect must not be dropped while an earlier retry owns the gate.
+            // Disposal cancels this wait, so it can safely outlive the ordinary lifecycle wait limit.
+            await _lifecycleGate.WaitAsync(_recoveryStop.Token).ConfigureAwait(false);
+            try
+            {
+                if (Volatile.Read(ref _disposeRequested) != 0 || _disposed || _pendingTerminalText is not { } text || _message is not { } message) return;
+                if (await TryUpdateAsync(message, text, _recoveryStop.Token, allowTerminal: true).ConfigureAwait(false))
+                {
+                    _pendingTerminalText = null;
+                    UnsubscribeConnection();
+                }
+            }
+            finally { _lifecycleGate.Release(); }
+        }
+        catch (OperationCanceledException) when (Volatile.Read(ref _disposeRequested) != 0) { }
+        catch (Exception ex) { ReportFailure(ex); }
+    }
+
+    private void UnsubscribeConnection()
+    {
+        if (Interlocked.Exchange(ref _connectionSubscribed, 0) == 0 || _connectionEvents is null) return;
+        _connectionEvents.Connected -= OnConnected;
     }
 
     private async Task HeartbeatLoopAsync(CancellationToken cancellationToken)
@@ -301,9 +374,9 @@ public sealed class ChatProgressReporter : IAsyncDisposable
 
     private async Task<bool> TryUpdateAsync(ChatProgressMessage message, string text, CancellationToken callerToken, bool allowTerminal)
     {
-        if (_transport is null || _disposed || _terminal && !allowTerminal ||
+        if (_transport is null || _disposed || Volatile.Read(ref _disposeRequested) != 0 || _terminal && !allowTerminal ||
             !await CanPublishAsync(callerToken).ConfigureAwait(false) ||
-            _disposed || _terminal && !allowTerminal)
+            _disposed || Volatile.Read(ref _disposeRequested) != 0 || _terminal && !allowTerminal)
         {
             _lastUpdateReachedProvider = false;
             return false;

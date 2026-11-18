@@ -1,6 +1,9 @@
 # Chat Agent Bridge
 
 
+If a final execution progress update cannot be sent during a temporary connection outage, the app retries the same progress message when that connection recovers, provided the request is still allowed.
+
+
 When a chat connection setting changes while the inbox contains requests, save confirmation warns that unsent results and attachments may no longer be actionable. Review them and reconnect manually; the inbox asks for confirmation before clearing the old requests.
 
 Attachment scope controls which existing paths can be named, but it is not a sandbox: an agent with workspace access can create copies of other readable files. Review the attachment contents and use agent permissions and workspace access controls as appropriate.
