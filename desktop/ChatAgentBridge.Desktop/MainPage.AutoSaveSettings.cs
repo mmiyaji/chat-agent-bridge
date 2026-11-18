@@ -24,6 +24,7 @@ public sealed partial class MainPage
         _settingsAutoSaveTimer.IsRepeating = false;
         _settingsAutoSaveTimer.Tick += SettingsAutoSaveTimer_Tick;
         ViewModel.ConfirmSensitiveSettingsAsync = ConfirmSensitiveSettingsAsync;
+        ViewModel.RequiresConnectionChangeConfirmation = InboxPage.ViewModel.RequiresConnectionChangeConfirmation;
         ViewModel.SettingsDraftEdited += ScheduleSettingsAutoSave;
         ViewModel.PropertyChanged += SettingsAutoSaveStateChanged;
         ViewModel.ModelCatalog.PropertyChanged += SettingsAutoSaveStateChanged;
@@ -154,6 +155,8 @@ public sealed partial class MainPage
                 content.Children.Add(new TextBlock { Text = group, TextWrapping = TextWrapping.Wrap, Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"] });
             foreach (var detail in SettingsReviewDetails(saved, draft))
                 content.Children.Add(new TextBlock { Text = detail, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true });
+            if (InboxPage.ViewModel.RequiresConnectionChangeConfirmation(draft))
+                content.Children.Add(new TextBlock { Text = DesktopText.Get("SettingsReconnectPendingWarning"), TextWrapping = TextWrapping.Wrap });
             content.Children.Add(new TextBlock { Text = DesktopText.Get("SettingsSensitiveApplyHelp"), TextWrapping = TextWrapping.Wrap });
             var dialog = new ContentDialog
             {

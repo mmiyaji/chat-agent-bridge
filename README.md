@@ -1,5 +1,10 @@
 # Chat Agent Bridge
 
+
+When a chat connection setting changes while the inbox contains requests, save confirmation warns that unsent results and attachments may no longer be actionable. Review them and reconnect manually; the inbox asks for confirmation before clearing the old requests.
+
+Attachment scope controls which existing paths can be named, but it is not a sandbox: an agent with workspace access can create copies of other readable files. Review the attachment contents and use agent permissions and workspace access controls as appropriate.
+
 **English** · [日本語](README.ja.md) · [Download](https://github.com/mmiyaji/chat-agent-bridge/releases)
 
 [![Latest release](https://img.shields.io/github/v/release/mmiyaji/chat-agent-bridge?include_prereleases&label=release)](https://github.com/mmiyaji/chat-agent-bridge/releases)

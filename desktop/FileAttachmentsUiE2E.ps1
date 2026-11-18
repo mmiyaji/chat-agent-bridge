@@ -749,6 +749,27 @@ try {
         Assert-True (@($after.replies|Select-Object -Skip $before|Where-Object { "$($_.message)".StartsWith($prefix) }).Count -eq 0) 'A request that did not ask for files got an attachment notice'
         $script:checks.Add(@{name='Chat notices for missing, excluded, and unrequested attachments';passed=$true})
     }
+    if (-not $script:mm) {
+        Check 'Connecting after disconnect confirms before clearing requests' {
+            $beforeCount = (Wait-Element 'InboxRequestCount').Current.Name
+            Assert-True (-not [string]::IsNullOrWhiteSpace($beforeCount)) 'No selected inbox request count to protect'
+            UI @('invoke','DisconnectChat') | Out-Null
+            UI @('wait-for','ConnectMattermost','-t','10000') | Out-Null
+            Invoke-AvailableAction 'ConnectMattermost' 20
+            UI @('wait-for','ChatReconnectConfirmation','-t','10000') | Out-Null
+            UI @('invoke','CloseButton') | Out-Null
+            UI @('wait-for','ChatReconnectConfirmation','--gone','-t','5000') | Out-Null
+            $afterCount = (Wait-Element 'InboxRequestCount').Current.Name
+            Assert-True ($afterCount -eq $beforeCount) 'Cancelling reconnect changed the selected inbox request count'
+            Assert-True ($null -ne (Element 'ChatRequests')) 'Cancelling reconnect removed the active request picker'
+            Invoke-AvailableAction 'ConnectMattermost' 20
+            UI @('wait-for','ChatReconnectConfirmation','-t','10000') | Out-Null
+            UI @('invoke','PrimaryButton') | Out-Null
+            UI @('wait-for','ChatReconnectConfirmation','--gone','-t','5000') | Out-Null
+            UI @('wait-for','DisconnectChat','-t','15000') | Out-Null
+            $script:checks.Add(@{name='Provider connect confirms before clearing requests';passed=$true})
+        }
+    }
     UI @('invoke','DisconnectChat') | Out-Null
 } catch {
     $failureDetail = $_.Exception.Message

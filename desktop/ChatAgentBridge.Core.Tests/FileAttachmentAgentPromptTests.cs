@@ -30,8 +30,17 @@ public sealed class FileAttachmentAgentPromptTests
         var result = FileAttachmentAgentPrompt.Build(prompt, new BridgeSettings(), deliveryAvailable: true);
 
         Assert.StartsWith("Attachment delivery capability note:", result, StringComparison.Ordinal);
-        Assert.Contains("copy just that file to a new uniquely named file", result, StringComparison.Ordinal);
+        Assert.Contains("copy just that file", result, StringComparison.Ordinal);
         Assert.Contains("--- Original user prompt (preserved verbatim) ---\n" + prompt + "\n--- End original user prompt ---", result, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ConversationScopeDoesNotInstructCopyingExistingFiles()
+    {
+        var result = FileAttachmentAgentPrompt.Build("Send the file", new BridgeSettings { FileAttachmentScope = "conversation" }, true);
+        Assert.Contains("Do not copy or recreate an existing file merely to make it eligible", result, StringComparison.Ordinal);
+        Assert.Contains("same service, chat origin, channel, thread, user and workspace", result, StringComparison.Ordinal);
+        Assert.DoesNotContain("copy just that file", result, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using ChatAgentBridge.Core;
 using ChatAgentBridge.Transports;
 using ChatAgentBridge_Desktop.Localization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -19,6 +20,10 @@ public sealed partial class ChatInboxViewModel
     public partial bool IsConnectionActionInProgress { get; set; }
 
     public Func<CancellationToken, Task<bool>>? ConfirmReconnectAsync { get; set; }
+
+    public bool RequiresConnectionChangeConfirmation(BridgeSettings draft) =>
+        IsConnected && Requests.Count > 0 && _connectionSettings is { } connected &&
+        ConnectionProvider is { } provider && !ChatConnectionPolicy.Matches(provider, draft, connected);
 
     public string ReconnectLabel => DesktopText.Get("InboxReconnectLabel");
     public string ReconnectHint => IsExecuting ? DesktopText.Get("InboxReconnectBusyHint") :
@@ -47,9 +52,17 @@ public sealed partial class ChatInboxViewModel
     {
         if (!CanConnect(provider)) return;
         IsConnectionActionInProgress = true;
-        _lastConnectionProvider = provider;
-        OnPropertyChanged(nameof(ReconnectHint));
-        try { await CreateAndConnectAsync(provider); }
+        try
+        {
+            // Provider-specific Connect buttons can also replace an old inbox after disconnection.
+            if (Requests.Count > 0 && (ConfirmReconnectAsync is null ||
+                !await ConfirmReconnectAsync(_connectionActionsLifetime.Token))) return;
+            if (_closing || IsExecuting || IsConnected) return;
+            _lastConnectionProvider = provider;
+            OnPropertyChanged(nameof(ReconnectHint));
+            await CreateAndConnectAsync(provider);
+        }
+        catch (OperationCanceledException) when (_closing) { }
         catch (Exception)
         {
             if (!_closing)
@@ -80,7 +93,7 @@ public sealed partial class ChatInboxViewModel
             // Old request actions are intentionally not carried into a new
             // transport. Include completed rows so unsent results/files cannot
             // silently lose their send action during a manual reconnect.
-            if (IsConnected && Requests.Count > 0 && (ConfirmReconnectAsync is null ||
+            if (Requests.Count > 0 && (ConfirmReconnectAsync is null ||
                 !await ConfirmReconnectAsync(_connectionActionsLifetime.Token))) return;
             // Another path (settings revocation or shutdown) may have ended the
             // connection while the confirmation was open. Never replace newer state.
@@ -113,6 +126,13 @@ public sealed partial class ChatInboxViewModel
         // New settings that cannot connect (cleared token, other provider) wait for the user instead.
         if (!IsProviderReady(provider)) { _pendingSettingsReconnect = null; return; }
         if (!CanConnect(provider)) return;
+        // Preserve old rows until the user explicitly accepts their removal.
+        if (Requests.Count > 0)
+        {
+            _pendingSettingsReconnect = null;
+            Status = DesktopText.Get("InboxReconnectPendingRequests");
+            return;
+        }
         _pendingSettingsReconnect = null;
         Status = DesktopText.Get("InboxReconnectingAfterSettingsChange");
         await ConnectProviderAsync(provider);

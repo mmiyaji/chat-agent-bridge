@@ -1154,4 +1154,6 @@
   <data name="AttachmentsChatPolicyChanged" xml:space="preserve"><value>添付の設定が変わったため送信を止めました。</value></data>
   <data name="AttachmentsChatFailed" xml:space="preserve"><value>アップロードに失敗しました。PCの状態を確認してください。</value></data>
   <data name="SettingsReviewAttachmentScope" xml:space="preserve"><value>送れるファイルの範囲</value></data>
+  <data name="SettingsReconnectPendingWarning" xml:space="preserve"><value>保存するとチャットが切断されます。再接続すると、現在の依頼はこの画面から操作できなくなります。未送信の結果・添付は先に共有し、未実行の依頼は再接続後に再投稿してください。会話履歴は残ります。</value></data>
+  <data name="InboxReconnectPendingRequests" xml:space="preserve"><value>チャット設定が変更されました。現在の依頼を確認してから手動で再接続してください。</value></data>
 </root>

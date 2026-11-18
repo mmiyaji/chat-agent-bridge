@@ -1,5 +1,10 @@
 # Chat Agent Bridge
 
+
+受信箱に依頼があるときにチャット接続設定を変更すると、保存前に未送信の結果・添付などについて確認します。現在の依頼を確認してから手動で再接続してください。古い依頼を受信箱から消す前にも確認します。
+
+添付範囲は既存ファイルをマーカーで指定できる範囲を制限しますが、エージェントの読み書きを隔離する機能ではありません。エージェントは読めるファイルのコピーを新規作成できるため、添付内容を確認し、必要に応じて作業フォルダーやエージェントの権限を制限してください。
+
 [English](README.md) · **日本語** · [ダウンロード](https://github.com/mmiyaji/chat-agent-bridge/releases)
 
 [![最新版](https://img.shields.io/github/v/release/mmiyaji/chat-agent-bridge?include_prereleases&label=release)](https://github.com/mmiyaji/chat-agent-bridge/releases)

@@ -10,6 +10,7 @@ public partial class MainPageViewModel
     private bool _savingSettings;
 
     public Func<BridgeSettings, BridgeSettings, Task<bool>>? ConfirmSensitiveSettingsAsync { get; set; }
+    public Func<BridgeSettings, bool>? RequiresConnectionChangeConfirmation { get; set; }
     public event Action? SettingsDraftEdited;
 
     [ObservableProperty]
@@ -73,7 +74,8 @@ public partial class MainPageViewModel
 
     private async Task<bool> ConfirmSensitiveDraftAsync(BridgeSettings baseline, BridgeSettings snapshot, Action rollback)
     {
-        if (IsOnboardingActive || !SettingsSensitiveChanges.Compare(baseline, snapshot).HasChanges) return true;
+        if (IsOnboardingActive || (!SettingsSensitiveChanges.Compare(baseline, snapshot).HasChanges &&
+            RequiresConnectionChangeConfirmation?.Invoke(snapshot) != true)) return true;
         var accepted = false;
         IsSensitiveConfirmationPending = true;
         try
