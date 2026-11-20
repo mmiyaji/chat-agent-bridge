@@ -84,17 +84,19 @@ public sealed class ChatScheduleStore
         finally { _gate.Release(); }
     }
 
-    /// <summary>Records a run, so a schedule fires once per due time even after a long pause.</summary>
-    public async Task MarkRunAsync(string id, DateTimeOffset at, CancellationToken cancellationToken = default)
+    /// <summary>Claims a run if the listed schedule still exists, is unchanged, and is due.</summary>
+    public async Task<bool> TryClaimRunAsync(ChatSchedule expected, DateTimeOffset at, TimeZoneInfo zone,
+        CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var document = await ReadAsync(cancellationToken).ConfigureAwait(false);
-            var index = document.Schedules.FindIndex(item => item.Id == id);
-            if (index < 0) return;
+            var index = document.Schedules.FindIndex(item => item == expected);
+            if (index < 0 || !document.Schedules[index].IsDue(at, zone)) return false;
             document.Schedules[index] = document.Schedules[index] with { LastRunAt = at };
             await WriteAsync(document, cancellationToken).ConfigureAwait(false);
+            return true;
         }
         finally { _gate.Release(); }
     }

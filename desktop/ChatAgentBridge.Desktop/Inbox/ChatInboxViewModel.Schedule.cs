@@ -25,37 +25,45 @@ public sealed partial class ChatInboxViewModel
 
     private async Task RunDueSchedulesAsync()
     {
-        // Only while connected and idle on this check, so a slow disk never stacks overlapping passes.
-        if (_scheduleChecking || _closing || !IsConnectionConfirmed || _transport is not { } transport ||
-            _connectionSettings is not { } connected || Volatile.Read(ref _accessSettings) is not { } access ||
+        // A slow disk must never stack overlapping passes.
+        if (_scheduleChecking || _closing || _disconnecting || !IsConnectionConfirmed || _transport is not { } transport ||
+            _connectionSettings is not { } connected || Volatile.Read(ref _accessSettings) is null ||
             ConnectionProvider is not { } provider || _connection is not { IsCancellationRequested: false } connection) return;
         _scheduleChecking = true;
         try
         {
             var token = connection.Token;
             var now = DateTimeOffset.UtcNow;
+            var zone = TimeZoneInfo.Local;
             foreach (var schedule in await _schedules.ListAsync(token))
             {
-                if (!schedule.Provider.Equals(provider, StringComparison.OrdinalIgnoreCase) ||
-                    !schedule.IsDue(now, TimeZoneInfo.Local)) continue;
-                // Mark first: a crash or rejection must not turn into a run on every tick.
-                await _schedules.MarkRunAsync(schedule.Id, now, token);
-                var request = new ChatRequest(schedule.Provider, schedule.ChannelId, schedule.ThreadId, schedule.UserId,
+                if (!IsCurrentConnection()) return;
+                if (!schedule.IsDue(now, zone) || !schedule.MatchesConnectionScope(provider, connected)) continue;
+                // Claim first to keep a crash or rejection from retrying every tick.
+                if (!await _schedules.TryClaimRunAsync(schedule, now, zone, token)) continue;
+                if (!IsCurrentConnection()) return;
+                var request = new ChatRequest(provider, schedule.ChannelId, schedule.ThreadId, schedule.UserId,
                     schedule.Prompt, $"schedule:{schedule.Id}:{now.ToUnixTimeSeconds()}")
                 { GuildId = schedule.GuildId, IsDirectMessage = schedule.IsDirectMessage };
                 // Access is checked again now, so a revoked user or channel stops its schedules.
-                if (!CanReceive(access, request, connected))
+                if (Volatile.Read(ref _accessSettings) is not { } access || !CanReceive(access, request, connected))
                 {
                     await AuditScheduleAsync("schedule_skipped", request, token);
                     continue;
                 }
                 await AuditScheduleAsync("schedule_fired", request, token);
-                await AcceptReceivedRequestAsync(request, transport, access, token);
+                if (!IsCurrentConnection()) return;
+                if (Volatile.Read(ref _accessSettings) is { } latest && CanReceive(latest, request, connected))
+                    await AcceptReceivedRequestAsync(request, transport, latest, token);
             }
         }
         catch (OperationCanceledException) { }
         catch (Exception) { /* A broken schedule file or audit write must not take the inbox down; the next tick retries. */ }
         finally { _scheduleChecking = false; }
+
+        bool IsCurrentConnection() => !_closing && !_disconnecting && IsConnectionConfirmed &&
+            !connection.IsCancellationRequested && ReferenceEquals(connection, _connection) &&
+            ReferenceEquals(transport, _transport) && ReferenceEquals(connected, _connectionSettings);
     }
 
     private async Task AuditScheduleAsync(string kind, ChatRequest request, CancellationToken token)

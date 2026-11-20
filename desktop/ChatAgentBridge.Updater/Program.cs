@@ -78,8 +78,9 @@ sealed class WindowsApplicationStarter : IPortableApplicationStarter
         var start = CreateStart(executable, dataDirectory);
         start.Environment["CAB_PORTABLE_UPDATE_READY_EVENT"] = healthEventName;
         using var process = Process.Start(start) ?? throw new IOException("The updated application did not start.");
-        var deadline = DateTimeOffset.UtcNow.AddSeconds(45);
-        while (DateTimeOffset.UtcNow < deadline && !process.HasExited)
+        // Allow for service and window setup, then the separate migration and page startup budgets.
+        var elapsed = Stopwatch.StartNew();
+        while (elapsed.Elapsed < TimeSpan.FromSeconds(90) && !process.HasExited)
         {
             if (ready.WaitOne(0)) return true;
             await Task.Delay(100, cancellationToken);

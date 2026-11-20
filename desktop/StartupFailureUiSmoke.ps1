@@ -75,11 +75,12 @@ function Set-Fixture([string]$Data,[string]$Mode) {
     $timeout = if ($Mode -eq 'none') { 30 } else { 1 }
     Write-Json (Join-Path $Data 'startup-fixture.json') @{mode=$Mode;timeoutSeconds=$timeout}
 }
-function Launch([string]$Data) {
+function Launch([string]$Data,[string]$UpdateReadyEvent) {
     $start = [Diagnostics.ProcessStartInfo]::new($executable)
     $start.UseShellExecute = $false
     $start.WorkingDirectory = $install
     $start.ArgumentList.Add('--data-dir'); $start.ArgumentList.Add($Data)
+    if ($UpdateReadyEvent) { $start.Environment['CAB_PORTABLE_UPDATE_READY_EVENT'] = $UpdateReadyEvent }
     $process = [Diagnostics.Process]::Start($start)
     if (-not $process -or $process.Id -eq 39892) { throw 'Refusing an unexpected app process.' }
     [void]$owned.Add($process.Id)
@@ -198,6 +199,35 @@ try {
     Write-Output 'PASS Exit shuts down cleanly from startup error'
     Stop-FixtureProcess $exitProcess
     $script:activeProcess = $null
+
+    # Set up the same named event as the updater and test both startup outcomes.
+    foreach ($mode in @('page-error','none')) {
+        $updateData = Join-Path $root ("update-$mode-data")
+        Write-Profile $updateData 'en' 'light'
+        Set-Fixture $updateData $mode
+        $eventName = 'Local\ChatAgentBridge.Update.' + [guid]::NewGuid().ToString('N')
+        $ready = [Threading.EventWaitHandle]::new($false,[Threading.EventResetMode]::ManualReset,$eventName)
+        try {
+            Launch $updateData $eventName
+            if ($mode -eq 'page-error') {
+                Wait { Visible 'StartupMigrationError' } 'startup error during update'
+                Assert (-not $ready.WaitOne(0)) 'The updated app confirmed readiness despite a page startup error.'
+                Assert (-not (Visible 'StartupMigrationRetry')) 'A failed update launch can restart before rollback.'
+                Invoke-Id 'StartupMigrationExit'
+                Assert ($activeProcess.WaitForExit(10000)) 'Exit did not close the failed update launch.'
+                Assert (-not $ready.WaitOne(0)) 'The failed update launch signaled readiness during shutdown.'
+            } else {
+                Wait { $ready.WaitOne(0) } 'portable update readiness signal'
+                Assert (Visible 'NavOverview') 'The update signaled readiness without usable navigation.'
+            }
+            $checks.Add(@{name="update-$mode";status='PASS';ready=$ready.WaitOne(0)})
+            Write-Output "PASS update-$mode readiness matches startup outcome"
+        } finally {
+            $ready.Dispose()
+            Stop-FixtureProcess $activeProcess
+            $script:activeProcess = $null
+        }
+    }
 
     # A clean profile with no startup fixture must follow the normal path.
     $normalData = Join-Path $root 'normal-data'

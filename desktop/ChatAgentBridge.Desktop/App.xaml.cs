@@ -166,7 +166,14 @@ public partial class App : Application
         // The lifetime update task initializes preferences and revalidates downloaded updates
         // after the window is visible; large archives must not delay first-window creation.
 
-        var mainWindow = new MainWindow();
+        const string updateReadyEventPrefix = @"Local\ChatAgentBridge.Update.";
+        var mainWindow = new MainWindow
+        {
+            PortableUpdateReadyEvent = DeploymentRuntime.IsPortable && updateReadyEvent is not null &&
+                updateReadyEvent.StartsWith(updateReadyEventPrefix, StringComparison.Ordinal) &&
+                updateReadyEvent.Length == updateReadyEventPrefix.Length + 32 &&
+                updateReadyEvent[^32..].All(Uri.IsHexDigit) ? updateReadyEvent : null,
+        };
         Window = mainWindow;
         KeepAwake = new(new ChatAgentBridge.Core.KeepAwakePreferencesStore(), WindowHandle);
         Tray = new(mainWindow, backgroundStore, background);
@@ -197,14 +204,6 @@ public partial class App : Application
         _ = RecoverAbandonedInputsAsync(dataDirectory);
         _logRetentionTask = RunLogRetentionAsync(dataDirectory);
         if (!IsNotificationOnlyLaunch) PendingRequestNotifications.ProcessStartupActivation();
-        if (DeploymentRuntime.IsPortable && updateReadyEvent is not null &&
-            updateReadyEvent.StartsWith(@"Local\ChatAgentBridge.Update.", StringComparison.Ordinal) &&
-            updateReadyEvent.Length == @"Local\ChatAgentBridge.Update.".Length + 32 &&
-            updateReadyEvent[^32..].All(Uri.IsHexDigit))
-        {
-            try { using var ready = EventWaitHandle.OpenExisting(updateReadyEvent); ready.Set(); }
-            catch (WaitHandleCannotBeOpenedException) { }
-        }
         _pricingTask = RunPricingUpdatesAsync(_pricingLifetime.Token);
         _ = RunPortableUpdateChecksAsync();
     }

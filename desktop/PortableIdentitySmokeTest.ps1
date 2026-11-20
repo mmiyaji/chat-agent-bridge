@@ -306,7 +306,7 @@ catch (COMException error) when (error.HResult == unchecked((int)0x800B0109))
         Assert (-not $helper.HasExited) 'Helper rejected the identity-bearing update.'
         Stop-TestApp
         $resultFile = Join-Path $work 'update-result.json'
-        Wait-Until { Test-Path -LiteralPath $resultFile } 75 'Updater did not finish.'
+        Wait-Until { Test-Path -LiteralPath $resultFile } 110 'Updater did not finish.'
         $result = Get-Content -LiteralPath $resultFile -Raw | ConvertFrom-Json
         if (-not $rollback) { Wait-Until { $helper.HasExited } 15 'Owned update helper did not exit.' }
         Assert ($result.Success -eq (-not $rollback) -and $result.RolledBack -eq $rollback) 'Unexpected update/rollback result.'

@@ -16,6 +16,7 @@ public sealed partial class MainWindow
     private bool _startupRestartRequired;
     private bool _startupRestarting;
     private CancellationToken StartupAttemptToken => _startupAttemptLifetime?.Token ?? _startupLifetime.Token;
+    internal string? PortableUpdateReadyEvent { get; init; }
     public Task StartupReady => _startupReady.Task;
     internal bool CanStartChatAfterStartup => _startupReady.Task.IsCompletedSuccessfully && !_startupAttemptFailed;
 
@@ -74,21 +75,19 @@ public sealed partial class MainWindow
             attempt.CancelAfter(timeout);
             StartupSplashMessage.Text = DesktopText.Get("StartupLoading");
             creatingPage = true;
-            if (!RootFrame.Navigate(typeof(MainPage))) throw new InvalidOperationException("Main page navigation failed.");
-            if (Page is { } page)
+            if (!RootFrame.Navigate(typeof(MainPage)) || Page is not { } page)
+                throw new InvalidOperationException("Main page navigation failed.");
+            page.SettingsSearchRequested += (_, _) => ShowSettingsSearch();
+            page.ViewModel.PropertyChanged += (_, args) =>
             {
-                page.SettingsSearchRequested += (_, _) => ShowSettingsSearch();
-                page.ViewModel.PropertyChanged += (_, args) =>
-                {
-                    if (args.PropertyName is nameof(page.ViewModel.IsOnboardingActive) or nameof(page.ViewModel.IsSettingsLoaded))
-                        UpdateSettingsSearchVisibility();
-                };
-                await CompleteStartupSplashAsync(page);
-            }
+                if (args.PropertyName is nameof(page.ViewModel.IsOnboardingActive) or nameof(page.ViewModel.IsSettingsLoaded))
+                    UpdateSettingsSearchVisibility();
+            };
+            await CompleteStartupSplashAsync(page);
             token.ThrowIfCancellationRequested();
             attempt.CancelAfter(Timeout.InfiniteTimeSpan);
             UpdateSettingsSearchVisibility();
-            _startupReady.TrySetResult();
+            if (_startupReady.TrySetResult()) SignalPortableUpdateReady();
         }
         catch (OperationCanceledException) when (_startupLifetime.IsCancellationRequested) { }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -109,6 +108,20 @@ public sealed partial class MainWindow
         }
     }
 
+    private void SignalPortableUpdateReady()
+    {
+        if (PortableUpdateReadyEvent is not { } eventName) return;
+        try
+        {
+            using var ready = EventWaitHandle.OpenExisting(eventName);
+            ready.Set();
+        }
+        catch (Exception error) when (error is WaitHandleCannotBeOpenedException or UnauthorizedAccessException)
+        {
+            // The updater may already have stopped waiting.
+        }
+    }
+
     private void ShowStartupFailure(string title, string message)
     {
         _startupAttemptFailed = true;
@@ -123,8 +136,10 @@ public sealed partial class MainWindow
         StartupMigrationTitle.Text = DesktopText.Get(title);
         StartupMigrationError.Message = DesktopText.Get(message);
         StartupMigrationError.IsOpen = true;
-        StartupMigrationRetry.Visibility = Visibility.Visible;
-        StartupMigrationRetry.IsEnabled = true;
+        // A replacement process could take the portable lease before the updater restores the backup.
+        var canRetry = !_startupRestartRequired || PortableUpdateReadyEvent is null;
+        StartupMigrationRetry.Visibility = canRetry ? Visibility.Visible : Visibility.Collapsed;
+        StartupMigrationRetry.IsEnabled = canRetry;
     }
 
     private void CancelStartupMigration()
@@ -137,7 +152,7 @@ public sealed partial class MainWindow
 
     private void StartupMigrationRetry_Click(object sender, RoutedEventArgs args)
     {
-        if (_startupBusy || _startupRestarting) return;
+        if (_startupBusy || _startupRestarting || !StartupMigrationRetry.IsEnabled) return;
         if (_startupRestartRequired)
         {
             _startupRestarting = true;

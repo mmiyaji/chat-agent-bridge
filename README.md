@@ -214,6 +214,9 @@ Actions are tied to the requester and the conversation (channel, thread and user
 | `!cab worktree NAME` | Request a git worktree (`.cab/worktrees/NAME`, branch `cab/NAME`) for this conversation; approved on the PC |
 | `!cab remember TEXT` / `!cab memory` / `!cab forget NUMBER\|all` | Save, list or remove notes for this channel (up to 20 notes of 500 characters). Notes are added to every request in the channel, for everyone allowed to use it |
 | `!cab usage` | Token usage and estimated cost for this thread and for you today |
+| `!cab schedule` | Add, list or remove recurring requests |
+
+Recurring requests follow the current approval settings and run while the app is connected. Mattermost schedules stay with the server where they were created, and shared-channel schedules require that channel to be configured. If a daily or weekday time falls in a daylight-saving gap, it is due at the first valid local time.
 
 `!cab status` lists running, approval-waiting and queued requests for your current thread, including agent, model, permission and working folder. When the permission is "inherit", it shows what the CLI's own settings resolve to, and marks modes that run without asking with ⚠. It does not expose requests from other users or threads. The reply is visible to people who can read that thread.
 
@@ -253,6 +256,8 @@ The app uses Japanese when the Windows language preference is Japanese and Engli
 ![Current status, startup, auto-connect and system tray settings](docs/assets/screenshots/general-en.png)
 
 After an update, a notice at the top of the app shows the main changes. You can revisit them under **About → What's new** after dismissing the notice.
+
+The portable updater waits for the main screen to finish initializing. If the new version fails to start, the updater restores the previous application files.
 
 Portable builds can check for and apply updates from **About**. Downloads show received and total size while active or paused, transfer speed and estimated time remaining, elapsed time while waiting for data, retry counts, and verification and preparation stages. Downloads can be canceled. Downloads support pause and resume, including after restarting the app. Network failures or five minutes without data trigger up to three retries. The completed archive is verified with SHA-256. Local failures show the update stage, a cause when identified (such as low disk space or a file in use), and a code to share with support. The `Data` folder is retained during updates. Completed update downloads and temporary binary payloads are cleaned up automatically; update logs are retained. Information → Update settings shows storage usage. Manual cleanup is under Information → Advanced settings → Maintenance. For manual updates, close the app and replace the files while keeping `Data`.
 

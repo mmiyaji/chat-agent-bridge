@@ -70,6 +70,61 @@ public sealed class ChatScheduleTests : IDisposable
         Assert.Equal(new DateTimeOffset(2026, 11, 9, 9, 0, 0, TimeSpan.Zero), next);
     }
 
+    [Theory]
+    [InlineData("Australia/Lord_Howe", 10, 4, 2, 30, 660)]
+    [InlineData("America/Los_Angeles", 3, 8, 3, 0, -420)]
+    public void SkippedWallTimeRunsAtFirstValidMinute(string zoneId, int month, int day, int hour, int minute, int utcOffsetMinutes)
+    {
+        var zone = TimeZoneInfo.FindSystemTimeZoneById(zoneId);
+        var expected = new DateTimeOffset(2026, month, day, hour, minute, 0, TimeSpan.FromMinutes(utcOffsetMinutes));
+        var scheduled = Daily(2 * 60 + 15, expected.AddHours(-8));
+
+        Assert.False(scheduled.IsDue(expected.AddMinutes(-1), zone));
+        Assert.True(expected.EqualsExact(scheduled.NextRun(zone)));
+        Assert.True(scheduled.IsDue(expected, zone));
+        Assert.False((scheduled with { LastRunAt = expected }).IsDue(expected, zone));
+    }
+
+    [Fact]
+    public void ScheduleMatchesOnlyItsCanonicalConnectionOrigin()
+    {
+        const string originalServer = "https://chat.example.com/mattermost";
+        var origin = Sessions.ChatSessionScope.Create("mattermost", "c", "t", "u", originalServer).Origin;
+        var schedule = Daily(0, DateTimeOffset.UtcNow) with { Origin = origin };
+        var connection = new BridgeSettings
+        {
+            MattermostServerUrl = "https://CHAT.example.com:443/mattermost/",
+            MattermostChannelId = "c"
+        };
+
+        Assert.True(schedule.MatchesConnectionScope("mattermost", connection));
+        Assert.False(schedule.MatchesConnectionScope("mattermost", connection with { MattermostServerUrl = "https://chat.example.com/other" }));
+        Assert.False(schedule.MatchesConnectionScope("slack", connection));
+        Assert.False((schedule with { Origin = null }).MatchesConnectionScope("mattermost", connection));
+    }
+
+    [Fact]
+    public void MattermostScheduleMatchesConfiguredSharedChannelOrEnabledDirectMessages()
+    {
+        var connection = new BridgeSettings
+        {
+            MattermostServerUrl = "https://chat.example.com",
+            MattermostChannelId = "shared",
+            MattermostAllowDirectMessages = true
+        };
+        var origin = Sessions.ChatSessionScope.Create("mattermost", "shared", "t", "u", connection.MattermostServerUrl).Origin;
+        var shared = Daily(0, DateTimeOffset.UtcNow) with { Origin = origin, ChannelId = "shared" };
+        var previousShared = shared with { ChannelId = "previous-shared" };
+        var direct = shared with { ChannelId = "personal", IsDirectMessage = true };
+
+        Assert.True(shared.MatchesConnectionScope("mattermost", connection));
+        Assert.False(previousShared.MatchesConnectionScope("mattermost", connection));
+        Assert.True(direct.MatchesConnectionScope("mattermost", connection));
+        var sharedOnly = connection with { MattermostAllowDirectMessages = false };
+        Assert.True(shared.MatchesConnectionScope("mattermost", sharedOnly));
+        Assert.False(direct.MatchesConnectionScope("mattermost", sharedOnly));
+    }
+
     [Fact]
     public void EveryAddsTheIntervalToTheLastRun()
     {
@@ -114,15 +169,44 @@ public sealed class ChatScheduleTests : IDisposable
     }
 
     [Fact]
-    public async Task MarkRunPersistsAndAnUnreadableFileReadsAsEmpty()
+    public async Task ClaimRunPersistsAndAnUnreadableFileReadsAsEmpty()
     {
         var store = new ChatScheduleStore(_directory);
-        var added = (await store.AddAsync(new ChatSchedule { Provider = "p", ChannelId = "c", UserId = "u", Prompt = "x", Kind = ChatScheduleKind.Every, EveryMinutes = 60 })).Schedule!;
-        var at = DateTimeOffset.UtcNow;
-        await store.MarkRunAsync(added.Id, at);
+        var at = new DateTimeOffset(2026, 11, 2, 10, 0, 0, TimeSpan.Zero);
+        var added = (await store.AddAsync(Daily(9 * 60, at.AddDays(-1)))).Schedule!;
+        Assert.True(await store.TryClaimRunAsync(added, at, Utc));
         Assert.Equal(at, (await store.ListAsync()).Single().LastRunAt);
         await File.WriteAllTextAsync(Path.Combine(_directory, "chat-schedules.json"), "{ not json");
         Assert.Empty(await store.ListAsync());
+    }
+
+    [Fact]
+    public async Task DeletedScheduleCannotBeClaimedFromAListSnapshot()
+    {
+        var store = new ChatScheduleStore(_directory);
+        var at = new DateTimeOffset(2026, 11, 2, 10, 0, 0, TimeSpan.Zero);
+        var added = (await store.AddAsync(Daily(9 * 60, at.AddDays(-1)))).Schedule!;
+        var visible = await store.ListAsync();
+
+        Assert.Equal(added, await store.RemoveAsync(added.Id, visible));
+        Assert.False(await store.TryClaimRunAsync(Assert.Single(visible), at, Utc));
+        Assert.Empty(await store.ListAsync());
+    }
+
+    [Fact]
+    public async Task ConcurrentClaimsSucceedOnceAndAStaleSnapshotCannotClaimTheNextRun()
+    {
+        var store = new ChatScheduleStore(_directory);
+        var otherStore = new ChatScheduleStore(_directory);
+        var at = new DateTimeOffset(2026, 11, 2, 9, 0, 0, TimeSpan.Zero);
+        var added = (await store.AddAsync(Daily(9 * 60, at.AddHours(-1)))).Schedule!;
+        Assert.False(await store.TryClaimRunAsync(added, at.AddMinutes(-1), Utc));
+        var claims = await Task.WhenAll(store.TryClaimRunAsync(added, at, Utc), otherStore.TryClaimRunAsync(added, at, Utc));
+
+        Assert.Single(claims, claimed => claimed);
+        Assert.False(await store.TryClaimRunAsync(added, at.AddDays(1), Utc));
+        var current = Assert.Single(await store.ListAsync());
+        Assert.True(await store.TryClaimRunAsync(current, at.AddDays(1), Utc));
     }
 
     public void Dispose() { try { Directory.Delete(_directory, true); } catch (IOException) { } }

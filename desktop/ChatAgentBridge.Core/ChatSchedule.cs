@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using ChatAgentBridge.Core.Sessions;
 
 namespace ChatAgentBridge.Core;
 
@@ -43,7 +44,7 @@ public sealed record ChatSchedule
             if (Kind == ChatScheduleKind.Weekdays && day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) continue;
             var wall = day.AddMinutes(MinuteOfDay);
             // A time skipped by a DST jump runs when the clock first passes it.
-            if (zone.IsInvalidTime(wall)) wall = wall.AddHours(1);
+            while (zone.IsInvalidTime(wall)) wall = wall.AddMinutes(1);
             var candidate = new DateTimeOffset(wall, zone.GetUtcOffset(wall));
             if (candidate > reference) return candidate;
         }
@@ -51,6 +52,22 @@ public sealed record ChatSchedule
     }
 
     public bool IsDue(DateTimeOffset now, TimeZoneInfo zone) => NextRun(zone) <= now;
+
+    public bool MatchesConnectionScope(string provider, BridgeSettings connected)
+    {
+        if (!string.Equals(Provider, provider, StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(UserId) || string.IsNullOrEmpty(Origin)) return false;
+        if (provider == "mattermost")
+        {
+            var matchesChannel = IsDirectMessage
+                ? connected.MattermostAllowDirectMessages
+                : !string.IsNullOrEmpty(connected.MattermostChannelId) &&
+                    string.Equals(ChannelId, connected.MattermostChannelId, StringComparison.Ordinal);
+            if (!matchesChannel) return false;
+        }
+        var scope = ChatSessionScope.Create(provider, ChannelId, ThreadId, UserId, connected.MattermostServerUrl);
+        return string.Equals(Origin, scope.Origin, StringComparison.Ordinal);
+    }
 
     public string Describe() => Kind switch
     {

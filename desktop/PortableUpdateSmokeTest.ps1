@@ -229,7 +229,7 @@ try {
         Stop-TestApp $app
         $app.Dispose(); $app = $null
         $resultFile = Join-Path $work 'update-result.json'
-        Wait-Until { Test-Path -LiteralPath $resultFile } 65 'Updater did not finish.'
+        Wait-Until { Test-Path -LiteralPath $resultFile } 110 'Updater did not finish.'
         $result = Get-Content -LiteralPath $resultFile -Raw | ConvertFrom-Json
         $dialogResult = $null
         if ($rollback) {
